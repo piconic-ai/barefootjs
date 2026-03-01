@@ -101,6 +101,38 @@ await Bun.write(
 )
 console.log(`Generated: dist/components/${barefootFileName}`)
 
+// Build and copy barefoot-form.js from @barefootjs/form
+// External @barefootjs/dom so it resolves via import map
+const FORM_PKG_DIR = resolve(ROOT_DIR, '../../packages/form')
+const formEntryFile = resolve(FORM_PKG_DIR, 'src/index.ts')
+
+console.log('Building @barefootjs/form for site...')
+const formBuildResult = await Bun.build({
+  entrypoints: [formEntryFile],
+  format: 'esm',
+  external: ['@barefootjs/dom'],
+})
+
+if (formBuildResult.outputs.length > 0) {
+  await Bun.write(
+    resolve(DIST_COMPONENTS_DIR, 'barefoot-form.js'),
+    formBuildResult.outputs[0]
+  )
+  console.log('Generated: dist/components/barefoot-form.js')
+}
+
+// Bundle zod for client-side use (needed by createForm demos)
+console.log('Building zod for site...')
+const zodBuildResult = await Bun.build({
+  entrypoints: [require.resolve('zod')],
+  format: 'esm',
+})
+if (zodBuildResult.outputs.length > 0) {
+  const zodDir = resolve(DIST_DIR, 'lib')
+  await mkdir(zodDir, { recursive: true })
+  await Bun.write(resolve(zodDir, 'zod.esm.js'), zodBuildResult.outputs[0])
+  console.log('Generated: dist/lib/zod.esm.js')
+}
 
 // Manifest - simplified structure
 const manifest: Record<string, { clientJs?: string; markedTemplate: string }> = {

@@ -60,6 +60,7 @@ import { ControlledInputPage } from './pages/forms/controlled-input'
 import { ValidationPage } from './pages/forms/validation'
 import { SubmitPage } from './pages/forms/submit'
 import { FieldArraysPage } from './pages/forms/field-arrays'
+import { CreateFormPage } from './pages/forms/create-form'
 
 
 /**
@@ -304,6 +305,14 @@ export function createApp() {
             >
               <h2 className="text-sm font-medium text-foreground group-hover:text-foreground">Field Arrays</h2>
               <p className="text-xs text-muted-foreground">Dynamic list of form inputs with add/remove</p>
+            </a>
+
+            <a
+              href="/docs/forms/create-form"
+              className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2"
+            >
+              <h2 className="text-sm font-medium text-foreground group-hover:text-foreground">createForm</h2>
+              <p className="text-xs text-muted-foreground">Schema-driven form with createForm + Standard Schema</p>
             </a>
           </div>
         </div>
@@ -557,6 +566,11 @@ export function createApp() {
   // Field Arrays pattern documentation
   app.get('/docs/forms/field-arrays', (c) => {
     return c.render(<FieldArraysPage />)
+  })
+
+  // createForm documentation
+  app.get('/docs/forms/create-form', (c) => {
+    return c.render(<CreateFormPage />)
   })
 
   return app

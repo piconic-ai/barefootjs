@@ -122,6 +122,7 @@ const menuEntries: SidebarEntry[] = [
     title: 'Forms',
     links: [
       { title: 'Controlled Input', href: '/docs/forms/controlled-input' },
+      { title: 'createForm', href: '/docs/forms/create-form' },
       { title: 'Field Arrays', href: '/docs/forms/field-arrays' },
       { title: 'Submit', href: '/docs/forms/submit' },
       { title: 'Validation', href: '/docs/forms/validation' },
@@ -141,6 +142,8 @@ const menuEntries: SidebarEntry[] = [
 const importMapScript = JSON.stringify({
   imports: {
     '@barefootjs/dom': '/static/components/barefoot.js',
+    '@barefootjs/form': '/static/components/barefoot-form.js',
+    'zod': '/static/lib/zod.esm.js',
     'embla-carousel': '/static/lib/embla-carousel.esm.js',
   },
 })

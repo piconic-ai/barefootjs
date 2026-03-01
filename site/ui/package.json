@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@barefootjs/dom": "workspace:*",
+    "@barefootjs/form": "workspace:*",
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/site-shared": "workspace:*",
     "@shikijs/langs": "^3.21.0",
@@ -26,6 +27,7 @@
     "@unocss/preset-wind": "^66.0.0",
     "bun-types": "^1.1.0",
     "unocss": "^66.0.0",
-    "wrangler": "^4.59.0"
+    "wrangler": "^4.59.0",
+    "zod": "^3.24.0"
   }
 }
