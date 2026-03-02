@@ -96,14 +96,18 @@ The `jsxToIR` function (`jsx-to-ir.ts`) transforms the analyzed JSX AST into the
 
 The core decision at this phase is: **is this expression reactive?**
 
-```typescript
-function isReactiveExpression(expr: string, ctx: AnalyzerContext): boolean
-```
+The compiler uses a two-tier detection strategy:
 
-An expression is reactive if it references:
-- A signal getter: `count()` — detected by pattern `\bcount\s*\(`
+1. **TypeChecker path** — Walks the AST and checks each node's type for the `Reactive<T>` brand via `checker.getTypeAtLocation()`. This detects all reactive getters: signals, memos, and library-provided reactive accessors (e.g., `FieldReturn.error`, `FormReturn.isSubmitting`).
+
+2. **Regex fallback** — Pattern-matches known signal/memo names and props references. Used when the TypeChecker cannot resolve imported types.
+
+An expression is reactive if it matches any of:
+- A `Reactive<T>`-branded type (via TypeChecker)
+- A signal getter: `count()` — regex pattern `\bcount\s*\(`
 - A memo: `doubled()` — same pattern
-- A props reference: `props.value` — detected by `\bprops\.\w+`
+- A props reference: `props.value` — per-prop name matching (excludes `children`)
+- A local constant derived from any of the above (taint analysis)
 
 Reactive expressions get a `slotId` assigned, which becomes a `bf` hydration marker in the output.
 

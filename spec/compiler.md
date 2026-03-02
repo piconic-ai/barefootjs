@@ -420,11 +420,35 @@ Note: Hono's JSX uses `class=` (HTML-style), but BarefootJS JSX uses React-style
 
 ### Reactivity Classification
 
-| Pattern | Reactive? | Reason |
-|---------|-----------|--------|
-| `count()` (signal getter) | Yes | Signal call detected |
-| `doubled()` (memo call) | Yes | Memo call detected |
-| `props.count` | Yes | Props reference |
+The compiler detects reactive expressions using a two-tier strategy:
+
+1. **Type-based detection** — Uses TypeScript's `TypeChecker` to find expressions typed with the `Reactive<T>` brand. All reactive getters carry this brand: `Signal<T>[0]`, `Memo<T>`, `FieldReturn.value`, `FormReturn.isSubmitting`, etc. This is the primary mechanism and handles both local signals/memos and library-provided reactive accessors.
+
+2. **Regex fallback** — Pattern-matches signal/memo getter names and props references. Used when the TypeChecker cannot resolve imported types (e.g., virtual file paths, missing type declarations). Build tools can pass a pre-built `ts.Program` via `CompileOptions.program` for full type resolution.
+
+#### The `Reactive<T>` Brand
+
+All reactive getters are typed with a phantom brand:
+
+```typescript
+type Reactive<T> = T & { readonly __reactive: true }
+
+type Signal<T> = [Reactive<() => T>, (valueOrFn: T | ((prev: T) => T)) => void]
+type Memo<T> = Reactive<() => T>
+```
+
+The compiler checks for `__reactive` via `checker.getTypeAtLocation(node).getProperty('__reactive')`. Library authors can brand their own reactive accessors by typing them as `Reactive<() => T>`.
+
+#### Classification Table
+
+| Pattern | Reactive? | Detection |
+|---------|-----------|-----------|
+| `count()` (signal getter) | Yes | Brand (`Reactive<() => T>`) or regex |
+| `doubled()` (memo call) | Yes | Brand (`Reactive<() => T>`) or regex |
+| `username.error()` (library accessor) | Yes | Brand (`Reactive<() => string>`) |
+| `form.isSubmitting()` | Yes | Brand (`Reactive<() => boolean>`) |
+| `props.count` | Yes | Regex (props aren't branded) |
+| `label` (const derived from signal) | Yes | Taint analysis (follows constant value) |
 | `count` (destructured prop) | No | Value captured at definition |
 | `"static string"` | No | Literal value |
 | `CONSTANT` (no reactive deps) | No | Pure constant |
