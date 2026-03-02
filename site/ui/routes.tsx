@@ -14,6 +14,7 @@ import { AlertPage } from './pages/alert'
 import { AlertDialogPage } from './pages/alert-dialog'
 import { AvatarPage } from './pages/avatar'
 import { BadgePage } from './pages/badge'
+import { BadgeRefPage } from './pages/components/badge'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { ButtonPage } from './pages/button'
 import { CalendarPage } from './pages/calendar'
@@ -358,6 +359,11 @@ export function createApp() {
   // Badge documentation
   app.get('/docs/components/badge', (c) => {
     return c.render(<BadgePage />)
+  })
+
+  // Badge reference page (redesigned #515)
+  app.get('/components/badge', (c) => {
+    return c.render(<BadgeRefPage />)
   })
 
   // Breadcrumb documentation

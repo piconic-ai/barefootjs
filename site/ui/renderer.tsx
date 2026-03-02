@@ -162,7 +162,7 @@ export const renderer = jsxRenderer(
     const pageTitle = title || 'BarefootJS Components'
 
     // Resolve prev/next links for mobile page navigation
-    const slugMatch = currentPath.match(/\/docs\/components\/([^/]+)/)
+    const slugMatch = currentPath.match(/\/(?:docs\/)?components\/([^/]+)/)
     const navLinks = slugMatch ? getNavLinks(slugMatch[1]) : {}
     return (
       <WithPredictableIds>
