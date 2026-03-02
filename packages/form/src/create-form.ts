@@ -108,7 +108,7 @@ export function createForm<
     }
 
     const fieldReturn: FieldReturn<Input[K]> = {
-      value: signals.value[0] as () => Input[K],
+      value: signals.value[0] as FieldReturn<Input[K]>['value'],
       error: signals.error[0],
       touched: signals.touched[0],
       dirty: signals.dirty[0],

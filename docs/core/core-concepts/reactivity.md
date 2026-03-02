@@ -7,6 +7,8 @@ description: Fine-grained reactivity with signals, effects, and memos
 
 BarefootJS uses fine-grained reactivity inspired by SolidJS. The core primitives are **signals**, **effects**, and **memos**.
 
+All reactive getters carry the `Reactive<T>` phantom brand — a compile-time type marker that the compiler uses to identify reactive expressions. The brand has no runtime cost; it enables the compiler to detect reactivity via TypeScript's type system rather than name-based pattern matching alone.
+
 ## Signals
 
 A signal holds a reactive value. It returns a getter/setter pair:
@@ -19,7 +21,7 @@ setCount(5)          // Write: set to 5
 setCount(n => n + 1) // Write: updater function
 ```
 
-The getter is a **function call** — `count()`, not `count`. This is how the reactivity system tracks which effects depend on which signals.
+The getter is a **function call** — `count()`, not `count`. This is how the reactivity system tracks which effects depend on which signals. The getter is typed as `Reactive<() => T>`, which the compiler recognizes as a reactive expression.
 
 ## Effects
 

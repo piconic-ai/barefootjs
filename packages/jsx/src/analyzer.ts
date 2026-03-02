@@ -17,6 +17,72 @@ import {
   isArrowComponentFunction,
 } from './analyzer-context'
 import { createError, createWarning, ErrorCodes } from './errors'
+import path from 'path'
+
+// =============================================================================
+// TypeScript Program Creation
+// =============================================================================
+
+/**
+ * Create a TypeScript program for a single file to enable type-based reactivity detection.
+ * Uses a virtual CompilerHost that injects the source string as a virtual file
+ * and delegates to the real file system for node_modules resolution.
+ *
+ * Note: Module resolution depends on node_modules being reachable from the file's
+ * directory. If the file path is virtual or node_modules isn't accessible,
+ * imported types may resolve to `any` and the signal/memo regex fallback kicks in.
+ * For full type resolution in build tools, pass a pre-built ts.Program via
+ * CompileOptions.program instead.
+ */
+export function createProgramForFile(
+  source: string,
+  filePath: string
+): { program: ts.Program; sourceFile: ts.SourceFile; checker: ts.TypeChecker } | null {
+  try {
+    const normalizedPath = path.resolve(filePath)
+
+    const compilerOptions: ts.CompilerOptions = {
+      target: ts.ScriptTarget.Latest,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      jsx: ts.JsxEmit.ReactJSX,
+      strict: true,
+      skipLibCheck: true,
+      noEmit: true,
+      baseUrl: path.dirname(normalizedPath),
+    }
+
+    const defaultHost = ts.createCompilerHost(compilerOptions)
+
+    const virtualHost: ts.CompilerHost = {
+      ...defaultHost,
+      getSourceFile(fileName, languageVersion) {
+        if (path.resolve(fileName) === normalizedPath) {
+          return ts.createSourceFile(fileName, source, languageVersion, true, ts.ScriptKind.TSX)
+        }
+        return defaultHost.getSourceFile(fileName, languageVersion)
+      },
+      fileExists(fileName) {
+        if (path.resolve(fileName) === normalizedPath) return true
+        return defaultHost.fileExists(fileName)
+      },
+      readFile(fileName) {
+        if (path.resolve(fileName) === normalizedPath) return source
+        return defaultHost.readFile(fileName)
+      },
+    }
+
+    const program = ts.createProgram([normalizedPath], compilerOptions, virtualHost)
+    const sourceFile = program.getSourceFile(normalizedPath)
+
+    if (!sourceFile) return null
+
+    return { program, sourceFile, checker: program.getTypeChecker() }
+  } catch {
+    // Fall back to regex-based detection
+    return null
+  }
+}
 
 // =============================================================================
 // Main Entry Point
@@ -25,17 +91,41 @@ import { createError, createWarning, ErrorCodes } from './errors'
 export function analyzeComponent(
   source: string,
   filePath: string,
-  targetComponentName?: string
+  targetComponentName?: string,
+  program?: ts.Program
 ): AnalyzerContext {
-  const sourceFile = ts.createSourceFile(
-    filePath,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  )
+  let sourceFile: ts.SourceFile | undefined
+  let checker: ts.TypeChecker | null = null
+
+  if (program) {
+    // Use the pre-built program's source file and checker
+    sourceFile = program.getSourceFile(filePath)
+    if (sourceFile) {
+      checker = program.getTypeChecker()
+    }
+  }
+
+  if (!sourceFile) {
+    sourceFile = ts.createSourceFile(
+      filePath,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX
+    )
+  }
+
+  // Try to create a program for type-based reactivity detection
+  if (!checker) {
+    const result = createProgramForFile(source, filePath)
+    if (result) {
+      sourceFile = result.sourceFile
+      checker = result.checker
+    }
+  }
 
   const ctx = createAnalyzerContext(sourceFile, filePath)
+  ctx.checker = checker
 
   // If no target specified, prioritize the default exported component
   if (!targetComponentName) {

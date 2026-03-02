@@ -11,11 +11,15 @@ const [getter, setter] = createSignal<T>(initialValue: T)
 **Type:**
 
 ```tsx
+type Reactive<T> = T & { readonly __reactive: true }
+
 type Signal<T> = [
-  () => T,                                    // getter
+  Reactive<() => T>,                          // getter (carries Reactive brand)
   (valueOrFn: T | ((prev: T) => T)) => void  // setter
 ]
 ```
+
+The getter carries the `Reactive<T>` phantom brand — a compile-time marker that the compiler uses to identify reactive expressions. The brand has no runtime cost.
 
 
 ## Basic Usage

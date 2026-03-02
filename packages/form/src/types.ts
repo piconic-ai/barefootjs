@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { Memo } from "@barefootjs/dom";
+import type { Reactive, Memo } from "@barefootjs/dom";
 
 // --- Validation timing ---
 
@@ -23,13 +23,13 @@ export interface CreateFormOptions<
 
 export interface FieldReturn<V> {
   /** Current field value (signal getter) */
-  value: () => V;
+  value: Reactive<() => V>;
   /** Current validation error message (signal getter) */
-  error: () => string;
+  error: Reactive<() => string>;
   /** Whether the field has been touched (signal getter) */
-  touched: () => boolean;
+  touched: Reactive<() => boolean>;
   /** Whether the field value differs from defaultValue (signal getter) */
-  dirty: () => boolean;
+  dirty: Reactive<() => boolean>;
   /** Set field value directly */
   setValue: (value: V) => void;
   /** Input event handler — reads e.target.value */
@@ -48,7 +48,7 @@ export interface FormReturn<
     name: K,
   ) => FieldReturn<StandardSchemaV1.InferInput<TSchema>[K]>;
   /** Whether a submission is in progress (signal getter) */
-  isSubmitting: () => boolean;
+  isSubmitting: Reactive<() => boolean>;
   /** Whether any field value differs from defaults (memo) */
   isDirty: Memo<boolean>;
   /** Whether all fields pass validation (memo) */

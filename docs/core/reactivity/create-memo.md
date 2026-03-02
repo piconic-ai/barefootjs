@@ -5,10 +5,10 @@ Creates a cached derived value. Recomputes only when its dependencies change.
 ```tsx
 import { createMemo } from '@barefootjs/dom'
 
-const getter = createMemo<T>(fn: () => T): () => T
+const getter = createMemo<T>(fn: () => T): Memo<T>
 ```
 
-Returns a read-only getter function.
+Returns a read-only getter function typed as `Memo<T>` (alias for `Reactive<() => T>`). The `Reactive<T>` brand is a compile-time marker that the compiler uses to identify reactive expressions.
 
 
 ## Basic Usage

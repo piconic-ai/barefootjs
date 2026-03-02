@@ -452,6 +452,8 @@ export interface CompileOptions {
    * Example: 'components' → classes prefixed with 'layer-components:'
    */
   cssLayerPrefix?: string
+  /** Pre-built TypeScript program for type-based reactivity detection */
+  program?: import('typescript').Program
 }
 
 export interface FileOutput {

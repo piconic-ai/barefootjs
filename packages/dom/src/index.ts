@@ -18,6 +18,7 @@ export {
   onCleanup,
   onMount,
   untrack,
+  type Reactive,
   type Signal,
   type Memo,
   type CleanupFn,

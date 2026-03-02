@@ -12,7 +12,7 @@ import type {
   FileOutput,
 } from './types'
 import type { TemplateAdapter } from './adapters/interface'
-import { analyzeComponent, listExportedComponents } from './analyzer'
+import { analyzeComponent, listExportedComponents, createProgramForFile } from './analyzer'
 import { jsxToIR } from './jsx-to-ir'
 import { generateClientJs, analyzeClientNeeds } from './ir-to-client-js'
 import { collectComponentNamesFromIR } from './ir-to-client-js/generate-init'
@@ -50,7 +50,7 @@ export async function compileJSX(
   }
 
   // Single component flow
-  const ctx = analyzeComponent(source, entryPath)
+  const ctx = analyzeComponent(source, entryPath, undefined, options.program)
 
   if (!ctx.jsxReturn) {
     errors.push(...ctx.errors)  // Only analyzer errors
@@ -125,8 +125,11 @@ function compileMultipleComponentsSync(
   // --- Pass 1: analyze + jsxToIR for ALL components ---
   const entries: { componentIR: ComponentIR; ctx: ReturnType<typeof analyzeComponent> }[] = []
 
+  // Create ts.Program once for all components in this file
+  const program = options.program ?? createProgramForFile(source, filePath)?.program
+
   for (const componentName of componentNames) {
-    const ctx = analyzeComponent(source, filePath, componentName)
+    const ctx = analyzeComponent(source, filePath, componentName, program)
 
     if (!ctx.jsxReturn) {
       errors.push(...ctx.errors)
@@ -347,7 +350,7 @@ export function compileJSXSync(
   }
 
   // Single component flow
-  const ctx = analyzeComponent(source, filePath)
+  const ctx = analyzeComponent(source, filePath, undefined, options.program)
 
   if (!ctx.jsxReturn) {
     errors.push(...ctx.errors)  // Only analyzer errors

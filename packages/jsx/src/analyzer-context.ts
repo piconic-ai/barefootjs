@@ -88,6 +88,9 @@ export interface AnalyzerContext {
   // Pre-computed type ranges for type stripping
   typeExcludeRanges: ExcludeRange[]
 
+  /** TypeScript type checker for type-based reactivity detection (null = regex fallback) */
+  checker: ts.TypeChecker | null
+
   /** Return node text with TypeScript type syntax removed. */
   getJS(node: ts.Node): string
 }
@@ -128,6 +131,7 @@ export function createAnalyzerContext(
     hasUseClientDirective: false,
 
     typeExcludeRanges: collectAllTypeRanges(sourceFile),
+    checker: null,
     getJS(node: ts.Node): string {
       return reconstructWithoutTypes(node, sourceFile, this.typeExcludeRanges)
     },

@@ -5,16 +5,23 @@
  * Inspired by SolidJS signals.
  */
 
+/**
+ * Phantom brand for compile-time reactivity detection.
+ * The compiler checks for the '__reactive' property via TypeChecker
+ * to identify reactive expressions.
+ */
+export type Reactive<T> = T & { readonly __reactive: true }
+
 export type Signal<T> = [
   /** Get current value (registers dependency when called inside effect) */
-  () => T,
+  Reactive<() => T>,
   /** Update value (accepts value or updater function) */
   (valueOrFn: T | ((prev: T) => T)) => void
 ]
 
 export type CleanupFn = () => void
 export type EffectFn = () => void | CleanupFn
-export type Memo<T> = () => T
+export type Memo<T> = Reactive<() => T>
 
 type EffectContext = {
   fn: EffectFn
@@ -68,7 +75,7 @@ export function createSignal<T>(initialValue: T): Signal<T> {
     }
   }
 
-  return [get, set]
+  return [get, set] as Signal<T>
 }
 
 /**

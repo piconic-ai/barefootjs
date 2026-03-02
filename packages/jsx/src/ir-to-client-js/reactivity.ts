@@ -11,7 +11,11 @@ import type {
 } from './types'
 
 /**
- * Check if an expression references signal getters or memos.
+ * Check if an expression directly references signal getters, memos, or props.
+ *
+ * Note: This function does NOT follow local constants — constant taint analysis
+ * is handled in Phase 1 (jsx-to-ir.ts) when marking IR nodes as reactive.
+ * Phase 2 only checks direct references in the expression string.
  */
 export function isReactiveExpression(expr: string, ctx: ClientJsContext): boolean {
   for (const signal of ctx.signals) {
@@ -26,9 +30,12 @@ export function isReactiveExpression(expr: string, ctx: ClientJsContext): boolea
     }
   }
 
-  // props.xxx may be reactive when passed as getters from parent
-  if (/\bprops\.\w+/.test(expr)) {
-    return true
+  // Check individual prop names (excluding children which is server-rendered)
+  for (const prop of ctx.propsParams) {
+    if (prop.name === 'children') continue
+    if (new RegExp(`\\b${prop.name}\\b`).test(expr)) {
+      return true
+    }
   }
 
   return false
