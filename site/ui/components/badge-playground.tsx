@@ -4,9 +4,15 @@
  *
  * Interactive playground for the Badge component.
  * Allows tweaking variant and children props with live preview.
+ *
+ * Strategy: SSR renders hidden Badge elements for each variant as templates.
+ * The createEffect clones the matching template and updates its text content,
+ * avoiding the need for client-side template registration (which render() requires
+ * but the compiler doesn't provide for SSR-compiled components).
  */
 
-import { createSignal, createMemo, createEffect, getComponentInit, getTemplate, render } from '@barefootjs/dom'
+import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { Badge } from '@ui/components/ui/badge'
 import { CheckIcon, CopyIcon } from '@ui/components/ui/icon'
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline'
@@ -26,12 +32,19 @@ function BadgePlayground(props: {}) {
   createEffect(() => {
     const v = variant()
     const t = text()
-    const el = document.querySelector('[data-badge-preview]') as HTMLElement
-    if (!el) return
-    const init = getComponentInit('Badge')
-    const template = getTemplate('Badge')
-    if (!init || !template) return
-    render(el, { init, template }, { variant: v, children: t })
+    const container = document.querySelector('[data-badge-preview]') as HTMLElement
+    const templates = document.querySelector('[data-badge-templates]') as HTMLElement
+    if (!container || !templates) return
+
+    const template = templates.querySelector(`[data-variant="${v}"]`) as HTMLElement
+    if (!template) return
+
+    const clone = template.cloneNode(true) as HTMLElement
+    clone.textContent = t
+    clone.removeAttribute('data-variant')
+
+    container.innerHTML = ''
+    container.appendChild(clone)
   })
 
   const handleCopy = () => {
@@ -89,6 +102,15 @@ function BadgePlayground(props: {}) {
         >
           {copied() ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}
         </button>
+      </div>
+
+      {/* Hidden templates: SSR renders real Badge elements for each variant.
+          The createEffect clones the matching one into the preview area. */}
+      <div className="hidden" data-badge-templates>
+        <Badge variant="default" data-variant="default">Badge</Badge>
+        <Badge variant="secondary" data-variant="secondary">Badge</Badge>
+        <Badge variant="destructive" data-variant="destructive">Badge</Badge>
+        <Badge variant="outline" data-variant="outline">Badge</Badge>
       </div>
     </div>
   )
