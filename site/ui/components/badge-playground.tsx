@@ -6,7 +6,9 @@
  * Allows tweaking variant and children props with live preview.
  *
  * Pure CSR approach: constructs Badge DOM directly using the same
- * class strings as the Badge source component, avoiding SSR templates.
+ * class strings as the Badge source component. Code display uses
+ * lightweight client-side JSX highlighting matching shiki's dual-theme
+ * CSS variable pattern for light/dark mode support.
  */
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
@@ -24,35 +26,58 @@ const badgeVariantClasses: Record<string, string> = {
   outline: 'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
 }
 
+// Lightweight JSX syntax highlighter using shiki's dual-theme CSS variable pattern.
+// Only handles the Badge JSX pattern — not a general-purpose highlighter.
+function highlightBadgeJsx(v: string, text: string): string {
+  const p = (s: string) => `<span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">${s}</span>`
+  const tag = (s: string) => `<span style="--shiki-light:#22863A;--shiki-dark:#85E89D">${s}</span>`
+  const attr = (s: string) => `<span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">${s}</span>`
+  const str = (s: string) => `<span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">${s}</span>`
+
+  const t = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  if (v === 'default') {
+    return `${p('&lt;')}${tag('Badge')}${p('&gt;')}${t}${p('&lt;/')}${tag('Badge')}${p('&gt;')}`
+  }
+  return `${p('&lt;')}${tag('Badge')} ${attr('variant')}${p('=')}${str(`&quot;${v}&quot;`)}${p('&gt;')}${t}${p('&lt;/')}${tag('Badge')}${p('&gt;')}`
+}
+
 function BadgePlayground(props: {}) {
   const [variant, setVariant] = createSignal<BadgeVariant>('default')
   const [text, setText] = createSignal('Badge')
   const [copied, setCopied] = createSignal(false)
 
-  const generatedCode = createMemo(() => {
+  const codeText = createMemo(() => {
     const v = variant()
     const t = text()
     const variantProp = v === 'default' ? '' : ` variant="${v}"`
-    return `import { Badge } from "@/components/ui/badge"\n\n<Badge${variantProp}>${t}</Badge>`
+    return `<Badge${variantProp}>${t}</Badge>`
   })
 
   createEffect(() => {
     const v = variant()
     const t = text()
+
+    // Update badge preview
     const container = document.querySelector('[data-badge-preview]') as HTMLElement
-    if (!container) return
+    if (container) {
+      const span = document.createElement('span')
+      span.setAttribute('data-slot', 'badge')
+      span.className = `${badgeBaseClasses} ${badgeVariantClasses[v]}`
+      span.textContent = t
+      container.innerHTML = ''
+      container.appendChild(span)
+    }
 
-    const span = document.createElement('span')
-    span.setAttribute('data-slot', 'badge')
-    span.className = `${badgeBaseClasses} ${badgeVariantClasses[v]}`
-    span.textContent = t
-
-    container.innerHTML = ''
-    container.appendChild(span)
+    // Update highlighted code
+    const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
+    if (codeEl) {
+      codeEl.innerHTML = highlightBadgeJsx(v, t)
+    }
   })
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(generatedCode()).then(() => {
+    navigator.clipboard.writeText(codeText()).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
@@ -96,7 +121,7 @@ function BadgePlayground(props: {}) {
       {/* Generated code */}
       <div className="border-t border-border relative group">
         <pre className="m-0 p-4 pr-12 bg-muted overflow-x-auto text-sm font-mono">
-          <code>{generatedCode()}</code>
+          <code data-playground-code />
         </pre>
         <button
           type="button"
