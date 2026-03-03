@@ -16,6 +16,7 @@ import { AvatarPage } from './pages/avatar'
 import { BadgePage } from './pages/badge'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { ButtonPage } from './pages/button'
+import { CalendarPage } from './pages/calendar'
 import { CarouselPage } from './pages/carousel'
 import { CardPage } from './pages/card'
 import { CheckboxPage } from './pages/checkbox'
@@ -123,6 +124,10 @@ export function createApp() {
             <a href="/docs/components/button" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Button</h3>
               <p className="text-xs text-muted-foreground">Clickable actions with multiple variants</p>
+            </a>
+            <a href="/docs/components/calendar" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+              <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Calendar</h3>
+              <p className="text-xs text-muted-foreground">Date picker with month navigation</p>
             </a>
             <a href="/docs/components/card" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Card</h3>
@@ -361,6 +366,11 @@ export function createApp() {
       title: 'Button - barefootjs/ui',
       description: 'Displays a button or a component that looks like a button.',
     })
+  })
+
+  // Calendar documentation
+  app.get('/docs/components/calendar', (c) => {
+    return c.render(<CalendarPage />)
   })
 
   // Carousel documentation

@@ -46,6 +46,12 @@
       "description": "A button component with variants and sizes"
     },
     {
+      "name": "calendar",
+      "type": "registry:ui",
+      "title": "Calendar",
+      "description": "A date calendar for picking single dates with month navigation"
+    },
+    {
       "name": "carousel",
       "type": "registry:ui",
       "title": "Carousel",

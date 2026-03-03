@@ -15,6 +15,7 @@ export const componentOrder = [
   { slug: 'badge', title: 'Badge' },
   { slug: 'breadcrumb', title: 'Breadcrumb' },
   { slug: 'button', title: 'Button' },
+  { slug: 'calendar', title: 'Calendar' },
   { slug: 'card', title: 'Card' },
   { slug: 'carousel', title: 'Carousel' },
   { slug: 'checkbox', title: 'Checkbox' },

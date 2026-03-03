@@ -1216,7 +1216,8 @@ function transformMapCall(
         const preambleStmts: string[] = []
         for (const stmt of body.statements) {
           if (stmt === returnStmt) break
-          preambleStmts.push(ctx.getJS(stmt))
+          const js = ctx.getJS(stmt)
+          preambleStmts.push(js.endsWith(';') ? js : js + ';')
         }
         if (preambleStmts.length > 0) {
           mapPreamble = preambleStmts.join(' ')
