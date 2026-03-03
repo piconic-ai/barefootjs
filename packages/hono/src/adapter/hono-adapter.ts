@@ -21,7 +21,6 @@ import {
   type AdapterOutput,
   type TemplateSections,
   type TemplateAdapter,
-  extractFunctionParams,
   isBooleanAttr,
 } from '@barefootjs/jsx'
 
@@ -371,23 +370,7 @@ export class HonoAdapter implements TemplateAdapter {
       // - new WeakMap() — client-side cross-component shared state
       if (/^createContext\b/.test(value) || /^new WeakMap\b/.test(value)) continue
 
-      // Check if it's an arrow function or function expression
-      const isArrowFunc =
-        value.startsWith('async (') ||
-        value.startsWith('async(') ||
-        value.startsWith('function') ||
-        /^\w+\s*=>/.test(value) ||
-        /^\([^)]*\)\s*=>/.test(value)
-
-      if (isArrowFunc) {
-        // Generate a stub function for SSR (these may be referenced as props)
-        // Extract parameters if possible
-        const params = extractFunctionParams(value)
-        lines.push(`  ${keyword} ${constant.name} = (${params}) => {}`)
-      } else {
-        // Output non-function constants directly
-        lines.push(`  ${keyword} ${constant.name} = ${constant.value}`)
-      }
+      lines.push(`  ${keyword} ${constant.name} = ${constant.value}`)
     }
 
     // Include local functions (skip exported ones — they are at module level)

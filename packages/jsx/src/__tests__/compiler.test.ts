@@ -4887,4 +4887,72 @@ describe('Compiler', () => {
       expect(exportIndex).toBeLessThan(componentIndex)
     })
   })
+
+  describe('arrow function bodies preserved in SSR (#543)', () => {
+    test('simple derived-state arrow function body is preserved in markedTemplate', () => {
+      const honoAdapter = new HonoAdapter()
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function Calendar(props) {
+          const [mode, setMode] = createSignal(props.mode ?? 'single')
+          const isRangeMode = () => mode() === 'range'
+          return <div>{isRangeMode() ? 'range' : 'single'}</div>
+        }
+      `
+
+      const result = compileJSXSync(source, 'Calendar.tsx', { adapter: honoAdapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      expect(template).toBeDefined()
+      expect(template.content).toContain("const isRangeMode = () => mode() === 'range'")
+    })
+
+    test('parameterized arrow function body is preserved in markedTemplate', () => {
+      const honoAdapter = new HonoAdapter()
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function MyComponent(props) {
+          const normalize = (val) => val == null ? '' : String(val)
+          const [value, setValue] = createSignal(normalize(props.defaultValue))
+          return <input value={value()} />
+        }
+      `
+
+      const result = compileJSXSync(source, 'MyComponent.tsx', { adapter: honoAdapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      expect(template).toBeDefined()
+      expect(template.content).toContain('normalize')
+      expect(template.content).not.toContain('normalize = () => {}')
+      expect(template.content).not.toContain('normalize = (val) => {}')
+    })
+
+    test('exported arrow function body is preserved in module exports', () => {
+      const honoAdapter = new HonoAdapter()
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export const formatDate = (d) => d.toISOString().split('T')[0]
+
+        export function DatePicker() {
+          const [date, setDate] = createSignal(new Date())
+          return <span>{formatDate(date())}</span>
+        }
+      `
+
+      const result = compileJSXSync(source, 'DatePicker.tsx', { adapter: honoAdapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      expect(template).toBeDefined()
+      expect(template.content).toContain("export const formatDate = (d) => d.toISOString().split('T')[0]")
+    })
+  })
 })

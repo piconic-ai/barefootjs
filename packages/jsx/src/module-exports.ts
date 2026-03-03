@@ -10,7 +10,6 @@ import type { ComponentIR } from './types'
 /**
  * Generate module-level export statements for constants and functions.
  * Skips client-only constructs (createContext, new WeakMap).
- * Arrow functions are stubbed with extracted parameters.
  */
 export function generateModuleExports(ir: ComponentIR): string | null {
   const lines: string[] = []
@@ -26,19 +25,7 @@ export function generateModuleExports(ir: ComponentIR): string | null {
     // Skip client-only constructs
     if (/^createContext\b/.test(value) || /^new WeakMap\b/.test(value)) continue
 
-    const isArrowFunc =
-      value.startsWith('async (') ||
-      value.startsWith('async(') ||
-      value.startsWith('function') ||
-      /^\w+\s*=>/.test(value) ||
-      /^\([^)]*\)\s*=>/.test(value)
-
-    if (isArrowFunc) {
-      const params = extractFunctionParams(value)
-      lines.push(`export ${keyword} ${constant.name} = (${params}) => {}`)
-    } else {
-      lines.push(`export ${keyword} ${constant.name} = ${constant.value}`)
-    }
+    lines.push(`export ${keyword} ${constant.name} = ${constant.value}`)
   }
 
   for (const func of ir.metadata.localFunctions) {

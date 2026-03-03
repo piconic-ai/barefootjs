@@ -191,18 +191,7 @@ export class TestAdapter extends BaseAdapter {
         lines.push(`  ${keyword} ${constant.name}`)
         continue
       }
-      const value = constant.value.trim()
-      const isArrowFunc =
-        value.startsWith('async (') ||
-        value.startsWith('function') ||
-        /^\w+\s*=>/.test(value) ||
-        /^\([^)]*\)\s*=>/.test(value)
-
-      if (isArrowFunc) {
-        lines.push(`  ${keyword} ${constant.name} = () => {}`)
-      } else {
-        lines.push(`  ${keyword} ${constant.name} = ${constant.value}`)
-      }
+      lines.push(`  ${keyword} ${constant.name} = ${constant.value}`)
     }
 
     // Include local functions (skip exported ones — they are at module level)
