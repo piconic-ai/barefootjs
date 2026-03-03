@@ -450,7 +450,9 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
       continue
     }
 
-    const keyFn = elem.key ? `(${elem.param}) => String(${elem.key})` : 'null'
+    const keyFn = elem.key
+      ? `(${elem.param}${elem.index ? `, ${elem.index}` : ''}) => String(${elem.key})`
+      : 'null'
 
     const vLoop = varSlotId(elem.slotId)
 

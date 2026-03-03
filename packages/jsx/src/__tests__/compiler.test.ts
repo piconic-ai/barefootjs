@@ -579,6 +579,34 @@ describe('Compiler', () => {
       // Should include index param in callback (not just item without index)
       expect(clientJs?.content).toContain('(item, i) => `')
     })
+
+    test('includes index parameter in key function when key references index', () => {
+      const source = `
+        'use client'
+        import { createMemo } from '@barefootjs/dom'
+
+        export function List() {
+          const items = createMemo(() => ['a', 'b', 'c'])
+          return (
+            <ul>
+              {items().map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          )
+        }
+      `
+
+      const result = compileJSXSync(source, 'List.tsx', { adapter })
+
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+
+      // Key function must include the index parameter to avoid ReferenceError
+      expect(clientJs?.content).toContain('(item, i) => String(i)')
+    })
   })
 
   describe('local constants arrow function detection', () => {
@@ -3992,6 +4020,83 @@ describe('Compiler', () => {
       expect(signalIndex).toBeGreaterThan(-1)
       expect(totalIndex).toBeGreaterThan(-1)
       expect(signalIndex).toBeLessThan(totalIndex)
+    })
+  })
+
+  describe('ternary text branches (#521)', () => {
+    test('non-reactive ternary preserves string quotes (TestAdapter)', () => {
+      const source = `
+        export function SubmitButton(props: { isSubmitting: boolean }) {
+          return <button>{props.isSubmitting ? 'Submitting...' : 'Submit'}</button>
+        }
+      `
+
+      const result = compileJSXSync(source, 'SubmitButton.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      expect(template).toBeDefined()
+      expect(template.content).toContain("'Submitting...'")
+      expect(template.content).toContain("'Submit'")
+    })
+
+    test('reactive ternary preserves string quotes (TestAdapter)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function SubmitButton() {
+          const [isSubmitting, setIsSubmitting] = createSignal(false)
+          return <button>{isSubmitting() ? 'Submitting...' : 'Submit'}</button>
+        }
+      `
+
+      const result = compileJSXSync(source, 'SubmitButton.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      expect(template).toBeDefined()
+      expect(template.content).toContain("'Submitting...'")
+      expect(template.content).toContain("'Submit'")
+    })
+
+    test('non-reactive ternary preserves string quotes (HonoAdapter)', () => {
+      const honoAdapter = new HonoAdapter()
+      const source = `
+        export function SubmitButton(props: { isSubmitting: boolean }) {
+          return <button>{props.isSubmitting ? 'Submitting...' : 'Submit'}</button>
+        }
+      `
+
+      const result = compileJSXSync(source, 'SubmitButton.tsx', { adapter: honoAdapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      expect(template).toBeDefined()
+      expect(template.content).toContain("'Submitting...'")
+      expect(template.content).toContain("'Submit'")
+    })
+
+    test('reactive ternary wraps string literals in braces (HonoAdapter)', () => {
+      const honoAdapter = new HonoAdapter()
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function SubmitButton() {
+          const [isSubmitting, setIsSubmitting] = createSignal(false)
+          return <button>{isSubmitting() ? 'Submitting...' : 'Submit'}</button>
+        }
+      `
+
+      const result = compileJSXSync(source, 'SubmitButton.tsx', { adapter: honoAdapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      expect(template).toBeDefined()
+      // String literals should be wrapped in braces inside cond marker fragments
+      expect(template.content).toContain("{'Submitting...'}")
+      expect(template.content).toContain("{'Submit'}")
     })
   })
 })

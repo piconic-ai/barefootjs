@@ -269,13 +269,6 @@ export class TestAdapter extends BaseAdapter {
       if (node.expr === 'null' || node.expr === 'undefined') {
         return 'null'
       }
-      const trimmed = node.expr.trim()
-      if (
-        (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-        (trimmed.startsWith('"') && trimmed.endsWith('"'))
-      ) {
-        return trimmed.slice(1, -1)
-      }
       return node.expr
     }
     return this.renderNode(node)

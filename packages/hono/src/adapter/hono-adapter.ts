@@ -505,14 +505,6 @@ export class HonoAdapter implements TemplateAdapter {
       if (node.expr === 'null' || node.expr === 'undefined') {
         return 'null'
       }
-      // Strip quotes from string literals for text content
-      const trimmed = node.expr.trim()
-      if (
-        (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-        (trimmed.startsWith('"') && trimmed.endsWith('"'))
-      ) {
-        return trimmed.slice(1, -1)
-      }
       return node.expr
     }
     return this.renderNode(node)
@@ -555,15 +547,8 @@ export class HonoAdapter implements TemplateAdapter {
       }
     }
 
-    // Determine if content should be wrapped in braces
+    // Expression node: wrap in braces for valid JSX
     if (node.type === 'expression') {
-      const trimmed = (node as IRExpression).expr.trim()
-      // String literal: output as text (quotes already stripped by renderNodeRaw)
-      if ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-          (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
-        return `<>{bfComment("cond-start:${condId}")}${content}{bfComment("cond-end:${condId}")}</>`
-      }
-      // Other expression: wrap in braces
       return `<>{bfComment("cond-start:${condId}")}{${content}}{bfComment("cond-end:${condId}")}</>`
     }
 
