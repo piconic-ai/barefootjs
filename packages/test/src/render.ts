@@ -17,6 +17,8 @@ export interface TestResult {
   componentName: string
   isClient: boolean
   signals: string[]
+  memos: string[]
+  effects: number
   errors: Array<{ code: string; message: string; line: number }>
 
   // Delegated to root
@@ -52,12 +54,16 @@ export function renderToTest(source: string, filePath: string, componentName?: s
   const constantMap = resolveConstants(metadata.localConstants)
   const root = irNodeToTestNode(ir, constantMap)
   const signals = metadata.signals.map(s => s.getter)
+  const memos = metadata.memos.map(m => m.name)
+  const effects = metadata.effects.length
 
   return {
     root,
     componentName: metadata.componentName,
     isClient: metadata.isClientComponent,
     signals,
+    memos,
+    effects,
     errors: allErrors,
     find: (query) => root.find(query),
     findAll: (query) => root.findAll(query),
@@ -118,6 +124,8 @@ function emptyResult(
     componentName,
     isClient,
     signals: [],
+    memos: [],
+    effects: 0,
     errors,
     find: () => null,
     findAll: () => [],
