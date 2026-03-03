@@ -167,6 +167,68 @@ describe('createMemo', () => {
     expect(calcCount).toBe(3)
   })
 
+  test('stores function value without calling it', () => {
+    const myFn = (x: number) => x * 2
+    const memo = createMemo(() => myFn)
+
+    expect(memo()).toBe(myFn)
+    expect(memo()(3)).toBe(6)
+  })
+
+  test('nested memo with function value (issue #538)', () => {
+    const defaultFormat = (d: Date) => d.toISOString()
+    const customFormat = (d: Date) => d.toLocaleDateString()
+
+    const [useCustom, setUseCustom] = createSignal(false)
+
+    // Memo that returns a function — previously caused TypeError
+    const formatter = createMemo(() =>
+      useCustom() ? customFormat : defaultFormat
+    )
+    const displayText = createMemo(() => {
+      const fmt = formatter()
+      const date = new Date('2025-01-15T00:00:00Z')
+      return fmt(date)
+    })
+
+    expect(displayText()).toBe(new Date('2025-01-15T00:00:00Z').toISOString())
+
+    setUseCustom(true)
+    expect(displayText()).toBe(new Date('2025-01-15T00:00:00Z').toLocaleDateString())
+  })
+
+  test('recomputes function value when signal changes', () => {
+    const fnA = () => 'A'
+    const fnB = () => 'B'
+    const [which, setWhich] = createSignal<'a' | 'b'>('a')
+
+    const memo = createMemo(() => which() === 'a' ? fnA : fnB)
+
+    expect(memo()).toBe(fnA)
+    expect(memo()()).toBe('A')
+
+    setWhich('b')
+    expect(memo()).toBe(fnB)
+    expect(memo()()).toBe('B')
+  })
+
+  test('function value triggers dependent effect', () => {
+    const results: string[] = []
+    const fnA = () => 'A'
+    const fnB = () => 'B'
+    const [which, setWhich] = createSignal<'a' | 'b'>('a')
+
+    const memo = createMemo(() => which() === 'a' ? fnA : fnB)
+
+    createEffect(() => {
+      results.push(memo()())
+    })
+
+    expect(results).toEqual(['A'])
+    setWhich('b')
+    expect(results).toEqual(['A', 'B'])
+  })
+
   test('handles conditional dependencies', () => {
     let calcCount = 0
     const [condition, setCondition] = createSignal(true)

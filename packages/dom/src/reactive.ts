@@ -220,16 +220,10 @@ export function onMount(fn: () => void): void {
  */
 export function createMemo<T>(fn: () => T): Memo<T> {
   const [value, setValue] = createSignal<T>(undefined as T)
-  let initialized = false
 
   createEffect(() => {
     const result = fn()
-    if (initialized) {
-      setValue(result)
-    } else {
-      initialized = true
-      setValue(result)
-    }
+    setValue(() => result)
   })
 
   return value
