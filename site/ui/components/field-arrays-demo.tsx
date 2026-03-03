@@ -13,6 +13,33 @@
 import { createSignal, createMemo } from '@barefootjs/dom'
 import { Button } from '@ui/components/ui/button'
 
+/**
+ * Static list demo - static array with onClick on plain elements (#537)
+ * Verifies that event delegation works for static (non-signal) arrays.
+ */
+export function StaticListDemo() {
+  const options = ['Alpha', 'Beta', 'Gamma']
+  const [selected, setSelected] = createSignal('Alpha')
+
+  return (
+    <div>
+      <div className="static-list flex gap-2">
+        {options.map(opt => (
+          <button
+            type="button"
+            data-slot="button"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all border px-3 h-9 hover:bg-accent"
+            onClick={() => setSelected(opt)}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+      <p className="selected-value text-sm text-muted-foreground mt-2">Selected: {selected()}</p>
+    </div>
+  )
+}
+
 type EmailField = {
   id: number
   value: string

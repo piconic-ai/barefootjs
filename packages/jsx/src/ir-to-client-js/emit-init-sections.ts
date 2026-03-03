@@ -6,7 +6,7 @@
 import type { ComponentIR, SignalInfo, IRFragment } from '../types'
 import type { Declaration } from './declaration-sort'
 import { isBooleanAttr } from '../html-constants'
-import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef } from './types'
+import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, LoopChildEvent } from './types'
 import { inferDefaultValue, toHtmlAttrName, toDomEventProp, wrapHandlerInBlock, buildChainedArrayExpr, quotePropName, varSlotId } from './utils'
 import { addCondAttrToTemplate, canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, irChildrenToJsExpr, createStringProtector } from './html-template'
 
@@ -452,47 +452,15 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
       // the container's direct child and use indexOf for index lookup.
       if (!elem.childComponent && elem.childEvents.length > 0) {
         const v = varSlotId(elem.slotId)
-        const eventsByName = new Map<string, typeof elem.childEvents>()
-        for (const ev of elem.childEvents) {
-          if (!eventsByName.has(ev.eventName)) {
-            eventsByName.set(ev.eventName, [])
-          }
-          eventsByName.get(ev.eventName)!.push(ev)
-        }
-
-        const NON_BUBBLING_EVENTS = new Set(['blur', 'focus', 'load', 'unload'])
-
-        for (const [eventName, events] of eventsByName) {
-          const useCapture = NON_BUBBLING_EVENTS.has(eventName)
-          if (useCapture) {
-            lines.push(`  if (_${v}) _${v}.addEventListener('${eventName}', (e) => {`)
-          } else {
-            lines.push(`  if (_${v}) _${v}.${toDomEventProp(eventName)} = (e) => {`)
-          }
-          lines.push(`    const target = e.target`)
-          for (const ev of events) {
-            lines.push(`    const ${ev.childSlotId}El = target.closest('[bf="${ev.childSlotId}"]')`)
-            lines.push(`    if (${ev.childSlotId}El) {`)
-            const handlerCall = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
-              ? `(${ev.handler})(e)`
-              : ev.handler
-            lines.push(`      let __el = ${ev.childSlotId}El`)
-            lines.push(`      while (__el.parentElement && __el.parentElement !== _${v}) __el = __el.parentElement`)
-            lines.push(`      if (__el.parentElement === _${v}) {`)
-            lines.push(`        const __idx = Array.from(_${v}.children).indexOf(__el)`)
-            lines.push(`        const ${elem.param} = ${elem.array}[__idx]`)
-            lines.push(`        if (${elem.param}) ${handlerCall}`)
-            lines.push(`      }`)
-            lines.push(`      return`)
-            lines.push(`    }`)
-          }
-          if (useCapture) {
-            lines.push(`  }, true)`)
-          } else {
-            lines.push(`  }`)
-          }
-          lines.push('')
-        }
+        emitLoopEventDelegation(lines, `_${v}`, elem.childEvents, (ls, ev, handlerCall, cVar) => {
+          ls.push(`      let __el = ${ev.childSlotId}El`)
+          ls.push(`      while (__el.parentElement && __el.parentElement !== ${cVar}) __el = __el.parentElement`)
+          ls.push(`      if (__el.parentElement === ${cVar}) {`)
+          ls.push(`        const __idx = Array.from(${cVar}.children).indexOf(__el)`)
+          ls.push(`        const ${elem.param} = ${elem.array}[__idx]`)
+          ls.push(`        if (${elem.param}) ${handlerCall}`)
+          ls.push(`      }`)
+        })
       }
 
       continue
@@ -548,59 +516,89 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
     lines.push('')
 
     if (!elem.childComponent && elem.childEvents.length > 0) {
-      const eventsByName = new Map<string, typeof elem.childEvents>()
-      for (const ev of elem.childEvents) {
-        if (!eventsByName.has(ev.eventName)) {
-          eventsByName.set(ev.eventName, [])
-        }
-        eventsByName.get(ev.eventName)!.push(ev)
-      }
-
-      // Non-bubbling events need addEventListener with capture for delegation
-      const NON_BUBBLING_EVENTS = new Set(['blur', 'focus', 'load', 'unload'])
-
-      for (const [eventName, events] of eventsByName) {
-        const useCapture = NON_BUBBLING_EVENTS.has(eventName)
-        if (useCapture) {
-          lines.push(`  if (_${vLoop}) _${vLoop}.addEventListener('${eventName}', (e) => {`)
-        } else {
-          lines.push(`  if (_${vLoop}) _${vLoop}.${toDomEventProp(eventName)} = (e) => {`)
-        }
-        lines.push(`    const target = e.target`)
-        for (const ev of events) {
-          lines.push(`    const ${ev.childSlotId}El = target.closest('[bf="${ev.childSlotId}"]')`)
-          lines.push(`    if (${ev.childSlotId}El) {`)
-          // Pass event `e` to handler functions so they can access e.target etc.
-          const handlerCall = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
-            ? `(${ev.handler})(e)`
-            : ev.handler
-          if (elem.key) {
-            const keyWithItem = elem.key.replace(new RegExp(`\\b${elem.param}\\b`, 'g'), 'item')
-            lines.push(`      const li = ${ev.childSlotId}El.closest('[data-key]')`)
-            lines.push(`      if (li) {`)
-            lines.push(`        const key = li.getAttribute('data-key')`)
-            lines.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
-            lines.push(`        if (${elem.param}) ${handlerCall}`)
-            lines.push(`      }`)
-          } else {
-            lines.push(`      const li = ${ev.childSlotId}El.closest('li, [bf-i]')`)
-            lines.push(`      if (li && li.parentElement) {`)
-            lines.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
-            lines.push(`        const ${elem.param} = ${elem.array}[idx]`)
-            lines.push(`        if (${elem.param}) ${handlerCall}`)
-            lines.push(`      }`)
-          }
-          lines.push(`      return`)
-          lines.push(`    }`)
-        }
-        if (useCapture) {
-          lines.push(`  }, true)`)
-        } else {
-          lines.push(`  }`)
-        }
-        lines.push('')
+      if (elem.key) {
+        // Dynamic keyed: find item by data-key attribute
+        const keyWithItem = elem.key.replace(new RegExp(`\\b${elem.param}\\b`, 'g'), 'item')
+        emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
+          ls.push(`      const li = ${ev.childSlotId}El.closest('[data-key]')`)
+          ls.push(`      if (li) {`)
+          ls.push(`        const key = li.getAttribute('data-key')`)
+          ls.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
+          ls.push(`        if (${elem.param}) ${handlerCall}`)
+          ls.push(`      }`)
+        })
+      } else {
+        // Dynamic non-keyed: find item by index in parent children
+        emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
+          ls.push(`      const li = ${ev.childSlotId}El.closest('li, [bf-i]')`)
+          ls.push(`      if (li && li.parentElement) {`)
+          ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
+          ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
+          ls.push(`        if (${elem.param}) ${handlerCall}`)
+          ls.push(`      }`)
+        })
       }
     }
+  }
+}
+
+/**
+ * Callback that emits the item-lookup lines inside a loop event delegation handler.
+ * Called once per event after target.closest() matched.
+ */
+type ItemLookupEmitter = (
+  lines: string[],
+  ev: LoopChildEvent,
+  handlerCall: string,
+  containerVar: string,
+) => void
+
+/** Non-bubbling events that require addEventListener with capture for delegation. */
+const NON_BUBBLING_EVENTS = new Set(['blur', 'focus', 'load', 'unload'])
+
+/**
+ * Emit event delegation for child events inside a loop (static or dynamic).
+ * The shared shell (event grouping, closest matching, handler call construction)
+ * is handled here; the strategy-specific item-lookup is injected via callback.
+ */
+function emitLoopEventDelegation(
+  lines: string[],
+  containerVar: string,
+  childEvents: LoopChildEvent[],
+  emitItemLookup: ItemLookupEmitter,
+): void {
+  const eventsByName = new Map<string, LoopChildEvent[]>()
+  for (const ev of childEvents) {
+    if (!eventsByName.has(ev.eventName)) {
+      eventsByName.set(ev.eventName, [])
+    }
+    eventsByName.get(ev.eventName)!.push(ev)
+  }
+
+  for (const [eventName, events] of eventsByName) {
+    const useCapture = NON_BUBBLING_EVENTS.has(eventName)
+    if (useCapture) {
+      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${eventName}', (e) => {`)
+    } else {
+      lines.push(`  if (${containerVar}) ${containerVar}.${toDomEventProp(eventName)} = (e) => {`)
+    }
+    lines.push(`    const target = e.target`)
+    for (const ev of events) {
+      lines.push(`    const ${ev.childSlotId}El = target.closest('[bf="${ev.childSlotId}"]')`)
+      lines.push(`    if (${ev.childSlotId}El) {`)
+      const handlerCall = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
+        ? `(${ev.handler})(e)`
+        : ev.handler
+      emitItemLookup(lines, ev, handlerCall, containerVar)
+      lines.push(`      return`)
+      lines.push(`    }`)
+    }
+    if (useCapture) {
+      lines.push(`  }, true)`)
+    } else {
+      lines.push(`  }`)
+    }
+    lines.push('')
   }
 }
 

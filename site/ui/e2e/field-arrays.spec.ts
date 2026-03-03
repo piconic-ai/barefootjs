@@ -196,6 +196,42 @@ test.describe('Field Arrays Documentation Page', () => {
     })
   })
 
+  test.describe('Static List Demo', () => {
+    test('displays static list demo', async ({ page }) => {
+      await expect(page.locator('[bf-s^="StaticListDemo_"]')).toBeVisible()
+    })
+
+    test('shows three buttons', async ({ page }) => {
+      const demo = page.locator('[bf-s^="StaticListDemo_"]')
+      const buttons = demo.locator('.static-list button')
+      await expect(buttons).toHaveCount(3)
+      await expect(buttons.nth(0)).toHaveText('Alpha')
+      await expect(buttons.nth(1)).toHaveText('Beta')
+      await expect(buttons.nth(2)).toHaveText('Gamma')
+    })
+
+    test('shows default selected value', async ({ page }) => {
+      const demo = page.locator('[bf-s^="StaticListDemo_"]')
+      await expect(demo.locator('.selected-value')).toContainText('Selected: Alpha')
+    })
+
+    test('clicking button updates selected value', async ({ page }) => {
+      const demo = page.locator('[bf-s^="StaticListDemo_"]')
+      await demo.locator('button', { hasText: 'Beta' }).click()
+      await expect(demo.locator('.selected-value')).toContainText('Selected: Beta')
+    })
+
+    test('clicking each button updates correctly', async ({ page }) => {
+      const demo = page.locator('[bf-s^="StaticListDemo_"]')
+
+      await demo.locator('button', { hasText: 'Gamma' }).click()
+      await expect(demo.locator('.selected-value')).toContainText('Selected: Gamma')
+
+      await demo.locator('button', { hasText: 'Alpha' }).click()
+      await expect(demo.locator('.selected-value')).toContainText('Selected: Alpha')
+    })
+  })
+
   test.describe('Min/Max Fields Demo', () => {
     test('displays min/max fields demo', async ({ page }) => {
       await expect(page.locator('[bf-s^="MinMaxFieldsDemo_"]')).toBeVisible()
