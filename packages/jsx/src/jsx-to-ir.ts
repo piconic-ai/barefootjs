@@ -627,6 +627,23 @@ function transformExpression(
     return result
   }
 
+  // Nullish coalescing / logical OR with JSX: {children ?? <Icon />}, {label || <Fallback />}
+  if (
+    ts.isBinaryExpression(expr) &&
+    (expr.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+      expr.operatorToken.kind === ts.SyntaxKind.BarBarToken) &&
+    containsJsxInExpression(expr.right)
+  ) {
+    const result = transformNullishCoalescing(expr, ctx)
+    if (isClientOnly) {
+      result.clientOnly = true
+      if (!result.slotId) {
+        result.slotId = generateSlotId(ctx)
+      }
+    }
+    return result
+  }
+
   // Array map: {items.map(item => <li>{item}</li>)}
   if (ts.isCallExpression(expr) && isMapCall(expr)) {
     return transformMapCall(expr, ctx, isClientOnly)
@@ -708,6 +725,61 @@ function transformLogicalAnd(
   }
 }
 
+/**
+ * Check if an expression contains JSX elements anywhere in its subtree.
+ */
+function containsJsxInExpression(node: ts.Node): boolean {
+  if (
+    ts.isJsxElement(node) ||
+    ts.isJsxSelfClosingElement(node) ||
+    ts.isJsxFragment(node)
+  ) {
+    return true
+  }
+  return ts.forEachChild(node, containsJsxInExpression) ?? false
+}
+
+/**
+ * Transform nullish coalescing (??) and logical OR (||) with JSX fallback.
+ *
+ * - `a ?? b` → condition=`a != null`, whenTrue=`a`, whenFalse=`b`
+ * - `a || b` → condition=`a`, whenTrue=`a`, whenFalse=`b`
+ */
+function transformNullishCoalescing(
+  node: ts.BinaryExpression,
+  ctx: TransformContext
+): IRConditional {
+  const leftText = ctx.getJS(node.left)
+  const isNullish = node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+  const condition = isNullish ? `${leftText} != null` : leftText
+  const reactive = isReactiveExpression(leftText, ctx, node.left)
+  const slotId = reactive ? generateSlotId(ctx) : null
+
+  // whenTrue: the left-hand value itself
+  const whenTrue: IRExpression = {
+    type: 'expression',
+    expr: leftText,
+    typeInfo: inferExpressionType(node.left, ctx),
+    reactive,
+    slotId: null,
+    loc: getSourceLocation(node.left, ctx.sourceFile, ctx.filePath),
+  }
+
+  // whenFalse: recursively transform the right-hand side (may contain JSX)
+  const whenFalse = transformConditionalBranch(node.right, ctx)
+
+  return {
+    type: 'conditional',
+    condition,
+    conditionType: null,
+    reactive,
+    whenTrue,
+    whenFalse,
+    slotId,
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+  }
+}
+
 function transformConditionalBranch(
   node: ts.Expression,
   ctx: TransformContext
@@ -730,6 +802,16 @@ function transformConditionalBranch(
   // Logical AND in branch: cond1 ? <A/> : (cond2 && <B/>)
   if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
     return transformLogicalAnd(node, ctx)
+  }
+
+  // Nullish coalescing / logical OR with JSX in branch
+  if (
+    ts.isBinaryExpression(node) &&
+    (node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+      node.operatorToken.kind === ts.SyntaxKind.BarBarToken) &&
+    containsJsxInExpression(node.right)
+  ) {
+    return transformNullishCoalescing(node, ctx)
   }
 
   // Regular expression (including null)
