@@ -245,21 +245,37 @@ function visit(
 
   // Module-level constants (outside component)
   if (ts.isVariableStatement(node) && !ctx.componentNode) {
+    const isExported = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
+    const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
     for (const decl of node.declarationList.declarations) {
       if (
         ts.isIdentifier(decl.name) &&
         decl.initializer &&
         !isArrowComponentFunction(decl)
       ) {
-        collectConstant(decl, ctx, true, 'const')
+        collectConstant(decl, ctx, true, isLet ? 'let' : 'const', isExported)
       }
     }
   }
 
   // Module-level functions (outside component)
   if (ts.isFunctionDeclaration(node) && node.name && !isComponentFunction(node)) {
-    collectFunction(node, ctx, true)
+    const isExported = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
+    collectFunction(node, ctx, true, isExported)
     return // Body is captured as string; don't walk internals
+  }
+
+  // Named exports: export { X, Y } — mark already-collected items as exported
+  if (ts.isExportDeclaration(node) && node.exportClause && ts.isNamedExports(node.exportClause)) {
+    for (const specifier of node.exportClause.elements) {
+      const name = specifier.name.text
+      for (const c of ctx.localConstants) {
+        if (c.name === name) c.isExported = true
+      }
+      for (const f of ctx.localFunctions) {
+        if (f.name === name) f.isExported = true
+      }
+    }
   }
 
   // Default export: export default ComponentName
@@ -683,7 +699,8 @@ function collectTypeAliasDefinition(
 function collectFunction(
   node: ts.FunctionDeclaration,
   ctx: AnalyzerContext,
-  _isModule: boolean
+  _isModule: boolean,
+  isExported: boolean = false
 ): void {
   if (!node.name) return
 
@@ -709,6 +726,7 @@ function collectFunction(
     body,
     returnType,
     containsJsx,
+    isExported,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
 }
@@ -721,7 +739,8 @@ function collectConstant(
   node: ts.VariableDeclaration,
   ctx: AnalyzerContext,
   _isModule: boolean,
-  declarationKind: 'const' | 'let' = 'const'
+  declarationKind: 'const' | 'let' = 'const',
+  isExported: boolean = false
 ): void {
   if (!ts.isIdentifier(node.name)) return
 
@@ -745,6 +764,7 @@ function collectConstant(
     name,
     value,
     declarationKind,
+    isExported,
     type,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })

@@ -163,28 +163,34 @@ function compileMultipleComponentsSync(
   }
 
   // --- Pass 2: adapter.generate + generateClientJs ---
-  const allOutputs: { imports: string; types: string; component: string; clientJs?: string }[] = []
+  const allOutputs: { imports: string; types: string; moduleExports: string; component: string; clientJs?: string }[] = []
 
   for (const { componentIR } of entries) {
     const adapterOutput = adapter.generate(componentIR)
     const fullContent = adapterOutput.template
 
-    // Parse output to separate imports, types, and component
+    // Parse output to separate imports, types, module exports, and component
     const lines = fullContent.split('\n')
     const importLines: string[] = []
     const typeLines: string[] = []
+    const moduleExportLines: string[] = []
     const componentLines: string[] = []
     let inComponent = false
 
     for (const line of lines) {
       if (line.startsWith('export function ')) {
-        inComponent = true
+        const funcName = line.match(/^export function (\w+)/)?.[1]
+        if (funcName && componentNames.includes(funcName)) {
+          inComponent = true
+        }
       }
 
       if (inComponent) {
         componentLines.push(line)
       } else if (line.startsWith('import ')) {
         importLines.push(line)
+      } else if (line.startsWith('export const ') || line.startsWith('export let ') || line.startsWith('export function ')) {
+        moduleExportLines.push(line)
       } else if (line.trim()) {
         typeLines.push(line)
       }
@@ -193,6 +199,7 @@ function compileMultipleComponentsSync(
     allOutputs.push({
       imports: importLines.join('\n'),
       types: typeLines.join('\n'),
+      moduleExports: moduleExportLines.join('\n'),
       component: componentLines.join('\n'),
       clientJs: generateClientJs(componentIR, componentNames, usedAsChild) || undefined,
     })
@@ -213,11 +220,25 @@ function compileMultipleComponentsSync(
     }
   }
 
+  // Deduplicate module-level exports across components
+  const seenModuleExports = new Set<string>()
+  const uniqueModuleExports: string[] = []
+  for (const output of allOutputs) {
+    if (output.moduleExports) {
+      for (const line of output.moduleExports.split('\n')) {
+        if (line.trim() && !seenModuleExports.has(line)) {
+          seenModuleExports.add(line)
+          uniqueModuleExports.push(line)
+        }
+      }
+    }
+  }
+
   // Combine all components
   const combinedTemplate = [
     allOutputs[0].imports,
     uniqueTypes.join('\n\n'),
-    '',
+    uniqueModuleExports.length > 0 ? uniqueModuleExports.join('\n') : '',
     ...allOutputs.map(o => o.component),
   ]
     .filter(Boolean)

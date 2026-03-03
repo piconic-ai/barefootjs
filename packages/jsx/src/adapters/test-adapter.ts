@@ -36,7 +36,8 @@ export class TestAdapter extends BaseAdapter {
       ? `\nexport default ${this.componentName}`
       : ''
 
-    const template = [imports, types, component].filter(Boolean).join('\n\n') + defaultExport
+    const moduleExports = this.generateModuleExports(ir)
+    const template = [imports, types, moduleExports, component].filter(Boolean).join('\n\n') + defaultExport
 
     return {
       template,
@@ -101,6 +102,39 @@ export class TestAdapter extends BaseAdapter {
       lines.push('  __instanceId?: string')
       lines.push('  __bfScope?: string')
       lines.push('}')
+    }
+
+    return lines.length > 0 ? lines.join('\n') : null
+  }
+
+  private generateModuleExports(ir: ComponentIR): string | null {
+    const lines: string[] = []
+
+    for (const constant of ir.metadata.localConstants) {
+      if (!constant.isExported) continue
+      const keyword = constant.declarationKind ?? 'const'
+      if (!constant.value) {
+        lines.push(`export ${keyword} ${constant.name}`)
+        continue
+      }
+      const value = constant.value.trim()
+      const isArrowFunc =
+        value.startsWith('async (') ||
+        value.startsWith('function') ||
+        /^\w+\s*=>/.test(value) ||
+        /^\([^)]*\)\s*=>/.test(value)
+
+      if (isArrowFunc) {
+        lines.push(`export ${keyword} ${constant.name} = () => {}`)
+      } else {
+        lines.push(`export ${keyword} ${constant.name} = ${constant.value}`)
+      }
+    }
+
+    for (const func of ir.metadata.localFunctions) {
+      if (!func.isExported) continue
+      const params = func.params.map((p) => p.name).join(', ')
+      lines.push(`export function ${func.name}(${params}) ${func.body}`)
     }
 
     return lines.length > 0 ? lines.join('\n') : null
@@ -176,6 +210,7 @@ export class TestAdapter extends BaseAdapter {
     }
 
     for (const constant of ir.metadata.localConstants) {
+      if (constant.isExported) continue
       const keyword = constant.declarationKind ?? 'const'
       if (!constant.value) {
         lines.push(`  ${keyword} ${constant.name}`)
@@ -193,6 +228,13 @@ export class TestAdapter extends BaseAdapter {
       } else {
         lines.push(`  ${keyword} ${constant.name} = ${constant.value}`)
       }
+    }
+
+    // Include local functions (skip exported ones — they are at module level)
+    for (const func of ir.metadata.localFunctions) {
+      if (func.isExported) continue
+      const params = func.params.map((p) => p.name).join(', ')
+      lines.push(`  function ${func.name}(${params}) ${func.body}`)
     }
 
     return lines.join('\n')

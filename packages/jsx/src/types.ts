@@ -371,6 +371,7 @@ export interface FunctionInfo {
   body: string
   returnType: TypeInfo | null
   containsJsx: boolean
+  isExported?: boolean
   loc: SourceLocation
 }
 
@@ -378,6 +379,7 @@ export interface ConstantInfo {
   name: string
   value?: string
   declarationKind: 'const' | 'let'
+  isExported?: boolean
   type: TypeInfo | null
   loc: SourceLocation
 }

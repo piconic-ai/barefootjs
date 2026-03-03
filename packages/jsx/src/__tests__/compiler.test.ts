@@ -4277,4 +4277,165 @@ describe('Compiler', () => {
       expect(template?.content).toContain('return')
     })
   })
+
+  describe('non-function exports from "use client" modules (#523)', () => {
+    test('export const is preserved at module level', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export const REGEXP_ONLY_DIGITS = '^\\\\d+$'
+
+        export function OTPInput(props: { pattern?: string }) {
+          const [value, setValue] = createSignal('')
+          return <input pattern={props.pattern ?? REGEXP_ONLY_DIGITS} />
+        }
+      `
+      const result = compileJSXSync(source, 'OTPInput.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template).toBeDefined()
+      const content = template!.content
+
+      // export const should appear before the component function, at module level
+      expect(content).toContain("export const REGEXP_ONLY_DIGITS = '^\\\\d+$'")
+
+      // It should NOT appear indented inside the function body
+      const funcStart = content.indexOf('export function OTPInput')
+      const exportConstIndex = content.indexOf("export const REGEXP_ONLY_DIGITS")
+      expect(exportConstIndex).toBeLessThan(funcStart)
+    })
+
+    test('export { X } named export syntax sets isExported on analyzer', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        const MY_CONST = 42
+
+        export { MY_CONST }
+
+        export function Widget() {
+          const [val, setVal] = createSignal(0)
+          return <div>{MY_CONST}</div>
+        }
+      `
+      const ctx = analyzeComponent(source, 'Widget.tsx')
+      const constInfo = ctx.localConstants.find(c => c.name === 'MY_CONST')
+      expect(constInfo).toBeDefined()
+      expect(constInfo!.isExported).toBe(true)
+    })
+
+    test('non-exported const stays inside function body', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        const INTERNAL_VALUE = 'secret'
+
+        export function MyComponent() {
+          const [count, setCount] = createSignal(0)
+          return <div>{INTERNAL_VALUE}</div>
+        }
+      `
+      const result = compileJSXSync(source, 'MyComponent.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      const content = template.content
+
+      // Non-exported const should NOT appear as 'export const' at module level
+      expect(content).not.toContain('export const INTERNAL_VALUE')
+
+      // It should appear inside the function body (indented)
+      const funcStart = content.indexOf('export function MyComponent')
+      const constIndex = content.indexOf("INTERNAL_VALUE = 'secret'")
+      expect(constIndex).toBeGreaterThan(funcStart)
+    })
+
+    test('exported non-component function at module level', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function helperFn(x: number) { return x * 2 }
+
+        export function Counter() {
+          const [count, setCount] = createSignal(0)
+          return <div>{helperFn(count())}</div>
+        }
+      `
+      const result = compileJSXSync(source, 'Counter.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      const content = template.content
+
+      // Exported helper function should be at module level
+      expect(content).toContain('export function helperFn(x)')
+
+      // It should appear before the component
+      const helperIndex = content.indexOf('export function helperFn')
+      const componentIndex = content.indexOf('export function Counter')
+      expect(helperIndex).toBeLessThan(componentIndex)
+    })
+
+    test('analyzer sets isExported flag correctly', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export const EXPORTED_A = 'aaa'
+        const INTERNAL_B = 'bbb'
+        export let EXPORTED_C = 100
+
+        export function MyComponent() {
+          const [val, setVal] = createSignal(0)
+          return <div />
+        }
+      `
+      const ctx = analyzeComponent(source, 'Test.tsx')
+
+      const a = ctx.localConstants.find(c => c.name === 'EXPORTED_A')
+      expect(a).toBeDefined()
+      expect(a!.isExported).toBe(true)
+      expect(a!.declarationKind).toBe('const')
+
+      const b = ctx.localConstants.find(c => c.name === 'INTERNAL_B')
+      expect(b).toBeDefined()
+      expect(b!.isExported).toBeFalsy()
+
+      const c = ctx.localConstants.find(c => c.name === 'EXPORTED_C')
+      expect(c).toBeDefined()
+      expect(c!.isExported).toBe(true)
+      expect(c!.declarationKind).toBe('let')
+    })
+
+    test('Hono adapter: exported const appears before component', () => {
+      const honoAdapter = new HonoAdapter()
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export const PATTERN = /^[0-9]+$/
+
+        export function InputField() {
+          const [val, setVal] = createSignal('')
+          return <input />
+        }
+      `
+      const result = compileJSXSync(source, 'InputField.tsx', { adapter: honoAdapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')!
+      const content = template.content
+
+      expect(content).toContain('export const PATTERN = /^[0-9]+$/')
+
+      const exportIndex = content.indexOf('export const PATTERN')
+      const componentIndex = content.indexOf('export function InputField')
+      expect(exportIndex).toBeLessThan(componentIndex)
+    })
+  })
 })
