@@ -29,16 +29,24 @@ Adapters: HonoAdapter (`packages/hono/`), GoTemplateAdapter (`packages/go-templa
 
 ## Testing
 
-| Layer | Verifies | Tool | Speed |
-|-------|----------|------|-------|
-| IR test (`@barefootjs/test`) | Structure, a11y, signals, compiler errors | `bun test` | ms |
-| Compiler unit test (`packages/jsx/`) | IR generation, adapter output, error codes | `bun test` | ms |
-| E2E (`site/ui/e2e/`) | User interactions, hydration, visual rendering | Playwright | seconds |
+See `spec/testing.md` for full testing specification with APIs, patterns, and examples.
 
-- **New UI component**: Write IR test in `packages/test/__tests__/` using `renderToTest()`.
-- **Compiler change**: Write unit test in `packages/jsx/src/__tests__/`.
-- **Interaction behavior**: Write E2E in `site/ui/e2e/` only for click/keyboard/hover that IR tests cannot cover.
-- **Hydration correctness** is a compiler invariant. If E2E reveals a hydration bug, fix it in `packages/jsx/`, not in `ui/`.
+| Layer | Verifies | Location | Speed |
+|-------|----------|----------|-------|
+| Compiler unit | Transformation rules, error codes, analysis | `packages/jsx/src/__tests__/` | ms |
+| Component IR | Structure, a11y, signals, classes | `ui/components/ui/*/index.test.tsx` | ms |
+| Adapter conformance | IR → HTML output per adapter | `packages/adapter-tests/fixtures/` | ms |
+| CSR conformance | Client JS → correct DOM output | `packages/adapter-tests/` | ms |
+| Runtime unit | Signals, DOM ops, hydration primitives | `packages/dom/__tests__/` | ms |
+| E2E | User interactions, hydration, visual | `site/ui/e2e/` | seconds |
+
+Quick decision guide:
+- **New UI component** → Component IR test using `renderToTest()`
+- **Compiler internals** (analysis, error codes, codegen) → Compiler unit test
+- **Template HTML output** → Adapter conformance fixture
+- **Client JS behavior** → CSR conformance fixture
+- **Click/keyboard behavior** → E2E test
+- **Hydration correctness** is a compiler invariant. Fix in `packages/jsx/`, verify with E2E.
 
 ## Implementation Guidelines
 
@@ -47,6 +55,7 @@ When implementing a feature, match the capability level of existing similar feat
 ## Specs
 
 - `spec/compiler.md` — Compiler spec: pipeline architecture, IR schema, transformation rules, adapter interface, error codes
+- `spec/testing.md` — Testing spec: layer responsibilities, decision guide, APIs, patterns, anti-patterns
 
 ## Git Commit (Claude Code Web)
 
