@@ -4245,6 +4245,112 @@ describe('Compiler', () => {
     })
   })
 
+  describe('reactive text-only ternary generates insert() (#526)', () => {
+    test('text ternary with string equality condition generates insert()', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function SubmitButton() {
+          const [status, setStatus] = createSignal('idle')
+          return <button>{status() === 'loading' ? 'Verifying...' : 'Verify'}</button>
+        }
+      `
+
+      const result = compileJSXSync(source, 'SubmitButton.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('insert(')
+      expect(clientJs!.content).toContain("status() === 'loading'")
+    })
+
+    test('logical AND with string equality generates insert()', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function StatusMessage() {
+          const [status, setStatus] = createSignal('idle')
+          return <div>{status() === 'success' && <p>Done!</p>}</div>
+        }
+      `
+
+      const result = compileJSXSync(source, 'StatusMessage.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('insert(')
+      expect(clientJs!.content).toContain("status() === 'success'")
+    })
+
+    test('full onClick scenario with text ternary and multiple conditionals', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function VerifyForm() {
+          const [status, setStatus] = createSignal('idle')
+
+          const handleSubmit = () => {
+            setStatus('loading')
+          }
+
+          return (
+            <div>
+              <button onClick={handleSubmit} disabled={status() === 'loading'}>
+                {status() === 'loading' ? 'Verifying...' : 'Verify'}
+              </button>
+              {status() === 'success' && <p>Success!</p>}
+              {status() === 'error' && <p>Error occurred</p>}
+            </div>
+          )
+        }
+      `
+
+      const result = compileJSXSync(source, 'VerifyForm.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+
+      // Should have insert() calls for each conditional
+      const insertCount = (clientJs!.content.match(/insert\(/g) || []).length
+      expect(insertCount).toBeGreaterThanOrEqual(3)
+
+      // Should include handleSubmit reference
+      expect(clientJs!.content).toContain('handleSubmit')
+
+      // Should have onclick binding
+      expect(clientJs!.content).toContain('onclick')
+    })
+
+    test('insert() template contains comment markers for text branches', () => {
+      const honoAdapter = new HonoAdapter()
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function SubmitButton() {
+          const [status, setStatus] = createSignal('idle')
+          return <button>{status() === 'loading' ? 'Verifying...' : 'Verify'}</button>
+        }
+      `
+
+      const result = compileJSXSync(source, 'SubmitButton.tsx', { adapter: honoAdapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+
+      // Text branches should have comment markers in insert() templates
+      expect(clientJs!.content).toContain('bf-cond-start:')
+      expect(clientJs!.content).toContain('bf-cond-end:')
+    })
+  })
+
   describe('.map() with block body (#520)', () => {
     test('handles block body with variable declaration and return JSX', () => {
       const source = `

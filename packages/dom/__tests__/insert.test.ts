@@ -123,4 +123,67 @@ describe('insert', () => {
     setShow(true)
     expect(trueBound.length).toBe(2)
   })
+
+  describe('fragment conditional (comment markers) (#526)', () => {
+    test('text swap via comment markers', () => {
+      document.body.innerHTML = `
+        <div bf-s="Test_1">
+          <button><!--bf-cond-start:c1-->Verify<!--bf-cond-end:c1--></button>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s]')!
+      const [show, setShow] = createSignal(false)
+
+      insert(
+        scope,
+        'c1',
+        show,
+        { template: () => '<!--bf-cond-start:c1-->Verifying...<!--bf-cond-end:c1-->', bindEvents: () => {} },
+        { template: () => '<!--bf-cond-start:c1-->Verify<!--bf-cond-end:c1-->', bindEvents: () => {} }
+      )
+
+      // Initial: condition is false, should show "Verify"
+      const button = scope.querySelector('button')!
+      expect(button.textContent).toBe('Verify')
+
+      // Toggle to true → "Verifying..."
+      setShow(true)
+      expect(button.textContent).toBe('Verifying...')
+
+      // Toggle back to false → "Verify"
+      setShow(false)
+      expect(button.textContent).toBe('Verify')
+    })
+
+    test('null-to-element branch switch via comment markers', () => {
+      document.body.innerHTML = `
+        <div bf-s="Test_1">
+          <!--bf-cond-start:c1--><!--bf-cond-end:c1-->
+        </div>
+      `
+      const scope = document.querySelector('[bf-s]')!
+      const [show, setShow] = createSignal(false)
+
+      insert(
+        scope,
+        'c1',
+        show,
+        { template: () => '<!--bf-cond-start:c1--><p bf-c="c1">Success!</p><!--bf-cond-end:c1-->', bindEvents: () => {} },
+        { template: () => '<!--bf-cond-start:c1--><!--bf-cond-end:c1-->', bindEvents: () => {} }
+      )
+
+      // Initial: condition is false, should be empty
+      expect(scope.querySelector('p')).toBeNull()
+
+      // Set condition true → <p>Success!</p> appears
+      setShow(true)
+      const p = scope.querySelector('p')
+      expect(p).not.toBeNull()
+      expect(p!.textContent).toBe('Success!')
+
+      // Set back to false → element removed
+      setShow(false)
+      expect(scope.querySelector('p')).toBeNull()
+    })
+  })
 })
