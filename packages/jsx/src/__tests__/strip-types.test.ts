@@ -60,6 +60,24 @@ describe('strip-types', () => {
         '(items) => items.length'
       )
     })
+
+    test('strips optional parameter type annotation (issue #544)', () => {
+      expect(stripExpr('(x?: string) => x')).toBe('(x) => x')
+    })
+
+    test('strips optional parameter with union type', () => {
+      expect(stripExpr('(x?: string | undefined) => x')).toBe('(x) => x')
+    })
+
+    test('strips mixed required and optional parameters', () => {
+      expect(stripExpr('(a: number, b?: string) => a')).toBe('(a, b) => a')
+    })
+
+    test('strips optional parameter with return type', () => {
+      expect(stripExpr('(x?: number): string => String(x)')).toBe(
+        '(x) => String(x)'
+      )
+    })
   })
 
   describe('type assertions (as)', () => {

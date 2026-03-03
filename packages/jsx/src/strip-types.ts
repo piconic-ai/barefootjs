@@ -94,12 +94,23 @@ function collectTypeRanges(
   fullText: string,
   ranges: ExcludeRange[]
 ): void {
-  // Parameter type annotation: (x: Type)
-  if (ts.isParameter(node) && node.type) {
-    // Exclude from colon (after name/initializer/questionToken) through type end
-    const colonPos = findColonBefore(node.type, fullText, node.name.getEnd())
-    if (colonPos >= 0) {
-      ranges.push({ start: colonPos, end: node.type.getEnd() })
+  // Parameter type annotation: (x: Type) or optional parameter: (x?: Type)
+  if (ts.isParameter(node)) {
+    const hasQuestion = !!node.questionToken
+    const hasType = !!node.type
+
+    if (hasQuestion && hasType) {
+      // Optional param with type: strip "?: Type"
+      ranges.push({ start: node.questionToken!.getStart(sourceFile), end: node.type!.getEnd() })
+    } else if (hasQuestion) {
+      // Optional param without type: strip "?"
+      ranges.push({ start: node.questionToken!.getStart(sourceFile), end: node.questionToken!.getEnd() })
+    } else if (hasType) {
+      // Required param with type: strip ": Type" (existing behavior)
+      const colonPos = findColonBefore(node.type!, fullText, node.name.getEnd())
+      if (colonPos >= 0) {
+        ranges.push({ start: colonPos, end: node.type!.getEnd() })
+      }
     }
   }
 
