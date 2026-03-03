@@ -35,12 +35,19 @@ const VOID_ELEMENTS = new Set([
 ])
 
 /** Convert an IR node tree to an HTML template string (for conditionals/loops). */
-export function irToHtmlTemplate(node: IRNode): string {
+export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>): string {
+  const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames)
+
   switch (node.type) {
     case 'element': {
       const attrParts = node.attrs
         .map((a) => {
-          if (a.name === '...') return ''
+          if (a.name === '...') {
+            const spreadValue = typeof a.value === 'string' ? a.value : null
+            if (!spreadValue) return ''
+            if (restSpreadNames?.has(spreadValue)) return ''
+            return `\${spreadAttrs(${spreadValue})}`
+          }
           // Convert JSX `key` to `data-key` so reconcileList can match elements
           const attrName = a.name === 'key' ? 'data-key' : toHtmlAttrName(a.name)
           if (a.value === null) return attrName
@@ -60,7 +67,7 @@ export function irToHtmlTemplate(node: IRNode): string {
       }
 
       const attrs = attrParts.join(' ')
-      const children = node.children.map(irToHtmlTemplate).join('')
+      const children = node.children.map(recurse).join('')
 
       // Non-void elements must use open+close tags (HTML parsers ignore self-closing on div, span, etc.)
       if (children || !VOID_ELEMENTS.has(node.tag)) {
@@ -80,21 +87,21 @@ export function irToHtmlTemplate(node: IRNode): string {
       return `\${${node.expr}}`
 
     case 'conditional': {
-      const trueBranch = irToHtmlTemplate(node.whenTrue)
-      const falseBranch = irToHtmlTemplate(node.whenFalse)
+      const trueBranch = recurse(node.whenTrue)
+      const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
       return `\${${node.condition} ? \`${trueHtml}\` : \`${falseHtml}\`}`
     }
 
     case 'fragment':
-      return node.children.map(irToHtmlTemplate).join('')
+      return node.children.map(recurse).join('')
 
     case 'component': {
       // Portal is a special pass-through component - render its children directly
       // Portal moves content to document.body, so we need the actual content in templates
       if (node.name === 'Portal') {
-        return node.children.map(irToHtmlTemplate).join('')
+        return node.children.map(recurse).join('')
       }
 
       // Use renderChild() to render child component's registered template at runtime.
@@ -115,7 +122,7 @@ export function irToHtmlTemplate(node: IRNode): string {
 
     case 'loop': {
       // Generate inline .map().join('') so loop variables are properly scoped
-      const childTemplate = node.children.map(irToHtmlTemplate).join('')
+      const childTemplate = node.children.map(recurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
       if (node.mapPreamble) {
         return `\${${node.array}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
@@ -127,7 +134,7 @@ export function irToHtmlTemplate(node: IRNode): string {
       return ''
 
     case 'provider':
-      return node.children.map(irToHtmlTemplate).join('')
+      return node.children.map(recurse).join('')
 
     default:
       return ''
@@ -228,7 +235,8 @@ export function addCondAttrToTemplate(html: string, condId: string): string {
 export function irToComponentTemplate(
   node: IRNode,
   propNames: Set<string>,
-  inlinableConstants?: Map<string, string>
+  inlinableConstants?: Map<string, string>,
+  restSpreadNames?: Set<string>
 ): string {
   const transformExpr = (expr: string): string => {
     const { protect, restore } = createStringProtector()
@@ -258,7 +266,12 @@ export function irToComponentTemplate(
     case 'element': {
       const attrParts = node.attrs
         .map((a) => {
-          if (a.name === '...') return ''
+          if (a.name === '...') {
+            const spreadValue = attrValueToString(a.value)
+            if (!spreadValue) return ''
+            if (restSpreadNames?.has(spreadValue)) return ''
+            return `\${spreadAttrs(${transformExpr(spreadValue)})}`
+          }
           if (a.name === 'key') return ''
           const attrName = toHtmlAttrName(a.name)
           if (a.value === null) return attrName
@@ -280,7 +293,7 @@ export function irToComponentTemplate(
       }
 
       const attrs = attrParts.join(' ')
-      const children = node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants)).join('')
+      const children = node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames)).join('')
 
       if (children || !VOID_ELEMENTS.has(node.tag)) {
         return `<${node.tag}${attrs ? ' ' + attrs : ''}>${children}</${node.tag}>`
@@ -299,19 +312,19 @@ export function irToComponentTemplate(
       return `\${${transformExpr(node.expr)}}`
 
     case 'conditional': {
-      const trueBranch = irToComponentTemplate(node.whenTrue, propNames, inlinableConstants)
-      const falseBranch = irToComponentTemplate(node.whenFalse, propNames, inlinableConstants)
+      const trueBranch = irToComponentTemplate(node.whenTrue, propNames, inlinableConstants, restSpreadNames)
+      const falseBranch = irToComponentTemplate(node.whenFalse, propNames, inlinableConstants, restSpreadNames)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
       return `\${${transformExpr(node.condition)} ? \`${trueHtml}\` : \`${falseHtml}\`}`
     }
 
     case 'fragment':
-      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants)).join('')
+      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames)).join('')
 
     case 'component': {
       if (node.name === 'Portal') {
-        return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants)).join('')
+        return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames)).join('')
       }
 
       // Use renderChild() to render child component's template at runtime (#435)
@@ -330,13 +343,13 @@ export function irToComponentTemplate(
     }
 
     case 'loop':
-      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants)).join('')
+      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames)).join('')
 
     case 'if-statement':
       return ''
 
     case 'provider':
-      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants)).join('')
+      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames)).join('')
 
     default:
       return ''
@@ -398,8 +411,14 @@ export function canGenerateStaticTemplate(
 
     case 'element':
       for (const attr of node.attrs) {
-        // Spread attributes are always dropped by template generators, so skip them.
-        if (attr.name === '...') continue
+        if (attr.name === '...') {
+          // Computed local spreads are now handled by spreadAttrs() at runtime.
+          // Only check for unsafe references that would fail at module scope.
+          const valueStr = attrValueToString(attr.value)
+          if (valueStr && hasUnsafeRef(valueStr)) return false
+          if (valueStr && valueStr.includes('()') && !isSimplePropExpression(valueStr, propNames)) return false
+          continue
+        }
         if (attr.dynamic && attr.value) {
           const valueStr = attrValueToString(attr.value)
           if (valueStr) {
@@ -464,6 +483,7 @@ export function generateCsrTemplate(
   signalMap?: Map<string, string>,
   memoMap?: Map<string, string>,
   insideLoop?: boolean,
+  restSpreadNames?: Set<string>,
 ): string {
   const transformExpr = (expr: string): string => {
     const { protect, restore } = createStringProtector()
@@ -513,14 +533,19 @@ export function generateCsrTemplate(
     return restore(result)
   }
 
-  const recurse = (n: IRNode): string => generateCsrTemplate(n, propNames, inlinableConstants, signalMap, memoMap, insideLoop)
-  const recurseInLoop = (n: IRNode): string => generateCsrTemplate(n, propNames, inlinableConstants, signalMap, memoMap, true)
+  const recurse = (n: IRNode): string => generateCsrTemplate(n, propNames, inlinableConstants, signalMap, memoMap, insideLoop, restSpreadNames)
+  const recurseInLoop = (n: IRNode): string => generateCsrTemplate(n, propNames, inlinableConstants, signalMap, memoMap, true, restSpreadNames)
 
   switch (node.type) {
     case 'element': {
       const attrParts = node.attrs
         .map((a) => {
-          if (a.name === '...') return ''
+          if (a.name === '...') {
+            const spreadValue = attrValueToString(a.value)
+            if (!spreadValue) return ''
+            if (restSpreadNames?.has(spreadValue)) return ''
+            return `\${spreadAttrs(${transformExpr(spreadValue)})}`
+          }
           const attrName = a.name === 'key' ? 'data-key' : toHtmlAttrName(a.name)
           if (a.value === null) return attrName
           const valueStr = attrValueToString(a.value)

@@ -9,6 +9,14 @@ import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBra
 import { irToHtmlTemplate } from './html-template'
 import { expandDynamicPropValue } from './prop-handling'
 
+/** Build rest spread names from context (rest/props spreads handled by applyRestAttrs, not spreadAttrs). */
+function buildRestSpreadNames(ctx: ClientJsContext): Set<string> {
+  const names = new Set<string>()
+  if (ctx.restPropsName) names.add(ctx.restPropsName)
+  if (ctx.propsObjectName) names.add(ctx.propsObjectName)
+  return names
+}
+
 /** Recursively walk the IR tree and populate ctx with interactive/dynamic/loop/conditional elements. */
 export function collectElements(node: IRNode, ctx: ClientJsContext, insideConditional = false): void {
   switch (node.type) {
@@ -40,11 +48,12 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         const whenFalseEvents = collectConditionalBranchEvents(node.whenFalse)
         const whenTrueRefs = collectConditionalBranchRefs(node.whenTrue)
         const whenFalseRefs = collectConditionalBranchRefs(node.whenFalse)
+        const restNames = buildRestSpreadNames(ctx)
         ctx.clientOnlyConditionals.push({
           slotId: node.slotId,
           condition: node.condition,
-          whenTrueHtml: irToHtmlTemplate(node.whenTrue),
-          whenFalseHtml: irToHtmlTemplate(node.whenFalse),
+          whenTrueHtml: irToHtmlTemplate(node.whenTrue, restNames),
+          whenFalseHtml: irToHtmlTemplate(node.whenFalse, restNames),
           whenTrueEvents,
           whenFalseEvents,
           whenTrueRefs,
@@ -56,11 +65,12 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         const whenTrueRefs = collectConditionalBranchRefs(node.whenTrue)
         const whenFalseRefs = collectConditionalBranchRefs(node.whenFalse)
 
+        const restNames = buildRestSpreadNames(ctx)
         ctx.conditionalElements.push({
           slotId: node.slotId,
           condition: node.condition,
-          whenTrueHtml: irToHtmlTemplate(node.whenTrue),
-          whenFalseHtml: irToHtmlTemplate(node.whenFalse),
+          whenTrueHtml: irToHtmlTemplate(node.whenTrue, restNames),
+          whenFalseHtml: irToHtmlTemplate(node.whenFalse, restNames),
           whenTrueEvents,
           whenFalseEvents,
           whenTrueRefs,
@@ -99,7 +109,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           param: node.param,
           index: node.index,
           key: node.key,
-          template: node.childComponent ? '' : (node.children[0] ? irToHtmlTemplate(node.children[0]) : ''),
+          template: node.childComponent ? '' : (node.children[0] ? irToHtmlTemplate(node.children[0], buildRestSpreadNames(ctx)) : ''),
           childEventHandlers: childHandlers,
           childEvents,
           childComponent: node.childComponent,

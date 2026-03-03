@@ -11,7 +11,7 @@ export const DOM_IMPORT_CANDIDATES = [
   'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'updateClientMarker',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
-  'forwardProps', 'applyRestAttrs', 'splitProps',
+  'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs',
 ] as const
 
 export const IMPORT_PLACEHOLDER = '/* __BAREFOOTJS_DOM_IMPORTS__ */'

@@ -135,10 +135,15 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   const propNamesForTemplate = new Set(ctx.propsParams.map((p) => p.name))
   const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx)
 
+  // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
+  const restSpreadNames = new Set<string>()
+  if (ctx.restPropsName) restSpreadNames.add(ctx.restPropsName)
+  if (ctx.propsObjectName) restSpreadNames.add(ctx.propsObjectName)
+
   let templateHtml: string | undefined
 
   if (canGenerateStaticTemplate(ir.root, propNamesForTemplate, inlinableConstants, unsafeLocalNames)) {
-    templateHtml = irToComponentTemplate(ir.root, propNamesForTemplate, inlinableConstants)
+    templateHtml = irToComponentTemplate(ir.root, propNamesForTemplate, inlinableConstants, restSpreadNames)
   }
 
   // CSR fallback: when static template generation fails (e.g., components with
@@ -148,7 +153,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
     const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap)
 
     templateHtml = generateCsrTemplate(
-      ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap
+      ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames
     )
   }
 

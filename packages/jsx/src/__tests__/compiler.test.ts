@@ -4148,6 +4148,70 @@ describe('Compiler', () => {
       // Stateless component must register a template so renderChild() can find it
       expect(content).toContain("hydrate('CheckIcon',")
       expect(content).toContain('template:')
+
+      // Computed spread must use spreadAttrs() to render attributes (#545)
+      expect(content).toContain('spreadAttrs(')
+      expect(content).toMatch(/import \{[^}]*spreadAttrs[^}]*\} from '@barefootjs\/dom'/)
+    })
+
+    test('computed spread with conditional expression emits spreadAttrs (#545)', () => {
+      const source = `
+        export function Icon(props: { large?: boolean }) {
+          const attrs = props.large ? { width: 48, height: 48 } : { width: 24, height: 24 }
+          return <svg {...attrs} viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" /></svg>
+        }
+      `
+      const result = compileJSXSync(source, 'Icon.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      expect(content).toContain('spreadAttrs(')
+    })
+
+    test('multiple computed spreads on same element both emit spreadAttrs (#545)', () => {
+      const source = `
+        export function Icon(props: { size?: string, color?: string }) {
+          const sizeAttrs = { width: props.size ?? '24', height: props.size ?? '24' }
+          const colorAttrs = { fill: props.color ?? 'currentColor' }
+          return <svg {...sizeAttrs} {...colorAttrs} viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" /></svg>
+        }
+      `
+      const result = compileJSXSync(source, 'Icon.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      // Both spreads should emit spreadAttrs
+      const matches = content.match(/spreadAttrs\(/g)
+      expect(matches).not.toBeNull()
+      expect(matches!.length).toBeGreaterThanOrEqual(2)
+    })
+
+    test('rest props spread is NOT emitted as spreadAttrs (#545)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function Button(props: { variant?: string }) {
+          const { variant, ...rest } = props
+          const [count, setCount] = createSignal(0)
+          return <button {...rest} onClick={() => setCount(c => c + 1)}>{count()}</button>
+        }
+      `
+      const result = compileJSXSync(source, 'Button.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      // Rest props spread should use applyRestAttrs, not spreadAttrs
+      expect(content).not.toContain('spreadAttrs(')
     })
 
     test('multi-component file: stateless icons in conditional rendering produce renderChild + hydrate', () => {

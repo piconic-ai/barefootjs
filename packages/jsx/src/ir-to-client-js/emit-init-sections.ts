@@ -1075,13 +1075,18 @@ export function emitRegistrationAndHydration(
   const propNamesForTemplate = new Set(ctx.propsParams.map((p) => p.name))
   const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx)
 
+  // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
+  const restSpreadNames = new Set<string>()
+  if (ctx.restPropsName) restSpreadNames.add(ctx.restPropsName)
+  if (ctx.propsObjectName) restSpreadNames.add(ctx.propsObjectName)
+
   const isCommentScope = _ir.root.type === 'fragment'
     && (_ir.root as IRFragment).needsScopeComment
 
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: init${name}`]
   if (canGenerateStaticTemplate(_ir.root, propNamesForTemplate, inlinableConstants, unsafeLocalNames)) {
-    const templateHtml = irToComponentTemplate(_ir.root, propNamesForTemplate, inlinableConstants)
+    const templateHtml = irToComponentTemplate(_ir.root, propNamesForTemplate, inlinableConstants, restSpreadNames)
     if (templateHtml) {
       defParts.push(`template: (props) => \`${templateHtml}\``)
     }
@@ -1092,7 +1097,7 @@ export function emitRegistrationAndHydration(
     const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap)
 
     const templateHtml = generateCsrTemplate(
-      _ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap
+      _ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames
     )
     if (templateHtml) {
       defParts.push(`template: (props) => \`${templateHtml}\``)

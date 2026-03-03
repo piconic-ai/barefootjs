@@ -53,6 +53,7 @@ export { splitProps } from './split-props'
 // Spread props helpers (internal, for compiler-generated code)
 export { forwardProps } from './forward-props'
 export { applyRestAttrs } from './apply-rest-attrs'
+export { spreadAttrs } from './spread-attrs'
 
 // Runtime helpers (internal, for compiler-generated code)
 export { findScope, find, $, $c, $t } from './query'
