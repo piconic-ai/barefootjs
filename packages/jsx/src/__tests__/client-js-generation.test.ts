@@ -1942,5 +1942,36 @@ describe('Client JS generation', () => {
       expect(content).toContain("renderChild('StatusOn'")
       expect(content).toContain("renderChild('StatusOff'")
     })
+
+    test('component event handler props are not bound as native DOM events (#551)', () => {
+      // When a parent passes onChange to a child component, the compiler should
+      // generate initChild with the handler in propsExpr, but NOT addEventListener.
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        function CustomInput(props: { onChange: (v: string) => void }) {
+          return <input onInput={(e) => props.onChange(e.target.value)} />
+        }
+
+        export function Parent() {
+          const [value, setValue] = createSignal('')
+          return <CustomInput onChange={setValue} />
+        }
+      `
+      const result = compileJSXSync(source, 'Parent.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      // initChild should pass onChange as a prop
+      expect(content).toContain('initChild')
+      expect(content).toContain('onChange')
+
+      // Must NOT generate addEventListener('change', ...) for the component slot
+      expect(content).not.toContain("addEventListener('change'")
+    })
   })
 })

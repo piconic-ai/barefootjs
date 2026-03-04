@@ -2,7 +2,7 @@
  * IR tree traversal → collect elements into ClientJsContext.
  */
 
-import type { IRNode, IRElement, IREvent } from '../types'
+import type { IRNode, IRElement } from '../types'
 import type { ClientJsContext, LoopChildEvent } from './types'
 import { attrValueToString, quotePropName } from './utils'
 import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectLoopChildEvents } from './reactivity'
@@ -135,25 +135,6 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
 
     case 'component':
       if (node.slotId) {
-        const componentEvents: IREvent[] = []
-        for (const prop of node.props) {
-          if (prop.name.startsWith('on') && prop.name.length > 2) {
-            const eventName = prop.name[2].toLowerCase() + prop.name.slice(3)
-            componentEvents.push({
-              name: eventName,
-              handler: prop.value,
-              loc: prop.loc,
-            })
-          }
-        }
-        if (componentEvents.length > 0) {
-          ctx.interactiveElements.push({
-            slotId: node.slotId,
-            events: componentEvents,
-            isComponentSlot: true,
-          })
-        }
-
         // Reactive props need effects to update the element when values change
         for (const prop of node.props) {
           if (prop.name.startsWith('on') && prop.name.length > 2) continue

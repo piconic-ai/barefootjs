@@ -285,11 +285,7 @@ export function generateElementRefs(ctx: ClientJsContext): string {
 
   for (const elem of ctx.interactiveElements) {
     if (elem.slotId !== '__scope' && !conditionalSlotIds.has(elem.slotId)) {
-      if (elem.isComponentSlot) {
-        componentSlots.add(elem.slotId)
-      } else {
-        regularSlots.add(elem.slotId)
-      }
+      regularSlots.add(elem.slotId)
     }
   }
   // Dynamic text expressions use comment markers found via $t()

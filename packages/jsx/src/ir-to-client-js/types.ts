@@ -46,7 +46,6 @@ export interface ClientJsContext {
 export interface InteractiveElement {
   slotId: string
   events: IREvent[]
-  isComponentSlot?: boolean // true if this slot is for a component (uses bf-s)
 }
 
 export interface ReactiveComponentProp {
