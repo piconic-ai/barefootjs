@@ -518,6 +518,106 @@ describe('child components inside .map() (#344)', () => {
     expect(content).toContain('setValue(item.value)')
   })
 
+  describe('callback returning function call (#546)', () => {
+    test('arrow expression body: items().map(item => renderItem(item))', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function List() {
+          const [items, setItems] = createSignal([{ id: '1' }, { id: '2' }])
+          const renderItem = (item: any) => <li>{item.id}</li>
+          return (
+            <ul>
+              {items().map(item => renderItem(item))}
+            </ul>
+          )
+        }
+      `
+      const result = compileJSXSync(source, 'List.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      // The .map() call should become an expression, not a loop with empty children
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('renderItem')
+    })
+
+    test('parenthesized expression: items().map(item => (renderItem(item)))', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function List() {
+          const [items, setItems] = createSignal([{ id: '1' }, { id: '2' }])
+          const renderItem = (item: any) => <li>{item.id}</li>
+          return (
+            <ul>
+              {items().map(item => (renderItem(item)))}
+            </ul>
+          )
+        }
+      `
+      const result = compileJSXSync(source, 'List.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('renderItem')
+    })
+
+    test('block body with function call return: items().map(item => { return renderItem(item) })', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function List() {
+          const [items, setItems] = createSignal([{ id: '1' }, { id: '2' }])
+          const renderItem = (item: any) => <li>{item.id}</li>
+          return (
+            <ul>
+              {items().map(item => { const label = item.id; return renderItem(label) })}
+            </ul>
+          )
+        }
+      `
+      const result = compileJSXSync(source, 'List.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('renderItem')
+    })
+
+    test('SSR template output does not contain empty arrow body', () => {
+      const honoAdapter = new HonoAdapter()
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function List() {
+          const [items, setItems] = createSignal([{ id: '1' }, { id: '2' }])
+          const renderItem = (item: any) => <li>{item.id}</li>
+          return (
+            <ul>
+              {items().map(item => renderItem(item))}
+            </ul>
+          )
+        }
+      `
+      const result = compileJSXSync(source, 'List.tsx', { adapter: honoAdapter })
+      expect(result.errors).toHaveLength(0)
+
+      const template = result.files.find(f => f.type === 'markedTemplate')
+      expect(template).toBeDefined()
+      // Should contain the .map() call with renderItem, not an empty arrow body
+      expect(template!.content).toContain('.map(')
+      expect(template!.content).toContain('renderItem')
+      // Must NOT contain the broken pattern: => )
+      expect(template!.content).not.toMatch(/=>\s*\)/)
+    })
+  })
+
   test('dynamic signal array: onClick on plain element still works (regression guard)', () => {
     const source = `
       'use client'

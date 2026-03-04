@@ -646,7 +646,11 @@ function transformExpression(
 
   // Array map: {items.map(item => <li>{item}</li>)}
   if (ts.isCallExpression(expr) && isMapCall(expr)) {
-    return transformMapCall(expr, ctx, isClientOnly)
+    const mapResult = transformMapCall(expr, ctx, isClientOnly)
+    if (mapResult) {
+      return mapResult
+    }
+    // Callback body is not JSX (e.g., function call). Fall through to expression handling.
   }
 
   // Inline JSX constants at the IR level (#547)
@@ -1036,7 +1040,7 @@ function transformMapCall(
   node: ts.CallExpression,
   ctx: TransformContext,
   isClientOnly = false
-): IRLoop {
+): IRLoop | null {
   const propAccess = node.expression as ts.PropertyAccessExpression
   const mapSource = propAccess.expression
 
@@ -1232,6 +1236,12 @@ function transformMapCall(
         }
       }
     }
+  }
+
+  // If no JSX children were found (e.g., callback returns a function call),
+  // fall back to treating the entire .map() expression as an IRExpression.
+  if (children.length === 0) {
+    return null
   }
 
   // Look for key prop in first child (element or component)
