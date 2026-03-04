@@ -71,8 +71,6 @@ export function collectExternalImports(ir: ComponentIR, generatedCode: string, l
   for (const imp of ir.metadata.imports) {
     if (imp.isTypeOnly) continue
     if (imp.source === '@barefootjs/dom') continue
-    // Skip relative imports (resolved by the build, not needed in browser)
-    if (imp.source.startsWith('./') || imp.source.startsWith('../')) continue
     // Skip local path-alias imports (resolved at build time, not in browser)
     if (localImportPrefixes?.some(prefix => imp.source.startsWith(prefix))) continue
 

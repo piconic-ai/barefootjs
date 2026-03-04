@@ -75,11 +75,51 @@ describe('collectExternalImports', () => {
     expect(result).toEqual([])
   })
 
-  test('skips relative imports', () => {
+  test('preserves relative imports when specifiers are used in generated code', () => {
     const ir = makeIR([makeImport('./utils', ['helper'])])
     const code = 'helper()'
     const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { helper } from './utils'"])
+  })
+
+  test('skips relative imports when specifiers are not used in generated code', () => {
+    const ir = makeIR([makeImport('./utils', ['helper'])])
+    const code = 'somethingElse()'
+    const result = collectExternalImports(ir, code)
     expect(result).toEqual([])
+  })
+
+  test('skips relative imports for component names', () => {
+    const ir = makeIR([makeImport('./MyWidget', ['MyWidget'])], ['MyWidget'])
+    const code = 'MyWidget'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([])
+  })
+
+  test('preserves parent-relative imports when specifiers are used', () => {
+    const ir = makeIR([makeImport('../shared/format', ['formatCurrency'])])
+    const code = 'formatCurrency(price)'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { formatCurrency } from '../shared/format'"])
+  })
+
+  test('preserves relative import with alias when used', () => {
+    const ir: ReturnType<typeof makeIR> = makeIR([{
+      source: './utils',
+      specifiers: [{ name: 'helper', alias: 'h', isDefault: false, isNamespace: false }],
+      isTypeOnly: false,
+      loc: dummyLoc,
+    }])
+    const code = 'h()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { helper as h } from './utils'"])
+  })
+
+  test('only preserves used specifiers from relative import with mixed usage', () => {
+    const ir = makeIR([makeImport('./utils', ['used', 'unused'])])
+    const code = 'used()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { used } from './utils'"])
   })
 
   test('preserves @ui/ imports by default (no localImportPrefixes)', () => {
