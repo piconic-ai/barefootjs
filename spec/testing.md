@@ -49,7 +49,7 @@ Test the compiler's internal logic: parsing, analysis, transformation rules, and
 ### What to test here
 
 - **Analysis:** Signal/memo/effect detection, props extraction, import resolution
-- **Error codes:** BF001, BF002, BF021, BF043, BF044, etc.
+- **Error codes:** BF001, BF002, BF021, BF043, BF044, BF045, etc.
 - **Expression parsing:** Ternary evaluation, filter/sort pattern detection, constant resolution
 - **Client JS generation:** Import deduplication, module combination, declaration ordering
 - **CSS processing:** `@layer` prefixing, type stripping
