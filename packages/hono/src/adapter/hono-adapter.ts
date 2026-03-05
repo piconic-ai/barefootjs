@@ -277,9 +277,20 @@ export class HonoAdapter implements TemplateAdapter {
     // This is needed when: (1) the component has its own props to serialize, OR
     // (2) the component's root is a component and it's a client component (namespaced props pass-through)
     this.currentComponentHasProps = hasPropsToSerialize || (hasClientInteractivity && isRootComponent)
-    const jsxBody = isIfStatement ? '' : this.renderNode(ir.root, {
+    let jsxBody = isIfStatement ? '' : this.renderNode(ir.root, {
       isRootOfClientComponent: hasClientInteractivity && isRootComponent
     })
+
+    // Component roots of client components need comment-based scope markers.
+    // Unlike element roots (which get bf-s directly), the root component is
+    // a plain function whose output has no hydration markers.
+    if (!isIfStatement && hasClientInteractivity && isRootComponent) {
+      const scopeExpr = '${__bfChild ? `~${__scopeId}` : __scopeId}'
+      const propsExpr = this.currentComponentHasProps
+        ? '${__bfPropsJson ? `|${__bfPropsJson}` : ""}'
+        : ''
+      jsxBody = `<>{bfComment(\`scope:${scopeExpr}${propsExpr}\`)}${jsxBody}</>`
+    }
 
     const lines: string[] = []
     lines.push(`export function ${name}(${fullPropsDestructure}${typeAnnotation}) {`)

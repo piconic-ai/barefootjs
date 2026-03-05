@@ -213,7 +213,7 @@ describe('JSX props (#559)', () => {
       }
     })
 
-    test('component references in JSX props are imported in client JS (with BF045)', () => {
+    test('component references in JSX props are imported in client JS', () => {
       const source = `
         'use client'
         import { createSignal } from '@barefootjs/dom'
@@ -226,14 +226,10 @@ describe('JSX props (#559)', () => {
         }
       `
       const result = compileJSXSync(source, 'App.tsx', { adapter })
-      // BF045: component inside JSX prop
-      const bf045Errors = result.errors.filter(e => e.code === 'BF045')
-      expect(bf045Errors).toHaveLength(1)
+      expect(result.errors).toHaveLength(0)
 
       const clientJs = result.files.find(f => f.type === 'clientJs')
       expect(clientJs).toBeDefined()
-      // Should import Button component referenced inside JSX prop
-      // (compilation continues despite BF045 — it's a diagnostic, not a hard stop)
       expect(clientJs!.content).toContain('@bf-child:Button')
     })
 
@@ -268,8 +264,8 @@ describe('JSX props (#559)', () => {
     })
   })
 
-  describe('BF045: component in JSX prop (#570)', () => {
-    test('component in JSX prop emits BF045', () => {
+  describe('__slot() wrapping for component-containing JSX props', () => {
+    test('__slot() wraps JSX prop when it contains components', () => {
       const source = `
         'use client'
         import { createSignal } from '@barefootjs/dom'
@@ -280,58 +276,14 @@ describe('JSX props (#559)', () => {
         }
       `
       const result = compileJSXSync(source, 'App.tsx', { adapter })
-      const bf045 = result.errors.filter(e => e.code === 'BF045')
-      expect(bf045).toHaveLength(1)
-      expect(bf045[0].message).toContain("'controls'")
-      expect(bf045[0].message).toContain("'Layout'")
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('__slot(')
     })
 
-    test('multiple components in JSX props emit BF045 for each', () => {
-      const source = `
-        'use client'
-        import { createSignal } from '@barefootjs/dom'
-
-        export function App() {
-          const [val, setVal] = createSignal('')
-          return <Layout controls={<Select />} extra={<Button />} />
-        }
-      `
-      const result = compileJSXSync(source, 'App.tsx', { adapter })
-      const bf045 = result.errors.filter(e => e.code === 'BF045')
-      expect(bf045).toHaveLength(2)
-    })
-
-    test('reactive expression only (no component) does not emit BF045', () => {
-      const source = `
-        'use client'
-        import { createSignal } from '@barefootjs/dom'
-
-        export function App() {
-          const [count, setCount] = createSignal(0)
-          return <Layout controls={<span>{count()}</span>} />
-        }
-      `
-      const result = compileJSXSync(source, 'App.tsx', { adapter })
-      const bf045 = result.errors.filter(e => e.code === 'BF045')
-      expect(bf045).toHaveLength(0)
-    })
-
-    test('event handler only (no component) does not emit BF045', () => {
-      const source = `
-        'use client'
-        import { createSignal } from '@barefootjs/dom'
-
-        export function App() {
-          const [val, setVal] = createSignal('')
-          return <Layout controls={<button onClick={() => setVal('x')}>Go</button>} />
-        }
-      `
-      const result = compileJSXSync(source, 'App.tsx', { adapter })
-      const bf045 = result.errors.filter(e => e.code === 'BF045')
-      expect(bf045).toHaveLength(0)
-    })
-
-    test('static JSX only (no component) does not emit BF045', () => {
+    test('__slot() does NOT wrap when no components (HTML-only)', () => {
       const source = `
         'use client'
         import { createSignal } from '@barefootjs/dom'
@@ -342,11 +294,14 @@ describe('JSX props (#559)', () => {
         }
       `
       const result = compileJSXSync(source, 'App.tsx', { adapter })
-      const bf045 = result.errors.filter(e => e.code === 'BF045')
-      expect(bf045).toHaveLength(0)
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).not.toContain('__slot(')
     })
 
-    test('nested component inside element emits BF045', () => {
+    test('__slot() wraps nested component inside element', () => {
       const source = `
         'use client'
         import { createSignal } from '@barefootjs/dom'
@@ -357,8 +312,53 @@ describe('JSX props (#559)', () => {
         }
       `
       const result = compileJSXSync(source, 'App.tsx', { adapter })
-      const bf045 = result.errors.filter(e => e.code === 'BF045')
-      expect(bf045).toHaveLength(1)
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('__slot(')
+    })
+
+    test('__slot import is included when used', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function App() {
+          const [val, setVal] = createSignal('')
+          return <Layout controls={<Button label="ok" />} />
+        }
+      `
+      const result = compileJSXSync(source, 'App.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      expect(clientJs!.content).toContain('__slot')
+      // Import should appear
+      expect(clientJs!.content).toMatch(/__slot/)
+    })
+  })
+
+  describe('__isSlot guard in callee text effects', () => {
+    test('__isSlot guard appears in generated text effects for reactive props', () => {
+      // Callee component: renders props.controls as text
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function Layout(props: { controls: any }) {
+          const [x, setX] = createSignal(0)
+          return <div>{props.controls}</div>
+        }
+      `
+      const result = compileJSXSync(source, 'Layout.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      // The generated effect should check __isSlot before updating nodeValue
+      expect(clientJs!.content).toContain('__isSlot')
     })
   })
 })

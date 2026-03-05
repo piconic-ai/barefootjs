@@ -8,7 +8,7 @@ import { attrValueToString, quotePropName } from './utils'
 import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectLoopChildEvents } from './reactivity'
 import { irToHtmlTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue } from './prop-handling'
-import { ErrorCodes, createError } from '../errors'
+
 
 /** Check whether an array of IR nodes contains any component nodes (recursively). */
 function jsxChildrenContainComponent(nodes: IRNode[]): boolean {
@@ -194,7 +194,13 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         } else if (prop.jsxChildren) {
           // JSX prop: generate getter using IR children → JS expression
           const jsxExpr = irChildrenToJsExpr(prop.jsxChildren)
-          propsForInit.push(`get ${quotePropName(prop.name)}() { return ${jsxExpr} }`)
+          if (jsxChildrenContainComponent(prop.jsxChildren)) {
+            // Wrap with __slot() so callee text effects skip nodeValue update,
+            // preserving server-rendered component DOM for hydration.
+            propsForInit.push(`get ${quotePropName(prop.name)}() { return __slot(() => ${jsxExpr}) }`)
+          } else {
+            propsForInit.push(`get ${quotePropName(prop.name)}() { return ${jsxExpr} }`)
+          }
         } else if (prop.dynamic) {
           const expandedValue = expandDynamicPropValue(prop.value, ctx)
           propsForInit.push(`get ${quotePropName(prop.name)}() { return ${expandedValue} }`)
@@ -235,20 +241,6 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
       })
       for (const child of node.children) {
         collectElements(child, ctx)
-      }
-      // Detect component nodes inside JSX prop children (BF045)
-      for (const prop of node.props) {
-        if (prop.jsxChildren && jsxChildrenContainComponent(prop.jsxChildren)) {
-          ctx.warnings.push(createError(
-            ErrorCodes.COMPONENT_IN_JSX_PROP,
-            prop.loc,
-            {
-              message: `Component found inside JSX prop '${prop.name}' passed to '${node.name}'. ` +
-                `If '${node.name}' is stateless (no "use client"), nested components will not hydrate. ` +
-                `Add "use client" to '${node.name}' or inline its template.`,
-            }
-          ))
-        }
       }
       // Traverse JSX prop children so events, reactive expressions,
       // and nested components inside JSX props are collected

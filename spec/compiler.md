@@ -293,7 +293,6 @@ interface TemplateAdapter {
 | BF031 | Props type mismatch |
 | BF043 | Props destructuring breaks reactivity |
 | BF044 | Signal/memo getter passed without calling it |
-| BF045 | Component in JSX prop may cause silent hydration failure |
 
 ### Error Format
 

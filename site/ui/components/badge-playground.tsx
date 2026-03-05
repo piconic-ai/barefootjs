@@ -4,15 +4,12 @@
  *
  * Interactive playground for the Badge component.
  * Allows tweaking variant and children props with live preview.
- *
- * Pure CSR approach: constructs Badge DOM directly using the same
- * class strings as the Badge source component. Code display uses
- * lightweight client-side JSX highlighting matching shiki's dual-theme
- * CSS variable pattern for light/dark mode support.
  */
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
-import { CheckIcon, CopyIcon } from '@ui/components/ui/icon'
+import { CopyButton } from './copy-button'
+import { highlightJsx } from './shared/playground-highlight'
+import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 import { Input } from '@ui/components/ui/input'
 
@@ -28,26 +25,9 @@ const badgeVariantClasses: Record<string, string> = {
   outline: 'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
 }
 
-// Lightweight JSX syntax highlighter using shiki's dual-theme CSS variable pattern.
-// Only handles the Badge JSX pattern — not a general-purpose highlighter.
-function highlightBadgeJsx(v: string, text: string): string {
-  const p = (s: string) => `<span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">${s}</span>`
-  const tag = (s: string) => `<span style="--shiki-light:#22863A;--shiki-dark:#85E89D">${s}</span>`
-  const attr = (s: string) => `<span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">${s}</span>`
-  const str = (s: string) => `<span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">${s}</span>`
-
-  const t = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
-  if (v === 'default') {
-    return `${p('&lt;')}${tag('Badge')}${p('&gt;')}${t}${p('&lt;/')}${tag('Badge')}${p('&gt;')}`
-  }
-  return `${p('&lt;')}${tag('Badge')} ${attr('variant')}${p('=')}${str(`&quot;${v}&quot;`)}${p('&gt;')}${t}${p('&lt;/')}${tag('Badge')}${p('&gt;')}`
-}
-
-function BadgePlayground(props: {}) {
+function BadgePlayground(_props: {}) {
   const [variant, setVariant] = createSignal<BadgeVariant>('default')
   const [text, setText] = createSignal('Badge')
-  const [copied, setCopied] = createSignal(false)
 
   const codeText = createMemo(() => {
     const v = variant()
@@ -74,68 +54,41 @@ function BadgePlayground(props: {}) {
     // Update highlighted code
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
     if (codeEl) {
-      codeEl.innerHTML = highlightBadgeJsx(v, t)
+      codeEl.innerHTML = highlightJsx(
+        'Badge',
+        [{ name: 'variant', value: v, defaultValue: 'default' }],
+        t,
+      )
     }
   })
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(codeText()).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
   return (
-    <div id="preview" className="border border-border rounded-lg overflow-hidden scroll-mt-16">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px]">
-        {/* Preview */}
-        <div className="flex items-center justify-center min-h-[140px] p-8 bg-card relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--muted)/0.5)_1px,transparent_1px)] bg-[length:16px_16px] pointer-events-none" />
-          <div className="relative z-10" data-badge-preview />
-        </div>
-
-        {/* Controls */}
-        <div className="border-t lg:border-t-0 lg:border-l border-border p-6 space-y-4 bg-background">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground block">variant</label>
-            <Select value={variant()} onValueChange={(v: string) => setVariant(v as BadgeVariant)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select variant..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">default</SelectItem>
-                <SelectItem value="secondary">secondary</SelectItem>
-                <SelectItem value="destructive">destructive</SelectItem>
-                <SelectItem value="outline">outline</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground block">children</label>
-            <Input
-              type="text"
-              value="Badge"
-              onInput={(e: Event) => setText((e.target as HTMLInputElement).value)}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Generated code */}
-      <div className="border-t border-border relative group">
-        <pre className="m-0 p-4 pr-12 bg-muted overflow-x-auto text-sm font-mono">
-          <code data-playground-code />
-        </pre>
-        <button
-          type="button"
-          className="absolute top-2 right-2 p-2 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
-          aria-label="Copy code"
-          onClick={handleCopy}
-        >
-          {copied() ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}
-        </button>
-      </div>
-    </div>
+    <PlaygroundLayout
+      previewDataAttr="data-badge-preview"
+      controls={<>
+        <PlaygroundControl label="variant">
+          <Select value={variant()} onValueChange={(v: string) => setVariant(v as BadgeVariant)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select variant..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">default</SelectItem>
+              <SelectItem value="secondary">secondary</SelectItem>
+              <SelectItem value="destructive">destructive</SelectItem>
+              <SelectItem value="outline">outline</SelectItem>
+            </SelectContent>
+          </Select>
+        </PlaygroundControl>
+        <PlaygroundControl label="children">
+          <Input
+            type="text"
+            value="Badge"
+            onInput={(e: Event) => setText((e.target as HTMLInputElement).value)}
+          />
+        </PlaygroundControl>
+      </>}
+      copyButton={<CopyButton code={codeText()} />}
+    />
   )
 }
 

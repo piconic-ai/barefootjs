@@ -40,7 +40,6 @@ export const ErrorCodes = {
   INVALID_COMPONENT_NAME: 'BF042',
   PROPS_DESTRUCTURING: 'BF043',
   SIGNAL_GETTER_NOT_CALLED: 'BF044',
-  COMPONENT_IN_JSX_PROP: 'BF045',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -79,8 +78,6 @@ const errorMessages: Record<ErrorCode, string> = {
     'Props destructuring in function parameters breaks reactivity. Use props object directly.',
   [ErrorCodes.SIGNAL_GETTER_NOT_CALLED]:
     'Signal/memo getter passed without calling it. Use getter() to read the value.',
-  [ErrorCodes.COMPONENT_IN_JSX_PROP]:
-    'Component in JSX prop may cause silent hydration failure. The target component needs "use client" or the wrapper template should be inlined.',
 }
 
 // =============================================================================

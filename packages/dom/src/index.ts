@@ -50,6 +50,9 @@ export { createComponent, renderChild, getPropsUpdateFn, getComponentProps } fro
 // Props utilities
 export { splitProps } from './split-props'
 
+// Slot marker for JSX props containing components
+export { __slot, type SlotMarker } from './slot'
+
 // Spread props helpers (internal, for compiler-generated code)
 export { forwardProps } from './forward-props'
 export { applyRestAttrs } from './apply-rest-attrs'
