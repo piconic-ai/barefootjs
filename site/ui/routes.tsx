@@ -20,6 +20,7 @@ import { InputRefPage } from './pages/components/input'
 import { LabelRefPage } from './pages/components/label'
 import { SelectRefPage } from './pages/components/select'
 import { TextareaRefPage } from './pages/components/textarea'
+import { ToggleRefPage } from './pages/components/toggle'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { ButtonPage } from './pages/button'
 import { CalendarPage } from './pages/calendar'
@@ -398,6 +399,11 @@ export function createApp() {
   // Textarea reference page (redesigned #515)
   app.get('/components/textarea', (c) => {
     return c.render(<TextareaRefPage />)
+  })
+
+  // Toggle reference page (redesigned #515)
+  app.get('/components/toggle', (c) => {
+    return c.render(<ToggleRefPage />)
   })
 
   // Breadcrumb documentation
