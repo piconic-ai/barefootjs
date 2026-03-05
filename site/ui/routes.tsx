@@ -19,6 +19,7 @@ import { ButtonRefPage } from './pages/components/button'
 import { InputRefPage } from './pages/components/input'
 import { LabelRefPage } from './pages/components/label'
 import { SelectRefPage } from './pages/components/select'
+import { TextareaRefPage } from './pages/components/textarea'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { ButtonPage } from './pages/button'
 import { CalendarPage } from './pages/calendar'
@@ -392,6 +393,11 @@ export function createApp() {
   // Select reference page (redesigned #515)
   app.get('/components/select', (c) => {
     return c.render(<SelectRefPage />)
+  })
+
+  // Textarea reference page (redesigned #515)
+  app.get('/components/textarea', (c) => {
+    return c.render(<TextareaRefPage />)
   })
 
   // Breadcrumb documentation

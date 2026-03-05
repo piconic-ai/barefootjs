@@ -1,0 +1,111 @@
+"use client"
+/**
+ * Textarea Props Playground
+ *
+ * Interactive playground for the Textarea component.
+ * Allows tweaking placeholder, disabled, error, and rows props with live preview.
+ */
+
+import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { CopyButton } from './copy-button'
+import { hlPlain, hlTag, hlAttr, hlStr, escapeHtml } from './shared/playground-highlight'
+import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
+import { Input } from '@ui/components/ui/input'
+import { Checkbox } from '@ui/components/ui/checkbox'
+
+// Mirror of Textarea component class definitions (ui/components/ui/textarea/index.tsx)
+const textareaBaseClasses = 'placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+const textareaFocusClasses = 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+const textareaErrorClasses = 'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive'
+
+function TextareaPlayground(_props: {}) {
+  const [placeholder, setPlaceholder] = createSignal('Type your message here.')
+  const [disabled, setDisabled] = createSignal(false)
+  const [error, setError] = createSignal(false)
+  const [rows, setRows] = createSignal('')
+
+  const codeText = createMemo(() => {
+    const parts: string[] = []
+    const p = placeholder()
+    if (p) parts.push(`placeholder="${p}"`)
+    if (disabled()) parts.push('disabled')
+    if (error()) parts.push('error')
+    const r = rows()
+    if (r) parts.push(`rows={${r}}`)
+    const propsStr = parts.length > 0 ? ` ${parts.join(' ')}` : ''
+    return `<Textarea${propsStr} />`
+  })
+
+  createEffect(() => {
+    const p = placeholder()
+    const d = disabled()
+    const e = error()
+    const r = rows()
+
+    // Update textarea preview
+    const container = document.querySelector('[data-textarea-preview]') as HTMLElement
+    if (container) {
+      const textarea = document.createElement('textarea')
+      textarea.setAttribute('data-slot', 'textarea')
+      textarea.className = `${textareaBaseClasses} ${textareaFocusClasses} ${textareaErrorClasses}`
+      textarea.placeholder = p
+      if (d) textarea.disabled = true
+      if (e) textarea.setAttribute('aria-invalid', 'true')
+      if (r) textarea.rows = parseInt(r, 10)
+      container.innerHTML = ''
+      container.appendChild(textarea)
+    }
+
+    // Update highlighted code
+    const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
+    if (codeEl) {
+      const propParts: string[] = []
+      if (p) {
+        propParts.push(` ${hlAttr('placeholder')}${hlPlain('=')}${hlStr(`&quot;${escapeHtml(p)}&quot;`)}`)
+      }
+      if (d) propParts.push(` ${hlAttr('disabled')}`)
+      if (e) propParts.push(` ${hlAttr('error')}`)
+      if (r) {
+        propParts.push(` ${hlAttr('rows')}${hlPlain('={')}${hlPlain(r)}${hlPlain('}')}`)
+      }
+      codeEl.innerHTML = `${hlPlain('&lt;')}${hlTag('Textarea')}${propParts.join('')}${hlPlain(' /&gt;')}`
+    }
+  })
+
+  return (
+    <PlaygroundLayout
+      previewDataAttr="data-textarea-preview"
+      controls={<>
+        <PlaygroundControl label="placeholder">
+          <Input
+            type="text"
+            value="Type your message here."
+            onInput={(e: Event) => setPlaceholder((e.target as HTMLInputElement).value)}
+          />
+        </PlaygroundControl>
+        <PlaygroundControl label="disabled">
+          <Checkbox
+            defaultChecked={false}
+            onCheckedChange={(checked: boolean) => setDisabled(checked)}
+          />
+        </PlaygroundControl>
+        <PlaygroundControl label="error">
+          <Checkbox
+            defaultChecked={false}
+            onCheckedChange={(checked: boolean) => setError(checked)}
+          />
+        </PlaygroundControl>
+        <PlaygroundControl label="rows">
+          <Input
+            type="number"
+            placeholder="unset"
+            onInput={(e: Event) => setRows((e.target as HTMLInputElement).value)}
+          />
+        </PlaygroundControl>
+      </>}
+      copyButton={<CopyButton code={codeText()} />}
+    />
+  )
+}
+
+export { TextareaPlayground }
