@@ -61,6 +61,9 @@ import { NavigationMenuPage } from './pages/navigation-menu'
 import { TablePage } from './pages/table'
 import { SpinnerPage } from './pages/spinner'
 
+// Chart pages
+import { BarChartPage } from './pages/charts/bar-chart'
+
 // Form pattern pages
 import { ControlledInputPage } from './pages/forms/controlled-input'
 import { ValidationPage } from './pages/forms/validation'
@@ -598,6 +601,11 @@ export function createApp() {
   // Table documentation
   app.get('/docs/components/table', (c) => {
     return c.render(<TablePage />)
+  })
+
+  // Bar Chart documentation
+  app.get('/docs/charts/bar-chart', (c) => {
+    return c.render(<BarChartPage />)
   })
 
   // Controlled Input pattern documentation

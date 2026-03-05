@@ -11,6 +11,7 @@
     "test:e2e:ui": "bunx playwright test --ui"
   },
   "dependencies": {
+    "@barefootjs/chart": "workspace:*",
     "@barefootjs/dom": "workspace:*",
     "@barefootjs/form": "workspace:*",
     "@barefootjs/hono": "workspace:*",

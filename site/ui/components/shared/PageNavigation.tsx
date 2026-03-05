@@ -58,6 +58,28 @@ export const componentOrder = [
   { slug: 'tooltip', title: 'Tooltip' },
 ]
 
+// Chart order for navigation (alphabetical)
+export const chartOrder = [
+  { slug: 'bar-chart', title: 'Bar Chart' },
+]
+
+// Get prev/next links for a chart page
+export function getChartNavLinks(currentSlug: string): {
+  prev?: { href: string; title: string }
+  next?: { href: string; title: string }
+} {
+  const currentIndex = chartOrder.findIndex(c => c.slug === currentSlug)
+  if (currentIndex === -1) return {}
+
+  const prev = currentIndex > 0 ? chartOrder[currentIndex - 1] : undefined
+  const next = currentIndex < chartOrder.length - 1 ? chartOrder[currentIndex + 1] : undefined
+
+  return {
+    prev: prev ? { href: `/docs/charts/${prev.slug}`, title: prev.title } : undefined,
+    next: next ? { href: `/docs/charts/${next.slug}`, title: next.title } : undefined,
+  }
+}
+
 // Get prev/next links for a component
 export function getNavLinks(currentSlug: string): {
   prev?: { href: string; title: string }

@@ -52,6 +52,12 @@
       "description": "A date calendar for picking single dates with month navigation"
     },
     {
+      "name": "bar-chart",
+      "type": "registry:ui",
+      "title": "Bar Chart",
+      "description": "A bar chart component built with SVG and D3 scales"
+    },
+    {
       "name": "carousel",
       "type": "registry:ui",
       "title": "Carousel",

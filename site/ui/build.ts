@@ -122,6 +122,26 @@ if (formBuildResult.outputs.length > 0) {
   console.log('Generated: dist/components/barefoot-form.js')
 }
 
+// Build and copy barefoot-chart.js from @barefootjs/chart
+// External @barefootjs/dom so it resolves via import map
+const CHART_PKG_DIR = resolve(ROOT_DIR, '../../packages/chart')
+const chartEntryFile = resolve(CHART_PKG_DIR, 'src/index.ts')
+
+console.log('Building @barefootjs/chart for site...')
+const chartBuildResult = await Bun.build({
+  entrypoints: [chartEntryFile],
+  format: 'esm',
+  external: ['@barefootjs/dom'],
+})
+
+if (chartBuildResult.outputs.length > 0) {
+  await Bun.write(
+    resolve(DIST_COMPONENTS_DIR, 'barefoot-chart.js'),
+    chartBuildResult.outputs[0]
+  )
+  console.log('Generated: dist/components/barefoot-chart.js')
+}
+
 // Bundle zod for client-side use (needed by createForm demos)
 // Use a wrapper to ensure named exports (z) are preserved in the ESM bundle,
 // since the CJS entry only produces a default export when bundled directly.

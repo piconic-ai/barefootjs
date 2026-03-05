@@ -1,0 +1,52 @@
+{
+  "name": "@barefootjs/chart",
+  "version": "0.0.1",
+  "description": "SVG chart components for BarefootJS with signal-based reactivity",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm",
+    "build:types": "tsc --emitDeclarationOnly --outDir ./dist",
+    "test": "bun test",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "chart",
+    "bar-chart",
+    "svg",
+    "signals",
+    "reactive",
+    "barefoot"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kfly8/barefootjs",
+    "directory": "packages/chart"
+  },
+  "peerDependencies": {
+    "@barefootjs/dom": ">=0.0.1"
+  },
+  "dependencies": {
+    "d3-scale": "^4.0.2",
+    "d3-array": "^3.2.4"
+  },
+  "devDependencies": {
+    "@types/d3-scale": "^4.0.8",
+    "@types/d3-array": "^3.2.1",
+    "typescript": "^5.0.0"
+  }
+}

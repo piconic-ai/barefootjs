@@ -138,7 +138,9 @@ const menuEntries: SidebarEntry[] = [
   },
   {
     title: 'Charts',
-    links: [],
+    links: [
+      { title: 'Bar Chart', href: '/docs/charts/bar-chart' },
+    ],
   },
 ]
 
@@ -147,6 +149,7 @@ const importMapScript = JSON.stringify({
   imports: {
     '@barefootjs/dom': '/static/components/barefoot.js',
     '@barefootjs/form': '/static/components/barefoot-form.js',
+    '@barefootjs/chart': '/static/components/barefoot-chart.js',
     'zod': '/static/lib/zod.esm.js',
     'embla-carousel': '/static/lib/embla-carousel.esm.js',
   },
