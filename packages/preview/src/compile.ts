@@ -7,91 +7,21 @@
 
 import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
+import { addScriptCollection } from '@barefootjs/hono/build'
 import { mkdir, readdir, symlink, lstat } from 'node:fs/promises'
 import { dirname, resolve, join, relative, basename } from 'node:path'
+import {
+  hasUseClientDirective,
+  discoverComponentFiles,
+  generateHash,
+} from '../../../cli/src/lib/build'
+import { resolveRelativeImports } from '../../../cli/src/lib/resolve-imports'
 
 const ROOT_DIR = resolve(import.meta.dir, '../../..')
 const UI_COMPONENTS_DIR = resolve(ROOT_DIR, 'ui/components')
 const DOM_PKG_DIR = resolve(ROOT_DIR, 'packages/dom')
 const DIST_DIR = resolve(ROOT_DIR, '.preview-dist')
 const DIST_COMPONENTS_DIR = resolve(DIST_DIR, 'components')
-
-function hasUseClientDirective(content: string): boolean {
-  let trimmed = content.trimStart()
-  while (trimmed.startsWith('/*')) {
-    const endIndex = trimmed.indexOf('*/')
-    if (endIndex === -1) break
-    trimmed = trimmed.slice(endIndex + 2).trimStart()
-  }
-  while (trimmed.startsWith('//')) {
-    const endIndex = trimmed.indexOf('\n')
-    if (endIndex === -1) break
-    trimmed = trimmed.slice(endIndex + 1).trimStart()
-  }
-  return trimmed.startsWith('"use client"') || trimmed.startsWith("'use client'")
-}
-
-function generateHash(content: string): string {
-  return Bun.hash(content).toString(16).slice(0, 8)
-}
-
-/**
- * Add script collection wrapper to SSR component (identical to site/ui/build.ts)
- */
-function addScriptCollection(content: string, componentId: string, clientJsPath: string): string {
-  const importStatement = "import { useRequestContext } from 'hono/jsx-renderer'\n"
-
-  const importMatch = content.match(/^([\s\S]*?)((?:import[^\n]+\n)*)/m)
-  if (!importMatch) return content
-
-  const beforeImports = importMatch[1]
-  const existingImports = importMatch[2]
-  const restOfFile = content.slice(importMatch[0].length)
-
-  const scriptCollector = `
-  try {
-    const __c = useRequestContext()
-    const __scripts: { src: string }[] = __c.get('bfCollectedScripts') || []
-    const __outputScripts: Set<string> = __c.get('bfOutputScripts') || new Set()
-    if (!__outputScripts.has('__barefoot__')) {
-      __outputScripts.add('__barefoot__')
-      __scripts.push({ src: '/static/barefoot.js' })
-    }
-    if (!__outputScripts.has('${componentId}')) {
-      __outputScripts.add('${componentId}')
-      __scripts.push({ src: '/static/components/${clientJsPath}' })
-    }
-    __c.set('bfCollectedScripts', __scripts)
-    __c.set('bfOutputScripts', __outputScripts)
-  } catch {}
-`
-
-  const modifiedRest = restOfFile.replace(
-    /export function (\w+)\(([^)]*)\)([^{]*)\{/g,
-    (match, name, params, rest) =>
-      `export function ${name}(${params})${rest}{${scriptCollector}`
-  )
-
-  return beforeImports + existingImports + importStatement + modifiedRest
-}
-
-/**
- * Discover all .tsx component files under ui/components/ (recursive, skip __previews__ and __tests__)
- */
-async function discoverComponentFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true })
-  const files: string[] = []
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name)
-    if (entry.isDirectory()) {
-      if (entry.name === '__previews__' || entry.name === '__tests__' || entry.name === 'shared') continue
-      files.push(...await discoverComponentFiles(fullPath))
-    } else if (entry.name.endsWith('.tsx')) {
-      files.push(fullPath)
-    }
-  }
-  return files
-}
 
 export interface CompileOptions {
   /** Absolute path to the .previews.tsx file */
@@ -143,7 +73,9 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   console.log('Generated: .preview-dist/globals.css')
 
   // 3. Discover all component files (dependency compilation)
-  const componentFiles = await discoverComponentFiles(UI_COMPONENTS_DIR)
+  const componentFiles = await discoverComponentFiles(UI_COMPONENTS_DIR, {
+    skipDirs: ['__previews__', '__tests__', 'shared'],
+  })
   // Add the previews file itself
   const allFiles = [...componentFiles, previewsPath]
 
@@ -250,6 +182,9 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
     await Bun.write(resolve(DIST_DIR, entry.clientJs), content)
     console.log(`Combined: ${entry.clientJs}`)
   }
+
+  // 5b. Resolve relative imports
+  await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
   // 6. Rewrite imports and add JSX pragma in compiled .tsx files
   const HONO_UTILS_PATH = resolve(ROOT_DIR, 'packages/hono/src/utils')

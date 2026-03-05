@@ -4,6 +4,9 @@ import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
 import type { TemplateAdapter } from '@barefootjs/jsx'
 import { mkdir, readdir, stat } from 'node:fs/promises'
 import { resolve, basename, relative } from 'node:path'
+import { resolveRelativeImports } from './resolve-imports'
+
+export { resolveRelativeImports } from './resolve-imports'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -64,8 +67,12 @@ export function hasUseClientDirective(content: string): boolean {
  * Recursively discover .tsx component files in a directory.
  * Skips .test.tsx, .spec.tsx, and .preview.tsx files.
  */
-export async function discoverComponentFiles(dir: string): Promise<string[]> {
+export async function discoverComponentFiles(
+  dir: string,
+  options?: { skipDirs?: string[] }
+): Promise<string[]> {
   const results: string[] = []
+  const skipDirs = options?.skipDirs ? new Set(options.skipDirs) : null
 
   let entries: { name: string; isDirectory(): boolean }[]
   try {
@@ -77,7 +84,8 @@ export async function discoverComponentFiles(dir: string): Promise<string[]> {
   for (const entry of entries) {
     const fullPath = resolve(dir, String(entry.name))
     if (entry.isDirectory()) {
-      results.push(...await discoverComponentFiles(fullPath))
+      if (skipDirs?.has(String(entry.name))) continue
+      results.push(...await discoverComponentFiles(fullPath, options))
     } else if (
       String(entry.name).endsWith('.tsx') &&
       !String(entry.name).endsWith('.test.tsx') &&
@@ -287,6 +295,9 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
       console.log(`Combined: ${entry.clientJs}`)
     }
   }
+
+  // 6b. Resolve relative imports
+  await resolveRelativeImports({ distDir: config.outDir, manifest })
 
   // 7. Minify client JS (after combine so all files are final)
   if (config.minify) {

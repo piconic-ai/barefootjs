@@ -15,7 +15,7 @@
  * - dist/static/snippets/ (code snippet files for LP)
  */
 
-import { compileJSX } from '@barefootjs/jsx'
+import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { mkdir, readdir } from 'node:fs/promises'
 import { dirname, resolve, join, relative } from 'node:path'
@@ -24,6 +24,7 @@ import {
   hasUseClientDirective,
   discoverComponentFiles,
   generateHash,
+  resolveRelativeImports,
 } from '../../packages/cli/src/lib/build'
 import { addScriptCollection } from '../../packages/hono/src/build'
 
@@ -175,6 +176,31 @@ for (const entryPath of componentFiles) {
 // Output manifest
 await Bun.write(resolve(DIST_COMPONENTS_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2))
 console.log('Generated: dist/components/manifest.json')
+
+// Combine parent-child client JS
+const clientJsFiles = new Map<string, string>()
+for (const [name, entry] of Object.entries(manifest)) {
+  if (!entry.clientJs) continue
+  const filePath = resolve(DIST_DIR, entry.clientJs)
+  try { clientJsFiles.set(name, await Bun.file(filePath).text()) } catch {}
+}
+if (clientJsFiles.size > 0) {
+  const combined = combineParentChildClientJs(clientJsFiles)
+  for (const [name, content] of combined) {
+    const entry = manifest[name]
+    if (entry?.clientJs) {
+      await Bun.write(resolve(DIST_DIR, entry.clientJs), content)
+      console.log(`Combined: ${entry.clientJs}`)
+    }
+  }
+}
+
+// Resolve relative imports
+await resolveRelativeImports({
+  distDir: DIST_DIR,
+  manifest,
+  sourceDirs: [COMPONENTS_DIR, resolve(SHARED_DIR, 'components'), LANDING_COMPONENTS_DIR],
+})
 
 // Generate index.ts for re-exporting all compiled components
 async function collectExports(dir: string, prefix: string = ''): Promise<string[]> {

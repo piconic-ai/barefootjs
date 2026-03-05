@@ -22,8 +22,8 @@ import {
   hasUseClientDirective,
   discoverComponentFiles as discoverFiles,
   generateHash,
+  resolveRelativeImports,
 } from '../../packages/cli/src/lib/build'
-import { RELATIVE_IMPORT_RE } from '../../packages/cli/src/lib/patterns'
 import { addScriptCollection } from '../../packages/hono/src/build'
 
 const ROOT_DIR = dirname(import.meta.path)
@@ -310,67 +310,11 @@ await copyTsFiles(SHARED_DIR, DIST_SHARED_DIR, 'dist/components/shared/')
 // The combiner handles @bf-child placeholders, but relative imports to utility
 // modules (e.g., ./shared/playground-highlight) need to be inlined separately.
 // Component imports that were already inlined via @bf-child are stripped as redundant.
-async function inlineRelativeImports(manifestData: typeof manifest): Promise<void> {
-  for (const [, entry] of Object.entries(manifestData)) {
-    if (!entry.clientJs) continue
-    const filePath = resolve(DIST_DIR, entry.clientJs)
-    let content = await Bun.file(filePath).text()
-
-    const matches = [...content.matchAll(RELATIVE_IMPORT_RE)]
-    if (matches.length === 0) continue
-
-    const inlinedPaths = new Set<string>()
-
-    for (const match of matches) {
-      const importPath = match[1]
-      const fullMatch = match[0]
-
-      // Try to resolve source file
-      const basePath = resolve(dirname(filePath), importPath)
-      let sourceFile = ''
-      for (const ext of ['.ts', '.tsx', '.js']) {
-        if (await Bun.file(basePath + ext).exists()) {
-          sourceFile = basePath + ext
-          break
-        }
-      }
-
-      if (!sourceFile || inlinedPaths.has(sourceFile)) {
-        // Already inlined or not found — strip the import
-        content = content.replace(fullMatch + '\n', '')
-        continue
-      }
-
-      // Only inline pure TS modules (no JSX). TSX files with JSX are server
-      // components whose rendering was already done at SSR time — their imports
-      // in client JS are for component name matching only, not runtime execution.
-      if (sourceFile.endsWith('.tsx')) {
-        content = content.replace(fullMatch + '\n', '')
-        console.log(`Stripped server component import: ${importPath} from ${entry.clientJs}`)
-        continue
-      }
-
-      // Transpile and inline pure TS utility modules
-      const sourceContent = await Bun.file(sourceFile).text()
-      const transpiler = new Bun.Transpiler({ loader: 'ts' })
-      let jsCode = transpiler.transformSync(sourceContent)
-
-      // Convert exports to plain declarations for inlining
-      jsCode = jsCode
-        .replace(/^import\s+.*$/gm, '')
-        .replace(/^export\s+/gm, '')
-        .trim()
-
-      content = content.replace(fullMatch, jsCode)
-      inlinedPaths.add(sourceFile)
-      console.log(`Inlined: ${importPath} into ${entry.clientJs}`)
-    }
-
-    await Bun.write(filePath, content)
-  }
-}
-
-await inlineRelativeImports(manifest)
+await resolveRelativeImports({
+  distDir: DIST_DIR,
+  manifest,
+  sourceDirs: [UI_COMPONENTS_DIR, SHARED_COMPONENTS_DIR, DOCS_COMPONENTS_DIR],
+})
 
 // Generate index.ts for re-exporting all components (handles subdirectories)
 async function collectExports(dir: string, prefix: string = ''): Promise<string[]> {
