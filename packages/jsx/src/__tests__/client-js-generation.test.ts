@@ -345,7 +345,7 @@ describe('Client JS generation', () => {
       // variable (e.g., prev) is undefined and property access would throw.
       // Pattern: try { __val = prev.title } catch { return }
       expect(content).toMatch(/try \{ __val = prev\.title \} catch \{ return \}/)
-      expect(content).toMatch(/if \(__el_\w+\) __el_\w+\.nodeValue = String\(__val\)/)
+      expect(content).toMatch(/if \(__el_\w+ && !__val\?\.__isSlot\) __el_\w+\.nodeValue = String\(__val\)/)
     })
 
     test('still defaults props with property access to {} when not used as conditional guard', () => {

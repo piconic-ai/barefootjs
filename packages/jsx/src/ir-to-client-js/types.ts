@@ -42,7 +42,7 @@ export interface ClientJsContext {
   providerSetups: Array<{ contextName: string; valueExpr: string }>
   /** HTML elements with unresolved spread attrs (open types, need applyRestAttrs at runtime) */
   restAttrElements: RestAttrElement[]
-  /** Warnings collected during client JS generation (e.g., BF045) */
+  /** Warnings collected during client JS generation */
   warnings: CompilerError[]
 }
 

@@ -12,6 +12,7 @@ export const DOM_IMPORT_CANDIDATES = [
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs',
+  '__slot',
 ] as const
 
 export const IMPORT_PLACEHOLDER = '/* __BAREFOOTJS_DOM_IMPORTS__ */'

@@ -209,7 +209,7 @@ Add `/* @client */` to evaluate on the client side:
 
 ---
 
-## Component Errors (BF040–BF045)
+## Component Errors (BF040–BF044)
 
 ### BF040 — Component Not Found
 
@@ -275,34 +275,6 @@ function Child({ initialCount }: Props) {
 <Child count={count()} />
 ```
 
-### BF045 — Component in JSX Prop
-
-**Trigger:** A component node (e.g., `<Button />`) appears inside a JSX prop passed to another component. If the target component is stateless (no `"use client"`), the nested component will not hydrate because `initChild` silently no-ops when the wrapper has no hydration boundary.
-
-```tsx
-// ⚠️ BF045
-"use client"
-export function App() {
-  const [val, setVal] = createSignal('')
-  return <Layout controls={<Button label="ok" />} />
-  //                        ^^^^^^^ component inside JSX prop
-}
-```
-
-Native elements (e.g., `<span>`, `<input>`) in JSX props are fine — they get parent-owned slot IDs and hydrate correctly. Only component nodes trigger this error.
-
-**Fix options:**
-
-1. Add `"use client"` to the wrapper component so it gets a hydration boundary:
-
-```tsx
-// ✅ Layout.tsx
-"use client"
-export function Layout(props: LayoutProps) { ... }
-```
-
-2. Inline the wrapper's template into the parent component.
-
 ---
 
 ## Suppressing Warnings
@@ -345,4 +317,3 @@ function Component({ checked }: Props) {
 | BF042 | Error | Invalid component name |
 | BF043 | Warning | Props destructuring breaks reactivity |
 | BF044 | Error | Signal/memo getter passed without calling it |
-| BF045 | Error | Component in JSX prop may cause silent hydration failure |

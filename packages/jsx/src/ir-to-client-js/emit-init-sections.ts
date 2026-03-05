@@ -218,12 +218,12 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
         lines.push(`    const __val = ${expr}`)
         for (const elem of normalElems) {
           const v = varSlotId(elem.slotId)
-          lines.push(`    if (_${v}) _${v}.nodeValue = String(__val)`)
+          lines.push(`    if (_${v} && !__val?.__isSlot) _${v}.nodeValue = String(__val)`)
         }
         for (const elem of conditionalElems) {
           const v = varSlotId(elem.slotId)
           lines.push(`    const [__el_${v}] = $t(__scope, '${elem.slotId}')`)
-          lines.push(`    if (__el_${v}) __el_${v}.nodeValue = String(__val)`)
+          lines.push(`    if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val)`)
         }
       } else {
         // Only conditional elements — evaluate expression unconditionally
@@ -238,7 +238,7 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
         for (const elem of conditionalElems) {
           const v = varSlotId(elem.slotId)
           lines.push(`    const [__el_${v}] = $t(__scope, '${elem.slotId}')`)
-          lines.push(`    if (__el_${v}) __el_${v}.nodeValue = String(__val)`)
+          lines.push(`    if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val)`)
         }
       }
       lines.push(`  })`)
