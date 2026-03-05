@@ -309,6 +309,10 @@ await copyTsFiles(SHARED_DIR, DIST_SHARED_DIR, 'dist/components/shared/')
 // The combiner handles @bf-child placeholders, but relative imports to utility
 // modules (e.g., ./shared/playground-highlight) need to be inlined separately.
 // Component imports that were already inlined via @bf-child are stripped as redundant.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 async function inlineRelativeImports(manifestData: typeof manifest): Promise<void> {
   const RELATIVE_IMPORT_RE = /^import\s+\{([^}]+)\}\s+from\s+['"](\.[^'"]+)['"]\s*;?$/gm
 
@@ -338,7 +342,7 @@ async function inlineRelativeImports(manifestData: typeof manifest): Promise<voi
 
       if (!sourceFile || inlinedPaths.has(sourceFile)) {
         // Already inlined or not found — strip the import
-        content = content.replace(fullMatch + '\n', '')
+        content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
         continue
       }
 
@@ -346,7 +350,7 @@ async function inlineRelativeImports(manifestData: typeof manifest): Promise<voi
       // components whose rendering was already done at SSR time — their imports
       // in client JS are for component name matching only, not runtime execution.
       if (sourceFile.endsWith('.tsx')) {
-        content = content.replace(fullMatch + '\n', '')
+        content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
         console.log(`Stripped server component import: ${importPath} from ${entry.clientJs}`)
         continue
       }
