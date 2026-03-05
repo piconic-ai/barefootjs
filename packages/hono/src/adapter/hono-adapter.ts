@@ -105,6 +105,12 @@ export class HonoAdapter implements TemplateAdapter {
     // Re-export original imports (excluding @barefootjs/dom)
     for (const imp of ir.metadata.imports) {
       if (imp.source === '@barefootjs/dom') continue
+      if (imp.specifiers.length === 0) {
+        if (!imp.isTypeOnly) {
+          lines.push(`import '${imp.source}'`)
+        }
+        continue
+      }
       if (imp.isTypeOnly) {
         lines.push(`import type ${this.formatImportSpecifiers(imp.specifiers)} from '${imp.source}'`)
       } else {

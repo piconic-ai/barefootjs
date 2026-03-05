@@ -75,6 +75,12 @@ export function collectExternalImports(ir: ComponentIR, generatedCode: string, l
     // Skip local path-alias imports (resolved at build time, not in browser)
     if (localImportPrefixes?.some(prefix => imp.source.startsWith(prefix))) continue
 
+    // Side-effect imports have no specifiers — preserve unconditionally
+    if (imp.specifiers.length === 0) {
+      importLines.push(`import '${imp.source}'`)
+      continue
+    }
+
     // Check which specifiers are actually used in the generated code.
     // Skip component names — they are rendered via initChild(), not imported directly.
     const usedSpecs: string[] = []

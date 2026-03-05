@@ -60,6 +60,15 @@ function makeImport(source: string, specifiers: string[], isTypeOnly = false): I
   }
 }
 
+function makeSideEffectImport(source: string): ImportInfo {
+  return {
+    source,
+    specifiers: [],
+    isTypeOnly: false,
+    loc: dummyLoc,
+  }
+}
+
 describe('collectExternalImports', () => {
   test('preserves third-party library imports used in generated code', () => {
     const ir = makeIR([makeImport('zod', ['z'])])
@@ -183,5 +192,39 @@ describe('collectExternalImports', () => {
     const code = 'useForm()'
     const result = collectExternalImports(ir, code)
     expect(result).toEqual(["import { useForm } from '@barefootjs/form'"])
+  })
+
+  test('preserves side-effect imports (empty specifiers)', () => {
+    const ir = makeIR([makeSideEffectImport('@barefootjs/chart')])
+    const code = ''
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import '@barefootjs/chart'"])
+  })
+
+  test('skips @barefootjs/dom side-effect imports', () => {
+    const ir = makeIR([{ source: '@barefootjs/dom', specifiers: [], isTypeOnly: false, loc: dummyLoc }])
+    const code = ''
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([])
+  })
+
+  test('skips side-effect imports matching localImportPrefixes', () => {
+    const ir = makeIR([makeSideEffectImport('@ui/styles/theme')])
+    const code = ''
+    const result = collectExternalImports(ir, code, ['@ui/'])
+    expect(result).toEqual([])
+  })
+
+  test('preserves side-effect imports alongside normal imports', () => {
+    const ir = makeIR([
+      makeSideEffectImport('@barefootjs/chart'),
+      makeImport('zod', ['z']),
+    ])
+    const code = 'z.string()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([
+      "import '@barefootjs/chart'",
+      "import { z } from 'zod'",
+    ])
   })
 })
