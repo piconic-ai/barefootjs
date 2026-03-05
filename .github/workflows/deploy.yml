@@ -80,6 +80,7 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/hono' build
           bun run --filter '@barefootjs/form' build
+          bun run --filter '@barefootjs/chart' build
 
       - name: Build site
         run: cd site/ui && bun run build:worker
