@@ -14,18 +14,22 @@ import type { Child } from 'hono/jsx'
 
 interface PlaygroundLayoutProps {
   previewDataAttr: string
+  /** Optional preview content to render inside the preview area */
+  previewContent?: Child
   controls: Child
   copyButton: Child
 }
 
-export function PlaygroundLayout({ previewDataAttr, controls, copyButton }: PlaygroundLayoutProps) {
+export function PlaygroundLayout({ previewDataAttr, previewContent, controls, copyButton }: PlaygroundLayoutProps) {
   return (
     <div id="preview" className="border border-border rounded-lg overflow-hidden scroll-mt-16">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px]">
         {/* Preview */}
         <div className="flex items-center justify-center min-h-[140px] p-8 bg-card relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle,hsl(var(--muted)/0.5)_1px,transparent_1px)] bg-[length:16px_16px] pointer-events-none" />
-          <div className="relative z-10" {...{ [previewDataAttr]: true }} />
+          <div className="relative z-10" {...{ [previewDataAttr]: true }}>
+            {previewContent}
+          </div>
         </div>
 
         {/* Controls */}

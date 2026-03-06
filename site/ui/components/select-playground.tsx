@@ -4,20 +4,18 @@
  *
  * Interactive playground for the Select component.
  * Allows tweaking placeholder and disabled props with live preview.
+ *
+ * Unlike badge/button playgrounds, the preview uses a real Select component
+ * (not DOM manipulation) because Select requires hydration for interactivity.
  */
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
 import { hlPlain, hlTag, hlAttr, hlStr, escapeHtml } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 import { Input } from '@ui/components/ui/input'
 import { Checkbox } from '@ui/components/ui/checkbox'
-
-// Mirror of Select component class definitions (ui/components/ui/select/index.tsx)
-const selectTriggerBaseClasses = 'flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none'
-const selectTriggerFocusClasses = 'focus:border-ring focus:ring-ring/50 focus:ring-[3px]'
-const selectTriggerDisabledClasses = 'disabled:cursor-not-allowed disabled:opacity-50'
-const selectTriggerDataStateClasses = 'data-[placeholder]:text-muted-foreground'
 
 /**
  * Generate syntax-highlighted JSX for the Select compound component.
@@ -46,6 +44,7 @@ function highlightSelectJsx(placeholder: string, disabled: boolean): string {
 function SelectPlayground(_props: {}) {
   const [placeholder, setPlaceholder] = createSignal('Select a fruit...')
   const [disabled, setDisabled] = createSignal(false)
+  const [value, setValue] = createSignal('')
 
   const codeText = createMemo(() => {
     const p = placeholder()
@@ -54,50 +53,42 @@ function SelectPlayground(_props: {}) {
     return `<Select${disabledProp}>\n  <SelectTrigger>\n    <SelectValue placeholder="${p}" />\n  </SelectTrigger>\n  <SelectContent>\n    <SelectItem value="apple">Apple</SelectItem>\n    <SelectItem value="banana">Banana</SelectItem>\n    <SelectItem value="orange">Orange</SelectItem>\n  </SelectContent>\n</Select>`
   })
 
+  // Update placeholder text on the real Select when control changes
+  createEffect(() => {
+    const p = placeholder()
+    const v = value()
+    const container = document.querySelector('[data-select-preview]') as HTMLElement
+    if (!container) return
+    const valueEl = container.querySelector('[data-slot="select-value"]') as HTMLElement
+    if (valueEl && !v) {
+      valueEl.textContent = p
+    }
+    // Update trigger's data-placeholder attribute
+    const trigger = container.querySelector('[data-slot="select-trigger"]') as HTMLElement
+    if (trigger) {
+      if (!v) {
+        trigger.setAttribute('data-placeholder', '')
+      } else {
+        trigger.removeAttribute('data-placeholder')
+      }
+    }
+  })
+
+  // Update disabled state on the real Select when control changes
+  createEffect(() => {
+    const d = disabled()
+    const container = document.querySelector('[data-select-preview]') as HTMLElement
+    if (!container) return
+    const trigger = container.querySelector('[data-slot="select-trigger"]') as HTMLButtonElement
+    if (trigger) {
+      trigger.disabled = d
+    }
+  })
+
+  // Update highlighted code
   createEffect(() => {
     const p = placeholder()
     const d = disabled()
-
-    // Update select preview
-    const container = document.querySelector('[data-select-preview]') as HTMLElement
-    if (container) {
-      // Rebuild the trigger button to reflect current props
-      const btn = document.createElement('button')
-      btn.setAttribute('data-slot', 'select-trigger')
-      btn.setAttribute('type', 'button')
-      btn.setAttribute('role', 'combobox')
-      btn.setAttribute('aria-expanded', 'false')
-      btn.setAttribute('aria-haspopup', 'listbox')
-      btn.setAttribute('data-state', 'closed')
-      btn.setAttribute('data-placeholder', '')
-      if (d) btn.disabled = true
-      btn.className = `${selectTriggerBaseClasses} ${selectTriggerFocusClasses} ${selectTriggerDisabledClasses} ${selectTriggerDataStateClasses}`
-
-      const valueSpan = document.createElement('span')
-      valueSpan.setAttribute('data-slot', 'select-value')
-      valueSpan.className = 'pointer-events-none truncate'
-      valueSpan.textContent = p
-
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-      svg.setAttribute('class', 'size-4 shrink-0 opacity-50')
-      svg.setAttribute('viewBox', '0 0 24 24')
-      svg.setAttribute('fill', 'none')
-      svg.setAttribute('stroke', 'currentColor')
-      svg.setAttribute('stroke-width', '2')
-      svg.setAttribute('stroke-linecap', 'round')
-      svg.setAttribute('stroke-linejoin', 'round')
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-      path.setAttribute('d', 'm6 9 6 6 6-6')
-      svg.appendChild(path)
-
-      btn.appendChild(valueSpan)
-      btn.appendChild(svg)
-
-      container.innerHTML = ''
-      container.appendChild(btn)
-    }
-
-    // Update highlighted code
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
     if (codeEl) {
       codeEl.innerHTML = highlightSelectJsx(p, d)
@@ -107,6 +98,18 @@ function SelectPlayground(_props: {}) {
   return (
     <PlaygroundLayout
       previewDataAttr="data-select-preview"
+      previewContent={
+        <Select value={value()} onValueChange={setValue} disabled={disabled()}>
+          <SelectTrigger>
+            <SelectValue placeholder={placeholder()} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="apple">Apple</SelectItem>
+            <SelectItem value="banana">Banana</SelectItem>
+            <SelectItem value="orange">Orange</SelectItem>
+          </SelectContent>
+        </Select>
+      }
       controls={<>
         <PlaygroundControl label="placeholder">
           <Input
