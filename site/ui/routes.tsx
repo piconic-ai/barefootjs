@@ -20,6 +20,7 @@ import { InputRefPage } from './pages/components/input'
 import { LabelRefPage } from './pages/components/label'
 import { SelectRefPage } from './pages/components/select'
 import { TextareaRefPage } from './pages/components/textarea'
+import { SwitchRefPage } from './pages/components/switch'
 import { ToggleRefPage } from './pages/components/toggle'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { ButtonPage } from './pages/button'
@@ -492,6 +493,11 @@ export function createApp() {
   // Switch documentation
   app.get('/docs/components/switch', (c) => {
     return c.render(<SwitchPage />)
+  })
+
+  // Switch reference page (redesigned #515)
+  app.get('/components/switch', (c) => {
+    return c.render(<SwitchRefPage />)
   })
 
   // Accordion documentation
