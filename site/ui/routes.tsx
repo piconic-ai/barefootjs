@@ -23,6 +23,7 @@ import { CalendarPage } from './pages/calendar'
 import { CarouselPage } from './pages/carousel'
 import { CardPage } from './pages/card'
 import { CheckboxPage } from './pages/checkbox'
+import { CheckboxRefPage } from './pages/components/checkbox'
 import { InputPage } from './pages/input'
 import { InputOTPPage } from './pages/input-otp'
 import { LabelPage } from './pages/label'
@@ -427,6 +428,11 @@ export function createApp() {
   // Checkbox documentation
   app.get('/docs/components/checkbox', (c) => {
     return c.render(<CheckboxPage />)
+  })
+
+  // Checkbox reference page (redesigned #515)
+  app.get('/components/checkbox', (c) => {
+    return c.render(<CheckboxRefPage />)
   })
 
   // Input documentation

@@ -107,52 +107,21 @@ function Checkbox(props: CheckboxProps) {
   // Determine current checked state: use controlled if provided, otherwise internal
   const isChecked = createMemo(() => isControlled() ? controlledChecked() : internalChecked())
 
-  // Helper function to update checkbox UI (visual state)
-  // Note: CSS classes are now handled by data-state attribute selectors
-  const updateCheckboxUI = (target: HTMLElement, newValue: boolean) => {
-    // Update ARIA and data attributes (CSS reacts to data-state changes)
-    target.setAttribute('aria-checked', String(newValue))
-    target.setAttribute('data-state', newValue ? 'checked' : 'unchecked')
-
-    // Update SVG checkmark visibility
-    const svg = target.querySelector('svg')
-    if (newValue && !svg) {
-      // Add checkmark SVG
-      target.innerHTML = '<svg data-slot="checkbox-indicator" class="size-3.5 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>'
-    } else if (!newValue && svg) {
-      // Remove checkmark SVG
-      svg.remove()
-    }
-  }
-
   // Classes - state styling handled by data-state attribute selectors
   const classes = `${baseClasses} ${focusClasses} ${errorClasses} ${stateClasses} ${props.className ?? ''} grid place-content-center`
 
-  // Click handler that works for both controlled and uncontrolled modes
-  const handleClick = (e: MouseEvent) => {
-    const target = e.currentTarget as HTMLElement
-    const currentChecked = target.getAttribute('aria-checked') === 'true'
-    const newValue = !currentChecked
+  // Click handler — only updates signals; the compiler's reactivity handles
+  // data-state, aria-checked, and conditional SVG via insert().
+  const handleClick = () => {
+    const newValue = !isChecked()
 
-    // Update state based on mode
     if (isControlled()) {
-      // In controlled mode, update controlledChecked directly for immediate UI update
       setControlledChecked(newValue)
     } else {
-      // In uncontrolled mode, update internal state
       setInternalChecked(newValue)
     }
 
-    // Update the UI visually
-    updateCheckboxUI(target, newValue)
-
-    // Notify parent if callback provided (works for both modes)
-    // Check scope element for callback (parent sets callback there during hydration)
-    const scope = target.closest('[bf-s]')
-    // @ts-ignore - oncheckedChange is set by parent during hydration
-    const scopeCallback = scope?.oncheckedChange
-    const handler = props.onCheckedChange || scopeCallback
-    handler?.(newValue)
+    props.onCheckedChange?.(newValue)
   }
 
   return (
