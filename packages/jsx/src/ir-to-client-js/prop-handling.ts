@@ -31,6 +31,10 @@ export function expandDynamicPropValue(value: string, ctx: ClientJsContext): str
  * One level of expansion is sufficient for the Badge/Button pattern.
  */
 export function expandConstantForReactivity(expr: string, ctx: ClientJsContext): string {
+  // Stateful components use props.xxx directly — reactivity is already detected.
+  // Only expand for stateless components with destructured props.
+  if (ctx.propsObjectName) return expr
+
   const trimmed = expr.trim()
   // Only expand single identifiers (not complex expressions)
   if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmed)) return expr

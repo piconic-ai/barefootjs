@@ -284,7 +284,8 @@ export function emitReactiveAttributeUpdates(lines: string[], ctx: ClientJsConte
         } else if (isBooleanAttr(htmlAttrName)) {
           lines.push(`      _${v}.${htmlAttrName} = !!(${expression})`)
         } else if (attr.presenceOrUndefined) {
-          lines.push(`      if (${expression}) _${v}.setAttribute('${htmlAttrName}', '')`)
+          const attrVal = htmlAttrName.startsWith('aria-') ? 'true' : ''
+          lines.push(`      if (${expression}) _${v}.setAttribute('${htmlAttrName}', '${attrVal}')`)
           lines.push(`      else _${v}.removeAttribute('${htmlAttrName}')`)
         } else {
           // Handle null/undefined: remove attribute instead of setting "undefined"
