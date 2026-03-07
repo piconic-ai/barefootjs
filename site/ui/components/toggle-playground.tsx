@@ -36,7 +36,6 @@ function TogglePlayground(_props: {}) {
   createEffect(() => {
     const v = variant()
     const s = size()
-
     // Update highlighted code
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
     if (codeEl) {

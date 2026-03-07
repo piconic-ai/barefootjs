@@ -24,24 +24,16 @@ export function expandDynamicPropValue(value: string, ctx: ClientJsContext): str
 }
 
 /**
- * Expand a single-identifier expression if it matches a local constant.
- * Used to detect transitive prop dependencies in attribute values.
- * e.g., `classes` → `` `${baseClasses} ${variantClasses[variant]} ${className}` ``
+ * Expand a local constant for reactivity detection in stateless components.
+ * Stateful components use props.xxx directly, so expansion is unnecessary.
  *
- * One level of expansion is sufficient for the Badge/Button pattern.
+ * e.g., `classes` → `` `${baseClasses} ${variantClasses[variant]} ${className}` ``
  */
 export function expandConstantForReactivity(expr: string, ctx: ClientJsContext): string {
   // Stateful components use props.xxx directly — reactivity is already detected.
-  // Only expand for stateless components with destructured props.
   if (ctx.propsObjectName) return expr
 
-  const trimmed = expr.trim()
-  const constant = ctx.localConstants.find((c) => c.name === trimmed)
-  if (constant && constant.value) {
-    return constant.value
-  }
-
-  return expr
+  return expandDynamicPropValue(expr, ctx)
 }
 
 /**

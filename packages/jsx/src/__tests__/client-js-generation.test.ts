@@ -2089,6 +2089,35 @@ describe('Client JS generation', () => {
       expect(content).toContain('props.size')
     })
 
+    test('prop rewrite does not corrupt identifiers containing the prop name', () => {
+      const source = `
+        interface Props {
+          size?: 'sm' | 'lg'
+          children?: any
+        }
+
+        const sizeMap: Record<string, string> = { sm: 'text-sm', lg: 'text-lg' }
+
+        export function Text({ size = 'sm', children }: Props) {
+          const classes = \`base \${sizeMap[size]}\`
+          return <span className={classes}>{children}</span>
+        }
+      `
+
+      const result = compileJSXSync(source, 'Text.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      // sizeMap should remain intact (not rewritten to (props.size ?? ...)Map)
+      expect(content).toContain('sizeMap')
+      expect(content).not.toContain('sizeMap'.replace('size', 'props.size'))
+      // The standalone size reference should be rewritten
+      expect(content).toContain("props.size ?? 'sm'")
+    })
+
     test('default values from destructuring are included in rewrite', () => {
       const source = `
         interface Props {
