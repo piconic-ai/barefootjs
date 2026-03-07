@@ -11,9 +11,7 @@ import { CopyButton } from './copy-button'
 import { hlPlain, hlTag, hlAttr, hlStr } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Input } from '@ui/components/ui/input'
-
-// Mirror of Label component class definitions (ui/components/ui/label/index.tsx)
-const labelClasses = 'flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50'
+import { Label } from '@ui/components/ui/label'
 
 function LabelPlayground(_props: {}) {
   const [text, setText] = createSignal('Email')
@@ -30,18 +28,6 @@ function LabelPlayground(_props: {}) {
     const t = text()
     const f = htmlFor()
 
-    // Update label preview
-    const container = document.querySelector('[data-label-preview]') as HTMLElement
-    if (container) {
-      const label = document.createElement('label')
-      label.setAttribute('data-slot', 'label')
-      label.className = labelClasses
-      if (f) label.setAttribute('for', f)
-      label.textContent = t
-      container.innerHTML = ''
-      container.appendChild(label)
-    }
-
     // Update highlighted code
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
     if (codeEl) {
@@ -55,6 +41,7 @@ function LabelPlayground(_props: {}) {
   return (
     <PlaygroundLayout
       previewDataAttr="data-label-preview"
+      previewContent={<Label for={htmlFor()}>{text()}</Label>}
       controls={<>
         <PlaygroundControl label="children">
           <Input

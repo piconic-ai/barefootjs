@@ -11,23 +11,10 @@ import { CopyButton } from './copy-button'
 import { highlightJsx } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
+import { Toggle } from '@ui/components/ui/toggle'
 
 type ToggleVariant = 'default' | 'outline'
 type ToggleSize = 'default' | 'sm' | 'lg'
-
-// Mirror of Toggle component class definitions (ui/components/ui/toggle/index.tsx)
-const toggleBaseClasses = 'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground'
-
-const toggleVariantClasses: Record<ToggleVariant, string> = {
-  default: 'bg-transparent',
-  outline: 'border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground',
-}
-
-const toggleSizeClasses: Record<ToggleSize, string> = {
-  default: 'h-9 px-2 min-w-9',
-  sm: 'h-8 px-1.5 min-w-8',
-  lg: 'h-10 px-2.5 min-w-10',
-}
 
 function TogglePlayground(_props: {}) {
   const [variant, setVariant] = createSignal<ToggleVariant>('default')
@@ -49,24 +36,6 @@ function TogglePlayground(_props: {}) {
   createEffect(() => {
     const v = variant()
     const s = size()
-    const p = pressed()
-    const isOn = p === 'true'
-
-    // Update toggle preview
-    const container = document.querySelector('[data-toggle-preview]') as HTMLElement
-    if (container) {
-      const btn = document.createElement('button')
-      btn.setAttribute('data-slot', 'toggle')
-      btn.setAttribute('data-state', isOn ? 'on' : 'off')
-      btn.setAttribute('aria-pressed', String(isOn))
-      btn.className = `${toggleBaseClasses} ${toggleVariantClasses[v]} ${toggleSizeClasses[s]}`
-      btn.textContent = 'Toggle'
-      btn.addEventListener('click', () => {
-        setPressed(pressed() === 'true' ? 'false' : 'true')
-      })
-      container.innerHTML = ''
-      container.appendChild(btn)
-    }
 
     // Update highlighted code
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
@@ -85,6 +54,15 @@ function TogglePlayground(_props: {}) {
   return (
     <PlaygroundLayout
       previewDataAttr="data-toggle-preview"
+      previewContent={
+        <Toggle
+          variant={variant()}
+          size={size()}
+          defaultPressed={pressed() === 'true'}
+        >
+          Toggle
+        </Toggle>
+      }
       controls={<>
         <PlaygroundControl label="variant">
           <Select value={variant()} onValueChange={(v: string) => setVariant(v as ToggleVariant)}>
