@@ -240,7 +240,7 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   emitRefCallbacks(lines, ctx, conditionalSlotIds)
   emitEffectsAndOnMounts(lines, ctx)
   emitProviderAndChildInits(lines, ctx)
-  emitRegistrationAndHydration(lines, ctx, _ir, usedAsChild)
+  const hydrateLine = emitRegistrationAndHydration(lines, ctx, _ir, usedAsChild)
 
   let generatedCode = lines.join('\n')
 
@@ -248,29 +248,21 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   // User code may use `props.xxx` or a custom name like `p.xxx`;
   // the init function parameter is always PROPS_PARAM.
   // Both property access (props.xxx) and bare references (fn(props)) are renamed.
-  // The hydrate() template line is protected since html-template.ts handles it independently.
+  // The hydrate line is structurally excluded — it was not in `lines` during join,
+  // so template expressions (already using PROPS_PARAM) are never double-replaced.
   const srcPropsName = ctx.propsObjectName ?? 'props'
   if (srcPropsName !== PROPS_PARAM) {
-    // Protect hydrate() template lines from double-replacement.
-    // These are already processed by html-template.ts with PROPS_PARAM.
-    const TEMPLATE_PLACEHOLDER = '__BF_TEMPLATE_LINE__'
-    const templateLines: string[] = []
-    generatedCode = generatedCode.replace(
-      /^hydrate\(.+\)$/gm,
-      (match) => { templateLines.push(match); return `${TEMPLATE_PLACEHOLDER}${templateLines.length - 1}` }
-    )
-
-    generatedCode = generatedCode.replace(
-      new RegExp(`\\b${srcPropsName}\\b`, 'g'),
-      PROPS_PARAM,
-    )
-
-    // Restore protected template lines
-    generatedCode = generatedCode.replace(
-      new RegExp(`${TEMPLATE_PLACEHOLDER}(\\d+)`, 'g'),
-      (_, idx) => templateLines[Number(idx)]
-    )
+    generatedCode = generatedCode.split('\n')
+      .map(line => {
+        // Skip comment lines
+        if (line.trimStart().startsWith('//')) return line
+        return line.replace(new RegExp(`\\b${srcPropsName}\\b`, 'g'), PROPS_PARAM)
+      })
+      .join('\n')
   }
+
+  // Append hydrate line after props renaming (template expressions are already correct)
+  generatedCode += '\n' + hydrateLine
 
   const usedImports = detectUsedImports(generatedCode)
 

@@ -1097,12 +1097,17 @@ export function buildCsrInlinableConstants(
 }
 
 /** Emit hydrate() call that registers component, template, and hydrates. */
+/**
+ * Generate the closing brace for the init function and the hydrate() call.
+ * Returns the hydrate line separately so it can be appended after props renaming,
+ * preventing double-replacement of props references in template expressions.
+ */
 export function emitRegistrationAndHydration(
   lines: string[],
   ctx: ClientJsContext,
   _ir: ComponentIR,
   usedAsChild?: Set<string>
-): void {
+): string {
   const name = ctx.componentName
 
   lines.push(`}`)
@@ -1145,5 +1150,5 @@ export function emitRegistrationAndHydration(
     defParts.push('comment: true')
   }
 
-  lines.push(`hydrate('${name}', { ${defParts.join(', ')} })`)
+  return `hydrate('${name}', { ${defParts.join(', ')} })`
 }

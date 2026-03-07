@@ -229,6 +229,21 @@ export function addCondAttrToTemplate(html: string, condId: string): string {
 }
 
 /**
+ * Options for template generation functions (irToComponentTemplate, generateCsrTemplate).
+ * Consolidates parameters to prevent argument-passing bugs during recursion.
+ */
+export interface TemplateOptions {
+  propNames: Set<string>
+  inlinableConstants?: Map<string, string>
+  restSpreadNames?: Set<string>
+  propsObjectName?: string | null
+  // generateCsrTemplate-specific fields
+  signalMap?: Map<string, string>
+  memoMap?: Map<string, string>
+  insideLoop?: boolean
+}
+
+/**
  * Generate HTML template for registerTemplate().
  * Used for client-side component creation via createComponent().
  *
@@ -236,10 +251,6 @@ export function addCondAttrToTemplate(html: string, condId: string): string {
  * - Expressions are transformed to use the template function's props parameter
  * - Local constant references are inlined with their resolved values (#343)
  * - bf markers ARE included so client code can find elements
- *
- * @param node - IR node to render
- * @param propNames - Set of prop names to prefix with 'props.'
- * @param inlinableConstants - Map of constant names to their resolved values for inlining
  */
 export function irToComponentTemplate(
   node: IRNode,
@@ -248,6 +259,12 @@ export function irToComponentTemplate(
   restSpreadNames?: Set<string>,
   propsObjectName?: string | null
 ): string {
+  return irToComponentTemplateWithOpts(node, { propNames, inlinableConstants, restSpreadNames, propsObjectName })
+}
+
+function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
+  const { propNames, inlinableConstants, restSpreadNames, propsObjectName } = opts
+  const recurse = (n: IRNode): string => irToComponentTemplateWithOpts(n, opts)
   const transformExpr = (expr: string): string => {
     const { protect, restore } = createStringProtector()
     let result = protect(expr)
@@ -312,7 +329,7 @@ export function irToComponentTemplate(
       }
 
       const attrs = attrParts.join(' ')
-      const children = node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames, propsObjectName)).join('')
+      const children = node.children.map(recurse).join('')
 
       if (children || !VOID_ELEMENTS.has(node.tag)) {
         return `<${node.tag}${attrs ? ' ' + attrs : ''}>${children}</${node.tag}>`
@@ -331,19 +348,19 @@ export function irToComponentTemplate(
       return `\${${transformExpr(node.expr)}}`
 
     case 'conditional': {
-      const trueBranch = irToComponentTemplate(node.whenTrue, propNames, inlinableConstants, restSpreadNames, propsObjectName)
-      const falseBranch = irToComponentTemplate(node.whenFalse, propNames, inlinableConstants, restSpreadNames, propsObjectName)
+      const trueBranch = recurse(node.whenTrue)
+      const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
       return `\${${transformExpr(node.condition)} ? \`${trueHtml}\` : \`${falseHtml}\`}`
     }
 
     case 'fragment':
-      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames, propsObjectName)).join('')
+      return node.children.map(recurse).join('')
 
     case 'component': {
       if (node.name === 'Portal') {
-        return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames, propsObjectName)).join('')
+        return node.children.map(recurse).join('')
       }
 
       // Use renderChild() to render child component's template at runtime (#435)
@@ -352,7 +369,7 @@ export function irToComponentTemplate(
         .filter(p => !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
         .map(p => {
           if (p.jsxChildren?.length) {
-            const childHtml = p.jsxChildren.map(c => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames, propsObjectName)).join('')
+            const childHtml = p.jsxChildren.map(recurse).join('')
             return `${quotePropName(p.name)}: \`${childHtml}\``
           }
           if (p.isLiteral) return `${quotePropName(p.name)}: ${JSON.stringify(p.value)}`
@@ -366,13 +383,13 @@ export function irToComponentTemplate(
     }
 
     case 'loop':
-      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames, propsObjectName)).join('')
+      return node.children.map(recurse).join('')
 
     case 'if-statement':
       return ''
 
     case 'provider':
-      return node.children.map((c) => irToComponentTemplate(c, propNames, inlinableConstants, restSpreadNames, propsObjectName)).join('')
+      return node.children.map(recurse).join('')
 
     default:
       return ''
@@ -509,6 +526,11 @@ export function generateCsrTemplate(
   restSpreadNames?: Set<string>,
   propsObjectName?: string | null,
 ): string {
+  return generateCsrTemplateWithOpts(node, { propNames, inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop })
+}
+
+function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
+  const { propNames, inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop } = opts
   const transformExpr = (expr: string): string => {
     const { protect, restore } = createStringProtector()
     let result = protect(expr)
@@ -565,8 +587,8 @@ export function generateCsrTemplate(
     return restore(result)
   }
 
-  const recurse = (n: IRNode): string => generateCsrTemplate(n, propNames, inlinableConstants, signalMap, memoMap, insideLoop, restSpreadNames, propsObjectName)
-  const recurseInLoop = (n: IRNode): string => generateCsrTemplate(n, propNames, inlinableConstants, signalMap, memoMap, true, restSpreadNames, propsObjectName)
+  const recurse = (n: IRNode): string => generateCsrTemplateWithOpts(n, opts)
+  const recurseInLoop = (n: IRNode): string => generateCsrTemplateWithOpts(n, { ...opts, insideLoop: true })
 
   switch (node.type) {
     case 'element': {
@@ -642,7 +664,7 @@ export function generateCsrTemplate(
         .filter(p => !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
         .map(p => {
           if (p.jsxChildren?.length) {
-            const childHtml = p.jsxChildren.map(c => generateCsrTemplate(c, propNames, inlinableConstants, signalMap, memoMap, insideLoop, restSpreadNames)).join('')
+            const childHtml = p.jsxChildren.map(c => recurse(c)).join('')
             return `${quotePropName(p.name)}: \`${childHtml}\``
           }
           if (p.isLiteral) return `${quotePropName(p.name)}: ${JSON.stringify(p.value)}`

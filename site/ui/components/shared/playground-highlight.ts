@@ -64,9 +64,10 @@ export function plainJsxSelfClosing(tagName: string, props: HighlightProp[]): st
 
 function renderProp(p: HighlightProp): string {
   const kind = p.kind ?? 'string'
-  if (kind === 'boolean') return ` ${hlAttr(p.name)}`
-  if (kind === 'expression') return ` ${hlAttr(p.name)}${hlPlain('={')}${hlPlain(escapeHtml(p.value))}${hlPlain('}')}`
-  return ` ${hlAttr(p.name)}${hlPlain('=')}${hlStr(`&quot;${escapeHtml(p.value)}&quot;`)}`
+  const safeName = escapeHtml(p.name)
+  if (kind === 'boolean') return ` ${hlAttr(safeName)}`
+  if (kind === 'expression') return ` ${hlAttr(safeName)}${hlPlain('={')}${hlPlain(escapeHtml(p.value))}${hlPlain('}')}`
+  return ` ${hlAttr(safeName)}${hlPlain('=')}${hlStr(`&quot;${escapeHtml(p.value)}&quot;`)}`
 }
 
 function isActive(p: HighlightProp): boolean {
