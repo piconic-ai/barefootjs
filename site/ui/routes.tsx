@@ -10,6 +10,7 @@ import { renderer } from './renderer'
 
 // Component pages
 import { AspectRatioPage } from './pages/aspect-ratio'
+import { AspectRatioRefPage } from './pages/components/aspect-ratio'
 import { AlertPage } from './pages/alert'
 import { AlertDialogPage } from './pages/alert-dialog'
 import { AvatarPage } from './pages/avatar'
@@ -51,8 +52,11 @@ import { ToggleGroupPage } from './pages/toggle-group'
 import { TooltipPage } from './pages/tooltip'
 import { SelectPage } from './pages/select'
 import { ResizablePage } from './pages/resizable'
+import { ResizableRefPage } from './pages/components/resizable'
 import { ScrollAreaPage } from './pages/scroll-area'
+import { ScrollAreaRefPage } from './pages/components/scroll-area'
 import { SeparatorPage } from './pages/separator'
+import { SeparatorRefPage } from './pages/components/separator'
 import { SkeletonPage } from './pages/skeleton'
 import { TextareaPage } from './pages/textarea'
 import { PortalPage } from './pages/portal'
@@ -364,6 +368,11 @@ export function createApp() {
     return c.render(<AspectRatioPage />)
   })
 
+  // Aspect Ratio reference page (redesigned #515)
+  app.get('/components/aspect-ratio', (c) => {
+    return c.render(<AspectRatioRefPage />)
+  })
+
   // Alert documentation
   app.get('/docs/components/alert', (c) => {
     return c.render(<AlertPage />)
@@ -577,6 +586,11 @@ export function createApp() {
     return c.render(<SeparatorPage />)
   })
 
+  // Separator reference page (redesigned #515)
+  app.get('/components/separator', (c) => {
+    return c.render(<SeparatorRefPage />)
+  })
+
   // Skeleton documentation
   app.get('/docs/components/skeleton', (c) => {
     return c.render(<SkeletonPage />)
@@ -632,9 +646,19 @@ export function createApp() {
     return c.render(<ResizablePage />)
   })
 
+  // Resizable reference page (redesigned #515)
+  app.get('/components/resizable', (c) => {
+    return c.render(<ResizableRefPage />)
+  })
+
   // Scroll Area documentation
   app.get('/docs/components/scroll-area', (c) => {
     return c.render(<ScrollAreaPage />)
+  })
+
+  // Scroll Area reference page (redesigned #515)
+  app.get('/components/scroll-area', (c) => {
+    return c.render(<ScrollAreaRefPage />)
   })
 
   // Drawer documentation
