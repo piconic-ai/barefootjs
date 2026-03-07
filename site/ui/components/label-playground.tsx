@@ -46,14 +46,14 @@ function LabelPlayground(_props: {}) {
         <PlaygroundControl label="children">
           <Input
             type="text"
-            value="Email"
+            value={text()}
             onInput={(e: Event) => setText((e.target as HTMLInputElement).value)}
           />
         </PlaygroundControl>
         <PlaygroundControl label="for">
           <Input
             type="text"
-            value="email"
+            value={htmlFor()}
             onInput={(e: Event) => setHtmlFor((e.target as HTMLInputElement).value)}
           />
         </PlaygroundControl>

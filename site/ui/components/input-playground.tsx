@@ -77,7 +77,7 @@ function InputPlayground(_props: {}) {
         <PlaygroundControl label="placeholder">
           <Input
             type="text"
-            value="Enter text..."
+            value={placeholder()}
             onInput={(e: Event) => setPlaceholder((e.target as HTMLInputElement).value)}
           />
         </PlaygroundControl>

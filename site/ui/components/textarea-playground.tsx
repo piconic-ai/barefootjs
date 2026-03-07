@@ -69,7 +69,7 @@ function TextareaPlayground(_props: {}) {
         <PlaygroundControl label="placeholder">
           <Input
             type="text"
-            value="Type your message here."
+            value={placeholder()}
             onInput={(e: Event) => setPlaceholder((e.target as HTMLInputElement).value)}
           />
         </PlaygroundControl>

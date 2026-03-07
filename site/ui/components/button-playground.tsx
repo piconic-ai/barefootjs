@@ -90,7 +90,7 @@ function ButtonPlayground(_props: {}) {
         <PlaygroundControl label="children">
           <Input
             type="text"
-            value="Button"
+            value={text()}
             onInput={(e: Event) => setText((e.target as HTMLInputElement).value)}
           />
         </PlaygroundControl>

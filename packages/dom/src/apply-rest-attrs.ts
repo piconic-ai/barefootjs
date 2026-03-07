@@ -50,6 +50,20 @@ export function applyRestAttrs(
       if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) continue
 
       const value = source[key]
+
+      // Use DOM property for value/checked (setAttribute doesn't update visible state)
+      if (key === 'value' && 'value' in el) {
+        const strVal = value != null ? String(value) : ''
+        if ((el as HTMLInputElement).value !== strVal) {
+          (el as HTMLInputElement).value = strVal
+        }
+        continue
+      }
+      if (key === 'checked' && 'checked' in el) {
+        (el as HTMLInputElement).checked = !!value
+        continue
+      }
+
       const attr = toAttrName(key)
 
       if (value != null && value !== false) {

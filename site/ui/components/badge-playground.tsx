@@ -63,7 +63,7 @@ function BadgePlayground(_props: {}) {
         <PlaygroundControl label="children">
           <Input
             type="text"
-            value="Badge"
+            value={text()}
             onInput={(e: Event) => setText((e.target as HTMLInputElement).value)}
           />
         </PlaygroundControl>
