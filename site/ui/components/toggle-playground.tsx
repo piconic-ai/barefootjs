@@ -57,7 +57,7 @@ function TogglePlayground(_props: {}) {
         <Toggle
           variant={variant()}
           size={size()}
-          defaultPressed={pressed() === 'true'}
+          pressed={pressed() === 'true'}
         >
           Toggle
         </Toggle>

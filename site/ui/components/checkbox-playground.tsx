@@ -46,7 +46,7 @@ function CheckboxPlayground(_props: {}) {
       previewDataAttr="data-checkbox-preview"
       previewContent={
         <div className="flex items-center space-x-2">
-          <Checkbox defaultChecked={defaultChecked()} disabled={disabled()} />
+          <Checkbox checked={defaultChecked()} disabled={disabled()} />
           <span className="text-sm font-medium leading-none">Accept terms</span>
         </div>
       }

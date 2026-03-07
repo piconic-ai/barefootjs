@@ -45,7 +45,7 @@ function SwitchPlayground(_props: {}) {
   return (
     <PlaygroundLayout
       previewDataAttr="data-switch-preview"
-      previewContent={<Switch defaultChecked={defaultChecked()} disabled={disabled()} />}
+      previewContent={<Switch checked={defaultChecked()} disabled={disabled()} />}
       controls={<>
         <PlaygroundControl label="defaultChecked">
           <Checkbox
