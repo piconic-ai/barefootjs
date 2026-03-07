@@ -6,47 +6,31 @@
  * Allows tweaking type, placeholder, and disabled props with live preview.
  */
 
-import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { highlightJsxSelfClosing } from './shared/playground-highlight'
+import { highlightJsxSelfClosing, plainJsxSelfClosing, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 import { Input } from '@ui/components/ui/input'
+import { Checkbox } from '@ui/components/ui/checkbox'
 
 type InputType = 'text' | 'email' | 'password' | 'number'
 
 function InputPlayground(_props: {}) {
   const [type, setType] = createSignal<InputType>('text')
   const [placeholder, setPlaceholder] = createSignal('Enter text...')
-  const [disabled, setDisabled] = createSignal('false')
+  const [disabled, setDisabled] = createSignal(false)
 
-  const codeText = createMemo(() => {
-    const t = type()
-    const p = placeholder()
-    const d = disabled()
-    const parts: string[] = []
-    if (t !== 'text') parts.push(`type="${t}"`)
-    if (p) parts.push(`placeholder="${p}"`)
-    if (d === 'true') parts.push('disabled')
-    const propsStr = parts.length > 0 ? ` ${parts.join(' ')}` : ''
-    return `<Input${propsStr} />`
-  })
+  const props = (): HighlightProp[] => [
+    { name: 'type', value: type(), defaultValue: 'text' },
+    { name: 'placeholder', value: placeholder(), defaultValue: '' },
+    { name: 'disabled', value: String(disabled()), defaultValue: 'false', kind: 'boolean' },
+  ]
 
   createEffect(() => {
-    const t = type()
-    const p = placeholder()
-    const d = disabled()
-
-    // Update highlighted code
+    const p = props()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      const props = [
-        { name: 'type', value: t, defaultValue: 'text' },
-        { name: 'placeholder', value: p, defaultValue: '' },
-        { name: 'disabled', value: d, defaultValue: 'false' },
-      ]
-      codeEl.innerHTML = highlightJsxSelfClosing('Input', props)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxSelfClosing('Input', p)
   })
 
   return (
@@ -56,7 +40,7 @@ function InputPlayground(_props: {}) {
         <Input
           type={type()}
           placeholder={placeholder()}
-          disabled={disabled() === 'true'}
+          disabled={disabled()}
           className="max-w-sm"
         />
       }
@@ -82,18 +66,13 @@ function InputPlayground(_props: {}) {
           />
         </PlaygroundControl>
         <PlaygroundControl label="disabled">
-          <Select value={disabled()} onValueChange={(v: string) => setDisabled(v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="false">false</SelectItem>
-              <SelectItem value="true">true</SelectItem>
-            </SelectContent>
-          </Select>
+          <Checkbox
+            checked={disabled()}
+            onCheckedChange={setDisabled}
+          />
         </PlaygroundControl>
       </>}
-      copyButton={<CopyButton code={codeText()} />}
+      copyButton={<CopyButton code={plainJsxSelfClosing('Input', props())} />}
     />
   )
 }

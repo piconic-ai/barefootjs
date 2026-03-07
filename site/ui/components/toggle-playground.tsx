@@ -6,11 +6,12 @@
  * Allows tweaking variant, size, and pressed state with live preview.
  */
 
-import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { highlightJsx } from './shared/playground-highlight'
+import { highlightJsx, plainJsx, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
+import { Checkbox } from '@ui/components/ui/checkbox'
 import { Toggle } from '@ui/components/ui/toggle'
 
 type ToggleVariant = 'default' | 'outline'
@@ -19,35 +20,18 @@ type ToggleSize = 'default' | 'sm' | 'lg'
 function TogglePlayground(_props: {}) {
   const [variant, setVariant] = createSignal<ToggleVariant>('default')
   const [size, setSize] = createSignal<ToggleSize>('default')
-  const [pressed, setPressed] = createSignal('false')
+  const [pressed, setPressed] = createSignal(false)
 
-  const codeText = createMemo(() => {
-    const v = variant()
-    const s = size()
-    const p = pressed()
-    const parts: string[] = []
-    if (v !== 'default') parts.push(`variant="${v}"`)
-    if (s !== 'default') parts.push(`size="${s}"`)
-    if (p === 'true') parts.push('defaultPressed')
-    const propsStr = parts.length > 0 ? ` ${parts.join(' ')}` : ''
-    return `<Toggle${propsStr}>Toggle</Toggle>`
-  })
+  const props = (): HighlightProp[] => [
+    { name: 'variant', value: variant(), defaultValue: 'default' },
+    { name: 'size', value: size(), defaultValue: 'default' },
+    { name: 'defaultPressed', value: String(pressed()), defaultValue: 'false', kind: 'boolean' },
+  ]
 
   createEffect(() => {
-    const v = variant()
-    const s = size()
-    // Update highlighted code
+    const p = props()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightJsx(
-        'Toggle',
-        [
-          { name: 'variant', value: v, defaultValue: 'default' },
-          { name: 'size', value: s, defaultValue: 'default' },
-        ],
-        'Toggle',
-      )
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsx('Toggle', p, 'Toggle')
   })
 
   return (
@@ -57,7 +41,7 @@ function TogglePlayground(_props: {}) {
         <Toggle
           variant={variant()}
           size={size()}
-          pressed={pressed() === 'true'}
+          pressed={pressed()}
         >
           Toggle
         </Toggle>
@@ -87,18 +71,13 @@ function TogglePlayground(_props: {}) {
           </Select>
         </PlaygroundControl>
         <PlaygroundControl label="pressed">
-          <Select value={pressed()} onValueChange={(v: string) => setPressed(v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select state..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="false">off</SelectItem>
-              <SelectItem value="true">on</SelectItem>
-            </SelectContent>
-          </Select>
+          <Checkbox
+            checked={pressed()}
+            onCheckedChange={setPressed}
+          />
         </PlaygroundControl>
       </>}
-      copyButton={<CopyButton code={codeText()} />}
+      copyButton={<CopyButton code={plainJsx('Toggle', props(), 'Toggle')} />}
     />
   )
 }

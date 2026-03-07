@@ -64,7 +64,7 @@ describe('Client JS generation', () => {
       const clientJs = result.files.find(f => f.type === 'clientJs')
       expect(clientJs).toBeDefined()
       // Should use props.onClick directly
-      expect(clientJs?.content).toContain('props.onClick')
+      expect(clientJs?.content).toContain('_p.onClick')
     })
 
     test('extracts props and props-dependent constants in client JS', () => {
@@ -98,7 +98,7 @@ describe('Client JS generation', () => {
       const clientJs = result.files.find(f => f.type === 'clientJs')
       expect(clientJs).toBeDefined()
       // Should use props.command directly in fullCommand constant
-      expect(clientJs?.content).toContain('const fullCommand = `npx ${props.command}`')
+      expect(clientJs?.content).toContain('const fullCommand = `npx ${_p.command}`')
     })
 
     test('outputs IR JSON when requested', () => {
@@ -300,10 +300,10 @@ describe('Client JS generation', () => {
       const content = clientJs!.content
 
       // Props used as conditional guards should NOT get ?? {} default
-      expect(content).toContain('const prev = props.prev\n')
-      expect(content).toContain('const next = props.next\n')
-      expect(content).not.toContain('props.prev ?? {}')
-      expect(content).not.toContain('props.next ?? {}')
+      expect(content).toContain('const prev = _p.prev\n')
+      expect(content).toContain('const next = _p.next\n')
+      expect(content).not.toContain('_p.prev ?? {}')
+      expect(content).not.toContain('_p.next ?? {}')
     })
 
     test('evaluates dynamic text unconditionally inside conditional branches with try-catch', () => {
@@ -382,7 +382,7 @@ describe('Client JS generation', () => {
 
       // config is accessed with dot notation but NOT used as a conditional guard
       // (the guard is open()), so it should still get ?? {} to prevent TypeError.
-      expect(content).toContain('props.config ?? {}')
+      expect(content).toContain('_p.config ?? {}')
     })
   })
 
@@ -631,10 +631,10 @@ describe('Client JS generation', () => {
       const content = clientJs!.content
 
       // Template should inline the constant value, not reference the local name
-      expect(content).toContain('(props) => `')
+      expect(content).toContain('(_p) => `')
       expect(content).not.toMatch(/\bisDisabled\b.*\?>/)
       // The inlined expression should reference props directly
-      expect(content).toMatch(/props\.disabled/)
+      expect(content).toMatch(/_p\.disabled/)
     })
 
     test('template literal constant is inlined in mount template', () => {
@@ -655,7 +655,7 @@ describe('Client JS generation', () => {
       const content = clientJs!.content
 
       // Template should inline the template literal, not reference 'classes'
-      expect(content).toContain('(props) => `')
+      expect(content).toContain('(_p) => `')
       expect(content).not.toMatch(/\bclasses\b/)
     })
 
@@ -735,14 +735,14 @@ describe('Client JS generation', () => {
       const content = clientJs!.content
 
       // Must have a template (the component is simple enough)
-      expect(content).toContain('(props) => `')
+      expect(content).toContain('(_p) => `')
       // Template must NOT reference the local variable name 'isDisabled'
       // It should instead contain the inlined expression with props access
-      const templateMatch = content.match(/\(props\) => `([^`]*)`/)
+      const templateMatch = content.match(/\(_p\) => `([^`]*)`/)
       expect(templateMatch).not.toBeNull()
       const template = templateMatch![1]
       expect(template).not.toContain('isDisabled')
-      expect(template).toContain('props.disabled')
+      expect(template).toContain('_p.disabled')
     })
   })
 
@@ -766,14 +766,14 @@ describe('Client JS generation', () => {
       const content = clientJs!.content
 
       // Must not contain corrupted props.(props. syntax
-      expect(content).not.toContain('props.(props.')
+      expect(content).not.toContain('_p.(props.')
       // Local constants should be fully resolved
-      const templateMatch = content.match(/\(props\) => `([^`]*)`/)
+      const templateMatch = content.match(/\(_p\) => `([^`]*)`/)
       expect(templateMatch).not.toBeNull()
       const template = templateMatch![1]
       expect(template).not.toContain('outlineShadow')
       // props.variant should appear as valid syntax
-      expect(template).toContain('props.variant')
+      expect(template).toContain('_p.variant')
     })
 
     test('three-level chain: props.kind → kind → color → classes', () => {
@@ -795,12 +795,12 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      expect(content).not.toContain('props.(props.')
-      const templateMatch = content.match(/\(props\) => `([^`]*)`/)
+      expect(content).not.toContain('_p.(props.')
+      const templateMatch = content.match(/\(_p\) => `([^`]*)`/)
       expect(templateMatch).not.toBeNull()
       const template = templateMatch![1]
       expect(template).not.toContain('classes')
-      expect(template).toContain('props.kind')
+      expect(template).toContain('_p.kind')
     })
 
     test('template literal with multi-level chain', () => {
@@ -822,9 +822,9 @@ describe('Client JS generation', () => {
       const content = clientJs!.content
 
       // Must not contain corrupted props.(props. syntax
-      expect(content).not.toContain('props.(props.')
+      expect(content).not.toContain('_p.(props.')
       // The mount call should contain props.variant properly resolved
-      expect(content).toContain('props.variant')
+      expect(content).toContain('_p.variant')
       // Local constant 'classes' should not appear in mount template
       expect(content).not.toMatch(/mount\([^)]*\bclasses\b/)
     })
@@ -846,14 +846,14 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      expect(content).not.toContain('props.(props.')
-      const templateMatch = content.match(/\(props\) => `([^`]*)`/)
+      expect(content).not.toContain('_p.(props.')
+      const templateMatch = content.match(/\(_p\) => `([^`]*)`/)
       expect(templateMatch).not.toBeNull()
       const template = templateMatch![1]
       // props.size should be valid and not corrupted
-      expect(template).toContain('props.size')
+      expect(template).toContain('_p.size')
       // Should not have double-wrapped props references
-      expect(template).not.toMatch(/props\.\(props\./)
+      expect(template).not.toMatch(/_p\.\(props\./)
     })
   })
 
@@ -2059,8 +2059,8 @@ describe('Client JS generation', () => {
       expect(content).toContain("setAttribute('class'")
 
       // Should reference props.variant and props.className (not destructured names)
-      expect(content).toContain('props.variant')
-      expect(content).toContain('props.className')
+      expect(content).toContain('_p.variant')
+      expect(content).toContain('_p.className')
     })
 
     test('expanded constant with single prop reference is detected as reactive', () => {
@@ -2086,7 +2086,7 @@ describe('Client JS generation', () => {
       const content = clientJs!.content
 
       expect(content).toContain('createEffect')
-      expect(content).toContain('props.size')
+      expect(content).toContain('_p.size')
     })
 
     test('prop rewrite does not corrupt identifiers containing the prop name', () => {
@@ -2115,7 +2115,7 @@ describe('Client JS generation', () => {
       expect(content).toContain('sizeMap')
       expect(content).not.toContain('sizeMap'.replace('size', 'props.size'))
       // The standalone size reference should be rewritten
-      expect(content).toContain("props.size ?? 'sm'")
+      expect(content).toContain("_p.size ?? 'sm'")
     })
 
     test('default values from destructuring are included in rewrite', () => {
@@ -2140,7 +2140,7 @@ describe('Client JS generation', () => {
 
       expect(content).toContain('createEffect')
       // Should include the default value in the rewrite
-      expect(content).toContain("props.label ?? 'tag'")
+      expect(content).toContain("_p.label ?? 'tag'")
     })
   })
 })

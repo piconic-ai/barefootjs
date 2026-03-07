@@ -11,6 +11,7 @@ import { generateInitFunction } from './generate-init'
 import { collectUsedIdentifiers, collectUsedFunctions } from './identifiers'
 import { valueReferencesReactiveData } from './prop-handling'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template'
+import { PROPS_PARAM } from './utils'
 import { buildInlinableConstants, buildSignalAndMemoMaps, buildCsrInlinableConstants } from './emit-init-sections'
 import { IMPORT_PLACEHOLDER, detectUsedImports } from './imports'
 
@@ -56,11 +57,9 @@ export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedP
       if (!constant.value) continue
       const trimmedValue = constant.value.trim()
       if (/^createContext\b/.test(trimmedValue) || /^new WeakMap\b/.test(trimmedValue)) continue
-      if (constant.name !== 'props') {
-        const refs = valueReferencesReactiveData(constant.value, ctx)
-        for (const propName of refs.usedProps) {
-          neededProps.add(propName)
-        }
+      const refs = valueReferencesReactiveData(constant.value, ctx)
+      for (const propName of refs.usedProps) {
+        neededProps.add(propName)
       }
     }
   }
@@ -145,7 +144,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   let templateHtml: string | undefined
 
   if (canGenerateStaticTemplate(ir.root, propNamesForTemplate, inlinableConstants, unsafeLocalNames)) {
-    templateHtml = irToComponentTemplate(ir.root, propNamesForTemplate, inlinableConstants, restSpreadNames)
+    templateHtml = irToComponentTemplate(ir.root, propNamesForTemplate, inlinableConstants, restSpreadNames, ctx.propsObjectName)
   }
 
   // CSR fallback: when static template generation fails (e.g., components with
@@ -155,7 +154,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
     const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap)
 
     templateHtml = generateCsrTemplate(
-      ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames
+      ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName
     )
   }
 
@@ -170,7 +169,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   lines.push('')
   lines.push(`function init${name}() {}`)
   lines.push('')
-  lines.push(`hydrate('${name}', { init: init${name}, template: (props) => \`${templateHtml}\` })`)
+  lines.push(`hydrate('${name}', { init: init${name}, template: (${PROPS_PARAM}) => \`${templateHtml}\` })`)
 
   const generatedCode = lines.join('\n')
   const usedImports = detectUsedImports(generatedCode)

@@ -7,6 +7,12 @@ import type { IRTemplateLiteral } from '../types'
 import type { LoopElement } from './types'
 
 /**
+ * Parameter name for the props object in generated init/template functions.
+ * Short name to minimize client JS bundle size.
+ */
+export const PROPS_PARAM = '_p'
+
+/**
  * Strip ^ prefix from slot ID for use as JavaScript variable name.
  * `^s3` → `s3` (since `_^s3` is not a valid identifier)
  */

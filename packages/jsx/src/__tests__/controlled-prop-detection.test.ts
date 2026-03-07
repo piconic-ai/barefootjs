@@ -26,7 +26,7 @@ describe('controlled prop detection (#434)', () => {
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // Sync effect for controlled prop should be generated
-    expect(clientJs?.content).toContain('const __val = props.initial')
+    expect(clientJs?.content).toContain('const __val = _p.initial')
   })
 
   test('props.defaultXxx ?? default does NOT generate sync effect', () => {
@@ -50,7 +50,7 @@ describe('controlled prop detection (#434)', () => {
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // No sync effect for uncontrolled (defaultXxx) props
-    expect(clientJs?.content).not.toContain('const __val = props.')
+    expect(clientJs?.content).not.toContain('const __val = _p.')
   })
 
   test('no redundant double-?? in output', () => {
@@ -100,8 +100,8 @@ describe('controlled prop detection (#434)', () => {
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // Must preserve the original fallback value, NOT replace with undefined
-    expect(clientJs?.content).toContain('props.initial ?? 0')
-    expect(clientJs?.content).not.toContain('props.initial ?? undefined')
+    expect(clientJs?.content).toContain('_p.initial ?? 0')
+    expect(clientJs?.content).not.toContain('_p.initial ?? undefined')
   })
 
   test('preserves boolean fallback value in output', () => {
@@ -125,8 +125,8 @@ describe('controlled prop detection (#434)', () => {
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // Must preserve false, NOT replace with undefined
-    expect(clientJs?.content).toContain('props.defaultChecked ?? false')
-    expect(clientJs?.content).not.toContain('props.defaultChecked ?? undefined')
+    expect(clientJs?.content).toContain('_p.defaultChecked ?? false')
+    expect(clientJs?.content).not.toContain('_p.defaultChecked ?? undefined')
   })
 
   test('preserves string fallback value in output', () => {
@@ -174,10 +174,11 @@ describe('controlled prop detection (#434)', () => {
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // Sync effect should be generated
-    expect(clientJs?.content).toContain('const __val = props.initial')
-    // Output should use 'props.initial' (not 'p.initial')
-    expect(clientJs?.content).toContain('props.initial')
-    expect(clientJs?.content).not.toContain('p.initial')
+    expect(clientJs?.content).toContain('const __val = _p.initial')
+    // Output should use '_p.initial' (normalized from custom 'p.initial')
+    expect(clientJs?.content).toContain('_p.initial')
+    // Should not contain unrewritten 'p.initial' (without underscore prefix)
+    expect(clientJs?.content).not.toMatch(/[^_]p\.initial/)
     // Init function should not contain double ??
     const initFn = clientJs?.content.match(/export function initSlider[\s\S]*?^}/m)?.[0] ?? ''
     expect(initFn).not.toMatch(/\?\?.*\?\?/)

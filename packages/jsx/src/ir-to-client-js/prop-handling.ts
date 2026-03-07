@@ -4,6 +4,7 @@
 
 import type { ConstantInfo, ParamInfo, SignalInfo } from '../types'
 import type { ClientJsContext } from './types'
+import { PROPS_PARAM } from './utils'
 
 /**
  * Expand dynamic prop value by resolving local constants.
@@ -93,6 +94,7 @@ export function getControlledPropName(
 ): string | null {
   const initialValue = signal.initialValue.trim()
   const isDefaultProp = (propName: string) => propName.startsWith('default')
+  // Use the source-level props name for pattern matching (not the generated PROPS_PARAM)
   const propsName = propsObjectName ?? 'props'
 
   // Direct <propsName>.X reference, optionally with ?? or || fallback

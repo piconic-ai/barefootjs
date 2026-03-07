@@ -78,7 +78,7 @@ describe('nullish coalescing with JSX (#524)', () => {
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // props.initial ?? 0 should remain as a regular expression
-    expect(clientJs!.content).toContain('props.initial ?? 0')
+    expect(clientJs!.content).toContain('_p.initial ?? 0')
   })
 
   test('compiles || with JSX element', () => {

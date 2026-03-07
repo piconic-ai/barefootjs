@@ -6,9 +6,9 @@
  * Allows tweaking variant, size, and children props with live preview.
  */
 
-import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { highlightJsx } from './shared/playground-highlight'
+import { highlightJsx, plainJsx, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 import { Input } from '@ui/components/ui/input'
@@ -22,34 +22,16 @@ function ButtonPlayground(_props: {}) {
   const [size, setSize] = createSignal<ButtonSize>('default')
   const [text, setText] = createSignal('Button')
 
-  const codeText = createMemo(() => {
-    const v = variant()
-    const s = size()
-    const t = text()
-    const parts: string[] = []
-    if (v !== 'default') parts.push(`variant="${v}"`)
-    if (s !== 'default') parts.push(`size="${s}"`)
-    const propsStr = parts.length > 0 ? ` ${parts.join(' ')}` : ''
-    return `<Button${propsStr}>${t}</Button>`
-  })
+  const props = (): HighlightProp[] => [
+    { name: 'variant', value: variant(), defaultValue: 'default' },
+    { name: 'size', value: size(), defaultValue: 'default' },
+  ]
 
   createEffect(() => {
-    const v = variant()
-    const s = size()
+    const p = props()
     const t = text()
-
-    // Update highlighted code
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightJsx(
-        'Button',
-        [
-          { name: 'variant', value: v, defaultValue: 'default' },
-          { name: 'size', value: s, defaultValue: 'default' },
-        ],
-        t,
-      )
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsx('Button', p, t)
   })
 
   return (
@@ -95,7 +77,7 @@ function ButtonPlayground(_props: {}) {
           />
         </PlaygroundControl>
       </>}
-      copyButton={<CopyButton code={codeText()} />}
+      copyButton={<CopyButton code={plainJsx('Button', props(), text())} />}
     />
   )
 }

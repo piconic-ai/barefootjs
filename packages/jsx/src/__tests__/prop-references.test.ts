@@ -232,7 +232,7 @@ describe('ClientJS generation with semantic prop refs', () => {
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // Should have capture: const open = props.open
-    expect(clientJs?.content).toContain('const open = props.open')
+    expect(clientJs?.content).toContain('const open = _p.open')
     // createEffect should use 'open' directly, NOT 'props.open'
     // (destructured props are static, captured once)
     expect(clientJs?.content).not.toMatch(/insert\([^)]*props\.open/)
@@ -257,9 +257,9 @@ describe('ClientJS generation with semantic prop refs', () => {
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // Should keep props.open as-is
-    expect(clientJs?.content).toContain('props.open')
+    expect(clientJs?.content).toContain('_p.open')
     // Should NOT have double-wrapped props.props.open
-    expect(clientJs?.content).not.toContain('props.props')
+    expect(clientJs?.content).not.toContain('_p.props')
   })
 
   test('does NOT transform window.open() in event handler', () => {
@@ -307,7 +307,7 @@ describe('ClientJS generation with semantic prop refs', () => {
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // Should capture with default value: const open = props.open ?? false
-    expect(clientJs?.content).toMatch(/const open = props\.open \?\? false/)
+    expect(clientJs?.content).toMatch(/const open = _p\.open \?\? false/)
   })
 })
 
@@ -332,7 +332,7 @@ describe('Issue #257 regression', () => {
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // Should keep props.command as-is, NOT transform to props.props.command
-    expect(clientJs?.content).toContain('props.command')
-    expect(clientJs?.content).not.toContain('props.props.command')
+    expect(clientJs?.content).toContain('_p.command')
+    expect(clientJs?.content).not.toContain('_p.props.command')
   })
 })

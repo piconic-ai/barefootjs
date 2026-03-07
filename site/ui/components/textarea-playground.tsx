@@ -6,9 +6,9 @@
  * Allows tweaking placeholder, disabled, error, and rows props with live preview.
  */
 
-import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr, hlStr, escapeHtml } from './shared/playground-highlight'
+import { highlightJsxSelfClosing, plainJsxSelfClosing, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Input } from '@ui/components/ui/input'
 import { Checkbox } from '@ui/components/ui/checkbox'
@@ -20,38 +20,17 @@ function TextareaPlayground(_props: {}) {
   const [error, setError] = createSignal(false)
   const [rows, setRows] = createSignal('')
 
-  const codeText = createMemo(() => {
-    const parts: string[] = []
-    const p = placeholder()
-    if (p) parts.push(`placeholder="${p}"`)
-    if (disabled()) parts.push('disabled')
-    if (error()) parts.push('error')
-    const r = rows()
-    if (r) parts.push(`rows={${r}}`)
-    const propsStr = parts.length > 0 ? ` ${parts.join(' ')}` : ''
-    return `<Textarea${propsStr} />`
-  })
+  const props = (): HighlightProp[] => [
+    { name: 'placeholder', value: placeholder(), defaultValue: '' },
+    { name: 'disabled', value: String(disabled()), defaultValue: 'false', kind: 'boolean' },
+    { name: 'error', value: String(error()), defaultValue: 'false', kind: 'boolean' },
+    { name: 'rows', value: rows(), defaultValue: '', kind: 'expression' },
+  ]
 
   createEffect(() => {
-    const p = placeholder()
-    const d = disabled()
-    const e = error()
-    const r = rows()
-
-    // Update highlighted code
+    const p = props()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      const propParts: string[] = []
-      if (p) {
-        propParts.push(` ${hlAttr('placeholder')}${hlPlain('=')}${hlStr(`&quot;${escapeHtml(p)}&quot;`)}`)
-      }
-      if (d) propParts.push(` ${hlAttr('disabled')}`)
-      if (e) propParts.push(` ${hlAttr('error')}`)
-      if (r) {
-        propParts.push(` ${hlAttr('rows')}${hlPlain('={')}${hlPlain(r)}${hlPlain('}')}`)
-      }
-      codeEl.innerHTML = `${hlPlain('&lt;')}${hlTag('Textarea')}${propParts.join('')}${hlPlain(' /&gt;')}`
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxSelfClosing('Textarea', p)
   })
 
   return (
@@ -75,13 +54,13 @@ function TextareaPlayground(_props: {}) {
         </PlaygroundControl>
         <PlaygroundControl label="disabled">
           <Checkbox
-            defaultChecked={false}
+            checked={disabled()}
             onCheckedChange={(checked: boolean) => setDisabled(checked)}
           />
         </PlaygroundControl>
         <PlaygroundControl label="error">
           <Checkbox
-            defaultChecked={false}
+            checked={error()}
             onCheckedChange={(checked: boolean) => setError(checked)}
           />
         </PlaygroundControl>
@@ -93,7 +72,7 @@ function TextareaPlayground(_props: {}) {
           />
         </PlaygroundControl>
       </>}
-      copyButton={<CopyButton code={codeText()} />}
+      copyButton={<CopyButton code={plainJsxSelfClosing('Textarea', props())} />}
     />
   )
 }

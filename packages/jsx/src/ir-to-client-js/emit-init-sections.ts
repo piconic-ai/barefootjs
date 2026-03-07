@@ -7,7 +7,7 @@ import type { ComponentIR, SignalInfo, IRFragment } from '../types'
 import type { Declaration } from './declaration-sort'
 import { isBooleanAttr } from '../html-constants'
 import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, LoopChildEvent } from './types'
-import { inferDefaultValue, toHtmlAttrName, toDomEventName, wrapHandlerInBlock, buildChainedArrayExpr, quotePropName, varSlotId } from './utils'
+import { inferDefaultValue, toHtmlAttrName, toDomEventName, wrapHandlerInBlock, buildChainedArrayExpr, quotePropName, varSlotId, PROPS_PARAM } from './utils'
 import { addCondAttrToTemplate, canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, irChildrenToJsExpr, createStringProtector } from './html-template'
 
 /**
@@ -63,20 +63,20 @@ export function emitPropsExtraction(
         // Wrap arrow function defaults in parentheses to avoid operator precedence issues
         // e.g., `props.onInput ?? () => {}` is a syntax error; must be `props.onInput ?? (() => {})`
         const wrappedDefault = defaultVal.includes('=>') ? `(${defaultVal})` : defaultVal
-        lines.push(`  const ${propName} = props.${propName} ?? ${wrappedDefault}`)
+        lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? ${wrappedDefault}`)
       } else if (propsUsedAsLoopArrays.has(propName)) {
-        lines.push(`  const ${propName} = props.${propName} ?? []`)
+        lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? []`)
       } else if (propsWithPropertyAccess.has(propName) && !propsUsedAsConditions.has(propName)) {
-        lines.push(`  const ${propName} = props.${propName} ?? {}`)
+        lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? {}`)
       } else if (prop?.optional && prop?.type) {
         const inferredDefault = inferDefaultValue(prop.type)
         if (inferredDefault !== 'undefined') {
-          lines.push(`  const ${propName} = props.${propName} ?? ${inferredDefault}`)
+          lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? ${inferredDefault}`)
         } else {
-          lines.push(`  const ${propName} = props.${propName}`)
+          lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName}`)
         }
       } else {
-        lines.push(`  const ${propName} = props.${propName}`)
+        lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName}`)
       }
     }
     lines.push('')
@@ -111,24 +111,24 @@ export function emitDeclaration(
 
       let initialValue: string
       if (signal.initialValue.startsWith(propsPrefix) && !signal.initialValue.includes('??')) {
-        const propRef = 'props.' + signal.initialValue.slice(propsPrefix.length)
+        const propRef = `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
         initialValue = `${propRef} ?? ${inferDefaultValue(signal.type)}`
       } else {
         const controlled = controlledSignals.find(c => c.signal === signal)
         if (controlled) {
           if (signal.initialValue.includes('??')) {
             if (ctx.propsObjectName && signal.initialValue.startsWith(propsPrefix)) {
-              initialValue = 'props.' + signal.initialValue.slice(propsPrefix.length)
+              initialValue = `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
             } else {
               initialValue = signal.initialValue
             }
           } else {
             const prop = ctx.propsParams.find(p => p.name === controlled.propName)
             const defaultVal = prop?.defaultValue ?? inferDefaultValue(signal.type)
-            initialValue = `props.${controlled.propName} ?? ${defaultVal}`
+            initialValue = `${PROPS_PARAM}.${controlled.propName} ?? ${defaultVal}`
           }
         } else if (ctx.propsObjectName && signal.initialValue.startsWith(propsPrefix)) {
-          initialValue = 'props.' + signal.initialValue.slice(propsPrefix.length)
+          initialValue = `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
         } else {
           initialValue = signal.initialValue
         }
@@ -159,8 +159,8 @@ export function emitControlledSignalEffect(
 ): void {
   const prop = ctx.propsParams.find(p => p.name === propName)
   const accessor = prop?.defaultValue
-    ? `(props.${propName} ?? ${prop.defaultValue})`
-    : `props.${propName}`
+    ? `(${PROPS_PARAM}.${propName} ?? ${prop.defaultValue})`
+    : `${PROPS_PARAM}.${propName}`
   lines.push(`  createEffect(() => {`)
   lines.push(`    const __val = ${accessor}`)
   lines.push(`    if (__val !== undefined) ${signal.setter}(__val)`)
@@ -185,7 +185,7 @@ export function emitPropsEventHandlers(
 
     const isProp = ctx.propsParams.some((p) => p.name === handlerName)
     if (isProp) {
-      lines.push(`  const ${handlerName} = props.${handlerName}`)
+      lines.push(`  const ${handlerName} = ${PROPS_PARAM}.${handlerName}`)
       addedPropsHandler = true
     }
   }
@@ -316,8 +316,8 @@ function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContext): str
 
     const defaultVal = prop.defaultValue
     const replacement = defaultVal
-      ? `(props.${prop.name} ?? ${defaultVal.includes('=>') ? `(${defaultVal})` : defaultVal})`
-      : `props.${prop.name}`
+      ? `(${PROPS_PARAM}.${prop.name} ?? ${defaultVal.includes('=>') ? `(${defaultVal})` : defaultVal})`
+      : `${PROPS_PARAM}.${prop.name}`
     result = result.replace(new RegExp(`\\b${prop.name}\\b`, 'g'), replacement)
   }
 
@@ -1000,17 +1000,17 @@ export function buildSignalAndMemoMaps(ctx: ClientJsContext): {
   const signalMap = new Map<string, string>()
   for (const signal of ctx.signals) {
     let initialValue = signal.initialValue
-    // Normalize custom props object name to 'props.' and add default fallback
+    // Normalize custom props object name to PROPS_PARAM and add default fallback
     // to match emitSignalsAndMemos() behavior (prevents undefined rendering in CSR)
     if (ctx.propsObjectName && initialValue.startsWith(propsPrefix)) {
-      const propRef = 'props.' + initialValue.slice(propsPrefix.length)
+      const propRef = `${PROPS_PARAM}.` + initialValue.slice(propsPrefix.length)
       if (!initialValue.includes('??')) {
         initialValue = `${propRef} ?? ${inferDefaultValue(signal.type)}`
       } else {
         initialValue = propRef
       }
     } else if (initialValue.startsWith('props.') && !initialValue.includes('??')) {
-      initialValue = `${initialValue} ?? ${inferDefaultValue(signal.type)}`
+      initialValue = `${PROPS_PARAM}.${initialValue.slice('props.'.length)} ?? ${inferDefaultValue(signal.type)}`
     }
     signalMap.set(signal.getter, initialValue)
   }
@@ -1097,12 +1097,17 @@ export function buildCsrInlinableConstants(
 }
 
 /** Emit hydrate() call that registers component, template, and hydrates. */
+/**
+ * Generate the closing brace for the init function and the hydrate() call.
+ * Returns the hydrate line separately so it can be appended after props renaming,
+ * preventing double-replacement of props references in template expressions.
+ */
 export function emitRegistrationAndHydration(
   lines: string[],
   ctx: ClientJsContext,
   _ir: ComponentIR,
   usedAsChild?: Set<string>
-): void {
+): string {
   const name = ctx.componentName
 
   lines.push(`}`)
@@ -1123,9 +1128,9 @@ export function emitRegistrationAndHydration(
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: init${name}`]
   if (canGenerateStaticTemplate(_ir.root, propNamesForTemplate, inlinableConstants, unsafeLocalNames)) {
-    const templateHtml = irToComponentTemplate(_ir.root, propNamesForTemplate, inlinableConstants, restSpreadNames)
+    const templateHtml = irToComponentTemplate(_ir.root, propNamesForTemplate, inlinableConstants, restSpreadNames, ctx.propsObjectName)
     if (templateHtml) {
-      defParts.push(`template: (props) => \`${templateHtml}\``)
+      defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)
     }
   } else if (usedAsChild?.has(name)) {
     // CSR fallback: only emit when this component is used as a child by another
@@ -1134,10 +1139,10 @@ export function emitRegistrationAndHydration(
     const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap)
 
     const templateHtml = generateCsrTemplate(
-      _ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames
+      _ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName
     )
     if (templateHtml) {
-      defParts.push(`template: (props) => \`${templateHtml}\``)
+      defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)
     }
   }
   // No else: top-level-only components skip template entirely (save bytes)
@@ -1145,5 +1150,5 @@ export function emitRegistrationAndHydration(
     defParts.push('comment: true')
   }
 
-  lines.push(`hydrate('${name}', { ${defParts.join(', ')} })`)
+  return `hydrate('${name}', { ${defParts.join(', ')} })`
 }

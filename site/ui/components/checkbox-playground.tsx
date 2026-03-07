@@ -6,39 +6,25 @@
  * Allows tweaking defaultChecked and disabled props with live preview.
  */
 
-import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr } from './shared/playground-highlight'
+import { highlightJsxSelfClosing, plainJsxSelfClosing, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Checkbox } from '@ui/components/ui/checkbox'
-
-function highlightCheckboxJsx(defaultChecked: boolean, disabled: boolean): string {
-  const boolProps: string[] = []
-  if (defaultChecked) boolProps.push(` ${hlAttr('defaultChecked')}`)
-  if (disabled) boolProps.push(` ${hlAttr('disabled')}`)
-  return `${hlPlain('&lt;')}${hlTag('Checkbox')}${boolProps.join('')}${hlPlain(' /&gt;')}`
-}
 
 function CheckboxPlayground(_props: {}) {
   const [defaultChecked, setDefaultChecked] = createSignal(false)
   const [disabled, setDisabled] = createSignal(false)
 
-  const codeText = createMemo(() => {
-    const parts: string[] = []
-    if (defaultChecked()) parts.push(' defaultChecked')
-    if (disabled()) parts.push(' disabled')
-    return `<Checkbox${parts.join('')} />`
-  })
+  const props = (): HighlightProp[] => [
+    { name: 'defaultChecked', value: String(defaultChecked()), defaultValue: 'false', kind: 'boolean' },
+    { name: 'disabled', value: String(disabled()), defaultValue: 'false', kind: 'boolean' },
+  ]
 
   createEffect(() => {
-    const dc = defaultChecked()
-    const d = disabled()
-
-    // Update highlighted code
+    const p = props()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightCheckboxJsx(dc, d)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxSelfClosing('Checkbox', p)
   })
 
   return (
@@ -64,7 +50,7 @@ function CheckboxPlayground(_props: {}) {
           />
         </PlaygroundControl>
       </>}
-      copyButton={<CopyButton code={codeText()} />}
+      copyButton={<CopyButton code={plainJsxSelfClosing('Checkbox', props())} />}
     />
   )
 }

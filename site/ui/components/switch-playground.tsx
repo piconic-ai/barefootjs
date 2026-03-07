@@ -6,40 +6,26 @@
  * Allows tweaking defaultChecked and disabled props with live preview.
  */
 
-import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr } from './shared/playground-highlight'
+import { highlightJsxSelfClosing, plainJsxSelfClosing, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Checkbox } from '@ui/components/ui/checkbox'
 import { Switch } from '@ui/components/ui/switch'
-
-function highlightSwitchJsx(defaultChecked: boolean, disabled: boolean): string {
-  const boolProps: string[] = []
-  if (defaultChecked) boolProps.push(` ${hlAttr('defaultChecked')}`)
-  if (disabled) boolProps.push(` ${hlAttr('disabled')}`)
-  return `${hlPlain('&lt;')}${hlTag('Switch')}${boolProps.join('')}${hlPlain(' /&gt;')}`
-}
 
 function SwitchPlayground(_props: {}) {
   const [defaultChecked, setDefaultChecked] = createSignal(false)
   const [disabled, setDisabled] = createSignal(false)
 
-  const codeText = createMemo(() => {
-    const parts: string[] = []
-    if (defaultChecked()) parts.push(' defaultChecked')
-    if (disabled()) parts.push(' disabled')
-    return `<Switch${parts.join('')} />`
-  })
+  const props = (): HighlightProp[] => [
+    { name: 'defaultChecked', value: String(defaultChecked()), defaultValue: 'false', kind: 'boolean' },
+    { name: 'disabled', value: String(disabled()), defaultValue: 'false', kind: 'boolean' },
+  ]
 
   createEffect(() => {
-    const dc = defaultChecked()
-    const d = disabled()
-
-    // Update highlighted code
+    const p = props()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightSwitchJsx(dc, d)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxSelfClosing('Switch', p)
   })
 
   return (
@@ -60,7 +46,7 @@ function SwitchPlayground(_props: {}) {
           />
         </PlaygroundControl>
       </>}
-      copyButton={<CopyButton code={codeText()} />}
+      copyButton={<CopyButton code={plainJsxSelfClosing('Switch', props())} />}
     />
   )
 }

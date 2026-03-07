@@ -6,9 +6,9 @@
  * Allows tweaking children and for props with live preview.
  */
 
-import { createSignal, createMemo, createEffect } from '@barefootjs/dom'
+import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr, hlStr } from './shared/playground-highlight'
+import { highlightJsx, plainJsx, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Input } from '@ui/components/ui/input'
 import { Label } from '@ui/components/ui/label'
@@ -17,25 +17,15 @@ function LabelPlayground(_props: {}) {
   const [text, setText] = createSignal('Email')
   const [htmlFor, setHtmlFor] = createSignal('email')
 
-  const codeText = createMemo(() => {
-    const t = text()
-    const f = htmlFor()
-    const forProp = f ? ` for="${f}"` : ''
-    return `<Label${forProp}>${t}</Label>`
-  })
+  const props = (): HighlightProp[] => [
+    { name: 'for', value: htmlFor(), defaultValue: '' },
+  ]
 
   createEffect(() => {
+    const p = props()
     const t = text()
-    const f = htmlFor()
-
-    // Update highlighted code
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      const forMarkup = f
-        ? ` ${hlAttr('for')}${hlPlain('=')}${hlStr(`&quot;${f}&quot;`)}`
-        : ''
-      codeEl.innerHTML = `${hlPlain('&lt;')}${hlTag('Label')}${forMarkup}${hlPlain('&gt;')}${t}${hlPlain('&lt;/')}${hlTag('Label')}${hlPlain('&gt;')}`
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsx('Label', p, t)
   })
 
   return (
@@ -58,7 +48,7 @@ function LabelPlayground(_props: {}) {
           />
         </PlaygroundControl>
       </>}
-      copyButton={<CopyButton code={codeText()} />}
+      copyButton={<CopyButton code={plainJsx('Label', props(), text())} />}
     />
   )
 }

@@ -29,6 +29,8 @@ export interface HighlightProp {
   name: string
   value: string
   defaultValue: string
+  /** 'string' (default): name="value". 'boolean': presence-only. 'expression': name={value}. */
+  kind?: 'string' | 'boolean' | 'expression'
 }
 
 /**
@@ -43,18 +45,42 @@ export interface HighlightProp {
  * highlightJsx('Badge', [{ name: 'variant', value: 'default', defaultValue: 'default' }], 'Hello')
  * // => highlighted: <Badge>Hello</Badge>
  */
+function renderPlainProp(p: HighlightProp): string {
+  const kind = p.kind ?? 'string'
+  if (kind === 'boolean') return ` ${p.name}`
+  if (kind === 'expression') return ` ${p.name}={${p.value}}`
+  return ` ${p.name}="${p.value}"`
+}
+
+export function plainJsx(tagName: string, props: HighlightProp[], content: string): string {
+  const renderedProps = props.filter(isActive).map(renderPlainProp).join('')
+  return `<${tagName}${renderedProps}>${content}</${tagName}>`
+}
+
+export function plainJsxSelfClosing(tagName: string, props: HighlightProp[]): string {
+  const renderedProps = props.filter(isActive).map(renderPlainProp).join('')
+  return `<${tagName}${renderedProps} />`
+}
+
+function renderProp(p: HighlightProp): string {
+  const kind = p.kind ?? 'string'
+  const safeName = escapeHtml(p.name)
+  if (kind === 'boolean') return ` ${hlAttr(safeName)}`
+  if (kind === 'expression') return ` ${hlAttr(safeName)}${hlPlain('={')}${hlPlain(escapeHtml(p.value))}${hlPlain('}')}`
+  return ` ${hlAttr(safeName)}${hlPlain('=')}${hlStr(`&quot;${escapeHtml(p.value)}&quot;`)}`
+}
+
+function isActive(p: HighlightProp): boolean {
+  return p.value !== p.defaultValue
+}
+
 export function highlightJsx(
   tagName: string,
   props: HighlightProp[],
   content: string,
 ): string {
   const escapedContent = escapeHtml(content)
-
-  const renderedProps = props
-    .filter((p) => p.value !== p.defaultValue)
-    .map((p) => ` ${hlAttr(p.name)}${hlPlain('=')}${hlStr(`&quot;${p.value}&quot;`)}`)
-    .join('')
-
+  const renderedProps = props.filter(isActive).map(renderProp).join('')
   return `${hlPlain('&lt;')}${hlTag(tagName)}${renderedProps}${hlPlain('&gt;')}${escapedContent}${hlPlain('&lt;/')}${hlTag(tagName)}${hlPlain('&gt;')}`
 }
 
@@ -71,10 +97,6 @@ export function highlightJsxSelfClosing(
   tagName: string,
   props: HighlightProp[],
 ): string {
-  const renderedProps = props
-    .filter((p) => p.value !== p.defaultValue)
-    .map((p) => ` ${hlAttr(p.name)}${hlPlain('=')}${hlStr(`&quot;${p.value}&quot;`)}`)
-    .join('')
-
+  const renderedProps = props.filter(isActive).map(renderProp).join('')
   return `${hlPlain('&lt;')}${hlTag(tagName)}${renderedProps} ${hlPlain('/&gt;')}`
 }

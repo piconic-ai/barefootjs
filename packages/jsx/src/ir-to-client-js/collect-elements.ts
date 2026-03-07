@@ -4,7 +4,7 @@
 
 import type { IRNode, IRElement } from '../types'
 import type { ClientJsContext, LoopChildEvent } from './types'
-import { attrValueToString, quotePropName } from './utils'
+import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
 import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectLoopChildEvents } from './reactivity'
 import { irToHtmlTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
@@ -173,12 +173,12 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
       // Detect unexpanded spread props (open type — Phase 1 couldn't resolve keys)
       // Only handle spreads whose source matches the component's rest/props parameter name.
       // Other identifiers (e.g., local variables) may not exist in the compiled init scope.
-      // Always use 'props' as the actual source since the init function parameter is always 'props'.
+      // Always use PROPS_PARAM as the actual source since the init function parameter is PROPS_PARAM.
       const spreadProp = node.props.find(p => p.name === '...' || p.name.startsWith('...'))
       const restName = ctx.restPropsName
       const propsObjName = ctx.propsObjectName
       const isKnownSource = spreadProp && (spreadProp.value === restName || spreadProp.value === propsObjName)
-      const spreadSource = isKnownSource ? 'props' : null
+      const spreadSource = isKnownSource ? PROPS_PARAM : null
 
       const propsForInit: string[] = []
       const explicitPropNames: string[] = []
@@ -299,7 +299,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
       // Track unresolved spread attrs for runtime application.
       // Only handle spreads whose source matches the component's rest/props parameter name.
       // Other identifiers or complex expressions may not exist in the compiled init scope.
-      // Always use 'props' as the source since the init function parameter is always 'props'.
+      // Always use PROPS_PARAM as the source since the init function parameter is PROPS_PARAM.
       if (attr.name === '...' && attr.value) {
         const spreadVal = attrValueToString(attr.value) ?? ''
         const elemRestName = ctx.restPropsName
@@ -310,7 +310,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
             .map(a => a.name)
           ctx.restAttrElements.push({
             slotId: element.slotId,
-            source: 'props',
+            source: PROPS_PARAM,
             excludeKeys,
           })
         }

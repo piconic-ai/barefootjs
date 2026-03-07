@@ -4,7 +4,7 @@
 
 import type { ComponentIR, ConstantInfo, IRNode } from '../types'
 import type { ClientJsContext } from './types'
-import { varSlotId } from './utils'
+import { varSlotId, PROPS_PARAM } from './utils'
 import { collectUsedIdentifiers, collectUsedFunctions } from './identifiers'
 import { valueReferencesReactiveData, getControlledPropName, detectPropsWithPropertyAccess } from './prop-handling'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER, detectUsedImports, collectUserDomImports, collectExternalImports } from './imports'
@@ -62,7 +62,7 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   lines.push('')
   lines.push(MODULE_CONSTANTS_PLACEHOLDER)
 
-  lines.push(`export function init${name}(__scope, props = {}) {`)
+  lines.push(`export function init${name}(__scope, ${PROPS_PARAM} = {}) {`)
   lines.push(`  if (!__scope) return`)
   lines.push('')
 
@@ -98,13 +98,11 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
         continue
       }
 
-      if (constant.name !== 'props') {
-        neededConstants.push(constant)
+      neededConstants.push(constant)
 
-        const refs = valueReferencesReactiveData(constant.value, ctx)
-        for (const propName of refs.usedProps) {
-          neededProps.add(propName)
-        }
+      const refs = valueReferencesReactiveData(constant.value, ctx)
+      for (const propName of refs.usedProps) {
+        neededProps.add(propName)
       }
     }
   }
@@ -242,9 +240,30 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   emitRefCallbacks(lines, ctx, conditionalSlotIds)
   emitEffectsAndOnMounts(lines, ctx)
   emitProviderAndChildInits(lines, ctx)
-  emitRegistrationAndHydration(lines, ctx, _ir, usedAsChild)
+  const hydrateLine = emitRegistrationAndHydration(lines, ctx, _ir, usedAsChild)
 
-  const generatedCode = lines.join('\n')
+  let generatedCode = lines.join('\n')
+
+  // Rename source-level props object name to the generated parameter name.
+  // User code may use `props.xxx` or a custom name like `p.xxx`;
+  // the init function parameter is always PROPS_PARAM.
+  // Both property access (props.xxx) and bare references (fn(props)) are renamed.
+  // The hydrate line is structurally excluded — it was not in `lines` during join,
+  // so template expressions (already using PROPS_PARAM) are never double-replaced.
+  const srcPropsName = ctx.propsObjectName ?? 'props'
+  if (srcPropsName !== PROPS_PARAM) {
+    generatedCode = generatedCode.split('\n')
+      .map(line => {
+        // Skip comment lines
+        if (line.trimStart().startsWith('//')) return line
+        return line.replace(new RegExp(`\\b${srcPropsName}\\b`, 'g'), PROPS_PARAM)
+      })
+      .join('\n')
+  }
+
+  // Append hydrate line after props renaming (template expressions are already correct)
+  generatedCode += '\n' + hydrateLine
+
   const usedImports = detectUsedImports(generatedCode)
 
   for (const userImport of collectUserDomImports(_ir)) {
