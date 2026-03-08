@@ -3,14 +3,18 @@
  * Table Props Playground
  *
  * Interactive playground for the Table component.
- * Allows toggling caption and footer sections.
+ * Allows toggling caption and footer sections independently.
+ *
+ * Note: Uses style-based visibility instead of conditional rendering (&&)
+ * to avoid HTML table foster parenting issues where the browser moves
+ * comment markers outside <table>, breaking hydration.
  */
 
 import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
 import { hlPlain, hlTag } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
+import { Checkbox } from '@ui/components/ui/checkbox'
 import {
   Table,
   TableHeader,
@@ -22,19 +26,19 @@ import {
   TableCaption,
 } from '@ui/components/ui/table'
 
-type TableLayout = 'basic' | 'with-caption' | 'with-footer'
-
 function TablePlayground(_props: {}) {
-  const [layout, setLayout] = createSignal<TableLayout>('basic')
+  const [showCaption, setShowCaption] = createSignal(false)
+  const [showFooter, setShowFooter] = createSignal(false)
 
   createEffect(() => {
-    const l = layout()
+    const caption = showCaption()
+    const footer = showFooter()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
     if (!codeEl) return
 
     let code = `${hlPlain('&lt;')}${hlTag('Table')}${hlPlain('&gt;')}\n`
 
-    if (l === 'with-caption') {
+    if (caption) {
       code += `  ${hlPlain('&lt;')}${hlTag('TableCaption')}${hlPlain('&gt;')}A list of recent invoices.${hlPlain('&lt;/')}${hlTag('TableCaption')}${hlPlain('&gt;')}\n`
     }
 
@@ -52,12 +56,12 @@ function TablePlayground(_props: {}) {
       `    ${hlPlain('&lt;/')}${hlTag('TableRow')}${hlPlain('&gt;')}\n` +
       `  ${hlPlain('&lt;/')}${hlTag('TableBody')}${hlPlain('&gt;')}\n`
 
-    if (l === 'with-footer') {
+    if (footer) {
       code +=
         `  ${hlPlain('&lt;')}${hlTag('TableFooter')}${hlPlain('&gt;')}\n` +
         `    ${hlPlain('&lt;')}${hlTag('TableRow')}${hlPlain('&gt;')}\n` +
         `      ${hlPlain('&lt;')}${hlTag('TableCell')}${hlPlain('&gt;')}Total${hlPlain('&lt;/')}${hlTag('TableCell')}${hlPlain('&gt;')}\n` +
-        `      ${hlPlain('&lt;')}${hlTag('TableCell')}${hlPlain('&gt;')}$250.00${hlPlain('&lt;/')}${hlTag('TableCell')}${hlPlain('&gt;')}\n` +
+        `      ${hlPlain('&lt;')}${hlTag('TableCell')}${hlPlain('&gt;')}$400.00${hlPlain('&lt;/')}${hlTag('TableCell')}${hlPlain('&gt;')}\n` +
         `    ${hlPlain('&lt;/')}${hlTag('TableRow')}${hlPlain('&gt;')}\n` +
         `  ${hlPlain('&lt;/')}${hlTag('TableFooter')}${hlPlain('&gt;')}\n`
     }
@@ -67,9 +71,10 @@ function TablePlayground(_props: {}) {
   })
 
   const plainCode = () => {
-    const l = layout()
+    const caption = showCaption()
+    const footer = showFooter()
     let code = `<Table>\n`
-    if (l === 'with-caption') code += `  <TableCaption>A list of recent invoices.</TableCaption>\n`
+    if (caption) code += `  <TableCaption>A list of recent invoices.</TableCaption>\n`
     code +=
       `  <TableHeader>\n` +
       `    <TableRow>\n` +
@@ -83,12 +88,12 @@ function TablePlayground(_props: {}) {
       `      <TableCell>$250.00</TableCell>\n` +
       `    </TableRow>\n` +
       `  </TableBody>\n`
-    if (l === 'with-footer') {
+    if (footer) {
       code +=
         `  <TableFooter>\n` +
         `    <TableRow>\n` +
         `      <TableCell>Total</TableCell>\n` +
-        `      <TableCell>$250.00</TableCell>\n` +
+        `      <TableCell>$400.00</TableCell>\n` +
         `    </TableRow>\n` +
         `  </TableFooter>\n`
     }
@@ -102,9 +107,7 @@ function TablePlayground(_props: {}) {
       previewContent={
         <div className="w-full max-w-md">
           <Table>
-            {layout() === 'with-caption' && (
-              <TableCaption>A list of recent invoices.</TableCaption>
-            )}
+            <TableCaption style={showCaption() ? undefined : 'display:none'}>A list of recent invoices.</TableCaption>
             <TableHeader>
               <TableRow>
                 <TableHead>Invoice</TableHead>
@@ -121,29 +124,27 @@ function TablePlayground(_props: {}) {
                 <TableCell>$150.00</TableCell>
               </TableRow>
             </TableBody>
-            {layout() === 'with-footer' && (
-              <TableFooter>
-                <TableRow>
-                  <TableCell>Total</TableCell>
-                  <TableCell>$400.00</TableCell>
-                </TableRow>
-              </TableFooter>
-            )}
+            <TableFooter style={showFooter() ? undefined : 'display:none'}>
+              <TableRow>
+                <TableCell>Total</TableCell>
+                <TableCell>$400.00</TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </div>
       }
       controls={<>
-        <PlaygroundControl label="layout">
-          <Select value={layout()} onValueChange={(v: string) => setLayout(v as TableLayout)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select layout..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="basic">basic</SelectItem>
-              <SelectItem value="with-caption">with caption</SelectItem>
-              <SelectItem value="with-footer">with footer</SelectItem>
-            </SelectContent>
-          </Select>
+        <PlaygroundControl label="caption">
+          <Checkbox
+            checked={showCaption()}
+            onCheckedChange={setShowCaption}
+          />
+        </PlaygroundControl>
+        <PlaygroundControl label="footer">
+          <Checkbox
+            checked={showFooter()}
+            onCheckedChange={setShowFooter}
+          />
         </PlaygroundControl>
       </>}
       copyButton={<CopyButton code={plainCode()} />}

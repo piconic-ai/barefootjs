@@ -5,8 +5,8 @@
  * Part of the #515 page redesign initiative.
  */
 
-import { Calendar } from '@/components/ui/calendar'
 import { CalendarPlayground } from '@/components/calendar-playground'
+import { CalendarUsageDemo } from '@/components/calendar-usage-demo'
 import {
   DocPage,
   PageHeader,
@@ -44,13 +44,13 @@ function CalendarDemo() {
       />
 
       {/* Range selection */}
-      <Calendar mode="range" />
+      <Calendar mode="range" numberOfMonths={2} />
 
-      {/* With constraints */}
+      {/* With constraints (next 30 days only) */}
       <Calendar
         mode="single"
-        minDate={new Date()}
-        maxDate={new Date(Date.now() + 30 * 86400000)}
+        fromDate={new Date()}
+        toDate={new Date(Date.now() + 30 * 86400000)}
       />
     </div>
   )
@@ -84,12 +84,12 @@ const calendarProps: PropDefinition[] = [
     description: 'Callback when a range is selected (range mode).',
   },
   {
-    name: 'minDate',
+    name: 'fromDate',
     type: 'Date',
     description: 'Minimum selectable date.',
   },
   {
-    name: 'maxDate',
+    name: 'toDate',
     type: 'Date',
     description: 'Maximum selectable date.',
   },
@@ -121,10 +121,7 @@ export function CalendarRefPage() {
         {/* Usage */}
         <Section id="usage" title="Usage">
           <Example title="" code={usageCode}>
-            <div className="flex flex-wrap gap-4">
-              <Calendar mode="single" />
-              <Calendar mode="range" />
-            </div>
+            <CalendarUsageDemo />
           </Example>
         </Section>
 
