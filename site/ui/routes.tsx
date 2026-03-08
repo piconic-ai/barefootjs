@@ -68,6 +68,7 @@ import { MenubarPage } from './pages/menubar'
 import { NavigationMenuPage } from './pages/navigation-menu'
 import { TablePage } from './pages/table'
 import { SpinnerPage } from './pages/spinner'
+import { ComponentCatalogPage } from './pages/components/catalog'
 
 // Chart pages
 import { BarChartPage } from './pages/charts/bar-chart'
@@ -351,6 +352,11 @@ export function createApp() {
         </div>
       </div>
     )
+  })
+
+  // Component catalog - visual card grid (#517)
+  app.get('/components', (c) => {
+    return c.render(<ComponentCatalogPage />)
   })
 
   // Aspect Ratio documentation

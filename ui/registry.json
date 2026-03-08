@@ -7,25 +7,29 @@
       "name": "alert",
       "type": "registry:ui",
       "title": "Alert",
-      "description": "Displays a callout for important content"
+      "description": "Displays a callout for important content",
+      "tags": ["feedback"]
     },
     {
       "name": "alert-dialog",
       "type": "registry:ui",
       "title": "Alert Dialog",
-      "description": "A modal dialog that interrupts the user with important content and expects a response"
+      "description": "A modal dialog that interrupts the user with important content and expects a response",
+      "tags": ["feedback"]
     },
     {
       "name": "aspect-ratio",
       "type": "registry:ui",
       "title": "Aspect Ratio",
-      "description": "Displays content within a desired ratio"
+      "description": "Displays content within a desired ratio",
+      "tags": ["display"]
     },
     {
       "name": "avatar",
       "type": "registry:ui",
       "title": "Avatar",
-      "description": "An image element with a fallback for representing the user"
+      "description": "An image element with a fallback for representing the user",
+      "tags": ["display"]
     },
     {
       "name": "slot",
@@ -37,19 +41,22 @@
       "name": "breadcrumb",
       "type": "registry:ui",
       "title": "Breadcrumb",
-      "description": "Displays the path to the current resource using a hierarchy of links"
+      "description": "Displays the path to the current resource using a hierarchy of links",
+      "tags": ["navigation"]
     },
     {
       "name": "button",
       "type": "registry:ui",
       "title": "Button",
-      "description": "A button component with variants and sizes"
+      "description": "A button component with variants and sizes",
+      "tags": ["input"]
     },
     {
       "name": "calendar",
       "type": "registry:ui",
       "title": "Calendar",
-      "description": "A date calendar for picking single dates with month navigation"
+      "description": "A date calendar for picking single dates with month navigation",
+      "tags": ["input"]
     },
     {
       "name": "bar-chart",
@@ -61,163 +68,295 @@
       "name": "carousel",
       "type": "registry:ui",
       "title": "Carousel",
-      "description": "A carousel with motion and swipe built using Embla"
+      "description": "A carousel with motion and swipe built using Embla",
+      "tags": ["display"]
     },
     {
       "name": "collapsible",
       "type": "registry:ui",
       "title": "Collapsible",
-      "description": "An interactive component which expands/collapses a panel"
+      "description": "An interactive component which expands/collapses a panel",
+      "tags": ["layout"]
     },
     {
       "name": "command",
       "type": "registry:ui",
       "title": "Command",
-      "description": "A command menu with search, keyboard navigation, and filtering"
+      "description": "A command menu with search, keyboard navigation, and filtering",
+      "tags": ["navigation"]
     },
     {
       "name": "combobox",
       "type": "registry:ui",
       "title": "Combobox",
-      "description": "Autocomplete input with searchable dropdown"
+      "description": "Autocomplete input with searchable dropdown",
+      "tags": ["input"]
     },
     {
       "name": "context-menu",
       "type": "registry:ui",
       "title": "Context Menu",
-      "description": "A menu triggered by right-click, displayed at the cursor position"
+      "description": "A menu triggered by right-click, displayed at the cursor position",
+      "tags": ["navigation"]
     },
     {
       "name": "data-table",
       "type": "registry:ui",
       "title": "Data Table",
-      "description": "Powerful table with sorting, filtering, and pagination"
+      "description": "Powerful table with sorting, filtering, and pagination",
+      "tags": ["display"]
     },
     {
       "name": "date-picker",
       "type": "registry:ui",
       "title": "Date Picker",
-      "description": "A date picker component with calendar popup and range selection"
+      "description": "A date picker component with calendar popup and range selection",
+      "tags": ["input"]
     },
     {
       "name": "pagination",
       "type": "registry:ui",
       "title": "Pagination",
-      "description": "Pagination with page navigation, next and previous links"
+      "description": "Pagination with page navigation, next and previous links",
+      "tags": ["navigation"]
     },
     {
       "name": "popover",
       "type": "registry:ui",
       "title": "Popover",
-      "description": "A floating panel that appears relative to a trigger element"
+      "description": "A floating panel that appears relative to a trigger element",
+      "tags": ["layout"]
     },
     {
       "name": "textarea",
       "type": "registry:ui",
       "title": "Textarea",
-      "description": "A multi-line text input field with error state support"
+      "description": "A multi-line text input field with error state support",
+      "tags": ["input"]
     },
     {
       "name": "separator",
       "type": "registry:ui",
       "title": "Separator",
-      "description": "A visual divider that separates content horizontally or vertically"
+      "description": "A visual divider that separates content horizontally or vertically",
+      "tags": ["display"]
     },
     {
       "name": "skeleton",
       "type": "registry:ui",
       "title": "Skeleton",
-      "description": "A placeholder loading indicator with pulse animation"
+      "description": "A placeholder loading indicator with pulse animation",
+      "tags": ["feedback"]
     },
     {
       "name": "drawer",
       "type": "registry:ui",
       "title": "Drawer",
-      "description": "A draggable panel that slides from the edge of the screen"
+      "description": "A draggable panel that slides from the edge of the screen",
+      "tags": ["layout"]
     },
     {
       "name": "sheet",
       "type": "registry:ui",
       "title": "Sheet",
-      "description": "A panel that slides in from the edge of the screen"
+      "description": "A panel that slides in from the edge of the screen",
+      "tags": ["layout"]
     },
     {
       "name": "toggle-group",
       "type": "registry:ui",
       "title": "Toggle Group",
-      "description": "A set of two-state buttons that can be toggled on or off"
+      "description": "A set of two-state buttons that can be toggled on or off",
+      "tags": ["input"]
     },
     {
       "name": "hover-card",
       "type": "registry:ui",
       "title": "Hover Card",
-      "description": "A floating card that appears on hover to display rich content"
+      "description": "A floating card that appears on hover to display rich content",
+      "tags": ["layout"]
     },
     {
       "name": "tooltip",
       "type": "registry:ui",
       "title": "Tooltip",
-      "description": "A popup that displays contextual information on hover or focus"
+      "description": "A popup that displays contextual information on hover or focus",
+      "tags": ["layout"]
     },
     {
       "name": "resizable",
       "type": "registry:ui",
       "title": "Resizable",
-      "description": "Accessible resizable panel groups and layouts with drag and keyboard support"
+      "description": "Accessible resizable panel groups and layouts with drag and keyboard support",
+      "tags": ["layout"]
     },
     {
       "name": "menubar",
       "type": "registry:ui",
       "title": "Menubar",
-      "description": "A visually persistent menu common in desktop applications"
+      "description": "A visually persistent menu common in desktop applications",
+      "tags": ["navigation"]
     },
     {
       "name": "navigation-menu",
       "type": "registry:ui",
       "title": "Navigation Menu",
-      "description": "A collection of links for navigating websites with hover-activated content panels"
+      "description": "A collection of links for navigating websites with hover-activated content panels",
+      "tags": ["navigation"]
     },
     {
       "name": "progress",
       "type": "registry:ui",
       "title": "Progress",
-      "description": "Displays an indicator showing the completion progress of a task"
+      "description": "Displays an indicator showing the completion progress of a task",
+      "tags": ["feedback"]
     },
     {
       "name": "scroll-area",
       "type": "registry:ui",
       "title": "Scroll Area",
-      "description": "Augments native scroll functionality for custom, cross-browser styling"
+      "description": "Augments native scroll functionality for custom, cross-browser styling",
+      "tags": ["layout"]
     },
     {
       "name": "table",
       "type": "registry:ui",
       "title": "Table",
-      "description": "A responsive table component for displaying structured data"
+      "description": "A responsive table component for displaying structured data",
+      "tags": ["display"]
     },
     {
       "name": "sidebar",
       "type": "registry:ui",
       "title": "Sidebar",
-      "description": "A composable, collapsible sidebar component with responsive mobile support"
+      "description": "A composable, collapsible sidebar component with responsive mobile support",
+      "tags": ["layout", "navigation"]
     },
     {
       "name": "spinner",
       "type": "registry:ui",
       "title": "Spinner",
-      "description": "An animated loading indicator for async operations"
+      "description": "An animated loading indicator for async operations",
+      "tags": ["feedback"]
     },
     {
       "name": "input-otp",
       "type": "registry:ui",
       "title": "Input OTP",
-      "description": "An accessible one-time password input with copy-paste support"
+      "description": "An accessible one-time password input with copy-paste support",
+      "tags": ["input"]
     },
     {
       "name": "switch",
       "type": "registry:ui",
       "title": "Switch",
-      "description": "A control that allows the user to toggle between checked and not checked"
+      "description": "A control that allows the user to toggle between checked and not checked",
+      "tags": ["input"]
+    },
+    {
+      "name": "accordion",
+      "type": "registry:ui",
+      "title": "Accordion",
+      "description": "Vertically collapsing content sections",
+      "tags": ["layout"]
+    },
+    {
+      "name": "badge",
+      "type": "registry:ui",
+      "title": "Badge",
+      "description": "Small status indicator labels",
+      "tags": ["display"]
+    },
+    {
+      "name": "card",
+      "type": "registry:ui",
+      "title": "Card",
+      "description": "Container for grouped content",
+      "tags": ["display"]
+    },
+    {
+      "name": "checkbox",
+      "type": "registry:ui",
+      "title": "Checkbox",
+      "description": "A control that allows the user to toggle between checked and not checked",
+      "tags": ["input"]
+    },
+    {
+      "name": "dialog",
+      "type": "registry:ui",
+      "title": "Dialog",
+      "description": "A modal overlay with custom content",
+      "tags": ["feedback"]
+    },
+    {
+      "name": "dropdown-menu",
+      "type": "registry:ui",
+      "title": "Dropdown Menu",
+      "description": "An action menu triggered by a button",
+      "tags": ["navigation"]
+    },
+    {
+      "name": "input",
+      "type": "registry:ui",
+      "title": "Input",
+      "description": "A text input field with error state support",
+      "tags": ["input"]
+    },
+    {
+      "name": "label",
+      "type": "registry:ui",
+      "title": "Label",
+      "description": "Accessible label for form controls",
+      "tags": ["input"]
+    },
+    {
+      "name": "portal",
+      "type": "registry:ui",
+      "title": "Portal",
+      "description": "Renders content outside the DOM hierarchy",
+      "tags": ["layout"]
+    },
+    {
+      "name": "radio-group",
+      "type": "registry:ui",
+      "title": "Radio Group",
+      "description": "A set of checkable buttons where only one can be checked at a time",
+      "tags": ["input"]
+    },
+    {
+      "name": "select",
+      "type": "registry:ui",
+      "title": "Select",
+      "description": "Displays a list of options for the user to pick from",
+      "tags": ["input"]
+    },
+    {
+      "name": "slider",
+      "type": "registry:ui",
+      "title": "Slider",
+      "description": "A range value selector with draggable thumb",
+      "tags": ["input"]
+    },
+    {
+      "name": "tabs",
+      "type": "registry:ui",
+      "title": "Tabs",
+      "description": "A set of layered sections of content displayed one at a time",
+      "tags": ["navigation"]
+    },
+    {
+      "name": "toast",
+      "type": "registry:ui",
+      "title": "Toast",
+      "description": "A temporary notification message that appears briefly",
+      "tags": ["feedback"]
+    },
+    {
+      "name": "toggle",
+      "type": "registry:ui",
+      "title": "Toggle",
+      "description": "A two-state button that can be on or off",
+      "tags": ["input"]
     }
   ]
 }
