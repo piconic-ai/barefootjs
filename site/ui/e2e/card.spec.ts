@@ -54,3 +54,21 @@ test.describe('Card Documentation Page', () => {
   })
 
 })
+
+test.describe('Card Reference Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/components/card', { waitUntil: 'domcontentloaded' })
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Card')
+  })
+
+  test('renders playground with card', async ({ page }) => {
+    await expect(page.locator('[data-slot="card"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
+  })
+})

@@ -153,3 +153,21 @@ test.describe('Data Table Documentation Page', () => {
     })
   })
 })
+
+test.describe('Data Table Reference Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/components/data-table')
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Data Table')
+  })
+
+  test('renders sortable column headers', async ({ page }) => {
+    await expect(page.locator('[data-slot="data-table-column-header"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
+  })
+})

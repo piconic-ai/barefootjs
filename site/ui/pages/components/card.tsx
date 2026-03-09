@@ -81,7 +81,7 @@ function CardDemo() {
 const cardProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Card sub-components (CardHeader, CardContent, CardFooter, etc.).',
   },
   {
@@ -94,7 +94,7 @@ const cardProps: PropDefinition[] = [
 const cardHeaderProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Header content (CardTitle, CardDescription, CardAction).',
   },
 ]
@@ -102,7 +102,7 @@ const cardHeaderProps: PropDefinition[] = [
 const cardTitleProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Title text.',
   },
 ]
@@ -110,7 +110,7 @@ const cardTitleProps: PropDefinition[] = [
 const cardDescriptionProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Description text.',
   },
 ]
@@ -118,7 +118,7 @@ const cardDescriptionProps: PropDefinition[] = [
 const cardContentProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Main content of the card.',
   },
 ]
@@ -126,7 +126,7 @@ const cardContentProps: PropDefinition[] = [
 const cardActionProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Action elements positioned in the header (buttons, links).',
   },
 ]
@@ -134,7 +134,7 @@ const cardActionProps: PropDefinition[] = [
 const cardFooterProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Footer content (typically action buttons).',
   },
 ]

@@ -8,7 +8,7 @@
 
 import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag } from './shared/playground-highlight'
+import { escapeHtml, hlPlain, hlTag } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 import { Input } from '@ui/components/ui/input'
@@ -22,7 +22,7 @@ function AvatarPlayground(_props: {}) {
 
   createEffect(() => {
     const m = mode()
-    const f = fallback()
+    const f = escapeHtml(fallback())
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
     if (!codeEl) return
 

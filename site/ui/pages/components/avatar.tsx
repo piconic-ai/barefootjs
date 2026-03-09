@@ -62,7 +62,7 @@ const avatarProps: PropDefinition[] = [
   },
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'AvatarImage and AvatarFallback components.',
   },
 ]
@@ -83,7 +83,7 @@ const avatarImageProps: PropDefinition[] = [
 const avatarFallbackProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Fallback content (typically user initials).',
   },
 ]

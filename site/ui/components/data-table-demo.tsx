@@ -128,6 +128,7 @@ export function DataTableUsageDemo() {
     } else {
       setSortKey(null)
     }
+    setPage(0)
   }
 
   const sortedData = createMemo(() => {

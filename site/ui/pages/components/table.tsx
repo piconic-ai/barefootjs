@@ -85,7 +85,7 @@ function TableDemo() {
 const tableProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Table sub-components (TableHeader, TableBody, TableFooter, TableCaption).',
   },
   {
@@ -98,7 +98,7 @@ const tableProps: PropDefinition[] = [
 const tableRowProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'TableHead or TableCell elements.',
   },
   {
@@ -111,7 +111,7 @@ const tableRowProps: PropDefinition[] = [
 const tableCellProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Cell content.',
   },
   {

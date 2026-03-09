@@ -94,6 +94,12 @@ const calendarProps: PropDefinition[] = [
     description: 'Maximum selectable date.',
   },
   {
+    name: 'numberOfMonths',
+    type: 'number',
+    defaultValue: '1',
+    description: 'Number of months to display side by side.',
+  },
+  {
     name: 'className',
     type: 'string',
     description: 'Additional CSS classes.',

@@ -77,7 +77,7 @@ const carouselProps: PropDefinition[] = [
 const carouselItemProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'Slide content.',
   },
   {

@@ -109,3 +109,21 @@ test.describe('Carousel Documentation Page', () => {
     })
   })
 })
+
+test.describe('Carousel Reference Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/components/carousel')
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Carousel')
+  })
+
+  test('renders carousel in playground', async ({ page }) => {
+    await expect(page.locator('[data-slot="carousel"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
+  })
+})
