@@ -8,7 +8,7 @@
 
 import { createSignal, createEffect } from '@barefootjs/dom'
 import { CopyButton } from './copy-button'
-import { escapeHtml, hlPlain, hlTag } from './shared/playground-highlight'
+import { escapeHtml, hlPlain, hlTag, hlAttr, hlStr } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 import { Input } from '@ui/components/ui/input'
@@ -28,15 +28,15 @@ function AvatarPlayground(_props: {}) {
 
     if (m === 'image') {
       codeEl.innerHTML =
-        `<span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">Avatar</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&gt;</span>\n` +
-        `  <span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">AvatarImage</span> <span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">src</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">=</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">&quot;/avatar.png&quot;</span> <span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">alt</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">=</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">&quot;User&quot;</span> <span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">/&gt;</span>\n` +
-        `  <span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">AvatarFallback</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&gt;</span>${f}<span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">AvatarFallback</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&gt;</span>\n` +
-        `<span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">Avatar</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&gt;</span>`
+        `${hlPlain('&lt;')}${hlTag('Avatar')}${hlPlain('&gt;')}\n` +
+        `  ${hlPlain('&lt;')}${hlTag('AvatarImage')} ${hlAttr('src')}${hlPlain('=')}${hlStr('&quot;/avatar.png&quot;')} ${hlAttr('alt')}${hlPlain('=')}${hlStr('&quot;User&quot;')} ${hlPlain('/&gt;')}\n` +
+        `  ${hlPlain('&lt;')}${hlTag('AvatarFallback')}${hlPlain('&gt;')}${f}${hlPlain('&lt;/')}${hlTag('AvatarFallback')}${hlPlain('&gt;')}\n` +
+        `${hlPlain('&lt;/')}${hlTag('Avatar')}${hlPlain('&gt;')}`
     } else {
       codeEl.innerHTML =
-        `<span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">Avatar</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&gt;</span>\n` +
-        `  <span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">AvatarFallback</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&gt;</span>${f}<span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">AvatarFallback</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&gt;</span>\n` +
-        `<span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&lt;/</span><span style="--shiki-light:#22863A;--shiki-dark:#85E89D">Avatar</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">&gt;</span>`
+        `${hlPlain('&lt;')}${hlTag('Avatar')}${hlPlain('&gt;')}\n` +
+        `  ${hlPlain('&lt;')}${hlTag('AvatarFallback')}${hlPlain('&gt;')}${f}${hlPlain('&lt;/')}${hlTag('AvatarFallback')}${hlPlain('&gt;')}\n` +
+        `${hlPlain('&lt;/')}${hlTag('Avatar')}${hlPlain('&gt;')}`
     }
   })
 
