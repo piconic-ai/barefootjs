@@ -58,6 +58,7 @@ export function WithProps() {
 ## Rules
 
 - Use `barefoot search` and `barefoot ui` for component discovery. Do not read source files to learn component APIs.
+- Use `barefoot core error-codes` to check compiler constraints (BF001, BF021, etc.) before writing components.
 - New components go in `ui/components/ui/<name>.tsx`.
 - IR tests go in `ui/components/ui/__tests__/<name>.test.ts`.
 - Stateful components (using signals) must have `"use client"` as the first line.

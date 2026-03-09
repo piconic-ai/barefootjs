@@ -48,6 +48,14 @@ Quick decision guide:
 - **Click/keyboard behavior** → E2E test
 - **Hydration correctness** is a compiler invariant. Fix in `packages/jsx/`, verify with E2E.
 
+## CLI
+
+Use the `barefoot` CLI to look up component APIs and framework docs. Do not read source files to learn APIs.
+
+- `barefoot search <query>` — Find components and docs by name/category/tags
+- `barefoot ui <component>` — Component reference (props, examples, a11y)
+- `barefoot core <topic>` — Core docs (signals, compiler constraints, error codes, etc.)
+
 ## Implementation Guidelines
 
 When implementing a feature, match the capability level of existing similar features. For example, if filter() supports arbitrary predicates, find() should too. Always check sibling implementations for parity.
