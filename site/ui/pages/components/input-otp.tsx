@@ -34,13 +34,19 @@ import {
   InputOTPGroup,
   InputOTPSlot,
   InputOTPSeparator,
+  REGEXP_ONLY_DIGITS_AND_CHARS,
 } from "@/components/ui/input-otp"
 
 function InputOTPDemo() {
   const [value, setValue] = createSignal("")
 
   return (
-    <InputOTP maxLength={6} value={value()} onValueChange={setValue}>
+    <InputOTP
+      maxLength={6}
+      pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+      value={value()}
+      onValueChange={setValue}
+    >
       <InputOTPGroup>
         <InputOTPSlot index={0} />
         <InputOTPSlot index={1} />
