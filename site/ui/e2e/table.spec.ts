@@ -62,3 +62,21 @@ test.describe('Table Documentation Page', () => {
     })
   })
 })
+
+test.describe('Table Reference Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/components/table')
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Table')
+  })
+
+  test('renders table in playground', async ({ page }) => {
+    await expect(page.locator('[data-slot="table"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
+  })
+})

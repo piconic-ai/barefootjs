@@ -139,3 +139,21 @@ test.describe('Calendar Documentation Page', () => {
     })
   })
 })
+
+test.describe('Calendar Reference Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/components/calendar')
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Calendar')
+  })
+
+  test('renders calendar in playground', async ({ page }) => {
+    await expect(page.locator('[data-slot="calendar"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
+  })
+})

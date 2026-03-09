@@ -523,7 +523,15 @@ export class HonoAdapter implements TemplateAdapter {
   }
 
   private wrapWithCondMarker(node: IRNode, content: string, condId: string): string {
-    // If content is a JSX element, add bf-c attribute
+    // Components don't reliably forward bf-c to their root element.
+    // Use comment markers so insert() can find them via TreeWalker.
+    // This matches the client-side template behavior (renderChild returns
+    // ${...} expressions which also get comment-wrapped by addCondAttrToTemplate).
+    if (node.type === 'component') {
+      return `<>{bfComment("cond-start:${condId}")}${content}{bfComment("cond-end:${condId}")}</>`
+    }
+
+    // If content is a raw HTML element, add bf-c attribute
     if (content.startsWith('<')) {
       const match = content.match(/^<(\w+)/)
       if (match) {

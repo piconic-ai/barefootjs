@@ -112,6 +112,96 @@ export function DataTablePreviewDemo() {
   )
 }
 
+// Usage demo: Sortable columns + pagination
+export function DataTableUsageDemo() {
+  const [sortKey, setSortKey] = createSignal<SortKey>(null)
+  const [sortDir, setSortDir] = createSignal<SortDir>('asc')
+  const [page, setPage] = createSignal(0)
+  const pageSize = 3
+
+  const handleSort = (key: 'amount' | 'status') => {
+    if (sortKey() === null) {
+      setSortKey(key)
+      setSortDir('asc')
+    } else if (sortKey() === key) {
+      setSortDir(sortDir() === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(null)
+    }
+    setPage(0)
+  }
+
+  const sortedData = createMemo(() => {
+    const key = sortKey()
+    if (!key) return payments
+
+    const dir = sortDir()
+    return /* @client */ [...payments].sort((a, b) => {
+      const aVal = a[key]
+      const bVal = b[key]
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return dir === 'asc' ? aVal - bVal : bVal - aVal
+      }
+      const aStr = String(aVal)
+      const bStr = String(bVal)
+      return dir === 'asc' ? (aStr < bStr ? -1 : aStr > bStr ? 1 : 0) : (aStr > bStr ? -1 : aStr < bStr ? 1 : 0)
+    })
+  })
+
+  const pageCount = createMemo(() =>
+    Math.max(1, Math.ceil(sortedData().length / pageSize))
+  )
+
+  const paginatedData = createMemo(() =>
+    sortedData().slice(page() * pageSize, (page() + 1) * pageSize)
+  )
+
+  return (
+    <div className="w-full space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">ID</TableHead>
+            <TableHead>
+              <DataTableColumnHeader
+                title="Status"
+                sorted={sortKey() === 'status' ? sortDir() : false}
+                onSort={() => handleSort('status')}
+              />
+            </TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead className="text-right">
+              <DataTableColumnHeader
+                title="Amount"
+                sorted={sortKey() === 'amount' ? sortDir() : false}
+                onSort={() => handleSort('amount')}
+              />
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedData().map((payment) => (
+            <TableRow>
+              <TableCell className="font-medium">{payment.id}</TableCell>
+              <TableCell>{payment.status}</TableCell>
+              <TableCell>{payment.email}</TableCell>
+              <TableCell className="text-right">${payment.amount.toFixed(2)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <DataTablePagination
+        canPrev={page() > 0}
+        canNext={page() < pageCount() - 1}
+        onPrev={() => setPage(p => p - 1)}
+        onNext={() => setPage(p => p + 1)}
+      >
+        Page {page() + 1} of {pageCount()}
+      </DataTablePagination>
+    </div>
+  )
+}
+
 // Filtering demo: Email filter + pagination
 export function DataTableFilteringDemo() {
   const [filter, setFilter] = createSignal('')
@@ -168,10 +258,13 @@ export function DataTableFilteringDemo() {
         </TableBody>
       </Table>
       <DataTablePagination
-        page={page()}
-        pageCount={pageCount()}
-        onPageChange={setPage}
-      />
+        canPrev={page() > 0}
+        canNext={page() < pageCount() - 1}
+        onPrev={() => setPage(p => p - 1)}
+        onNext={() => setPage(p => p + 1)}
+      >
+        Page {page() + 1} of {pageCount()}
+      </DataTablePagination>
     </div>
   )
 }

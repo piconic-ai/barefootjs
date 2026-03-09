@@ -100,3 +100,60 @@ export function highlightJsxSelfClosing(
   const renderedProps = props.filter(isActive).map(renderProp).join('')
   return `${hlPlain('&lt;')}${hlTag(tagName)}${renderedProps} ${hlPlain('/&gt;')}`
 }
+
+/**
+ * Generate syntax-highlighted JSX markup for nested component trees.
+ *
+ * Each line is either:
+ * - A self-closing tag: `{ tag, props }` (no children)
+ * - A tag with text content: `{ tag, props, children: 'text' }`
+ * - A tag wrapping child elements: `{ tag, props, children: [...] }`
+ *
+ * @example
+ * highlightJsxTree({
+ *   tag: 'Avatar', children: [
+ *     { tag: 'AvatarImage', props: [{ name: 'src', value: '/img.png', defaultValue: '' }] },
+ *     { tag: 'AvatarFallback', children: 'BF' },
+ *   ]
+ * })
+ */
+export interface JsxTreeNode {
+  tag: string
+  props?: HighlightProp[]
+  children?: string | JsxTreeNode[]
+}
+
+export function highlightJsxTree(node: JsxTreeNode, indent = 0): string {
+  const pad = '  '.repeat(indent)
+  const renderedProps = (node.props ?? []).filter(isActive).map(renderProp).join('')
+
+  if (node.children === undefined) {
+    // Self-closing
+    return `${pad}${hlPlain('&lt;')}${hlTag(node.tag)}${renderedProps} ${hlPlain('/&gt;')}`
+  }
+  if (typeof node.children === 'string') {
+    // Inline text content
+    const open = `${hlPlain('&lt;')}${hlTag(node.tag)}${renderedProps}${hlPlain('&gt;')}`
+    const close = `${hlPlain('&lt;/')}${hlTag(node.tag)}${hlPlain('&gt;')}`
+    return `${pad}${open}${escapeHtml(node.children)}${close}`
+  }
+  // Nested children
+  const open = `${pad}${hlPlain('&lt;')}${hlTag(node.tag)}${renderedProps}${hlPlain('&gt;')}`
+  const close = `${pad}${hlPlain('&lt;/')}${hlTag(node.tag)}${hlPlain('&gt;')}`
+  const childLines = node.children.map(c => highlightJsxTree(c, indent + 1))
+  return [open, ...childLines, close].join('\n')
+}
+
+export function plainJsxTree(node: JsxTreeNode, indent = 0): string {
+  const pad = '  '.repeat(indent)
+  const renderedProps = (node.props ?? []).filter(isActive).map(renderPlainProp).join('')
+
+  if (node.children === undefined) {
+    return `${pad}<${node.tag}${renderedProps} />`
+  }
+  if (typeof node.children === 'string') {
+    return `${pad}<${node.tag}${renderedProps}>${node.children}</${node.tag}>`
+  }
+  const childLines = node.children.map(c => plainJsxTree(c, indent + 1))
+  return [`${pad}<${node.tag}${renderedProps}>`, ...childLines, `${pad}</${node.tag}>`].join('\n')
+}

@@ -124,7 +124,14 @@ function DataTableFiltering() {
       <Table>
         {/* ... table rows ... */}
       </Table>
-      <DataTablePagination page={page()} pageCount={pageCount()} onPageChange={setPage} />
+      <DataTablePagination
+        canPrev={page() > 0}
+        canNext={page() < pageCount() - 1}
+        onPrev={() => setPage(p => p - 1)}
+        onNext={() => setPage(p => p + 1)}
+      >
+        Page \${page() + 1} of \${pageCount()}
+      </DataTablePagination>
     </div>
   )
 }`
@@ -202,34 +209,34 @@ const columnHeaderProps: PropDefinition[] = [
 
 const paginationProps: PropDefinition[] = [
   {
-    name: 'page',
-    type: 'number',
+    name: 'children',
+    type: 'Child',
     defaultValue: '-',
-    description: 'Current page (0-indexed).',
+    description: 'Page info label (e.g. "Page 1 of 3").',
   },
   {
-    name: 'pageCount',
-    type: 'number',
+    name: 'canPrev',
+    type: 'boolean',
     defaultValue: '-',
-    description: 'Total number of pages.',
+    description: 'Whether previous page is available.',
   },
   {
-    name: 'onPageChange',
-    type: '(page: number) => void',
+    name: 'canNext',
+    type: 'boolean',
     defaultValue: '-',
-    description: 'Callback when page changes.',
+    description: 'Whether next page is available.',
   },
   {
-    name: 'selectedCount',
-    type: 'number',
+    name: 'onPrev',
+    type: '() => void',
     defaultValue: '-',
-    description: 'Number of selected rows (optional).',
+    description: 'Callback for previous page.',
   },
   {
-    name: 'totalCount',
-    type: 'number',
+    name: 'onNext',
+    type: '() => void',
     defaultValue: '-',
-    description: 'Total number of rows (optional).',
+    description: 'Callback for next page.',
   },
 ]
 

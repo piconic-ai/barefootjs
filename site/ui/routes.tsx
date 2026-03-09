@@ -24,6 +24,13 @@ import { SelectRefPage } from './pages/components/select'
 import { TextareaRefPage } from './pages/components/textarea'
 import { SwitchRefPage } from './pages/components/switch'
 import { ToggleRefPage } from './pages/components/toggle'
+import { AvatarRefPage } from './pages/components/avatar'
+import { CalendarRefPage } from './pages/components/calendar'
+import { CardRefPage } from './pages/components/card'
+import { CarouselRefPage } from './pages/components/carousel'
+import { DataTableRefPage } from './pages/components/data-table'
+import { SkeletonRefPage } from './pages/components/skeleton'
+import { TableRefPage } from './pages/components/table'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { ButtonPage } from './pages/button'
 import { CalendarPage } from './pages/calendar'
@@ -129,7 +136,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Aspect Ratio</h3>
               <p className="text-xs text-muted-foreground">Content within a desired ratio</p>
             </a>
-            <a href="/docs/components/avatar" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/avatar" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Avatar</h3>
               <p className="text-xs text-muted-foreground">User profile image with fallback</p>
             </a>
@@ -145,15 +152,15 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Button</h3>
               <p className="text-xs text-muted-foreground">Clickable actions with multiple variants</p>
             </a>
-            <a href="/docs/components/calendar" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/calendar" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Calendar</h3>
               <p className="text-xs text-muted-foreground">Date picker with month navigation</p>
             </a>
-            <a href="/docs/components/card" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/card" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Card</h3>
               <p className="text-xs text-muted-foreground">Container for grouped content</p>
             </a>
-            <a href="/docs/components/carousel" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/carousel" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Carousel</h3>
               <p className="text-xs text-muted-foreground">Motion and swipe content slider</p>
             </a>
@@ -177,7 +184,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Context Menu</h3>
               <p className="text-xs text-muted-foreground">Right-click menu at cursor position</p>
             </a>
-            <a href="/docs/components/data-table" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/data-table" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Data Table</h3>
               <p className="text-xs text-muted-foreground">Sortable, filterable data table</p>
             </a>
@@ -257,7 +264,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Separator</h3>
               <p className="text-xs text-muted-foreground">Visual divider between content</p>
             </a>
-            <a href="/docs/components/skeleton" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/skeleton" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Skeleton</h3>
               <p className="text-xs text-muted-foreground">Placeholder loading indicator</p>
             </a>
@@ -277,7 +284,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Switch</h3>
               <p className="text-xs text-muted-foreground">On/off toggle control</p>
             </a>
-            <a href="/docs/components/table" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/table" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Table</h3>
               <p className="text-xs text-muted-foreground">Responsive data table</p>
             </a>
@@ -426,6 +433,41 @@ export function createApp() {
   // Toggle reference page (redesigned #515)
   app.get('/components/toggle', (c) => {
     return c.render(<ToggleRefPage />)
+  })
+
+  // Avatar reference page (redesigned #515)
+  app.get('/components/avatar', (c) => {
+    return c.render(<AvatarRefPage />)
+  })
+
+  // Calendar reference page (redesigned #515)
+  app.get('/components/calendar', (c) => {
+    return c.render(<CalendarRefPage />)
+  })
+
+  // Card reference page (redesigned #515)
+  app.get('/components/card', (c) => {
+    return c.render(<CardRefPage />)
+  })
+
+  // Carousel reference page (redesigned #515)
+  app.get('/components/carousel', (c) => {
+    return c.render(<CarouselRefPage />)
+  })
+
+  // Data Table reference page (redesigned #515)
+  app.get('/components/data-table', (c) => {
+    return c.render(<DataTableRefPage />)
+  })
+
+  // Skeleton reference page (redesigned #515)
+  app.get('/components/skeleton', (c) => {
+    return c.render(<SkeletonRefPage />)
+  })
+
+  // Table reference page (redesigned #515)
+  app.get('/components/table', (c) => {
+    return c.render(<TableRefPage />)
   })
 
   // Breadcrumb documentation

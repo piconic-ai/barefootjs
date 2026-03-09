@@ -86,6 +86,29 @@ test.describe('Data Table Documentation Page', () => {
 
       await expect(pagination).toBeVisible()
     })
+
+    test('navigating to next page and back preserves table rows', async ({ page }) => {
+      // Find the first pagination component (filtering demo: 12 items, pageSize=5 → 3 pages)
+      const pagination = page.locator('[data-slot="data-table-pagination"]').first()
+      const nextBtn = pagination.locator('button', { hasText: 'Next' })
+      const prevBtn = pagination.locator('button', { hasText: 'Previous' })
+
+      // Should start on page 1
+      await expect(pagination).toContainText('Page 1 of 3')
+
+      // Navigate to page 2
+      await nextBtn.click()
+      await expect(pagination).toContainText('Page 2 of 3')
+
+      // Navigate back to page 1
+      await prevBtn.click()
+      await expect(pagination).toContainText('Page 1 of 3')
+
+      // Table body should still have rows
+      const table = pagination.locator('..').locator('[data-slot="table-body"] [data-slot="table-row"]')
+      const rowCount = await table.count()
+      expect(rowCount).toBeGreaterThan(0)
+    })
   })
 
   test.describe('Row Selection', () => {
@@ -128,5 +151,23 @@ test.describe('Data Table Documentation Page', () => {
       await selectAll.click()
       await expect(page.locator('text=0 of 5 row(s) selected.')).toBeVisible()
     })
+  })
+})
+
+test.describe('Data Table Reference Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/components/data-table')
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Data Table')
+  })
+
+  test('renders sortable column headers', async ({ page }) => {
+    await expect(page.locator('[data-slot="data-table-column-header"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
   })
 })

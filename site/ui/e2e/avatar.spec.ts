@@ -54,3 +54,21 @@ test.describe('Avatar Documentation Page', () => {
     })
   })
 })
+
+test.describe('Avatar Reference Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/components/avatar')
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Avatar')
+  })
+
+  test('renders playground', async ({ page }) => {
+    await expect(page.locator('[data-slot="avatar"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
+  })
+})

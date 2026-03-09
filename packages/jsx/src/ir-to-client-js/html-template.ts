@@ -51,14 +51,16 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>): s
           // Convert JSX `key` to `data-key` so reconcileList can match elements
           const attrName = a.name === 'key' ? 'data-key' : toHtmlAttrName(a.name)
           if (a.value === null) return attrName
+          // Resolve IRTemplateLiteral to string expression for use in template literals
+          const valExpr = typeof a.value === 'string' ? a.value : attrValueToString(a.value)
           if (a.dynamic && isBooleanAttr(attrName)) {
-            return `\${${a.value} ? '${attrName}' : ''}`
+            return `\${${valExpr} ? '${attrName}' : ''}`
           }
           if (a.dynamic && a.presenceOrUndefined) {
-            return `\${${a.value} ? '${attrName}' : ''}`
+            return `\${${valExpr} ? '${attrName}' : ''}`
           }
-          if (a.dynamic) return `\${(${a.value}) != null ? '${attrName}="' + (${a.value}) + '"' : ''}`
-          return `${attrName}="${a.value}"`
+          if (a.dynamic) return `\${(${valExpr}) != null ? '${attrName}="' + (${valExpr}) + '"' : ''}`
+          return `${attrName}="${valExpr}"`
         })
         .filter(Boolean)
 
@@ -119,6 +121,11 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>): s
           if (p.isLiteral) return `${quotePropName(p.name)}: ${JSON.stringify(p.value)}`
           return `${quotePropName(p.name)}: ${p.value}`
         })
+      // Include children as a prop for renderChild() template rendering
+      if (node.children.length > 0) {
+        const childHtml = node.children.map(recurse).join('')
+        propsEntries.push(`children: \`${childHtml}\``)
+      }
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${keyProp.value}` : ''
