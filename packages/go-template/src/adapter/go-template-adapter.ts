@@ -75,7 +75,13 @@ export class GoTemplateAdapter extends BaseAdapter {
     this.errors = []
     this.propsObjectName = ir.metadata.propsObjectName
 
-    const templateBody = this.renderNode(ir.root)
+    const hasInteractivity = this.hasClientInteractivity(ir)
+    const isRootComponent = ir.root.type === 'component'
+    const isIfStatement = ir.root.type === 'if-statement'
+
+    const templateBody = isIfStatement
+      ? this.renderIfStatement(ir.root as IRIfStatement, { isRootOfClientComponent: hasInteractivity })
+      : this.renderNode(ir.root, { isRootOfClientComponent: hasInteractivity && isRootComponent })
 
     // Generate script registration code at template start (unless skipped)
     const scriptRegistrations = options?.skipScriptRegistration
@@ -978,7 +984,7 @@ export class GoTemplateAdapter extends BaseAdapter {
     return `"${value}"`
   }
 
-  renderNode(node: IRNode): string {
+  renderNode(node: IRNode, ctx?: { isRootOfClientComponent?: boolean }): string {
     switch (node.type) {
       case 'element':
         return this.renderElement(node)
@@ -991,13 +997,13 @@ export class GoTemplateAdapter extends BaseAdapter {
       case 'loop':
         return this.renderLoop(node)
       case 'component':
-        return this.renderComponent(node)
+        return this.renderComponent(node, ctx)
       case 'fragment':
         return this.renderFragment(node as IRFragment)
       case 'slot':
         return this.renderSlot(node as IRSlot)
       case 'if-statement':
-        return this.renderIfStatement(node as IRIfStatement)
+        return this.renderIfStatement(node as IRIfStatement, ctx)
       case 'provider':
         return this.renderChildren((node as IRProvider).children)
       default:
@@ -1885,9 +1891,9 @@ export class GoTemplateAdapter extends BaseAdapter {
     }
   }
 
-  private renderIfStatement(ifStmt: IRIfStatement): string {
+  private renderIfStatement(ifStmt: IRIfStatement, ctx?: { isRootOfClientComponent?: boolean }): string {
     const { condition: goCondition, preamble } = this.convertConditionToGo(ifStmt.condition)
-    const consequent = this.renderNode(ifStmt.consequent)
+    const consequent = this.renderNode(ifStmt.consequent, ctx)
     let result = `${preamble}{{if ${goCondition}}}${consequent}`
 
     if (ifStmt.alternate) {
@@ -1906,14 +1912,14 @@ export class GoTemplateAdapter extends BaseAdapter {
             },
           })
         }
-        const altConsequent = this.renderNode(altIfStmt.consequent)
+        const altConsequent = this.renderNode(altIfStmt.consequent, ctx)
         result += `{{else if ${altCondition}}}${altConsequent}`
         if (altIfStmt.alternate) {
-          const altElse = this.renderNode(altIfStmt.alternate)
+          const altElse = this.renderNode(altIfStmt.alternate, ctx)
           result += `{{else}}${altElse}`
         }
       } else {
-        const alternate = this.renderNode(ifStmt.alternate)
+        const alternate = this.renderNode(ifStmt.alternate, ctx)
         result += `{{else}}${alternate}`
       }
     }
@@ -2237,24 +2243,31 @@ export class GoTemplateAdapter extends BaseAdapter {
     return null
   }
 
-  renderComponent(comp: IRComponent): string {
+  renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean }): string {
     // Handle Portal component specially - collect content for body end
     if (comp.name === 'Portal') {
       return this.renderPortalComponent(comp)
     }
 
     // In Go templates, components are rendered using {{template "name" data}}
+    let templateCall: string
     if (this.inLoop) {
       // Loop children: dot becomes loop item (already has correct props)
-      return `{{template "${comp.name}" .}}`
-    }
-    // Static children with slotId: use unique field name based on slotId
-    if (comp.slotId) {
+      templateCall = `{{template "${comp.name}" .}}`
+    } else if (comp.slotId) {
+      // Static children with slotId: use unique field name based on slotId
       const suffix = slotIdToFieldSuffix(comp.slotId)
-      return `{{template "${comp.name}" .${comp.name}${suffix}}}`
+      templateCall = `{{template "${comp.name}" .${comp.name}${suffix}}}`
+    } else {
+      // Static children without slotId: fallback to .ComponentName
+      templateCall = `{{template "${comp.name}" .${comp.name}}}`
     }
-    // Static children without slotId: fallback to .ComponentName
-    return `{{template "${comp.name}" .${comp.name}}}`
+
+    // Root component in client component needs scope comment for hydration boundary
+    if (ctx?.isRootOfClientComponent) {
+      return `{{bfScopeComment .}}${templateCall}`
+    }
+    return templateCall
   }
 
   /**

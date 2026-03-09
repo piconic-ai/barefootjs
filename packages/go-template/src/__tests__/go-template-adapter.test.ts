@@ -382,4 +382,55 @@ export function ItemChecker() {
       expect(result.template).toContain('Found')
     })
   })
+
+  describe('component root scope comment propagation', () => {
+    test('component root in client component outputs bfScopeComment', () => {
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/dom"
+
+export function Wrapper() {
+  const [active, setActive] = createSignal(false)
+  return <Badge active={active()} />
+}
+`)
+      // Component root should have scope comment for hydration boundary
+      expect(result.template).toContain('{{bfScopeComment .}}')
+      expect(result.template).toContain('{{template "Badge"')
+    })
+
+    test('element root in client component does NOT output bfScopeComment', () => {
+      // Element roots use bf-s attribute directly, not scope comments
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/dom"
+
+export function Counter() {
+  const [count, setCount] = createSignal(0)
+  return <div>{count()}</div>
+}
+`)
+      expect(result.template).not.toContain('{{bfScopeComment .}}')
+      expect(result.template).toContain('<div')
+    })
+
+    test('if-statement root with component branches outputs bfScopeComment', () => {
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/dom"
+
+export function ConditionalComponent(props: { variant: string }) {
+  const [active, setActive] = createSignal(false)
+  if (props.variant === 'primary') {
+    return <PrimaryBadge active={active()} />
+  }
+  return <DefaultBadge active={active()} />
+}
+`)
+      // Both branches should have scope comments
+      const template = result.template
+      const scopeCommentCount = (template.match(/\{\{bfScopeComment \.\}\}/g) ?? []).length
+      expect(scopeCommentCount).toBeGreaterThanOrEqual(2)
+    })
+  })
 })
