@@ -113,10 +113,13 @@ function DataTableDemo() {
         </TableBody>
       </Table>
       <DataTablePagination
-        page={page()}
-        pageCount={pageCount()}
-        onPageChange={setPage}
-      />
+        canPrev={page() > 0}
+        canNext={page() < pageCount() - 1}
+        onPrev={() => setPage(p => p - 1)}
+        onNext={() => setPage(p => p + 1)}
+      >
+        Page \${page() + 1} of \${pageCount()}
+      </DataTablePagination>
     </div>
   )
 }`
@@ -142,29 +145,29 @@ const columnHeaderProps: PropDefinition[] = [
 
 const paginationProps: PropDefinition[] = [
   {
-    name: 'page',
-    type: 'number',
-    description: 'Current page index (0-based).',
+    name: 'children',
+    type: 'Child',
+    description: 'Page info label (e.g. "Page 1 of 3").',
   },
   {
-    name: 'pageCount',
-    type: 'number',
-    description: 'Total number of pages.',
+    name: 'canPrev',
+    type: 'boolean',
+    description: 'Whether previous page is available.',
   },
   {
-    name: 'onPageChange',
-    type: '(page: number) => void',
-    description: 'Callback when the page changes.',
+    name: 'canNext',
+    type: 'boolean',
+    description: 'Whether next page is available.',
   },
   {
-    name: 'selectedCount',
-    type: 'number',
-    description: 'Number of selected rows (optional, for display).',
+    name: 'onPrev',
+    type: '() => void',
+    description: 'Callback for previous page.',
   },
   {
-    name: 'totalCount',
-    type: 'number',
-    description: 'Total number of rows (optional, for display).',
+    name: 'onNext',
+    type: '() => void',
+    description: 'Callback for next page.',
   },
 ]
 

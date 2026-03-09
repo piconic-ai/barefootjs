@@ -190,10 +190,13 @@ export function DataTableUsageDemo() {
         </TableBody>
       </Table>
       <DataTablePagination
-        page={page()}
-        pageCount={pageCount()}
-        onPageChange={setPage}
-      />
+        canPrev={page() > 0}
+        canNext={page() < pageCount() - 1}
+        onPrev={() => setPage(p => p - 1)}
+        onNext={() => setPage(p => p + 1)}
+      >
+        Page {page() + 1} of {pageCount()}
+      </DataTablePagination>
     </div>
   )
 }
@@ -254,10 +257,13 @@ export function DataTableFilteringDemo() {
         </TableBody>
       </Table>
       <DataTablePagination
-        page={page()}
-        pageCount={pageCount()}
-        onPageChange={setPage}
-      />
+        canPrev={page() > 0}
+        canNext={page() < pageCount() - 1}
+        onPrev={() => setPage(p => p - 1)}
+        onNext={() => setPage(p => p + 1)}
+      >
+        Page {page() + 1} of {pageCount()}
+      </DataTablePagination>
     </div>
   )
 }

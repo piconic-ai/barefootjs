@@ -16,10 +16,13 @@
  * @example Pagination
  * ```tsx
  * <DataTablePagination
- *   page={page()}
- *   pageCount={totalPages()}
- *   onPageChange={setPage}
- * />
+ *   canPrev={page() > 0}
+ *   canNext={page() < pageCount() - 1}
+ *   onPrev={() => setPage(p => p - 1)}
+ *   onNext={() => setPage(p => p + 1)}
+ * >
+ *   Page {page() + 1} of {pageCount()}
+ * </DataTablePagination>
  * ```
  */
 
@@ -78,16 +81,16 @@ function DataTableColumnHeader({ title, sorted = false, onSort, className = '', 
 }
 
 interface DataTablePaginationProps extends HTMLBaseAttributes {
-  /** Current page (0-indexed) */
-  page: number
-  /** Total number of pages */
-  pageCount: number
-  /** Callback when page changes */
-  onPageChange: (page: number) => void
-  /** Number of selected rows (optional) */
-  selectedCount?: number
-  /** Total number of rows (optional) */
-  totalCount?: number
+  /** Whether previous page is available */
+  canPrev: boolean
+  /** Whether next page is available */
+  canNext: boolean
+  /** Callback for previous page */
+  onPrev: () => void
+  /** Callback for next page */
+  onNext: () => void
+  /** Page info label (rendered as children) */
+  children?: Child
 }
 
 // Pagination button classes (synced with button.tsx outline variant, sm size)
@@ -96,22 +99,22 @@ const paginationButtonClasses = 'inline-flex items-center justify-center gap-2 w
 /**
  * Pagination controls for data tables.
  * Shows page info and prev/next buttons.
+ *
+ * Pass page label as children so reactive text nodes
+ * are created in the parent's scope.
  */
-function DataTablePagination({ page, pageCount, onPageChange, selectedCount, totalCount, className = '', ...props }: DataTablePaginationProps) {
+function DataTablePagination({ canPrev, canNext, onPrev, onNext, children, className = '', ...props }: DataTablePaginationProps) {
   return (
     <div data-slot="data-table-pagination" className={`${paginationClasses} ${className}`} {...props}>
       <div className="text-sm text-muted-foreground">
-        {selectedCount !== undefined && totalCount !== undefined
-          ? `${selectedCount} of ${totalCount} row(s) selected.`
-          : `Page ${page + 1} of ${pageCount}`
-        }
+        {children}
       </div>
       <div className="flex items-center gap-2">
         <button
           type="button"
           className={paginationButtonClasses}
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 0}
+          onClick={onPrev}
+          disabled={!canPrev}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m15 18-6-6 6-6" />
@@ -121,8 +124,8 @@ function DataTablePagination({ page, pageCount, onPageChange, selectedCount, tot
         <button
           type="button"
           className={paginationButtonClasses}
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= pageCount - 1}
+          onClick={onNext}
+          disabled={!canNext}
         >
           Next
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
