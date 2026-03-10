@@ -25,7 +25,7 @@ export function generateCoreLlmsTxt(docs: CoreDocMeta[], baseUrl: string): strin
   const lines: string[] = [
     '# BarefootJS',
     '',
-    '> JSX → Marked Template + client JS compiler. Signal-based reactivity for any backend.',
+    '> JSX -> Marked Template + client JS compiler. Signal-based reactivity for any backend.',
     '',
   ]
 
