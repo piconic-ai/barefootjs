@@ -82,6 +82,9 @@ jobs:
           bun run --filter '@barefootjs/form' build
           bun run --filter '@barefootjs/chart' build
 
+      - name: Extract component metadata
+        run: bun run meta:extract
+
       - name: Build site
         run: cd site/ui && bun run build:worker
 
