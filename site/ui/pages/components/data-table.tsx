@@ -5,7 +5,7 @@
  * Part of the #515 page redesign initiative.
  */
 
-import { DataTablePreviewDemo, DataTableUsageDemo } from '@/components/data-table-demo'
+import { DataTablePreviewDemo, DataTableUsageDemo, DataTableFilteringDemo, DataTableSelectionDemo } from '@/components/data-table-demo'
 import {
   DocPage,
   PageHeader,
@@ -22,6 +22,9 @@ const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'filtering', title: 'Filtering', branch: 'start' },
+  { id: 'selection', title: 'Row Selection', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -124,6 +127,159 @@ function DataTableDemo() {
   )
 }`
 
+const filteringCode = `"use client"
+
+import { createSignal, createMemo } from "@barefootjs/dom"
+import {
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
+} from "@/components/ui/table"
+import { DataTablePagination } from "@/components/ui/data-table"
+
+const data = [
+  { id: "PAY001", amount: 316, status: "success", email: "ken99@example.com" },
+  { id: "PAY002", amount: 242, status: "success", email: "abe45@example.com" },
+  { id: "PAY003", amount: 837, status: "processing", email: "monserrat44@example.com" },
+  { id: "PAY004", amount: 874, status: "success", email: "silas22@example.com" },
+  { id: "PAY005", amount: 721, status: "failed", email: "carmella@example.com" },
+  // ... more rows
+]
+
+function DataTableFiltering() {
+  const [filter, setFilter] = createSignal("")
+  const [page, setPage] = createSignal(0)
+  const pageSize = 5
+
+  const filteredData = createMemo(() =>
+    data.filter(row =>
+      row.email.toLowerCase().includes(filter().toLowerCase())
+    )
+  )
+
+  const pageCount = createMemo(() =>
+    Math.max(1, Math.ceil(filteredData().length / pageSize))
+  )
+  const paginatedData = createMemo(() =>
+    filteredData().slice(page() * pageSize, (page() + 1) * pageSize)
+  )
+
+  return (
+    <div className="space-y-4">
+      <input
+        type="text"
+        placeholder="Filter emails..."
+        className="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-base"
+        value={filter()}
+        onInput={(e) => { setFilter(e.target.value); setPage(0) }}
+      />
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedData().map((p) => (
+            <TableRow>
+              <TableCell>{p.id}</TableCell>
+              <TableCell>{p.status}</TableCell>
+              <TableCell>{p.email}</TableCell>
+              <TableCell className="text-right">
+                \${p.amount.toFixed(2)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <DataTablePagination
+        canPrev={page() > 0}
+        canNext={page() < pageCount() - 1}
+        onPrev={() => setPage(p => p - 1)}
+        onNext={() => setPage(p => p + 1)}
+      >
+        Page \${page() + 1} of \${pageCount()}
+      </DataTablePagination>
+    </div>
+  )
+}`
+
+const selectionCode = `"use client"
+
+import { createSignal, createMemo } from "@barefootjs/dom"
+import {
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
+} from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+
+const data = [
+  { id: "PAY001", amount: 316, status: "success", email: "ken99@example.com" },
+  { id: "PAY002", amount: 242, status: "success", email: "abe45@example.com" },
+  { id: "PAY003", amount: 837, status: "processing", email: "monserrat44@example.com" },
+  { id: "PAY004", amount: 874, status: "success", email: "silas22@example.com" },
+  { id: "PAY005", amount: 721, status: "failed", email: "carmella@example.com" },
+]
+
+function DataTableSelection() {
+  const [selected, setSelected] = createSignal(data.map(() => false))
+  const selectedCount = createMemo(() => selected().filter(Boolean).length)
+  const isAllSelected = createMemo(() => selectedCount() === data.length)
+
+  const toggleAll = () => {
+    setSelected(isAllSelected() ? data.map(() => false) : data.map(() => true))
+  }
+
+  const toggleRow = (index) => {
+    setSelected(prev => prev.map((v, i) => i === index ? !v : v))
+  }
+
+  return (
+    <div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              <Checkbox
+                checked={isAllSelected()}
+                onCheckedChange={toggleAll}
+                aria-label="Select all"
+              />
+            </TableHead>
+            <TableHead>ID</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map((row, i) => (
+            <TableRow data-state={selected()[i] ? "selected" : undefined}>
+              <TableCell>
+                <Checkbox
+                  checked={selected()[i]}
+                  onCheckedChange={() => toggleRow(i)}
+                />
+              </TableCell>
+              <TableCell>{row.id}</TableCell>
+              <TableCell>{row.status}</TableCell>
+              <TableCell>{row.email}</TableCell>
+              <TableCell className="text-right">
+                \${row.amount.toFixed(2)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <div className="text-sm text-muted-foreground">
+        {selectedCount()} of {data.length} row(s) selected.
+      </div>
+    </div>
+  )
+}`
+
 const columnHeaderProps: PropDefinition[] = [
   {
     name: 'title',
@@ -194,6 +350,23 @@ export function DataTableRefPage() {
           <Example title="" code={usageCode}>
             <DataTableUsageDemo />
           </Example>
+        </Section>
+
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <div id="filtering">
+              <Example title="Filtering" code={filteringCode}>
+                <DataTableFilteringDemo />
+              </Example>
+            </div>
+
+            <div id="selection">
+              <Example title="Row Selection" code={selectionCode}>
+                <DataTableSelectionDemo />
+              </Example>
+            </div>
+          </div>
         </Section>
 
         {/* API Reference */}

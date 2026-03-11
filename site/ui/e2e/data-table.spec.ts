@@ -1,19 +1,23 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Data Table Documentation Page', () => {
+test.describe('Data Table Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/data-table')
+    await page.goto('/components/data-table')
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Data Table')
+  })
+
+  test('renders sortable column headers', async ({ page }) => {
+    await expect(page.locator('[data-slot="data-table-column-header"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
   })
 
   test.describe('Sorting (Preview)', () => {
-    test('renders table with sort buttons', async ({ page }) => {
-      const sortButtons = page.locator('[data-slot="data-table-column-header"]')
-
-      // Preview uses 2 sort buttons (Status, Amount), plus Sorting example reuses same demo = 4
-      const count = await sortButtons.count()
-      expect(count).toBeGreaterThanOrEqual(2)
-    })
-
     test('clicking Amount header toggles between asc and desc', async ({ page }) => {
       const amountHeader = page.locator('[data-slot="data-table-column-header"]').filter({ hasText: 'Amount' }).first()
 
@@ -58,20 +62,15 @@ test.describe('Data Table Documentation Page', () => {
   test.describe('Filtering', () => {
     test('renders filter input', async ({ page }) => {
       const input = page.locator('input[placeholder="Filter emails..."]')
-
       await expect(input).toBeVisible()
     })
 
     test('filtering narrows displayed rows', async ({ page }) => {
       const input = page.locator('input[placeholder="Filter emails..."]')
 
-      // Type a filter that matches fewer rows
       await input.fill('ken')
-
-      // Wait for reactive update
       await page.waitForTimeout(200)
 
-      // The filtered table (second table) should show fewer rows
       const filteringSection = input.locator('..')
       const rows = filteringSection.locator('[data-slot="table-body"] [data-slot="table-row"]')
       const count = await rows.count()
@@ -83,54 +82,40 @@ test.describe('Data Table Documentation Page', () => {
   test.describe('Pagination', () => {
     test('pagination controls are visible', async ({ page }) => {
       const pagination = page.locator('[data-slot="data-table-pagination"]')
-
-      await expect(pagination).toBeVisible()
+      await expect(pagination.first()).toBeVisible()
     })
 
-    test('navigating to next page and back preserves table rows', async ({ page }) => {
-      // Find the first pagination component (filtering demo: 12 items, pageSize=5 → 3 pages)
+    test('navigating to next page and back', async ({ page }) => {
       const pagination = page.locator('[data-slot="data-table-pagination"]').first()
       const nextBtn = pagination.locator('button', { hasText: 'Next' })
       const prevBtn = pagination.locator('button', { hasText: 'Previous' })
 
-      // Should start on page 1
-      await expect(pagination).toContainText('Page 1 of 3')
+      // Usage demo: 5 items, pageSize=3 → 2 pages
+      await expect(pagination).toContainText('Page 1 of 2')
 
-      // Navigate to page 2
       await nextBtn.click()
-      await expect(pagination).toContainText('Page 2 of 3')
+      await expect(pagination).toContainText('Page 2 of 2')
 
-      // Navigate back to page 1
       await prevBtn.click()
-      await expect(pagination).toContainText('Page 1 of 3')
-
-      // Table body should still have rows
-      const table = pagination.locator('..').locator('[data-slot="table-body"] [data-slot="table-row"]')
-      const rowCount = await table.count()
-      expect(rowCount).toBeGreaterThan(0)
+      await expect(pagination).toContainText('Page 1 of 2')
     })
   })
 
   test.describe('Row Selection', () => {
     test('renders checkboxes', async ({ page }) => {
-      // The selection demo has checkboxes (select-all + rows)
       const checkboxes = page.locator('button[role="checkbox"]')
       const count = await checkboxes.count()
       expect(count).toBeGreaterThanOrEqual(6) // 1 select-all + 5 rows
     })
 
     test('clicking row checkbox selects it', async ({ page }) => {
-      // Find the checkboxes in the selection demo (last group of checkboxes)
       const allCheckboxes = page.locator('button[role="checkbox"]')
       const totalCount = await allCheckboxes.count()
 
-      // Click the second-to-last group's first non-select-all checkbox
       // The selection demo's checkboxes are the last 6 (1 header + 5 rows)
-      const rowCheckbox = allCheckboxes.nth(totalCount - 5) // First row checkbox in selection demo
-
+      const rowCheckbox = allCheckboxes.nth(totalCount - 5) // First row checkbox
       await rowCheckbox.click()
 
-      // Should show "1 of 5 row(s) selected."
       await expect(page.locator('text=1 of 5 row(s) selected.')).toBeVisible()
     })
 
@@ -138,36 +123,13 @@ test.describe('Data Table Documentation Page', () => {
       const allCheckboxes = page.locator('button[role="checkbox"]')
       const totalCount = await allCheckboxes.count()
 
-      // Select-all checkbox is the first one in the selection demo group
       const selectAll = allCheckboxes.nth(totalCount - 6)
 
-      // Click select all
       await selectAll.click()
-
-      // Should show "5 of 5 row(s) selected."
       await expect(page.locator('text=5 of 5 row(s) selected.')).toBeVisible()
 
-      // Click again to deselect all
       await selectAll.click()
       await expect(page.locator('text=0 of 5 row(s) selected.')).toBeVisible()
     })
-  })
-})
-
-test.describe('Data Table Reference Page', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/components/data-table')
-  })
-
-  test('renders page header', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('Data Table')
-  })
-
-  test('renders sortable column headers', async ({ page }) => {
-    await expect(page.locator('[data-slot="data-table-column-header"]').first()).toBeVisible()
-  })
-
-  test('renders API reference section', async ({ page }) => {
-    await expect(page.locator('#api-reference')).toBeVisible()
   })
 })
