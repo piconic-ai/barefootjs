@@ -53,7 +53,6 @@ import { ComboboxPage } from './pages/combobox'
 import { TabsPage } from './pages/tabs'
 import { DialogPage } from './pages/dialog'
 import { ContextMenuPage } from './pages/context-menu'
-import { DataTablePage } from './pages/data-table'
 import { DatePickerPage } from './pages/date-picker'
 import { DropdownMenuPage } from './pages/dropdown-menu'
 import { ToastPage } from './pages/toast'
@@ -583,12 +582,7 @@ export function createApp() {
     return c.render(<ContextMenuPage />)
   })
 
-  // Data Table documentation
-  app.get('/docs/components/data-table', (c) => {
-    return c.render(<DataTablePage />)
-  })
-
-  // Dropdown Menu documentation
+// Dropdown Menu documentation
   app.get('/docs/components/dropdown-menu', (c) => {
     return c.render(<DropdownMenuPage />)
   })
