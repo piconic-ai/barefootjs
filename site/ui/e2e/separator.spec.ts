@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Separator Documentation Page', () => {
+test.describe('Separator Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/separator')
+    await page.goto('/components/separator')
   })
 
   test.describe('Separator Rendering', () => {

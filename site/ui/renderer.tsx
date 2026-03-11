@@ -108,7 +108,7 @@ const menuEntries: SidebarEntry[] = [
       { title: 'Scroll Area', href: '/docs/components/scroll-area' },
       { title: 'Select', href: '/components/select' },
       { title: 'Sidebar', href: '/docs/components/sidebar' },
-      { title: 'Separator', href: '/docs/components/separator' },
+      { title: 'Separator', href: '/components/separator' },
       { title: 'Skeleton', href: '/components/skeleton' },
       { title: 'Sheet', href: '/docs/components/sheet' },
       { title: 'Slider', href: '/docs/components/slider' },
