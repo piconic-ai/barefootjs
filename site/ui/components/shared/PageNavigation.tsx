@@ -80,6 +80,39 @@ export function getChartNavLinks(currentSlug: string): {
   }
 }
 
+// Components migrated to /components/ (new reference pages)
+const migratedSlugs = new Set([
+  'aspect-ratio',
+  'avatar',
+  'badge',
+  'button',
+  'calendar',
+  'card',
+  'carousel',
+  'checkbox',
+  'combobox',
+  'data-table',
+  'input',
+  'input-otp',
+  'label',
+  'radio-group',
+  'resizable',
+  'scroll-area',
+  'select',
+  'separator',
+  'skeleton',
+  'slider',
+  'switch',
+  'table',
+  'textarea',
+  'toggle',
+  'toggle-group',
+])
+
+function componentHref(slug: string): string {
+  return migratedSlugs.has(slug) ? `/components/${slug}` : `/docs/components/${slug}`
+}
+
 // Get prev/next links for a component
 export function getNavLinks(currentSlug: string): {
   prev?: { href: string; title: string }
@@ -92,7 +125,7 @@ export function getNavLinks(currentSlug: string): {
   const next = currentIndex < componentOrder.length - 1 ? componentOrder[currentIndex + 1] : undefined
 
   return {
-    prev: prev ? { href: `/docs/components/${prev.slug}`, title: prev.title } : undefined,
-    next: next ? { href: `/docs/components/${next.slug}`, title: next.title } : undefined,
+    prev: prev ? { href: componentHref(prev.slug), title: prev.title } : undefined,
+    next: next ? { href: componentHref(next.slug), title: next.title } : undefined,
   }
 }
