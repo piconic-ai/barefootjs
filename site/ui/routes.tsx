@@ -36,7 +36,6 @@ import { InputOTPRefPage } from './pages/components/input-otp'
 import { SliderRefPage } from './pages/components/slider'
 import { ToggleGroupRefPage } from './pages/components/toggle-group'
 import { BreadcrumbPage } from './pages/breadcrumb'
-import { CalendarPage } from './pages/calendar'
 import { CarouselPage } from './pages/carousel'
 import { CardPage } from './pages/card'
 import { CheckboxPage } from './pages/checkbox'
@@ -478,12 +477,7 @@ export function createApp() {
     return c.render(<BreadcrumbPage />)
   })
 
-// Calendar documentation
-  app.get('/docs/components/calendar', (c) => {
-    return c.render(<CalendarPage />)
-  })
-
-  // Carousel documentation
+// Carousel documentation
   app.get('/docs/components/carousel', (c) => {
     return c.render(<CarouselPage />)
   })
