@@ -7,6 +7,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { BadgePlayground } from '@/components/badge-playground'
+import { BadgeAsChildDemo } from '@/components/badge-as-child-demo'
 import {
   DocPage,
   PageHeader,
@@ -23,6 +24,11 @@ const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'secondary', title: 'Secondary', branch: 'start' },
+  { id: 'destructive', title: 'Destructive', branch: 'child' },
+  { id: 'outline', title: 'Outline', branch: 'child' },
+  { id: 'as-child', title: 'As Child', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -37,6 +43,34 @@ function BadgeDemo() {
       <Badge variant="outline">Outline</Badge>
       <Badge asChild>
         <a href="#">Link Badge</a>
+      </Badge>
+    </div>
+  )
+}`
+
+const secondaryCode = `<Badge variant="secondary">Secondary</Badge>`
+
+const destructiveCode = `<Badge variant="destructive">Destructive</Badge>`
+
+const outlineCode = `<Badge variant="outline">Outline</Badge>`
+
+const asChildCode = `"use client"
+
+import { createSignal } from '@barefootjs/dom'
+import { Badge } from '@/components/ui/badge'
+
+function BadgeAsChild() {
+  const [count, setCount] = createSignal(0)
+
+  return (
+    <div className="flex items-center gap-4">
+      <Badge asChild>
+        <a href="#" onClick={() => setCount(count() + 1)}>
+          Clicked {count()} times
+        </a>
+      </Badge>
+      <Badge variant="outline" asChild>
+        <a href="#">Outline Link</a>
       </Badge>
     </div>
   )
@@ -93,6 +127,27 @@ export function BadgeRefPage() {
               </Badge>
             </div>
           </Example>
+        </Section>
+
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <Example title="Secondary" code={secondaryCode} showLineNumbers={false}>
+              <Badge variant="secondary">Secondary</Badge>
+            </Example>
+
+            <Example title="Destructive" code={destructiveCode} showLineNumbers={false}>
+              <Badge variant="destructive">Destructive</Badge>
+            </Example>
+
+            <Example title="Outline" code={outlineCode} showLineNumbers={false}>
+              <Badge variant="outline">Outline</Badge>
+            </Example>
+
+            <Example title="As Child" code={asChildCode}>
+              <BadgeAsChildDemo />
+            </Example>
+          </div>
         </Section>
 
         {/* API Reference */}

@@ -78,7 +78,7 @@ const menuEntries: SidebarEntry[] = [
       { title: 'Alert Dialog', href: '/docs/components/alert-dialog' },
       { title: 'Aspect Ratio', href: '/docs/components/aspect-ratio' },
       { title: 'Avatar', href: '/components/avatar' },
-      { title: 'Badge', href: '/docs/components/badge' },
+      { title: 'Badge', href: '/components/badge' },
       { title: 'Breadcrumb', href: '/docs/components/breadcrumb' },
       { title: 'Button', href: '/components/button' },
       { title: 'Calendar', href: '/components/calendar' },

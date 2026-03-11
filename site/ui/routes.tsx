@@ -14,7 +14,6 @@ import { AspectRatioRefPage } from './pages/components/aspect-ratio'
 import { AlertPage } from './pages/alert'
 import { AlertDialogPage } from './pages/alert-dialog'
 import { AvatarPage } from './pages/avatar'
-import { BadgePage } from './pages/badge'
 import { BadgeRefPage } from './pages/components/badge'
 import { ButtonRefPage } from './pages/components/button'
 import { ComboboxRefPage } from './pages/components/combobox'
@@ -143,7 +142,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Avatar</h3>
               <p className="text-xs text-muted-foreground">User profile image with fallback</p>
             </a>
-            <a href="/docs/components/badge" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/badge" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Badge</h3>
               <p className="text-xs text-muted-foreground">Small status indicator labels</p>
             </a>
@@ -398,12 +397,7 @@ export function createApp() {
     return c.render(<AvatarPage />)
   })
 
-  // Badge documentation
-  app.get('/docs/components/badge', (c) => {
-    return c.render(<BadgePage />)
-  })
-
-  // Badge reference page (redesigned #515)
+  // Badge reference page
   app.get('/components/badge', (c) => {
     return c.render(<BadgeRefPage />)
   })
