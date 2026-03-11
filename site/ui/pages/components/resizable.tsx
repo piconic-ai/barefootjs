@@ -5,7 +5,12 @@
  * Part of the #515 page redesign initiative.
  */
 
-import { ResizableHorizontalDemo } from '@/components/resizable-demo'
+import {
+  ResizableHorizontalDemo,
+  ResizableVerticalDemo,
+  ResizableWithHandleDemo,
+  ResizableThreePanelDemo,
+} from '@/components/resizable-demo'
 import { ResizablePlayground } from '@/components/resizable-playground'
 import {
   DocPage,
@@ -23,8 +28,123 @@ const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'horizontal', title: 'Horizontal', branch: 'start' },
+  { id: 'vertical', title: 'Vertical', branch: 'child' },
+  { id: 'with-handle', title: 'With Handle', branch: 'child' },
+  { id: 'three-panels', title: 'Three Panels', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
+
+const horizontalCode = `"use client"
+
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable"
+
+function ResizableHorizontal() {
+  return (
+    <ResizablePanelGroup direction="horizontal" class="max-w-md rounded-lg border">
+      <ResizablePanel defaultSize={50}>
+        <div className="flex h-[200px] items-center justify-center p-6">
+          <span className="font-semibold">One</span>
+        </div>
+      </ResizablePanel>
+      <ResizableHandle />
+      <ResizablePanel defaultSize={50}>
+        <div className="flex h-[200px] items-center justify-center p-6">
+          <span className="font-semibold">Two</span>
+        </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  )
+}`
+
+const verticalCode = `"use client"
+
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable"
+
+function ResizableVertical() {
+  return (
+    <ResizablePanelGroup direction="vertical" class="min-h-[200px] max-w-md rounded-lg border">
+      <ResizablePanel defaultSize={25}>
+        <div className="flex h-full items-center justify-center p-6">
+          <span className="font-semibold">Header</span>
+        </div>
+      </ResizablePanel>
+      <ResizableHandle />
+      <ResizablePanel defaultSize={75}>
+        <div className="flex h-full items-center justify-center p-6">
+          <span className="font-semibold">Content</span>
+        </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  )
+}`
+
+const withHandleCode = `"use client"
+
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable"
+
+function ResizableWithHandle() {
+  return (
+    <ResizablePanelGroup direction="horizontal" class="min-h-[200px] max-w-md rounded-lg border">
+      <ResizablePanel defaultSize={25}>
+        <div className="flex h-full items-center justify-center p-6">
+          <span className="font-semibold">Sidebar</span>
+        </div>
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={75}>
+        <div className="flex h-full items-center justify-center p-6">
+          <span className="font-semibold">Content</span>
+        </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  )
+}`
+
+const threePanelsCode = `"use client"
+
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable"
+
+function ResizableThreePanels() {
+  return (
+    <ResizablePanelGroup direction="horizontal" class="min-h-[200px] rounded-lg border">
+      <ResizablePanel defaultSize={20} minSize={15} maxSize={40}>
+        <div className="flex h-full items-center justify-center p-6">
+          <span className="font-semibold">Sidebar</span>
+        </div>
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={55} minSize={30}>
+        <div className="flex h-full items-center justify-center p-6">
+          <span className="font-semibold">Content</span>
+        </div>
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={25} minSize={15} maxSize={35}>
+        <div className="flex h-full items-center justify-center p-6">
+          <span className="font-semibold">Aside</span>
+        </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  )
+}`
 
 const usageCode = `"use client"
 
@@ -150,6 +270,27 @@ export function ResizableRefPage() {
           <Example title="" code={usageCode}>
             <ResizableHorizontalDemo />
           </Example>
+        </Section>
+
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <Example title="Horizontal" code={horizontalCode}>
+              <ResizableHorizontalDemo />
+            </Example>
+
+            <Example title="Vertical" code={verticalCode}>
+              <ResizableVerticalDemo />
+            </Example>
+
+            <Example title="With Handle" code={withHandleCode}>
+              <ResizableWithHandleDemo />
+            </Example>
+
+            <Example title="Three Panels" code={threePanelsCode}>
+              <ResizableThreePanelDemo />
+            </Example>
+          </div>
         </Section>
 
         {/* API Reference */}

@@ -50,7 +50,6 @@ import { TogglePage } from './pages/toggle'
 import { ToggleGroupPage } from './pages/toggle-group'
 import { TooltipPage } from './pages/tooltip'
 import { SelectPage } from './pages/select'
-import { ResizablePage } from './pages/resizable'
 import { ResizableRefPage } from './pages/components/resizable'
 import { ScrollAreaRefPage } from './pages/components/scroll-area'
 import { SeparatorPage } from './pages/separator'
@@ -234,7 +233,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Radio Group</h3>
               <p className="text-xs text-muted-foreground">Single-select option group</p>
             </a>
-            <a href="/docs/components/resizable" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/resizable" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Resizable</h3>
               <p className="text-xs text-muted-foreground">Draggable resize panels</p>
             </a>
@@ -621,12 +620,7 @@ export function createApp() {
     return c.render(<HoverCardPage />)
   })
 
-  // Resizable documentation
-  app.get('/docs/components/resizable', (c) => {
-    return c.render(<ResizablePage />)
-  })
-
-  // Resizable reference page (redesigned #515)
+  // Resizable reference page
   app.get('/components/resizable', (c) => {
     return c.render(<ResizableRefPage />)
   })
