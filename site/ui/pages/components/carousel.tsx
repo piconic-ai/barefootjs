@@ -13,6 +13,7 @@ import {
   CarouselNext,
 } from '@/components/ui/carousel'
 import { CarouselPlayground } from '@/components/carousel-playground'
+import { CarouselSizesDemo, CarouselOrientationDemo } from '@/components/carousel-demo'
 import {
   DocPage,
   PageHeader,
@@ -29,6 +30,9 @@ const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'sizes', title: 'Sizes', branch: 'start' },
+  { id: 'orientation', title: 'Orientation', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -45,6 +49,60 @@ function CarouselDemo() {
           <CarouselItem>
             <div className="flex aspect-square items-center justify-center rounded-lg border bg-card p-6">
               <span className="text-4xl font-semibold">{i + 1}</span>
+            </div>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <CarouselPrevious />
+      <CarouselNext />
+    </Carousel>
+  )
+}`
+
+const sizesCode = `"use client"
+
+import {
+  Carousel, CarouselContent, CarouselItem,
+  CarouselPrevious, CarouselNext,
+} from "@/components/ui/carousel"
+
+function CarouselSizes() {
+  return (
+    <Carousel>
+      <CarouselContent className="-ml-2">
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <CarouselItem className="pl-2 basis-1/3">
+            <div className="p-1">
+              <div className="flex items-center justify-center rounded-lg border bg-card p-4 aspect-square">
+                <span className="text-2xl font-semibold">{n}</span>
+              </div>
+            </div>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <CarouselPrevious />
+      <CarouselNext />
+    </Carousel>
+  )
+}`
+
+const orientationCode = `"use client"
+
+import {
+  Carousel, CarouselContent, CarouselItem,
+  CarouselPrevious, CarouselNext,
+} from "@/components/ui/carousel"
+
+function CarouselOrientation() {
+  return (
+    <Carousel orientation="vertical" opts={{ align: 'start' }}>
+      <CarouselContent className="-mt-2 h-[200px]">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <CarouselItem className="pt-2 basis-1/2">
+            <div className="p-1">
+              <div className="flex items-center justify-center rounded-lg border bg-card p-4">
+                <span className="text-2xl font-semibold">{n}</span>
+              </div>
             </div>
           </CarouselItem>
         ))}
@@ -122,6 +180,19 @@ export function CarouselRefPage() {
               <CarouselNext />
             </Carousel>
           </Example>
+        </Section>
+
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <Example title="Sizes" code={sizesCode}>
+              <CarouselSizesDemo />
+            </Example>
+
+            <Example title="Orientation" code={orientationCode}>
+              <CarouselOrientationDemo />
+            </Example>
+          </div>
         </Section>
 
         {/* API Reference */}

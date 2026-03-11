@@ -1,11 +1,15 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Carousel Documentation Page', () => {
+test.describe('Carousel Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/carousel')
+    await page.goto('/components/carousel')
   })
 
-  test.describe('Preview', () => {
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Carousel')
+  })
+
+  test.describe('Playground', () => {
     test('renders carousel with region role', async ({ page }) => {
       const carousel = page.locator('[data-slot="carousel"]').first()
 
@@ -37,7 +41,7 @@ test.describe('Carousel Documentation Page', () => {
         if (msg.type() === 'error') errors.push(msg.text())
       })
 
-      await page.goto('/docs/components/carousel')
+      await page.goto('/components/carousel')
 
       const carousel = page.locator('[data-slot="carousel"]').first()
       const prevBtn = carousel.locator('[data-slot="carousel-previous"]')
@@ -68,32 +72,37 @@ test.describe('Carousel Documentation Page', () => {
     })
   })
 
-  test.describe('Sizes', () => {
+  test.describe('Sizes Example', () => {
     test('renders items with basis-1/3 class', async ({ page }) => {
-      // Second carousel on the page is the Sizes demo
-      const carousel = page.locator('[data-slot="carousel"]').nth(1)
+      // Sizes demo carousel has items with basis-1/3
+      const sizesSection = page.locator('#sizes').locator('..')
+      const carousel = sizesSection.locator('[data-slot="carousel"]')
       const items = carousel.locator('[data-slot="carousel-item"]')
 
       await expect(items.first()).toHaveClass(/basis-1\/3/)
     })
   })
 
-  test.describe('Orientation', () => {
+  test.describe('Orientation Example', () => {
     test('vertical carousel has correct orientation', async ({ page }) => {
-      const verticalCarousel = page.locator('[data-slot="carousel"][data-orientation="vertical"]')
+      // Scope to CarouselOrientationDemo to avoid the Playground's hidden vertical carousel
+      const demo = page.locator('[bf-s^="CarouselOrientationDemo_"]')
+      const verticalCarousel = demo.locator('[data-slot="carousel"][data-orientation="vertical"]')
 
       await expect(verticalCarousel).toBeVisible()
     })
 
     test('vertical carousel content uses flex-col', async ({ page }) => {
-      const verticalCarousel = page.locator('[data-slot="carousel"][data-orientation="vertical"]')
+      const demo = page.locator('[bf-s^="CarouselOrientationDemo_"]')
+      const verticalCarousel = demo.locator('[data-slot="carousel"][data-orientation="vertical"]')
       const content = verticalCarousel.locator('[data-slot="carousel-content"]')
 
       await expect(content).toHaveClass(/flex-col/)
     })
 
     test('clicking next in vertical carousel navigates', async ({ page }) => {
-      const verticalCarousel = page.locator('[data-slot="carousel"][data-orientation="vertical"]')
+      const demo = page.locator('[bf-s^="CarouselOrientationDemo_"]')
+      const verticalCarousel = demo.locator('[data-slot="carousel"][data-orientation="vertical"]')
       const nextBtn = verticalCarousel.locator('[data-slot="carousel-next"]')
       const prevBtn = verticalCarousel.locator('[data-slot="carousel-previous"]')
 
@@ -107,20 +116,6 @@ test.describe('Carousel Documentation Page', () => {
       // Previous should now be enabled
       await expect(prevBtn).not.toBeDisabled()
     })
-  })
-})
-
-test.describe('Carousel Reference Page', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/components/carousel')
-  })
-
-  test('renders page header', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('Carousel')
-  })
-
-  test('renders carousel in playground', async ({ page }) => {
-    await expect(page.locator('[data-slot="carousel"]').first()).toBeVisible()
   })
 
   test('renders API reference section', async ({ page }) => {
