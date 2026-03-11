@@ -66,7 +66,7 @@ const iconCode = `<Button size="icon-sm" aria-label="Add">
 </Button>`
 
 const asChildCode = `<Button asChild>
-  <a href="/home">Go Home</a>
+  <a href="/">Go Home</a>
 </Button>`
 
 const buttonProps: PropDefinition[] = [
@@ -155,7 +155,7 @@ export function ButtonRefPage() {
 
             <Example title="As Child" code={asChildCode} showLineNumbers={false}>
               <Button asChild>
-                <a href="/home">Go Home</a>
+                <a href="/">Go Home</a>
               </Button>
             </Example>
           </div>
