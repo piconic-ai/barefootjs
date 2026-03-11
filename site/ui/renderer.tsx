@@ -105,7 +105,7 @@ const menuEntries: SidebarEntry[] = [
       { title: 'Progress', href: '/docs/components/progress' },
       { title: 'Radio Group', href: '/docs/components/radio-group' },
       { title: 'Resizable', href: '/docs/components/resizable' },
-      { title: 'Scroll Area', href: '/docs/components/scroll-area' },
+      { title: 'Scroll Area', href: '/components/scroll-area' },
       { title: 'Select', href: '/components/select' },
       { title: 'Sidebar', href: '/docs/components/sidebar' },
       { title: 'Separator', href: '/docs/components/separator' },

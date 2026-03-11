@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Scroll Area Documentation Page', () => {
+test.describe('Scroll Area Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/scroll-area')
+    await page.goto('/components/scroll-area')
   })
 
   test.describe('ScrollArea Rendering', () => {
@@ -13,22 +13,22 @@ test.describe('Scroll Area Documentation Page', () => {
 
     test('has multiple scroll area examples', async ({ page }) => {
       const scrollAreas = page.locator('[data-slot="scroll-area"]')
-      // Preview + Tags + Horizontal + Both Axes
+      // Playground + Usage + Horizontal + Both Axes
       expect(await scrollAreas.count()).toBeGreaterThanOrEqual(3)
     })
   })
 
-  test.describe('Preview (Tags Demo)', () => {
+  test.describe('Usage (Tags Demo)', () => {
     test('displays tags list in scrollable area', async ({ page }) => {
-      // ScrollArea root has data-slot="scroll-area", so use that directly
       const scrollArea = page.locator('[data-slot="scroll-area"]').first()
       await expect(scrollArea).toBeVisible()
       await expect(scrollArea.locator('text=Tags')).toBeVisible()
     })
 
     test('shows version tags', async ({ page }) => {
-      const scrollArea = page.locator('[data-slot="scroll-area"]').first()
-      await expect(scrollArea.locator('[data-tag="v1.2.0-beta.50"]')).toBeVisible()
+      // Usage section tags demo (not the playground) has data-tag attributes
+      const tagsDemo = page.locator('[data-slot="scroll-area"]').filter({ has: page.locator('[data-tag]') }).first()
+      await expect(tagsDemo.locator('[data-tag="v1.2.0-beta.50"]')).toBeVisible()
     })
 
     test('has scrollable viewport', async ({ page }) => {
@@ -36,7 +36,6 @@ test.describe('Scroll Area Documentation Page', () => {
       const viewport = scrollArea.locator('[data-slot="scroll-area-viewport"]')
       await expect(viewport).toBeVisible()
 
-      // Viewport should have overflow scroll
       const overflowStyle = await viewport.evaluate(
         (el) => window.getComputedStyle(el).overflow
       )
@@ -56,7 +55,6 @@ test.describe('Scroll Area Documentation Page', () => {
     })
 
     test('shows artwork titles', async ({ page }) => {
-      // The horizontal demo has whitespace-nowrap content
       await expect(page.locator('text=Sunset Horizon')).toBeVisible()
     })
   })
@@ -70,5 +68,4 @@ test.describe('Scroll Area Documentation Page', () => {
       await expect(page.locator('h4:has-text("Changelog")')).toBeVisible()
     })
   })
-
 })

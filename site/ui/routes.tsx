@@ -63,7 +63,6 @@ import { TooltipPage } from './pages/tooltip'
 import { SelectPage } from './pages/select'
 import { ResizablePage } from './pages/resizable'
 import { ResizableRefPage } from './pages/components/resizable'
-import { ScrollAreaPage } from './pages/scroll-area'
 import { ScrollAreaRefPage } from './pages/components/scroll-area'
 import { SeparatorPage } from './pages/separator'
 import { SeparatorRefPage } from './pages/components/separator'
@@ -251,7 +250,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Resizable</h3>
               <p className="text-xs text-muted-foreground">Draggable resize panels</p>
             </a>
-            <a href="/docs/components/scroll-area" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/scroll-area" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Scroll Area</h3>
               <p className="text-xs text-muted-foreground">Custom scrollbar container</p>
             </a>
@@ -706,11 +705,6 @@ export function createApp() {
   // Resizable reference page (redesigned #515)
   app.get('/components/resizable', (c) => {
     return c.render(<ResizableRefPage />)
-  })
-
-  // Scroll Area documentation
-  app.get('/docs/components/scroll-area', (c) => {
-    return c.render(<ScrollAreaPage />)
   })
 
   // Scroll Area reference page (redesigned #515)
