@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Checkbox Documentation Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/checkbox')
+    await page.goto('/components/checkbox')
   })
 
   test.describe('Preview (Terms Demo)', () => {

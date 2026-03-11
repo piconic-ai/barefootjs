@@ -25,7 +25,7 @@ const componentItems = [
   { id: 'badge', title: 'Badge', href: '/components/badge', category: 'Components' },
   { id: 'button', title: 'Button', href: '/components/button', category: 'Components' },
   { id: 'card', title: 'Card', href: '/components/card', category: 'Components' },
-  { id: 'checkbox', title: 'Checkbox', href: '/docs/components/checkbox', category: 'Components' },
+  { id: 'checkbox', title: 'Checkbox', href: '/components/checkbox', category: 'Components' },
   { id: 'command', title: 'Command', href: '/docs/components/command', category: 'Components' },
   { id: 'dialog', title: 'Dialog', href: '/docs/components/dialog', category: 'Components' },
   { id: 'dropdown-menu', title: 'Dropdown Menu', href: '/docs/components/dropdown-menu', category: 'Components' },

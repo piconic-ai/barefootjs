@@ -411,7 +411,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Checkbox', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/checkbox')
+    await page.goto('/components/checkbox')
   })
 
   test('click toggles checked state', async ({ page }) => {
@@ -501,7 +501,7 @@ export const fixture = createFixture({
 ```typescript
 // ❌ E2E test that doesn't need a browser
 test('checkbox has aria role', async ({ page }) => {
-  await page.goto('/docs/components/checkbox')
+  await page.goto('/components/checkbox')
   const role = await page.locator('button').getAttribute('role')
   expect(role).toBe('checkbox')
 })

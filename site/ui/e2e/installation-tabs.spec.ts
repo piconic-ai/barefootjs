@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Installation Tabs (PackageManagerTabs)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/checkbox')
+    await page.goto('/components/checkbox')
   })
 
   test('displays all package manager tabs', async ({ page }) => {
