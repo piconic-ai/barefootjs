@@ -7,6 +7,7 @@
 
 import { Input } from '@/components/ui/input'
 import { InputPlayground } from '@/components/input-playground'
+import { InputBindingDemo, InputFocusDemo } from '@/components/input-demo'
 import {
   DocPage,
   PageHeader,
@@ -23,6 +24,11 @@ const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'input-types', title: 'Input Types', branch: 'start' },
+  { id: 'disabled', title: 'Disabled', branch: 'child' },
+  { id: 'value-binding', title: 'Value Binding', branch: 'child' },
+  { id: 'focus-state', title: 'Focus State', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -36,6 +42,74 @@ function InputDemo() {
       <Input type="password" placeholder="Password" />
       <Input type="number" placeholder="Number" />
       <Input disabled placeholder="Disabled input" />
+    </div>
+  )
+}`
+
+const typesCode = `import { Input } from "@/components/ui/input"
+
+function InputTypes() {
+  return (
+    <div className="flex flex-col gap-2 max-w-sm">
+      <Input type="text" placeholder="Text input" />
+      <Input type="email" placeholder="Email address" />
+      <Input type="password" placeholder="Password" />
+      <Input type="number" placeholder="Number" />
+    </div>
+  )
+}`
+
+const disabledCode = `import { Input } from "@/components/ui/input"
+
+function InputDisabled() {
+  return (
+    <div className="flex flex-col gap-2 max-w-sm">
+      <Input disabled placeholder="Disabled input" />
+      <Input disabled value="Disabled with value" />
+    </div>
+  )
+}`
+
+const bindingCode = `"use client"
+
+import { createSignal } from "@barefootjs/dom"
+import { Input } from "@/components/ui/input"
+
+function InputBinding() {
+  const [value, setValue] = createSignal("")
+
+  return (
+    <div className="max-w-sm space-y-2">
+      <Input
+        value={value()}
+        onInput={(e) => setValue(e.target.value)}
+        placeholder="Type something..."
+      />
+      <p className="text-sm text-muted-foreground">
+        You typed: {value()}
+      </p>
+    </div>
+  )
+}`
+
+const focusCode = `"use client"
+
+import { createSignal } from "@barefootjs/dom"
+import { Input } from "@/components/ui/input"
+
+function InputFocus() {
+  const [focused, setFocused] = createSignal(false)
+
+  return (
+    <div className="max-w-sm space-y-2">
+      <Input
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="Focus me..."
+      />
+      <p className="text-sm text-muted-foreground">
+        {focused() ? "Input is focused" : "Input is not focused"}
+      </p>
     </div>
   )
 }`
@@ -119,6 +193,39 @@ export function InputRefPage() {
               <Input disabled placeholder="Disabled input" />
             </div>
           </Example>
+        </Section>
+
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <Example title="Input Types" code={typesCode}>
+              <div className="flex flex-col gap-2 max-w-sm">
+                <Input type="text" placeholder="Text input" />
+                <Input type="email" placeholder="Email address" />
+                <Input type="password" placeholder="Password" />
+                <Input type="number" placeholder="Number" />
+              </div>
+            </Example>
+
+            <Example title="Disabled" code={disabledCode}>
+              <div className="flex flex-col gap-2 max-w-sm">
+                <Input disabled placeholder="Disabled input" />
+                <Input disabled value="Disabled with value" />
+              </div>
+            </Example>
+
+            <Example title="Value Binding" code={bindingCode}>
+              <div className="max-w-sm">
+                <InputBindingDemo />
+              </div>
+            </Example>
+
+            <Example title="Focus State" code={focusCode}>
+              <div className="max-w-sm">
+                <InputFocusDemo />
+              </div>
+            </Example>
+          </div>
         </Section>
 
         {/* API Reference */}

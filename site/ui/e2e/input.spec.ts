@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Input Documentation Page', () => {
+test.describe('Input Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/input')
+    await page.goto('/components/input')
   })
 
   test.describe('Input Rendering', () => {
@@ -24,10 +24,10 @@ test.describe('Input Documentation Page', () => {
     })
 
     test('has text, email, password, and number inputs', async ({ page }) => {
-      await expect(page.locator('input[type="text"][placeholder="Text input"]')).toBeVisible()
-      await expect(page.locator('input[type="email"][placeholder="Email address"]')).toBeVisible()
-      await expect(page.locator('input[type="password"][placeholder="Password"]')).toBeVisible()
-      await expect(page.locator('input[type="number"][placeholder="Number"]')).toBeVisible()
+      await expect(page.locator('input[type="text"][placeholder="Text input"]').first()).toBeVisible()
+      await expect(page.locator('input[type="email"][placeholder="Email address"]').first()).toBeVisible()
+      await expect(page.locator('input[type="password"][placeholder="Password"]').first()).toBeVisible()
+      await expect(page.locator('input[type="number"][placeholder="Number"]').first()).toBeVisible()
     })
   })
 
@@ -88,6 +88,4 @@ test.describe('Input Documentation Page', () => {
       await expect(status).toContainText('Not focused')
     })
   })
-
 })
-

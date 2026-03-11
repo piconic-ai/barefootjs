@@ -29,7 +29,7 @@ const componentItems = [
   { id: 'command', title: 'Command', href: '/docs/components/command', category: 'Components' },
   { id: 'dialog', title: 'Dialog', href: '/docs/components/dialog', category: 'Components' },
   { id: 'dropdown-menu', title: 'Dropdown Menu', href: '/docs/components/dropdown-menu', category: 'Components' },
-  { id: 'input', title: 'Input', href: '/docs/components/input', category: 'Components' },
+  { id: 'input', title: 'Input', href: '/components/input', category: 'Components' },
   { id: 'select', title: 'Select', href: '/docs/components/select', category: 'Components' },
   { id: 'switch', title: 'Switch', href: '/docs/components/switch', category: 'Components' },
   { id: 'tabs', title: 'Tabs', href: '/docs/components/tabs', category: 'Components' },
