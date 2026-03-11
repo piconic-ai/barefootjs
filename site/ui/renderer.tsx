@@ -84,7 +84,7 @@ const menuEntries: SidebarEntry[] = [
       { title: 'Calendar', href: '/components/calendar' },
       { title: 'Card', href: '/components/card' },
       { title: 'Carousel', href: '/components/carousel' },
-      { title: 'Checkbox', href: '/docs/components/checkbox' },
+      { title: 'Checkbox', href: '/components/checkbox' },
       { title: 'Collapsible', href: '/docs/components/collapsible' },
       { title: 'Command', href: '/docs/components/command' },
       { title: 'Combobox', href: '/components/combobox' },

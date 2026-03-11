@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Reactivity Patterns', () => {
   test.describe('Signal Reactivity', () => {
     test('signal getter in JSX updates when signal changes', async ({ page }) => {
-      await page.goto('/docs/components/checkbox#form')
+      await page.goto('/components/checkbox#form')
 
       // Find the Form section with multiple checkboxes
       const section = page.locator('[bf-s^="CheckboxFormDemo_"]:not([data-slot])').first()
@@ -35,7 +35,7 @@ test.describe('Reactivity Patterns', () => {
 
   test.describe('Props Reactivity (Parent → Child)', () => {
     test('child component updates when parent signal changes via getter', async ({ page }) => {
-      await page.goto('/docs/components/checkbox#form')
+      await page.goto('/components/checkbox#form')
 
       // The CheckboxFormDemo passes `checked={desktop()}` to Checkbox
       // This tests that parent signal changes flow to child via getter
@@ -62,7 +62,7 @@ test.describe('Reactivity Patterns', () => {
       // const isControlled = createMemo(() => props.checked !== undefined)
       // const isChecked = createMemo(() => isControlled() ? controlledChecked() : internalChecked())
 
-      await page.goto('/docs/components/checkbox')
+      await page.goto('/components/checkbox')
 
       // Use the terms demo at the top (CheckboxTermsDemo)
       const section = page.locator('[bf-s^="CheckboxTermsDemo_"]:not([data-slot])').first()
@@ -83,7 +83,7 @@ test.describe('Reactivity Patterns', () => {
 
   test.describe('Uncontrolled Mode (Internal State)', () => {
     test('uncontrolled checkbox uses internal signal', async ({ page }) => {
-      await page.goto('/docs/components/checkbox#basic')
+      await page.goto('/components/checkbox#basic')
 
       // The basic checkbox section has uncontrolled checkboxes
       const section = page.locator('[bf-s^="CheckboxBasicDemo_"]:not([data-slot])').first()
@@ -97,7 +97,7 @@ test.describe('Reactivity Patterns', () => {
 
   test.describe('JSX Expression Reactivity', () => {
     test('conditional JSX updates based on signal', async ({ page }) => {
-      await page.goto('/docs/components/checkbox#form')
+      await page.goto('/components/checkbox#form')
 
       const section = page.locator('[bf-s^="CheckboxFormDemo_"]:not([data-slot])').first()
       const checkboxes = section.locator('[data-slot="checkbox"]')
@@ -118,7 +118,7 @@ test.describe('Reactivity Patterns', () => {
 
   test.describe('Attribute Reactivity', () => {
     test('aria-checked attribute updates reactively', async ({ page }) => {
-      await page.goto('/docs/components/checkbox')
+      await page.goto('/components/checkbox')
 
       // Get first checkbox (terms demo)
       const section = page.locator('[bf-s^="CheckboxTermsDemo_"]:not([data-slot])').first()
@@ -135,7 +135,7 @@ test.describe('Reactivity Patterns', () => {
     })
 
     test('data-state attribute updates reactively', async ({ page }) => {
-      await page.goto('/docs/components/checkbox')
+      await page.goto('/components/checkbox')
 
       const section = page.locator('[bf-s^="CheckboxTermsDemo_"]:not([data-slot])').first()
       const checkbox = section.locator('[data-slot="checkbox"]')
@@ -150,7 +150,7 @@ test.describe('Reactivity Patterns', () => {
 
   test.describe('Button State Binding', () => {
     test('button disabled state updates based on checkbox', async ({ page }) => {
-      await page.goto('/docs/components/checkbox')
+      await page.goto('/components/checkbox')
 
       const section = page.locator('[bf-s^="CheckboxTermsDemo_"]:not([data-slot])').first()
       const checkbox = section.locator('[data-slot="checkbox"]')
@@ -175,7 +175,7 @@ test.describe('Reactivity Patterns', () => {
 
   test.describe('Email List Selection', () => {
     test('email list checkboxes work independently', async ({ page }) => {
-      await page.goto('/docs/components/checkbox#email-list')
+      await page.goto('/components/checkbox#email-list')
 
       const section = page.locator('[bf-s^="CheckboxEmailListDemo_"]:not([data-slot])').first()
       const checkboxes = section.locator('[data-slot="checkbox"]')

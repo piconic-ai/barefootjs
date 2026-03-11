@@ -34,7 +34,6 @@ import { SliderRefPage } from './pages/components/slider'
 import { ToggleGroupRefPage } from './pages/components/toggle-group'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { CalendarPage } from './pages/calendar'
-import { CheckboxPage } from './pages/checkbox'
 import { CheckboxRefPage } from './pages/components/checkbox'
 import { InputOTPPage } from './pages/input-otp'
 import { SliderPage } from './pages/slider'
@@ -156,7 +155,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Carousel</h3>
               <p className="text-xs text-muted-foreground">Motion and swipe content slider</p>
             </a>
-            <a href="/docs/components/checkbox" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/checkbox" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Checkbox</h3>
               <p className="text-xs text-muted-foreground">Toggle selection control</p>
             </a>
@@ -462,12 +461,7 @@ export function createApp() {
     return c.render(<CommandPage />)
   })
 
-  // Checkbox documentation
-  app.get('/docs/components/checkbox', (c) => {
-    return c.render(<CheckboxPage />)
-  })
-
-  // Checkbox reference page (redesigned #515)
+  // Checkbox reference page
   app.get('/components/checkbox', (c) => {
     return c.render(<CheckboxRefPage />)
   })

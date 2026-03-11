@@ -52,7 +52,7 @@ export function MobileMenu() {
 
     if (currentPath === '/') {
       openCategory('get-started')
-    } else if (currentPath.startsWith('/docs/components')) {
+    } else if (currentPath.startsWith('/docs/components') || (currentPath.startsWith('/components/') && currentPath !== '/components')) {
       openCategory('components')
     } else if (currentPath.startsWith('/docs/forms')) {
       openCategory('forms')
@@ -209,7 +209,7 @@ export function MobileMenu() {
                   <a href="/components/badge" className={menuLinkClass}>Badge</a>
                   <a href="/components/button" className={menuLinkClass}>Button</a>
                   <a href="/components/card" className={menuLinkClass}>Card</a>
-                  <a href="/docs/components/checkbox" className={menuLinkClass}>Checkbox</a>
+                  <a href="/components/checkbox" className={menuLinkClass}>Checkbox</a>
                   <a href="/docs/components/dialog" className={menuLinkClass}>Dialog</a>
                   <a href="/docs/components/dropdown-menu" className={menuLinkClass}>Dropdown Menu</a>
                   <a href="/components/input" className={menuLinkClass}>Input</a>
