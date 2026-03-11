@@ -5,7 +5,7 @@
  * Part of the #515 page redesign initiative.
  */
 
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { AvatarDemo, AvatarFallbackDemo, AvatarGroupDemo } from '@/components/avatar-demo'
 import { AvatarPlayground } from '@/components/avatar-playground'
 import {
   DocPage,
@@ -22,34 +22,52 @@ import { getNavLinks } from '../../components/shared/PageNavigation'
 const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'basic', title: 'Basic', branch: 'start' },
+  { id: 'with-fallback', title: 'With Fallback', branch: 'child' },
+  { id: 'group', title: 'Group', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-const usageCode = `import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+const basicCode = `import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
-function AvatarDemo() {
+function AvatarBasic() {
   return (
-    <div className="flex items-center gap-4">
-      <Avatar>
+    <Avatar>
+      <AvatarImage src="https://github.com/kfly8.png" alt="@kfly8" />
+      <AvatarFallback>KF</AvatarFallback>
+    </Avatar>
+  )
+}`
+
+const fallbackCode = `import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+
+function AvatarWithFallback() {
+  return (
+    <Avatar>
+      <AvatarFallback>BF</AvatarFallback>
+    </Avatar>
+  )
+}`
+
+const groupCode = `import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+
+function AvatarGroup() {
+  return (
+    <div className="flex -space-x-3">
+      <Avatar className="border-2 border-background">
         <AvatarImage src="https://github.com/kfly8.png" alt="@kfly8" />
         <AvatarFallback>KF</AvatarFallback>
       </Avatar>
-      <Avatar>
-        <AvatarFallback>BF</AvatarFallback>
+      <Avatar className="border-2 border-background">
+        <AvatarFallback>AB</AvatarFallback>
       </Avatar>
-      <div className="flex -space-x-3">
-        <Avatar className="border-2 border-background">
-          <AvatarImage src="https://github.com/kfly8.png" alt="@kfly8" />
-          <AvatarFallback>KF</AvatarFallback>
-        </Avatar>
-        <Avatar className="border-2 border-background">
-          <AvatarFallback>AB</AvatarFallback>
-        </Avatar>
-        <Avatar className="border-2 border-background">
-          <AvatarFallback>+2</AvatarFallback>
-        </Avatar>
-      </div>
+      <Avatar className="border-2 border-background">
+        <AvatarFallback>CD</AvatarFallback>
+      </Avatar>
+      <Avatar className="border-2 border-background">
+        <AvatarFallback>+3</AvatarFallback>
+      </Avatar>
     </div>
   )
 }`
@@ -106,31 +124,21 @@ export function AvatarRefPage() {
           <PackageManagerTabs command="barefoot add avatar" />
         </Section>
 
-        {/* Usage */}
-        <Section id="usage" title="Usage">
-          <Example title="" code={usageCode}>
-            <div className="flex items-center gap-4">
-              <Avatar>
-                <AvatarImage src="https://github.com/kfly8.png" alt="@kfly8" />
-                <AvatarFallback>KF</AvatarFallback>
-              </Avatar>
-              <Avatar>
-                <AvatarFallback>BF</AvatarFallback>
-              </Avatar>
-              <div className="flex -space-x-3">
-                <Avatar className="border-2 border-background">
-                  <AvatarImage src="https://github.com/kfly8.png" alt="@kfly8" />
-                  <AvatarFallback>KF</AvatarFallback>
-                </Avatar>
-                <Avatar className="border-2 border-background">
-                  <AvatarFallback>AB</AvatarFallback>
-                </Avatar>
-                <Avatar className="border-2 border-background">
-                  <AvatarFallback>+2</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-          </Example>
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <Example title="Basic" code={basicCode}>
+              <AvatarDemo />
+            </Example>
+
+            <Example title="With Fallback" code={fallbackCode}>
+              <AvatarFallbackDemo />
+            </Example>
+
+            <Example title="Group" code={groupCode}>
+              <AvatarGroupDemo />
+            </Example>
+          </div>
         </Section>
 
         {/* API Reference */}

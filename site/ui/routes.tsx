@@ -13,7 +13,6 @@ import { AspectRatioPage } from './pages/aspect-ratio'
 import { AspectRatioRefPage } from './pages/components/aspect-ratio'
 import { AlertPage } from './pages/alert'
 import { AlertDialogPage } from './pages/alert-dialog'
-import { AvatarPage } from './pages/avatar'
 import { BadgePage } from './pages/badge'
 import { BadgeRefPage } from './pages/components/badge'
 import { ButtonRefPage } from './pages/components/button'
@@ -391,11 +390,6 @@ export function createApp() {
   // Alert Dialog documentation
   app.get('/docs/components/alert-dialog', (c) => {
     return c.render(<AlertDialogPage />)
-  })
-
-  // Avatar documentation
-  app.get('/docs/components/avatar', (c) => {
-    return c.render(<AvatarPage />)
   })
 
   // Badge documentation
