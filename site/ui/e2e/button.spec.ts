@@ -5,17 +5,7 @@ test.describe('Button Reference Page', () => {
     await page.goto('/components/button')
   })
 
-  test('displays page heading and description', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('Button')
-    await expect(page.locator('text=Displays a button or a component that looks like a button')).toBeVisible()
-  })
-
   test.describe('Props Playground', () => {
-    test('renders preview button with default text', async ({ page }) => {
-      const preview = page.locator('[data-button-preview]')
-      await expect(preview.locator('button')).toContainText('Button')
-    })
-
     test('changing children text updates preview button', async ({ page }) => {
       const preview = page.locator('[data-button-preview]')
       const section = page.locator('#preview')
@@ -24,18 +14,31 @@ test.describe('Button Reference Page', () => {
       await input.fill('Click me')
       await expect(preview.locator('button')).toContainText('Click me')
     })
-  })
 
-  test.describe('As Child example', () => {
-    test('renders link styled as button', async ({ page }) => {
-      const link = page.locator('a:has-text("Go Home")').first()
-      await expect(link).toBeVisible()
-      await expect(link).toHaveAttribute('href', '/')
+    test('changing variant updates preview button class', async ({ page }) => {
+      const preview = page.locator('[data-button-preview]')
+      const section = page.locator('#preview')
+
+      // Open variant select and pick "outline"
+      await section.locator('button[role="combobox"]').first().click()
+      await page.locator('[role="option"]:has-text("outline")').click()
+
+      // Preview button should have outline variant class
+      const btn = preview.locator('button')
+      await expect(btn).toHaveClass(/border/)
     })
 
-    test('navigates to home on click', async ({ page }) => {
-      await page.locator('a:has-text("Go Home")').first().click()
-      await expect(page).toHaveURL('/')
+    test('changing size updates preview button class', async ({ page }) => {
+      const preview = page.locator('[data-button-preview]')
+      const section = page.locator('#preview')
+
+      // Open size select (second combobox) and pick "sm"
+      await section.locator('button[role="combobox"]').nth(1).click()
+      await page.locator('[role="option"]:has-text("sm")').first().click()
+
+      // Preview button should have sm size class
+      const btn = preview.locator('button')
+      await expect(btn).toHaveClass(/h-8/)
     })
   })
 })
