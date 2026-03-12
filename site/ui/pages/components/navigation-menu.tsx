@@ -24,8 +24,7 @@ const tocItems: TocItem[] = [
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
-  { id: 'basic', title: 'Basic', branch: 'start' },
-  { id: 'with-links', title: 'With Links', branch: 'end' },
+  { id: 'with-links', title: 'With Links', branch: 'child' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -53,49 +52,6 @@ function BasicNavigationMenu() {
                   <div className="text-sm font-medium">Introduction</div>
                   <p className="text-sm text-muted-foreground mt-1">
                     Learn the basics.
-                  </p>
-                </NavigationMenuLink>
-              </li>
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
-  )
-}`
-
-const basicCode = `"use client"
-
-import {
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem,
-  NavigationMenuTrigger,
-  NavigationMenuContent,
-  NavigationMenuLink,
-} from '@/components/ui/navigation-menu'
-
-function BasicNavigationMenu() {
-  return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem value="getting-started">
-          <NavigationMenuTrigger>Getting Started</NavigationMenuTrigger>
-          <NavigationMenuContent className="w-[400px] md:w-[500px]">
-            <ul className="grid gap-3 p-4 md:grid-cols-2">
-              <li>
-                <NavigationMenuLink href="/docs">
-                  <div className="text-sm font-medium">Introduction</div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Learn the basics.
-                  </p>
-                </NavigationMenuLink>
-              </li>
-              <li>
-                <NavigationMenuLink href="/docs/installation">
-                  <div className="text-sm font-medium">Installation</div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    How to install and configure.
                   </p>
                 </NavigationMenuLink>
               </li>
@@ -233,9 +189,6 @@ export function NavigationMenuRefPage() {
         {/* Examples */}
         <Section id="examples" title="Examples">
           <div className="space-y-8">
-            <Example title="Basic" code={basicCode}>
-              <NavigationMenuBasicDemo />
-            </Example>
             <Example title="With Links" code={withLinksCode}>
               <NavigationMenuWithLinksDemo />
             </Example>

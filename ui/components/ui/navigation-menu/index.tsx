@@ -90,9 +90,11 @@ function NavigationMenu(props: NavigationMenuProps) {
   const [activeValue, setActiveValue] = createSignal('')
 
   const handleMount = (el: HTMLElement) => {
-    // Store delay config on root for timer helpers
-    el.dataset.nmOpenDelay = String(props.delayDuration ?? 200)
-    el.dataset.nmCloseDelay = String(props.closeDelay ?? 300)
+    // Store delay config on root for timer helpers (reactive)
+    createEffect(() => {
+      el.dataset.nmOpenDelay = String(props.delayDuration ?? 200)
+      el.dataset.nmCloseDelay = String(props.closeDelay ?? 300)
+    })
 
     // Global click-outside handler
     const handleClickOutside = (e: MouseEvent) => {
@@ -230,16 +232,22 @@ function NavigationMenuTrigger(props: NavigationMenuTriggerProps) {
         root.dataset.nmCloseTimer = ''
       }
 
-      const openDelay = Number(root.dataset.nmOpenDelay) || 200
+      if (ctx.activeValue() === itemValue) return
 
-      if (openDelay > 0 && ctx.activeValue() !== itemValue) {
+      const rawDelay = root.dataset.nmOpenDelay
+      const openDelay = rawDelay != null ? Number(rawDelay) : 200
+
+      if (ctx.activeValue() !== '') {
+        // Roving: another menu is already open, switch immediately
+        ctx.onActiveValueChange(itemValue)
+      } else if (openDelay > 0) {
         const timerId = setTimeout(() => {
           ctx.onActiveValueChange(itemValue)
           root.dataset.nmOpenTimer = ''
         }, openDelay) as unknown as number
         root.dataset.nmOpenTimer = String(timerId)
-      } else if (ctx.activeValue() !== '') {
-        // If any menu is already open, open immediately (roving)
+      } else {
+        // Zero delay: open immediately
         ctx.onActiveValueChange(itemValue)
       }
     })
@@ -255,7 +263,8 @@ function NavigationMenuTrigger(props: NavigationMenuTriggerProps) {
         root.dataset.nmOpenTimer = ''
       }
 
-      const closeDelay = Number(root.dataset.nmCloseDelay) || 300
+      const rawDelay = root.dataset.nmCloseDelay
+      const closeDelay = rawDelay != null ? Number(rawDelay) : 300
 
       if (closeDelay > 0) {
         const timerId = setTimeout(() => {
@@ -397,7 +406,8 @@ function NavigationMenuContent(props: NavigationMenuContentProps) {
         root.dataset.nmOpenTimer = ''
       }
 
-      const closeDelay = Number(root.dataset.nmCloseDelay) || 300
+      const rawDelay = root.dataset.nmCloseDelay
+      const closeDelay = rawDelay != null ? Number(rawDelay) : 300
 
       if (closeDelay > 0) {
         const timerId = setTimeout(() => {
