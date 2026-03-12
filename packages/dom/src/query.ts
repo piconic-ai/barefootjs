@@ -461,10 +461,89 @@ function $cSingle(scope: Element | null, id: string): Element | null {
   const cleanId = id.startsWith(BF_PARENT_OWNED_PREFIX) ? id.slice(1) : id
   // Slot IDs start with 's' + digit; component names start with uppercase
   if (/^s\d/.test(cleanId)) {
-    return find(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
+    // Suffix match [bf-s$="_s3"] is ambiguous: it matches both "_s0_s3" (nested)
+    // and "_s3" (direct child). When the parent scope ID is known, verify the
+    // candidate is a direct child by checking the scope ID contains
+    // "{parentScopeId}_{slotId}" without intermediate slot segments.
+    const parentScopeId = getScopeId(scope)
+    const result = find(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
+    if (result && parentScopeId) {
+      const raw = result.getAttribute(BF_SCOPE) ?? ''
+      const childScopeId = raw.startsWith(BF_CHILD_PREFIX) ? raw.slice(1) : raw
+      const expectedSuffix = `${parentScopeId}_${cleanId}`
+      if (!childScopeId.endsWith(expectedSuffix)) {
+        // Found a nested scope (e.g., _s0_s3) instead of direct child (_s3).
+        // Fall back to searching all candidates.
+        return findDirectChild(scope, `[${BF_SCOPE}$="_${cleanId}"]`, parentScopeId, cleanId)
+      }
+    }
+    return result
   }
   // Component name prefix match - support both child (~Name_) and root (Name_) scopes
   return find(scope, `[${BF_SCOPE}^="${BF_CHILD_PREFIX}${cleanId}_"], [${BF_SCOPE}^="${cleanId}_"]`)
+}
+
+/**
+ * Get the scope ID from an element, stripping the ~ child prefix if present.
+ */
+function getScopeId(scope: Element | null): string | null {
+  if (!scope) return null
+  // Check comment scope first
+  const commentInfo = commentScopeRegistry.get(scope)
+  if (commentInfo) return commentInfo.scopeId
+  // Check bf-s attribute
+  const raw = scope.getAttribute(BF_SCOPE)
+  if (!raw) return null
+  return raw.startsWith(BF_CHILD_PREFIX) ? raw.slice(1) : raw
+}
+
+/**
+ * Find a direct child scope element when suffix match is ambiguous.
+ * Searches all elements matching the selector and picks the one whose
+ * scope ID ends with "{parentScopeId}_{slotId}".
+ */
+function findDirectChild(
+  scope: Element | null,
+  selector: string,
+  parentScopeId: string,
+  slotId: string
+): Element | null {
+  if (!scope) return null
+  const expectedSuffix = `${parentScopeId}_${slotId}`
+
+  // Check comment scope range
+  const commentInfo = commentScopeRegistry.get(scope)
+  if (commentInfo) {
+    const boundary = getCommentScopeBoundary(commentInfo.commentNode)
+    let node: Node | null = commentInfo.commentNode.nextSibling
+    while (node && node !== boundary) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const candidates = (node as Element).querySelectorAll(selector)
+        for (const candidate of candidates) {
+          const raw = candidate.getAttribute(BF_SCOPE) ?? ''
+          const id = raw.startsWith(BF_CHILD_PREFIX) ? raw.slice(1) : raw
+          if (id.endsWith(expectedSuffix)) return candidate
+        }
+      }
+      node = node.nextSibling
+    }
+    return null
+  }
+
+  // Regular scope — search descendants
+  const candidates = scope.querySelectorAll(selector)
+  for (const candidate of candidates) {
+    const raw = candidate.getAttribute(BF_SCOPE) ?? ''
+    const id = raw.startsWith(BF_CHILD_PREFIX) ? raw.slice(1) : raw
+    if (id.endsWith(expectedSuffix)) return candidate
+  }
+
+  // Search portals
+  const scopeId = scope.getAttribute(BF_SCOPE)
+  if (scopeId) {
+    return findInPortals(scopeId, selector)
+  }
+  return null
 }
 
 // --- $t: text node finder via comment markers ---
