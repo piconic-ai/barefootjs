@@ -42,7 +42,7 @@ import { DialogRefPage } from './pages/components/dialog'
 import { ContextMenuRefPage } from './pages/components/context-menu'
 import { DatePickerRefPage } from './pages/components/date-picker'
 import { DropdownMenuRefPage } from './pages/components/dropdown-menu'
-import { ToastPage } from './pages/toast'
+import { ToastRefPage } from './pages/components/toast'
 import { TooltipPage } from './pages/tooltip'
 import { ResizableRefPage } from './pages/components/resizable'
 import { ScrollAreaRefPage } from './pages/components/scroll-area'
@@ -275,7 +275,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Textarea</h3>
               <p className="text-xs text-muted-foreground">Multi-line text input</p>
             </a>
-            <a href="/docs/components/toast" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/toast" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Toast</h3>
               <p className="text-xs text-muted-foreground">Temporary notification message</p>
             </a>
@@ -499,9 +499,9 @@ export function createApp() {
     return c.render(<DropdownMenuRefPage />)
   })
 
-  // Toast documentation
-  app.get('/docs/components/toast', (c) => {
-    return c.render(<ToastPage />)
+  // Toast reference page
+  app.get('/components/toast', (c) => {
+    return c.render(<ToastRefPage />)
   })
 
   // Radio Group reference page (redesigned #515)
