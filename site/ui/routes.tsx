@@ -44,7 +44,6 @@ import { ContextMenuPage } from './pages/context-menu'
 import { DatePickerPage } from './pages/date-picker'
 import { DropdownMenuPage } from './pages/dropdown-menu'
 import { ToastPage } from './pages/toast'
-import { ToggleGroupPage } from './pages/toggle-group'
 import { TooltipPage } from './pages/tooltip'
 import { ResizableRefPage } from './pages/components/resizable'
 import { ScrollAreaRefPage } from './pages/components/scroll-area'
@@ -285,7 +284,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Toggle</h3>
               <p className="text-xs text-muted-foreground">Two-state pressed button</p>
             </a>
-            <a href="/docs/components/toggle-group" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/toggle-group" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Toggle Group</h3>
               <p className="text-xs text-muted-foreground">Group of toggle buttons</p>
             </a>
@@ -504,11 +503,6 @@ export function createApp() {
   // Toast documentation
   app.get('/docs/components/toast', (c) => {
     return c.render(<ToastPage />)
-  })
-
-  // Toggle Group documentation
-  app.get('/docs/components/toggle-group', (c) => {
-    return c.render(<ToggleGroupPage />)
   })
 
   // Radio Group reference page (redesigned #515)

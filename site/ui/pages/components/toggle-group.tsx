@@ -8,6 +8,11 @@
 import { ToggleGroupPlayground } from '@/components/toggle-group-playground'
 import { ToggleGroupUsageDemo } from '@/components/toggle-group-usage-demo'
 import {
+  ToggleGroupBasicDemo,
+  ToggleGroupOutlineDemo,
+  ToggleGroupMultipleDemo,
+} from '@/components/toggle-group-demo'
+import {
   DocPage,
   PageHeader,
   Section,
@@ -23,6 +28,10 @@ const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'basic', title: 'Basic', branch: 'start' },
+  { id: 'outline', title: 'Outline', branch: 'child' },
+  { id: 'multiple', title: 'Multiple', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -50,6 +59,84 @@ function ToggleGroupDemo() {
         <ToggleGroupItem value="italic">Italic</ToggleGroupItem>
         <ToggleGroupItem value="underline">Underline</ToggleGroupItem>
       </ToggleGroup>
+    </div>
+  )
+}`
+
+const basicCode = `"use client"
+
+import { createSignal } from "@barefootjs/dom"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+
+export function ToggleGroupBasicDemo() {
+  const [alignment, setAlignment] = createSignal("center")
+
+  return (
+    <div className="space-y-4">
+      <ToggleGroup type="single" defaultValue="center" onValueChange={setAlignment}>
+        <ToggleGroupItem value="left" aria-label="Align left">
+          <AlignLeftIcon />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="center" aria-label="Align center">
+          <AlignCenterIcon />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="right" aria-label="Align right">
+          <AlignRightIcon />
+        </ToggleGroupItem>
+      </ToggleGroup>
+      <div className={\`\${alignment() === "left" ? "text-left" : alignment() === "right" ? "text-right" : "text-center"} rounded-md border p-4\`}>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+      </div>
+    </div>
+  )
+}`
+
+const outlineCode = `"use client"
+
+import { createSignal } from "@barefootjs/dom"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+
+export function ToggleGroupOutlineDemo() {
+  const [fontSize, setFontSize] = createSignal("M")
+
+  return (
+    <div className="space-y-4">
+      <ToggleGroup type="single" variant="outline" defaultValue="M" onValueChange={setFontSize}>
+        <ToggleGroupItem value="S">S</ToggleGroupItem>
+        <ToggleGroupItem value="M">M</ToggleGroupItem>
+        <ToggleGroupItem value="L">L</ToggleGroupItem>
+      </ToggleGroup>
+      <div className={\`\${fontSize() === "S" ? "text-sm" : fontSize() === "L" ? "text-lg" : "text-base"} rounded-md border p-4\`}>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+      </div>
+    </div>
+  )
+}`
+
+const multipleCode = `"use client"
+
+import { createSignal } from "@barefootjs/dom"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+
+export function ToggleGroupMultipleDemo() {
+  const [formats, setFormats] = createSignal<string[]>([])
+
+  return (
+    <div className="space-y-4">
+      <ToggleGroup type="multiple" onValueChange={setFormats}>
+        <ToggleGroupItem value="Bold" aria-label="Toggle bold">
+          <BoldIcon />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="Italic" aria-label="Toggle italic">
+          <ItalicIcon />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="Underline" aria-label="Toggle underline">
+          <UnderlineIcon />
+        </ToggleGroupItem>
+      </ToggleGroup>
+      <div className={\`\${formats().includes("Bold") ? "font-bold" : ""} \${formats().includes("Italic") ? "italic" : ""} \${formats().includes("Underline") ? "underline" : ""} rounded-md border p-4\`}>
+        <p>The quick brown fox jumps over the lazy dog.</p>
+      </div>
     </div>
   )
 }`
@@ -132,6 +219,23 @@ export function ToggleGroupRefPage() {
           <Example title="" code={usageCode}>
             <ToggleGroupUsageDemo />
           </Example>
+        </Section>
+
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <Example title="Basic" code={basicCode}>
+              <ToggleGroupBasicDemo />
+            </Example>
+
+            <Example title="Outline" code={outlineCode}>
+              <ToggleGroupOutlineDemo />
+            </Example>
+
+            <Example title="Multiple" code={multipleCode}>
+              <ToggleGroupMultipleDemo />
+            </Example>
+          </div>
         </Section>
 
         {/* API Reference */}
