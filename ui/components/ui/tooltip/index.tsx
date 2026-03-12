@@ -99,10 +99,6 @@ interface TooltipProps extends HTMLBaseAttributes {
 function Tooltip(props: TooltipProps) {
   const [open, setOpen] = createSignal(false)
 
-  const placement = props.placement ?? 'top'
-  const delayDuration = props.delayDuration ?? 0
-  const closeDelay = props.closeDelay ?? 0
-
   // Helper to get/set timer IDs on the DOM element
   const getTimer = (el: HTMLElement, key: string): number | undefined => {
     const val = el.dataset[key]
@@ -120,11 +116,11 @@ function Tooltip(props: TooltipProps) {
       setTimer(el, 'closeTimer', undefined)
     }
 
-    if (delayDuration > 0) {
+    if ((props.delayDuration ?? 0) > 0) {
       const timerId = setTimeout(() => {
         setOpen(true)
         setTimer(el, 'openTimer', undefined)
-      }, delayDuration) as unknown as number
+      }, props.delayDuration!) as unknown as number
       setTimer(el, 'openTimer', timerId)
     } else {
       setOpen(true)
@@ -139,11 +135,11 @@ function Tooltip(props: TooltipProps) {
       setTimer(el, 'openTimer', undefined)
     }
 
-    if (closeDelay > 0) {
+    if ((props.closeDelay ?? 0) > 0) {
       const timerId = setTimeout(() => {
         setOpen(false)
         setTimer(el, 'closeTimer', undefined)
-      }, closeDelay) as unknown as number
+      }, props.closeDelay!) as unknown as number
       setTimer(el, 'closeTimer', timerId)
     } else {
       setOpen(false)
@@ -168,13 +164,13 @@ function Tooltip(props: TooltipProps) {
       <div
         data-slot="tooltip-content"
         data-state={open() ? 'open' : 'closed'}
-        className={`${tooltipTransitionClasses} ${placementClasses[placement]} ${tooltipContentBaseClasses} ${open() ? tooltipContentOpenClasses : tooltipContentClosedClasses}`}
+        className={`${tooltipTransitionClasses} ${placementClasses[props.placement ?? 'top']} ${tooltipContentBaseClasses} ${open() ? tooltipContentOpenClasses : tooltipContentClosedClasses}`}
         role="tooltip"
         id={props.id}
       >
         {props.content}
         <span
-          className={`absolute w-0 h-0 border-4 ${arrowClasses[placement]}`}
+          className={`absolute w-0 h-0 border-4 ${arrowClasses[props.placement ?? 'top']}`}
           aria-hidden="true"
         />
       </div>
