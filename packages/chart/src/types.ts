@@ -60,6 +60,51 @@ export interface ChartTooltipProps {
   labelFormatter?: (label: string) => string
 }
 
+/** Registration info for a radial bar series */
+export interface RadialBarRegistration {
+  dataKey: string
+  fill: string
+}
+
+/** Props for RadialChart */
+export interface RadialChartProps {
+  data: Record<string, unknown>[]
+  innerRadius?: number
+  outerRadius?: number
+  startAngle?: number
+  endAngle?: number
+  children?: unknown
+}
+
+/** Props for RadialBar */
+export interface RadialBarProps {
+  dataKey: string
+  fill?: string
+  stackId?: string
+}
+
+/** Props for RadialChartLabel */
+export interface RadialChartLabelProps {
+  children?: unknown
+}
+
+/** Context value shared between RadialChart and its children */
+export interface RadialChartContextValue {
+  svgGroup: () => SVGGElement | null
+  container: () => HTMLElement | null
+  data: () => Record<string, unknown>[]
+  innerRadius: () => number
+  outerRadius: () => number
+  startAngle: () => number
+  endAngle: () => number
+  config: () => ChartConfig
+  centerX: () => number
+  centerY: () => number
+  radialBars: () => RadialBarRegistration[]
+  registerRadialBar: (bar: RadialBarRegistration) => void
+  unregisterRadialBar: (dataKey: string) => void
+}
+
 /** Context value shared between BarChart and its children */
 export interface BarChartContextValue {
   svgGroup: () => SVGGElement | null

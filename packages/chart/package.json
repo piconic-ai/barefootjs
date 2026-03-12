@@ -41,12 +41,14 @@
     "@barefootjs/dom": ">=0.0.1"
   },
   "dependencies": {
+    "d3-array": "^3.2.4",
     "d3-scale": "^4.0.2",
-    "d3-array": "^3.2.4"
+    "d3-shape": "^3.2.0"
   },
   "devDependencies": {
-    "@types/d3-scale": "^4.0.8",
     "@types/d3-array": "^3.2.1",
+    "@types/d3-scale": "^4.0.8",
+    "@types/d3-shape": "^3.1.8",
     "typescript": "^5.0.0"
   }
 }

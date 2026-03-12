@@ -65,6 +65,12 @@
       "description": "A bar chart component built with SVG and D3 scales"
     },
     {
+      "name": "radial-chart",
+      "type": "registry:ui",
+      "title": "Radial Chart",
+      "description": "A radial bar chart component built with SVG and D3 arc shapes"
+    },
+    {
       "name": "carousel",
       "type": "registry:ui",
       "title": "Carousel",
