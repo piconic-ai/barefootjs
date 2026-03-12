@@ -1,4 +1,4 @@
-import { scaleBand, scaleLinear, type ScaleBand, type ScaleLinear } from 'd3-scale'
+import { scaleBand, scaleLinear, scalePoint, type ScaleBand, type ScaleLinear, type ScalePoint } from 'd3-scale'
 import { max } from 'd3-array'
 
 export function createBandScale(
@@ -28,4 +28,15 @@ export function createLinearScale(
     .domain([0, maxValue])
     .nice()
     .range([height, 0])
+}
+
+export function createPointScale(
+  data: Record<string, unknown>[],
+  dataKey: string,
+  width: number,
+): ScalePoint<string> {
+  return scalePoint<string>()
+    .domain(data.map((d) => String(d[dataKey])))
+    .range([0, width])
+    .padding(0.5)
 }

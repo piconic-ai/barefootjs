@@ -62,6 +62,7 @@ import { ComponentCatalogPage } from './pages/components/catalog'
 
 // Chart pages
 import { BarChartRefPage } from './pages/charts/bar-chart'
+import { AreaChartRefPage } from './pages/charts/area-chart'
 import { LineChartRefPage } from './pages/charts/line-chart'
 
 // Form pattern pages
@@ -602,6 +603,11 @@ export function createApp() {
   // Bar Chart reference page
   app.get('/charts/bar-chart', (c) => {
     return c.render(<BarChartRefPage />)
+  })
+
+  // Area Chart reference page
+  app.get('/charts/area-chart', (c) => {
+    return c.render(<AreaChartRefPage />)
   })
 
   // Line Chart reference page

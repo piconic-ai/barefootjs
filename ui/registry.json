@@ -59,6 +59,12 @@
       "tags": ["input"]
     },
     {
+      "name": "area-chart",
+      "type": "registry:ui",
+      "title": "Area Chart",
+      "description": "An area chart component built with SVG, D3 scales, and d3-shape"
+    },
+    {
       "name": "bar-chart",
       "type": "registry:ui",
       "title": "Bar Chart",

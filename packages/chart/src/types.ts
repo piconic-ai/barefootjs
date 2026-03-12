@@ -1,4 +1,4 @@
-import type { ScaleBand, ScaleLinear } from 'd3-scale'
+import type { ScaleBand, ScaleLinear, ScalePoint } from 'd3-scale'
 
 /** Color and label configuration for chart data series */
 export type ChartConfig = Record<
@@ -89,5 +89,44 @@ export interface BarChartContextValue {
   bars: () => BarRegistration[]
   registerBar: (bar: BarRegistration) => void
   unregisterBar: (dataKey: string) => void
+  setXDataKey: (key: string) => void
+}
+
+/** Registration info for an area series */
+export interface AreaRegistration {
+  dataKey: string
+  fill: string
+  stroke: string
+  fillOpacity: number
+}
+
+/** Props for AreaChart */
+export interface AreaChartProps {
+  data: Record<string, unknown>[]
+  children?: unknown
+}
+
+/** Props for Area */
+export interface AreaProps {
+  dataKey: string
+  fill?: string
+  stroke?: string
+  fillOpacity?: number
+}
+
+/** Context value shared between AreaChart and its children */
+export interface AreaChartContextValue {
+  svgGroup: () => SVGGElement | null
+  container: () => HTMLElement | null
+  data: () => Record<string, unknown>[]
+  xDataKey: () => string
+  xScale: () => ScalePoint<string> | null
+  yScale: () => ScaleLinear<number, number> | null
+  innerWidth: () => number
+  innerHeight: () => number
+  config: () => ChartConfig
+  areas: () => AreaRegistration[]
+  registerArea: (area: AreaRegistration) => void
+  unregisterArea: (dataKey: string) => void
   setXDataKey: (key: string) => void
 }

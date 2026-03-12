@@ -141,6 +141,126 @@
           "description": ""
         }
       ]
+    },
+    {
+      "name": "AreaChart",
+      "description": "",
+      "props": [
+        {
+          "name": "data",
+          "type": "Record<string, unknown>[]",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "children",
+          "type": "unknown",
+          "required": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "Area",
+      "description": "",
+      "props": [
+        {
+          "name": "dataKey",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "fill",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "stroke",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "fillOpacity",
+          "type": "number",
+          "required": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "AreaCartesianGrid",
+      "description": "",
+      "props": [
+        {
+          "name": "vertical",
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "horizontal",
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "AreaXAxis",
+      "description": "",
+      "props": [
+        {
+          "name": "dataKey",
+          "type": "string",
+          "required": true,
+          "description": ""
+        },
+        {
+          "name": "tickFormatter",
+          "type": "(value: string) => string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "hide",
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "AreaYAxis",
+      "description": "",
+      "props": [
+        {
+          "name": "hide",
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "tickFormatter",
+          "type": "(value: number) => string",
+          "required": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "AreaChartTooltip",
+      "description": "",
+      "props": [
+        {
+          "name": "labelFormatter",
+          "type": "(label: string) => string",
+          "required": false,
+          "description": ""
+        }
+      ]
     }
   ],
   "examples": [],
