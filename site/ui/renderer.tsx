@@ -110,7 +110,7 @@ const menuEntries: SidebarEntry[] = [
       { title: 'Sidebar', href: '/docs/components/sidebar' },
       { title: 'Separator', href: '/components/separator' },
       { title: 'Skeleton', href: '/components/skeleton' },
-      { title: 'Sheet', href: '/docs/components/sheet' },
+      { title: 'Sheet', href: '/components/sheet' },
       { title: 'Slider', href: '/components/slider' },
       { title: 'Spinner', href: '/docs/components/spinner' },
       { title: 'Switch', href: '/components/switch' },

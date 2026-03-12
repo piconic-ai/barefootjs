@@ -52,7 +52,7 @@ import { PaginationRefPage } from './pages/components/pagination'
 import { PopoverRefPage } from './pages/components/popover'
 import { ProgressRefPage } from './pages/components/progress'
 import { DrawerRefPage } from './pages/components/drawer'
-import { SheetPage } from './pages/sheet'
+import { SheetRefPage } from './pages/components/sheet'
 import { SidebarPage } from './pages/sidebar'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
@@ -247,7 +247,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Skeleton</h3>
               <p className="text-xs text-muted-foreground">Placeholder loading indicator</p>
             </a>
-            <a href="/docs/components/sheet" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/sheet" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Sheet</h3>
               <p className="text-xs text-muted-foreground">Side panel overlay</p>
             </a>
@@ -587,9 +587,9 @@ export function createApp() {
     return c.render(<DrawerRefPage />)
   })
 
-  // Sheet documentation
-  app.get('/docs/components/sheet', (c) => {
-    return c.render(<SheetPage />)
+  // Sheet reference page (redesigned)
+  app.get('/components/sheet', (c) => {
+    return c.render(<SheetRefPage />)
   })
 
   // Sidebar documentation
