@@ -55,6 +55,21 @@ export interface YAxisProps {
   tickFormatter?: (value: number) => string
 }
 
+/** Props for LineChart */
+export interface LineChartProps {
+  data: Record<string, unknown>[]
+  children?: unknown
+}
+
+/** Props for Line */
+export interface LineProps {
+  dataKey: string
+  stroke?: string
+  strokeWidth?: number
+  type?: 'linear' | 'monotone'
+  dot?: boolean
+}
+
 /** Props for ChartTooltip */
 export interface ChartTooltipProps {
   labelFormatter?: (label: string) => string

@@ -5,6 +5,8 @@ export { BarChartContext, ChartConfigContext } from './context'
 export { applyChartCSSVariables, initChartContainer } from './chart-container'
 export { initBarChart } from './bar-chart'
 export { initBar } from './bar'
+export { initLineChart } from './line-chart'
+export { initLine } from './line'
 export { initCartesianGrid } from './cartesian-grid'
 export { initXAxis } from './x-axis'
 export { initYAxis } from './y-axis'
@@ -17,6 +19,8 @@ export type {
   ChartContainerProps,
   BarChartProps,
   BarProps,
+  LineChartProps,
+  LineProps,
   CartesianGridProps,
   XAxisProps,
   YAxisProps,

@@ -54,7 +54,7 @@ export function initChartTooltip(_scope: Element, props: Record<string, unknown>
 
     const handleMouseOver = (e: Event): void => {
       const target = e.target as SVGElement
-      if (target.tagName !== 'rect' || !target.hasAttribute('data-x')) return
+      if (!target.hasAttribute('data-x')) return
 
       const xValue = target.getAttribute('data-x') ?? ''
       const datum = data.find((d) => String(d[xKey]) === xValue)
@@ -88,7 +88,7 @@ export function initChartTooltip(_scope: Element, props: Record<string, unknown>
 
     const handleMouseOut = (e: Event): void => {
       const target = e.target as SVGElement
-      if (target.tagName === 'rect') {
+      if (target.hasAttribute('data-x')) {
         currentTooltip.style.opacity = '0'
       }
     }

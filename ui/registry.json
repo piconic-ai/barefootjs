@@ -65,6 +65,12 @@
       "description": "A bar chart component built with SVG and D3 scales"
     },
     {
+      "name": "line-chart",
+      "type": "registry:ui",
+      "title": "Line Chart",
+      "description": "A line chart component built with SVG, D3 scales, and D3 shape"
+    },
+    {
       "name": "carousel",
       "type": "registry:ui",
       "title": "Carousel",
