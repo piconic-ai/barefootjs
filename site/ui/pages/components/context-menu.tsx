@@ -1,8 +1,12 @@
 /**
- * Context Menu Documentation Page
+ * Context Menu Reference Page (/components/context-menu)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Part of the #515 page redesign initiative.
  */
 
 import { ContextMenuFullDemo, ContextMenuBasicDemo, ContextMenuCheckboxDemo } from '@/components/context-menu-demo'
+import { ContextMenuPlayground } from '@/components/context-menu-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,20 +16,60 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'features', title: 'Features' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'checkbox-items', title: 'Checkbox Items', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `"use client"
+
+import { createSignal } from '@barefootjs/dom'
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+} from '@/components/ui/context-menu'
+
+function ContextMenuDemo() {
+  const [open, setOpen] = createSignal(false)
+
+  return (
+    <ContextMenu open={open()} onOpenChange={setOpen}>
+      <ContextMenuTrigger>
+        <div className="flex h-[150px] w-[300px] items-center justify-center rounded-md border border-dashed text-sm">
+          Right-click here
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem>
+          <span>Back</span>
+          <ContextMenuShortcut>⌘[</ContextMenuShortcut>
+        </ContextMenuItem>
+        <ContextMenuItem>
+          <span>Forward</span>
+          <ContextMenuShortcut>⌘]</ContextMenuShortcut>
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem>
+          <span>Reload</span>
+          <ContextMenuShortcut>⌘R</ContextMenuShortcut>
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}`
+
 const basicCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -224,7 +268,7 @@ const contextMenuShortcutProps: PropDefinition[] = [
   },
 ]
 
-export function ContextMenuPage() {
+export function ContextMenuRefPage() {
   return (
     <DocPage slug="context-menu" toc={tocItems}>
       <div className="space-y-12">
@@ -234,29 +278,21 @@ export function ContextMenuPage() {
           {...getNavLinks('context-menu')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<ContextMenu open={open()} onOpenChange={setOpen}><ContextMenuTrigger>...</ContextMenuTrigger><ContextMenuContent>...</ContextMenuContent></ContextMenu>`}>
-          <div className="flex gap-4">
-            <ContextMenuFullDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <ContextMenuPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add context-menu" />
         </Section>
 
-        {/* Features */}
-        <Section id="features" title="Features">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">Right-click trigger</strong> - Opens at cursor position on contextmenu event</li>
-            <li><strong className="text-foreground">Cursor positioning</strong> - Menu appears exactly where you right-clicked</li>
-            <li><strong className="text-foreground">Submenu</strong> - Nested submenus with hover and keyboard navigation</li>
-            <li><strong className="text-foreground">Checkbox items</strong> - Multi-select items with check indicator</li>
-            <li><strong className="text-foreground">Radio items</strong> - Single-select items within a group</li>
-            <li><strong className="text-foreground">Keyboard navigation</strong> - Arrow keys, Home/End, Enter/Space, ESC</li>
-            <li><strong className="text-foreground">Composable</strong> - Label, Separator, Shortcut, Group, Sub sub-components</li>
-          </ul>
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="flex gap-4">
+              <ContextMenuFullDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}
