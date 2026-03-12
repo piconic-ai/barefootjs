@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Slider Documentation Page', () => {
+test.describe('Slider Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/slider')
+    await page.goto('/components/slider')
   })
 
   test.describe('Slider Rendering', () => {
@@ -14,45 +14,6 @@ test.describe('Slider Documentation Page', () => {
     test('has multiple slider examples', async ({ page }) => {
       const sliders = page.locator('[role="slider"]')
       expect(await sliders.count()).toBeGreaterThan(3)
-    })
-  })
-
-  test.describe('Preview (Volume Demo)', () => {
-    test('displays preview with slider and value', async ({ page }) => {
-      const section = page.locator('[bf-s^="SliderPreviewDemo_"]:not([data-slot])').first()
-      await expect(section).toBeVisible()
-      await expect(section.locator('[role="slider"]')).toBeVisible()
-      await expect(section.locator('text=Volume')).toBeVisible()
-    })
-
-    test('shows initial volume value of 50%', async ({ page }) => {
-      const section = page.locator('[bf-s^="SliderPreviewDemo_"]:not([data-slot])').first()
-      await expect(section.locator('text=50%')).toBeVisible()
-    })
-
-    test('slider has correct ARIA attributes', async ({ page }) => {
-      const section = page.locator('[bf-s^="SliderPreviewDemo_"]:not([data-slot])').first()
-      const slider = section.locator('[role="slider"]')
-
-      await expect(slider).toHaveAttribute('aria-valuemin', '0')
-      await expect(slider).toHaveAttribute('aria-valuemax', '100')
-      await expect(slider).toHaveAttribute('aria-valuenow', '50')
-    })
-
-    test('clicking on track changes value', async ({ page }) => {
-      const section = page.locator('[bf-s^="SliderPreviewDemo_"]:not([data-slot])').first()
-      const track = section.locator('[data-slot="slider-track"]')
-      const slider = section.locator('[role="slider"]')
-
-      // Click near the left edge of the track (approximately 10%)
-      const trackBox = await track.boundingBox()
-      if (trackBox) {
-        await page.mouse.click(trackBox.x + trackBox.width * 0.1, trackBox.y + trackBox.height / 2)
-      }
-
-      // Value should change (no longer 50)
-      const valuenow = await slider.getAttribute('aria-valuenow')
-      expect(Number(valuenow)).toBeLessThan(50)
     })
   })
 

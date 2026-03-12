@@ -24,7 +24,7 @@ test.describe('Home Page', () => {
     await expect(page.locator('#components a[href="/docs/components/command"]')).toBeVisible()
     await expect(page.locator('#components a[href="/docs/components/dialog"]')).toBeVisible()
     await expect(page.locator('#components a[href="/components/select"]')).toBeVisible()
-    await expect(page.locator('#components a[href="/docs/components/slider"]')).toBeVisible()
+    await expect(page.locator('#components a[href="/components/slider"]')).toBeVisible()
     await expect(page.locator('#components a[href="/docs/components/switch"]')).toBeVisible()
     await expect(page.locator('#components a[href="/docs/components/tabs"]')).toBeVisible()
   })

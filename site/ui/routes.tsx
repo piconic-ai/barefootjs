@@ -35,7 +35,6 @@ import { ToggleGroupRefPage } from './pages/components/toggle-group'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { CalendarPage } from './pages/calendar'
 import { CheckboxRefPage } from './pages/components/checkbox'
-import { SliderPage } from './pages/slider'
 import { SwitchPage } from './pages/switch'
 import { AccordionPage } from './pages/accordion'
 import { CollapsiblePage } from './pages/collapsible'
@@ -258,7 +257,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Sheet</h3>
               <p className="text-xs text-muted-foreground">Side panel overlay</p>
             </a>
-            <a href="/docs/components/slider" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/slider" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Slider</h3>
               <p className="text-xs text-muted-foreground">Range value selector</p>
             </a>
@@ -464,11 +463,6 @@ export function createApp() {
   // Input reference page (redesigned #515)
   app.get('/components/input', (c) => {
     return c.render(<InputRefPage />)
-  })
-
-  // Slider documentation
-  app.get('/docs/components/slider', (c) => {
-    return c.render(<SliderPage />)
   })
 
   // Spinner documentation

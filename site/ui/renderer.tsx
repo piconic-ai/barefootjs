@@ -111,7 +111,7 @@ const menuEntries: SidebarEntry[] = [
       { title: 'Separator', href: '/components/separator' },
       { title: 'Skeleton', href: '/components/skeleton' },
       { title: 'Sheet', href: '/docs/components/sheet' },
-      { title: 'Slider', href: '/docs/components/slider' },
+      { title: 'Slider', href: '/components/slider' },
       { title: 'Spinner', href: '/docs/components/spinner' },
       { title: 'Switch', href: '/components/switch' },
       { title: 'Table', href: '/components/table' },
