@@ -1,8 +1,12 @@
 /**
- * Dropdown Menu Documentation Page
+ * Dropdown Menu Reference Page (/components/dropdown-menu)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/dropdown-menu.
  */
 
 import { DropdownMenuProfileDemo, DropdownMenuBasicDemo, DropdownMenuCheckboxDemo } from '@/components/dropdown-menu-demo'
+import { DropdownMenuPlayground } from '@/components/dropdown-menu-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,13 +16,13 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'features', title: 'Features' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'checkbox-items', title: 'Checkbox Items', branch: 'end' },
@@ -26,9 +30,9 @@ const tocItems: TocItem[] = [
 ]
 
 // Code examples
-const basicCode = `"use client"
+const usageCode = `"use client"
 
-import { createSignal } from '@barefootjs/dom'
+import { createSignal } from "@barefootjs/dom"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -36,7 +40,47 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu"
+
+function MyMenu() {
+  const [open, setOpen] = createSignal(false)
+
+  return (
+    <DropdownMenu open={open()} onOpenChange={setOpen}>
+      <DropdownMenuTrigger>
+        <span className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+          Open Menu
+        </span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>
+          <span>Copy</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <span>Paste</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive">
+          <span>Delete</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}`
+
+const basicCode = `"use client"
+
+import { createSignal } from "@barefootjs/dom"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 function BasicMenu() {
   const [open, setOpen] = createSignal(false)
@@ -68,7 +112,7 @@ function BasicMenu() {
 
 const checkboxCode = `"use client"
 
-import { createSignal } from '@barefootjs/dom'
+import { createSignal } from "@barefootjs/dom"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -76,7 +120,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu"
 
 function CheckboxMenu() {
   const [open, setOpen] = createSignal(false)
@@ -235,7 +279,7 @@ const dropdownMenuShortcutProps: PropDefinition[] = [
   },
 ]
 
-export function DropdownMenuPage() {
+export function DropdownMenuRefPage() {
   return (
     <DocPage slug="dropdown-menu" toc={tocItems}>
       <div className="space-y-12">
@@ -245,7 +289,10 @@ export function DropdownMenuPage() {
           {...getNavLinks('dropdown-menu')}
         />
 
-        {/* Preview */}
+        {/* Props Playground */}
+        <DropdownMenuPlayground />
+
+        {/* Full-featured preview */}
         <Example title="" code={`<DropdownMenu open={open()} onOpenChange={setOpen}><DropdownMenuTrigger>...</DropdownMenuTrigger><DropdownMenuContent>...</DropdownMenuContent></DropdownMenu>`}>
           <div className="flex gap-4">
             <DropdownMenuProfileDemo />
@@ -257,18 +304,11 @@ export function DropdownMenuPage() {
           <PackageManagerTabs command="barefoot add dropdown-menu" />
         </Section>
 
-        {/* Features */}
-        <Section id="features" title="Features">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">Props-based state</strong> - Parent controls open state with signals</li>
-            <li><strong className="text-foreground">Flexible trigger</strong> - Use any element as the trigger (button, avatar, icon)</li>
-            <li><strong className="text-foreground">Submenu</strong> - Nested submenus with hover and keyboard navigation</li>
-            <li><strong className="text-foreground">Checkbox items</strong> - Multi-select items with check indicator</li>
-            <li><strong className="text-foreground">Radio items</strong> - Single-select items within a group</li>
-            <li><strong className="text-foreground">Destructive variant</strong> - Red styling for dangerous actions</li>
-            <li><strong className="text-foreground">Keyboard navigation</strong> - Arrow keys, Home/End, Enter/Space, ESC</li>
-            <li><strong className="text-foreground">Composable</strong> - Label, Separator, Shortcut, Group, Sub sub-components</li>
-          </ul>
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <DropdownMenuBasicDemo />
+          </Example>
         </Section>
 
         {/* Examples */}

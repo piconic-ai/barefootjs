@@ -1,8 +1,12 @@
 /**
- * Command Documentation Page
+ * Command Reference Page (/components/command)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/command.
  */
 
 import { CommandPreviewDemo, CommandDialogDemo, CommandFilterDemo } from '@/components/command-demo'
+import { CommandPlayground } from '@/components/command-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,19 +16,30 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'dialog', title: 'Dialog', branch: 'start' },
   { id: 'custom-filter', title: 'Custom Filter', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandSeparator,
+  CommandShortcut,
+} from '@/components/ui/command'`
+
 const previewCode = `"use client"
 
 import {
@@ -237,7 +252,7 @@ const commandDialogProps: PropDefinition[] = [
   },
 ]
 
-export function CommandPage() {
+export function CommandRefPage() {
   return (
     <DocPage slug="command" toc={tocItems}>
       <div className="space-y-12">
@@ -247,14 +262,19 @@ export function CommandPage() {
           {...getNavLinks('command')}
         />
 
-        {/* Preview */}
-        <Example title="" code={previewCode}>
-          <CommandPreviewDemo />
-        </Example>
+        {/* Props Playground */}
+        <CommandPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add command" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <CommandPreviewDemo />
+          </Example>
         </Section>
 
         {/* Examples */}

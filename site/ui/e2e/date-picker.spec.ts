@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('DatePicker Documentation Page', () => {
+test.describe('DatePicker Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/date-picker')
+    await page.goto('/components/date-picker')
   })
 
   test.describe('Preview', () => {

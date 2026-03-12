@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('ContextMenu Documentation Page', () => {
+test.describe('ContextMenu Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/context-menu')
+    await page.goto('/components/context-menu')
   })
 
   test.describe('Basic Demo', () => {

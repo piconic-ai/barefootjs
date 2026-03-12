@@ -7,7 +7,7 @@ const OVERLAY_CLICK_POSITION = { x: 10, y: 10 }
 
 test.describe('Dialog Documentation Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/dialog')
+    await page.goto('/components/dialog')
   })
 
   test.describe('Basic Dialog', () => {
@@ -369,7 +369,7 @@ test.describe('Dialog Documentation Page', () => {
 
 test.describe('DialogTrigger asChild', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/dialog')
+    await page.goto('/components/dialog')
   })
 
   test('custom button renders as trigger with destructive styling', async ({ page }) => {
