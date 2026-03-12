@@ -50,7 +50,6 @@ import { TooltipPage } from './pages/tooltip'
 import { ResizableRefPage } from './pages/components/resizable'
 import { ScrollAreaRefPage } from './pages/components/scroll-area'
 import { SeparatorRefPage } from './pages/components/separator'
-import { TextareaPage } from './pages/textarea'
 import { PortalPage } from './pages/portal'
 import { PaginationPage } from './pages/pagination'
 import { PopoverPage } from './pages/popover'
@@ -275,7 +274,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Tabs</h3>
               <p className="text-xs text-muted-foreground">Tabbed content navigation</p>
             </a>
-            <a href="/docs/components/textarea" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/textarea" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Textarea</h3>
               <p className="text-xs text-muted-foreground">Multi-line text input</p>
             </a>
@@ -549,11 +548,6 @@ export function createApp() {
     return c.render(<SeparatorRefPage />)
   })
 
-
-  // Textarea documentation
-  app.get('/docs/components/textarea', (c) => {
-    return c.render(<TextareaPage />)
-  })
 
   // Portal documentation
   app.get('/docs/components/portal', (c) => {
