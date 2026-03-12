@@ -28,6 +28,7 @@ import {
   emitRefCallbacks,
   emitEffectsAndOnMounts,
   emitProviderAndChildInits,
+  emitStaticArrayChildInits,
   emitRegistrationAndHydration,
 } from './emit-init-sections'
 
@@ -240,6 +241,7 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   emitRefCallbacks(lines, ctx, conditionalSlotIds)
   emitEffectsAndOnMounts(lines, ctx)
   emitProviderAndChildInits(lines, ctx)
+  emitStaticArrayChildInits(lines, ctx)
   const hydrateLine = emitRegistrationAndHydration(lines, ctx, _ir)
 
   let generatedCode = lines.join('\n')
