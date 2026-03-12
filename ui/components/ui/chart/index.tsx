@@ -16,6 +16,11 @@ import {
   initXAxis as xAxisInit,
   initYAxis as yAxisInit,
   initChartTooltip as chartTooltipInit,
+  initRadarChart as radarChartInit,
+  initRadar as radarInit,
+  initPolarGrid as polarGridInit,
+  initPolarAngleAxis as polarAngleAxisInit,
+  initRadarTooltip as radarTooltipInit,
 } from '@barefootjs/chart'
 
 /** Color and label configuration for chart data series */
@@ -55,6 +60,32 @@ interface YAxisProps {
 }
 
 interface ChartTooltipProps {
+  labelFormatter?: (label: string) => string
+}
+
+interface RadarChartProps {
+  data: Record<string, unknown>[]
+  children?: unknown
+}
+
+interface RadarProps {
+  dataKey: string
+  fill?: string
+  fillOpacity?: number
+}
+
+interface PolarGridProps {
+  gridType?: 'polygon' | 'circle'
+  show?: boolean
+}
+
+interface PolarAngleAxisProps {
+  dataKey: string
+  tickFormatter?: (value: string) => string
+  hide?: boolean
+}
+
+interface RadarTooltipProps {
   labelFormatter?: (label: string) => string
 }
 
@@ -122,6 +153,50 @@ function ChartTooltip(props: ChartTooltipProps) {
   return <span data-slot="chart-tooltip" style="display:none" ref={handleMount} />
 }
 
+function RadarChart(props: RadarChartProps) {
+  const handleMount = (el: HTMLElement) => {
+    radarChartInit(el, props as unknown as Record<string, unknown>)
+  }
+
+  return (
+    <div data-slot="radar-chart" ref={handleMount}>
+      {props.children}
+    </div>
+  )
+}
+
+function Radar(props: RadarProps) {
+  const handleMount = (el: HTMLElement) => {
+    radarInit(el, props as unknown as Record<string, unknown>)
+  }
+
+  return <span data-slot="radar" style="display:none" ref={handleMount} />
+}
+
+function PolarGrid(props: PolarGridProps) {
+  const handleMount = (el: HTMLElement) => {
+    polarGridInit(el, props as unknown as Record<string, unknown>)
+  }
+
+  return <span data-slot="polar-grid" style="display:none" ref={handleMount} />
+}
+
+function PolarAngleAxis(props: PolarAngleAxisProps) {
+  const handleMount = (el: HTMLElement) => {
+    polarAngleAxisInit(el, props as unknown as Record<string, unknown>)
+  }
+
+  return <span data-slot="polar-angle-axis" style="display:none" ref={handleMount} />
+}
+
+function RadarTooltip(props: RadarTooltipProps) {
+  const handleMount = (el: HTMLElement) => {
+    radarTooltipInit(el, props as unknown as Record<string, unknown>)
+  }
+
+  return <span data-slot="radar-tooltip" style="display:none" ref={handleMount} />
+}
+
 export {
   ChartContainer,
   BarChart,
@@ -130,6 +205,11 @@ export {
   XAxis,
   YAxis,
   ChartTooltip,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  RadarTooltip,
 }
 
 export type {
@@ -140,4 +220,9 @@ export type {
   XAxisProps,
   YAxisProps,
   ChartTooltipProps,
+  RadarChartProps,
+  RadarProps,
+  PolarGridProps,
+  PolarAngleAxisProps,
+  RadarTooltipProps,
 }

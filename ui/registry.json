@@ -65,6 +65,12 @@
       "description": "A bar chart component built with SVG and D3 scales"
     },
     {
+      "name": "radar-chart",
+      "type": "registry:ui",
+      "title": "Radar Chart",
+      "description": "A radar chart component built with SVG and D3 scales"
+    },
+    {
       "name": "carousel",
       "type": "registry:ui",
       "title": "Carousel",
