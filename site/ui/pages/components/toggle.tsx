@@ -8,6 +8,11 @@
 import { Toggle } from '@/components/ui/toggle'
 import { TogglePlayground } from '@/components/toggle-playground'
 import {
+  ToggleBasicDemo,
+  ToggleOutlineDemo,
+  ToggleToolbarDemo,
+} from '@/components/toggle-demo'
+import {
   DocPage,
   PageHeader,
   Section,
@@ -23,8 +28,93 @@ const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'basic', title: 'Basic', branch: 'start' },
+  { id: 'outline', title: 'Outline', branch: 'child' },
+  { id: 'toolbar', title: 'Toolbar', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
+
+const basicCode = `import { Toggle } from "@/components/ui/toggle"
+
+export function ToggleBasicDemo() {
+  return (
+    <div className="flex items-center gap-2">
+      <Toggle aria-label="Toggle bold">
+        <BoldIcon />
+      </Toggle>
+      <Toggle defaultPressed aria-label="Toggle italic">
+        <ItalicIcon />
+      </Toggle>
+      <Toggle disabled aria-label="Toggle underline">
+        <UnderlineIcon />
+      </Toggle>
+    </div>
+  )
+}`
+
+const outlineCode = `import { Toggle } from "@/components/ui/toggle"
+
+export function ToggleOutlineDemo() {
+  return (
+    <div className="flex items-center gap-2">
+      <Toggle variant="outline" aria-label="Toggle bold">
+        <BoldIcon />
+      </Toggle>
+      <Toggle variant="outline" aria-label="Toggle italic">
+        <ItalicIcon />
+      </Toggle>
+      <Toggle variant="outline" aria-label="Toggle underline">
+        <UnderlineIcon />
+      </Toggle>
+    </div>
+  )
+}`
+
+const toolbarCode = `"use client"
+
+import { createSignal, createMemo } from "@barefootjs/dom"
+import { Toggle } from "@/components/ui/toggle"
+
+const formatOptions = [
+  { id: 0, name: 'Bold', label: 'Toggle bold' },
+  { id: 1, name: 'Italic', label: 'Toggle italic' },
+  { id: 2, name: 'Underline', label: 'Toggle underline' },
+]
+
+export function ToggleToolbarDemo() {
+  const [active, setActive] = createSignal(formatOptions.map(() => false))
+
+  const activeCount = createMemo(() => active().filter(Boolean).length)
+  const activeNames = createMemo(() =>
+    formatOptions.filter((_, i) => active()[i]).map(o => o.name).join(', ') || 'None'
+  )
+
+  const toggleFormat = (index: number) => {
+    setActive(prev => prev.map((v, i) => i === index ? !v : v))
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-1 rounded-md border border-input p-1">
+        {formatOptions.map((option) => (
+          <Toggle
+            key={option.id}
+            pressed={active()[option.id]}
+            onPressedChange={() => toggleFormat(option.id)}
+            size="sm"
+            aria-label={option.label}
+          >
+            <Icon />
+          </Toggle>
+        ))}
+      </div>
+      <div className="text-sm text-muted-foreground">
+        Active formatting: {activeNames()} ({activeCount()} selected)
+      </div>
+    </div>
+  )
+}`
 
 const usageCode = `import { Toggle } from "@/components/ui/toggle"
 
@@ -108,6 +198,23 @@ export function ToggleRefPage() {
               <Toggle disabled>Disabled</Toggle>
             </div>
           </Example>
+        </Section>
+
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <Example title="Basic" code={basicCode}>
+              <ToggleBasicDemo />
+            </Example>
+
+            <Example title="Outline" code={outlineCode}>
+              <ToggleOutlineDemo />
+            </Example>
+
+            <Example title="Toolbar" code={toolbarCode}>
+              <ToggleToolbarDemo />
+            </Example>
+          </div>
         </Section>
 
         {/* API Reference */}

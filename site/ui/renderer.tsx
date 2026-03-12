@@ -118,7 +118,7 @@ const menuEntries: SidebarEntry[] = [
       { title: 'Tabs', href: '/docs/components/tabs' },
       { title: 'Textarea', href: '/components/textarea' },
       { title: 'Toast', href: '/docs/components/toast' },
-      { title: 'Toggle', href: '/docs/components/toggle' },
+      { title: 'Toggle', href: '/components/toggle' },
       { title: 'Toggle Group', href: '/docs/components/toggle-group' },
       { title: 'Tooltip', href: '/docs/components/tooltip' },
     ],
