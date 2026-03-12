@@ -1,5 +1,8 @@
 /**
- * Tooltip Documentation Page
+ * Tooltip Reference Page (/components/tooltip)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/tooltip.
  */
 
 import {
@@ -13,6 +16,7 @@ import {
   TooltipNoDelayDemo,
   TooltipIconDemo,
 } from '@/components/tooltip-demo'
+import { TooltipPlayground } from '@/components/tooltip-playground'
 import {
   DocPage,
   PageHeader,
@@ -22,12 +26,13 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'button-focus', title: 'Button Focus', branch: 'child' },
@@ -37,8 +42,7 @@ const tocItems: TocItem[] = [
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
-const previewCode = `import { Tooltip } from "@/components/ui/tooltip"
+const usageCode = `import { Tooltip } from "@/components/ui/tooltip"
 
 <Tooltip content="This is a tooltip">
   <span className="underline decoration-dotted cursor-help">
@@ -135,7 +139,6 @@ export function TooltipDelayDemo() {
   )
 }`
 
-// Props definition
 const tooltipProps: PropDefinition[] = [
   {
     name: 'content',
@@ -167,7 +170,7 @@ const tooltipProps: PropDefinition[] = [
   },
 ]
 
-export function TooltipPage() {
+export function TooltipRefPage() {
   return (
     <DocPage slug="tooltip" toc={tocItems}>
       <div className="space-y-12">
@@ -177,16 +180,21 @@ export function TooltipPage() {
           {...getNavLinks('tooltip')}
         />
 
-        {/* Preview */}
-        <Example title="" code={previewCode}>
-          <div className="flex gap-4">
-            <TooltipBasicDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <TooltipPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add tooltip" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="flex gap-4">
+              <TooltipBasicDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}

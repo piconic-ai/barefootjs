@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Portal Documentation Page', () => {
+test.describe('Portal Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/portal')
+    await page.goto('/components/portal')
   })
 
   test.describe('Basic Portal', () => {

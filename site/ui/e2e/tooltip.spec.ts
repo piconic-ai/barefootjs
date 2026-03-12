@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Tooltip Documentation Page', () => {
+test.describe('Tooltip Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/tooltip')
+    await page.goto('/components/tooltip')
   })
 
   test.describe('Basic Tooltip', () => {

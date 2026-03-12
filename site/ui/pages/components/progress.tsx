@@ -1,7 +1,12 @@
 /**
- * Progress Documentation Page
+ * Progress Reference Page (/components/progress)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Part of the #515 page redesign initiative.
  */
 
+import { Progress } from '@/components/ui/progress'
+import { ProgressPlayground } from '@/components/progress-playground'
 import {
   ProgressPreviewDemo,
   ProgressBasicDemo,
@@ -16,17 +21,49 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
-  { id: 'basic', title: 'Basic', branch: 'start' },
+  { id: 'simulated-upload', title: 'Simulated Upload', branch: 'start' },
+  { id: 'basic', title: 'Basic', branch: 'child' },
   { id: 'form-wizard', title: 'Form Wizard', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
+
+const usageCode = `import { Progress } from "@/components/ui/progress"
+
+function ProgressDemo() {
+  return (
+    <div className="space-y-6 w-full max-w-sm">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium leading-none">Empty</span>
+          <span className="text-sm text-muted-foreground tabular-nums">0%</span>
+        </div>
+        <Progress value={0} />
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium leading-none">Half</span>
+          <span className="text-sm text-muted-foreground tabular-nums">50%</span>
+        </div>
+        <Progress value={50} />
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium leading-none">Complete</span>
+          <span className="text-sm text-muted-foreground tabular-nums">100%</span>
+        </div>
+        <Progress value={100} />
+      </div>
+    </div>
+  )
+}`
 
 // Code examples - Preview (Simulated Upload)
 const previewCode = `"use client"
@@ -171,7 +208,7 @@ const progressProps: PropDefinition[] = [
   },
 ]
 
-export function ProgressPage() {
+export function ProgressRefPage() {
   return (
     <DocPage slug="progress" toc={tocItems}>
       <div className="space-y-12">
@@ -181,19 +218,50 @@ export function ProgressPage() {
           {...getNavLinks('progress')}
         />
 
-        {/* Preview */}
-        <Example title="" code={previewCode}>
-          <ProgressPreviewDemo />
-        </Example>
+        {/* Props Playground */}
+        <ProgressPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add progress" />
         </Section>
 
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="space-y-6 w-full max-w-sm">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium leading-none">Empty</span>
+                  <span className="text-sm text-muted-foreground tabular-nums">0%</span>
+                </div>
+                <Progress value={0} />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium leading-none">Half</span>
+                  <span className="text-sm text-muted-foreground tabular-nums">50%</span>
+                </div>
+                <Progress value={50} />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium leading-none">Complete</span>
+                  <span className="text-sm text-muted-foreground tabular-nums">100%</span>
+                </div>
+                <Progress value={100} />
+              </div>
+            </div>
+          </Example>
+        </Section>
+
         {/* Examples */}
         <Section id="examples" title="Examples">
           <div className="space-y-8">
+            <Example title="Simulated Upload" code={previewCode}>
+              <ProgressPreviewDemo />
+            </Example>
+
             <Example title="Basic" code={basicCode}>
               <ProgressBasicDemo />
             </Example>

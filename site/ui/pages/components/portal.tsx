@@ -1,8 +1,12 @@
 /**
- * Portal Documentation Page
+ * Portal Reference Page (/components/portal)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/portal.
  */
 
 import { PortalBasicDemo, PortalCustomContainerDemo } from '@/components/portal-demo'
+import { PortalPlayground } from '@/components/portal-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,20 +16,30 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'features', title: 'Features' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'custom-container', title: 'Custom Container', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import { createPortal } from '@barefootjs/dom'
+
+// Mount content at document.body
+const portal = createPortal('<div>Portal content</div>')
+
+// Mount at a specific container
+const portal = createPortal('<div>Content</div>', containerEl)
+
+// Cleanup
+portal.unmount()`
+
 const basicCode = `"use client"
 
 import { createSignal, createPortal } from '@barefootjs/dom'
@@ -112,7 +126,7 @@ const portalReturnProps: PropDefinition[] = [
   },
 ]
 
-export function PortalPage() {
+export function PortalRefPage() {
   return (
     <DocPage slug="portal" toc={tocItems}>
       <div className="space-y-12">
@@ -122,27 +136,21 @@ export function PortalPage() {
           {...getNavLinks('portal')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`createPortal('<div>content</div>', document.body)`}>
-          <div className="flex gap-4">
-            <PortalBasicDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <PortalPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add portal" />
         </Section>
 
-        {/* Features */}
-        <Section id="features" title="Features">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">DOM escape</strong> - Render content outside the parent DOM hierarchy</li>
-            <li><strong className="text-foreground">Custom container</strong> - Mount to any DOM element, not just document.body</li>
-            <li><strong className="text-foreground">Flexible input</strong> - Accepts HTMLElement, HTML string, or JSX</li>
-            <li><strong className="text-foreground">Cleanup</strong> - Built-in unmount function for proper cleanup</li>
-            <li><strong className="text-foreground">Z-index freedom</strong> - Avoid stacking context issues with overlays</li>
-          </ul>
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="flex gap-4">
+              <PortalBasicDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}

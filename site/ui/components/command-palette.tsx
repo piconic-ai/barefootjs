@@ -35,7 +35,7 @@ const componentItems = [
   { id: 'table', title: 'Table', href: '/components/table', category: 'Components' },
   { id: 'tabs', title: 'Tabs', href: '/components/tabs', category: 'Components' },
   { id: 'toast', title: 'Toast', href: '/docs/components/toast', category: 'Components' },
-  { id: 'tooltip', title: 'Tooltip', href: '/docs/components/tooltip', category: 'Components' },
+  { id: 'tooltip', title: 'Tooltip', href: '/components/tooltip', category: 'Components' },
 ]
 
 const formItems = [

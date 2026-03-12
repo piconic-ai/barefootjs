@@ -4,9 +4,9 @@ import { test, expect } from '@playwright/test'
 // Sheets are positioned at edges, so clicking near the opposite edge hits the overlay.
 const OVERLAY_CLICK_POSITION = { x: 10, y: 10 }
 
-test.describe('Sheet Documentation Page', () => {
+test.describe('Sheet Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/sheet')
+    await page.goto('/components/sheet')
   })
 
   test.describe('Basic Sheet', () => {

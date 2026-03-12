@@ -1,8 +1,12 @@
 /**
- * Popover Documentation Page
+ * Popover Reference Page (/components/popover)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/popover.
  */
 
 import { PopoverPreviewDemo, PopoverBasicDemo, PopoverFormDemo } from '@/components/popover-demo'
+import { PopoverPlayground } from '@/components/popover-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,19 +16,26 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'form', title: 'Form', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverClose,
+} from '@/components/ui/popover'`
+
 const basicCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -108,7 +119,6 @@ function FormPopover() {
   )
 }`
 
-// Props definitions
 const popoverProps: PropDefinition[] = [
   {
     name: 'open',
@@ -161,7 +171,7 @@ const popoverCloseProps: PropDefinition[] = [
   },
 ]
 
-export function PopoverPage() {
+export function PopoverRefPage() {
   return (
     <DocPage slug="popover" toc={tocItems}>
       <div className="space-y-12">
@@ -171,16 +181,21 @@ export function PopoverPage() {
           {...getNavLinks('popover')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<Popover open={open()} onOpenChange={setOpen}><PopoverTrigger>...</PopoverTrigger><PopoverContent>...</PopoverContent></Popover>`}>
-          <div className="flex gap-4">
-            <PopoverPreviewDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <PopoverPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add popover" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="flex gap-4">
+              <PopoverPreviewDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}

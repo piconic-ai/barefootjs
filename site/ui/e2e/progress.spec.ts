@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Progress Documentation Page', () => {
+test.describe('Progress Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/progress')
+    await page.goto('/components/progress')
   })
 
   test.describe('Progress Rendering', () => {
@@ -17,7 +17,7 @@ test.describe('Progress Documentation Page', () => {
     })
   })
 
-  test.describe('Preview (Upload Demo)', () => {
+  test.describe('Simulated Upload', () => {
     test('displays preview with progress bar and text', async ({ page }) => {
       const section = page.locator('[bf-s^="ProgressPreviewDemo_"]:not([data-slot])').first()
       await expect(section).toBeVisible()

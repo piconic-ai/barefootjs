@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Popover Documentation Page', () => {
+test.describe('Popover Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/popover')
+    await page.goto('/components/popover')
   })
 
   test.describe('Preview Demo', () => {
