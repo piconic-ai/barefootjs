@@ -50,7 +50,7 @@ import { ScrollAreaRefPage } from './pages/components/scroll-area'
 import { SeparatorRefPage } from './pages/components/separator'
 import { PortalPage } from './pages/portal'
 import { PaginationPage } from './pages/pagination'
-import { PopoverPage } from './pages/popover'
+import { PopoverRefPage } from './pages/components/popover'
 import { ProgressPage } from './pages/progress'
 import { DrawerPage } from './pages/drawer'
 import { SheetPage } from './pages/sheet'
@@ -212,7 +212,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Pagination</h3>
               <p className="text-xs text-muted-foreground">Page navigation controls</p>
             </a>
-            <a href="/docs/components/popover" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/popover" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Popover</h3>
               <p className="text-xs text-muted-foreground">Floating content anchored to a trigger</p>
             </a>
@@ -557,9 +557,9 @@ export function createApp() {
     return c.render(<PaginationPage />)
   })
 
-  // Popover documentation
-  app.get('/docs/components/popover', (c) => {
-    return c.render(<PopoverPage />)
+  // Popover reference page
+  app.get('/components/popover', (c) => {
+    return c.render(<PopoverRefPage />)
   })
 
   // Progress documentation
