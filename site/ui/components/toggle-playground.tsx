@@ -31,20 +31,30 @@ function TogglePlayground(_props: {}) {
   createEffect(() => {
     const p = props()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) codeEl.innerHTML = highlightJsx('Toggle', p, 'Toggle')
+    if (codeEl) codeEl.innerHTML = highlightJsx('Toggle', p, 'Bold')
   })
 
   return (
     <PlaygroundLayout
       previewDataAttr="data-toggle-preview"
       previewContent={
-        <Toggle
-          variant={variant()}
-          size={size()}
-          pressed={pressed()}
-        >
-          Toggle
-        </Toggle>
+        <div className="flex items-center gap-4">
+          <Toggle
+            variant={variant()}
+            size={size()}
+            pressed={pressed()}
+            onPressedChange={setPressed}
+            aria-label="Toggle bold"
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" />
+            </svg>
+          </Toggle>
+          <span className={pressed() ? 'text-sm font-bold' : 'text-sm text-muted-foreground'}>
+            {pressed() ? 'Bold On' : 'Bold Off'}
+          </span>
+        </div>
       }
       controls={<>
         <PlaygroundControl label="variant">
@@ -77,7 +87,7 @@ function TogglePlayground(_props: {}) {
           />
         </PlaygroundControl>
       </>}
-      copyButton={<CopyButton code={plainJsx('Toggle', props(), 'Toggle')} />}
+      copyButton={<CopyButton code={plainJsx('Toggle', props(), 'Bold')} />}
     />
   )
 }
