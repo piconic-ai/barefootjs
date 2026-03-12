@@ -57,7 +57,7 @@ import { SidebarPage } from './pages/sidebar'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarPage } from './pages/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
-import { SpinnerPage } from './pages/spinner'
+import { SpinnerRefPage } from './pages/components/spinner'
 import { ComponentCatalogPage } from './pages/components/catalog'
 
 // Chart pages
@@ -255,7 +255,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Slider</h3>
               <p className="text-xs text-muted-foreground">Range value selector</p>
             </a>
-            <a href="/docs/components/spinner" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/spinner" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Spinner</h3>
               <p className="text-xs text-muted-foreground">Animated loading indicator</p>
             </a>
@@ -459,9 +459,9 @@ export function createApp() {
     return c.render(<InputRefPage />)
   })
 
-  // Spinner documentation
-  app.get('/docs/components/spinner', (c) => {
-    return c.render(<SpinnerPage />)
+  // Spinner reference page
+  app.get('/components/spinner', (c) => {
+    return c.render(<SpinnerRefPage />)
   })
 
   // Switch reference page

@@ -1,8 +1,11 @@
 /**
- * Spinner Documentation Page
+ * Spinner Reference Page (/components/spinner)
+ *
+ * Focused developer reference with interactive Props Playground.
  */
 
 import { Spinner } from '@/components/ui/spinner'
+import { SpinnerPlayground } from '@/components/spinner-playground'
 import { SpinnerSizesDemo, SpinnerButtonDemo } from '@/components/spinner-demo'
 import {
   DocPage,
@@ -13,23 +16,22 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
-  { id: 'default', title: 'Default', branch: 'start' },
-  { id: 'sizes', title: 'Sizes', branch: 'child' },
+  { id: 'sizes', title: 'Sizes', branch: 'start' },
   { id: 'button-loading', title: 'Button Loading', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
-const defaultCode = `import { Spinner } from '@/components/ui/spinner'
+const usageCode = `import { Spinner } from "@/components/ui/spinner"
 
-function SpinnerDefault() {
+function SpinnerDemo() {
   return <Spinner />
 }`
 
@@ -70,7 +72,6 @@ function SpinnerButton() {
   )
 }`
 
-// Props definition
 const spinnerProps: PropDefinition[] = [
   {
     name: 'className',
@@ -86,7 +87,7 @@ const spinnerProps: PropDefinition[] = [
   },
 ]
 
-export function SpinnerPage() {
+export function SpinnerRefPage() {
   return (
     <DocPage slug="spinner" toc={tocItems}>
       <div className="space-y-12">
@@ -96,23 +97,24 @@ export function SpinnerPage() {
           {...getNavLinks('spinner')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<Spinner />`}>
-          <Spinner />
-        </Example>
+        {/* Props Playground */}
+        <SpinnerPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add spinner" />
         </Section>
 
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <Spinner />
+          </Example>
+        </Section>
+
         {/* Examples */}
         <Section id="examples" title="Examples">
           <div className="space-y-8">
-            <Example title="Default" code={defaultCode}>
-              <Spinner />
-            </Example>
-
             <Example title="Sizes" code={sizesCode}>
               <SpinnerSizesDemo />
             </Example>
