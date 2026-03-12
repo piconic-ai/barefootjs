@@ -49,7 +49,6 @@ import { ToastPage } from './pages/toast'
 import { TogglePage } from './pages/toggle'
 import { ToggleGroupPage } from './pages/toggle-group'
 import { TooltipPage } from './pages/tooltip'
-import { SelectPage } from './pages/select'
 import { ResizableRefPage } from './pages/components/resizable'
 import { ScrollAreaRefPage } from './pages/components/scroll-area'
 import { SeparatorPage } from './pages/separator'
@@ -241,7 +240,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Scroll Area</h3>
               <p className="text-xs text-muted-foreground">Custom scrollbar container</p>
             </a>
-            <a href="/docs/components/select" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/select" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Select</h3>
               <p className="text-xs text-muted-foreground">Dropdown selection control</p>
             </a>
@@ -559,10 +558,6 @@ export function createApp() {
     return c.render(<TooltipPage />)
   })
 
-  // Select documentation
-  app.get('/docs/components/select', (c) => {
-    return c.render(<SelectPage />)
-  })
 
   // Separator documentation
   app.get('/docs/components/separator', (c) => {
