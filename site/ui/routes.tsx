@@ -49,7 +49,7 @@ import { ResizableRefPage } from './pages/components/resizable'
 import { ScrollAreaRefPage } from './pages/components/scroll-area'
 import { SeparatorRefPage } from './pages/components/separator'
 import { PortalPage } from './pages/portal'
-import { PaginationPage } from './pages/pagination'
+import { PaginationRefPage } from './pages/components/pagination'
 import { PopoverPage } from './pages/popover'
 import { ProgressPage } from './pages/progress'
 import { DrawerPage } from './pages/drawer'
@@ -208,7 +208,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Navigation Menu</h3>
               <p className="text-xs text-muted-foreground">Hover-activated navigation links</p>
             </a>
-            <a href="/docs/components/pagination" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/pagination" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Pagination</h3>
               <p className="text-xs text-muted-foreground">Page navigation controls</p>
             </a>
@@ -552,9 +552,9 @@ export function createApp() {
     return c.render(<NavigationMenuPage />)
   })
 
-  // Pagination documentation
-  app.get('/docs/components/pagination', (c) => {
-    return c.render(<PaginationPage />)
+  // Pagination reference page
+  app.get('/components/pagination', (c) => {
+    return c.render(<PaginationRefPage />)
   })
 
   // Popover documentation

@@ -1,5 +1,7 @@
 /**
- * Pagination Documentation Page
+ * Pagination Reference Page (/components/pagination)
+ *
+ * Focused developer reference with interactive Props Playground.
  */
 
 import {
@@ -11,6 +13,7 @@ import {
   PaginationNext,
   PaginationEllipsis,
 } from '@/components/ui/pagination'
+import { PaginationPlayground } from '@/components/pagination-playground'
 import { PaginationBasicDemo, PaginationDynamicDemo } from '@/components/pagination-demo'
 import {
   DocPage,
@@ -21,20 +24,20 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'dynamic', title: 'Dynamic', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
-const previewCode = `import {
+const usageCode = `import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -44,7 +47,7 @@ const previewCode = `import {
   PaginationEllipsis,
 } from '@/components/ui/pagination'
 
-function PaginationPreview() {
+function PaginationDemo() {
   return (
     <Pagination>
       <PaginationContent>
@@ -173,7 +176,6 @@ function PaginationDynamic() {
   )
 }`
 
-// Props definition
 const paginationLinkProps: PropDefinition[] = [
   {
     name: 'isActive',
@@ -199,12 +201,12 @@ const paginationLinkProps: PropDefinition[] = [
   },
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'The content of the pagination link (typically a page number).',
   },
 ]
 
-export function PaginationPage() {
+export function PaginationRefPage() {
   return (
     <DocPage slug="pagination" toc={tocItems}>
       <div className="space-y-12">
@@ -214,35 +216,40 @@ export function PaginationPage() {
           {...getNavLinks('pagination')}
         />
 
-        {/* Preview */}
-        <Example title="" code={previewCode}>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious href="#" />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="#" isActive>1</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="#">2</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="#">3</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationEllipsis />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext href="#" />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </Example>
+        {/* Props Playground */}
+        <PaginationPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add pagination" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious href="#" />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink href="#" isActive>1</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink href="#">2</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink href="#">3</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext href="#" />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </Example>
         </Section>
 
         {/* Examples */}
