@@ -49,6 +49,39 @@ test.describe('Scroll Area Reference Page', () => {
     })
   })
 
+  test.describe('Playground Type Prop', () => {
+    test('type="always" keeps scrollbar visible without hover', async ({ page }) => {
+      const playgroundRoot = page.locator('#preview')
+      await expect(playgroundRoot).toBeVisible()
+
+      // Select "always" type via playground control
+      const trigger = playgroundRoot.locator('[data-slot="select-trigger"]').first()
+      await trigger.click()
+      await page.locator('[data-slot="select-item"]:has-text("always")').click()
+
+      // Move mouse away from the scroll area to ensure we're not hovering
+      await page.mouse.move(0, 0)
+      await page.waitForTimeout(500)
+
+      // Verify scrollbar is visible via computed opacity (style effect is reactive)
+      const scrollbar = playgroundRoot.locator('[data-scroll-area-preview] [data-slot="scroll-area-scrollbar"][data-orientation="vertical"]')
+      await expect(scrollbar).toHaveCSS('opacity', '1')
+    })
+
+    test('type="hover" hides scrollbar when not hovered', async ({ page }) => {
+      const playgroundRoot = page.locator('#preview')
+      await expect(playgroundRoot).toBeVisible()
+
+      // Default is "hover", move mouse away
+      await page.mouse.move(0, 0)
+      await page.waitForTimeout(500)
+
+      // Verify scrollbar is hidden via computed opacity
+      const scrollbar = playgroundRoot.locator('[data-scroll-area-preview] [data-slot="scroll-area-scrollbar"][data-orientation="vertical"]')
+      await expect(scrollbar).toHaveCSS('opacity', '0')
+    })
+  })
+
   test.describe('Horizontal Demo', () => {
     test('displays horizontal scroll example', async ({ page }) => {
       await expect(page.locator('h3:has-text("Horizontal Scrolling")')).toBeVisible()

@@ -46,7 +46,6 @@ interface ScrollBarProps extends HTMLBaseAttributes {
  * ScrollArea renders a scrollable viewport with custom overlay scrollbars.
  */
 function ScrollArea(props: ScrollAreaProps) {
-  const type = props.type ?? 'hover'
   const [hovered, setHovered] = createSignal(false)
   const [scrolling, setScrolling] = createSignal(false)
   const [thumbVSize, setThumbVSize] = createSignal(0)
@@ -104,9 +103,10 @@ function ScrollArea(props: ScrollAreaProps) {
   }
 
   const isVisible = () => {
-    if (type === 'always') return true
-    if (type === 'hover') return hovered()
-    if (type === 'scroll') return scrolling()
+    const t = props.type ?? 'hover'
+    if (t === 'always') return true
+    if (t === 'hover') return hovered()
+    if (t === 'scroll') return scrolling()
     // auto: show on hover or scroll
     return hovered() || scrolling()
   }
