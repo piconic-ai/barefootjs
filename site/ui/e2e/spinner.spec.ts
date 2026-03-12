@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Spinner Documentation Page', () => {
+test.describe('Spinner Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/spinner')
+    await page.goto('/components/spinner')
   })
 
   test.describe('Spinner Display', () => {
