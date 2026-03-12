@@ -9,14 +9,21 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
  */
 export function initYAxis(_scope: Element, props: Record<string, unknown>): void {
   const ctx = useContext(BarChartContext)
-  const hide = props.hide as boolean | undefined
-  const tickFormatter = props.tickFormatter as ((value: number) => string) | undefined
-
-  if (hide) return
 
   let axisGroup: SVGGElement | null = null
 
   createEffect(() => {
+    const hide = props.hide as boolean | undefined
+    const tickFormatter = props.tickFormatter as ((value: number) => string) | undefined
+
+    if (hide) {
+      if (axisGroup) {
+        axisGroup.remove()
+        axisGroup = null
+      }
+      return
+    }
+
     const g = ctx.svgGroup()
     const ys = ctx.yScale()
     if (!g || !ys) return

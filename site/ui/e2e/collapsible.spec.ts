@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Collapsible Documentation Page', () => {
+test.describe('Collapsible Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/collapsible')
+    await page.goto('/components/collapsible')
   })
 
   test.describe('Basic Demo', () => {

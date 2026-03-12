@@ -1,8 +1,12 @@
 /**
- * Collapsible Documentation Page
+ * Collapsible Reference Page (/components/collapsible)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/collapsible.
  */
 
 import { CollapsibleBasicDemo, CollapsibleControlledDemo, CollapsibleDisabledDemo } from '@/components/collapsible-demo'
+import { CollapsiblePlayground } from '@/components/collapsible-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,20 +16,27 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'controlled', title: 'Controlled', branch: 'child' },
   { id: 'disabled', title: 'Disabled', branch: 'end' },
+  { id: 'accessibility', title: 'Accessibility' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible'`
+
 const basicCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -149,7 +160,6 @@ function CollapsibleDisabled() {
   )
 }`
 
-// Props definitions
 const collapsibleProps: PropDefinition[] = [
   {
     name: 'open',
@@ -186,7 +196,7 @@ const collapsibleTriggerProps: PropDefinition[] = [
 
 const collapsibleContentProps: PropDefinition[] = []
 
-export function CollapsiblePage() {
+export function CollapsibleRefPage() {
   return (
     <DocPage slug="collapsible" toc={tocItems}>
       <div className="space-y-12">
@@ -196,14 +206,19 @@ export function CollapsiblePage() {
           {...getNavLinks('collapsible')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<Collapsible>...</Collapsible>`}>
-          <CollapsibleBasicDemo />
-        </Example>
+        {/* Props Playground */}
+        <CollapsiblePlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add collapsible" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <CollapsibleBasicDemo />
+          </Example>
         </Section>
 
         {/* Examples */}
@@ -221,6 +236,16 @@ export function CollapsiblePage() {
               <CollapsibleDisabledDemo />
             </Example>
           </div>
+        </Section>
+
+        {/* Accessibility */}
+        <Section id="accessibility" title="Accessibility">
+          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+            <li><strong className="text-foreground">Activation</strong> - Enter/Space to toggle collapsible content</li>
+            <li><strong className="text-foreground">ARIA</strong> - Trigger uses aria-expanded; Content uses aria-labelledby</li>
+            <li><strong className="text-foreground">Disabled State</strong> - data-disabled on the collapsible, interaction is blocked</li>
+            <li><strong className="text-foreground">Screen Readers</strong> - State changes are announced when content is expanded/collapsed</li>
+          </ul>
         </Section>
 
         {/* API Reference */}

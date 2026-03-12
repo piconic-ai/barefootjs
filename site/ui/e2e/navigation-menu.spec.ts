@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Navigation Menu Documentation Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/navigation-menu')
+    await page.goto('/components/navigation-menu')
   })
 
   test.describe('Basic Demo', () => {

@@ -1,13 +1,16 @@
 /**
- * Breadcrumb Documentation Page
+ * Breadcrumb Reference Page (/components/breadcrumb)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/breadcrumb.
  */
 
 import {
-  BreadcrumbPreviewDemo,
   BreadcrumbBasicDemo,
   BreadcrumbEllipsisDemo,
   BreadcrumbCustomSeparatorDemo,
 } from '@/components/breadcrumb-demo'
+import { BreadcrumbPlayground } from '@/components/breadcrumb-playground'
 import {
   DocPage,
   PageHeader,
@@ -17,12 +20,13 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'ellipsis', title: 'Ellipsis', branch: 'child' },
@@ -30,8 +34,7 @@ const tocItems: TocItem[] = [
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
-const previewCode = `import {
+const usageCode = `import {
   Breadcrumb,
   BreadcrumbList,
   BreadcrumbItem,
@@ -39,31 +42,7 @@ const previewCode = `import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
-} from '@/components/ui/breadcrumb'
-
-function BreadcrumbPreview() {
-  return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink href="#">Home</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbEllipsis />
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbLink href="#">Components</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>Breadcrumb</BreadcrumbPage>
-        </BreadcrumbItem>
-      </BreadcrumbList>
-    </Breadcrumb>
-  )
-}`
+} from '@/components/ui/breadcrumb'`
 
 const basicCode = `import {
   Breadcrumb,
@@ -222,7 +201,7 @@ const breadcrumbSeparatorProps: PropDefinition[] = [
   },
 ]
 
-export function BreadcrumbPage() {
+export function BreadcrumbRefPage() {
   return (
     <DocPage slug="breadcrumb" toc={tocItems}>
       <div className="space-y-12">
@@ -232,14 +211,19 @@ export function BreadcrumbPage() {
           {...getNavLinks('breadcrumb')}
         />
 
-        {/* Preview */}
-        <Example title="" code={previewCode}>
-          <BreadcrumbPreviewDemo />
-        </Example>
+        {/* Props Playground */}
+        <BreadcrumbPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add breadcrumb" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <BreadcrumbBasicDemo />
+          </Example>
         </Section>
 
         {/* Examples */}
@@ -261,29 +245,29 @@ export function BreadcrumbPage() {
 
         {/* API Reference */}
         <Section id="api-reference" title="API Reference">
-          <div className="space-y-8">
+          <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Breadcrumb</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">Breadcrumb</h3>
               <PropsTable props={breadcrumbProps} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">BreadcrumbList</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">BreadcrumbList</h3>
               <PropsTable props={breadcrumbListProps} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">BreadcrumbItem</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">BreadcrumbItem</h3>
               <PropsTable props={breadcrumbItemProps} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">BreadcrumbLink</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">BreadcrumbLink</h3>
               <PropsTable props={breadcrumbLinkProps} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">BreadcrumbPage</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">BreadcrumbPage</h3>
               <PropsTable props={breadcrumbPageProps} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">BreadcrumbSeparator</h3>
+              <h3 className="text-lg font-medium text-foreground mb-4">BreadcrumbSeparator</h3>
               <PropsTable props={breadcrumbSeparatorProps} />
             </div>
           </div>

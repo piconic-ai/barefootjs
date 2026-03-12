@@ -9,12 +9,13 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
  */
 export function initCartesianGrid(_scope: Element, props: Record<string, unknown>): void {
   const ctx = useContext(BarChartContext)
-  const horizontal = (props.horizontal as boolean) !== false
-  const vertical = (props.vertical as boolean) ?? true
 
   let gridGroup: SVGGElement | null = null
 
   createEffect(() => {
+    const horizontal = (props.horizontal as boolean) !== false
+    const vertical = (props.vertical as boolean) ?? true
+
     const g = ctx.svgGroup()
     const ys = ctx.yScale()
     if (!g || !ys) return

@@ -75,8 +75,8 @@ export function getChartNavLinks(currentSlug: string): {
   const next = currentIndex < chartOrder.length - 1 ? chartOrder[currentIndex + 1] : undefined
 
   return {
-    prev: prev ? { href: `/docs/charts/${prev.slug}`, title: prev.title } : undefined,
-    next: next ? { href: `/docs/charts/${next.slug}`, title: next.title } : undefined,
+    prev: prev ? { href: `/charts/${prev.slug}`, title: prev.title } : undefined,
+    next: next ? { href: `/charts/${next.slug}`, title: next.title } : undefined,
   }
 }
 

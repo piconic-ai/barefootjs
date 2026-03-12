@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Hover Card Documentation Page', () => {
+test.describe('Hover Card Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/hover-card')
+    await page.goto('/components/hover-card')
   })
 
   test.describe('Preview Demo', () => {

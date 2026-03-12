@@ -75,7 +75,7 @@ export function NavigationMenuBasicDemo() {
                 </NavigationMenuLink>
               </li>
               <li>
-                <NavigationMenuLink href="/docs/components/dialog">
+                <NavigationMenuLink href="/components/dialog">
                   <div className="text-sm font-medium leading-none">Dialog</div>
                   <p className="line-clamp-2 text-sm leading-snug text-muted-foreground mt-1">
                     Modal overlay with custom content and focus trap.

@@ -1,8 +1,12 @@
 /**
- * Navigation Menu Documentation Page
+ * Navigation Menu Reference Page (/components/navigation-menu)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Part of the #515 page redesign initiative.
  */
 
 import { NavigationMenuBasicDemo, NavigationMenuWithLinksDemo } from '@/components/navigation-menu-demo'
+import { NavigationMenuPlayground } from '@/components/navigation-menu-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,20 +16,54 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'features', title: 'Features' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'with-links', title: 'With Links', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `"use client"
+
+import {
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+  NavigationMenuTrigger,
+  NavigationMenuContent,
+  NavigationMenuLink,
+} from '@/components/ui/navigation-menu'
+
+function BasicNavigationMenu() {
+  return (
+    <NavigationMenu>
+      <NavigationMenuList>
+        <NavigationMenuItem value="getting-started">
+          <NavigationMenuTrigger>Getting Started</NavigationMenuTrigger>
+          <NavigationMenuContent className="w-[400px] md:w-[500px]">
+            <ul className="grid gap-3 p-4 md:grid-cols-2">
+              <li>
+                <NavigationMenuLink href="/docs">
+                  <div className="text-sm font-medium">Introduction</div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Learn the basics.
+                  </p>
+                </NavigationMenuLink>
+              </li>
+            </ul>
+          </NavigationMenuContent>
+        </NavigationMenuItem>
+      </NavigationMenuList>
+    </NavigationMenu>
+  )
+}`
+
 const basicCode = `"use client"
 
 import {
@@ -167,7 +205,7 @@ const navigationMenuLinkProps: PropDefinition[] = [
   },
 ]
 
-export function NavigationMenuPage() {
+export function NavigationMenuRefPage() {
   return (
     <DocPage slug="navigation-menu" toc={tocItems}>
       <div className="space-y-12">
@@ -177,26 +215,19 @@ export function NavigationMenuPage() {
           {...getNavLinks('navigation-menu')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<NavigationMenu><NavigationMenuList><NavigationMenuItem>...</NavigationMenuItem></NavigationMenuList></NavigationMenu>`}>
-          <NavigationMenuBasicDemo />
-        </Example>
+        {/* Props Playground */}
+        <NavigationMenuPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add navigation-menu" />
         </Section>
 
-        {/* Features */}
-        <Section id="features" title="Features">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">Hover with delay</strong> - Content opens after a configurable delay (200ms default)</li>
-            <li><strong className="text-foreground">Close delay</strong> - Content stays open briefly when moving mouse (300ms default)</li>
-            <li><strong className="text-foreground">Click toggle</strong> - Click triggers to toggle content panels</li>
-            <li><strong className="text-foreground">Keyboard navigation</strong> - ArrowLeft/Right navigates between triggers</li>
-            <li><strong className="text-foreground">Active page</strong> - NavigationMenuLink supports aria-current for active page indication</li>
-            <li><strong className="text-foreground">Mixed content</strong> - Combine trigger menus with direct links</li>
-          </ul>
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <NavigationMenuBasicDemo />
+          </Example>
         </Section>
 
         {/* Examples */}
@@ -215,27 +246,27 @@ export function NavigationMenuPage() {
         <Section id="api-reference" title="API Reference">
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-medium text-foreground mb-4">NavigationMenu</h3>
+              <h3 className="text-lg font-semibold mb-3">NavigationMenu</h3>
               <PropsTable props={navigationMenuProps} />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-foreground mb-4">NavigationMenuList</h3>
+              <h3 className="text-lg font-semibold mb-3">NavigationMenuList</h3>
               <p className="text-sm text-muted-foreground">Styled list wrapper. Renders as &lt;ul&gt;.</p>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-foreground mb-4">NavigationMenuItem</h3>
+              <h3 className="text-lg font-semibold mb-3">NavigationMenuItem</h3>
               <PropsTable props={navigationMenuItemProps} />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-foreground mb-4">NavigationMenuTrigger</h3>
+              <h3 className="text-lg font-semibold mb-3">NavigationMenuTrigger</h3>
               <PropsTable props={navigationMenuTriggerProps} />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-foreground mb-4">NavigationMenuContent</h3>
+              <h3 className="text-lg font-semibold mb-3">NavigationMenuContent</h3>
               <PropsTable props={navigationMenuContentProps} />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-foreground mb-4">NavigationMenuLink</h3>
+              <h3 className="text-lg font-semibold mb-3">NavigationMenuLink</h3>
               <PropsTable props={navigationMenuLinkProps} />
             </div>
           </div>

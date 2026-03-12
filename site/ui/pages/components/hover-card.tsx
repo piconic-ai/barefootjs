@@ -1,8 +1,12 @@
 /**
- * Hover Card Documentation Page
+ * Hover Card Reference Page (/components/hover-card)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/hover-card.
  */
 
 import { HoverCardPreviewDemo, HoverCardBasicDemo } from '@/components/hover-card-demo'
+import { HoverCardPlayground } from '@/components/hover-card-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,18 +16,24 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+} from '@/components/ui/hover-card'`
+
 const basicCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -55,43 +65,6 @@ function BasicHoverCard() {
   )
 }`
 
-const profileCode = `"use client"
-
-import { createSignal } from '@barefootjs/dom'
-import {
-  HoverCard,
-  HoverCardTrigger,
-  HoverCardContent,
-} from '@/components/ui/hover-card'
-
-function ProfileHoverCard() {
-  const [open, setOpen] = createSignal(false)
-
-  return (
-    <HoverCard open={open()} onOpenChange={setOpen}>
-      <HoverCardTrigger>
-        <a href="#" className="text-sm font-medium underline underline-offset-4">
-          @barefootjs
-        </a>
-      </HoverCardTrigger>
-      <HoverCardContent align="start" class="w-80">
-        <div className="flex justify-between space-x-4">
-          <div className="flex size-10 items-center justify-center rounded-full bg-muted text-lg font-bold shrink-0">
-            B
-          </div>
-          <div className="space-y-1">
-            <h4 className="text-sm font-semibold">@barefootjs</h4>
-            <p className="text-sm text-muted-foreground">
-              JSX to Marked Template + client JS compiler.
-            </p>
-          </div>
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  )
-}`
-
-// Props definitions
 const hoverCardProps: PropDefinition[] = [
   {
     name: 'open',
@@ -142,7 +115,7 @@ const hoverCardContentProps: PropDefinition[] = [
   },
 ]
 
-export function HoverCardPage() {
+export function HoverCardRefPage() {
   return (
     <DocPage slug="hover-card" toc={tocItems}>
       <div className="space-y-12">
@@ -152,16 +125,21 @@ export function HoverCardPage() {
           {...getNavLinks('hover-card')}
         />
 
-        {/* Preview */}
-        <Example title="" code={profileCode}>
-          <div className="flex gap-4">
-            <HoverCardPreviewDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <HoverCardPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add hover-card" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="flex gap-4">
+              <HoverCardPreviewDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}

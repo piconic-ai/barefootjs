@@ -3,16 +3,15 @@ import { test, expect } from '@playwright/test'
 // Click position for overlay outside the alert dialog area.
 const OVERLAY_CLICK_POSITION = { x: 10, y: 10 }
 
-// Fragment-root demos don't have bf-s attributes.
-// Trigger buttons are found directly by text; dialogs by aria-labelledby.
-const BASIC_TRIGGER = 'button:has-text("Show Dialog")'
+// Scope triggers to specific page sections to avoid matching Playground instances.
+const BASIC_TRIGGER = '#usage button:has-text("Show Dialog")'
 const BASIC_DIALOG = '[role="alertdialog"][aria-labelledby="alert-basic-title"]'
-const DESTRUCTIVE_TRIGGER = 'button:has-text("Delete Account")'
+const DESTRUCTIVE_TRIGGER = '#examples button:has-text("Delete Account")'
 const DESTRUCTIVE_DIALOG = '[role="alertdialog"][aria-labelledby="alert-destructive-title"]'
 
 test.describe('AlertDialog Documentation Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/alert-dialog')
+    await page.goto('/components/alert-dialog')
   })
 
   test.describe('Basic AlertDialog', () => {
@@ -243,7 +242,7 @@ test.describe('AlertDialog Documentation Page', () => {
 
 test.describe('AlertDialogTrigger asChild', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/alert-dialog')
+    await page.goto('/components/alert-dialog')
   })
 
   test('custom button renders as trigger with destructive styling', async ({ page }) => {

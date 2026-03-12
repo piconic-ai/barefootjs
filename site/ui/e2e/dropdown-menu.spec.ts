@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('DropdownMenu Documentation Page', () => {
+test.describe('DropdownMenu Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/dropdown-menu')
+    await page.goto('/components/dropdown-menu')
   })
 
   test.describe('Basic Demo', () => {

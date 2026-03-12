@@ -1,8 +1,12 @@
 /**
- * Dialog Documentation Page
+ * Dialog Reference Page (/components/dialog)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/dialog.
  */
 
 import { DialogBasicDemo, DialogFormDemo, DialogLongContentDemo } from '@/components/dialog-demo'
+import { DialogPlayground } from '@/components/dialog-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,20 +16,32 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'features', title: 'Features' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'delete-confirmation', title: 'Delete Confirmation', branch: 'start' },
   { id: 'long-content', title: 'Long Content', branch: 'end' },
+  { id: 'accessibility', title: 'Accessibility' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  Dialog,
+  DialogTrigger,
+  DialogOverlay,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'`
+
 const basicCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -267,7 +283,7 @@ const dialogDescriptionProps: PropDefinition[] = [
 
 const dialogCloseProps: PropDefinition[] = []
 
-export function DialogPage() {
+export function DialogRefPage() {
   return (
     <DocPage slug="dialog" toc={tocItems}>
       <div className="space-y-12">
@@ -277,28 +293,21 @@ export function DialogPage() {
           {...getNavLinks('dialog')}
         />
 
-        {/* Preview */}
-        <Example title="" code={basicCode}>
-          <div className="flex gap-4">
-            <DialogBasicDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <DialogPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add dialog" />
         </Section>
 
-        {/* Features */}
-        <Section id="features" title="Features">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">ESC key to close</strong> - Press Escape to close the dialog</li>
-            <li><strong className="text-foreground">Click outside to close</strong> - Click the overlay to close</li>
-            <li><strong className="text-foreground">Scroll lock</strong> - Body scroll is disabled when dialog is open</li>
-            <li><strong className="text-foreground">Focus trap</strong> - Tab/Shift+Tab cycles within the dialog</li>
-            <li><strong className="text-foreground">Accessibility</strong> - role="dialog", aria-modal="true", aria-labelledby, aria-describedby</li>
-            <li><strong className="text-foreground">Portal rendering</strong> - Dialog is mounted to document.body via createPortal</li>
-          </ul>
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="flex gap-4">
+              <DialogBasicDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}
@@ -312,6 +321,18 @@ export function DialogPage() {
               <DialogLongContentDemo />
             </Example>
           </div>
+        </Section>
+
+        {/* Accessibility */}
+        <Section id="accessibility" title="Accessibility">
+          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+            <li><strong className="text-foreground">ESC key to close</strong> - Press Escape to close the dialog</li>
+            <li><strong className="text-foreground">Click outside to close</strong> - Click the overlay to close</li>
+            <li><strong className="text-foreground">Scroll lock</strong> - Body scroll is disabled when dialog is open</li>
+            <li><strong className="text-foreground">Focus trap</strong> - Tab/Shift+Tab cycles within the dialog</li>
+            <li><strong className="text-foreground">ARIA attributes</strong> - role="dialog", aria-modal="true", aria-labelledby, aria-describedby</li>
+            <li><strong className="text-foreground">Portal rendering</strong> - Dialog is mounted to document.body via createPortal</li>
+          </ul>
         </Section>
 
         {/* API Reference */}

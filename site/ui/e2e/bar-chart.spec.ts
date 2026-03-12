@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Bar Chart Documentation Page', () => {
+test.describe('Bar Chart Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/charts/bar-chart')
+    await page.goto('/charts/bar-chart')
   })
 
   test.describe('Preview', () => {
@@ -23,6 +23,76 @@ test.describe('Bar Chart Documentation Page', () => {
       const container = page.locator(scope)
       const xAxisTexts = container.locator('.chart-x-axis text')
       await expect(xAxisTexts.first()).toHaveText('Jan')
+    })
+  })
+
+  test.describe('Playground', () => {
+    test('renders chart in playground preview', async ({ page }) => {
+      const preview = page.locator('[data-bar-chart-preview]')
+      await expect(preview).toBeVisible()
+      await expect(preview.locator('svg').first()).toBeVisible()
+    })
+
+    test('renders 6 bar rects in playground', async ({ page }) => {
+      const preview = page.locator('[data-bar-chart-preview]')
+      const rects = preview.locator('rect[data-key="desktop"]')
+      await expect(rects).toHaveCount(6)
+    })
+
+    test('changing radius updates bar corners', async ({ page }) => {
+      const preview = page.locator('[data-bar-chart-preview]')
+      const rect = preview.locator('rect[data-key="desktop"]').first()
+
+      // Default radius is 4
+      await expect(rect).toHaveAttribute('rx', '4')
+
+      // Open the radius select (first combobox in the playground controls)
+      const playgroundSection = page.locator('[data-bar-chart-preview]').locator('..').locator('..')
+      const radiusSelect = playgroundSection.locator('button[role="combobox"]').first()
+      await radiusSelect.click()
+      await page.locator('[role="option"]:has-text("0")').click()
+
+      // rx attribute should be removed (radius=0 means no rounding)
+      await expect(rect).not.toHaveAttribute('rx')
+    })
+
+    test('toggling vertical grid adds vertical lines', async ({ page }) => {
+      const preview = page.locator('[data-bar-chart-preview]')
+      const gridGroup = preview.locator('.chart-grid')
+      await expect(gridGroup).toBeVisible()
+
+      // Count initial lines (horizontal only, vertical=false by default)
+      const initialLineCount = await gridGroup.locator('line').count()
+
+      // Click "vertical grid" checkbox
+      const verticalCheckbox = page.locator('text=vertical grid')
+        .locator('..')
+        .locator('button[role="checkbox"]')
+      await verticalCheckbox.click()
+
+      // Should have more lines (horizontal + vertical)
+      const updatedLineCount = await gridGroup.locator('line').count()
+      expect(updatedLineCount).toBeGreaterThan(initialLineCount)
+    })
+
+    test('toggling showGrid hides grid lines', async ({ page }) => {
+      const preview = page.locator('[data-bar-chart-preview]')
+      const gridGroup = preview.locator('.chart-grid')
+      await expect(gridGroup).toBeVisible()
+
+      // Initially has grid lines
+      const initialLineCount = await gridGroup.locator('line').count()
+      expect(initialLineCount).toBeGreaterThan(0)
+
+      // Uncheck showGrid
+      const showGridCheckbox = page.locator('text=showGrid')
+        .locator('..')
+        .locator('button[role="checkbox"]')
+      await showGridCheckbox.click()
+
+      // Grid lines should be gone (horizontal=false hides all lines)
+      const updatedLineCount = await gridGroup.locator('line').count()
+      expect(updatedLineCount).toBe(0)
     })
   })
 

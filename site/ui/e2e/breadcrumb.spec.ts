@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Breadcrumb Documentation Page', () => {
+test.describe('Breadcrumb Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/breadcrumb')
+    await page.goto('/components/breadcrumb')
   })
 
   test.describe('Breadcrumb Structure', () => {
