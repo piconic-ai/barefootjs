@@ -32,6 +32,7 @@ const componentItems = [
   { id: 'input', title: 'Input', href: '/components/input', category: 'Components' },
   { id: 'select', title: 'Select', href: '/components/select', category: 'Components' },
   { id: 'switch', title: 'Switch', href: '/components/switch', category: 'Components' },
+  { id: 'table', title: 'Table', href: '/components/table', category: 'Components' },
   { id: 'tabs', title: 'Tabs', href: '/docs/components/tabs', category: 'Components' },
   { id: 'toast', title: 'Toast', href: '/docs/components/toast', category: 'Components' },
   { id: 'tooltip', title: 'Tooltip', href: '/docs/components/tooltip', category: 'Components' },

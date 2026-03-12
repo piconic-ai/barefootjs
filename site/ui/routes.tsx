@@ -61,7 +61,6 @@ import { SidebarPage } from './pages/sidebar'
 import { HoverCardPage } from './pages/hover-card'
 import { MenubarPage } from './pages/menubar'
 import { NavigationMenuPage } from './pages/navigation-menu'
-import { TablePage } from './pages/table'
 import { SpinnerPage } from './pages/spinner'
 import { ComponentCatalogPage } from './pages/components/catalog'
 
@@ -617,10 +616,6 @@ export function createApp() {
     return c.render(<SidebarPage />)
   })
 
-  // Table documentation
-  app.get('/docs/components/table', (c) => {
-    return c.render(<TablePage />)
-  })
 
   // Bar Chart documentation
   app.get('/docs/charts/bar-chart', (c) => {

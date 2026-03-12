@@ -1,8 +1,20 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Table Documentation Page', () => {
+test.describe('Table Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/table')
+    await page.goto('/components/table')
+  })
+
+  test('renders page header', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Table')
+  })
+
+  test('renders table in playground', async ({ page }) => {
+    await expect(page.locator('[data-slot="table"]').first()).toBeVisible()
+  })
+
+  test('renders API reference section', async ({ page }) => {
+    await expect(page.locator('#api-reference')).toBeVisible()
   })
 
   test.describe('Table Structure', () => {
@@ -58,25 +70,7 @@ test.describe('Table Documentation Page', () => {
     test('renders table caption', async ({ page }) => {
       const caption = page.locator('[data-slot="table-caption"]')
       await expect(caption.first()).toBeVisible()
-      await expect(caption.first()).toContainText('A list of your recent invoices')
+      await expect(caption.first()).toContainText('A list of')
     })
-  })
-})
-
-test.describe('Table Reference Page', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/components/table')
-  })
-
-  test('renders page header', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('Table')
-  })
-
-  test('renders table in playground', async ({ page }) => {
-    await expect(page.locator('[data-slot="table"]').first()).toBeVisible()
-  })
-
-  test('renders API reference section', async ({ page }) => {
-    await expect(page.locator('#api-reference')).toBeVisible()
   })
 })

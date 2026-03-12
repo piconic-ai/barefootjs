@@ -16,6 +16,7 @@ import {
   TableCaption,
 } from '@/components/ui/table'
 import { TablePlayground } from '@/components/table-playground'
+import { TableBasicDemo, TableWithFooterDemo } from '../../components/table-demo'
 import {
   DocPage,
   PageHeader,
@@ -32,6 +33,9 @@ const tocItems: TocItem[] = [
   { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
   { id: 'usage', title: 'Usage' },
+  { id: 'examples', title: 'Examples' },
+  { id: 'basic', title: 'Basic', branch: 'start' },
+  { id: 'with-footer', title: 'With Footer', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -76,6 +80,89 @@ function TableDemo() {
         <TableRow>
           <TableCell colSpan={3}>Total</TableCell>
           <TableCell className="text-right">$750.00</TableCell>
+        </TableRow>
+      </TableFooter>
+    </Table>
+  )
+}`
+
+const basicCode = `import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+
+const invoices = [
+  { invoice: 'INV001', status: 'Paid', method: 'Credit Card', amount: '$250.00' },
+  { invoice: 'INV002', status: 'Pending', method: 'PayPal', amount: '$150.00' },
+  { invoice: 'INV003', status: 'Unpaid', method: 'Bank Transfer', amount: '$350.00' },
+  { invoice: 'INV004', status: 'Paid', method: 'Credit Card', amount: '$450.00' },
+]
+
+function TableBasic() {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[100px]">Invoice</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Method</TableHead>
+          <TableHead className="text-right">Amount</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {invoices.map((inv) => (
+          <TableRow>
+            <TableCell className="font-medium">{inv.invoice}</TableCell>
+            <TableCell>{inv.status}</TableCell>
+            <TableCell>{inv.method}</TableCell>
+            <TableCell className="text-right">{inv.amount}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}`
+
+const withFooterCode = `import {
+  Table, TableBody, TableCaption, TableCell,
+  TableFooter, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+
+const invoices = [
+  { invoice: 'INV001', status: 'Paid', method: 'Credit Card', amount: '$250.00' },
+  { invoice: 'INV002', status: 'Pending', method: 'PayPal', amount: '$150.00' },
+  { invoice: 'INV003', status: 'Unpaid', method: 'Bank Transfer', amount: '$350.00' },
+  { invoice: 'INV004', status: 'Paid', method: 'Credit Card', amount: '$450.00' },
+  { invoice: 'INV005', status: 'Paid', method: 'PayPal', amount: '$550.00' },
+  { invoice: 'INV006', status: 'Pending', method: 'Bank Transfer', amount: '$200.00' },
+  { invoice: 'INV007', status: 'Unpaid', method: 'Credit Card', amount: '$300.00' },
+]
+
+function TableWithFooter() {
+  return (
+    <Table>
+      <TableCaption>A list of your recent invoices.</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[100px]">Invoice</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Method</TableHead>
+          <TableHead className="text-right">Amount</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {invoices.map((inv) => (
+          <TableRow>
+            <TableCell className="font-medium">{inv.invoice}</TableCell>
+            <TableCell>{inv.status}</TableCell>
+            <TableCell>{inv.method}</TableCell>
+            <TableCell className="text-right">{inv.amount}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+      <TableFooter>
+        <TableRow>
+          <TableCell colSpan={3}>Total</TableCell>
+          <TableCell className="text-right">$2,500.00</TableCell>
         </TableRow>
       </TableFooter>
     </Table>
@@ -180,6 +267,19 @@ export function TableRefPage() {
               </TableFooter>
             </Table>
           </Example>
+        </Section>
+
+        {/* Examples */}
+        <Section id="examples" title="Examples">
+          <div className="space-y-8">
+            <Example title="Basic" code={basicCode}>
+              <TableBasicDemo />
+            </Example>
+
+            <Example title="With Footer" code={withFooterCode}>
+              <TableWithFooterDemo />
+            </Example>
+          </div>
         </Section>
 
         {/* API Reference */}
