@@ -35,7 +35,7 @@ import { ToggleGroupRefPage } from './pages/components/toggle-group'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { CalendarPage } from './pages/calendar'
 import { CheckboxRefPage } from './pages/components/checkbox'
-import { AccordionPage } from './pages/accordion'
+import { AccordionRefPage } from './pages/components/accordion'
 import { CollapsiblePage } from './pages/collapsible'
 import { CommandPage } from './pages/command'
 import { TabsPage } from './pages/tabs'
@@ -100,7 +100,7 @@ export function createApp() {
           <h2 className="text-xl font-semibold tracking-tight text-foreground">Components</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <a href="/docs/components/accordion" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/accordion" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Accordion</h3>
               <p className="text-xs text-muted-foreground">Vertically collapsing content sections</p>
             </a>
@@ -470,9 +470,9 @@ export function createApp() {
     return c.render(<SwitchRefPage />)
   })
 
-  // Accordion documentation
-  app.get('/docs/components/accordion', (c) => {
-    return c.render(<AccordionPage />)
+  // Accordion reference page
+  app.get('/components/accordion', (c) => {
+    return c.render(<AccordionRefPage />)
   })
 
   // Tabs documentation

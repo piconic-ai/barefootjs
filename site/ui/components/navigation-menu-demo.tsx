@@ -91,7 +91,7 @@ export function NavigationMenuBasicDemo() {
                 </NavigationMenuLink>
               </li>
               <li>
-                <NavigationMenuLink href="/docs/components/accordion">
+                <NavigationMenuLink href="/components/accordion">
                   <div className="text-sm font-medium leading-none">Accordion</div>
                   <p className="line-clamp-2 text-sm leading-snug text-muted-foreground mt-1">
                     Vertically collapsing content sections.

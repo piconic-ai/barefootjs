@@ -18,7 +18,7 @@ test.describe('Home Page', () => {
   })
 
   test('displays component preview cards', async ({ page }) => {
-    await expect(page.locator('#components a[href="/docs/components/accordion"]')).toBeVisible()
+    await expect(page.locator('#components a[href="/components/accordion"]')).toBeVisible()
     await expect(page.locator('#components a[href="/components/button"]')).toBeVisible()
     await expect(page.locator('#components a[href="/components/card"]')).toBeVisible()
     await expect(page.locator('#components a[href="/docs/components/command"]')).toBeVisible()

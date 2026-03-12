@@ -21,7 +21,7 @@ const getStartedItems = [
 ]
 
 const componentItems = [
-  { id: 'accordion', title: 'Accordion', href: '/docs/components/accordion', category: 'Components' },
+  { id: 'accordion', title: 'Accordion', href: '/components/accordion', category: 'Components' },
   { id: 'badge', title: 'Badge', href: '/components/badge', category: 'Components' },
   { id: 'button', title: 'Button', href: '/components/button', category: 'Components' },
   { id: 'card', title: 'Card', href: '/components/card', category: 'Components' },

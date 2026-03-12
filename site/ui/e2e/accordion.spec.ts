@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Accordion Documentation Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/accordion')
+    await page.goto('/components/accordion')
   })
 
   test.describe('Single Open Accordion', () => {
@@ -149,7 +149,7 @@ test.describe('Accordion Documentation Page', () => {
 
 test.describe('Accordion asChild', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/accordion')
+    await page.goto('/components/accordion')
   })
 
   test('toggles content on click with reactive state', async ({ page }) => {
@@ -206,7 +206,7 @@ test.describe('Accordion asChild', () => {
 
 test.describe('Accordion Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/accordion')
+    await page.goto('/components/accordion')
   })
 
   test('ArrowDown navigates to next accordion trigger', async ({ page }) => {

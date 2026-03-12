@@ -205,7 +205,7 @@ export function MobileMenu() {
                   <ChevronRightIcon size="sm" className={chevronClass} />
                 </summary>
                 <div className="pl-2 py-1 space-y-0.5">
-                  <a href="/docs/components/accordion" className={menuLinkClass}>Accordion</a>
+                  <a href="/components/accordion" className={menuLinkClass}>Accordion</a>
                   <a href="/components/badge" className={menuLinkClass}>Badge</a>
                   <a href="/components/button" className={menuLinkClass}>Button</a>
                   <a href="/components/card" className={menuLinkClass}>Card</a>

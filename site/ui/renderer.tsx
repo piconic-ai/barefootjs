@@ -73,7 +73,7 @@ const menuEntries: SidebarEntry[] = [
     title: 'Components',
     links: [
       { title: 'Browse All', href: '/components' },
-      { title: 'Accordion', href: '/docs/components/accordion' },
+      { title: 'Accordion', href: '/components/accordion' },
       { title: 'Alert', href: '/docs/components/alert' },
       { title: 'Alert Dialog', href: '/docs/components/alert-dialog' },
       { title: 'Aspect Ratio', href: '/components/aspect-ratio' },

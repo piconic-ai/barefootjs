@@ -1,8 +1,12 @@
 /**
- * Accordion Documentation Page
+ * Accordion Reference Page (/components/accordion)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/accordion.
  */
 
 import { AccordionSingleOpenDemo, AccordionMultipleOpenDemo, AccordionAsChildDemo } from '@/components/accordion-demo'
+import { AccordionPlayground } from '@/components/accordion-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,12 +16,13 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'single-open', title: 'Single Open', branch: 'start' },
   { id: 'multiple-open', title: 'Multiple Open', branch: 'child' },
@@ -26,7 +31,13 @@ const tocItems: TocItem[] = [
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion'`
+
 const singleCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -137,7 +148,6 @@ function AccordionAsChild() {
   )
 }`
 
-// Props definition
 const accordionItemProps: PropDefinition[] = [
   {
     name: 'value',
@@ -180,7 +190,7 @@ const accordionTriggerProps: PropDefinition[] = [
 
 const accordionContentProps: PropDefinition[] = []
 
-export function AccordionPage() {
+export function AccordionRefPage() {
   return (
     <DocPage slug="accordion" toc={tocItems}>
       <div className="space-y-12">
@@ -190,16 +200,21 @@ export function AccordionPage() {
           {...getNavLinks('accordion')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<Accordion>...</Accordion>`}>
-          <div className="w-full max-w-md">
-            <AccordionSingleOpenDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <AccordionPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add accordion" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="w-full max-w-md">
+              <AccordionSingleOpenDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}
