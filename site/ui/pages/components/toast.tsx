@@ -1,5 +1,7 @@
 /**
- * Toast Documentation Page
+ * Toast Reference Page (/components/toast)
+ *
+ * Focused developer reference with interactive Props Playground.
  */
 
 import {
@@ -11,6 +13,7 @@ import {
   ToastWithActionDemo,
   ToastPositionDemo,
 } from '@/components/toast-demo'
+import { ToastPlayground } from '@/components/toast-playground'
 import {
   DocPage,
   PageHeader,
@@ -20,13 +23,13 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'features', title: 'Features' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'default', title: 'Default', branch: 'start' },
   { id: 'success', title: 'Success', branch: 'child' },
@@ -35,11 +38,35 @@ const tocItems: TocItem[] = [
   { id: 'info', title: 'Info', branch: 'child' },
   { id: 'with-action', title: 'With Action', branch: 'child' },
   { id: 'position', title: 'Position', branch: 'end' },
-  { id: 'accessibility', title: 'Accessibility' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  ToastProvider,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+  ToastAction,
+} from "@/components/ui/toast"
+
+function ToastDemo() {
+  const [open, setOpen] = createSignal(false)
+
+  return (
+    <ToastProvider position="bottom-right">
+      <Button onClick={() => setOpen(true)}>Show Toast</Button>
+      <Toast open={open()} onOpenChange={setOpen}>
+        <div className="flex-1">
+          <ToastTitle>Event created</ToastTitle>
+          <ToastDescription>Sunday, December 03, 2023 at 9:00 AM</ToastDescription>
+        </div>
+        <ToastClose />
+      </Toast>
+    </ToastProvider>
+  )
+}`
+
 const defaultCode = `<Toast open={open()} onOpenChange={setOpen}>
   <div className="flex-1">
     <ToastTitle>Event created</ToastTitle>
@@ -167,7 +194,7 @@ const toastActionProps: PropDefinition[] = [
   },
 ]
 
-export function ToastPage() {
+export function ToastRefPage() {
   return (
     <DocPage slug="toast" toc={tocItems}>
       <div className="space-y-12">
@@ -177,30 +204,19 @@ export function ToastPage() {
           {...getNavLinks('toast')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<Toast variant="success" open={open()}>...</Toast>`}>
-          <div className="flex gap-4">
-            <ToastSuccessDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <ToastPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add toast" />
         </Section>
 
-        {/* Features */}
-        <Section id="features" title="Features">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">Auto-dismiss</strong> - Toasts automatically disappear after a configurable duration</li>
-            <li><strong className="text-foreground">Manual dismiss</strong> - Close button to dismiss immediately via context</li>
-            <li><strong className="text-foreground">Variants</strong> - default, success, error, warning, info with type-specific icons</li>
-            <li><strong className="text-foreground">Position options</strong> - top-right, top-center, top-left, bottom-right, bottom-center, bottom-left</li>
-            <li><strong className="text-foreground">Action buttons</strong> - Optional action button for undo/retry operations</li>
-            <li><strong className="text-foreground">Portal rendering</strong> - Toast container portals to document.body to avoid z-index issues</li>
-            <li><strong className="text-foreground">Accessibility</strong> - role="status", aria-live="polite" (assertive for errors)</li>
-            <li><strong className="text-foreground">Stackable</strong> - Multiple toasts can be displayed simultaneously</li>
-          </ul>
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <ToastDefaultDemo />
+          </Example>
         </Section>
 
         {/* Examples */}
@@ -234,17 +250,6 @@ export function ToastPage() {
               <ToastPositionDemo />
             </Example>
           </div>
-        </Section>
-
-        {/* Accessibility */}
-        <Section id="accessibility" title="Accessibility">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">Live Regions</strong> - role="status" with aria-live="polite" for non-critical toasts</li>
-            <li><strong className="text-foreground">Assertive Alerts</strong> - Error toasts use aria-live="assertive" for immediate announcement</li>
-            <li><strong className="text-foreground">Action Accessibility</strong> - Action buttons include altText for screen reader descriptions</li>
-            <li><strong className="text-foreground">Close Button</strong> - Close button has aria-label="Close" for screen readers</li>
-            <li><strong className="text-foreground">Timing</strong> - Toasts auto-dismiss with sufficient time for users to read</li>
-          </ul>
         </Section>
 
         {/* API Reference */}
