@@ -11,7 +11,7 @@ import { renderer } from './renderer'
 // Component pages
 import { AspectRatioRefPage } from './pages/components/aspect-ratio'
 import { AlertRefPage } from './pages/components/alert'
-import { AlertDialogPage } from './pages/alert-dialog'
+import { AlertDialogRefPage } from './pages/components/alert-dialog'
 import { BadgeRefPage } from './pages/components/badge'
 import { ButtonRefPage } from './pages/components/button'
 import { ComboboxRefPage } from './pages/components/combobox'
@@ -108,7 +108,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Alert</h3>
               <p className="text-xs text-muted-foreground">Callout for important content</p>
             </a>
-            <a href="/docs/components/alert-dialog" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/alert-dialog" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Alert Dialog</h3>
               <p className="text-xs text-muted-foreground">Modal dialog for important confirmations</p>
             </a>
@@ -360,9 +360,9 @@ export function createApp() {
     return c.render(<AlertRefPage />)
   })
 
-  // Alert Dialog documentation
-  app.get('/docs/components/alert-dialog', (c) => {
-    return c.render(<AlertDialogPage />)
+  // Alert Dialog reference page
+  app.get('/components/alert-dialog', (c) => {
+    return c.render(<AlertDialogRefPage />)
   })
 
   // Badge reference page

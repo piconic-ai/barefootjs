@@ -1,8 +1,12 @@
 /**
- * AlertDialog Documentation Page
+ * AlertDialog Reference Page (/components/alert-dialog)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/alert-dialog.
  */
 
 import { AlertDialogBasicDemo, AlertDialogDestructiveDemo } from '@/components/alert-dialog-demo'
+import { AlertDialogPlayground } from '@/components/alert-dialog-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,19 +16,32 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'features', title: 'Features' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'destructive', title: 'Destructive', branch: 'end' },
+  { id: 'accessibility', title: 'Accessibility' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'`
+
 const basicCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -192,7 +209,7 @@ const alertDialogActionProps: PropDefinition[] = [
   },
 ]
 
-export function AlertDialogPage() {
+export function AlertDialogRefPage() {
   return (
     <DocPage slug="alert-dialog" toc={tocItems}>
       <div className="space-y-12">
@@ -202,28 +219,21 @@ export function AlertDialogPage() {
           {...getNavLinks('alert-dialog')}
         />
 
-        {/* Preview */}
-        <Example title="" code={basicCode}>
-          <div className="flex gap-4">
-            <AlertDialogBasicDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <AlertDialogPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add alert-dialog" />
         </Section>
 
-        {/* Features */}
-        <Section id="features" title="Features">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">ESC key to close</strong> - Press Escape to close the alert dialog</li>
-            <li><strong className="text-foreground">No outside click dismiss</strong> - Clicking the overlay does NOT close the dialog</li>
-            <li><strong className="text-foreground">Scroll lock</strong> - Body scroll is disabled when alert dialog is open</li>
-            <li><strong className="text-foreground">Focus trap</strong> - Tab/Shift+Tab cycles within the alert dialog</li>
-            <li><strong className="text-foreground">Accessibility</strong> - role="alertdialog", aria-modal="true", aria-labelledby, aria-describedby</li>
-            <li><strong className="text-foreground">Portal rendering</strong> - Alert dialog is mounted to document.body via createPortal</li>
-          </ul>
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="flex gap-4">
+              <AlertDialogBasicDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}
@@ -233,6 +243,18 @@ export function AlertDialogPage() {
               <AlertDialogDestructiveDemo />
             </Example>
           </div>
+        </Section>
+
+        {/* Accessibility */}
+        <Section id="accessibility" title="Accessibility">
+          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+            <li><strong className="text-foreground">ESC key to close</strong> - Press Escape to close the alert dialog</li>
+            <li><strong className="text-foreground">No outside click dismiss</strong> - Clicking the overlay does NOT close the dialog</li>
+            <li><strong className="text-foreground">Scroll lock</strong> - Body scroll is disabled when alert dialog is open</li>
+            <li><strong className="text-foreground">Focus trap</strong> - Tab/Shift+Tab cycles within the alert dialog</li>
+            <li><strong className="text-foreground">ARIA</strong> - role="alertdialog", aria-modal="true", aria-labelledby, aria-describedby</li>
+            <li><strong className="text-foreground">Portal rendering</strong> - Alert dialog is mounted to document.body via createPortal</li>
+          </ul>
         </Section>
 
         {/* API Reference */}
