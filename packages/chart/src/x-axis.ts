@@ -9,18 +9,25 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
  */
 export function initXAxis(_scope: Element, props: Record<string, unknown>): void {
   const ctx = useContext(BarChartContext)
-  const dataKey = props.dataKey as string
-  const tickFormatter = props.tickFormatter as ((value: string) => string) | undefined
-  const hide = props.hide as boolean | undefined
-
-  // Tell BarChart which key to use for X axis
-  ctx.setXDataKey(dataKey)
-
-  if (hide) return
 
   let axisGroup: SVGGElement | null = null
 
   createEffect(() => {
+    const dataKey = props.dataKey as string
+    const tickFormatter = props.tickFormatter as ((value: string) => string) | undefined
+    const hide = props.hide as boolean | undefined
+
+    // Tell BarChart which key to use for X axis
+    ctx.setXDataKey(dataKey)
+
+    if (hide) {
+      if (axisGroup) {
+        axisGroup.remove()
+        axisGroup = null
+      }
+      return
+    }
+
     const g = ctx.svgGroup()
     const xs = ctx.xScale()
     if (!g || !xs) return

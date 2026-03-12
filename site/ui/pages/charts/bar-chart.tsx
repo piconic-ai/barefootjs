@@ -290,8 +290,7 @@ const chartTooltipProps: PropDefinition[] = [
   },
 ]
 
-/** Legacy export for /docs/charts/bar-chart route */
-export function BarChartPage() {
+export function BarChartRefPage() {
   return (
     <DocPage slug="bar-chart" toc={tocItems}>
       <div className="space-y-12">
@@ -366,6 +365,3 @@ export function BarChartPage() {
     </DocPage>
   )
 }
-
-/** RefPage export for /charts/bar-chart route */
-export { BarChartPage as BarChartRefPage }

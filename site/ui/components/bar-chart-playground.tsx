@@ -44,16 +44,13 @@ function buildHighlightedCode(radius: number, vertical: boolean, showGrid: boole
   const indent = '  '
   const lines: string[] = []
 
-  // <ChartContainer config={chartConfig} className="w-full">
   lines.push(
     `${hlPlain('&lt;')}${hlTag('ChartContainer')} ${hlAttr('config')}${hlPlain('={chartConfig}')} ${hlAttr('className')}${hlPlain('=')}${hlStr('&quot;w-full&quot;')}${hlPlain('&gt;')}`
   )
-  // <BarChart data={chartData}>
   lines.push(
     `${indent}${hlPlain('&lt;')}${hlTag('BarChart')} ${hlAttr('data')}${hlPlain('={chartData}')}${hlPlain('&gt;')}`
   )
 
-  // CartesianGrid (only if showGrid)
   if (showGrid) {
     const verticalProp = vertical
       ? ''
@@ -63,20 +60,16 @@ function buildHighlightedCode(radius: number, vertical: boolean, showGrid: boole
     )
   }
 
-  // XAxis
   lines.push(
     `${indent}${indent}${hlPlain('&lt;')}${hlTag('XAxis')} ${hlAttr('dataKey')}${hlPlain('=')}${hlStr('&quot;month&quot;')} ${hlPlain('/&gt;')}`
   )
-  // YAxis
   lines.push(
     `${indent}${indent}${hlPlain('&lt;')}${hlTag('YAxis')} ${hlPlain('/&gt;')}`
   )
-  // ChartTooltip
   lines.push(
     `${indent}${indent}${hlPlain('&lt;')}${hlTag('ChartTooltip')} ${hlPlain('/&gt;')}`
   )
 
-  // Bar
   const radiusProp = radius !== 0
     ? ` ${hlAttr('radius')}${hlPlain('={' + radius + '}')}`
     : ''
@@ -84,11 +77,9 @@ function buildHighlightedCode(radius: number, vertical: boolean, showGrid: boole
     `${indent}${indent}${hlPlain('&lt;')}${hlTag('Bar')} ${hlAttr('dataKey')}${hlPlain('=')}${hlStr('&quot;desktop&quot;')} ${hlAttr('fill')}${hlPlain('=')}${hlStr('&quot;var(--color-desktop)&quot;')}${radiusProp} ${hlPlain('/&gt;')}`
   )
 
-  // </BarChart>
   lines.push(
     `${indent}${hlPlain('&lt;/')}${hlTag('BarChart')}${hlPlain('&gt;')}`
   )
-  // </ChartContainer>
   lines.push(
     `${hlPlain('&lt;/')}${hlTag('ChartContainer')}${hlPlain('&gt;')}`
   )
@@ -144,7 +135,10 @@ function BarChartPlayground(_props: {}) {
         <div className="w-full min-w-[300px]">
           <ChartContainer config={chartConfig} className="w-full">
             <BarChart data={chartData}>
-              {showGrid() ? <CartesianGrid vertical={vertical()} /> : null}
+              <CartesianGrid
+                vertical={vertical()}
+                horizontal={showGrid()}
+              />
               <XAxis dataKey="month" />
               <YAxis />
               <ChartTooltip />
@@ -170,13 +164,13 @@ function BarChartPlayground(_props: {}) {
         <PlaygroundControl label="vertical grid">
           <Checkbox
             checked={vertical()}
-            onCheckedChange={setVertical}
+            onCheckedChange={(v: boolean) => setVertical(v)}
           />
         </PlaygroundControl>
         <PlaygroundControl label="showGrid">
           <Checkbox
             checked={showGrid()}
-            onCheckedChange={setShowGrid}
+            onCheckedChange={(v: boolean) => setShowGrid(v)}
           />
         </PlaygroundControl>
       </>}
