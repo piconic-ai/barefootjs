@@ -17,6 +17,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 type AlignValue = 'start' | 'center' | 'end'
 
 function DatePickerPlayground(_props: {}) {
+  const [selected, setSelected] = createSignal<Date | undefined>(undefined)
   const [disabled, setDisabled] = createSignal(false)
   const [align, setAlign] = createSignal<AlignValue>('start')
 
@@ -36,6 +37,8 @@ function DatePickerPlayground(_props: {}) {
       previewDataAttr="data-date-picker-preview"
       previewContent={
         <DatePicker
+          selected={selected()}
+          onSelect={setSelected}
           disabled={disabled()}
           align={align()}
         />
