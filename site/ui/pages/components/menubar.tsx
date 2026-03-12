@@ -1,8 +1,12 @@
 /**
- * Menubar Documentation Page
+ * Menubar Reference Page (/components/menubar)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/menubar.
  */
 
-import { MenubarApplicationDemo, MenubarBasicDemo } from '@/components/menubar-demo'
+import { MenubarBasicDemo, MenubarApplicationDemo } from '@/components/menubar-demo'
+import { MenubarPlayground } from '@/components/menubar-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,20 +16,30 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
-  { id: 'features', title: 'Features' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'application', title: 'Application', branch: 'end' },
+  { id: 'accessibility', title: 'Accessibility' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  Menubar,
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+  MenubarShortcut,
+} from '@/components/ui/menubar'`
+
 const basicCode = `"use client"
 
 import {
@@ -179,7 +193,6 @@ function AppMenubar() {
   )
 }`
 
-// Props definitions
 const menubarProps: PropDefinition[] = [
   {
     name: 'class',
@@ -297,7 +310,7 @@ const menubarShortcutProps: PropDefinition[] = [
   },
 ]
 
-export function MenubarPage() {
+export function MenubarRefPage() {
   return (
     <DocPage slug="menubar" toc={tocItems}>
       <div className="space-y-12">
@@ -307,27 +320,19 @@ export function MenubarPage() {
           {...getNavLinks('menubar')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<Menubar><MenubarMenu><MenubarTrigger>File</MenubarTrigger><MenubarContent>...</MenubarContent></MenubarMenu></Menubar>`}>
-          <MenubarApplicationDemo />
-        </Example>
+        {/* Props Playground */}
+        <MenubarPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add menubar" />
         </Section>
 
-        {/* Features */}
-        <Section id="features" title="Features">
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li><strong className="text-foreground">Roving hover</strong> - When one menu is open, hovering another trigger opens it</li>
-            <li><strong className="text-foreground">Keyboard navigation</strong> - ArrowLeft/Right navigates between menus, ArrowDown/Up within menus</li>
-            <li><strong className="text-foreground">Submenu support</strong> - Nested submenus with hover and keyboard navigation</li>
-            <li><strong className="text-foreground">Checkbox items</strong> - Toggle items that stay open after selection</li>
-            <li><strong className="text-foreground">Radio items</strong> - Single-select items within a group</li>
-            <li><strong className="text-foreground">Keyboard shortcuts</strong> - Display shortcut hints alongside items</li>
-            <li><strong className="text-foreground">Composable</strong> - Label, Separator, Shortcut, Group, Sub sub-components</li>
-          </ul>
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <MenubarBasicDemo />
+          </Example>
         </Section>
 
         {/* Examples */}
@@ -336,10 +341,22 @@ export function MenubarPage() {
             <Example title="Basic" code={basicCode}>
               <MenubarBasicDemo />
             </Example>
+
             <Example title="Application" code={applicationCode}>
               <MenubarApplicationDemo />
             </Example>
           </div>
+        </Section>
+
+        {/* Accessibility */}
+        <Section id="accessibility" title="Accessibility">
+          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+            <li><strong className="text-foreground">Roving Hover</strong> - When one menu is open, hovering another trigger opens it</li>
+            <li><strong className="text-foreground">Keyboard Navigation</strong> - ArrowLeft/Right navigates between menus, ArrowDown/Up within menus</li>
+            <li><strong className="text-foreground">Submenu Support</strong> - Nested submenus with hover and keyboard navigation</li>
+            <li><strong className="text-foreground">ARIA</strong> - Triggers use aria-haspopup, aria-expanded; Items use appropriate roles (menuitem, menuitemcheckbox, menuitemradio)</li>
+            <li><strong className="text-foreground">Disabled State</strong> - aria-disabled on disabled items, skipped in keyboard navigation</li>
+          </ul>
         </Section>
 
         {/* API Reference */}

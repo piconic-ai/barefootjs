@@ -1,7 +1,11 @@
 /**
- * DatePicker Documentation Page
+ * DatePicker Reference Page (/components/date-picker)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Part of the #515 page redesign initiative.
  */
 
+import { DatePickerPlayground } from '@/components/date-picker-playground'
 import {
   DatePickerPreviewDemo,
   DatePickerBasicDemo,
@@ -18,12 +22,13 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'form', title: 'Form', branch: 'child' },
@@ -32,7 +37,29 @@ const tocItems: TocItem[] = [
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `"use client"
+
+import { createSignal } from '@barefootjs/dom'
+import { DatePicker } from '@/components/ui/date-picker'
+
+function DatePickerDemo() {
+  const [date, setDate] = createSignal<Date | undefined>()
+
+  return (
+    <div className="flex flex-col gap-4">
+      <DatePicker selected={date()} onSelect={setDate} />
+      <p className="text-sm text-muted-foreground">
+        {date()
+          ? date()!.toLocaleDateString('en-US', {
+              weekday: 'long', year: 'numeric',
+              month: 'long', day: 'numeric',
+            })
+          : 'No date selected'}
+      </p>
+    </div>
+  )
+}`
+
 const basicCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -166,7 +193,6 @@ function DatePickerWithPresets() {
   )
 }`
 
-// Props definitions
 const datePickerProps: PropDefinition[] = [
   {
     name: 'selected',
@@ -267,7 +293,7 @@ const dateRangePickerProps: PropDefinition[] = [
   },
 ]
 
-export function DatePickerPage() {
+export function DatePickerRefPage() {
   return (
     <DocPage slug="date-picker" toc={tocItems}>
       <div className="space-y-12">
@@ -277,16 +303,19 @@ export function DatePickerPage() {
           {...getNavLinks('date-picker')}
         />
 
-        {/* Preview */}
-        <Example title="" code={`<DatePicker selected={date()} onSelect={setDate} />`}>
-          <div className="flex gap-4">
-            <DatePickerPreviewDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <DatePickerPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add date-picker" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <DatePickerPreviewDemo />
+          </Example>
         </Section>
 
         {/* Examples */}

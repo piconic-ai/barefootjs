@@ -4,9 +4,9 @@ import { test, expect } from '@playwright/test'
 // Drawers are positioned at edges, so clicking near the opposite edge hits the overlay.
 const OVERLAY_CLICK_POSITION = { x: 10, y: 10 }
 
-test.describe('Drawer Documentation Page', () => {
+test.describe('Drawer Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/drawer')
+    await page.goto('/components/drawer')
   })
 
   test.describe('Basic Drawer', () => {

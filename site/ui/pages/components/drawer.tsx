@@ -1,8 +1,12 @@
 /**
- * Drawer Documentation Page
+ * Drawer Reference Page (/components/drawer)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/drawer.
  */
 
 import { DrawerBasicDemo, DrawerDirectionDemo, DrawerFormDemo } from '@/components/drawer-demo'
+import { DrawerPlayground } from '@/components/drawer-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,20 +16,34 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
-// Table of contents items
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'direction', title: 'Direction', branch: 'child' },
   { id: 'form', title: 'Form', branch: 'end' },
+  { id: 'accessibility', title: 'Accessibility' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-// Code examples
+const usageCode = `import {
+  Drawer,
+  DrawerTrigger,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerHandle,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerClose,
+} from '@/components/ui/drawer'`
+
 const basicCode = `"use client"
 
 import { createSignal } from '@barefootjs/dom'
@@ -247,7 +265,7 @@ const drawerDescriptionProps: PropDefinition[] = [
 
 const drawerCloseProps: PropDefinition[] = []
 
-export function DrawerPage() {
+export function DrawerRefPage() {
   return (
     <DocPage slug="drawer" toc={tocItems}>
       <div className="space-y-12">
@@ -257,16 +275,21 @@ export function DrawerPage() {
           {...getNavLinks('drawer')}
         />
 
-        {/* Preview */}
-        <Example title="" code={basicCode}>
-          <div className="flex gap-4">
-            <DrawerBasicDemo />
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <DrawerPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add drawer" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="flex gap-4">
+              <DrawerBasicDemo />
+            </div>
+          </Example>
         </Section>
 
         {/* Examples */}
@@ -284,6 +307,16 @@ export function DrawerPage() {
               <DrawerFormDemo />
             </Example>
           </div>
+        </Section>
+
+        {/* Accessibility */}
+        <Section id="accessibility" title="Accessibility">
+          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+            <li><strong className="text-foreground">Keyboard Navigation</strong> - ESC to close, Tab/Shift+Tab cycles within the drawer (focus trap)</li>
+            <li><strong className="text-foreground">ARIA</strong> - role="dialog", aria-modal="true", aria-labelledby, aria-describedby</li>
+            <li><strong className="text-foreground">Overlay Dismiss</strong> - Clicking outside the drawer closes it</li>
+            <li><strong className="text-foreground">Screen Readers</strong> - State changes are announced via data-state attribute</li>
+          </ul>
         </Section>
 
         {/* API Reference */}
