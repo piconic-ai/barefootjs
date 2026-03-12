@@ -361,10 +361,10 @@ function MenubarContent(props: MenubarContentProps) {
           } else {
             // Navigate to next menubar trigger
             e.preventDefault()
-            const bar = document.querySelector('[data-slot="menubar"]')
+            const currentTrigger = contentTriggerMap.get(el)
+            const bar = currentTrigger?.closest('[data-slot="menubar"]')
             if (!bar) break
             const triggers = Array.from(bar.querySelectorAll('[data-slot="menubar-trigger"]')) as HTMLElement[]
-            const currentTrigger = contentTriggerMap.get(el)
             const triggerIndex = currentTrigger ? triggers.indexOf(currentTrigger) : -1
             const nextIndex = triggerIndex < triggers.length - 1 ? triggerIndex + 1 : 0
             const nextTrigger = triggers[nextIndex]
@@ -377,10 +377,10 @@ function MenubarContent(props: MenubarContentProps) {
         case 'ArrowLeft': {
           // Navigate to previous menubar trigger
           e.preventDefault()
-          const bar = document.querySelector('[data-slot="menubar"]')
+          const currentTrigger = contentTriggerMap.get(el)
+          const bar = currentTrigger?.closest('[data-slot="menubar"]')
           if (!bar) break
           const triggers = Array.from(bar.querySelectorAll('[data-slot="menubar-trigger"]')) as HTMLElement[]
-          const currentTrigger = contentTriggerMap.get(el)
           const triggerIndex = currentTrigger ? triggers.indexOf(currentTrigger) : -1
           const prevIndex = triggerIndex > 0 ? triggerIndex - 1 : triggers.length - 1
           const prevTrigger = triggers[prevIndex]
