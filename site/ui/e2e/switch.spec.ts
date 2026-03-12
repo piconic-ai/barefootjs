@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Switch Documentation Page', () => {
+test.describe('Switch Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/switch')
+    await page.goto('/components/switch')
   })
 
   test.describe('Switch Rendering', () => {
@@ -17,8 +17,8 @@ test.describe('Switch Documentation Page', () => {
     })
   })
 
-  test.describe('Preview (Consent Demo)', () => {
-    test('displays preview with switch and button', async ({ page }) => {
+  test.describe('Consent Demo', () => {
+    test('displays consent demo with switch and button', async ({ page }) => {
       const section = page.locator('[bf-s^="SwitchConsentDemo_"]:not([data-slot])').first()
       await expect(section).toBeVisible()
       await expect(section.locator('button[role="switch"]')).toBeVisible()
@@ -54,54 +54,6 @@ test.describe('Switch Documentation Page', () => {
       // Switch should be checked
       await expect(switchBtn).toHaveAttribute('data-state', 'checked')
       await expect(switchBtn).toHaveAttribute('aria-checked', 'true')
-    })
-  })
-
-  test.describe('Basic', () => {
-    test('displays basic example', async ({ page }) => {
-      await expect(page.locator('h3:has-text("Basic")')).toBeVisible()
-      const section = page.locator('[bf-s^="SwitchBasicDemo_"]:not([data-slot])').first()
-      await expect(section).toBeVisible()
-    })
-
-    test('has three switches', async ({ page }) => {
-      const section = page.locator('[bf-s^="SwitchBasicDemo_"]:not([data-slot])').first()
-      const switches = section.locator('button[role="switch"]')
-      await expect(switches).toHaveCount(3)
-    })
-
-    test('first switch starts unchecked', async ({ page }) => {
-      const section = page.locator('[bf-s^="SwitchBasicDemo_"]:not([data-slot])').first()
-      const switches = section.locator('button[role="switch"]')
-      await expect(switches.first()).toHaveAttribute('aria-checked', 'false')
-    })
-
-    test('second switch starts checked (defaultChecked)', async ({ page }) => {
-      const section = page.locator('[bf-s^="SwitchBasicDemo_"]:not([data-slot])').first()
-      const switches = section.locator('button[role="switch"]')
-      await expect(switches.nth(1)).toHaveAttribute('aria-checked', 'true')
-    })
-
-    test('third switch is disabled', async ({ page }) => {
-      const section = page.locator('[bf-s^="SwitchBasicDemo_"]:not([data-slot])').first()
-      const switches = section.locator('button[role="switch"]')
-      await expect(switches.nth(2)).toBeDisabled()
-    })
-
-    test('clicking toggles switch state', async ({ page }) => {
-      const section = page.locator('[bf-s^="SwitchBasicDemo_"]:not([data-slot])').first()
-      const switchBtn = section.locator('button[role="switch"]').first()
-
-      // Initially unchecked
-      await expect(switchBtn).toHaveAttribute('aria-checked', 'false')
-
-      // Click to check
-      await switchBtn.click()
-      await expect(switchBtn).toHaveAttribute('aria-checked', 'true')
-
-      // Click to uncheck
-      await switchBtn.click()
-      await expect(switchBtn).toHaveAttribute('aria-checked', 'false')
     })
   })
 

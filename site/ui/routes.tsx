@@ -35,7 +35,6 @@ import { ToggleGroupRefPage } from './pages/components/toggle-group'
 import { BreadcrumbPage } from './pages/breadcrumb'
 import { CalendarPage } from './pages/calendar'
 import { CheckboxRefPage } from './pages/components/checkbox'
-import { SwitchPage } from './pages/switch'
 import { AccordionPage } from './pages/accordion'
 import { CollapsiblePage } from './pages/collapsible'
 import { CommandPage } from './pages/command'
@@ -265,7 +264,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Spinner</h3>
               <p className="text-xs text-muted-foreground">Animated loading indicator</p>
             </a>
-            <a href="/docs/components/switch" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/switch" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Switch</h3>
               <p className="text-xs text-muted-foreground">On/off toggle control</p>
             </a>
@@ -470,12 +469,7 @@ export function createApp() {
     return c.render(<SpinnerPage />)
   })
 
-  // Switch documentation
-  app.get('/docs/components/switch', (c) => {
-    return c.render(<SwitchPage />)
-  })
-
-  // Switch reference page (redesigned #515)
+  // Switch reference page
   app.get('/components/switch', (c) => {
     return c.render(<SwitchRefPage />)
   })
