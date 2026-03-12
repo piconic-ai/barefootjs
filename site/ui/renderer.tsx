@@ -107,7 +107,7 @@ const menuEntries: SidebarEntry[] = [
       { title: 'Resizable', href: '/components/resizable' },
       { title: 'Scroll Area', href: '/components/scroll-area' },
       { title: 'Select', href: '/components/select' },
-      { title: 'Sidebar', href: '/docs/components/sidebar' },
+      { title: 'Sidebar', href: '/components/sidebar' },
       { title: 'Separator', href: '/components/separator' },
       { title: 'Skeleton', href: '/components/skeleton' },
       { title: 'Sheet', href: '/components/sheet' },

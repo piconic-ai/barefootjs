@@ -1,5 +1,8 @@
 /**
- * Sidebar Documentation Page
+ * Sidebar Reference Page (/components/sidebar)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Migrated from /docs/components/sidebar.
  */
 
 import { SidebarBasicDemo, SidebarCollapsibleGroupDemo, SidebarFloatingDemo } from '@/components/sidebar-demo'
@@ -12,11 +15,12 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
 const tocItems: TocItem[] = [
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'collapsible-groups', title: 'Collapsible Groups', branch: 'child' },
@@ -58,6 +62,15 @@ function SidebarDemo() {
     </SidebarProvider>
   )
 }`
+
+const usageCode = `import {
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
+  SidebarGroupContent, SidebarGroupLabel, SidebarHeader,
+  SidebarInset, SidebarMenu, SidebarMenuBadge,
+  SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
+  SidebarMenuSubButton, SidebarMenuSubItem, SidebarProvider,
+  SidebarSeparator, SidebarTrigger,
+} from '@/components/ui/sidebar'`
 
 const basicCode = `"use client"
 
@@ -305,7 +318,7 @@ const sidebarMenuButtonProps: PropDefinition[] = [
   },
 ]
 
-export function SidebarPage() {
+export function SidebarRefPage() {
   return (
     <DocPage slug="sidebar" toc={tocItems}>
       <div className="space-y-12">
@@ -323,6 +336,13 @@ export function SidebarPage() {
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add sidebar" />
+        </Section>
+
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <span />
+          </Example>
         </Section>
 
         {/* Examples */}
