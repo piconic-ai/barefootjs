@@ -1,8 +1,12 @@
 /**
- * Alert Documentation Page
+ * Alert Reference Page (/components/alert)
+ *
+ * Focused developer reference with interactive Props Playground.
+ * Part of the #515 page redesign initiative.
  */
 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AlertPlayground } from '@/components/alert-playground'
 import {
   DocPage,
   PageHeader,
@@ -12,8 +16,8 @@ import {
   PackageManagerTabs,
   type PropDefinition,
   type TocItem,
-} from '../components/shared/docs'
-import { getNavLinks } from '../components/shared/PageNavigation'
+} from '../../components/shared/docs'
+import { getNavLinks } from '../../components/shared/PageNavigation'
 
 // Lucide Terminal icon (inline SVG)
 function TerminalIcon() {
@@ -37,14 +41,16 @@ function CircleAlertIcon() {
 }
 
 const tocItems: TocItem[] = [
+  { id: 'preview', title: 'Preview' },
   { id: 'installation', title: 'Installation' },
+  { id: 'usage', title: 'Usage' },
   { id: 'examples', title: 'Examples' },
   { id: 'default', title: 'Default', branch: 'start' },
   { id: 'destructive', title: 'Destructive', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
-const previewCode = `import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+const usageCode = `import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 
 function AlertDemo() {
   return (
@@ -58,33 +64,21 @@ function AlertDemo() {
   )
 }`
 
-const defaultCode = `import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+const defaultCode = `<Alert>
+  <TerminalIcon />
+  <AlertTitle>Heads up!</AlertTitle>
+  <AlertDescription>
+    You can add components to your app using the CLI.
+  </AlertDescription>
+</Alert>`
 
-function AlertDefault() {
-  return (
-    <Alert>
-      <TerminalIcon />
-      <AlertTitle>Heads up!</AlertTitle>
-      <AlertDescription>
-        You can add components to your app using the CLI.
-      </AlertDescription>
-    </Alert>
-  )
-}`
-
-const destructiveCode = `import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-
-function AlertDestructive() {
-  return (
-    <Alert variant="destructive">
-      <CircleAlertIcon />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>
-        Your session has expired. Please log in again.
-      </AlertDescription>
-    </Alert>
-  )
-}`
+const destructiveCode = `<Alert variant="destructive">
+  <CircleAlertIcon />
+  <AlertTitle>Error</AlertTitle>
+  <AlertDescription>
+    Your session has expired. Please log in again.
+  </AlertDescription>
+</Alert>`
 
 const alertProps: PropDefinition[] = [
   {
@@ -95,7 +89,7 @@ const alertProps: PropDefinition[] = [
   },
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'The content of the alert (typically an SVG icon, AlertTitle, and AlertDescription).',
   },
 ]
@@ -103,7 +97,7 @@ const alertProps: PropDefinition[] = [
 const alertTitleProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'The title text of the alert.',
   },
 ]
@@ -111,12 +105,12 @@ const alertTitleProps: PropDefinition[] = [
 const alertDescriptionProps: PropDefinition[] = [
   {
     name: 'children',
-    type: 'ReactNode',
+    type: 'Child',
     description: 'The description text of the alert.',
   },
 ]
 
-export function AlertPage() {
+export function AlertRefPage() {
   return (
     <DocPage slug="alert" toc={tocItems}>
       <div className="space-y-12">
@@ -126,28 +120,33 @@ export function AlertPage() {
           {...getNavLinks('alert')}
         />
 
-        {/* Preview */}
-        <Example title="" code={previewCode}>
-          <div className="w-full">
-            <Alert>
-              <TerminalIcon />
-              <AlertTitle>Heads up!</AlertTitle>
-              <AlertDescription>
-                You can add components to your app using the CLI.
-              </AlertDescription>
-            </Alert>
-          </div>
-        </Example>
+        {/* Props Playground */}
+        <AlertPlayground />
 
         {/* Installation */}
         <Section id="installation" title="Installation">
           <PackageManagerTabs command="barefoot add alert" />
         </Section>
 
+        {/* Usage */}
+        <Section id="usage" title="Usage">
+          <Example title="" code={usageCode}>
+            <div className="w-full">
+              <Alert>
+                <TerminalIcon />
+                <AlertTitle>Heads up!</AlertTitle>
+                <AlertDescription>
+                  You can add components to your app using the CLI.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </Example>
+        </Section>
+
         {/* Examples */}
         <Section id="examples" title="Examples">
           <div className="space-y-8">
-            <Example title="Default" code={defaultCode}>
+            <Example title="Default" code={defaultCode} showLineNumbers={false}>
               <div className="w-full">
                 <Alert>
                   <TerminalIcon />
@@ -159,7 +158,7 @@ export function AlertPage() {
               </div>
             </Example>
 
-            <Example title="Destructive" code={destructiveCode}>
+            <Example title="Destructive" code={destructiveCode} showLineNumbers={false}>
               <div className="w-full">
                 <Alert variant="destructive">
                   <CircleAlertIcon />

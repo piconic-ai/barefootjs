@@ -10,7 +10,7 @@ import { renderer } from './renderer'
 
 // Component pages
 import { AspectRatioRefPage } from './pages/components/aspect-ratio'
-import { AlertPage } from './pages/alert'
+import { AlertRefPage } from './pages/components/alert'
 import { AlertDialogRefPage } from './pages/components/alert-dialog'
 import { BadgeRefPage } from './pages/components/badge'
 import { ButtonRefPage } from './pages/components/button'
@@ -104,7 +104,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Accordion</h3>
               <p className="text-xs text-muted-foreground">Vertically collapsing content sections</p>
             </a>
-            <a href="/docs/components/alert" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/alert" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Alert</h3>
               <p className="text-xs text-muted-foreground">Callout for important content</p>
             </a>
@@ -355,9 +355,9 @@ export function createApp() {
     return c.render(<AspectRatioRefPage />)
   })
 
-  // Alert documentation
-  app.get('/docs/components/alert', (c) => {
-    return c.render(<AlertPage />)
+  // Alert reference page
+  app.get('/components/alert', (c) => {
+    return c.render(<AlertRefPage />)
   })
 
   // Alert Dialog reference page
