@@ -53,7 +53,7 @@ import { PopoverPage } from './pages/popover'
 import { ProgressPage } from './pages/progress'
 import { DrawerRefPage } from './pages/components/drawer'
 import { SheetPage } from './pages/sheet'
-import { SidebarPage } from './pages/sidebar'
+import { SidebarRefPage } from './pages/components/sidebar'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarPage } from './pages/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -235,7 +235,7 @@ export function createApp() {
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Select</h3>
               <p className="text-xs text-muted-foreground">Dropdown selection control</p>
             </a>
-            <a href="/docs/components/sidebar" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
+            <a href="/components/sidebar" className="group flex flex-col rounded-xl border border-border hover:border-ring transition-colors no-underline p-6 space-y-2">
               <h3 className="text-sm font-medium text-foreground group-hover:text-foreground">Sidebar</h3>
               <p className="text-xs text-muted-foreground">Collapsible navigation panel</p>
             </a>
@@ -592,9 +592,9 @@ export function createApp() {
     return c.render(<SheetPage />)
   })
 
-  // Sidebar documentation
-  app.get('/docs/components/sidebar', (c) => {
-    return c.render(<SidebarPage />)
+  // Sidebar reference page (migrated from /docs/components/sidebar)
+  app.get('/components/sidebar', (c) => {
+    return c.render(<SidebarRefPage />)
   })
 
 

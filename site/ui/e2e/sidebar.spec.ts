@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Sidebar Documentation Page', () => {
+test.describe('Sidebar Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/docs/components/sidebar')
+    await page.goto('/components/sidebar')
   })
 
   test.describe('Basic Sidebar', () => {
