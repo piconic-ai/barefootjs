@@ -48,16 +48,19 @@ test.describe('DatePicker Reference Page', () => {
   })
 
   test.describe('Basic', () => {
+    const basicScope = '[bf-s^="DatePickerBasicDemo_"]'
+
     test('displays selected date text after selection', async ({ page }) => {
       // Initially shows "No date selected"
       await expect(page.locator('[data-testid="selected-date"]').first()).toContainText('No date selected')
 
-      // Open the second "Pick a date" picker (Basic demo, first one is Preview)
-      const triggers = page.locator('button:has-text("Pick a date")')
-      await triggers.nth(1).click()
+      // Open the Basic demo's "Pick a date" picker
+      const trigger = page.locator(`${basicScope} button:has-text("Pick a date")`)
+      await trigger.click()
 
       const popover = page.locator('[data-slot="popover-content"][data-state="open"]')
-      const dayButton = popover.locator('[data-slot="calendar"] button[data-current-month]:has-text("10")').first()
+      await expect(popover).toBeVisible()
+      const dayButton = popover.locator('button:has-text("15")').first()
       await dayButton.click()
 
       // Should now show the selected date (no longer "No date selected")

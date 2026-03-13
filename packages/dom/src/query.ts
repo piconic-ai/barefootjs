@@ -468,6 +468,10 @@ function $cSingle(scope: Element | null, id: string): Element | null {
     const parentScopeId = getScopeId(scope)
     const result = find(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
     if (result && parentScopeId) {
+      // When find() returns scope itself, this is a fragment root / inlined component
+      // where the child's scope IS the parent's scope element. Accept it as-is.
+      if (result === scope) return result
+
       const raw = result.getAttribute(BF_SCOPE) ?? ''
       const childScopeId = raw.startsWith(BF_CHILD_PREFIX) ? raw.slice(1) : raw
       const expectedSuffix = `${parentScopeId}_${cleanId}`
@@ -488,13 +492,16 @@ function $cSingle(scope: Element | null, id: string): Element | null {
  */
 function getScopeId(scope: Element | null): string | null {
   if (!scope) return null
-  // Check comment scope first
+  // Prefer bf-s attribute on the element itself — this is the actual scope ID
+  // used to construct child scope IDs (e.g., ParentScope_s0 → ParentScope_s0_s6).
+  // Comment scope IDs (from commentScopeRegistry) may differ from the element's
+  // bf-s when the component is inlined into its parent (fragment root).
+  const raw = scope.getAttribute(BF_SCOPE)
+  if (raw) return raw.startsWith(BF_CHILD_PREFIX) ? raw.slice(1) : raw
+  // Fall back to comment scope ID when element has no bf-s
   const commentInfo = commentScopeRegistry.get(scope)
   if (commentInfo) return commentInfo.scopeId
-  // Check bf-s attribute
-  const raw = scope.getAttribute(BF_SCOPE)
-  if (!raw) return null
-  return raw.startsWith(BF_CHILD_PREFIX) ? raw.slice(1) : raw
+  return null
 }
 
 /**
