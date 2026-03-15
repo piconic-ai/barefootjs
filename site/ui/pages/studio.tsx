@@ -402,108 +402,92 @@ const componentPatterns: Record<string, ComponentPattern> = {
   'Portal': { slug: 'portal', patterns: [{ title: 'Portal', render: () => <p className="text-xs italic text-muted-foreground">Renders children into a different part of the DOM tree.</p> }] },
 }
 
-// ─── Preset Data ────────────────────────────────────────────
+// ─── Style Preset Data ───────────────────────────────────────
+//
+// Presets define the structural skeleton: radius, shadow depth, and font.
+// Colors are a separate concern — users customize them independently.
 
-type TokenColors = Record<string, { light: string; dark: string }>
-
-interface Preset {
+interface StylePreset {
   name: string
-  colors: TokenColors
+  description: string
   radius: string
+  shadow: {
+    sm: string
+    default: string
+    md: string
+    lg: string
+  }
+  font: string
 }
 
-const presets: Preset[] = [
+const defaultColors = {
+  background:              { light: 'oklch(1 0 0)',               dark: 'oklch(0.145 0 0)' },
+  foreground:              { light: 'oklch(0.145 0 0)',           dark: 'oklch(0.985 0 0)' },
+  card:                    { light: 'oklch(1 0 0)',               dark: 'oklch(0.205 0 0)' },
+  'card-foreground':       { light: 'oklch(0.145 0 0)',           dark: 'oklch(0.985 0 0)' },
+  primary:                 { light: 'oklch(0.205 0 0)',           dark: 'oklch(0.35 0 0)' },
+  'primary-foreground':    { light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
+  secondary:               { light: 'oklch(0.97 0 0)',            dark: 'oklch(0.269 0 0)' },
+  'secondary-foreground':  { light: 'oklch(0.205 0 0)',           dark: 'oklch(0.985 0 0)' },
+  muted:                   { light: 'oklch(0.97 0 0)',            dark: 'oklch(0.269 0 0)' },
+  'muted-foreground':      { light: 'oklch(0.556 0 0)',           dark: 'oklch(0.708 0 0)' },
+  accent:                  { light: 'oklch(0.97 0 0)',            dark: 'oklch(0.269 0 0)' },
+  'accent-foreground':     { light: 'oklch(0.205 0 0)',           dark: 'oklch(0.985 0 0)' },
+  destructive:             { light: 'oklch(0.577 0.245 27.325)',  dark: 'oklch(0.704 0.191 22.216)' },
+  'destructive-foreground':{ light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
+  border:                  { light: 'oklch(0.922 0 0)',           dark: 'oklch(1 0 0 / 10%)' },
+  input:                   { light: 'oklch(0.922 0 0)',           dark: 'oklch(1 0 0 / 15%)' },
+  ring:                    { light: 'oklch(0.708 0 0)',           dark: 'oklch(0.556 0 0)' },
+}
+
+const stylePresets: StylePreset[] = [
   {
     name: 'Default',
-    colors: {
-      background:              { light: 'oklch(1 0 0)',               dark: 'oklch(0.145 0 0)' },
-      foreground:              { light: 'oklch(0.145 0 0)',           dark: 'oklch(0.985 0 0)' },
-      card:                    { light: 'oklch(1 0 0)',               dark: 'oklch(0.205 0 0)' },
-      'card-foreground':       { light: 'oklch(0.145 0 0)',           dark: 'oklch(0.985 0 0)' },
-      primary:                 { light: 'oklch(0.205 0 0)',           dark: 'oklch(0.35 0 0)' },
-      'primary-foreground':    { light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
-      secondary:               { light: 'oklch(0.97 0 0)',            dark: 'oklch(0.269 0 0)' },
-      'secondary-foreground':  { light: 'oklch(0.205 0 0)',           dark: 'oklch(0.985 0 0)' },
-      muted:                   { light: 'oklch(0.97 0 0)',            dark: 'oklch(0.269 0 0)' },
-      'muted-foreground':      { light: 'oklch(0.556 0 0)',           dark: 'oklch(0.708 0 0)' },
-      accent:                  { light: 'oklch(0.97 0 0)',            dark: 'oklch(0.269 0 0)' },
-      'accent-foreground':     { light: 'oklch(0.205 0 0)',           dark: 'oklch(0.985 0 0)' },
-      destructive:             { light: 'oklch(0.577 0.245 27.325)',  dark: 'oklch(0.704 0.191 22.216)' },
-      'destructive-foreground':{ light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
-      border:                  { light: 'oklch(0.922 0 0)',           dark: 'oklch(1 0 0 / 10%)' },
-      input:                   { light: 'oklch(0.922 0 0)',           dark: 'oklch(1 0 0 / 15%)' },
-      ring:                    { light: 'oklch(0.708 0 0)',           dark: 'oklch(0.556 0 0)' },
-    },
+    description: 'The classic shadcn/ui look. Clean and familiar.',
     radius: '0.625rem',
+    shadow: {
+      sm:      '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+      default: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+      md:      '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+      lg:      '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    },
+    font: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif',
   },
   {
-    name: 'Neutral',
-    colors: {
-      background:              { light: 'oklch(0.99 0.005 260)',      dark: 'oklch(0.155 0.01 260)' },
-      foreground:              { light: 'oklch(0.17 0.015 260)',      dark: 'oklch(0.98 0.005 260)' },
-      card:                    { light: 'oklch(0.99 0.005 260)',      dark: 'oklch(0.21 0.012 260)' },
-      'card-foreground':       { light: 'oklch(0.17 0.015 260)',      dark: 'oklch(0.98 0.005 260)' },
-      primary:                 { light: 'oklch(0.35 0.04 260)',       dark: 'oklch(0.65 0.06 260)' },
-      'primary-foreground':    { light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
-      secondary:               { light: 'oklch(0.95 0.008 260)',      dark: 'oklch(0.28 0.015 260)' },
-      'secondary-foreground':  { light: 'oklch(0.25 0.02 260)',       dark: 'oklch(0.95 0.005 260)' },
-      muted:                   { light: 'oklch(0.95 0.008 260)',      dark: 'oklch(0.28 0.015 260)' },
-      'muted-foreground':      { light: 'oklch(0.55 0.02 260)',       dark: 'oklch(0.7 0.02 260)' },
-      accent:                  { light: 'oklch(0.94 0.01 260)',       dark: 'oklch(0.3 0.02 260)' },
-      'accent-foreground':     { light: 'oklch(0.22 0.02 260)',       dark: 'oklch(0.95 0.005 260)' },
-      destructive:             { light: 'oklch(0.577 0.245 27.325)',  dark: 'oklch(0.704 0.191 22.216)' },
-      'destructive-foreground':{ light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
-      border:                  { light: 'oklch(0.91 0.01 260)',       dark: 'oklch(1 0 0 / 12%)' },
-      input:                   { light: 'oklch(0.91 0.01 260)',       dark: 'oklch(1 0 0 / 15%)' },
-      ring:                    { light: 'oklch(0.55 0.04 260)',       dark: 'oklch(0.65 0.06 260)' },
+    name: 'Sharp',
+    description: 'Boxy and sharp. Pairs well with mono fonts.',
+    radius: '0',
+    shadow: {
+      sm:      '0 1px 2px 0 rgb(0 0 0 / 0.04)',
+      default: '0 1px 2px 0 rgb(0 0 0 / 0.06)',
+      md:      '0 2px 4px -1px rgb(0 0 0 / 0.08)',
+      lg:      '0 4px 8px -2px rgb(0 0 0 / 0.1)',
     },
-    radius: '0.5rem',
+    font: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
   },
   {
-    name: 'Warm',
-    colors: {
-      background:              { light: 'oklch(0.99 0.008 70)',       dark: 'oklch(0.16 0.015 60)' },
-      foreground:              { light: 'oklch(0.18 0.02 60)',        dark: 'oklch(0.97 0.008 70)' },
-      card:                    { light: 'oklch(0.99 0.008 70)',       dark: 'oklch(0.22 0.018 60)' },
-      'card-foreground':       { light: 'oklch(0.18 0.02 60)',        dark: 'oklch(0.97 0.008 70)' },
-      primary:                 { light: 'oklch(0.55 0.15 55)',        dark: 'oklch(0.7 0.14 60)' },
-      'primary-foreground':    { light: 'oklch(0.985 0 0)',           dark: 'oklch(0.15 0.02 60)' },
-      secondary:               { light: 'oklch(0.95 0.012 70)',       dark: 'oklch(0.29 0.02 60)' },
-      'secondary-foreground':  { light: 'oklch(0.25 0.025 60)',       dark: 'oklch(0.95 0.008 70)' },
-      muted:                   { light: 'oklch(0.95 0.012 70)',       dark: 'oklch(0.29 0.02 60)' },
-      'muted-foreground':      { light: 'oklch(0.55 0.03 60)',        dark: 'oklch(0.7 0.03 70)' },
-      accent:                  { light: 'oklch(0.94 0.02 75)',        dark: 'oklch(0.32 0.03 60)' },
-      'accent-foreground':     { light: 'oklch(0.22 0.025 60)',       dark: 'oklch(0.95 0.008 70)' },
-      destructive:             { light: 'oklch(0.577 0.245 27.325)',  dark: 'oklch(0.704 0.191 22.216)' },
-      'destructive-foreground':{ light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
-      border:                  { light: 'oklch(0.91 0.015 70)',       dark: 'oklch(1 0 0 / 12%)' },
-      input:                   { light: 'oklch(0.91 0.015 70)',       dark: 'oklch(1 0 0 / 15%)' },
-      ring:                    { light: 'oklch(0.55 0.15 55)',        dark: 'oklch(0.7 0.14 60)' },
+    name: 'Soft',
+    description: 'Soft and rounded, with generous curves.',
+    radius: '1rem',
+    shadow: {
+      sm:      '0 1px 3px 0 rgb(0 0 0 / 0.06)',
+      default: '0 2px 6px 0 rgb(0 0 0 / 0.08), 0 1px 3px -1px rgb(0 0 0 / 0.06)',
+      md:      '0 6px 12px -2px rgb(0 0 0 / 0.08), 0 3px 6px -3px rgb(0 0 0 / 0.06)',
+      lg:      '0 12px 24px -4px rgb(0 0 0 / 0.08), 0 6px 10px -5px rgb(0 0 0 / 0.06)',
     },
-    radius: '0.75rem',
+    font: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif',
   },
   {
-    name: 'Ocean',
-    colors: {
-      background:              { light: 'oklch(0.99 0.006 240)',      dark: 'oklch(0.15 0.02 240)' },
-      foreground:              { light: 'oklch(0.16 0.025 240)',      dark: 'oklch(0.97 0.006 240)' },
-      card:                    { light: 'oklch(0.99 0.006 240)',      dark: 'oklch(0.21 0.022 240)' },
-      'card-foreground':       { light: 'oklch(0.16 0.025 240)',      dark: 'oklch(0.97 0.006 240)' },
-      primary:                 { light: 'oklch(0.5 0.18 240)',        dark: 'oklch(0.65 0.16 235)' },
-      'primary-foreground':    { light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
-      secondary:               { light: 'oklch(0.95 0.01 235)',       dark: 'oklch(0.28 0.025 240)' },
-      'secondary-foreground':  { light: 'oklch(0.23 0.03 240)',       dark: 'oklch(0.95 0.006 240)' },
-      muted:                   { light: 'oklch(0.95 0.01 235)',       dark: 'oklch(0.28 0.025 240)' },
-      'muted-foreground':      { light: 'oklch(0.55 0.03 240)',       dark: 'oklch(0.7 0.025 235)' },
-      accent:                  { light: 'oklch(0.93 0.015 230)',      dark: 'oklch(0.3 0.03 240)' },
-      'accent-foreground':     { light: 'oklch(0.2 0.03 240)',        dark: 'oklch(0.95 0.006 240)' },
-      destructive:             { light: 'oklch(0.577 0.245 27.325)',  dark: 'oklch(0.704 0.191 22.216)' },
-      'destructive-foreground':{ light: 'oklch(0.985 0 0)',           dark: 'oklch(0.985 0 0)' },
-      border:                  { light: 'oklch(0.91 0.012 235)',      dark: 'oklch(1 0 0 / 12%)' },
-      input:                   { light: 'oklch(0.91 0.012 235)',      dark: 'oklch(1 0 0 / 15%)' },
-      ring:                    { light: 'oklch(0.5 0.18 240)',        dark: 'oklch(0.65 0.16 235)' },
-    },
+    name: 'Flat',
+    description: 'Minimal elevation. Borders over shadows.',
     radius: '0.375rem',
+    shadow: {
+      sm:      'none',
+      default: 'none',
+      md:      'none',
+      lg:      '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    },
+    font: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif',
   },
 ]
 
@@ -594,28 +578,23 @@ function TokenPanel() {
       </div>
 
       <div className="p-3 space-y-3 max-h-[calc(100vh-16rem)] overflow-y-auto">
-        {/* Presets */}
+        {/* Style Presets */}
         <div className="space-y-1.5">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Preset</span>
-          <div className="grid grid-cols-2 gap-1.5">
-            {presets.map((preset, i) => (
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Style</span>
+          <div className="space-y-1">
+            {stylePresets.map((preset, i) => (
               <button
-                className={`px-2 py-1 text-[11px] rounded-md border transition-colors ${
+                className={`w-full text-left px-2 py-1.5 rounded-md border transition-colors ${
                   i === 0
-                    ? 'border-ring bg-accent text-accent-foreground font-medium'
+                    ? 'border-ring bg-accent text-accent-foreground'
                     : 'border-border text-muted-foreground hover:border-ring'
                 }`}
                 data-studio-preset={preset.name}
               >
-                {preset.name}
+                <div className="text-[11px] font-medium">{preset.name}</div>
+                <div className="text-[9px] opacity-70">{preset.description}</div>
               </button>
             ))}
-            <button
-              className="px-2 py-1 text-[11px] rounded-md border transition-colors border-border text-muted-foreground hover:border-ring hidden"
-              data-studio-preset="Custom"
-            >
-              Custom
-            </button>
           </div>
         </div>
 
@@ -1202,17 +1181,16 @@ const zoomScript = `
 
 // ─── Studio Script (Presets + Token Editing) ────────────────
 
-// Serialize preset data for the client script
-const presetsJson = JSON.stringify(
-  presets.map(p => ({ name: p.name, colors: p.colors, radius: p.radius }))
-)
+// Serialize data for the client script
+const stylePresetsJson = JSON.stringify(stylePresets)
+const defaultColorsJson = JSON.stringify(defaultColors)
 
 const studioScript = `
 (function() {
-  var presets = ${presetsJson};
-  var activePreset = 'Default';
+  var stylePresets = ${stylePresetsJson};
+  var defaultColors = ${defaultColorsJson};
+  var activeStyle = 'Default';
   var customTokens = {};
-  var customRadius = null;
 
   function isDark() {
     return document.documentElement.classList.contains('dark');
@@ -1233,68 +1211,64 @@ const studioScript = `
     return 'oklch(' + l.toFixed(3) + ' ' + c.toFixed(3) + ' ' + h + ')';
   }
 
-  // ── Get current token value (custom > preset > default) ──
+  // ── Get current color token value (custom > default) ──
   function getTokenValue(token, mode) {
     if (customTokens[token] && customTokens[token][mode]) {
       return customTokens[token][mode];
     }
-    var preset = presets.find(function(p) { return p.name === activePreset; });
-    if (preset && preset.colors[token]) {
-      return preset.colors[token][mode];
-    }
-    return presets[0].colors[token] ? presets[0].colors[token][mode] : 'oklch(0.5 0 0)';
+    return defaultColors[token] ? defaultColors[token][mode] : 'oklch(0.5 0 0)';
   }
 
-  // ── Update preset button styles ──
-  function updatePresetButtons() {
-    var hasCustom = Object.keys(customTokens).length > 0 || customRadius !== null;
-    var customBtn = document.querySelector('[data-studio-preset="Custom"]');
-    if (customBtn) {
-      if (hasCustom) customBtn.classList.remove('hidden');
-      else customBtn.classList.add('hidden');
-    }
-
+  // ── Update style preset button styles ──
+  function updateStyleButtons() {
     var buttons = document.querySelectorAll('[data-studio-preset]');
     buttons.forEach(function(btn) {
       var name = btn.getAttribute('data-studio-preset');
-      var isActive = hasCustom ? name === 'Custom' : name === activePreset;
-      if (isActive) {
+      if (name === activeStyle) {
         btn.className = btn.className
           .replace('border-border text-muted-foreground hover:border-ring', '')
-          .replace('border-ring bg-accent text-accent-foreground font-medium', '')
-          .replace(' hidden', '')
-          .trim() + ' border-ring bg-accent text-accent-foreground font-medium';
+          .replace('border-ring bg-accent text-accent-foreground', '')
+          .trim() + ' border-ring bg-accent text-accent-foreground';
       } else {
         btn.className = btn.className
-          .replace('border-ring bg-accent text-accent-foreground font-medium', '')
+          .replace('border-ring bg-accent text-accent-foreground', '')
           .replace('border-border text-muted-foreground hover:border-ring', '')
           .trim() + ' border-border text-muted-foreground hover:border-ring';
       }
     });
   }
 
-  // ── Apply preset ──
-  function applyPreset(name, animate) {
-    var preset = presets.find(function(p) { return p.name === name; });
+  // ── Apply style preset (radius + shadow + font) ──
+  function applyStyle(name) {
+    var preset = stylePresets.find(function(p) { return p.name === name; });
     if (!preset) return;
 
-    activePreset = name;
-    customTokens = {};
-    customRadius = null;
+    activeStyle = name;
     var root = document.documentElement;
-    var mode = getMode();
 
+    // Radius
     if (name === 'Default') {
-      var allTokens = Object.keys(presets[0].colors);
-      allTokens.forEach(function(token) {
-        root.style.removeProperty('--' + token);
-      });
       root.style.removeProperty('--radius');
     } else {
-      Object.keys(preset.colors).forEach(function(token) {
-        root.style.setProperty('--' + token, preset.colors[token][mode]);
-      });
       root.style.setProperty('--radius', preset.radius);
+    }
+
+    // Shadows
+    var shadowKeys = ['sm', 'default', 'md', 'lg'];
+    var shadowVars = ['--shadow-sm', '--shadow', '--shadow-md', '--shadow-lg'];
+    if (name === 'Default') {
+      shadowVars.forEach(function(v) { root.style.removeProperty(v); });
+    } else {
+      shadowKeys.forEach(function(key, i) {
+        root.style.setProperty(shadowVars[i], preset.shadow[key]);
+      });
+    }
+
+    // Font
+    if (name === 'Default') {
+      root.style.removeProperty('--font-sans');
+    } else {
+      root.style.setProperty('--font-sans', preset.font);
     }
 
     // Update radius label + slider
@@ -1303,32 +1277,15 @@ const studioScript = `
     var radiusSlider = document.querySelector('[data-studio-radius-slider]');
     if (radiusSlider) radiusSlider.value = parseFloat(preset.radius);
 
-    // Close all open editors and refresh their values
-    document.querySelectorAll('[data-studio-color-editor]').forEach(function(ed) {
-      ed.classList.add('hidden');
-    });
-
-    updatePresetButtons();
+    updateStyleButtons();
   }
 
-  // ── Re-apply overrides for current mode ──
+  // ── Re-apply color overrides for current mode (dark/light toggle) ──
   function reapplyForMode() {
     var root = document.documentElement;
     var mode = getMode();
 
-    // Re-apply preset colors
-    if (activePreset !== 'Default') {
-      var preset = presets.find(function(p) { return p.name === activePreset; });
-      if (preset) {
-        Object.keys(preset.colors).forEach(function(token) {
-          if (!customTokens[token]) {
-            root.style.setProperty('--' + token, preset.colors[token][mode]);
-          }
-        });
-      }
-    }
-
-    // Re-apply custom tokens for the new mode
+    // Re-apply custom color tokens for the new mode
     Object.keys(customTokens).forEach(function(token) {
       if (customTokens[token][mode]) {
         root.style.setProperty('--' + token, customTokens[token][mode]);
@@ -1407,11 +1364,10 @@ const studioScript = `
     } else if (slider.hasAttribute('data-studio-radius-slider')) {
       // Radius slider
       var val = parseFloat(slider.value);
-      customRadius = val + 'rem';
-      document.documentElement.style.setProperty('--radius', customRadius);
+      var radiusVal = val + 'rem';
+      document.documentElement.style.setProperty('--radius', radiusVal);
       var radiusLabel = document.querySelector('[data-studio-radius-label]');
-      if (radiusLabel) radiusLabel.textContent = customRadius;
-      updatePresetButtons();
+      if (radiusLabel) radiusLabel.textContent = radiusVal;
       return;
     } else {
       return;
@@ -1431,7 +1387,7 @@ const studioScript = `
     // Store in customTokens
     if (!customTokens[token]) {
       customTokens[token] = {};
-      // Seed the other mode with the preset value
+      // Seed the other mode with the default value
       var otherMode = mode === 'light' ? 'dark' : 'light';
       customTokens[token][otherMode] = getTokenValue(token, otherMode);
     }
@@ -1449,19 +1405,16 @@ const studioScript = `
     if (labelC) labelC.textContent = parsed.c.toFixed(3);
     if (labelH) labelH.textContent = Math.round(parsed.h);
     if (valueEl) valueEl.textContent = newVal;
-
-    updatePresetButtons();
   });
 
-  // ── Preset button click ──
+  // ── Style preset button click ──
   document.addEventListener('click', function(e) {
     var btn = e.target.closest('[data-studio-preset]');
     if (!btn) return;
     // Ignore clicks on color edit buttons inside the panel
     if (e.target.closest('[data-studio-color-edit]')) return;
     var name = btn.getAttribute('data-studio-preset');
-    if (name === 'Custom') return; // Custom is not clickable
-    applyPreset(name, true);
+    applyStyle(name);
   });
 
   // ── Dark mode toggle → re-apply ──
@@ -1477,7 +1430,7 @@ const studioScript = `
   // ── Initialize radius slider ──
   var radiusSlider = document.querySelector('[data-studio-radius-slider]');
   if (radiusSlider) {
-    radiusSlider.value = parseFloat(presets[0].radius);
+    radiusSlider.value = parseFloat(stylePresets[0].radius);
   }
 })();
 `
