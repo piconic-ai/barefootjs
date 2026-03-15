@@ -546,26 +546,55 @@ function ColorSwatch({ name }: { name: string }) {
         <div className="w-3.5 h-3.5 rounded-sm border border-border shrink-0" style={{ backgroundColor: `var(--${name})` }} data-studio-color-preview={name} />
         <span className="text-[11px] font-mono text-foreground">--{name}</span>
       </button>
-      {/* Inline OKLCH editor — hidden by default */}
+      {/* Inline color editor — hidden by default */}
       <div className="hidden pl-1 pr-0.5 pb-1.5 pt-1 space-y-1" data-studio-color-editor={name}>
         <div className="flex items-center gap-1.5 mb-1">
           <div className="w-5 h-5 rounded border border-border shrink-0" style={{ backgroundColor: `var(--${name})` }} data-studio-color-editor-preview={name} />
-          <span className="text-[10px] font-mono text-muted-foreground" data-studio-color-value={name} />
+          <input
+            type="text"
+            className="flex-1 text-[10px] font-mono text-muted-foreground bg-transparent border-b border-border focus:border-ring focus:outline-none px-0.5 py-0"
+            data-studio-color-text={name}
+            placeholder="#000000"
+          />
+          <button className="text-[8px] font-mono text-muted-foreground hover:text-foreground px-1 py-0.5 rounded border border-border transition-colors" data-studio-color-mode={name}>
+            RGB
+          </button>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[9px] text-muted-foreground w-5 shrink-0">L</span>
-          <input type="range" min="0" max="1" step="0.005" className="flex-1 h-1 accent-primary" data-studio-slider-l={name} />
-          <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-l={name} />
+        {/* OKLCH sliders — hidden by default */}
+        <div className="hidden" data-studio-sliders-oklch={name}>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground w-5 shrink-0">L</span>
+            <input type="range" min="0" max="1" step="0.005" className="flex-1 h-1 accent-primary" data-studio-slider-l={name} />
+            <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-l={name} />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground w-5 shrink-0">C</span>
+            <input type="range" min="0" max="0.4" step="0.005" className="flex-1 h-1 accent-primary" data-studio-slider-c={name} />
+            <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-c={name} />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground w-5 shrink-0">H</span>
+            <input type="range" min="0" max="360" step="1" className="flex-1 h-1 accent-primary" data-studio-slider-h={name} />
+            <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-h={name} />
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[9px] text-muted-foreground w-5 shrink-0">C</span>
-          <input type="range" min="0" max="0.4" step="0.005" className="flex-1 h-1 accent-primary" data-studio-slider-c={name} />
-          <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-c={name} />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[9px] text-muted-foreground w-5 shrink-0">H</span>
-          <input type="range" min="0" max="360" step="1" className="flex-1 h-1 accent-primary" data-studio-slider-h={name} />
-          <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-h={name} />
+        {/* RGB sliders */}
+        <div data-studio-sliders-rgb={name}>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground w-5 shrink-0">R</span>
+            <input type="range" min="0" max="255" step="1" className="flex-1 h-1 accent-primary" data-studio-slider-r={name} />
+            <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-r={name} />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground w-5 shrink-0">G</span>
+            <input type="range" min="0" max="255" step="1" className="flex-1 h-1 accent-primary" data-studio-slider-g={name} />
+            <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-g={name} />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-muted-foreground w-5 shrink-0">B</span>
+            <input type="range" min="0" max="255" step="1" className="flex-1 h-1 accent-primary" data-studio-slider-b={name} />
+            <span className="text-[9px] font-mono text-muted-foreground w-7 text-right" data-studio-label-b={name} />
+          </div>
         </div>
       </div>
     </div>
@@ -1216,7 +1245,8 @@ const studioScript = `
     return isDark() ? 'dark' : 'light';
   }
 
-  // ── Parse oklch string into {l, c, h} ──
+  // ── Color conversion utilities ──
+
   function parseOklch(str) {
     var m = str.match(/oklch\\(([\\d.]+)\\s+([\\d.]+)\\s+([\\d.]+)/);
     if (!m) return { l: 0.5, c: 0, h: 0 };
@@ -1226,6 +1256,75 @@ const studioScript = `
   function buildOklch(l, c, h) {
     return 'oklch(' + l.toFixed(3) + ' ' + c.toFixed(3) + ' ' + h + ')';
   }
+
+  // OKLCH → sRGB (approximate via OKLab intermediate)
+  function oklchToRgb(l, c, h) {
+    var hRad = h * Math.PI / 180;
+    var a = c * Math.cos(hRad);
+    var b = c * Math.sin(hRad);
+    // OKLab → linear sRGB
+    var l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+    var m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+    var s_ = l - 0.0894841775 * a - 1.2914855480 * b;
+    l_ = l_ * l_ * l_; m_ = m_ * m_ * m_; s_ = s_ * s_ * s_;
+    var r = +4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_;
+    var g = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_;
+    var bl = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_;
+    // Linear → sRGB gamma
+    function gamma(x) { return x >= 0.0031308 ? 1.055 * Math.pow(x, 1/2.4) - 0.055 : 12.92 * x; }
+    return {
+      r: Math.round(Math.max(0, Math.min(255, gamma(r) * 255))),
+      g: Math.round(Math.max(0, Math.min(255, gamma(g) * 255))),
+      b: Math.round(Math.max(0, Math.min(255, gamma(bl) * 255)))
+    };
+  }
+
+  // sRGB → OKLCH
+  function rgbToOklch(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    // sRGB gamma → linear
+    function linearize(x) { return x >= 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92; }
+    r = linearize(r); g = linearize(g); b = linearize(b);
+    // Linear sRGB → OKLab
+    var l_ = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    var m_ = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    var s_ = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    var L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_;
+    var A = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_;
+    var B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_;
+    var C = Math.sqrt(A * A + B * B);
+    var H = Math.atan2(B, A) * 180 / Math.PI;
+    if (H < 0) H += 360;
+    return { l: Math.max(0, Math.min(1, L)), c: Math.max(0, C), h: Math.round(H) };
+  }
+
+  // Parse hex (#rgb or #rrggbb) or rgb() string to {r, g, b}
+  function parseColorText(str) {
+    str = str.trim();
+    // Hex
+    var hex = str.match(/^#?([0-9a-f]{3,8})$/i);
+    if (hex) {
+      var h = hex[1];
+      if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+      if (h.length >= 6) {
+        return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+      }
+    }
+    // rgb(r, g, b)
+    var rgb = str.match(/rgb\\w?\\(\\s*(\\d+)[\\s,]+(\\d+)[\\s,]+(\\d+)/);
+    if (rgb) return { r: parseInt(rgb[1]), g: parseInt(rgb[2]), b: parseInt(rgb[3]) };
+    // oklch(l c h)
+    var ok = str.match(/oklch\\(([\\d.]+)\\s+([\\d.]+)\\s+([\\d.]+)/);
+    if (ok) return oklchToRgb(parseFloat(ok[1]), parseFloat(ok[2]), parseFloat(ok[3]));
+    return null;
+  }
+
+  function rgbToHex(r, g, b) {
+    return '#' + [r,g,b].map(function(v) { return ('0' + v.toString(16)).slice(-2); }).join('');
+  }
+
+  // Per-editor color mode tracking ('oklch' or 'rgb')
+  var editorModes = {};
 
   // ── Get current color token value (custom > default) ──
   function getTokenValue(token, mode) {
@@ -1335,13 +1434,13 @@ const studioScript = `
     var val = getTokenValue(token, mode);
     var parsed = parseOklch(val);
 
+    // OKLCH sliders
     var sliderL = document.querySelector('[data-studio-slider-l="' + token + '"]');
     var sliderC = document.querySelector('[data-studio-slider-c="' + token + '"]');
     var sliderH = document.querySelector('[data-studio-slider-h="' + token + '"]');
     var labelL = document.querySelector('[data-studio-label-l="' + token + '"]');
     var labelC = document.querySelector('[data-studio-label-c="' + token + '"]');
     var labelH = document.querySelector('[data-studio-label-h="' + token + '"]');
-    var valueEl = document.querySelector('[data-studio-color-value="' + token + '"]');
 
     if (sliderL) sliderL.value = parsed.l;
     if (sliderC) sliderC.value = parsed.c;
@@ -1349,7 +1448,33 @@ const studioScript = `
     if (labelL) labelL.textContent = parsed.l.toFixed(3);
     if (labelC) labelC.textContent = parsed.c.toFixed(3);
     if (labelH) labelH.textContent = Math.round(parsed.h);
-    if (valueEl) valueEl.textContent = val;
+
+    // RGB sliders
+    var rgb = oklchToRgb(parsed.l, parsed.c, parsed.h);
+    var sliderR = document.querySelector('[data-studio-slider-r="' + token + '"]');
+    var sliderG = document.querySelector('[data-studio-slider-g="' + token + '"]');
+    var sliderB = document.querySelector('[data-studio-slider-b="' + token + '"]');
+    var labelR = document.querySelector('[data-studio-label-r="' + token + '"]');
+    var labelG = document.querySelector('[data-studio-label-g="' + token + '"]');
+    var labelB = document.querySelector('[data-studio-label-b="' + token + '"]');
+
+    if (sliderR) sliderR.value = rgb.r;
+    if (sliderG) sliderG.value = rgb.g;
+    if (sliderB) sliderB.value = rgb.b;
+    if (labelR) labelR.textContent = rgb.r;
+    if (labelG) labelG.textContent = rgb.g;
+    if (labelB) labelB.textContent = rgb.b;
+
+    // Text input — show hex in RGB mode, oklch string otherwise
+    var textInput = document.querySelector('[data-studio-color-text="' + token + '"]');
+    if (textInput) {
+      var edMode = editorModes[token] || 'rgb';
+      textInput.value = edMode === 'rgb' ? rgbToHex(rgb.r, rgb.g, rgb.b) : val;
+    }
+
+    // Color previews
+    var previews = document.querySelectorAll('[data-studio-color-editor-preview="' + token + '"]');
+    previews.forEach(function(el) { el.style.backgroundColor = val; });
   }
 
   // ── Click on ColorSwatch → toggle editor ──
@@ -1398,6 +1523,15 @@ const studioScript = `
       var spacingLabel = document.querySelector('[data-studio-spacing-label]');
       if (spacingLabel) spacingLabel.textContent = spacingVal;
       return;
+    } else if (slider.hasAttribute('data-studio-slider-r')) {
+      token = slider.getAttribute('data-studio-slider-r');
+      component = 'r';
+    } else if (slider.hasAttribute('data-studio-slider-g')) {
+      token = slider.getAttribute('data-studio-slider-g');
+      component = 'g';
+    } else if (slider.hasAttribute('data-studio-slider-b')) {
+      token = slider.getAttribute('data-studio-slider-b');
+      component = 'b';
     } else if (slider.hasAttribute('data-studio-radius-slider')) {
       // Radius slider
       var val = parseFloat(slider.value);
@@ -1412,19 +1546,29 @@ const studioScript = `
 
     var mode = getMode();
     var currentVal = getTokenValue(token, mode);
-    var parsed = parseOklch(currentVal);
+    var newVal;
 
-    // Update the changed component
-    if (component === 'l') parsed.l = parseFloat(slider.value);
-    if (component === 'c') parsed.c = parseFloat(slider.value);
-    if (component === 'h') parsed.h = parseFloat(slider.value);
-
-    var newVal = buildOklch(parsed.l, parsed.c, parsed.h);
+    if (component === 'r' || component === 'g' || component === 'b') {
+      // RGB slider → convert current value to RGB, update one channel, convert back
+      var parsed = parseOklch(currentVal);
+      var rgb = oklchToRgb(parsed.l, parsed.c, parsed.h);
+      if (component === 'r') rgb.r = parseInt(slider.value);
+      if (component === 'g') rgb.g = parseInt(slider.value);
+      if (component === 'b') rgb.b = parseInt(slider.value);
+      var oklch = rgbToOklch(rgb.r, rgb.g, rgb.b);
+      newVal = buildOklch(oklch.l, oklch.c, oklch.h);
+    } else {
+      // OKLCH slider
+      var parsed = parseOklch(currentVal);
+      if (component === 'l') parsed.l = parseFloat(slider.value);
+      if (component === 'c') parsed.c = parseFloat(slider.value);
+      if (component === 'h') parsed.h = parseFloat(slider.value);
+      newVal = buildOklch(parsed.l, parsed.c, parsed.h);
+    }
 
     // Store in customTokens
     if (!customTokens[token]) {
       customTokens[token] = {};
-      // Seed the other mode with the default value
       var otherMode = mode === 'light' ? 'dark' : 'light';
       customTokens[token][otherMode] = getTokenValue(token, otherMode);
     }
@@ -1433,15 +1577,8 @@ const studioScript = `
     // Apply immediately
     document.documentElement.style.setProperty('--' + token, newVal);
 
-    // Update labels
-    var labelL = document.querySelector('[data-studio-label-l="' + token + '"]');
-    var labelC = document.querySelector('[data-studio-label-c="' + token + '"]');
-    var labelH = document.querySelector('[data-studio-label-h="' + token + '"]');
-    var valueEl = document.querySelector('[data-studio-color-value="' + token + '"]');
-    if (labelL) labelL.textContent = parsed.l.toFixed(3);
-    if (labelC) labelC.textContent = parsed.c.toFixed(3);
-    if (labelH) labelH.textContent = Math.round(parsed.h);
-    if (valueEl) valueEl.textContent = newVal;
+    // Update all sliders and labels for this token
+    updateEditorSliders(token);
   });
 
   // ── Style preset button click ──
@@ -1452,6 +1589,63 @@ const studioScript = `
     if (e.target.closest('[data-studio-color-edit]')) return;
     var name = btn.getAttribute('data-studio-preset');
     applyStyle(name);
+  });
+
+  // ── Mode toggle (OKLCH ↔ RGB) ──
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-studio-color-mode]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var token = btn.getAttribute('data-studio-color-mode');
+    var current = editorModes[token] || 'rgb';
+    var next = current === 'oklch' ? 'rgb' : 'oklch';
+    editorModes[token] = next;
+
+    // Update button label
+    btn.textContent = next.toUpperCase();
+
+    // Toggle slider visibility
+    var oklchGroup = document.querySelector('[data-studio-sliders-oklch="' + token + '"]');
+    var rgbGroup = document.querySelector('[data-studio-sliders-rgb="' + token + '"]');
+    if (oklchGroup && rgbGroup) {
+      if (next === 'rgb') {
+        oklchGroup.classList.add('hidden');
+        rgbGroup.classList.remove('hidden');
+      } else {
+        oklchGroup.classList.remove('hidden');
+        rgbGroup.classList.add('hidden');
+      }
+    }
+
+    // Update text input format
+    updateEditorSliders(token);
+  });
+
+  // ── Text input → parse and apply color ──
+  document.addEventListener('change', function(e) {
+    var input = e.target.closest('[data-studio-color-text]');
+    if (!input) return;
+    var token = input.getAttribute('data-studio-color-text');
+    var text = input.value.trim();
+    if (!text) return;
+
+    var rgb = parseColorText(text);
+    if (!rgb) return; // Invalid input — ignore
+
+    var oklch = rgbToOklch(rgb.r, rgb.g, rgb.b);
+    var newVal = buildOklch(oklch.l, oklch.c, oklch.h);
+
+    var mode = getMode();
+    if (!customTokens[token]) {
+      customTokens[token] = {};
+      var otherMode = mode === 'light' ? 'dark' : 'light';
+      customTokens[token][otherMode] = getTokenValue(token, otherMode);
+    }
+    customTokens[token][mode] = newVal;
+
+    document.documentElement.style.setProperty('--' + token, newVal);
+    updateEditorSliders(token);
   });
 
   // ── Dark mode toggle → re-apply ──
