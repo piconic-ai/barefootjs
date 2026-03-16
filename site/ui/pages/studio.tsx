@@ -722,7 +722,7 @@ function PreviewItem({ name, children }: { name: string; children: any }) {
         {name}
       </button>
       {/* Preview */}
-      <div className="flex items-center justify-center min-h-8">
+      <div className="flex items-center justify-center min-h-8 min-w-0">
         {children}
       </div>
     </div>
@@ -786,7 +786,7 @@ function CanvasContent() {
       {/* Input & Form Controls */}
       <GroupIsland title="Input & Form Controls">
         <PreviewItem name="Button">
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             <Button size="sm">Primary</Button>
             <Button variant="outline" size="sm">Outline</Button>
             <Button variant="secondary" size="sm">Secondary</Button>
