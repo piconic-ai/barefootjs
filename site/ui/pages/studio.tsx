@@ -26,6 +26,7 @@ import { Progress } from '@/components/ui/progress'
 import { Slider } from '@/components/ui/slider'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
+import { Combobox, ComboboxTrigger, ComboboxValue, ComboboxContent, ComboboxInput, ComboboxEmpty, ComboboxItem } from '@/components/ui/combobox'
 
 // ─── Component Pattern Data ─────────────────────────────────
 
@@ -374,7 +375,7 @@ const componentPatterns: Record<string, ComponentPattern> = {
   'Radio Group': { slug: 'radio-group', patterns: [{ title: 'Radio Group', render: () => <p className="text-xs italic text-muted-foreground">A set of checkable buttons where only one can be checked at a time.</p> }] },
   'Calendar': { slug: 'calendar', patterns: [{ title: 'Calendar', render: () => <p className="text-xs italic text-muted-foreground">A date field component with calendar popup.</p> }] },
   'Date Picker': { slug: 'date-picker', patterns: [{ title: 'Date Picker', render: () => <p className="text-xs italic text-muted-foreground">A date picker with range and preset support.</p> }] },
-  'Combobox': { slug: 'combobox', patterns: [{ title: 'Combobox', render: () => <p className="text-xs italic text-muted-foreground">Autocomplete input with dropdown suggestions.</p> }] },
+  'Combobox': { slug: 'combobox', patterns: [{ title: 'Combobox', render: () => <p className="text-xs italic text-muted-foreground">Autocomplete input with searchable dropdown. Click the preview to try it.</p> }] },
   'Input OTP': { slug: 'input-otp', patterns: [{ title: 'Input OTP', render: () => <p className="text-xs italic text-muted-foreground">One-time password input with auto-advance.</p> }] },
   'Toggle Group': { slug: 'toggle-group', patterns: [{ title: 'Toggle Group', render: () => <p className="text-xs italic text-muted-foreground">A group of toggle buttons supporting single or multiple selection.</p> }] },
   'Table': { slug: 'table', patterns: [{ title: 'Table', render: () => <p className="text-xs italic text-muted-foreground">Responsive table with sorting and row selection.</p> }] },
@@ -860,9 +861,18 @@ function CanvasContent() {
         </PreviewItem>
 
         <PreviewItem name="Combobox">
-          <div className="w-full rounded-md border border-input bg-background px-2 py-1 text-[11px] text-muted-foreground">
-            Search...
-          </div>
+          <Combobox>
+            <ComboboxTrigger className="h-7 text-[11px] w-full">
+              <ComboboxValue placeholder="Select..." />
+            </ComboboxTrigger>
+            <ComboboxContent>
+              <ComboboxInput placeholder="Search..." />
+              <ComboboxEmpty>No results.</ComboboxEmpty>
+              <ComboboxItem value="react">React</ComboboxItem>
+              <ComboboxItem value="vue">Vue</ComboboxItem>
+              <ComboboxItem value="svelte">Svelte</ComboboxItem>
+            </ComboboxContent>
+          </Combobox>
         </PreviewItem>
 
         <PreviewItem name="Input OTP">
