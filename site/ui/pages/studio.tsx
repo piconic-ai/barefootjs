@@ -678,6 +678,13 @@ function TokenPanel() {
           <div className="text-[11px] font-mono text-muted-foreground">system-ui, sans-serif</div>
         </div>
       </div>
+
+      {/* Reset — bottom, separated by border */}
+      <div className="hidden border-t border-border px-3 py-2" data-studio-reset-container>
+        <button className="w-full text-[10px] text-muted-foreground hover:text-destructive transition-colors text-center" data-studio-reset>
+          Reset all customizations
+        </button>
+      </div>
     </div>
   )
 }
@@ -1236,10 +1243,56 @@ const defaultColorsJson = JSON.stringify(defaultColors)
 
 const studioScript = `
 (function() {
+  var STORAGE_KEY = 'barefootjs-studio-tokens';
   var stylePresets = ${stylePresetsJson};
   var defaultColors = ${defaultColorsJson};
   var activeStyle = 'Default';
   var customTokens = {};
+
+  // ── localStorage persistence ──
+  // Track custom spacing/radius overrides (null = use preset value)
+  var customSpacing = null;
+  var customRadius = null;
+
+  function saveToStorage() {
+    try {
+      var data = {
+        style: activeStyle,
+        tokens: customTokens,
+        spacing: customSpacing,
+        radius: customRadius
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch(e) {}
+    updateResetButton();
+  }
+
+  function loadFromStorage() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      if (data.tokens) customTokens = data.tokens;
+      if (data.style) activeStyle = data.style;
+      if (data.spacing) customSpacing = data.spacing;
+      if (data.radius) customRadius = data.radius;
+    } catch(e) {}
+  }
+
+  function hasCustomizations() {
+    return Object.keys(customTokens).length > 0 || activeStyle !== 'Default'
+      || customSpacing !== null || customRadius !== null;
+  }
+
+  function updateResetButton() {
+    var container = document.querySelector('[data-studio-reset-container]');
+    if (!container) return;
+    if (hasCustomizations()) {
+      container.classList.remove('hidden');
+    } else {
+      container.classList.add('hidden');
+    }
+  }
 
   function isDark() {
     return document.documentElement.classList.contains('dark');
@@ -1360,6 +1413,8 @@ const studioScript = `
     if (!preset) return;
 
     activeStyle = name;
+    customSpacing = null;
+    customRadius = null;
     var root = document.documentElement;
 
     // Spacing
@@ -1406,7 +1461,11 @@ const studioScript = `
     var radiusSlider = document.querySelector('[data-studio-radius-slider]');
     if (radiusSlider) radiusSlider.value = parseFloat(preset.radius);
 
+    // Re-apply custom color tokens (preserve across style changes)
+    reapplyForMode();
+
     updateStyleButtons();
+    saveToStorage();
   }
 
   // ── Re-apply color overrides for current mode (dark/light toggle) ──
@@ -1523,6 +1582,8 @@ const studioScript = `
       document.documentElement.style.setProperty('--spacing', spacingVal);
       var spacingLabel = document.querySelector('[data-studio-spacing-label]');
       if (spacingLabel) spacingLabel.textContent = spacingVal;
+      customSpacing = spacingVal;
+      saveToStorage();
       return;
     } else if (slider.hasAttribute('data-studio-slider-r')) {
       token = slider.getAttribute('data-studio-slider-r');
@@ -1540,6 +1601,8 @@ const studioScript = `
       document.documentElement.style.setProperty('--radius', radiusVal);
       var radiusLabel = document.querySelector('[data-studio-radius-label]');
       if (radiusLabel) radiusLabel.textContent = radiusVal;
+      customRadius = radiusVal;
+      saveToStorage();
       return;
     } else {
       return;
@@ -1580,6 +1643,7 @@ const studioScript = `
 
     // Update all sliders and labels for this token
     updateEditorSliders(token);
+    saveToStorage();
   });
 
   // ── Style dropdown open/close ──
@@ -1666,6 +1730,50 @@ const studioScript = `
 
     document.documentElement.style.setProperty('--' + token, newVal);
     updateEditorSliders(token);
+    saveToStorage();
+  });
+
+  // ── Reset button ──
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-studio-reset]');
+    if (!btn) return;
+    e.preventDefault();
+
+    // Build description of what will be reset
+    var parts = [];
+    if (Object.keys(customTokens).length > 0) {
+      parts.push(Object.keys(customTokens).length + ' color token(s)');
+    }
+    if (customSpacing !== null) parts.push('spacing');
+    if (customRadius !== null) parts.push('radius');
+    if (activeStyle !== 'Default') parts.push('style preset');
+
+    var msg = parts.length > 0
+      ? parts.join(', ') + ' will be reset. Continue?'
+      : 'Reset all customizations?';
+
+    if (!confirm(msg)) return;
+
+    // Clear all customizations
+    customTokens = {};
+    customSpacing = null;
+    customRadius = null;
+
+    // Remove all inline style overrides for color tokens
+    Object.keys(defaultColors).forEach(function(token) {
+      document.documentElement.style.removeProperty('--' + token);
+    });
+
+    // Close all open editors
+    document.querySelectorAll('[data-studio-color-editor]').forEach(function(ed) {
+      ed.classList.add('hidden');
+    });
+
+    // Apply Default style (also removes spacing/radius/shadow/font overrides)
+    applyStyle('Default');
+
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+    updateResetButton();
   });
 
   // ── Dark mode toggle → re-apply ──
@@ -1678,15 +1786,45 @@ const studioScript = `
   });
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
-  // ── Initialize sliders ──
-  var spacingSlider = document.querySelector('[data-studio-spacing-slider]');
-  if (spacingSlider) {
-    spacingSlider.value = parseFloat(stylePresets[0].spacing);
+  // ── Initialize: restore from localStorage ──
+  loadFromStorage();
+
+  if (activeStyle !== 'Default') {
+    applyStyle(activeStyle);
   }
-  var radiusSlider = document.querySelector('[data-studio-radius-slider]');
-  if (radiusSlider) {
-    radiusSlider.value = parseFloat(stylePresets[0].radius);
+
+  // Apply custom spacing/radius overrides (on top of preset)
+  if (customSpacing !== null) {
+    document.documentElement.style.setProperty('--spacing', customSpacing);
+    var spacingLabel = document.querySelector('[data-studio-spacing-label]');
+    if (spacingLabel) spacingLabel.textContent = customSpacing;
+    var spacingSlider = document.querySelector('[data-studio-spacing-slider]');
+    if (spacingSlider) spacingSlider.value = parseFloat(customSpacing);
+  } else {
+    var spacingSlider = document.querySelector('[data-studio-spacing-slider]');
+    if (spacingSlider) {
+      var preset = stylePresets.find(function(p) { return p.name === activeStyle; }) || stylePresets[0];
+      spacingSlider.value = parseFloat(preset.spacing);
+    }
   }
+
+  if (customRadius !== null) {
+    document.documentElement.style.setProperty('--radius', customRadius);
+    var radiusLabel = document.querySelector('[data-studio-radius-label]');
+    if (radiusLabel) radiusLabel.textContent = customRadius;
+    var radiusSlider = document.querySelector('[data-studio-radius-slider]');
+    if (radiusSlider) radiusSlider.value = parseFloat(customRadius);
+  } else {
+    var radiusSlider = document.querySelector('[data-studio-radius-slider]');
+    if (radiusSlider) {
+      var preset = stylePresets.find(function(p) { return p.name === activeStyle; }) || stylePresets[0];
+      radiusSlider.value = parseFloat(preset.radius);
+    }
+  }
+
+  // Apply saved color tokens
+  reapplyForMode();
+  updateResetButton();
 })();
 `
 
