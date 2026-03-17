@@ -29,6 +29,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { Combobox, ComboboxTrigger, ComboboxValue, ComboboxContent, ComboboxInput, ComboboxEmpty, ComboboxItem } from '@/components/ui/combobox'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Calendar } from '@/components/ui/calendar'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 // ─── Component Pattern Data ─────────────────────────────────
 
@@ -833,16 +834,16 @@ function CanvasContent() {
         </PreviewItem>
 
         <PreviewItem name="Radio Group">
-          <div className="space-y-1">
+          <RadioGroup defaultValue="a" className="gap-1.5">
             <div className="flex items-center gap-1.5">
-              <div className="h-3 w-3 rounded-full border-2 border-primary flex items-center justify-center"><div className="h-1 w-1 rounded-full bg-primary" /></div>
-              <span className="text-[11px] text-foreground">Option A</span>
+              <RadioGroupItem value="a" />
+              <Label className="text-[11px]">Option A</Label>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="h-3 w-3 rounded-full border-2 border-input" />
-              <span className="text-[11px] text-foreground">Option B</span>
+              <RadioGroupItem value="b" />
+              <Label className="text-[11px]">Option B</Label>
             </div>
-          </div>
+          </RadioGroup>
         </PreviewItem>
 
         <PreviewItem name="Slider">
