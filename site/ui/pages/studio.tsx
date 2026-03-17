@@ -31,6 +31,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Calendar } from '@/components/ui/calendar'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { DatePicker } from '@/components/ui/date-picker'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 // ─── Component Pattern Data ─────────────────────────────────
 
@@ -896,11 +897,11 @@ function CanvasContent() {
         </PreviewItem>
 
         <PreviewItem name="Toggle Group">
-          <div className="flex">
-            <button className="rounded-l-md border border-input bg-muted px-2 py-1 text-[11px]">B</button>
-            <button className="border-y border-input px-2 py-1 text-[11px]">I</button>
-            <button className="rounded-r-md border border-input px-2 py-1 text-[11px]">U</button>
-          </div>
+          <ToggleGroup type="multiple" variant="outline" size="sm" defaultValue={["bold"]}>
+            <ToggleGroupItem value="bold" className="h-7 px-2 text-[11px]">B</ToggleGroupItem>
+            <ToggleGroupItem value="italic" className="h-7 px-2 text-[11px]">I</ToggleGroupItem>
+            <ToggleGroupItem value="underline" className="h-7 px-2 text-[11px]">U</ToggleGroupItem>
+          </ToggleGroup>
         </PreviewItem>
       </GroupIsland>
 
