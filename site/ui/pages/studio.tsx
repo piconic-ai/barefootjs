@@ -27,6 +27,7 @@ import { Slider } from '@/components/ui/slider'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import { Combobox, ComboboxTrigger, ComboboxValue, ComboboxContent, ComboboxInput, ComboboxEmpty, ComboboxItem } from '@/components/ui/combobox'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
 // ─── Component Pattern Data ─────────────────────────────────
 
@@ -818,10 +819,16 @@ function CanvasContent() {
         </PreviewItem>
 
         <PreviewItem name="Select">
-          <div className="w-full rounded-md border border-input bg-background px-2 py-1 text-[11px] text-muted-foreground flex items-center justify-between">
-            <span>Select...</span>
-            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
-          </div>
+          <Select>
+            <SelectTrigger className="h-7 text-[11px] w-full">
+              <SelectValue placeholder="Select..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="light">Light</SelectItem>
+              <SelectItem value="dark">Dark</SelectItem>
+              <SelectItem value="system">System</SelectItem>
+            </SelectContent>
+          </Select>
         </PreviewItem>
 
         <PreviewItem name="Radio Group">

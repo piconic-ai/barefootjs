@@ -104,13 +104,19 @@ interface SelectProps extends HTMLBaseAttributes {
 function Select(props: SelectProps) {
   // Open state is always internal (like DropdownMenu)
   const [open, setOpen] = createSignal(false)
+  // Internal state for uncontrolled mode (when value prop is not provided)
+  const [internalValue, setInternalValue] = createSignal(props.value ?? '')
+  const isControlled = props.value !== undefined
 
   return (
     <SelectContext.Provider value={{
       open,
       onOpenChange: (v) => { setOpen(v); props.onOpenChange?.(v) },
-      value: () => props.value ?? '',
-      onValueChange: props.onValueChange ?? (() => {}),
+      value: () => isControlled ? (props.value ?? '') : internalValue(),
+      onValueChange: (v: string) => {
+        if (!isControlled) setInternalValue(v)
+        if (props.onValueChange) props.onValueChange(v)
+      },
       disabled: () => props.disabled ?? false,
     }}>
       <div data-slot="select" id={props.id} className={`relative inline-block ${props.className ?? ''}`}>
