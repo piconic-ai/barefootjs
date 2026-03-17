@@ -964,7 +964,7 @@ function CanvasContent() {
         </PreviewItem>
 
         <PreviewItem name="Aspect Ratio">
-          <div className="w-14 h-8 rounded bg-muted flex items-center justify-center text-[10px] text-muted-foreground">16:9</div>
+          <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center text-[11px] text-muted-foreground">16:9</div>
         </PreviewItem>
 
         <PreviewItem name="Data Table">
