@@ -933,9 +933,10 @@ function CanvasContent() {
         </PreviewItem>
 
         <PreviewItem name="Badge">
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             <Badge className="text-[9px] px-1.5 py-0.5">Default</Badge>
             <Badge variant="secondary" className="text-[9px] px-1.5 py-0.5">Secondary</Badge>
+            <Badge variant="destructive" className="text-[9px] px-1.5 py-0.5">Destructive</Badge>
             <Badge variant="outline" className="text-[9px] px-1.5 py-0.5">Outline</Badge>
           </div>
         </PreviewItem>
