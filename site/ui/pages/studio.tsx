@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
@@ -909,10 +909,23 @@ function CanvasContent() {
       <GroupIsland title="Display & Data">
         <PreviewItem name="Card">
           <Card className="w-full">
-            <CardHeader className="p-2 space-y-0.5">
-              <CardTitle className="text-[11px]">Settings</CardTitle>
-              <CardDescription className="text-[10px]">Manage preferences.</CardDescription>
+            <CardHeader className="p-3 pb-2">
+              <div className="flex items-center gap-2.5">
+                <Avatar className="size-9 bg-muted">
+                  <AvatarFallback className="bg-muted text-muted-foreground">
+                    <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <CardTitle className="text-[11px] leading-tight">Emily Chen</CardTitle>
+                  <CardDescription className="text-[10px] leading-tight">Product Designer</CardDescription>
+                </div>
+              </div>
             </CardHeader>
+            <CardFooter className="px-3 pb-2.5 pt-0 gap-1.5">
+              <Button variant="outline" size="sm" className="h-6 text-[10px] px-2.5 flex-1">Message</Button>
+              <Button size="sm" className="h-6 text-[10px] px-2.5 flex-1">Follow</Button>
+            </CardFooter>
           </Card>
         </PreviewItem>
 
