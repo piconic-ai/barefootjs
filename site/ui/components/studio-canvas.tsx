@@ -28,6 +28,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Menubar, MenubarMenu, MenubarTrigger, MenubarContent, MenubarItem, MenubarSeparator } from '@/components/ui/menubar'
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink } from '@/components/ui/navigation-menu'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import { Sheet, SheetTrigger, SheetOverlay, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -106,6 +107,8 @@ export function StudioCanvas() {
   const [accordionOpen, setAccordionOpen] = createSignal<string | null>('a11y')
   // Collapsible state
   const [collapsibleOpen, setCollapsibleOpen] = createSignal(false)
+  // Sheet state
+  const [sheetOpen, setSheetOpen] = createSignal(false)
 
   const handleSort = (key: 'name' | 'priority') => {
     if (sortKey() === key) {
@@ -611,7 +614,21 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Sheet">
-          <div className="text-[10px] text-muted-foreground italic">Side panel</div>
+          <Sheet open={sheetOpen()} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-[11px] px-2">Open</Button>
+            </SheetTrigger>
+            <SheetOverlay />
+            <SheetContent side="right" ariaLabelledby="studio-sheet-title">
+              <SheetHeader>
+                <SheetTitle id="studio-sheet-title">Settings</SheetTitle>
+                <SheetDescription>Adjust your preferences.</SheetDescription>
+              </SheetHeader>
+              <SheetFooter>
+                <SheetClose>Close</SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
         </PreviewItem>
 
         <PreviewItem name="Drawer">
