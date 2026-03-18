@@ -23,6 +23,7 @@ import { Dialog, DialogTrigger, DialogOverlay, DialogContent, DialogHeader, Dial
 import { ToastProvider, Toast, ToastTitle, ToastDescription, ToastClose } from '@/components/ui/toast'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '@/components/ui/context-menu'
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -492,8 +493,18 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Command">
-          <div className="w-full rounded-md border border-input bg-background px-2 py-1 text-[11px] text-muted-foreground">
-            Search...
+          <div className="w-full rounded-md border border-border overflow-hidden">
+            <Command>
+              <CommandInput placeholder="Search..." />
+              <CommandList>
+                <CommandEmpty>No results.</CommandEmpty>
+                <CommandGroup heading="Pages">
+                  <CommandItem>Home</CommandItem>
+                  <CommandItem>About</CommandItem>
+                  <CommandItem>Settings</CommandItem>
+                </CommandGroup>
+              </CommandList>
+            </Command>
           </div>
         </PreviewItem>
 
