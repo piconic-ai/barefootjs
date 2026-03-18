@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
@@ -279,7 +280,9 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Aspect Ratio">
-          <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center text-[11px] text-muted-foreground">16:9</div>
+          <AspectRatio ratio={16 / 9} className="w-full rounded-md bg-muted flex items-center justify-center text-[11px] text-muted-foreground">
+            16:9
+          </AspectRatio>
         </PreviewItem>
 
         <PreviewItem name="Data Table">
