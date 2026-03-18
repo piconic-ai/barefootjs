@@ -26,6 +26,7 @@ import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, C
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from '@/components/ui/pagination'
 import { Menubar, MenubarMenu, MenubarTrigger, MenubarContent, MenubarItem, MenubarSeparator } from '@/components/ui/menubar'
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink } from '@/components/ui/navigation-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -551,7 +552,23 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Navigation Menu">
-          <div className="text-[10px] text-muted-foreground italic">Hover nav</div>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem value="docs">
+                <NavigationMenuTrigger>Docs</NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <NavigationMenuLink href="/components/button">Introduction</NavigationMenuLink>
+                  <NavigationMenuLink href="/components/input">Installation</NavigationMenuLink>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+              <NavigationMenuItem value="api">
+                <NavigationMenuTrigger>API</NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <NavigationMenuLink href="/components">Reference</NavigationMenuLink>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
         </PreviewItem>
       </GroupIsland>
 

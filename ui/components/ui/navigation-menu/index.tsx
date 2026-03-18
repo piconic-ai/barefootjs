@@ -61,7 +61,7 @@ const navigationMenuTriggerOpenClasses = 'bg-accent/50 text-accent-foreground'
 const navigationMenuContentBaseClasses = 'fixed z-50 rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md transform-gpu origin-top transition-[opacity,transform] duration-normal ease-out'
 const navigationMenuContentOpenClasses = 'opacity-100 scale-100'
 const navigationMenuContentClosedClasses = 'opacity-0 scale-95 pointer-events-none'
-const navigationMenuLinkBaseClasses = 'block select-none rounded-md p-3 leading-none no-underline outline-hidden transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
+const navigationMenuLinkBaseClasses = 'block select-none rounded-sm px-2 py-1.5 text-sm no-underline outline-hidden transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
 const navigationMenuLinkActiveClasses = 'bg-accent/50 text-accent-foreground'
 
 // --- NavigationMenu (root) ---
