@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AlertDialog, AlertDialogTrigger, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -79,6 +80,9 @@ export function StudioCanvas() {
   // Data Table sort state
   const [sortKey, setSortKey] = createSignal<'name' | 'priority' | null>('name')
   const [sortDir, setSortDir] = createSignal<'asc' | 'desc'>('asc')
+
+  // Alert Dialog state
+  const [alertDialogOpen, setAlertDialogOpen] = createSignal(false)
 
   const handleSort = (key: 'name' | 'priority') => {
     if (sortKey() === key) {
@@ -356,7 +360,22 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Alert Dialog">
-          <div className="text-[10px] text-muted-foreground italic">Confirmation modal</div>
+          <AlertDialog open={alertDialogOpen()} onOpenChange={setAlertDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-[11px] px-2">Delete</Button>
+            </AlertDialogTrigger>
+            <AlertDialogOverlay />
+            <AlertDialogContent ariaLabelledby="studio-alert-title" ariaDescribedby="studio-alert-desc">
+              <AlertDialogHeader>
+                <AlertDialogTitle id="studio-alert-title">Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription id="studio-alert-desc">This action cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </PreviewItem>
 
         <PreviewItem name="Dialog">
