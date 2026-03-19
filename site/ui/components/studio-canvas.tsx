@@ -28,6 +28,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Menubar, MenubarMenu, MenubarTrigger, MenubarContent, MenubarItem, MenubarSeparator } from '@/components/ui/menubar'
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink } from '@/components/ui/navigation-menu'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Sheet, SheetTrigger, SheetOverlay, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from '@/components/ui/sheet'
 import { Drawer, DrawerTrigger, DrawerOverlay, DrawerContent, DrawerHandle, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -112,6 +113,8 @@ export function StudioCanvas() {
   const [sheetOpen, setSheetOpen] = createSignal(false)
   // Drawer state
   const [drawerOpen, setDrawerOpen] = createSignal(false)
+  // Popover state
+  const [popoverOpen, setPopoverOpen] = createSignal(false)
   const [drawerGoal, setDrawerGoal] = createSignal(350)
 
   const handleSort = (key: 'name' | 'priority') => {
@@ -686,7 +689,17 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Popover">
-          <div className="text-[10px] text-muted-foreground italic">Floating</div>
+          <Popover open={popoverOpen()} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-[11px] px-2">Open</Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <div className="space-y-1.5">
+                <h4 className="text-sm font-medium">Dimensions</h4>
+                <p className="text-xs text-muted-foreground">Set the dimensions for the layer.</p>
+              </div>
+            </PopoverContent>
+          </Popover>
         </PreviewItem>
 
         <PreviewItem name="Tooltip">
