@@ -176,8 +176,8 @@ const catalogEntries: CatalogEntry[] = [
     description: 'Date picker with month navigation',
     tags: ['input'],
     preview: () => (
-      <div className="w-[180px] h-[100px] overflow-hidden">
-        <div style="transform: scale(0.55); transform-origin: top center;">
+      <div style="width: 140px; height: 110px; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.45);">
           <Calendar />
         </div>
       </div>
