@@ -5,7 +5,6 @@ import path from 'path'
 import type { CliContext } from '../context'
 import type { BarefootConfig } from '../context'
 import { addFromRegistry } from './add'
-import { fetchIndex } from '../lib/meta-loader'
 
 const DEFAULT_CONFIG: BarefootConfig = {
   $schema: 'https://barefootjs.dev/schema/barefoot.json',
@@ -147,13 +146,17 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     const registryUrl = deriveRegistryUrl(fromUrl)
     console.log(`\n  Fetching components from ${registryUrl}...`)
     try {
-      const index = await fetchIndex(registryUrl)
+      const indexUrl = registryUrl.endsWith('/') ? `${registryUrl}index.json` : `${registryUrl}/index.json`
+      const res = await fetch(indexUrl, { signal: AbortSignal.timeout(10_000) })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const index = await res.json() as { components: { name: string }[] }
       const allNames = index.components.map(c => c.name)
       if (allNames.length > 0) {
         await addFromRegistry(allNames, registryUrl, projectDir, config, true)
       }
     } catch (err) {
-      console.error(`  Warning: Could not fetch components from registry: ${err instanceof Error ? err.message : err}`)
+      console.log(`  Skipped component download: ${err instanceof Error ? err.message : err}`)
+      console.log(`  Run \`barefoot add <component...> --registry ${deriveRegistryUrl(fromUrl)}\` to add components later.`)
     }
   }
 
