@@ -71,6 +71,11 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   // Generate tokens.css from tokens.json
   await generateTokensCSS(ctx.root, destTokensJson, tokensDir, config.paths.tokens)
 
+  // Append CSS variable overrides not in tokens.json (e.g., --spacing from Tailwind)
+  if (studioConfig) {
+    appendCSSOverrides(path.join(tokensDir, 'tokens.css'), studioConfig)
+  }
+
   // 3. Copy types/index.tsx
   const typesDir = path.join(projectDir, 'types')
   mkdirSync(typesDir, { recursive: true })
@@ -268,11 +273,25 @@ function applyColorOverride(
 }
 
 function applySimpleOverride(tokensData: any, name: string, value: string): void {
-  const targets = [tokensData.tokens, tokensData.colors, tokensData.spacing, tokensData.typography]
-  for (const arr of targets) {
+  // Strip leading -- for matching (tokens.json uses bare names like "radius", not "--radius")
+  const bareName = name.startsWith('--') ? name.slice(2) : name
+
+  // Walk all array-valued sections in tokens.json
+  const sections = [
+    tokensData.colors, tokensData.spacing, tokensData.borderRadius,
+    tokensData.shadows, tokensData.layout,
+  ]
+  // Also walk nested objects (typography.fontFamily, typography.letterSpacing, etc.)
+  if (tokensData.typography) {
+    for (const arr of Object.values(tokensData.typography)) {
+      if (Array.isArray(arr)) sections.push(arr as any[])
+    }
+  }
+
+  for (const arr of sections) {
     if (!Array.isArray(arr)) continue
     for (const token of arr) {
-      if (token.name === name) {
+      if (token.name === bareName || token.name === name) {
         token.value = value
         return
       }
@@ -282,24 +301,25 @@ function applySimpleOverride(tokensData: any, name: string, value: string): void
 
 function applyShadowPreset(tokensData: any, styleName: string): void {
   // Style presets (must match Studio's stylePresets)
+  // Use bare names (no -- prefix) to match tokens.json schema
   const presets: Record<string, Record<string, string>> = {
     Sharp: {
-      '--shadow-sm': '0 1px 2px 0 rgb(0 0 0 / 0.04)',
-      '--shadow': '0 1px 2px 0 rgb(0 0 0 / 0.06)',
-      '--shadow-md': '0 2px 4px -1px rgb(0 0 0 / 0.08)',
-      '--shadow-lg': '0 4px 8px -2px rgb(0 0 0 / 0.1)',
+      'shadow-sm': '0 1px 2px 0 rgb(0 0 0 / 0.04)',
+      'shadow': '0 1px 2px 0 rgb(0 0 0 / 0.06)',
+      'shadow-md': '0 2px 4px -1px rgb(0 0 0 / 0.08)',
+      'shadow-lg': '0 4px 8px -2px rgb(0 0 0 / 0.1)',
     },
     Soft: {
-      '--shadow-sm': '0 1px 3px 0 rgb(0 0 0 / 0.06)',
-      '--shadow': '0 2px 6px 0 rgb(0 0 0 / 0.08), 0 1px 3px -1px rgb(0 0 0 / 0.06)',
-      '--shadow-md': '0 6px 12px -2px rgb(0 0 0 / 0.08), 0 3px 6px -3px rgb(0 0 0 / 0.06)',
-      '--shadow-lg': '0 12px 24px -4px rgb(0 0 0 / 0.08), 0 6px 10px -5px rgb(0 0 0 / 0.06)',
+      'shadow-sm': '0 1px 3px 0 rgb(0 0 0 / 0.06)',
+      'shadow': '0 2px 6px 0 rgb(0 0 0 / 0.08), 0 1px 3px -1px rgb(0 0 0 / 0.06)',
+      'shadow-md': '0 6px 12px -2px rgb(0 0 0 / 0.08), 0 3px 6px -3px rgb(0 0 0 / 0.06)',
+      'shadow-lg': '0 12px 24px -4px rgb(0 0 0 / 0.08), 0 6px 10px -5px rgb(0 0 0 / 0.06)',
     },
     Compact: {
-      '--shadow-sm': 'none',
-      '--shadow': 'none',
-      '--shadow-md': 'none',
-      '--shadow-lg': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+      'shadow-sm': 'none',
+      'shadow': 'none',
+      'shadow-md': 'none',
+      'shadow-lg': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
     },
   }
 
@@ -309,6 +329,32 @@ function applyShadowPreset(tokensData: any, styleName: string): void {
   for (const [name, value] of Object.entries(shadows)) {
     applySimpleOverride(tokensData, name, value)
   }
+}
+
+/**
+ * Append CSS variable overrides that aren't part of tokens.json
+ * (e.g., --spacing is a Tailwind v4 variable, not in our token schema).
+ */
+export function appendCSSOverrides(cssPath: string, config: StudioConfig): void {
+  if (!existsSync(cssPath)) return
+
+  const lines: string[] = []
+  if (config.spacing) {
+    lines.push(`  --spacing: ${config.spacing};`)
+  }
+
+  if (lines.length === 0) return
+
+  const existing = readFileSync(cssPath, 'utf-8')
+  // Insert overrides into the :root block before the closing }
+  const rootCloseIdx = existing.indexOf('}')
+  if (rootCloseIdx === -1) return
+
+  const patched = existing.slice(0, rootCloseIdx) +
+    `\n  /* ── Studio overrides ── */\n${lines.join('\n')}\n` +
+    existing.slice(rootCloseIdx)
+
+  writeFileSync(cssPath, patched)
 }
 
 async function generateTokensCSS(

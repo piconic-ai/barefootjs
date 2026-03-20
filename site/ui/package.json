@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "build": "bun run build.ts",
-    "build:registry": "cd ../../ui && bun run build:registry && mkdir -p ../site/ui/dist/r && cp -r dist/r/* ../site/ui/dist/r/ && cp meta/*.json ../site/ui/dist/r/",
+    "build:registry": "cd ../../ui && bun run build:registry && mkdir -p ../site/ui/dist/r ../site/ui/dist/meta && cp -r dist/r/* ../site/ui/dist/r/ && cp meta/index.json ../site/ui/dist/r/index.json && cp meta/*.json ../site/ui/dist/meta/",
     "build:worker": "bun run build && bun run build:registry",
     "dev": "bun run --watch server.tsx",
     "deploy": "bun run build:worker && wrangler deploy",
