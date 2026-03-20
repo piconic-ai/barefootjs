@@ -67,10 +67,9 @@ function DatePicker(props: DatePickerProps) {
   const [open, setOpen] = createSignal(false)
   // Internal state for uncontrolled mode (when selected prop is not provided)
   const [internalSelected, setInternalSelected] = createSignal<Date | undefined>(undefined)
-  const isControlled = props.selected !== undefined
 
   const currentSelected = createMemo(() =>
-    isControlled ? props.selected : internalSelected()
+    props.selected !== undefined ? props.selected : internalSelected()
   )
 
   const displayText = createMemo(() => {
@@ -83,7 +82,7 @@ function DatePicker(props: DatePickerProps) {
   })
 
   const handleSelect = (date: Date | undefined) => {
-    if (!isControlled) setInternalSelected(date)
+    if (props.selected === undefined) setInternalSelected(date)
     props.onSelect?.(date)
     if (date) {
       setOpen(false)
