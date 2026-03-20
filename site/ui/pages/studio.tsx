@@ -963,10 +963,20 @@ const studioScript = `
     if (name === '--radius') {
       if (canvas) setRadiusDerived(canvas, value);
     }
+    if (name === '--font-sans') {
+      if (canvas) {
+        canvas.style.setProperty('--default-font-family', value);
+        canvas.style.fontFamily = value;
+      }
+    }
     // Apply to portaled elements (direct children of body with bf-pi attribute)
     document.querySelectorAll('body > [bf-pi]').forEach(function(el) {
       el.style.setProperty(name, value);
       if (name === '--radius') setRadiusDerived(el, value);
+      if (name === '--font-sans') {
+        el.style.setProperty('--default-font-family', value);
+        el.style.fontFamily = value;
+      }
     });
   }
 
@@ -974,9 +984,17 @@ const studioScript = `
     delete activeOverrides[name];
     if (canvas) canvas.style.removeProperty(name);
     if (name === '--radius' && canvas) removeRadiusDerived(canvas);
+    if (name === '--font-sans' && canvas) {
+      canvas.style.removeProperty('--default-font-family');
+      canvas.style.removeProperty('font-family');
+    }
     document.querySelectorAll('body > [bf-pi]').forEach(function(el) {
       el.style.removeProperty(name);
       if (name === '--radius') removeRadiusDerived(el);
+      if (name === '--font-sans') {
+        el.style.removeProperty('--default-font-family');
+        el.style.removeProperty('font-family');
+      }
     });
   }
 
@@ -989,6 +1007,10 @@ const studioScript = `
         Object.keys(activeOverrides).forEach(function(name) {
           node.style.setProperty(name, activeOverrides[name]);
           if (name === '--radius') setRadiusDerived(node, activeOverrides[name]);
+          if (name === '--font-sans') {
+            node.style.setProperty('--default-font-family', activeOverrides[name]);
+            node.style.fontFamily = activeOverrides[name];
+          }
         });
       });
     });
