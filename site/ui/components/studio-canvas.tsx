@@ -30,6 +30,7 @@ import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuT
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Tooltip } from '@/components/ui/tooltip'
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card'
 import { Sheet, SheetTrigger, SheetOverlay, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from '@/components/ui/sheet'
 import { Drawer, DrawerTrigger, DrawerOverlay, DrawerContent, DrawerHandle, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -116,6 +117,8 @@ export function StudioCanvas() {
   const [drawerOpen, setDrawerOpen] = createSignal(false)
   // Popover state
   const [popoverOpen, setPopoverOpen] = createSignal(false)
+  // Hover Card state
+  const [hoverCardOpen, setHoverCardOpen] = createSignal(false)
   const [drawerGoal, setDrawerGoal] = createSignal(350)
 
   const handleSort = (key: 'name' | 'priority') => {
@@ -710,7 +713,17 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Hover Card">
-          <div className="text-[10px] text-muted-foreground italic">Preview</div>
+          <HoverCard open={hoverCardOpen()} onOpenChange={setHoverCardOpen}>
+            <HoverCardTrigger asChild>
+              <a href="#" className="text-sm font-medium underline underline-offset-4">@barefootjs</a>
+            </HoverCardTrigger>
+            <HoverCardContent>
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold">@barefootjs</h4>
+                <p className="text-xs text-muted-foreground">JSX → Marked Template + client JS compiler.</p>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
         </PreviewItem>
 
         <PreviewItem name="Scroll Area">

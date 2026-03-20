@@ -134,11 +134,17 @@ function HoverCardTrigger(props: HoverCardTriggerProps) {
     const ctx = useContext(HoverCardContext)
     const root = el.closest('[data-slot="hover-card"]') as HTMLElement
 
+    // Resolve through display:contents — mouse events don't fire reliably
+    // on display:contents elements, so attach to the first child instead
+    const eventTarget = getComputedStyle(el).display === 'contents'
+      ? (el.firstElementChild as HTMLElement | null) ?? el
+      : el
+
     createEffect(() => {
       el.setAttribute('aria-expanded', String(ctx.open()))
     })
 
-    el.addEventListener('mouseenter', () => {
+    eventTarget.addEventListener('mouseenter', () => {
       if (!root) return
 
       // Cancel any pending close timer
@@ -159,7 +165,7 @@ function HoverCardTrigger(props: HoverCardTriggerProps) {
       }
     })
 
-    el.addEventListener('mouseleave', () => {
+    eventTarget.addEventListener('mouseleave', () => {
       if (!root) return
 
       // Cancel any pending open timer
@@ -280,9 +286,14 @@ function HoverCardContent(props: HoverCardContentProps) {
     })
 
     // Position content relative to trigger
+    // Resolve through display:contents (asChild wraps in a span with display:contents
+    // which returns a zero rect from getBoundingClientRect)
+    const positionTarget = triggerEl && getComputedStyle(triggerEl).display === 'contents'
+      ? (triggerEl.firstElementChild as HTMLElement | null) ?? triggerEl
+      : triggerEl
     const updatePosition = () => {
-      if (!triggerEl) return
-      const rect = triggerEl.getBoundingClientRect()
+      if (!positionTarget) return
+      const rect = positionTarget.getBoundingClientRect()
       const align = props.align ?? 'center'
       const side = props.side ?? 'bottom'
 
