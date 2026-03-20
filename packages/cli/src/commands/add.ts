@@ -74,7 +74,7 @@ async function tryFetchRegistryItem(
 
 /**
  * Add components from a remote registry.
- * Phase 1: Fetch all registry items.
+ * Phase 1: Fetch all registry items, resolving `requires` dependencies transitively.
  * Phase 2: Write files only if all fetches succeeded (or skip failures when skipErrors=true).
  */
 export async function addFromRegistry(
@@ -85,14 +85,50 @@ export async function addFromRegistry(
   force: boolean,
   skipErrors = false,
 ): Promise<void> {
-  // Phase 1: Fetch all registry items
-  const results = await Promise.all(
-    componentNames.map(name => tryFetchRegistryItem(registryUrl, name, skipErrors))
-  )
-  const items = results.filter((item): item is RegistryItem => item !== null)
-  const skippedComponents = componentNames.filter((_, i) => results[i] === null)
-  if (skippedComponents.length > 0) {
-    console.log(`  Skipped ${skippedComponents.length} unavailable component(s)`)
+  // Phase 1: Fetch all registry items, resolving requires transitively
+  const fetched = new Map<string, RegistryItem>()
+  const failed = new Set<string>()
+  const queue = [...componentNames]
+
+  while (queue.length > 0) {
+    const pending = queue.filter(n => !fetched.has(n) && !failed.has(n))
+    if (pending.length === 0) break
+
+    const results = await Promise.all(
+      pending.map(name => tryFetchRegistryItem(registryUrl, name, skipErrors))
+    )
+
+    for (let i = 0; i < pending.length; i++) {
+      const item = results[i]
+      if (!item) {
+        failed.add(pending[i])
+        continue
+      }
+      fetched.set(item.name, item)
+      // Enqueue any requires that haven't been fetched yet
+      if (item.requires) {
+        for (const dep of item.requires) {
+          if (!fetched.has(dep) && !failed.has(dep) && !queue.includes(dep)) {
+            queue.push(dep)
+          }
+        }
+      }
+    }
+
+    // Remove processed items from queue
+    queue.splice(0, pending.length)
+  }
+
+  if (failed.size > 0) {
+    console.log(`  Skipped ${failed.size} unavailable component(s)`)
+  }
+
+  const items = Array.from(fetched.values())
+  const autoDeps = items
+    .map(i => i.name)
+    .filter(n => !componentNames.includes(n))
+  if (autoDeps.length > 0) {
+    console.log(`  Resolved dependencies: ${autoDeps.join(', ')}`)
   }
 
   // Merge all files into a deduplication map (path → content)

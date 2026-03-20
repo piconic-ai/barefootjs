@@ -120,5 +120,6 @@ export interface RegistryItem {
   title: string
   description: string
   dependencies: string[]
+  requires?: string[]
   files: RegistryItemFile[]
 }

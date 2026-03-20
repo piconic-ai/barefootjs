@@ -222,4 +222,72 @@ describe('addFromRegistry', () => {
     // No files should be written since Promise.all fails atomically
     expect(existsSync(path.join(tmpDir, 'components/ui/button/index.tsx'))).toBe(false)
   })
+
+  test('resolves requires dependencies transitively', async () => {
+    const slotItem: RegistryItem = {
+      $schema: 'https://ui.shadcn.com/schema/registry-item.json',
+      name: 'slot',
+      type: 'registry:ui',
+      title: 'Slot',
+      description: 'Polymorphic slot',
+      dependencies: [],
+      files: [
+        { path: 'components/ui/slot/index.tsx', type: 'registry:ui', content: 'export function Slot() {}' },
+      ],
+    }
+
+    const datePickerItem: RegistryItem = {
+      $schema: 'https://ui.shadcn.com/schema/registry-item.json',
+      name: 'date-picker',
+      type: 'registry:ui',
+      title: 'Date Picker',
+      description: 'Date picker with calendar',
+      dependencies: [],
+      requires: ['button', 'calendar'],
+      files: [
+        { path: 'components/ui/date-picker/index.tsx', type: 'registry:ui', content: 'export function DatePicker() {}' },
+      ],
+    }
+
+    const buttonWithReq: RegistryItem = {
+      ...buttonItem,
+      requires: ['slot'],
+    }
+
+    const calendarItem: RegistryItem = {
+      $schema: 'https://ui.shadcn.com/schema/registry-item.json',
+      name: 'calendar',
+      type: 'registry:ui',
+      title: 'Calendar',
+      description: 'Calendar',
+      dependencies: [],
+      files: [
+        { path: 'components/ui/calendar/index.tsx', type: 'registry:ui', content: 'export function Calendar() {}' },
+      ],
+    }
+
+    const items: Record<string, RegistryItem> = {
+      'date-picker': datePickerItem,
+      button: buttonWithReq,
+      calendar: calendarItem,
+      slot: slotItem,
+    }
+
+    globalThis.fetch = async (url: any) => {
+      const name = String(url).match(/\/([a-z-]+)\.json$/)?.[1]
+      if (name && items[name]) return new Response(JSON.stringify(items[name]), { status: 200 })
+      return new Response('Not Found', { status: 404 })
+    }
+
+    // Request only date-picker; it should auto-fetch button, calendar, and slot
+    await addFromRegistry(['date-picker'], 'https://example.com/r/', tmpDir, config, false)
+
+    expect(existsSync(path.join(tmpDir, 'components/ui/date-picker/index.tsx'))).toBe(true)
+    expect(existsSync(path.join(tmpDir, 'components/ui/button/index.tsx'))).toBe(true)
+    expect(existsSync(path.join(tmpDir, 'components/ui/calendar/index.tsx'))).toBe(true)
+    expect(existsSync(path.join(tmpDir, 'components/ui/slot/index.tsx'))).toBe(true)
+
+    // Should log resolved dependencies
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Resolved dependencies'))
+  })
 })

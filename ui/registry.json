@@ -42,14 +42,16 @@
       "type": "registry:ui",
       "title": "Breadcrumb",
       "description": "Displays the path to the current resource using a hierarchy of links",
-      "tags": ["navigation"]
+      "tags": ["navigation"],
+      "requires": ["slot"]
     },
     {
       "name": "button",
       "type": "registry:ui",
       "title": "Button",
       "description": "A button component with variants and sizes",
-      "tags": ["input"]
+      "tags": ["input"],
+      "requires": ["slot"]
     },
     {
       "name": "calendar",
@@ -113,7 +115,8 @@
       "type": "registry:ui",
       "title": "Command",
       "description": "A command menu with search, keyboard navigation, and filtering",
-      "tags": ["navigation"]
+      "tags": ["navigation"],
+      "requires": ["dialog"]
     },
     {
       "name": "combobox",
@@ -141,7 +144,8 @@
       "type": "registry:ui",
       "title": "Date Picker",
       "description": "A date picker component with calendar popup and range selection",
-      "tags": ["input"]
+      "tags": ["input"],
+      "requires": ["button", "popover", "calendar"]
     },
     {
       "name": "pagination",
@@ -295,7 +299,8 @@
       "type": "registry:ui",
       "title": "Badge",
       "description": "Small status indicator labels",
-      "tags": ["display"]
+      "tags": ["display"],
+      "requires": ["slot"]
     },
     {
       "name": "card",

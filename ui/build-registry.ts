@@ -78,6 +78,7 @@ interface RegistryItem {
   title: string
   description: string
   dependencies: string[]
+  requires?: string[]
   files: Array<{
     path: string
     type: string
@@ -94,12 +95,13 @@ interface RegistryIndex {
     type: string
     title: string
     description: string
+    requires?: string[]
   }>
 }
 
 async function buildRegistryItem(
   name: string,
-  registryMeta: { title: string; description: string },
+  registryMeta: { title: string; description: string; requires?: string[] },
 ): Promise<RegistryItem> {
   const filePaths = await resolveFiles(name)
   const dependencies = await resolveDependencies(filePaths)
@@ -117,7 +119,7 @@ async function buildRegistryItem(
     })
   }
 
-  return {
+  const item: RegistryItem = {
     $schema: 'https://ui.shadcn.com/schema/registry-item.json',
     name,
     type: 'registry:ui',
@@ -126,6 +128,12 @@ async function buildRegistryItem(
     dependencies,
     files,
   }
+
+  if (registryMeta.requires && registryMeta.requires.length > 0) {
+    item.requires = registryMeta.requires
+  }
+
+  return item
 }
 
 async function main() {
