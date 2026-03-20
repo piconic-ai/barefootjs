@@ -693,7 +693,7 @@ function TokenPanel() {
         <div className="space-y-1">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Radius</span>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 border-2 border-foreground bg-muted" style={{ borderRadius: 'var(--radius)' }} />
+            <div className="w-8 h-8 border-2 border-foreground bg-muted" style={{ borderRadius: 'var(--radius)' }} data-studio-radius-preview />
             <span className="text-[11px] font-mono text-muted-foreground" data-studio-radius-label>0.625rem</span>
           </div>
           <div className="flex items-center gap-1.5 pt-0.5">
@@ -943,20 +943,40 @@ const studioScript = `
   var canvas = document.querySelector('[data-studio-canvas]');
   var activeOverrides = {}; // { '--primary': 'oklch(...)' , '--spacing': '0.3rem', ... }
 
+  // Derived radius variables that reference --radius
+  function setRadiusDerived(target, radiusVal) {
+    target.style.setProperty('--radius-lg', radiusVal);
+    target.style.setProperty('--radius-md', 'calc(' + radiusVal + ' - 2px)');
+    target.style.setProperty('--radius-sm', 'calc(' + radiusVal + ' - 4px)');
+  }
+  function removeRadiusDerived(target) {
+    target.style.removeProperty('--radius-lg');
+    target.style.removeProperty('--radius-md');
+    target.style.removeProperty('--radius-sm');
+  }
+
   function scopedSetProperty(name, value) {
     activeOverrides[name] = value;
     if (canvas) canvas.style.setProperty(name, value);
+    // For --radius, also set derived variables so components using
+    // var(--radius-lg) etc. pick up the change within scoped elements
+    if (name === '--radius') {
+      if (canvas) setRadiusDerived(canvas, value);
+    }
     // Apply to portaled elements (direct children of body with bf-pi attribute)
     document.querySelectorAll('body > [bf-pi]').forEach(function(el) {
       el.style.setProperty(name, value);
+      if (name === '--radius') setRadiusDerived(el, value);
     });
   }
 
   function scopedRemoveProperty(name) {
     delete activeOverrides[name];
     if (canvas) canvas.style.removeProperty(name);
+    if (name === '--radius' && canvas) removeRadiusDerived(canvas);
     document.querySelectorAll('body > [bf-pi]').forEach(function(el) {
       el.style.removeProperty(name);
+      if (name === '--radius') removeRadiusDerived(el);
     });
   }
 
@@ -968,6 +988,7 @@ const studioScript = `
         if (!node.hasAttribute('bf-pi')) return;
         Object.keys(activeOverrides).forEach(function(name) {
           node.style.setProperty(name, activeOverrides[name]);
+          if (name === '--radius') setRadiusDerived(node, activeOverrides[name]);
         });
       });
     });
@@ -1210,11 +1231,13 @@ const studioScript = `
     var spacingSlider = document.querySelector('[data-studio-spacing-slider]');
     if (spacingSlider) spacingSlider.value = parseFloat(preset.spacing);
 
-    // Update radius label + slider
+    // Update radius label + slider + preview
     var radiusLabel = document.querySelector('[data-studio-radius-label]');
     if (radiusLabel) radiusLabel.textContent = preset.radius;
     var radiusSlider = document.querySelector('[data-studio-radius-slider]');
     if (radiusSlider) radiusSlider.value = parseFloat(preset.radius);
+    var radiusPreview = document.querySelector('[data-studio-radius-preview]');
+    if (radiusPreview) radiusPreview.style.borderRadius = preset.radius;
 
     // Re-apply custom color tokens (preserve across style changes)
     reapplyForMode();
@@ -1286,9 +1309,11 @@ const studioScript = `
       textInput.value = edMode === 'rgb' ? rgbToHex(rgb.r, rgb.g, rgb.b) : val;
     }
 
-    // Color previews
+    // Color previews (editor + swatch list)
     var previews = document.querySelectorAll('[data-studio-color-editor-preview="' + token + '"]');
     previews.forEach(function(el) { el.style.backgroundColor = val; });
+    var swatch = document.querySelector('[data-studio-color-preview="' + token + '"]');
+    if (swatch) swatch.style.backgroundColor = val;
   }
 
   // ── Click on ColorSwatch → toggle editor ──
@@ -1355,6 +1380,8 @@ const studioScript = `
       scopedSetProperty('--radius', radiusVal);
       var radiusLabel = document.querySelector('[data-studio-radius-label]');
       if (radiusLabel) radiusLabel.textContent = radiusVal;
+      var radiusPreview = document.querySelector('[data-studio-radius-preview]');
+      if (radiusPreview) radiusPreview.style.borderRadius = radiusVal;
       customRadius = radiusVal;
       saveToStorage();
       return;
@@ -1634,6 +1661,8 @@ const studioScript = `
     if (radiusLabel) radiusLabel.textContent = customRadius;
     var radiusSlider = document.querySelector('[data-studio-radius-slider]');
     if (radiusSlider) radiusSlider.value = parseFloat(customRadius);
+    var radiusPreview = document.querySelector('[data-studio-radius-preview]');
+    if (radiusPreview) radiusPreview.style.borderRadius = customRadius;
   } else {
     var radiusSlider = document.querySelector('[data-studio-radius-slider]');
     if (radiusSlider) {
