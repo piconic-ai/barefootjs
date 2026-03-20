@@ -21,6 +21,28 @@ import { Toggle } from '@/components/ui/toggle'
 import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
 import { CatalogFilter } from '@/components/catalog-filter'
+import { Accordion, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { AspectRatio } from '@/components/ui/aspect-ratio'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb'
+import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Combobox, ComboboxTrigger, ComboboxValue } from '@/components/ui/combobox'
+import { Command, CommandInput } from '@/components/ui/command'
+import { DataTableColumnHeader } from '@/components/ui/data-table'
+import { DatePicker } from '@/components/ui/date-picker'
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp'
+import { Menubar, MenubarMenu, MenubarTrigger } from '@/components/ui/menubar'
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from '@/components/ui/navigation-menu'
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from '@/components/ui/pagination'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Tooltip } from '@/components/ui/tooltip'
 
 // Tag definitions for filtering
 export type ComponentTag = 'input' | 'display' | 'feedback' | 'navigation' | 'layout'
@@ -40,30 +62,65 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Accordion',
     description: 'Vertically collapsing content sections',
     tags: ['layout'],
+    preview: () => (
+      <div className="w-full max-w-[200px]">
+        <Accordion>
+          <AccordionItem value="1">
+            <AccordionTrigger>Is it accessible?</AccordionTrigger>
+          </AccordionItem>
+          <AccordionItem value="2">
+            <AccordionTrigger>Is it styled?</AccordionTrigger>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    ),
   },
   {
     slug: 'alert',
     title: 'Alert',
     description: 'Callout for important content',
     tags: ['feedback'],
+    preview: () => (
+      <Alert className="max-w-[200px]">
+        <AlertTitle>Heads up!</AlertTitle>
+        <AlertDescription className="text-xs">You can add components.</AlertDescription>
+      </Alert>
+    ),
   },
   {
     slug: 'alert-dialog',
     title: 'Alert Dialog',
     description: 'Modal dialog for important confirmations',
     tags: ['feedback'],
+    preview: () => (
+      <Button size="sm" variant="destructive">Delete Account</Button>
+    ),
   },
   {
     slug: 'aspect-ratio',
     title: 'Aspect Ratio',
     description: 'Content within a desired ratio',
     tags: ['display'],
+    preview: () => (
+      <div className="w-full max-w-[160px]">
+        <AspectRatio ratio={16 / 9}>
+          <div className="flex items-center justify-center w-full h-full bg-muted rounded-md text-xs text-muted-foreground">16 : 9</div>
+        </AspectRatio>
+      </div>
+    ),
   },
   {
     slug: 'avatar',
     title: 'Avatar',
     description: 'User profile image with fallback',
     tags: ['display'],
+    preview: () => (
+      <div className="flex -space-x-2">
+        <Avatar><AvatarFallback>CN</AvatarFallback></Avatar>
+        <Avatar><AvatarFallback>JD</AvatarFallback></Avatar>
+        <Avatar><AvatarFallback>AB</AvatarFallback></Avatar>
+      </div>
+    ),
   },
   {
     slug: 'badge',
@@ -83,6 +140,15 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Breadcrumb',
     description: 'Navigation hierarchy trail',
     tags: ['navigation'],
+    preview: () => (
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem><BreadcrumbLink href="#">Home</BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbPage>Page</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    ),
   },
   {
     slug: 'button',
@@ -131,60 +197,105 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Collapsible',
     description: 'Expandable content section',
     tags: ['layout'],
+    preview: () => (
+      <Collapsible>
+        <CollapsibleTrigger>
+          <Button variant="ghost" size="sm">Toggle Content ▾</Button>
+        </CollapsibleTrigger>
+      </Collapsible>
+    ),
   },
   {
     slug: 'command',
     title: 'Command',
     description: 'Search and command menu',
     tags: ['navigation'],
+    preview: () => (
+      <div className="w-full max-w-[200px] rounded-md border">
+        <Command>
+          <CommandInput placeholder="Type a command..." />
+        </Command>
+      </div>
+    ),
   },
   {
     slug: 'combobox',
     title: 'Combobox',
     description: 'Autocomplete input with dropdown',
     tags: ['input'],
+    preview: () => (
+      <Combobox>
+        <ComboboxTrigger className="w-[180px]">
+          <ComboboxValue placeholder="Select framework..." />
+        </ComboboxTrigger>
+      </Combobox>
+    ),
   },
   {
     slug: 'context-menu',
     title: 'Context Menu',
     description: 'Right-click menu at cursor position',
     tags: ['navigation'],
+    preview: () => (
+      <div className="flex items-center justify-center h-16 w-[160px] border border-dashed rounded-md text-xs text-muted-foreground">Right-click here</div>
+    ),
   },
   {
     slug: 'data-table',
     title: 'Data Table',
     description: 'Sortable, filterable data table',
     tags: ['display'],
+    preview: () => (
+      <DataTableColumnHeader title="Amount" sorted="asc" onSort={() => {}} />
+    ),
   },
   {
     slug: 'date-picker',
     title: 'Date Picker',
     description: 'Date selection with calendar popup',
     tags: ['input'],
+    preview: () => (
+      <DatePicker placeholder="Pick a date" />
+    ),
   },
   {
     slug: 'dialog',
     title: 'Dialog',
     description: 'Modal overlay with custom content',
     tags: ['feedback'],
+    preview: () => (
+      <Button size="sm" variant="outline">Edit Profile</Button>
+    ),
   },
   {
     slug: 'drawer',
     title: 'Drawer',
     description: 'Slide-out panel from screen edge',
     tags: ['layout'],
+    preview: () => (
+      <Button size="sm" variant="outline">Open Drawer</Button>
+    ),
   },
   {
     slug: 'dropdown-menu',
     title: 'Dropdown Menu',
     description: 'Action menu triggered by a button',
     tags: ['navigation'],
+    preview: () => (
+      <Button size="sm" variant="outline" className="gap-1">
+        Options
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </Button>
+    ),
   },
   {
     slug: 'hover-card',
     title: 'Hover Card',
     description: 'Preview card on hover',
     tags: ['layout'],
+    preview: () => (
+      <span className="text-sm underline decoration-dotted underline-offset-4">@nextjs</span>
+    ),
   },
   {
     slug: 'input',
@@ -200,6 +311,19 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Input OTP',
     description: 'One-time password input',
     tags: ['input'],
+    preview: () => (
+      <InputOTP maxLength={4}>
+        <InputOTPGroup>
+          <InputOTPSlot index={0} />
+          <InputOTPSlot index={1} />
+        </InputOTPGroup>
+        <InputOTPSeparator />
+        <InputOTPGroup>
+          <InputOTPSlot index={2} />
+          <InputOTPSlot index={3} />
+        </InputOTPGroup>
+      </InputOTP>
+    ),
   },
   {
     slug: 'label',
@@ -215,24 +339,56 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Menubar',
     description: 'Desktop application menu bar',
     tags: ['navigation'],
+    preview: () => (
+      <Menubar>
+        <MenubarMenu value="file"><MenubarTrigger>File</MenubarTrigger></MenubarMenu>
+        <MenubarMenu value="edit"><MenubarTrigger>Edit</MenubarTrigger></MenubarMenu>
+        <MenubarMenu value="view"><MenubarTrigger>View</MenubarTrigger></MenubarMenu>
+      </Menubar>
+    ),
   },
   {
     slug: 'navigation-menu',
     title: 'Navigation Menu',
     description: 'Hover-activated navigation links',
     tags: ['navigation'],
+    preview: () => (
+      <NavigationMenu>
+        <NavigationMenuList>
+          <NavigationMenuItem>
+            <NavigationMenuLink href="#">Getting Started</NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink href="#">Components</NavigationMenuLink>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+      </NavigationMenu>
+    ),
   },
   {
     slug: 'pagination',
     title: 'Pagination',
     description: 'Page navigation controls',
     tags: ['navigation'],
+    preview: () => (
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem><PaginationPrevious /></PaginationItem>
+          <PaginationItem><PaginationLink isActive>1</PaginationLink></PaginationItem>
+          <PaginationItem><PaginationLink>2</PaginationLink></PaginationItem>
+          <PaginationItem><PaginationNext /></PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    ),
   },
   {
     slug: 'popover',
     title: 'Popover',
     description: 'Floating content anchored to a trigger',
     tags: ['layout'],
+    preview: () => (
+      <Button size="sm" variant="outline">Open Popover</Button>
+    ),
   },
   {
     slug: 'portal',
@@ -254,24 +410,67 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Radio Group',
     description: 'Single-select option group',
     tags: ['input'],
+    preview: () => (
+      <RadioGroup defaultValue="default">
+        <div className="flex items-center gap-1.5">
+          <RadioGroupItem value="default" />
+          <Label className="text-xs">Default</Label>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <RadioGroupItem value="compact" />
+          <Label className="text-xs">Compact</Label>
+        </div>
+      </RadioGroup>
+    ),
   },
   {
     slug: 'resizable',
     title: 'Resizable',
     description: 'Draggable resize panels',
     tags: ['layout'],
+    preview: () => (
+      <div className="w-full max-w-[200px]">
+        <ResizablePanelGroup direction="horizontal" className="rounded-md border">
+          <ResizablePanel defaultSize={50}>
+            <div className="flex items-center justify-center h-16 text-xs p-2">A</div>
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel defaultSize={50}>
+            <div className="flex items-center justify-center h-16 text-xs p-2">B</div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+    ),
   },
   {
     slug: 'scroll-area',
     title: 'Scroll Area',
     description: 'Custom scrollbar container',
     tags: ['layout'],
+    preview: () => (
+      <ScrollArea className="h-[72px] w-full max-w-[180px] rounded-md border p-2">
+        <div className="text-xs space-y-1">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+          <div>Item 4</div>
+          <div>Item 5</div>
+        </div>
+      </ScrollArea>
+    ),
   },
   {
     slug: 'select',
     title: 'Select',
     description: 'Dropdown selection control',
     tags: ['input'],
+    preview: () => (
+      <Select>
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Select option..." />
+        </SelectTrigger>
+      </Select>
+    ),
   },
   {
     slug: 'separator',
@@ -310,6 +509,9 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Sheet',
     description: 'Side panel overlay',
     tags: ['layout'],
+    preview: () => (
+      <Button size="sm" variant="outline">Open Sheet</Button>
+    ),
   },
   {
     slug: 'slider',
@@ -346,12 +548,38 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Table',
     description: 'Responsive data table',
     tags: ['display'],
+    preview: () => (
+      <div className="w-full max-w-[200px]">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="h-8 text-xs">Name</TableHead>
+              <TableHead className="h-8 text-xs text-right">Amount</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell className="text-xs py-1.5">Alpha</TableCell>
+              <TableCell className="text-xs py-1.5 text-right">$250</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    ),
   },
   {
     slug: 'tabs',
     title: 'Tabs',
     description: 'Tabbed content navigation',
     tags: ['navigation'],
+    preview: () => (
+      <Tabs defaultValue="account">
+        <TabsList>
+          <TabsTrigger value="account" selected={true}>Account</TabsTrigger>
+          <TabsTrigger value="password">Password</TabsTrigger>
+        </TabsList>
+      </Tabs>
+    ),
   },
   {
     slug: 'textarea',
@@ -384,12 +612,24 @@ const catalogEntries: CatalogEntry[] = [
     title: 'Toggle Group',
     description: 'Group of toggle buttons',
     tags: ['input'],
+    preview: () => (
+      <ToggleGroup type="single" defaultValue="bold" variant="outline" size="sm">
+        <ToggleGroupItem value="bold" className="font-bold">B</ToggleGroupItem>
+        <ToggleGroupItem value="italic" className="italic">I</ToggleGroupItem>
+        <ToggleGroupItem value="underline" className="underline">U</ToggleGroupItem>
+      </ToggleGroup>
+    ),
   },
   {
     slug: 'tooltip',
     title: 'Tooltip',
     description: 'Informational text on hover',
     tags: ['layout'],
+    preview: () => (
+      <Tooltip content="Add to library">
+        <Button size="sm" variant="outline">Hover me</Button>
+      </Tooltip>
+    ),
   },
 ]
 
