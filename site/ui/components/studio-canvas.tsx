@@ -271,27 +271,29 @@ export function StudioCanvas() {
 
       {/* Display & Data */}
       <GroupIsland title="Display & Data">
+        <div className="col-span-2">
         <PreviewItem name="Card">
           <Card className="w-full">
-            <CardHeader className="p-3 pb-2">
+            <CardHeader>
               <div className="flex items-center gap-2.5">
-                <Avatar className="size-9 bg-muted">
+                <Avatar className="bg-muted">
                   <AvatarFallback className="bg-muted text-muted-foreground">
                     <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <CardTitle className="text-[11px] leading-tight">Emily Chen</CardTitle>
-                  <CardDescription className="text-[10px] leading-tight">Product Designer</CardDescription>
+                  <CardTitle>Emily Chen</CardTitle>
+                  <CardDescription>Product Designer</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardFooter className="px-3 pb-2.5 pt-0 gap-1.5">
-              <Button variant="outline" size="sm" className="h-6 text-[10px] px-2.5 flex-1">Message</Button>
-              <Button size="sm" className="h-6 text-[10px] px-2.5 flex-1">Follow</Button>
+            <CardFooter>
+              <Button variant="outline" size="sm" className="flex-1">Message</Button>
+              <Button size="sm" className="flex-1">Follow</Button>
             </CardFooter>
           </Card>
         </PreviewItem>
+        </div>
 
         <PreviewItem name="Badge">
           <div className="flex flex-wrap gap-1">
