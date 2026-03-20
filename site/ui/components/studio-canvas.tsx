@@ -740,8 +740,8 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Tooltip">
-          <Tooltip content="Add to library" placement="right">
-            <Button variant="outline" size="sm" className="h-7 text-[11px] px-2">Hover me</Button>
+          <Tooltip content="Tip" placement="right">
+            <Button variant="outline" size="sm">Hover</Button>
           </Tooltip>
         </PreviewItem>
 
