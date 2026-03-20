@@ -35,8 +35,8 @@ import { DataTableColumnHeader } from '@/components/ui/data-table'
 import { DatePicker } from '@/components/ui/date-picker'
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp'
 import { Menubar, MenubarMenu, MenubarTrigger } from '@/components/ui/menubar'
-import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from '@/components/ui/navigation-menu'
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from '@/components/ui/pagination'
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from '@/components/ui/navigation-menu'
+import { Pagination, PaginationContent, PaginationItem } from '@/components/ui/pagination'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -151,7 +151,7 @@ const catalogEntries: CatalogEntry[] = [
     preview: () => (
       <Breadcrumb>
         <BreadcrumbList>
-          <BreadcrumbItem><BreadcrumbLink href="#">Home</BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbItem><BreadcrumbLink asChild><span>Home</span></BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem><BreadcrumbPage>Page</BreadcrumbPage></BreadcrumbItem>
         </BreadcrumbList>
@@ -390,10 +390,10 @@ const catalogEntries: CatalogEntry[] = [
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <NavigationMenuLink href="#">Getting Started</NavigationMenuLink>
+            <span className="text-sm font-medium">Getting Started</span>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <NavigationMenuLink href="#">Components</NavigationMenuLink>
+            <span className="text-sm font-medium">Components</span>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
@@ -407,10 +407,10 @@ const catalogEntries: CatalogEntry[] = [
     preview: () => (
       <Pagination>
         <PaginationContent>
-          <PaginationItem><PaginationPrevious /></PaginationItem>
-          <PaginationItem><PaginationLink isActive>1</PaginationLink></PaginationItem>
-          <PaginationItem><PaginationLink>2</PaginationLink></PaginationItem>
-          <PaginationItem><PaginationNext /></PaginationItem>
+          <PaginationItem><span className="text-xs text-muted-foreground">‹ Previous</span></PaginationItem>
+          <PaginationItem><span className="text-xs font-medium px-2.5 py-0.5 border rounded-md">1</span></PaginationItem>
+          <PaginationItem><span className="text-xs px-2.5 py-0.5">2</span></PaginationItem>
+          <PaginationItem><span className="text-xs text-muted-foreground">Next ›</span></PaginationItem>
         </PaginationContent>
       </Pagination>
     ),
@@ -672,12 +672,12 @@ function ComponentCard({ entry }: { entry: CatalogEntry }) {
   return (
     <a
       href={href}
-      className="no-underline"
+      className="no-underline h-full"
       data-catalog-card
       data-tags={entry.tags.join(' ')}
     >
-      <Card className="overflow-hidden py-0 gap-0 hover:border-ring transition-colors">
-        <CardContent className="flex items-center justify-center p-6 min-h-[120px] bg-muted/30">
+      <Card className="overflow-hidden py-0 gap-0 h-full hover:border-ring transition-colors">
+        <CardContent className="flex items-center justify-center p-6 h-[120px] bg-muted/30 overflow-hidden">
           {entry.preview ? (
             entry.preview()
           ) : (
