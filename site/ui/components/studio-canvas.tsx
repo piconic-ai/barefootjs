@@ -309,9 +309,27 @@ export function StudioCanvas() {
 
         <PreviewItem name="Table">
           <div className="w-full text-[10px]">
-            <div className="flex border-b border-border py-0.5 font-medium text-muted-foreground"><span className="flex-1">Name</span><span className="w-10 text-right">Role</span><span className="w-12 text-right">Status</span></div>
-            <div className="flex border-b border-border py-0.5 text-foreground"><span className="flex-1">Alice</span><span className="w-10 text-right text-muted-foreground">Admin</span><span className="w-12 text-right">Active</span></div>
-            <div className="flex py-0.5 text-foreground"><span className="flex-1">Bob</span><span className="w-10 text-right text-muted-foreground">Editor</span><span className="w-12 text-right">Draft</span></div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="text-right">Role</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Alice</TableCell>
+                  <TableCell className="text-right text-muted-foreground">Admin</TableCell>
+                  <TableCell className="text-right">Active</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Bob</TableCell>
+                  <TableCell className="text-right text-muted-foreground">Editor</TableCell>
+                  <TableCell className="text-right">Draft</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
         </PreviewItem>
 
