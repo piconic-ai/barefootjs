@@ -351,8 +351,8 @@ export function StudioCanvas() {
           <div className="w-full border border-border rounded-md overflow-hidden">
             <Table className="text-[10px]">
               <TableHeader>
-                <TableRow className="border-border">
-                  <TableHead className="h-7 px-1.5">
+                <TableRow>
+                  <TableHead>
                     <DataTableColumnHeader
                       title="Task"
                       sorted={sortKey() === 'name' ? sortDir() : false}
@@ -360,7 +360,7 @@ export function StudioCanvas() {
                       className="text-[10px]"
                     />
                   </TableHead>
-                  <TableHead className="h-7 px-1.5 text-right">
+                  <TableHead className="text-right">
                     <DataTableColumnHeader
                       title="Priority"
                       sorted={sortKey() === 'priority' ? sortDir() : false}
@@ -372,9 +372,9 @@ export function StudioCanvas() {
               </TableHeader>
               <TableBody>
                 {sortedTasks().map((task: Task) => (
-                  <TableRow className="border-border">
-                    <TableCell className="px-1.5 py-1">{task.name}</TableCell>
-                    <TableCell className={`px-1.5 py-1 text-right ${task.priorityOrder === 1 ? 'text-destructive' : task.priorityOrder === 3 ? 'text-muted-foreground' : ''}`}>
+                  <TableRow>
+                    <TableCell>{task.name}</TableCell>
+                    <TableCell className={`text-right ${task.priorityOrder === 1 ? 'text-destructive' : task.priorityOrder === 3 ? 'text-muted-foreground' : ''}`}>
                       {task.priority}
                     </TableCell>
                   </TableRow>
