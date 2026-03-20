@@ -760,7 +760,7 @@ export function StudioCanvas() {
         </PreviewItem>
 
         <PreviewItem name="Portal">
-          <div className="text-[10px] text-muted-foreground italic">Outside DOM</div>
+          <div className="text-[10px] text-muted-foreground italic">Utility — auto-installed by overlay components</div>
         </PreviewItem>
       </GroupIsland>
     </div>
