@@ -191,4 +191,38 @@ test.describe('Studio Export & URL', () => {
     const decoded = JSON.parse(atob(decodeURIComponent(cMatch![1])))
     expect(decoded.style).toBe('Compact')
   })
+
+  test('reset clears color swatch previews back to defaults', async ({ page }) => {
+    await page.goto('/studio')
+
+    // Get the default background color of the primary swatch
+    const swatch = page.locator('[data-studio-color-preview="primary"]')
+    const defaultColor = await swatch.evaluate(el => el.style.backgroundColor)
+
+    // Open primary editor and change the color
+    await page.locator('[data-studio-color-edit="primary"]').click()
+    const sliderR = page.locator('[data-studio-slider-r="primary"]')
+    await sliderR.fill('50')
+    await sliderR.dispatchEvent('input')
+
+    // Swatch should now have a different inline color
+    const customColor = await swatch.evaluate(el => el.style.backgroundColor)
+    expect(customColor).not.toBe(defaultColor)
+
+    // Accept the confirm dialog
+    page.on('dialog', dialog => dialog.accept())
+
+    // Click "Reset all customizations"
+    await page.locator('[data-studio-reset]').click()
+
+    // Swatch should be reset back to CSS variable reference
+    const resetColor = await swatch.evaluate(el => el.style.backgroundColor)
+    expect(resetColor).toContain('var(--primary)')
+
+    // localStorage should be cleared
+    const stored = await page.evaluate(() =>
+      localStorage.getItem('barefootjs-studio-tokens')
+    )
+    expect(stored).toBeNull()
+  })
 })

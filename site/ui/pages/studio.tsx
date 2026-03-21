@@ -1736,9 +1736,14 @@ const studioScript = `
     customRadius = null;
     customFont = null;
 
-    // Remove all inline style overrides for color tokens
+    // Remove all inline style overrides for color tokens and reset previews
     Object.keys(defaultColors).forEach(function(token) {
       scopedRemoveProperty('--' + token);
+      // Reset swatch and editor previews back to CSS variable reference
+      var swatch = document.querySelector('[data-studio-color-preview="' + token + '"]');
+      if (swatch) swatch.style.backgroundColor = 'var(--' + token + ')';
+      var editorPreviews = document.querySelectorAll('[data-studio-color-editor-preview="' + token + '"]');
+      editorPreviews.forEach(function(el) { el.style.backgroundColor = 'var(--' + token + ')'; });
     });
 
     // Close all open editors
