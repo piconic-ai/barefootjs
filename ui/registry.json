@@ -346,6 +346,14 @@
       "tags": ["input"]
     },
     {
+      "name": "input-group",
+      "type": "registry:ui",
+      "title": "Input Group",
+      "description": "Input with addons, prefixes, and suffixes",
+      "tags": ["input"],
+      "requires": ["input"]
+    },
+    {
       "name": "label",
       "type": "registry:ui",
       "title": "Label",

@@ -41,6 +41,7 @@ export const componentEntries: ComponentEntry[] = [
   { slug: 'date-picker', title: 'Date Picker', description: 'Date selection with calendar popup', category: 'input' },
   { slug: 'field', title: 'Field', description: 'Form field wrapper with label and error', category: 'input' },
   { slug: 'input', title: 'Input', description: 'Text input field', category: 'input' },
+  { slug: 'input-group', title: 'Input Group', description: 'Input with addons and affixes', category: 'input' },
   { slug: 'input-otp', title: 'Input OTP', description: 'One-time password input', category: 'input' },
   { slug: 'label', title: 'Label', description: 'Accessible label for form controls', category: 'input' },
   { slug: 'radio-group', title: 'Radio Group', description: 'Single-select option group', category: 'input' },
