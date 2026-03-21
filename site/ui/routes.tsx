@@ -17,6 +17,7 @@ import { ButtonRefPage } from './pages/components/button'
 import { ButtonGroupRefPage } from './pages/components/button-group'
 import { ComboboxRefPage } from './pages/components/combobox'
 import { InputRefPage } from './pages/components/input'
+import { InputGroupRefPage } from './pages/components/input-group'
 import { LabelRefPage } from './pages/components/label'
 import { SelectRefPage } from './pages/components/select'
 import { TextareaRefPage } from './pages/components/textarea'
@@ -234,6 +235,11 @@ export function createApp() {
   // Input reference page (redesigned #515)
   app.get('/components/input', (c) => {
     return c.render(<InputRefPage />)
+  })
+
+  // Input Group reference page
+  app.get('/components/input-group', (c) => {
+    return c.render(<InputGroupRefPage />)
   })
 
   // Spinner reference page
