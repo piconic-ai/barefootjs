@@ -416,6 +416,13 @@
       "title": "Toggle",
       "description": "A two-state button that can be on or off",
       "tags": ["input"]
+    },
+    {
+      "name": "typography",
+      "type": "registry:ui",
+      "title": "Typography",
+      "description": "Styled text elements for headings, paragraphs, and prose content",
+      "tags": ["display"]
     }
   ]
 }

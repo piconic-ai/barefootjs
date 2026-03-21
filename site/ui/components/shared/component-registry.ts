@@ -63,6 +63,7 @@ export const componentEntries: ComponentEntry[] = [
   { slug: 'separator', title: 'Separator', description: 'Visual divider between content', category: 'display' },
   { slug: 'skeleton', title: 'Skeleton', description: 'Placeholder loading indicator', category: 'display' },
   { slug: 'table', title: 'Table', description: 'Responsive data table', category: 'display' },
+  { slug: 'typography', title: 'Typography', description: 'Styled text elements for prose', category: 'display' },
 
   // Feedback (6)
   { slug: 'alert', title: 'Alert', description: 'Callout for important content', category: 'feedback' },
