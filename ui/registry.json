@@ -369,6 +369,14 @@
       "requires": ["input"]
     },
     {
+      "name": "item",
+      "type": "registry:ui",
+      "title": "Item",
+      "description": "A generic list/menu item component with composable sub-components",
+      "tags": ["display"],
+      "requires": ["separator"]
+    },
+    {
       "name": "kbd",
       "type": "registry:ui",
       "title": "Kbd",

@@ -18,6 +18,7 @@ import { ButtonGroupRefPage } from './pages/components/button-group'
 import { ComboboxRefPage } from './pages/components/combobox'
 import { InputRefPage } from './pages/components/input'
 import { InputGroupRefPage } from './pages/components/input-group'
+import { ItemRefPage } from './pages/components/item'
 import { LabelRefPage } from './pages/components/label'
 import { SelectRefPage } from './pages/components/select'
 import { TextareaRefPage } from './pages/components/textarea'
@@ -260,6 +261,11 @@ export function createApp() {
   // Native Select reference page
   app.get('/components/native-select', (c) => {
     return c.render(<NativeSelectRefPage />)
+  })
+
+  // Item reference page
+  app.get('/components/item', (c) => {
+    return c.render(<ItemRefPage />)
   })
 
   // Spinner reference page

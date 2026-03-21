@@ -62,6 +62,7 @@ export const componentEntries: ComponentEntry[] = [
   { slug: 'carousel', title: 'Carousel', description: 'Motion and swipe content slider', category: 'display' },
   { slug: 'kbd', title: 'Kbd', description: 'Keyboard key display for shortcuts', category: 'display' },
   { slug: 'data-table', title: 'Data Table', description: 'Sortable, filterable data table', category: 'display' },
+  { slug: 'item', title: 'Item', description: 'Generic list/menu item with sub-components', category: 'display' },
   { slug: 'separator', title: 'Separator', description: 'Visual divider between content', category: 'display' },
   { slug: 'skeleton', title: 'Skeleton', description: 'Placeholder loading indicator', category: 'display' },
   { slug: 'table', title: 'Table', description: 'Responsive data table', category: 'display' },
