@@ -35,6 +35,7 @@ export const categoryLabels: Record<ComponentCategory, string> = {
 export const componentEntries: ComponentEntry[] = [
   // Input (15)
   { slug: 'button', title: 'Button', description: 'Clickable actions with multiple variants', category: 'input' },
+  { slug: 'button-group', title: 'Button Group', description: 'Container for grouping related buttons', category: 'input' },
   { slug: 'calendar', title: 'Calendar', description: 'Date picker with month navigation', category: 'input' },
   { slug: 'checkbox', title: 'Checkbox', description: 'Toggle selection control', category: 'input' },
   { slug: 'combobox', title: 'Combobox', description: 'Autocomplete input with dropdown', category: 'input' },

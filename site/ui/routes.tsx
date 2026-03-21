@@ -14,6 +14,7 @@ import { AlertRefPage } from './pages/components/alert'
 import { AlertDialogRefPage } from './pages/components/alert-dialog'
 import { BadgeRefPage } from './pages/components/badge'
 import { ButtonRefPage } from './pages/components/button'
+import { ButtonGroupRefPage } from './pages/components/button-group'
 import { ComboboxRefPage } from './pages/components/combobox'
 import { InputRefPage } from './pages/components/input'
 import { LabelRefPage } from './pages/components/label'
@@ -143,6 +144,11 @@ export function createApp() {
   // Button reference page (redesigned #515)
   app.get('/components/button', (c) => {
     return c.render(<ButtonRefPage />)
+  })
+
+  // Button Group reference page
+  app.get('/components/button-group', (c) => {
+    return c.render(<ButtonGroupRefPage />)
   })
 
   // Combobox reference page (redesigned #515)

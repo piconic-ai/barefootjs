@@ -54,6 +54,14 @@
       "requires": ["slot"]
     },
     {
+      "name": "button-group",
+      "type": "registry:ui",
+      "title": "Button Group",
+      "description": "Container for grouping related buttons",
+      "tags": ["input"],
+      "requires": ["slot", "separator"]
+    },
+    {
       "name": "calendar",
       "type": "registry:ui",
       "title": "Calendar",
