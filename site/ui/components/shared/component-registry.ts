@@ -53,12 +53,13 @@ export const componentEntries: ComponentEntry[] = [
   { slug: 'toggle', title: 'Toggle', description: 'Two-state pressed button', category: 'input' },
   { slug: 'toggle-group', title: 'Toggle Group', description: 'Group of toggle buttons', category: 'input' },
 
-  // Display (9)
+  // Display (10)
   { slug: 'aspect-ratio', title: 'Aspect Ratio', description: 'Content within a desired ratio', category: 'display' },
   { slug: 'avatar', title: 'Avatar', description: 'User profile image with fallback', category: 'display' },
   { slug: 'badge', title: 'Badge', description: 'Small status indicator labels', category: 'display' },
   { slug: 'card', title: 'Card', description: 'Container for grouped content', category: 'display' },
   { slug: 'carousel', title: 'Carousel', description: 'Motion and swipe content slider', category: 'display' },
+  { slug: 'kbd', title: 'Kbd', description: 'Keyboard key display for shortcuts', category: 'display' },
   { slug: 'data-table', title: 'Data Table', description: 'Sortable, filterable data table', category: 'display' },
   { slug: 'separator', title: 'Separator', description: 'Visual divider between content', category: 'display' },
   { slug: 'skeleton', title: 'Skeleton', description: 'Placeholder loading indicator', category: 'display' },

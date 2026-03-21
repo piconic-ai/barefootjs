@@ -369,6 +369,14 @@
       "requires": ["input"]
     },
     {
+      "name": "kbd",
+      "type": "registry:ui",
+      "title": "Kbd",
+      "description": "Keyboard key display for showing keyboard shortcuts",
+      "tags": ["display"],
+      "requires": ["slot"]
+    },
+    {
       "name": "label",
       "type": "registry:ui",
       "title": "Label",

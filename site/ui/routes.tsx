@@ -61,6 +61,7 @@ import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
 import { EmptyRefPage } from './pages/components/empty'
+import { KbdRefPage } from './pages/components/kbd'
 import { SpinnerRefPage } from './pages/components/spinner'
 import { TypographyRefPage } from './pages/components/typography'
 import { ComponentCatalogPage } from './pages/components/catalog'
@@ -248,6 +249,11 @@ export function createApp() {
   // Empty reference page
   app.get('/components/empty', (c) => {
     return c.render(<EmptyRefPage />)
+  })
+
+  // Kbd reference page
+  app.get('/components/kbd', (c) => {
+    return c.render(<KbdRefPage />)
   })
 
   // Spinner reference page
