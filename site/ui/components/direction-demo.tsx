@@ -1,4 +1,5 @@
 import { DirectionProvider } from '@ui/components/ui/direction'
+import { Input } from '@ui/components/ui/input'
 
 export function DirectionBasicDemo() {
   return (
@@ -39,8 +40,6 @@ export function DirectionNestedDemo() {
 }
 
 export function DirectionFormDemo() {
-  const inputClasses = 'file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
-
   return (
     <div className="flex flex-col gap-4 max-w-md">
       <DirectionProvider dir="rtl">
@@ -48,11 +47,11 @@ export function DirectionFormDemo() {
           <h4 className="text-sm font-medium">نموذج تسجيل</h4>
           <div className="grid gap-1.5">
             <label className="text-sm font-medium">الاسم</label>
-            <input type="text" placeholder="أدخل اسمك" className={inputClasses} />
+            <Input type="text" placeholder="أدخل اسمك" />
           </div>
           <div className="grid gap-1.5">
             <label className="text-sm font-medium">البريد الإلكتروني</label>
-            <input type="email" placeholder="أدخل بريدك الإلكتروني" className={inputClasses} />
+            <Input type="email" placeholder="أدخل بريدك الإلكتروني" />
           </div>
         </div>
       </DirectionProvider>

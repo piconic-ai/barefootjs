@@ -7,6 +7,7 @@
  */
 
 import { ScrollArea } from '@ui/components/ui/scroll-area'
+import { Separator } from '@ui/components/ui/separator'
 
 const tags = Array.from({ length: 50 }).map(
   (_, i, a) => `v1.2.0-beta.${a.length - i}`
@@ -24,7 +25,7 @@ export function ScrollAreaTagsDemo() {
         {tags.map((tag) => (
           <div>
             <div className="text-sm" data-tag={tag}>{tag}</div>
-            <div className="bg-border shrink-0 h-px w-full my-2" />
+            <Separator className="my-2" />
           </div>
         ))}
       </div>
