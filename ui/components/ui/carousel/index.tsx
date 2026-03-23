@@ -25,6 +25,7 @@
 import { createContext, useContext, createSignal, createEffect, onCleanup } from '@barefootjs/dom'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
+import { ChevronLeftIcon, ChevronRightIcon } from '../icon'
 
 // Embla Carousel types (minimal subset)
 type EmblaOptionsType = {
@@ -244,9 +245,7 @@ function CarouselPrevious(props: CarouselPreviousProps) {
       aria-label="Previous slide"
       ref={handleMount}
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="m15 18-6-6 6-6" />
-      </svg>
+      <ChevronLeftIcon size="sm" />
       <span className="sr-only">Previous slide</span>
     </button>
   )
@@ -289,9 +288,7 @@ function CarouselNext(props: CarouselNextProps) {
       aria-label="Next slide"
       ref={handleMount}
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="m9 18 6-6-6-6" />
-      </svg>
+      <ChevronRightIcon size="sm" />
       <span className="sr-only">Next slide</span>
     </button>
   )

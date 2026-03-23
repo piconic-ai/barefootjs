@@ -38,6 +38,7 @@
 import { createContext, useContext, createSignal, createEffect, createPortal, isSSRPortal } from '@barefootjs/dom'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
+import { ChevronDownIcon } from '../icon'
 
 // Root-level context: coordinates which item is active
 interface NavigationMenuContextValue {
@@ -314,7 +315,7 @@ function NavigationMenuTrigger(props: NavigationMenuTriggerProps) {
       ref={handleMount}
     >
       {props.children}
-      <svg data-slot="navigation-menu-chevron" className="relative top-px ml-1 size-3 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      <ChevronDownIcon data-slot="navigation-menu-chevron" className="relative top-px ml-1 size-3 transition-transform duration-200" />
     </button>
   )
 }

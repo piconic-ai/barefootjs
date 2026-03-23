@@ -27,7 +27,7 @@ test.describe('Checkbox Documentation Page', () => {
       const label = section.locator('text=I agree to the terms and conditions')
 
       // Initially no checkmark
-      await expect(checkbox.locator('svg[data-slot="checkbox-indicator"]')).not.toBeVisible()
+      await expect(checkbox.locator('svg')).not.toBeVisible()
 
       // Click the label (which triggers setAccepted via handleLabelClick)
       await label.click()
@@ -37,7 +37,7 @@ test.describe('Checkbox Documentation Page', () => {
       await expect(checkbox).toHaveAttribute('data-state', 'checked')
       await expect(checkbox).toHaveAttribute('aria-checked', 'true')
       // Then check SVG (use more specific selector)
-      await expect(checkbox.locator('svg[data-slot="checkbox-indicator"]')).toBeVisible()
+      await expect(checkbox.locator('svg')).toBeVisible()
     })
   })
 
@@ -102,7 +102,7 @@ test.describe('Checkbox Documentation Page', () => {
         // First wait for data-state to be checked (confirms state update is complete)
         await expect(checkbox).toHaveAttribute('data-state', 'checked')
         // Then check SVG (use more specific selector to avoid stale reference)
-        await expect(checkbox.locator('svg[data-slot="checkbox-indicator"]')).toBeVisible()
+        await expect(checkbox.locator('svg')).toBeVisible()
       }
     })
   })

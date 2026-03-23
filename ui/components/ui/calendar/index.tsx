@@ -1,6 +1,7 @@
 "use client"
 
 import { createSignal, createMemo } from '@barefootjs/dom'
+import { ChevronLeftIcon, ChevronRightIcon } from '../icon'
 
 /**
  * Calendar Component
@@ -511,7 +512,7 @@ function Calendar(props: CalendarProps) {
         <div data-slot="calendar-month-caption" className={monthCaptionClasses}>
           {showPrev ? (
             <button data-slot="calendar-nav-prev" className={navButtonClasses} disabled={isPrevDisabled()} aria-label="Go to previous month" onClick={goToPrevMonth}>
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              <ChevronLeftIcon className="size-4" />
             </button>
           ) : (
             <div className="size-7" />
@@ -519,7 +520,7 @@ function Calendar(props: CalendarProps) {
           <span data-slot="calendar-month-title" className={monthTitleClasses}>{label}</span>
           {showNext ? (
             <button data-slot="calendar-nav-next" className={navButtonClasses} disabled={isNextDisabled()} aria-label="Go to next month" onClick={goToNextMonth}>
-              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+              <ChevronRightIcon className="size-4" />
             </button>
           ) : (
             <div className="size-7" />

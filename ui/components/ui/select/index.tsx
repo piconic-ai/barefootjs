@@ -37,6 +37,7 @@
 import { createContext, useContext, createSignal, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/dom'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
+import { CheckIcon, ChevronDownIcon } from '../icon'
 
 // Context for parent-child state sharing
 interface SelectContextValue {
@@ -180,9 +181,7 @@ function SelectTrigger(props: SelectTriggerProps) {
       ref={handleMount}
     >
       {props.children}
-      <svg className="size-4 shrink-0 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m6 9 6 6 6-6" />
-      </svg>
+      <ChevronDownIcon className="size-4 opacity-50" />
     </button>
   )
 }
@@ -476,7 +475,7 @@ function SelectItem(props: SelectItemProps) {
       ref={handleMount}
     >
       <span data-slot="select-item-indicator" className={selectIndicatorClasses} style="display:none">
-        <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+        <CheckIcon className="size-4" />
       </span>
       {props.children}
     </div>
