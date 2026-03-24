@@ -47,7 +47,7 @@ jobs:
           cd ../jsx && bun run build
 
       - name: Run unit tests
-        run: bun test packages/dom packages/jsx packages/test
+        run: bun test packages/dom packages/jsx packages/test packages/adapter-tests
 
   test-ui:
     runs-on: ubuntu-latest
