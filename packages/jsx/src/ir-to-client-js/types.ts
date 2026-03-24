@@ -88,6 +88,12 @@ export interface ConditionalBranchRef {
   callback: string
 }
 
+export interface ConditionalBranchChildComponent {
+  name: string
+  slotId: string | null
+  propsExpr: string
+}
+
 export interface ConditionalElement {
   slotId: string
   condition: string
@@ -97,6 +103,8 @@ export interface ConditionalElement {
   whenFalseEvents: ConditionalBranchEvent[]
   whenTrueRefs: ConditionalBranchRef[]
   whenFalseRefs: ConditionalBranchRef[]
+  whenTrueChildComponents: ConditionalBranchChildComponent[]
+  whenFalseChildComponents: ConditionalBranchChildComponent[]
 }
 
 export interface LoopChildEvent {
@@ -170,6 +178,8 @@ export interface ClientOnlyConditional {
   whenFalseEvents: ConditionalBranchEvent[]
   whenTrueRefs: ConditionalBranchRef[]
   whenFalseRefs: ConditionalBranchRef[]
+  whenTrueChildComponents: ConditionalBranchChildComponent[]
+  whenFalseChildComponents: ConditionalBranchChildComponent[]
 }
 
 export interface RestAttrElement {

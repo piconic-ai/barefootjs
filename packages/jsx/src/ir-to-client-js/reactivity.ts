@@ -2,7 +2,7 @@
  * Reactivity detection: reactive expression checking, event/ref collection.
  */
 
-import type { IRNode, IRElement } from '../types'
+import type { IRNode, IRElement, IRProp } from '../types'
 import type {
   ClientJsContext,
   ConditionalBranchEvent,
@@ -182,6 +182,54 @@ export function collectLoopChildEvents(node: IRNode): LoopChildEvent[] {
     }
   })
   return events
+}
+
+/**
+ * Collect child component nodes from a conditional branch for use with insert().
+ * These components will be re-initialized via initChild() in the branch's bindEvents callback.
+ */
+export function collectConditionalBranchChildComponents(
+  node: IRNode,
+): Array<{ name: string; slotId: string | null; props: IRProp[] }> {
+  const components: Array<{ name: string; slotId: string | null; props: IRProp[] }> = []
+  traverseForComponents(node, components)
+  return components
+}
+
+function traverseForComponents(
+  node: IRNode,
+  components: Array<{ name: string; slotId: string | null; props: IRProp[] }>,
+): void {
+  switch (node.type) {
+    case 'element':
+    case 'fragment':
+    case 'provider':
+      for (const child of node.children) {
+        traverseForComponents(child, components)
+      }
+      break
+    case 'component':
+      components.push({
+        name: node.name,
+        slotId: node.slotId,
+        props: node.props,
+      })
+      // Recurse into JSX children passed to this component
+      for (const child of node.children) {
+        traverseForComponents(child, components)
+      }
+      break
+    case 'conditional':
+      traverseForComponents(node.whenTrue, components)
+      traverseForComponents(node.whenFalse, components)
+      break
+    case 'if-statement':
+      traverseForComponents(node.consequent, components)
+      if (node.alternate) {
+        traverseForComponents(node.alternate, components)
+      }
+      break
+  }
 }
 
 /**

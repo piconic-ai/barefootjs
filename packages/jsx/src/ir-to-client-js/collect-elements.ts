@@ -2,10 +2,10 @@
  * IR tree traversal → collect elements into ClientJsContext.
  */
 
-import type { IRNode, IRElement } from '../types'
-import type { ClientJsContext, LoopChildEvent, LoopChildReactiveAttr } from './types'
+import type { IRNode, IRElement, IRProp } from '../types'
+import type { ClientJsContext, ConditionalBranchChildComponent, LoopChildEvent, LoopChildReactiveAttr } from './types'
 import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
-import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectLoopChildEvents, collectLoopChildReactiveAttrs } from './reactivity'
+import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildReactiveAttrs } from './reactivity'
 import { irToHtmlTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 
@@ -29,6 +29,64 @@ function buildRestSpreadNames(ctx: ClientJsContext): Set<string> {
   if (ctx.restPropsName) names.add(ctx.restPropsName)
   if (ctx.propsObjectName) names.add(ctx.propsObjectName)
   return names
+}
+
+/** Build propsExpr for a child component from its IR props. */
+function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
+  const restName = ctx.restPropsName
+  const propsObjName = ctx.propsObjectName
+  const knownSpreadProp = props.find(p =>
+    (p.name === '...' || p.name.startsWith('...')) &&
+    (p.value === restName || p.value === propsObjName)
+  )
+  const spreadSource = knownSpreadProp ? PROPS_PARAM : null
+
+  const propsForInit: string[] = []
+  const explicitPropNames: string[] = []
+  for (const prop of props) {
+    if (prop.name === '...' || prop.name.startsWith('...')) continue
+    explicitPropNames.push(prop.name)
+    const isEventHandler =
+      prop.name.startsWith('on') &&
+      prop.name.length > 2 &&
+      prop.name[2] === prop.name[2].toUpperCase()
+    if (isEventHandler) {
+      propsForInit.push(`${quotePropName(prop.name)}: ${prop.value}`)
+    } else if (prop.jsxChildren) {
+      const jsxExpr = irChildrenToJsExpr(prop.jsxChildren)
+      if (jsxChildrenContainComponent(prop.jsxChildren)) {
+        propsForInit.push(`get ${quotePropName(prop.name)}() { return __slot(() => ${jsxExpr}) }`)
+      } else {
+        propsForInit.push(`get ${quotePropName(prop.name)}() { return ${jsxExpr} }`)
+      }
+    } else if (prop.dynamic) {
+      const expandedValue = expandDynamicPropValue(prop.value, ctx)
+      propsForInit.push(`get ${quotePropName(prop.name)}() { return ${expandedValue} }`)
+    } else if (prop.isLiteral) {
+      propsForInit.push(`${quotePropName(prop.name)}: ${JSON.stringify(prop.value)}`)
+    } else {
+      propsForInit.push(`${quotePropName(prop.name)}: ${prop.value}`)
+    }
+  }
+
+  if (spreadSource) {
+    const overrides = propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'
+    const excludeKeys = JSON.stringify(explicitPropNames)
+    return `forwardProps(${spreadSource}, ${overrides}, ${excludeKeys})`
+  }
+  return propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'
+}
+
+/** Convert raw component info from IR traversal to ConditionalBranchChildComponent with built propsExpr. */
+function buildBranchChildComponents(
+  rawComponents: Array<{ name: string; slotId: string | null; props: IRProp[] }>,
+  ctx: ClientJsContext,
+): ConditionalBranchChildComponent[] {
+  return rawComponents.map(comp => ({
+    name: comp.name,
+    slotId: comp.slotId,
+    propsExpr: buildComponentPropsExpr(comp.props, ctx),
+  }))
 }
 
 /** Recursively walk the IR tree and populate ctx with interactive/dynamic/loop/conditional elements. */
@@ -62,6 +120,8 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         const whenFalseEvents = collectConditionalBranchEvents(node.whenFalse)
         const whenTrueRefs = collectConditionalBranchRefs(node.whenTrue)
         const whenFalseRefs = collectConditionalBranchRefs(node.whenFalse)
+        const whenTrueChildComponents = buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenTrue), ctx)
+        const whenFalseChildComponents = buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenFalse), ctx)
         const restNames = buildRestSpreadNames(ctx)
         ctx.clientOnlyConditionals.push({
           slotId: node.slotId,
@@ -72,12 +132,16 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           whenFalseEvents,
           whenTrueRefs,
           whenFalseRefs,
+          whenTrueChildComponents,
+          whenFalseChildComponents,
         })
       } else if (node.reactive && node.slotId) {
         const whenTrueEvents = collectConditionalBranchEvents(node.whenTrue)
         const whenFalseEvents = collectConditionalBranchEvents(node.whenFalse)
         const whenTrueRefs = collectConditionalBranchRefs(node.whenTrue)
         const whenFalseRefs = collectConditionalBranchRefs(node.whenFalse)
+        const whenTrueChildComponents = buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenTrue), ctx)
+        const whenFalseChildComponents = buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenFalse), ctx)
 
         const restNames = buildRestSpreadNames(ctx)
         ctx.conditionalElements.push({
@@ -89,6 +153,8 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           whenFalseEvents,
           whenTrueRefs,
           whenFalseRefs,
+          whenTrueChildComponents,
+          whenFalseChildComponents,
         })
       }
       // Recurse into conditional branches with insideConditional = true

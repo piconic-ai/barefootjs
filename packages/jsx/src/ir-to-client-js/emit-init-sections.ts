@@ -6,7 +6,7 @@
 import type { ComponentIR, SignalInfo, IRFragment } from '../types'
 import type { Declaration } from './declaration-sort'
 import { isBooleanAttr } from '../html-constants'
-import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, LoopChildEvent } from './types'
+import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, LoopChildEvent } from './types'
 import { inferDefaultValue, toHtmlAttrName, toDomEventName, wrapHandlerInBlock, buildChainedArrayExpr, quotePropName, varSlotId, PROPS_PARAM } from './utils'
 import { addCondAttrToTemplate, canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, irChildrenToJsExpr, createStringProtector } from './html-template'
 
@@ -325,13 +325,14 @@ function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContext): str
 }
 
 /**
- * Emit find() + event binding + ref callbacks for a conditional branch.
+ * Emit find() + event binding + ref callbacks + child component inits for a conditional branch.
  * Used by both emitConditionalUpdates and emitClientOnlyConditionals.
  */
 function emitBranchBindings(
   lines: string[],
   events: ConditionalBranchEvent[],
   refs: ConditionalBranchRef[],
+  childComponents: ConditionalBranchChildComponent[],
   eventNameFn: (eventName: string) => string
 ): void {
   const allSlotIds = new Set<string>()
@@ -365,6 +366,15 @@ function emitBranchBindings(
     const v = varSlotId(ref.slotId)
     lines.push(`      if (_${v}) (${ref.callback})(_${v})`)
   }
+
+  // Initialize child components created by the branch swap
+  for (let i = 0; i < childComponents.length; i++) {
+    const comp = childComponents[i]
+    const varName = `__c${i}`
+    const selectorArg = comp.slotId || comp.name
+    lines.push(`      const [${varName}] = $c(__branchScope, '${selectorArg}')`)
+    lines.push(`      if (${varName}) initChild('${comp.name}', ${varName}, ${comp.propsExpr})`)
+  }
 }
 
 /** Emit insert() calls for server-rendered reactive conditionals with branch configs. */
@@ -376,12 +386,12 @@ export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): v
     lines.push(`  insert(__scope, '${elem.slotId}', () => ${elem.condition}, {`)
     lines.push(`    template: () => \`${whenTrueWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, toDomEventName)
+    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, toDomEventName)
     lines.push(`    }`)
     lines.push(`  }, {`)
     lines.push(`    template: () => \`${whenFalseWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, toDomEventName)
+    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, toDomEventName)
     lines.push(`    }`)
     lines.push(`  })`)
     lines.push('')
@@ -399,12 +409,12 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
     lines.push(`  insert(__scope, '${elem.slotId}', () => ${elem.condition}, {`)
     lines.push(`    template: () => \`${whenTrueWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, rawEventName)
+    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, rawEventName)
     lines.push(`    }`)
     lines.push(`  }, {`)
     lines.push(`    template: () => \`${whenFalseWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, rawEventName)
+    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, rawEventName)
     lines.push(`    }`)
     lines.push(`  })`)
     lines.push('')

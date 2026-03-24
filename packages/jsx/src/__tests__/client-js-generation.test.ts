@@ -2266,4 +2266,61 @@ describe('Client JS generation', () => {
       expect(content).toContain('$t(__scope')
     })
   })
+
+  describe('child component initialization in conditional branches', () => {
+    test('emits initChild in bindEvents for component in reactive conditional', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function Parent() {
+          const [show, setShow] = createSignal(false)
+          return (
+            <div>
+              <button onClick={() => setShow(!show())}>Toggle</button>
+              {show() && <Spinner />}
+            </div>
+          )
+        }
+      `
+
+      const result = compileJSXSync(source, 'Parent.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      // bindEvents callback should contain initChild for the component in the branch
+      expect(content).toContain('initChild')
+      expect(content).toMatch(/bindEvents:.*\n[\s\S]*?initChild\('Spinner'/)
+    })
+
+    test('emits initChild with props in bindEvents for component with props', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/dom'
+
+        export function Parent() {
+          const [show, setShow] = createSignal(false)
+          return (
+            <div>
+              <button onClick={() => setShow(!show())}>Toggle</button>
+              {show() && <Alert message="hello" onClose={() => setShow(false)} />}
+            </div>
+          )
+        }
+      `
+
+      const result = compileJSXSync(source, 'Parent.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      // Should have initChild with props in the bindEvents callback
+      expect(content).toMatch(/initChild\('Alert'/)
+    })
+  })
 })

@@ -129,7 +129,9 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>): s
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${keyProp.value}` : ''
-      return `\${renderChild('${node.name}', ${propsExpr}${keyArg})}`
+      // Pass slotId as suffix so $c() can find the child component by slot after branch swap
+      const slotArg = node.slotId ? `, '${node.slotId}'` : ''
+      return `\${renderChild('${node.name}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
     }
 
     case 'loop': {
