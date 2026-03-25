@@ -34,6 +34,24 @@ const VOID_ELEMENTS = new Set([
   'input', 'link', 'meta', 'param', 'source', 'track', 'wbr',
 ])
 
+/**
+ * Generate a template expression for a dynamic attribute.
+ * Unifies boolean, presenceOrUndefined, and generic dynamic attribute handling.
+ *
+ * - Boolean attrs and presenceOrUndefined: render attribute name when truthy, empty string when falsy
+ * - Generic dynamic attrs: render `name="value"` when non-null, empty string otherwise
+ *
+ * @param attrName - The HTML attribute name
+ * @param valExpr - The already-transformed value expression string
+ * @param attr - Attribute metadata (only presenceOrUndefined flag is used)
+ */
+function templateAttrExpr(attrName: string, valExpr: string, attr: { presenceOrUndefined?: boolean }): string {
+  if (isBooleanAttr(attrName) || attr.presenceOrUndefined) {
+    return `\${${valExpr} ? '${attrName}' : ''}`
+  }
+  return `\${(${valExpr}) != null ? '${attrName}="' + (${valExpr}) + '"' : ''}`
+}
+
 /** Convert an IR node tree to an HTML template string (for conditionals/loops). */
 export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>): string {
   const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames)
@@ -53,13 +71,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>): s
           if (a.value === null) return attrName
           // Resolve IRTemplateLiteral to string expression for use in template literals
           const valExpr = typeof a.value === 'string' ? a.value : attrValueToString(a.value)
-          if (a.dynamic && isBooleanAttr(attrName)) {
-            return `\${${valExpr} ? '${attrName}' : ''}`
-          }
-          if (a.dynamic && a.presenceOrUndefined) {
-            return `\${${valExpr} ? '${attrName}' : ''}`
-          }
-          if (a.dynamic) return `\${(${valExpr}) != null ? '${attrName}="' + (${valExpr}) + '"' : ''}`
+          if (a.dynamic) return templateAttrExpr(attrName, valExpr, a)
           return `${attrName}="${valExpr}"`
         })
         .filter(Boolean)
@@ -321,13 +333,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
           const attrName = toHtmlAttrName(a.name)
           if (a.value === null) return attrName
           const valueStr = attrValueToString(a.value)
-          if (a.dynamic && valueStr && isBooleanAttr(attrName)) {
-            return `\${${transformExpr(valueStr)} ? '${attrName}' : ''}`
-          }
-          if (a.dynamic && valueStr && a.presenceOrUndefined) {
-            return `\${${transformExpr(valueStr)} ? '${attrName}' : ''}`
-          }
-          if (a.dynamic && valueStr) return `\${(${transformExpr(valueStr)}) != null ? '${attrName}="' + (${transformExpr(valueStr)}) + '"' : ''}`
+          if (a.dynamic && valueStr) return templateAttrExpr(attrName, transformExpr(valueStr), a)
           if (valueStr) return `${attrName}="${valueStr}"`
           return attrName
         })
@@ -612,13 +618,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           const attrName = a.name === 'key' ? 'data-key' : toHtmlAttrName(a.name)
           if (a.value === null) return attrName
           const valueStr = attrValueToString(a.value)
-          if (a.dynamic && valueStr && isBooleanAttr(attrName)) {
-            return `\${${transformExpr(valueStr)} ? '${attrName}' : ''}`
-          }
-          if (a.dynamic && valueStr && a.presenceOrUndefined) {
-            return `\${${transformExpr(valueStr)} ? '${attrName}' : ''}`
-          }
-          if (a.dynamic && valueStr) return `\${(${transformExpr(valueStr)}) != null ? '${attrName}="' + (${transformExpr(valueStr)}) + '"' : ''}`
+          if (a.dynamic && valueStr) return templateAttrExpr(attrName, transformExpr(valueStr), a)
           if (valueStr) return `${attrName}="${valueStr}"`
           return attrName
         })
