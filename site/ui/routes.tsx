@@ -58,6 +58,7 @@ import { DirectionRefPage } from './pages/components/direction'
 import { DrawerRefPage } from './pages/components/drawer'
 import { SheetRefPage } from './pages/components/sheet'
 import { DashboardRefPage } from './pages/components/dashboard'
+import { MailRefPage } from './pages/components/mail'
 import { LoginRefPage } from './pages/components/login'
 import { SettingsRefPage } from './pages/components/settings'
 import { SidebarRefPage } from './pages/components/sidebar'
@@ -417,6 +418,11 @@ export function createApp() {
   // Dashboard block page
   app.get('/components/dashboard', (c) => {
     return c.render(<DashboardRefPage />)
+  })
+
+  // Mail block page
+  app.get('/components/mail', (c) => {
+    return c.render(<MailRefPage />)
   })
 
   // Login block page

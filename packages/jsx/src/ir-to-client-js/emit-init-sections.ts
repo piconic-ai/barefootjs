@@ -493,7 +493,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
       if (!elem.childComponent && elem.childEvents.length > 0) {
         const v = varSlotId(elem.slotId)
         emitLoopEventDelegation(lines, `_${v}`, elem.childEvents, (ls, ev, handlerCall, cVar) => {
-          ls.push(`      let __el = ${ev.childSlotId}El`)
+          ls.push(`      let __el = ${varSlotId(ev.childSlotId)}El`)
           ls.push(`      while (__el.parentElement && __el.parentElement !== ${cVar}) __el = __el.parentElement`)
           ls.push(`      if (__el.parentElement === ${cVar}) {`)
           ls.push(`        const __idx = Array.from(${cVar}.children).indexOf(__el)`)
@@ -560,7 +560,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
         // Dynamic keyed: find item by data-key attribute
         const keyWithItem = elem.key.replace(new RegExp(`\\b${elem.param}\\b`, 'g'), 'item')
         emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
-          ls.push(`      const li = ${ev.childSlotId}El.closest('[data-key]')`)
+          ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[data-key]')`)
           ls.push(`      if (li) {`)
           ls.push(`        const key = li.getAttribute('data-key')`)
           ls.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
@@ -570,7 +570,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
       } else {
         // Dynamic non-keyed: find item by index in parent children
         emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
-          ls.push(`      const li = ${ev.childSlotId}El.closest('li, [bf-i]')`)
+          ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
           ls.push(`      if (li && li.parentElement) {`)
           ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
           ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
@@ -624,8 +624,9 @@ function emitLoopEventDelegation(
     }
     lines.push(`    const target = e.target`)
     for (const ev of events) {
-      lines.push(`    const ${ev.childSlotId}El = target.closest('[bf="${ev.childSlotId}"]')`)
-      lines.push(`    if (${ev.childSlotId}El) {`)
+      const childVar = varSlotId(ev.childSlotId)
+      lines.push(`    const ${childVar}El = target.closest('[bf="${ev.childSlotId}"]')`)
+      lines.push(`    if (${childVar}El) {`)
       const handlerCall = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
         ? `(${ev.handler})(e)`
         : ev.handler
