@@ -143,7 +143,7 @@ export function DashboardDemo() {
   }
 
   return (
-    <div className="w-full max-w-4xl min-w-0 overflow-hidden space-y-6">
+    <div className="w-full min-w-0 overflow-hidden space-y-6">
       {/* Tab navigation */}
       <Tabs value={selectedTab()} onValueChange={setSelectedTab}>
         <div className="flex items-center justify-between">
