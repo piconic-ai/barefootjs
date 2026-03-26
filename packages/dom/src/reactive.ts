@@ -145,8 +145,13 @@ function runEffect(effect: EffectContext): void {
  * @returns A dispose function that stops the effect and removes it from all signal dependencies.
  */
 export function createDisposableEffect(fn: EffectFn): () => void {
+  let disposed = false
+
   const effect: EffectContext = {
-    fn,
+    fn: () => {
+      if (disposed) return  // Prevent re-activation after disposal
+      return fn()
+    },
     cleanup: null,
     dependencies: new Set(),
   }
@@ -154,6 +159,7 @@ export function createDisposableEffect(fn: EffectFn): () => void {
   runEffect(effect)
 
   return () => {
+    disposed = true
     if (effect.cleanup) {
       effect.cleanup()
       effect.cleanup = null

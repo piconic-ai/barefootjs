@@ -166,7 +166,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         })
       }
       // Recurse into conditional branches with insideConditional = true
-      // This is still needed for dynamic text elements inside conditionals
+      // to collect nested conditionals, events, refs, child components, and reactive attrs
       collectElements(node.whenTrue, ctx, true)
       collectElements(node.whenFalse, ctx, true)
       break

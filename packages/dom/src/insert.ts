@@ -59,12 +59,17 @@ export function insert(
   try {
     const sampleTrue = whenTrue.template()
     isFragmentCond = sampleTrue.includes(`<!--bf-cond-start:${id}-->`)
-  } catch { /* template evaluation failed — not a fragment */ }
+  } catch (err) {
+    // Template may throw TypeError for nullable access (e.g., selectedMail().subject)
+    if (!(err instanceof TypeError)) throw err
+  }
   if (!isFragmentCond) {
     try {
       const sampleFalse = whenFalse.template()
       isFragmentCond = sampleFalse.includes(`<!--bf-cond-start:${id}-->`)
-    } catch { /* template evaluation failed — not a fragment */ }
+    } catch (err) {
+      if (!(err instanceof TypeError)) throw err
+    }
   }
 
   let prevCond: boolean | undefined
@@ -74,10 +79,15 @@ export function insert(
     let currCond: boolean
     try {
       currCond = Boolean(conditionFn())
-    } catch {
-      // Condition evaluation may throw if parent branch is inactive
-      // (e.g., selectedMail().read when selectedMail() is null)
-      currCond = false
+    } catch (err) {
+      // Condition evaluation may throw TypeError if parent branch is inactive
+      // (e.g., selectedMail().read when selectedMail() is null).
+      // Only swallow TypeErrors; rethrow unexpected errors to avoid hiding bugs.
+      if (err instanceof TypeError) {
+        currCond = false
+      } else {
+        throw err
+      }
     }
     const isFirstRun = prevCond === undefined
     const prevVal = prevCond

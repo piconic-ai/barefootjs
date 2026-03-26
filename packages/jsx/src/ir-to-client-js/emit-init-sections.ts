@@ -401,13 +401,14 @@ function emitBranchBindings(
 
   // Emit disposable text effects scoped to this branch.
   // These only run while the branch is active and are disposed on branch switch.
+  // Text node is resolved once (stable while branch is active) and closed over.
   if (textEffects.length > 0) {
     lines.push(`      const __disposers = []`)
     for (const te of textEffects) {
       const v = varSlotId(te.slotId)
+      lines.push(`      const [__el_${v}] = $t(__branchScope, '${te.slotId}')`)
       lines.push(`      __disposers.push(createDisposableEffect(() => {`)
       lines.push(`        const __val = ${te.expression}`)
-      lines.push(`        const [__el_${v}] = $t(__branchScope, '${te.slotId}')`)
       lines.push(`        if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val ?? '')`)
       lines.push(`      }))`)
     }
