@@ -3,7 +3,7 @@
  */
 
 import { type IRNode, type IRElement, type IRProp, pickAttrMeta } from '../types'
-import type { ClientJsContext, ConditionalBranchChildComponent, LoopChildEvent, LoopChildReactiveAttr } from './types'
+import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchTextEffect, LoopChildEvent, LoopChildReactiveAttr } from './types'
 import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
 import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildReactiveAttrs } from './reactivity'
 import { irToHtmlTemplate, irChildrenToJsExpr } from './html-template'
@@ -105,11 +105,13 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           slotId: node.slotId,
           expression: node.expr,
         })
-      } else if (node.reactive && node.slotId) {
+      } else if (node.reactive && node.slotId && !insideConditional) {
+        // Only collect as top-level dynamic element if NOT inside a conditional.
+        // Conditional text effects are collected per-branch and emitted inside bindEvents.
         ctx.dynamicElements.push({
           slotId: node.slotId,
           expression: node.expr,
-          insideConditional,
+          insideConditional: false,
         })
       }
       break
@@ -134,6 +136,8 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           whenFalseRefs,
           whenTrueChildComponents,
           whenFalseChildComponents,
+          whenTrueTextEffects: collectBranchTextEffects(node.whenTrue),
+          whenFalseTextEffects: collectBranchTextEffects(node.whenFalse),
         })
       } else if (node.reactive && node.slotId) {
         const whenTrueEvents = collectConditionalBranchEvents(node.whenTrue)
@@ -142,6 +146,8 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         const whenFalseRefs = collectConditionalBranchRefs(node.whenFalse)
         const whenTrueChildComponents = buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenTrue), ctx)
         const whenFalseChildComponents = buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenFalse), ctx)
+        const whenTrueTextEffects = collectBranchTextEffects(node.whenTrue)
+        const whenFalseTextEffects = collectBranchTextEffects(node.whenFalse)
 
         const restNames = buildRestSpreadNames(ctx)
         ctx.conditionalElements.push({
@@ -155,6 +161,8 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           whenFalseRefs,
           whenTrueChildComponents,
           whenFalseChildComponents,
+          whenTrueTextEffects,
+          whenFalseTextEffects,
         })
       }
       // Recurse into conditional branches with insideConditional = true
@@ -411,4 +419,41 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
       }
     }
   }
+}
+
+/**
+ * Collect reactive text expressions from a conditional branch IR subtree.
+ * Walks the branch tree to find expression nodes that need createEffect updates.
+ * Does NOT recurse into nested conditionals (they get their own insert() call).
+ */
+function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
+  const effects: ConditionalBranchTextEffect[] = []
+  function walk(n: IRNode): void {
+    switch (n.type) {
+      case 'expression':
+        if (n.reactive && n.slotId && !n.clientOnly) {
+          effects.push({ slotId: n.slotId, expression: n.expr })
+        }
+        break
+      case 'element':
+        for (const child of n.children) walk(child)
+        break
+      case 'component':
+        for (const child of n.children) walk(child)
+        break
+      case 'fragment':
+        for (const child of n.children) walk(child)
+        break
+      // Do NOT recurse into nested conditionals — they have their own insert()
+      case 'conditional':
+        break
+      case 'if-statement':
+        break
+      case 'provider':
+        for (const child of n.children) walk(child)
+        break
+    }
+  }
+  walk(node)
+  return effects
 }
