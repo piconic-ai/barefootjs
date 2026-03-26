@@ -139,6 +139,39 @@ function runEffect(effect: EffectContext): void {
 }
 
 /**
+ * Create an effect that can be explicitly disposed (unsubscribed from all signals).
+ * Used for effects inside conditional branches that need cleanup on branch switch.
+ *
+ * @returns A dispose function that stops the effect and removes it from all signal dependencies.
+ */
+export function createDisposableEffect(fn: EffectFn): () => void {
+  let disposed = false
+
+  const effect: EffectContext = {
+    fn: () => {
+      if (disposed) return  // Prevent re-activation after disposal
+      return fn()
+    },
+    cleanup: null,
+    dependencies: new Set(),
+  }
+
+  runEffect(effect)
+
+  return () => {
+    disposed = true
+    if (effect.cleanup) {
+      effect.cleanup()
+      effect.cleanup = null
+    }
+    for (const dep of effect.dependencies) {
+      dep.delete(effect)
+    }
+    effect.dependencies.clear()
+  }
+}
+
+/**
  * Register cleanup function for effects
  *
  * @param fn - Cleanup function

@@ -6,7 +6,7 @@
 import type { AttrMeta, ComponentIR, SignalInfo, IRFragment } from '../types'
 import type { Declaration } from './declaration-sort'
 import { isBooleanAttr } from '../html-constants'
-import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, LoopChildEvent } from './types'
+import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, LoopChildEvent } from './types'
 import { inferDefaultValue, toHtmlAttrName, toDomEventName, wrapHandlerInBlock, buildChainedArrayExpr, quotePropName, varSlotId, PROPS_PARAM } from './utils'
 import { addCondAttrToTemplate, canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, irChildrenToJsExpr, createStringProtector } from './html-template'
 
@@ -355,7 +355,8 @@ function emitBranchBindings(
   events: ConditionalBranchEvent[],
   refs: ConditionalBranchRef[],
   childComponents: ConditionalBranchChildComponent[],
-  eventNameFn: (eventName: string) => string
+  eventNameFn: (eventName: string) => string,
+  textEffects: ConditionalBranchTextEffect[] = []
 ): void {
   const allSlotIds = new Set<string>()
   for (const event of events) allSlotIds.add(event.slotId)
@@ -397,6 +398,22 @@ function emitBranchBindings(
     lines.push(`      const [${varName}] = $c(__branchScope, '${selectorArg}')`)
     lines.push(`      if (${varName}) initChild('${comp.name}', ${varName}, ${comp.propsExpr})`)
   }
+
+  // Emit disposable text effects scoped to this branch.
+  // These only run while the branch is active and are disposed on branch switch.
+  // Text node is resolved once (stable while branch is active) and closed over.
+  if (textEffects.length > 0) {
+    lines.push(`      const __disposers = []`)
+    for (const te of textEffects) {
+      const v = varSlotId(te.slotId)
+      lines.push(`      const [__el_${v}] = $t(__branchScope, '${te.slotId}')`)
+      lines.push(`      __disposers.push(createDisposableEffect(() => {`)
+      lines.push(`        const __val = ${te.expression}`)
+      lines.push(`        if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val ?? '')`)
+      lines.push(`      }))`)
+    }
+    lines.push(`      return () => __disposers.forEach(d => d())`)
+  }
 }
 
 /** Emit insert() calls for server-rendered reactive conditionals with branch configs. */
@@ -408,12 +425,12 @@ export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): v
     lines.push(`  insert(__scope, '${elem.slotId}', () => ${elem.condition}, {`)
     lines.push(`    template: () => \`${whenTrueWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, toDomEventName)
+    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, toDomEventName, elem.whenTrueTextEffects)
     lines.push(`    }`)
     lines.push(`  }, {`)
     lines.push(`    template: () => \`${whenFalseWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, toDomEventName)
+    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, toDomEventName, elem.whenFalseTextEffects)
     lines.push(`    }`)
     lines.push(`  })`)
     lines.push('')
@@ -431,12 +448,12 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
     lines.push(`  insert(__scope, '${elem.slotId}', () => ${elem.condition}, {`)
     lines.push(`    template: () => \`${whenTrueWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, rawEventName)
+    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, rawEventName, elem.whenTrueTextEffects)
     lines.push(`    }`)
     lines.push(`  }, {`)
     lines.push(`    template: () => \`${whenFalseWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, rawEventName)
+    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, rawEventName, elem.whenFalseTextEffects)
     lines.push(`    }`)
     lines.push(`  })`)
     lines.push('')

@@ -340,12 +340,12 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // The expression should be evaluated unconditionally to maintain reactive
-      // subscriptions, but wrapped in try-catch to handle cases where the guard
-      // variable (e.g., prev) is undefined and property access would throw.
-      // Pattern: try { __val = prev.title } catch { return }
-      expect(content).toMatch(/try \{ __val = prev\.title \} catch \{ return \}/)
-      expect(content).toMatch(/if \(__el_\w+ && !__val\?\.__isSlot\) __el_\w+\.nodeValue = String\(__val \?\? ''\)/)
+      // Text effects inside conditional branches are emitted inside bindEvents
+      // using createDisposableEffect, not as top-level try-catch effects.
+      // This ensures they only run when the branch is active.
+      expect(content).toContain('createDisposableEffect')
+      expect(content).toContain('prev.title')
+      expect(content).toContain('bindEvents')
     })
 
     test('still defaults props with property access to {} when not used as conditional guard', () => {
@@ -2232,8 +2232,8 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // text() inside a component inside a conditional must use $t() runtime lookup
-      expect(content).toContain('$t(__scope')
+      // text() inside a component inside a conditional uses $t() in branch-scoped effect
+      expect(content).toContain('$t(__branchScope')
     })
 
     test('propagates insideConditional through fragment children', () => {
@@ -2263,8 +2263,8 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // text() inside a fragment inside a conditional must use $t() runtime lookup
-      expect(content).toContain('$t(__scope')
+      // text() inside a fragment inside a conditional uses $t() in branch-scoped effect
+      expect(content).toContain('$t(__branchScope')
     })
   })
 

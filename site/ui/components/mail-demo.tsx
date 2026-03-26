@@ -163,14 +163,6 @@ export function MailInboxDemo() {
     mails().find((m) => m.id === selectedId())
   )
 
-  // Derived properties with safe defaults — avoids null access in conditional templates
-  const detailSubject = createMemo(() => selectedMail()?.subject ?? '')
-  const detailFrom = createMemo(() => selectedMail()?.from ?? '')
-  const detailDate = createMemo(() => selectedMail()?.date ?? '')
-  const detailBody = createMemo(() => selectedMail()?.body ?? '')
-  const detailRead = createMemo(() => selectedMail()?.read ?? false)
-  const detailId = createMemo(() => selectedMail()?.id ?? 0)
-
   const selectedCount = createMemo(() =>
     mails().filter((m) => m.selected).length
   )
@@ -323,9 +315,9 @@ export function MailInboxDemo() {
                 <div className="mail-detail p-4 space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="mail-detail-subject text-lg font-semibold">{detailSubject()}</h3>
-                      <p className="mail-detail-from text-sm text-muted-foreground">From: {detailFrom()}</p>
-                      <p className="text-xs text-muted-foreground">{detailDate()}</p>
+                      <h3 className="mail-detail-subject text-lg font-semibold">{selectedMail().subject}</h3>
+                      <p className="mail-detail-from text-sm text-muted-foreground">From: {selectedMail().from}</p>
+                      <p className="text-xs text-muted-foreground">{selectedMail().date}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -333,12 +325,12 @@ export function MailInboxDemo() {
                         size="sm"
                         onClick={handleToggleRead}
                       >
-                        <span className="read-toggle-text">{detailRead() ? 'Mark unread' : 'Mark read'}</span>
+                        <span className="read-toggle-text">{selectedMail().read ? 'Mark unread' : 'Mark read'}</span>
                       </Button>
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => handleDeleteClick(detailId())}
+                        onClick={() => handleDeleteClick(selectedMail().id)}
                       >
                         Delete
                       </Button>
@@ -347,7 +339,7 @@ export function MailInboxDemo() {
 
                   <Separator />
 
-                  <div className="mail-body text-sm whitespace-pre-line">{detailBody()}</div>
+                  <div className="mail-body text-sm whitespace-pre-line">{selectedMail().body}</div>
                 </div>
               ) : (
                 <div className="mail-empty flex items-center justify-center h-full text-muted-foreground text-sm">

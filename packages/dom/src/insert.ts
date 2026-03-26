@@ -19,11 +19,13 @@ export interface BranchConfig {
   template: () => string
 
   /**
-   * Bind events to elements within the branch.
+   * Bind events and reactive effects to elements within the branch.
    * Called both during hydration (for SSR elements) and after DOM swaps.
    * @param scope - The scope element to search within for event targets
+   * @returns Optional cleanup function, called when the branch is deactivated.
+   *          Used to dispose reactive effects scoped to this branch.
    */
-  bindEvents: (scope: Element) => void
+  bindEvents: (scope: Element) => (() => void) | void
 }
 
 
@@ -49,17 +51,44 @@ export function insert(
 ): void {
   if (!scope) return
 
-  // Check if either branch uses fragment conditional (comment markers)
-  // Both branches need to be checked because SSR may render either branch
-  const sampleTrue = whenTrue.template()
-  const sampleFalse = whenFalse.template()
-  const isFragmentCond = sampleTrue.includes(`<!--bf-cond-start:${id}-->`) ||
-                         sampleFalse.includes(`<!--bf-cond-start:${id}-->`)
+  // Check if either branch uses fragment conditional (comment markers).
+  // Both branches need to be checked because SSR may render either branch.
+  // Use try/catch because template evaluation may access nullable expressions
+  // (e.g., selectedMail().subject when the branch is for the non-null case).
+  let isFragmentCond = false
+  try {
+    const sampleTrue = whenTrue.template()
+    isFragmentCond = sampleTrue.includes(`<!--bf-cond-start:${id}-->`)
+  } catch (err) {
+    // Template may throw TypeError for nullable access (e.g., selectedMail().subject)
+    if (!(err instanceof TypeError)) throw err
+  }
+  if (!isFragmentCond) {
+    try {
+      const sampleFalse = whenFalse.template()
+      isFragmentCond = sampleFalse.includes(`<!--bf-cond-start:${id}-->`)
+    } catch (err) {
+      if (!(err instanceof TypeError)) throw err
+    }
+  }
 
   let prevCond: boolean | undefined
+  let branchCleanup: (() => void) | null = null
 
   createEffect(() => {
-    const currCond = Boolean(conditionFn())
+    let currCond: boolean
+    try {
+      currCond = Boolean(conditionFn())
+    } catch (err) {
+      // Condition evaluation may throw TypeError if parent branch is inactive
+      // (e.g., selectedMail().read when selectedMail() is null).
+      // Only swallow TypeErrors; rethrow unexpected errors to avoid hiding bugs.
+      if (err instanceof TypeError) {
+        currCond = false
+      } else {
+        throw err
+      }
+    }
     const isFirstRun = prevCond === undefined
     const prevVal = prevCond
     prevCond = currCond
@@ -94,7 +123,8 @@ export function insert(
       }
 
       // Bind events to the (possibly updated) SSR element
-      branch.bindEvents(scope)
+      const result = branch.bindEvents(scope)
+      branchCleanup = typeof result === 'function' ? result : null
 
       // Auto-focus on first run too (for components created via createComponent with editing=true)
       autoFocusConditionalElement(scope, id)
@@ -108,6 +138,12 @@ export function insert(
       return
     }
 
+    // Dispose previous branch's scoped effects before swapping DOM
+    if (branchCleanup) {
+      branchCleanup()
+      branchCleanup = null
+    }
+
     // Branch changed: swap DOM and bind events
     const html = branch.template()
     if (isFragmentCond) {
@@ -117,7 +153,8 @@ export function insert(
     }
 
     // Bind events to the newly inserted element
-    branch.bindEvents(scope)
+    const result = branch.bindEvents(scope)
+      branchCleanup = typeof result === 'function' ? result : null
 
     // Auto-focus elements with autofocus attribute (for dynamically created elements)
     autoFocusConditionalElement(scope, id)

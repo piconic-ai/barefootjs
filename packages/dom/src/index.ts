@@ -14,6 +14,7 @@ export {
 export {
   createSignal,
   createEffect,
+  createDisposableEffect,
   createMemo,
   onCleanup,
   onMount,

@@ -95,6 +95,11 @@ export interface ConditionalBranchChildComponent {
   propsExpr: string
 }
 
+export interface ConditionalBranchTextEffect {
+  slotId: string
+  expression: string
+}
+
 export interface ConditionalElement {
   slotId: string
   condition: string
@@ -106,6 +111,8 @@ export interface ConditionalElement {
   whenFalseRefs: ConditionalBranchRef[]
   whenTrueChildComponents: ConditionalBranchChildComponent[]
   whenFalseChildComponents: ConditionalBranchChildComponent[]
+  whenTrueTextEffects: ConditionalBranchTextEffect[]
+  whenFalseTextEffects: ConditionalBranchTextEffect[]
 }
 
 export interface LoopChildEvent {
@@ -179,6 +186,8 @@ export interface ClientOnlyConditional {
   whenFalseRefs: ConditionalBranchRef[]
   whenTrueChildComponents: ConditionalBranchChildComponent[]
   whenFalseChildComponents: ConditionalBranchChildComponent[]
+  whenTrueTextEffects: ConditionalBranchTextEffect[]
+  whenFalseTextEffects: ConditionalBranchTextEffect[]
 }
 
 export interface RestAttrElement {
