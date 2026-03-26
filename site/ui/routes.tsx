@@ -19,6 +19,7 @@ import { ComboboxRefPage } from './pages/components/combobox'
 import { InputRefPage } from './pages/components/input'
 import { InputGroupRefPage } from './pages/components/input-group'
 import { ItemRefPage } from './pages/components/item'
+import { FieldRefPage } from './pages/components/field'
 import { LabelRefPage } from './pages/components/label'
 import { SelectRefPage } from './pages/components/select'
 import { TextareaRefPage } from './pages/components/textarea'
@@ -165,6 +166,11 @@ export function createApp() {
   // Combobox reference page (redesigned #515)
   app.get('/components/combobox', (c) => {
     return c.render(<ComboboxRefPage />)
+  })
+
+  // Field reference page
+  app.get('/components/field', (c) => {
+    return c.render(<FieldRefPage />)
   })
 
   // Label reference page (redesigned #515)
