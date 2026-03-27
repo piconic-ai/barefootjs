@@ -120,6 +120,7 @@ export interface NestedLoopInfo {
   array: string    // Inner loop array expression (e.g., 'col.tasks')
   param: string    // Inner loop parameter name (e.g., 'task')
   key: string      // Inner loop key expression (e.g., 'task.id')
+  containerSlotId: string | null // Slot ID of the parent element containing the loop (for hydration)
 }
 
 export interface LoopChildEvent {
@@ -147,8 +148,9 @@ export interface LoopElement {
   childEvents: LoopChildEvent[] // Detailed event info for delegation
   childReactiveAttrs: LoopChildReactiveAttr[] // Reactive attributes in loop children
   childComponent?: IRLoopChildComponent // For createComponent-based rendering
-  nestedComponents?: IRLoopChildComponent[] // For nested components in static arrays
+  nestedComponents?: IRLoopChildComponent[] // For nested components in loop bodies
   isStaticArray: boolean // True if array is a static prop (not a signal)
+  useElementReconciliation?: boolean // True: reconcileElements + composite rendering (native root with child components)
   filterPredicate?: {
     param: string
     raw: string  // Original filter predicate expression or block body

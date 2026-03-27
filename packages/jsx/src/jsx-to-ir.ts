@@ -1417,12 +1417,11 @@ function transformMapCall(
   // Only signal and memo arrays need reconcileList for dynamic DOM updates
   const isStaticArray = !isSignalOrMemoArray(array, ctx)
 
-  // For static arrays, collect nested components that need hydration.
-  // When childComponent exists (e.g., <TableRow>), also collect components nested
-  // within it (e.g., <Checkbox> inside <TableCell> inside <TableRow>).
-  const nestedComponents = isStaticArray
-    ? collectNestedComponents(children).filter(c => c.name !== childComponent?.name)
-    : undefined
+  // Collect nested components for both static and dynamic arrays.
+  // Static arrays: needed for initChild hydration.
+  // Dynamic arrays with native root + component descendants: enables reconcileElements
+  // with composite rendering (placeholder + createComponent replacement).
+  const nestedComponents = collectNestedComponents(children).filter(c => c.name !== childComponent?.name)
 
   return {
     type: 'loop',
@@ -1450,12 +1449,13 @@ function transformMapCall(
 
 /**
  * Recursively collect all components nested within loop children.
- * Used for static array hydration when components are wrapped in elements.
+ * Tracks loop nesting depth so composite element reconciliation knows
+ * which components are inside inner loops (loopDepth > 0).
  */
 function collectNestedComponents(nodes: IRNode[]): IRLoopChildComponent[] {
   const result: IRLoopChildComponent[] = []
 
-  function traverse(node: IRNode): void {
+  function traverse(node: IRNode, loopDepth: number): void {
     if (node.type === 'component') {
       result.push({
         name: node.name,
@@ -1470,22 +1470,30 @@ function collectNestedComponents(nodes: IRNode[]): IRLoopChildComponent[] {
             isEventHandler: p.name.startsWith('on') && p.name.length > 2,
           })),
         children: node.children,
+        loopDepth,
       })
       // Also traverse component children to find deeply nested components
-      // (e.g., Checkbox inside TableCell inside TableRow)
       if (node.children) {
-        node.children.forEach(traverse)
+        node.children.forEach(c => traverse(c, loopDepth))
       }
     }
     if (node.type === 'element' && node.children) {
-      node.children.forEach(traverse)
+      node.children.forEach(c => traverse(c, loopDepth))
     }
     if (node.type === 'fragment' && node.children) {
-      node.children.forEach(traverse)
+      node.children.forEach(c => traverse(c, loopDepth))
+    }
+    if (node.type === 'loop' && node.children) {
+      // Entering an inner loop — increment depth
+      node.children.forEach(c => traverse(c, loopDepth + 1))
+    }
+    if (node.type === 'conditional') {
+      traverse(node.whenTrue, loopDepth)
+      traverse(node.whenFalse, loopDepth)
     }
   }
 
-  nodes.forEach(traverse)
+  nodes.forEach(n => traverse(n, 0))
   return result
 }
 

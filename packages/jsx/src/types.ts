@@ -147,6 +147,7 @@ export interface IRLoopChildComponent {
     isEventHandler: boolean
   }>
   children: IRNode[] // Child nodes for nested component rendering
+  loopDepth?: number // 0 = direct child of outer loop, 1+ = inside nested inner loops
 }
 
 export interface IRLoop {

@@ -50,6 +50,12 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
       childComponentNames.add(loop.childComponent.name)
       collectComponentNamesFromIR(loop.childComponent.children, childComponentNames)
     }
+    // Composite element reconciliation: collect component names from nestedComponents
+    if (loop.useElementReconciliation && loop.nestedComponents?.length) {
+      for (const comp of loop.nestedComponents) {
+        childComponentNames.add(comp.name)
+      }
+    }
   }
   for (const child of ctx.childInits) {
     childComponentNames.add(child.name)

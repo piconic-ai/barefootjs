@@ -6,7 +6,7 @@ import { type IRNode, type IRElement, type IRProp, pickAttrMeta } from '../types
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchTextEffect, LoopChildEvent, LoopChildReactiveAttr } from './types'
 import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
 import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs } from './reactivity'
-import { irToHtmlTemplate, irChildrenToJsExpr } from './html-template'
+import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 
 
@@ -193,19 +193,35 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           }
         }
 
+        // Determine rendering strategy for dynamic arrays with component descendants:
+        // Native element root + component children → reconcileElements with composite rendering
+        const useElementReconciliation = !node.childComponent
+          && !node.isStaticArray
+          && (node.nestedComponents?.length ?? 0) > 0
+
+        let template = ''
+        if (node.childComponent) {
+          template = '' // childComponent path uses createComponent directly
+        } else if (useElementReconciliation && node.children[0]) {
+          template = irToPlaceholderTemplate(node.children[0], buildRestSpreadNames(ctx))
+        } else if (node.children[0]) {
+          template = irToHtmlTemplate(node.children[0], buildRestSpreadNames(ctx))
+        }
+
         ctx.loopElements.push({
           slotId: node.slotId,
           array: node.array,
           param: node.param,
           index: node.index,
           key: node.key,
-          template: node.childComponent ? '' : (node.children[0] ? irToHtmlTemplate(node.children[0], buildRestSpreadNames(ctx)) : ''),
+          template,
           childEventHandlers: childHandlers,
           childEvents,
           childReactiveAttrs,
           childComponent: node.childComponent,
           nestedComponents: node.nestedComponents,
           isStaticArray: node.isStaticArray,
+          useElementReconciliation,
           filterPredicate: node.filterPredicate ? {
             param: node.filterPredicate.param,
             raw: node.filterPredicate.raw,

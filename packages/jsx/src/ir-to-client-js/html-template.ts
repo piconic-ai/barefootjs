@@ -175,6 +175,101 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
 }
 
 /**
+ * Generate an HTML template for composite element reconciliation.
+ * Identical to irToHtmlTemplate except component nodes become placeholder
+ * elements (`<div data-bf-ph="sN"></div>`) instead of renderChild() calls.
+ * The placeholders are replaced with real createComponent() elements at runtime.
+ */
+export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0): string {
+  const recurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth)
+
+  switch (node.type) {
+    case 'element': {
+      const attrParts = node.attrs
+        .map((a) => {
+          if (a.name === '...') {
+            const spreadValue = typeof a.value === 'string' ? a.value : null
+            if (!spreadValue) return ''
+            if (restSpreadNames?.has(spreadValue)) return ''
+            return `\${spreadAttrs(${spreadValue})}`
+          }
+          const attrName = a.name === 'key'
+            ? (loopDepth > 0 ? `data-key-${loopDepth}` : 'data-key')
+            : toHtmlAttrName(a.name)
+          if (a.value === null) return attrName
+          const valExpr = typeof a.value === 'string' ? a.value : (attrValueToString(a.value) ?? '')
+          if (a.dynamic) return templateAttrExpr(attrName, valExpr, a)
+          return `${attrName}="${valExpr}"`
+        })
+        .filter(Boolean)
+
+      if (node.slotId) {
+        attrParts.push(`bf="${node.slotId}"`)
+      }
+
+      const attrs = attrParts.join(' ')
+      const children = node.children.map(recurse).join('')
+
+      if (children || !VOID_ELEMENTS.has(node.tag)) {
+        return `<${node.tag}${attrs ? ' ' + attrs : ''}>${children}</${node.tag}>`
+      }
+      return `<${node.tag}${attrs ? ' ' + attrs : ''} />`
+    }
+
+    case 'text':
+      return node.value
+
+    case 'expression':
+      if (node.expr === 'null' || node.expr === 'undefined') return ''
+      if (node.slotId) {
+        return `<!--bf:${node.slotId}-->\${${node.expr}}<!--/-->`
+      }
+      return `\${${node.expr}}`
+
+    case 'conditional': {
+      const trueBranch = recurse(node.whenTrue)
+      const falseBranch = recurse(node.whenFalse)
+      const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
+      const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
+      return `\${${node.condition} ? \`${trueHtml}\` : \`${falseHtml}\`}`
+    }
+
+    case 'fragment':
+      return node.children.map(recurse).join('')
+
+    case 'component': {
+      // Portal is a pass-through — render children directly
+      if (node.name === 'Portal') {
+        return node.children.map(recurse).join('')
+      }
+      // Emit a placeholder div that will be replaced with createComponent() at runtime
+      const phId = node.slotId || node.name
+      return `<div data-bf-ph="${phId}"></div>`
+    }
+
+    case 'loop': {
+      // Inner loops: generate inline .map().join('') with placeholders for components
+      const innerRecurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth + 1)
+      const childTemplate = node.children.map(innerRecurse).join('')
+      const indexParam = node.index ? `, ${node.index}` : ''
+      if (node.mapPreamble) {
+        return `\${${node.array}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+      }
+      return `\${${node.array}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
+    }
+
+    case 'if-statement':
+      return ''
+
+    case 'provider':
+      return node.children.map(recurse).join('')
+
+    default:
+      return ''
+  }
+}
+
+/**
  * Convert IR children into a JavaScript expression string for createComponent.
  * Produces expressions suitable for use in `get children() { return <expr> }`.
  *

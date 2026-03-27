@@ -121,13 +121,32 @@ export function syncElementState(target: HTMLElement, source: HTMLElement): void
     }
   }
 
-  // Then sync text content of bf slots that are NOT inside conditional elements
+  // Then sync text content of bf slots that are NOT inside conditional elements.
+  // Use querySelectorAll on BOTH source and target, then match by position index
+  // within each slot ID group. This handles multiple component instances that share
+  // the same internal slot ID (e.g., multiple Badge components each with bf="s0").
   const sourceSlots = source.querySelectorAll(`[${BF_SLOT}]`)
-  for (const sourceSlot of sourceSlots) {
+  const targetSlotsByID = new Map<string, Element[]>()
+  const targetAllSlots = target.querySelectorAll(`[${BF_SLOT}]`)
+  for (const targetSlot of Array.from(targetAllSlots)) {
+    const id = (targetSlot as HTMLElement).getAttribute(BF_SLOT)
+    if (id) {
+      if (!targetSlotsByID.has(id)) targetSlotsByID.set(id, [])
+      targetSlotsByID.get(id)!.push(targetSlot)
+    }
+  }
+
+  // Track which index we're at for each slot ID
+  const slotIndexCounters = new Map<string, number>()
+
+  for (const sourceSlot of Array.from(sourceSlots)) {
     const slotId = (sourceSlot as HTMLElement).getAttribute(BF_SLOT)
     if (slotId) {
       if (sourceSlot.closest(`[${BF_COND}]`)) continue
-      const targetSlot = target.querySelector(`[${BF_SLOT}="${slotId}"]`)
+      const idx = slotIndexCounters.get(slotId) ?? 0
+      slotIndexCounters.set(slotId, idx + 1)
+      const targets = targetSlotsByID.get(slotId)
+      const targetSlot = targets?.[idx]
       if (targetSlot && sourceSlot.textContent !== null) {
         if (sourceSlot.children.length === 0) {
           targetSlot.textContent = sourceSlot.textContent

@@ -205,9 +205,13 @@ export function collectLoopChildEventsWithNesting(
 ): LoopChildEvent[] {
   const events: LoopChildEvent[] = []
 
+  let lastElementSlotId: string | null = null
+
   function walk(n: IRNode): void {
     switch (n.type) {
-      case 'element':
+      case 'element': {
+        const prevSlotId = lastElementSlotId
+        if (n.slotId) lastElementSlotId = n.slotId
         if (n.slotId) {
           for (const event of n.events) {
             events.push({
@@ -219,14 +223,17 @@ export function collectLoopChildEventsWithNesting(
           }
         }
         for (const child of n.children) walk(child)
+        lastElementSlotId = prevSlotId
         break
+      }
       case 'loop':
-        // Enter nested loop — push nesting info
+        // Enter nested loop — push nesting info with container element's slotId
         nestingStack.push({
           depth: nestingStack.length + 1,
           array: n.array,
           param: n.param,
           key: n.key ?? '',
+          containerSlotId: lastElementSlotId,
         })
         for (const child of n.children) walk(child)
         nestingStack.pop()
