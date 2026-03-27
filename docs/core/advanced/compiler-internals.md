@@ -259,7 +259,7 @@ export function initCounter(__scope, props = {}) {
   // insert(_s4, () => isOpen() ? panelHtml : null)
 
   // 9. Loop updates
-  // reconcileTemplates(_s5, items(), getKey, renderItem)
+  // reconcileElements(_s5, items(), getKey, renderItem)
 
   // 10. Event handlers
   if (_s3) _s3.onclick = handleClick

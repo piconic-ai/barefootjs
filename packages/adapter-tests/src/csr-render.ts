@@ -146,7 +146,6 @@ const onMount = () => {}
 const onCleanup = () => {}
 const insert = () => {}
 const reconcileElements = () => {}
-const reconcileTemplates = () => {}
 const updateClientMarker = () => {}
 const initChild = () => {}
 const createComponent = () => null

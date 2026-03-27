@@ -151,6 +151,8 @@ export interface LoopElement {
   nestedComponents?: IRLoopChildComponent[] // For nested components in loop bodies
   isStaticArray: boolean // True if array is a static prop (not a signal)
   useElementReconciliation?: boolean // True: reconcileElements + composite rendering (native root with child components)
+  /** Inner loop metadata for composite element reconciliation (array, param, key, container) */
+  innerLoops?: NestedLoopInfo[]
   filterPredicate?: {
     param: string
     raw: string  // Original filter predicate expression or block body

@@ -10,6 +10,7 @@
 
 import { createSignal, createMemo } from '@barefootjs/dom'
 import { Badge } from '@ui/components/ui/badge'
+import { Button } from '@ui/components/ui/button'
 import {
   ToastProvider,
   Toast,
@@ -128,9 +129,6 @@ export function KanbanDemo() {
         <span className="task-total text-sm text-muted-foreground">{totalTasks()} tasks</span>
       </div>
 
-      {/* WORKAROUND: Uses native <button> and <input> instead of Button/Input components
-           inside the loop. reconcileTemplates loses component event handlers (renderChild
-           generates HTML but initChild is never called). See memory: compiler-reconcile-templates-events.md */}
       <div className="kanban-columns flex gap-4 overflow-x-auto pb-4">
         {columns().map(col => (
           <div key={col.id} className="kanban-column flex-1 min-w-[250px]">
@@ -139,14 +137,21 @@ export function KanbanDemo() {
                 <h3 className="column-title text-sm font-semibold">{col.title}</h3>
                 <Badge variant="secondary" className="task-count">{col.tasks.length}</Badge>
               </div>
-              <button
-                className="add-task-btn inline-flex items-center justify-center h-7 w-7 rounded-md border border-input bg-background text-sm hover:bg-muted"
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="add-task-btn"
                 onClick={() => setAddingToColumn(addingToColumn() === col.id ? null : col.id)}
               >
                 +
-              </button>
+              </Button>
             </div>
 
+            {/* WORKAROUND: Uses native <input> and <button> in the add form instead of
+                 Input/Button components. Signal reads (newTaskTitle()) in the loop template
+                 cause reconcileElements to replace all items on each keystroke, losing
+                 component state. Fix: compiler should emit reactive attrs (value={signal()})
+                 as separate createEffect instead of inlining in template string. */}
             {addingToColumn() === col.id ? (
               <div className="add-task-form flex gap-2 mb-3">
                 <input
@@ -169,28 +174,34 @@ export function KanbanDemo() {
                 <div key={task.id} className="task-card rounded-xl border border-border bg-card p-3 space-y-2 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <p className="task-title text-sm font-medium">{task.title}</p>
-                    <button
-                      className="delete-task text-muted-foreground hover:text-destructive text-xs shrink-0"
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="delete-task text-muted-foreground hover:text-destructive"
                       onClick={() => deleteTask(task.id, col.id)}
                     >
                       ×
-                    </button>
+                    </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <Badge variant={priorityVariant[task.priority]} className="task-priority text-xs">{task.priority}</Badge>
                     <div className="flex gap-1">
-                      <button
-                        className="move-left inline-flex items-center justify-center h-6 w-6 rounded-md text-xs hover:bg-muted"
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="move-left"
                         onClick={() => moveTask(task.id, col.id, 'left')}
                       >
                         ←
-                      </button>
-                      <button
-                        className="move-right inline-flex items-center justify-center h-6 w-6 rounded-md text-xs hover:bg-muted"
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="move-right"
                         onClick={() => moveTask(task.id, col.id, 'right')}
                       >
                         →
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>

@@ -149,7 +149,7 @@ describe('Client JS generation', () => {
   })
 
   describe('map with index parameter', () => {
-    test('includes index parameter in reconcileTemplates callback', () => {
+    test('includes index parameter in reconcileElements renderItem callback', () => {
       const source = `
         'use client'
         import { createMemo } from '@barefootjs/dom'
@@ -173,8 +173,8 @@ describe('Client JS generation', () => {
       const clientJs = result.files.find(f => f.type === 'clientJs')
       expect(clientJs).toBeDefined()
 
-      // Should include index param in callback (not just item without index)
-      expect(clientJs?.content).toContain('(item, i) => `')
+      // Should include index param in renderItem callback
+      expect(clientJs?.content).toContain('(item, i) => {')
     })
 
     test('includes index parameter in key function when key references index', () => {

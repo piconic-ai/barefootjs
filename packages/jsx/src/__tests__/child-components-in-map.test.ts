@@ -313,9 +313,9 @@ describe('child components inside .map() (#344)', () => {
     const uniqueVars = new Set(allVars)
     expect(allVars.length).toBe(uniqueVars.size)
 
-    // Component slot ref ($c) and reconcileTemplates should both be present
+    // Component slot ref ($c) and reconcileElements should both be present
     expect(content).toContain('$c(__scope')
-    expect(content).toContain('reconcileTemplates')
+    expect(content).toContain('reconcileElements')
   })
 
   test('dynamic signal array: component with component children emits nested createComponent (#481)', () => {
@@ -642,8 +642,8 @@ describe('child components inside .map() (#344)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    // Dynamic array should use reconcileTemplates and event delegation
-    expect(content).toContain('reconcileTemplates')
+    // Dynamic array should use reconcileElements and event delegation
+    expect(content).toContain('reconcileElements')
     expect(content).toContain(".addEventListener('click', (e) => {")
     expect(content).toContain('handleClick(item.id)')
   })

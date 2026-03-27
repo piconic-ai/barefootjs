@@ -561,15 +561,30 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
       lines.push(`  })`)
     } else {
       const chainedExprTemplate = buildChainedArrayExpr(elem)
-
       const indexParamTemplate = elem.index || '__idx'
+
       lines.push(`  createEffect(() => {`)
       lines.push(`    const __arr = ${chainedExprTemplate}`)
       if (elem.mapPreamble) {
-        lines.push(`    reconcileTemplates(_${vLoop}, __arr, ${keyFn}, (${elem.param}, ${indexParamTemplate}) => { ${elem.mapPreamble} return \`${elem.template}\` })`)
+        lines.push(`    const __renderItem = (${elem.param}, ${indexParamTemplate}) => { ${elem.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
       } else {
-        lines.push(`    reconcileTemplates(_${vLoop}, __arr, ${keyFn}, (${elem.param}, ${indexParamTemplate}) => \`${elem.template}\`)`)
+        lines.push(`    const __renderItem = (${elem.param}, ${indexParamTemplate}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
       }
+      // Hydration: preserve SSR elements, tag with data-key, track signals
+      lines.push(`    if (_${vLoop} && _${vLoop}.children.length > 0 && !_${vLoop}.firstElementChild?.hasAttribute('data-key')) {`)
+      lines.push(`      Array.from(_${vLoop}.children).forEach((__hChild, ${indexParamTemplate}) => {`)
+      lines.push(`        if (${indexParamTemplate} >= __arr.length) return`)
+      lines.push(`        const ${elem.param} = __arr[${indexParamTemplate}]`)
+      if (elem.key) {
+        lines.push(`        __hChild.setAttribute('data-key', String(${elem.key}))`)
+      } else {
+        lines.push(`        __hChild.setAttribute('data-key', String(${indexParamTemplate}))`)
+      }
+      lines.push(`      })`)
+      lines.push(`      if (__arr.length > 0) __renderItem(__arr[0], 0)`)
+      lines.push(`      return`)
+      lines.push(`    }`)
+      lines.push(`    reconcileElements(_${vLoop}, __arr, ${keyFn}, __renderItem)`)
       lines.push(`  })`)
     }
     lines.push('')
@@ -677,12 +692,9 @@ function emitCompositeElementReconciliation(
   const outerEvents = elem.childEvents.filter(ev => ev.nestedLoops.length === 0)
   const innerEvents = elem.childEvents.filter(ev => ev.nestedLoops.length > 0)
 
-  // Extract inner loop info from nested events (array, param, key)
-  const innerLoopInfo = innerEvents.length > 0
-    ? innerEvents[0].nestedLoops[0]
-    : innerComps.length > 0
-      ? null // Will need fallback
-      : null
+  // Extract inner loop info: prefer IR-derived innerLoops, fall back to event nesting info
+  const innerLoopInfo = elem.innerLoops?.[0]
+    ?? (innerEvents.length > 0 ? innerEvents[0].nestedLoops[0] : null)
 
   // Helper: emit event handler setup
   const emitEventSetup = (ls: string[], indent: string, elVar: string, ev: LoopChildEvent): void => {

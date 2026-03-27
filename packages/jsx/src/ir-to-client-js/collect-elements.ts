@@ -3,11 +3,55 @@
  */
 
 import { type IRNode, type IRElement, type IRProp, pickAttrMeta } from '../types'
-import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchTextEffect, LoopChildEvent, LoopChildReactiveAttr } from './types'
+import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchTextEffect, LoopChildEvent, LoopChildReactiveAttr, NestedLoopInfo } from './types'
 import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
 import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
+
+/**
+ * Collect inner loop metadata from an IR subtree.
+ * Returns NestedLoopInfo for each loop node found within the tree,
+ * tracking the nearest ancestor element's slotId as container.
+ */
+function collectInnerLoops(nodes: IRNode[]): NestedLoopInfo[] {
+  const result: NestedLoopInfo[] = []
+  let depth = 0
+  let lastSlotId: string | null = null
+
+  function walk(n: IRNode): void {
+    switch (n.type) {
+      case 'element':
+        if (n.slotId) lastSlotId = n.slotId
+        for (const child of n.children) walk(child)
+        break
+      case 'loop':
+        depth++
+        result.push({
+          depth,
+          array: n.array,
+          param: n.param,
+          key: n.key ?? '',
+          containerSlotId: lastSlotId,
+        })
+        for (const child of n.children) walk(child)
+        depth--
+        break
+      case 'fragment':
+      case 'component':
+      case 'provider':
+        for (const child of n.children) walk(child)
+        break
+      case 'conditional':
+        walk(n.whenTrue)
+        walk(n.whenFalse)
+        break
+    }
+  }
+
+  nodes.forEach(walk)
+  return result
+}
 
 
 /** Check whether an array of IR nodes contains any component nodes (recursively). */
@@ -222,6 +266,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           nestedComponents: node.nestedComponents,
           isStaticArray: node.isStaticArray,
           useElementReconciliation,
+          innerLoops: useElementReconciliation ? collectInnerLoops(node.children) : undefined,
           filterPredicate: node.filterPredicate ? {
             param: node.filterPredicate.param,
             raw: node.filterPredicate.raw,

@@ -39,7 +39,6 @@ export {
 
 export { reconcileList, type RenderItemFn } from './list'
 export { reconcileElements } from './reconcile-elements'
-export { reconcileTemplates } from './reconcile-templates'
 
 export { createContext, useContext, provideContext, type Context } from './context'
 

@@ -62,7 +62,7 @@ If a list doesn't change after initial render, the compiler detects it as a **st
 const tabs = ['Home', 'About', 'Contact']
 {tabs.map(tab => <Tab label={tab} />)}
 
-// Dynamic — reconcileElements/reconcileTemplates needed
+// Dynamic — reconcileElements needed
 const [items, setItems] = createSignal([...])
 {items().map(item => <Item key={item.id} data={item} />)}
 ```
