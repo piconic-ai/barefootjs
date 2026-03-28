@@ -142,12 +142,7 @@ export function KanbanDemo() {
                 variant="outline"
                 size="icon-sm"
                 className="add-task-btn"
-                onClick={() => {
-                  setAddingToColumn(addingToColumn() === col.id ? null : col.id)
-                  requestAnimationFrame(() => {
-                    (document.querySelector('.add-task-form input') as HTMLInputElement)?.focus()
-                  })
-                }}
+                onClick={() => setAddingToColumn(addingToColumn() === col.id ? null : col.id)}
               >
                 +
               </Button>
@@ -159,6 +154,7 @@ export function KanbanDemo() {
                   placeholder="Task title"
                   value={newTaskTitle()}
                   onInput={(e) => setNewTaskTitle(e.target.value)}
+                  ref={(el) => requestAnimationFrame(() => el.focus())}
                   className="h-8"
                 />
                 <Button size="sm" onClick={() => addTask(col.id)}>

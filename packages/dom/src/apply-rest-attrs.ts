@@ -30,9 +30,14 @@ export function applyRestAttrs(
 ): void {
   const exclude = new Set(excludeKeys)
 
-  // Wire up event handlers once (not reactively)
+  // Wire up event handlers and ref callbacks once (not reactively)
   for (const key of Object.keys(source)) {
     if (exclude.has(key)) continue
+    if (key === 'ref') {
+      const ref = source[key]
+      if (typeof ref === 'function') (ref as (el: Element) => void)(el)
+      continue
+    }
     if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) {
       const handler = source[key]
       if (typeof handler === 'function') {
@@ -46,7 +51,8 @@ export function applyRestAttrs(
     for (const key of Object.keys(source)) {
       if (exclude.has(key)) continue
 
-      // Event handlers are wired up above, not as attributes
+      // Event handlers and ref are wired up above, not as attributes
+      if (key === 'ref') continue
       if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) continue
 
       const value = source[key]
