@@ -34,9 +34,9 @@ export function isReactiveExpression(expr: string, ctx: ClientJsContext): boolea
     }
   }
 
-  // Check individual prop names (children included — needed for reactive
-  // text updates when components are created dynamically via createComponent)
+  // Check individual prop names (excluding children which is server-rendered)
   for (const prop of ctx.propsParams) {
+    if (prop.name === 'children') continue
     if (new RegExp(`\\b${prop.name}\\b`).test(expr)) {
       return true
     }

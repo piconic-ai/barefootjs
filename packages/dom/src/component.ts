@@ -8,7 +8,6 @@
 import { getTemplate } from './template'
 import { getComponentInit } from './registry'
 import { hydratedScopes } from './hydration-state'
-import { untrack } from './reactive'
 import { BF_SCOPE } from './attrs'
 import type { ComponentDef } from './types'
 
@@ -65,18 +64,15 @@ export function createComponent(
     return createPlaceholder(name, key)
   }
 
-  // 2. Evaluate children from props getter (untracked — component's own init
-  //    effects handle reactivity, caller's effect should not track these reads)
+  // 2. Evaluate children from props getter
   const childrenDescriptor = Object.getOwnPropertyDescriptor(props, 'children')
-  const children = untrack(() =>
-    childrenDescriptor && typeof childrenDescriptor.get === 'function'
-      ? childrenDescriptor.get()
-      : props.children
-  )
+  const children = childrenDescriptor && typeof childrenDescriptor.get === 'function'
+    ? childrenDescriptor.get()
+    : props.children
 
-  // 3. Generate HTML from props (untracked — same reason as above)
+  // 3. Generate HTML from props
   // When children contain DOM elements, pass empty children for shell HTML
-  const unwrappedProps = untrack(() => unwrapPropsForTemplate(props))
+  const unwrappedProps = unwrapPropsForTemplate(props)
   const hasDomChildren = children != null && hasDomElements(children)
   if (hasDomChildren) {
     unwrappedProps.children = ''
@@ -301,8 +297,8 @@ function createComponentFromDef(
     throw new Error('[BarefootJS] createComponent with ComponentDef requires a template function')
   }
 
-  // Generate HTML from template (untracked — component init handles reactivity)
-  const unwrappedProps = untrack(() => unwrapPropsForTemplate(props))
+  // Generate HTML from template
+  const unwrappedProps = unwrapPropsForTemplate(props)
   const html = def.template(unwrappedProps)
 
   // Create DOM element

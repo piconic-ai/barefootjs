@@ -565,35 +565,11 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
 
       lines.push(`  createEffect(() => {`)
       lines.push(`    const __arr = ${chainedExprTemplate}`)
-      lines.push(`    const __renderItem = (${elem.param}, ${indexParamTemplate}) => {`)
       if (elem.mapPreamble) {
-        lines.push(`      ${elem.mapPreamble}`)
+        lines.push(`    const __renderItem = (${elem.param}, ${indexParamTemplate}) => { ${elem.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
+      } else {
+        lines.push(`    const __renderItem = (${elem.param}, ${indexParamTemplate}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
       }
-      lines.push(`      const __tpl = document.createElement('template')`)
-      lines.push(`      __tpl.innerHTML = \`${elem.template}\``)
-      lines.push(`      const __el = __tpl.content.firstElementChild.cloneNode(true)`)
-      // Reactive attrs: separate createEffect to avoid triggering full list re-render
-      if (elem.childReactiveAttrs.length > 0) {
-        const attrsBySlot = new Map<string, typeof elem.childReactiveAttrs>()
-        for (const attr of elem.childReactiveAttrs) {
-          if (!attrsBySlot.has(attr.childSlotId)) attrsBySlot.set(attr.childSlotId, [])
-          attrsBySlot.get(attr.childSlotId)!.push(attr)
-        }
-        for (const [slotId, attrs] of attrsBySlot) {
-          lines.push(`      { const __ra = __el.querySelector('[bf="${slotId}"]')`)
-          lines.push(`        if (__ra) {`)
-          for (const attr of attrs) {
-            lines.push(`          createEffect(() => {`)
-            for (const stmt of emitAttrUpdate('__ra', attr.attrName, attr.expression, attr)) {
-              lines.push(`            ${stmt}`)
-            }
-            lines.push(`          })`)
-          }
-          lines.push(`        } }`)
-        }
-      }
-      lines.push(`      return __el`)
-      lines.push(`    }`)
       // Hydration: preserve SSR elements, tag with data-key, track signals
       lines.push(`    if (_${vLoop} && _${vLoop}.children.length > 0 && !_${vLoop}.firstElementChild?.hasAttribute('data-key')) {`)
       lines.push(`      Array.from(_${vLoop}.children).forEach((__hChild, ${indexParamTemplate}) => {`)
@@ -773,28 +749,6 @@ function emitCompositeElementReconciliation(
         emitEventSetup(ls, `${indent}  `, '__innerEl', ev)
       }
       ls.push(`${indent}})`)
-    }
-
-    // Reactive attributes: update via separate createEffect so signal reads
-    // don't trigger full list reconciliation (e.g., value={signal()} on input)
-    if (elem.childReactiveAttrs.length > 0) {
-      const attrsBySlot = new Map<string, typeof elem.childReactiveAttrs>()
-      for (const attr of elem.childReactiveAttrs) {
-        if (!attrsBySlot.has(attr.childSlotId)) attrsBySlot.set(attr.childSlotId, [])
-        attrsBySlot.get(attr.childSlotId)!.push(attr)
-      }
-      for (const [slotId, attrs] of attrsBySlot) {
-        ls.push(`${indent}{ const __ra = __el.querySelector('[bf="${slotId}"]')`)
-        ls.push(`${indent}  if (__ra) {`)
-        for (const attr of attrs) {
-          ls.push(`${indent}    createEffect(() => {`)
-          for (const stmt of emitAttrUpdate('__ra', attr.attrName, attr.expression, attr)) {
-            ls.push(`${indent}      ${stmt}`)
-          }
-          ls.push(`${indent}    })`)
-        }
-        ls.push(`${indent}  } }`)
-      }
     }
 
     ls.push(`${indent}return __el`)

@@ -56,8 +56,8 @@ function templateAttrExpr(attrName: string, valExpr: string, attr: { presenceOrU
  *  @param loopDepth - Current nesting depth inside inner loops. 0 = outer loop level.
  *    When > 0, `key` attributes are converted to `data-key-{depth}` instead of `data-key`.
  */
-export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, skipReactiveAttrs?: Set<string>): string {
-  const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, skipReactiveAttrs)
+export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0): string {
+  const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth)
 
   switch (node.type) {
     case 'element': {
@@ -74,8 +74,6 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
             ? (loopDepth > 0 ? `data-key-${loopDepth}` : 'data-key')
             : toHtmlAttrName(a.name)
           if (a.value === null) return attrName
-          // Skip reactive attributes — handled by separate createEffect in renderItem
-          if (skipReactiveAttrs?.has(`${node.slotId}:${a.name}`)) return ''
           // Resolve IRTemplateLiteral to string expression for use in template literals
           const valExpr = typeof a.value === 'string' ? a.value : (attrValueToString(a.value) ?? '')
           if (a.dynamic) return templateAttrExpr(attrName, valExpr, a)
@@ -182,8 +180,8 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
  * elements (`<div data-bf-ph="sN"></div>`) instead of renderChild() calls.
  * The placeholders are replaced with real createComponent() elements at runtime.
  */
-export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, skipReactiveAttrs?: Set<string>): string {
-  const recurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth, skipReactiveAttrs)
+export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0): string {
+  const recurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth)
 
   switch (node.type) {
     case 'element': {
@@ -199,7 +197,6 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
             ? (loopDepth > 0 ? `data-key-${loopDepth}` : 'data-key')
             : toHtmlAttrName(a.name)
           if (a.value === null) return attrName
-          if (skipReactiveAttrs?.has(`${node.slotId}:${a.name}`)) return ''
           const valExpr = typeof a.value === 'string' ? a.value : (attrValueToString(a.value) ?? '')
           if (a.dynamic) return templateAttrExpr(attrName, valExpr, a)
           return `${attrName}="${valExpr}"`

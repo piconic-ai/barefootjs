@@ -243,20 +243,13 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           && !node.isStaticArray
           && (node.nestedComponents?.length ?? 0) > 0
 
-        // Build skip set for reactive attrs in dynamic loops — these will be handled
-        // by separate createEffect inside renderItem, preventing signal reads from
-        // triggering full list reconciliation (e.g., value={signal()} on input).
-        const skipReactiveAttrs = !node.isStaticArray && childReactiveAttrs.length > 0
-          ? new Set(childReactiveAttrs.map(a => `${a.childSlotId}:${a.attrName}`))
-          : undefined
-
         let template = ''
         if (node.childComponent) {
           template = '' // childComponent path uses createComponent directly
         } else if (useElementReconciliation && node.children[0]) {
-          template = irToPlaceholderTemplate(node.children[0], buildRestSpreadNames(ctx), 0, skipReactiveAttrs)
+          template = irToPlaceholderTemplate(node.children[0], buildRestSpreadNames(ctx))
         } else if (node.children[0]) {
-          template = irToHtmlTemplate(node.children[0], buildRestSpreadNames(ctx), 0, skipReactiveAttrs)
+          template = irToHtmlTemplate(node.children[0], buildRestSpreadNames(ctx))
         }
 
         ctx.loopElements.push({
