@@ -142,7 +142,12 @@ export function KanbanDemo() {
                 variant="outline"
                 size="icon-sm"
                 className="add-task-btn"
-                onClick={() => setAddingToColumn(addingToColumn() === col.id ? null : col.id)}
+                onClick={() => {
+                  setAddingToColumn(addingToColumn() === col.id ? null : col.id)
+                  requestAnimationFrame(() => {
+                    (document.querySelector('.add-task-form input') as HTMLInputElement)?.focus()
+                  })
+                }}
               >
                 +
               </Button>
