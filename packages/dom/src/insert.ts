@@ -8,7 +8,7 @@
 
 import { createEffect } from './reactive'
 import { find } from './query'
-import { setParentScopeId } from './component'
+import { setParentScopeId, escapeAttrGt } from './component'
 import { BF_COND, BF_SCOPE, BF_CHILD_PREFIX } from './attrs'
 
 /**
@@ -237,9 +237,10 @@ function updateFragmentConditional(scope: Element, id: string, html: string): vo
     const endComment = node
     nodesToRemove.forEach(n => n.parentNode?.removeChild(n))
 
-    // Insert new content
+    // Insert new content (escapeAttrGt handles ">" inside attribute values
+    // from UnoCSS classes like has-[>svg] that would break innerHTML parsing)
     const template = document.createElement('template')
-    template.innerHTML = html
+    template.innerHTML = escapeAttrGt(html)
     const newNodes: Node[] = []
     let child = template.content.firstChild
     while (child) {
@@ -275,7 +276,7 @@ function updateElementConditional(scope: Element, id: string, html: string): voi
   if (!condEl) return
 
   const template = document.createElement('template')
-  template.innerHTML = html
+  template.innerHTML = escapeAttrGt(html)
   const newEl = template.content.firstChild
   if (newEl) {
     condEl.replaceWith(newEl.cloneNode(true))

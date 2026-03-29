@@ -290,7 +290,13 @@ function unwrapPropsForTemplate(props: Record<string, unknown>): Record<string, 
  * the opening tag when parsed via innerHTML. The browser decodes &gt;
  * back to ">" in the DOM attribute value, preserving CSS matching.
  */
-function escapeAttrGt(html: string): string {
+/**
+ * Escape ">" inside HTML attribute values to prevent broken parsing.
+ * UnoCSS classes like has-[>svg]:shrink-0 contain ">" which terminates
+ * the opening tag when parsed via innerHTML. The browser decodes &gt;
+ * back to ">" in the DOM attribute value, preserving CSS matching.
+ */
+export function escapeAttrGt(html: string): string {
   return html.replace(/"[^"]*"/g, match => match.replace(/>/g, '&gt;'))
 }
 
