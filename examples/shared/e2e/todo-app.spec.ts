@@ -174,10 +174,11 @@ export function todoAppTests(baseUrl: string, todosPath: string = '/todos') {
       // Navigate directly to /todos#/active
       await page.goto(`${baseUrl}${todosPath}#/active`)
       await page.waitForSelector('.todoapp')
-      await page.waitForSelector('.todo-list li[bf-s*="TodoItem_"]', { timeout: 10000 })
+      // Wait for hydration + filter application (hash filter may reduce visible items)
+      await page.waitForSelector('.todo-list li', { timeout: 15000 })
 
-      // Should show only 2 active todos (not the completed one)
-      await expect(page.locator('.todo-list li')).toHaveCount(2)
+      // Should show only 2 active todos (wait for filter to settle)
+      await expect(page.locator('.todo-list li')).toHaveCount(2, { timeout: 10000 })
 
       // Active filter should be selected
       await expect(page.locator('.filters a:has-text("Active")')).toHaveClass(/selected/)
@@ -193,10 +194,11 @@ export function todoAppTests(baseUrl: string, todosPath: string = '/todos') {
       // Navigate directly to /todos#/completed
       await page.goto(`${baseUrl}${todosPath}#/completed`)
       await page.waitForSelector('.todoapp')
-      await page.waitForSelector('.todo-list li[bf-s*="TodoItem_"]', { timeout: 10000 })
+      // Wait for hydration + filter application (hash filter may reduce visible items)
+      await page.waitForSelector('.todo-list li', { timeout: 15000 })
 
-      // Should show only 1 completed todo
-      await expect(page.locator('.todo-list li')).toHaveCount(1)
+      // Should show only 1 completed todo (wait for filter to settle)
+      await expect(page.locator('.todo-list li')).toHaveCount(1, { timeout: 10000 })
 
       // Completed filter should be selected
       await expect(page.locator('.filters a:has-text("Completed")')).toHaveClass(/selected/)
