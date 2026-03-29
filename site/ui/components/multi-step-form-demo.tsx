@@ -192,183 +192,181 @@ export function MultiStepFormDemo() {
           ))}
         </div>
 
-        {/* Step content — all steps rendered, visibility toggled via style.
-             Using display:none instead of conditional rendering because the compiler
-             does not yet initialize child components inside insert() branches
-             (bindEvents does not call initChild for dynamically swapped content).
-             This is a known limitation — tracked for future compiler improvement. */}
+        {/* Step content — nested ternary conditional rendering */}
         <div className="p-6 min-h-[320px]">
-          <div className="step-content step-1 space-y-4" style={currentStep() === 1 ? '' : 'display:none'}>
-            <div>
-              <h3 className="text-base font-semibold mb-1">Account Details</h3>
-              <p className="text-sm text-muted-foreground">Set up your login credentials.</p>
-            </div>
-            <div className="space-y-3">
+          {currentStep() === 1 ? (
+            <div className="step-content step-1 space-y-4">
               <div>
-                <Label for="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email()}
-                  onInput={(e) => setEmail(e.target.value)}
-                />
-                {emailError() ? (
-                  <p className="email-error text-xs text-destructive mt-1">{emailError()}</p>
-                ) : null}
+                <h3 className="text-base font-semibold mb-1">Account Details</h3>
+                <p className="text-sm text-muted-foreground">Set up your login credentials.</p>
               </div>
-              <div>
-                <Label for="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="At least 8 characters"
-                  value={password()}
-                  onInput={(e) => setPassword(e.target.value)}
-                />
-                {passwordError() ? (
-                  <p className="password-error text-xs text-destructive mt-1">{passwordError()}</p>
-                ) : null}
-              </div>
-              <div>
-                <Label for="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="Repeat your password"
-                  value={confirmPassword()}
-                  onInput={(e) => setConfirmPassword(e.target.value)}
-                />
-                {confirmError() ? (
-                  <p className="confirm-error text-xs text-destructive mt-1">{confirmError()}</p>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="step-content step-2 space-y-4" style={currentStep() === 2 ? '' : 'display:none'}>
-            <div>
-              <h3 className="text-base font-semibold mb-1">Profile Information</h3>
-              <p className="text-sm text-muted-foreground">Tell us about yourself.</p>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <Label for="fullname">Full Name</Label>
-                <Input
-                  id="fullname"
-                  placeholder="John Doe"
-                  value={fullName()}
-                  onInput={(e) => setFullName(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label for="username">Username</Label>
-                <Input
-                  id="username"
-                  placeholder="johndoe"
-                  value={username()}
-                  onInput={(e) => setUsername(e.target.value)}
-                />
-                {usernameError() ? (
-                  <p className="username-error text-xs text-destructive mt-1">{usernameError()}</p>
-                ) : null}
-              </div>
-              <div>
-                <Label for="bio">Bio (optional)</Label>
-                <Input
-                  id="bio"
-                  placeholder="A short bio about you"
-                  value={bio()}
-                  onInput={(e) => setBio(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="step-content step-3 space-y-4" style={currentStep() === 3 ? '' : 'display:none'}>
-            <div>
-              <h3 className="text-base font-semibold mb-1">Preferences</h3>
-              <p className="text-sm text-muted-foreground">Customize your experience.</p>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <Label className="mb-2 block">Plan</Label>
-                <RadioGroup value={plan()} onValueChange={setPlan}>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="free" />
-                    <Label>Free</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="pro" />
-                    <Label>Pro — $9/month</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="enterprise" />
-                    <Label>Enterprise — $29/month</Label>
-                  </div>
-                </RadioGroup>
-                <p className="plan-value text-xs text-muted-foreground mt-1">Selected: {plan()}</p>
-              </div>
-              <Separator />
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={newsletter()}
-                    onCheckedChange={setNewsletter}
+                <div>
+                  <Label for="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email()}
+                    onInput={(e) => setEmail(e.target.value)}
                   />
-                  <Label>Subscribe to newsletter</Label>
+                  {emailError() ? (
+                    <p className="email-error text-xs text-destructive mt-1">{emailError()}</p>
+                  ) : null}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={notifications()}
-                    onCheckedChange={setNotifications}
+                <div>
+                  <Label for="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="At least 8 characters"
+                    value={password()}
+                    onInput={(e) => setPassword(e.target.value)}
                   />
-                  <Label>Enable email notifications</Label>
+                  {passwordError() ? (
+                    <p className="password-error text-xs text-destructive mt-1">{passwordError()}</p>
+                  ) : null}
+                </div>
+                <div>
+                  <Label for="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="Repeat your password"
+                    value={confirmPassword()}
+                    onInput={(e) => setConfirmPassword(e.target.value)}
+                  />
+                  {confirmError() ? (
+                    <p className="confirm-error text-xs text-destructive mt-1">{confirmError()}</p>
+                  ) : null}
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="step-content step-4 space-y-4" style={currentStep() === 4 ? '' : 'display:none'}>
-            <div>
-              <h3 className="text-base font-semibold mb-1">Review</h3>
-              <p className="text-sm text-muted-foreground">Confirm your details before creating your account.</p>
+          ) : currentStep() === 2 ? (
+            <div className="step-content step-2 space-y-4">
+              <div>
+                <h3 className="text-base font-semibold mb-1">Profile Information</h3>
+                <p className="text-sm text-muted-foreground">Tell us about yourself.</p>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <Label for="fullname">Full Name</Label>
+                  <Input
+                    id="fullname"
+                    placeholder="John Doe"
+                    value={fullName()}
+                    onInput={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label for="username">Username</Label>
+                  <Input
+                    id="username"
+                    placeholder="johndoe"
+                    value={username()}
+                    onInput={(e) => setUsername(e.target.value)}
+                  />
+                  {usernameError() ? (
+                    <p className="username-error text-xs text-destructive mt-1">{usernameError()}</p>
+                  ) : null}
+                </div>
+                <div>
+                  <Label for="bio">Bio (optional)</Label>
+                  <Input
+                    id="bio"
+                    placeholder="A short bio about you"
+                    value={bio()}
+                    onInput={(e) => setBio(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="review-summary space-y-3 rounded-lg bg-muted/50 p-4 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Email</span>
-                <span className="review-email font-medium">{email()}</span>
+          ) : currentStep() === 3 ? (
+            <div className="step-content step-3 space-y-4">
+              <div>
+                <h3 className="text-base font-semibold mb-1">Preferences</h3>
+                <p className="text-sm text-muted-foreground">Customize your experience.</p>
               </div>
-              <Separator />
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Full Name</span>
-                <span className="review-name font-medium">{fullName()}</span>
+              <div className="space-y-4">
+                <div>
+                  <Label className="mb-2 block">Plan</Label>
+                  <RadioGroup value={plan()} onValueChange={setPlan}>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="free" />
+                      <Label>Free</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="pro" />
+                      <Label>Pro — $9/month</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="enterprise" />
+                      <Label>Enterprise — $29/month</Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="plan-value text-xs text-muted-foreground mt-1">Selected: {plan()}</p>
+                </div>
+                <Separator />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={newsletter()}
+                      onCheckedChange={setNewsletter}
+                    />
+                    <Label>Subscribe to newsletter</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={notifications()}
+                      onCheckedChange={setNotifications}
+                    />
+                    <Label>Enable email notifications</Label>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Username</span>
-                <span className="review-username font-medium">@{username()}</span>
+            </div>
+          ) : (
+            <div className="step-content step-4 space-y-4">
+              <div>
+                <h3 className="text-base font-semibold mb-1">Review</h3>
+                <p className="text-sm text-muted-foreground">Confirm your details before creating your account.</p>
               </div>
-              {bio() ? (
+              <div className="review-summary space-y-3 rounded-lg bg-muted/50 p-4 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Bio</span>
-                  <span className="review-bio font-medium truncate max-w-[200px]">{bio()}</span>
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="review-email font-medium">{email()}</span>
                 </div>
-              ) : null}
-              <Separator />
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Plan</span>
-                <Badge variant={plan() === 'free' ? 'outline' : 'default'} className="review-plan">{plan()}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Newsletter</span>
-                <span>{newsletter() ? 'Yes' : 'No'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Notifications</span>
-                <span>{notifications() ? 'Yes' : 'No'}</span>
+                <Separator />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Full Name</span>
+                  <span className="review-name font-medium">{fullName()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Username</span>
+                  <span className="review-username font-medium">@{username()}</span>
+                </div>
+                {bio() ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bio</span>
+                    <span className="review-bio font-medium truncate max-w-[200px]">{bio()}</span>
+                  </div>
+                ) : null}
+                <Separator />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Plan</span>
+                  <Badge variant={plan() === 'free' ? 'outline' : 'default'} className="review-plan">{plan()}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Newsletter</span>
+                  <span>{newsletter() ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Notifications</span>
+                  <span>{notifications() ? 'Yes' : 'No'}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Navigation buttons — outside conditionals for reliable event binding */}
