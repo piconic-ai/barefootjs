@@ -246,7 +246,7 @@ export function MailInboxDemo() {
         </CardHeader>
         <CardContent className="p-0">
           {/* Toolbar */}
-          <div className="flex items-center gap-3 px-4 py-2 border-b">
+          <div className="flex items-center gap-3 px-4 py-2 border-b border-border">
             <Checkbox
               checked={isAllSelected()}
               onCheckedChange={handleToggleAll}
@@ -274,11 +274,11 @@ export function MailInboxDemo() {
           {/* Two-panel layout */}
           <div className="flex min-h-[400px]">
             {/* Mail list (left panel) */}
-            <div className="w-2/5 border-r overflow-y-auto">
+            <div className="w-2/5 border-r border-border overflow-y-auto">
               {filteredMails().map((mail) => (
                 <div
                   key={mail.id}
-                  className={`mail-row flex items-start gap-2 px-3 py-3 border-b cursor-pointer hover:bg-muted/50 ${mail.id === selectedId() ? 'bg-muted' : ''}`}
+                  className={`mail-row flex items-start gap-2 px-3 py-3 border-b border-border cursor-pointer hover:bg-muted/50 ${mail.id === selectedId() ? 'bg-muted' : ''}`}
                 >
                   <div className="pt-0.5">
                     <Checkbox
