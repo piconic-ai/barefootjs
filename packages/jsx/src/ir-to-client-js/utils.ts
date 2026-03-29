@@ -147,8 +147,12 @@ export function inferDefaultValue(type: { kind: string; primitive?: string }): s
  */
 export function bodyReferencesComponentScope(body: string, scopeNames: Set<string>): boolean {
   for (const name of scopeNames) {
-    if (new RegExp(`\\b${name}\\b`).test(body)) return true
+    if (new RegExp(`\\b${escapeRegExp(name)}\\b`).test(body)) return true
   }
   return false
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
