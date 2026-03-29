@@ -8,7 +8,8 @@
 
 import { createEffect } from './reactive'
 import { find } from './query'
-import { BF_COND } from './attrs'
+import { setParentScopeId } from './component'
+import { BF_COND, BF_SCOPE, BF_CHILD_PREFIX } from './attrs'
 
 /**
  * Branch configuration for conditional rendering.
@@ -50,6 +51,14 @@ export function insert(
   whenFalse: BranchConfig
 ): void {
   if (!scope) return
+
+  // Extract parent scope ID for renderChild context.
+  // When branch templates call renderChild(), it needs the parent scope ID
+  // to generate child scope IDs matching the SSR convention.
+  const rawScopeId = scope.getAttribute(BF_SCOPE)
+  const parentScopeId = rawScopeId
+    ? (rawScopeId.startsWith(BF_CHILD_PREFIX) ? rawScopeId.slice(1) : rawScopeId)
+    : null
 
   // Check if either branch uses fragment conditional (comment markers).
   // Both branches need to be checked because SSR may render either branch.
@@ -100,7 +109,9 @@ export function insert(
       // Hydration mode: check if existing DOM matches expected branch
       // If the existing element doesn't match the expected branch,
       // we need to swap the DOM first (e.g., SSR rendered whenFalse but now we need whenTrue)
-      const html = branch.template()
+      setParentScopeId(parentScopeId)
+      let html: string
+      try { html = branch.template() } finally { setParentScopeId(null) }
       const existingEl = find(scope, `[${BF_COND}="${id}"]`)
       if (existingEl) {
         // Compare full opening tag signatures to detect branch mismatch.
@@ -145,7 +156,9 @@ export function insert(
     }
 
     // Branch changed: swap DOM and bind events
-    const html = branch.template()
+    setParentScopeId(parentScopeId)
+    let html: string
+    try { html = branch.template() } finally { setParentScopeId(null) }
     if (isFragmentCond) {
       updateFragmentConditional(scope, id, html)
     } else {

@@ -12,6 +12,17 @@ import { untrack } from './reactive'
 import { BF_SCOPE } from './attrs'
 import type { ComponentDef } from './types'
 
+// Parent scope ID context for renderChild() inside insert() branch templates.
+// When set, renderChild uses the parent's scope ID as prefix instead of a random ID,
+// producing scope IDs consistent with SSR (e.g., "ParentName_abc_s5" instead of
+// "Button_random_s5"). This enables $cSingle's getDualScopeIds check to pass.
+// Set by insert() before calling branch.template(), cleared after.
+let _parentScopeId: string | null = null
+
+export function setParentScopeId(id: string | null): void {
+  _parentScopeId = id
+}
+
 // WeakMap to store props update functions for each component element
 // This allows reconcileList to update props when an element is reused
 const propsUpdateMap = new WeakMap<HTMLElement, (props: Record<string, unknown>) => void>()
@@ -188,14 +199,20 @@ export function renderChild(
   slotSuffix?: string
 ): string {
   const templateFn = getTemplate(name)
-  const id = Math.random().toString(36).slice(2, 8)
   const suffix = slotSuffix ? `_${slotSuffix}` : ''
+  // When inside an insert() branch template with a known parent scope,
+  // use the parent scope ID so child scope IDs match the SSR convention
+  // (e.g., ~ParentName_parentHash_s5 instead of ~Button_randomHash_s5).
+  // This enables $cSingle's getDualScopeIds verification to pass.
+  const scopePrefix = (_parentScopeId && slotSuffix)
+    ? _parentScopeId
+    : `${name}_${generateId()}`
   const keyAttr = key !== undefined ? ` data-key="${key}"` : ''
 
   if (!templateFn) {
     // Fallback: empty placeholder (for components without registered templates)
     // Use ~ prefix to mark as child component (prevents hydrate() re-initialization)
-    return `<div bf-s="~${name}_${id}${suffix}"${keyAttr}></div>`
+    return `<div bf-s="~${scopePrefix}${suffix}"${keyAttr}></div>`
   }
 
   const html = templateFn(props).trim()
@@ -209,7 +226,7 @@ export function renderChild(
   if (!firstElMatch) return html
   const insertPos = html.indexOf(firstElMatch[0])
   return html.slice(0, insertPos) +
-    html.slice(insertPos).replace(/^(<\w+)/, `$1 bf-s="~${name}_${id}${suffix}"${keyAttr}`)
+    html.slice(insertPos).replace(/^(<\w+)/, `$1 bf-s="~${scopePrefix}${suffix}"${keyAttr}`)
 }
 
 /**

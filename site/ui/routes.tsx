@@ -66,6 +66,7 @@ import { SettingsRefPage } from './pages/components/settings'
 import { SidebarRefPage } from './pages/components/sidebar'
 import { ChatRefPage } from './pages/components/chat'
 import { MusicPlayerRefPage } from './pages/components/music-player'
+import { MultiStepFormRefPage } from './pages/components/multi-step-form'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -462,6 +463,11 @@ export function createApp() {
   // Music Player block page
   app.get('/components/music-player', (c) => {
     return c.render(<MusicPlayerRefPage />)
+  })
+
+  // Multi-Step Form block page
+  app.get('/components/multi-step-form', (c) => {
+    return c.render(<MultiStepFormRefPage />)
   })
 
 
