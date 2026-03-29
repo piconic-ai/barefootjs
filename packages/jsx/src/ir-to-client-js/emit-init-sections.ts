@@ -488,7 +488,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
         }
         for (const [slotId, attrs] of attrsBySlot) {
           const varName = `__t_${varSlotId(slotId)}`
-          lines.push(`        const ${varName} = __iterEl.matches('[bf="${slotId}"]') ? __iterEl : __iterEl.querySelector('[bf="${slotId}"]')`)
+          lines.push(`        const ${varName} = qsa(__iterEl, '[bf="${slotId}"]')`)
           lines.push(`        if (${varName}) {`)
           for (const attr of attrs) {
             lines.push(`          createEffect(() => {`)
@@ -702,7 +702,7 @@ function emitCompositeElementReconciliation(
     const handler = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
       ? `(${ev.handler})(e)`
       : ev.handler
-    ls.push(`${indent}{ const __e = ${elVar}.matches('[bf="${ev.childSlotId}"]') ? ${elVar} : ${elVar}.querySelector('[bf="${ev.childSlotId}"]'); if (__e) __e.addEventListener('${toDomEventName(ev.eventName)}', (e) => { ${handler} }) }`)
+    ls.push(`${indent}{ const __e = qsa(${elVar}, '[bf="${ev.childSlotId}"]'); if (__e) __e.addEventListener('${toDomEventName(ev.eventName)}', (e) => { ${handler} }) }`)
   }
 
   // Helper: emit renderItem body (shared between hydration tracking and reconciliation)

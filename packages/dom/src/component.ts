@@ -98,12 +98,7 @@ export function createComponent(
   const html = templateFn(unwrappedProps)
 
   // 4. Create DOM element
-  // Escape ">" inside attribute values to prevent broken HTML parsing.
-  // UnoCSS generates classes like has-[>svg] where ">" would prematurely
-  // close the opening tag when parsed via innerHTML.
-  const template = document.createElement('template')
-  template.innerHTML = escapeAttrGt(html.trim())
-  const element = template.content.firstChild as HTMLElement
+  const element = parseHTML(html.trim()).firstChild as HTMLElement
 
   if (!element) {
     console.warn(`[BarefootJS] Template returned empty HTML for component: ${name}`)
@@ -301,6 +296,17 @@ export function escapeAttrGt(html: string): string {
 }
 
 /**
+ * Parse an HTML string into a DocumentFragment, safely escaping ">" in
+ * attribute values. All code that sets innerHTML on dynamic HTML should
+ * use this instead of raw innerHTML assignment.
+ */
+export function parseHTML(html: string): DocumentFragment {
+  const tpl = document.createElement('template')
+  tpl.innerHTML = escapeAttrGt(html)
+  return tpl.content
+}
+
+/**
  * Check if a value contains DOM elements (HTMLElement instances).
  */
 function hasDomElements(value: unknown): boolean {
@@ -345,9 +351,7 @@ function createComponentFromDef(
   const html = def.template(unwrappedProps)
 
   // Create DOM element
-  const template = document.createElement('template')
-  template.innerHTML = escapeAttrGt(html.trim())
-  const element = template.content.firstChild as HTMLElement
+  const element = parseHTML(html.trim()).firstChild as HTMLElement
 
   if (!element) {
     const el = document.createElement('div')

@@ -377,6 +377,20 @@ function findInPortals(scopeId: string, selector: string): Element | null {
 // --- shorthand finders ---
 
 /**
+ * Find an element matching a selector, checking the element itself first,
+ * then its descendants. Unlike querySelector() which only searches descendants,
+ * this also matches the root element.
+ *
+ * Used by compiler-generated code for event binding and attribute updates
+ * on loop items where the target may be the loop item's root element itself.
+ */
+export function qsa(el: Element | null, selector: string): Element | null {
+  if (!el) return null
+  if (el.matches(selector)) return el
+  return el.querySelector(selector)
+}
+
+/**
  * Find elements within a scope by slot IDs.
  * Used by compiler-generated code for regular slot element references.
  * Always returns an array — callers use destructuring.

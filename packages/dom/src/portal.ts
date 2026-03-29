@@ -8,6 +8,7 @@
  */
 
 import { BF_SCOPE, BF_PORTAL_ID, BF_PORTAL_OWNER, BF_PORTAL_PLACEHOLDER, BF_CHILD_PREFIX } from './attrs'
+import { parseHTML } from './component'
 import { getPortalScopeId } from './scope'
 
 export type Portal = {
@@ -139,9 +140,7 @@ export function createPortal(
     // Convert to string (handles both string and Renderable)
     const html = typeof children === 'string' ? children : children.toString()
 
-    const temp = document.createElement('div')
-    temp.innerHTML = html
-    const parsed = temp.firstElementChild as HTMLElement
+    const parsed = parseHTML(html).firstElementChild as HTMLElement
 
     if (!parsed) {
       throw new Error('createPortal: Invalid HTML provided')

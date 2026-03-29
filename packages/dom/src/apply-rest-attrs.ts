@@ -16,6 +16,18 @@ function toAttrName(key: string): string {
 }
 
 /**
+ * Convert a JSX event prop name to a DOM event name for addEventListener.
+ * Handles: camelCase → lowercase, plus special mappings (doubleclick → dblclick).
+ * Mirrors the compiler's toDomEventName in packages/jsx/src/ir-to-client-js/utils.ts.
+ */
+const jsxToDomEventMap: Record<string, string> = { doubleclick: 'dblclick' }
+function toEventName(jsxPropName: string): string {
+  // onKeyDown → 'k' + 'eyDown' → 'keydown'
+  const raw = (jsxPropName[2].toLowerCase() + jsxPropName.slice(3)).toLowerCase()
+  return jsxToDomEventMap[raw] ?? raw
+}
+
+/**
  * Reactively apply rest attributes from a props source onto an HTML element.
  * Runs inside a createEffect so attribute values update when props change.
  *
@@ -41,8 +53,7 @@ export function applyRestAttrs(
     if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) {
       const handler = source[key]
       if (typeof handler === 'function') {
-        const eventName = (key[2].toLowerCase() + key.slice(3)).toLowerCase()
-        el.addEventListener(eventName, handler as EventListener)
+        el.addEventListener(toEventName(key), handler as EventListener)
       }
     }
   }

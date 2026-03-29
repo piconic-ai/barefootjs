@@ -8,7 +8,7 @@
 
 import { createEffect } from './reactive'
 import { find } from './query'
-import { setParentScopeId, escapeAttrGt } from './component'
+import { setParentScopeId, parseHTML } from './component'
 import { BF_COND, BF_SCOPE, BF_CHILD_PREFIX } from './attrs'
 
 /**
@@ -237,12 +237,10 @@ function updateFragmentConditional(scope: Element, id: string, html: string): vo
     const endComment = node
     nodesToRemove.forEach(n => n.parentNode?.removeChild(n))
 
-    // Insert new content (escapeAttrGt handles ">" inside attribute values
-    // from UnoCSS classes like has-[>svg] that would break innerHTML parsing)
-    const template = document.createElement('template')
-    template.innerHTML = escapeAttrGt(html)
+    // Insert new content
+    const fragment = parseHTML(html)
     const newNodes: Node[] = []
-    let child = template.content.firstChild
+    let child = fragment.firstChild
     while (child) {
       if (!(child.nodeType === 8 && child.nodeValue?.startsWith('bf-cond-'))) {
         newNodes.push(child.cloneNode(true))
@@ -252,14 +250,13 @@ function updateFragmentConditional(scope: Element, id: string, html: string): vo
     newNodes.forEach(n => startComment!.parentNode?.insertBefore(n, endComment))
   } else if (condEl) {
     // Single element: replace with new content
-    const template = document.createElement('template')
-    template.innerHTML = html
-    const firstChild = template.content.firstChild
+    const parsed = parseHTML(html)
+    const firstChild = parsed.firstChild
 
     if (firstChild?.nodeType === 8 && firstChild?.nodeValue === `bf-cond-start:${id}`) {
       // Switching from element to fragment
       const parent = condEl.parentNode
-      const nodes = Array.from(template.content.childNodes).map(n => n.cloneNode(true))
+      const nodes = Array.from(parsed.childNodes).map(n => n.cloneNode(true))
       nodes.forEach(n => parent?.insertBefore(n, condEl))
       condEl.remove()
     } else if (firstChild) {
@@ -275,9 +272,7 @@ function updateElementConditional(scope: Element, id: string, html: string): voi
   const condEl = scope.querySelector(`[${BF_COND}="${id}"]`)
   if (!condEl) return
 
-  const template = document.createElement('template')
-  template.innerHTML = escapeAttrGt(html)
-  const newEl = template.content.firstChild
+  const newEl = parseHTML(html).firstChild
   if (newEl) {
     condEl.replaceWith(newEl.cloneNode(true))
   }

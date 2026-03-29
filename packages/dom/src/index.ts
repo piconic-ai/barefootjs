@@ -60,7 +60,8 @@ export { applyRestAttrs } from './apply-rest-attrs'
 export { spreadAttrs } from './spread-attrs'
 
 // Runtime helpers (internal, for compiler-generated code)
-export { findScope, find, $, $c, $t } from './query'
+export { findScope, find, $, $c, $t, qsa } from './query'
+export { parseHTML } from './component'
 export { hydrate } from './hydrate'
 export { registerComponent, getComponentInit, initChild } from './registry'
 export { insert, type BranchConfig } from './insert'
