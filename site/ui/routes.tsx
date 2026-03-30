@@ -67,6 +67,7 @@ import { SidebarRefPage } from './pages/components/sidebar'
 import { ChatRefPage } from './pages/components/chat'
 import { MusicPlayerRefPage } from './pages/components/music-player'
 import { MultiStepFormRefPage } from './pages/components/multi-step-form'
+import { TasksTableRefPage } from './pages/components/tasks-table'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -470,6 +471,10 @@ export function createApp() {
     return c.render(<MultiStepFormRefPage />)
   })
 
+  // Tasks Table block page
+  app.get('/components/tasks-table', (c) => {
+    return c.render(<TasksTableRefPage />)
+  })
 
   // Bar Chart reference page
   app.get('/charts/bar-chart', (c) => {
