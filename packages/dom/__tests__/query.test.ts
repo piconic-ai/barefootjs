@@ -285,6 +285,62 @@ describe('find', () => {
       expect(portalRoot?.getAttribute('bf-po')).toBe('Dialog_self')
     })
   })
+
+  describe('with comment-based scopes', () => {
+    test('finds slot in proxy element (sibling with bf-s)', () => {
+      // Comment scope: proxy element has bf-s but is a top-level sibling
+      // in the comment range — should be searchable for its own slots
+      document.body.innerHTML = `
+        <!--bf-scope:FragComp_abc-->
+        <div bf-s="~Child_xyz">
+          <button bf="s0">Click</button>
+        </div>
+      `
+      const scope = findScope('FragComp', 0, null, true)
+      expect(scope).not.toBeNull()
+      // The proxy element has bf-s, but find() should still search into it
+      const btn = find(scope, '[bf="s0"]')
+      // Should be null — s0 is inside Child_xyz's scope, not FragComp's
+      expect(btn).toBeNull()
+    })
+
+    test('finds slot directly in comment range (no nested scope)', () => {
+      document.body.innerHTML = `
+        <!--bf-scope:FragComp_abc-->
+        <div>
+          <button bf="s0">Click</button>
+        </div>
+      `
+      const scope = findScope('FragComp', 0, null, true)
+      const btn = find(scope, '[bf="s0"]')
+      expect(btn).not.toBeNull()
+      expect(btn?.textContent).toBe('Click')
+    })
+
+    test('finds sibling element itself when it matches selector', () => {
+      document.body.innerHTML = `
+        <!--bf-scope:FragComp_abc-->
+        <button bf="s0">Direct sibling</button>
+        <div>other</div>
+      `
+      const scope = findScope('FragComp', 0, null, true)
+      const btn = find(scope, '[bf="s0"]')
+      expect(btn).not.toBeNull()
+      expect(btn?.textContent).toBe('Direct sibling')
+    })
+
+    test('finds proxy element itself when it matches selector', () => {
+      // Proxy element has bf-s AND matches the slot selector
+      document.body.innerHTML = `
+        <!--bf-scope:FragComp_abc-->
+        <div bf-s="~Child_xyz" bf="s0">Proxy with slot</div>
+      `
+      const scope = findScope('FragComp', 0, null, true)
+      const el = find(scope, '[bf="s0"]')
+      expect(el).not.toBeNull()
+      expect(el?.textContent).toBe('Proxy with slot')
+    })
+  })
 })
 
 describe('$', () => {

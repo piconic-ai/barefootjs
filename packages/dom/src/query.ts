@@ -312,9 +312,13 @@ export function find(
   for (const candidate of candidatesInScope(scope, selector)) {
     if (ignoreScope) return candidate
     if (commentInfo) {
-      // Comment scope: for scope searches accept any match;
-      // for slot searches exclude elements inside nested bf-s scopes
-      if (isLookingForScope || !candidate.closest(`[${BF_SCOPE}]`)) return candidate
+      // Comment scope: for scope searches accept any match.
+      // For slot searches: top-level siblings in the comment range are always
+      // accepted (even if they have bf-s, like proxy elements). Descendants
+      // are accepted only if not inside a nested bf-s scope.
+      if (isLookingForScope) return candidate
+      if (candidate.parentElement === commentInfo.commentNode.parentElement) return candidate
+      if (!candidate.closest(`[${BF_SCOPE}]`)) return candidate
     } else {
       if (belongsToScope(candidate, scope, isLookingForScope)) return candidate
     }
