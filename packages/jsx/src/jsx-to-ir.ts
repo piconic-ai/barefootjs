@@ -1910,7 +1910,17 @@ function isSignalOrMemoArray(array: string, ctx: TransformContext): boolean {
 }
 
 /**
- * Check if an expression is reactive.
+ * Phase 1 reactivity detection: determines the `reactive: boolean` flag on IR nodes
+ * during JSX → IR transformation.
+ *
+ * This operates on TypeScript AST nodes and source text, using the TypeChecker when
+ * available for precise Reactive<T> branded-type detection, with regex fallbacks.
+ *
+ * Unlike Phase 2's `needsEffectWrapper` (in ir-to-client-js/reactivity.ts), this function:
+ * - Has access to the TypeChecker and full AST for type-level analysis
+ * - Follows local constant references transitively (e.g., `const x = count()`)
+ * - Does NOT need a `children` skip because children are processed as child JSX nodes
+ *   in the AST, not as named props — they never appear as `props.children` expressions here
  *
  * Detection strategy:
  * 1. TypeChecker: walk AST to find Reactive<T> branded types (signals, memos, FieldReturn, etc.)

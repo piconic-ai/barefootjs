@@ -15,13 +15,19 @@ import { attrValueToString } from './utils'
 import { expandConstantForReactivity } from './prop-handling'
 
 /**
- * Check if an expression directly references signal getters, memos, or props.
+ * Phase 2 reactivity detection: determines if a code expression needs `createEffect`
+ * wrapping during IR → Client JS generation.
  *
- * Note: This function does NOT follow local constants — constant taint analysis
- * is handled in Phase 1 (jsx-to-ir.ts) when marking IR nodes as reactive.
- * Phase 2 only checks direct references in the expression string.
+ * This operates on string expressions (already extracted from IR), using regex matching
+ * against known signal getters, memo names, and prop parameter names.
+ *
+ * Unlike Phase 1's `isReactiveExpression` (in jsx-to-ir.ts), this function:
+ * - Has NO access to TypeChecker or AST — works purely on expression strings
+ * - Does NOT follow local constants (constant taint analysis is Phase 1's job)
+ * - Skips `children` props because children are server-rendered and should not
+ *   trigger `createEffect` wrapping on the client
  */
-export function isReactiveExpression(expr: string, ctx: ClientJsContext): boolean {
+export function needsEffectWrapper(expr: string, ctx: ClientJsContext): boolean {
   for (const signal of ctx.signals) {
     if (new RegExp(`\\b${signal.getter}\\s*\\(`).test(expr)) {
       return true
@@ -34,7 +40,8 @@ export function isReactiveExpression(expr: string, ctx: ClientJsContext): boolea
     }
   }
 
-  // Check individual prop names (excluding children which is server-rendered)
+  // Check individual prop names (excluding children which is server-rendered
+  // and should not trigger effect wrapping on the client)
   for (const prop of ctx.propsParams) {
     if (prop.name === 'children') continue
     if (new RegExp(`\\b${prop.name}\\b`).test(expr)) {
@@ -323,7 +330,7 @@ export function collectLoopChildReactiveAttrs(
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
         const expanded = expandConstantForReactivity(valueStr, ctx)
-        if (isReactiveExpression(expanded, ctx)) {
+        if (needsEffectWrapper(expanded, ctx)) {
           attrs.push({
             childSlotId: el.slotId,
             attrName: attr.name,

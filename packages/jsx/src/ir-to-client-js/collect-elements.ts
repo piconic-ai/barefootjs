@@ -5,7 +5,7 @@
 import { type IRNode, type IRElement, type IRProp, pickAttrMeta } from '../types'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchTextEffect, LoopChildEvent, LoopChildReactiveAttr, NestedLoopInfo } from './types'
 import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
-import { isReactiveExpression, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs } from './reactivity'
+import { needsEffectWrapper, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 
@@ -349,7 +349,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           propsForInit.push(`get ${quotePropName(prop.name)}() { return ${expandedValue} }`)
 
           const hasPropsRef = expandedValue.includes('props.')
-          const hasReactiveExpr = isReactiveExpression(expandedValue, ctx)
+          const hasReactiveExpr = needsEffectWrapper(expandedValue, ctx)
           if (hasPropsRef || hasReactiveExpr) {
             const attrName = prop.name === 'className' ? 'class' : prop.name
             ctx.reactiveChildProps.push({
@@ -469,7 +469,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
         // e.g., `classes` → `` `${baseClasses} ${variantClasses[variant]} ${className}` ``
         const expandedValueStr = expandConstantForReactivity(valueStr, ctx)
 
-        if (isReactiveExpression(expandedValueStr, ctx)) {
+        if (needsEffectWrapper(expandedValueStr, ctx)) {
           ctx.reactiveAttrs.push({
             slotId: element.slotId,
             attrName: attr.name,
