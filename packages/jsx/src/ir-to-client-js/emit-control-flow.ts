@@ -129,7 +129,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
     if (elem.isStaticArray) {
       emitStaticArrayUpdates(lines, elem)
     } else {
-      emitDynamicLoopUpdates(lines, elem, ctx)
+      emitDynamicLoopUpdates(lines, elem)
     }
   }
 }
@@ -204,15 +204,13 @@ function emitStaticArrayUpdates(lines: string[], elem: LoopElement): void {
  *   - Plain element → reconcileElements + template + hydration
  * Then emits event delegation handlers if needed.
  */
-function emitDynamicLoopUpdates(lines: string[], elem: LoopElement, ctx: ClientJsContext): void {
+function emitDynamicLoopUpdates(lines: string[], elem: LoopElement): void {
   const keyFn = elem.key
     ? `(${elem.param}${elem.index ? `, ${elem.index}` : ''}) => String(${elem.key})`
     : 'null'
 
-  const vLoop = varSlotId(elem.slotId)
-
   if (elem.useElementReconciliation && elem.nestedComponents?.length) {
-    emitCompositeElementReconciliation(lines, elem, keyFn, ctx)
+    emitCompositeElementReconciliation(lines, elem, keyFn)
   } else if (elem.childComponent) {
     emitComponentLoopReconciliation(lines, elem, keyFn)
   } else {
@@ -226,11 +224,14 @@ function emitDynamicLoopUpdates(lines: string[], elem: LoopElement, ctx: ClientJ
   }
 }
 
-/** Emit reconcileElements for a loop whose body is a single child component. */
-function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, keyFn: string): void {
-  const { name, props, children } = elem.childComponent!
-  const vLoop = varSlotId(elem.slotId)
-  const propsEntries = props.map((p) => {
+/**
+ * Build a props object expression string from component prop definitions.
+ * Shared by emitComponentLoopReconciliation and emitCompositeElementReconciliation.
+ */
+function buildComponentPropsExpr(
+  comp: { props: Array<{ name: string; value: string; isEventHandler: boolean; isLiteral: boolean }>, children?: import('../types').IRNode[] }
+): string {
+  const entries = comp.props.map((p) => {
     if (p.isEventHandler) {
       return `${quotePropName(p.name)}: ${p.value}`
     } else if (p.isLiteral) {
@@ -239,13 +240,18 @@ function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, key
       return `get ${quotePropName(p.name)}() { return ${p.value} }`
     }
   })
-
-  if (children && children.length > 0) {
-    const childrenExpr = irChildrenToJsExpr(children)
-    propsEntries.push(`get children() { return ${childrenExpr} }`)
+  if ('children' in comp && Array.isArray(comp.children) && comp.children.length > 0) {
+    const childrenExpr = irChildrenToJsExpr(comp.children)
+    entries.push(`get children() { return ${childrenExpr} }`)
   }
+  return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
+}
 
-  const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
+/** Emit reconcileElements for a loop whose body is a single child component. */
+function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, keyFn: string): void {
+  const { name } = elem.childComponent!
+  const vLoop = varSlotId(elem.slotId)
+  const propsExpr = buildComponentPropsExpr(elem.childComponent!)
   const keyExpr = elem.key || '__idx'
   const indexParam = elem.index || '__idx'
   const chainedExpr = buildChainedArrayExpr(elem)
@@ -255,6 +261,34 @@ function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, key
   lines.push(`      createComponent('${name}', ${propsExpr}, ${keyExpr})`)
   lines.push(`    )`)
   lines.push(`  })`)
+}
+
+/**
+ * Emit the hydration guard and data-key tagging for loop elements.
+ * Shared between plain element and composite element reconciliation.
+ * After tagging, calls afterTag callback for additional per-child setup (e.g., component init).
+ */
+function emitHydrationTagging(
+  lines: string[],
+  elem: LoopElement,
+  vLoop: string,
+  indexParam: string,
+  afterTag?: (lines: string[]) => void,
+): void {
+  lines.push(`    if (_${vLoop} && _${vLoop}.children.length > 0 && !_${vLoop}.firstElementChild?.hasAttribute('${DATA_KEY}')) {`)
+  lines.push(`      Array.from(_${vLoop}.children).forEach((__hChild, ${indexParam}) => {`)
+  lines.push(`        if (${indexParam} >= __arr.length) return`)
+  lines.push(`        const ${elem.param} = __arr[${indexParam}]`)
+  if (elem.key) {
+    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${elem.key}))`)
+  } else {
+    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${indexParam}))`)
+  }
+  afterTag?.(lines)
+  lines.push(`      })`)
+  lines.push(`      if (__arr.length > 0) __renderItem(__arr[0], 0)`)
+  lines.push(`      return`)
+  lines.push(`    }`)
 }
 
 /** Emit reconcileElements for a plain element loop with hydration support. */
@@ -270,20 +304,7 @@ function emitPlainElementLoopReconciliation(lines: string[], elem: LoopElement, 
   } else {
     lines.push(`    const __renderItem = (${elem.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
   }
-  // Hydration: preserve SSR elements, tag with data-key, track signals
-  lines.push(`    if (_${vLoop} && _${vLoop}.children.length > 0 && !_${vLoop}.firstElementChild?.hasAttribute('${DATA_KEY}')) {`)
-  lines.push(`      Array.from(_${vLoop}.children).forEach((__hChild, ${indexParam}) => {`)
-  lines.push(`        if (${indexParam} >= __arr.length) return`)
-  lines.push(`        const ${elem.param} = __arr[${indexParam}]`)
-  if (elem.key) {
-    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${elem.key}))`)
-  } else {
-    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${indexParam}))`)
-  }
-  lines.push(`      })`)
-  lines.push(`      if (__arr.length > 0) __renderItem(__arr[0], 0)`)
-  lines.push(`      return`)
-  lines.push(`    }`)
+  emitHydrationTagging(lines, elem, vLoop, indexParam)
   lines.push(`    reconcileElements(_${vLoop}, __arr, ${keyFn}, __renderItem)`)
   lines.push(`  })`)
 }
@@ -360,29 +381,10 @@ function emitCompositeElementReconciliation(
   lines: string[],
   elem: LoopElement,
   keyFn: string,
-  _ctx: ClientJsContext,
 ): void {
   const vLoop = varSlotId(elem.slotId)
   const chainedExpr = buildChainedArrayExpr(elem)
   const indexParam = elem.index || '__idx'
-
-  // Helper: build props expression for a nested component
-  const buildPropsExpr = (comp: { props: Array<{ name: string; value: string; isEventHandler: boolean; isLiteral: boolean }>, children?: import('../types').IRNode[] }): string => {
-    const entries = comp.props.map((p) => {
-      if (p.isEventHandler) {
-        return `${quotePropName(p.name)}: ${p.value}`
-      } else if (p.isLiteral) {
-        return `${quotePropName(p.name)}: ${JSON.stringify(p.value)}`
-      } else {
-        return `get ${quotePropName(p.name)}() { return ${p.value} }`
-      }
-    })
-    if ('children' in comp && Array.isArray(comp.children) && comp.children.length > 0) {
-      const childrenExpr = irChildrenToJsExpr(comp.children)
-      entries.push(`get children() { return ${childrenExpr} }`)
-    }
-    return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
-  }
 
   const nestedComps = elem.nestedComponents!
 
@@ -416,7 +418,7 @@ function emitCompositeElementReconciliation(
     // Replace outer-level component placeholders
     for (const comp of outerComps) {
       const phId = comp.slotId || comp.name
-      const propsExpr = buildPropsExpr(comp)
+      const propsExpr = buildComponentPropsExpr(comp)
       const keyProp = comp.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${keyProp.value}` : ''
       ls.push(`${indent}{ const __ph = __el.querySelector('[${DATA_BF_PH}="${phId}"]'); if (__ph) __ph.replaceWith(createComponent('${comp.name}', ${propsExpr}${keyArg})) }`)
@@ -440,7 +442,7 @@ function emitCompositeElementReconciliation(
       ls.push(`${indent}  if (!__innerEl) return`)
       for (const comp of innerComps) {
         const phId = comp.slotId || comp.name
-        const propsExpr = buildPropsExpr(comp)
+        const propsExpr = buildComponentPropsExpr(comp)
         const keyProp = comp.props.find(p => p.name === 'key')
         const keyArg = keyProp ? `, ${keyProp.value}` : ''
         ls.push(`${indent}  { const __ph = __innerEl.querySelector('[${DATA_BF_PH}="${phId}"]'); if (__ph) __ph.replaceWith(createComponent('${comp.name}', ${propsExpr}${keyArg})) }`)
@@ -463,61 +465,43 @@ function emitCompositeElementReconciliation(
   emitRenderItemBody(lines, '      ')
   lines.push(`    }`)
   lines.push('')
-  lines.push(`    // Hydration: preserve SSR elements, init components/events, track signals`)
-  lines.push(`    if (_${vLoop} && _${vLoop}.children.length > 0 && !_${vLoop}.firstElementChild?.hasAttribute('${DATA_KEY}')) {`)
-  lines.push(`      Array.from(_${vLoop}.children).forEach((__hChild, ${indexParam}) => {`)
-  lines.push(`        if (${indexParam} >= __arr.length) return`)
-  lines.push(`        const ${elem.param} = __arr[${indexParam}]`)
-  if (elem.key) {
-    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${elem.key}))`)
-  } else {
-    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${indexParam}))`)
-  }
-  // Initialize outer-level child components in SSR markup
-  // Use both suffix match (for components with slotSuffix in bf-s, e.g. ~Badge_hash_s2)
-  // and prefix match (for components without slotSuffix, e.g. ~Badge_hash) as SSR
-  // renderChild() may not include slotSuffix in the generated bf-s attribute.
-  for (const comp of outerComps) {
-    const selector = comp.slotId
-      ? `[bf-s$="_${comp.slotId}"], [bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
-      : `[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
-    const propsExpr = buildPropsExpr(comp)
-    lines.push(`        { const __c = __hChild.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${propsExpr}) }`)
-  }
-  // Set up outer-level events on SSR elements
-  for (const ev of outerEvents) {
-    emitEventSetup(lines, '        ', '__hChild', ev)
-  }
-  // Handle inner loop items in SSR
-  // SSR HTML doesn't have data-key-N (Hono JSX strips key props), so use
-  // container children index. Tag with data-key-N for future querySelector lookups.
-  if (innerLoopInfo && (innerComps.length > 0 || innerEvents.length > 0)) {
-    const inner = innerLoopInfo
-    const containerSelector = inner.containerSlotId ? `'[bf="${inner.containerSlotId}"]'` : 'null'
-    lines.push(`        { const __ic = ${containerSelector !== 'null' ? `__hChild.querySelector(${containerSelector})` : '__hChild'}`)
-    lines.push(`        if (__ic) ${inner.array}.forEach((${inner.param}, __innerIdx) => {`)
-    lines.push(`          const __innerEl = __ic.children[__innerIdx]`)
-    lines.push(`          if (!__innerEl) return`)
-    if (inner.key) {
-      lines.push(`          __innerEl.setAttribute('${keyAttrName(inner.depth)}', String(${inner.key}))`)
-    }
-    for (const comp of innerComps) {
+  emitHydrationTagging(lines, elem, vLoop, indexParam, (ls) => {
+    // Initialize outer-level child components in SSR markup
+    for (const comp of outerComps) {
       const selector = comp.slotId
         ? `[bf-s$="_${comp.slotId}"], [bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
         : `[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
-      const propsExpr = buildPropsExpr(comp)
-      lines.push(`          { const __c = __innerEl.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${propsExpr}) }`)
+      const propsExpr = buildComponentPropsExpr(comp)
+      ls.push(`        { const __c = __hChild.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${propsExpr}) }`)
     }
-    for (const ev of innerEvents) {
-      emitEventSetup(lines, '          ', '__innerEl', ev)
+    // Set up outer-level events on SSR elements
+    for (const ev of outerEvents) {
+      emitEventSetup(ls, '        ', '__hChild', ev)
     }
-    lines.push(`        }) }`)
-  }
-  lines.push(`      })`)
-  lines.push(`      // Call renderItem once to track signal dependencies (template reads signals)`)
-  lines.push(`      if (__arr.length > 0) __renderItem(__arr[0], 0)`)
-  lines.push(`      return`)
-  lines.push(`    }`)
+    // Handle inner loop items in SSR
+    if (innerLoopInfo && (innerComps.length > 0 || innerEvents.length > 0)) {
+      const inner = innerLoopInfo
+      const containerSelector = inner.containerSlotId ? `'[bf="${inner.containerSlotId}"]'` : 'null'
+      ls.push(`        { const __ic = ${containerSelector !== 'null' ? `__hChild.querySelector(${containerSelector})` : '__hChild'}`)
+      ls.push(`        if (__ic) ${inner.array}.forEach((${inner.param}, __innerIdx) => {`)
+      ls.push(`          const __innerEl = __ic.children[__innerIdx]`)
+      ls.push(`          if (!__innerEl) return`)
+      if (inner.key) {
+        ls.push(`          __innerEl.setAttribute('${keyAttrName(inner.depth)}', String(${inner.key}))`)
+      }
+      for (const comp of innerComps) {
+        const selector = comp.slotId
+          ? `[bf-s$="_${comp.slotId}"], [bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
+          : `[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
+        const propsExpr = buildComponentPropsExpr(comp)
+        ls.push(`          { const __c = __innerEl.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${propsExpr}) }`)
+      }
+      for (const ev of innerEvents) {
+        emitEventSetup(ls, '          ', '__innerEl', ev)
+      }
+      ls.push(`        }) }`)
+    }
+  })
   lines.push('')
   // Blur active element before reconciliation to avoid syncElementState issues.
   // Composite elements have duplicate internal slot IDs (e.g., multiple Badge components
