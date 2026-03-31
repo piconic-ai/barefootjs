@@ -152,42 +152,8 @@ describe('find', () => {
     expect(el).toBeNull()
   })
 
-  test('finds child scope element before matching scope itself', () => {
-    // AccordionTrigger case: parent scope also matches the suffix selector,
-    // but we want the child scope (ChevronDownIcon) returned first
-    document.body.innerHTML = `
-      <div bf-s="AccordionTrigger_abc_s0">
-        <span bf-s="AccordionTrigger_abc_s0_s0">icon</span>
-      </div>
-    `
-    const scope = document.querySelector('[bf-s="AccordionTrigger_abc_s0"]')
-    const el = find(scope, '[bf-s$="_s0"]')
-    expect(el).not.toBeNull()
-    expect(el?.textContent).toBe('icon')
-  })
-
-  test('returns scope itself when looking for scope selector and no child matches', () => {
-    // ButtonDemo case: scope element IS the slot element (no children)
-    document.body.innerHTML = `
-      <button bf-s="ButtonDemo_xyz_s1">click</button>
-    `
-    const scope = document.querySelector('[bf-s]')
-    const el = find(scope, '[bf-s$="_s1"]')
-    expect(el).toBe(scope)
-  })
-
-  test('prioritizes child scope over self-match for scope selectors', () => {
-    // Both parent and child match the suffix selector, child should be returned
-    document.body.innerHTML = `
-      <div bf-s="Parent_abc_s0">
-        <div bf-s="Parent_abc_s0_s0">child</div>
-      </div>
-    `
-    const scope = document.querySelector('[bf-s="Parent_abc_s0"]')
-    const el = find(scope, '[bf-s$="_s0"]')
-    expect(el?.textContent).toBe('child')
-    expect(el).not.toBe(scope)
-  })
+  // Note: child scope searches (bf-s selectors) are handled by $c/findChildScope,
+  // not by find(). See the $c test suite for scope-selector tests.
 
   describe('with portals', () => {
     test('finds element in portal owned by scope', () => {
@@ -635,6 +601,34 @@ describe('$c', () => {
       const scope = document.querySelector('[bf-s="App_root"]')!
       const [result] = $c(scope, 'Counter')
       expect(result?.getAttribute('bf-s')).toBe('Counter_abc')
+    })
+  })
+
+  describe('child priority over self-match', () => {
+    test('finds child scope before matching scope itself', () => {
+      // AccordionTrigger case: parent scope also matches the suffix,
+      // but the child scope (ChevronDownIcon) should be returned
+      document.body.innerHTML = `
+        <div bf-s="AccordionTrigger_abc_s0">
+          <span bf-s="AccordionTrigger_abc_s0_s0">icon</span>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s="AccordionTrigger_abc_s0"]')!
+      const [result] = $c(scope, 's0')
+      expect(result).not.toBeNull()
+      expect(result?.textContent).toBe('icon')
+    })
+
+    test('prioritizes child over self when both match', () => {
+      document.body.innerHTML = `
+        <div bf-s="Parent_abc_s0">
+          <div bf-s="Parent_abc_s0_s0">child</div>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s="Parent_abc_s0"]')!
+      const [result] = $c(scope, 's0')
+      expect(result?.textContent).toBe('child')
+      expect(result).not.toBe(scope)
     })
   })
 })

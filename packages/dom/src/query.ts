@@ -208,52 +208,21 @@ function* candidatesInScope(scope: Element, selector: string): Generator<Element
 // --- scope membership ---
 
 /**
- * Check if an element belongs directly to a scope (not in a nested scope).
+ * Check if a slot element belongs directly to a scope (not in a nested scope).
  * Returns true only if the element's nearest scope is exactly the given scope.
  * Elements inside nested child scopes (which have their own bf-s) return false.
  *
- * Used by find() for the regular (non-comment) scope path.
+ * Only used for slot element searches (bf="sN" selectors) in regular scopes.
+ * Child scope searches ($c) use findChildScope() which bypasses this check.
+ * Comment scope filtering is handled inline in find().
  */
-function belongsToScope(
-  element: Element,
-  scope: Element,
-  isLookingForScope = false
-): boolean {
-  // If element has its own scope, it's a component root
-  const rawElementScope = element.getAttribute(BF_SCOPE)
-  if (rawElementScope) {
-    // Strip child prefix for ID comparison
-    const elementScope = stripChildPrefix(rawElementScope)
-    // When looking for child scope elements (bf-s selectors),
-    // accept only scopes whose ID is parentScopeId + "_sN" (single slot suffix).
-    // Reject nested scopes like parentScopeId + "_sM_sN" which belong to an intermediate scope.
-    if (isLookingForScope) {
-      const scopeId = getScopeId(scope)
-      if (scopeId && elementScope.startsWith(scopeId + '_')) {
-        const remainder = elementScope.slice(scopeId.length + 1)
-        return /^s\d+$/.test(remainder)
-      }
-      // For component name prefix matches (e.g., [bf-s^="Counter_"]),
-      // element scope ID won't start with parent scope ID. Use containment check.
-      return scope.contains(element)
-    }
-    // When looking for slot elements (bf selectors),
-    // exclude component roots to prevent slot ID collision
-    return false
-  }
+function belongsToScope(element: Element, scope: Element): boolean {
+  // Elements with their own scope are component roots — never a slot match
+  if (element.getAttribute(BF_SCOPE)) return false
 
-  // Element doesn't have its own scope - check if nearest scope matches
+  // Check if nearest scope matches
   const nearestScope = element.closest(`[${BF_SCOPE}]`)
-  if (nearestScope === scope) return true
-
-  // For comment-based scopes, the scope element has no bf-s attribute.
-  // Check if element is within the comment scope range.
-  const commentInfo = commentScopeRegistry.get(scope)
-  if (commentInfo) {
-    return isInCommentScopeRange(element, commentInfo.commentNode)
-  }
-
-  return false
+  return nearestScope === scope
 }
 
 /**
@@ -292,31 +261,24 @@ export function find(
 ): Element | null {
   if (!scope) return null
 
-  const isLookingForScope = selector.includes(BF_SCOPE)
   const commentInfo = commentScopeRegistry.get(scope)
 
-  // Self-match: for non-scope, non-comment selectors, check scope element first
-  if (!commentInfo && !isLookingForScope && scope.matches?.(selector)) return scope
+  // Self-match: check scope element first (for non-comment scopes)
+  if (!commentInfo && scope.matches?.(selector)) return scope
 
   // Enumerate candidates and apply filter
   for (const candidate of candidatesInScope(scope, selector)) {
     if (ignoreScope) return candidate
     if (commentInfo) {
-      // Comment scope: for scope searches accept any match.
-      // For slot searches: top-level siblings in the comment range are always
+      // Comment scope: top-level siblings in the comment range are always
       // accepted (even if they have bf-s, like proxy elements). Descendants
       // are accepted only if not inside a nested bf-s scope.
-      if (isLookingForScope) return candidate
       if (candidate.parentElement === commentInfo.commentNode.parentElement) return candidate
       if (!candidate.closest(`[${BF_SCOPE}]`)) return candidate
     } else {
-      if (belongsToScope(candidate, scope, isLookingForScope)) return candidate
+      if (belongsToScope(candidate, scope)) return candidate
     }
   }
-
-  // Self-match fallback: for scope selectors, check scope element after descendants
-  // (child priority — e.g., ButtonDemo where component root IS the slot element)
-  if (!commentInfo && isLookingForScope && scope.matches?.(selector)) return scope
 
   // Portal search (outside scope's DOM subtree)
   const scopeId = commentInfo?.scopeId ?? getScopeId(scope)
@@ -396,36 +358,63 @@ export function $c(scope: Element | null, ...ids: string[]): (Element | null)[] 
  *     e.g., [bf-s$="Parent_abc_s3"] — matches "Parent_abc_s3" but NOT "Parent_abc_s4_s3".
  *   - Component name ('Counter'): Prefix match [bf-s^="Counter_"]. Unambiguous.
  *
+ * Uses candidatesInScope directly (not find()) because child scope searches
+ * don't need slot-level scope boundary checks — the CSS selector itself is
+ * precise enough to identify the correct element.
+ *
  * Dual-scope: A proxy element can host both a comment scope (fragment-root parent)
  * and a bf-s scope (proxied child). getDualScopeIds() returns both IDs so the
  * search tries each parent identity.
  */
 function $cSingle(scope: Element | null, id: string): Element | null {
+  if (!scope) return null
   // Strip ^ prefix defensively — component slot IDs should never have it,
   // but guard against compiler edge cases to avoid silent initialization failures.
   const cleanId = id.startsWith(BF_PARENT_OWNED_PREFIX) ? id.slice(1) : id
 
   // --- Component name path (unambiguous) ---
   if (!/^s\d/.test(cleanId)) {
-    return find(scope, `[${BF_SCOPE}^="${BF_CHILD_PREFIX}${cleanId}_"], [${BF_SCOPE}^="${cleanId}_"]`)
+    const selector = `[${BF_SCOPE}^="${BF_CHILD_PREFIX}${cleanId}_"], [${BF_SCOPE}^="${cleanId}_"]`
+    return findChildScope(scope, selector)
   }
 
   // --- Slot ID path: precise suffix match using parent scope ID ---
-  // The parent scope ID is already embedded in child scope IDs (e.g., "Parent_abc_s3").
-  // By including it in the CSS selector, we avoid matching nested grandchildren
-  // (e.g., "Parent_abc_s4_s3") that share the same short suffix "_s3".
   const parentScopeIds = getDualScopeIds(scope)
 
-  for (const parentId of parentScopeIds) {
-    const result = find(scope, `[${BF_SCOPE}$="${parentId}_${cleanId}"]`)
-    if (result) return result
+  if (parentScopeIds.length > 0) {
+    for (const parentId of parentScopeIds) {
+      const result = findChildScope(scope, `[${BF_SCOPE}$="${parentId}_${cleanId}"]`)
+      if (result) return result
+    }
+    // Precise match found nothing. Check if scope itself matches the short suffix
+    // (fragment root / inlined component where scope IS the child).
+    if (scope.matches?.(`[${BF_SCOPE}$="_${cleanId}"]`)) return scope
+    return null
   }
 
-  // Fallback: short suffix match.
-  // Covers two cases:
-  //   1. No parent scope ID available (scope has no bf-s or comment scope)
-  //   2. Scope element itself matches the suffix (fragment root / inlined component)
-  return find(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
+  // Fallback: no parent scope ID available — use short suffix match (best-effort)
+  return findChildScope(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
+}
+
+/**
+ * Find a child scope element using candidatesInScope + portal search.
+ * Unlike find(), this accepts any matching candidate without slot-level
+ * scope boundary checks — the selector is assumed to be precise enough.
+ */
+function findChildScope(scope: Element, selector: string): Element | null {
+  // Check scope itself (handles self-match for fragment root / inlined components)
+  if (scope.matches?.(selector)) return scope
+
+  for (const candidate of candidatesInScope(scope, selector)) {
+    return candidate
+  }
+
+  // Portal search
+  const commentInfo = commentScopeRegistry.get(scope)
+  const scopeId = commentInfo?.scopeId ?? getScopeId(scope)
+  if (scopeId) return findInPortals(scopeId, selector)
+
+  return null
 }
 
 /**
