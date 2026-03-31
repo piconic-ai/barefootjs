@@ -123,185 +123,221 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
   }
 }
 
-/** Emit reconcileElements/reconcileTemplates calls for dynamic loops, and static array non-initChild updates. */
+/** Emit loop updates: dispatches to static or dynamic handlers per element. */
 export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
   for (const elem of ctx.loopElements) {
     if (elem.isStaticArray) {
-      // Static array initChild calls are deferred to emitStaticArrayChildInits()
-      // so that parent context providers (provideContext) run first.
-
-      // Reactive attribute effects for plain elements in static arrays.
-      // Static arrays are server-rendered once, so signal-dependent attributes
-      // (e.g., className that reads activeTag()) need createEffect to update the DOM.
-      if (!elem.childComponent && elem.childReactiveAttrs.length > 0) {
-        const v = varSlotId(elem.slotId)
-        lines.push(`  // Reactive attributes in static array children`)
-        lines.push(`  if (_${v}) {`)
-        const indexParam = elem.index || '__idx'
-        lines.push(`    ${elem.array}.forEach((${elem.param}, ${indexParam}) => {`)
-        lines.push(`      const __iterEl = _${v}.children[${indexParam}]`)
-        lines.push(`      if (__iterEl) {`)
-        // Group attrs by childSlotId to avoid duplicate const declarations
-        const attrsBySlot = new Map<string, typeof elem.childReactiveAttrs>()
-        for (const attr of elem.childReactiveAttrs) {
-          if (!attrsBySlot.has(attr.childSlotId)) {
-            attrsBySlot.set(attr.childSlotId, [])
-          }
-          attrsBySlot.get(attr.childSlotId)!.push(attr)
-        }
-        for (const [slotId, attrs] of attrsBySlot) {
-          const varName = `__t_${varSlotId(slotId)}`
-          lines.push(`        const ${varName} = qsa(__iterEl, '[bf="${slotId}"]')`)
-          lines.push(`        if (${varName}) {`)
-          for (const attr of attrs) {
-            lines.push(`          createEffect(() => {`)
-            for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.expression, attr)) {
-              lines.push(`            ${stmt}`)
-            }
-            lines.push(`          })`)
-          }
-          lines.push(`        }`)
-        }
-        lines.push(`      }`)
-        lines.push(`    })`)
-        lines.push(`  }`)
-        lines.push('')
-      }
-
-      // Event delegation for plain elements in static arrays (#537)
-      // Static arrays have no data-key/bf-i markers, so walk up from target to
-      // the container's direct child and use indexOf for index lookup.
-      if (!elem.childComponent && elem.childEvents.length > 0) {
-        const v = varSlotId(elem.slotId)
-        emitLoopEventDelegation(lines, `_${v}`, elem.childEvents, (ls, ev, handlerCall, cVar) => {
-          ls.push(`      let __el = ${varSlotId(ev.childSlotId)}El`)
-          ls.push(`      while (__el.parentElement && __el.parentElement !== ${cVar}) __el = __el.parentElement`)
-          ls.push(`      if (__el.parentElement === ${cVar}) {`)
-          ls.push(`        const __idx = Array.from(${cVar}.children).indexOf(__el)`)
-          ls.push(`        const ${elem.param} = ${elem.array}[__idx]`)
-          ls.push(`        if (${elem.param}) ${handlerCall}`)
-          ls.push(`      }`)
-        })
-      }
-
-      continue
-    }
-
-    const keyFn = elem.key
-      ? `(${elem.param}${elem.index ? `, ${elem.index}` : ''}) => String(${elem.key})`
-      : 'null'
-
-    const vLoop = varSlotId(elem.slotId)
-
-    if (elem.useElementReconciliation && elem.nestedComponents?.length) {
-      emitCompositeElementReconciliation(lines, elem, keyFn, ctx)
-    } else if (elem.childComponent) {
-      const { name, props, children } = elem.childComponent
-      const propsEntries = props.map((p) => {
-        if (p.isEventHandler) {
-          return `${quotePropName(p.name)}: ${p.value}`
-        } else if (p.isLiteral) {
-          return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value)} }`
-        } else {
-          return `get ${quotePropName(p.name)}() { return ${p.value} }`
-        }
-      })
-
-      if (children && children.length > 0) {
-        const childrenExpr = irChildrenToJsExpr(children)
-        propsEntries.push(`get children() { return ${childrenExpr} }`)
-      }
-
-      const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
-      const keyExpr = elem.key || '__idx'
-      const indexParam = elem.index || '__idx'
-
-      const chainedExpr = buildChainedArrayExpr(elem)
-
-      lines.push(`  createEffect(() => {`)
-      lines.push(`    reconcileElements(_${vLoop}, ${chainedExpr}, ${keyFn}, (${elem.param}, ${indexParam}) =>`)
-      lines.push(`      createComponent('${name}', ${propsExpr}, ${keyExpr})`)
-      lines.push(`    )`)
-      lines.push(`  })`)
+      emitStaticArrayUpdates(lines, elem)
     } else {
-      const chainedExprTemplate = buildChainedArrayExpr(elem)
-      const indexParamTemplate = elem.index || '__idx'
-
-      lines.push(`  createEffect(() => {`)
-      lines.push(`    const __arr = ${chainedExprTemplate}`)
-      if (elem.mapPreamble) {
-        lines.push(`    const __renderItem = (${elem.param}, ${indexParamTemplate}) => { ${elem.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
-      } else {
-        lines.push(`    const __renderItem = (${elem.param}, ${indexParamTemplate}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
-      }
-      // Hydration: preserve SSR elements, tag with data-key, track signals
-      lines.push(`    if (_${vLoop} && _${vLoop}.children.length > 0 && !_${vLoop}.firstElementChild?.hasAttribute('${DATA_KEY}')) {`)
-      lines.push(`      Array.from(_${vLoop}.children).forEach((__hChild, ${indexParamTemplate}) => {`)
-      lines.push(`        if (${indexParamTemplate} >= __arr.length) return`)
-      lines.push(`        const ${elem.param} = __arr[${indexParamTemplate}]`)
-      if (elem.key) {
-        lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${elem.key}))`)
-      } else {
-        lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${indexParamTemplate}))`)
-      }
-      lines.push(`      })`)
-      lines.push(`      if (__arr.length > 0) __renderItem(__arr[0], 0)`)
-      lines.push(`      return`)
-      lines.push(`    }`)
-      lines.push(`    reconcileElements(_${vLoop}, __arr, ${keyFn}, __renderItem)`)
-      lines.push(`  })`)
+      emitDynamicLoopUpdates(lines, elem, ctx)
     }
+  }
+}
+
+/**
+ * Emit reactive attribute effects and event delegation for static arrays.
+ * Static arrays are server-rendered once; only signal-dependent attributes
+ * and event handlers need client-side setup.
+ */
+function emitStaticArrayUpdates(lines: string[], elem: LoopElement): void {
+  // Static array initChild calls are deferred to emitStaticArrayChildInits()
+  // so that parent context providers (provideContext) run first.
+
+  // Reactive attribute effects for plain elements in static arrays.
+  if (!elem.childComponent && elem.childReactiveAttrs.length > 0) {
+    const v = varSlotId(elem.slotId)
+    lines.push(`  // Reactive attributes in static array children`)
+    lines.push(`  if (_${v}) {`)
+    const indexParam = elem.index || '__idx'
+    lines.push(`    ${elem.array}.forEach((${elem.param}, ${indexParam}) => {`)
+    lines.push(`      const __iterEl = _${v}.children[${indexParam}]`)
+    lines.push(`      if (__iterEl) {`)
+    // Group attrs by childSlotId to avoid duplicate const declarations
+    const attrsBySlot = new Map<string, typeof elem.childReactiveAttrs>()
+    for (const attr of elem.childReactiveAttrs) {
+      if (!attrsBySlot.has(attr.childSlotId)) {
+        attrsBySlot.set(attr.childSlotId, [])
+      }
+      attrsBySlot.get(attr.childSlotId)!.push(attr)
+    }
+    for (const [slotId, attrs] of attrsBySlot) {
+      const varName = `__t_${varSlotId(slotId)}`
+      lines.push(`        const ${varName} = qsa(__iterEl, '[bf="${slotId}"]')`)
+      lines.push(`        if (${varName}) {`)
+      for (const attr of attrs) {
+        lines.push(`          createEffect(() => {`)
+        for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.expression, attr)) {
+          lines.push(`            ${stmt}`)
+        }
+        lines.push(`          })`)
+      }
+      lines.push(`        }`)
+    }
+    lines.push(`      }`)
+    lines.push(`    })`)
+    lines.push(`  }`)
     lines.push('')
+  }
 
-    if (!elem.childComponent && !elem.useElementReconciliation && elem.childEvents.length > 0) {
-      if (elem.key) {
-        // Dynamic keyed: find item by data-key attribute
-        const keyWithItem = elem.key.replace(new RegExp(`\\b${elem.param}\\b`, 'g'), 'item')
-        emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
-          if (ev.nestedLoops.length === 0) {
-            // Direct child of outer loop — single-level lookup
-            ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[${DATA_KEY}]')`)
-            ls.push(`      if (li) {`)
-            ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
-            ls.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
-            ls.push(`        if (${elem.param}) ${handlerCall}`)
-            ls.push(`      }`)
-          } else {
-            // Nested loop event — multi-level data-key-N resolution
-            const evVar = varSlotId(ev.childSlotId)
-            // Resolve inner loop keys (innermost first)
-            for (const nested of ev.nestedLoops) {
-              const dataAttr = keyAttrName(nested.depth)
-              ls.push(`      const innerLi${nested.depth} = ${evVar}El.closest('[${dataAttr}]')`)
-              ls.push(`      const innerKey${nested.depth} = innerLi${nested.depth}?.getAttribute('${dataAttr}')`)
-            }
-            // Resolve outer loop key
-            ls.push(`      const outerLi = ${evVar}El.closest('[${DATA_KEY}]')`)
-            ls.push(`      const outerKey = outerLi?.getAttribute('${DATA_KEY}')`)
-            // Resolve outer loop variable
-            ls.push(`      const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === outerKey)`)
-            // Resolve inner loop variables via the outer param's nested array
-            for (const nested of ev.nestedLoops) {
-              const innerKeyExpr = nested.key.replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
-              ls.push(`      const ${nested.param} = ${elem.param} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
-            }
-            // Guard all resolved variables
-            const allParams = [elem.param, ...ev.nestedLoops.map(n => n.param)]
-            ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
-          }
-        })
-      } else {
-        // Dynamic non-keyed: find item by index in parent children
-        emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
-          ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
-          ls.push(`      if (li && li.parentElement) {`)
-          ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
-          ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
-          ls.push(`        if (${elem.param}) ${handlerCall}`)
-          ls.push(`      }`)
-        })
-      }
+  // Event delegation for plain elements in static arrays (#537).
+  // Static arrays have no data-key/bf-i markers, so walk up from target to
+  // the container's direct child and use indexOf for index lookup.
+  if (!elem.childComponent && elem.childEvents.length > 0) {
+    const v = varSlotId(elem.slotId)
+    emitLoopEventDelegation(lines, `_${v}`, elem.childEvents, (ls, ev, handlerCall, cVar) => {
+      ls.push(`      let __el = ${varSlotId(ev.childSlotId)}El`)
+      ls.push(`      while (__el.parentElement && __el.parentElement !== ${cVar}) __el = __el.parentElement`)
+      ls.push(`      if (__el.parentElement === ${cVar}) {`)
+      ls.push(`        const __idx = Array.from(${cVar}.children).indexOf(__el)`)
+      ls.push(`        const ${elem.param} = ${elem.array}[__idx]`)
+      ls.push(`        if (${elem.param}) ${handlerCall}`)
+      ls.push(`      }`)
+    })
+  }
+}
+
+/**
+ * Emit reconcileElements for a dynamic loop element.
+ * Handles three sub-cases:
+ *   - Composite (native elements + child components) → emitCompositeElementReconciliation
+ *   - Component-only → reconcileElements + createComponent
+ *   - Plain element → reconcileElements + template + hydration
+ * Then emits event delegation handlers if needed.
+ */
+function emitDynamicLoopUpdates(lines: string[], elem: LoopElement, ctx: ClientJsContext): void {
+  const keyFn = elem.key
+    ? `(${elem.param}${elem.index ? `, ${elem.index}` : ''}) => String(${elem.key})`
+    : 'null'
+
+  const vLoop = varSlotId(elem.slotId)
+
+  if (elem.useElementReconciliation && elem.nestedComponents?.length) {
+    emitCompositeElementReconciliation(lines, elem, keyFn, ctx)
+  } else if (elem.childComponent) {
+    emitComponentLoopReconciliation(lines, elem, keyFn)
+  } else {
+    emitPlainElementLoopReconciliation(lines, elem, keyFn)
+  }
+  lines.push('')
+
+  // Event delegation for plain element loops (component loops handle events differently)
+  if (!elem.childComponent && !elem.useElementReconciliation && elem.childEvents.length > 0) {
+    emitDynamicLoopEventDelegation(lines, elem)
+  }
+}
+
+/** Emit reconcileElements for a loop whose body is a single child component. */
+function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, keyFn: string): void {
+  const { name, props, children } = elem.childComponent!
+  const vLoop = varSlotId(elem.slotId)
+  const propsEntries = props.map((p) => {
+    if (p.isEventHandler) {
+      return `${quotePropName(p.name)}: ${p.value}`
+    } else if (p.isLiteral) {
+      return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value)} }`
+    } else {
+      return `get ${quotePropName(p.name)}() { return ${p.value} }`
     }
+  })
+
+  if (children && children.length > 0) {
+    const childrenExpr = irChildrenToJsExpr(children)
+    propsEntries.push(`get children() { return ${childrenExpr} }`)
+  }
+
+  const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
+  const keyExpr = elem.key || '__idx'
+  const indexParam = elem.index || '__idx'
+  const chainedExpr = buildChainedArrayExpr(elem)
+
+  lines.push(`  createEffect(() => {`)
+  lines.push(`    reconcileElements(_${vLoop}, ${chainedExpr}, ${keyFn}, (${elem.param}, ${indexParam}) =>`)
+  lines.push(`      createComponent('${name}', ${propsExpr}, ${keyExpr})`)
+  lines.push(`    )`)
+  lines.push(`  })`)
+}
+
+/** Emit reconcileElements for a plain element loop with hydration support. */
+function emitPlainElementLoopReconciliation(lines: string[], elem: LoopElement, keyFn: string): void {
+  const vLoop = varSlotId(elem.slotId)
+  const chainedExpr = buildChainedArrayExpr(elem)
+  const indexParam = elem.index || '__idx'
+
+  lines.push(`  createEffect(() => {`)
+  lines.push(`    const __arr = ${chainedExpr}`)
+  if (elem.mapPreamble) {
+    lines.push(`    const __renderItem = (${elem.param}, ${indexParam}) => { ${elem.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
+  } else {
+    lines.push(`    const __renderItem = (${elem.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) }`)
+  }
+  // Hydration: preserve SSR elements, tag with data-key, track signals
+  lines.push(`    if (_${vLoop} && _${vLoop}.children.length > 0 && !_${vLoop}.firstElementChild?.hasAttribute('${DATA_KEY}')) {`)
+  lines.push(`      Array.from(_${vLoop}.children).forEach((__hChild, ${indexParam}) => {`)
+  lines.push(`        if (${indexParam} >= __arr.length) return`)
+  lines.push(`        const ${elem.param} = __arr[${indexParam}]`)
+  if (elem.key) {
+    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${elem.key}))`)
+  } else {
+    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${indexParam}))`)
+  }
+  lines.push(`      })`)
+  lines.push(`      if (__arr.length > 0) __renderItem(__arr[0], 0)`)
+  lines.push(`      return`)
+  lines.push(`    }`)
+  lines.push(`    reconcileElements(_${vLoop}, __arr, ${keyFn}, __renderItem)`)
+  lines.push(`  })`)
+}
+
+/** Emit event delegation for dynamic (non-static) loop child events. */
+function emitDynamicLoopEventDelegation(lines: string[], elem: LoopElement): void {
+  const vLoop = varSlotId(elem.slotId)
+
+  if (elem.key) {
+    // Dynamic keyed: find item by data-key attribute
+    const keyWithItem = elem.key.replace(new RegExp(`\\b${elem.param}\\b`, 'g'), 'item')
+    emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
+      if (ev.nestedLoops.length === 0) {
+        // Direct child of outer loop — single-level lookup
+        ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[${DATA_KEY}]')`)
+        ls.push(`      if (li) {`)
+        ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
+        ls.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
+        ls.push(`        if (${elem.param}) ${handlerCall}`)
+        ls.push(`      }`)
+      } else {
+        // Nested loop event — multi-level data-key-N resolution
+        const evVar = varSlotId(ev.childSlotId)
+        // Resolve inner loop keys (innermost first)
+        for (const nested of ev.nestedLoops) {
+          const dataAttr = keyAttrName(nested.depth)
+          ls.push(`      const innerLi${nested.depth} = ${evVar}El.closest('[${dataAttr}]')`)
+          ls.push(`      const innerKey${nested.depth} = innerLi${nested.depth}?.getAttribute('${dataAttr}')`)
+        }
+        // Resolve outer loop key
+        ls.push(`      const outerLi = ${evVar}El.closest('[${DATA_KEY}]')`)
+        ls.push(`      const outerKey = outerLi?.getAttribute('${DATA_KEY}')`)
+        // Resolve outer loop variable
+        ls.push(`      const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === outerKey)`)
+        // Resolve inner loop variables via the outer param's nested array
+        for (const nested of ev.nestedLoops) {
+          const innerKeyExpr = nested.key.replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
+          ls.push(`      const ${nested.param} = ${elem.param} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
+        }
+        // Guard all resolved variables
+        const allParams = [elem.param, ...ev.nestedLoops.map(n => n.param)]
+        ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
+      }
+    })
+  } else {
+    // Dynamic non-keyed: find item by index in parent children
+    emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
+      ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
+      ls.push(`      if (li && li.parentElement) {`)
+      ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
+      ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
+      ls.push(`        if (${elem.param}) ${handlerCall}`)
+      ls.push(`      }`)
+    })
   }
 }
 
