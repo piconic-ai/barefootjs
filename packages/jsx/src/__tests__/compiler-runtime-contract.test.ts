@@ -83,8 +83,8 @@ describe('Compiler-Runtime Contract', () => {
     })
   })
 
-  describe('attribute constants consistency', () => {
-    test('data-key attribute in loop hydration', () => {
+  describe('key pipeline', () => {
+    test('outer loop uses data-key attribute', () => {
       const js = compileClient(`
         "use client"
         import { createSignal } from '@barefootjs/dom'
@@ -93,10 +93,43 @@ describe('Compiler-Runtime Contract', () => {
           return <ul>{items().map(item => <li key={item.id}>{item.id}</li>)}</ul>
         }
       `)
-      // Should use data-key for key attribute
       expect(js).toContain("data-key")
-      // Should not use any other key attribute pattern
       expect(js).not.toContain("data-item-key")
+    })
+
+    test('nested loop uses data-key-N for inner levels', () => {
+      const js = compileClient(`
+        "use client"
+        import { createSignal } from '@barefootjs/dom'
+        export function Test() {
+          const [groups] = createSignal([{id: 'g1', items: [{id: 'i1'}]}])
+          return <div>{groups().map(group => (
+            <div key={group.id}>
+              {group.items.map(item => <span key={item.id}>{item.id}</span>)}
+            </div>
+          ))}</div>
+        }
+      `)
+      // Outer loop: data-key
+      expect(js).toContain('data-key')
+      // Inner loop: data-key-1 (depth 1)
+      expect(js).toContain('data-key-1')
+      // Should not have data-key-0 (depth 0 uses data-key, not data-key-0)
+      expect(js).not.toContain('data-key-0')
+    })
+
+    test('key in HTML template uses data-key attribute name', () => {
+      const result = compileJSXSync(`
+        "use client"
+        import { createSignal } from '@barefootjs/dom'
+        export function Test() {
+          const [items] = createSignal([{id: 1}])
+          return <ul>{items().map(item => <li key={item.id}>{item.id}</li>)}</ul>
+        }
+      `, 'Test.tsx', { adapter })
+      const template = result.files.find(f => f.type === 'markedTemplate')?.content ?? ''
+      // Template should have data-key attribute for loop items
+      expect(template).toContain('data-key')
     })
   })
 

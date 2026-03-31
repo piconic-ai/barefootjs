@@ -25,6 +25,15 @@ export const DATA_KEY_PREFIX = 'data-key-'
 export const DATA_BF_PH = 'data-bf-ph'
 
 /**
+ * Get the data-key attribute name for a given loop depth.
+ * Outer loop (depth 0): 'data-key'
+ * Nested loops (depth N): 'data-key-N'
+ */
+export function keyAttrName(loopDepth: number): string {
+  return loopDepth > 0 ? `${DATA_KEY_PREFIX}${loopDepth}` : DATA_KEY
+}
+
+/**
  * Strip ^ prefix from slot ID for use as JavaScript variable name.
  * `^s3` → `s3` (since `_^s3` is not a valid identifier)
  */

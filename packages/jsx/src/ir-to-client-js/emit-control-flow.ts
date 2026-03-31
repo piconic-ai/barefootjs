@@ -5,7 +5,7 @@
  */
 
 import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, LoopChildEvent, LoopElement } from './types'
-import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH } from './utils'
+import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
 
@@ -271,7 +271,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
             const evVar = varSlotId(ev.childSlotId)
             // Resolve inner loop keys (innermost first)
             for (const nested of ev.nestedLoops) {
-              const dataAttr = `${DATA_KEY_PREFIX}${nested.depth}`
+              const dataAttr = keyAttrName(nested.depth)
               ls.push(`      const innerLi${nested.depth} = ${evVar}El.closest('[${dataAttr}]')`)
               ls.push(`      const innerKey${nested.depth} = innerLi${nested.depth}?.getAttribute('${dataAttr}')`)
             }
@@ -397,7 +397,7 @@ function emitCompositeElementReconciliation(
       ls.push(`${indent}// Initialize inner loop components and events`)
       ls.push(`${indent}${inner.array}.forEach((${inner.param}) => {`)
       if (inner.key) {
-        ls.push(`${indent}  const __innerEl = __el.querySelector('[${DATA_KEY_PREFIX}${inner.depth}="' + ${inner.key} + '"]')`)
+        ls.push(`${indent}  const __innerEl = __el.querySelector('[${keyAttrName(inner.depth)}="' + ${inner.key} + '"]')`)
       } else {
         ls.push(`${indent}  const __innerEl = null`)
       }
@@ -463,7 +463,7 @@ function emitCompositeElementReconciliation(
     lines.push(`          const __innerEl = __ic.children[__innerIdx]`)
     lines.push(`          if (!__innerEl) return`)
     if (inner.key) {
-      lines.push(`          __innerEl.setAttribute('${DATA_KEY_PREFIX}${inner.depth}', String(${inner.key}))`)
+      lines.push(`          __innerEl.setAttribute('${keyAttrName(inner.depth)}', String(${inner.key}))`)
     }
     for (const comp of innerComps) {
       const selector = comp.slotId
