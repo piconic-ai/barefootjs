@@ -23,6 +23,31 @@ function getScopeId(el: Element | null): string | null {
   return raw ? stripChildPrefix(raw) : null
 }
 
+/** Comments already processed by findScopeByComment. */
+const initializedComments = new WeakSet<Comment>()
+
+/**
+ * Parse scope ID from a comment value like "bf-scope:~Name_xxx|propsJson".
+ * Strips the prefix, child prefix (~), and props JSON suffix (|...).
+ */
+function parseCommentScopeId(value: string, prefix: string): string | null {
+  if (!value.startsWith(prefix)) return null
+  let id = stripChildPrefix(value.slice(prefix.length))
+  const pipeIdx = id.indexOf('|')
+  if (pipeIdx >= 0) id = id.slice(0, pipeIdx)
+  return id
+}
+
+/** Find the first Element sibling after a node. */
+function nextElementSibling(node: Node): Element | null {
+  let sibling: Node | null = node.nextSibling
+  while (sibling) {
+    if (sibling.nodeType === Node.ELEMENT_NODE) return sibling as Element
+    sibling = sibling.nextSibling
+  }
+  return null
+}
+
 // --- findScope ---
 
 /**
@@ -56,25 +81,18 @@ export function findScope(
     }
   }
 
-  // Check if parent is the scope element itself
-  // This handles two cases:
+  // Check if parent is the scope element itself.
+  // Two cases:
   // 1. Scope ID starts with component name (e.g., "AddTodoForm_abc123")
   // 2. Scope ID is from parent component via initChild (e.g., "TodoApp_xyz_s5")
-  //    In this case, initChild already found the correct element, so trust it
-  const rawScope = parentEl?.getAttribute(BF_SCOPE)
-  if (rawScope) {
-    // Strip child prefix for name matching
-    const scopeId = stripChildPrefix(rawScope)
-    // Accept if it matches the name prefix OR if it's a child slot pattern
-    // (when initChild passes the scope element directly)
+  //    — initChild already found the correct element, so trust it
+  const scopeId = getScopeId(parentEl)
+  if (scopeId) {
     if (
       scopeId.startsWith(`${name}_`) ||
       (/_s\d/.test(scopeId) && parent !== document)
     ) {
-      // Mark as initialized if not already
-      if (!hydratedScopes.has(parentEl)) {
-        hydratedScopes.add(parentEl)
-      }
+      hydratedScopes.add(parentEl)
       return parent as Element
     }
   }
@@ -122,47 +140,19 @@ function findScopeByComment(
     const value = comment.nodeValue
     if (!value?.startsWith(prefix)) continue
 
-    // Extract scope ID from comment value: "bf-scope:Name_xxx" or "bf-scope:~Name_xxx|propsJson"
-    let scopeId = value.slice(prefix.length)
-    // Strip child prefix
-    scopeId = stripChildPrefix(scopeId)
-    // Strip props JSON suffix
-    const pipeIdx = scopeId.indexOf('|')
-    if (pipeIdx >= 0) {
-      scopeId = scopeId.slice(0, pipeIdx)
-    }
-
-    if (!scopeId.startsWith(`${name}_`)) continue
-
-    // Check if already initialized
-    if ((comment as unknown as Record<string, boolean>).__bfInitialized) continue
+    // Parse scope ID from comment: "bf-scope:Name_xxx" or "bf-scope:~Name_xxx|propsJson"
+    const scopeId = parseCommentScopeId(value, prefix)
+    if (!scopeId?.startsWith(`${name}_`)) continue
+    if (initializedComments.has(comment)) continue
 
     if (matchIdx === idx) {
-      // Mark as initialized
-      ;(comment as unknown as Record<string, boolean>).__bfInitialized = true
+      initializedComments.add(comment)
 
-      // Find the scope proxy element: first element sibling after the comment
-      let proxyEl: Element | null = null
-      let node: Node | null = comment.nextSibling
-      while (node) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          proxyEl = node as Element
-          break
-        }
-        node = node.nextSibling
-      }
-      // If no element sibling, use parent element
-      if (!proxyEl) {
-        proxyEl = comment.parentElement
-      }
-
+      // Proxy element: first element sibling after the comment, or parent
+      const proxyEl = nextElementSibling(comment) ?? comment.parentElement
       if (proxyEl) {
-        commentScopeRegistry.set(proxyEl, {
-          commentNode: comment,
-          scopeId,
-        })
+        commentScopeRegistry.set(proxyEl, { commentNode: comment, scopeId })
       }
-
       return proxyEl
     }
     matchIdx++
@@ -398,47 +388,64 @@ export function $c(scope: Element | null, ...ids: string[]): (Element | null)[] 
   return ids.map(id => $cSingle(scope, id))
 }
 
+/**
+ * Resolve a single child component scope by slot ID or component name.
+ *
+ * Two ID formats:
+ *   - Slot ID ('s0', 's1', ...): Suffix match [bf-s$="_s0"]. Ambiguous because
+ *     both "_s0" (direct child) and "_s5_s0" (nested grandchild) share the suffix.
+ *     Disambiguation uses the parent scope ID to verify direct parentage.
+ *   - Component name ('Counter'): Prefix match [bf-s^="Counter_"]. Unambiguous.
+ *
+ * Slot ID resolution steps:
+ *   1. find() returns the first suffix-matching scope element
+ *   2. If result IS scope itself → fragment root / inlined, accept
+ *   3. If no parent scope ID known → accept (no disambiguation possible)
+ *   4. Verify result's scope ID = "{parentScopeId}_{slotId}" (direct child)
+ *   5. If verification fails → fall back to findDirectChild() which checks all candidates
+ *
+ * Dual-scope complication: A proxy element can be registered in both the comment
+ * scope registry (for the fragment-root parent) and have a bf-s attribute (for the
+ * proxied child). getDualScopeIds() returns both IDs so steps 4-5 try each.
+ */
 function $cSingle(scope: Element | null, id: string): Element | null {
   // Strip ^ prefix defensively — component slot IDs should never have it,
   // but guard against compiler edge cases to avoid silent initialization failures.
   const cleanId = id.startsWith(BF_PARENT_OWNED_PREFIX) ? id.slice(1) : id
-  // Slot IDs start with 's' + digit; component names start with uppercase
-  if (/^s\d/.test(cleanId)) {
-    // Suffix match [bf-s$="_s3"] is ambiguous: it matches both "_s0_s3" (nested)
-    // and "_s3" (direct child). When the parent scope ID is known, verify the
-    // candidate is a direct child by checking the scope ID contains
-    // "{parentScopeId}_{slotId}" without intermediate slot segments.
-    const result = find(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
-    if (!result) return null
 
-    // When find() returns scope itself, this is a fragment root / inlined component
-    // where the child's scope IS the parent's scope element. Accept it as-is.
-    if (result === scope) return result
-
-    // For dual-registered elements (comment scope proxy + bf-s), try both
-    // scope IDs. Fragment-root components scope their children to the comment
-    // scope ID, while the proxied child component scopes its children to the
-    // bf-s scope ID. Both sets of children live in the same DOM subtree.
-    const parentScopeIds = getDualScopeIds(scope)
-    if (parentScopeIds.length === 0) return result
-
-    const childScopeId = getScopeId(result) ?? ''
-
-    for (const parentId of parentScopeIds) {
-      if (childScopeId.endsWith(`${parentId}_${cleanId}`)) return result
-    }
-
-    // Fall back to searching all candidates with each parent ID.
-    const selector = `[${BF_SCOPE}$="_${cleanId}"]`
-    for (const parentId of parentScopeIds) {
-      const directChild = findDirectChild(scope, selector, parentId, cleanId)
-      if (directChild) return directChild
-    }
-
-    return null
+  // --- Component name path (unambiguous) ---
+  if (!/^s\d/.test(cleanId)) {
+    // Support both child (~Name_) and root (Name_) scopes
+    return find(scope, `[${BF_SCOPE}^="${BF_CHILD_PREFIX}${cleanId}_"], [${BF_SCOPE}^="${cleanId}_"]`)
   }
-  // Component name prefix match - support both child (~Name_) and root (Name_) scopes
-  return find(scope, `[${BF_SCOPE}^="${BF_CHILD_PREFIX}${cleanId}_"], [${BF_SCOPE}^="${cleanId}_"]`)
+
+  // --- Slot ID path (needs disambiguation) ---
+
+  // Step 1: Find first suffix match
+  const result = find(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
+  if (!result) return null
+
+  // Step 2: Self-match means fragment root / inlined component
+  if (result === scope) return result
+
+  // Step 3: Get parent scope IDs for direct-child verification
+  const parentScopeIds = getDualScopeIds(scope)
+  if (parentScopeIds.length === 0) return result
+
+  // Step 4: Quick check — does the first result's scope ID confirm direct parentage?
+  const childScopeId = getScopeId(result) ?? ''
+  for (const parentId of parentScopeIds) {
+    if (childScopeId.endsWith(`${parentId}_${cleanId}`)) return result
+  }
+
+  // Step 5: First result was a nested grandchild. Search all candidates for the direct child.
+  const selector = `[${BF_SCOPE}$="_${cleanId}"]`
+  for (const parentId of parentScopeIds) {
+    const directChild = findDirectChild(scope, selector, parentId, cleanId)
+    if (directChild) return directChild
+  }
+
+  return null
 }
 
 /**

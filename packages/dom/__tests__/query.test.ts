@@ -564,6 +564,79 @@ describe('$c', () => {
     expect(c0?.textContent).toBe('slot')
     expect(c1?.textContent).toBe('counter')
   })
+
+  describe('slot ID disambiguation (direct child vs nested grandchild)', () => {
+    test('when grandchild matches suffix first, falls back to direct child', () => {
+      // The grandchild Demo_abc_s4_s3 has suffix "_s3" and appears inside
+      // the subtree before Demo_abc_s3 in DOM order (because it's nested).
+      // $cSingle must disambiguate using the parent scope ID.
+      document.body.innerHTML = `
+        <div bf-s="Demo_abc">
+          <div bf-s="Demo_abc_s4">
+            <div bf-s="Demo_abc_s4_s3">nested grandchild</div>
+          </div>
+          <div bf-s="Demo_abc_s3">direct child</div>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s="Demo_abc"]')!
+      const [result] = $c(scope, 's3')
+      expect(result).not.toBeNull()
+      expect(result?.getAttribute('bf-s')).toBe('Demo_abc_s3')
+    })
+
+    test('returns null when only nested grandchild exists (no direct child)', () => {
+      // Only Demo_abc_s4_s3 exists, not Demo_abc_s3.
+      // $cSingle should NOT return the grandchild.
+      document.body.innerHTML = `
+        <div bf-s="Demo_abc">
+          <div bf-s="Demo_abc_s4">
+            <div bf-s="Demo_abc_s4_s3">nested grandchild only</div>
+          </div>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s="Demo_abc"]')!
+      const [result] = $c(scope, 's3')
+      expect(result).toBeNull()
+    })
+
+    test('scope element itself matches suffix (fragment root / inlined)', () => {
+      // When find() returns the scope element itself, it means the child
+      // component's scope IS the parent's scope (inlined or fragment root).
+      document.body.innerHTML = `
+        <div bf-s="Parent_abc_s0">
+          <span>content</span>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s="Parent_abc_s0"]')!
+      const [result] = $c(scope, 's0')
+      expect(result).toBe(scope)
+    })
+  })
+
+  describe('child component prefix (~) matching', () => {
+    test('finds child-prefixed scope by component name', () => {
+      document.body.innerHTML = `
+        <div bf-s="App_root">
+          <div bf-s="~Dialog_abc">dialog</div>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s="App_root"]')!
+      const [result] = $c(scope, 'Dialog')
+      expect(result).not.toBeNull()
+      expect(result?.getAttribute('bf-s')).toBe('~Dialog_abc')
+    })
+
+    test('finds non-prefixed scope by component name', () => {
+      document.body.innerHTML = `
+        <div bf-s="App_root">
+          <div bf-s="Counter_abc">counter</div>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s="App_root"]')!
+      const [result] = $c(scope, 'Counter')
+      expect(result?.getAttribute('bf-s')).toBe('Counter_abc')
+    })
+  })
 })
 
 describe('$t', () => {
