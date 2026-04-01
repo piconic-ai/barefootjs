@@ -2,11 +2,11 @@
 /**
  * SocialFeedDemo Component
  *
- * Social media feed block with posts, comments, and replies.
- * Compiler stress: deeply nested component composition (Feed > Post > Comments > Reply),
- * conditional rendering inside loops (liked/unliked, expanded/collapsed comments),
+ * Community feed with threaded comments — posts, comments, and nested replies.
+ * Exercises deeply nested component composition (Feed > Post > Comments > Reply),
+ * conditional rendering inside loops (expanded/collapsed comments),
  * dynamic list updates (add comment → reconciliation), derived state (counts),
- * loop-in-loop with events (replies inside comments inside posts).
+ * and loop-in-loop with events (replies inside comments inside posts).
  */
 
 import { createSignal, createMemo } from '@barefootjs/dom'
@@ -50,41 +50,41 @@ type Post = {
 
 const initialPosts: Post[] = [
   {
-    id: 1, author: 'Alice Chen', initials: 'AC', role: 'Engineer',
-    text: 'Just shipped a new compiler optimization — 25% smaller runtime queries! The key insight was that parent scope IDs were already embedded in child scope IDs, we just were not using them.',
-    time: '2h ago', likes: 12, liked: false, showComments: true,
+    id: 1, author: 'Mia Torres', initials: 'MT', role: 'Author',
+    text: 'Just published my guide on building accessible forms. The biggest takeaway: always associate labels with inputs, and use aria-describedby for error messages — screen readers need both.',
+    time: '2h ago', likes: 42, liked: false, showComments: true,
     comments: [
       {
-        id: 101, author: 'Bob Park', initials: 'BP',
-        text: 'Nice work! Does this affect hydration performance too?', time: '1h ago',
-        likes: 3, liked: false,
+        id: 101, author: 'James O\'Brien', initials: 'JO',
+        text: 'Great article! One thing I\'d add: don\'t forget aria-live regions for dynamic validation messages.', time: '1h ago',
+        likes: 8, liked: false,
         replies: [
-          { id: 1001, author: 'Alice Chen', initials: 'AC', text: 'Yes, fewer DOM queries during hydration.', time: '45m ago' },
+          { id: 1001, author: 'Mia Torres', initials: 'MT', text: 'Good point — I\'ll add a section on that in the follow-up.', time: '45m ago' },
         ],
       },
       {
-        id: 102, author: 'Carol Liu', initials: 'CL',
-        text: 'The before/after diff is impressive. Clean refactoring.', time: '30m ago',
+        id: 102, author: 'Sara Lin', initials: 'SL',
+        text: 'This helped me fix our checkout form. The error message pattern was exactly what we needed.', time: '30m ago',
         likes: 5, liked: true, replies: [],
       },
     ],
   },
   {
-    id: 2, author: 'Dave Kim', initials: 'DK', role: 'Designer',
-    text: 'Working on the new component library docs. Dark mode support is tricky with CSS layers — anyone have tips on UnoCSS @layer ordering?',
-    time: '5h ago', likes: 8, liked: true, showComments: false,
+    id: 2, author: 'Noah Patel', initials: 'NP', role: 'Designer',
+    text: 'Redesigned our onboarding flow — went from 5 steps to 3 by combining related fields. Early metrics show 23% higher completion rate.',
+    time: '5h ago', likes: 18, liked: true, showComments: false,
     comments: [
       {
-        id: 201, author: 'Eve Wang', initials: 'EW',
-        text: 'Check if your preflights use border: 0 solid — that shorthand resets border-color!', time: '4h ago',
-        likes: 7, liked: false, replies: [],
+        id: 201, author: 'Lily Chang', initials: 'LC',
+        text: 'Did you A/B test the 3-step version against the original? Curious about the methodology.', time: '4h ago',
+        likes: 3, liked: false, replies: [],
       },
     ],
   },
   {
-    id: 3, author: 'Frank Lee', initials: 'FL', role: 'PM',
-    text: 'Sprint retrospective: 13 PRs merged this cycle covering compiler refactoring, CSS fixes, and contract tests. Great teamwork everyone!',
-    time: '1d ago', likes: 24, liked: false, showComments: false,
+    id: 3, author: 'Ethan Brooks', initials: 'EB', role: 'DevRel',
+    text: 'Hosting a live coding session this Friday on building real-time dashboards with server-sent events. Drop a comment if you want the invite link!',
+    time: '1d ago', likes: 31, liked: false, showComments: false,
     comments: [],
   },
 ]

@@ -62,7 +62,7 @@ export function SocialFeedRefPage() {
     <DocPage slug="social-feed" toc={tocItems}>
       <PageHeader
         title="Social Feed"
-        description="A social media feed with posts, comments, and nested replies. Exercises deeply nested component composition, conditional rendering inside loops, and dynamic list updates."
+        description="A community feed with threaded comments. Posts, comments, and nested replies form a 3-level hierarchy with interactive state at each level."
       />
 
       <Section id="preview" title="Preview">
