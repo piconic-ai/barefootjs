@@ -15,15 +15,24 @@ import { Checkbox } from '@ui/components/ui/checkbox'
 import { Input } from '@ui/components/ui/input'
 import { Separator } from '@ui/components/ui/separator'
 
-type TreeNode = {
+type FileItem = {
   id: number
   name: string
-  type: 'file' | 'folder'
-  size: number  // bytes (0 for folders)
+  type: 'file'
+  size: number  // bytes
+  selected: boolean
+}
+
+type FolderItem = {
+  id: number
+  name: string
+  type: 'folder'
   expanded: boolean
   selected: boolean
   children: TreeNode[]
 }
+
+type TreeNode = FileItem | FolderItem
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -58,31 +67,38 @@ function countSelected(nodes: TreeNode[]): number {
   return count
 }
 
-const f = (id: number, name: string, size: number): TreeNode =>
-  ({ id, name, type: 'file', size, expanded: false, selected: false, children: [] })
-const d = (id: number, name: string, expanded: boolean, children: TreeNode[]): TreeNode =>
-  ({ id, name, type: 'folder', size: 0, expanded, selected: false, children })
-
 const initialTree: TreeNode[] = [
-  d(1, 'src', true, [
-    d(2, 'components', true, [
-      f(3, 'Button.tsx', 2048),
-      f(4, 'Input.tsx', 1536),
-      f(5, 'Dialog.tsx', 3200),
-    ]),
-    d(6, 'utils', false, [
-      f(7, 'format.ts', 512),
-      f(8, 'cn.ts', 256),
-    ]),
-    f(9, 'index.ts', 128),
-  ]),
-  d(10, 'public', false, [
-    f(11, 'favicon.ico', 4096),
-    f(12, 'robots.txt', 64),
-  ]),
-  f(13, 'package.json', 1024),
-  f(14, 'tsconfig.json', 384),
-  f(15, 'README.md', 2560),
+  {
+    id: 1, name: 'src', type: 'folder', expanded: true, selected: false,
+    children: [
+      {
+        id: 2, name: 'components', type: 'folder', expanded: true, selected: false,
+        children: [
+          { id: 3, name: 'Button.tsx', type: 'file', size: 2048, selected: false },
+          { id: 4, name: 'Input.tsx', type: 'file', size: 1536, selected: false },
+          { id: 5, name: 'Dialog.tsx', type: 'file', size: 3200, selected: false },
+        ],
+      },
+      {
+        id: 6, name: 'utils', type: 'folder', expanded: false, selected: false,
+        children: [
+          { id: 7, name: 'format.ts', type: 'file', size: 512, selected: false },
+          { id: 8, name: 'cn.ts', type: 'file', size: 256, selected: false },
+        ],
+      },
+      { id: 9, name: 'index.ts', type: 'file', size: 128, selected: false },
+    ],
+  },
+  {
+    id: 10, name: 'public', type: 'folder', expanded: false, selected: false,
+    children: [
+      { id: 11, name: 'favicon.ico', type: 'file', size: 4096, selected: false },
+      { id: 12, name: 'robots.txt', type: 'file', size: 64, selected: false },
+    ],
+  },
+  { id: 13, name: 'package.json', type: 'file', size: 1024, selected: false },
+  { id: 14, name: 'tsconfig.json', type: 'file', size: 384, selected: false },
+  { id: 15, name: 'README.md', type: 'file', size: 2560, selected: false },
 ]
 
 let nextId = 100
@@ -125,14 +141,12 @@ export function FileBrowserDemo() {
 
   const addFile = (folderId: number, name: string) => {
     if (!name.trim()) return
-    const newFile: TreeNode = {
+    const newFile: FileItem = {
       id: nextId++,
       name: name.trim(),
       type: 'file',
       size: Math.floor(Math.random() * 4096) + 128,
-      expanded: false,
       selected: false,
-      children: [],
     }
     setTree(prev => updateNode(prev, folderId, node =>
       node.type === 'folder' ? { ...node, children: [...node.children, newFile], expanded: true } : node
