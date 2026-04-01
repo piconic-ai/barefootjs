@@ -276,7 +276,8 @@ function emitHydrationTagging(
   afterTag?: (lines: string[]) => void,
 ): void {
   lines.push(`    if (_${vLoop} && _${vLoop}.children.length > 0 && !_${vLoop}.firstElementChild?.hasAttribute('${DATA_KEY}')) {`)
-  lines.push(`      Array.from(_${vLoop}.children).forEach((__hChild, ${indexParam}) => {`)
+  lines.push(`      ensureLoopMarkers(_${vLoop}, __arr.length)`)
+  lines.push(`      getLoopChildren(_${vLoop}).forEach((__hChild, ${indexParam}) => {`)
   lines.push(`        if (${indexParam} >= __arr.length) return`)
   lines.push(`        const ${elem.param} = __arr[${indexParam}]`)
   if (elem.key) {

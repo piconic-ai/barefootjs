@@ -6,7 +6,82 @@
  */
 
 import { hydratedScopes } from './hydration-state'
-import { BF_SCOPE, BF_SLOT, BF_COND, BF_KEY } from './attrs'
+import { BF_SCOPE, BF_SLOT, BF_COND, BF_KEY, BF_LOOP_START, BF_LOOP_END } from './attrs'
+
+/** Find loop boundary comment markers in a container. */
+function findLoopMarkers(container: HTMLElement): { startMarker: Comment | null; endMarker: Comment | null } {
+  let startMarker: Comment | null = null
+  let endMarker: Comment | null = null
+  for (const node of Array.from(container.childNodes)) {
+    if (node.nodeType === Node.COMMENT_NODE) {
+      const value = (node as Comment).nodeValue
+      if (value === BF_LOOP_START) startMarker = node as Comment
+      else if (value === BF_LOOP_END) endMarker = node as Comment
+    }
+  }
+  if (startMarker && endMarker) return { startMarker, endMarker }
+  return { startMarker: null, endMarker: null }
+}
+
+/** Get all Element nodes between start and end comment markers. */
+function getElementsBetweenMarkers(start: Comment, end: Comment): Element[] {
+  const elements: Element[] = []
+  let node: Node | null = start.nextSibling
+  while (node && node !== end) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      elements.push(node as Element)
+    }
+    node = node.nextSibling
+  }
+  return elements
+}
+
+/** Remove all nodes between start and end comment markers (preserves the markers). */
+function removeElementsBetweenMarkers(start: Comment, end: Comment): void {
+  let node: Node | null = start.nextSibling
+  while (node && node !== end) {
+    const next: Node | null = node.nextSibling
+    node.parentNode?.removeChild(node)
+    node = next
+  }
+}
+
+/**
+ * Get loop children from a container, respecting bf-loop boundary markers.
+ * When markers are present, returns only elements between them.
+ * When absent, returns all children (backward compatible).
+ * Exported for use by compiler-generated hydration code.
+ */
+export function getLoopChildren(container: HTMLElement): HTMLElement[] {
+  const { startMarker, endMarker } = findLoopMarkers(container)
+  if (startMarker && endMarker) {
+    return getElementsBetweenMarkers(startMarker, endMarker) as HTMLElement[]
+  }
+  return Array.from(container.children) as HTMLElement[]
+}
+
+/**
+ * Ensure loop boundary markers exist in a container for SSR-rendered content.
+ * SSR HTML doesn't include markers, so we insert them during hydration.
+ * Uses itemCount to identify the last N children as loop items (rest are siblings).
+ */
+export function ensureLoopMarkers(container: HTMLElement, itemCount: number): void {
+  // Already has markers
+  const { startMarker } = findLoopMarkers(container)
+  if (startMarker) return
+
+  const children = Array.from(container.children)
+  if (children.length === 0) return
+
+  // Loop items are the LAST itemCount children (siblings come first in HTML order)
+  const loopStartIdx = Math.max(0, children.length - itemCount)
+  const firstLoopChild = children[loopStartIdx]
+
+  const start = document.createComment(BF_LOOP_START)
+  const end = document.createComment(BF_LOOP_END)
+  container.insertBefore(start, firstLoopChild)
+  container.appendChild(end)
+}
 
 /**
  * Reconcile a list container using HTMLElement mode (for createComponent).
@@ -27,12 +102,20 @@ export function reconcileElements<T>(
 ): void {
   if (!container || !items) return
 
-  // Build key -> element map from existing children
+  // Find loop boundary markers if present.
+  // When markers exist, only elements between <!--bf-loop--> and <!--/bf-loop-->
+  // participate in reconciliation — siblings outside the range are preserved.
+  const { startMarker, endMarker } = findLoopMarkers(container)
+
+  // Collect existing keyed elements (only within loop range if markers exist)
   const existingByKey = new Map<string, HTMLElement>()
   let hasKeyedChildren = false
-  for (const child of Array.from(container.children)) {
+  const loopChildren = startMarker
+    ? getElementsBetweenMarkers(startMarker, endMarker!)
+    : Array.from(container.children)
+  for (const child of loopChildren) {
     const el = child as HTMLElement
-    const key = el.dataset.key
+    const key = el.dataset?.key
     if (key !== undefined) {
       existingByKey.set(key, el)
       hasKeyedChildren = true
@@ -44,7 +127,11 @@ export function reconcileElements<T>(
   // SSR-rendered loop items that haven't been through hydration yet.
   if (!hasKeyedChildren) {
     if (items.length === 0) {
-      container.innerHTML = ''
+      if (startMarker) {
+        removeElementsBetweenMarkers(startMarker, endMarker!)
+      } else {
+        container.innerHTML = ''
+      }
       return
     }
 
@@ -55,28 +142,34 @@ export function reconcileElements<T>(
       if (!el.dataset.key) el.setAttribute(BF_KEY, key)
       fragment.appendChild(el)
     }
-    container.innerHTML = ''
-    container.appendChild(fragment)
+    if (startMarker) {
+      removeElementsBetweenMarkers(startMarker, endMarker!)
+      endMarker!.parentNode!.insertBefore(fragment, endMarker)
+    } else {
+      container.innerHTML = ''
+      container.appendChild(fragment)
+    }
     return
   }
 
-  // Find the boundary: the first non-keyed node after the keyed region.
-  // Non-keyed siblings (comment markers, ref divs) must be preserved —
-  // they belong to conditionals or other constructs sharing this container.
-  let insertBefore: Node | null = null
-  let foundKeyed = false
-  for (const child of Array.from(container.childNodes)) {
-    if (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).dataset.key !== undefined) {
-      foundKeyed = true
-    } else if (foundKeyed) {
-      insertBefore = child
-      break
+  // When loop markers exist, use end marker as insert point and remove only within range.
+  // Otherwise, find boundary by walking children.
+  let insertBefore: Node | null = endMarker ?? null
+  if (!startMarker) {
+    let foundKeyed = false
+    for (const child of Array.from(container.childNodes)) {
+      if (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).dataset.key !== undefined) {
+        foundKeyed = true
+      } else if (foundKeyed) {
+        insertBefore = child
+        break
+      }
     }
   }
 
-  // Remove old keyed elements only (preserves comment markers, ref divs, etc.)
-  for (const child of Array.from(container.children)) {
-    if ((child as HTMLElement).dataset.key !== undefined) {
+  // Remove old keyed elements (only within loop range if markers exist)
+  for (const child of loopChildren) {
+    if ((child as HTMLElement).dataset?.key !== undefined) {
       child.remove()
     }
   }

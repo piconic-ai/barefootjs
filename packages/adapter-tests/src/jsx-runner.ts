@@ -48,6 +48,8 @@ const VOID_ELEMENTS = 'area|base|br|col|embed|hr|img|input|link|meta|param|sourc
  */
 export function normalizeHTML(html: string): string {
   return html
+    // Remove loop boundary comment markers (template detail, not semantic)
+    .replace(/<!--\/?bf-loop-->/g, '')
     // Remove bf-p attribute (Hono uses JSON serialization, Go uses struct fields)
     .replace(/\s*bf-p="[^"]*"/g, '')
     // Normalize child scope ID prefix: bf-s="~parentId_sN" → bf-s="parentId_sN"

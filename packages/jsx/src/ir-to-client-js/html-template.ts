@@ -4,7 +4,7 @@
 
 import type { IRNode } from '../types'
 import { isBooleanAttr } from '../html-constants'
-import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName } from './utils'
+import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, BF_LOOP_START, BF_LOOP_END } from './utils'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -157,10 +157,14 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       const innerRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth + 1)
       const childTemplate = node.children.map(innerRecurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
+      let mapExpr: string
       if (node.mapPreamble) {
-        return `\${${node.array}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = `\${${node.array}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+      } else {
+        mapExpr = `\${${node.array}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
       }
-      return `\${${node.array}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
+      // Wrap with loop boundary markers so reconciliation doesn't affect siblings
+      return `<!--${BF_LOOP_START}-->${mapExpr}<!--${BF_LOOP_END}-->`
     }
 
     case 'if-statement':
@@ -252,10 +256,13 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       const innerRecurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth + 1)
       const childTemplate = node.children.map(innerRecurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
+      let mapExpr: string
       if (node.mapPreamble) {
-        return `\${${node.array}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = `\${${node.array}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+      } else {
+        mapExpr = `\${${node.array}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
       }
-      return `\${${node.array}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
+      return `<!--${BF_LOOP_START}-->${mapExpr}<!--${BF_LOOP_END}-->`
     }
 
     case 'if-statement':
@@ -810,10 +817,13 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       // Generate inline .map().join('') so loop variables are properly scoped
       const childTemplate = node.children.map(recurseInLoop).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
+      let mapExpr: string
       if (node.mapPreamble) {
-        return `\${${transformExpr(node.array)}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = `\${${transformExpr(node.array)}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+      } else {
+        mapExpr = `\${${transformExpr(node.array)}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
       }
-      return `\${${transformExpr(node.array)}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
+      return `<!--${BF_LOOP_START}-->${mapExpr}<!--${BF_LOOP_END}-->`
     }
 
     case 'if-statement': {
