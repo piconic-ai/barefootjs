@@ -114,6 +114,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'multi-step-form', title: 'Multi-Step Form', description: 'Wizard form with step validation, cross-step state, and review' },
   { slug: 'tasks-table', title: 'Tasks Table', description: 'Data table with sort, filter, pagination, and row selection' },
   { slug: 'social-feed', title: 'Social Feed', description: 'Feed with posts, comments, replies — deeply nested loops and conditionals' },
+  { slug: 'file-browser', title: 'File Browser', description: 'Tree-structured file browser with expand/collapse, multi-select, and CRUD' },
 ]
 
 // Helper: get components filtered by category

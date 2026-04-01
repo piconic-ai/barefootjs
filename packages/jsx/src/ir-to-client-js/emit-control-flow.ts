@@ -473,7 +473,9 @@ function emitInnerLoopSetup(
 
   if (mode === 'csr') {
     ls.push(`${indent}// Initialize depth-${inner.depth} loop components and events`)
-    ls.push(`${indent}${inner.array}.forEach((${inner.param}) => {`)
+    // Guard: inner loop array may be undefined when inside a conditional branch
+    // (e.g., folder.children exists but file.children doesn't)
+    ls.push(`${indent}if (${inner.array}) ${inner.array}.forEach((${inner.param}) => {`)
     if (inner.key) {
       ls.push(`${indent}  const __innerEl${inner.depth} = ${parentElVar}.querySelector('[${keyAttrName(inner.depth)}="' + ${inner.key} + '"]')`)
     } else {
@@ -487,7 +489,8 @@ function emitInnerLoopSetup(
   } else {
     const containerSelector = inner.containerSlotId ? `'[bf="${inner.containerSlotId}"]'` : 'null'
     ls.push(`${indent}{ const __ic${inner.depth} = ${containerSelector !== 'null' ? `${parentElVar}.querySelector(${containerSelector})` : parentElVar}`)
-    ls.push(`${indent}if (__ic${inner.depth}) ${inner.array}.forEach((${inner.param}, __innerIdx${inner.depth}) => {`)
+    // Guard: inner loop array may be undefined when inside a conditional branch
+    ls.push(`${indent}if (__ic${inner.depth} && ${inner.array}) ${inner.array}.forEach((${inner.param}, __innerIdx${inner.depth}) => {`)
     ls.push(`${indent}  const __innerEl${inner.depth} = __ic${inner.depth}.children[__innerIdx${inner.depth}]`)
     ls.push(`${indent}  if (!__innerEl${inner.depth}) return`)
     if (inner.key) {

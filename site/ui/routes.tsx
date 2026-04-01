@@ -69,6 +69,7 @@ import { MusicPlayerRefPage } from './pages/components/music-player'
 import { MultiStepFormRefPage } from './pages/components/multi-step-form'
 import { TasksTableRefPage } from './pages/components/tasks-table'
 import { SocialFeedRefPage } from './pages/components/social-feed'
+import { FileBrowserRefPage } from './pages/components/file-browser'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -480,6 +481,11 @@ export function createApp() {
   // Social Feed block page
   app.get('/components/social-feed', (c) => {
     return c.render(<SocialFeedRefPage />)
+  })
+
+  // File Browser block page
+  app.get('/components/file-browser', (c) => {
+    return c.render(<FileBrowserRefPage />)
   })
 
   // Bar Chart reference page
