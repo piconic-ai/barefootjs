@@ -55,3 +55,11 @@ export const BF_KEY_PREFIX = 'data-key-'
  * @see packages/jsx/src/ir-to-client-js/utils.ts — DATA_BF_PH (compiler-side mirror)
  */
 export const BF_PLACEHOLDER = 'data-bf-ph'
+
+/**
+ * Loop boundary comment markers: `<!--bf-loop-->...<!--/bf-loop-->`
+ * Delimits loop items within a container that has sibling content.
+ * @see packages/jsx/src/ir-to-client-js/utils.ts — BF_LOOP_START, BF_LOOP_END (compiler-side mirror)
+ */
+export const BF_LOOP_START = 'bf-loop'
+export const BF_LOOP_END = 'bf-/loop'

@@ -558,10 +558,16 @@ export class HonoAdapter implements TemplateAdapter {
     // Render children with isInsideLoop flag so components generate their own scope IDs
     const children = this.renderChildrenInLoop(loop.children)
 
+    let mapExpr: string
     if (loop.mapPreamble) {
-      return `{${loop.array}.map((${loop.param}${indexParam}) => { ${loop.mapPreamble} return ${children} })}`
+      mapExpr = `{${loop.array}.map((${loop.param}${indexParam}) => { ${loop.mapPreamble} return ${children} })}`
+    } else {
+      mapExpr = `{${loop.array}.map((${loop.param}${indexParam}) => ${children})}`
     }
-    return `{${loop.array}.map((${loop.param}${indexParam}) => ${children})}`
+    // Wrap with loop boundary markers so reconciliation doesn't affect siblings.
+    // bfComment is a helper that renders an HTML comment in JSX.
+    // bfComment('loop') → <!--bf-loop-->, bfComment('/loop') → <!--bf-/loop-->
+    return `{bfComment('loop')}${mapExpr}{bfComment('/loop')}`
   }
 
   private renderChildrenInLoop(children: IRNode[]): string {

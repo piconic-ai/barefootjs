@@ -25,6 +25,13 @@ export const DATA_KEY_PREFIX = 'data-key-'
 export const DATA_BF_PH = 'data-bf-ph'
 
 /**
+ * Loop boundary comment markers.
+ * @see packages/dom/src/attrs.ts — BF_LOOP_START, BF_LOOP_END (runtime-side mirror)
+ */
+export const BF_LOOP_START = 'bf-loop'
+export const BF_LOOP_END = 'bf-/loop'
+
+/**
  * Get the data-key attribute name for a given loop depth.
  * Outer loop (depth 0): 'data-key'
  * Nested loops (depth N): 'data-key-N'

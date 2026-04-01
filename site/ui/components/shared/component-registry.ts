@@ -113,6 +113,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'music-player', title: 'Music Player', description: 'Media player with timer, effect cleanup, and slider binding' },
   { slug: 'multi-step-form', title: 'Multi-Step Form', description: 'Wizard form with step validation, cross-step state, and review' },
   { slug: 'tasks-table', title: 'Tasks Table', description: 'Data table with sort, filter, pagination, and row selection' },
+  { slug: 'social-feed', title: 'Social Feed', description: 'Feed with posts, comments, replies — deeply nested loops and conditionals' },
 ]
 
 // Helper: get components filtered by category
