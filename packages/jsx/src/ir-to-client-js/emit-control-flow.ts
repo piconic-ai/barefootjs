@@ -88,21 +88,114 @@ function emitBranchBindings(
       lines.push(`      const [__loop_${cv}] = $(__branchScope, '${loop.containerSlotId}')`)
       // Rename SSR data-key-1 → data-key for reconcileElements compatibility
       lines.push(`      if (__loop_${cv}) getLoopChildren(__loop_${cv}).forEach(__el => { if (__el.hasAttribute('${DATA_KEY_PREFIX}1') && !__el.hasAttribute('${DATA_KEY}')) { __el.setAttribute('${DATA_KEY}', __el.getAttribute('${DATA_KEY_PREFIX}1')); __el.removeAttribute('${DATA_KEY_PREFIX}1') } })`)
-      const keyFn = loop.key
-        ? `(${loop.param}${loop.index ? `, ${loop.index}` : ''}) => String(${loop.key})`
-        : 'null'
-      const indexParam = loop.index || '__idx'
-      lines.push(`      if (__loop_${cv}) __disposers.push(createDisposableEffect(() => {`)
-      if (loop.mapPreamble) {
-        lines.push(`        reconcileElements(__loop_${cv}, ${loop.array}, ${keyFn}, (${loop.param}, ${indexParam}) => { ${loop.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+
+      if (loop.useElementReconciliation && loop.nestedComponents?.length) {
+        // Composite loop: items contain child components — use createComponent in renderItem
+        emitCompositeBranchLoop(lines, loop, cv)
       } else {
-        lines.push(`        reconcileElements(__loop_${cv}, ${loop.array}, ${keyFn}, (${loop.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+        // Simple loop: basic template clone
+        const keyFn = loop.key
+          ? `(${loop.param}${loop.index ? `, ${loop.index}` : ''}) => String(${loop.key})`
+          : 'null'
+        const indexParam = loop.index || '__idx'
+        lines.push(`      if (__loop_${cv}) __disposers.push(createDisposableEffect(() => {`)
+        if (loop.mapPreamble) {
+          lines.push(`        reconcileElements(__loop_${cv}, ${loop.array}, ${keyFn}, (${loop.param}, ${indexParam}) => { ${loop.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+        } else {
+          lines.push(`        reconcileElements(__loop_${cv}, ${loop.array}, ${keyFn}, (${loop.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+        }
+        lines.push(`      }))`)
       }
-      lines.push(`      }))`)
     }
 
     lines.push(`      return () => __disposers.forEach(d => d())`)
   }
+}
+
+/**
+ * Emit composite loop reconciliation inside a conditional branch's bindEvents.
+ * Mirrors emitCompositeElementReconciliation but scoped to a branch with disposal.
+ * Generates: SSR hydration (initChild) + CSR renderItem (createComponent) + reconcileElements.
+ */
+function emitCompositeBranchLoop(
+  lines: string[],
+  loop: ConditionalBranchLoop,
+  cv: string,
+): void {
+  const nestedComps = loop.nestedComponents!
+  const innerLoops = loop.innerLoops ?? []
+  const childEvents = loop.childEvents ?? []
+  const indexParam = loop.index || '__idx'
+
+  // Build per-depth-level data (same pattern as emitCompositeElementReconciliation)
+  const maxDepth = Math.max(
+    ...nestedComps.map(c => c.loopDepth ?? 0),
+    ...innerLoops.map(l => l.depth),
+    0,
+  )
+  const depthLevels: DepthLevel[] = []
+  for (let d = 1; d <= maxDepth; d++) {
+    const loopInfo = innerLoops.find(l => l.depth === d) ?? null
+    depthLevels.push({
+      comps: nestedComps.filter(c => (c.loopDepth ?? 0) === d),
+      events: childEvents.filter(ev =>
+        ev.nestedLoops.length > 0 && ev.nestedLoops[ev.nestedLoops.length - 1].depth === d
+      ),
+      loopInfo,
+    })
+  }
+
+  const outerComps = nestedComps.filter(c => !c.loopDepth || c.loopDepth === 0)
+  const outerEvents = childEvents.filter(ev => ev.nestedLoops.length === 0)
+
+  // Build a partial LoopElement-compatible object for CompositeLoopContext
+  const pseudoElem = {
+    template: loop.template,
+    mapPreamble: loop.mapPreamble ?? undefined,
+  } as LoopElement
+
+  const ctx: CompositeLoopContext = {
+    elem: pseudoElem,
+    outerComps,
+    outerEvents,
+    depthLevels,
+  }
+
+  const keyFn = loop.key
+    ? `(${loop.param}${loop.index ? `, ${loop.index}` : ''}) => String(${loop.key})`
+    : 'null'
+
+  // Wrap everything in a disposable effect for branch cleanup
+  lines.push(`      if (__loop_${cv}) __disposers.push(createDisposableEffect(() => {`)
+  lines.push(`        const __arr = ${loop.array}`)
+  lines.push(`        const __renderItem = (${loop.param}, ${indexParam}) => {`)
+  emitCompositeRenderItemBody(lines, '          ', ctx)
+  lines.push(`        }`)
+
+  // SSR hydration: tag existing children with data-key and initialize components
+  lines.push(`        const __loopChildren = getLoopChildren(__loop_${cv})`)
+  lines.push(`        if (__loopChildren.length > 0 && !__loopChildren[0]?.hasAttribute('${DATA_KEY}')) {`)
+  lines.push(`          __loopChildren.forEach((__hChild, ${indexParam}) => {`)
+  lines.push(`            if (${indexParam} >= __arr.length) return`)
+  lines.push(`            const ${loop.param} = __arr[${indexParam}]`)
+  if (loop.key) {
+    lines.push(`            __hChild.setAttribute('${DATA_KEY}', String(${loop.key}))`)
+  } else {
+    lines.push(`            __hChild.setAttribute('${DATA_KEY}', String(${indexParam}))`)
+  }
+  // Initialize components on SSR elements (hydration)
+  emitComponentAndEventSetup(lines, '            ', '__hChild', outerComps, outerEvents, 'ssr')
+  emitInnerLoopSetup(lines, '            ', '__hChild', depthLevels, 0, 'ssr')
+  lines.push(`          })`)
+  // Pre-render first item to initialize createComponent paths
+  lines.push(`          if (__arr.length > 0) __renderItem(__arr[0], 0)`)
+  lines.push(`          return`)
+  lines.push(`        }`)
+
+  // Blur active element before reconciliation to avoid syncElementState issues
+  lines.push(`        if (__loop_${cv}?.contains(document.activeElement)) document.activeElement?.blur()`)
+  lines.push(`        reconcileElements(__loop_${cv}, __arr, ${keyFn}, __renderItem)`)
+  lines.push(`      }))`)
 }
 
 /** Emit insert() calls for server-rendered reactive conditionals with branch configs. */

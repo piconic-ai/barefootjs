@@ -182,8 +182,8 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           whenFalseChildComponents,
           whenTrueTextEffects: collectBranchTextEffects(node.whenTrue),
           whenFalseTextEffects: collectBranchTextEffects(node.whenFalse),
-          whenTrueLoops: collectBranchLoops(node.whenTrue),
-          whenFalseLoops: collectBranchLoops(node.whenFalse),
+          whenTrueLoops: collectBranchLoops(node.whenTrue, ctx),
+          whenFalseLoops: collectBranchLoops(node.whenFalse, ctx),
         })
       } else if (node.reactive && node.slotId) {
         const whenTrueEvents = collectConditionalBranchEvents(node.whenTrue)
@@ -209,8 +209,8 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           whenFalseChildComponents,
           whenTrueTextEffects,
           whenFalseTextEffects,
-          whenTrueLoops: collectBranchLoops(node.whenTrue),
-          whenFalseLoops: collectBranchLoops(node.whenFalse),
+          whenTrueLoops: collectBranchLoops(node.whenTrue, ctx),
+          whenFalseLoops: collectBranchLoops(node.whenFalse, ctx),
         })
       }
       // Recurse into conditional branches with insideConditional = true
@@ -527,10 +527,12 @@ function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
  * Collect loop info from a conditional branch for reactive reconciliation.
  * Finds IRLoop nodes in the branch and extracts their metadata.
  * Only collects top-level loops (not nested loops inside other loops).
+ * Detects composite loops (with child components) and collects extra metadata.
  */
-function collectBranchLoops(node: IRNode): ConditionalBranchLoop[] {
+function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBranchLoop[] {
   const loops: ConditionalBranchLoop[] = []
   let parentSlotId: string | null = null
+  const restNames = ctx ? buildRestSpreadNames(ctx) : undefined
 
   function walk(n: IRNode): void {
     switch (n.type) {
@@ -542,10 +544,29 @@ function collectBranchLoops(node: IRNode): ConditionalBranchLoop[] {
         break
       case 'loop': {
         if (!parentSlotId) break
+
+        // Detect composite: native element root + nested components
+        const hasNestedComps = (n.nestedComponents?.length ?? 0) > 0
+        const useElementReconciliation = !n.childComponent && !n.isStaticArray && hasNestedComps
+
         // Build the item template from loop children.
         // Use loopDepth=0: this loop gets its own reconcileElements (independent
         // from the conditional's template), so items use data-key (not data-key-1).
-        const childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0)).join('')
+        let childTemplate: string
+        if (useElementReconciliation && n.children[0]) {
+          childTemplate = irToPlaceholderTemplate(n.children[0], restNames, 0)
+        } else {
+          childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0)).join('')
+        }
+
+        // Collect child events for composite loops
+        const childEvents: LoopChildEvent[] = []
+        if (useElementReconciliation) {
+          for (const child of n.children) {
+            childEvents.push(...collectLoopChildEventsWithNesting(child))
+          }
+        }
+
         loops.push({
           array: n.array,
           param: n.param,
@@ -554,6 +575,10 @@ function collectBranchLoops(node: IRNode): ConditionalBranchLoop[] {
           template: childTemplate,
           containerSlotId: parentSlotId,
           mapPreamble: n.mapPreamble ?? null,
+          nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
+          childEvents: useElementReconciliation ? childEvents : undefined,
+          innerLoops: useElementReconciliation ? collectInnerLoops(n.children) : undefined,
+          useElementReconciliation: useElementReconciliation || undefined,
         })
         // Don't recurse into the loop — nested loops are handled by the loop's own reconciliation
         break

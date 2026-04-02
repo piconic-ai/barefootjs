@@ -78,79 +78,79 @@ export function CartDemo() {
         <Badge variant="secondary">{itemCount()} items</Badge>
       </div>
 
-      {/* Cart item list — outside conditional for proper hydration of loop components */}
-      <div className="rounded-lg border divide-y">
-        {items().map(item => (
-          <div key={item.id} className="flex items-center gap-3 p-3">
-            <span className="text-2xl">{item.image}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{item.name}</p>
-              <p className="text-sm text-muted-foreground">{formatPrice(item.price)} each</p>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => updateQuantity(item.id, -1)}
-              >
-                −
-              </Button>
-              <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => updateQuantity(item.id, 1)}
-              >
-                +
-              </Button>
-            </div>
-            <p className="text-sm font-semibold w-16 text-right">
-              {formatPrice(item.price * item.quantity)}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-              onClick={() => removeItem(item.id)}
-            >
-              ✕
-            </Button>
-          </div>
-        ))}
-      </div>
-
-      {/* Summary — conditional on non-empty cart */}
+      {/* Cart items + summary — both inside conditional */}
       {items().length > 0 ? (
-        <div className="space-y-3">
-          <div className="rounded-lg border p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatPrice(subtotal())}</span>
-            </div>
-            {discount() > 0 ? (
-              <div className="flex justify-between text-sm text-green-600">
-                <span>Discount (10%)</span>
-                <span>−{formatPrice(discount())}</span>
+        <div className="space-y-4">
+          <div className="rounded-lg border divide-y">
+            {items().map(item => (
+              <div key={item.id} className="flex items-center gap-3 p-3">
+                <span className="text-2xl">{item.image}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{item.name}</p>
+                  <p className="text-sm text-muted-foreground">{formatPrice(item.price)} each</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => updateQuantity(item.id, -1)}
+                  >
+                    −
+                  </Button>
+                  <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => updateQuantity(item.id, 1)}
+                  >
+                    +
+                  </Button>
+                </div>
+                <p className="text-sm font-semibold w-16 text-right">
+                  {formatPrice(item.price * item.quantity)}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => removeItem(item.id)}
+                >
+                  ✕
+                </Button>
               </div>
-            ) : null}
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax (8%)</span>
-              <span>{formatPrice(tax())}</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between font-semibold">
-              <span>Total</span>
-              <span>{formatPrice(total())}</span>
-            </div>
-            {discount() === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Add {formatPrice(DISCOUNT_THRESHOLD - subtotal())} more for 10% off
-              </p>
-            ) : null}
+            ))}
           </div>
-          <Button className="w-full">Checkout — {formatPrice(total())}</Button>
+          <div className="space-y-3">
+            <div className="rounded-lg border p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>{formatPrice(subtotal())}</span>
+              </div>
+              {discount() > 0 ? (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Discount (10%)</span>
+                  <span>−{formatPrice(discount())}</span>
+                </div>
+              ) : null}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Tax (8%)</span>
+                <span>{formatPrice(tax())}</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between font-semibold">
+                <span>Total</span>
+                <span>{formatPrice(total())}</span>
+              </div>
+              {discount() === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Add {formatPrice(DISCOUNT_THRESHOLD - subtotal())} more for 10% off
+                </p>
+              ) : null}
+            </div>
+            <Button className="w-full">Checkout — {formatPrice(total())}</Button>
+          </div>
         </div>
       ) : (
         <div className="rounded-lg border p-8 text-center">

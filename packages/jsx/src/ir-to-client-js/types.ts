@@ -109,6 +109,11 @@ export interface ConditionalBranchLoop {
   template: string     // HTML template for each item
   containerSlotId: string // bf slot ID of the container element (e.g., 's1' for <ul bf="s1">)
   mapPreamble: string | null
+  // Composite loop fields (loops whose body contains child components)
+  nestedComponents?: IRLoopChildComponent[]
+  childEvents?: LoopChildEvent[]
+  innerLoops?: NestedLoopInfo[]
+  useElementReconciliation?: boolean
 }
 
 export interface ConditionalElement {
