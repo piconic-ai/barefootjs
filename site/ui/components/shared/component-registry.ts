@@ -117,6 +117,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'file-browser', title: 'File Browser', description: 'Tree-structured file browser with expand/collapse, multi-select, and CRUD' },
   { slug: 'cart', title: 'Cart', description: 'Shopping cart with inline quantity editing, discount, and derived pricing chain' },
   { slug: 'checkout', title: 'Checkout', description: 'Multi-step checkout with shipping, payment, and order review' },
+  { slug: 'comments', title: 'Comments', description: 'Comment thread with inline editing, sorting, reactions, and nested replies' },
 ]
 
 // Helper: get components filtered by category
