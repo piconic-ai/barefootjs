@@ -89,19 +89,18 @@ test.describe('Comments Block', () => {
     await expect(firstComment.locator('button:has-text("Edit")')).toBeVisible()
   })
 
-  // BUG: Event handlers on elements inside nested loops (loop > loop) are not
-  // bound during hydration. The reaction buttons have bf="s22" but the click
-  // event never fires. Same issue affects Social Feed comment-level likes.
-  test.fixme('toggle reaction updates count', async ({ page }) => {
+  test('toggle reaction updates count', async ({ page }) => {
     const section = page.locator('[bf-s^="CommentsDemo_"]:not([data-slot])').first()
     const firstComment = section.locator('.comment-item').first()
 
     const thumbsUp = firstComment.locator('button:has-text("👍12")')
     await expect(thumbsUp).toBeVisible()
 
+    // Click to react
     await thumbsUp.click()
     await expect(firstComment.locator('button:has-text("👍13")')).toBeVisible()
 
+    // Click again to unreact
     await firstComment.locator('button:has-text("👍13")').click()
     await expect(firstComment.locator('button:has-text("👍12")')).toBeVisible()
   })
@@ -121,10 +120,7 @@ test.describe('Comments Block', () => {
     await expect(replies).toHaveCount(3)
   })
 
-  // BUG: Event handlers inside loop > conditional > inner loop are not bound.
-  // The reply Input onKeyDown and reply Delete button both fail to fire.
-  // This is the same nested loop event binding bug as reactions.
-  test.fixme('add reply via input inside nested loop', async ({ page }) => {
+  test('add reply via input inside nested loop', async ({ page }) => {
     const section = page.locator('[bf-s^="CommentsDemo_"]:not([data-slot])').first()
 
     await section.locator('button:has-text("Oldest")').click()
@@ -139,8 +135,7 @@ test.describe('Comments Block', () => {
     await expect(frankComment.locator('text=Great explanation!')).toBeVisible()
   })
 
-  // BUG: Same nested loop event binding issue.
-  test.fixme('delete reply removes from nested list', async ({ page }) => {
+  test('delete reply removes from nested list', async ({ page }) => {
     const section = page.locator('[bf-s^="CommentsDemo_"]:not([data-slot])').first()
 
     const aliceComment = section.locator('.comment-item').first()
