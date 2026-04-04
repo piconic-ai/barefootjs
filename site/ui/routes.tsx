@@ -72,6 +72,7 @@ import { SocialFeedRefPage } from './pages/components/social-feed'
 import { FileBrowserRefPage } from './pages/components/file-browser'
 import { CartRefPage } from './pages/components/cart'
 import { CheckoutRefPage } from './pages/components/checkout'
+import { CommentsRefPage } from './pages/components/comments'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -498,6 +499,11 @@ export function createApp() {
   // Checkout block page
   app.get('/components/checkout', (c) => {
     return c.render(<CheckoutRefPage />)
+  })
+
+  // Comments block page
+  app.get('/components/comments', (c) => {
+    return c.render(<CommentsRefPage />)
   })
 
   // Bar Chart reference page

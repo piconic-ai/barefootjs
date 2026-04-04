@@ -1455,7 +1455,7 @@ function transformMapCall(
 function collectNestedComponents(nodes: IRNode[]): IRLoopChildComponent[] {
   const result: IRLoopChildComponent[] = []
 
-  function traverse(node: IRNode, loopDepth: number): void {
+  function traverse(node: IRNode, loopDepth: number, innerLoopArray?: string): void {
     if (node.type === 'component') {
       result.push({
         name: node.name,
@@ -1471,25 +1471,26 @@ function collectNestedComponents(nodes: IRNode[]): IRLoopChildComponent[] {
           })),
         children: node.children,
         loopDepth,
+        innerLoopArray,
       })
       // Also traverse component children to find deeply nested components
       if (node.children) {
-        node.children.forEach(c => traverse(c, loopDepth))
+        node.children.forEach(c => traverse(c, loopDepth, innerLoopArray))
       }
     }
     if (node.type === 'element' && node.children) {
-      node.children.forEach(c => traverse(c, loopDepth))
+      node.children.forEach(c => traverse(c, loopDepth, innerLoopArray))
     }
     if (node.type === 'fragment' && node.children) {
-      node.children.forEach(c => traverse(c, loopDepth))
+      node.children.forEach(c => traverse(c, loopDepth, innerLoopArray))
     }
     if (node.type === 'loop' && node.children) {
-      // Entering an inner loop — increment depth
-      node.children.forEach(c => traverse(c, loopDepth + 1))
+      // Entering an inner loop — increment depth, record array expression
+      node.children.forEach(c => traverse(c, loopDepth + 1, node.array))
     }
     if (node.type === 'conditional') {
-      traverse(node.whenTrue, loopDepth)
-      traverse(node.whenFalse, loopDepth)
+      traverse(node.whenTrue, loopDepth, innerLoopArray)
+      traverse(node.whenFalse, loopDepth, innerLoopArray)
     }
   }
 

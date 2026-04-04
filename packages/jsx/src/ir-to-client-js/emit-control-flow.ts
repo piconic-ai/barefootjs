@@ -4,7 +4,8 @@
  * and event delegation within loop containers.
  */
 
-import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, ConditionalBranchLoop, ConditionalBranchConditional, LoopChildEvent, LoopElement } from './types'
+import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, ConditionalBranchLoop, ConditionalBranchConditional, LoopChildEvent, LoopElement, NestedLoopInfo } from './types'
+import type { IRLoopChildComponent } from '../types'
 import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, keyAttrName } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
@@ -164,23 +165,7 @@ function emitCompositeBranchLoop(
   const childEvents = loop.childEvents ?? []
   const indexParam = loop.index || '__idx'
 
-  // Build per-depth-level data (same pattern as emitCompositeElementReconciliation)
-  const maxDepth = Math.max(
-    ...nestedComps.map(c => c.loopDepth ?? 0),
-    ...innerLoops.map(l => l.depth),
-    0,
-  )
-  const depthLevels: DepthLevel[] = []
-  for (let d = 1; d <= maxDepth; d++) {
-    const loopInfo = innerLoops.find(l => l.depth === d) ?? null
-    depthLevels.push({
-      comps: nestedComps.filter(c => (c.loopDepth ?? 0) === d),
-      events: childEvents.filter(ev =>
-        ev.nestedLoops.length > 0 && ev.nestedLoops[ev.nestedLoops.length - 1].depth === d
-      ),
-      loopInfo,
-    })
-  }
+  const depthLevels = buildDepthLevels(innerLoops, nestedComps, childEvents)
 
   const outerComps = nestedComps.filter(c => !c.loopDepth || c.loopDepth === 0)
   const outerEvents = childEvents.filter(ev => ev.nestedLoops.length === 0)
@@ -506,11 +491,34 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: LoopElement): voi
   }
 }
 
-/** Per-depth-level data for composite loop emission. */
+/** Per-inner-loop data for composite loop emission. */
 interface DepthLevel {
   comps: (LoopElement['nestedComponents'] & {})[number][]
   events: LoopChildEvent[]
   loopInfo: { array: string; param: string; key: string; depth: number; containerSlotId?: string | null } | null
+}
+
+/**
+ * Build per-inner-loop grouping of components and events.
+ * One DepthLevel entry per inner loop (not per depth), so sibling loops at the
+ * same depth (e.g., reactions.map + replies.map) each get their own forEach block.
+ */
+function buildDepthLevels(
+  innerLoops: NestedLoopInfo[],
+  nestedComps: IRLoopChildComponent[],
+  childEvents: LoopChildEvent[],
+): DepthLevel[] {
+  return innerLoops.map(loop => ({
+    comps: nestedComps.filter(c =>
+      (c.loopDepth ?? 0) === loop.depth && c.innerLoopArray === loop.array
+    ),
+    events: childEvents.filter(ev => {
+      if (ev.nestedLoops.length === 0) return false
+      const innermost = ev.nestedLoops[ev.nestedLoops.length - 1]
+      return innermost.depth === loop.depth && innermost.array === loop.array
+    }),
+    loopInfo: loop,
+  }))
 }
 
 /** Nesting-level-separated data for composite loop emission. */
@@ -587,59 +595,58 @@ function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: Composit
   emitComponentAndEventSetup(ls, indent, '__el', ctx.outerComps, ctx.outerEvents, 'csr')
 
   // Inner loop levels (depth 1, 2, ...) — each level nests inside the previous
-  emitInnerLoopSetup(ls, indent, '__el', ctx.depthLevels, 0, 'csr')
+  emitInnerLoopSetup(ls, indent, '__el', ctx.depthLevels, 'csr')
 
   ls.push(`${indent}return __el`)
 }
 
 /**
- * Recursively emit inner loop forEach + component/event setup for CSR and SSR.
- * Each depth level nests inside the previous: depth1.forEach -> depth2.forEach -> ...
+ * Emit inner loop forEach + component/event setup for CSR and SSR.
+ * Handles sibling loops at the same depth (emitted sequentially) and
+ * nested loops at increasing depth (emitted inside their parent's forEach).
+ * Levels are ordered by DFS walk, so child levels immediately follow their parent.
  */
 function emitInnerLoopSetup(
   ls: string[],
   indent: string,
   parentElVar: string,
   levels: DepthLevel[],
-  levelIdx: number,
   mode: 'csr' | 'ssr',
 ): void {
-  if (levelIdx >= levels.length) return
-  const level = levels[levelIdx]
-  if (!level.loopInfo && level.comps.length === 0 && level.events.length === 0) return
+  let i = 0
+  while (i < levels.length) {
+    const level = levels[i]
+    const inner = level.loopInfo
+    if (!inner) { i++; continue }
 
-  const inner = level.loopInfo
-  if (!inner) return
-
-  if (mode === 'csr') {
-    ls.push(`${indent}// Initialize depth-${inner.depth} loop components and events`)
-    // Guard: inner loop array may be undefined when inside a conditional branch
-    // (e.g., folder.children exists but file.children doesn't)
-    ls.push(`${indent}if (${inner.array}) ${inner.array}.forEach((${inner.param}) => {`)
-    if (inner.key) {
-      ls.push(`${indent}  const __innerEl${inner.depth} = ${parentElVar}.querySelector('[${keyAttrName(inner.depth)}="' + ${inner.key} + '"]')`)
-    } else {
-      ls.push(`${indent}  const __innerEl${inner.depth} = null`)
+    // Collect child levels (immediately following with depth > current)
+    const childLevels: DepthLevel[] = []
+    let j = i + 1
+    while (j < levels.length && levels[j].loopInfo && levels[j].loopInfo!.depth > inner.depth) {
+      childLevels.push(levels[j])
+      j++
     }
-    ls.push(`${indent}  if (!__innerEl${inner.depth}) return`)
-    emitComponentAndEventSetup(ls, `${indent}  `, `__innerEl${inner.depth}`, level.comps, level.events, 'csr')
-    // Recurse for deeper levels
-    emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${inner.depth}`, levels, levelIdx + 1, 'csr')
-    ls.push(`${indent}})`)
-  } else {
+
+    // Use unique variable suffix to avoid name collisions between sibling loops
+    const uid = `${inner.depth}_${i}`
     const containerSelector = inner.containerSlotId ? `'[bf="${inner.containerSlotId}"]'` : 'null'
-    ls.push(`${indent}{ const __ic${inner.depth} = ${containerSelector !== 'null' ? `${parentElVar}.querySelector(${containerSelector})` : parentElVar}`)
+    ls.push(`${indent}// Initialize ${inner.array} loop components and events`)
+    ls.push(`${indent}{ const __ic${uid} = ${containerSelector !== 'null' ? `${parentElVar}.querySelector(${containerSelector})` : parentElVar}`)
     // Guard: inner loop array may be undefined when inside a conditional branch
-    ls.push(`${indent}if (__ic${inner.depth} && ${inner.array}) ${inner.array}.forEach((${inner.param}, __innerIdx${inner.depth}) => {`)
-    ls.push(`${indent}  const __innerEl${inner.depth} = __ic${inner.depth}.children[__innerIdx${inner.depth}]`)
-    ls.push(`${indent}  if (!__innerEl${inner.depth}) return`)
+    ls.push(`${indent}if (__ic${uid} && ${inner.array}) ${inner.array}.forEach((${inner.param}, __innerIdx${uid}) => {`)
+    ls.push(`${indent}  const __innerEl${uid} = __ic${uid}.children[__innerIdx${uid}]`)
+    ls.push(`${indent}  if (!__innerEl${uid}) return`)
     if (inner.key) {
-      ls.push(`${indent}  __innerEl${inner.depth}.setAttribute('${keyAttrName(inner.depth)}', String(${inner.key}))`)
+      ls.push(`${indent}  __innerEl${uid}.setAttribute('${keyAttrName(inner.depth)}', String(${inner.key}))`)
     }
-    emitComponentAndEventSetup(ls, `${indent}  `, `__innerEl${inner.depth}`, level.comps, level.events, 'ssr')
-    // Recurse for deeper levels
-    emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${inner.depth}`, levels, levelIdx + 1, 'ssr')
+    emitComponentAndEventSetup(ls, `${indent}  `, `__innerEl${uid}`, level.comps, level.events, mode)
+    // Recurse for child levels (nested deeper loops)
+    if (childLevels.length > 0) {
+      emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${uid}`, childLevels, mode)
+    }
     ls.push(`${indent}}) }`)
+
+    i = j // skip past this level + its children
   }
 }
 
@@ -652,7 +659,7 @@ function emitCompositeHydrationSetup(ls: string[], ctx: CompositeLoopContext): v
   emitComponentAndEventSetup(ls, '        ', '__hChild', ctx.outerComps, ctx.outerEvents, 'ssr')
 
   // Inner loop levels (depth 1, 2, ...) — each level nests inside the previous
-  emitInnerLoopSetup(ls, '        ', '__hChild', ctx.depthLevels, 0, 'ssr')
+  emitInnerLoopSetup(ls, '        ', '__hChild', ctx.depthLevels, 'ssr')
 }
 
 /**
@@ -671,23 +678,7 @@ function emitCompositeElementReconciliation(
   const nestedComps = elem.nestedComponents!
   const innerLoops = elem.innerLoops ?? []
 
-  // Build per-depth-level data
-  const maxDepth = Math.max(
-    ...nestedComps.map(c => c.loopDepth ?? 0),
-    ...innerLoops.map(l => l.depth),
-    0,
-  )
-  const depthLevels: DepthLevel[] = []
-  for (let d = 1; d <= maxDepth; d++) {
-    const loopInfo = innerLoops.find(l => l.depth === d) ?? null
-    depthLevels.push({
-      comps: nestedComps.filter(c => (c.loopDepth ?? 0) === d),
-      events: elem.childEvents.filter(ev =>
-        ev.nestedLoops.length > 0 && ev.nestedLoops[ev.nestedLoops.length - 1].depth === d
-      ),
-      loopInfo,
-    })
-  }
+  const depthLevels = buildDepthLevels(innerLoops, nestedComps, elem.childEvents)
 
   const ctx: CompositeLoopContext = {
     elem,
@@ -706,8 +697,6 @@ function emitCompositeElementReconciliation(
     emitCompositeHydrationSetup(ls, ctx)
   })
   lines.push('')
-  // Blur active element before reconciliation to avoid syncElementState issues.
-  lines.push(`    if (_${vLoop}?.contains(document.activeElement)) document.activeElement?.blur()`)
   lines.push(`    reconcileElements(_${vLoop}, __arr, ${keyFn}, __renderItem)`)
   lines.push(`  })`)
 }

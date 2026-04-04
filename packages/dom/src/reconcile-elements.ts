@@ -152,88 +152,140 @@ export function reconcileElements<T>(
     return
   }
 
-  // When loop markers exist, use end marker as insert point and remove only within range.
-  // Otherwise, find boundary by walking children.
-  let insertBefore: Node | null = endMarker ?? null
+  // Insert anchor: end marker (if present) or first non-keyed sibling after keyed region.
+  let insertAnchor: Node | null = endMarker ?? null
   if (!startMarker) {
     let foundKeyed = false
     for (const child of Array.from(container.childNodes)) {
       if (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).dataset.key !== undefined) {
         foundKeyed = true
       } else if (foundKeyed) {
-        insertBefore = child
+        insertAnchor = child
         break
       }
     }
   }
 
-  // Remove old keyed elements (only within loop range if markers exist)
-  for (const child of loopChildren) {
-    if ((child as HTMLElement).dataset?.key !== undefined) {
-      child.remove()
+  // --- Phase 1: Detect focus (before ANY DOM mutation) ---
+  // Only text inputs have ongoing user state (cursor, selection, typed text)
+  // that must survive reconciliation. Button focus has no state to preserve.
+  let focusedKey: string | null = null
+  const activeEl = document.activeElement
+  if (activeEl && activeEl !== document.body) {
+    const tag = activeEl.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+        || (activeEl as HTMLElement).isContentEditable) {
+      for (const [key, el] of existingByKey) {
+        if (el.contains(activeEl)) {
+          focusedKey = key
+          break
+        }
+      }
     }
   }
 
-  if (items.length === 0) {
-    return
-  }
-
-  const fragment = document.createDocumentFragment()
+  // --- Phase 2: Build desired element list ---
+  // For each item, decide: reuse existing (focus), create new, or skip.
+  // Track old elements to remove explicitly — no bulk remove-all.
+  const desiredElements: HTMLElement[] = []
+  const toRemove: Element[] = []
+  let focusTarget: FocusTransferInfo | null = null
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
     const key = getKey ? getKey(item, i) : String(i)
-
     const createEl = () => (i === 0 && firstElement) ? firstElement : renderItem(item, i)
 
-    if (existingByKey.has(key)) {
-      // An element with this key already exists
-      const existingEl = existingByKey.get(key)!
+    const existing = existingByKey.get(key)
+    if (existing) {
       existingByKey.delete(key)
 
-      // Check if this is an uninitialized SSR element
-      if (existingEl.getAttribute(BF_SCOPE) && !hydratedScopes.has(existingEl)) {
-        // For SSR elements, create new element with proper initialization
+      if (existing.getAttribute(BF_SCOPE) && !hydratedScopes.has(existing)) {
+        // Uninitialized SSR element — replace with client-rendered element
         const newEl = createEl()
-        if (!newEl.dataset.key) {
-          newEl.setAttribute(BF_KEY, key)
-        }
-        fragment.appendChild(newEl)
+        if (!newEl.dataset.key) newEl.setAttribute(BF_KEY, key)
+        desiredElements.push(newEl)
+        toRemove.push(existing)
+      } else if (focusedKey === key) {
+        // Element contains a focused text input. Create the new element (with
+        // updated inner loops, conditionals, etc.), copy input state now,
+        // defer focus() to after DOM insertion to avoid flicker.
+        const newEl = createEl()
+        if (!newEl.dataset.key) newEl.setAttribute(BF_KEY, key)
+        focusTarget = prepareInputTransfer(existing, newEl)
+        desiredElements.push(newEl)
+        toRemove.push(existing)
       } else {
-        // Element is already initialized - decide whether to sync or replace
-        const hasFocus = existingEl.contains(document.activeElement)
-
-        if (hasFocus) {
-          // Preserve existing element to maintain focus state.
-          // Re-render a temporary element to extract updated attribute state,
-          // then sync attributes from the temp to the existing element.
-          // TODO: createEl() creates a full component instance with reactive effects.
-          // The tempEl is never added to DOM, but its effects remain subscribed to
-          // signals until GC collects them. A proper fix requires scope-level disposal.
-          const tempEl = createEl()
-          syncElementState(existingEl, tempEl)
-          fragment.appendChild(existingEl)
-        } else {
-          // No focus to preserve - use the temp element directly
-          const tempEl = createEl()
-          if (!tempEl.dataset.key) {
-            tempEl.setAttribute(BF_KEY, key)
-          }
-          fragment.appendChild(tempEl)
-        }
+        // Normal update — use new element
+        const newEl = createEl()
+        if (!newEl.dataset.key) newEl.setAttribute(BF_KEY, key)
+        desiredElements.push(newEl)
+        toRemove.push(existing)
       }
     } else {
-      // Create new element via renderItem (which calls createComponent)
+      // Brand new key
       const el = createEl()
-      if (!el.dataset.key) {
-        el.setAttribute(BF_KEY, key)
-      }
-      fragment.appendChild(el)
+      if (!el.dataset.key) el.setAttribute(BF_KEY, key)
+      desiredElements.push(el)
     }
   }
 
-  // Insert new keyed elements before non-keyed siblings
-  container.insertBefore(fragment, insertBefore)
+  // Remaining entries in existingByKey are orphans (key no longer in items)
+  for (const el of existingByKey.values()) {
+    toRemove.push(el)
+  }
+
+  // --- Phase 3: Remove old elements ---
+  for (const el of toRemove) {
+    if (el.parentNode) el.remove()
+  }
+
+  // --- Phase 4: Insert/move desired elements in correct order ---
+  // insertBefore moves already-connected elements; inserts new ones.
+  for (const el of desiredElements) {
+    container.insertBefore(el, insertAnchor)
+  }
+
+  // --- Phase 5: Restore focus synchronously (element is now in DOM) ---
+  if (focusTarget) {
+    focusTarget.target.focus()
+    if (typeof focusTarget.selectionStart === 'number') {
+      focusTarget.target.selectionStart = focusTarget.selectionStart
+      focusTarget.target.selectionEnd = focusTarget.selectionEnd
+    }
+  }
+}
+
+interface FocusTransferInfo {
+  target: HTMLInputElement
+  selectionStart: number | null
+  selectionEnd: number | null
+}
+
+/**
+ * Prepare focus transfer: copy value + selection state from old focused input
+ * to the matching input in newEl. Returns info needed to call focus() later
+ * (after the new element is inserted into the DOM).
+ */
+function prepareInputTransfer(oldEl: HTMLElement, newEl: HTMLElement): FocusTransferInfo | null {
+  const focused = oldEl.contains(document.activeElement) ? document.activeElement as HTMLInputElement : null
+  if (!focused) return null
+
+  const tag = focused.tagName
+  const oldInputs = Array.from(oldEl.querySelectorAll(tag))
+  const idx = oldInputs.indexOf(focused)
+  if (idx < 0) return null
+
+  const newInputs = Array.from(newEl.querySelectorAll(tag)) as HTMLInputElement[]
+  const target = newInputs[idx]
+  if (!target) return null
+
+  target.value = focused.value
+  return {
+    target,
+    selectionStart: focused.selectionStart,
+    selectionEnd: focused.selectionEnd,
+  }
 }
 
 /**
