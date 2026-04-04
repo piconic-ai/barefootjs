@@ -126,7 +126,10 @@ export function mapArray<T>(
             scopes.set(key, scope)
             container.insertBefore(scope.element, anchor)
           }
-          return
+          // Fall through to diff path on first run so that renderItem executes
+          // and any external signals (e.g. activeContact, addingToColumn) are
+          // tracked by this effect. Without this, hydration-only return would
+          // leave external signals untracked.
         } else {
           // No hydration callback — remove SSR placeholders and fall through
           // to the diff path which creates fresh elements via renderItem.
@@ -135,7 +138,24 @@ export function mapArray<T>(
       }
     }
 
-    // --- Subsequent runs: key-based diff ---
+    // --- Adopt any existing keyed elements not yet in scopes ---
+    // This handles SSR elements that already have data-key (e.g., from SSR template
+    // generation) but weren't adopted during hydration. Without this, they'd remain
+    // in DOM as orphans while new elements are appended.
+    if (scopes.size === 0) {
+      const loopChildren = startMarker
+        ? elementsBetween(startMarker, endMarker!)
+        : Array.from(container.children) as HTMLElement[]
+      for (const child of loopChildren) {
+        const existingKey = (child as HTMLElement).dataset?.key
+        if (existingKey && !scopes.has(existingKey)) {
+          // Adopt with a no-op dispose (will be disposed in diff below)
+          scopes.set(existingKey, { element: child as HTMLElement, dispose: () => {} })
+        }
+      }
+    }
+
+    // --- Key-based diff ---
     const newKeys = new Set<string>()
     const desiredOrder: { key: string; element: HTMLElement }[] = []
 
