@@ -354,8 +354,8 @@ describe('child components inside .map() (#344)', () => {
     // Children should be emitted as nested createComponent calls
     expect(content).toContain("createComponent('TableCell'")
     expect(content).toContain('get children()')
-    expect(content).toContain('payment.id')
-    expect(content).toContain('payment.amount')
+    expect(content).toContain('payment().id')
+    expect(content).toContain('payment().amount')
   })
 
   test('dynamic signal array: component with mixed children (text + components)', () => {
@@ -386,7 +386,7 @@ describe('child components inside .map() (#344)', () => {
     expect(content).toContain("createComponent('Card'")
     expect(content).toContain("createComponent('CardHeader'")
     expect(content).toContain('get children()')
-    expect(content).toContain('item.name')
+    expect(content).toContain('item().name')
   })
 
   test('dynamic signal array: component without children does not emit children getter', () => {
@@ -448,7 +448,7 @@ describe('child components inside .map() (#344)', () => {
     expect(content).toContain("createComponent('TableRow'")
     expect(content).toContain("createComponent('TableCell'")
     expect(content).toContain("createComponent('Badge'")
-    expect(content).toContain('row.value')
+    expect(content).toContain('row().value')
 
     // All nested component names should be imported
     expect(content).toContain('@bf-child:TableRow')

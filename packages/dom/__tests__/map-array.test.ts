@@ -29,7 +29,6 @@ describe('createRoot', () => {
     expect(innerRuns).toBe(1)
 
     setCount(1)
-    // Inner effect re-runs (tracks count), outer does NOT re-run
     expect(outerRuns).toBe(1)
     expect(innerRuns).toBe(2)
   })
@@ -53,7 +52,6 @@ describe('createRoot', () => {
 
     disposeFn()
     setCount(2)
-    // Effect should not run after disposal
     expect(runs).toBe(2)
   })
 
@@ -78,10 +76,10 @@ describe('createRoot', () => {
 
     disposeInner()
     setB(1)
-    expect(bRuns).toBe(1) // disposed, no re-run
+    expect(bRuns).toBe(1)
 
     setA(1)
-    expect(aRuns).toBe(2) // still active
+    expect(aRuns).toBe(2)
   })
 })
 
@@ -94,6 +92,7 @@ describe('mapArray', () => {
     document.body.appendChild(container)
   })
 
+  // Note: renderItem receives item as a signal accessor: item() returns current value
   test('renders initial items', () => {
     const [items] = createSignal([
       { id: '1', text: 'A' },
@@ -106,7 +105,7 @@ describe('mapArray', () => {
       (item) => item.id,
       (item) => {
         const li = document.createElement('li')
-        li.textContent = item.text
+        li.textContent = item().text
         return li
       },
     )
@@ -125,7 +124,7 @@ describe('mapArray', () => {
       (item) => item.id,
       (item) => {
         const li = document.createElement('li')
-        li.textContent = item.text
+        li.textContent = item().text
         return li
       },
     )
@@ -152,7 +151,7 @@ describe('mapArray', () => {
       (item) => item.id,
       (item) => {
         const li = document.createElement('li')
-        li.textContent = item.text
+        li.textContent = item().text
         return li
       },
     )
@@ -164,7 +163,7 @@ describe('mapArray', () => {
     expect(container.children[1].textContent).toBe('C')
   })
 
-  test('reorders items correctly', () => {
+  test('reorders items and preserves DOM elements', () => {
     const [items, setItems] = createSignal([
       { id: '1', text: 'A' },
       { id: '2', text: 'B' },
@@ -177,12 +176,16 @@ describe('mapArray', () => {
       (item) => item.id,
       (item) => {
         const li = document.createElement('li')
-        li.textContent = item.text
+        li.textContent = item().text
         return li
       },
     )
 
-    // Reverse order
+    const elA = container.children[0]
+    const elB = container.children[1]
+    const elC = container.children[2]
+
+    // Reverse order — same keys, elements should be preserved
     setItems([
       { id: '3', text: 'C' },
       { id: '2', text: 'B' },
@@ -190,9 +193,10 @@ describe('mapArray', () => {
     ])
 
     expect(container.children.length).toBe(3)
-    expect(container.children[0].textContent).toBe('C')
-    expect(container.children[1].textContent).toBe('B')
-    expect(container.children[2].textContent).toBe('A')
+    // Same DOM nodes, just reordered
+    expect(container.children[0]).toBe(elC)
+    expect(container.children[1]).toBe(elB)
+    expect(container.children[2]).toBe(elA)
   })
 
   test('clears to empty', () => {
@@ -204,7 +208,7 @@ describe('mapArray', () => {
       (item) => item.id,
       (item) => {
         const li = document.createElement('li')
-        li.textContent = item.text
+        li.textContent = item().text
         return li
       },
     )
@@ -226,11 +230,10 @@ describe('mapArray', () => {
       (item) => item.id,
       (item) => {
         const li = document.createElement('li')
-        li.textContent = item.text
-        // Create an effect inside the item scope
+        li.textContent = item().text
         createEffect(() => {
           effectRuns++
-          signal() // track
+          signal()
         })
         return li
       },
@@ -240,10 +243,62 @@ describe('mapArray', () => {
     setSignal(1)
     expect(effectRuns).toBe(2)
 
-    // Remove the item — its scope should be disposed
     setItems([])
     setSignal(2)
-    // Effect should NOT run after item is removed
     expect(effectRuns).toBe(2)
+  })
+
+  test('same-key item updates in place via per-item signal', () => {
+    const [items, setItems] = createSignal([{ id: '1', text: 'A' }])
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item) => {
+        const li = document.createElement('li')
+        // Fine-grained effect reads item signal
+        createEffect(() => {
+          li.textContent = item().text
+        })
+        return li
+      },
+    )
+
+    const firstEl = container.children[0]
+    expect(firstEl.textContent).toBe('A')
+
+    // Update item data (same key, new object)
+    setItems([{ id: '1', text: 'B' }])
+
+    // Same DOM element preserved
+    expect(container.children[0]).toBe(firstEl)
+    // Text updated via fine-grained effect
+    expect(container.children[0].textContent).toBe('B')
+  })
+
+  test('same-key update does not re-call renderItem', () => {
+    const [items, setItems] = createSignal([{ id: '1', text: 'A' }])
+    let renderCount = 0
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item) => {
+        renderCount++
+        const li = document.createElement('li')
+        createEffect(() => { li.textContent = item().text })
+        return li
+      },
+    )
+
+    expect(renderCount).toBe(1)
+
+    setItems([{ id: '1', text: 'B' }])
+
+    // renderItem should NOT be called again for same-key item
+    expect(renderCount).toBe(1)
+    expect(container.children[0].textContent).toBe('B')
   })
 })

@@ -6,7 +6,7 @@
 
 import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, ConditionalBranchLoop, ConditionalBranchConditional, LoopChildEvent, LoopElement, NestedLoopInfo } from './types'
 import type { IRLoopChildComponent } from '../types'
-import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, keyAttrName } from './utils'
+import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
 
@@ -170,9 +170,11 @@ function emitCompositeBranchLoop(
 
   // Build a partial LoopElement-compatible object for CompositeLoopContext
   const pseudoElem = {
+    param: loop.param,
     template: loop.template,
     mapPreamble: loop.mapPreamble ?? undefined,
-  } as LoopElement
+    childConditionals: [],
+  } as unknown as LoopElement
 
   const ctx: CompositeLoopContext = {
     elem: pseudoElem,
@@ -287,7 +289,9 @@ function emitLoopChildReactiveEffects(
   attrs: LoopElement['childReactiveAttrs'],
   texts: LoopElement['childReactiveTexts'],
   conditionals?: LoopElement['childConditionals'],
+  loopParam?: string,
 ): void {
+  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr
   // Reactive attribute effects
   const attrsBySlot = new Map<string, typeof attrs>()
   for (const attr of attrs) {
@@ -302,7 +306,7 @@ function emitLoopChildReactiveEffects(
     lines.push(`${indent}if (${varName}) {`)
     for (const attr of slotAttrs) {
       lines.push(`${indent}  createEffect(() => {`)
-      for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.expression, attr)) {
+      for (const stmt of emitAttrUpdate(varName, attr.attrName, wrap(attr.expression), attr)) {
         lines.push(`${indent}    ${stmt}`)
       }
       lines.push(`${indent}  })`)
@@ -311,20 +315,18 @@ function emitLoopChildReactiveEffects(
   }
 
   // Reactive text content effects
-  // Find text nodes by their comment marker (<!--bf:slotId-->) and update via createEffect
   for (const text of texts) {
     const varName = `__rt_${varSlotId(text.slotId)}`
     lines.push(`${indent}{ const ${varName} = (() => { const w = document.createTreeWalker(${elVar}, NodeFilter.SHOW_COMMENT); while (w.nextNode()) { if (w.currentNode.nodeValue === 'bf:${text.slotId}') return w.currentNode.nextSibling }; return null })()`)
-    lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.expression}) }) }`)
+    lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${wrap(text.expression)}) }) }`)
   }
 
   // Reactive conditional effects
-  // Use insert() scoped to the loop item element for conditional switching
   if (conditionals) {
     for (const cond of conditionals) {
-      const whenTrueWithCond = addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId)
-      const whenFalseWithCond = addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId)
-      lines.push(`${indent}insert(${elVar}, '${cond.slotId}', () => ${cond.condition}, {`)
+      const whenTrueWithCond = addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId)
+      const whenFalseWithCond = addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId)
+      lines.push(`${indent}insert(${elVar}, '${cond.slotId}', () => ${wrap(cond.condition)}, {`)
       lines.push(`${indent}  template: () => \`${whenTrueWithCond}\`,`)
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
       emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrueComponents)
@@ -456,8 +458,8 @@ function buildComponentPropsExpr(
 function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, keyFn: string): void {
   const { name } = elem.childComponent!
   const vLoop = varSlotId(elem.slotId)
-  const propsExpr = buildComponentPropsExpr(elem.childComponent!)
-  const keyExpr = elem.key || '__idx'
+  const propsExpr = wrapLoopParamAsAccessor(buildComponentPropsExpr(elem.childComponent!), elem.param)
+  const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param)
   const indexParam = elem.index || '__idx'
   const chainedExpr = buildChainedArrayExpr(elem)
 
@@ -503,26 +505,28 @@ function emitPlainElementLoopReconciliation(lines: string[], elem: LoopElement, 
   const vLoop = varSlotId(elem.slotId)
   const chainedExpr = buildChainedArrayExpr(elem)
   const indexParam = elem.index || '__idx'
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param)
 
   const hasReactiveEffects = elem.childReactiveAttrs.length > 0 || elem.childReactiveTexts.length > 0
 
   if (!hasReactiveEffects) {
     // Simple case: no reactive effects, single-line renderItem
+    const tpl = wrap(elem.template)
     if (elem.mapPreamble) {
-      lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}) => { ${elem.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+      lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}) => { ${wrap(elem.mapPreamble)}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${tpl}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
     } else {
-      lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+      lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${tpl}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
     }
   } else {
     // Multi-line renderItem with fine-grained effects
     lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}) => {`)
     if (elem.mapPreamble) {
-      lines.push(`    ${elem.mapPreamble}`)
+      lines.push(`    ${wrap(elem.mapPreamble)}`)
     }
     lines.push(`    const __tpl = document.createElement('template')`)
-    lines.push(`    __tpl.innerHTML = \`${elem.template}\``)
+    lines.push(`    __tpl.innerHTML = \`${wrap(elem.template)}\``)
     lines.push(`    const __el = __tpl.content.firstElementChild.cloneNode(true)`)
-    emitLoopChildReactiveEffects(lines, '    ', '__el', elem.childReactiveAttrs, elem.childReactiveTexts, elem.childConditionals)
+    emitLoopChildReactiveEffects(lines, '    ', '__el', elem.childReactiveAttrs, elem.childReactiveTexts, elem.childConditionals, elem.param)
     lines.push(`    return __el`)
     lines.push(`  })`)
   }
@@ -650,13 +654,15 @@ function emitComponentAndEventSetup(
   comps: CompositeLoopContext['outerComps'],
   events: LoopChildEvent[],
   mode: 'csr' | 'ssr',
+  loopParam?: string,
 ): void {
+  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr
   for (const comp of comps) {
-    const propsExpr = buildComponentPropsExpr(comp)
+    const propsExpr = wrap(buildComponentPropsExpr(comp))
     if (mode === 'csr') {
       const phId = comp.slotId || comp.name
       const keyProp = comp.props.find(p => p.name === 'key')
-      const keyArg = keyProp ? `, ${keyProp.value}` : ''
+      const keyArg = keyProp ? `, ${wrap(keyProp.value)}` : ''
       ls.push(`${indent}{ const __ph = ${elVar}.querySelector('[${DATA_BF_PH}="${phId}"]'); if (__ph) __ph.replaceWith(createComponent('${comp.name}', ${propsExpr}${keyArg})) }`)
     } else {
       const selector = buildCompSelector(comp)
@@ -674,17 +680,19 @@ function emitComponentAndEventSetup(
  * Handles arbitrary nesting depth (depth 1, 2, ...) via recursive emission.
  */
 function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: CompositeLoopContext): void {
+  const param = ctx.elem.param
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, param)
+
   ls.push(`${indent}const __tpl = document.createElement('template')`)
   if (ctx.elem.mapPreamble) {
-    ls.push(`${indent}${ctx.elem.mapPreamble}`)
+    ls.push(`${indent}${wrap(ctx.elem.mapPreamble)}`)
   }
-  ls.push(`${indent}__tpl.innerHTML = \`${ctx.elem.template}\``)
+  ls.push(`${indent}__tpl.innerHTML = \`${wrap(ctx.elem.template)}\``)
   ls.push(`${indent}const __el = __tpl.content.firstElementChild.cloneNode(true)`)
 
   // Outer-level component + event setup.
   // Exclude components inside reactive conditionals — they are managed by insert()
-  // via bindEvents/initChild, not createComponent/replaceWith. If we replaceWith
-  // them here, the bf-c marker element is destroyed and insert() can't find it.
+  // via bindEvents/initChild, not createComponent/replaceWith.
   const condCompSlotIds = new Set<string>()
   for (const cond of ctx.elem.childConditionals ?? []) {
     for (const comp of [...cond.whenTrueComponents, ...cond.whenFalseComponents]) {
@@ -694,7 +702,7 @@ function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: Composit
   const filteredComps = condCompSlotIds.size > 0
     ? ctx.outerComps.filter(c => !c.slotId || !condCompSlotIds.has(c.slotId))
     : ctx.outerComps
-  emitComponentAndEventSetup(ls, indent, '__el', filteredComps, ctx.outerEvents, 'csr')
+  emitComponentAndEventSetup(ls, indent, '__el', filteredComps, ctx.outerEvents, 'csr', param)
 
   // Inner loop levels (depth 1, 2, ...) — each level nests inside the previous
   emitInnerLoopSetup(ls, indent, '__el', ctx.depthLevels, 'csr')
@@ -704,7 +712,7 @@ function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: Composit
   const reactiveTexts = ctx.elem.childReactiveTexts ?? []
   const reactiveConditionals = ctx.elem.childConditionals ?? []
   if (reactiveAttrs.length > 0 || reactiveTexts.length > 0 || reactiveConditionals.length > 0) {
-    emitLoopChildReactiveEffects(ls, indent, '__el', reactiveAttrs, reactiveTexts, reactiveConditionals)
+    emitLoopChildReactiveEffects(ls, indent, '__el', reactiveAttrs, reactiveTexts, reactiveConditionals, param)
   }
 
   ls.push(`${indent}return __el`)
@@ -766,7 +774,8 @@ function emitInnerLoopSetup(
  */
 function emitCompositeHydrationSetup(ls: string[], ctx: CompositeLoopContext): void {
   // Outer-level component + event setup on SSR elements
-  emitComponentAndEventSetup(ls, '        ', '__hChild', ctx.outerComps, ctx.outerEvents, 'ssr')
+  // Pass loopParam so props expressions use accessor (item() for per-item signal)
+  emitComponentAndEventSetup(ls, '        ', '__hChild', ctx.outerComps, ctx.outerEvents, 'ssr', ctx.elem.param)
 
   // Inner loop levels (depth 1, 2, ...) — each level nests inside the previous
   emitInnerLoopSetup(ls, '        ', '__hChild', ctx.depthLevels, 'ssr')
