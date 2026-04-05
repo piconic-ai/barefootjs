@@ -93,7 +93,7 @@ test.describe('Kanban Board Block', () => {
       await expect(column.locator('.add-task-form')).toBeVisible()
     })
 
-    // TODO(#730): insert() bindEvents needs full component init for conditional form
+    // TODO(#730): insert() bindEvents initChild not initializing Button onClick
     test.skip('adding task increases count', async ({ page }) => {
       const section = page.locator('[bf-s^="KanbanDemo_"]:not([data-slot])').first()
       const column = section.locator('.kanban-column').first()

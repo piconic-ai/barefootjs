@@ -52,8 +52,7 @@ test.describe('Chat Block', () => {
       await expect(messages).toHaveCount(2)
     })
 
-    // TODO(#730): conditional with component children inside component loop
-    test.skip('switching to Carol marks her messages as read', async ({ page }) => {
+    test('switching to Carol marks her messages as read', async ({ page }) => {
       const section = page.locator('[bf-s^="ChatDemo_"]:not([data-slot])').first()
 
       // Carol should have unread badge before clicking

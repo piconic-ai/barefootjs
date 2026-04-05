@@ -678,8 +678,20 @@ function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: Composit
   ls.push(`${indent}__tpl.innerHTML = \`${ctx.elem.template}\``)
   ls.push(`${indent}const __el = __tpl.content.firstElementChild.cloneNode(true)`)
 
-  // Outer-level component + event setup
-  emitComponentAndEventSetup(ls, indent, '__el', ctx.outerComps, ctx.outerEvents, 'csr')
+  // Outer-level component + event setup.
+  // Exclude components inside reactive conditionals — they are managed by insert()
+  // via bindEvents/initChild, not createComponent/replaceWith. If we replaceWith
+  // them here, the bf-c marker element is destroyed and insert() can't find it.
+  const condCompSlotIds = new Set<string>()
+  for (const cond of ctx.elem.childConditionals ?? []) {
+    for (const comp of [...cond.whenTrueComponents, ...cond.whenFalseComponents]) {
+      if (comp.slotId) condCompSlotIds.add(comp.slotId)
+    }
+  }
+  const filteredComps = condCompSlotIds.size > 0
+    ? ctx.outerComps.filter(c => !c.slotId || !condCompSlotIds.has(c.slotId))
+    : ctx.outerComps
+  emitComponentAndEventSetup(ls, indent, '__el', filteredComps, ctx.outerEvents, 'csr')
 
   // Inner loop levels (depth 1, 2, ...) — each level nests inside the previous
   emitInnerLoopSetup(ls, indent, '__el', ctx.depthLevels, 'csr')
