@@ -264,7 +264,9 @@ function emitBranchChildComponentInits(
   lines: string[],
   indent: string,
   components: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[] }>,
+  loopParam?: string,
 ): void {
+  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr
   for (const comp of components) {
     // Use slotId suffix match + child prefix (~) match only.
     // Exclude non-child prefix match ([bf-s^="Name_"]) to avoid matching
@@ -275,9 +277,9 @@ function emitBranchChildComponentInits(
     const propsEntries = comp.props
       .filter(p => p.name !== 'key')
       .map(p => {
-        if (p.name.startsWith('on') && p.name.length > 2) return `${quotePropName(p.name)}: ${p.value}`
+        if (p.name.startsWith('on') && p.name.length > 2) return `${quotePropName(p.name)}: ${wrap(p.value)}`
         if (p.isLiteral) return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value)} }`
-        return `get ${quotePropName(p.name)}() { return ${p.value} }`
+        return `get ${quotePropName(p.name)}() { return ${wrap(p.value)} }`
       })
     const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
     lines.push(`${indent}{ const __c = __branchScope.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${propsExpr}) }`)
@@ -331,12 +333,12 @@ function emitLoopChildReactiveEffects(
       lines.push(`${indent}insert(${elVar}, '${cond.slotId}', () => ${wrap(cond.condition)}, {`)
       lines.push(`${indent}  template: () => \`${whenTrueWithCond}\`,`)
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrueComponents)
+      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrueComponents, loopParam)
       lines.push(`${indent}  }`)
       lines.push(`${indent}}, {`)
       lines.push(`${indent}  template: () => \`${whenFalseWithCond}\`,`)
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalseComponents)
+      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalseComponents, loopParam)
       lines.push(`${indent}  }`)
       lines.push(`${indent}})`)
     }
@@ -780,12 +782,21 @@ function emitInnerLoopSetup(
  * Initializes components and events on SSR-rendered elements.
  */
 function emitCompositeHydrationSetup(ls: string[], ctx: CompositeLoopContext): void {
+  const param = ctx.elem.param
   // Outer-level component + event setup on SSR elements
   // Pass loopParam so props expressions use accessor (item() for per-item signal)
-  emitComponentAndEventSetup(ls, '        ', '__hChild', ctx.outerComps, ctx.outerEvents, 'ssr', ctx.elem.param)
+  emitComponentAndEventSetup(ls, '        ', '__hChild', ctx.outerComps, ctx.outerEvents, 'ssr', param)
 
   // Inner loop levels (depth 1, 2, ...) — each level nests inside the previous
-  emitInnerLoopSetup(ls, '        ', '__hChild', ctx.depthLevels, 'ssr', ctx.elem.param)
+  emitInnerLoopSetup(ls, '        ', '__hChild', ctx.depthLevels, 'ssr', param)
+
+  // Fine-grained reactive effects for per-item signal updates on SSR elements
+  const reactiveAttrs = ctx.elem.childReactiveAttrs ?? []
+  const reactiveTexts = ctx.elem.childReactiveTexts ?? []
+  const reactiveConditionals = ctx.elem.childConditionals ?? []
+  if (reactiveAttrs.length > 0 || reactiveTexts.length > 0 || reactiveConditionals.length > 0) {
+    emitLoopChildReactiveEffects(ls, '        ', '__hChild', reactiveAttrs, reactiveTexts, reactiveConditionals, param)
+  }
 }
 
 /**

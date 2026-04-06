@@ -813,7 +813,8 @@ function transformConditional(
 ): IRConditional {
   const condition = ctx.getJS(node.condition)
   const reactive = isReactiveExpression(condition, ctx, node.condition)
-  const slotId = reactive ? generateSlotId(ctx) : null
+  const loopParamReactive = !reactive && referencesLoopParam(condition, ctx)
+  const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
 
   // Transform both branches
   const whenTrue = transformConditionalBranch(node.whenTrue, ctx)
@@ -837,7 +838,8 @@ function transformLogicalAnd(
 ): IRConditional {
   const condition = ctx.getJS(node.left)
   const reactive = isReactiveExpression(condition, ctx, node.left)
-  const slotId = reactive ? generateSlotId(ctx) : null
+  const loopParamReactive = !reactive && referencesLoopParam(condition, ctx)
+  const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
 
   const whenTrue = transformConditionalBranch(node.right, ctx)
   const whenFalse: IRExpression = {
@@ -889,7 +891,8 @@ function transformNullishCoalescing(
   const isNullish = node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
   const condition = isNullish ? `${leftText} != null` : leftText
   const reactive = isReactiveExpression(leftText, ctx, node.left)
-  const slotId = reactive ? generateSlotId(ctx) : null
+  const loopParamReactive = !reactive && referencesLoopParam(leftText, ctx)
+  const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
 
   // whenTrue: the left-hand value itself
   const whenTrue: IRExpression = {
@@ -1942,6 +1945,20 @@ function isSignalOrMemoArray(array: string, ctx: TransformContext): boolean {
  *    branded with Reactive<T> since users define props interfaces directly.
  *    Regex is the right tool here — props detection is name-based by design.
  */
+/**
+ * Check if an expression references a loop parameter.
+ * Used by conditional transforms to assign slotId for per-item signal reactivity.
+ * NOT added to isReactiveExpression to avoid promoting text expressions
+ * like {item.name} to reactive (they use a separate slotId path).
+ */
+function referencesLoopParam(expr: string, ctx: TransformContext): boolean {
+  if (ctx.loopParams.size === 0) return false
+  for (const p of ctx.loopParams) {
+    if (new RegExp(`\\b${p}\\b`).test(expr)) return true
+  }
+  return false
+}
+
 function isReactiveExpression(expr: string, ctx: TransformContext, astNode?: ts.Node): boolean {
   // Type-checker path: walk AST to find Reactive<T> branded types
   if (ctx.analyzer.checker && astNode) {

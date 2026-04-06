@@ -375,7 +375,10 @@ export function collectLoopChildConditionals(
       const refsLoopParam = loopParam ? new RegExp(`\\b${loopParam}\\b`).test(n.condition) : false
       if (!isReactive && !refsLoopParam) return
       const expanded = expandConstantForReactivity(n.condition, ctx)
-      if (needsEffectWrapper(expanded, ctx)) {
+      // Loop-param conditionals are reactive via per-item signal accessors;
+      // needsEffectWrapper only knows about signals/memos/props, not loop params.
+      if (!refsLoopParam && !needsEffectWrapper(expanded, ctx)) return
+      {
         const whenTrueHtml = irToHtmlTemplate(n.whenTrue)
         const whenFalseHtml = irToHtmlTemplate(n.whenFalse)
         conditionals.push({

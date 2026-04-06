@@ -18,7 +18,7 @@ test.describe('Data Table Reference Page', () => {
   })
 
   test.describe('Sorting (Preview)', () => {
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
+    // TODO(#730): per-item signals — pending loop-param conditional reactivity
     test.skip('clicking Amount header toggles between asc and desc', async ({ page }) => {
       const amountHeader = page.locator('[data-slot="data-table-column-header"]').filter({ hasText: 'Amount' }).first()
 
@@ -42,7 +42,7 @@ test.describe('Data Table Reference Page', () => {
       await expect(firstAmountCell).toHaveText('$242.00')
     })
 
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
+    // TODO(#730): per-item signals — pending loop-param conditional reactivity
     test.skip('clicking different column resets to unsorted', async ({ page }) => {
       const amountHeader = page.locator('[data-slot="data-table-column-header"]').filter({ hasText: 'Amount' }).first()
       const statusHeader = page.locator('[data-slot="data-table-column-header"]').filter({ hasText: 'Status' }).first()

@@ -119,13 +119,15 @@ export function insert(
         const expectedSig = getTemplateRootSignature(html)
         const existingSig = existingEl.outerHTML.match(/^<[^>]+>/)?.[0] ?? null
 
-        if (expectedSig && existingSig && expectedSig !== existingSig) {
+        if (isFragmentCond) {
+          // Fragment conditional template but element conditional in DOM:
+          // CSR composite loops inline-evaluate conditionals into bf-c elements,
+          // but insert() manages them as fragment conditionals (comment markers).
+          // Replace the bf-c element with the fragment template content.
+          updateFragmentConditional(scope, id, html)
+        } else if (expectedSig && existingSig && expectedSig !== existingSig) {
           // DOM doesn't match expected branch - need to swap
-          if (isFragmentCond) {
-            updateFragmentConditional(scope, id, html)
-          } else {
-            updateElementConditional(scope, id, html)
-          }
+          updateElementConditional(scope, id, html)
         }
       } else if (isFragmentCond) {
         // For @client fragment conditionals, SSR renders only comment markers.
