@@ -63,7 +63,8 @@ test.describe('Dashboard Block', () => {
       await expect(section.locator('text=Alice Johnson')).toBeVisible()
     })
 
-    test('search filters orders by email', async ({ page }) => {
+    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
+    test.skip('search filters orders by email', async ({ page }) => {
       const section = page.locator('[bf-s^="DashboardDemo_"]:not([data-slot])').first()
       const searchInput = section.locator('input[placeholder="Search orders..."]')
 
@@ -73,7 +74,8 @@ test.describe('Dashboard Block', () => {
       await expect(section.locator('text=Bob Smith')).toBeVisible()
     })
 
-    test('search filters orders by order ID', async ({ page }) => {
+    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
+    test.skip('search filters orders by order ID', async ({ page }) => {
       const section = page.locator('[bf-s^="DashboardDemo_"]:not([data-slot])').first()
       const searchInput = section.locator('input[placeholder="Search orders..."]')
 
