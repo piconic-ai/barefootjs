@@ -38,8 +38,7 @@ test.describe('Chat Block', () => {
   })
 
   test.describe('Contact Switching', () => {
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
-    test.skip('clicking Bob shows Bob messages', async ({ page }) => {
+    test('clicking Bob shows Bob messages', async ({ page }) => {
       const section = page.locator('[bf-s^="ChatDemo_"]:not([data-slot])').first()
 
       // Click Bob contact

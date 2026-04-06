@@ -123,8 +123,7 @@ test.describe('Kanban Board Block', () => {
   })
 
   test.describe('Toast', () => {
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
-    test.skip('moving task shows toast', async ({ page }) => {
+    test('moving task shows toast', async ({ page }) => {
       const section = page.locator('[bf-s^="KanbanDemo_"]:not([data-slot])').first()
       const firstTask = section.locator('.kanban-column').nth(0).locator('.task-card').first()
 

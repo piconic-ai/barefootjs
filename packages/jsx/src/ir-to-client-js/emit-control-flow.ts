@@ -628,10 +628,11 @@ interface CompositeLoopContext {
 }
 
 /** Emit a single addEventListener call for a child event on a given element. */
-function emitEventSetup(ls: string[], indent: string, elVar: string, ev: LoopChildEvent): void {
-  const handler = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
+function emitEventSetup(ls: string[], indent: string, elVar: string, ev: LoopChildEvent, loopParam?: string): void {
+  let handler = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
     ? `(${ev.handler})(e)`
     : ev.handler
+  if (loopParam) handler = wrapLoopParamAsAccessor(handler, loopParam)
   ls.push(`${indent}{ const __e = qsa(${elVar}, '[bf="${ev.childSlotId}"]'); if (__e) __e.addEventListener('${toDomEventName(ev.eventName)}', (e) => { ${handler} }) }`)
 }
 
@@ -672,7 +673,7 @@ function emitComponentAndEventSetup(
     }
   }
   for (const ev of events) {
-    emitEventSetup(ls, indent, elVar, ev)
+    emitEventSetup(ls, indent, elVar, ev, loopParam)
   }
 }
 
@@ -707,7 +708,7 @@ function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: Composit
   emitComponentAndEventSetup(ls, indent, '__el', filteredComps, ctx.outerEvents, 'csr', param)
 
   // Inner loop levels (depth 1, 2, ...) — each level nests inside the previous
-  emitInnerLoopSetup(ls, indent, '__el', ctx.depthLevels, 'csr')
+  emitInnerLoopSetup(ls, indent, '__el', ctx.depthLevels, 'csr', param)
 
   // Fine-grained effects for reactive attrs, text, and conditionals
   const reactiveAttrs = ctx.elem.childReactiveAttrs ?? []
@@ -732,7 +733,10 @@ function emitInnerLoopSetup(
   parentElVar: string,
   levels: DepthLevel[],
   mode: 'csr' | 'ssr',
+  outerLoopParam?: string,
 ): void {
+  const wrapOuter = outerLoopParam
+    ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam) : (expr: string) => expr
   let i = 0
   while (i < levels.length) {
     const level = levels[i]
@@ -749,20 +753,21 @@ function emitInnerLoopSetup(
 
     // Use unique variable suffix to avoid name collisions between sibling loops
     const uid = `${inner.depth}_${i}`
+    const arrayExpr = wrapOuter(inner.array)
     const containerSelector = inner.containerSlotId ? `'[bf="${inner.containerSlotId}"]'` : 'null'
     ls.push(`${indent}// Initialize ${inner.array} loop components and events`)
     ls.push(`${indent}{ const __ic${uid} = ${containerSelector !== 'null' ? `${parentElVar}.querySelector(${containerSelector})` : parentElVar}`)
     // Guard: inner loop array may be undefined when inside a conditional branch
-    ls.push(`${indent}if (__ic${uid} && ${inner.array}) ${inner.array}.forEach((${inner.param}, __innerIdx${uid}) => {`)
+    ls.push(`${indent}if (__ic${uid} && ${arrayExpr}) ${arrayExpr}.forEach((${inner.param}, __innerIdx${uid}) => {`)
     ls.push(`${indent}  const __innerEl${uid} = __ic${uid}.children[__innerIdx${uid}]`)
     ls.push(`${indent}  if (!__innerEl${uid}) return`)
     if (inner.key) {
       ls.push(`${indent}  __innerEl${uid}.setAttribute('${keyAttrName(inner.depth)}', String(${inner.key}))`)
     }
-    emitComponentAndEventSetup(ls, `${indent}  `, `__innerEl${uid}`, level.comps, level.events, mode)
+    emitComponentAndEventSetup(ls, `${indent}  `, `__innerEl${uid}`, level.comps, level.events, mode, outerLoopParam)
     // Recurse for child levels (nested deeper loops)
     if (childLevels.length > 0) {
-      emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${uid}`, childLevels, mode)
+      emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${uid}`, childLevels, mode, outerLoopParam)
     }
     ls.push(`${indent}}) }`)
 
@@ -780,7 +785,7 @@ function emitCompositeHydrationSetup(ls: string[], ctx: CompositeLoopContext): v
   emitComponentAndEventSetup(ls, '        ', '__hChild', ctx.outerComps, ctx.outerEvents, 'ssr', ctx.elem.param)
 
   // Inner loop levels (depth 1, 2, ...) — each level nests inside the previous
-  emitInnerLoopSetup(ls, '        ', '__hChild', ctx.depthLevels, 'ssr')
+  emitInnerLoopSetup(ls, '        ', '__hChild', ctx.depthLevels, 'ssr', ctx.elem.param)
 }
 
 /**

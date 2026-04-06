@@ -47,8 +47,7 @@ test.describe('Mail Inbox Block', () => {
       await expect(section.locator('text=Select an email to read')).toBeVisible()
     })
 
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
-    test.skip('clicking a mail shows detail panel', async ({ page }) => {
+    test('clicking a mail shows detail panel', async ({ page }) => {
       const section = page.locator('[bf-s^="MailInboxDemo_"]:not([data-slot])').first()
       // Click on the mail content area (not checkbox/star) to select
       await section.locator('.mail-content').first().click()
@@ -58,8 +57,7 @@ test.describe('Mail Inbox Block', () => {
       await expect(section.locator('.mail-detail-from')).toContainText('Alice Johnson')
     })
 
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
-    test.skip('clicking a mail shows full body', async ({ page }) => {
+    test('clicking a mail shows full body', async ({ page }) => {
       const section = page.locator('[bf-s^="MailInboxDemo_"]:not([data-slot])').first()
       await section.locator('.mail-content').first().click()
 
@@ -173,8 +171,7 @@ test.describe('Mail Inbox Block', () => {
   })
 
   test.describe('Delete with Dialog', () => {
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
-    test.skip('delete button opens confirmation dialog', async ({ page }) => {
+    test('delete button opens confirmation dialog', async ({ page }) => {
       const section = page.locator('[bf-s^="MailInboxDemo_"]:not([data-slot])').first()
       // Select first mail
       await section.locator('.mail-content').first().click()
@@ -189,8 +186,7 @@ test.describe('Mail Inbox Block', () => {
       await expect(alertDialog.locator('text=Are you sure you want to delete')).toBeVisible()
     })
 
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
-    test.skip('cancel closes dialog without deleting', async ({ page }) => {
+    test('cancel closes dialog without deleting', async ({ page }) => {
       const section = page.locator('[bf-s^="MailInboxDemo_"]:not([data-slot])').first()
       await section.locator('.mail-content').first().click()
       await section.locator('.mail-detail button:has-text("Delete")').click()
@@ -237,8 +233,7 @@ test.describe('Mail Inbox Block', () => {
   })
 
   test.describe('Read/Unread Toggle', () => {
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
-    test.skip('selecting unread mail shows Mark unread button', async ({ page }) => {
+    test('selecting unread mail shows Mark unread button', async ({ page }) => {
       const section = page.locator('[bf-s^="MailInboxDemo_"]:not([data-slot])').first()
       // Click Alice (unread) — it becomes read on selection
       await section.locator('.mail-content').first().click()
@@ -247,8 +242,7 @@ test.describe('Mail Inbox Block', () => {
       await expect(section.locator('.read-toggle-text')).toContainText('Mark unread')
     })
 
-    // TODO(#730): per-item signals — loop-param conditional/event accessor not yet reactive
-    test.skip('selecting already read mail shows Mark unread button', async ({ page }) => {
+    test('selecting already read mail shows Mark unread button', async ({ page }) => {
       const section = page.locator('[bf-s^="MailInboxDemo_"]:not([data-slot])').first()
       // Bob (2nd row) is already read
       await section.locator('.mail-content').nth(1).click()
