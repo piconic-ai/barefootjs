@@ -46,8 +46,7 @@ test.describe('Kanban Board Block', () => {
   // loop variable (task) is undefined in delegation scope.
   // See memory: compiler-reconcile-templates-events.md
   test.describe('Move Tasks', () => {
-    // TODO(#730): per-item signals — pending deeper loop reactivity fixes
-    test.skip('move right moves task from To Do to In Progress', async ({ page }) => {
+    test('move right moves task from To Do to In Progress', async ({ page }) => {
       const section = page.locator('[bf-s^="KanbanDemo_"]:not([data-slot])').first()
       const columns = section.locator('.kanban-column')
 
@@ -63,8 +62,7 @@ test.describe('Kanban Board Block', () => {
       await expect(columns.nth(1).locator('.task-count')).toHaveText('3')
     })
 
-    // TODO(#730): per-item signals — pending deeper loop reactivity fixes
-    test.skip('move left moves task from In Progress to To Do', async ({ page }) => {
+    test('move left moves task from In Progress to To Do', async ({ page }) => {
       const section = page.locator('[bf-s^="KanbanDemo_"]:not([data-slot])').first()
       const columns = section.locator('.kanban-column')
 
@@ -95,8 +93,7 @@ test.describe('Kanban Board Block', () => {
       await expect(column.locator('.add-task-form')).toBeVisible()
     })
 
-    // TODO(#730): per-item signals — pending deeper loop reactivity fixes
-    test.skip('adding task increases count', async ({ page }) => {
+    test('adding task increases count', async ({ page }) => {
       const section = page.locator('[bf-s^="KanbanDemo_"]:not([data-slot])').first()
       const column = section.locator('.kanban-column').first()
 
@@ -110,8 +107,7 @@ test.describe('Kanban Board Block', () => {
   })
 
   test.describe('Delete Task', () => {
-    // TODO(#730): per-item signals — pending deeper loop reactivity fixes
-    test.skip('delete removes task and updates count', async ({ page }) => {
+    test('delete removes task and updates count', async ({ page }) => {
       const section = page.locator('[bf-s^="KanbanDemo_"]:not([data-slot])').first()
       const column = section.locator('.kanban-column').first()
 
