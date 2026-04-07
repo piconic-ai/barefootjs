@@ -477,8 +477,13 @@ function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, key
     for (const comp of nestedComps) {
       const selector = buildCompSelector(comp)
       const nestedPropsExpr = wrapLoopParamAsAccessor(buildComponentPropsExpr(comp), elem.param)
-      // Check if children reference the loop param (reactive via per-item signal)
-      const rawChildrenExpr = comp.children?.length ? irChildrenToJsExpr(comp.children) : null
+      // Check if children are text-only and reference the loop param.
+      // Only text-only children can safely use textContent update;
+      // children containing elements/components would be destroyed.
+      const isTextOnly = comp.children?.length
+        ? comp.children.every(c => c.type === 'expression' || c.type === 'text')
+        : false
+      const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
       const childrenRefsLoop = rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, elem.param)
       if (childrenRefsLoop) {
         const wrappedChildren = wrapLoopParamAsAccessor(rawChildrenExpr, elem.param)
