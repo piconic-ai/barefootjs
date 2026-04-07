@@ -33,9 +33,12 @@ function extractClientSlotRefs(js: string): string[] {
   return [...matches].map(m => m[1])
 }
 
-/** Extract $t(..., 'sN') text node references from client JS */
+/** Extract $t(..., 'sN') text node references from client JS.
+ *  Only matches top-level scope refs (__scope, __branchScope) — loop-item
+ *  $t refs (scoped to __el) live inside renderItem templates and have no
+ *  corresponding markers in the top-level SSR HTML. */
 function extractClientTextRefs(js: string): string[] {
-  const matches = js.matchAll(/\$t\([^,]+,\s*'(\^?s\d+)'/g)
+  const matches = js.matchAll(/\$t\((?:__scope|__branchScope)[^,]*,\s*'(\^?s\d+)'/g)
   return [...matches].map(m => m[1])
 }
 

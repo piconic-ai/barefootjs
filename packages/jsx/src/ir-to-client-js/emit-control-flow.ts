@@ -321,7 +321,7 @@ function emitLoopChildReactiveEffects(
   // Reactive text content effects
   for (const text of texts) {
     const varName = `__rt_${varSlotId(text.slotId)}`
-    lines.push(`${indent}{ const ${varName} = (() => { const w = document.createTreeWalker(${elVar}, NodeFilter.SHOW_COMMENT); while (w.nextNode()) { if (w.currentNode.nodeValue === 'bf:${text.slotId}') return w.currentNode.nextSibling }; return null })()`)
+    lines.push(`${indent}{ const [${varName}] = $t(${elVar}, '${text.slotId}')`)
     lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${wrap(text.expression)}) }) }`)
   }
 

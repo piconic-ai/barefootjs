@@ -459,6 +459,10 @@ export function $t(scope: Element | null, ...ids: string[]): (Text | null)[] {
   const commentInfo = commentScopeRegistry.get(scope)
   const searchRoot: Node = commentInfo ? (commentInfo.commentNode.parentNode ?? scope) : scope
 
+  // When the element is not a component scope (e.g. a loop item element),
+  // skip ownership checks — all markers inside it belong to this element.
+  const isComponentScope = scope.hasAttribute(BF_SCOPE) || commentInfo != null
+
   // Build marker → index map for O(1) lookup during walk
   const markerMap = new Map<string, { index: number; isParentOwned: boolean }>()
   for (let i = 0; i < ids.length; i++) {
@@ -475,7 +479,7 @@ export function $t(scope: Element | null, ...ids: string[]): (Text | null)[] {
     const entry = markerMap.get(comment.nodeValue ?? '')
     if (!entry || results[entry.index] !== null) continue
 
-    if (!entry.isParentOwned && !commentBelongsToScope(comment, scope, commentInfo)) {
+    if (isComponentScope && !entry.isParentOwned && !commentBelongsToScope(comment, scope, commentInfo)) {
       continue
     }
     results[entry.index] = textNodeAfterComment(comment)

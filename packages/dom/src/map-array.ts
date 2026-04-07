@@ -115,7 +115,6 @@ export function mapArray<T>(
       const needsHydration = existingChildren.length > 0
         && (!existingChildren[0]?.hasAttribute('data-key') || scopes.size === 0)
       if (needsHydration) {
-        console.log('[BF DEBUG] mapArray SSR hydration: processing', existingChildren.length, 'items')
         // Hydrate in place: tag keys, create per-item scopes with renderItem(existing)
         for (let i = 0; i < existingChildren.length && i < items.length; i++) {
           const child = existingChildren[i]

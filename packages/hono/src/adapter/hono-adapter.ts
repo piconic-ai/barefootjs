@@ -475,8 +475,10 @@ export class HonoAdapter implements TemplateAdapter {
     if (expr.clientOnly && expr.slotId) {
       return `{bfComment("client:${expr.slotId}")}`
     }
-    // Mark reactive expressions with comment nodes for client JS to find
-    if (expr.reactive && expr.slotId) {
+    // Mark expressions with slotId using comment nodes for client JS to find.
+    // This includes reactive expressions AND loop-param-dependent expressions
+    // (which become reactive via per-item signals on the client).
+    if (expr.slotId) {
       return `{bfText("${expr.slotId}")}{${expr.expr}}{bfTextEnd()}`
     }
     return `{${expr.expr}}`
