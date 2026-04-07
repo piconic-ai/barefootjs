@@ -221,7 +221,7 @@ export function DashboardDemo() {
                       </TableHeader>
                       <TableBody>
                         {filteredOrders().map((order) => (
-                          <TableRow>
+                          <TableRow key={order.id}>
                             <TableCell className="font-medium">{order.id}</TableCell>
                             <TableCell>
                               <div>

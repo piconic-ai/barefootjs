@@ -18,7 +18,7 @@ test.describe('Data Table Reference Page', () => {
   })
 
   test.describe('Sorting (Preview)', () => {
-    test.skip('clicking Amount header toggles between asc and desc', async ({ page }) => {
+    test('clicking Amount header toggles between asc and desc', async ({ page }) => {
       const amountHeader = page.locator('[data-slot="data-table-column-header"]').filter({ hasText: 'Amount' }).first()
 
       const firstTable = page.locator('[data-slot="table"]').first()
@@ -41,7 +41,7 @@ test.describe('Data Table Reference Page', () => {
       await expect(firstAmountCell).toHaveText('$242.00')
     })
 
-    test.skip('clicking different column resets to unsorted', async ({ page }) => {
+    test('clicking different column resets to unsorted', async ({ page }) => {
       const amountHeader = page.locator('[data-slot="data-table-column-header"]').filter({ hasText: 'Amount' }).first()
       const statusHeader = page.locator('[data-slot="data-table-column-header"]').filter({ hasText: 'Status' }).first()
 

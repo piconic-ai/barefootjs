@@ -20,27 +20,27 @@ type Props = {
   onFinishEdit: (text: string) => void
 }
 
-function TodoItem({ todo, onToggle, onDelete, onStartEdit, onFinishEdit }: Props) {
+function TodoItem(props: Props) {
   return (
-    <li className={todo.done ? (todo.editing ? 'completed editing' : 'completed') : (todo.editing ? 'editing' : '')}>
+    <li className={props.todo.done ? (props.todo.editing ? 'completed editing' : 'completed') : (props.todo.editing ? 'editing' : '')}>
       <div className="view">
         <input
           className="toggle"
           type="checkbox"
-          checked={todo.done}
-          onChange={() => onToggle()}
+          checked={props.todo.done}
+          onChange={() => props.onToggle()}
         />
-        <label onDoubleClick={() => onStartEdit()}>
-          {todo.text}
+        <label onDoubleClick={() => props.onStartEdit()}>
+          {props.todo.text}
         </label>
-        <button className="destroy" onClick={() => onDelete()}></button>
+        <button className="destroy" onClick={() => props.onDelete()}></button>
       </div>
       <input
         className="edit"
-        value={todo.text}
+        value={props.todo.text}
         autofocus
-        onBlur={(e) => onFinishEdit(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && !e.isComposing && onFinishEdit(e.target.value)}
+        onBlur={(e) => props.onFinishEdit(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && !e.isComposing && props.onFinishEdit(e.target.value)}
       />
     </li>
   )
