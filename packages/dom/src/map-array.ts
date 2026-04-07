@@ -190,9 +190,21 @@ export function mapArray<T>(
       }
     }
 
-    // Reconcile DOM order: insertBefore moves already-connected elements
+    // Reconcile DOM order: skip insertBefore entirely when order is unchanged.
+    // Moving elements via insertBefore causes detach/reattach which makes
+    // focused inputs lose focus (controlled input flicker).
+    let inOrder = true
+    let checkNode: Node | null = startMarker ? startMarker.nextSibling : container.firstChild
     for (const { element } of desiredOrder) {
-      container.insertBefore(element, anchor)
+      // Skip non-element nodes (comments, text)
+      while (checkNode && checkNode.nodeType !== Node.ELEMENT_NODE) checkNode = checkNode.nextSibling
+      if (checkNode !== element) { inOrder = false; break }
+      checkNode = checkNode.nextSibling
+    }
+    if (!inOrder) {
+      for (const { element } of desiredOrder) {
+        container.insertBefore(element, anchor)
+      }
     }
   })
 }
