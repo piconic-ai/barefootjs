@@ -28,8 +28,10 @@ function collectInnerLoops(nodes: IRNode[], outerLoopParam?: string, ctx?: Clien
         break
       case 'loop':
         depth++
-        // Generate item template for CSR rendering in mapArray
-        const itemTemplate = n.children.map(c => irToPlaceholderTemplate(c, undefined, depth)).join('')
+        // Generate item template for CSR rendering in mapArray.
+        // Pass loopParams so expressions are wrapped at generation time (not post-hoc regex).
+        const loopParamsForTemplate = outerLoopParam ? [outerLoopParam, n.param] : undefined
+        const itemTemplate = n.children.map(c => irToPlaceholderTemplate(c, undefined, depth, loopParamsForTemplate)).join('')
         // Check if array expression references the outer loop param
         const refsOuter = outerLoopParam
           ? new RegExp(`\\b${outerLoopParam}\\b`).test(n.array)

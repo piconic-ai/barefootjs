@@ -311,7 +311,8 @@ function emitBranchInnerLoops(
       ? `(${inner.param}) => String(${inner.key})`
       : 'null'
     const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param)
-    const wrappedTemplate = wrapBoth(inner.itemTemplate)
+    // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
+    const wrappedTemplate = inner.itemTemplate
     const containerSelector = inner.containerSlotId ? `'[bf="${inner.containerSlotId}"]'` : 'null'
 
     lines.push(`${indent}{ const __bic${uid} = ${containerSelector !== 'null' ? `${scopeVar}.querySelector(${containerSelector})` : scopeVar}`)
@@ -523,7 +524,7 @@ function buildComponentPropsExpr(
   })
   if ('children' in comp && Array.isArray(comp.children) && comp.children.length > 0) {
     const childrenExpr = irChildrenToJsExpr(comp.children)
-    entries.push(`get children() { return ${childrenExpr} }`)
+    entries.push(`get children() { return ${wrap(childrenExpr)} }`)
   }
   return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
 }
@@ -872,9 +873,9 @@ function emitInnerLoopSetup(
       const keyFn = inner.key
         ? `(${inner.param}) => String(${inner.key})`
         : 'null'
-      // Template and key inside renderItem use accessor: wrap both outer and inner params
       const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param)
-      const wrappedTemplate = wrapBoth(inner.itemTemplate!)
+      // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
+      const wrappedTemplate = inner.itemTemplate!
       ls.push(`${indent}// Reactive inner loop: ${inner.array}`)
       ls.push(`${indent}{ const __ic${uid} = ${containerSelector !== 'null' ? `${parentElVar}.querySelector(${containerSelector})` : parentElVar}`)
       ls.push(`${indent}if (__ic${uid}) mapArray(() => ${arrayExpr} || [], __ic${uid}, ${keyFn}, (${inner.param}, __innerIdx${uid}, __existing) => {`)

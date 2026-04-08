@@ -428,7 +428,8 @@ function collectBranchInnerLoops(
       if (n.slotId) lastSlotId = n.slotId
       for (const child of n.children) walk(child)
     } else if (n.type === 'loop') {
-      const itemTemplate = n.children.map((c: IRNode) => irToPlaceholderTemplate(c, undefined, 1)).join('')
+      const loopParamsForTemplate = outerLoopParam ? [outerLoopParam, n.param] : undefined
+      const itemTemplate = n.children.map((c: IRNode) => irToPlaceholderTemplate(c, undefined, 1, loopParamsForTemplate)).join('')
       const refsOuter = outerLoopParam
         ? new RegExp(`\\b${outerLoopParam}\\b`).test(n.array)
         : false

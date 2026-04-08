@@ -4,7 +4,7 @@
 
 import type { IRNode } from '../types'
 import { isBooleanAttr } from '../html-constants'
-import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, BF_LOOP_START, BF_LOOP_END, exprReferencesIdent } from './utils'
+import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, BF_LOOP_START, BF_LOOP_END, exprReferencesIdent, wrapLoopParamAsAccessor } from './utils'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -184,8 +184,15 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
  * elements (`<div data-bf-ph="sN"></div>`) instead of renderChild() calls.
  * The placeholders are replaced with real createComponent() elements at runtime.
  */
-export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0): string {
-  const recurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth)
+export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: string[]): string {
+  const recurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth, loopParams)
+  // Wrap expression with loop param accessors (only for expressions, not literal text)
+  const wrapExpr = (expr: string): string => {
+    if (!loopParams) return expr
+    let result = expr
+    for (const p of loopParams) result = wrapLoopParamAsAccessor(result, p)
+    return result
+  }
 
   switch (node.type) {
     case 'element': {
@@ -202,7 +209,7 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
             : toHtmlAttrName(a.name)
           if (a.value === null) return attrName
           const valExpr = typeof a.value === 'string' ? a.value : (attrValueToString(a.value) ?? '')
-          if (a.dynamic) return templateAttrExpr(attrName, valExpr, a)
+          if (a.dynamic) return templateAttrExpr(attrName, wrapExpr(valExpr), a)
           return `${attrName}="${valExpr}"`
         })
         .filter(Boolean)
@@ -226,16 +233,16 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''
       if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${node.expr}}<!--/-->`
+        return `<!--bf:${node.slotId}-->\${${wrapExpr(node.expr)}}<!--/-->`
       }
-      return `\${${node.expr}}`
+      return `\${${wrapExpr(node.expr)}}`
 
     case 'conditional': {
       const trueBranch = recurse(node.whenTrue)
       const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
-      return `\${${node.condition} ? \`${trueHtml}\` : \`${falseHtml}\`}`
+      return `\${${wrapExpr(node.condition)} ? \`${trueHtml}\` : \`${falseHtml}\`}`
     }
 
     case 'fragment':
@@ -253,6 +260,7 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
 
     case 'loop': {
       // Inner loops: generate inline .map().join('') with placeholders for components
+      // Don't pass loopParams to inner loop children — inner loop map body uses its own param names
       const innerRecurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth + 1)
       const childTemplate = node.children.map(innerRecurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
