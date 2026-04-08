@@ -256,7 +256,6 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   emitReactiveAttributeUpdates(lines, ctx)
   emitConditionalUpdates(lines, ctx)
   emitClientOnlyConditionals(lines, ctx)
-  emitLoopUpdates(lines, ctx)
 
   const conditionalSlotIds = collectConditionalSlotIds(ctx)
 
@@ -267,6 +266,10 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   emitRefCallbacks(lines, ctx, conditionalSlotIds)
   emitEffectsAndOnMounts(lines, ctx)
   emitProviderAndChildInits(lines, ctx)
+  // Loop updates must run AFTER provider/child inits so that parent
+  // components have already provided their context (e.g., SelectContext)
+  // before loop children (e.g., SelectItem) call useContext().
+  emitLoopUpdates(lines, ctx)
   emitStaticArrayChildInits(lines, ctx)
   const hydrateLine = emitRegistrationAndHydration(lines, ctx, _ir)
 
