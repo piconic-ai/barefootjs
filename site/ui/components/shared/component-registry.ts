@@ -104,6 +104,7 @@ export const componentEntries: ComponentEntry[] = [
 // Blocks — page-level composition patterns
 export const blockEntries: BlockEntry[] = [
   { slug: 'analytics-dashboard', title: 'Analytics Dashboard', description: 'Website analytics with multi-level memo chains, dynamic charts, inner loops, and controlled input' },
+  { slug: 'pricing', title: 'Pricing', description: 'SaaS pricing with billing toggle, plan cards, and feature comparison table' },
   { slug: 'product-cards', title: 'Product Cards', description: 'E-commerce product grid with multi-signal filtering, cart, and view mode toggle' },
   { slug: 'user-profile', title: 'User Profile', description: 'Developer profile with inline editing, filterable repos, star toggle, and activity feed' },
   { slug: 'dashboard', title: 'Dashboard', description: 'Sales dashboard with stats, filterable orders table, and activity feed' },
