@@ -559,14 +559,40 @@ function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, key
   const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param)
   const indexParam = elem.index || '__idx'
   const chainedExpr = buildChainedArrayExpr(elem)
-  const nestedComps = elem.nestedComponents ?? []
+  // Only init components at loopDepth 0 — inner-loop components are handled by their own loop
+  const nestedComps = (elem.nestedComponents ?? []).filter(c => !c.loopDepth)
 
   lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}, __existing) => {`)
   if (nestedComps.length > 0) {
-    // Unified renderItem: element acquisition differs (SSR vs CSR), then shared init
-    lines.push(`    const __el = __existing ?? createComponent('${name}', ${propsExpr}, ${keyExpr})`)
-    lines.push(`    if (__existing) initChild('${name}', __existing, ${propsExpr})`)
-    // Initialize nested child components (shared for both SSR and CSR)
+    // Unified renderItem: SSR hydrates nested components, CSR creates from scratch
+    lines.push(`    if (__existing) {`)
+    lines.push(`      initChild('${name}', __existing, ${propsExpr})`)
+    // Initialize nested child components within the SSR-rendered element
+    for (const comp of nestedComps) {
+      const selector = buildCompSelector(comp)
+      const nestedPropsExpr = buildComponentPropsExpr(comp, elem.param)
+      // Check if children are text-only and reference the loop param.
+      // Only text-only children can safely use textContent update;
+      // children containing elements/components would be destroyed.
+      const isTextOnly = comp.children?.length
+        ? comp.children.every(c => c.type === 'expression' || c.type === 'text')
+        : false
+      const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
+      const childrenRefsLoop = rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, elem.param)
+      if (childrenRefsLoop) {
+        const wrappedChildren = wrapLoopParamAsAccessor(rawChildrenExpr, elem.param)
+        lines.push(`      { const __c = __existing.querySelector('${selector}'); if (__c) { initChild('${comp.name}', __c, ${nestedPropsExpr}); createEffect(() => { const __v = ${wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+      } else {
+        lines.push(`      { const __c = __existing.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${nestedPropsExpr}) }`)
+      }
+    }
+    // Emit reactive effects for conditionals/texts inside component children
+    if (elem.childConditionals && elem.childConditionals.length > 0) {
+      emitLoopChildReactiveEffects(lines, '      ', '__existing', [], [], elem.childConditionals, elem.param)
+    }
+    lines.push(`      return __existing`)
+    lines.push(`    }`)
+    lines.push(`    const __csrEl = createComponent('${name}', ${propsExpr}, ${keyExpr})`)
     for (const comp of nestedComps) {
       const selector = buildCompSelector(comp)
       const nestedPropsExpr = buildComponentPropsExpr(comp, elem.param)
@@ -577,16 +603,15 @@ function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, key
       const childrenRefsLoop = rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, elem.param)
       if (childrenRefsLoop) {
         const wrappedChildren = wrapLoopParamAsAccessor(rawChildrenExpr, elem.param)
-        lines.push(`    { const __c = __el.querySelector('${selector}'); if (__c) { initChild('${comp.name}', __c, ${nestedPropsExpr}); createEffect(() => { const __v = ${wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+        lines.push(`    { const __c = __csrEl.querySelector('${selector}'); if (__c) { initChild('${comp.name}', __c, ${nestedPropsExpr}); createEffect(() => { const __v = ${wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
       } else {
-        lines.push(`    { const __c = __el.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${nestedPropsExpr}) }`)
+        lines.push(`    { const __c = __csrEl.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${nestedPropsExpr}) }`)
       }
     }
-    // Reactive effects for conditionals inside component children
     if (elem.childConditionals && elem.childConditionals.length > 0) {
-      emitLoopChildReactiveEffects(lines, '    ', '__el', [], [], elem.childConditionals, elem.param)
+      emitLoopChildReactiveEffects(lines, '    ', '__csrEl', [], [], elem.childConditionals, elem.param)
     }
-    lines.push(`    return __el`)
+    lines.push(`    return __csrEl`)
   } else {
     lines.push(`    if (__existing) { initChild('${name}', __existing, ${propsExpr}); return __existing }`)
     lines.push(`    return createComponent('${name}', ${propsExpr}, ${keyExpr})`)
