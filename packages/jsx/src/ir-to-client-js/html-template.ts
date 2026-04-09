@@ -56,8 +56,14 @@ function templateAttrExpr(attrName: string, valExpr: string, attr: { presenceOrU
  *  @param loopDepth - Current nesting depth inside inner loops. 0 = outer loop level.
  *    When > 0, `key` attributes are converted to `data-key-{depth}` instead of `data-key`.
  */
-export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0): string {
-  const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth)
+export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: string[]): string {
+  const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams)
+  const wrapExpr = (expr: string): string => {
+    if (!loopParams) return expr
+    let result = expr
+    for (const p of loopParams) result = wrapLoopParamAsAccessor(result, p)
+    return result
+  }
 
   switch (node.type) {
     case 'element': {
@@ -76,7 +82,10 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
           if (a.value === null) return attrName
           // Resolve IRTemplateLiteral to string expression for use in template literals
           const valExpr = typeof a.value === 'string' ? a.value : (attrValueToString(a.value) ?? '')
-          if (a.dynamic) return templateAttrExpr(attrName, valExpr, a)
+          if (a.dynamic) {
+            const wrappedVal = wrapExpr(valExpr)
+            return templateAttrExpr(attrName, wrappedVal, a)
+          }
           return `${attrName}="${valExpr}"`
         })
         .filter(Boolean)
@@ -101,16 +110,16 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''
       if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${node.expr}}<!--/-->`
+        return `<!--bf:${node.slotId}-->\${${wrapExpr(node.expr)}}<!--/-->`
       }
-      return `\${${node.expr}}`
+      return `\${${wrapExpr(node.expr)}}`
 
     case 'conditional': {
       const trueBranch = recurse(node.whenTrue)
       const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
       const falseHtml = node.slotId ? addCondAttrToTemplate(falseBranch, node.slotId) : falseBranch
-      return `\${${node.condition} ? \`${trueHtml}\` : \`${falseHtml}\`}`
+      return `\${${wrapExpr(node.condition)} ? \`${trueHtml}\` : \`${falseHtml}\`}`
     }
 
     case 'fragment':
@@ -154,14 +163,17 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
     case 'loop': {
       // Generate inline .map().join('') so loop variables are properly scoped
       // Increment loopDepth so inner key attrs become data-key-N
+      // Don't pass loopParams to inner loop children — the inner loop's own param is
+      // received as a .map() callback argument, not a signal accessor.
       const innerRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth + 1)
       const childTemplate = node.children.map(innerRecurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
+      const wrappedArray = wrapExpr(node.array)
       let mapExpr: string
       if (node.mapPreamble) {
-        mapExpr = `\${${node.array}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = `\${${wrappedArray}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
       } else {
-        mapExpr = `\${${node.array}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
+        mapExpr = `\${${wrappedArray}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
       }
       // Wrap with loop boundary markers so reconciliation doesn't affect siblings
       return `<!--${BF_LOOP_START}-->${mapExpr}<!--${BF_LOOP_END}-->`
@@ -209,7 +221,12 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
             : toHtmlAttrName(a.name)
           if (a.value === null) return attrName
           const valExpr = typeof a.value === 'string' ? a.value : (attrValueToString(a.value) ?? '')
-          if (a.dynamic) return templateAttrExpr(attrName, wrapExpr(valExpr), a)
+          // Only wrap dynamic expression values, not string literals that happen
+          // to be marked dynamic (e.g., className="cart-item" where "item" matches a loop param)
+          if (a.dynamic) {
+            const wrappedVal = wrapExpr(valExpr)
+            return templateAttrExpr(attrName, wrappedVal, a)
+          }
           return `${attrName}="${valExpr}"`
         })
         .filter(Boolean)
@@ -264,11 +281,12 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       const innerRecurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth + 1)
       const childTemplate = node.children.map(innerRecurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
+      const wrappedArray = wrapExpr(node.array)
       let mapExpr: string
       if (node.mapPreamble) {
-        mapExpr = `\${${node.array}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = `\${${wrappedArray}.map((${node.param}${indexParam}) => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
       } else {
-        mapExpr = `\${${node.array}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
+        mapExpr = `\${${wrappedArray}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
       }
       return `<!--${BF_LOOP_START}-->${mapExpr}<!--${BF_LOOP_END}-->`
     }

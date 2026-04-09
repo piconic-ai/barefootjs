@@ -61,6 +61,7 @@ import { SheetRefPage } from './pages/components/sheet'
 import { DashboardRefPage } from './pages/components/dashboard'
 import { AnalyticsDashboardRefPage } from './pages/components/analytics-dashboard'
 import { UserProfileRefPage } from './pages/components/user-profile'
+import { ProductCardsRefPage } from './pages/components/product-cards'
 import { MailRefPage } from './pages/components/mail'
 import { KanbanRefPage } from './pages/components/kanban'
 import { LoginRefPage } from './pages/components/login'
@@ -446,6 +447,11 @@ export function createApp() {
   // User Profile block page
   app.get('/components/user-profile', (c) => {
     return c.render(<UserProfileRefPage />)
+  })
+
+  // Product Cards block page
+  app.get('/components/product-cards', (c) => {
+    return c.render(<ProductCardsRefPage />)
   })
 
   // Mail block page

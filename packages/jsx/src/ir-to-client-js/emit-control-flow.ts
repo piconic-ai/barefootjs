@@ -616,16 +616,17 @@ function emitPlainElementLoopReconciliation(lines: string[], elem: LoopElement, 
 
   if (!hasReactiveEffects) {
     // Simple case: no reactive effects
-    const tpl = wrap(elem.template)
+    // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
     const preamble = elem.mapPreamble ? `${wrap(elem.mapPreamble)}; ` : ''
-    lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}, __existing) => { ${preamble}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${tpl}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+    lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}, __existing) => { ${preamble}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
   } else {
     // Multi-line renderItem with fine-grained effects (shared for CSR and SSR)
     lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${elem.param}, ${indexParam}, __existing) => {`)
     if (elem.mapPreamble) {
       lines.push(`    ${wrap(elem.mapPreamble)}`)
     }
-    lines.push(`    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${wrap(elem.template)}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
+    // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
+    lines.push(`    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
     emitLoopChildReactiveEffects(lines, '    ', '__el', elem.childReactiveAttrs, elem.childReactiveTexts, elem.childConditionals, elem.param)
     lines.push(`    return __el`)
     lines.push(`  })`)
@@ -812,7 +813,8 @@ function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: Composit
     ls.push(`${indent}  ${wrap(ctx.elem.mapPreamble)}`)
   }
   ls.push(`${indent}  const __tpl = document.createElement('template')`)
-  ls.push(`${indent}  __tpl.innerHTML = \`${wrap(ctx.elem.template)}\``)
+  // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
+  ls.push(`${indent}  __tpl.innerHTML = \`${ctx.elem.template}\``)
   ls.push(`${indent}  __el = __tpl.content.firstElementChild.cloneNode(true)`)
   emitComponentAndEventSetup(ls, `${indent}  `, '__el', filteredComps, ctx.outerEvents, 'csr', param)
   // CSR: inner loop initialization

@@ -236,10 +236,12 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         let template = ''
         if (node.childComponent) {
           template = '' // childComponent path uses createComponent directly
-        } else if (useElementReconciliation && node.children[0]) {
-          template = irToPlaceholderTemplate(node.children[0], buildRestSpreadNames(ctx))
         } else if (node.children[0]) {
-          template = irToHtmlTemplate(node.children[0], buildRestSpreadNames(ctx))
+          // Pass loopParams so expressions are wrapped at generation time,
+          // avoiding post-hoc regex wrapping that corrupts literal attribute values.
+          template = useElementReconciliation
+            ? irToPlaceholderTemplate(node.children[0], buildRestSpreadNames(ctx), 0, [node.param])
+            : irToHtmlTemplate(node.children[0], buildRestSpreadNames(ctx), 0, [node.param])
         }
 
         ctx.loopElements.push({
