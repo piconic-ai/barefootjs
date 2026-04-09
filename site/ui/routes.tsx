@@ -63,6 +63,7 @@ import { AnalyticsDashboardRefPage } from './pages/components/analytics-dashboar
 import { UserProfileRefPage } from './pages/components/user-profile'
 import { ProductCardsRefPage } from './pages/components/product-cards'
 import { PricingRefPage } from './pages/components/pricing'
+import { FileUploadRefPage } from './pages/components/file-upload'
 import { MailRefPage } from './pages/components/mail'
 import { KanbanRefPage } from './pages/components/kanban'
 import { LoginRefPage } from './pages/components/login'
@@ -458,6 +459,11 @@ export function createApp() {
   // Pricing block page
   app.get('/components/pricing', (c) => {
     return c.render(<PricingRefPage />)
+  })
+
+  // File Upload block page
+  app.get('/components/file-upload', (c) => {
+    return c.render(<FileUploadRefPage />)
   })
 
   // Mail block page
