@@ -458,6 +458,28 @@ function emitStaticArrayUpdates(lines: string[], elem: LoopElement): void {
     lines.push('')
   }
 
+  // Reactive text effects for static array children (both plain and component loops).
+  // Text expressions that read signals (e.g., {isAnnual() ? x : y}) need
+  // createEffect to update when the signal changes.
+  if (elem.childReactiveTexts.length > 0) {
+    const v = varSlotId(elem.slotId)
+    lines.push(`  // Reactive texts in static array children`)
+    lines.push(`  if (_${v}) {`)
+    const indexParam = elem.index || '__idx'
+    lines.push(`    ${elem.array}.forEach((${elem.param}, ${indexParam}) => {`)
+    lines.push(`      const __iterEl = _${v}.children[${indexParam}]`)
+    lines.push(`      if (__iterEl) {`)
+    for (const text of elem.childReactiveTexts) {
+      const vn = `__rt_${varSlotId(text.slotId)}`
+      lines.push(`        { const [${vn}] = $t(__iterEl, '${text.slotId}')`)
+      lines.push(`        if (${vn}) createEffect(() => { ${vn}.textContent = String(${text.expression}) }) }`)
+    }
+    lines.push(`      }`)
+    lines.push(`    })`)
+    lines.push(`  }`)
+    lines.push('')
+  }
+
   // Event delegation for plain elements in static arrays (#537).
   // Static arrays have no data-key/bf-i markers, so walk up from target to
   // the container's direct child and use indexOf for index lookup.
@@ -562,6 +584,10 @@ function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, key
       } else {
         lines.push(`      { const __c = __existing.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${nestedPropsExpr}) }`)
       }
+    }
+    // Emit reactive effects for conditionals/texts inside component children
+    if (elem.childConditionals && elem.childConditionals.length > 0) {
+      emitLoopChildReactiveEffects(lines, '      ', '__existing', [], [], elem.childConditionals, elem.param)
     }
     lines.push(`      return __existing`)
     lines.push(`    }`)
