@@ -273,15 +273,15 @@ export function collectLoopChildEventsWithNesting(
  */
 export function collectConditionalBranchChildComponents(
   node: IRNode,
-): Array<{ name: string; slotId: string | null; props: IRProp[] }> {
-  const components: Array<{ name: string; slotId: string | null; props: IRProp[] }> = []
+): Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }> {
+  const components: Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }> = []
   traverseForComponents(node, components)
   return components
 }
 
 function traverseForComponents(
   node: IRNode,
-  components: Array<{ name: string; slotId: string | null; props: IRProp[] }>,
+  components: Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }>,
 ): void {
   switch (node.type) {
     case 'element':
@@ -296,6 +296,7 @@ function traverseForComponents(
         name: node.name,
         slotId: node.slotId,
         props: node.props,
+        children: node.children,
       })
       // Recurse into JSX children passed to this component
       for (const child of node.children) {

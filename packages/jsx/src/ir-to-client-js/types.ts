@@ -189,8 +189,8 @@ export interface LoopChildConditional {
   condition: string    // Reactive condition expression
   whenTrueHtml: string // HTML template for true branch
   whenFalseHtml: string // HTML template for false branch (usually comment markers)
-  whenTrueComponents: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[] }>
-  whenFalseComponents: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[] }>
+  whenTrueComponents: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: import('../types').IRNode[] }>
+  whenFalseComponents: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: import('../types').IRNode[] }>
   /** Inner loops inside whenTrue branch that need mapArray setup */
   whenTrueInnerLoops?: NestedLoopInfo[]
   /** Inner loops inside whenFalse branch that need mapArray setup */

@@ -263,7 +263,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
 function emitBranchChildComponentInits(
   lines: string[],
   indent: string,
-  components: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[] }>,
+  components: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children?: import('../types').IRNode[] }>,
   loopParam?: string,
 ): void {
   const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr
@@ -280,6 +280,11 @@ function emitBranchChildComponentInits(
         if (p.isLiteral) return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value)} }`
         return `get ${quotePropName(p.name)}() { return ${wrap(p.value)} }`
       })
+    // Include children for CSR createComponent (SSR initChild doesn't need it — text is in HTML)
+    const childrenExpr = comp.children?.length ? irChildrenToJsExpr(comp.children) : null
+    if (childrenExpr) {
+      propsEntries.push(`get children() { return ${wrap(childrenExpr)} }`)
+    }
     const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
     // SSR: element has bf-s attribute → initChild.
     // CSR: element is a placeholder (data-bf-ph) → createComponent to replace it.
