@@ -149,12 +149,17 @@ test.describe('Inventory Manager Block', () => {
       await expect(s.locator('.inventory-row')).toHaveCount(8)
     })
 
-    test('undo cancels edit mode', async ({ page }) => {
+    test('undo cancels edit mode and restores state', async ({ page }) => {
       const s = section(page)
+      const nameBefore = await s.locator('.row-name').first().textContent()
       await s.locator('.edit-btn').first().click()
       await expect(s.locator('.edit-name')).toBeVisible()
+      await s.locator('.edit-name').fill('Changed Name')
+      // Undo should exit edit mode without saving
       await s.locator('.undo-btn').click()
       await expect(s.locator('.edit-name')).not.toBeVisible()
+      // Name should be unchanged
+      await expect(s.locator('.row-name').first()).toContainText(nameBefore!)
     })
 
     test('redo re-applies action', async ({ page }) => {
