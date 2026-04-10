@@ -196,6 +196,7 @@ export declare namespace JSX {
     use: HTMLBaseAttributes & { href?: string; x?: number | string; y?: number | string; width?: number | string; height?: number | string }
     symbol: HTMLBaseAttributes & { viewBox?: string }
     clipPath: HTMLBaseAttributes
+    marker: HTMLBaseAttributes & { viewBox?: string; refX?: number | string; refY?: number | string; markerWidth?: number | string; markerHeight?: number | string; markerUnits?: string; orient?: string | number }
     mask: HTMLBaseAttributes
     linearGradient: HTMLBaseAttributes & { x1?: number | string; y1?: number | string; x2?: number | string; y2?: number | string }
     radialGradient: HTMLBaseAttributes & { cx?: number | string; cy?: number | string; r?: number | string; fx?: number | string; fy?: number | string }
