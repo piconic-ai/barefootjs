@@ -1,0 +1,50 @@
+{
+  "name": "@barefootjs/xyflow",
+  "version": "0.0.1",
+  "description": "Signal-based xyflow wrapper for BarefootJS",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/dom'",
+    "build:types": "tsc --emitDeclarationOnly --outDir ./dist",
+    "test": "bun test",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "xyflow",
+    "react-flow",
+    "graph",
+    "node-editor",
+    "signals",
+    "reactive",
+    "barefoot"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kfly8/barefootjs",
+    "directory": "packages/xyflow"
+  },
+  "peerDependencies": {
+    "@barefootjs/dom": ">=0.0.1"
+  },
+  "dependencies": {
+    "@xyflow/system": "^0.0.76"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
