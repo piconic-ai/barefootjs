@@ -533,8 +533,9 @@ export class HonoAdapter implements TemplateAdapter {
       return `<>{bfComment("cond-start:${condId}")}${content}{bfComment("cond-end:${condId}")}</>`
     }
 
-    // If content is a raw HTML element, add bf-c attribute
-    if (content.startsWith('<')) {
+    // If content is a single raw HTML element, add bf-c attribute.
+    // For fragments (multiple sibling elements), use comment markers.
+    if (content.startsWith('<') && node.type !== 'fragment') {
       const match = content.match(/^<(\w+)/)
       if (match) {
         return content.replace(`<${match[1]}`, `<${match[1]} bf-c="${condId}"`)

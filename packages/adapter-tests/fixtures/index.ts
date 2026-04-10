@@ -21,6 +21,8 @@ import { fixture as mapWithIndex } from './map-with-index'
 import { fixture as filterSimple } from './filter-simple'
 import { fixture as sortSimple } from './sort-simple'
 import { fixture as filterSortChain } from './filter-sort-chain'
+import { fixture as mapNested } from './map-nested'
+import { fixture as mapDynamicClass } from './map-dynamic-class'
 // Priority 5: Elements and attributes
 import { fixture as voidElements } from './void-elements'
 import { fixture as dynamicAttributes } from './dynamic-attributes'
@@ -28,6 +30,7 @@ import { fixture as classVsClassname } from './class-vs-classname'
 import { fixture as styleAttribute } from './style-attribute'
 // Priority 6: Advanced patterns
 import { fixture as fragment } from './fragment'
+import { fixture as fragmentConditional } from './fragment-conditional'
 import { fixture as clientOnly } from './client-only'
 import { fixture as eventHandlers } from './event-handlers'
 import { fixture as defaultProps } from './default-props'
@@ -67,6 +70,8 @@ export const jsxFixtures: JSXFixture[] = [
   filterSimple,
   sortSimple,
   filterSortChain,
+  mapNested,
+  mapDynamicClass,
   // Priority 5: Elements and attributes
   voidElements,
   dynamicAttributes,
@@ -74,6 +79,7 @@ export const jsxFixtures: JSXFixture[] = [
   styleAttribute,
   // Priority 6: Advanced patterns
   fragment,
+  fragmentConditional,
   clientOnly,
   eventHandlers,
   defaultProps,

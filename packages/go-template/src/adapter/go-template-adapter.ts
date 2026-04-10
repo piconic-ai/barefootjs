@@ -2386,11 +2386,17 @@ export class GoTemplateAdapter extends BaseAdapter {
   }
 
   private wrapWithCondMarker(content: string, condId: string): string {
-    // If content is an HTML element, add bf-c attribute
+    // If content is a single HTML element, add bf-c attribute.
+    // For fragments (multiple sibling elements), use comment markers.
     if (content.startsWith('<')) {
       const match = content.match(/^<(\w+)/)
       if (match) {
-        return content.replace(`<${match[1]}`, `<${match[1]} ${this.renderCondMarker(condId)}`)
+        const tag = match[1]
+        const trimmed = content.trim()
+        const isSingle = new RegExp(`</${tag}>\\s*$`).test(trimmed) || /^<\w+[^>]*\/>$/.test(trimmed)
+        if (isSingle) {
+          return content.replace(`<${match[1]}`, `<${match[1]} ${this.renderCondMarker(condId)}`)
+        }
       }
     }
     // Text: use bfComment function to output comment markers
