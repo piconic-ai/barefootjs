@@ -9,6 +9,14 @@ export type { HandleType, HandleProps } from './handle'
 export { useFlow, useViewport, useNodes, useEdges, useNodesInitialized } from './hooks'
 export { setupKeyboardHandlers, setupNodeSelection, setupEdgeSelection } from './selection'
 
+// Plugins
+export { initBackground } from './background'
+export type { BackgroundVariant, BackgroundProps } from './background'
+export { initControls } from './controls'
+export type { ControlsProps } from './controls'
+export { initMiniMap } from './minimap'
+export type { MiniMapProps } from './minimap'
+
 // Types
 export type {
   FlowProps,
