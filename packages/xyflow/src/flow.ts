@@ -15,6 +15,7 @@ import { createFlowStore } from './store'
 import { FlowContext } from './context'
 import { createNodeRenderer } from './node-wrapper'
 import { createEdgeRenderer } from './edge-renderer'
+import { setupKeyboardHandlers } from './selection'
 import type { FlowProps, FlowStore } from './types'
 
 /**
@@ -156,6 +157,16 @@ export function initFlow(scope: Element, props: Record<string, unknown>): void {
 
   // --- Reactive edge rendering (delegated to edge-renderer.ts) ---
   createEdgeRenderer(store as FlowStore, edgesSvg)
+
+  // --- Keyboard handlers (delete, escape, shift for multi-select) ---
+  setupKeyboardHandlers(store as FlowStore, el)
+
+  // --- Click on pane to deselect ---
+  el.addEventListener('click', (event) => {
+    if (event.target === el || event.target === viewportEl) {
+      store.unselectNodesAndEdges()
+    }
+  })
 
   // --- Fit view on mount if requested ---
   if (flowProps.fitView) {

@@ -10,6 +10,7 @@ import type {
   InternalNodeBase,
   InternalNodeUpdate,
 } from '@xyflow/system'
+import { setupNodeSelection } from './selection'
 import type { FlowStore } from './types'
 
 /**
@@ -80,6 +81,9 @@ export function createNodeWrapper<NodeType extends NodeBase>(
     })
     resizeObserver.observe(element)
     onCleanup(() => resizeObserver.disconnect())
+
+    // --- Click-to-select ---
+    setupNodeSelection(element, internalNode.id, store)
 
     // --- XYDrag integration ---
     const isDraggable = internalNode.draggable !== false
