@@ -78,6 +78,7 @@ import { FileBrowserRefPage } from './pages/components/file-browser'
 import { CartRefPage } from './pages/components/cart'
 import { CheckoutRefPage } from './pages/components/checkout'
 import { CommentsRefPage } from './pages/components/comments'
+import { NotificationsCenterRefPage } from './pages/components/notifications-center'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -534,6 +535,11 @@ export function createApp() {
   // Comments block page
   app.get('/components/comments', (c) => {
     return c.render(<CommentsRefPage />)
+  })
+
+  // Notifications Center block page
+  app.get('/components/notifications-center', (c) => {
+    return c.render(<NotificationsCenterRefPage />)
   })
 
   // Bar Chart reference page

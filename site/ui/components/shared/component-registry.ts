@@ -123,6 +123,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'cart', title: 'Cart', description: 'Shopping cart with inline quantity editing, discount, and derived pricing chain' },
   { slug: 'checkout', title: 'Checkout', description: 'Multi-step checkout with shipping, payment, and order review' },
   { slug: 'comments', title: 'Comments', description: 'Comment thread with inline editing, sorting, reactions, and nested replies' },
+  { slug: 'notifications-center', title: 'Notifications Center', description: 'Notification center with streaming, date grouping, type filtering, and bulk actions' },
 ]
 
 // Helper: get components filtered by category

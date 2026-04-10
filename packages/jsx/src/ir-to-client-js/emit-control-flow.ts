@@ -575,7 +575,7 @@ function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, key
       // Only text-only children can safely use textContent update;
       // children containing elements/components would be destroyed.
       const isTextOnly = comp.children?.length
-        ? comp.children.every(c => c.type === 'expression' || c.type === 'text')
+        ? comp.children.every(c => c.type === 'expression' || c.type === 'text' || isTextOnlyConditional(c))
         : false
       const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
       const childrenRefsLoop = rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, elem.param)
@@ -597,7 +597,7 @@ function emitComponentLoopReconciliation(lines: string[], elem: LoopElement, key
       const selector = buildCompSelector(comp)
       const nestedPropsExpr = buildComponentPropsExpr(comp, elem.param)
       const isTextOnly = comp.children?.length
-        ? comp.children.every(c => c.type === 'expression' || c.type === 'text')
+        ? comp.children.every(c => c.type === 'expression' || c.type === 'text' || isTextOnlyConditional(c))
         : false
       const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
       const childrenRefsLoop = rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, elem.param)
@@ -798,6 +798,14 @@ function buildCompSelector(comp: { slotId?: string | null; name: string }): stri
  * For new elements (CSR): replaces placeholders with createComponent.
  * For SSR elements (hydration): finds scope elements and calls initChild.
  */
+/** Check if an IR node is a conditional whose branches are text/expression only. */
+function isTextOnlyConditional(node: { type: string; [k: string]: any }): boolean {
+  if (node.type !== 'conditional') return false
+  const checkNode = (n: { type: string; [k: string]: any }): boolean =>
+    n.type === 'text' || n.type === 'expression' || (n.type === 'conditional' && isTextOnlyConditional(n))
+  return checkNode(node.whenTrue) && checkNode(node.whenFalse)
+}
+
 function emitComponentAndEventSetup(
   ls: string[],
   indent: string,
@@ -810,14 +818,32 @@ function emitComponentAndEventSetup(
   const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr
   for (const comp of comps) {
     const propsExpr = buildComponentPropsExpr(comp, loopParam)
+    // Check if children are text-equivalent and reference the loop param — if so,
+    // emit a createEffect to reactively update textContent when the signal changes.
+    // Text-equivalent: expression, text, or conditional with text-only branches.
+    const isTextOnly = comp.children?.length
+      ? comp.children.every(c => c.type === 'expression' || c.type === 'text' || isTextOnlyConditional(c))
+      : false
+    const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
+    const childrenRefsLoop = loopParam != null && rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, loopParam)
     if (mode === 'csr') {
       const phId = comp.slotId || comp.name
       const keyProp = comp.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${wrap(keyProp.value)}` : ''
-      ls.push(`${indent}{ const __ph = ${elVar}.querySelector('[${DATA_BF_PH}="${phId}"]'); if (__ph) __ph.replaceWith(createComponent('${comp.name}', ${propsExpr}${keyArg})) }`)
+      if (childrenRefsLoop) {
+        const wrappedChildren = wrap(rawChildrenExpr!)
+        ls.push(`${indent}{ const __ph = ${elVar}.querySelector('[${DATA_BF_PH}="${phId}"]'); if (__ph) { const __comp = createComponent('${comp.name}', ${propsExpr}${keyArg}); __ph.replaceWith(__comp); createEffect(() => { const __v = ${wrappedChildren}; __comp.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+      } else {
+        ls.push(`${indent}{ const __ph = ${elVar}.querySelector('[${DATA_BF_PH}="${phId}"]'); if (__ph) __ph.replaceWith(createComponent('${comp.name}', ${propsExpr}${keyArg})) }`)
+      }
     } else {
       const selector = buildCompSelector(comp)
-      ls.push(`${indent}{ const __c = ${elVar}.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${propsExpr}) }`)
+      if (childrenRefsLoop) {
+        const wrappedChildren = wrap(rawChildrenExpr!)
+        ls.push(`${indent}{ const __c = ${elVar}.querySelector('${selector}'); if (__c) { initChild('${comp.name}', __c, ${propsExpr}); createEffect(() => { const __v = ${wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+      } else {
+        ls.push(`${indent}{ const __c = ${elVar}.querySelector('${selector}'); if (__c) initChild('${comp.name}', __c, ${propsExpr}) }`)
+      }
     }
   }
   for (const ev of events) {
