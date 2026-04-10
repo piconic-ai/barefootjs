@@ -2036,12 +2036,21 @@ function isPropsReference(expr: string, ctx: TransformContext, visited?: Set<str
  */
 function hasReactiveAttributes(attrs: IRAttribute[], ctx: TransformContext): boolean {
   for (const attr of attrs) {
+    // Skip key — it's used for loop reconciliation, not rendered to DOM
+    if (attr.name === 'key') continue
     if (attr.dynamic && attr.value) {
       const valueToCheck = getAttributeValueAsString(attr.value)
       if (!valueToCheck) continue
 
       if (isSignalOrMemoReference(valueToCheck, ctx) || isPropsReference(valueToCheck, ctx)) {
         return true
+      }
+      // Check if attribute references any active loop parameters —
+      // loop root elements need a slotId so className can be updated reactively.
+      if (ctx.loopParams.size > 0) {
+        for (const p of ctx.loopParams) {
+          if (new RegExp(`\\b${p}\\b`).test(valueToCheck)) return true
+        }
       }
     }
   }

@@ -158,9 +158,9 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
     case 'loop': {
       // Generate inline .map().join('') so loop variables are properly scoped
       // Increment loopDepth so inner key attrs become data-key-N
-      // Don't pass loopParams to inner loop children — the inner loop's own param is
-      // received as a .map() callback argument, not a signal accessor.
-      const innerRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth + 1)
+      // Forward loopParams so expressions referencing outer/inner loop params
+      // get wrapped as signal accessors (e.g., task.title → task().title).
+      const innerRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth + 1, loopParams)
       const childTemplate = node.children.map(innerRecurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
       const wrappedArray = wrapExpr(node.array)
@@ -266,8 +266,8 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
 
     case 'loop': {
       // Inner loops: generate inline .map().join('') with placeholders for components
-      // Don't pass loopParams to inner loop children — inner loop map body uses its own param names
-      const innerRecurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth + 1)
+      // Forward loopParams so inner loop param expressions get wrapped as signal accessors.
+      const innerRecurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth + 1, loopParams)
       const childTemplate = node.children.map(innerRecurse).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
       const wrappedArray = wrapExpr(node.array)
@@ -366,11 +366,24 @@ function irNodeToJsExprs(node: IRNode): string[] {
  * This ensures cond() can find the element for subsequent swaps.
  */
 export function addCondAttrToTemplate(html: string, condId: string): string {
-  if (/^<\w+/.test(html)) {
+  if (/^<\w+/.test(html) && isSingleRootElement(html)) {
     return html.replace(/^(<\w+)(\s|>)/, `$1 bf-c="${condId}"$2`)
   }
-  // Text nodes use comment markers instead of attributes
+  // Text, fragments (multiple sibling elements), or comments use comment markers
   return `<!--bf-cond-start:${condId}-->${html}<!--bf-cond-end:${condId}-->`
+}
+
+/** Check if HTML string has a single root element (not multiple siblings). */
+function isSingleRootElement(html: string): boolean {
+  // Match the opening tag name, then find its closing tag
+  const match = html.match(/^<(\w+)[\s>]/)
+  if (!match) return false
+  const tag = match[1]
+  // Self-closing tags like <br/>, <input/>
+  if (/^<\w+[^>]*\/>$/.test(html.trim())) return true
+  // Check that the last closing tag matches and nothing follows it
+  const closingPattern = new RegExp(`</${tag}>\\s*$`)
+  return closingPattern.test(html.trim())
 }
 
 /**
