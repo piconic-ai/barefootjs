@@ -1,5 +1,6 @@
 import { useContext, createEffect, onCleanup } from '@barefootjs/dom'
 import { PieChartContext } from './context'
+import { escapeHtml } from './utils/escape-html'
 
 /**
  * Init function for PieTooltip component.
@@ -60,9 +61,9 @@ export function initPieTooltip(_scope: Element, props: Record<string, unknown>):
       const label = labelFormatter ? labelFormatter(name) : entryLabel
 
       let html = `<div style="display:flex;align-items:center;gap:8px">`
-      html += `<span style="width:8px;height:8px;border-radius:2px;background:${color};display:inline-block"></span>`
-      html += `<span>${label}</span>`
-      html += `<span style="font-weight:500;margin-left:auto">${value}</span>`
+      html += `<span style="width:8px;height:8px;border-radius:2px;background:${escapeHtml(color)};display:inline-block"></span>`
+      html += `<span>${escapeHtml(label)}</span>`
+      html += `<span style="font-weight:500;margin-left:auto">${escapeHtml(value)}</span>`
       html += `</div>`
       currentTooltip.innerHTML = html
       currentTooltip.style.opacity = '1'

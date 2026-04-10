@@ -1,5 +1,6 @@
 import { useContext, createEffect, onCleanup } from '@barefootjs/dom'
 import { AreaChartContext } from './context'
+import { escapeHtml } from './utils/escape-html'
 
 /**
  * Init function for ChartTooltip in AreaChart context.
@@ -62,16 +63,16 @@ export function initAreaChartTooltip(_scope: Element, props: Record<string, unkn
 
       const label = labelFormatter ? labelFormatter(xValue) : xValue
 
-      let html = `<div style="font-weight:500;margin-bottom:4px">${label}</div>`
+      let html = `<div style="font-weight:500;margin-bottom:4px">${escapeHtml(label)}</div>`
       for (const area of areas) {
         const value = datum[area.dataKey]
         const configEntry = config[area.dataKey]
         const color = area.stroke ?? configEntry?.color ?? 'currentColor'
         const entryLabel = configEntry?.label ?? area.dataKey
         html += `<div style="display:flex;align-items:center;gap:8px">`
-        html += `<span style="width:8px;height:8px;border-radius:2px;background:${color};display:inline-block"></span>`
-        html += `<span>${entryLabel}</span>`
-        html += `<span style="font-weight:500;margin-left:auto">${value}</span>`
+        html += `<span style="width:8px;height:8px;border-radius:2px;background:${escapeHtml(color)};display:inline-block"></span>`
+        html += `<span>${escapeHtml(entryLabel)}</span>`
+        html += `<span style="font-weight:500;margin-left:auto">${escapeHtml(value)}</span>`
         html += `</div>`
       }
       currentTooltip.innerHTML = html
