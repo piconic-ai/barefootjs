@@ -224,7 +224,7 @@ export function NotificationsCenterDemo() {
         {filtered().map(notif => (
           <div
             key={notif.id}
-            className={`notification-item flex items-start gap-3 rounded-lg border p-3 transition-colors ${notif.read ? 'opacity-60' : 'border-primary/20 bg-primary/5'}`}
+            className="notification-item flex items-start gap-3 rounded-lg border p-3 transition-colors"
           >
             <span className="notif-icon text-xl mt-0.5">{typeIcon(notif.type)}</span>
             <div className="flex-1 min-w-0">
