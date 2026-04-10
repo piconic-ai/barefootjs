@@ -149,6 +149,14 @@ test.describe('Inventory Manager Block', () => {
       await expect(s.locator('.inventory-row')).toHaveCount(8)
     })
 
+    test('undo cancels edit mode', async ({ page }) => {
+      const s = section(page)
+      await s.locator('.edit-btn').first().click()
+      await expect(s.locator('.edit-name')).toBeVisible()
+      await s.locator('.undo-btn').click()
+      await expect(s.locator('.edit-name')).not.toBeVisible()
+    })
+
     test('redo re-applies action', async ({ page }) => {
       const s = section(page)
       await s.locator('.delete-btn').first().click()

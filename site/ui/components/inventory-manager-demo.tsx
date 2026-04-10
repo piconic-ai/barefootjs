@@ -104,6 +104,7 @@ export function InventoryManagerDemo() {
     setHistory(h.slice(0, -1))
     setFuture(f => [...f, items()])
     setItems(prev)
+    setEditingId(null)
     showToast('Undone')
   }
 
@@ -175,11 +176,12 @@ export function InventoryManagerDemo() {
       price: 0,
     }
     setItems(prev => [...prev, newItem])
-    startEdit(newItem)
+    startEdit(newItem, true)
     showToast('Item added')
   }
 
-  const startEdit = (item: InventoryItem) => {
+  const startEdit = (item: InventoryItem, skipHistory?: boolean) => {
+    if (!skipHistory) pushHistory(items())
     setEditingId(item.id)
     setEditName(item.name)
     setEditQuantity(String(item.quantity))
