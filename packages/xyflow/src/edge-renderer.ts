@@ -38,6 +38,8 @@ export function createEdgeRenderer<
 
   createEffect(() => {
     const edges = store.edges()
+    // Read nodes() to re-run when node positions change (setNodes during drag)
+    store.nodes()
     const nodeLookup = store.nodeLookup()
     const existingIds = new Set(edgeElements.keys())
 

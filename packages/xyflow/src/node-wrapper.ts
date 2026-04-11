@@ -102,6 +102,8 @@ export function createNodeWrapper<NodeType extends NodeBase>(
       let startMouseY = 0
       let startNodeX = 0
       let startNodeY = 0
+      let currentX = 0
+      let currentY = 0
       let rafId = 0
 
       const onMouseDown = (e: MouseEvent) => {
@@ -139,24 +141,28 @@ export function createNodeWrapper<NodeType extends NodeBase>(
           const newX = startNodeX + dx
           const newY = startNodeY + dy
 
+          currentX = newX
+          currentY = newY
+
           // Update DOM directly for immediate visual feedback
           element.style.transform = `translate(${newX}px, ${newY}px)`
 
-          // Update internal state + trigger edge re-render via rAF throttle
+          // Update internal state
           const lookup = untrack(store.nodeLookup)
           const node = lookup.get(internalNode.id)
           if (node) {
             node.internals.positionAbsolute = { x: newX, y: newY }
             node.internals.userNode.position = { x: newX, y: newY }
           }
+
+          // Trigger edge re-render via rAF-throttled setNodes
           if (!rafId) {
             rafId = requestAnimationFrame(() => {
               rafId = 0
-              // Trigger reactive edge re-render by updating nodes signal
               store.setNodes((prev) =>
                 prev.map((n) =>
                   n.id === internalNode.id
-                    ? { ...n, position: { x: newX, y: newY } }
+                    ? { ...n, position: { x: currentX, y: currentY } }
                     : n,
                 ),
               )

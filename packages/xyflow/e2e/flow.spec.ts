@@ -155,6 +155,45 @@ test.describe('Node Dragging', () => {
     expect(await drag1.getAttribute('style')).toContain('translate(50px, 50px)')
     expect(await drag2.getAttribute('style')).toContain('translate(300px, 50px)')
   })
+
+  test('edges update during node drag', async ({ page }) => {
+    await page.waitForSelector('#interact .bf-flow__node[data-id="drag1"]')
+    await page.waitForSelector('#interact .bf-flow__edge[data-id="e-drag"]')
+    const result = await page.evaluate(async () => {
+      const node = document.querySelector('#interact [data-id="drag1"]')!
+      const edge = document.querySelector('#interact .bf-flow__edge[data-id="e-drag"]')!
+      const rect = node.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+
+      const edgeBefore = edge.getAttribute('d')
+
+      node.dispatchEvent(new MouseEvent('mousedown', {
+        clientX: cx, clientY: cy, button: 0, bubbles: true, view: window,
+      }))
+
+      for (let i = 1; i <= 5; i++) {
+        document.dispatchEvent(new MouseEvent('mousemove', {
+          clientX: cx + i * 30, clientY: cy, bubbles: true, view: window,
+        }))
+      }
+
+      const edgeDuring = edge.getAttribute('d')
+      const nodeTransform = (node as HTMLElement).style.transform
+
+      document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, view: window }))
+
+      await new Promise(r => setTimeout(r, 100))
+      const edgeAfter = edge.getAttribute('d')
+
+      return { edgeBefore, edgeDuring, edgeAfter, nodeTransform }
+    })
+
+    // Node moved
+    expect(result.nodeTransform).not.toBe('translate(50px, 50px)')
+    // Edge should have updated (at least after mouseup triggers setNodes)
+    expect(result.edgeAfter).not.toBe(result.edgeBefore)
+  })
 })
 
 // ============================================================
