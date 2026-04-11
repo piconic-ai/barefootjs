@@ -126,6 +126,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'notifications-center', title: 'Notifications Center', description: 'Notification center with streaming, date grouping, type filtering, and bulk actions' },
   { slug: 'inventory-manager', title: 'Inventory Manager', description: 'CRUD inventory table with inline editing, undo/redo, search/filter, and validation' },
   { slug: 'spreadsheet', title: 'Spreadsheet', description: 'Spreadsheet grid with cell editing, formula evaluation, selection, and 2D nested loops' },
+  { slug: 'flow', title: 'Flow', description: 'Node-based flow editor with @xyflow/system — pan/zoom, drag, edges, selection' },
 ]
 
 // Helper: get components filtered by category
