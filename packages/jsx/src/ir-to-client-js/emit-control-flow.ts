@@ -109,10 +109,7 @@ function emitBranchBindings(
         } else {
           lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${loop.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
         }
-        // Event delegation for simple branch loops (#766)
-        if (loop.childEvents.length > 0) {
-          emitBranchLoopEventDelegation(lines, loop, cv)
-        }
+        emitBranchLoopEventDelegation(lines, loop, cv)
       }
     }
 
