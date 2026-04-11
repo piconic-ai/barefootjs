@@ -98,6 +98,55 @@ describe('composite loops inside conditional branches (#724)', () => {
     expect(js).not.toContain('createComponent(')
   })
 
+  test('simple loop with onClick inside conditional generates event delegation (#766)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/dom'
+
+      interface Item { id: string; name: string }
+
+      export function ItemList(props) {
+        const [items, setItems] = createSignal(props.initialItems)
+
+        const handleDelete = (id) => {
+          setItems(items().filter(i => i.id !== id))
+        }
+
+        return (
+          <div>
+            {items().length > 0 && (
+              <div className="list">
+                {items().map(item => (
+                  <div key={item.id}>
+                    <span>{item.name}</span>
+                    <button onClick={() => handleDelete(item.id)}>Delete</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'ItemList.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const js = clientJs!.content
+
+    // Should use mapArray for the loop
+    expect(js).toContain('mapArray(')
+
+    // Should have event delegation (addEventListener + closest pattern)
+    expect(js).toContain(".addEventListener('click', (e) => {")
+    expect(js).toContain('target.closest')
+    expect(js).toContain('handleDelete(item.id)')
+
+    // Should NOT use createComponent (no child components)
+    expect(js).not.toContain('createComponent(')
+  })
+
   test('SSR hydration: composite branch loop initializes child components via initChild', () => {
     const source = `
       'use client'

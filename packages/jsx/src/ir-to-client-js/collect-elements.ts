@@ -555,14 +555,19 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
           childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0)).join('')
         }
 
-        // Collect child events and reactive fields for composite loops
+        // Collect child events for ALL loops (needed for event delegation).
+        // Reactive fields (texts, attrs, conditionals) are composite-only.
         const childEvents: LoopChildEvent[] = []
         const childReactiveTexts: import('./types').LoopChildReactiveText[] = []
         const childReactiveAttrs: import('./types').LoopChildReactiveAttr[] = []
         const childConditionals: import('./types').LoopChildConditional[] = []
-        if (useElementReconciliation && ctx) {
+        if (ctx) {
           for (const child of n.children) {
             childEvents.push(...collectLoopChildEventsWithNesting(child))
+          }
+        }
+        if (useElementReconciliation && ctx) {
+          for (const child of n.children) {
             childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
             childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param))
             childConditionals.push(...collectLoopChildConditionals(child, ctx, n.param))
@@ -578,7 +583,7 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
           containerSlotId: parentSlotId,
           mapPreamble: n.mapPreamble ?? null,
           nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
-          childEvents: useElementReconciliation ? childEvents : undefined,
+          childEvents,
           childReactiveTexts: useElementReconciliation ? childReactiveTexts : undefined,
           childReactiveAttrs: useElementReconciliation ? childReactiveAttrs : undefined,
           childConditionals: useElementReconciliation ? childConditionals : undefined,

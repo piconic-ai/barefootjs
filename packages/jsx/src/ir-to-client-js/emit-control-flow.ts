@@ -109,6 +109,7 @@ function emitBranchBindings(
         } else {
           lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${loop.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
         }
+        emitBranchLoopEventDelegation(lines, loop, cv)
       }
     }
 
@@ -160,7 +161,7 @@ function emitCompositeBranchLoop(
 ): void {
   const nestedComps = loop.nestedComponents!
   const innerLoops = loop.innerLoops ?? []
-  const childEvents = loop.childEvents ?? []
+  const childEvents = loop.childEvents
   const indexParam = loop.index || '__idx'
 
   const depthLevels = buildDepthLevels(innerLoops, nestedComps, childEvents)
@@ -764,6 +765,57 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: LoopElement): voi
       ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
       ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
       ls.push(`        if (${elem.param}) ${handlerCall}`)
+      ls.push(`      }`)
+    })
+  }
+}
+
+/**
+ * Emit event delegation for simple (non-composite) loops inside conditional branches (#766).
+ * Mirrors emitDynamicLoopEventDelegation but uses branch-scoped container variable.
+ */
+function emitBranchLoopEventDelegation(lines: string[], loop: ConditionalBranchLoop, cv: string): void {
+  const containerVar = `__loop_${cv}`
+  const childEvents = loop.childEvents
+
+  if (loop.key) {
+    // Keyed: find item by data-key attribute
+    const keyWithItem = loop.key.replace(new RegExp(`\\b${loop.param}\\b`, 'g'), 'item')
+    emitLoopEventDelegation(lines, containerVar, childEvents, (ls, ev, handlerCall) => {
+      if (ev.nestedLoops.length === 0) {
+        ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[${DATA_KEY}]')`)
+        ls.push(`      if (li) {`)
+        ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
+        ls.push(`        const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === key)`)
+        ls.push(`        if (${loop.param}) ${handlerCall}`)
+        ls.push(`      }`)
+      } else {
+        // Nested loop event — multi-level data-key-N resolution
+        const evVar = varSlotId(ev.childSlotId)
+        for (const nested of ev.nestedLoops) {
+          const dataAttr = keyAttrName(nested.depth)
+          ls.push(`      const innerLi${nested.depth} = ${evVar}El.closest('[${dataAttr}]')`)
+          ls.push(`      const innerKey${nested.depth} = innerLi${nested.depth}?.getAttribute('${dataAttr}')`)
+        }
+        ls.push(`      const outerLi = ${evVar}El.closest('[${DATA_KEY}]')`)
+        ls.push(`      const outerKey = outerLi?.getAttribute('${DATA_KEY}')`)
+        ls.push(`      const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === outerKey)`)
+        for (const nested of ev.nestedLoops) {
+          const innerKeyExpr = nested.key.replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
+          ls.push(`      const ${nested.param} = ${loop.param} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
+        }
+        const allParams = [loop.param, ...ev.nestedLoops.map(n => n.param)]
+        ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
+      }
+    })
+  } else {
+    // Non-keyed: find item by index in parent children
+    emitLoopEventDelegation(lines, containerVar, childEvents, (ls, ev, handlerCall) => {
+      ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
+      ls.push(`      if (li && li.parentElement) {`)
+      ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
+      ls.push(`        const ${loop.param} = ${loop.array}[idx]`)
+      ls.push(`        if (${loop.param}) ${handlerCall}`)
       ls.push(`      }`)
     })
   }
