@@ -2,13 +2,15 @@
 /**
  * SpreadsheetDemo
  *
- * Spreadsheet grid with cell editing, formulas, selection, and stats.
+ * Spreadsheet grid using nested mapArray (rows → cells).
  *
  * Compiler stress targets:
- * - Dynamic loop with per-item conditional (edit vs view mode)
+ * - Nested mapArray: rows().map(row => row.cells.map(cell => ...))
+ * - Inner loop event handlers (cell click)
+ * - Inner loop reactive text (cell value display)
  * - Cross-cell formula evaluation via memo chain
- * - Controlled input inside conditional branch
- * - Per-item signal updates (cell value changes)
+ * - Formula bar editing with conditional (Input vs span)
+ * - Nested immutable updates for cell values
  */
 
 import { createSignal, createMemo } from '@barefootjs/dom'
@@ -19,16 +21,12 @@ import { Badge } from '@ui/components/ui/badge'
 // --- Types ---
 
 type CellValue = string | number
-type Cell = {
-  id: string
-  value: CellValue
-  formula: string | null
-}
+type Cell = { id: string; value: CellValue; formula: string | null }
+type Row = { id: number; cells: Cell[] }
 
 // --- Helpers ---
 
 const COLS = ['A', 'B', 'C', 'D']
-const ROWS = [1, 2, 3, 4, 5]
 
 function cellId(col: string, row: number): string {
   return `${col}${row}`
@@ -39,7 +37,7 @@ function formatValue(v: CellValue): string {
   return String(v)
 }
 
-function initialCells(): Cell[] {
+function initialRows(): Row[] {
   const data: Record<string, { value: CellValue; formula: string | null }> = {
     A1: { value: 'Product', formula: null }, B1: { value: 'Price', formula: null },
     C1: { value: 'Qty', formula: null }, D1: { value: 'Total', formula: null },
@@ -52,46 +50,46 @@ function initialCells(): Cell[] {
     A5: { value: 'Total', formula: null }, B5: { value: '', formula: null },
     C5: { value: '', formula: null }, D5: { value: 749.65, formula: '=SUM(D2:D4)' },
   }
-  const cells: Cell[] = []
-  for (const row of ROWS) {
-    for (const col of COLS) {
-      const id = cellId(col, row)
+  const result: Row[] = []
+  for (let r = 1; r <= 5; r++) {
+    const cells: Cell[] = COLS.map(col => {
+      const id = cellId(col, r)
       const d = data[id] || { value: '', formula: null }
-      cells.push({ id, value: d.value, formula: d.formula })
-    }
+      return { id, value: d.value, formula: d.formula }
+    })
+    result.push({ id: r, cells })
   }
-  return cells
+  return result
 }
 
-// Simple formula evaluator
-function evaluateFormulas(cells: Cell[]): Record<string, CellValue> {
+function evaluateFormulas(rows: Row[]): Record<string, CellValue> {
   const byId: Record<string, Cell> = {}
-  for (const c of cells) byId[c.id] = c
+  for (const row of rows) for (const c of row.cells) byId[c.id] = c
 
   const result: Record<string, CellValue> = {}
-  for (const c of cells) {
-    if (!c.formula) { result[c.id] = c.value; continue }
-    const expr = c.formula.slice(1)
-    // =SUM(X1:X3)
-    const sumMatch = expr.match(/^SUM\(([A-D])(\d+):([A-D])(\d+)\)$/)
-    if (sumMatch) {
-      let sum = 0
-      for (let r = parseInt(sumMatch[2], 10); r <= parseInt(sumMatch[4], 10); r++) {
-        const v = byId[cellId(sumMatch[1], r)]?.value
-        if (typeof v === 'number') sum += v
+  for (const row of rows) {
+    for (const c of row.cells) {
+      if (!c.formula) { result[c.id] = c.value; continue }
+      const expr = c.formula.slice(1)
+      const sumMatch = expr.match(/^SUM\(([A-D])(\d+):([A-D])(\d+)\)$/)
+      if (sumMatch) {
+        let sum = 0
+        for (let r = parseInt(sumMatch[2], 10); r <= parseInt(sumMatch[4], 10); r++) {
+          const v = byId[cellId(sumMatch[1], r)]?.value
+          if (typeof v === 'number') sum += v
+        }
+        result[c.id] = Math.round(sum * 100) / 100
+        continue
       }
-      result[c.id] = Math.round(sum * 100) / 100
-      continue
+      const mulMatch = expr.match(/^([A-D])(\d+)\*([A-D])(\d+)$/)
+      if (mulMatch) {
+        const a = byId[cellId(mulMatch[1], parseInt(mulMatch[2], 10))]?.value
+        const b = byId[cellId(mulMatch[3], parseInt(mulMatch[4], 10))]?.value
+        result[c.id] = typeof a === 'number' && typeof b === 'number' ? Math.round(a * b * 100) / 100 : 0
+        continue
+      }
+      result[c.id] = c.formula
     }
-    // =X1*Y1
-    const mulMatch = expr.match(/^([A-D])(\d+)\*([A-D])(\d+)$/)
-    if (mulMatch) {
-      const a = byId[cellId(mulMatch[1], parseInt(mulMatch[2], 10))]?.value
-      const b = byId[cellId(mulMatch[3], parseInt(mulMatch[4], 10))]?.value
-      result[c.id] = typeof a === 'number' && typeof b === 'number' ? Math.round(a * b * 100) / 100 : 0
-      continue
-    }
-    result[c.id] = c.formula
   }
   return result
 }
@@ -99,15 +97,13 @@ function evaluateFormulas(cells: Cell[]): Record<string, CellValue> {
 // --- Component ---
 
 export function SpreadsheetDemo() {
-  const [cells, setCells] = createSignal<Cell[]>(initialCells())
+  const [rows, setRows] = createSignal<Row[]>(initialRows())
   const [selectedCell, setSelectedCell] = createSignal<string | null>(null)
   const [editingCell, setEditingCell] = createSignal<string | null>(null)
   const [editValue, setEditValue] = createSignal('')
 
-  // Computed values: evaluate all formulas
-  const computed = createMemo(() => evaluateFormulas(cells()))
+  const computed = createMemo(() => evaluateFormulas(rows()))
 
-  // Stats
   const filledCount = createMemo(() => {
     const c = computed()
     return Object.values(c).filter(v => v !== '' && v !== null && v !== undefined).length
@@ -118,7 +114,6 @@ export function SpreadsheetDemo() {
     return Object.values(c).reduce((sum: number, v) => sum + (typeof v === 'number' ? v : 0), 0)
   })
 
-  // Cell interaction
   const selectCell = (id: string) => {
     if (editingCell() === id) return
     setSelectedCell(id)
@@ -126,10 +121,15 @@ export function SpreadsheetDemo() {
   }
 
   const startEditing = (id: string) => {
-    const cell = cells().find(c => c.id === id)
-    setEditingCell(id)
-    setSelectedCell(id)
-    setEditValue(cell?.formula || String(cell?.value ?? ''))
+    for (const row of rows()) {
+      const cell = row.cells.find(c => c.id === id)
+      if (cell) {
+        setEditingCell(id)
+        setSelectedCell(id)
+        setEditValue(cell.formula || String(cell.value ?? ''))
+        return
+      }
+    }
   }
 
   const commitEdit = () => {
@@ -140,12 +140,15 @@ export function SpreadsheetDemo() {
     let formula: string | null = null
     if (raw.startsWith('=')) {
       formula = raw
-      value = 0 // will be computed
+      value = 0
     } else {
       const num = parseFloat(raw)
       if (!isNaN(num) && String(num) === raw) value = num
     }
-    setCells(prev => prev.map(c => c.id === id ? { ...c, value, formula } : c))
+    setRows(prev => prev.map(row => ({
+      ...row,
+      cells: row.cells.map(c => c.id === id ? { ...c, value, formula } : c),
+    })))
     setEditingCell(null)
   }
 
@@ -159,11 +162,11 @@ export function SpreadsheetDemo() {
   const clearCell = () => {
     const id = selectedCell()
     if (!id) return
-    setCells(prev => prev.map(c => c.id === id ? { ...c, value: '', formula: null } : c))
+    setRows(prev => prev.map(row => ({
+      ...row,
+      cells: row.cells.map(c => c.id === id ? { ...c, value: '', formula: null } : c),
+    })))
   }
-
-  // Get column index for grid layout
-  const colIndex = (id: string) => COLS.indexOf(id[0])
 
   return (
     <div className="spreadsheet-page w-full max-w-3xl mx-auto space-y-4">
@@ -178,54 +181,62 @@ export function SpreadsheetDemo() {
         </div>
       </div>
 
-      {/* Formula bar */}
-      <div className="formula-bar flex items-center gap-2 px-3 py-2 border rounded-lg bg-muted/30 text-sm">
+      {/* Formula bar — doubles as edit field */}
+      <div className="formula-bar flex items-center gap-2 px-3 py-1.5 border rounded-lg bg-muted/30 text-sm">
         <span className="cell-ref font-mono font-medium w-8">{selectedCell() || ''}</span>
         <span className="text-muted-foreground">|</span>
-        <span className="cell-formula flex-1 font-mono text-muted-foreground">
-          {selectedCell() ? (cells().find(c => c.id === selectedCell())?.formula || formatValue(computed()[selectedCell()!] ?? '')) : ''}
-        </span>
+        {editingCell() ? (
+          <Input
+            value={editValue()}
+            onInput={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={commitEdit}
+            className="cell-input flex-1 h-7 font-mono text-sm"
+            ref={(el) => requestAnimationFrame(() => el.focus())}
+          />
+        ) : (
+          <span
+            className="cell-formula flex-1 font-mono text-muted-foreground cursor-pointer"
+            onClick={() => { if (selectedCell()) startEditing(selectedCell()!) }}
+          >
+            {selectedCell() ? formatValue(computed()[selectedCell()!] ?? '') : ''}
+          </span>
+        )}
       </div>
 
-      {/* Grid */}
+      {/* Grid — nested mapArray: rows → cells */}
       <div className="spreadsheet-grid border rounded-lg overflow-hidden">
-        <div className="grid" style="grid-template-columns: 40px repeat(4, 1fr)">
-          {/* Column headers */}
-          <div className="p-2 border-r border-b bg-muted/50 text-center text-xs text-muted-foreground" />
-          {COLS.map(col => (
-            <div key={col} className="col-header p-2 border-r border-b bg-muted/50 text-center text-xs font-medium">{col}</div>
-          ))}
-          {/* Row headers (static) */}
-          {ROWS.map(row => (
-            <div key={row} className="row-header p-2 border-r border-b bg-muted/30 text-center text-xs text-muted-foreground font-medium" style={`grid-column: 1; grid-row: ${row + 1}`}>
-              {row}
-            </div>
-          ))}
-          {/* Cells: flat dynamic loop */}
-          {cells().map(cell => (
-            <div
-              key={cell.id}
-              className={`spreadsheet-cell border-r border-b p-0 h-9 cursor-pointer ${selectedCell() === cell.id ? 'ring-2 ring-primary ring-inset bg-primary/5' : 'hover:bg-accent/30'}`}
-              style={`grid-column: ${colIndex(cell.id) + 2}; grid-row: ${parseInt(cell.id.slice(1), 10) + 1}`}
-              onClick={() => selectedCell() === cell.id ? startEditing(cell.id) : selectCell(cell.id)}
-            >
-              {editingCell() === cell.id ? (
-                <Input
-                  value={editValue()}
-                  onInput={(e) => setEditValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onBlur={commitEdit}
-                  className="cell-input h-full w-full border-0 rounded-none text-sm px-2 focus-visible:ring-0"
-                  ref={(el) => requestAnimationFrame(() => el.focus())}
-                />
-              ) : (
-                <div className="cell-value px-2 py-1.5 truncate text-sm">
-                  {formatValue(computed()[cell.id] ?? '')}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-muted/50">
+              <th className="w-10 p-2 border-r border-b text-center text-xs text-muted-foreground" />
+              <th className="col-header p-2 border-r border-b text-center text-xs font-medium">A</th>
+              <th className="col-header p-2 border-r border-b text-center text-xs font-medium">B</th>
+              <th className="col-header p-2 border-r border-b text-center text-xs font-medium">C</th>
+              <th className="col-header p-2 border-b text-center text-xs font-medium">D</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows().map(row => (
+              <tr key={row.id} className="spreadsheet-row">
+                <td className="row-header p-2 border-r border-b bg-muted/30 text-center text-xs text-muted-foreground font-medium">
+                  {row.id}
+                </td>
+                {row.cells.map(cell => (
+                  <td
+                    key={cell.id}
+                    className="spreadsheet-cell border-r border-b p-0 h-9 cursor-pointer hover:bg-accent/30"
+                    onClick={() => selectCell(cell.id)}
+                  >
+                    <div className="cell-value px-2 py-1.5 truncate text-sm">
+                      {formatValue(computed()[cell.id] ?? '')}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Stats */}

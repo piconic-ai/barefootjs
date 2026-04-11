@@ -547,7 +547,7 @@ function emitDynamicLoopUpdates(lines: string[], elem: LoopElement): void {
     ? `(${elem.param}${elem.index ? `, ${elem.index}` : ''}) => String(${elem.key})`
     : 'null'
 
-  if (elem.useElementReconciliation && elem.nestedComponents?.length) {
+  if (elem.useElementReconciliation && (elem.nestedComponents?.length || elem.innerLoops?.length)) {
     emitCompositeElementReconciliation(lines, elem, keyFn)
   } else if (elem.childComponent) {
     emitComponentLoopReconciliation(lines, elem, keyFn)
@@ -987,7 +987,7 @@ function emitInnerLoopSetup(
       // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
       const wrappedTemplate = inner.itemTemplate!
       ls.push(`${indent}// Reactive inner loop: ${inner.array}`)
-      ls.push(`${indent}{ const __ic${uid} = ${containerSelector !== 'null' ? `${parentElVar}.querySelector(${containerSelector})` : parentElVar}`)
+      ls.push(`${indent}{ const __ic${uid} = ${containerSelector !== 'null' ? `qsa(${parentElVar}, ${containerSelector})` : parentElVar}`)
       ls.push(`${indent}if (__ic${uid}) mapArray(() => ${arrayExpr} || [], __ic${uid}, ${keyFn}, (${inner.param}, __innerIdx${uid}, __existing) => {`)
       // SSR/CSR branch
       ls.push(`${indent}  const __innerEl${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${wrappedTemplate}\`; return __t.content.firstElementChild.cloneNode(true) })()`)
@@ -1033,7 +1033,7 @@ function emitInnerLoopSetup(
     } else {
       // Static inner loop: use forEach for initial setup only
       ls.push(`${indent}// Initialize ${inner.array} loop components and events`)
-      ls.push(`${indent}{ const __ic${uid} = ${containerSelector !== 'null' ? `${parentElVar}.querySelector(${containerSelector})` : parentElVar}`)
+      ls.push(`${indent}{ const __ic${uid} = ${containerSelector !== 'null' ? `qsa(${parentElVar}, ${containerSelector})` : parentElVar}`)
       // Guard: inner loop array may be undefined when inside a conditional branch
       ls.push(`${indent}if (__ic${uid} && ${arrayExpr}) ${arrayExpr}.forEach((${inner.param}, __innerIdx${uid}) => {`)
       ls.push(`${indent}  const __innerEl${uid} = __ic${uid}.children[__innerIdx${uid}]`)

@@ -53,6 +53,8 @@ export class HonoAdapter implements TemplateAdapter {
   private isClientComponent: boolean = false
   private hasClientInteractivity: boolean = false
   private currentComponentHasProps: boolean = false
+  /** Stack of loop keys for generating data-key / data-key-1 attributes on loop items */
+  private loopKeyStack: Array<{ key: string | null; param: string }> = []
 
   constructor(options: HonoAdapterOptions = {}) {
     this.options = {
@@ -404,10 +406,10 @@ export class HonoAdapter implements TemplateAdapter {
   // Node Rendering
   // ===========================================================================
 
-  renderNode(node: IRNode, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean }): string {
+  renderNode(node: IRNode, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean; isLoopItemRoot?: boolean }): string {
     switch (node.type) {
       case 'element':
-        return this.renderElement(node)
+        return this.renderElement(node, ctx)
       case 'text':
         return this.renderText(node)
       case 'expression':
@@ -433,7 +435,7 @@ export class HonoAdapter implements TemplateAdapter {
     }
   }
 
-  renderElement(element: IRElement): string {
+  renderElement(element: IRElement, ctx?: { isLoopItemRoot?: boolean }): string {
     const tag = element.tag
     const attrs = this.renderAttributes(element)
     const children = this.renderChildren(element.children)
@@ -450,6 +452,14 @@ export class HonoAdapter implements TemplateAdapter {
       }
       // Add data-key for list reconciliation (only on root elements with scope)
       hydrationAttrs += ' {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}'
+    }
+    // Add data-key-N for loop items so event delegation can identify inner items
+    if (ctx?.isLoopItemRoot && this.loopKeyStack.length > 0) {
+      const loop = this.loopKeyStack[this.loopKeyStack.length - 1]
+      if (loop.key) {
+        const keyAttrName = this.loopKeyStack.length === 1 ? 'data-key' : `data-key-${this.loopKeyStack.length - 1}`
+        hydrationAttrs += ` ${keyAttrName}={String(${loop.key})}`
+      }
     }
     if (element.slotId) {
       hydrationAttrs += ` bf="${element.slotId}"`
@@ -558,8 +568,11 @@ export class HonoAdapter implements TemplateAdapter {
     }
 
     const indexParam = loop.index ? `, ${loop.index}` : ''
+    // Push loop key info for data-key attribute generation on loop items
+    this.loopKeyStack.push({ key: loop.key, param: loop.param })
     // Render children with isInsideLoop flag so components generate their own scope IDs
     const children = this.renderChildrenInLoop(loop.children)
+    this.loopKeyStack.pop()
 
     let mapExpr: string
     if (loop.mapPreamble) {
@@ -574,7 +587,7 @@ export class HonoAdapter implements TemplateAdapter {
   }
 
   private renderChildrenInLoop(children: IRNode[]): string {
-    return children.map((child) => this.renderNode(child, { isInsideLoop: true })).join('')
+    return children.map((child) => this.renderNode(child, { isInsideLoop: true, isLoopItemRoot: true })).join('')
   }
 
   /**
@@ -621,7 +634,7 @@ export class HonoAdapter implements TemplateAdapter {
     return lines.join('\n')
   }
 
-  renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean }): string {
+  renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean; isLoopItemRoot?: boolean }): string {
     const props = this.renderComponentProps(comp)
     const children = this.renderChildren(comp.children)
 
