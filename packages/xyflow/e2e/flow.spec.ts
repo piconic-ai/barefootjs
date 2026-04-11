@@ -402,8 +402,8 @@ test.describe('Controls Plugin', () => {
     await expect(page.locator('#plugins .bf-flow__controls')).toBeVisible()
   })
 
-  test('has 3 buttons', async ({ page }) => {
-    await expect(page.locator('#plugins .bf-flow__controls-button')).toHaveCount(3)
+  test('has 4 buttons (zoom in, zoom out, fit, lock)', async ({ page }) => {
+    await expect(page.locator('#plugins .bf-flow__controls-button')).toHaveCount(4)
   })
 
   test('zoom in button is clickable', async ({ page }) => {
