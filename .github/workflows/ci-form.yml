@@ -5,13 +5,13 @@ on:
     branches: [main]
     paths:
       - 'packages/form/**'
-      - 'packages/dom/**'
+      - 'packages/client/**'
       - '.github/workflows/ci-form.yml'
   pull_request:
     branches: [main]
     paths:
       - 'packages/form/**'
-      - 'packages/dom/**'
+      - 'packages/client/**'
       - '.github/workflows/ci-form.yml'
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
         run: bun install
 
       - name: Build dependencies
-        run: cd packages/dom && bun run build
+        run: bun run --filter '@barefootjs/client' build
 
       - name: Type check
         run: cd packages/form && npx tsc --noEmit

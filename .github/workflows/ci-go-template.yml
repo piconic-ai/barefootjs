@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/dom/**'
+      - 'packages/client/**'
+      - 'packages/client-runtime/**'
       - 'packages/jsx/**'
       - 'packages/go-template/**'
       - 'packages/preview/**'
@@ -14,7 +15,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'packages/dom/**'
+      - 'packages/client/**'
+      - 'packages/client-runtime/**'
       - 'packages/jsx/**'
       - 'packages/go-template/**'
       - 'packages/preview/**'
@@ -44,9 +46,10 @@ jobs:
 
       - name: Build packages
         run: |
-          cd packages/dom && bun run build
-          cd ../jsx && bun run build
-          cd ../go-template && bun run build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/client-runtime' build
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/go-template' build
 
       - name: Pre-warm Go build cache
         run: cd packages/go-template/runtime && GOTOOLCHAIN=local go build ./...
@@ -76,9 +79,10 @@ jobs:
 
       - name: Build packages
         run: |
-          cd packages/dom && bun run build
-          cd ../jsx && bun run build
-          cd ../go-template && bun run build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/client-runtime' build
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/go-template' build
 
       - name: Build examples/echo
         run: cd examples/echo && bun run build

@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/dom/**'
+      - 'packages/client/**'
+      - 'packages/client-runtime/**'
       - 'packages/jsx/**'
       - 'packages/form/**'
       - 'packages/test/**'
@@ -16,7 +17,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'packages/dom/**'
+      - 'packages/client/**'
+      - 'packages/client-runtime/**'
       - 'packages/jsx/**'
       - 'packages/form/**'
       - 'packages/test/**'
@@ -43,11 +45,12 @@ jobs:
 
       - name: Build packages
         run: |
-          cd packages/dom && bun run build
-          cd ../jsx && bun run build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/client-runtime' build
+          bun run --filter '@barefootjs/jsx' build
 
       - name: Run unit tests
-        run: bun test packages/dom packages/jsx packages/test packages/adapter-tests
+        run: bun test packages/client packages/client-runtime packages/jsx packages/test packages/adapter-tests
 
   test-ui:
     runs-on: ubuntu-latest
@@ -65,8 +68,9 @@ jobs:
 
       - name: Build packages
         run: |
-          cd packages/dom && bun run build
-          cd ../jsx && bun run build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/client-runtime' build
+          bun run --filter '@barefootjs/jsx' build
 
       - name: Run UI component IR tests
         run: bun test ui/components/
@@ -88,11 +92,12 @@ jobs:
 
       - name: Build packages
         run: |
-          cd packages/dom && bun run build
-          cd ../jsx && bun run build
-          cd ../form && bun run build
-          cd ../chart && bun run build
-          cd ../hono && bun run build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/client-runtime' build
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/form' build
+          bun run --filter '@barefootjs/chart' build
+          bun run --filter '@barefootjs/hono' build
 
       - name: Build site/ui
         run: cd site/ui && bun run build
@@ -133,9 +138,10 @@ jobs:
 
       - name: Build packages
         run: |
-          cd packages/dom && bun run build
-          cd ../jsx && bun run build
-          cd ../go-template && bun run build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/client-runtime' build
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/go-template' build
 
       - name: Build examples/echo
         run: cd examples/echo && bun run build
