@@ -530,6 +530,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     ? elements[1].name.text
     : null
   const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+  const typedInitialValue = callExpr.arguments[0] ? callExpr.arguments[0].getText(ctx.sourceFile) : undefined
 
   // Try to infer type from initial value or type argument
   let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
@@ -546,6 +547,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     getter,
     setter,
     initialValue,
+    typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
     type,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
@@ -570,6 +572,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   const name = (node.name as ts.Identifier).text
   const callExpr = node.initializer as ts.CallExpression
   const computation = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+  const typedComputation = callExpr.arguments[0] ? callExpr.arguments[0].getText(ctx.sourceFile) : undefined
 
   // Extract dependencies from computation
   const deps = extractDependencies(computation, ctx)
@@ -583,6 +586,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   ctx.memos.push({
     name,
     computation,
+    typedComputation: typedComputation !== computation ? typedComputation : undefined,
     type,
     deps,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
@@ -805,6 +809,7 @@ function collectFunction(
     defaultValue: p.initializer ? ctx.getJS(p.initializer) : undefined,
   }))
   const body = node.body ? ctx.getJS(node.body) : ''
+  const typedBody = node.body ? node.body.getText(ctx.sourceFile) : undefined
   const returnType = typeNodeToTypeInfo(node.type, ctx.sourceFile)
 
   // Check if function contains JSX
@@ -827,6 +832,7 @@ function collectFunction(
     name,
     params,
     body,
+    typedBody: typedBody !== body ? typedBody : undefined,
     returnType,
     containsJsx,
     isExported,
@@ -936,6 +942,9 @@ function collectConstant(
   const value = node.initializer
     ? ctx.getJS(node.initializer)
     : undefined
+  const typedValue = node.initializer
+    ? node.initializer.getText(ctx.sourceFile)
+    : undefined
 
   // Detect JSX initializers and store AST nodes for IR-level inlining (#547)
   let isJsx = false
@@ -1004,6 +1013,7 @@ function collectConstant(
   ctx.localConstants.push({
     name,
     value,
+    typedValue: typedValue !== value ? typedValue : undefined,
     valueBranches,
     declarationKind,
     isExported,

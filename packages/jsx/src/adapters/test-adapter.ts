@@ -222,8 +222,9 @@ export class TestAdapter extends BaseAdapter {
       lines.push(`  const ${signal.getter} = () => ${initialValue}`)
       if (signal.setter) {
         const setterUsed = new RegExp(`\\b${signal.setter}\\b`).test(setterRefText)
-        const setterName = setterUsed ? signal.setter : `_${signal.setter}`
-        lines.push(`  const ${setterName} = (..._args: any[]) => {}`)
+        if (setterUsed) {
+          lines.push(`  const ${signal.setter} = (..._args: any[]) => {}`)
+        }
       }
     }
 
@@ -372,7 +373,7 @@ export class TestAdapter extends BaseAdapter {
     }
 
     for (const event of element.events) {
-      const handlerName = `on${event.name.charAt(0).toUpperCase()}${event.name.slice(1)}`
+      const handlerName = event.originalAttr ?? `on${event.name.charAt(0).toUpperCase()}${event.name.slice(1)}`
       parts.push(`${handlerName}={() => {}}`)
     }
 

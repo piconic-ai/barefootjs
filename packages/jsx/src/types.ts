@@ -233,6 +233,13 @@ export interface IRLoop {
    * stores "const label = item.name.toUpperCase();" as mapPreamble.
    */
   mapPreamble?: string
+
+  /** Type annotation for loop param (e.g., 'Desk'), preserved for .tsx output */
+  paramType?: string
+  /** Type annotation for loop index param (e.g., 'number'), preserved for .tsx output */
+  indexType?: string
+  /** mapPreamble with TypeScript type annotations preserved, for .tsx output */
+  typedMapPreamble?: string
 }
 
 export interface IRComponent {
@@ -334,6 +341,7 @@ export interface IRAttribute extends AttrMeta {
 
 export interface IREvent {
   name: string // 'click', 'input', 'keydown'
+  originalAttr?: string // Original JSX attribute name: 'onClick', 'onKeyDown'
   handler: string // JS expression: '() => setCount(n => n + 1)'
   loc: SourceLocation
 }
@@ -356,6 +364,8 @@ export interface SignalInfo {
   getter: string
   setter: string | null
   initialValue: string
+  /** Initial value with TypeScript type annotations preserved, for .tsx output */
+  typedInitialValue?: string
   type: TypeInfo
   loc: SourceLocation
 }
@@ -363,6 +373,8 @@ export interface SignalInfo {
 export interface MemoInfo {
   name: string
   computation: string
+  /** Computation with TypeScript type annotations preserved, for .tsx output */
+  typedComputation?: string
   type: TypeInfo
   deps: string[]
   loc: SourceLocation
@@ -397,6 +409,8 @@ export interface FunctionInfo {
   name: string
   params: ParamInfo[]
   body: string
+  /** Body with TypeScript type annotations preserved, for .tsx output */
+  typedBody?: string
   returnType: TypeInfo | null
   containsJsx: boolean
   isExported?: boolean
@@ -410,6 +424,8 @@ export interface FunctionInfo {
 export interface ConstantInfo {
   name: string
   value?: string
+  /** Value with TypeScript type annotations preserved, for .tsx output */
+  typedValue?: string
   valueBranches?: string[]
   declarationKind: 'const' | 'let'
   isExported?: boolean

@@ -71,8 +71,8 @@ export class HonoAdapter implements TemplateAdapter {
     this.isClientComponent = ir.metadata.isClientComponent
 
     const imports = this.generateImports(ir)
-    const types = this.generateTypes(ir)
     const component = this.generateComponent(ir)
+    const types = this.generateTypes(ir, component)
 
     const defaultExport = ir.metadata.hasDefaultExport
       ? `\nexport default ${this.componentName}`
@@ -156,12 +156,42 @@ export class HonoAdapter implements TemplateAdapter {
   // Types Generation
   // ===========================================================================
 
-  generateTypes(ir: ComponentIR): string | null {
+  generateTypes(ir: ComponentIR, componentBody?: string): string | null {
     const lines: string[] = []
 
-    // Include original type definitions
-    for (const typeDef of ir.metadata.typeDefinitions) {
-      lines.push(typeDef.definition)
+    // Include original type definitions — only those referenced in the component body
+    // or transitively referenced by other included type definitions
+    if (componentBody && ir.metadata.typeDefinitions.length > 0) {
+      const included = new Set<string>()
+      // First pass: include types directly referenced in the component body
+      for (const typeDef of ir.metadata.typeDefinitions) {
+        if (new RegExp(`\\b${typeDef.name}\\b`).test(componentBody)) {
+          included.add(typeDef.name)
+        }
+      }
+      // Transitive pass: include types referenced by already-included types
+      let changed = true
+      while (changed) {
+        changed = false
+        for (const typeDef of ir.metadata.typeDefinitions) {
+          if (included.has(typeDef.name)) continue
+          for (const name of included) {
+            const includedDef = ir.metadata.typeDefinitions.find(t => t.name === name)
+            if (includedDef && new RegExp(`\\b${typeDef.name}\\b`).test(includedDef.definition)) {
+              included.add(typeDef.name)
+              changed = true
+              break
+            }
+          }
+        }
+      }
+      for (const typeDef of ir.metadata.typeDefinitions) {
+        if (included.has(typeDef.name)) lines.push(typeDef.definition)
+      }
+    } else {
+      for (const typeDef of ir.metadata.typeDefinitions) {
+        lines.push(typeDef.definition)
+      }
     }
 
     // Generate hydration props type (only when destructured-props pattern uses it;
@@ -421,17 +451,21 @@ export class HonoAdapter implements TemplateAdapter {
 
     for (const signal of ir.metadata.signals) {
       // Create a getter that returns the initial value for SSR
-      const initialValue = signal.initialValue.trim().startsWith('{') ? `(${signal.initialValue})` : signal.initialValue
+      // Use typed version when available to preserve type annotations in .tsx output
+      const rawInitialValue = signal.typedInitialValue ?? signal.initialValue
+      const initialValue = rawInitialValue.trim().startsWith('{') ? `(${rawInitialValue})` : rawInitialValue
       lines.push(`  const ${signal.getter} = () => ${initialValue}`)
-      // Create a no-op setter for SSR — prefix with _ if not referenced anywhere
+      // Create a no-op setter for SSR — omit entirely if not referenced anywhere
       const setterUsed = new RegExp(`\\b${signal.setter}\\b`).test(setterRefText)
-      const setterName = setterUsed ? signal.setter : `_${signal.setter}`
-      lines.push(`  const ${setterName} = (..._args: any[]) => {}`)
+      if (setterUsed) {
+        lines.push(`  const ${signal.setter} = (..._args: any[]) => {}`)
+      }
     }
 
     for (const memo of ir.metadata.memos) {
       // Evaluate memo computation at SSR time
-      lines.push(`  const ${memo.name} = ${memo.computation}`)
+      // Use typed version when available to preserve type annotations in .tsx output
+      lines.push(`  const ${memo.name} = ${memo.typedComputation ?? memo.computation}`)
     }
 
     // Include local constants — skip unreachable ones (only used in event handlers)
@@ -451,14 +485,16 @@ export class HonoAdapter implements TemplateAdapter {
       // Skip unreachable constants (only used in event handler code paths)
       if (!reachable.has(constant.name)) continue
 
-      lines.push(`  ${keyword} ${constant.name} = ${constant.value}`)
+      // Use typed version when available to preserve type annotations in .tsx output
+      lines.push(`  ${keyword} ${constant.name} = ${constant.typedValue ?? constant.value}`)
     }
 
     // Include local functions — skip unreachable ones (only used in event handlers)
     for (const func of localFunctions) {
       if (!reachable.has(func.name)) continue
       const params = func.params.map(formatParamWithType).join(', ')
-      lines.push(`  function ${func.name}(${params}) ${func.body}`)
+      // Use typed version when available to preserve type annotations in .tsx output
+      lines.push(`  function ${func.name}(${params}) ${func.typedBody ?? func.body}`)
     }
 
     return lines.join('\n')
@@ -629,7 +665,10 @@ export class HonoAdapter implements TemplateAdapter {
       return ''
     }
 
-    const indexParam = loop.index ? `, ${loop.index}` : ''
+    // Preserve type annotations for loop params in .tsx output
+    const paramAnnotation = loop.paramType ? `: ${loop.paramType}` : ''
+    const indexAnnotation = loop.indexType ? `: ${loop.indexType}` : ''
+    const indexParam = loop.index ? `, ${loop.index}${indexAnnotation}` : ''
     // Push loop key info for data-key attribute generation on loop items
     this.loopKeyStack.push({ key: loop.key, param: loop.param })
     // Render children with isInsideLoop flag so components generate their own scope IDs
@@ -637,10 +676,12 @@ export class HonoAdapter implements TemplateAdapter {
     this.loopKeyStack.pop()
 
     let mapExpr: string
-    if (loop.mapPreamble) {
-      mapExpr = `{${loop.array}.map((${loop.param}${indexParam}) => { ${loop.mapPreamble} return ${children} })}`
+    // Use typed mapPreamble when available to preserve type annotations in .tsx output
+    const preamble = loop.typedMapPreamble ?? loop.mapPreamble
+    if (preamble) {
+      mapExpr = `{${loop.array}.map((${loop.param}${paramAnnotation}${indexParam}) => { ${preamble} return ${children} })}`
     } else {
-      mapExpr = `{${loop.array}.map((${loop.param}${indexParam}) => ${children})}`
+      mapExpr = `{${loop.array}.map((${loop.param}${paramAnnotation}${indexParam}) => ${children})}`
     }
     // Wrap with loop boundary markers so reconciliation doesn't affect siblings.
     // bfComment is a helper that renders an HTML comment in JSX.
@@ -800,7 +841,7 @@ export class HonoAdapter implements TemplateAdapter {
 
     // Add event handlers (as no-op for SSR)
     for (const event of element.events) {
-      const handlerName = `on${event.name.charAt(0).toUpperCase()}${event.name.slice(1)}`
+      const handlerName = event.originalAttr ?? `on${event.name.charAt(0).toUpperCase()}${event.name.slice(1)}`
       parts.push(`${handlerName}={() => {}}`)
     }
 

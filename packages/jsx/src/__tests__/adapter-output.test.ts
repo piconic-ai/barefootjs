@@ -347,9 +347,8 @@ describe('Adapter output', () => {
       expect(result.errors).toHaveLength(0)
 
       const template = result.files.find(f => f.type === 'markedTemplate')!
-      // No-op setter must accept arguments
-      expect(template.content).toContain('(..._args: any[]) => {}')
-      expect(template.content).not.toMatch(/const \w+ = \(\) => \{\}/)
+      // Unused setter (only used in event handler) should be omitted entirely
+      expect(template.content).not.toContain('setCount')
     })
 
     test('signal setter accepts arguments in generated SSR template (TestAdapter)', () => {
@@ -366,7 +365,8 @@ describe('Adapter output', () => {
       expect(result.errors).toHaveLength(0)
 
       const template = result.files.find(f => f.type === 'markedTemplate')!
-      expect(template.content).toContain('(..._args: any[]) => {}')
+      // Unused setter (only used in event handler) should be omitted entirely
+      expect(template.content).not.toContain('setCount')
     })
 
     test('local function parameters preserve type annotations', () => {
@@ -430,7 +430,7 @@ describe('Adapter output', () => {
       expect(template.content).not.toContain('CounterPropsWithHydration')
     })
 
-    test('unused signal setter is prefixed with _ when only used in event handlers', () => {
+    test('unused signal setter is omitted when only used in event handlers', () => {
       const honoAdapter = new HonoAdapter()
       const source = `
         'use client'
@@ -445,9 +445,9 @@ describe('Adapter output', () => {
       expect(result.errors).toHaveLength(0)
 
       const template = result.files.find(f => f.type === 'markedTemplate')!
-      // setCount is only used in onClick which becomes () => {} in SSR
-      expect(template.content).toContain('_setCount')
-      expect(template.content).not.toMatch(/\bconst setCount\b/)
+      // setCount is only used in onClick which becomes () => {} in SSR — omit entirely
+      expect(template.content).not.toContain('setCount')
+      expect(template.content).not.toContain('_setCount')
     })
 
     test('event handler functions not emitted when only used in event handlers', () => {

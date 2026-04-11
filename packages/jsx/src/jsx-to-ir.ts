@@ -1197,6 +1197,7 @@ function transformMapCall(
   let sortComparator: SortComparatorResult | undefined
   let chainOrder: 'filter-sort' | 'sort-filter' | undefined
   let mapPreamble: string | undefined
+  let typedMapPreamble: string | undefined
 
   const filterInfo = isFilterCall(mapSource)
   const sortInfo = isSortCall(mapSource)
@@ -1319,18 +1320,26 @@ function transformMapCall(
   // Get callback function
   const callback = node.arguments[0]
   let param = 'item'
+  let paramType: string | undefined
   let index: string | null = null
+  let indexType: string | undefined
   let children: IRNode[] = []
 
   if (ts.isArrowFunction(callback)) {
-    // Extract parameter names
+    // Extract parameter names and type annotations
     if (callback.parameters.length > 0) {
       const firstParam = callback.parameters[0]
       param = firstParam.name.getText(ctx.sourceFile)
+      if (firstParam.type) {
+        paramType = firstParam.type.getText(ctx.sourceFile)
+      }
     }
     if (callback.parameters.length > 1) {
       const secondParam = callback.parameters[1]
       index = secondParam.name.getText(ctx.sourceFile)
+      if (secondParam.type) {
+        indexType = secondParam.type.getText(ctx.sourceFile)
+      }
     }
 
     // Register loop params so expressions referencing them get slotId
@@ -1369,13 +1378,21 @@ function transformMapCall(
           }
         }
         const preambleStmts: string[] = []
+        const typedPreambleStmts: string[] = []
+        let hasTypeDiff = false
         for (const stmt of body.statements) {
           if (stmt === returnStmt) break
           const js = ctx.getJS(stmt)
+          const ts = stmt.getText(ctx.sourceFile)
           preambleStmts.push(js.endsWith(';') ? js : js + ';')
+          typedPreambleStmts.push(ts.endsWith(';') ? ts : ts + ';')
+          if (js !== ts) hasTypeDiff = true
         }
         if (preambleStmts.length > 0) {
           mapPreamble = preambleStmts.join(' ')
+          if (hasTypeDiff) {
+            typedMapPreamble = typedPreambleStmts.join(' ')
+          }
         }
       }
     }
@@ -1458,6 +1475,9 @@ function transformMapCall(
     chainOrder,
     clientOnly: isClientOnly || undefined,
     mapPreamble,
+    paramType,
+    indexType,
+    typedMapPreamble,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -1580,6 +1600,7 @@ function processAttributes(
         const eventName = name.slice(2).toLowerCase()
         events.push({
           name: eventName,
+          originalAttr: name,
           handler: ctx.getJS(attr.initializer.expression),
           loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
         })
