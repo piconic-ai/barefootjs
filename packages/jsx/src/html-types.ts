@@ -133,6 +133,12 @@ export interface HTMLBaseAttributes extends BaseEventAttributes {
   dangerouslySetInnerHTML?: { __html: string }
   children?: unknown
   key?: string | number | bigint | null
+
+  // Hydration attributes (used by compiled marked templates)
+  bf?: string
+  'bf-s'?: string
+  'bf-c'?: string
+  'bf-p'?: string
 }
 
 // ============================================================================
