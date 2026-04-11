@@ -583,7 +583,7 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
           containerSlotId: parentSlotId,
           mapPreamble: n.mapPreamble ?? null,
           nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
-          childEvents: childEvents.length > 0 ? childEvents : undefined,
+          childEvents,
           childReactiveTexts: useElementReconciliation ? childReactiveTexts : undefined,
           childReactiveAttrs: useElementReconciliation ? childReactiveAttrs : undefined,
           childConditionals: useElementReconciliation ? childConditionals : undefined,

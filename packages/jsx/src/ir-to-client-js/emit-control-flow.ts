@@ -110,7 +110,7 @@ function emitBranchBindings(
           lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${loop.param}, ${indexParam}) => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
         }
         // Event delegation for simple branch loops (#766)
-        if (loop.childEvents?.length) {
+        if (loop.childEvents.length > 0) {
           emitBranchLoopEventDelegation(lines, loop, cv)
         }
       }
@@ -164,7 +164,7 @@ function emitCompositeBranchLoop(
 ): void {
   const nestedComps = loop.nestedComponents!
   const innerLoops = loop.innerLoops ?? []
-  const childEvents = loop.childEvents ?? []
+  const childEvents = loop.childEvents
   const indexParam = loop.index || '__idx'
 
   const depthLevels = buildDepthLevels(innerLoops, nestedComps, childEvents)
@@ -779,7 +779,7 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: LoopElement): voi
  */
 function emitBranchLoopEventDelegation(lines: string[], loop: ConditionalBranchLoop, cv: string): void {
   const containerVar = `__loop_${cv}`
-  const childEvents = loop.childEvents!
+  const childEvents = loop.childEvents
 
   if (loop.key) {
     // Keyed: find item by data-key attribute
