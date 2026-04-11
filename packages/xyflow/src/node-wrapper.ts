@@ -195,19 +195,44 @@ function renderNodeContent<NodeType extends NodeBase>(
     return
   }
 
-  // Default rendering
-  el.style.padding = '10px 20px'
+  // Default rendering — match React Flow's default node style
+  el.style.width = '150px'
+  el.style.padding = '10px'
   el.style.border = '1px solid #1a192b'
-  el.style.borderRadius = '3px'
+  el.style.borderRadius = '5px'
   el.style.backgroundColor = '#fff'
   el.style.fontSize = '12px'
   el.style.color = '#222'
+  el.style.textAlign = 'center'
   el.style.cursor = 'grab'
   el.style.userSelect = 'none'
+  el.style.boxSizing = 'border-box'
 
   const data = node.internals.userNode.data as Record<string, unknown>
   const label = data?.label ?? node.id
   el.textContent = String(label)
+
+  // Add default handles (source=bottom, target=top) to match React Flow
+  const handleSize = 8
+  const createDefaultHandle = (type: 'source' | 'target') => {
+    const h = document.createElement('div')
+    h.className = `bf-flow__handle bf-flow__handle--${type}`
+    h.style.position = 'absolute'
+    h.style.width = `${handleSize}px`
+    h.style.height = `${handleSize}px`
+    h.style.borderRadius = '50%'
+    h.style.backgroundColor = '#1a192b'
+    h.style.left = '50%'
+    h.style.transform = 'translateX(-50%)'
+    if (type === 'target') {
+      h.style.top = `-${handleSize / 2}px`
+    } else {
+      h.style.bottom = `-${handleSize / 2}px`
+    }
+    el.appendChild(h)
+  }
+  createDefaultHandle('target')
+  createDefaultHandle('source')
 }
 
 /**

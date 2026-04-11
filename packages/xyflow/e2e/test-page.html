@@ -34,6 +34,13 @@
 import { createRoot } from '@barefootjs/client'
 import { initFlow, initBackground, initControls } from '@barefootjs/xyflow'
 
+// Debug: log mousedown event.view on any node click
+document.addEventListener('mousedown', (e) => {
+  if (e.target.closest && e.target.closest('.bf-flow__node')) {
+    console.log('[debug] mousedown on node, event.view:', e.view === window ? 'window' : e.view)
+  }
+}, true)
+
 // Basic Flow
 createRoot(() => {
   initFlow(document.getElementById('basic'), {
