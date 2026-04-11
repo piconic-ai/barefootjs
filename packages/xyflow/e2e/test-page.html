@@ -21,6 +21,12 @@
 <h2>Flow with Plugins</h2>
 <div id="plugins" class="test-container"></div>
 
+<h2>Interaction (drag, select, delete)</h2>
+<div id="interact" class="test-container"></div>
+
+<h2>Edge Properties (hidden, animated)</h2>
+<div id="edge-props" class="test-container"></div>
+
 <h2>Stress Test (20 nodes)</h2>
 <div id="stress" class="test-container" style="height:500px"></div>
 
@@ -64,6 +70,38 @@ createRoot(() => {
   })
   initBackground(el, { variant: 'dots', gap: 20, color: '#e0e0e0' })
   initControls(el, { position: 'bottom-left' })
+})
+
+// Interaction test — for drag, select, delete
+createRoot(() => {
+  initFlow(document.getElementById('interact'), {
+    nodes: [
+      { id: 'drag1', position: { x: 50, y: 50 }, data: { label: 'Draggable' } },
+      { id: 'drag2', position: { x: 300, y: 50 }, data: { label: 'Also Draggable' } },
+      { id: 'fixed', position: { x: 50, y: 200 }, data: { label: 'Not Draggable' }, draggable: false },
+    ],
+    edges: [
+      { id: 'e-drag', source: 'drag1', target: 'drag2' },
+      { id: 'e-fixed', source: 'drag1', target: 'fixed' },
+    ],
+  })
+})
+
+// Edge properties test — hidden, animated edges
+createRoot(() => {
+  initFlow(document.getElementById('edge-props'), {
+    nodes: [
+      { id: 'ep1', position: { x: 50, y: 50 }, data: { label: 'A' } },
+      { id: 'ep2', position: { x: 250, y: 50 }, data: { label: 'B' } },
+      { id: 'ep3', position: { x: 450, y: 50 }, data: { label: 'C' } },
+      { id: 'ep4', position: { x: 250, y: 200 }, data: { label: 'D' } },
+    ],
+    edges: [
+      { id: 'visible', source: 'ep1', target: 'ep2' },
+      { id: 'hidden-edge', source: 'ep2', target: 'ep3', hidden: true },
+      { id: 'animated-edge', source: 'ep1', target: 'ep4', animated: true },
+    ],
+  })
 })
 
 // Stress test
