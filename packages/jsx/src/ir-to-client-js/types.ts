@@ -171,6 +171,8 @@ export interface LoopChildEvent {
   handler: string // Handler expression (may reference loop param)
   /** Nesting info for events inside nested inner loops. Empty = direct child. */
   nestedLoops: NestedLoopInfo[]
+  /** DOM nesting depth (0 = loop body root). Deepest-first sorting for event delegation (#774). */
+  domDepth: number
 }
 
 export interface LoopChildReactiveAttr extends AttrMeta {

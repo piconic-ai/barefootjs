@@ -1169,6 +1169,8 @@ function emitLoopEventDelegation(
   }
 
   for (const [eventName, events] of eventsByName) {
+    // Sort deepest-first so child elements are checked before parents (#774)
+    events.sort((a, b) => b.domDepth - a.domDepth)
     const useCapture = NON_BUBBLING_EVENTS.has(eventName)
     if (useCapture) {
       lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${eventName}', (e) => {`)

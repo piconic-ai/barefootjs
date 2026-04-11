@@ -115,29 +115,29 @@ export function collectEventHandlersFromIR(node: IRNode): string[] {
  * Shared by collectConditionalBranchEvents, collectConditionalBranchRefs,
  * and collectLoopChildEvents to avoid duplicating the traversal logic.
  */
-function traverseElements(node: IRNode, visitor: (el: IRElement) => void): void {
+function traverseElements(node: IRNode, visitor: (el: IRElement, domDepth: number) => void, domDepth = 0): void {
   switch (node.type) {
     case 'element':
-      visitor(node)
+      visitor(node, domDepth)
       for (const child of node.children) {
-        traverseElements(child, visitor)
+        traverseElements(child, visitor, domDepth + 1)
       }
       break
     case 'fragment':
     case 'component':
     case 'provider':
       for (const child of node.children) {
-        traverseElements(child, visitor)
+        traverseElements(child, visitor, domDepth)
       }
       break
     case 'conditional':
-      traverseElements(node.whenTrue, visitor)
-      traverseElements(node.whenFalse, visitor)
+      traverseElements(node.whenTrue, visitor, domDepth)
+      traverseElements(node.whenFalse, visitor, domDepth)
       break
     case 'if-statement':
-      traverseElements(node.consequent, visitor)
+      traverseElements(node.consequent, visitor, domDepth)
       if (node.alternate) {
-        traverseElements(node.alternate, visitor)
+        traverseElements(node.alternate, visitor, domDepth)
       }
       break
     // Note: 'loop' case is intentionally omitted. Nested .map() event delegation
@@ -188,7 +188,7 @@ export function collectConditionalBranchRefs(node: IRNode): ConditionalBranchRef
  */
 export function collectLoopChildEvents(node: IRNode): LoopChildEvent[] {
   const events: LoopChildEvent[] = []
-  traverseElements(node, (el) => {
+  traverseElements(node, (el, domDepth) => {
     if (el.slotId) {
       for (const event of el.events) {
         events.push({
@@ -196,6 +196,7 @@ export function collectLoopChildEvents(node: IRNode): LoopChildEvent[] {
           childSlotId: el.slotId,
           handler: event.handler,
           nestedLoops: [],
+          domDepth,
         })
       }
     }
@@ -216,7 +217,7 @@ export function collectLoopChildEventsWithNesting(
 
   let lastElementSlotId: string | null = null
 
-  function walk(n: IRNode): void {
+  function walk(n: IRNode, domDepth = 0): void {
     switch (n.type) {
       case 'element': {
         const prevSlotId = lastElementSlotId
@@ -228,10 +229,11 @@ export function collectLoopChildEventsWithNesting(
               childSlotId: n.slotId,
               handler: event.handler,
               nestedLoops: [...nestingStack],
+              domDepth,
             })
           }
         }
-        for (const child of n.children) walk(child)
+        for (const child of n.children) walk(child, domDepth + 1)
         lastElementSlotId = prevSlotId
         break
       }
@@ -244,21 +246,21 @@ export function collectLoopChildEventsWithNesting(
           key: n.key ?? '',
           containerSlotId: lastElementSlotId,
         })
-        for (const child of n.children) walk(child)
+        for (const child of n.children) walk(child, domDepth)
         nestingStack.pop()
         break
       case 'fragment':
       case 'component':
       case 'provider':
-        for (const child of n.children) walk(child)
+        for (const child of n.children) walk(child, domDepth)
         break
       case 'conditional':
-        walk(n.whenTrue)
-        walk(n.whenFalse)
+        walk(n.whenTrue, domDepth)
+        walk(n.whenFalse, domDepth)
         break
       case 'if-statement':
-        walk(n.consequent)
-        if (n.alternate) walk(n.alternate)
+        walk(n.consequent, domDepth)
+        if (n.alternate) walk(n.alternate, domDepth)
         break
     }
   }
