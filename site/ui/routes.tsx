@@ -60,7 +60,6 @@ import { DrawerRefPage } from './pages/components/drawer'
 import { SheetRefPage } from './pages/components/sheet'
 import { DashboardRefPage } from './pages/components/dashboard'
 import { AnalyticsDashboardRefPage } from './pages/components/analytics-dashboard'
-import { FlowRefPage } from './pages/components/flow'
 import { UserProfileRefPage } from './pages/components/user-profile'
 import { ProductCardsRefPage } from './pages/components/product-cards'
 import { PricingRefPage } from './pages/components/pricing'
@@ -553,11 +552,6 @@ export function createApp() {
   // Spreadsheet block page
   app.get('/components/spreadsheet', (c) => {
     return c.render(<SpreadsheetRefPage />)
-  })
-
-  // Flow block page
-  app.get('/components/flow', (c) => {
-    return c.render(<FlowRefPage />)
   })
 
   // Bar Chart reference page

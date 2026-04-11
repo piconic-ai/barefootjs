@@ -107,7 +107,6 @@ jobs:
           cd ../jsx && bun run build
           cd ../form && bun run build
           cd ../chart && bun run build
-          cd ../xyflow && bun run build
           cd ../hono && bun run build
 
       - name: Build site/ui

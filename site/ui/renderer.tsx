@@ -130,7 +130,6 @@ const importMapScript = JSON.stringify({
     '@barefootjs/client-runtime': '/static/components/barefoot.js',
     '@barefootjs/form': '/static/components/barefoot-form.js',
     '@barefootjs/chart': '/static/components/barefoot-chart.js',
-    '@barefootjs/xyflow': '/static/components/barefoot-xyflow.js',
     'zod': '/static/lib/zod.esm.js',
     'embla-carousel': '/static/lib/embla-carousel.esm.js',
   },

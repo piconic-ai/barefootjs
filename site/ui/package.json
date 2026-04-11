@@ -15,7 +15,6 @@
     "@barefootjs/client-runtime": "workspace:*",
     "@barefootjs/form": "workspace:*",
     "@barefootjs/hono": "workspace:*",
-    "@barefootjs/xyflow": "workspace:*",
     "@barefootjs/site-shared": "workspace:*",
     "@shikijs/langs": "^3.21.0",
     "@shikijs/themes": "^3.21.0",
