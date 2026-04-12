@@ -271,6 +271,28 @@ interface TemplateAdapter {
 }
 ```
 
+### Adapter Responsibility Boundary
+
+Adapters are **template-language specialists**. Their sole responsibility is converting IR into HTML templates with hydration markers (`bf-s`, `bf`, `bf-c`, etc.).
+
+Adapters **must not** handle:
+- **Module structure** — `export` keywords, default exports
+- **Client-package import filtering** — Stripping `@barefootjs/client`, `@barefootjs/dom`, `@barefootjs/client-runtime` imports
+- **Client JS generation** — Handled independently by `ir-to-client-js` (adapter-agnostic)
+
+These concerns belong in the **compiler layer**, which orchestrates adapter output and client JS into the final module.
+
+**Rationale:** If adapters take on module-structure concerns, every new adapter must re-implement them. The adapter conformance tests (HTML comparison) cannot catch gaps in these non-template concerns, leading to silent drift between adapters.
+
+```
+IR (ComponentIR)
+ ├─→ Adapter: HTML template + markers only
+ ├─→ Compiler: Module structure (imports, exports, assembly)
+ └─→ ir-to-client-js: Client JS (adapter-independent)
+```
+
+The **hydration contract** between template and client JS is maintained through shared marker constants (`bf-s`, `bf`, `bf-c`). As long as an adapter's rendered HTML contains correct markers, client JS will hydrate it correctly regardless of the template language.
+
 ### Available Adapters
 
 - **HonoAdapter** (`@barefootjs/hono`) - Generates hono/jsx compatible TSX

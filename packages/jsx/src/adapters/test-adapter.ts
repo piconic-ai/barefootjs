@@ -58,8 +58,8 @@ export class TestAdapter extends BaseAdapter {
   private generateImports(ir: ComponentIR): string {
     const lines: string[] = []
 
-    for (const imp of ir.metadata.imports) {
-      if (imp.source === '@barefootjs/dom' || imp.source === '@barefootjs/client' || imp.source === '@barefootjs/client-runtime') continue
+    // Use templateImports (client-side packages already filtered by compiler)
+    for (const imp of ir.metadata.templateImports) {
       if (imp.specifiers.length === 0) {
         if (!imp.isTypeOnly) {
           lines.push(`import '${imp.source}'`)
@@ -161,8 +161,8 @@ export class TestAdapter extends BaseAdapter {
     const fullPropsDestructure = `{ ${parts.join(', ')} }`
 
     const lines: string[] = []
-    const exportKeyword = ir.metadata.isExported !== false ? 'export ' : ''
-    lines.push(`${exportKeyword}function ${name}(${fullPropsDestructure}${typeAnnotation}) {`)
+    // Adapter always emits without 'export'; compiler handles export keywords
+    lines.push(`function ${name}(${fullPropsDestructure}${typeAnnotation}) {`)
 
     // Generate scope ID
     if (hasClientInteractivity) {

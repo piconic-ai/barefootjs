@@ -170,6 +170,7 @@ describe('applyCssLayerPrefix', () => {
       effects: [],
       onMounts: [],
       imports: [],
+      templateImports: [],
       localFunctions: [],
       localConstants: overrides.localConstants ?? [],
     }

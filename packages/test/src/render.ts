@@ -78,6 +78,7 @@ function buildMetadata(
   return {
     componentName: ctx.componentName || 'Unknown',
     hasDefaultExport: ctx.hasDefaultExport,
+    isExported: ctx.isExported,
     isClientComponent: ctx.hasUseClientDirective,
     typeDefinitions: ctx.typeDefinitions,
     propsType: ctx.propsType,
@@ -90,6 +91,7 @@ function buildMetadata(
     effects: ctx.effects,
     onMounts: ctx.onMounts,
     imports: ctx.imports,
+    templateImports: ctx.imports.filter((imp) => !['@barefootjs/client-runtime', '@barefootjs/dom', '@barefootjs/client'].includes(imp.source)),
     localFunctions: ctx.localFunctions,
     localConstants: ctx.localConstants,
   }

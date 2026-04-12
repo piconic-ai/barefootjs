@@ -116,15 +116,8 @@ export class HonoAdapter implements TemplateAdapter {
       lines.push(`import { ${utilImports.join(', ')} } from '@barefootjs/hono/utils'`)
     }
 
-    // Re-export original imports, skipping all barefootjs client-side modules
-    // (their exports are replaced by SSR no-ops in generateSignalInitializers)
-    const ssrSkippedSources = new Set([
-      '@barefootjs/client-runtime',
-      '@barefootjs/dom',
-      '@barefootjs/client',
-    ])
-    for (const imp of ir.metadata.imports) {
-      if (ssrSkippedSources.has(imp.source)) continue
+    // Re-export template imports (client-side packages already filtered by compiler)
+    for (const imp of ir.metadata.templateImports) {
       if (imp.specifiers.length === 0) {
         if (!imp.isTypeOnly) {
           lines.push(`import '${imp.source}'`)
@@ -374,8 +367,8 @@ export class HonoAdapter implements TemplateAdapter {
     }
 
     const lines: string[] = []
-    const exportKeyword = ir.metadata.isExported !== false ? 'export ' : ''
-    lines.push(`${exportKeyword}function ${name}(${fullPropsDestructure}${typeAnnotation}) {`)
+    // Adapter always emits without 'export'; compiler handles export keywords
+    lines.push(`function ${name}(${fullPropsDestructure}${typeAnnotation}) {`)
 
     // Add props extraction for SolidJS-style pattern
     if (propsExtraction) {

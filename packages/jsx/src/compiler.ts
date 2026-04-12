@@ -6,6 +6,7 @@
 
 import type {
   ComponentIR,
+  ImportInfo,
   IRMetadata,
   CompileOptions,
   CompileResult,
@@ -24,6 +25,30 @@ import { applyCssLayerPrefix } from './css-layer-prefixer'
 export interface CompileOptionsWithAdapter extends CompileOptions {
   /** Template adapter for generating output (required) */
   adapter: TemplateAdapter
+}
+
+/**
+ * Client-side package sources that should be excluded from template imports.
+ * These packages are only needed by client JS, not by server-side templates.
+ */
+const CLIENT_PACKAGE_SOURCES = new Set([
+  '@barefootjs/client-runtime',
+  '@barefootjs/dom',
+  '@barefootjs/client',
+])
+
+function filterTemplateImports(imports: ImportInfo[]): ImportInfo[] {
+  return imports.filter(imp => !CLIENT_PACKAGE_SOURCES.has(imp.source))
+}
+
+/**
+ * Add 'export' keyword to the component function declaration if needed.
+ * Adapters emit plain `function Name(...)` — the compiler adds module-level export.
+ */
+function applyExportKeyword(component: string, ir: ComponentIR): string {
+  if (ir.metadata.isExported === false) return component
+  // Prepend 'export ' to the first 'function' declaration
+  return component.replace(/^function /, 'export function ')
 }
 
 // =============================================================================
@@ -95,7 +120,8 @@ export async function compileJSX(
   let content: string
   if (adapterOutput.sections) {
     const s = adapterOutput.sections
-    content = [s.imports, s.types, moduleExports, s.component]
+    const component = applyExportKeyword(s.component, componentIR)
+    content = [s.imports, s.types, moduleExports, component]
       .filter(Boolean).join('\n\n') + (s.defaultExport || '')
   } else {
     content = adapterOutput.template
@@ -184,7 +210,7 @@ function compileMultipleComponentsSync(
       const s = adapterOutput.sections
       imports = s.imports
       types = s.types
-      component = s.component + (s.defaultExport || '')
+      component = applyExportKeyword(s.component, componentIR) + (s.defaultExport || '')
     } else {
       // Fallback: parse template string (for adapters without sections)
       const lines = adapterOutput.template.split('\n')
@@ -194,8 +220,8 @@ function compileMultipleComponentsSync(
       let inComponent = false
 
       for (const line of lines) {
-        if (line.startsWith('export function ')) {
-          const funcName = line.match(/^export function (\w+)/)?.[1]
+        if (line.startsWith('export function ') || line.startsWith('function ')) {
+          const funcName = line.match(/^(?:export )?function (\w+)/)?.[1]
           if (funcName && componentNames.includes(funcName)) {
             inComponent = true
           }
@@ -380,6 +406,7 @@ export function buildMetadata(
     effects: ctx.effects,
     onMounts: ctx.onMounts,
     imports: ctx.imports,
+    templateImports: filterTemplateImports(ctx.imports),
     localFunctions: ctx.localFunctions,
     localConstants: ctx.localConstants,
   }
@@ -451,7 +478,8 @@ export function compileJSXSync(
   let content: string
   if (adapterOutput.sections) {
     const s = adapterOutput.sections
-    content = [s.imports, s.types, moduleExports, s.component]
+    const component = applyExportKeyword(s.component, componentIR)
+    content = [s.imports, s.types, moduleExports, component]
       .filter(Boolean).join('\n\n') + (s.defaultExport || '')
   } else {
     content = adapterOutput.template

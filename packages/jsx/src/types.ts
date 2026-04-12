@@ -470,6 +470,9 @@ export interface IRMetadata {
   effects: EffectInfo[]
   onMounts: OnMountInfo[]
   imports: ImportInfo[]
+  /** Imports filtered for template use (client-side packages stripped).
+   *  Computed by the compiler — adapters should use this instead of `imports`. */
+  templateImports: ImportInfo[]
   localFunctions: FunctionInfo[]
   localConstants: ConstantInfo[]
   /** Pre-computed client JS analysis for adapter use */
