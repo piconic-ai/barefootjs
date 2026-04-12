@@ -45,6 +45,8 @@ export { generateModuleExports, extractFunctionParams, formatParamWithType, find
 // Adapters
 export { BaseAdapter } from './adapters/interface'
 export type { TemplateAdapter, AdapterOutput, AdapterGenerateOptions, TemplateSections } from './adapters/interface'
+export { JsxAdapter } from './adapters/jsx-adapter'
+export type { JsxAdapterConfig } from './adapters/jsx-adapter'
 
 // Client JS Generator
 export { generateClientJs, analyzeClientNeeds } from './ir-to-client-js'
