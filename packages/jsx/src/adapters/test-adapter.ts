@@ -17,14 +17,14 @@ import type {
   IRFragment,
   ParamInfo,
 } from '../types'
-import { type AdapterOutput, type TemplateSections, BaseAdapter } from './interface'
-import { formatParamWithType, findReachableNames } from '../module-exports'
+import type { AdapterOutput, TemplateSections } from './interface'
+import { type JsxAdapterConfig, JsxAdapter } from './jsx-adapter'
 
-export class TestAdapter extends BaseAdapter {
+export class TestAdapter extends JsxAdapter {
   name = 'test'
   extension = '.test.tsx'
 
-  private componentName: string = ''
+  protected jsxConfig: JsxAdapterConfig = { preserveTypes: false }
 
   generate(ir: ComponentIR): AdapterOutput {
     this.componentName = ir.metadata.componentName
@@ -74,33 +74,6 @@ export class TestAdapter extends BaseAdapter {
     }
 
     return lines.join('\n')
-  }
-
-  private formatImportSpecifiers(
-    specifiers: { name: string; alias: string | null; isDefault: boolean; isNamespace: boolean }[]
-  ): string {
-    const defaultSpec = specifiers.find((s) => s.isDefault)
-    const namespaceSpec = specifiers.find((s) => s.isNamespace)
-    const namedSpecs = specifiers.filter((s) => !s.isDefault && !s.isNamespace)
-
-    const parts: string[] = []
-
-    if (defaultSpec) {
-      parts.push(defaultSpec.alias || defaultSpec.name)
-    }
-
-    if (namespaceSpec) {
-      parts.push(`* as ${namespaceSpec.name}`)
-    }
-
-    if (namedSpecs.length > 0) {
-      const named = namedSpecs
-        .map((s) => (s.alias ? `${s.name} as ${s.alias}` : s.name))
-        .join(', ')
-      parts.push(`{ ${named} }`)
-    }
-
-    return parts.join(', ')
   }
 
   generateTypes(ir: ComponentIR): string | null {
@@ -187,74 +160,6 @@ export class TestAdapter extends BaseAdapter {
     return lines.join('\n')
   }
 
-  private generateSignalInitializers(ir: ComponentIR, jsxBody: string): string {
-    const lines: string[] = []
-
-    // Build primary reference text for reachability analysis
-    const primaryRefs = [jsxBody]
-    for (const signal of ir.metadata.signals) {
-      primaryRefs.push(signal.initialValue)
-    }
-    for (const memo of ir.metadata.memos) {
-      primaryRefs.push(memo.computation)
-    }
-    const primaryRefText = primaryRefs.join('\n')
-
-    // Collect local declarations for dependency analysis
-    const localFunctions = ir.metadata.localFunctions.filter(f => !f.isExported)
-    const localConstants = ir.metadata.localConstants.filter(c => !c.isExported && c.value)
-    const declarations = [
-      ...localFunctions.map(f => ({ name: f.name, body: f.body })),
-      ...localConstants.map(c => ({ name: c.name, body: c.value! })),
-    ]
-    const reachable = findReachableNames(primaryRefText, declarations)
-
-    // Build text for setter reference checking
-    const reachableBodies = [...reachable].map(name => {
-      const func = localFunctions.find(f => f.name === name)
-      if (func) return func.body
-      const constant = localConstants.find(c => c.name === name)
-      return constant?.value ?? ''
-    }).join('\n')
-    const setterRefText = primaryRefText + '\n' + reachableBodies
-
-    for (const signal of ir.metadata.signals) {
-      const initialValue = signal.initialValue.trim().startsWith('{') ? `(${signal.initialValue})` : signal.initialValue
-      lines.push(`  const ${signal.getter} = () => ${initialValue}`)
-      if (signal.setter) {
-        const setterUsed = new RegExp(`\\b${signal.setter}\\b`).test(setterRefText)
-        if (setterUsed) {
-          lines.push(`  const ${signal.setter} = (..._args: any[]) => {}`)
-        }
-      }
-    }
-
-    for (const memo of ir.metadata.memos) {
-      lines.push(`  const ${memo.name} = ${memo.computation}`)
-    }
-
-    for (const constant of ir.metadata.localConstants) {
-      if (constant.isExported) continue
-      const keyword = constant.declarationKind ?? 'const'
-      if (!constant.value) {
-        lines.push(`  ${keyword} ${constant.name}`)
-        continue
-      }
-      // Skip unreachable constants (only used in event handler code paths)
-      if (!reachable.has(constant.name)) continue
-      lines.push(`  ${keyword} ${constant.name} = ${constant.value}`)
-    }
-
-    // Include local functions — skip unreachable ones (only used in event handlers)
-    for (const func of localFunctions) {
-      if (!reachable.has(func.name)) continue
-      const params = func.params.map(formatParamWithType).join(', ')
-      lines.push(`  function ${func.name}(${params}) ${func.body}`)
-    }
-
-    return lines.join('\n')
-  }
-
   renderNode(node: IRNode): string {
     switch (node.type) {
       case 'element':
@@ -303,8 +208,6 @@ export class TestAdapter extends BaseAdapter {
       return 'null'
     }
     if (expr.reactive && expr.slotId) {
-      // Use comment markers instead of span to avoid altering DOM structure.
-      // In JSX, this is rendered via bfText() at runtime.
       return `{bfText("${expr.slotId}")}{${expr.expr}}{bfTextEnd()}`
     }
     return `{${expr.expr}}`
@@ -319,16 +222,6 @@ export class TestAdapter extends BaseAdapter {
     }
 
     return `{${cond.condition} ? ${whenTrue} : ${whenFalse}}`
-  }
-
-  private renderNodeRaw(node: IRNode): string {
-    if (node.type === 'expression') {
-      if (node.expr === 'null' || node.expr === 'undefined') {
-        return 'null'
-      }
-      return node.expr
-    }
-    return this.renderNode(node)
   }
 
   renderLoop(loop: IRLoop): string {
@@ -386,7 +279,6 @@ export class TestAdapter extends BaseAdapter {
 
     for (const prop of comp.props) {
       if (prop.jsxChildren?.length) {
-        // JSX prop: render children inline
         const rendered = prop.jsxChildren.map(c => this.renderNode(c)).join('')
         parts.push(`${prop.name}={<>${rendered}</>}`)
         continue
@@ -406,19 +298,6 @@ export class TestAdapter extends BaseAdapter {
 
     return parts.length > 0 ? ' ' + parts.join(' ') : ''
   }
-
-  renderScopeMarker(instanceIdExpr: string): string {
-    return `bf-s={${instanceIdExpr}}`
-  }
-
-  renderSlotMarker(slotId: string): string {
-    return `bf="${slotId}"`
-  }
-
-  renderCondMarker(condId: string): string {
-    return `bf-c="${condId}"`
-  }
-
 }
 
 export const testAdapter = new TestAdapter()

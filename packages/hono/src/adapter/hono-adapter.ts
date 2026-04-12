@@ -20,10 +20,9 @@ import {
   type ParamInfo,
   type AdapterOutput,
   type TemplateSections,
-  type TemplateAdapter,
+  type JsxAdapterConfig,
+  JsxAdapter,
   isBooleanAttr,
-  formatParamWithType,
-  findReachableNames,
 } from '@barefootjs/jsx'
 
 export interface HonoAdapterOptions {
@@ -46,11 +45,12 @@ export interface HonoAdapterOptions {
   clientJsFilename?: string
 }
 
-export class HonoAdapter implements TemplateAdapter {
+export class HonoAdapter extends JsxAdapter {
   name = 'hono'
   extension = '.hono.tsx'
 
-  private componentName: string = ''
+  protected jsxConfig: JsxAdapterConfig = { preserveTypes: true }
+
   private options: HonoAdapterOptions
   private isClientComponent: boolean = false
   private hasClientInteractivity: boolean = false
@@ -59,6 +59,7 @@ export class HonoAdapter implements TemplateAdapter {
   private loopKeyStack: Array<{ key: string | null; param: string }> = []
 
   constructor(options: HonoAdapterOptions = {}) {
+    super()
     this.options = {
       clientJsBasePath: options.clientJsBasePath ?? '/static/components/',
       barefootJsPath: options.barefootJsPath ?? '/static/components/barefoot.js',
@@ -132,33 +133,6 @@ export class HonoAdapter implements TemplateAdapter {
     }
 
     return lines.join('\n')
-  }
-
-  private formatImportSpecifiers(
-    specifiers: { name: string; alias: string | null; isDefault: boolean; isNamespace: boolean }[]
-  ): string {
-    const defaultSpec = specifiers.find((s) => s.isDefault)
-    const namespaceSpec = specifiers.find((s) => s.isNamespace)
-    const namedSpecs = specifiers.filter((s) => !s.isDefault && !s.isNamespace)
-
-    const parts: string[] = []
-
-    if (defaultSpec) {
-      parts.push(defaultSpec.alias || defaultSpec.name)
-    }
-
-    if (namespaceSpec) {
-      parts.push(`* as ${namespaceSpec.name}`)
-    }
-
-    if (namedSpecs.length > 0) {
-      const named = namedSpecs
-        .map((s) => (s.alias ? `${s.name} as ${s.alias}` : s.name))
-        .join(', ')
-      parts.push(`{ ${named} }`)
-    }
-
-    return parts.join(', ')
   }
 
   // ===========================================================================
@@ -425,101 +399,6 @@ export class HonoAdapter implements TemplateAdapter {
     return lines.join('\n')
   }
 
-  private generateSignalInitializers(ir: ComponentIR, jsxBody: string): string {
-    const lines: string[] = []
-
-    // Build primary reference text for reachability analysis:
-    // jsxBody + signal initial values + memo computations (these are the "consumers")
-    const primaryRefs = [jsxBody]
-    for (const signal of ir.metadata.signals) {
-      primaryRefs.push(signal.initialValue)
-    }
-    for (const memo of ir.metadata.memos) {
-      primaryRefs.push(memo.computation)
-    }
-    const primaryRefText = primaryRefs.join('\n')
-
-    // Collect local declarations and their bodies for dependency analysis
-    const localFunctions = ir.metadata.localFunctions.filter(f => !f.isExported)
-    const localConstants = ir.metadata.localConstants.filter(c => !c.isExported && c.value)
-    const declarations = [
-      ...localFunctions.map(f => ({ name: f.name, body: f.body })),
-      ...localConstants.map(c => ({ name: c.name, body: c.value! })),
-    ]
-
-    // Find reachable declarations via transitive dependency analysis
-    const reachable = findReachableNames(primaryRefText, declarations)
-
-    // Also check which signal setters are referenced
-    const reachableBodies = [...reachable].map(name => {
-      const func = localFunctions.find(f => f.name === name)
-      if (func) return func.body
-      const constant = localConstants.find(c => c.name === name)
-      return constant?.value ?? ''
-    }).join('\n')
-    const setterRefText = primaryRefText + '\n' + reachableBodies
-
-    for (const signal of ir.metadata.signals) {
-      // Create a getter that returns the initial value for SSR
-      // Use typed version when available to preserve type annotations in .tsx output
-      const rawInitialValue = signal.typedInitialValue ?? signal.initialValue
-      const initialValue = rawInitialValue.trim().startsWith('{') ? `(${rawInitialValue})` : rawInitialValue
-      // When typedInitialValue is absent but signal.type has a meaningful type from a generic
-      // parameter (e.g. createSignal<string[]>([])), add a type assertion to prevent TS
-      // from inferring never[] / {} / null etc.
-      const needsTypeAssertion = !signal.typedInitialValue
-        && signal.type.kind !== 'unknown'
-        && signal.type.kind !== 'primitive'
-      if (needsTypeAssertion) {
-        lines.push(`  const ${signal.getter} = () => ${initialValue} as ${signal.type.raw}`)
-      } else {
-        lines.push(`  const ${signal.getter} = () => ${initialValue}`)
-      }
-      // Create a no-op setter for SSR — omit entirely if not referenced anywhere
-      const setterUsed = new RegExp(`\\b${signal.setter}\\b`).test(setterRefText)
-      if (setterUsed) {
-        lines.push(`  const ${signal.setter} = (..._args: any[]) => {}`)
-      }
-    }
-
-    for (const memo of ir.metadata.memos) {
-      // Evaluate memo computation at SSR time
-      // Use typed version when available to preserve type annotations in .tsx output
-      lines.push(`  const ${memo.name} = ${memo.typedComputation ?? memo.computation}`)
-    }
-
-    // Include local constants — skip unreachable ones (only used in event handlers)
-    for (const constant of ir.metadata.localConstants) {
-      if (constant.isExported) continue
-      const keyword = constant.declarationKind ?? 'const'
-      if (!constant.value) {
-        lines.push(`  ${keyword} ${constant.name}`)
-        continue
-      }
-      const value = constant.value.trim()
-      // Skip client-only constructs in SSR:
-      // - createContext() — only used client-side via provideContext/useContext
-      // - new WeakMap() — client-side cross-component shared state
-      if (/^createContext\b/.test(value) || /^new WeakMap\b/.test(value)) continue
-
-      // Skip unreachable constants (only used in event handler code paths)
-      if (!reachable.has(constant.name)) continue
-
-      // Use typed version when available to preserve type annotations in .tsx output
-      lines.push(`  ${keyword} ${constant.name} = ${constant.typedValue ?? constant.value}`)
-    }
-
-    // Include local functions — skip unreachable ones (only used in event handlers)
-    for (const func of localFunctions) {
-      if (!reachable.has(func.name)) continue
-      const params = func.params.map(formatParamWithType).join(', ')
-      // Use typed version when available to preserve type annotations in .tsx output
-      lines.push(`  function ${func.name}(${params}) ${func.typedBody ?? func.body}`)
-    }
-
-    return lines.join('\n')
-  }
-
   // ===========================================================================
   // Node Rendering
   // ===========================================================================
@@ -610,18 +489,6 @@ export class HonoAdapter implements TemplateAdapter {
       return `{bfText("${expr.slotId}")}{${expr.expr}}{bfTextEnd()}`
     }
     return `{${expr.expr}}`
-  }
-
-  // Render a node without wrapping braces (for use inside ternary expressions)
-  private renderNodeRaw(node: IRNode): string {
-    if (node.type === 'expression') {
-      // Return expression without braces
-      if (node.expr === 'null' || node.expr === 'undefined') {
-        return 'null'
-      }
-      return node.expr
-    }
-    return this.renderNode(node)
   }
 
   renderConditional(cond: IRConditional): string {
@@ -820,10 +687,6 @@ export class HonoAdapter implements TemplateAdapter {
     return `<>${children}</>`
   }
 
-  renderChildren(children: IRNode[]): string {
-    return children.map((child) => this.renderNode(child)).join('')
-  }
-
   // ===========================================================================
   // Attribute Rendering
   // ===========================================================================
@@ -944,21 +807,6 @@ export class HonoAdapter implements TemplateAdapter {
     return false
   }
 
-  // ===========================================================================
-  // Hydration Markers (TemplateAdapter interface)
-  // ===========================================================================
-
-  renderScopeMarker(instanceIdExpr: string): string {
-    return `bf-s={${instanceIdExpr}}`
-  }
-
-  renderSlotMarker(slotId: string): string {
-    return `bf="${slotId}"`
-  }
-
-  renderCondMarker(condId: string): string {
-    return `bf-c="${condId}"`
-  }
 }
 
 // Export singleton instance for convenience
