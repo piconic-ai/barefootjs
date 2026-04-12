@@ -198,14 +198,15 @@ test.describe('Permission Matrix Block', () => {
       expect(updatedText).not.toBe(initialText)
     })
 
-    test('direct count updates after grant', async ({ page }) => {
+    test('inherited count updates after grant all for viewer', async ({ page }) => {
       const s = section(page)
-      const directDisplay = s.locator('.direct-count')
-      const initialText = await directDisplay.textContent()
+      const inheritedDisplay = s.locator('.inherited-count')
+      const initialText = await inheritedDisplay.textContent()
 
+      // Grant all to viewer — other roles' matching perms become inherited
       await s.locator('.grant-all-viewer').click()
 
-      const updatedText = await directDisplay.textContent()
+      const updatedText = await inheritedDisplay.textContent()
       expect(updatedText).not.toBe(initialText)
     })
   })

@@ -104,11 +104,21 @@ export function PermissionMatrixDemo() {
       for (const perm of ALL_PERMISSIONS) {
         const key = `${role.id}:${perm.id}`
         const isEffective = effectiveList.indexOf(perm.id) !== -1
-        const isDirect = hasDirectGrant(grants, role.id, perm.id)
+        // Inherited = a lower-authority role (higher rank number) has this permission directly.
+        // Even if this role also has a direct grant, the lower role's grant takes precedence
+        // and this role's cell shows as inherited (disabled).
+        let inheritedFromBelow = false
+        for (const otherRole of ROLES) {
+          if (otherRole.rank > role.rank && hasDirectGrant(grants, otherRole.id, perm.id)) {
+            inheritedFromBelow = true
+            break
+          }
+        }
+        const isInherited = isEffective && inheritedFromBelow
         states[key] = {
           checked: isEffective,
-          inherited: isEffective && !isDirect,
-          disabled: isEffective && !isDirect,
+          inherited: isInherited,
+          disabled: isInherited,
         }
       }
     }
@@ -118,17 +128,18 @@ export function PermissionMatrixDemo() {
   // Diamond memo node 3: stats per role (reads effectivePerms + directGrants — converges)
   const roleStats = createMemo(() => {
     const effective = effectivePerms()
-    const grants = directGrants()
+    const states = cellStates()
     const stats: Record<string, { total: number; direct: number; inherited: number }> = {}
     for (const role of ROLES) {
       const effectiveList = effective[role.id] || []
       let directCount = 0
       let inheritedCount = 0
       for (const permId of effectiveList) {
-        if (hasDirectGrant(grants, role.id, permId)) {
-          directCount++
-        } else {
+        const key = `${role.id}:${permId}`
+        if (states[key] && states[key].inherited) {
           inheritedCount++
+        } else {
+          directCount++
         }
       }
       stats[role.id] = {
