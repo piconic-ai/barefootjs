@@ -8,21 +8,17 @@
  * Compiler stress targets:
  * - Diamond memo dependency: directGrants → effectivePerms → cellStates + roleStats
  *   (multiple memos reading from shared signals, forming a diamond DAG)
- * - Static array loop with per-item reactive props (ALL_PERMISSIONS.map)
- * - Per-cell derived state: each cell's checked/disabled/inherited status from memo chain
- * - Bulk toggle: column/row bulk operations triggering cascading memo updates
- * - Reactive text in loop: per-role permission count badges update reactively
- * - Many reactive attribute bindings per loop iteration (4 cells × 3 attrs each = 12 per row)
- *
- * Known compiler limitations found during development:
- * - Ternary inside .map() callback emits raw JSX
- * - 3-level nested static array loses inner variable scope in event delegation
- * - 2-level nested static array: inner loop component init uses wrong scope
- * - Workaround: explicit cells per role (no inner loop)
+ * - 2D nested loop: ALL_PERMISSIONS.map(perm => ROLES.map(role => <Checkbox>))
+ * - Per-cell derived state: each cell's checked/disabled/inherited from memo chain
+ * - Bulk toggle: column/row bulk ops triggering cascading memo updates
+ * - Reactive text in loop: per-role count badges update reactively
+ * - Static array with preceding siblings (tests getLoopChildren offset)
+ * - Nested static array component initialization (inner loop Checkbox)
  */
 
 import { createSignal, createMemo } from '@barefootjs/client'
 import { Badge } from '@ui/components/ui/badge'
+import { Checkbox } from '@ui/components/ui/checkbox'
 
 // --- Types ---
 
@@ -72,24 +68,9 @@ function hasDirectGrant(grants: Record<string, string[]>, roleId: string, permId
   return roleGrants.indexOf(permId) !== -1
 }
 
-// Checkbox base styles (matching @ui/checkbox appearance)
-const CB_BASE = 'perm-check inline-flex items-center justify-center h-4 w-4 shrink-0 rounded-[4px] border border-primary shadow-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring'
-const CB_CHECKED = 'bg-primary text-primary-foreground'
-const CB_UNCHECKED = 'bg-background'
-const CB_DISABLED = 'cursor-not-allowed'
-
-function cbClass(state: CellState): string {
-  const base = CB_BASE
-  const check = state.checked ? CB_CHECKED : CB_UNCHECKED
-  const dis = state.disabled ? CB_DISABLED : 'cursor-pointer'
-  const inh = state.inherited ? 'inherited-badge opacity-50' : ''
-  return `${base} ${check} ${dis} ${inh}`
-}
-
 // --- Component ---
 
 export function PermissionMatrixDemo() {
-  // Signal: direct grants per role
   const [directGrants, setDirectGrants] = createSignal<Record<string, string[]>>(buildInitialGrants())
 
   // Diamond memo node 1: effective permissions per role (direct + inherited)
@@ -258,49 +239,34 @@ export function PermissionMatrixDemo() {
         ))}
       </div>
 
-      {/* Grid — ALL_PERMISSIONS.map with explicit role cells (4 per row) */}
+      {/* Grid — 2D nested static array: ALL_PERMISSIONS.map → ROLES.map */}
       <div className="rounded-lg border overflow-hidden">
         <table className="w-full text-sm border-collapse">
           <thead>
+            {/* Static "Permission" th + ROLES.map: tests getLoopChildren with preceding sibling */}
             <tr className="bg-muted/50">
               <th className="text-left p-3 font-medium border-r min-w-[180px]">Permission</th>
-              {/* Explicit role headers (avoids static-array off-by-one with preceding sibling) */}
-              <th className="role-header p-2 text-center font-medium border-r min-w-[100px]">
-                <div className="flex flex-col items-center gap-1">
-                  <span>Viewer</span>
-                  <div className="flex gap-1">
-                    <button className="role-toggle grant-all-btn grant-all-viewer text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors" onClick={() => grantAllForRole('viewer')}>All</button>
-                    <button className="role-toggle revoke-all-btn revoke-all-viewer text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors" onClick={() => revokeAllForRole('viewer')}>None</button>
+              {ROLES.map(role => (
+                <th key={role.id} className="role-header p-2 text-center font-medium border-r last:border-r-0 min-w-[100px]">
+                  <div className="flex flex-col items-center gap-1">
+                    <span>{role.label}</span>
+                    <div className="flex gap-1">
+                      <button
+                        className={`role-toggle grant-all-btn grant-all-${role.id} text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors`}
+                        onClick={() => grantAllForRole(role.id)}
+                      >
+                        All
+                      </button>
+                      <button
+                        className={`role-toggle revoke-all-btn revoke-all-${role.id} text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors`}
+                        onClick={() => revokeAllForRole(role.id)}
+                      >
+                        None
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </th>
-              <th className="role-header p-2 text-center font-medium border-r min-w-[100px]">
-                <div className="flex flex-col items-center gap-1">
-                  <span>Editor</span>
-                  <div className="flex gap-1">
-                    <button className="role-toggle grant-all-btn grant-all-editor text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors" onClick={() => grantAllForRole('editor')}>All</button>
-                    <button className="role-toggle revoke-all-btn revoke-all-editor text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors" onClick={() => revokeAllForRole('editor')}>None</button>
-                  </div>
-                </div>
-              </th>
-              <th className="role-header p-2 text-center font-medium border-r min-w-[100px]">
-                <div className="flex flex-col items-center gap-1">
-                  <span>Admin</span>
-                  <div className="flex gap-1">
-                    <button className="role-toggle grant-all-btn grant-all-admin text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors" onClick={() => grantAllForRole('admin')}>All</button>
-                    <button className="role-toggle revoke-all-btn revoke-all-admin text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors" onClick={() => revokeAllForRole('admin')}>None</button>
-                  </div>
-                </div>
-              </th>
-              <th className="role-header p-2 text-center font-medium border-r-0 min-w-[100px]">
-                <div className="flex flex-col items-center gap-1">
-                  <span>Owner</span>
-                  <div className="flex gap-1">
-                    <button className="role-toggle grant-all-btn grant-all-owner text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors" onClick={() => grantAllForRole('owner')}>All</button>
-                    <button className="role-toggle revoke-all-btn revoke-all-owner text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-accent transition-colors" onClick={() => revokeAllForRole('owner')}>None</button>
-                  </div>
-                </div>
-              </th>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -328,63 +294,19 @@ export function PermissionMatrixDemo() {
                     </div>
                   </div>
                 </td>
-                {/* Explicit role cells (avoids nested static array compiler bug) */}
-                <td className="perm-cell border-r text-center p-2">
-                  <div className="flex items-center justify-center">
-                    <button
-                      role="checkbox"
-                      aria-checked={cellStates()['viewer:' + perm.id].checked ? 'true' : 'false'}
-                      data-state={cellStates()['viewer:' + perm.id].checked ? 'checked' : 'unchecked'}
-                      disabled={cellStates()['viewer:' + perm.id].disabled}
-                      className={cbClass(cellStates()['viewer:' + perm.id])}
-                      onClick={() => togglePermission('viewer', perm.id)}
-                    >
-                      <svg className={`h-3 w-3 ${cellStates()['viewer:' + perm.id].checked ? '' : 'hidden'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                    </button>
-                  </div>
-                </td>
-                <td className="perm-cell border-r text-center p-2">
-                  <div className="flex items-center justify-center">
-                    <button
-                      role="checkbox"
-                      aria-checked={cellStates()['editor:' + perm.id].checked ? 'true' : 'false'}
-                      data-state={cellStates()['editor:' + perm.id].checked ? 'checked' : 'unchecked'}
-                      disabled={cellStates()['editor:' + perm.id].disabled}
-                      className={cbClass(cellStates()['editor:' + perm.id])}
-                      onClick={() => togglePermission('editor', perm.id)}
-                    >
-                      <svg className={`h-3 w-3 ${cellStates()['editor:' + perm.id].checked ? '' : 'hidden'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                    </button>
-                  </div>
-                </td>
-                <td className="perm-cell border-r text-center p-2">
-                  <div className="flex items-center justify-center">
-                    <button
-                      role="checkbox"
-                      aria-checked={cellStates()['admin:' + perm.id].checked ? 'true' : 'false'}
-                      data-state={cellStates()['admin:' + perm.id].checked ? 'checked' : 'unchecked'}
-                      disabled={cellStates()['admin:' + perm.id].disabled}
-                      className={cbClass(cellStates()['admin:' + perm.id])}
-                      onClick={() => togglePermission('admin', perm.id)}
-                    >
-                      <svg className={`h-3 w-3 ${cellStates()['admin:' + perm.id].checked ? '' : 'hidden'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                    </button>
-                  </div>
-                </td>
-                <td className="perm-cell border-r-0 text-center p-2">
-                  <div className="flex items-center justify-center">
-                    <button
-                      role="checkbox"
-                      aria-checked={cellStates()['owner:' + perm.id].checked ? 'true' : 'false'}
-                      data-state={cellStates()['owner:' + perm.id].checked ? 'checked' : 'unchecked'}
-                      disabled={cellStates()['owner:' + perm.id].disabled}
-                      className={cbClass(cellStates()['owner:' + perm.id])}
-                      onClick={() => togglePermission('owner', perm.id)}
-                    >
-                      <svg className={`h-3 w-3 ${cellStates()['owner:' + perm.id].checked ? '' : 'hidden'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                    </button>
-                  </div>
-                </td>
+                {/* Inner ROLES.map: tests nested static array component init */}
+                {ROLES.map(role => (
+                  <td key={role.id} className="perm-cell border-r last:border-r-0 text-center p-2">
+                    <div className="flex items-center justify-center">
+                      <Checkbox
+                        checked={cellStates()[`${role.id}:${perm.id}`].checked}
+                        disabled={cellStates()[`${role.id}:${perm.id}`].disabled}
+                        onCheckedChange={() => togglePermission(role.id, perm.id)}
+                        className={cellStates()[`${role.id}:${perm.id}`].inherited ? 'inherited-badge opacity-50' : ''}
+                      />
+                    </div>
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
