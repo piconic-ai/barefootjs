@@ -215,8 +215,11 @@ export function createNodeWrapper<NodeType extends NodeBase>(
       onCleanup(() => element.removeEventListener('mousedown', onMouseDown))
     }
 
-    // Reactive position update
+    // Reactive position + selection update
     createEffect(() => {
+      // Read nodes() to trigger on setNodes (nodeLookup signal doesn't
+      // fire because it's the same Map reference after mutation)
+      store.nodes()
       const lookup = store.nodeLookup()
       const current = lookup.get(internalNode.id)
       if (!current) return
