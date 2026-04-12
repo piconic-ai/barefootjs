@@ -71,7 +71,8 @@ export function initFlow(scope: Element, props: Record<string, unknown>): void {
   edgesSvg.style.width = '100%'
   edgesSvg.style.height = '100%'
   edgesSvg.style.overflow = 'visible'
-  edgesSvg.style.pointerEvents = 'none'
+  // SVG container allows pointer events — hit areas on edges need them.
+  // Visible edge paths have pointer-events: none; only hit areas respond.
   viewportEl.appendChild(edgesSvg)
 
   // Nodes container

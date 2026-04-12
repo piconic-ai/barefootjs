@@ -120,6 +120,7 @@ export function createEdgeRenderer<
         pathEl.setAttribute('fill', 'none')
         pathEl.setAttribute('stroke', '#b1b1b7')
         pathEl.setAttribute('stroke-width', '1')
+        pathEl.style.pointerEvents = 'none'
         edgeGroup.appendChild(pathEl)
         edgeElements.set(edge.id, pathEl)
       }
