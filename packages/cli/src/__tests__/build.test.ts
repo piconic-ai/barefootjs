@@ -156,3 +156,31 @@ describe('resolveBuildConfigFromTs', () => {
     expect(config.outDir).toBe('/test/project/build/output')
   })
 })
+
+// ── minification ────────────────────────────────────────────────────────
+
+describe('minification does not re-introduce jsxDEV', () => {
+  test('Bun.Transpiler with loader: js preserves HTML in template literals', () => {
+    const transpiler = new Bun.Transpiler({
+      loader: 'js',
+      minifyWhitespace: true,
+      minifySyntax: true,
+    })
+
+    const clientJs = `
+import { createSignal, createEffect } from '@barefootjs/client-runtime'
+export function __bf_init_Counter(el, props) {
+  const [count, setCount] = createSignal(props.initial ?? 0)
+  const __tpl = document.createElement('template')
+  __tpl.innerHTML = \`<div class="counter"><p>\${count()}</p><button>+1</button></div>\`
+  el.appendChild(__tpl.content.cloneNode(true))
+}
+`
+    const result = transpiler.transformSync(clientJs)
+
+    expect(result).not.toContain('jsxDEV')
+    expect(result).not.toContain('jsx(')
+    expect(result).toContain('innerHTML')
+    expect(result).toContain('counter')
+  })
+})

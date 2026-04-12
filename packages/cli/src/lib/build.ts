@@ -302,7 +302,7 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
   // 7. Minify client JS (after combine so all files are final)
   if (config.minify) {
     // @ts-expect-error minifySyntax is supported at runtime but missing from older bun-types
-    const transpiler = new Bun.Transpiler({ minifyWhitespace: true, minifySyntax: true })
+    const transpiler = new Bun.Transpiler({ loader: 'js', minifyWhitespace: true, minifySyntax: true })
     for (const [, entry] of Object.entries(manifest)) {
       if (!entry.clientJs) continue
       const filePath = resolve(config.outDir, entry.clientJs)
