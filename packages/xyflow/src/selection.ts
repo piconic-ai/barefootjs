@@ -90,6 +90,10 @@ export function setupNodeSelection<NodeType extends NodeBase>(
       store.unselectNodesAndEdges()
     }
 
+    // Focus the container so keyboard events (Delete) work
+    const container = untrack(store.domNode)
+    if (container) container.focus()
+
     // Toggle this node's selection
     store.setNodes((prev) =>
       prev.map((n) =>

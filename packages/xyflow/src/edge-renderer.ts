@@ -69,7 +69,6 @@ export function createEdgeRenderer<
         const sw = sourceNode.measured.width ?? 150
         const sh = sourceNode.measured.height ?? 40
         const tw = targetNode.measured.width ?? 150
-        const th = targetNode.measured.height ?? 40
 
         const sourcePos = sourceNode.internals.positionAbsolute
         const targetPos = targetNode.internals.positionAbsolute
@@ -102,6 +101,9 @@ export function createEdgeRenderer<
         hitPath.style.pointerEvents = 'stroke'
         hitPath.addEventListener('mousedown', (e) => {
           e.stopPropagation()
+          // Focus container for keyboard events (Delete)
+          const container = store.domNode()
+          if (container) container.focus()
           const edgeId = edge.id
           store.unselectNodesAndEdges()
           store.setEdges((prev) =>

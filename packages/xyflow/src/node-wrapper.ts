@@ -143,7 +143,9 @@ export function createNodeWrapper<NodeType extends NodeBase>(
         const mw = internalNode.measured.width
         const mh = internalNode.measured.height
 
-        // Select this node
+        // Select this node and focus container for keyboard events
+        const container = untrack(store.domNode)
+        if (container) container.focus()
         store.unselectNodesAndEdges()
         store.setNodes((prev) =>
           prev.map((n) =>
