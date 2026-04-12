@@ -39,7 +39,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createEffect, createPortal, isSSRPortal } from '@barefootjs/client-runtime'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal } from '@barefootjs/client-runtime'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronRightIcon } from '../icon'
@@ -521,7 +521,7 @@ function MenubarCheckboxItem(props: MenubarCheckboxItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
+  const isDisabled = createMemo(() => props.disabled ?? false)
 
   return (
     <div
@@ -529,9 +529,9 @@ function MenubarCheckboxItem(props: MenubarCheckboxItemProps) {
       role="menuitemcheckbox"
       id={props.id}
       aria-checked={String(props.checked ?? false)}
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${menubarCheckableItemClasses} ${isDisabled ? menubarItemDisabledClasses : menubarItemDefaultClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${menubarCheckableItemClasses} ${isDisabled() ? menubarItemDisabledClasses : menubarItemDefaultClasses} ${props.className ?? ''}`}
       ref={handleMount}
     >
       <span className={menubarIndicatorClasses}>
@@ -599,7 +599,7 @@ function MenubarRadioItem(props: MenubarRadioItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
+  const isDisabled = createMemo(() => props.disabled ?? false)
 
   return (
     <div
@@ -607,9 +607,9 @@ function MenubarRadioItem(props: MenubarRadioItemProps) {
       role="menuitemradio"
       id={props.id}
       aria-checked="false"
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${menubarCheckableItemClasses} ${isDisabled ? menubarItemDisabledClasses : menubarItemDefaultClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${menubarCheckableItemClasses} ${isDisabled() ? menubarItemDisabledClasses : menubarItemDefaultClasses} ${props.className ?? ''}`}
       ref={handleMount}
     >
       <span className={menubarIndicatorClasses} data-slot="menubar-radio-indicator">

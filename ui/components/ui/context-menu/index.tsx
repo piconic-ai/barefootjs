@@ -35,7 +35,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client-runtime'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client-runtime'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronRightIcon } from '../icon'
@@ -391,22 +391,22 @@ function ContextMenuItem(props: ContextMenuItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
-  const isDestructive = props.variant === 'destructive'
-  const stateClasses = isDisabled
+  const isDisabled = createMemo(() => props.disabled ?? false)
+  const isDestructive = createMemo(() => props.variant === 'destructive')
+  const stateClasses = createMemo(() => isDisabled()
     ? contextMenuItemDisabledClasses
-    : isDestructive
+    : isDestructive()
       ? contextMenuItemDestructiveClasses
-      : contextMenuItemDefaultClasses
+      : contextMenuItemDefaultClasses)
 
   return (
     <div
       data-slot="context-menu-item"
       role="menuitem"
       id={props.id}
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${contextMenuItemBaseClasses} ${stateClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${contextMenuItemBaseClasses} ${stateClasses()} ${props.className ?? ''}`}
       ref={handleMount}
     >
       {props.children}
@@ -444,7 +444,7 @@ function ContextMenuCheckboxItem(props: ContextMenuCheckboxItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
+  const isDisabled = createMemo(() => props.disabled ?? false)
 
   return (
     <div
@@ -452,9 +452,9 @@ function ContextMenuCheckboxItem(props: ContextMenuCheckboxItemProps) {
       role="menuitemcheckbox"
       id={props.id}
       aria-checked={String(props.checked ?? false)}
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${contextMenuCheckableItemClasses} ${isDisabled ? contextMenuItemDisabledClasses : contextMenuItemDefaultClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${contextMenuCheckableItemClasses} ${isDisabled() ? contextMenuItemDisabledClasses : contextMenuItemDefaultClasses} ${props.className ?? ''}`}
       ref={handleMount}
     >
       <span className={contextMenuIndicatorClasses}>
@@ -525,7 +525,7 @@ function ContextMenuRadioItem(props: ContextMenuRadioItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
+  const isDisabled = createMemo(() => props.disabled ?? false)
 
   return (
     <div
@@ -533,9 +533,9 @@ function ContextMenuRadioItem(props: ContextMenuRadioItemProps) {
       role="menuitemradio"
       id={props.id}
       aria-checked="false"
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${contextMenuCheckableItemClasses} ${isDisabled ? contextMenuItemDisabledClasses : contextMenuItemDefaultClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${contextMenuCheckableItemClasses} ${isDisabled() ? contextMenuItemDisabledClasses : contextMenuItemDefaultClasses} ${props.className ?? ''}`}
       ref={handleMount}
     >
       <span className={contextMenuIndicatorClasses} data-slot="context-menu-radio-indicator">

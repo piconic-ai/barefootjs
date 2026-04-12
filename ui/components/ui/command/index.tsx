@@ -32,7 +32,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createEffect } from '@barefootjs/client-runtime'
+import { createContext, useContext, createSignal, createMemo, createEffect } from '@barefootjs/client-runtime'
 import {
   Dialog,
   DialogOverlay,
@@ -146,10 +146,10 @@ function Command(props: CommandProps) {
   const [selectedValue, setSelectedValue] = createSignal('')
   const items = new Set<HTMLElement>()
 
-  const filterFn = props.filter ?? ((value: string, search: string) => {
+  const filterFn = createMemo(() => props.filter ?? ((value: string, search: string) => {
     if (!search) return true
     return value.toLowerCase().includes(search.toLowerCase())
-  })
+  }))
 
   const handleMount = (el: HTMLElement) => {
     // Auto-select first visible item when search changes
@@ -215,7 +215,7 @@ function Command(props: CommandProps) {
       },
       registerItem: (el: HTMLElement) => items.add(el),
       unregisterItem: (el: HTMLElement) => items.delete(el),
-      filter: filterFn,
+      filter: filterFn(),
     }}>
       <div
         data-slot="command"
@@ -407,14 +407,14 @@ function CommandItem(props: CommandItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
+  const isDisabled = createMemo(() => props.disabled ?? false)
 
   return (
     <div
       data-slot="command-item"
       id={props.id}
       role="option"
-      data-disabled={isDisabled || undefined}
+      data-disabled={isDisabled() || undefined}
       data-selected="false"
       className={`${commandItemClasses} ${props.className ?? ''}`}
       ref={handleMount}

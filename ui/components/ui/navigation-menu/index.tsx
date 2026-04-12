@@ -35,7 +35,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createEffect, createPortal, isSSRPortal } from '@barefootjs/client-runtime'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal } from '@barefootjs/client-runtime'
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { ChevronDownIcon } from '../icon'
@@ -450,19 +450,18 @@ interface NavigationMenuLinkProps extends HTMLBaseAttributes {
  * Navigation link element. Stateless.
  * When active, renders with aria-current="page" and data-active.
  */
-function NavigationMenuLink({ children, className = '', ...props }: NavigationMenuLinkProps) {
-  const isActive = props.active ?? false
+function NavigationMenuLink(props: NavigationMenuLinkProps) {
+  const isActive = createMemo(() => props.active ?? false)
 
   return (
     <a
       data-slot="navigation-menu-link"
       href={props.href}
-      aria-current={isActive ? 'page' : undefined}
-      data-active={isActive || undefined}
-      className={`${navigationMenuLinkBaseClasses} ${isActive ? navigationMenuLinkActiveClasses : ''} ${className}`}
-      {...props}
+      aria-current={isActive() ? 'page' : undefined}
+      data-active={isActive() || undefined}
+      className={`${navigationMenuLinkBaseClasses} ${isActive() ? navigationMenuLinkActiveClasses : ''} ${props.className ?? ''}`}
     >
-      {children}
+      {props.children}
     </a>
   )
 }

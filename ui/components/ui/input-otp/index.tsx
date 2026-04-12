@@ -29,7 +29,7 @@
  */
 
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
-import { createSignal, createContext, useContext, createEffect } from '@barefootjs/client-runtime'
+import { createSignal, createMemo, createContext, useContext, createEffect } from '@barefootjs/client-runtime'
 import type { Child } from '../../../types'
 import { MinusIcon } from '../icon'
 
@@ -117,7 +117,7 @@ function InputOTP(props: InputOTPProps) {
   const [isFocused, setIsFocused] = createSignal(false)
 
   const getValue = () => props.value !== undefined ? (props.value ?? '') : internalValue()
-  const pattern = resolvePattern(props.pattern)
+  const pattern = createMemo(() => resolvePattern(props.pattern))
 
   const updateValue = (newValue: string) => {
     const truncated = newValue.slice(0, props.maxLength)
@@ -153,7 +153,7 @@ function InputOTP(props: InputOTPProps) {
       // Filter by pattern character-by-character
       let filtered = ''
       for (const ch of raw) {
-        if (pattern.test(ch)) {
+        if (pattern().test(ch)) {
           filtered += ch
         }
       }
@@ -188,7 +188,7 @@ function InputOTP(props: InputOTPProps) {
       const pasted = e.clipboardData?.getData('text') ?? ''
       let filtered = ''
       for (const ch of pasted) {
-        if (pattern.test(ch)) {
+        if (pattern().test(ch)) {
           filtered += ch
         }
       }
@@ -314,14 +314,13 @@ function InputOTPSlot(props: InputOTPSlotProps) {
     })
   }
 
-  const className = props.className ?? ''
-  const classes = `${slotBaseClasses} ${slotActiveClasses} ${className}`
+  const className = createMemo(() => props.className ?? '')
 
   return (
     <div
       data-slot="input-otp-slot"
       data-active="false"
-      className={classes}
+      className={`${slotBaseClasses} ${slotActiveClasses} ${className()}`}
       ref={handleMount}
     >
       <span data-otp-char></span>

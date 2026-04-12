@@ -23,7 +23,7 @@
  */
 
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
-import { createContext, useContext, createEffect } from '@barefootjs/client-runtime'
+import { createContext, useContext, createMemo, createEffect } from '@barefootjs/client-runtime'
 import type { Child } from '../../../types'
 import { ChevronDownIcon } from '../icon'
 
@@ -272,7 +272,7 @@ function AccordionContent(props: AccordionContentProps) {
     })
   }
 
-  const className = props.className ?? ''
+  const className = createMemo(() => props.className ?? '')
 
   return (
     <div
@@ -284,7 +284,7 @@ function AccordionContent(props: AccordionContentProps) {
       ref={handleMount}
     >
       <div className={accordionContentInnerClasses}>
-        <div className={`pt-0 pb-4 ${className}`}>
+        <div className={`pt-0 pb-4 ${className()}`}>
           {props.children}
         </div>
       </div>

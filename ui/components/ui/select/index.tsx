@@ -34,7 +34,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client-runtime'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client-runtime'
 import type { HTMLBaseAttributes, ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronDownIcon } from '../icon'
@@ -107,15 +107,15 @@ function Select(props: SelectProps) {
   const [open, setOpen] = createSignal(false)
   // Internal state for uncontrolled mode (when value prop is not provided)
   const [internalValue, setInternalValue] = createSignal(props.value ?? '')
-  const isControlled = props.value !== undefined
+  const isControlled = createMemo(() => props.value !== undefined)
 
   return (
     <SelectContext.Provider value={{
       open,
       onOpenChange: (v) => { setOpen(v); props.onOpenChange?.(v) },
-      value: () => isControlled ? (props.value ?? '') : internalValue(),
+      value: () => isControlled() ? (props.value ?? '') : internalValue(),
       onValueChange: (v: string) => {
-        if (!isControlled) setInternalValue(v)
+        if (!isControlled()) setInternalValue(v)
         if (props.onValueChange) props.onValueChange(v)
       },
       disabled: () => props.disabled ?? false,
@@ -458,8 +458,8 @@ function SelectItem(props: SelectItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
-  const stateClasses = isDisabled ? selectItemDisabledClasses : selectItemDefaultClasses
+  const isDisabled = createMemo(() => props.disabled ?? false)
+  const stateClasses = createMemo(() => isDisabled() ? selectItemDisabledClasses : selectItemDefaultClasses)
 
   return (
     <div
@@ -469,9 +469,9 @@ function SelectItem(props: SelectItemProps) {
       role="option"
       id={props.id}
       aria-selected="false"
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${selectItemBaseClasses} ${stateClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${selectItemBaseClasses} ${stateClasses()} ${props.className ?? ''}`}
       ref={handleMount}
     >
       <span data-slot="select-item-indicator" className={selectIndicatorClasses} style="display:none">

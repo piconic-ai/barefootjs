@@ -36,7 +36,7 @@
  * ```
  */
 
-import { createContext, useContext, createSignal, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client-runtime'
+import { createContext, useContext, createSignal, createMemo, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client-runtime'
 import type { ButtonHTMLAttributes, HTMLBaseAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { CheckIcon, ChevronRightIcon } from '../icon'
@@ -418,22 +418,22 @@ function DropdownMenuItem(props: DropdownMenuItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
-  const isDestructive = props.variant === 'destructive'
-  const stateClasses = isDisabled
+  const isDisabled = createMemo(() => props.disabled ?? false)
+  const isDestructive = createMemo(() => props.variant === 'destructive')
+  const stateClasses = createMemo(() => isDisabled()
     ? dropdownMenuItemDisabledClasses
-    : isDestructive
+    : isDestructive()
       ? dropdownMenuItemDestructiveClasses
-      : dropdownMenuItemDefaultClasses
+      : dropdownMenuItemDefaultClasses)
 
   return (
     <div
       data-slot="dropdown-menu-item"
       role="menuitem"
       id={props.id}
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${dropdownMenuItemBaseClasses} ${stateClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${dropdownMenuItemBaseClasses} ${stateClasses()} ${props.className ?? ''}`}
       ref={handleMount}
     >
       {props.children}
@@ -471,7 +471,7 @@ function DropdownMenuCheckboxItem(props: DropdownMenuCheckboxItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
+  const isDisabled = createMemo(() => props.disabled ?? false)
 
   return (
     <div
@@ -479,9 +479,9 @@ function DropdownMenuCheckboxItem(props: DropdownMenuCheckboxItemProps) {
       role="menuitemcheckbox"
       id={props.id}
       aria-checked={String(props.checked ?? false)}
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${dropdownMenuCheckableItemClasses} ${isDisabled ? dropdownMenuItemDisabledClasses : dropdownMenuItemDefaultClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${dropdownMenuCheckableItemClasses} ${isDisabled() ? dropdownMenuItemDisabledClasses : dropdownMenuItemDefaultClasses} ${props.className ?? ''}`}
       ref={handleMount}
     >
       <span className={dropdownMenuIndicatorClasses}>
@@ -552,7 +552,7 @@ function DropdownMenuRadioItem(props: DropdownMenuRadioItemProps) {
     })
   }
 
-  const isDisabled = props.disabled ?? false
+  const isDisabled = createMemo(() => props.disabled ?? false)
 
   return (
     <div
@@ -560,9 +560,9 @@ function DropdownMenuRadioItem(props: DropdownMenuRadioItemProps) {
       role="menuitemradio"
       id={props.id}
       aria-checked="false"
-      aria-disabled={isDisabled || undefined}
-      tabindex={isDisabled ? -1 : 0}
-      className={`${dropdownMenuCheckableItemClasses} ${isDisabled ? dropdownMenuItemDisabledClasses : dropdownMenuItemDefaultClasses} ${props.className ?? ''}`}
+      aria-disabled={isDisabled() || undefined}
+      tabindex={isDisabled() ? -1 : 0}
+      className={`${dropdownMenuCheckableItemClasses} ${isDisabled() ? dropdownMenuItemDisabledClasses : dropdownMenuItemDefaultClasses} ${props.className ?? ''}`}
       ref={handleMount}
     >
       <span className={dropdownMenuIndicatorClasses} data-slot="dropdown-menu-radio-indicator">
