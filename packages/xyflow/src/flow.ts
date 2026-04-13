@@ -14,7 +14,7 @@ import type {
 import { createFlowStore } from './store'
 import { FlowContext } from './context'
 import { createNodeRenderer } from './node-wrapper'
-import { createEdgeRenderer } from './edge-renderer'
+import { createEdgeRenderer, createEdgeLabelRenderer } from './edge-renderer'
 import { setupKeyboardHandlers } from './selection'
 import { INFINITE_EXTENT, SVG_NS } from './constants'
 import type { FlowProps } from './types'
@@ -142,6 +142,7 @@ export function initFlow(scope: Element, props: Record<string, unknown>): void {
 
   createNodeRenderer(store, nodesEl)
   createEdgeRenderer(store, edgesSvg)
+  createEdgeLabelRenderer(store, viewportEl)
   setupKeyboardHandlers(store, el)
 
   el.addEventListener('click', (event) => {
@@ -219,6 +220,50 @@ function injectDefaultStyles() {
     @keyframes bf-dashdraw { from { stroke-dashoffset: 10; } }
     .bf-flow__controls-button:hover { background: #f4f4f4 !important; }
     .bf-flow__controls-button:last-child { border-bottom: none !important; }
+    .bf-flow__edge-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #f8f8f8;
+      border: 1px solid #e2e2e2;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: #222;
+      white-space: nowrap;
+      cursor: default;
+    }
+    .bf-flow__edge-label--selected {
+      border-color: #555;
+    }
+    .bf-flow__edge-toolbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      gap: 4px;
+      z-index: 10;
+    }
+    .bf-flow__edge-toolbar-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid #e2e2e2;
+      background: #fff;
+      color: #666;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+    .bf-flow__edge-toolbar-button:hover {
+      background: #fee;
+      color: #c00;
+      border-color: #c00;
+    }
   `
   document.head.appendChild(style)
 }

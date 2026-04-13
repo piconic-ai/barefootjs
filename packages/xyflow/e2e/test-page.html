@@ -30,6 +30,9 @@
 <h2>Stress Test (20 nodes)</h2>
 <div id="stress" class="test-container" style="height:500px"></div>
 
+<h2>Edge Labels</h2>
+<div id="edge-labels" class="test-container"></div>
+
 <h2>Heavy Stress Test (100 nodes)</h2>
 <div id="heavy-stress" class="test-container" style="height:600px"></div>
 
@@ -104,6 +107,22 @@ createRoot(() => {
     edges: [
       { id: 'e-drag', source: 'drag1', target: 'drag2' },
       { id: 'e-fixed', source: 'drag1', target: 'fixed' },
+    ],
+  })
+})
+
+// Edge labels test — labels on edges, toolbar on selection
+createRoot(() => {
+  initFlow(document.getElementById('edge-labels'), {
+    nodes: [
+      { id: 'el1', position: { x: 50, y: 50 }, data: { label: 'Source' } },
+      { id: 'el2', position: { x: 300, y: 50 }, data: { label: 'Target A' } },
+      { id: 'el3', position: { x: 300, y: 200 }, data: { label: 'Target B' } },
+    ],
+    edges: [
+      { id: 'el-ab', source: 'el1', target: 'el2', label: 'connection 1' },
+      { id: 'el-ac', source: 'el1', target: 'el3', label: 'connection 2' },
+      { id: 'el-bc', source: 'el2', target: 'el3' },
     ],
   })
 })

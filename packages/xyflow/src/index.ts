@@ -3,7 +3,7 @@ export { initFlow } from './flow'
 export { createFlowStore } from './store'
 export { FlowContext } from './context'
 export { createNodeWrapper, createNodeRenderer } from './node-wrapper'
-export { createEdgeRenderer } from './edge-renderer'
+export { createEdgeRenderer, createEdgeLabelRenderer } from './edge-renderer'
 export { createHandle, initHandle } from './handle'
 export type { HandleType, HandleProps } from './handle'
 export { attachConnectionHandler } from './connection'
@@ -61,6 +61,7 @@ export {
   getIncomers,
   getNodesBounds,
   getNodesInside,
+  getEdgeToolbarTransform,
   Position,
   ConnectionMode as ConnectionModeEnum,
   MarkerType,

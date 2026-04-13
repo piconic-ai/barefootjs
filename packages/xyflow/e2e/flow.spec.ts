@@ -155,6 +155,136 @@ test.describe('Edge Rendering', () => {
 })
 
 // ============================================================
+// Edge Labels
+// ============================================================
+test.describe('Edge Labels', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.evaluate(() => {
+      document.getElementById('edge-labels')?.scrollIntoView({ block: 'center' })
+    })
+  })
+
+  test('renders edge labels with correct text', async ({ page }) => {
+    const labels = page.locator('#edge-labels .bf-flow__edge-label')
+    await expect(labels).toHaveCount(2)
+    await expect(labels.nth(0)).toHaveText('connection 1')
+    await expect(labels.nth(1)).toHaveText('connection 2')
+  })
+
+  test('edge labels have data-edge-id attribute', async ({ page }) => {
+    await expect(
+      page.locator('#edge-labels .bf-flow__edge-label[data-edge-id="el-ab"]'),
+    ).toBeAttached()
+    await expect(
+      page.locator('#edge-labels .bf-flow__edge-label[data-edge-id="el-ac"]'),
+    ).toBeAttached()
+  })
+
+  test('edges without label do not render label element', async ({ page }) => {
+    await expect(
+      page.locator('#edge-labels .bf-flow__edge-label[data-edge-id="el-bc"]'),
+    ).not.toBeAttached()
+  })
+
+  test('edge labels are positioned with transform', async ({ page }) => {
+    const label = page.locator('#edge-labels .bf-flow__edge-label').first()
+    const style = await label.getAttribute('style')
+    expect(style).toContain('translate')
+  })
+
+  test('edge toolbar appears on edge selection', async ({ page }) => {
+    // Initially toolbar is hidden
+    await page.waitForSelector('#edge-labels .bf-flow__edge')
+
+    // Click on edge hit area to select it
+    await page.evaluate(() => {
+      const hitPath = document.querySelector('#edge-labels path[stroke="transparent"]')!
+      hitPath.dispatchEvent(
+        new MouseEvent('mousedown', { button: 0, bubbles: true, view: window }),
+      )
+      document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, view: window }))
+    })
+    await page.waitForTimeout(100)
+
+    // Toolbar should be visible
+    const toolbar = page.locator('#edge-labels .bf-flow__edge-toolbar')
+    await expect(toolbar).toBeVisible()
+  })
+
+  test('edge toolbar delete button removes selected edge', async ({ page }) => {
+    await page.waitForSelector('#edge-labels .bf-flow__edge')
+    const beforeCount = await page.locator('#edge-labels .bf-flow__edge').count()
+
+    // Select first edge
+    await page.evaluate(() => {
+      const hitPath = document.querySelector('#edge-labels path[stroke="transparent"]')!
+      hitPath.dispatchEvent(
+        new MouseEvent('mousedown', { button: 0, bubbles: true, view: window }),
+      )
+      document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, view: window }))
+    })
+    await page.waitForTimeout(100)
+
+    // Click delete button on toolbar
+    await page.evaluate(() => {
+      const btn = document.querySelector(
+        '#edge-labels .bf-flow__edge-toolbar-button',
+      )!
+      btn.dispatchEvent(
+        new MouseEvent('mousedown', { button: 0, bubbles: true, view: window }),
+      )
+    })
+    await page.waitForTimeout(100)
+
+    const afterCount = await page.locator('#edge-labels .bf-flow__edge').count()
+    expect(afterCount).toBeLessThan(beforeCount)
+  })
+
+  test('edge labels update position when node is dragged', async ({ page }) => {
+    await page.waitForSelector('#edge-labels .bf-flow__edge-label')
+
+    const result = await page.evaluate(async () => {
+      const label = document.querySelector('#edge-labels .bf-flow__edge-label')! as HTMLElement
+      const before = label.style.transform
+
+      // Drag source node
+      const node = document.querySelector('#edge-labels [data-id="el1"]')!
+      const rect = node.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+
+      node.dispatchEvent(
+        new MouseEvent('mousedown', {
+          clientX: cx,
+          clientY: cy,
+          button: 0,
+          bubbles: true,
+          view: window,
+        }),
+      )
+      for (let i = 1; i <= 5; i++) {
+        document.dispatchEvent(
+          new MouseEvent('mousemove', {
+            clientX: cx + i * 20,
+            clientY: cy,
+            bubbles: true,
+            view: window,
+          }),
+        )
+        await new Promise((r) => setTimeout(r, 16))
+      }
+      document.dispatchEvent(
+        new MouseEvent('mouseup', { bubbles: true, view: window }),
+      )
+      await new Promise((r) => setTimeout(r, 100))
+
+      return { before, after: label.style.transform }
+    })
+    expect(result.after).not.toBe(result.before)
+  })
+})
+
+// ============================================================
 // Edge Properties (hidden, animated)
 // ============================================================
 test.describe('Edge Properties', () => {
