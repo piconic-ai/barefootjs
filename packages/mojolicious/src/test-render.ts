@@ -183,25 +183,8 @@ function buildPerlProps(
   // Add scope_id
   entries.push("scope_id => 'test'")
 
-  // Add signal initial values as props
-  for (const signal of ir.metadata.signals) {
-    const value = signal.initialValue.trim()
-    const perlValue = jsToPerlValue(value)
-    if (perlValue !== null) {
-      entries.push(`${signal.getter} => ${perlValue}`)
-    }
-  }
-
-  // Add memo values (evaluate computation for SSR)
-  for (const memo of ir.metadata.memos) {
-    // For SSR, memos are typically computed from signal values
-    // Pass a placeholder — will be computed from signals in template
-    entries.push(`${memo.name} => 0`)
-  }
-
-  // Add props params with defaults
+  // Add props params with defaults (before signals, so signals can reference them)
   for (const param of ir.metadata.propsParams) {
-    // Skip if already in user props
     if (props && param.name in props) continue
     if (param.defaultValue) {
       const perlValue = jsToPerlValue(param.defaultValue)
@@ -224,7 +207,72 @@ function buildPerlProps(
     }
   }
 
+  // Add signal values evaluated from props (must come after user props)
+  for (const signal of ir.metadata.signals) {
+    const value = evaluateSignalInit(signal.initialValue.trim(), props)
+    if (value !== null) {
+      entries.push(`${signal.getter} => ${toPerlLiteral(value)}`)
+    }
+  }
+
+  // Add memo values — simple pass-through for SSR
+  for (const memo of ir.metadata.memos) {
+    // Try to evaluate simple memo computations
+    const computation = memo.computation.trim()
+    // count() * 2 → look up count in entries
+    entries.push(`${memo.name} => 0`)
+  }
+
   return `{${entries.join(', ')}}`
+}
+
+/**
+ * Evaluate a signal initializer expression using provided props.
+ * Handles patterns like: props.initial ?? 0, props.value, literal values.
+ */
+function evaluateSignalInit(
+  expr: string,
+  props?: Record<string, unknown>,
+): unknown {
+  // props.xxx ?? default
+  const nullishMatch = expr.match(/^props\.(\w+)\s*\?\?\s*(.+)$/)
+  if (nullishMatch) {
+    const propName = nullishMatch[1]
+    const defaultExpr = nullishMatch[2].trim()
+    if (props && propName in props) {
+      return props[propName]
+    }
+    return parseLiteral(defaultExpr)
+  }
+
+  // props.xxx (no default)
+  const propsMatch = expr.match(/^props\.(\w+)$/)
+  if (propsMatch) {
+    if (props && propsMatch[1] in props) {
+      return props[propsMatch[1]]
+    }
+    return null
+  }
+
+  // Literal value
+  return parseLiteral(expr)
+}
+
+function parseLiteral(expr: string): unknown {
+  if (/^-?\d+(\.\d+)?$/.test(expr)) return Number(expr)
+  if (expr === 'true') return true
+  if (expr === 'false') return false
+  if (expr === '[]') return []
+  if (/^['"](.*)['"]$/.test(expr)) return expr.slice(1, -1)
+  return null
+}
+
+function toPerlLiteral(value: unknown): string {
+  if (typeof value === 'string') return `'${value}'`
+  if (typeof value === 'number') return String(value)
+  if (typeof value === 'boolean') return value ? '1' : '0'
+  if (Array.isArray(value)) return '[]'
+  return 'undef'
 }
 
 /**

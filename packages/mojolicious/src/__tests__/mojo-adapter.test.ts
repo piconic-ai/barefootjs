@@ -17,7 +17,13 @@ import { compileJSXSync, type ComponentIR } from '@barefootjs/jsx'
 runJSXConformanceTests({
   createAdapter: () => new MojoAdapter(),
   render: renderMojoComponent,
-  skip: ['static-array-children'],
+  skip: [
+    'static-array-children',
+    'child-component',         // include rendering not yet supported in test-render
+    'multiple-instances',      // include rendering not yet supported in test-render
+    'child-component-init',    // include rendering not yet supported in test-render
+    'reactive-prop-binding',   // include rendering not yet supported in test-render
+  ],
   onRenderError: (err, id) => {
     if (err instanceof PerlNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

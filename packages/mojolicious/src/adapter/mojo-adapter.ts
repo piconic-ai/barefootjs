@@ -15,9 +15,10 @@ import type {
   IRComponent,
   IRFragment,
   IRSlot,
+  IRTemplateLiteral,
   CompilerError,
 } from '@barefootjs/jsx'
-import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions } from '@barefootjs/jsx'
+import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND } from '@barefootjs/shared'
 
 export interface MojoAdapterOptions {
@@ -184,15 +185,32 @@ export class MojoAdapter extends BaseAdapter {
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
-    let result: string
-    if (whenFalse) {
-      result = `% if (${condition}) {\n${whenTrue}\n% } else {\n${whenFalse}\n% }`
-    } else {
-      result = `% if (${condition}) {\n${whenTrue}\n% }`
+    // When slotId is present, add bf-c marker.
+    // Use comment markers for fragments (multiple sibling elements), attribute for single elements.
+    const isFragmentBranch = cond.whenTrue.type === 'fragment' || cond.whenFalse.type === 'fragment'
+    const useCommentMarkers = cond.slotId && isFragmentBranch
+
+    let markedTrue = whenTrue
+    let markedFalse = whenFalse
+    if (cond.slotId && !useCommentMarkers) {
+      markedTrue = this.addCondMarkerToFirstElement(whenTrue, cond.slotId)
+      markedFalse = whenFalse ? this.addCondMarkerToFirstElement(whenFalse, cond.slotId) : whenFalse
     }
 
-    if (cond.slotId) {
-      return this.wrapWithCondMarker(result, cond.slotId)
+    let result: string
+    if (useCommentMarkers) {
+      // Fragment branches: use comment markers
+      const inner = whenFalse
+        ? `\n% if (${condition}) {\n${whenTrue}\n% } else {\n${whenFalse}\n% }\n`
+        : `\n% if (${condition}) {\n${whenTrue}\n% }\n`
+      result = `<%== $bf->comment("cond-start:${cond.slotId}") %>${inner}<%== $bf->comment("cond-end:${cond.slotId}") %>`
+    } else if (markedFalse) {
+      result = `\n% if (${condition}) {\n${markedTrue}\n% } else {\n${markedFalse}\n% }\n`
+    } else if (cond.slotId) {
+      // Conditional with no else: wrap with comment markers for client hydration
+      result = `<%== $bf->comment("cond-start:${cond.slotId}") %>\n% if (${condition}) {\n${whenTrue}\n% }\n<%== $bf->comment("cond-end:${cond.slotId}") %>`
+    } else {
+      result = `\n% if (${condition}) {\n${whenTrue}\n% }\n`
     }
 
     return result
@@ -205,13 +223,17 @@ export class MojoAdapter extends BaseAdapter {
     return this.renderNode(node)
   }
 
-  private wrapWithCondMarker(content: string, condId: string): string {
-    // Try to add bf-c attribute to first HTML element
-    const match = content.match(/^(% if \([^)]+\) \{\n<\w+)(\s|>)/)
+  /**
+   * Add bf-c attribute to the first HTML element in a branch.
+   * If no element found, wrap with comment markers.
+   */
+  private addCondMarkerToFirstElement(content: string, condId: string): string {
+    // Match first HTML open tag
+    const match = content.match(/^(<\w+)([\s>])/)
     if (match) {
-      return content.replace(/^(% if \([^)]+\) \{\n<\w+)(\s|>)/, `$1 ${BF_COND}="${condId}"$2`)
+      return content.replace(/^(<\w+)([\s>])/, `$1 ${BF_COND}="${condId}"$2`)
     }
-    // Fall back to comment markers
+    // Fall back to comment markers for non-element content
     return `<%== $bf->comment("cond-start:${condId}") %>${content}<%== $bf->comment("cond-end:${condId}") %>`
   }
 
@@ -220,6 +242,9 @@ export class MojoAdapter extends BaseAdapter {
   // ===========================================================================
 
   renderLoop(loop: IRLoop): string {
+    // Client-only loops: skip SSR rendering entirely
+    if (loop.clientOnly) return ''
+
     const array = this.convertExpressionToPerl(loop.array)
     const param = loop.param
     const indexVar = loop.index ? `$${loop.index}` : '$_i'
@@ -286,8 +311,16 @@ export class MojoAdapter extends BaseAdapter {
       } else if (attr.value === null) {
         parts.push(attrName)
       } else if (attr.dynamic) {
-        const value = typeof attr.value === 'string' ? attr.value : ''
-        parts.push(`${attrName}="<%= ${this.convertExpressionToPerl(value)} %>"`)
+        if (typeof attr.value !== 'string') {
+          // IRTemplateLiteral — convert to Perl string expression
+          const perlExpr = this.convertTemplateLiteralToPerl(attr.value as IRTemplateLiteral)
+          parts.push(`${attrName}="<%= ${perlExpr} %>"`)
+        } else if (isBooleanAttr(attrName)) {
+          // Boolean attributes: render conditionally (present or absent)
+          parts.push(`<%= ${this.convertExpressionToPerl(attr.value)} ? '${attrName}' : '' %>`)
+        } else {
+          parts.push(`${attrName}="<%= ${this.convertExpressionToPerl(attr.value)} %>"`)
+        }
       } else {
         parts.push(`${attrName}="${attr.value ?? ''}"`)
 
@@ -317,6 +350,20 @@ export class MojoAdapter extends BaseAdapter {
   // Expression Conversion: JS → Perl
   // ===========================================================================
 
+  private convertTemplateLiteralToPerl(literal: IRTemplateLiteral): string {
+    const parts: string[] = []
+    for (const part of literal.parts) {
+      if (part.type === 'string') {
+        parts.push(`'${part.value}'`)
+      } else if (part.type === 'ternary') {
+        const cond = this.convertExpressionToPerl(part.condition)
+        parts.push(`(${cond} ? '${part.whenTrue}' : '${part.whenFalse}')`)
+      }
+    }
+    // Join with Perl string concatenation
+    return parts.length === 1 ? parts[0] : parts.join(' . ')
+  }
+
   private convertExpressionToPerl(expr: string): string {
     // Signal getter calls: count() → $count
     let result = expr.replace(/\b([a-z_]\w*)\(\)/g, (_, name) => `$${name}`)
@@ -341,7 +388,17 @@ export class MojoAdapter extends BaseAdapter {
     // .length → scalar(@{...})
     result = result.replace(/\$(\w+)->\{length\}/g, (_, arr) => `scalar(@{$${arr}})`)
 
-    // Boolean/comparison operators
+    // Nullish coalescing: a ?? b → a // b (Perl defined-or)
+    result = result.replace(/\?\?/g, '//')
+
+    // String comparison: expr === 'str' → expr eq 'str', expr !== 'str' → expr ne 'str'
+    result = result.replace(/\s*===\s*(['"])/g, ' eq $1')
+    result = result.replace(/\s*!==\s*(['"])/g, ' ne $1')
+    // Also handle: 'str' === expr
+    result = result.replace(/(['"])\s*===\s*/g, '$1 eq ')
+    result = result.replace(/(['"])\s*!==\s*/g, '$1 ne ')
+
+    // Numeric comparison (remaining === / !==)
     result = result.replace(/===/g, '==')
     result = result.replace(/!==/g, '!=')
 
