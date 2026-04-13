@@ -40,8 +40,7 @@ const components = [
   '../shared/components/Toggle.tsx',
   '../shared/components/TodoItem.tsx',
   '../shared/components/TodoApp.tsx',
-  // TodoAppSSR uses JS array methods (.filter/.every) that need complex Perl conversion
-  // '../shared/components/TodoAppSSR.tsx',
+  '../shared/components/TodoAppSSR.tsx',
   '../shared/components/ReactiveProps.tsx',
   '../shared/components/PortalExample.tsx',
 ]

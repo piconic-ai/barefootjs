@@ -19,7 +19,8 @@ import type {
   IRTemplateLiteral,
   CompilerError,
 } from '@barefootjs/jsx'
-import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr } from '@barefootjs/jsx'
+import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr, parseExpression } from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND } from '@barefootjs/shared'
 
 export interface MojoAdapterOptions {
@@ -265,7 +266,37 @@ export class MojoAdapter extends BaseAdapter {
     lines.push(`<%== bf->comment("loop") %>`)
     lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
     lines.push(`% my $${param} = ${array}->[${indexVar}];`)
-    lines.push(children)
+
+    // Handle filter().map() pattern by wrapping children in if-condition
+    if (loop.filterPredicate) {
+      let filterCond: string
+      if (loop.filterPredicate.blockBody) {
+        filterCond = this.renderBlockBodyCondition(
+          loop.filterPredicate.blockBody,
+          loop.filterPredicate.param
+        )
+      } else if (loop.filterPredicate.predicate) {
+        filterCond = this.renderPerlFilterExpr(
+          loop.filterPredicate.predicate,
+          loop.filterPredicate.param
+        )
+      } else {
+        filterCond = '1'
+      }
+      // Map filter param to loop param (e.g., $t → $todo)
+      if (loop.filterPredicate.param !== param) {
+        filterCond = filterCond.replace(
+          new RegExp(`\\$${loop.filterPredicate.param}\\b`, 'g'),
+          `$${param}`
+        )
+      }
+      lines.push(`% if (${filterCond}) {`)
+      lines.push(children)
+      lines.push(`% }`)
+    } else {
+      lines.push(children)
+    }
+
     lines.push(`% }`)
     lines.push(`<%== bf->comment("/loop") %>`)
 
@@ -398,6 +429,196 @@ export class MojoAdapter extends BaseAdapter {
   }
 
   // ===========================================================================
+  // Filter Predicate Rendering (ParsedExpr → Perl)
+  // ===========================================================================
+
+  /**
+   * Convert a ParsedExpr AST to Perl expression string.
+   * Used for filter predicates in loops and standalone higher-order expressions.
+   */
+  private renderPerlFilterExpr(
+    expr: ParsedExpr,
+    param: string,
+    localVarMap: Map<string, string> = new Map()
+  ): string {
+    switch (expr.kind) {
+      case 'identifier': {
+        if (expr.name === param) return `$${param}`
+        const signal = localVarMap.get(expr.name)
+        if (signal) return `$${signal}`
+        return `$${expr.name}`
+      }
+
+      case 'literal':
+        if (expr.literalType === 'string') return `'${expr.value}'`
+        if (expr.literalType === 'boolean') return expr.value ? '1' : '0'
+        if (expr.literalType === 'null') return 'undef'
+        return String(expr.value)
+
+      case 'member': {
+        const obj = this.renderPerlFilterExpr(expr.object, param, localVarMap)
+        return `${obj}->{${expr.property}}`
+      }
+
+      case 'call': {
+        // Signal getter calls: filter() → $filter
+        if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
+          return `$${expr.callee.name}`
+        }
+        return this.renderPerlFilterExpr(expr.callee, param, localVarMap)
+      }
+
+      case 'unary': {
+        const arg = this.renderPerlFilterExpr(expr.argument, param, localVarMap)
+        if (expr.op === '!') {
+          // Wrap in parens for binary/logical to avoid Perl precedence issues
+          const needsParens = expr.argument.kind === 'binary' || expr.argument.kind === 'logical'
+          return needsParens ? `!(${arg})` : `!${arg}`
+        }
+        if (expr.op === '-') return `-${arg}`
+        return arg
+      }
+
+      case 'binary': {
+        const left = this.renderPerlFilterExpr(expr.left, param, localVarMap)
+        const right = this.renderPerlFilterExpr(expr.right, param, localVarMap)
+        // String comparison
+        if ((expr.op === '===' || expr.op === '==') && (expr.right.kind === 'literal' && expr.right.literalType === 'string')) {
+          return `${left} eq ${right}`
+        }
+        if ((expr.op === '!==' || expr.op === '!=') && (expr.right.kind === 'literal' && expr.right.literalType === 'string')) {
+          return `${left} ne ${right}`
+        }
+        const opMap: Record<string, string> = { '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=', '+': '+', '-': '-', '*': '*', '/': '/' }
+        const perlOp = opMap[expr.op] ?? expr.op
+        return `${left} ${perlOp} ${right}`
+      }
+
+      case 'logical': {
+        const left = this.renderPerlFilterExpr(expr.left, param, localVarMap)
+        const right = this.renderPerlFilterExpr(expr.right, param, localVarMap)
+        if (expr.op === '&&') return `(${left} && ${right})`
+        if (expr.op === '||') return `(${left} || ${right})`
+        return `(${left} // ${right})`  // ?? → //
+      }
+
+      case 'higher-order': {
+        // filter/every/some on arrays → Perl grep
+        const arrayExpr = this.renderPerlFilterExpr(expr.object, param, localVarMap)
+        const predBody = this.renderPerlFilterExpr(expr.predicate, expr.param, localVarMap)
+        // In grep block, use $_ for the loop variable
+        const grepBody = predBody.replace(new RegExp(`\\$${expr.param}\\b`, 'g'), '$_')
+        if (expr.method === 'filter') {
+          return `[grep { ${grepBody} } @{${arrayExpr}}]`
+        }
+        if (expr.method === 'every') {
+          return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
+        }
+        if (expr.method === 'some') {
+          return `!!(grep { ${grepBody} } @{${arrayExpr}})`
+        }
+        return `${arrayExpr}`
+      }
+
+      default:
+        return '1'
+    }
+  }
+
+  /**
+   * Render a complex block body filter into a Perl condition.
+   * Handles patterns like: filter(t => { const f = filter(); if (...) return ...; })
+   */
+  private renderBlockBodyCondition(
+    statements: ParsedStatement[],
+    param: string
+  ): string {
+    const localVarMap = new Map<string, string>()
+    const paths = this.collectReturnPaths(statements, [], localVarMap, param)
+
+    if (paths.length === 0) return '1'
+    if (paths.length === 1) return this.buildSinglePathCondition(paths[0], param, localVarMap)
+
+    // Multiple paths: build OR condition
+    const parts: string[] = []
+    for (const path of paths) {
+      if (path.result.kind === 'literal' && path.result.literalType === 'boolean' && path.result.value === false) continue
+      const cond = this.buildSinglePathCondition(path, param, localVarMap)
+      if (cond !== '0') parts.push(cond)
+    }
+
+    if (parts.length === 0) return '0'
+    if (parts.length === 1) return parts[0]
+    return `(${parts.join(' || ')})`
+  }
+
+  private collectReturnPaths(
+    statements: ParsedStatement[],
+    currentConditions: ParsedExpr[],
+    localVarMap: Map<string, string>,
+    param: string
+  ): Array<{ conditions: ParsedExpr[]; result: ParsedExpr }> {
+    const paths: Array<{ conditions: ParsedExpr[]; result: ParsedExpr }> = []
+
+    for (const stmt of statements) {
+      if (stmt.kind === 'var-decl') {
+        if (stmt.init.kind === 'call' && stmt.init.callee.kind === 'identifier') {
+          localVarMap.set(stmt.name, stmt.init.callee.name)
+        }
+      } else if (stmt.kind === 'return') {
+        paths.push({ conditions: [...currentConditions], result: stmt.value })
+        break
+      } else if (stmt.kind === 'if') {
+        const thenPaths = this.collectReturnPaths(stmt.consequent, [...currentConditions, stmt.condition], localVarMap, param)
+        paths.push(...thenPaths)
+
+        if (stmt.alternate) {
+          const negated: ParsedExpr = { kind: 'unary', op: '!', argument: stmt.condition }
+          const elsePaths = this.collectReturnPaths(stmt.alternate, [...currentConditions, negated], localVarMap, param)
+          paths.push(...elsePaths)
+        } else {
+          currentConditions.push({ kind: 'unary', op: '!', argument: stmt.condition })
+        }
+      }
+    }
+
+    return paths
+  }
+
+  private buildSinglePathCondition(
+    path: { conditions: ParsedExpr[]; result: ParsedExpr },
+    param: string,
+    localVarMap: Map<string, string>
+  ): string {
+    if (path.result.kind === 'literal' && path.result.literalType === 'boolean') {
+      if (path.result.value === true) {
+        if (path.conditions.length === 0) return '1'
+        return this.renderConditionsAnd(path.conditions, param, localVarMap)
+      }
+      return '0'
+    }
+
+    if (path.conditions.length === 0) {
+      return this.renderPerlFilterExpr(path.result, param, localVarMap)
+    }
+
+    const condPart = this.renderConditionsAnd(path.conditions, param, localVarMap)
+    const resultPart = this.renderPerlFilterExpr(path.result, param, localVarMap)
+    return `(${condPart} && ${resultPart})`
+  }
+
+  private renderConditionsAnd(
+    conditions: ParsedExpr[],
+    param: string,
+    localVarMap: Map<string, string>
+  ): string {
+    if (conditions.length === 0) return '1'
+    if (conditions.length === 1) return this.renderPerlFilterExpr(conditions[0], param, localVarMap)
+    const parts = conditions.map(c => this.renderPerlFilterExpr(c, param, localVarMap))
+    return `(${parts.join(' && ')})`
+  }
+
+  // ===========================================================================
   // Expression Conversion: JS → Perl
   // ===========================================================================
 
@@ -416,6 +637,11 @@ export class MojoAdapter extends BaseAdapter {
   }
 
   private convertExpressionToPerl(expr: string): string {
+    // Handle higher-order array methods via ParsedExpr AST
+    if (/\.\s*(?:filter|every|some)\s*\(/.test(expr)) {
+      return this.convertHigherOrderExpr(expr)
+    }
+
     // Signal getter calls: count() → $count
     let result = expr.replace(/\b([a-z_]\w*)\(\)/g, (_, name) => `$${name}`)
 
@@ -424,8 +650,8 @@ export class MojoAdapter extends BaseAdapter {
 
     // Bare identifier property access: item.field → $item->{field}
     // Must run before $-prefixed property access to catch bare identifiers
-    result = result.replace(/\b([a-z_]\w*)\.(\w+)/g, (match, obj, field) => {
-      // Don't convert if already $-prefixed or is a keyword
+    // Use negative lookbehind to skip $-prefixed variables (avoid $$var double-prefix)
+    result = result.replace(/(?<!\$)\b([a-z_]\w*)\.(\w+)/g, (match, obj, field) => {
       if (match.startsWith('$')) return match
       return `$${obj}->{${field}}`
     })
@@ -468,6 +694,109 @@ export class MojoAdapter extends BaseAdapter {
     }
 
     return result
+  }
+  /**
+   * Convert expressions containing higher-order array methods to Perl.
+   * Parses the full expression as AST and renders recursively.
+   *
+   * Handles patterns like:
+   * - todos().filter(t => !t.done).length → scalar(grep { !$_->{done} } @{$todos})
+   * - todos().every(t => t.done) → !(grep { !$_->{done} } @{$todos})
+   * - todos().filter(t => t.done).length > 0 → scalar(grep { $_->{done} } @{$todos}) > 0
+   */
+  private convertHigherOrderExpr(expr: string): string {
+    const parsed = parseExpression(expr)
+    return this.renderParsedExprToPerl(parsed)
+  }
+
+  /**
+   * Render a full ParsedExpr tree to Perl (for standalone expressions, not filter predicates).
+   * Unlike renderPerlFilterExpr which uses a filter param context, this handles
+   * top-level expressions where identifiers are signals/stash vars.
+   */
+  private renderParsedExprToPerl(expr: ParsedExpr): string {
+    switch (expr.kind) {
+      case 'identifier':
+        return `$${expr.name}`
+
+      case 'literal':
+        if (expr.literalType === 'string') return `'${expr.value}'`
+        if (expr.literalType === 'boolean') return expr.value ? '1' : '0'
+        if (expr.literalType === 'null') return 'undef'
+        return String(expr.value)
+
+      case 'member': {
+        const obj = this.renderParsedExprToPerl(expr.object)
+        if (expr.property === 'length') {
+          // Array length: expr.length → scalar(@{expr})
+          return `scalar(@{${obj}})`
+        }
+        return `${obj}->{${expr.property}}`
+      }
+
+      case 'call': {
+        // Signal getter: count() → $count
+        if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
+          return `$${expr.callee.name}`
+        }
+        return this.renderParsedExprToPerl(expr.callee)
+      }
+
+      case 'unary': {
+        const arg = this.renderParsedExprToPerl(expr.argument)
+        if (expr.op === '!') return `!${arg}`
+        if (expr.op === '-') return `-${arg}`
+        return arg
+      }
+
+      case 'binary': {
+        const left = this.renderParsedExprToPerl(expr.left)
+        const right = this.renderParsedExprToPerl(expr.right)
+        if ((expr.op === '===' || expr.op === '==') && expr.right.kind === 'literal' && expr.right.literalType === 'string') {
+          return `${left} eq ${right}`
+        }
+        if ((expr.op === '!==' || expr.op === '!=') && expr.right.kind === 'literal' && expr.right.literalType === 'string') {
+          return `${left} ne ${right}`
+        }
+        const opMap: Record<string, string> = { '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=', '+': '+', '-': '-', '*': '*' }
+        return `${left} ${opMap[expr.op] ?? expr.op} ${right}`
+      }
+
+      case 'logical': {
+        const left = this.renderParsedExprToPerl(expr.left)
+        const right = this.renderParsedExprToPerl(expr.right)
+        if (expr.op === '&&') return `(${left} && ${right})`
+        if (expr.op === '||') return `(${left} || ${right})`
+        return `(${left} // ${right})`
+      }
+
+      case 'higher-order': {
+        const arrayExpr = this.renderParsedExprToPerl(expr.object)
+        const predBody = this.renderPerlFilterExpr(expr.predicate, expr.param)
+        const grepBody = predBody.replace(new RegExp(`\\$${expr.param}\\b`, 'g'), '$_')
+        if (expr.method === 'filter') {
+          return `[grep { ${grepBody} } @{${arrayExpr}}]`
+        }
+        if (expr.method === 'every') {
+          return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
+        }
+        if (expr.method === 'some') {
+          return `!!(grep { ${grepBody} } @{${arrayExpr}})`
+        }
+        return arrayExpr
+      }
+
+      case 'conditional': {
+        const test = this.renderParsedExprToPerl(expr.test)
+        const consequent = this.renderParsedExprToPerl(expr.consequent)
+        const alternate = this.renderParsedExprToPerl(expr.alternate)
+        return `(${test} ? ${consequent} : ${alternate})`
+      }
+
+      default:
+        // Fallback: use regex-based conversion
+        return this.convertExpressionToPerl(('raw' in expr) ? (expr as { raw: string }).raw : '')
+    }
   }
 }
 

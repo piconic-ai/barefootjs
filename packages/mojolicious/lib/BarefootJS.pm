@@ -2,7 +2,7 @@ package BarefootJS;
 use Mojo::Base -base, -signatures;
 
 use Mojo::ByteStream qw(b);
-use Mojo::JSON qw(encode_json);
+use Mojo::JSON qw(encode_json to_json);
 
 has 'c';       # Mojolicious controller
 has 'config';  # Plugin config
@@ -33,7 +33,8 @@ sub scope_attr ($self) {
 sub props_attr ($self) {
     my $props = $self->_props;
     return '' unless $props && %$props;
-    my $json = encode_json($props);
+    # to_json returns a character string (not bytes) for safe embedding in templates
+    my $json = to_json($props);
     return qq{ bf-p='$json'};
 }
 
@@ -57,7 +58,7 @@ sub scope_comment ($self) {
     my $scope_id = $self->scope_attr;
     my $props_json = '';
     if ($self->_props && %{$self->_props}) {
-        $props_json = '|' . encode_json($self->_props);
+        $props_json = '|' . to_json($self->_props);
     }
     return "<!--bf-scope:$scope_id$props_json-->";
 }

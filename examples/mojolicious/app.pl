@@ -119,6 +119,7 @@ get '/' => sub ($c) {
             <li><a href="/counter">Counter</a></li>
             <li><a href="/toggle">Toggle</a></li>
             <li><a href="/todos">Todo (@client)</a></li>
+            <li><a href="/todos-ssr">Todo (no @client markers)</a></li>
         </ul>
     </body>
     </html>
@@ -195,6 +196,22 @@ get '/todos' => sub ($c) {
     my $done_count = scalar grep { $_->{done} } @current_todos;
 
     $c->render_component('TodoApp',
+        children => { todo_item => 'TodoItem' },
+        props    => { initialTodos => \@current_todos },
+        stash    => {
+            todos     => \@current_todos,
+            newText   => '',
+            filter    => 'all',
+            doneCount => $done_count,
+        },
+    );
+};
+
+get '/todos-ssr' => sub ($c) {
+    my @current_todos = map { {%$_} } @todos;
+    my $done_count = scalar grep { $_->{done} } @current_todos;
+
+    $c->render_component('TodoAppSSR',
         children => { todo_item => 'TodoItem' },
         props    => { initialTodos => \@current_todos },
         stash    => {
@@ -288,6 +305,7 @@ __DATA__
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title><%= $title %></title>
     <link rel="stylesheet" href="/styles/components.css">
     <link rel="stylesheet" href="/styles/todo-app.css">
