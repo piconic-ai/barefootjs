@@ -325,7 +325,10 @@ export function emitStaticArrayChildInits(lines: string[], ctx: ClientJsContext)
 
     if (elem.nestedComponents && elem.nestedComponents.length > 0) {
       const v = varSlotId(elem.slotId)
-      for (const comp of elem.nestedComponents) {
+
+      // Outer-level components (loopDepth === 0 or undefined)
+      const outerComps = elem.nestedComponents.filter(c => !c.loopDepth)
+      for (const comp of outerComps) {
         const propsEntries = comp.props.map((p) => {
           if (p.isEventHandler) {
             return `${quotePropName(p.name)}: ${p.value}`
@@ -344,8 +347,9 @@ export function emitStaticArrayChildInits(lines: string[], ctx: ClientJsContext)
         lines.push(`  // Initialize nested ${comp.name} in static array`)
         lines.push(`  if (_${v}) {`)
         const indexParam = elem.index || '__idx'
+        const offsetExpr = elem.siblingOffset ? `${indexParam} + ${elem.siblingOffset}` : indexParam
         lines.push(`    ${elem.array}.forEach((${elem.param}, ${indexParam}) => {`)
-        lines.push(`      const __iterEl = _${v}.children[${indexParam}]`)
+        lines.push(`      const __iterEl = _${v}.children[${offsetExpr}]`)
         lines.push(`      if (__iterEl) {`)
         lines.push(`        const __compEl = __iterEl.querySelector('${selector}')`)
         lines.push(`        if (__compEl) initChild('${comp.name}', __compEl, ${propsExpr})`)
@@ -353,6 +357,56 @@ export function emitStaticArrayChildInits(lines: string[], ctx: ClientJsContext)
         lines.push(`    })`)
         lines.push(`  }`)
         lines.push('')
+      }
+
+      // Inner-loop components (loopDepth > 0): iterate outer then inner loop
+      if (elem.innerLoops) {
+        for (const innerLoop of elem.innerLoops) {
+          const innerComps = elem.nestedComponents.filter(c =>
+            (c.loopDepth ?? 0) === innerLoop.depth && c.innerLoopArray === innerLoop.array
+          )
+          if (innerComps.length === 0) continue
+
+          lines.push(`  // Initialize inner-loop components in static array (depth ${innerLoop.depth})`)
+          lines.push(`  if (_${v}) {`)
+          const outerIdx = elem.index || '__idx'
+          const outerOffset = elem.siblingOffset ? `${outerIdx} + ${elem.siblingOffset}` : outerIdx
+          lines.push(`    ${elem.array}.forEach((${elem.param}, ${outerIdx}) => {`)
+          lines.push(`      const __outerEl = _${v}.children[${outerOffset}]`)
+          lines.push(`      if (!__outerEl) return`)
+          if (innerLoop.containerSlotId) {
+            lines.push(`      const __ic = __outerEl.querySelector('[bf="${innerLoop.containerSlotId}"]') || __outerEl`)
+          } else {
+            lines.push(`      const __ic = __outerEl`)
+          }
+          const innerOffset = innerLoop.siblingOffset ? `__innerIdx + ${innerLoop.siblingOffset}` : '__innerIdx'
+          lines.push(`      ${innerLoop.array}.forEach((${innerLoop.param}, __innerIdx) => {`)
+          lines.push(`        const __innerEl = __ic.children[${innerOffset}]`)
+          lines.push(`        if (!__innerEl) return`)
+
+          for (const comp of innerComps) {
+            const propsEntries = comp.props.map((p) => {
+              if (p.isEventHandler) {
+                return `${quotePropName(p.name)}: ${p.value}`
+              } else if (p.isLiteral) {
+                return `${quotePropName(p.name)}: ${JSON.stringify(p.value)}`
+              } else {
+                return `get ${quotePropName(p.name)}() { return ${p.value} }`
+              }
+            })
+            const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
+            const selector = comp.slotId
+              ? `[bf-s$="_${comp.slotId}"]`
+              : `[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
+            lines.push(`        const __compEl = __innerEl.querySelector('${selector}')`)
+            lines.push(`        if (__compEl) initChild('${comp.name}', __compEl, ${propsExpr})`)
+          }
+
+          lines.push(`      })`)
+          lines.push(`    })`)
+          lines.push(`  }`)
+          lines.push('')
+        }
       }
     }
   }

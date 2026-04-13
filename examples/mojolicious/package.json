@@ -1,0 +1,13 @@
+{
+  "name": "barefootjs-mojolicious-example",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "bun run build.ts",
+    "dev": "perl app.pl daemon -l http://*:3000"
+  },
+  "devDependencies": {
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/mojolicious": "workspace:*",
+    "bun-types": "^1.1.0"
+  }
+}

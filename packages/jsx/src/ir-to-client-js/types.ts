@@ -163,6 +163,8 @@ export interface NestedLoopInfo {
   childEvents?: LoopChildEvent[]
   /** True when this loop is inside a conditional branch (handled by insert() bindEvents instead) */
   insideConditional?: boolean
+  /** Number of non-loop DOM siblings before this loop in its container element */
+  siblingOffset?: number
 }
 
 export interface LoopChildEvent {
@@ -217,6 +219,8 @@ export interface LoopElement {
   useElementReconciliation?: boolean // True: reconcileElements + composite rendering (native root with child components)
   /** Inner loop metadata for composite element reconciliation (array, param, key, container) */
   innerLoops?: NestedLoopInfo[]
+  /** Number of non-loop DOM siblings before this loop in its parent element. Used to offset children[idx] access. */
+  siblingOffset?: number
   filterPredicate?: {
     param: string
     raw: string  // Original filter predicate expression or block body

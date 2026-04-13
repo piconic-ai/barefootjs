@@ -647,4 +647,86 @@ describe('child components inside .map() (#344)', () => {
     expect(content).toContain(".addEventListener('click', (e) => {")
     expect(content).toContain('handleClick(item.id)')
   })
+
+  test('static array with preceding siblings uses siblingOffset (#810)', () => {
+    const source = `
+      'use client'
+
+      export function Header() {
+        const roles = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]
+        return (
+          <tr>
+            <th>Name</th>
+            {roles.map(role => (
+              <th>{role.label}</th>
+            ))}
+          </tr>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'Header.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // Should use offset to skip the preceding <th>Name</th>
+    expect(content).toContain('children[__idx + 1]')
+  })
+
+  test('static array event delegation with preceding siblings uses offset (#810)', () => {
+    const source = `
+      'use client'
+
+      export function Header() {
+        const roles = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]
+        const select = (id: string) => console.log(id)
+        return (
+          <tr>
+            <th>Name</th>
+            {roles.map(role => (
+              <th><button onClick={() => select(role.id)}>{role.label}</button></th>
+            ))}
+          </tr>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'Header.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // Event delegation indexOf should subtract offset
+    expect(content).toContain('.indexOf(__el) - 1')
+  })
+
+  test('static array without preceding siblings has no offset', () => {
+    const source = `
+      'use client'
+
+      export function List() {
+        const items = [{ id: '1', label: 'A' }, { id: '2', label: 'B' }]
+        return (
+          <ul>
+            {items.map(item => (
+              <li>{item.label}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'List.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // No offset needed — children[__idx] should be used directly
+    expect(content).toContain('children[__idx]')
+    expect(content).not.toContain('children[__idx + ')
+  })
 })

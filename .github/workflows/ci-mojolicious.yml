@@ -1,0 +1,56 @@
+name: CI — Mojolicious Adapter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/client-runtime/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/mojolicious/**'
+      - 'packages/adapter-tests/**'
+      - '.github/workflows/ci-mojolicious.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/client-runtime/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/mojolicious/**'
+      - 'packages/adapter-tests/**'
+      - '.github/workflows/ci-mojolicious.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: '5.40'
+
+      - name: Install Mojolicious
+        run: cpanm --notest Mojolicious
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/client-runtime' build
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/mojolicious' build
+
+      - name: Run unit tests
+        run: bun test packages/mojolicious

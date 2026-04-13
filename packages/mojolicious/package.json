@@ -1,0 +1,55 @@
+{
+  "name": "@barefootjs/mojolicious",
+  "version": "0.0.1",
+  "description": "Mojolicious EP template adapter for BarefootJS - generates .html.ep files from IR",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./test-render": {
+      "bun": "./src/test-render.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "lib"
+  ],
+  "scripts": {
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm",
+    "build:types": "tsc --emitDeclarationOnly --outDir ./dist",
+    "test": "bun test",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "mojolicious",
+    "mojo",
+    "perl",
+    "template",
+    "barefoot",
+    "ssr"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kfly8/barefootjs",
+    "directory": "packages/mojolicious"
+  },
+  "dependencies": {
+    "@barefootjs/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "@barefootjs/jsx": "workspace:*"
+  },
+  "devDependencies": {
+    "@barefootjs/adapter-tests": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
+    "typescript": "^5.0.0"
+  }
+}
