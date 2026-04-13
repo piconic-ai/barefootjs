@@ -205,8 +205,8 @@ function injectDefaultStyles() {
       box-sizing: border-box;
     }
     .bf-flow__node--selected {
-      outline: 1px solid #1a192b;
-      outline-offset: 1px;
+      outline: 2px solid #1a192b;
+      outline-offset: 0px;
     }
     .bf-flow__handle {
       width: 6px;
@@ -276,7 +276,7 @@ function injectDefaultStyles() {
     }
     .bf-flow__selection {
       background: rgba(0, 89, 220, 0.08);
-      border: 1px solid rgba(0, 89, 220, 0.4);
+      border: 1px dashed rgba(0, 89, 220, 0.5);
       border-radius: 2px;
       pointer-events: none;
     }
