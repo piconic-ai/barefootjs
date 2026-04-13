@@ -34,6 +34,9 @@
     "url": "https://github.com/kfly8/barefootjs",
     "directory": "packages/client-runtime"
   },
+  "dependencies": {
+    "@barefootjs/shared": "workspace:*"
+  },
   "peerDependencies": {
     "@barefootjs/client": ">=0.0.1"
   },

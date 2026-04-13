@@ -5,31 +5,21 @@
 
 import type { IRTemplateLiteral } from '../types'
 import type { LoopElement } from './types'
+import {
+  BF_KEY as DATA_KEY,
+  BF_KEY_PREFIX as DATA_KEY_PREFIX,
+  BF_PLACEHOLDER as DATA_BF_PH,
+  BF_LOOP_START,
+  BF_LOOP_END,
+} from '@barefootjs/shared'
+
+export { DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, BF_LOOP_START, BF_LOOP_END }
 
 /**
  * Parameter name for the props object in generated init/template functions.
  * Short name to minimize client JS bundle size.
  */
 export const PROPS_PARAM = '_p'
-
-/**
- * HTML attribute constants for compiler-generated code.
- * These are the same values as the runtime constants in packages/dom/src/attrs.ts
- * (BF_KEY, BF_KEY_PREFIX, BF_PLACEHOLDER). Duplicated here because the compiler
- * package cannot depend on the runtime package.
- *
- * @see packages/dom/src/attrs.ts — runtime-side definitions
- */
-export const DATA_KEY = 'data-key'
-export const DATA_KEY_PREFIX = 'data-key-'
-export const DATA_BF_PH = 'data-bf-ph'
-
-/**
- * Loop boundary comment markers.
- * @see packages/dom/src/attrs.ts — BF_LOOP_START, BF_LOOP_END (runtime-side mirror)
- */
-export const BF_LOOP_START = 'bf-loop'
-export const BF_LOOP_END = 'bf-/loop'
 
 /**
  * Get the data-key attribute name for a given loop depth.

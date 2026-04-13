@@ -10,6 +10,7 @@ import type {
   IRNode,
   ImportSpecifier,
 } from '../types'
+import { BF_SCOPE, BF_SLOT, BF_COND } from '@barefootjs/shared'
 import { BaseAdapter } from './interface'
 import { formatParamWithType, findReachableNames } from '../module-exports'
 
@@ -189,14 +190,14 @@ export abstract class JsxAdapter extends BaseAdapter {
   // ===========================================================================
 
   renderScopeMarker(instanceIdExpr: string): string {
-    return `bf-s={${instanceIdExpr}}`
+    return `${BF_SCOPE}={${instanceIdExpr}}`
   }
 
   renderSlotMarker(slotId: string): string {
-    return `bf="${slotId}"`
+    return `${BF_SLOT}="${slotId}"`
   }
 
   renderCondMarker(condId: string): string {
-    return `bf-c="${condId}"`
+    return `${BF_COND}="${condId}"`
   }
 }

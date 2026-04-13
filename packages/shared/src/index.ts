@@ -1,23 +1,18 @@
-/**
- * BarefootJS - HTML Attribute Constants
- *
- * Re-exported from @barefootjs/shared (single source of truth).
- */
 export {
   BF_SCOPE,
   BF_SLOT,
   BF_PROPS,
   BF_COND,
+  BF_ITEM,
   BF_PORTAL_OWNER,
   BF_PORTAL_ID,
   BF_PORTAL_PLACEHOLDER,
-  BF_ITEM,
   BF_CHILD_PREFIX,
   BF_PARENT_OWNED_PREFIX,
   BF_SCOPE_COMMENT_PREFIX,
+  BF_LOOP_START,
+  BF_LOOP_END,
   BF_KEY,
   BF_KEY_PREFIX,
   BF_PLACEHOLDER,
-  BF_LOOP_START,
-  BF_LOOP_END,
-} from '@barefootjs/shared'
+} from './markers'

@@ -41,6 +41,9 @@
     "url": "https://github.com/kfly8/barefootjs",
     "directory": "packages/jsx"
   },
+  "dependencies": {
+    "@barefootjs/shared": "workspace:*"
+  },
   "peerDependencies": {
     "@barefootjs/client-runtime": "workspace:*"
   },
