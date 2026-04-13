@@ -662,6 +662,185 @@ test.describe('Stress Test (20 nodes)', () => {
 })
 
 // ============================================================
+// Connection Validation (isValidConnection)
+// ============================================================
+test.describe('Connection Validation', () => {
+  test.beforeEach(async ({ page }) => {
+    // Scroll the validation container into view since it's at the bottom of the page
+    await page.evaluate(() => {
+      const el = document.getElementById('validation')
+      if (el && 'scrollIntoViewIfNeeded' in el) {
+        ;(el as any).scrollIntoViewIfNeeded()
+      } else if (el) {
+        el.scrollIntoView({ block: 'center' })
+      }
+    })
+    await page.waitForSelector('#validation .bf-flow__node[data-id="v-source"]')
+    await page.waitForSelector('#validation .bf-flow__node[data-id="v-allowed"]')
+    await page.waitForSelector('#validation .bf-flow__node[data-id="v-blocked"]')
+  })
+
+  test('valid connection creates an edge', async ({ page }) => {
+    const beforeEdges = await page.locator('#validation .bf-flow__edge').count()
+
+    const created = await page.evaluate(async () => {
+      const sourceHandle = document.querySelector('#validation [data-id="v-source"] .bf-flow__handle--source')!
+      const targetHandle = document.querySelector('#validation [data-id="v-allowed"] .bf-flow__handle--target')!
+      const sr = sourceHandle.getBoundingClientRect()
+      const tr = targetHandle.getBoundingClientRect()
+
+      sourceHandle.dispatchEvent(new MouseEvent('mousedown', {
+        clientX: sr.left + 3, clientY: sr.top + 3, button: 0, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 10))
+      document.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      document.dispatchEvent(new MouseEvent('mouseup', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 200))
+
+      return document.querySelectorAll('#validation .bf-flow__edge').length
+    })
+
+    expect(created).toBeGreaterThan(beforeEdges)
+  })
+
+  test('invalid connection does not create an edge', async ({ page }) => {
+    const beforeEdges = await page.locator('#validation .bf-flow__edge').count()
+
+    const afterEdges = await page.evaluate(async () => {
+      const sourceHandle = document.querySelector('#validation [data-id="v-source"] .bf-flow__handle--source')!
+      const targetHandle = document.querySelector('#validation [data-id="v-blocked"] .bf-flow__handle--target')!
+      const sr = sourceHandle.getBoundingClientRect()
+      const tr = targetHandle.getBoundingClientRect()
+
+      sourceHandle.dispatchEvent(new MouseEvent('mousedown', {
+        clientX: sr.left + 3, clientY: sr.top + 3, button: 0, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 10))
+      document.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      document.dispatchEvent(new MouseEvent('mouseup', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 200))
+
+      return document.querySelectorAll('#validation .bf-flow__edge').length
+    })
+
+    expect(afterEdges).toBe(beforeEdges)
+  })
+
+  test('valid target handle shows .valid class during drag', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const sourceHandle = document.querySelector('#validation [data-id="v-source"] .bf-flow__handle--source')!
+      const targetHandle = document.querySelector('#validation [data-id="v-allowed"] .bf-flow__handle--target')!
+      const sr = sourceHandle.getBoundingClientRect()
+      const tr = targetHandle.getBoundingClientRect()
+
+      sourceHandle.dispatchEvent(new MouseEvent('mousedown', {
+        clientX: sr.left + 3, clientY: sr.top + 3, button: 0, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 10))
+
+      // Move to the target handle
+      document.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 50))
+
+      const hasValid = targetHandle.classList.contains('valid')
+      const hasInvalid = targetHandle.classList.contains('invalid')
+
+      // Clean up — release mouse
+      document.dispatchEvent(new MouseEvent('mouseup', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 50))
+
+      return { hasValid, hasInvalid }
+    })
+
+    expect(result.hasValid).toBe(true)
+    expect(result.hasInvalid).toBe(false)
+  })
+
+  test('invalid target handle shows .invalid class during drag', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const sourceHandle = document.querySelector('#validation [data-id="v-source"] .bf-flow__handle--source')!
+      const targetHandle = document.querySelector('#validation [data-id="v-blocked"] .bf-flow__handle--target')!
+      const sr = sourceHandle.getBoundingClientRect()
+      const tr = targetHandle.getBoundingClientRect()
+
+      sourceHandle.dispatchEvent(new MouseEvent('mousedown', {
+        clientX: sr.left + 3, clientY: sr.top + 3, button: 0, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 10))
+
+      // Move to the blocked target handle
+      document.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 50))
+
+      const hasValid = targetHandle.classList.contains('valid')
+      const hasInvalid = targetHandle.classList.contains('invalid')
+
+      // Clean up — release mouse
+      document.dispatchEvent(new MouseEvent('mouseup', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 50))
+
+      return { hasValid, hasInvalid }
+    })
+
+    expect(result.hasValid).toBe(false)
+    expect(result.hasInvalid).toBe(true)
+  })
+
+  test('validation classes are cleaned up after mouse up', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const sourceHandle = document.querySelector('#validation [data-id="v-source"] .bf-flow__handle--source')!
+      const targetHandle = document.querySelector('#validation [data-id="v-blocked"] .bf-flow__handle--target')!
+      const sr = sourceHandle.getBoundingClientRect()
+      const tr = targetHandle.getBoundingClientRect()
+
+      sourceHandle.dispatchEvent(new MouseEvent('mousedown', {
+        clientX: sr.left + 3, clientY: sr.top + 3, button: 0, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 10))
+      document.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 50))
+
+      // Verify the class is present during drag
+      const hasDuring = targetHandle.classList.contains('invalid')
+
+      // Release mouse
+      document.dispatchEvent(new MouseEvent('mouseup', {
+        clientX: tr.left + 3, clientY: tr.top + 3, bubbles: true, view: window,
+      }))
+      await new Promise((r) => setTimeout(r, 50))
+
+      // Verify classes are cleaned up
+      const hasValidAfter = targetHandle.classList.contains('valid')
+      const hasInvalidAfter = targetHandle.classList.contains('invalid')
+
+      return { hasDuring, hasValidAfter, hasInvalidAfter }
+    })
+
+    expect(result.hasDuring).toBe(true)
+    expect(result.hasValidAfter).toBe(false)
+    expect(result.hasInvalidAfter).toBe(false)
+  })
+})
+
+// ============================================================
 // Heavy Stress Test (100 nodes, 10x10 grid)
 // ============================================================
 test.describe('Heavy Stress Test (100 nodes)', () => {

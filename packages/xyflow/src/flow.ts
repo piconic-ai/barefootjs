@@ -40,6 +40,7 @@ export function initFlow(scope: Element, props: Record<string, unknown>): void {
     snapToGrid: flowProps.snapToGrid,
     snapGrid: flowProps.snapGrid,
     onConnect: flowProps.onConnect,
+    isValidConnection: flowProps.isValidConnection,
   })
 
   provideContext(FlowContext, store)
@@ -213,6 +214,8 @@ function injectDefaultStyles() {
     .bf-flow__handle--target:hover { top: -5px; }
     .bf-flow__handle--source { bottom: -3px; }
     .bf-flow__handle--source:hover { bottom: -5px; }
+    .bf-flow__handle.valid { background-color: #22c55e; border-color: #16a34a; width: 10px; height: 10px; }
+    .bf-flow__handle.invalid { background-color: #ef4444; border-color: #dc2626; width: 10px; height: 10px; }
     .bf-flow__edge { fill: none; stroke: #b1b1b7; stroke-width: 1; pointer-events: none; }
     .bf-flow__edge--selected { stroke: #555; stroke-width: 2; }
     .bf-flow__edge--animated { stroke-dasharray: 5; animation: bf-dashdraw 0.5s linear infinite; }

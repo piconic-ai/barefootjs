@@ -4,6 +4,39 @@ import type { FlowStore, NodeBase, EdgeBase } from './types'
 import { SVG_NS } from './constants'
 
 /**
+ * Build a connection object for the given source handle / target handle pair.
+ * Used by both validation and edge creation.
+ */
+function buildConnection(
+  sourceNodeId: string,
+  targetNodeId: string,
+  handleType: 'source' | 'target',
+): { source: string; target: string; sourceHandle: string | null; targetHandle: string | null } {
+  let source = sourceNodeId
+  let target = targetNodeId
+  if (handleType === 'target') {
+    source = targetNodeId
+    target = sourceNodeId
+  }
+  return { source, target, sourceHandle: null, targetHandle: null }
+}
+
+/**
+ * Check whether a proposed connection is valid according to the store's
+ * isValidConnection callback. Returns true when no callback is configured.
+ */
+function checkConnectionValidity<
+  NodeType extends NodeBase = NodeBase,
+  EdgeType extends EdgeBase = EdgeBase,
+>(
+  store: FlowStore<NodeType, EdgeType>,
+  connection: { source: string; target: string; sourceHandle: string | null; targetHandle: string | null },
+): boolean {
+  if (!store.isValidConnection) return true
+  return store.isValidConnection(connection)
+}
+
+/**
  * Attach a connection drag handler to a handle element.
  * Called when creating each handle in node-wrapper.
  */
@@ -42,6 +75,9 @@ export function attachConnectionHandler<
     connectionLine.setAttribute('stroke-width', '1')
     edgesSvg.appendChild(connectionLine)
 
+    // Track the currently hovered handle for validation feedback
+    let lastHoveredHandle: HTMLElement | null = null
+
     const onMouseMove = (e: MouseEvent) => {
       // Read fresh viewport and container rect each move — the user
       // may pan/zoom while drawing a connection.
@@ -62,11 +98,41 @@ export function attachConnectionHandler<
       })
 
       connectionLine.setAttribute('d', path)
+
+      // Validate connection on hover over target handles
+      const hoverEl = document.elementFromPoint(e.clientX, e.clientY)
+      const hoveredHandle = hoverEl?.closest?.('.bf-flow__handle') as HTMLElement | null
+
+      // Clear previous handle's validation classes
+      if (lastHoveredHandle && lastHoveredHandle !== hoveredHandle) {
+        lastHoveredHandle.classList.remove('valid', 'invalid')
+      }
+
+      if (
+        hoveredHandle &&
+        hoveredHandle !== handleEl &&
+        hoveredHandle.dataset.nodeId &&
+        hoveredHandle.dataset.nodeId !== nodeId
+      ) {
+        const conn = buildConnection(nodeId, hoveredHandle.dataset.nodeId, handleType)
+        const isValid = checkConnectionValidity(store, conn)
+
+        hoveredHandle.classList.remove('valid', 'invalid')
+        hoveredHandle.classList.add(isValid ? 'valid' : 'invalid')
+        lastHoveredHandle = hoveredHandle
+      } else {
+        lastHoveredHandle = null
+      }
     }
 
     const onMouseUp = (e: MouseEvent) => {
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
+
+      // Clean up validation classes from any hovered handle
+      if (lastHoveredHandle) {
+        lastHoveredHandle.classList.remove('valid', 'invalid')
+      }
 
       // Check if released on a target handle
       const targetEl = document.elementFromPoint(e.clientX, e.clientY)
@@ -78,24 +144,21 @@ export function attachConnectionHandler<
         targetHandle.dataset.nodeId !== nodeId
       ) {
         const targetNodeId = targetHandle.dataset.nodeId
+        const conn = buildConnection(nodeId, targetNodeId, handleType)
 
-        // Determine source/target based on handle types
-        let source = nodeId
-        let target = targetNodeId
-        if (handleType === 'target') {
-          source = targetNodeId
-          target = nodeId
+        // Validate before creating edge
+        const isValid = checkConnectionValidity(store, conn)
+
+        if (isValid) {
+          const edgeId = `e-${conn.source}-${conn.target}-${Date.now()}`
+          const newEdge = { id: edgeId, source: conn.source, target: conn.target } as EdgeType
+
+          if (store.onConnect) {
+            store.onConnect(conn)
+          }
+
+          store.addEdge(newEdge)
         }
-
-        // Create edge
-        const edgeId = `e-${source}-${target}-${Date.now()}`
-        const newEdge = { id: edgeId, source, target } as EdgeType
-
-        if (store.onConnect) {
-          store.onConnect({ source, target, sourceHandle: null, targetHandle: null })
-        }
-
-        store.addEdge(newEdge)
       }
 
       // Remove connection line

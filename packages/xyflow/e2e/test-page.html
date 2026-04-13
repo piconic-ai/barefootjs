@@ -36,6 +36,9 @@
 <h2>MiniMap Interactive</h2>
 <div id="minimap-test" class="test-container"></div>
 
+<h2>Connection Validation</h2>
+<div id="validation" class="test-container"></div>
+
 <script type="module">
 import { createRoot } from '@barefootjs/client'
 import { initFlow, initBackground, initControls, initMiniMap } from '@barefootjs/xyflow'
@@ -187,6 +190,21 @@ createRoot(() => {
     ],
   })
   initMiniMap(el, { pannable: true, zoomable: true })
+})
+
+// Connection Validation — only allow connections to "v-allowed"
+createRoot(() => {
+  initFlow(document.getElementById('validation'), {
+    nodes: [
+      { id: 'v-source', position: { x: 50, y: 100 }, data: { label: 'Source' } },
+      { id: 'v-allowed', position: { x: 300, y: 50 }, data: { label: 'Allowed Target' } },
+      { id: 'v-blocked', position: { x: 300, y: 200 }, data: { label: 'Blocked Target' } },
+    ],
+    edges: [],
+    isValidConnection: (connection) => {
+      return connection.target === 'v-allowed'
+    },
+  })
 })
 </script>
 </body>
