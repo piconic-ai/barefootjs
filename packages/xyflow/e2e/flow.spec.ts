@@ -707,3 +707,124 @@ test.describe('Heavy Stress Test (100 nodes)', () => {
     expect(someVisible).toBeGreaterThan(50)
   })
 })
+
+// ============================================================
+// MiniMap Plugin
+// ============================================================
+test.describe('MiniMap Plugin', () => {
+  test.beforeEach(async ({ page }) => {
+    // Scroll minimap section into viewport so page.mouse can reach it
+    await page.locator('#minimap-test').scrollIntoViewIfNeeded()
+    await page.waitForTimeout(200)
+  })
+
+  test('renders minimap container', async ({ page }) => {
+    await expect(page.locator('#minimap-test .bf-flow__minimap')).toBeVisible()
+  })
+
+  test('minimap contains SVG element', async ({ page }) => {
+    const svg = page.locator('#minimap-test .bf-flow__minimap svg')
+    await expect(svg).toBeAttached()
+    expect(Number(await svg.getAttribute('width'))).toBe(200)
+    expect(Number(await svg.getAttribute('height'))).toBe(150)
+  })
+
+  test('minimap renders node rectangles', async ({ page }) => {
+    // Wait for nodes to be measured and minimap to render
+    await page.waitForTimeout(500)
+    const rects = page.locator('#minimap-test .bf-flow__minimap svg g rect')
+    const count = await rects.count()
+    expect(count).toBe(4)
+  })
+
+  test('minimap has viewport mask path', async ({ page }) => {
+    await page.waitForTimeout(500)
+    const mask = page.locator('#minimap-test .bf-flow__minimap-mask')
+    await expect(mask).toBeAttached()
+    const d = await mask.getAttribute('d')
+    expect(d).toBeTruthy()
+    // Mask uses evenodd fill rule with two sub-paths
+    expect(await mask.getAttribute('fill-rule')).toBe('evenodd')
+  })
+
+  test('minimap SVG has viewBox attribute', async ({ page }) => {
+    await page.waitForTimeout(500)
+    const svg = page.locator('#minimap-test .bf-flow__minimap svg')
+    const viewBox = await svg.getAttribute('viewBox')
+    expect(viewBox).toBeTruthy()
+    // viewBox should have 4 numbers
+    expect(viewBox!.split(' ').length).toBe(4)
+  })
+
+  test('minimap has interactive cursor', async ({ page }) => {
+    const svg = page.locator('#minimap-test .bf-flow__minimap svg')
+    const cursor = await svg.evaluate((el: SVGSVGElement) => el.style.cursor)
+    expect(cursor).toBe('grab')
+  })
+
+  test('dragging on minimap pans the main viewport', async ({ page }) => {
+    await page.waitForTimeout(500)
+    const container = page.locator('#minimap-test')
+    const viewport = container.locator('.bf-flow__viewport')
+    const minimapSvg = container.locator('.bf-flow__minimap svg')
+
+    const transformBefore = await viewport.evaluate((el: HTMLElement) => el.style.transform)
+
+    // Drag on the minimap SVG
+    const box = await minimapSvg.boundingBox()
+    if (!box) throw new Error('minimap SVG not found')
+
+    const startX = box.x + box.width / 2
+    const startY = box.y + box.height / 2
+
+    await page.mouse.move(startX, startY)
+    await page.mouse.down()
+    await page.mouse.move(startX + 30, startY + 20, { steps: 5 })
+    await page.mouse.up()
+    await page.waitForTimeout(300)
+
+    const transformAfter = await viewport.evaluate((el: HTMLElement) => el.style.transform)
+    expect(transformAfter).not.toBe(transformBefore)
+  })
+
+  test('minimap viewport indicator updates after main viewport pan', async ({ page }) => {
+    await page.waitForTimeout(500)
+    const container = page.locator('#minimap-test')
+    const mask = container.locator('.bf-flow__minimap-mask')
+
+    const maskBefore = await mask.getAttribute('d')
+
+    // Pan the main viewport by dragging on empty area (top-left to avoid minimap)
+    const mainBox = await container.boundingBox()
+    if (!mainBox) throw new Error('container not found')
+
+    const startX = mainBox.x + 50
+    const startY = mainBox.y + 50
+    await page.mouse.move(startX, startY)
+    await page.mouse.down()
+    await page.mouse.move(startX - 100, startY - 80, { steps: 10 })
+    await page.mouse.up()
+    await page.waitForTimeout(500)
+
+    const maskAfter = await mask.getAttribute('d')
+    expect(maskAfter).not.toBe(maskBefore)
+  })
+
+  test('minimap zoom via scroll wheel changes main viewport zoom', async ({ page }) => {
+    await page.waitForTimeout(500)
+    const container = page.locator('#minimap-test')
+    const viewport = container.locator('.bf-flow__viewport')
+    const minimapSvg = container.locator('.bf-flow__minimap svg')
+
+    const before = await getTransform(viewport)
+    const box = await minimapSvg.boundingBox()
+    if (!box) throw new Error('minimap SVG not found')
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.wheel(0, -300)
+    await page.waitForTimeout(500)
+
+    const after = await getTransform(viewport)
+    expect(after.scale).not.toBeCloseTo(before.scale, 1)
+  })
+})

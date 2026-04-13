@@ -33,9 +33,12 @@
 <h2>Heavy Stress Test (100 nodes)</h2>
 <div id="heavy-stress" class="test-container" style="height:600px"></div>
 
+<h2>MiniMap Interactive</h2>
+<div id="minimap-test" class="test-container"></div>
+
 <script type="module">
 import { createRoot } from '@barefootjs/client'
-import { initFlow, initBackground, initControls } from '@barefootjs/xyflow'
+import { initFlow, initBackground, initControls, initMiniMap } from '@barefootjs/xyflow'
 
 // Debug: trace mousedown → D3 drag flow
 document.addEventListener('mousedown', (e) => {
@@ -164,6 +167,26 @@ createRoot(() => {
 
   initFlow(el, { nodes, edges, fitView: true })
   initControls(el, { position: 'top-right' })
+})
+
+// MiniMap interactive test
+createRoot(() => {
+  const el = document.getElementById('minimap-test')
+  initFlow(el, {
+    nodes: [
+      { id: 'm1', position: { x: 0, y: 0 }, data: { label: 'Alpha' } },
+      { id: 'm2', position: { x: 250, y: 0 }, data: { label: 'Beta' } },
+      { id: 'm3', position: { x: 125, y: 150 }, data: { label: 'Gamma' } },
+      { id: 'm4', position: { x: 500, y: 100 }, data: { label: 'Delta' } },
+    ],
+    edges: [
+      { id: 'em1-2', source: 'm1', target: 'm2' },
+      { id: 'em1-3', source: 'm1', target: 'm3' },
+      { id: 'em2-4', source: 'm2', target: 'm4' },
+      { id: 'em3-4', source: 'm3', target: 'm4' },
+    ],
+  })
+  initMiniMap(el, { pannable: true, zoomable: true })
 })
 </script>
 </body>
