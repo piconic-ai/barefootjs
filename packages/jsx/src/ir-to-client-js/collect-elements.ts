@@ -10,6 +10,20 @@ import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from '.
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 
 /**
+ * WeakMap to store the number of non-loop DOM siblings before each loop node
+ * in its parent element. Populated during collectElements element traversal,
+ * read when constructing LoopElements.
+ */
+const loopSiblingOffsets = new WeakMap<IRNode, number>()
+
+/** Check if an IR node produces a DOM child element (for sibling offset counting). */
+function producesDomChild(node: IRNode): boolean {
+  return node.type === 'element' || node.type === 'component' || node.type === 'provider'
+    || node.type === 'text' || (node.type === 'expression' && !node.reactive)
+    || node.type === 'conditional'
+}
+
+/**
  * Collect inner loop metadata from an IR subtree.
  * Returns NestedLoopInfo for each loop node found within the tree,
  * tracking the nearest ancestor element's slotId as container.
@@ -17,16 +31,25 @@ import { expandDynamicPropValue, expandConstantForReactivity } from './prop-hand
 function collectInnerLoops(nodes: IRNode[], outerLoopParam?: string, ctx?: ClientJsContext): NestedLoopInfo[] {
   const result: NestedLoopInfo[] = []
   let depth = 0
-  let lastSlotId: string | null = null
   let insideCond = false
 
-  function walk(n: IRNode): void {
+  function walk(n: IRNode, parentSlotId: string | null): void {
     switch (n.type) {
-      case 'element':
-        if (n.slotId) lastSlotId = n.slotId
-        for (const child of n.children) walk(child)
+      case 'element': {
+        const mySlotId = n.slotId ?? parentSlotId
+        // Count non-loop siblings for inner loop offset
+        let nonLoopCount = 0
+        for (const child of n.children) {
+          if (child.type === 'loop') {
+            if (nonLoopCount > 0) loopSiblingOffsets.set(child, nonLoopCount)
+          } else if (producesDomChild(child)) {
+            nonLoopCount++
+          }
+        }
+        for (const child of n.children) walk(child, mySlotId)
         break
-      case 'loop':
+      }
+      case 'loop': {
         depth++
         // Generate item template for CSR rendering in mapArray.
         // Pass loopParams so expressions are wrapped at generation time (not post-hoc regex).
@@ -48,32 +71,34 @@ function collectInnerLoops(nodes: IRNode[], outerLoopParam?: string, ctx?: Clien
           array: n.array,
           param: n.param,
           key: n.key ?? '',
-          containerSlotId: lastSlotId,
+          containerSlotId: parentSlotId,
           itemTemplate,
           refsOuterParam: refsOuter,
           reactiveTexts: innerReactiveTexts.length > 0 ? innerReactiveTexts : undefined,
           insideConditional: insideCond || undefined,
+          siblingOffset: loopSiblingOffsets.get(n) || undefined,
         })
-        for (const child of n.children) walk(child)
+        for (const child of n.children) walk(child, parentSlotId)
         depth--
         break
+      }
       case 'fragment':
       case 'component':
       case 'provider':
-        for (const child of n.children) walk(child)
+        for (const child of n.children) walk(child, parentSlotId)
         break
       case 'conditional': {
         const prev = insideCond
         insideCond = true
-        walk(n.whenTrue)
-        walk(n.whenFalse)
+        walk(n.whenTrue, parentSlotId)
+        walk(n.whenFalse, parentSlotId)
         insideCond = prev
         break
       }
     }
   }
 
-  nodes.forEach(walk)
+  nodes.forEach(n => walk(n, null))
   return result
 }
 
@@ -162,6 +187,17 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
   switch (node.type) {
     case 'element':
       collectFromElement(node, ctx, insideConditional)
+      // Pre-compute sibling offsets for any loop children in this element
+      {
+        let nonLoopCount = 0
+        for (const child of node.children) {
+          if (child.type === 'loop') {
+            if (nonLoopCount > 0) loopSiblingOffsets.set(child, nonLoopCount)
+          } else if (producesDomChild(child)) {
+            nonLoopCount++
+          }
+        }
+      }
       for (const child of node.children) {
         collectElements(child, ctx, insideConditional)
       }
@@ -231,7 +267,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         // Use element reconciliation when the loop body has nested components,
         // or when inner loops need their own mapArray for events/reactive text.
         const hasNestedComps = (node.nestedComponents?.length ?? 0) > 0
-        const innerLoops = !node.childComponent && !node.isStaticArray
+        const innerLoops = !node.childComponent
           ? collectInnerLoops(node.children, node.param, ctx)
           : undefined
         const hasInnerLoops = (innerLoops?.length ?? 0) > 0
@@ -266,7 +302,8 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           nestedComponents: node.nestedComponents,
           isStaticArray: node.isStaticArray,
           useElementReconciliation,
-          innerLoops: useElementReconciliation ? innerLoops : undefined,
+          innerLoops: (useElementReconciliation || (node.isStaticArray && innerLoops?.length)) ? innerLoops : undefined,
+          siblingOffset: loopSiblingOffsets.get(node) || undefined,
           filterPredicate: node.filterPredicate ? {
             param: node.filterPredicate.param,
             raw: node.filterPredicate.raw,
