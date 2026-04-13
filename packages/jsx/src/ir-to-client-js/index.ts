@@ -133,7 +133,7 @@ function needsClientJs(ctx: ClientJsContext): boolean {
  * Returns '' if a static template cannot be generated.
  */
 function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): string {
-  const propNamesForTemplate = new Set(ctx.propsParams.map((p) => p.name))
+  const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
   const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx)
 
   // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
@@ -143,8 +143,8 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
 
   let templateHtml: string | undefined
 
-  if (canGenerateStaticTemplate(ir.root, propNamesForTemplate, inlinableConstants, unsafeLocalNames)) {
-    templateHtml = irToComponentTemplate(ir.root, propNamesForTemplate, inlinableConstants, restSpreadNames, ctx.propsObjectName)
+  if (canGenerateStaticTemplate(ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
+    templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName)
   }
 
   // CSR fallback: when static template generation fails (e.g., components with
@@ -154,7 +154,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
     const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap)
 
     templateHtml = generateCsrTemplate(
-      ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName
+      ir.root, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName
     )
   }
 

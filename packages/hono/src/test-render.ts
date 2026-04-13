@@ -110,6 +110,10 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
     )
 
     const res = await app.request('/')
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(`Render failed with status ${res.status}: ${body}`)
+    }
     return await res.text()
   } finally {
     await rm(tempFile, { force: true }).catch(() => {})

@@ -336,3 +336,117 @@ describe('Issue #257 regression', () => {
     expect(clientJs?.content).not.toContain('_p.props.command')
   })
 })
+
+// Issue #807 regression test: Object literal key renaming
+describe('Issue #807 regression', () => {
+  test('object literal key is NOT renamed when it matches a prop name', () => {
+    const source = `
+      'use client'
+
+      interface Props {
+        org: string
+      }
+
+      function translate(key: string, params: Record<string, string>): string {
+        return key
+      }
+
+      export function Example(props: Props) {
+        return <div>{translate('No projects for {org}', { org: props.org })}</div>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Example.tsx', { adapter })
+
+    expect(result.errors).toHaveLength(0)
+    const clientJs = result.files.find((f) => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    // Key 'org' should NOT be renamed to '_p.org'
+    expect(clientJs?.content).not.toContain('_p.org:')
+    // Value should be correctly transformed
+    expect(clientJs?.content).toContain('_p.org')
+  })
+
+  test('multiple object literal keys matching prop names are preserved', () => {
+    const source = `
+      'use client'
+
+      interface Props {
+        org: string
+        name: string
+      }
+
+      function translate(key: string, params: Record<string, string>): string {
+        return key
+      }
+
+      export function Example(props: Props) {
+        return <div>{translate('msg', { org: props.org, name: props.name })}</div>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Example.tsx', { adapter })
+
+    expect(result.errors).toHaveLength(0)
+    const clientJs = result.files.find((f) => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    // Neither key should be renamed
+    expect(clientJs?.content).not.toContain('_p.org:')
+    expect(clientJs?.content).not.toContain('_p.name:')
+    // Values should be correctly transformed
+    expect(clientJs?.content).toContain('_p.org')
+    expect(clientJs?.content).toContain('_p.name')
+  })
+
+  test('destructured props: object literal key is NOT renamed (templateExpr)', () => {
+    const source = `
+      'use client'
+
+      interface Props {
+        org: string
+      }
+
+      function translate(key: string, params: Record<string, string>): string {
+        return key
+      }
+
+      export function Example({ org }: Props) {
+        return <div>{translate('No projects for {org}', { org: org })}</div>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Example.tsx', { adapter })
+
+    expect(result.errors).toHaveLength(0)
+    const clientJs = result.files.find((f) => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    // Key 'org' should NOT be renamed to '_p.org'
+    expect(clientJs?.content).not.toContain('_p.org:')
+    // Value should be correctly transformed
+    expect(clientJs?.content).toContain('_p.org')
+  })
+
+  test('destructured props: ternary attribute value is rewritten (templateCondition)', () => {
+    const source = `
+      'use client'
+
+      interface Props {
+        decorative?: boolean
+      }
+
+      export function Separator({ decorative }: Props) {
+        return <hr role={decorative ? 'none' : 'separator'} />
+      }
+    `
+
+    const result = compileJSXSync(source, 'Separator.tsx', { adapter })
+
+    expect(result.errors).toHaveLength(0)
+    const clientJs = result.files.find((f) => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    // Ternary condition should use _p.decorative
+    expect(clientJs?.content).toContain('_p.decorative')
+    // Should NOT have bare 'decorative' in the template (would cause ReferenceError)
+    expect(clientJs?.content).not.toMatch(/\$\{[^}]*(?<!\.)decorative(?![\w])/)
+  })
+})

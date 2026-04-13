@@ -42,16 +42,17 @@ export function varSlotId(slotId: string): string {
  * Convert an attribute value to a string expression.
  * Handles both string values and IRTemplateLiteral.
  */
-export function attrValueToString(value: string | IRTemplateLiteral | null): string | null {
+export function attrValueToString(value: string | IRTemplateLiteral | null, opts?: { useTemplate?: boolean }): string | null {
   if (value === null) return null
   if (typeof value === 'string') return value
 
   let result = '`'
   for (const part of value.parts) {
     if (part.type === 'string') {
-      result += part.value
+      result += (opts?.useTemplate && part.templateValue) ? part.templateValue : part.value
     } else if (part.type === 'ternary') {
-      result += `\${${part.condition} ? '${part.whenTrue}' : '${part.whenFalse}'}`
+      const cond = (opts?.useTemplate && part.templateCondition) ? part.templateCondition : part.condition
+      result += `\${${cond} ? '${part.whenTrue}' : '${part.whenFalse}'}`
     }
   }
   result += '`'

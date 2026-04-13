@@ -172,7 +172,7 @@ export function buildInlinableConstants(ctx: ClientJsContext): {
       continue
     }
 
-    inlinableConstants.set(constant.name, trimmedValue)
+    inlinableConstants.set(constant.name, constant.templateValue?.trim() ?? trimmedValue)
   }
 
   // Build freeIdentifiers lookup for resolveChainedRefs
@@ -351,7 +351,7 @@ export function emitRegistrationAndHydration(
   lines.push(`}`)
   lines.push('')
 
-  const propNamesForTemplate = new Set(ctx.propsParams.map((p) => p.name))
+  const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
   const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx)
 
   // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
@@ -365,8 +365,8 @@ export function emitRegistrationAndHydration(
 
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: init${name}`]
-  if (canGenerateStaticTemplate(_ir.root, propNamesForTemplate, inlinableConstants, unsafeLocalNames)) {
-    const templateHtml = irToComponentTemplate(_ir.root, propNamesForTemplate, inlinableConstants, restSpreadNames, ctx.propsObjectName)
+  if (canGenerateStaticTemplate(_ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
+    const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName)
     if (templateHtml) {
       defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)
     }
@@ -378,7 +378,7 @@ export function emitRegistrationAndHydration(
     const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap)
 
     const templateHtml = generateCsrTemplate(
-      _ir.root, propNamesForTemplate, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName
+      _ir.root, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName
     )
     if (templateHtml) {
       defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)

@@ -7,6 +7,7 @@
 
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo } from './types'
+import { rewriteBarePropRefs } from './prop-rewrite'
 import {
   type AnalyzerContext,
   type ConditionalReturn,
@@ -1014,6 +1015,15 @@ function collectConstant(
   const containsArrow = node.initializer ? nodeContainsArrow(node.initializer) : false
   const systemConstructKind = node.initializer ? getSystemConstructKind(node.initializer) : undefined
 
+  // Pre-transform bare prop refs for template inlining (#807)
+  let templateValue: string | undefined
+  if (value && !ctx.propsObjectName && ctx.propsParams.length > 0 && node.initializer) {
+    const propNames = new Set(ctx.propsParams.map(p => p.name))
+    if (propNames.size > 0) {
+      templateValue = rewriteBarePropRefs(value, node.initializer, propNames)
+    }
+  }
+
   ctx.localConstants.push({
     name,
     value,
@@ -1028,6 +1038,7 @@ function collectConstant(
     isJsxFunction: isJsxFunction || undefined,
     containsArrow: containsArrow || undefined,
     systemConstructKind,
+    templateValue,
   })
 }
 

@@ -30,6 +30,7 @@ import { type AnalyzerContext, getSourceLocation } from './analyzer-context'
 import { parseExpression, isSupported, parseBlockBody, type ParsedExpr, type ParsedStatement } from './expression-parser'
 import { createError, ErrorCodes } from './errors'
 import { containsReactiveExpression } from './reactivity-checker'
+import { rewriteBarePropRefs as rewriteBarePropRefsCore } from './prop-rewrite'
 
 // =============================================================================
 // Transform Context
@@ -53,8 +54,12 @@ interface TransformContext {
   patterns: ReactivityPatterns
   /** Shortcut for analyzer.getJS(node) */
   getJS(node: ts.Node): string
+  /** getJS + rewrite destructured prop refs for client JS templates (#807) */
+  getTemplateJS(node: ts.Node): string
   /** Cached set of reactive getter names (signal getters + memo names) for O(1) lookup */
   _reactiveGetterNames?: Set<string>
+  /** Cached set of destructured prop names for AST-based rewriting */
+  _destructuredPropNames?: Set<string> | null
   /** Active loop parameter names for slotId assignment to loop-param-dependent expressions */
   loopParams: Set<string>
 }
@@ -100,6 +105,25 @@ function exprHasFunctionCalls(expr: ts.Expression): boolean {
   return found
 }
 
+/**
+ * Rewrite bare destructured prop references in expression text.
+ * Thin wrapper that caches prop names on ctx and delegates to the shared core.
+ * Returns undefined if no rewriting is needed (SolidJS-style or no props).
+ */
+function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string | undefined {
+  // Build and cache destructured prop names
+  if (ctx._destructuredPropNames === undefined) {
+    if (ctx.analyzer.propsObjectName) {
+      ctx._destructuredPropNames = null  // SolidJS-style, no rewriting needed
+    } else {
+      const names = ctx.analyzer.propsParams.map(p => p.name)
+      ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
+    }
+  }
+  if (!ctx._destructuredPropNames) return undefined
+  return rewriteBarePropRefsCore(text, expr, ctx._destructuredPropNames)
+}
+
 function createTransformContext(analyzer: AnalyzerContext): TransformContext {
   return {
     analyzer,
@@ -129,6 +153,10 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     },
     getJS(node: ts.Node): string {
       return analyzer.getJS(node)
+    },
+    getTemplateJS(node: ts.Node): string {
+      const text = analyzer.getJS(node)
+      return rewriteBarePropRefs(text, node, this) ?? text
     },
   }
 }
@@ -734,9 +762,11 @@ function transformExpression(
   const callsReactive = exprCallsReactiveGetters(expr, ctx)
   const hasCalls = exprHasFunctionCalls(expr)
 
+  const templateExpr = rewriteBarePropRefs(exprText, expr, ctx)
   return {
     type: 'expression',
     expr: exprText,
+    templateExpr,
     typeInfo: inferExpressionType(expr, ctx),
     reactive,
     slotId,
@@ -823,6 +853,7 @@ function transformConditional(
   return {
     type: 'conditional',
     condition,
+    templateCondition: rewriteBarePropRefs(condition, node.condition, ctx),
     conditionType: null,
     reactive,
     whenTrue,
@@ -854,6 +885,7 @@ function transformLogicalAnd(
   return {
     type: 'conditional',
     condition,
+    templateCondition: rewriteBarePropRefs(condition, node.left, ctx),
     conditionType: null,
     reactive,
     whenTrue,
@@ -895,9 +927,11 @@ function transformNullishCoalescing(
   const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
 
   // whenTrue: the left-hand value itself
+  const templateLeftText = rewriteBarePropRefs(leftText, node.left, ctx)
   const whenTrue: IRExpression = {
     type: 'expression',
     expr: leftText,
+    templateExpr: templateLeftText,
     typeInfo: inferExpressionType(node.left, ctx),
     reactive,
     slotId: null,
@@ -909,9 +943,14 @@ function transformNullishCoalescing(
   // whenFalse: recursively transform the right-hand side (may contain JSX)
   const whenFalse = transformConditionalBranch(node.right, ctx)
 
+  const templateCondition = templateLeftText
+    ? (isNullish ? `${templateLeftText} != null` : templateLeftText)
+    : undefined
+
   return {
     type: 'conditional',
     condition,
+    templateCondition,
     conditionType: null,
     reactive,
     whenTrue,
@@ -979,6 +1018,7 @@ function transformConditionalBranch(
   return {
     type: 'expression',
     expr: exprText,
+    templateExpr: rewriteBarePropRefs(exprText, node, ctx),
     typeInfo: inferExpressionType(node, ctx),
     reactive: isReactiveExpression(exprText, ctx, node),
     slotId: null,
@@ -1200,12 +1240,20 @@ function transformMapCall(
   // 3. filter().sort().map()  (outermost = sort, inner = filter)
   // 4. sort().filter().map()  (outermost = filter, inner = sort)
 
-  let array: string
+  let array: string = ''
+  let templateArray: string | undefined
   let filterPredicate: FilterPredicateResult | undefined
   let sortComparator: SortComparatorResult | undefined
   let chainOrder: 'filter-sort' | 'sort-filter' | undefined
   let mapPreamble: string | undefined
+  let templateMapPreamble: string | undefined
   let typedMapPreamble: string | undefined
+
+  // Helper to set both array and templateArray
+  const setArray = (node: ts.Expression) => {
+    array = ctx.getJS(node)
+    templateArray = rewriteBarePropRefs(array, node, ctx)
+  }
 
   const filterInfo = isFilterCall(mapSource)
   const sortInfo = isSortCall(mapSource)
@@ -1231,7 +1279,7 @@ function transformMapCall(
         )
       }
       // Keep sort (and filter if present) in array string for client evaluation
-      array = ctx.getJS(mapSource)
+      setArray(mapSource)
     } else {
       sortComparator = sortExtraction.result
 
@@ -1254,16 +1302,16 @@ function transformMapCall(
             )
           }
           // Keep entire chain in array for client evaluation
-          array = ctx.getJS(mapSource)
+          setArray(mapSource)
           sortComparator = undefined
           chainOrder = undefined
         } else {
-          array = ctx.getJS(innerFilter.array)
+          setArray(innerFilter.array)
           filterPredicate = filterExtraction.result
         }
       } else {
         // Simple sort().map()
-        array = ctx.getJS(sortInfo.array)
+        setArray(sortInfo.array)
       }
     }
   } else if (filterInfo) {
@@ -1288,7 +1336,7 @@ function transformMapCall(
         )
       }
       // Keep filter (and sort if present) in array for client evaluation
-      array = ctx.getJS(mapSource)
+      setArray(mapSource)
     } else {
       filterPredicate = filterExtraction.result
 
@@ -1311,10 +1359,10 @@ function transformMapCall(
             )
           }
           // Keep sort in array for client evaluation, but keep filter extracted
-          array = ctx.getJS(filterInfo.array)
+          setArray(filterInfo.array)
         } else {
           sortComparator = sortExtraction.result
-          array = ctx.getJS(innerSort.array)
+          setArray(innerSort.array)
         }
       } else {
         // Simple filter().map()
@@ -1395,18 +1443,26 @@ function transformMapCall(
           }
         }
         const preambleStmts: string[] = []
+        const templatePreambleStmts: string[] = []
         const typedPreambleStmts: string[] = []
         let hasTypeDiff = false
+        let hasTemplateDiff = false
         for (const stmt of body.statements) {
           if (stmt === returnStmt) break
           const js = ctx.getJS(stmt)
+          const tjs = ctx.getTemplateJS(stmt)
           const ts = stmt.getText(ctx.sourceFile)
           preambleStmts.push(js.endsWith(';') ? js : js + ';')
+          templatePreambleStmts.push(tjs.endsWith(';') ? tjs : tjs + ';')
           typedPreambleStmts.push(ts.endsWith(';') ? ts : ts + ';')
           if (js !== ts) hasTypeDiff = true
+          if (js !== tjs) hasTemplateDiff = true
         }
         if (preambleStmts.length > 0) {
           mapPreamble = preambleStmts.join(' ')
+          if (hasTemplateDiff) {
+            templateMapPreamble = templatePreambleStmts.join(' ')
+          }
           if (hasTypeDiff) {
             typedMapPreamble = typedPreambleStmts.join(' ')
           }
@@ -1475,6 +1531,7 @@ function transformMapCall(
   return {
     type: 'loop',
     array,
+    templateArray,
     arrayType: null,
     itemType: null,
     param,
@@ -1492,6 +1549,7 @@ function transformMapCall(
     chainOrder,
     clientOnly: isClientOnly || undefined,
     mapPreamble,
+    templateMapPreamble,
     paramType,
     indexType,
     typedMapPreamble,
@@ -1591,6 +1649,7 @@ function processAttributes(
         attrs.push({
           name: '...',
           value: spreadExpr,
+          templateValue: ctx.getTemplateJS(attr.expression),
           dynamic: true,
           isLiteral: false,
           loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
@@ -1628,9 +1687,15 @@ function processAttributes(
     // Regular attribute
     const attrResult = getAttributeValue(attr, ctx)
     const { value, dynamic, isLiteral } = attrResult
+    // Compute templateValue for dynamic string attributes
+    let templateValue: string | undefined
+    if (dynamic && typeof value === 'string' && attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+      templateValue = rewriteBarePropRefs(value, attr.initializer.expression, ctx)
+    }
     attrs.push({
       name,
       value,
+      templateValue,
       dynamic,
       isLiteral,
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
@@ -1727,11 +1792,15 @@ function parseTemplateLiteral(
         parts.push(ternary)
       } else {
         // Fallback: keep as string expression
-        parts.push({ type: 'string', value: `\${${ctx.getJS(span.expression)}}` })
+        const val = ctx.getJS(span.expression)
+        const tVal = rewriteBarePropRefs(val, span.expression, ctx)
+        parts.push({ type: 'string', value: `\${${val}}`, templateValue: tVal ? `\${${tVal}}` : undefined })
       }
     } else {
       // Non-ternary expression: keep as ${expr}
-      parts.push({ type: 'string', value: `\${${ctx.getJS(span.expression)}}` })
+      const val = ctx.getJS(span.expression)
+      const tVal = rewriteBarePropRefs(val, span.expression, ctx)
+      parts.push({ type: 'string', value: `\${${val}}`, templateValue: tVal ? `\${${tVal}}` : undefined })
     }
 
     // Add the literal part after this span (text after ${} until next ${} or end)
@@ -1756,9 +1825,11 @@ function parseTernary(
 
   // Only parse if both branches are string literals
   if (whenTrueValue !== null && whenFalseValue !== null) {
+    const condition = ctx.getJS(expr.condition)
     return {
       type: 'ternary',
-      condition: ctx.getJS(expr.condition),
+      condition,
+      templateCondition: rewriteBarePropRefs(condition, expr.condition, ctx),
       whenTrue: whenTrueValue,
       whenFalse: whenFalseValue,
     }
@@ -1814,6 +1885,7 @@ function processComponentProps(
         props.push({
           name: '...',
           value: spreadExpr,
+          templateValue: ctx.getTemplateJS(attr.expression),
           dynamic: true,
           isLiteral: false,
           loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
@@ -1860,9 +1932,16 @@ function processComponentProps(
     // since props are passed to components as-is
     const propValue = templateLiteralToString(value) ?? 'true'
 
+    // Compute templateValue for dynamic string props
+    let propTemplateValue: string | undefined
+    if (dynamic && typeof value === 'string' && attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+      propTemplateValue = rewriteBarePropRefs(propValue, attr.initializer.expression, ctx)
+    }
+
     props.push({
       name,
       value: propValue,
+      templateValue: propTemplateValue,
       dynamic,
       isLiteral,
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
@@ -2183,6 +2262,7 @@ function buildIfStatementChain(
 
     // Get the condition text
     const condition = ctx.getJS(condReturn.condition)
+    const templateCondition = rewriteBarePropRefs(condition, condReturn.condition, ctx)
 
     // Transform the JSX return in the then branch
     // Reset isRoot so each branch gets needsScope=true
@@ -2193,12 +2273,14 @@ function buildIfStatementChain(
     }
 
     // Collect scope variables with their initializers
-    const scopeVariables: Array<{ name: string; initializer: string }> = []
+    const scopeVariables: Array<{ name: string; initializer: string; templateInitializer?: string }> = []
     for (const decl of condReturn.scopeVariables) {
       if (ts.isIdentifier(decl.name) && decl.initializer) {
+        const init = ctx.getJS(decl.initializer)
         scopeVariables.push({
           name: decl.name.text,
-          initializer: ctx.getJS(decl.initializer),
+          initializer: init,
+          templateInitializer: rewriteBarePropRefs(init, decl.initializer, ctx),
         })
       }
     }
@@ -2214,6 +2296,7 @@ function buildIfStatementChain(
     const ifStmt: IRIfStatement = {
       type: 'if-statement',
       condition,
+      templateCondition,
       consequent,
       alternate,
       scopeVariables,
