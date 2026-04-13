@@ -238,17 +238,10 @@ function injectDefaultStyles() {
       position: absolute;
       top: 0;
       left: 0;
-      background: #f8f8f8;
-      border: 1px solid #e2e2e2;
-      border-radius: 4px;
-      padding: 2px 6px;
       font-size: 11px;
       color: #222;
       white-space: nowrap;
       cursor: default;
-    }
-    .bf-flow__edge-label--selected {
-      border-color: #555;
     }
     .bf-flow__edge-toolbar {
       position: absolute;
