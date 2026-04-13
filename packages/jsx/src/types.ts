@@ -108,6 +108,8 @@ export interface IRText {
 export interface IRExpression {
   type: 'expression'
   expr: string
+  /** Pre-transformed expr with destructured prop refs rewritten to _p.xxx (for client JS templates). */
+  templateExpr?: string
   typeInfo: TypeInfo | null
   reactive: boolean
   slotId: string | null
@@ -123,6 +125,8 @@ export interface IRExpression {
 export interface IRConditional {
   type: 'conditional'
   condition: string
+  /** Pre-transformed condition with destructured prop refs rewritten to _p.xxx. */
+  templateCondition?: string
   conditionType: TypeInfo | null
   reactive: boolean
   whenTrue: IRNode
@@ -154,6 +158,8 @@ export interface IRLoopChildComponent {
 export interface IRLoop {
   type: 'loop'
   array: string
+  /** Pre-transformed array expr with destructured prop refs rewritten to _p.xxx. */
+  templateArray?: string
   arrayType: TypeInfo | null
   itemType: TypeInfo | null
   param: string
@@ -285,12 +291,14 @@ export interface IRIfStatement {
   type: 'if-statement'
   /** The condition expression (e.g., "name === 'github'") */
   condition: string
+  /** Pre-transformed condition with destructured prop refs rewritten to _p.xxx. */
+  templateCondition?: string
   /** The JSX return in the then branch */
   consequent: IRNode
   /** The else branch: either another IRIfStatement (else if) or IRNode (final else) */
   alternate: IRNode | null
   /** Variables declared in the if block scope */
-  scopeVariables: Array<{ name: string; initializer: string }>
+  scopeVariables: Array<{ name: string; initializer: string; templateInitializer?: string }>
   loc: SourceLocation
 }
 
@@ -334,6 +342,8 @@ export function pickAttrMeta(src: AttrMeta): AttrMeta {
 export interface IRAttribute extends AttrMeta {
   name: string
   value: string | IRTemplateLiteral | null // null for boolean attrs like 'disabled'
+  /** Pre-transformed value string with destructured prop refs rewritten to _p.xxx. */
+  templateValue?: string
   dynamic: boolean
   isLiteral: boolean // true if value came from a string literal attribute
   loc: SourceLocation
@@ -349,6 +359,8 @@ export interface IREvent {
 export interface IRProp extends AttrMeta {
   name: string
   value: string
+  /** Pre-transformed value with destructured prop refs rewritten to _p.xxx. */
+  templateValue?: string
   dynamic: boolean
   isLiteral: boolean // true if value came from a string literal attribute (e.g., value="account")
   loc: SourceLocation
