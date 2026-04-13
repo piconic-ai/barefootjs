@@ -108,8 +108,14 @@ export function attachConnectionHandler<
         lastHoveredHandle.classList.remove('valid', 'invalid')
       }
 
+      // Only validate handles of the opposite type (source→target, target→source)
+      const isOppositeType = hoveredHandle &&
+        ((handleType === 'source' && hoveredHandle.classList.contains('bf-flow__handle--target')) ||
+         (handleType === 'target' && hoveredHandle.classList.contains('bf-flow__handle--source')))
+
       if (
         hoveredHandle &&
+        isOppositeType &&
         hoveredHandle !== handleEl &&
         hoveredHandle.dataset.nodeId &&
         hoveredHandle.dataset.nodeId !== nodeId
