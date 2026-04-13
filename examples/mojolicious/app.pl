@@ -44,6 +44,7 @@ helper render_component => sub ($c, $component, %opts) {
     my $heading  = $opts{heading}  // '';
     my $stash    = $opts{stash}    // {};
     my $children = $opts{children} // {};
+    my $props    = $opts{props};     # JSON-serializable props for bf-p attribute
 
     for my $key (keys %$stash) {
         $c->stash($key => $stash->{$key});
@@ -53,18 +54,25 @@ helper render_component => sub ($c, $component, %opts) {
     my $scope_id = $component . '_' . substr(rand() =~ s/^0\.//r, 0, 6);
     $bf->_scope_id($scope_id);
 
+    # Set props for bf-p attribute (used by client JS for hydration)
+    $bf->_props($props) if $props;
+
     # Register child component renderers
     my $signal_inits = $opts{signal_init} // {};
     for my $child_name (keys %$children) {
         my $child_template = $children->{$child_name};
         my $child_init = $signal_inits->{$child_name};
-        my $child_idx = 0;
         $bf->register_child_renderer($child_name, sub {
             my ($props) = @_;
             my $parent_bf = $c->stash->{'bf.instance'};
             my $child_bf = BarefootJS->new($c, {});
-            $child_bf->_scope_id($scope_id . '_s' . $child_idx);
-            $child_idx++;
+            # Use slot ID from IR for scope (client JS uses $c(__scope, 'sN') to find children)
+            # Falls back to child component name + random suffix for loop children
+            my $slot_id = delete $props->{_bf_slot};
+            my $child_scope = $slot_id
+                ? $scope_id . '_' . $slot_id
+                : $child_template . '_' . substr(rand() =~ s/^0\.//r, 0, 6);
+            $child_bf->_scope_id($child_scope);
             $child_bf->_is_child(1);
             # Share script collector with parent
             $child_bf->_scripts($parent_bf->_scripts);
@@ -112,6 +120,7 @@ get '/' => sub ($c) {
             <li><a href="/toggle">Toggle</a></li>
             <li><a href="/form">Form</a></li>
             <li><a href="/reactive-props">Reactive Props</a></li>
+            <li><a href="/props-reactivity">Props Reactivity Comparison</a></li>
             <li><a href="/conditional-return">Conditional Return</a></li>
             <li><a href="/conditional-return-link">Conditional Return (Link)</a></li>
             <li><a href="/todos">Todo</a></li>
@@ -123,14 +132,23 @@ get '/' => sub ($c) {
 };
 
 get '/counter' => sub ($c) {
-    $c->render_component('Counter', stash => {
-        count   => 0,
-        initial => 0,
-        doubled => 0,
-    }, heading => 'Counter Component');
+    $c->render_component('Counter',
+        props => { initial => 0 },
+        stash => {
+            count   => 0,
+            initial => 0,
+            doubled => 0,
+        },
+        heading => 'Counter Component',
+    );
 };
 
 get '/toggle' => sub ($c) {
+    my $items = [
+        { label => 'Setting 1', defaultOn => \1 },
+        { label => 'Setting 2', defaultOn => \0 },
+        { label => 'Setting 3', defaultOn => \0 },
+    ];
     $c->render_component('Toggle',
         children    => { toggle_item => 'ToggleItem' },
         signal_init => {
@@ -139,43 +157,43 @@ get '/toggle' => sub ($c) {
                 return (on => ($props->{defaultOn} // 0));
             },
         },
-        stash => {
-            toggleItems => [
-                { label => 'Setting 1', defaultOn => 1 },
-                { label => 'Setting 2', defaultOn => 0 },
-                { label => 'Setting 3', defaultOn => 0 },
-            ],
-        },
+        props => { toggleItems => $items },
+        stash => { toggleItems => $items },
         heading => 'Toggle Component',
     );
 };
 
 get '/form' => sub ($c) {
-    $c->render_component('Form', stash => {
-        accepted => 0,
-    }, heading => 'Form Example');
+    $c->render_component('Form',
+        props   => {},
+        stash   => { accepted => 0 },
+        heading => 'Form Example',
+    );
 };
 
 get '/reactive-props' => sub ($c) {
     $c->render_component('ReactiveProps',
         children => { reactive_child => 'ReactiveChild' },
+        props    => {},
         stash    => { count => 0, doubled => 0 },
         heading  => 'Reactive Props Test',
     );
 };
 
 get '/conditional-return' => sub ($c) {
-    $c->render_component('ConditionalReturn', stash => {
-        variant => '',
-        count   => 0,
-    }, heading => 'Conditional Return Example');
+    $c->render_component('ConditionalReturn',
+        props => { variant => '' },
+        stash => { variant => '', count => 0 },
+        heading => 'Conditional Return Example',
+    );
 };
 
 get '/conditional-return-link' => sub ($c) {
-    $c->render_component('ConditionalReturn', stash => {
-        variant => 'link',
-        count   => 0,
-    }, heading => 'Conditional Return Example (Link)');
+    $c->render_component('ConditionalReturn',
+        props => { variant => 'link' },
+        stash => { variant => 'link', count => 0 },
+        heading => 'Conditional Return Example (Link)',
+    );
 };
 
 get '/todos' => sub ($c) {
@@ -184,6 +202,7 @@ get '/todos' => sub ($c) {
 
     $c->render_component('TodoApp',
         children => { todo_item => 'TodoItem' },
+        props    => { initialTodos => \@current_todos },
         stash    => {
             todos     => \@current_todos,
             newText   => '',
@@ -193,8 +212,31 @@ get '/todos' => sub ($c) {
     );
 };
 
+get '/props-reactivity' => sub ($c) {
+    $c->render_component('PropsReactivityComparison',
+        children => {
+            props_style_child        => 'PropsStyleChild',
+            destructured_style_child => 'DestructuredStyleChild',
+        },
+        signal_init => {
+            props_style_child => sub {
+                my ($props) = @_;
+                return (displayValue => ($props->{value} // 0) * 10);
+            },
+            destructured_style_child => sub {
+                my ($props) = @_;
+                return (displayValue => ($props->{value} // 0) * 10);
+            },
+        },
+        props   => {},
+        stash   => { count => 1 },
+        heading => 'Props Reactivity Comparison',
+    );
+};
+
 get '/portal' => sub ($c) {
     $c->render_component('PortalExample',
+        props   => {},
         stash   => { open => 0 },
         heading => 'Portal Example',
     );

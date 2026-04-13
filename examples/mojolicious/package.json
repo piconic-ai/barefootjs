@@ -3,11 +3,14 @@
   "version": "0.0.1",
   "scripts": {
     "build": "bun run build.ts",
-    "dev": "perl app.pl daemon -l http://*:3000"
+    "dev": "perl app.pl daemon -l 'http://*:3004'",
+    "test:e2e": "bunx playwright test",
+    "test:e2e:ui": "bunx playwright test --ui"
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
     "@barefootjs/mojolicious": "workspace:*",
+    "@playwright/test": "^1.41.0",
     "bun-types": "^1.1.0"
   }
 }
