@@ -30,6 +30,9 @@
 <h2>Stress Test (20 nodes)</h2>
 <div id="stress" class="test-container" style="height:500px"></div>
 
+<h2>Heavy Stress Test (100 nodes)</h2>
+<div id="heavy-stress" class="test-container" style="height:600px"></div>
+
 <script type="module">
 import { createRoot } from '@barefootjs/client'
 import { initFlow, initBackground, initControls } from '@barefootjs/xyflow'
@@ -140,6 +143,26 @@ createRoot(() => {
 
   initFlow(el, { nodes, edges, fitView: true })
   initBackground(el, { variant: 'lines', gap: 30, color: '#f0f0f0' })
+  initControls(el, { position: 'top-right' })
+})
+
+// Heavy stress test — 100 nodes, 180 edges (10x10 grid)
+createRoot(() => {
+  const el = document.getElementById('heavy-stress')
+  const nodes = []
+  const edges = []
+  const cols = 10, rows = 10
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const id = `h${r}-${c}`
+      nodes.push({ id, position: { x: c * 180, y: r * 100 }, data: { label: `N${r * cols + c + 1}` } })
+      if (c < cols - 1) edges.push({ id: `eh${id}-h`, source: id, target: `h${r}-${c + 1}` })
+      if (r < rows - 1) edges.push({ id: `eh${id}-v`, source: id, target: `h${r + 1}-${c}` })
+    }
+  }
+
+  initFlow(el, { nodes, edges, fitView: true })
   initControls(el, { position: 'top-right' })
 })
 </script>
