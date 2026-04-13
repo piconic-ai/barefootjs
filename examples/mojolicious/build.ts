@@ -37,8 +37,8 @@ const components = [
 ]
 
 const adapter = new MojoAdapter({
-  clientJsBasePath: '/static/client/',
-  barefootJsPath: '/static/client/barefoot.js',
+  clientJsBasePath: '/client/',
+  barefootJsPath: '/client/barefoot.js',
 })
 
 console.log('Building Mojolicious EP templates...\n')
