@@ -453,7 +453,17 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       // Uses negative lookahead for identifier chars to avoid partial matches.
       // Exclude matches preceded by dot (e.g., Math.max should not become Math._p.max)
       const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
-      result = result.replace(pattern, `${PROPS_PARAM}.${propName}`)
+      result = result.replace(pattern, (match, offset, str) => {
+        // Skip object literal keys (#807): identifier preceded by { or , and followed by :
+        const after = str.slice(offset + match.length)
+        if (/^\s*:(?!:)/.test(after)) {
+          const before = str.slice(0, offset)
+          if (/[{,]\s*$/.test(before)) {
+            return match
+          }
+        }
+        return `${PROPS_PARAM}.${propName}`
+      })
     }
     return restore(result)
   }
@@ -749,7 +759,17 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     for (const propName of propNames) {
       // Exclude matches preceded by dot (e.g., Math.max should not become Math._p.max)
       const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
-      result = result.replace(pattern, `${PROPS_PARAM}.${propName}`)
+      result = result.replace(pattern, (match, offset, str) => {
+        // Skip object literal keys (#807): identifier preceded by { or , and followed by :
+        const after = str.slice(offset + match.length)
+        if (/^\s*:(?!:)/.test(after)) {
+          const before = str.slice(0, offset)
+          if (/[{,]\s*$/.test(before)) {
+            return match
+          }
+        }
+        return `${PROPS_PARAM}.${propName}`
+      })
     }
     return restore(result)
   }
