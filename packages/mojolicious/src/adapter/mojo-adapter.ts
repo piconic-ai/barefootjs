@@ -266,9 +266,15 @@ export class MojoAdapter extends BaseAdapter {
   // ===========================================================================
 
   renderComponent(comp: IRComponent): string {
-    // TODO: implement include-based component rendering
-    const props = comp.props.map(p => `${p.name} => ${this.convertExpressionToPerl(p.value)}`).join(', ')
-    return `%= include '${this.toTemplateName(comp.name)}', ${props}`
+    const propParts = comp.props.map(p => {
+      if (p.dynamic) {
+        return `${p.name} => ${this.convertExpressionToPerl(typeof p.value === 'string' ? p.value : '')}`
+      }
+      // Static props: quote the value
+      return `${p.name} => '${p.value}'`
+    })
+    const propsStr = propParts.length > 0 ? ', ' + propParts.join(', ') : ''
+    return `<%== $bf->render_child('${this.toTemplateName(comp.name)}'${propsStr}) %>`
   }
 
   private toTemplateName(componentName: string): string {

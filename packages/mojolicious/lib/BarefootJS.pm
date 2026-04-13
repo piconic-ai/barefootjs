@@ -72,6 +72,26 @@ sub register_script ($self, $path) {
     push @{$self->_scripts}, $path;
 }
 
+# ---------------------------------------------------------------------------
+# Child Component Rendering
+# ---------------------------------------------------------------------------
+
+has '_child_renderers' => sub { {} };
+
+sub register_child_renderer ($self, $name, $renderer) {
+    $self->_child_renderers->{$name} = $renderer;
+}
+
+sub render_child ($self, $name, %props) {
+    my $renderer = $self->_child_renderers->{$name};
+    die "No renderer registered for child component '$name'" unless $renderer;
+    return $renderer->(\%props);
+}
+
+# ---------------------------------------------------------------------------
+# Script Output
+# ---------------------------------------------------------------------------
+
 sub scripts ($self) {
     my @tags;
     for my $path (@{$self->_scripts}) {

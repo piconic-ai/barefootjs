@@ -48,9 +48,27 @@ export interface RenderOptions {
 }
 
 export async function renderMojoComponent(options: RenderOptions): Promise<string> {
-  const { source, adapter, props } = options
+  const { source, adapter, props, components } = options
 
-  // Compile source
+  // Compile child components first
+  const childTemplates: Map<string, { template: string; ir: ComponentIR }> = new Map()
+  if (components) {
+    for (const [filename, childSource] of Object.entries(components)) {
+      const childResult = compileJSXSync(childSource, filename, { adapter, outputIR: true })
+      const childErrors = childResult.errors.filter(e => e.severity === 'error')
+      if (childErrors.length > 0) {
+        throw new Error(`Compilation errors in ${filename}:\n${childErrors.map(e => e.message).join('\n')}`)
+      }
+      const childTemplate = childResult.files.find(f => f.type === 'markedTemplate')
+      if (!childTemplate) throw new Error(`No marked template for ${filename}`)
+      const childIrFile = childResult.files.find(f => f.type === 'ir')
+      if (!childIrFile) throw new Error(`No IR output for ${filename}`)
+      const childIR = JSON.parse(childIrFile.content) as ComponentIR
+      childTemplates.set(childIR.metadata.componentName, { template: childTemplate.content, ir: childIR })
+    }
+  }
+
+  // Compile parent source
   const result = compileJSXSync(source, 'component.tsx', { adapter, outputIR: true })
 
   const errors = result.errors.filter(e => e.severity === 'error')
@@ -75,11 +93,17 @@ export async function renderMojoComponent(options: RenderOptions): Promise<strin
   await mkdir(tempDir, { recursive: true })
 
   try {
-    // Write template file
+    // Write template files (parent + children)
     await Bun.write(resolve(tempDir, `${toSnakeCase(componentName)}.html.ep`), templateFile.content)
+    for (const [childName, { template }] of childTemplates) {
+      await Bun.write(resolve(tempDir, `${toSnakeCase(childName)}.html.ep`), template)
+    }
 
     // Build props hash for Perl
     const propsPerl = buildPerlProps(componentName, props, ir)
+
+    // Build child template rendering functions for Perl
+    const childRenderers = buildChildRenderers(childTemplates, ir, tempDir)
 
     // Write render script
     const renderScript = `#!/usr/bin/env perl
@@ -105,18 +129,12 @@ my $props = ${propsPerl};
 
 # Create BarefootJS instance with mock controller
 my $c = $app->build_controller;
-$c->stash('bf.instance' => BarefootJS->new($c, {}));
+my $bf = BarefootJS->new($c, {});
+$bf->_scope_id('test');
 
-# Set up stash from props
-for my $key (keys %$props) {
-    $c->stash($key => $props->{$key});
-}
-
-# Set scope_id for BarefootJS
-$c->stash->{'bf.instance'}->_scope_id('test');
+${childRenderers}
 
 # Render template inline
-my $bf = $c->stash->{'bf.instance'};
 my $mt = Mojo::Template->new(vars => 1, auto_escape => 1);
 my $output = $mt->render($template_content, {
     %$props,
@@ -158,6 +176,77 @@ print $output;
   } finally {
     await rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
+}
+
+/**
+ * Build Perl code that replaces `%= include 'child_name', ...` with inline template rendering.
+ * Each child component becomes a Perl sub that renders its template with Mojo::Template.
+ */
+function buildChildRenderers(
+  childTemplates: Map<string, { template: string; ir: ComponentIR }>,
+  parentIR: ComponentIR,
+  tempDir: string,
+): string {
+  if (childTemplates.size === 0) return ''
+
+  const lines: string[] = []
+  lines.push(`# Register child component renderers`)
+
+  for (const [componentName] of childTemplates) {
+    const snakeName = toSnakeCase(componentName)
+    const childTemplatePath = resolve(tempDir, `${snakeName}.html.ep`)
+
+    // Compute child scope ID from parent IR
+    const childSlotIds = findChildSlotIds(parentIR, componentName)
+
+    lines.push(`{`)
+    lines.push(`  open my $child_fh, '<:utf8', '${childTemplatePath}' or die "Cannot open child template: $!";`)
+    lines.push(`  my $child_tmpl = do { local $/; <$child_fh> };`)
+    lines.push(`  close $child_fh;`)
+    lines.push(`  my $child_mt = Mojo::Template->new(vars => 1, auto_escape => 1);`)
+
+    // Track instance counter for multiple-instances support
+    lines.push(`  my $instance_idx = 0;`)
+    const slotIdsPerl = childSlotIds.length > 0
+      ? `my @slot_ids = (${childSlotIds.map(id => `'${id}'`).join(', ')}); my $sid = $slot_ids[$instance_idx] // $slot_ids[-1]; $instance_idx++;`
+      : `my $sid = '${snakeName}';`
+
+    lines.push(`  $bf->register_child_renderer('${snakeName}', sub {`)
+    lines.push(`    my ($child_props) = @_;`)
+    lines.push(`    ${slotIdsPerl}`)
+    lines.push(`    my $child_bf = BarefootJS->new($c, {});`)
+    lines.push(`    $child_bf->_scope_id("test_$sid");`)
+    lines.push(`    my $rendered = $child_mt->render($child_tmpl, { %$child_props, bf => $child_bf });`)
+    lines.push(`    die $rendered->to_string if ref $rendered;`)
+    lines.push(`    chomp $rendered;`)
+    lines.push(`    return $rendered;`)
+    lines.push(`  });`)
+    lines.push(`}`)
+    lines.push(``)
+  }
+
+  return lines.join('\n')
+}
+
+/**
+ * Find slot IDs assigned to a child component in the parent IR.
+ */
+function findChildSlotIds(parentIR: ComponentIR, childName: string): string[] {
+  const ids: string[] = []
+  function walk(node: import('@barefootjs/jsx').IRNode): void {
+    if (node.type === 'component' && node.name === childName && node.slotId) {
+      ids.push(node.slotId)
+    }
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) walk(child)
+    }
+    if (node.type === 'conditional') {
+      walk(node.whenTrue)
+      walk(node.whenFalse)
+    }
+  }
+  walk(parentIR.root)
+  return ids
 }
 
 /**
