@@ -118,13 +118,7 @@ get '/' => sub ($c) {
         <ul>
             <li><a href="/counter">Counter</a></li>
             <li><a href="/toggle">Toggle</a></li>
-            <li><a href="/form">Form</a></li>
-            <li><a href="/reactive-props">Reactive Props</a></li>
-            <li><a href="/props-reactivity">Props Reactivity Comparison</a></li>
-            <li><a href="/conditional-return">Conditional Return</a></li>
-            <li><a href="/conditional-return-link">Conditional Return (Link)</a></li>
-            <li><a href="/todos">Todo</a></li>
-            <li><a href="/portal">Portal</a></li>
+            <li><a href="/todos">Todo (@client)</a></li>
         </ul>
     </body>
     </html>
