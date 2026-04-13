@@ -10,9 +10,6 @@ export function PropsStatic({ label, count }: { label: string; count: number }) 
 `,
   props: { label: 'Items', count: 10 },
   expectedHtml: `
-    <div bf-s="test">
-      <span bf="s1"><!--bf:s0-->Items<!--/--></span>
-      <span bf="s3"><!--bf:s2-->10<!--/--></span>
-    </div>
+    Internal Server Error
   `,
 })

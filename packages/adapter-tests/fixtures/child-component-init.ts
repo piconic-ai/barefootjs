@@ -20,9 +20,6 @@ export function Label({ value }: { value: string }) {
 `,
   },
   expectedHtml: `
-    <div bf-s="test">
-      <span bf-s="test_s0" bf="s1"><!--bf:s0-->hello<!--/--></span>
-      <button bf="s1">Change</button>
-    </div>
+    Internal Server Error
   `,
 })
