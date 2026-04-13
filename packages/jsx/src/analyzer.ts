@@ -7,6 +7,7 @@
 
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo } from './types'
+import { PROPS_PARAM } from './ir-to-client-js/utils'
 import {
   type AnalyzerContext,
   type ConditionalReturn,
@@ -1014,6 +1015,18 @@ function collectConstant(
   const containsArrow = node.initializer ? nodeContainsArrow(node.initializer) : false
   const systemConstructKind = node.initializer ? getSystemConstructKind(node.initializer) : undefined
 
+  // Pre-transform bare prop refs for template inlining (#807)
+  let templateValue: string | undefined
+  if (value && !ctx.propsObjectName && ctx.propsParams.length > 0 && node.initializer) {
+    const propNames = new Set(ctx.propsParams.map(p => p.name).filter(n => n !== 'children'))
+    if (propNames.size > 0) {
+      const rewritten = rewriteBarePropRefsInNode(value, node.initializer, propNames, ctx.sourceFile)
+      if (rewritten !== value) {
+        templateValue = rewritten
+      }
+    }
+  }
+
   ctx.localConstants.push({
     name,
     value,
@@ -1028,7 +1041,49 @@ function collectConstant(
     isJsxFunction: isJsxFunction || undefined,
     containsArrow: containsArrow || undefined,
     systemConstructKind,
+    templateValue,
   })
+}
+
+// =============================================================================
+// Prop Reference Rewriting (for template inlining)
+// =============================================================================
+
+/**
+ * Rewrite bare destructured prop references in expression text using AST context.
+ * Standalone version for the analyzer (no TransformContext dependency).
+ */
+function rewriteBarePropRefsInNode(
+  text: string,
+  node: ts.Node,
+  propNames: Set<string>,
+  sourceFile: ts.SourceFile
+): string {
+  const replacements: Array<{ start: number; end: number; name: string }> = []
+  const exprStart = node.getStart(sourceFile)
+
+  function visit(n: ts.Node, parent?: ts.Node) {
+    if (ts.isIdentifier(n) && propNames.has(n.text)) {
+      if (parent && ts.isPropertyAssignment(parent) && parent.name === n) return
+      if (parent && ts.isShorthandPropertyAssignment(parent) && parent.name === n) return
+      if (parent && ts.isPropertyAccessExpression(parent) && parent.name === n) return
+      replacements.push({
+        start: n.getStart(sourceFile) - exprStart,
+        end: n.getEnd() - exprStart,
+        name: n.text,
+      })
+    }
+    ts.forEachChild(n, child => visit(child, n))
+  }
+
+  visit(node)
+  if (replacements.length === 0) return text
+
+  let result = text
+  for (const r of replacements.sort((a, b) => b.start - a.start)) {
+    result = result.slice(0, r.start) + `${PROPS_PARAM}.${r.name}` + result.slice(r.end)
+  }
+  return result
 }
 
 // =============================================================================

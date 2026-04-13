@@ -45,15 +45,18 @@ export function emitPropsExtraction(
 ): void {
   // Props used as conditional guards must remain falsy when undefined,
   // so we must NOT default them to {} (which is truthy).
+  // Condition may be pre-transformed (e.g., _p.prev from bare `prev`), so strip the prefix.
   const propsUsedAsConditions = new Set<string>()
   for (const cond of ctx.conditionalElements) {
-    if (neededProps.has(cond.condition)) {
-      propsUsedAsConditions.add(cond.condition)
+    const condName = cond.condition.startsWith(`${PROPS_PARAM}.`) ? cond.condition.slice(PROPS_PARAM.length + 1) : cond.condition
+    if (neededProps.has(condName)) {
+      propsUsedAsConditions.add(condName)
     }
   }
   for (const cond of ctx.clientOnlyConditionals) {
-    if (neededProps.has(cond.condition)) {
-      propsUsedAsConditions.add(cond.condition)
+    const condName = cond.condition.startsWith(`${PROPS_PARAM}.`) ? cond.condition.slice(PROPS_PARAM.length + 1) : cond.condition
+    if (neededProps.has(condName)) {
+      propsUsedAsConditions.add(condName)
     }
   }
 

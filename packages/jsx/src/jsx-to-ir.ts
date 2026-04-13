@@ -30,6 +30,7 @@ import { type AnalyzerContext, getSourceLocation } from './analyzer-context'
 import { parseExpression, isSupported, parseBlockBody, type ParsedExpr, type ParsedStatement } from './expression-parser'
 import { createError, ErrorCodes } from './errors'
 import { containsReactiveExpression } from './reactivity-checker'
+import { PROPS_PARAM } from './ir-to-client-js/utils'
 
 // =============================================================================
 // Transform Context
@@ -53,10 +54,68 @@ interface TransformContext {
   patterns: ReactivityPatterns
   /** Shortcut for analyzer.getJS(node) */
   getJS(node: ts.Node): string
+  /** getJS + rewrite destructured prop refs for template expressions (#807) */
+  getTemplateJS(node: ts.Node): string
   /** Cached set of reactive getter names (signal getters + memo names) for O(1) lookup */
   _reactiveGetterNames?: Set<string>
+  /** Cached set of destructured prop names for AST-based rewriting */
+  _destructuredPropNames?: Set<string> | null
   /** Active loop parameter names for slotId assignment to loop-param-dependent expressions */
   loopParams: Set<string>
+}
+
+/**
+ * Rewrite bare destructured prop references in expression text using AST context.
+ * Uses TypeScript AST to distinguish value positions from object keys, property access, etc.
+ * Only applies to destructured-props components (propsObjectName is null).
+ */
+function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string {
+  // Build and cache destructured prop names
+  if (ctx._destructuredPropNames === undefined) {
+    if (ctx.analyzer.propsObjectName) {
+      ctx._destructuredPropNames = null  // SolidJS-style, no rewriting needed
+    } else {
+      const names = ctx.analyzer.propsParams
+        .filter(p => p.name !== 'children')
+        .map(p => p.name)
+      ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
+    }
+  }
+
+  const propNames = ctx._destructuredPropNames
+  if (!propNames) return text
+
+  const names = propNames // Local binding for closure
+  const replacements: Array<{ start: number; end: number; name: string }> = []
+  const exprStart = expr.getStart(ctx.sourceFile)
+
+  function visit(node: ts.Node, parent?: ts.Node) {
+    if (ts.isIdentifier(node) && names.has(node.text)) {
+      // Skip: object literal key  { org: ... }
+      if (parent && ts.isPropertyAssignment(parent) && parent.name === node) return
+      // Skip: shorthand property  { org }
+      if (parent && ts.isShorthandPropertyAssignment(parent) && parent.name === node) return
+      // Skip: property access name  foo.org
+      if (parent && ts.isPropertyAccessExpression(parent) && parent.name === node) return
+
+      replacements.push({
+        start: node.getStart(ctx.sourceFile) - exprStart,
+        end: node.getEnd() - exprStart,
+        name: node.text,
+      })
+    }
+    ts.forEachChild(node, child => visit(child, node))
+  }
+
+  visit(expr)
+  if (replacements.length === 0) return text
+
+  // Apply in reverse order to preserve positions
+  let result = text
+  for (const r of replacements.sort((a, b) => b.start - a.start)) {
+    result = result.slice(0, r.start) + `${PROPS_PARAM}.${r.name}` + result.slice(r.end)
+  }
+  return result
 }
 
 /**
@@ -129,6 +188,10 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     },
     getJS(node: ts.Node): string {
       return analyzer.getJS(node)
+    },
+    getTemplateJS(node: ts.Node): string {
+      const text = analyzer.getJS(node)
+      return rewriteBarePropRefs(text, node, this)
     },
   }
 }
@@ -720,7 +783,7 @@ function transformExpression(
   }
 
   // Regular expression
-  const exprText = ctx.getJS(expr)
+  const exprText = ctx.getTemplateJS(expr)
   const reactive = isReactiveExpression(exprText, ctx, expr)
   // @client expressions always need slotId and are treated as reactive for client-side evaluation
   // Expressions inside loops that reference the loop parameter need slotId
@@ -811,7 +874,7 @@ function transformConditional(
   node: ts.ConditionalExpression,
   ctx: TransformContext
 ): IRConditional {
-  const condition = ctx.getJS(node.condition)
+  const condition = ctx.getTemplateJS(node.condition)
   const reactive = isReactiveExpression(condition, ctx, node.condition)
   const loopParamReactive = !reactive && referencesLoopParam(condition, ctx)
   const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
@@ -836,7 +899,7 @@ function transformLogicalAnd(
   node: ts.BinaryExpression,
   ctx: TransformContext
 ): IRConditional {
-  const condition = ctx.getJS(node.left)
+  const condition = ctx.getTemplateJS(node.left)
   const reactive = isReactiveExpression(condition, ctx, node.left)
   const loopParamReactive = !reactive && referencesLoopParam(condition, ctx)
   const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
@@ -887,7 +950,7 @@ function transformNullishCoalescing(
   node: ts.BinaryExpression,
   ctx: TransformContext
 ): IRConditional {
-  const leftText = ctx.getJS(node.left)
+  const leftText = ctx.getTemplateJS(node.left)
   const isNullish = node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
   const condition = isNullish ? `${leftText} != null` : leftText
   const reactive = isReactiveExpression(leftText, ctx, node.left)
@@ -975,7 +1038,7 @@ function transformConditionalBranch(
   }
 
   // Regular expression (including null)
-  const exprText = ctx.getJS(node)
+  const exprText = ctx.getTemplateJS(node)
   return {
     type: 'expression',
     expr: exprText,
@@ -1074,7 +1137,7 @@ function extractSortComparator(
     return { result: null, unsupportedReason: 'Block body sort comparators are not supported for server-side rendering' }
   }
 
-  const raw = ctx.getJS(callback.body)
+  const raw = ctx.getTemplateJS(callback.body)
 
   // Must be a subtraction: a.field - b.field or b.field - a.field
   if (!ts.isBinaryExpression(callback.body) || callback.body.operatorToken.kind !== ts.SyntaxKind.MinusToken) {
@@ -1163,8 +1226,8 @@ function extractFilterPredicate(
 
   // Block body arrow functions: filter(t => { const f = filter(); ... })
   if (ts.isBlock(callback.body)) {
-    const raw = ctx.getJS(callback.body)
-    const statements = parseBlockBody(callback.body, ctx.sourceFile, (n) => ctx.getJS(n))
+    const raw = ctx.getTemplateJS(callback.body)
+    const statements = parseBlockBody(callback.body, ctx.sourceFile, (n) => ctx.getTemplateJS(n))
     if (!statements) {
       return { result: null, unsupportedReason: 'Block body filter predicate cannot be parsed for server-side rendering' }
     }
@@ -1174,7 +1237,7 @@ function extractFilterPredicate(
   }
 
   // Expression body: filter(t => !t.done)
-  const raw = ctx.getJS(callback.body)
+  const raw = ctx.getTemplateJS(callback.body)
   const predicate = parseExpression(raw)
 
   // Check if predicate is supported for SSR
@@ -1231,7 +1294,7 @@ function transformMapCall(
         )
       }
       // Keep sort (and filter if present) in array string for client evaluation
-      array = ctx.getJS(mapSource)
+      array = ctx.getTemplateJS(mapSource)
     } else {
       sortComparator = sortExtraction.result
 
@@ -1254,16 +1317,16 @@ function transformMapCall(
             )
           }
           // Keep entire chain in array for client evaluation
-          array = ctx.getJS(mapSource)
+          array = ctx.getTemplateJS(mapSource)
           sortComparator = undefined
           chainOrder = undefined
         } else {
-          array = ctx.getJS(innerFilter.array)
+          array = ctx.getTemplateJS(innerFilter.array)
           filterPredicate = filterExtraction.result
         }
       } else {
         // Simple sort().map()
-        array = ctx.getJS(sortInfo.array)
+        array = ctx.getTemplateJS(sortInfo.array)
       }
     }
   } else if (filterInfo) {
@@ -1288,7 +1351,7 @@ function transformMapCall(
         )
       }
       // Keep filter (and sort if present) in array for client evaluation
-      array = ctx.getJS(mapSource)
+      array = ctx.getTemplateJS(mapSource)
     } else {
       filterPredicate = filterExtraction.result
 
@@ -1311,18 +1374,18 @@ function transformMapCall(
             )
           }
           // Keep sort in array for client evaluation, but keep filter extracted
-          array = ctx.getJS(filterInfo.array)
+          array = ctx.getTemplateJS(filterInfo.array)
         } else {
           sortComparator = sortExtraction.result
-          array = ctx.getJS(innerSort.array)
+          array = ctx.getTemplateJS(innerSort.array)
         }
       } else {
         // Simple filter().map()
-        array = ctx.getJS(filterInfo.array)
+        array = ctx.getTemplateJS(filterInfo.array)
       }
     }
   } else {
-    array = ctx.getJS(mapSource)
+    array = ctx.getTemplateJS(mapSource)
   }
 
   // Get callback function
@@ -1399,7 +1462,7 @@ function transformMapCall(
         let hasTypeDiff = false
         for (const stmt of body.statements) {
           if (stmt === returnStmt) break
-          const js = ctx.getJS(stmt)
+          const js = ctx.getTemplateJS(stmt)
           const ts = stmt.getText(ctx.sourceFile)
           preambleStmts.push(js.endsWith(';') ? js : js + ';')
           typedPreambleStmts.push(ts.endsWith(';') ? ts : ts + ';')
@@ -1571,7 +1634,7 @@ function processAttributes(
   for (const attr of attributes.properties) {
     // Spread attribute: {...props}
     if (ts.isJsxSpreadAttribute(attr)) {
-      const spreadExpr = ctx.getJS(attr.expression)
+      const spreadExpr = ctx.getTemplateJS(attr.expression)
       const expandedKeys = ctx.analyzer.restPropsExpandedKeys
       const restName = ctx.analyzer.restPropsName
 
@@ -1692,12 +1755,12 @@ function getAttributeValue(
     // Detect `expr || undefined` pattern → boolean presence attribute
     if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.BarBarToken) {
       if (ts.isIdentifier(expr.right) && expr.right.text === 'undefined') {
-        const baseExpr = ctx.getJS(expr.left)
+        const baseExpr = ctx.getTemplateJS(expr.left)
         return { value: baseExpr, dynamic: true, isLiteral: false, presenceOrUndefined: true }
       }
     }
 
-    const exprText = ctx.getJS(expr)
+    const exprText = ctx.getTemplateJS(expr)
     return { value: exprText, dynamic: true, isLiteral: false }
   }
 
@@ -1727,11 +1790,11 @@ function parseTemplateLiteral(
         parts.push(ternary)
       } else {
         // Fallback: keep as string expression
-        parts.push({ type: 'string', value: `\${${ctx.getJS(span.expression)}}` })
+        parts.push({ type: 'string', value: `\${${ctx.getTemplateJS(span.expression)}}` })
       }
     } else {
       // Non-ternary expression: keep as ${expr}
-      parts.push({ type: 'string', value: `\${${ctx.getJS(span.expression)}}` })
+      parts.push({ type: 'string', value: `\${${ctx.getTemplateJS(span.expression)}}` })
     }
 
     // Add the literal part after this span (text after ${} until next ${} or end)
@@ -1758,7 +1821,7 @@ function parseTernary(
   if (whenTrueValue !== null && whenFalseValue !== null) {
     return {
       type: 'ternary',
-      condition: ctx.getJS(expr.condition),
+      condition: ctx.getTemplateJS(expr.condition),
       whenTrue: whenTrueValue,
       whenFalse: whenFalseValue,
     }
@@ -1794,7 +1857,7 @@ function processComponentProps(
   for (const attr of attributes.properties) {
     // Spread props: {...props}
     if (ts.isJsxSpreadAttribute(attr)) {
-      const spreadExpr = ctx.getJS(attr.expression)
+      const spreadExpr = ctx.getTemplateJS(attr.expression)
       const expandedKeys = ctx.analyzer.restPropsExpandedKeys
       const restName = ctx.analyzer.restPropsName
 
@@ -2182,7 +2245,7 @@ function buildIfStatementChain(
     const condReturn = conditionalReturns[i]
 
     // Get the condition text
-    const condition = ctx.getJS(condReturn.condition)
+    const condition = ctx.getTemplateJS(condReturn.condition)
 
     // Transform the JSX return in the then branch
     // Reset isRoot so each branch gets needsScope=true
@@ -2198,7 +2261,7 @@ function buildIfStatementChain(
       if (ts.isIdentifier(decl.name) && decl.initializer) {
         scopeVariables.push({
           name: decl.name.text,
-          initializer: ctx.getJS(decl.initializer),
+          initializer: ctx.getTemplateJS(decl.initializer),
         })
       }
     }

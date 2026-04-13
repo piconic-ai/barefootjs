@@ -391,7 +391,6 @@ function isSingleRootElement(html: string): boolean {
  * Consolidates parameters to prevent argument-passing bugs during recursion.
  */
 export interface TemplateOptions {
-  propNames: Set<string>
   inlinableConstants?: Map<string, string>
   restSpreadNames?: Set<string>
   propsObjectName?: string | null
@@ -413,16 +412,15 @@ export interface TemplateOptions {
  */
 export function irToComponentTemplate(
   node: IRNode,
-  propNames: Set<string>,
   inlinableConstants?: Map<string, string>,
   restSpreadNames?: Set<string>,
   propsObjectName?: string | null
 ): string {
-  return irToComponentTemplateWithOpts(node, { propNames, inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1 })
+  return irToComponentTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1 })
 }
 
 function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { propNames, inlinableConstants, restSpreadNames, propsObjectName, loopDepth = 0 } = opts
+  const { inlinableConstants, restSpreadNames, propsObjectName, loopDepth = 0 } = opts
   const recurse = (n: IRNode): string => irToComponentTemplateWithOpts(n, opts)
   const transformExpr = (expr: string): string => {
     const { protect, restore } = createStringProtector()
@@ -438,7 +436,6 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
     }
 
     // Normalize source-level props object access (e.g., props.xxx → _p.xxx)
-    // before the bare propName prefixing step to avoid double-prefixing.
     if (propsObjectName && propsObjectName !== PROPS_PARAM) {
       result = result.replace(
         new RegExp(`\\b${propsObjectName}\\.`, 'g'),
@@ -446,25 +443,9 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       )
     }
 
-    // Then: prefix prop names with PROPS_PARAM
-    for (const propName of propNames) {
-      // Match propName as standalone identifier or followed by property/index/call access,
-      // but not already prefixed with PROPS_PARAM or inside string literals.
-      // Uses negative lookahead for identifier chars to avoid partial matches.
-      // Exclude matches preceded by dot (e.g., Math.max should not become Math._p.max)
-      const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
-      result = result.replace(pattern, (match, offset, str) => {
-        // Skip object literal keys (#807): identifier preceded by { or , and followed by :
-        const after = str.slice(offset + match.length)
-        if (/^\s*:(?!:)/.test(after)) {
-          const before = str.slice(0, offset)
-          if (/[{,]\s*$/.test(before)) {
-            return match
-          }
-        }
-        return `${PROPS_PARAM}.${propName}`
-      })
-    }
+    // Bare prop name prefixing (org → _p.org) is handled in Phase 1 (jsx-to-ir.ts)
+    // via AST-based rewriting, which correctly distinguishes value positions from
+    // object keys, property access targets, etc. (#807)
     return restore(result)
   }
 
@@ -694,7 +675,6 @@ export function canGenerateStaticTemplate(
  */
 export function generateCsrTemplate(
   node: IRNode,
-  propNames: Set<string>,
   inlinableConstants?: Map<string, string>,
   signalMap?: Map<string, string>,
   memoMap?: Map<string, string>,
@@ -702,11 +682,11 @@ export function generateCsrTemplate(
   restSpreadNames?: Set<string>,
   propsObjectName?: string | null,
 ): string {
-  return generateCsrTemplateWithOpts(node, { propNames, inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, loopDepth: -1 })
+  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, loopDepth: -1 })
 }
 
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { propNames, inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, loopDepth = 0 } = opts
+  const { inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, loopDepth = 0 } = opts
   const transformExpr = (expr: string): string => {
     const { protect, restore } = createStringProtector()
     let result = protect(expr)
@@ -755,22 +735,8 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       )
     }
 
-    // Prefix prop names with PROPS_PARAM
-    for (const propName of propNames) {
-      // Exclude matches preceded by dot (e.g., Math.max should not become Math._p.max)
-      const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
-      result = result.replace(pattern, (match, offset, str) => {
-        // Skip object literal keys (#807): identifier preceded by { or , and followed by :
-        const after = str.slice(offset + match.length)
-        if (/^\s*:(?!:)/.test(after)) {
-          const before = str.slice(0, offset)
-          if (/[{,]\s*$/.test(before)) {
-            return match
-          }
-        }
-        return `${PROPS_PARAM}.${propName}`
-      })
-    }
+    // Bare prop name prefixing (org → _p.org) is handled in Phase 1 (jsx-to-ir.ts)
+    // via AST-based rewriting (#807)
     return restore(result)
   }
 
@@ -905,6 +871,12 @@ export function isSimplePropExpression(expr: string, propNames: Set<string>): bo
   const rootIdent = match[1]
   if (propNames.has(rootIdent)) {
     // Even if root is a prop name, calling it as a function means it's a signal getter
+    const rest = expr.slice(rootIdent.length)
+    if (rest.startsWith('(')) return false
+    return true
+  }
+  // Pre-transformed prop access: _p.xxx (bare prop refs rewritten in Phase 1)
+  if (rootIdent === PROPS_PARAM) {
     const rest = expr.slice(rootIdent.length)
     if (rest.startsWith('(')) return false
     return true

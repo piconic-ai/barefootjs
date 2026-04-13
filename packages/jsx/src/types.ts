@@ -441,6 +441,8 @@ export interface ConstantInfo {
   containsArrow?: boolean
   /** The kind of system construct, if the initializer is createContext() or new WeakMap(). */
   systemConstructKind?: 'createContext' | 'weakMap'
+  /** Value with destructured prop refs rewritten to _p.propName, for template inlining. */
+  templateValue?: string
 }
 
 export interface TypeDefinition {
