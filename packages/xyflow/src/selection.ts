@@ -348,7 +348,8 @@ export function setupSelectionRectangle<
             selectionRect.style.width = `${bbox.width}px`
             selectionRect.style.height = `${bbox.height}px`
             selectionRect.classList.add('bf-flow__selection--active')
-            // Keep the rect — it will be removed on next click/mousedown
+            // Focus container so keyboard Delete/Escape works immediately
+            container.focus()
           } else {
             selectionRect.remove()
             selectionRect = null
@@ -367,11 +368,22 @@ export function setupSelectionRectangle<
     isSelecting = false
   }
 
+  // Clean up selection rect when selected nodes are deleted
+  function handleSelectionKeyDown(event: KeyboardEvent) {
+    if (!selectionRect) return
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      selectionRect.remove()
+      selectionRect = null
+    }
+  }
+
   // Use capture phase so we can intercept before D3 zoom when needed
   container.addEventListener('mousedown', handleMouseDown, true)
+  container.addEventListener('keydown', handleSelectionKeyDown)
 
   onCleanup(() => {
     container.removeEventListener('mousedown', handleMouseDown, true)
+    container.removeEventListener('keydown', handleSelectionKeyDown)
     document.removeEventListener('mousemove', handleMouseMove)
     document.removeEventListener('mouseup', handleMouseUp)
     if (selectionRect) {
