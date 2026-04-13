@@ -1079,9 +1079,30 @@ function rewriteBarePropRefsInNode(
   visit(node)
   if (replacements.length === 0) return text
 
+  // Check if type stripping changed positions (raw text differs from getJS text)
+  const rawText = node.getText(sourceFile)
+  if (rawText === text) {
+    // Fast path: no type annotations, positions match
+    let result = text
+    for (const r of replacements.sort((a, b) => b.start - a.start)) {
+      result = result.slice(0, r.start) + `${PROPS_PARAM}.${r.name}` + result.slice(r.end)
+    }
+    return result
+  }
+
+  // Slow path: type annotations present, use targeted regex on type-stripped text
+  const propRefNames = new Set(replacements.map(r => r.name))
   let result = text
-  for (const r of replacements.sort((a, b) => b.start - a.start)) {
-    result = result.slice(0, r.start) + `${PROPS_PARAM}.${r.name}` + result.slice(r.end)
+  for (const propName of propRefNames) {
+    const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
+    result = result.replace(pattern, (match, offset, str) => {
+      const after = str.slice(offset + match.length)
+      if (/^\s*:(?!:)/.test(after)) {
+        const before = str.slice(0, offset)
+        if (/[{,]\s*$/.test(before)) return match
+      }
+      return `${PROPS_PARAM}.${propName}`
+    })
   }
   return result
 }

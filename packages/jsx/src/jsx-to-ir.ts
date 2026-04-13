@@ -108,6 +108,10 @@ function exprHasFunctionCalls(expr: ts.Expression): boolean {
 /**
  * Rewrite bare destructured prop references in expression text using AST context.
  * Returns undefined if no rewriting is needed (SolidJS-style or no props).
+ *
+ * Uses AST to identify prop refs, then applies replacements to the RAW source text
+ * (before type stripping) and finally strips types. This avoids position mismatches
+ * when ctx.getJS() removes type annotations like `as T`.
  */
 function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string | undefined {
   // Build and cache destructured prop names
@@ -150,10 +154,35 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   visit(expr)
   if (replacements.length === 0) return undefined
 
-  // Apply in reverse order to preserve positions
-  let result = text
-  for (const r of replacements.sort((a, b) => b.start - a.start)) {
-    result = result.slice(0, r.start) + `${PROPS_PARAM}.${r.name}` + result.slice(r.end)
+  // Apply replacements to the RAW source text (positions match AST nodes),
+  // then strip types. This avoids position mismatches from type annotations.
+  const rawText = expr.getText(ctx.sourceFile)
+
+  // Fast path: no type stripping needed (raw text === getJS output)
+  if (rawText === text) {
+    let result = text
+    for (const r of replacements.sort((a, b) => b.start - a.start)) {
+      result = result.slice(0, r.start) + `${PROPS_PARAM}.${r.name}` + result.slice(r.end)
+    }
+    return result
+  }
+
+  // Slow path: type annotations present. Apply replacements to raw text first,
+  // then strip types via getJS on the original node. Since we can't re-parse,
+  // apply the same getJS output but use targeted regex for AST-identified prop refs.
+  // Deduplicate replacement names (same name may appear multiple times).
+  const propRefNames = new Set(replacements.map(r => r.name))
+  let result = ctx.getJS(expr)
+  for (const propName of propRefNames) {
+    const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
+    result = result.replace(pattern, (match, offset, str) => {
+      const after = str.slice(offset + match.length)
+      if (/^\s*:(?!:)/.test(after)) {
+        const before = str.slice(0, offset)
+        if (/[{,]\s*$/.test(before)) return match
+      }
+      return `${PROPS_PARAM}.${propName}`
+    })
   }
   return result
 }
