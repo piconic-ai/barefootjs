@@ -162,6 +162,41 @@ function findNodesInRect<NodeType extends NodeBase>(
 }
 
 /**
+ * Compute screen-space bounding box around the given internal nodes.
+ */
+function getSelectedNodesBBox<NodeType extends NodeBase>(
+  nodes: InternalNodeBase<NodeType>[],
+  [tx, ty, tScale]: Transform,
+): SelectionRect | null {
+  if (nodes.length === 0) return null
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+  for (const node of nodes) {
+    const pos = node.internals.positionAbsolute
+    const nw = node.measured.width ?? 0
+    const nh = node.measured.height ?? 0
+    // Convert flow-space to screen-space
+    const sx = pos.x * tScale + tx
+    const sy = pos.y * tScale + ty
+    const sw = nw * tScale
+    const sh = nh * tScale
+    minX = Math.min(minX, sx)
+    minY = Math.min(minY, sy)
+    maxX = Math.max(maxX, sx + sw)
+    maxY = Math.max(maxY, sy + sh)
+  }
+
+  const pad = 4
+  return {
+    x: minX - pad,
+    y: minY - pad,
+    width: maxX - minX + pad * 2,
+    height: maxY - minY + pad * 2,
+  }
+}
+
+/**
  * Options for the selection rectangle behavior.
  */
 export type SelectionRectOptions = {
@@ -198,6 +233,12 @@ export function setupSelectionRectangle<
 
   function handleMouseDown(event: MouseEvent) {
     if (event.button !== 0) return
+
+    // Remove any lingering selection bounding box from previous selection
+    if (selectionRect) {
+      selectionRect.remove()
+      selectionRect = null
+    }
 
     // Only start selection on the container or viewport (empty pane),
     // not on nodes, handles, controls, etc.
@@ -297,18 +338,31 @@ export function setupSelectionRectangle<
             selectedIds.has(n.id) ? { ...n, selected: true } : { ...n, selected: false },
           ),
         )
+
+        // Reposition selection rect as bounding box around selected nodes
+        if (selectionRect) {
+          const transform = store.getTransform()
+          const bbox = getSelectedNodesBBox(nodesInside, transform)
+          if (bbox) {
+            selectionRect.style.left = `${bbox.x}px`
+            selectionRect.style.top = `${bbox.y}px`
+            selectionRect.style.width = `${bbox.width}px`
+            selectionRect.style.height = `${bbox.height}px`
+            selectionRect.classList.add('bf-flow__selection--active')
+            // Keep the rect — it will be removed on next click/mousedown
+          } else {
+            selectionRect.remove()
+            selectionRect = null
+          }
+        }
       } else {
         store.unselectNodesAndEdges()
+        if (selectionRect) { selectionRect.remove(); selectionRect = null }
       }
     } else {
       // Small drag = click on empty pane, deselect all
       store.unselectNodesAndEdges()
-    }
-
-    // Remove the selection rectangle element
-    if (selectionRect) {
-      selectionRect.remove()
-      selectionRect = null
+      if (selectionRect) { selectionRect.remove(); selectionRect = null }
     }
 
     isSelecting = false

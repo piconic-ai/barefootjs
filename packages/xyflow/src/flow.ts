@@ -205,8 +205,7 @@ function injectDefaultStyles() {
       box-sizing: border-box;
     }
     .bf-flow__node--selected {
-      outline: 2px solid #1a192b;
-      outline-offset: 0px;
+      box-shadow: 0 0 0 0.5px #1a192b;
     }
     .bf-flow__handle {
       width: 6px;
