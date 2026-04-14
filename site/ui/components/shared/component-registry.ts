@@ -127,6 +127,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'inventory-manager', title: 'Inventory Manager', description: 'CRUD inventory table with inline editing, undo/redo, search/filter, and validation' },
   { slug: 'permission-matrix', title: 'Permission Matrix', description: 'Role x Permission grid with inheritance cascade, diamond memo dependencies, and bulk operations' },
   { slug: 'spreadsheet', title: 'Spreadsheet', description: 'Spreadsheet grid with cell editing, formula evaluation, selection, and 2D nested loops' },
+  { slug: 'form-builder', title: 'Form Builder', description: 'Signal-driven form builder with heterogeneous loop, dynamic field type switching, nested groups, and conditional visibility' },
 ]
 
 // Helper: get components filtered by category

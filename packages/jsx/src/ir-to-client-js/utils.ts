@@ -187,11 +187,134 @@ function escapeRegExp(s: string): string {
  * Transform loop param references to signal accessor calls in an expression.
  * e.g., "item.text" → "item().text", "item" → "item()"
  * Does not double-wrap: "item().text" stays "item().text"
+ *
+ * String-context aware: skips replacements inside string literals and template
+ * literal string parts (e.g., CSS class name "preview-field" stays unchanged
+ * when paramName is "field"). Handles arbitrarily nested template literals.
  */
 export function wrapLoopParamAsAccessor(expr: string, paramName: string): string {
-  // Match word boundary + paramName + NOT followed by ( (avoid double-wrapping)
-  // or - (avoid corrupting CSS class names like "comment-item")
-  return expr.replace(new RegExp(`\\b${escapeRegExp(paramName)}\\b(?!\\s*\\()(?!-)`, 'g'), `${paramName}()`)
+  const re = new RegExp(`\\b${escapeRegExp(paramName)}\\b(?!\\s*\\()(?!-)`, 'g')
+  return _replaceInExprContexts(expr, re, `${paramName}()`)
+}
+
+/** Replace `re` with `replacement` only in expression contexts (not in string literals). */
+function _replaceInExprContexts(code: string, re: RegExp, replacement: string): string {
+  let result = ''
+  let i = 0
+  let exprStart = 0
+
+  const flushExpr = (end: number) => {
+    if (end > exprStart) {
+      re.lastIndex = 0
+      result += code.slice(exprStart, end).replace(re, replacement)
+    }
+    exprStart = end
+  }
+
+  while (i < code.length) {
+    const ch = code[i]
+    if (ch === "'" || ch === '"') {
+      flushExpr(i)
+      i = _skipQuotedString(code, i)
+      result += code.slice(exprStart, i)
+      exprStart = i
+    } else if (ch === '`') {
+      flushExpr(i)
+      const [tplResult, nextI] = _processTemplateLiteral(code, i, re, replacement)
+      result += tplResult
+      i = nextI
+      exprStart = i
+    } else {
+      i++
+    }
+  }
+  flushExpr(i)
+  return result
+}
+
+function _skipQuotedString(code: string, start: number): number {
+  const quote = code[start]
+  let i = start + 1
+  while (i < code.length) {
+    if (code[i] === '\\') { i += 2; continue }
+    if (code[i] === quote) return i + 1
+    i++
+  }
+  return i
+}
+
+/** Process a template literal from the opening backtick. Returns [result, nextIndex]. */
+function _processTemplateLiteral(code: string, start: number, re: RegExp, replacement: string): [string, number] {
+  let result = '`'
+  let i = start + 1
+  while (i < code.length) {
+    if (code[i] === '\\') {
+      result += code[i] + (code[i + 1] ?? '')
+      i += 2
+    } else if (code[i] === '`') {
+      result += '`'
+      i++
+      return [result, i]
+    } else if (code[i] === '$' && code[i + 1] === '{') {
+      result += '${'
+      i += 2
+      const [innerResult, nextI] = _processInterpolation(code, i, re, replacement)
+      result += innerResult + '}'
+      i = nextI
+    } else {
+      // String part of template literal: copy verbatim, no replacement
+      result += code[i]
+      i++
+    }
+  }
+  return [result, i]
+}
+
+/** Process inside ${...}. Returns [content without closing }, nextIndex after }]. */
+function _processInterpolation(code: string, start: number, re: RegExp, replacement: string): [string, number] {
+  let i = start
+  let depth = 1
+  let exprStart = i
+  let result = ''
+
+  const flushExpr = (end: number) => {
+    if (end > exprStart) {
+      re.lastIndex = 0
+      result += code.slice(exprStart, end).replace(re, replacement)
+    }
+    exprStart = end
+  }
+
+  while (i < code.length) {
+    const ch = code[i]
+    if (ch === "'" || ch === '"') {
+      flushExpr(i)
+      i = _skipQuotedString(code, i)
+      result += code.slice(exprStart, i)
+      exprStart = i
+    } else if (ch === '`') {
+      flushExpr(i)
+      const [tplResult, nextI] = _processTemplateLiteral(code, i, re, replacement)
+      result += tplResult
+      i = nextI
+      exprStart = i
+    } else if (ch === '{') {
+      depth++
+      i++
+    } else if (ch === '}') {
+      depth--
+      if (depth === 0) {
+        flushExpr(i)
+        i++
+        return [result, i]
+      }
+      i++
+    } else {
+      i++
+    }
+  }
+  flushExpr(i)
+  return [result, i]
 }
 
 /**

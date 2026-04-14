@@ -82,6 +82,7 @@ import { NotificationsCenterRefPage } from './pages/components/notifications-cen
 import { InventoryManagerRefPage } from './pages/components/inventory-manager'
 import { SpreadsheetRefPage } from './pages/components/spreadsheet'
 import { PermissionMatrixRefPage } from './pages/components/permission-matrix'
+import { FormBuilderRefPage } from './pages/components/form-builder'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -558,6 +559,11 @@ export function createApp() {
   // Permission Matrix block page
   app.get('/components/permission-matrix', (c) => {
     return c.render(<PermissionMatrixRefPage />)
+  })
+
+  // Form Builder block page
+  app.get('/components/form-builder', (c) => {
+    return c.render(<FormBuilderRefPage />)
   })
 
   // Bar Chart reference page
