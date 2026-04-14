@@ -132,4 +132,49 @@ describe('nested loops/conditionals inside mapArray (#830)', () => {
     const mapArrayCount = (js.match(/\bmapArray\(/g) || []).length
     expect(mapArrayCount).toBeGreaterThanOrEqual(3)
   })
+
+  test('reactive text inside conditional inside inner loop uses re-query pattern (#840)', () => {
+    // When a reactive text is inside a conditional branch inside a nested (inner) loop,
+    // insert() may replace the SSR element after the text node is captured.
+    // The generated code must use the re-query pattern:
+    //   createEffect(() => { const [__rt] = $t(...) ... })
+    // NOT the capture-then-effect pattern:
+    //   { const [__rt] = $t(...); if (__rt) createEffect(() => ...) }
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client-runtime'
+
+      type Child = { id: string; type: 'text' | 'other'; label: string }
+      type Group = { id: string; children: Child[] }
+
+      export function App() {
+        const [groups, setGroups] = createSignal<Group[]>([])
+        return (
+          <div>
+            {groups().map(group => (
+              <div key={group.id}>
+                {group.children.map(child => (
+                  <div key={child.id}>
+                    {child.type === 'text' ? (
+                      <label>{child.label}</label>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+
+    const result = compileJSXSync(source, 'App.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // Re-query pattern: $t() inside createEffect so it always finds the live node
+    expect(content).toContain('createEffect(() => { const [__rt] = $t(')
+  })
 })

@@ -131,6 +131,47 @@ describe('reactive attributes inside .map() callbacks', () => {
     expect(constDecls.length).toBe(uniqueDecls.size)
   })
 
+  test('map param name matching CSS class substring: static part not transformed (#838)', () => {
+    // When loop param is "row" and a template literal class contains "pivot-row",
+    // the static string "pivot-row" must not become "pivot-row()" in the output.
+    // Only actual signal references inside interpolations should be transformed.
+    const source = `
+      'use client'
+
+      import { createSignal } from '@barefootjs/client-runtime'
+
+      type Row = { id: string; isActive: boolean }
+
+      export function PivotTable() {
+        const [rows, setRows] = createSignal<Row[]>([])
+        return (
+          <table>
+            {rows().map((row) => (
+              <tr class={\`pivot-row \${row.isActive ? "active" : ""}\`}>
+                <td>{row.id}</td>
+              </tr>
+            ))}
+          </table>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'PivotTable.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // Static string "pivot-row" must NOT be transformed to "pivot-row()"
+    expect(content).not.toContain('pivot-row()')
+
+    // The interpolated expression "row.isActive" must be transformed to "row().isActive"
+    expect(content).toContain('row().isActive')
+
+    // The static text "pivot-row" must still appear in the output
+    expect(content).toContain('pivot-row')
+  })
+
   test('static array: non-reactive className does NOT generate createEffect', () => {
     const source = `
       'use client'
