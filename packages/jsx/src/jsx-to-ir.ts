@@ -1730,6 +1730,14 @@ function getAttributeValue(
     // Check for bare signal/memo identifier (BF044)
     checkBareSignalOrMemoIdentifier(expr, ctx)
 
+    // Static style object: style={{ key: 'value', ... }} → CSS string at compile time
+    if (attr.name.getText(ctx.sourceFile) === 'style' && ts.isObjectLiteralExpression(expr)) {
+      const cssString = tryStaticStyleObjectToCss(expr)
+      if (cssString !== null) {
+        return { value: cssString, dynamic: false, isLiteral: true }
+      }
+    }
+
     // Template literal with ternaries: `...${cond ? 'a' : 'b'}...`
     if (ts.isTemplateExpression(expr)) {
       const parts = parseTemplateLiteral(expr, ctx)
@@ -1767,6 +1775,25 @@ function getAttributeValue(
   }
 
   return { value: null, dynamic: false, isLiteral: false }
+}
+
+/**
+ * Convert a static style object literal to a CSS string at compile time.
+ * Returns null if any property value is non-static (dynamic expression, template literal, etc.).
+ *
+ * @example
+ * // { background: 'red', fontSize: '16px' } → "background:red;font-size:16px"
+ */
+function tryStaticStyleObjectToCss(expr: ts.ObjectLiteralExpression): string | null {
+  const parts: string[] = []
+  for (const prop of expr.properties) {
+    if (!ts.isPropertyAssignment(prop)) return null
+    if (!ts.isIdentifier(prop.name) && !ts.isStringLiteral(prop.name)) return null
+    if (!ts.isStringLiteral(prop.initializer)) return null
+    const key = prop.name.text.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
+    parts.push(`${key}:${prop.initializer.text}`)
+  }
+  return parts.join(';')
 }
 
 /**

@@ -28,7 +28,7 @@ import { fixture as mapDynamicClass } from './map-dynamic-class'
 import { fixture as voidElements } from './void-elements'
 import { fixture as dynamicAttributes } from './dynamic-attributes'
 import { fixture as classVsClassname } from './class-vs-classname'
-import { fixture as styleAttribute } from './style-attribute'
+import { fixture as styleAttribute, fixtureStaticObject as styleObjectStatic, fixtureDynamicObject as styleObjectDynamic } from './style-attribute'
 // Priority 6: Advanced patterns
 import { fixture as fragment } from './fragment'
 import { fixture as fragmentConditional } from './fragment-conditional'
@@ -79,6 +79,8 @@ export const jsxFixtures: JSXFixture[] = [
   dynamicAttributes,
   classVsClassname,
   styleAttribute,
+  styleObjectStatic,
+  styleObjectDynamic,
   // Priority 6: Advanced patterns
   fragment,
   fragmentConditional,

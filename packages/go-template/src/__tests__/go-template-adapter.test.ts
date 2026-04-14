@@ -20,7 +20,9 @@ runJSXConformanceTests({
   // Uses fixture.expectedHtml (pre-generated from Hono adapter) for comparison
   // Static array with child components from separate files is not yet supported
   // by the Go template renderer (child templates are not registered)
-  skip: ['static-array-children'],
+  // Dynamic style objects (non-static values) require Go template interpolation
+  // support for JS template literals, which is not yet implemented.
+  skip: ['static-array-children', 'style-object-dynamic'],
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
