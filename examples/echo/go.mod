@@ -1,4 +1,4 @@
-module github.com/kfly8/barefootjs/examples/echo
+module github.com/barefootjs/barefootjs/examples/echo
 
 go 1.25.6
 

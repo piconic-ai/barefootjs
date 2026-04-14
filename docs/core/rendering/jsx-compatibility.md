@@ -153,4 +153,4 @@ When the compiler encounters an unsupported expression, it emits a **compile err
 {/* @client */ items().sort((a, b) => a.name.localeCompare(b.name)).map(...)}
 ```
 
-See the [TodoApp example](https://github.com/kfly8/barefootjs/blob/main/examples/shared/components/TodoApp.tsx) for a real-world component using `/* @client */`.
+See the [TodoApp example](https://github.com/barefootjs/barefootjs/blob/main/examples/shared/components/TodoApp.tsx) for a real-world component using `/* @client */`.

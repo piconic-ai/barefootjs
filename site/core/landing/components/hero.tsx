@@ -196,7 +196,7 @@ export async function Hero() {
               Get Started
             </a>
             <a
-              href="https://github.com/kfly8/barefootjs"
+              href="https://github.com/barefootjs/barefootjs"
               className="btn-secondary"
             >
               GitHub

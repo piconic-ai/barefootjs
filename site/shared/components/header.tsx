@@ -83,7 +83,7 @@ export function Header({
         <div className="flex items-center gap-2 sm:gap-4">
           {searchSlot}
           <a
-            href="https://github.com/kfly8/barefootjs"
+            href="https://github.com/barefootjs/barefootjs"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center w-9 h-9 rounded-md text-foreground hover:bg-accent transition-colors"

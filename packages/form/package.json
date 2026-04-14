@@ -32,7 +32,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kfly8/barefootjs",
+    "url": "https://github.com/barefootjs/barefootjs",
     "directory": "packages/form"
   },
   "peerDependencies": {
