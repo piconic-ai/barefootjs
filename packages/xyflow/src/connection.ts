@@ -181,8 +181,8 @@ export function attachConnectionHandler<
       if (nearHandle) {
         const nearHandleType = nearHandle.classList.contains('bf-flow__handle--target') ? 'target' : 'source'
         const isCompatibleType = handleType !== nearHandleType
-        const srcHandleId = handleEl.dataset.handleId ?? null
-        const tgtHandleId = nearHandle.dataset.handleId ?? null
+        const srcHandleId = handleEl.getAttribute("data-handleid") ?? null
+        const tgtHandleId = nearHandle.getAttribute("data-handleid") ?? null
         const conn = buildConnection(nodeId, nearHandle.dataset.nodeId!, handleType, srcHandleId, tgtHandleId)
         const isValid = isCompatibleType && checkConnectionValidity(store, conn)
 
@@ -206,8 +206,8 @@ export function attachConnectionHandler<
         ) {
           const hoveredHandleType = hoveredHandle.classList.contains('bf-flow__handle--target') ? 'target' : 'source'
           const isCompatibleType = handleType !== hoveredHandleType
-          const srcHandleId = handleEl.dataset.handleId ?? null
-          const tgtHandleId = hoveredHandle.dataset.handleId ?? null
+          const srcHandleId = handleEl.getAttribute("data-handleid") ?? null
+          const tgtHandleId = hoveredHandle.getAttribute("data-handleid") ?? null
           const conn = buildConnection(nodeId, hoveredHandle.dataset.nodeId, handleType, srcHandleId, tgtHandleId)
           const isValid = isCompatibleType && checkConnectionValidity(store, conn)
 
@@ -247,8 +247,8 @@ export function attachConnectionHandler<
         const targetNodeId = targetHandle.dataset.nodeId
         const targetHandleType = targetHandle.classList.contains('bf-flow__handle--target') ? 'target' : 'source'
         const isCompatibleType = handleType !== targetHandleType
-        const srcHandleId = handleEl.dataset.handleId ?? null
-        const tgtHandleId = targetHandle.dataset.handleId ?? null
+        const srcHandleId = handleEl.getAttribute("data-handleid") ?? null
+        const tgtHandleId = targetHandle.getAttribute("data-handleid") ?? null
         const conn = buildConnection(nodeId, targetNodeId, handleType, srcHandleId, tgtHandleId)
 
         // Validate: handle type must be compatible + custom validation

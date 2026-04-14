@@ -36,7 +36,7 @@ export function createHandle(
   el.dataset.handlePosition = position
   el.dataset.nodeId = props.nodeId
   if (props.id) {
-    el.dataset.handleId = props.id
+    el.setAttribute('data-handleid', props.id)
   }
 
   el.style.position = 'absolute'
