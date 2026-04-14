@@ -336,6 +336,9 @@ function renderNodeContent<NodeType extends NodeBase>(
   const customType = nodeType && store.nodeTypes?.[nodeType]
 
   if (customType) {
+    // Reset default node styling for custom types
+    el.classList.add('bf-flow__node--custom')
+
     // Build node component props
     const nodeProps: NodeComponentProps<NodeType> = {
       id: node.id,

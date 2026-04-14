@@ -204,6 +204,12 @@ function injectDefaultStyles() {
       user-select: none;
       box-sizing: border-box;
     }
+    .bf-flow__node--custom {
+      border: none;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
     .bf-flow__node--selected {
       box-shadow: 0 0 0 0.5px #1a192b;
     }
