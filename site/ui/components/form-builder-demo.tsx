@@ -20,6 +20,13 @@ import { Button } from '@ui/components/ui/button'
 import { Checkbox } from '@ui/components/ui/checkbox'
 import { Input } from '@ui/components/ui/input'
 import { Label } from '@ui/components/ui/label'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@ui/components/ui/select'
 import { Textarea } from '@ui/components/ui/textarea'
 import {
   ToastProvider,
@@ -254,17 +261,21 @@ export function FormBuilderDemo() {
 
                 {/* Row 1: type selector + label + controls */}
                 <div className="flex items-center gap-1.5">
-                  <select
+                  <Select
                     value={field.type}
-                    onChange={(e) => updateField(field.id, { type: e.target.value as FieldType })}
-                    className="w-28 flex-shrink-0 field-type-select h-8 rounded-md border border-input bg-transparent px-3 text-sm appearance-none cursor-pointer"
+                    onValueChange={(v: string) => updateField(field.id, { type: v as FieldType })}
                   >
-                    <option value="text">Text</option>
-                    <option value="textarea">Textarea</option>
-                    <option value="select">Select</option>
-                    <option value="checkbox">Checkbox</option>
-                    <option value="group">Group</option>
-                  </select>
+                    <SelectTrigger className="w-28 flex-shrink-0 field-type-select h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">Text</SelectItem>
+                      <SelectItem value="textarea">Textarea</SelectItem>
+                      <SelectItem value="select">Select</SelectItem>
+                      <SelectItem value="checkbox">Checkbox</SelectItem>
+                      <SelectItem value="group">Group</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   <Input
                     value={field.label}
@@ -315,26 +326,26 @@ export function FormBuilderDemo() {
                     {/* Nested loop: group children */}
                     {field.children.map(child => (
                       <div key={child.id} className="child-field flex items-center gap-1.5 pl-3 border-l-2 border-muted">
-                        <select
+                        <Select
                           value={child.type}
-                          onChange={(e) => updateChildField(field.id, child.id, { type: e.target.value as 'text' | 'checkbox' | 'select' })}
-                          className="w-24 shrink-0 child-type-select h-8 rounded-md border border-input bg-transparent px-3 text-sm appearance-none cursor-pointer"
+                          onValueChange={(v: string) => updateChildField(field.id, child.id, { type: v as 'text' | 'checkbox' | 'select' })}
                         >
-                          <option value="text">Text</option>
-                          <option value="checkbox">Checkbox</option>
-                          <option value="select">Select</option>
-                        </select>
+                          <SelectTrigger className="w-24 shrink-0 child-type-select h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="text">Text</SelectItem>
+                            <SelectItem value="checkbox">Checkbox</SelectItem>
+                            <SelectItem value="select">Select</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <Input
                           value={child.label}
                           onInput={(e) => updateChildField(field.id, child.id, { label: e.target.value })}
                           className="flex-1 h-8 text-sm child-label-input"
                           placeholder="Child label"
                         />
-                        <button
-                          type="button"
-                          className="remove-child shrink-0 text-muted-foreground hover:text-destructive h-7 w-7 rounded-md inline-flex items-center justify-center text-base hover:bg-accent"
-                          onClick={() => removeChildField(field.id, child.id)}
-                        >×</button>
+                        <Button variant="ghost" size="icon-sm" className="remove-child shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeChildField(field.id, child.id)}>×</Button>
                       </div>
                     ))}
                     <Button variant="outline" size="sm" className="add-child-btn" onClick={() => addChildField(field.id)}>
@@ -345,14 +356,14 @@ export function FormBuilderDemo() {
 
                 {/* Row 2: required + visibility condition */}
                 <div className="flex items-center gap-4 pt-1">
-                  <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
+                  <Label className="gap-1.5 cursor-pointer shrink-0">
                     <Checkbox
                       checked={field.required}
                       onCheckedChange={(v) => updateField(field.id, { required: v })}
                       className="required-checkbox"
                     />
                     <span className="text-xs text-muted-foreground">Required</span>
-                  </label>
+                  </Label>
 
                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
                     <span className="text-xs text-muted-foreground whitespace-nowrap">Show when:</span>
@@ -423,60 +434,67 @@ export function FormBuilderDemo() {
                       {field.label}
                       {field.required ? <span className="text-destructive ml-1">*</span> : null}
                     </Label>
-                    <select
+                    <Select
                       value={previewValues()[field.label] || ''}
-                      onChange={(e) => updatePreviewValue(field.label, e.target.value)}
-                      className="preview-select w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm appearance-none cursor-pointer"
+                      onValueChange={(v: string) => updatePreviewValue(field.label, v)}
                     >
-                      <option value="">Select…</option>
-                      {field.options.split(',').map(opt => (
-                        <option key={opt.trim()} value={opt.trim()}>{opt.trim()}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="preview-select">
+                        <SelectValue placeholder="Select…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.options.split(',').map(opt => (
+                          <SelectItem key={opt.trim()} value={opt.trim()}>{opt.trim()}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 ) : null}
 
                 {field.type === 'checkbox' ? (
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <Label className="cursor-pointer">
                     <Checkbox className="preview-checkbox" />
                     <span className="text-sm">
                       {field.label}
                       {field.required ? <span className="text-destructive ml-1">*</span> : null}
                     </span>
-                  </label>
+                  </Label>
                 ) : null}
 
                 {field.type === 'group' ? (
                   <div className="group-preview space-y-3">
-                    <Label className="text-sm font-medium">{field.label}</Label>
+                    <Label>{field.label}</Label>
                     <div className="pl-4 border-l-2 border-muted space-y-3">
                       {/* Nested loop: group children in preview */}
                       {field.children.map(child => (
                         <div key={child.id} className="child-preview">
                           {child.type === 'text' ? (
                             <div className="space-y-1">
-                              <label className="text-xs font-medium leading-none">
+                              <Label className="text-xs">
                                 {child.label}
                                 {child.required ? <span className="text-destructive ml-1">*</span> : null}
-                              </label>
+                              </Label>
                               <Input placeholder={child.label} className="preview-child-input" />
                             </div>
                           ) : null}
                           {child.type === 'checkbox' ? (
-                            <label className="flex items-center gap-2 cursor-pointer">
+                            <Label className="cursor-pointer">
                               <Checkbox />
                               <span className="text-sm">{child.label}</span>
-                            </label>
+                            </Label>
                           ) : null}
                           {child.type === 'select' ? (
                             <div className="space-y-1">
-                              <label className="text-xs font-medium leading-none">{child.label}</label>
-                              <select className="preview-child-select w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm appearance-none cursor-pointer">
-                                <option value="">Select…</option>
-                                {child.options.split(',').map(opt => (
-                                  <option key={opt.trim()} value={opt.trim()}>{opt.trim()}</option>
-                                ))}
-                              </select>
+                              <Label className="text-xs">{child.label}</Label>
+                              <Select>
+                                <SelectTrigger className="preview-child-select">
+                                  <SelectValue placeholder="Select…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {child.options.split(',').map(opt => (
+                                    <SelectItem key={opt.trim()} value={opt.trim()}>{opt.trim()}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           ) : null}
                         </div>

@@ -14,6 +14,7 @@
 
 import { createSignal, createMemo } from '@barefootjs/client'
 import { Badge } from '@ui/components/ui/badge'
+import { Button } from '@ui/components/ui/button'
 import {
   Select,
   SelectTrigger,
@@ -431,13 +432,9 @@ export function PivotTableDemo() {
                 >
                   <GripVerticalIcon className="w-3 h-3 opacity-60" />
                   {f.label}
-                  <button
-                    className="field-remove-btn ml-0.5 opacity-60 hover:opacity-100"
-                    onClick={() => removeField(fid)}
-                    aria-label={`Remove ${f.label}`}
-                  >
+                  <Button variant="ghost" size="icon-sm" className="field-remove-btn ml-0.5 opacity-60 hover:opacity-100" onClick={() => removeField(fid)} aria-label={`Remove ${f.label}`}>
                     <XIcon className="w-3 h-3" />
-                  </button>
+                  </Button>
                 </div>
               )
             })}
@@ -460,13 +457,9 @@ export function PivotTableDemo() {
               >
                 <GripVerticalIcon className="w-3 h-3 opacity-60" />
                 {columnLabel()}
-                <button
-                  className="field-remove-btn ml-0.5 opacity-60 hover:opacity-100"
-                  onClick={() => removeField(columnField() as FieldId)}
-                  aria-label={`Remove ${columnLabel()}`}
-                >
+                <Button variant="ghost" size="icon-sm" className="field-remove-btn ml-0.5 opacity-60 hover:opacity-100" onClick={() => removeField(columnField() as FieldId)} aria-label={`Remove ${columnLabel()}`}>
                   <XIcon className="w-3 h-3" />
-                </button>
+                </Button>
               </div>
             ) : null}
           </div>
