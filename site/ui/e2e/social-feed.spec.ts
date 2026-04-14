@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Social Feed Block (#830)', () => {
+test.describe('Social Feed Block', () => {
   test.beforeEach(async ({ page }) => {
     page.on('pageerror', error => {
       console.log('Page error:', error.message)
@@ -11,104 +11,174 @@ test.describe('Social Feed Block (#830)', () => {
   const section = (page: any) =>
     page.locator('[bf-s^="SocialFeedDemo_"]:not([data-slot])').first()
 
-  // Each post action bar: "flex items-center gap-1 border-t px-4 py-2"
-  // Buttons inside are plain <button> (rendered text has no space between emoji and number)
   const likeBtn = (s: any, postIndex: number) =>
     s.locator('.flex.items-center.gap-1.border-t').nth(postIndex).locator('button').first()
 
   const commentToggleBtn = (s: any, postIndex: number) =>
     s.locator('.flex.items-center.gap-1.border-t').nth(postIndex).locator('button').nth(1)
 
-  test('renders initial posts with stats', async ({ page }) => {
-    const s = section(page)
+  test.describe('Initial Render', () => {
+    test('renders stats bar with post/like/comment counts', async ({ page }) => {
+      const s = section(page)
+      await expect(s.locator('text=3 posts')).toBeVisible()
+      await expect(s.locator('text=91 likes')).toBeVisible()
+      await expect(s.locator('text=3 comments')).toBeVisible()
+    })
 
-    // Stats bar should show counts
-    await expect(s.locator('text=3 posts')).toBeVisible()
-    await expect(s.locator('text=91 likes')).toBeVisible()
-    await expect(s.locator('text=3 comments')).toBeVisible()
+    test('renders 3 posts', async ({ page }) => {
+      const s = section(page)
+      await expect(s.locator('text=Mia Torres').first()).toBeVisible()
+      await expect(s.locator('text=Noah Patel')).toBeVisible()
+      await expect(s.locator('text=Ethan Brooks')).toBeVisible()
+    })
 
-    // First post author should be visible (appears twice — post + reply author)
-    await expect(s.locator('text=Mia Torres').first()).toBeVisible()
+    test('first post shows expanded comments by default', async ({ page }) => {
+      const s = section(page)
+      await expect(s.locator('text=James O\'Brien')).toBeVisible()
+      await expect(s.locator('text=Sara Lin')).toBeVisible()
+    })
+
+    test('second post starts with comments collapsed', async ({ page }) => {
+      const s = section(page)
+      await expect(s.locator('text=Lily Chang')).not.toBeVisible()
+    })
+
+    test('posts render like counts', async ({ page }) => {
+      const s = section(page)
+      await expect(likeBtn(s, 0)).toContainText('42')
+      await expect(likeBtn(s, 1)).toContainText('18')
+      await expect(likeBtn(s, 2)).toContainText('31')
+    })
   })
 
-  test('toggle comments section shows/hides comments', async ({ page }) => {
-    const s = section(page)
+  test.describe('Post Like Toggle', () => {
+    test('liking a post increments like count', async ({ page }) => {
+      const s = section(page)
+      const btn = likeBtn(s, 2)
+      await expect(btn).toContainText('31')
+      await btn.click()
+      await expect(btn).toContainText('32')
+    })
 
-    // Mia's post has showComments: true — comments should be visible
-    await expect(s.locator('text=James O\'Brien').first()).toBeVisible()
+    test('unliking a post decrements like count', async ({ page }) => {
+      const s = section(page)
+      const btn = likeBtn(s, 1)
+      await expect(btn).toContainText('18')
+      await btn.click()
+      await expect(btn).toContainText('17')
+    })
 
-    // Noah's post (index 1) has showComments: false — click to show comments
-    await commentToggleBtn(s, 1).click()
+    test('total likes in stats bar updates after like', async ({ page }) => {
+      const s = section(page)
+      await likeBtn(s, 2).click()
+      await expect(s.locator('text=92 likes')).toBeVisible()
+    })
 
-    // Lily's comment should now be visible
-    await expect(s.locator('text=Lily Chang')).toBeVisible()
-
-    // Click again to hide
-    await commentToggleBtn(s, 1).click()
-    await expect(s.locator('text=Lily Chang')).not.toBeVisible()
+    test('total likes decrements after unlike', async ({ page }) => {
+      const s = section(page)
+      await likeBtn(s, 1).click()
+      await expect(s.locator('text=90 likes')).toBeVisible()
+    })
   })
 
-  test('existing replies are visible in expanded comments', async ({ page }) => {
-    const s = section(page)
+  test.describe('Comment Toggle', () => {
+    test('clicking comment button expands comments for collapsed post', async ({ page }) => {
+      const s = section(page)
+      await expect(s.locator('text=Lily Chang')).not.toBeVisible()
+      await commentToggleBtn(s, 1).click()
+      await expect(s.locator('text=Lily Chang')).toBeVisible()
+    })
 
-    // Mia's post is expanded and James's comment has 1 reply from Mia
-    await expect(s.locator('text=I\'ll add a section on that in the follow-up')).toBeVisible()
+    test('clicking comment button collapses expanded comments', async ({ page }) => {
+      const s = section(page)
+      await expect(s.locator('text=James O\'Brien')).toBeVisible()
+      await commentToggleBtn(s, 0).click()
+      await expect(s.locator('text=James O\'Brien')).not.toBeVisible()
+    })
   })
 
-  test('add reply via input appends to reply list', async ({ page }) => {
-    const s = section(page)
+  test.describe('Add Comment', () => {
+    test('adding a comment updates comment count button', async ({ page }) => {
+      const s = section(page)
+      await commentToggleBtn(s, 2).click()
+      const commentInput = s.locator('input[placeholder="Write a comment..."]').last()
+      await commentInput.fill('Great session!')
+      await commentInput.press('Enter')
+      await expect(commentToggleBtn(s, 2)).toContainText('1')
+    })
 
-    const replyInput = s.locator('input[placeholder="Reply..."]').first()
-    await replyInput.fill('Thanks for the suggestion!')
-    await replyInput.press('Enter')
+    test('added comment appears in the list', async ({ page }) => {
+      const s = section(page)
+      const commentInput = s.locator('input[placeholder="Write a comment..."]').first()
+      await commentInput.fill('This is helpful!')
+      await commentInput.press('Enter')
+      await expect(s.locator('text=This is helpful!')).toBeVisible()
+    })
 
-    await expect(s.locator('text=Thanks for the suggestion!')).toBeVisible()
-    await expect(replyInput).toHaveValue('')
+    test('added comment shows author as "You"', async ({ page }) => {
+      const s = section(page)
+      const commentInput = s.locator('input[placeholder="Write a comment..."]').first()
+      await commentInput.fill('My new comment')
+      await commentInput.press('Enter')
+      await expect(s.locator('text=You').first()).toBeVisible()
+    })
+
+    test('empty input does not add comment', async ({ page }) => {
+      const s = section(page)
+      await expect(commentToggleBtn(s, 0)).toContainText('2')
+      const commentInput = s.locator('input[placeholder="Write a comment..."]').first()
+      await commentInput.fill('   ')
+      await commentInput.press('Enter')
+      await expect(commentToggleBtn(s, 0)).toContainText('2')
+    })
+
+    test('total comments in stats bar updates after adding comment', async ({ page }) => {
+      const s = section(page)
+      const commentInput = s.locator('input[placeholder="Write a comment..."]').first()
+      await commentInput.fill('Stats test')
+      await commentInput.press('Enter')
+      await expect(s.locator('text=4 comments')).toBeVisible()
+    })
   })
 
-  test('like button on post toggles like state', async ({ page }) => {
-    const s = section(page)
+  test.describe('Comment Like Toggle', () => {
+    test('liking a comment changes its like count', async ({ page }) => {
+      const s = section(page)
+      const commentLikeBtn = s.locator('.flex.items-center.gap-2.mt-1 button').first()
+      const beforeText = await commentLikeBtn.textContent()
+      await commentLikeBtn.click()
+      const afterText = await commentLikeBtn.textContent()
+      expect(afterText).not.toBe(beforeText)
+    })
 
-    // Mia's post (index 0), not liked, likes = 42
-    const btn = likeBtn(s, 0)
-    await expect(btn).toContainText('42')
-    await btn.click()
-    await expect(btn).toContainText('43')
+    test('unliking a comment changes its like count', async ({ page }) => {
+      const s = section(page)
+      const commentLikeBtn = s.locator('.flex.items-center.gap-2.mt-1 button').nth(1)
+      const beforeText = await commentLikeBtn.textContent()
+      await commentLikeBtn.click()
+      const afterText = await commentLikeBtn.textContent()
+      expect(afterText).not.toBe(beforeText)
+    })
   })
 
-  test('total likes in stats bar updates after like', async ({ page }) => {
-    const s = section(page)
-    await likeBtn(s, 2).click()
-    await expect(s.locator('text=92 likes')).toBeVisible()
-  })
+  test.describe('Nested Replies', () => {
+    test('first post shows existing reply from Mia Torres', async ({ page }) => {
+      const s = section(page)
+      await expect(s.locator('text=I\'ll add a section on that in the follow-up')).toBeVisible()
+    })
 
-  test('add comment via input appends to comment list', async ({ page }) => {
-    const s = section(page)
+    test('reply input is shown when a comment has replies', async ({ page }) => {
+      const s = section(page)
+      await expect(s.locator('input[placeholder="Reply..."]')).toBeVisible()
+    })
 
-    // Find the comment input in Mia's post (first expanded post)
-    const commentInput = s.locator('input[placeholder="Write a comment..."]').first()
-    await commentInput.fill('Great discussion!')
-    await commentInput.press('Enter')
-
-    // New comment should appear
-    await expect(s.locator('text=Great discussion!')).toBeVisible()
-
-    // Input should be cleared
-    await expect(commentInput).toHaveValue('')
-  })
-
-  test('comment like toggle changes count', async ({ page }) => {
-    const s = section(page)
-    // James's comment like button
-    const commentLikeBtn = s.locator('.flex.items-center.gap-2.mt-1 button').first()
-    const beforeText = await commentLikeBtn.textContent()
-    await commentLikeBtn.click()
-    const afterText = await commentLikeBtn.textContent()
-    expect(afterText).not.toBe(beforeText)
-  })
-
-  test('reply input is shown when a comment has replies', async ({ page }) => {
-    const s = section(page)
-    await expect(s.locator('input[placeholder="Reply..."]')).toBeVisible()
+    test('add reply via input appends to reply list', async ({ page }) => {
+      const s = section(page)
+      const replyInput = s.locator('input[placeholder="Reply..."]').first()
+      await replyInput.fill('Thanks for the suggestion!')
+      await replyInput.press('Enter')
+      await expect(s.locator('text=Thanks for the suggestion!')).toBeVisible()
+      await expect(replyInput).toHaveValue('')
+    })
   })
 })
