@@ -921,11 +921,9 @@ interface CompositeLoopContext {
 
 /** Emit a single addEventListener call for a child event on a given element. */
 function emitEventSetup(ls: string[], indent: string, elVar: string, ev: LoopChildEvent, loopParam?: string): void {
-  let handler = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
-    ? `(${ev.handler})(e)`
-    : ev.handler
-  if (loopParam) handler = wrapLoopParamAsAccessor(handler, loopParam)
-  ls.push(`${indent}{ const __e = qsa(${elVar}, '[bf="${ev.childSlotId}"]'); if (__e) __e.addEventListener('${toDomEventName(ev.eventName)}', (e) => { ${handler} }) }`)
+  let handler = loopParam ? wrapLoopParamAsAccessor(ev.handler, loopParam) : ev.handler
+  handler = wrapHandlerInBlock(handler)
+  ls.push(`${indent}{ const __e = qsa(${elVar}, '[bf="${ev.childSlotId}"]'); if (__e) __e.addEventListener('${toDomEventName(ev.eventName)}', ${handler}) }`)
 }
 
 /** Build the component-finder CSS selector for SSR hydration initChild. */
@@ -1247,9 +1245,7 @@ function emitLoopEventDelegation(
       const childVar = varSlotId(ev.childSlotId)
       lines.push(`    const ${childVar}El = target.closest('[bf="${ev.childSlotId}"]')`)
       lines.push(`    if (${childVar}El) {`)
-      const handlerCall = ev.handler.trim().startsWith('(') || ev.handler.trim().startsWith('function')
-        ? `(${ev.handler})(e)`
-        : ev.handler
+      const handlerCall = `(${ev.handler.trim()})(e)`
       emitItemLookup(lines, ev, handlerCall, containerVar)
       lines.push(`      return`)
       lines.push(`    }`)
