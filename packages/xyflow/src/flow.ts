@@ -271,12 +271,12 @@ function injectDefaultStyles() {
     .bf-flow__handle--source:hover { bottom: -5px; }
     .bf-flow__handle.valid { background-color: #22c55e; border-color: #16a34a; width: 10px; height: 10px; }
     .bf-flow__handle.invalid { background-color: #ef4444; border-color: #dc2626; width: 10px; height: 10px; }
-    .bf-flow__edge { fill: none; stroke: #b1b1b7; stroke-width: 1; pointer-events: none; }
-    .bf-flow__edge--selected { stroke: #555; stroke-width: 2; }
+    .bf-flow__edge { fill: none; stroke: var(--edge-user, #d29922); stroke-width: 2; pointer-events: none; }
+    .bf-flow__edge--selected { stroke: var(--edge-user, #d29922); stroke-width: 3; }
     .bf-flow__edge--animated { stroke-dasharray: 5; animation: bf-dashdraw 0.5s linear infinite; }
     @keyframes bf-dashdraw { from { stroke-dashoffset: 10; } }
     .bf-flow__edge-reconnect { fill: transparent; stroke: transparent; cursor: move; pointer-events: all; }
-    path.bf-flow__edge.bf-flow__edge--reconnect-hover { stroke: #222; }
+    path.bf-flow__edge.bf-flow__edge--reconnect-hover { stroke: var(--text-primary, #222); }
     .bf-flow__controls-button:hover { background: #f4f4f4 !important; }
     .bf-flow__controls-button:last-child { border-bottom: none !important; }
     .bf-flow__edge-label {

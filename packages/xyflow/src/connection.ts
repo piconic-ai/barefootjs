@@ -1,5 +1,5 @@
 import { untrack } from '@barefootjs/client'
-import { getBezierPath, Position, reconnectEdge as reconnectEdgeUtil } from '@xyflow/system'
+import { getSmoothStepPath, Position, reconnectEdge as reconnectEdgeUtil } from '@xyflow/system'
 import type { FlowStore, NodeBase, EdgeBase, Connection } from './types'
 import { SVG_NS } from './constants'
 
@@ -96,8 +96,8 @@ export function attachConnectionHandler<
 
     const connectionLine = document.createElementNS(SVG_NS, 'path')
     connectionLine.setAttribute('fill', 'none')
-    connectionLine.setAttribute('stroke', '#b1b1b7')
-    connectionLine.setAttribute('stroke-width', '1')
+    connectionLine.setAttribute('stroke', 'var(--edge-user, #d29922)')
+    connectionLine.setAttribute('stroke-width', '2')
     lineGroup.appendChild(connectionLine)
 
     // Track the currently hovered handle for validation feedback
@@ -113,7 +113,7 @@ export function attachConnectionHandler<
       const targetX = (e.clientX - containerRect.left - vp.x) / scale
       const targetY = (e.clientY - containerRect.top - vp.y) / scale
 
-      const [path] = getBezierPath({
+      const [path] = getSmoothStepPath({
         sourceX,
         sourceY,
         sourcePosition: handleType === 'source' ? Position.Bottom : Position.Top,
@@ -278,8 +278,8 @@ export function attachReconnectionHandler<
     // Create temporary connection line from anchor to cursor
     const connectionLine = document.createElementNS(SVG_NS, 'path')
     connectionLine.setAttribute('fill', 'none')
-    connectionLine.setAttribute('stroke', '#b1b1b7')
-    connectionLine.setAttribute('stroke-width', '1')
+    connectionLine.setAttribute('stroke', 'var(--edge-user, #d29922)')
+    connectionLine.setAttribute('stroke-width', '2')
     connectionLine.setAttribute('pointer-events', 'none')
     edgesSvg.appendChild(connectionLine)
 
@@ -293,12 +293,12 @@ export function attachReconnectionHandler<
       const cursorX = (ev.clientX - containerRect.left - vp.x) / scale
       const cursorY = (ev.clientY - containerRect.top - vp.y) / scale
 
-      // Draw bezier from anchor to cursor
+      // Draw smoothstep path from anchor to cursor
       // sourcePosition/targetPosition depends on which endpoint is the anchor
       const sourcePosition = endpointType === 'source' ? Position.Top : Position.Bottom
       const targetPosition = endpointType === 'source' ? Position.Bottom : Position.Top
 
-      const [path] = getBezierPath({
+      const [path] = getSmoothStepPath({
         sourceX: anchorX,
         sourceY: anchorY,
         sourcePosition,
