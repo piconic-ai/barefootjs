@@ -4,7 +4,7 @@
  * and event delegation within loop containers.
  */
 
-import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, ConditionalBranchLoop, ConditionalBranchConditional, LoopChildEvent, LoopElement, NestedLoopInfo } from './types'
+import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, ConditionalBranchLoop, ConditionalBranchConditional, LoopChildEvent, LoopChildConditional, LoopElement, NestedLoopInfo } from './types'
 import type { IRLoopChildComponent } from '../types'
 import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
@@ -356,8 +356,52 @@ function emitBranchInnerLoops(
         lines.push(`${indent}  if (__rt) createEffect(() => { __rt.textContent = String(${wrappedExpr}) }) }`)
       }
     }
+    // Nested conditionals inside inner loop items (#830 Path B)
+    if (inner.childConditionals && inner.childConditionals.length > 0) {
+      emitNestedLoopChildConditionals(
+        lines, `${indent}  `, `__bel${uid}`,
+        inner.childConditionals,
+        wrapBoth,
+        inner.param,
+      )
+    }
     lines.push(`${indent}  return __bel${uid}`)
     lines.push(`${indent}}) }`)
+  }
+}
+
+/**
+ * Recursively emit insert() calls for nested conditionals inside loop items.
+ * Handles Path A (conditional→conditional) and Path B (loop→conditional) by
+ * mutual recursion with emitBranchInnerLoops (#830).
+ */
+function emitNestedLoopChildConditionals(
+  lines: string[],
+  indent: string,
+  scopeVar: string,
+  conditionals: LoopChildConditional[] | undefined,
+  wrap: (expr: string) => string,
+  loopParam?: string,
+): void {
+  if (!conditionals || conditionals.length === 0) return
+  for (const cond of conditionals) {
+    const whenTrueWithCond = addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId)
+    const whenFalseWithCond = addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId)
+    lines.push(`${indent}insert(${scopeVar}, '${cond.slotId}', () => ${wrap(cond.condition)}, {`)
+    lines.push(`${indent}  template: () => \`${whenTrueWithCond}\`,`)
+    lines.push(`${indent}  bindEvents: (__branchScope) => {`)
+    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrueComponents, loopParam)
+    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrueInnerLoops, loopParam)
+    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrueConditionals, wrap, loopParam)
+    lines.push(`${indent}  }`)
+    lines.push(`${indent}}, {`)
+    lines.push(`${indent}  template: () => \`${whenFalseWithCond}\`,`)
+    lines.push(`${indent}  bindEvents: (__branchScope) => {`)
+    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalseComponents, loopParam)
+    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalseInnerLoops, loopParam)
+    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalseConditionals, wrap, loopParam)
+    lines.push(`${indent}  }`)
+    lines.push(`${indent}})`)
   }
 }
 
@@ -429,6 +473,7 @@ function emitLoopChildReactiveEffects(
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
       emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrueComponents, loopParam)
       emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrueInnerLoops, loopParam)
+      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrueConditionals, wrap, loopParam)
       for (const text of textsForBranch(cond.whenTrueHtml)) {
         const varName = `__rt_${varSlotId(text.slotId)}`
         lines.push(`${indent}    { const [${varName}] = $t(__branchScope, '${text.slotId}')`)
@@ -440,6 +485,7 @@ function emitLoopChildReactiveEffects(
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
       emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalseComponents, loopParam)
       emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalseInnerLoops, loopParam)
+      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalseConditionals, wrap, loopParam)
       for (const text of textsForBranch(cond.whenFalseHtml)) {
         const varName = `__rt_${varSlotId(text.slotId)}`
         lines.push(`${indent}    { const [${varName}] = $t(__branchScope, '${text.slotId}')`)

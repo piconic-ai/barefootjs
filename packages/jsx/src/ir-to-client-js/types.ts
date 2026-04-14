@@ -161,6 +161,8 @@ export interface NestedLoopInfo {
   childComponents?: import('../types').IRLoopChildComponent[]
   /** Event handlers inside inner loop items */
   childEvents?: LoopChildEvent[]
+  /** Reactive conditionals inside inner loop items (Path B, #830) */
+  childConditionals?: LoopChildConditional[]
   /** True when this loop is inside a conditional branch (handled by insert() bindEvents instead) */
   insideConditional?: boolean
   /** Number of non-loop DOM siblings before this loop in its container element */
@@ -199,6 +201,10 @@ export interface LoopChildConditional {
   whenTrueInnerLoops?: NestedLoopInfo[]
   /** Inner loops inside whenFalse branch that need mapArray setup */
   whenFalseInnerLoops?: NestedLoopInfo[]
+  /** Nested conditionals inside whenTrue branch (recursive — Path A, #830) */
+  whenTrueConditionals?: LoopChildConditional[]
+  /** Nested conditionals inside whenFalse branch (recursive — Path A, #830) */
+  whenFalseConditionals?: LoopChildConditional[]
 }
 
 export interface LoopElement {

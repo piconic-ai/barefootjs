@@ -402,6 +402,8 @@ export function collectLoopChildConditionals(
           whenFalseComponents: collectConditionalBranchChildComponents(n.whenFalse),
           whenTrueInnerLoops: collectBranchInnerLoops(n.whenTrue, loopParam, ctx),
           whenFalseInnerLoops: collectBranchInnerLoops(n.whenFalse, loopParam, ctx),
+          whenTrueConditionals: collectLoopChildConditionals(n.whenTrue, ctx, loopParam),
+          whenFalseConditionals: collectLoopChildConditionals(n.whenFalse, ctx, loopParam),
         })
       }
       // Don't recurse into conditional branches — nested conditionals
@@ -474,6 +476,14 @@ function collectBranchInnerLoops(
       for (const child of n.children) {
         childEvents.push(...collectLoopChildEventsWithNesting(child))
       }
+      // Collect conditionals inside inner loop body (#830 Path B)
+      const childConditionals = ctx
+        ? collectLoopChildConditionals(
+            { type: 'fragment', children: n.children } as any,
+            ctx,
+            n.param,
+          )
+        : []
       loops.push({
         depth: 1,
         array: n.array,
@@ -485,6 +495,7 @@ function collectBranchInnerLoops(
         reactiveTexts: reactiveTexts.length > 0 ? reactiveTexts : undefined,
         childComponents: childComponents.length > 0 ? childComponents : undefined,
         childEvents: childEvents.length > 0 ? childEvents : undefined,
+        childConditionals: childConditionals.length > 0 ? childConditionals : undefined,
       })
     } else if (n.type === 'fragment' || n.type === 'component' || n.type === 'provider') {
       for (const child of n.children) walk(child)
