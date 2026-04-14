@@ -128,6 +128,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'permission-matrix', title: 'Permission Matrix', description: 'Role x Permission grid with inheritance cascade, diamond memo dependencies, and bulk operations' },
   { slug: 'spreadsheet', title: 'Spreadsheet', description: 'Spreadsheet grid with cell editing, formula evaluation, selection, and 2D nested loops' },
   { slug: 'form-builder', title: 'Form Builder', description: 'Signal-driven form builder with heterogeneous loop, dynamic field type switching, nested groups, and conditional visibility' },
+  { slug: 'pivot-table', title: 'Pivot Table', description: 'Dynamic row/column grouping with multi-level aggregation, drag axis config, and expand/collapse groups' },
 ]
 
 // Helper: get components filtered by category

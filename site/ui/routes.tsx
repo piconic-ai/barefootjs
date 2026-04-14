@@ -83,6 +83,7 @@ import { InventoryManagerRefPage } from './pages/components/inventory-manager'
 import { SpreadsheetRefPage } from './pages/components/spreadsheet'
 import { PermissionMatrixRefPage } from './pages/components/permission-matrix'
 import { FormBuilderRefPage } from './pages/components/form-builder'
+import { PivotTableRefPage } from './pages/components/pivot-table'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -564,6 +565,11 @@ export function createApp() {
   // Form Builder block page
   app.get('/components/form-builder', (c) => {
     return c.render(<FormBuilderRefPage />)
+  })
+
+  // Pivot Table block page
+  app.get('/components/pivot-table', (c) => {
+    return c.render(<PivotTableRefPage />)
   })
 
   // Bar Chart reference page
