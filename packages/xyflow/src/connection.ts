@@ -100,8 +100,37 @@ export function attachConnectionHandler<
     connectionLine.setAttribute('stroke-width', '2')
     lineGroup.appendChild(connectionLine)
 
-    // Track the currently hovered handle for validation feedback
-    let lastHoveredHandle: HTMLElement | null = null
+    // Track the currently highlighted handle for validation/snap feedback
+    let lastHighlightedHandle: HTMLElement | null = null
+    // Track the snapped handle so onMouseUp can use it without re-querying
+    let snappedHandle: HTMLElement | null = null
+
+    const SNAP_THRESHOLD = 30
+
+    /**
+     * Find the nearest valid target handle within SNAP_THRESHOLD pixels of
+     * the cursor. Returns null when none is close enough.
+     */
+    function findNearestHandle(cursorX: number, cursorY: number): HTMLElement | null {
+      const candidates = container.querySelectorAll<HTMLElement>('.bf-flow__handle')
+      let nearest: HTMLElement | null = null
+      let nearestDist = SNAP_THRESHOLD
+
+      for (const candidate of candidates) {
+        if (candidate === handleEl) continue
+        if (!candidate.dataset.nodeId || candidate.dataset.nodeId === nodeId) continue
+
+        const rect = candidate.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        const dist = Math.hypot(cursorX - cx, cursorY - cy)
+        if (dist < nearestDist) {
+          nearestDist = dist
+          nearest = candidate
+        }
+      }
+      return nearest
+    }
 
     const onMouseMove = (e: MouseEvent) => {
       // Read fresh viewport and container rect each move — the user
@@ -110,8 +139,20 @@ export function attachConnectionHandler<
       const [, , scale] = store.getTransform()
       const vp = untrack(store.viewport)
 
-      const targetX = (e.clientX - containerRect.left - vp.x) / scale
-      const targetY = (e.clientY - containerRect.top - vp.y) / scale
+      // Determine if we should snap to a nearby handle
+      const nearHandle = findNearestHandle(e.clientX, e.clientY)
+
+      let targetX: number
+      let targetY: number
+
+      if (nearHandle) {
+        const rect = nearHandle.getBoundingClientRect()
+        targetX = (rect.left + rect.width / 2 - containerRect.left - vp.x) / scale
+        targetY = (rect.top + rect.height / 2 - containerRect.top - vp.y) / scale
+      } else {
+        targetX = (e.clientX - containerRect.left - vp.x) / scale
+        targetY = (e.clientY - containerRect.top - vp.y) / scale
+      }
 
       const [path] = getSmoothStepPath({
         sourceX,
@@ -128,37 +169,52 @@ export function attachConnectionHandler<
       const vpCurrent = untrack(store.viewport)
       lineGroup.setAttribute('transform', `translate(${vpCurrent.x}, ${vpCurrent.y}) scale(${vpCurrent.zoom})`)
 
-      // Hide overlay briefly so elementFromPoint sees handles, not the SVG
-      overlaySvg.style.display = 'none'
-      const hoverEl = document.elementFromPoint(e.clientX, e.clientY)
-      overlaySvg.style.display = ''
-      const hoveredHandle = hoverEl?.closest?.('.bf-flow__handle') as HTMLElement | null
-
-      // Clear previous handle's validation classes
-      if (lastHoveredHandle && lastHoveredHandle !== hoveredHandle) {
-        lastHoveredHandle.classList.remove('invalid')
+      // Clear classes from the previously highlighted handle
+      if (lastHighlightedHandle && lastHighlightedHandle !== nearHandle) {
+        lastHighlightedHandle.classList.remove('valid', 'invalid')
       }
 
-      if (
-        hoveredHandle &&
-        hoveredHandle !== handleEl &&
-        hoveredHandle.dataset.nodeId &&
-        hoveredHandle.dataset.nodeId !== nodeId
-      ) {
-        // Check handle type compatibility: source→target or target→source
-        const hoveredHandleType = hoveredHandle.classList.contains('bf-flow__handle--target') ? 'target' : 'source'
-        const isCompatibleType = handleType !== hoveredHandleType
+      snappedHandle = null
 
+      if (nearHandle) {
+        const nearHandleType = nearHandle.classList.contains('bf-flow__handle--target') ? 'target' : 'source'
+        const isCompatibleType = handleType !== nearHandleType
         const srcHandleId = handleEl.dataset.handleId ?? null
-        const tgtHandleId = hoveredHandle.dataset.handleId ?? null
-        const conn = buildConnection(nodeId, hoveredHandle.dataset.nodeId, handleType, srcHandleId, tgtHandleId)
+        const tgtHandleId = nearHandle.dataset.handleId ?? null
+        const conn = buildConnection(nodeId, nearHandle.dataset.nodeId!, handleType, srcHandleId, tgtHandleId)
         const isValid = isCompatibleType && checkConnectionValidity(store, conn)
 
-        hoveredHandle.classList.remove('invalid')
-        if (!isValid) hoveredHandle.classList.add('invalid')
-        lastHoveredHandle = hoveredHandle
+        nearHandle.classList.remove('valid', 'invalid')
+        nearHandle.classList.add(isValid ? 'valid' : 'invalid')
+        lastHighlightedHandle = nearHandle
+
+        if (isValid) snappedHandle = nearHandle
       } else {
-        lastHoveredHandle = null
+        // Fall back to elementFromPoint for hover-only feedback (cursor directly on handle)
+        overlaySvg.style.display = 'none'
+        const hoverEl = document.elementFromPoint(e.clientX, e.clientY)
+        overlaySvg.style.display = ''
+        const hoveredHandle = hoverEl?.closest?.('.bf-flow__handle') as HTMLElement | null
+
+        if (
+          hoveredHandle &&
+          hoveredHandle !== handleEl &&
+          hoveredHandle.dataset.nodeId &&
+          hoveredHandle.dataset.nodeId !== nodeId
+        ) {
+          const hoveredHandleType = hoveredHandle.classList.contains('bf-flow__handle--target') ? 'target' : 'source'
+          const isCompatibleType = handleType !== hoveredHandleType
+          const srcHandleId = handleEl.dataset.handleId ?? null
+          const tgtHandleId = hoveredHandle.dataset.handleId ?? null
+          const conn = buildConnection(nodeId, hoveredHandle.dataset.nodeId, handleType, srcHandleId, tgtHandleId)
+          const isValid = isCompatibleType && checkConnectionValidity(store, conn)
+
+          hoveredHandle.classList.remove('valid', 'invalid')
+          if (!isValid) hoveredHandle.classList.add('invalid')
+          lastHighlightedHandle = hoveredHandle
+        } else {
+          lastHighlightedHandle = null
+        }
       }
     }
 
@@ -166,16 +222,20 @@ export function attachConnectionHandler<
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
 
-      // Clean up validation classes from any hovered handle
-      if (lastHoveredHandle) {
-        lastHoveredHandle.classList.remove('invalid')
+      // Clean up validation/snap classes from any highlighted handle
+      if (lastHighlightedHandle) {
+        lastHighlightedHandle.classList.remove('valid', 'invalid')
       }
 
-      // Hide overlay so elementFromPoint sees handles, not the SVG
-      overlaySvg.style.display = 'none'
-      const targetEl = document.elementFromPoint(e.clientX, e.clientY)
-      overlaySvg.style.display = ''
-      const targetHandle = targetEl?.closest?.('.bf-flow__handle') as HTMLElement | null
+      // Prefer the snapped handle; fall back to direct hit-test
+      let targetHandle = snappedHandle
+
+      if (!targetHandle) {
+        overlaySvg.style.display = 'none'
+        const targetEl = document.elementFromPoint(e.clientX, e.clientY)
+        overlaySvg.style.display = ''
+        targetHandle = targetEl?.closest?.('.bf-flow__handle') as HTMLElement | null
+      }
 
       if (
         targetHandle &&
