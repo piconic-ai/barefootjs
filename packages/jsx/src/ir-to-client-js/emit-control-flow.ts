@@ -1244,7 +1244,11 @@ type ItemLookupEmitter = (
 ) => void
 
 /** Non-bubbling events that require addEventListener with capture for delegation. */
-const NON_BUBBLING_EVENTS = new Set(['blur', 'focus', 'load', 'unload'])
+const NON_BUBBLING_EVENTS = new Set([
+  'blur', 'focus', 'load', 'unload',
+  'mouseenter', 'mouseleave',
+  'pointerenter', 'pointerleave',
+])
 
 /**
  * Emit event delegation for child events inside a loop (static or dynamic).
