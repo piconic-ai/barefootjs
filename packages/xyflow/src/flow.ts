@@ -230,8 +230,9 @@ function injectDefaultStyles() {
     .bf-flow__edge--animated { stroke-dasharray: 5; animation: bf-dashdraw 0.5s linear infinite; }
     @keyframes bf-dashdraw { from { stroke-dashoffset: 10; } }
     .bf-flow__edge-reconnect { fill: transparent; stroke: none; cursor: move; pointer-events: all; }
-    .bf-flow__edge-group:hover .bf-flow__edge-reconnect { fill: #b1b1b7; stroke: #fff; stroke-width: 1.5; r: 5; }
-    .bf-flow__edge-reconnect:hover { fill: #555; stroke: #fff; stroke-width: 1.5; r: 7; cursor: move; }
+    .bf-flow__edge-group:hover .bf-flow__edge-reconnect { fill: #b1b1b7; stroke: #fff; stroke-width: 1.5; }
+    .bf-flow__edge-reconnect:hover { fill: #555; stroke: #fff; stroke-width: 1.5; cursor: move; }
+    .bf-flow__edge-group:hover path.bf-flow__edge { stroke: #222; }
     .bf-flow__controls-button:hover { background: #f4f4f4 !important; }
     .bf-flow__controls-button:last-child { border-bottom: none !important; }
     .bf-flow__edge-label {
