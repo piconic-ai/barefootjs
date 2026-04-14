@@ -4,51 +4,60 @@
  * Color tokens are provided by tokens.css (concatenated by build.ts).
  */
 
+/* CSS Cascade Layer ordering for UnoCSS + component class overrides.
+ * Priority (lowest → highest): preflights < base < shortcuts < components < default
+ * Base resets go into @layer base (above preflights, below component classes).
+ * User override classes stay in @layer default, so they always win. */
+@layer preflights, base, shortcuts, components, default;
+
 /* ── Reset & Base ──────────────────────────────────────────── */
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  border-width: 0;
-  border-style: solid;
-  border-color: var(--border);
-}
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    border-style: solid;
+    /* border-color: var(--border) is set via UnoCSS custom preflight
+     * (uno.config.ts) to ensure it runs after preset-wind4's reset. */
+  }
 
-:root {
-  --sidebar-width: 14rem;    /* 224px — matches UI site (w-56) */
-  --content-max-width: 1000px; /* matches UI site (max-w-[1000px]) */
-}
+  :root {
+    --sidebar-width: 14rem;    /* 224px — matches UI site (w-56) */
+    --content-max-width: 1000px; /* matches UI site (max-w-[1000px]) */
+  }
 
-html {
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--foreground);
-  background: var(--background);
-  -webkit-font-smoothing: antialiased;
-  scroll-behavior: smooth;
-}
+  html {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--foreground);
+    background: var(--background);
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
 
-body {
-  min-height: 100vh;
-  font-family: var(--font-sans);
-  background-color: var(--background);
-  color: var(--foreground);
-}
+  body {
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    background-color: var(--background);
+    color: var(--foreground);
+  }
 
-button {
-  border-width: 0;
-  border-style: solid;
-  background-color: transparent;
-  color: inherit;
-  font: inherit;
-}
+  button {
+    border-width: 0;
+    border-style: solid;
+    background-color: transparent;
+    color: inherit;
+    font: inherit;
+  }
 
-code, kbd, samp, pre {
-  font-family: var(--font-mono);
+  code, kbd, samp, pre {
+    font-family: var(--font-mono);
+  }
 }
 
 /* ── Theme transition ──────────────────────────────────────── */

@@ -51,6 +51,7 @@ export { createComponent, renderChild, getPropsUpdateFn, getComponentProps, pars
 // Spread props helpers
 export { applyRestAttrs } from './apply-rest-attrs'
 export { spreadAttrs } from './spread-attrs'
+export { styleToCss } from './style'
 
 // Runtime helpers
 export { findScope, find, $, $c, $t, qsa } from './query'

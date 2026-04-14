@@ -49,6 +49,9 @@ function templateAttrExpr(attrName: string, valExpr: string, attr: { presenceOrU
   if (isBooleanAttr(attrName) || attr.presenceOrUndefined) {
     return `\${${valExpr} ? '${attrName}' : ''}`
   }
+  if (attrName === 'style') {
+    return `\${((v) => v != null ? 'style="' + v + '"' : '')(styleToCss(${valExpr}))}`
+  }
   return `\${(${valExpr}) != null ? '${attrName}="' + (${valExpr}) + '"' : ''}`
 }
 

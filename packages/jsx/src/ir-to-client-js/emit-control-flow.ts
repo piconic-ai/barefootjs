@@ -621,6 +621,7 @@ function emitStaticArrayUpdates(lines: string[], elem: LoopElement): void {
       const idxOffset = elem.siblingOffset ? ` - ${elem.siblingOffset}` : ''
       ls.push(`        const __idx = Array.from(${cVar}.children).indexOf(__el)${idxOffset}`)
       ls.push(`        const ${elem.param} = ${elem.array}[__idx]`)
+      if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
       ls.push(`        if (${elem.param}) ${handlerCall}`)
       ls.push(`      }`)
     })
@@ -823,6 +824,7 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: LoopElement): voi
         ls.push(`      if (li) {`)
         ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
         ls.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
+        if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
         ls.push(`        if (${elem.param}) ${handlerCall}`)
         ls.push(`      }`)
       } else {
@@ -846,6 +848,7 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: LoopElement): voi
         }
         // Guard all resolved variables
         const allParams = [elem.param, ...ev.nestedLoops.map(n => n.param)]
+        if (elem.mapPreamble) ls.push(`      ${elem.mapPreamble}`)
         ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
       }
     })
@@ -856,6 +859,7 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: LoopElement): voi
       ls.push(`      if (li && li.parentElement) {`)
       ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
       ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
+      if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
       ls.push(`        if (${elem.param}) ${handlerCall}`)
       ls.push(`      }`)
     })
@@ -879,6 +883,7 @@ function emitBranchLoopEventDelegation(lines: string[], loop: ConditionalBranchL
         ls.push(`      if (li) {`)
         ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
         ls.push(`        const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === key)`)
+        if (loop.mapPreamble) ls.push(`        ${loop.mapPreamble}`)
         ls.push(`        if (${loop.param}) ${handlerCall}`)
         ls.push(`      }`)
       } else {
@@ -897,6 +902,7 @@ function emitBranchLoopEventDelegation(lines: string[], loop: ConditionalBranchL
           ls.push(`      const ${nested.param} = ${loop.param} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
         }
         const allParams = [loop.param, ...ev.nestedLoops.map(n => n.param)]
+        if (loop.mapPreamble) ls.push(`      ${loop.mapPreamble}`)
         ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
       }
     })
@@ -907,6 +913,7 @@ function emitBranchLoopEventDelegation(lines: string[], loop: ConditionalBranchL
       ls.push(`      if (li && li.parentElement) {`)
       ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
       ls.push(`        const ${loop.param} = ${loop.array}[idx]`)
+      if (loop.mapPreamble) ls.push(`        ${loop.mapPreamble}`)
       ls.push(`        if (${loop.param}) ${handlerCall}`)
       ls.push(`      }`)
     })
@@ -1244,7 +1251,11 @@ type ItemLookupEmitter = (
 ) => void
 
 /** Non-bubbling events that require addEventListener with capture for delegation. */
-const NON_BUBBLING_EVENTS = new Set(['blur', 'focus', 'load', 'unload'])
+const NON_BUBBLING_EVENTS = new Set([
+  'blur', 'focus', 'load', 'unload',
+  'mouseenter', 'mouseleave',
+  'pointerenter', 'pointerleave',
+])
 
 /**
  * Emit event delegation for child events inside a loop (static or dynamic).

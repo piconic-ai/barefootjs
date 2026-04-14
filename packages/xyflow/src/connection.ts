@@ -96,8 +96,10 @@ export function attachConnectionHandler<
 
     const connectionLine = document.createElementNS(SVG_NS, 'path')
     connectionLine.setAttribute('fill', 'none')
-    connectionLine.setAttribute('stroke', 'var(--edge-user, #d29922)')
-    connectionLine.setAttribute('stroke-width', '2')
+    // Apply connectionLineStyle from store if available
+    const lineStyle = store.connectionLineStyle
+    connectionLine.setAttribute('stroke', lineStyle?.stroke ?? '#b1b1b7')
+    connectionLine.setAttribute('stroke-width', lineStyle?.strokeWidth ?? '1')
     lineGroup.appendChild(connectionLine)
 
     // Track the currently highlighted handle for validation/snap feedback
@@ -338,8 +340,9 @@ export function attachReconnectionHandler<
     // Create temporary connection line from anchor to cursor
     const connectionLine = document.createElementNS(SVG_NS, 'path')
     connectionLine.setAttribute('fill', 'none')
-    connectionLine.setAttribute('stroke', 'var(--edge-user, #d29922)')
-    connectionLine.setAttribute('stroke-width', '2')
+    const reconnectLineStyle = store.connectionLineStyle
+    connectionLine.setAttribute('stroke', reconnectLineStyle?.stroke ?? '#b1b1b7')
+    connectionLine.setAttribute('stroke-width', reconnectLineStyle?.strokeWidth ?? '1')
     connectionLine.setAttribute('pointer-events', 'none')
     edgesSvg.appendChild(connectionLine)
 

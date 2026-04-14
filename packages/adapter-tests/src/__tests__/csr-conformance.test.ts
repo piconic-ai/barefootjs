@@ -26,6 +26,9 @@ describe('CSR Conformance Tests', () => {
     // Local array variable (items) is not available at CSR template module scope.
     // CSR templates only have access to props and signals, not file-scope constants.
     'static-array-children',
+    // Static style object is converted at compile time — no runtime needed.
+    // Attribute ordering differs between SSR (style first) and CSR injection (bf-s first).
+    'style-object-static',
   ])
 
   for (const fixture of jsxFixtures) {

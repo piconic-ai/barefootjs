@@ -153,6 +153,17 @@ const createPortal = () => {}
 const applyRestAttrs = () => {}
 const provideContext = () => {}
 const useContext = () => undefined
+function styleToCss(value) {
+  if (value == null) return null
+  if (typeof value !== 'object') return String(value)
+  const parts = []
+  for (const [k, v] of Object.entries(value)) {
+    if (v == null) continue
+    const prop = k.replace(/[A-Z]/g, (m) => \`-\${m.toLowerCase()}\`)
+    parts.push(\`\${prop}:\${v}\`)
+  }
+  return parts.join(';') || null
+}
 
 // --- Execute client JS (registers templates via hydrate()) ---
 ${strippedCode}

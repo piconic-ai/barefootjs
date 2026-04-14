@@ -298,3 +298,77 @@ describe('direct map call as conditional branch (#783)', () => {
     expect(js).toContain('.map(')
   })
 })
+
+describe('mapPreamble in event delegation handlers (#851)', () => {
+  test('keyed loop with block body: preamble appears in event delegation handler', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client-runtime'
+
+      export function List() {
+        const [items, setItems] = createSignal([{ id: '1', name: 'a' }])
+        const handleClick = (label: string) => console.log(label)
+        return (
+          <ul>
+            {items().map(item => {
+              const label = item.name.toUpperCase()
+              return <li key={item.id}><button onClick={() => handleClick(label)}>{label}</button></li>
+            })}
+          </ul>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'List.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const js = clientJs!.content
+
+    // Preamble must appear in event delegation handler (not only in renderItem)
+    expect(js).toContain(".addEventListener('click', (e) => {")
+    const count = js.split('const label = item.name.toUpperCase()').length - 1
+    expect(count).toBeGreaterThanOrEqual(2)
+  })
+
+  test('branch loop with block body: preamble appears in branch event delegation handler (#851)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client-runtime'
+
+      export function List() {
+        const [items, setItems] = createSignal([{ id: '1', name: 'a' }])
+        const [currentId, setCurrentId] = createSignal('')
+        const handleClick = (id: string) => console.log('click', id)
+        const handleClose = () => console.log('close')
+        return (
+          <ul>
+            {items().length > 0 && (
+              <div>
+                {items().map(item => {
+                  const isCurrent = item.id === currentId()
+                  return (
+                    <li key={item.id} onClick={() => (isCurrent ? handleClose() : handleClick(item.id))}>
+                      {item.name}
+                    </li>
+                  )
+                })}
+              </div>
+            )}
+          </ul>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'List.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const js = clientJs!.content
+
+    // Preamble must appear inside the delegation handler
+    expect(js).toContain(".addEventListener('click', (e) => {")
+    const count = js.split('const isCurrent = item.id === currentId()').length - 1
+    expect(count).toBeGreaterThanOrEqual(2)
+  })
+})

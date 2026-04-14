@@ -29,6 +29,8 @@ import { fixture as voidElements } from './void-elements'
 import { fixture as dynamicAttributes } from './dynamic-attributes'
 import { fixture as classVsClassname } from './class-vs-classname'
 import { fixture as styleAttribute } from './style-attribute'
+import { fixture as styleObjectStatic } from './style-object-static'
+import { fixture as styleObjectDynamic } from './style-object-dynamic'
 // Priority 6: Advanced patterns
 import { fixture as fragment } from './fragment'
 import { fixture as fragmentConditional } from './fragment-conditional'
@@ -79,6 +81,8 @@ export const jsxFixtures: JSXFixture[] = [
   dynamicAttributes,
   classVsClassname,
   styleAttribute,
+  styleObjectStatic,
+  styleObjectDynamic,
   // Priority 6: Advanced patterns
   fragment,
   fragmentConditional,

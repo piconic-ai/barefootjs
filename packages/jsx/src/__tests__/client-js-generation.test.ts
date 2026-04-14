@@ -1802,6 +1802,39 @@ describe('Client JS generation', () => {
       expect(loop.children[0].type).toBe('element')
     })
 
+    test('block body map with onClick: preamble available in event delegation handler (#851)', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client-runtime'
+
+        export function List() {
+          const [items, setItems] = createSignal([{ name: 'a' }])
+          const handleClick = (label: string) => console.log(label)
+          return (
+            <ul>
+              {items().map(item => {
+                const label = item.name.toUpperCase()
+                return <li><button onClick={() => handleClick(label)}>{label}</button></li>
+              })}
+            </ul>
+          )
+        }
+      `
+
+      const result = compileJSXSync(source, 'List.tsx', { adapter })
+
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const js = clientJs!.content
+
+      // Preamble must appear in event delegation handler as well as renderItem
+      expect(js).toContain(".addEventListener('click', (e) => {")
+      const count = js.split('const label = item.name.toUpperCase()').length - 1
+      expect(count).toBeGreaterThanOrEqual(2)
+    })
+
     test('Hono adapter generates block body SSR output', () => {
       const honoAdapter = new HonoAdapter()
       const source = `

@@ -39,7 +39,7 @@ export function initBackground(scope: Element, props: Record<string, unknown>): 
   svg.style.width = '100%'
   svg.style.height = '100%'
   svg.style.pointerEvents = 'none'
-  svg.style.zIndex = '-1'
+  svg.style.zIndex = '0'
 
   const patternId = `bf-bg-${Math.random().toString(36).slice(2, 8)}`
 

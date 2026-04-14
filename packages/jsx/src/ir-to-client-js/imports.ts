@@ -11,7 +11,7 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'updateClientMarker',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
-  'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs',
+  'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss',
   'qsa', '__slot',
 ] as const
 

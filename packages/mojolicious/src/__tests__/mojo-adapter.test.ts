@@ -17,8 +17,11 @@ import { compileJSXSync, type ComponentIR } from '@barefootjs/jsx'
 runJSXConformanceTests({
   createAdapter: () => new MojoAdapter(),
   render: renderMojoComponent,
+  // Dynamic style objects (non-static values) require Perl template interpolation
+  // support for JS object literals, which is not yet implemented.
   skip: [
     'static-array-children',
+    'style-object-dynamic',
   ],
   onRenderError: (err, id) => {
     if (err instanceof PerlNotAvailableError) {

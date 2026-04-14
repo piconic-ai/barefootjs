@@ -16,6 +16,11 @@ import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils'
  */
 export function emitAttrUpdate(target: string, attrName: string, expression: string, meta: AttrMeta): string[] {
   const htmlName = toHtmlAttrName(attrName)
+  if (htmlName === 'style') {
+    return [
+      `{ const __v = styleToCss(${expression}); if (__v != null) ${target}.setAttribute('style', __v); else ${target}.removeAttribute('style') }`,
+    ]
+  }
   if (htmlName === 'class') {
     return [
       `{ const __v = ${expression}; if (__v != null) ${target}.setAttribute('class', String(__v)); else ${target}.removeAttribute('class') }`,

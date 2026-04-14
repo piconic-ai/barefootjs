@@ -2,6 +2,22 @@ import { defineConfig, presetWind4 } from 'unocss'
 
 export default defineConfig({
   presets: [presetWind4()],
+  // Custom preflight: re-apply border-color after preset-wind4's reset preflight.
+  // preset-wind4 uses `border: 0 solid` which implicitly sets border-color to
+  // currentColor. This preflight runs after the reset (same @layer base, later
+  // source order) so var(--border) wins.
+  preflights: [{
+    getCSS: () => '*, ::before, ::after { border-color: var(--border); }',
+    layer: 'base',
+  }],
+  // Wrap UnoCSS output in CSS @layer blocks for cascade ordering.
+  // Order: preflights < base < shortcuts < components < default
+  outputToCssLayers: true,
+  layers: {
+    preflights: -2,
+    components: -1,
+    default: 0,
+  },
   safelist: [
     'hidden', 'sm:block', 'sm:hidden', 'lg:block',
     'border-input',
