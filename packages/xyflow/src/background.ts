@@ -1,6 +1,7 @@
-import { createEffect, onCleanup } from '@barefootjs/client-runtime'
+import { createEffect, onCleanup } from '@barefootjs/client'
 import { useFlow } from './hooks'
 import { SVG_NS } from './constants'
+import type { FlowStore } from './types'
 
 export type BackgroundVariant = 'dots' | 'lines' | 'cross'
 
@@ -15,9 +16,13 @@ export type BackgroundProps = {
 /**
  * Init function for Background component.
  * Renders an SVG pattern background that moves with the viewport.
+ *
+ * When called outside the barefootjs render pipeline (e.g., from a plain
+ * script), pass the store explicitly via props._store since useFlow()
+ * context may not be available.
  */
 export function initBackground(scope: Element, props: Record<string, unknown>): void {
-  const store = useFlow()
+  const store = (props._store as FlowStore | undefined) ?? useFlow()
   const el = scope as HTMLElement
 
   const variant = (props.variant as BackgroundVariant) ?? 'dots'

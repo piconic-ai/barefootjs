@@ -161,14 +161,6 @@ export function createNodeWrapper<NodeType extends NodeBase>(
           ),
         )
 
-        // Fire onNodeDragStart callback
-        if (store.onNodeDragStart) {
-          const draggedNode = untrack(store.nodes).find((n) => n.id === internalNode.id)
-          if (draggedNode) {
-            store.onNodeDragStart(e, draggedNode, untrack(store.nodes))
-          }
-        }
-
         // Auto-pan state: pan viewport when dragging near container edges
         let autoPanId = 0
         let lastMouseX = 0
@@ -295,14 +287,6 @@ export function createNodeWrapper<NodeType extends NodeBase>(
             ),
           )
 
-          // Fire onNodeDragStop callback
-          if (store.onNodeDragStop) {
-            const draggedNode = untrack(store.nodes).find((n) => n.id === internalNode.id)
-            if (draggedNode) {
-              store.onNodeDragStop(e, draggedNode, untrack(store.nodes))
-            }
-          }
-
           document.removeEventListener('mousemove', onMouseMove)
           document.removeEventListener('mouseup', onMouseUp)
         }
@@ -402,11 +386,6 @@ function renderNodeContent<NodeType extends NodeBase>(
 
     const isConnectable = node.connectable !== false
 
-    // Add target handle before custom content (only if connectable)
-    if (isConnectable) {
-      createDefaultHandle(el, node.id, 'target', store)
-    }
-
     // Render custom content
     const contentEl = document.createElement('div')
     contentEl.className = 'bf-flow__node-content'
@@ -420,8 +399,12 @@ function renderNodeContent<NodeType extends NodeBase>(
       render(contentEl, customType as ComponentDef, nodeProps as unknown as Record<string, unknown>)
     }
 
-    // Add source handle after custom content (only if connectable)
-    if (isConnectable) {
+    // Only add default handles if the custom component didn't create its own.
+    // Custom nodes that call createHandle() are responsible for their own handles
+    // (same behavior as React Flow custom nodes).
+    const hasCustomHandles = el.querySelector('.bf-flow__handle') !== null
+    if (isConnectable && !hasCustomHandles) {
+      createDefaultHandle(el, node.id, 'target', store)
       createDefaultHandle(el, node.id, 'source', store)
     }
 

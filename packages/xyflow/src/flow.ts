@@ -1,12 +1,14 @@
 import {
   createEffect,
   onCleanup,
-  onMount,
-  provideContext,
   untrack,
-} from '@barefootjs/client-runtime'
-import { XYPanZoom } from '@xyflow/system'
-import type { Viewport } from '@xyflow/system'
+} from '@barefootjs/client'
+import { provideContext } from '@barefootjs/client-runtime'
+import { XYPanZoom, PanOnScrollMode } from '@xyflow/system'
+import type {
+  Viewport,
+  Transform,
+} from '@xyflow/system'
 
 import { createFlowStore } from './store'
 import { FlowContext } from './context'
@@ -26,49 +28,7 @@ export function initFlow(scope: Element, props: Record<string, unknown>): void {
   const el = scope as HTMLElement
   const flowProps = props as unknown as FlowProps
 
-  const store = createFlowStore({
-    nodes: flowProps.nodes,
-    edges: flowProps.edges,
-    defaultViewport: flowProps.defaultViewport,
-    minZoom: flowProps.minZoom,
-    maxZoom: flowProps.maxZoom,
-    nodeOrigin: flowProps.nodeOrigin,
-    nodeExtent: flowProps.nodeExtent,
-    snapToGrid: flowProps.snapToGrid,
-    snapGrid: flowProps.snapGrid,
-    nodeTypes: flowProps.nodeTypes,
-    edgeTypes: flowProps.edgeTypes,
-    onConnect: flowProps.onConnect,
-    onConnectStart: flowProps.onConnectStart,
-    onConnectEnd: flowProps.onConnectEnd,
-    isValidConnection: flowProps.isValidConnection,
-    edgesReconnectable: flowProps.edgesReconnectable,
-    onReconnect: flowProps.onReconnect,
-    // Lifecycle callbacks
-    onInit: flowProps.onInit,
-    onNodeDragStart: flowProps.onNodeDragStart,
-    onNodeDragStop: flowProps.onNodeDragStop,
-    onMoveEnd: flowProps.onMoveEnd,
-    onPaneClick: flowProps.onPaneClick,
-    onPaneMouseMove: flowProps.onPaneMouseMove,
-    onNodesDelete: flowProps.onNodesDelete,
-    onEdgesDelete: flowProps.onEdgesDelete,
-    // Interactivity config
-    panOnDrag: flowProps.panOnDrag,
-    panOnScroll: flowProps.panOnScroll,
-    zoomOnScroll: flowProps.zoomOnScroll,
-    zoomOnDoubleClick: flowProps.zoomOnDoubleClick,
-    zoomActivationKeyCode: flowProps.zoomActivationKeyCode,
-    nodesDraggable: flowProps.nodesDraggable,
-    nodesConnectable: flowProps.nodesConnectable,
-    elementsSelectable: flowProps.elementsSelectable,
-    deleteKeyCode: flowProps.deleteKeyCode,
-    selectionKeyCode: flowProps.selectionKeyCode,
-    connectionLineStyle: flowProps.connectionLineStyle,
-    defaultEdgeOptions: flowProps.defaultEdgeOptions,
-    elevateNodesOnSelect: flowProps.elevateNodesOnSelect,
-    reconnectRadius: flowProps.reconnectRadius,
-  })
+  const store = createFlowStore(flowProps)
 
   provideContext(FlowContext, store)
   injectDefaultStyles()
@@ -144,18 +104,90 @@ export function initFlow(scope: Element, props: Record<string, unknown>): void {
 
   store.setPanZoom(panZoomInstance)
 
-  // Initial pan/zoom config from store
-  store.updatePanZoomConfig()
+  panZoomInstance.update({
+    noWheelClassName: 'nowheel',
+    noPanClassName: 'nopan',
+    preventScrolling: true,
+    panOnScroll: flowProps.panOnScroll ?? false,
+    panOnDrag: flowProps.panOnDrag ?? true,
+    panOnScrollMode: PanOnScrollMode.Free,
+    panOnScrollSpeed: 0.5,
+    userSelectionActive: false,
+    zoomOnPinch: true,
+    zoomOnScroll: flowProps.zoomOnScroll ?? true,
+    zoomOnDoubleClick: flowProps.zoomOnDoubleClick ?? true,
+    zoomActivationKeyPressed: false,
+    lib: 'bf',
+    onTransformChange: (transform: Transform) => {
+      store.setViewport({ x: transform[0], y: transform[1], zoom: transform[2] })
+    },
+    connectionInProgress: false,
+    paneClickDistance: 0,
+  })
 
   onCleanup(() => panZoomInstance.destroy())
 
-  // Re-apply pan/zoom config when reactive settings change
-  createEffect(() => {
-    store.panOnDrag()
-    store.panOnScroll()
-    store.zoomOnScroll()
-    store.updatePanZoomConfig()
-  })
+  // Zoom activation key: when held, scroll zooms instead of panning
+  const zoomKeyCode = flowProps.zoomActivationKeyCode as string | null | undefined
+  if (zoomKeyCode) {
+    let zoomKeyPressed = false
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === zoomKeyCode && !zoomKeyPressed) {
+        zoomKeyPressed = true
+        panZoomInstance.update({
+          noWheelClassName: 'nowheel',
+          noPanClassName: 'nopan',
+          preventScrolling: true,
+          panOnScroll: flowProps.panOnScroll ?? false,
+          panOnDrag: flowProps.panOnDrag ?? true,
+          panOnScrollMode: PanOnScrollMode.Free,
+          panOnScrollSpeed: 0.5,
+          userSelectionActive: false,
+          zoomOnPinch: true,
+          zoomOnScroll: flowProps.zoomOnScroll ?? true,
+          zoomOnDoubleClick: flowProps.zoomOnDoubleClick ?? true,
+          zoomActivationKeyPressed: true,
+          lib: 'bf',
+          onTransformChange: (transform: Transform) => {
+            store.setViewport({ x: transform[0], y: transform[1], zoom: transform[2] })
+          },
+          connectionInProgress: false,
+          paneClickDistance: 0,
+        })
+      }
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === zoomKeyCode && zoomKeyPressed) {
+        zoomKeyPressed = false
+        panZoomInstance.update({
+          noWheelClassName: 'nowheel',
+          noPanClassName: 'nopan',
+          preventScrolling: true,
+          panOnScroll: flowProps.panOnScroll ?? false,
+          panOnDrag: flowProps.panOnDrag ?? true,
+          panOnScrollMode: PanOnScrollMode.Free,
+          panOnScrollSpeed: 0.5,
+          userSelectionActive: false,
+          zoomOnPinch: true,
+          zoomOnScroll: flowProps.zoomOnScroll ?? true,
+          zoomOnDoubleClick: flowProps.zoomOnDoubleClick ?? true,
+          zoomActivationKeyPressed: false,
+          lib: 'bf',
+          onTransformChange: (transform: Transform) => {
+            store.setViewport({ x: transform[0], y: transform[1], zoom: transform[2] })
+          },
+          connectionInProgress: false,
+          paneClickDistance: 0,
+        })
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('keyup', onKeyUp)
+    onCleanup(() => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('keyup', onKeyUp)
+    })
+  }
 
   createEffect(() => {
     const vp = store.viewport()
@@ -171,49 +203,19 @@ export function initFlow(scope: Element, props: Record<string, unknown>): void {
     selectionMode: flowProps.selectionMode,
   })
 
-  // Pane click: deselect all + call onPaneClick callback
   el.addEventListener('click', (event) => {
     if (event.target === el || event.target === viewportEl) {
       store.unselectNodesAndEdges()
-      if (store.onPaneClick) {
-        store.onPaneClick(event)
-      }
     }
   })
 
-  // Pane mouse move callback
-  if (flowProps.onPaneMouseMove) {
-    el.addEventListener('mousemove', (event) => {
-      if (event.target === el || event.target === viewportEl) {
-        store.onPaneMouseMove?.(event)
-      }
-    })
+  // Call onInit callback immediately after flow is set up
+  if (typeof flowProps.onInit === 'function') {
+    flowProps.onInit(store)
   }
 
-  // Call onInit callback after setup
-  if (store.onInit) {
-    store.onInit(store)
-  }
-
-  if (flowProps.fitView) {
-    onMount(() => {
-      // Wait for ResizeObserver to measure all nodes (needs 2+ frames)
-      const tryFitView = (attempts = 0) => {
-        requestAnimationFrame(() => {
-          const lookup = store.nodeLookup()
-          const allMeasured = [...lookup.values()].every(
-            (n) => n.measured.width && n.measured.height,
-          )
-          if (allMeasured || attempts > 10) {
-            store.fitView(flowProps.fitViewOptions)
-          } else {
-            tryFitView(attempts + 1)
-          }
-        })
-      }
-      tryFitView()
-    })
-  }
+  // fitView is handled by the caller (DeskCanvas) after nodes are loaded
+  // via queueMicrotask to avoid effect depth issues
 }
 
 /**
