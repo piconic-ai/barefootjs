@@ -353,8 +353,12 @@ function renderNodeContent<NodeType extends NodeBase>(
       isConnectable: node.connectable !== false,
     }
 
-    // Add target handle before custom content
-    createDefaultHandle(el, node.id, 'target', store)
+    const isConnectable = node.connectable !== false
+
+    // Add target handle before custom content (only if connectable)
+    if (isConnectable) {
+      createDefaultHandle(el, node.id, 'target', store)
+    }
 
     // Render custom content
     const contentEl = document.createElement('div')
@@ -369,8 +373,10 @@ function renderNodeContent<NodeType extends NodeBase>(
       render(contentEl, customType as ComponentDef, nodeProps as unknown as Record<string, unknown>)
     }
 
-    // Add source handle after custom content
-    createDefaultHandle(el, node.id, 'source', store)
+    // Add source handle after custom content (only if connectable)
+    if (isConnectable) {
+      createDefaultHandle(el, node.id, 'source', store)
+    }
 
     el.style.cursor = 'grab'
     el.style.userSelect = 'none'

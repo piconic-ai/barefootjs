@@ -324,8 +324,8 @@ createRoot(() => {
 
   initFlow(document.getElementById('custom-nodes'), {
     nodes: [
-      { id: 'cn1', type: 'custom', position: { x: 50, y: 50 }, data: { title: 'Input Node', description: 'Receives data' } },
-      { id: 'cn2', type: 'custom', position: { x: 300, y: 50 }, data: { title: 'Process Node', description: 'Transforms data' } },
+      { id: 'cn1', type: 'custom', position: { x: 50, y: 50 }, data: { title: 'Input Node', description: 'Receives data' }, connectable: false },
+      { id: 'cn2', type: 'custom', position: { x: 300, y: 50 }, data: { title: 'Process Node', description: 'Transforms data' }, connectable: false },
       { id: 'cn3', position: { x: 175, y: 200 }, data: { label: 'Default Node' } },
     ],
     edges: [],
@@ -453,8 +453,8 @@ createRoot(() => {
 
   initFlow(document.getElementById('node-resize'), {
     nodes: [
-      { id: 'rs1', type: 'resizable', position: { x: 50, y: 50 }, data: { label: 'Resizable A', initialWidth: 180, initialHeight: 100, minWidth: 80, minHeight: 50, maxWidth: 400, maxHeight: 300 } },
-      { id: 'rs2', type: 'resizable', position: { x: 300, y: 50 }, data: { label: 'Resizable B', initialWidth: 180, initialHeight: 100, minWidth: 100, minHeight: 60, maxWidth: 500, maxHeight: 400 } },
+      { id: 'rs1', type: 'resizable', position: { x: 50, y: 50 }, data: { label: 'Resizable A', initialWidth: 180, initialHeight: 100, minWidth: 80, minHeight: 50, maxWidth: 400, maxHeight: 300 }, connectable: false },
+      { id: 'rs2', type: 'resizable', position: { x: 300, y: 50 }, data: { label: 'Resizable B', initialWidth: 180, initialHeight: 100, minWidth: 100, minHeight: 60, maxWidth: 500, maxHeight: 400 }, connectable: false },
     ],
     edges: [],
     nodeTypes: {
