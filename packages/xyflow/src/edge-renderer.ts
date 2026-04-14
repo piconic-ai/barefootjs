@@ -213,8 +213,7 @@ export function createEdgeRenderer<
         if (!srcHandle) {
           srcHandle = document.createElementNS(SVG_NS, 'circle') as SVGCircleElement
           srcHandle.setAttribute('class', 'bf-flow__edge-reconnect bf-flow__edge-reconnect--source')
-          srcHandle.setAttribute('r', '5')
-          srcHandle.style.cursor = 'crosshair'
+          srcHandle.setAttribute('r', '10')
           srcHandle.style.pointerEvents = 'all'
           edgeGroup.appendChild(srcHandle)
           reconnectSourceHandles.set(edge.id, srcHandle)
@@ -232,8 +231,7 @@ export function createEdgeRenderer<
         if (!tgtHandle) {
           tgtHandle = document.createElementNS(SVG_NS, 'circle') as SVGCircleElement
           tgtHandle.setAttribute('class', 'bf-flow__edge-reconnect bf-flow__edge-reconnect--target')
-          tgtHandle.setAttribute('r', '5')
-          tgtHandle.style.cursor = 'crosshair'
+          tgtHandle.setAttribute('r', '10')
           tgtHandle.style.pointerEvents = 'all'
           edgeGroup.appendChild(tgtHandle)
           reconnectTargetHandles.set(edge.id, tgtHandle)
