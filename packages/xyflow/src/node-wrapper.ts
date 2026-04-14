@@ -120,11 +120,13 @@ export function createNodeWrapper<NodeType extends NodeBase>(
       // integrate well with our DOM structure (XYDrag's d3Selection.call
       // doesn't fire handlers reliably outside React's synthetic events).
       let dragging = false
-      let startMouseX = 0
-      let startMouseY = 0
       let startNodeX = 0
       let startNodeY = 0
       let rafId = 0
+      let currentAbsX = 0
+      let currentAbsY = 0
+      let prevMouseX = 0
+      let prevMouseY = 0
 
       const onMouseDown = (e: MouseEvent) => {
         if (e.button !== 0) return // left button only
@@ -132,14 +134,16 @@ export function createNodeWrapper<NodeType extends NodeBase>(
         if (!draggable) return // locked — let event bubble to D3 zoom for pan
         e.stopPropagation() // prevent D3 zoom pan (only when dragging nodes)
 
-        startMouseX = e.clientX
-        startMouseY = e.clientY
+        prevMouseX = e.clientX
+        prevMouseY = e.clientY
 
         const lookup = untrack(store.nodeLookup)
         const node = lookup.get(internalNode.id)
         if (node) {
           startNodeX = node.internals.positionAbsolute.x
           startNodeY = node.internals.positionAbsolute.y
+          currentAbsX = startNodeX
+          currentAbsY = startNodeY
         }
 
         dragging = true
@@ -161,8 +165,6 @@ export function createNodeWrapper<NodeType extends NodeBase>(
         let autoPanId = 0
         let lastMouseX = 0
         let lastMouseY = 0
-        let autoPanDx = 0
-        let autoPanDy = 0
 
         function updateNodePosition(newX: number, newY: number) {
           const lookup = untrack(store.nodeLookup)
@@ -189,6 +191,8 @@ export function createNodeWrapper<NodeType extends NodeBase>(
 
           element.style.transform = `translate(${absX}px, ${absY}px)`
           node.internals.positionAbsolute = { x: absX, y: absY }
+          currentAbsX = absX
+          currentAbsY = absY
 
           // Update relative position for child nodes
           if (userNode.parentId) {
@@ -232,16 +236,11 @@ export function createNodeWrapper<NodeType extends NodeBase>(
 
           if (xMovement !== 0 || yMovement !== 0) {
             const [, , scale] = store.getTransform()
-            // Track auto-pan offset in flow space
-            autoPanDx -= xMovement / scale
-            autoPanDy -= yMovement / scale
 
             store.panByDelta({ x: xMovement, y: yMovement })
 
-            // Recompute node position including auto-pan offset
-            const dx = (lastMouseX - startMouseX) / scale
-            const dy = (lastMouseY - startMouseY) / scale
-            updateNodePosition(startNodeX + dx + autoPanDx, startNodeY + dy + autoPanDy)
+            // Move node by the auto-pan delta (in flow space)
+            updateNodePosition(currentAbsX - xMovement / scale, currentAbsY - yMovement / scale)
           }
 
           autoPanId = requestAnimationFrame(autoPanTick)
@@ -253,11 +252,14 @@ export function createNodeWrapper<NodeType extends NodeBase>(
           lastMouseX = e.clientX
           lastMouseY = e.clientY
 
+          // Incremental delta from previous mouse position
           const [, , scale] = store.getTransform()
-          const dx = (e.clientX - startMouseX) / scale
-          const dy = (e.clientY - startMouseY) / scale
+          const dx = (e.clientX - prevMouseX) / scale
+          const dy = (e.clientY - prevMouseY) / scale
+          prevMouseX = e.clientX
+          prevMouseY = e.clientY
 
-          updateNodePosition(startNodeX + dx + autoPanDx, startNodeY + dy + autoPanDy)
+          updateNodePosition(currentAbsX + dx, currentAbsY + dy)
 
           // Start auto-pan loop if not already running
           if (!autoPanId) {
@@ -271,17 +273,11 @@ export function createNodeWrapper<NodeType extends NodeBase>(
           if (rafId) { cancelAnimationFrame(rafId); rafId = 0 }
           if (autoPanId) { cancelAnimationFrame(autoPanId); autoPanId = 0 }
 
-          const [, , scale] = store.getTransform()
-          const dx = (e.clientX - startMouseX) / scale
-          const dy = (e.clientY - startMouseY) / scale
-          const finalX = startNodeX + dx + autoPanDx
-          const finalY = startNodeY + dy + autoPanDy
-
           // Commit final position: use the clamped position from the last
           // updateNodePosition call (stored in internals.userNode.position).
           const lookup = untrack(store.nodeLookup)
           const finalNode = lookup.get(internalNode.id)
-          const committedPos = finalNode?.internals.userNode.position ?? { x: finalX, y: finalY }
+          const committedPos = finalNode?.internals.userNode.position ?? { x: currentAbsX, y: currentAbsY }
 
           store.setNodes((prev) =>
             prev.map((n) =>
