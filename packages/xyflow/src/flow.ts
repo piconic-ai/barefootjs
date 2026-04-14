@@ -300,9 +300,9 @@ function injectDefaultStyles() {
     .bf-flow__resize-handle--corner {
       width: 8px;
       height: 8px;
-      background: #fff;
-      border: 1px solid #1a192b;
-      border-radius: 1px;
+      background: var(--bf-resize-color, #4a90d9);
+      border: none;
+      border-radius: 0;
     }
     .bf-flow__resize-handle--top-left {
       top: -4px;
@@ -359,8 +359,7 @@ function injectDefaultStyles() {
       background: rgba(26, 25, 43, 0.1);
     }
     .bf-flow__resize-handle--corner:hover {
-      background: #1a192b;
-      border-color: #1a192b;
+      background: var(--bf-resize-color, #3a7bd5);
     }
     .bf-flow__node--group {
       background-color: rgba(240, 240, 240, 0.7);

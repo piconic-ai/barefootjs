@@ -328,11 +328,7 @@ createRoot(() => {
       { id: 'cn2', type: 'custom', position: { x: 300, y: 50 }, data: { title: 'Process Node', description: 'Transforms data' } },
       { id: 'cn3', position: { x: 175, y: 200 }, data: { label: 'Default Node' } },
     ],
-    edges: [
-      { id: 'ecn1-2', source: 'cn1', target: 'cn2' },
-      { id: 'ecn1-3', source: 'cn1', target: 'cn3' },
-      { id: 'ecn2-3', source: 'cn2', target: 'cn3' },
-    ],
+    edges: [],
     nodeTypes: {
       custom: customNodeRenderer,
     },
@@ -417,40 +413,24 @@ createRoot(() => {
 
   function resizableNodeRenderer(props) {
     const el = this
-    const wrapper = document.createElement('div')
-    wrapper.className = 'resizable-node-content'
-    wrapper.style.padding = '12px 16px'
-    wrapper.style.minWidth = '100%'
-    wrapper.style.minHeight = '100%'
-    wrapper.style.boxSizing = 'border-box'
+    // Simple label only — no dims display
+    const label = document.createElement('div')
+    label.textContent = props.data?.label ?? 'Resizable'
+    label.style.fontWeight = 'bold'
+    label.style.fontSize = '13px'
+    label.style.padding = '10px 16px'
+    el.appendChild(label)
 
-    const title = document.createElement('div')
-    title.className = 'resizable-node-title'
-    title.textContent = props.data?.label ?? 'Resizable'
-    title.style.fontWeight = 'bold'
-    title.style.fontSize = '13px'
-    wrapper.appendChild(title)
-
-    const dims = document.createElement('div')
-    dims.className = 'resizable-node-dims'
-    dims.style.fontSize = '11px'
-    dims.style.opacity = '0.7'
-    dims.style.marginTop = '4px'
-    dims.textContent = `${props.width ?? '?'} x ${props.height ?? '?'}`
-    wrapper.appendChild(dims)
-
-    el.appendChild(wrapper)
-
-    // Get the node element (.bf-flow__node) from the content container
     const nodeEl = el.closest('.bf-flow__node')
-
-    // Set initial dimensions on the node element
     if (nodeEl) {
       nodeEl.style.width = `${props.data?.initialWidth ?? 150}px`
-      nodeEl.style.height = `${props.data?.initialHeight ?? 80}px`
+      nodeEl.style.height = `${props.data?.initialHeight ?? 100}px`
+      // Blue outline matching React Flow's NodeResizer style
+      nodeEl.style.border = '1px solid #4a90d9'
+      nodeEl.style.borderRadius = '0'
+      nodeEl.style.background = '#fff'
     }
 
-    // Use useFlow() to access the store from context (provided by initFlow)
     const { useFlow } = window.__xyflowModule
     const store = useFlow()
     if (nodeEl && store) {
@@ -459,13 +439,13 @@ createRoot(() => {
         minHeight: props.data?.minHeight ?? 50,
         maxWidth: props.data?.maxWidth ?? 400,
         maxHeight: props.data?.maxHeight ?? 300,
+        color: '#4a90d9',
         onResize: (event, params) => {
           window.__resizeLog.push({
             nodeId: props.id,
             width: params.width,
             height: params.height,
           })
-          dims.textContent = `${Math.round(params.width)} x ${Math.round(params.height)}`
         },
       })
     }
@@ -473,14 +453,10 @@ createRoot(() => {
 
   initFlow(document.getElementById('node-resize'), {
     nodes: [
-      { id: 'rs1', type: 'resizable', position: { x: 50, y: 50 }, data: { label: 'Resizable A', initialWidth: 150, initialHeight: 80, minWidth: 80, minHeight: 50, maxWidth: 400, maxHeight: 300 } },
+      { id: 'rs1', type: 'resizable', position: { x: 50, y: 50 }, data: { label: 'Resizable A', initialWidth: 180, initialHeight: 100, minWidth: 80, minHeight: 50, maxWidth: 400, maxHeight: 300 } },
       { id: 'rs2', type: 'resizable', position: { x: 300, y: 50 }, data: { label: 'Resizable B', initialWidth: 180, initialHeight: 100, minWidth: 100, minHeight: 60, maxWidth: 500, maxHeight: 400 } },
-      { id: 'rs3', position: { x: 150, y: 220 }, data: { label: 'Not Resizable' } },
     ],
-    edges: [
-      { id: 'ers1-2', source: 'rs1', target: 'rs2' },
-      { id: 'ers1-3', source: 'rs1', target: 'rs3' },
-    ],
+    edges: [],
     nodeTypes: {
       resizable: resizableNodeRenderer,
     },

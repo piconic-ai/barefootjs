@@ -125,8 +125,7 @@ export function initNodeResizer<NodeType extends NodeBase>(
     handleEl.dataset.position = position
 
     if (color) {
-      handleEl.style.borderColor = color
-      handleEl.style.backgroundColor = color
+      handleEl.style.setProperty('--bf-resize-color', color)
     }
 
     container.appendChild(handleEl)
