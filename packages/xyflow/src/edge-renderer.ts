@@ -246,8 +246,10 @@ export function createEdgeRenderer<
             attachReconnectionHandler(srcHandle, edge, 'source', container, svgContainer, store)
           }
         }
+        // Shift outward from node by radius (matching React Flow's shiftX/shiftY)
+        const srcR = 10
         srcHandle.setAttribute('cx', String(edgePos.sourceX))
-        srcHandle.setAttribute('cy', String(edgePos.sourceY))
+        srcHandle.setAttribute('cy', String(edgePos.sourceY + srcR))
 
         // Target reconnection handle
         let tgtHandle = reconnectTargetHandles.get(edge.id)
@@ -263,8 +265,10 @@ export function createEdgeRenderer<
             attachReconnectionHandler(tgtHandle, edge, 'target', container, svgContainer, store)
           }
         }
+        // Shift outward from node by radius (matching React Flow's shiftX/shiftY)
+        const tgtR = 10
         tgtHandle.setAttribute('cx', String(edgePos.targetX))
-        tgtHandle.setAttribute('cy', String(edgePos.targetY))
+        tgtHandle.setAttribute('cy', String(edgePos.targetY - tgtR))
       }
     }
 
