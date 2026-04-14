@@ -292,4 +292,37 @@ test.describe('Form Builder Block', () => {
       await expect(page.locator('.toast-message').first()).toContainText('Field removed')
     })
   })
+
+  // --- Bug Regression ---
+
+  test.describe('Bug Regression', () => {
+    test('required asterisk shows and hides in preview when toggled', async ({ page }) => {
+      const s = section(page)
+      // Full Name is text type and required → asterisk visible
+      const previewTextField = s.locator('.preview-field-text').first()
+      await expect(previewTextField.locator('.text-destructive')).toBeVisible()
+      // Uncheck required on Full Name
+      await s.locator('.field-editor').first().locator('.required-checkbox').click()
+      // Asterisk should disappear
+      await expect(previewTextField.locator('.text-destructive')).not.toBeVisible()
+    })
+
+    test('select field preview shows option list', async ({ page }) => {
+      const s = section(page)
+      // Country is a select field → preview should have options
+      const previewSelect = s.locator('.preview-field-select select, .preview-field-select .preview-select select').first()
+      const optionCount = await previewSelect.locator('option').count()
+      // 'Select…' placeholder + 4 country options
+      expect(optionCount).toBeGreaterThanOrEqual(2)
+    })
+
+    test('add child button shows no undefined text', async ({ page }) => {
+      const s = section(page)
+      const groupField = s.locator('.field-editor').nth(3)
+      await groupField.locator('.add-child-btn').click()
+      // New child row should not contain literal "undefined" text
+      const newChild = groupField.locator('.child-field').last()
+      await expect(newChild).not.toContainText('undefined')
+    })
+  })
 })

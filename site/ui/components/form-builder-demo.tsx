@@ -20,7 +20,6 @@ import { Button } from '@ui/components/ui/button'
 import { Checkbox } from '@ui/components/ui/checkbox'
 import { Input } from '@ui/components/ui/input'
 import { Label } from '@ui/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '@ui/components/ui/native-select'
 import { Textarea } from '@ui/components/ui/textarea'
 import {
   ToastProvider,
@@ -331,14 +330,11 @@ export function FormBuilderDemo() {
                           className="flex-1 h-8 text-sm child-label-input"
                           placeholder="Child label"
                         />
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="remove-child shrink-0 text-muted-foreground hover:text-destructive"
+                        <button
+                          type="button"
+                          className="remove-child shrink-0 text-muted-foreground hover:text-destructive h-7 w-7 rounded-md inline-flex items-center justify-center text-base hover:bg-accent"
                           onClick={() => removeChildField(field.id, child.id)}
-                        >
-                          ×
-                        </Button>
+                        >×</button>
                       </div>
                     ))}
                     <Button variant="outline" size="sm" className="add-child-btn" onClick={() => addChildField(field.id)}>
@@ -427,16 +423,16 @@ export function FormBuilderDemo() {
                       {field.label}
                       {field.required ? <span className="text-destructive ml-1">*</span> : null}
                     </Label>
-                    <NativeSelect
+                    <select
                       value={previewValues()[field.label] || ''}
                       onChange={(e) => updatePreviewValue(field.label, e.target.value)}
-                      className="preview-select"
+                      className="preview-select w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm appearance-none cursor-pointer"
                     >
-                      <NativeSelectOption value="">Select…</NativeSelectOption>
+                      <option value="">Select…</option>
                       {field.options.split(',').map(opt => (
-                        <NativeSelectOption key={opt.trim()} value={opt.trim()}>{opt.trim()}</NativeSelectOption>
+                        <option key={opt.trim()} value={opt.trim()}>{opt.trim()}</option>
                       ))}
-                    </NativeSelect>
+                    </select>
                   </div>
                 ) : null}
 
@@ -475,12 +471,12 @@ export function FormBuilderDemo() {
                           {child.type === 'select' ? (
                             <div className="space-y-1">
                               <Label className="text-xs">{child.label}</Label>
-                              <NativeSelect className="preview-child-select">
-                                <NativeSelectOption value="">Select…</NativeSelectOption>
+                              <select className="preview-child-select w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm appearance-none cursor-pointer">
+                                <option value="">Select…</option>
                                 {child.options.split(',').map(opt => (
-                                  <NativeSelectOption key={opt.trim()} value={opt.trim()}>{opt.trim()}</NativeSelectOption>
+                                  <option key={opt.trim()} value={opt.trim()}>{opt.trim()}</option>
                                 ))}
-                              </NativeSelect>
+                              </select>
                             </div>
                           ) : null}
                         </div>
