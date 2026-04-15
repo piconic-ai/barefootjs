@@ -37,14 +37,16 @@ The compiler skips template generation for the expression. The server outputs a 
 **Server output:**
 
 ```html
-<!--bf-client:slot_5-->
+<!--bf-client:s2--><!--/-->
 ```
 
 **Client JS:**
 
 ```js
-// The expression is evaluated on the client and inserted into the DOM
-insert(scope, 'slot_5', () => todos().filter(t => !t.done).length)
+// @client: s2
+createEffect(() => {
+  updateClientMarker(__scope, 's2', todos().filter(t => !t.done).length)
+})
 ```
 
 

@@ -8,7 +8,7 @@ description: Share state with deeply nested children without prop drilling using
 Context shares state with deeply nested children without prop drilling. It is the foundation of compound components (Dialog, Accordion, Tabs).
 
 ```tsx
-import { createContext, useContext } from '@barefootjs/client'
+import { createContext, useContext } from '@barefootjs/client-runtime'
 ```
 
 
@@ -63,7 +63,7 @@ const value = useContext(MyContext)
 
 ```tsx
 "use client"
-import { createContext, useContext } from '@barefootjs/client'
+import { createContext, useContext } from '@barefootjs/client-runtime'
 
 // 1. Create the context
 const ThemeContext = createContext<'light' | 'dark'>('light')
@@ -104,7 +104,7 @@ A group of related components sharing internal state. The root provides state; s
 
 ```tsx
 "use client"
-import { createSignal, createContext, useContext, createEffect } from '@barefootjs/client'
+import { createSignal, createContext, useContext, createEffect } from '@barefootjs/client-runtime'
 
 // Context type
 interface AccordionContextValue {

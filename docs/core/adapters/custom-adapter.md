@@ -314,15 +314,14 @@ const adapter = new TestAdapter()
 const output = adapter.generate(ir)
 
 console.log(output.template)
-// export function Counter({ initial = 0, __instanceId, __bfScope }: CounterPropsWithHydration) {
+// export function Counter({ __instanceId, ... }) {
 //   const __scopeId = ...
-//   const count = () => initial
-//   const setCount = () => {}
+//   const count = () => 0
 //
 //   return (
 //     <div bf-s={__scopeId}>
-//       <span bf="slot_0">{count()}</span>
-//       <button bf="slot_1" onClick={() => {}}>+1</button>
+//       <span bf="s1">Count: {bfText("s0")}{count()}{bfTextEnd()}</span>
+//       <button bf="s2" onClick={() => {}}>+1</button>
 //     </div>
 //   )
 // }

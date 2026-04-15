@@ -29,14 +29,13 @@ Client components use reactive primitives and ship JavaScript to the browser. Th
 "use client"
 import { createSignal } from '@barefootjs/client'
 
-export function Counter({ initial = 0 }) {
-  const [count, setCount] = createSignal(initial)
+export function Counter() {
+  const [count, setCount] = createSignal(0)
 
   return (
-    <div>
-      <p>{count()}</p>
-      <button onClick={() => setCount(n => n + 1)}>+1</button>
-    </div>
+    <button onClick={() => setCount(n => n + 1)}>
+      Count: {count()}
+    </button>
   )
 }
 ```
@@ -84,22 +83,26 @@ export function Toggle() {
   const [on, setOn] = createSignal(false)
 
   return (
-    <button onClick={() => setOn(v => !v)}>
+    <button onClick={() => setOn(prev => !prev)}>
       {on() ? 'ON' : 'OFF'}
     </button>
   )
 }
 ```
 
-**Marked template (Hono):**
+**Marked template:**
 
 <!-- tabs:adapter -->
 <!-- tab:Hono -->
 ```tsx
-export function Toggle() {
+export function Toggle({ __instanceId, ... }) {
+  const __scopeId = __instanceId || `Toggle_${...}`
+  const on = () => false
+
   return (
-    <button bf-s="Toggle" bf="slot_0">
-      OFF
+    <button bf-s={__scopeId} bf="s1">
+      {on() ? <>{bfComment("cond-start:s0")}{'ON'}{bfComment("cond-end:s0")}</>
+            : <>{bfComment("cond-start:s0")}{'OFF'}{bfComment("cond-end:s0")}</>}
     </button>
   )
 }
@@ -107,8 +110,9 @@ export function Toggle() {
 <!-- tab:Go Template -->
 ```go-template
 {{define "Toggle"}}
-<button bf-s="{{.ScopeID}}" bf="slot_0">
-  OFF
+<button bf-s="{{bfScopeAttr .}}" bf="s1">
+  {{if .On}}{{bfComment "cond-start:s0"}}{{"ON"}}{{bfComment "cond-end:s0"}}
+  {{else}}{{bfComment "cond-start:s0"}}{{"OFF"}}{{bfComment "cond-end:s0"}}{{end}}
 </button>
 {{end}}
 ```
@@ -117,24 +121,30 @@ export function Toggle() {
 **Client JS:**
 
 ```js
-import { createSignal, createEffect, $, hydrate } from '@barefootjs/client'
+import { $, createSignal, hydrate, insert } from '@barefootjs/client-runtime'
 
-export function initToggle(__scope, props = {}) {
+export function initToggle(__scope, _p = {}) {
+  if (!__scope) return
+
   const [on, setOn] = createSignal(false)
 
-  const _s0 = $(__scope, 's0')
+  const [_s1, _s0] = $(__scope, 's1', 's0')
 
-  createEffect(() => {
-    if (_s0) _s0.textContent = on() ? 'ON' : 'OFF'
+  insert(__scope, 's0', () => on(), {
+    template: () => `<!--bf-cond-start:s0-->ON<!--bf-cond-end:s0-->`,
+    bindEvents: (__branchScope) => {}
+  }, {
+    template: () => `<!--bf-cond-start:s0-->OFF<!--bf-cond-end:s0-->`,
+    bindEvents: (__branchScope) => {}
   })
 
-  if (_s0) _s0.onclick = () => setOn(v => !v)
+  if (_s1) _s1.addEventListener('click', () => { setOn(prev => !prev) })
 }
 
-hydrate('Toggle', { init: initToggle })
+hydrate('Toggle', { init: initToggle, template: ... })
 ```
 
-Only the text node bound to `on()` updates when the signal changes.
+Only the conditional branch bound to `on()` updates when the signal changes. The `insert()` function handles DOM swapping using comment markers as boundaries.
 
 
 ## Composition Rules

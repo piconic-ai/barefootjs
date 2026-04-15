@@ -8,7 +8,7 @@ description: Render elements outside their parent DOM hierarchy for overlays, mo
 Portals render elements outside their parent DOM hierarchy — useful for overlays, modals, and tooltips that need to escape `overflow: hidden` or `z-index` stacking contexts.
 
 ```tsx
-import { createPortal } from '@barefootjs/client'
+import { createPortal } from '@barefootjs/client-runtime'
 ```
 
 
@@ -50,7 +50,7 @@ Create portals inside `ref` callbacks:
 
 ```tsx
 "use client"
-import { createSignal, createEffect, createPortal, isSSRPortal } from '@barefootjs/client'
+import { createSignal, createEffect, createPortal, isSSRPortal } from '@barefootjs/client-runtime'
 
 export function Tooltip(props: { text: string; children?: Child }) {
   const [visible, setVisible] = createSignal(false)
@@ -89,7 +89,7 @@ export function Tooltip(props: { text: string; children?: Child }) {
 `isSSRPortal` checks whether an element was already portaled during SSR to prevent double-portaling:
 
 ```tsx
-import { isSSRPortal } from '@barefootjs/client'
+import { isSSRPortal } from '@barefootjs/client-runtime'
 
 const handleMount = (el: HTMLElement) => {
   // Skip if already portaled during SSR
@@ -102,7 +102,7 @@ const handleMount = (el: HTMLElement) => {
 After hydration, remove SSR placeholders:
 
 ```tsx
-import { cleanupPortalPlaceholder } from '@barefootjs/client'
+import { cleanupPortalPlaceholder } from '@barefootjs/client-runtime'
 
 cleanupPortalPlaceholder(portalId)
 ```
@@ -128,7 +128,7 @@ Dialog overlays are a common portal use case:
 
 ```tsx
 "use client"
-import { createPortal, isSSRPortal, useContext, createEffect } from '@barefootjs/client'
+import { createPortal, isSSRPortal, useContext, createEffect } from '@barefootjs/client-runtime'
 
 function DialogOverlay() {
   const handleMount = (el: HTMLElement) => {
@@ -165,7 +165,7 @@ The overlay accesses `DialogContext` from the component tree but is moved to `do
 Combine `portal.unmount()` with `onCleanup`:
 
 ```tsx
-import { createPortal, onCleanup } from '@barefootjs/client'
+import { createPortal, onCleanup } from '@barefootjs/client-runtime'
 
 const handleMount = (el: HTMLElement) => {
   const portal = createPortal(el, document.body)

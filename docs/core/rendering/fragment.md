@@ -32,10 +32,10 @@ No extra hydration markers are generated for transparent fragments.
 Fragments don't produce a DOM node. For conditional fragments, the compiler uses HTML comment markers as boundaries:
 
 ```html
-<!--bf-cond-start:slot_0-->
+<!--bf-cond-start:s0-->
 <h1>Title</h1>
 <p>Description</p>
-<!--bf-cond-end:slot_0-->
+<!--bf-cond-end:s0-->
 ```
 
 The client runtime uses these comment markers to locate and swap the fragment content when the condition changes.

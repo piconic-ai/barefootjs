@@ -15,14 +15,13 @@ Write familiar JSX with fine-grained reactivity — the compiler splits it into 
 "use client"
 import { createSignal } from '@barefootjs/client'
 
-export function Counter({ initial = 0 }) {
-  const [count, setCount] = createSignal(initial)
+export function Counter() {
+  const [count, setCount] = createSignal(0)
 
   return (
-    <div>
-      <p>{count()}</p>
-      <button onClick={() => setCount(n => n + 1)}>+1</button>
-    </div>
+    <button onClick={() => setCount(n => n + 1)}>
+      Count: {count()}
+    </button>
   )
 }
 ```
@@ -34,12 +33,14 @@ This single file compiles into two outputs:
 **Marked template** — Renders static HTML with hydration markers:
 
 ```tsx
-export function Counter(props) {
+export function Counter({ __instanceId, ... }) {
+  const __scopeId = __instanceId || `Counter_${Math.random().toString(36).slice(2, 8)}`
+  const count = () => 0
+
   return (
-    <div bf-s="Counter">
-      <p bf="slot_0">{props.initial ?? 0}</p>
-      <button bf="slot_1">+1</button>
-    </div>
+    <button bf-s={__scopeId} bf="s1">
+      Count: {bfText("s0")}{count()}{bfTextEnd()}
+    </button>
   )
 }
 ```
@@ -49,10 +50,9 @@ export function Counter(props) {
 
 ```go-template
 {{define "Counter"}}
-<div bf-s="{{.ScopeID}}">
-  <p bf="slot_0">{{.Initial}}</p>
-  <button bf="slot_1">+1</button>
-</div>
+<button bf-s="{{bfScopeAttr .}}" bf="s1">
+  Count: {{bfTextStart "s0"}}{{.Count}}{{bfTextEnd}}
+</button>
 {{end}}
 ```
 
@@ -61,22 +61,28 @@ export function Counter(props) {
 **Client script** — Wires up only the interactive parts:
 
 ```js
-import { createSignal, createEffect, find, hydrate } from '@barefootjs/client'
+import { $, $t, createEffect, createSignal, hydrate } from '@barefootjs/client-runtime'
 
-export function initCounter(__scope, props = {}) {
-  const [count, setCount] = createSignal(props.initial ?? 0)
+export function initCounter(__scope, _p = {}) {
+  if (!__scope) return
 
-  const _slot_0 = find(__scope, '[bf="slot_0"]')
-  const _slot_1 = find(__scope, '[bf="slot_1"]')
+  const [count, setCount] = createSignal(0)
+
+  const [_s1] = $(__scope, 's1')       // find element with bf="s1"
+  const [_s0] = $t(__scope, 's0')      // find text node at <!--bf:s0-->
 
   createEffect(() => {
-    if (_slot_0) _slot_0.textContent = String(count())
+    const __val = count()
+    if (_s0) _s0.nodeValue = String(__val ?? '')
   })
 
-  if (_slot_1) _slot_1.onclick = () => setCount(n => n + 1)
+  if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
 }
 
-hydrate('Counter', { init: initCounter })
+hydrate('Counter', {
+  init: initCounter,
+  template: (_p) => `<button bf="s1"> Count: <!--bf:s0-->${(0)}<!--/--></button>`
+})
 ```
 
 No framework runtime. No virtual DOM. Just the minimum JavaScript needed for interactivity.

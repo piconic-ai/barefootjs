@@ -136,7 +136,7 @@ An HTML element with attributes, events, and children.
   attrs: IRAttribute[]     // Static and dynamic attributes
   events: IREvent[]        // Event handlers (onClick, onChange, etc.)
   children: IRNode[]       // Child nodes
-  slotId: string | null    // Hydration slot ID (e.g., 'slot_0')
+  slotId: string | null    // Hydration slot ID (e.g., 's0')
   needsScope: boolean      // True if this is the component root
 }
 ```
@@ -220,8 +220,8 @@ A nested component invocation.
 | Marker | Example | Purpose |
 |--------|---------|---------|
 | `bf-s` | `<div bf-s="Counter_a1b2">` | Component boundary — scopes all queries inside |
-| `bf` | `<p bf="slot_0">` | Interactive element — target for effects and event handlers |
-| `bf-c` | `<div bf-c="slot_2">` | Conditional block — target for DOM switching |
+| `bf` | `<p bf="s0">` | Interactive element — target for effects and event handlers |
+| `bf-c` | `<div bf-c="s2">` | Conditional block — target for DOM switching |
 
 
 

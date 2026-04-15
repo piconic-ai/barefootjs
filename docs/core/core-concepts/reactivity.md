@@ -56,7 +56,7 @@ setCount(1)
     ↓
 Signal notifies subscribers
     ↓
-Effect re-runs: _slot_0.textContent = String(count())
+Effect re-runs: _s0.nodeValue = String(count())
     ↓
 Only <p> updates. The rest of the DOM is untouched.
 ```

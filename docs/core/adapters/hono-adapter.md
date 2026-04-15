@@ -47,21 +47,30 @@ const adapter = new HonoAdapter({
 
 ### Server Component
 
-Without `"use client"`, no hydration markers or client JS:
+Without `"use client"`, the template is generated with props access and hydration markers (for potential parent hydration), but no client JS:
 
 **Source:**
 
 ```tsx
-export function Greeting({ name }: { name: string }) {
-  return <h1>Hello, {name}</h1>
+export function Greeting(props: { name: string }) {
+  return <h1>Hello, {props.name}!</h1>
 }
 ```
 
 **Output (.hono.tsx):**
 
 ```tsx
-export function Greeting({ name }: { name: string }) {
-  return <h1>Hello, {name}</h1>
+import { bfText, bfTextEnd } from '@barefootjs/hono/utils'
+
+export function Greeting(__allProps: { name: string } & { __instanceId?: string; ... }) {
+  const { __instanceId, ..., ...props } = __allProps
+  const __scopeId = __instanceId || `Greeting_${...}`
+
+  return (
+    <h1 bf-s={...} bf="s1">
+      Hello, {bfText("s0")}{props.name}{bfTextEnd()}!
+    </h1>
+  )
 }
 ```
 
@@ -73,12 +82,12 @@ export function Greeting({ name }: { name: string }) {
 "use client"
 import { createSignal } from '@barefootjs/client'
 
-export function Counter({ initial = 0 }: { initial?: number }) {
-  const [count, setCount] = createSignal(initial)
+export function Counter(props: { initial?: number }) {
+  const [count, setCount] = createSignal(props.initial ?? 0)
 
   return (
     <div>
-      <p>{count()}</p>
+      <span>Count: {count()}</span>
       <button onClick={() => setCount(n => n + 1)}>+1</button>
     </div>
   )
@@ -88,25 +97,28 @@ export function Counter({ initial = 0 }: { initial?: number }) {
 **Output (.hono.tsx):**
 
 ```tsx
-export function Counter({ initial = 0, __instanceId, __bfScope }: CounterPropsWithHydration) {
+import { bfText, bfTextEnd } from '@barefootjs/hono/utils'
+
+export function Counter(__allProps: { initial?: number } & { __instanceId?: string; ... }) {
+  const { __instanceId, ..., ...props } = __allProps
   const __scopeId = __instanceId || `Counter_${Math.random().toString(36).slice(2, 8)}`
-  const count = () => initial ?? 0
-  const setCount = () => {}
+  const count = () => props.initial ?? 0    // signal → server-side stub
 
   return (
-    <div bf-s={__scopeId} {...(__bfPropsJson ? { "bf-p": __bfPropsJson } : {})}>
-      <p bf="slot_0">{count()}</p>
-      <button bf="slot_1">+1</button>
+    <div bf-s={...} {...(... ? { "bf-p": __bfPropsJson } : {})}>
+      <span bf="s1">Count: {bfText("s0")}{count()}{bfTextEnd()}</span>
+      <button onClick={() => {}} bf="s2">+1</button>
     </div>
   )
 }
 ```
 
-- `bf-s` — component boundary
-- `bf="slot_N"` — client JS targets
-- Signal stubs (`count = () => initial ?? 0`) — render initial values server-side
-- `bf-p` — serialized props for client hydration
-- Event handlers are removed (client JS only)
+- `bf-s` — component scope boundary (unique per instance)
+- `bf="sN"` — client JS targets (elements, text nodes)
+- `bfText("s0")` / `bfTextEnd()` — text node markers (rendered as `<!--bf:s0-->...<!--/-->`)
+- Signal stubs (`count = () => props.initial ?? 0`) — render initial values server-side
+- `bf-p` — serialized props JSON for client hydration
+- Event handlers are replaced with no-ops (client JS handles the real ones)
 
 
 ## Script Collection
@@ -147,18 +159,27 @@ These are used internally — no manual passing needed.
 
 ## Conditional Rendering
 
-Ternaries compile with `bf-c` markers:
+Ternaries with element branches use `bf-c` markers. Text-only ternaries use comment markers:
 
-**Source:**
+**Element branches:**
 
 ```tsx
-{isActive() ? <span>Active</span> : <span>Inactive</span>}
+{loggedIn() ? <span>Welcome back!</span> : <span>Please log in</span>}
 ```
 
-**Output:**
+```tsx
+{loggedIn() ? <span bf-c="s0">Welcome back!</span> : <span bf-c="s0">Please log in</span>}
+```
+
+**Text-only branches:**
 
 ```tsx
-{isActive() ? <span bf-c="slot_2">Active</span> : <span bf-c="slot_2">Inactive</span>}
+{on() ? 'ON' : 'OFF'}
+```
+
+```tsx
+{on() ? <>{bfComment("cond-start:s0")}{'ON'}{bfComment("cond-end:s0")}</>
+      : <>{bfComment("cond-start:s0")}{'OFF'}{bfComment("cond-end:s0")}</>}
 ```
 
 ## Loop Rendering
@@ -166,13 +187,13 @@ Ternaries compile with `bf-c` markers:
 **Source:**
 
 ```tsx
-{items().map(item => <li>{item.name}</li>)}
+{items().map(item => <li>{item}</li>)}
 ```
 
 **Output:**
 
 ```tsx
-{items().map(item => <li>{item.name}</li>)}
+{bfComment('loop')}{items().map((item) => <li>{bfText("s0")}{item}{bfTextEnd()}</li>)}{bfComment('/loop')}
 ```
 
-For child components in loops, the adapter generates unique instance IDs per iteration using the loop index or `key`.
+Loop markers (`<!--bf-loop-->...<!--bf-/loop-->`) are used for reconciliation. For child components in loops, the adapter generates unique instance IDs per iteration using the loop index or `key`.

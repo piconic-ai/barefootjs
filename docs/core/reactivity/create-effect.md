@@ -111,10 +111,11 @@ The compiler generates effects for reactive attributes:
 
 ```tsx
 // Source
-<button disabled={!accepted()}>Submit</button>
+<button disabled={loading()}>Submit</button>
 
 // Generated client JS
+const [_s0] = $(__scope, 's0')
 createEffect(() => {
-  button.disabled = !accepted()
+  if (_s0) { _s0.disabled = !!(loading()) }
 })
 ```

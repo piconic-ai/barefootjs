@@ -187,7 +187,7 @@ A sync effect is generated:
 
 ```javascript
 createEffect(() => {
-  const __val = props.checked
+  const __val = _p.checked
   if (__val !== undefined) setChecked(__val)
 })
 ```
@@ -195,64 +195,59 @@ createEffect(() => {
 ### 4. Code Generation Order
 
 ```javascript
-import { $, $t, createEffect, createMemo, createSignal, hydrate, onMount } from '@barefootjs/client'
+import { $, $t, createEffect, createMemo, createSignal, hydrate, onMount } from '@barefootjs/client-runtime'
 
-export function initCounter(__scope, props = {}) {
+export function initCounter(__scope, _p = {}) {
   if (!__scope) return
 
-  // 1. Props extraction (with defaults)
-  const label = props.label ?? 'Click'
-
-  // 2. Early constants (no reactive deps)
+  // 1. Early constants (no reactive deps)
   const baseClass = 'counter'
 
-  // 3. Local functions / handlers (before signals so signal initializers
-  //    can reference them, e.g., createSignal(toArray(props.x)))
+  // 2. Local functions / handlers (before signals so signal initializers
+  //    can reference them, e.g., createSignal(toArray(_p.x)))
   const handleClick = () => { setCount(n => n + 1) }
 
-  // 4. Signals, memos, controlled signal sync, and late constants
-  const [count, setCount] = createSignal(props.initial ?? 0)
+  // 3. Signals, memos, controlled signal sync, and late constants
+  const [count, setCount] = createSignal(_p.initial ?? 0)
   createEffect(() => {                          // controlled signal sync
-    const __val = props.initial
+    const __val = _p.initial
     if (__val !== undefined) setCount(__val)
   })
   const doubled = createMemo(() => count() * 2)
-  const displayValue = `Count: ${count()}`      // late constant (reactive deps)
 
-  // 5. Element references (always destructured, always returns array)
-  //    $()  — regular elements:  find(scope, '[bf="id"]')
+  // 4. Element references (always destructured, always returns array)
+  //    $()  — regular elements:  querySelector('[bf="id"]') within scope
   //    $t() — text nodes:        find comment marker <!--bf:id-->
-  //    $c() — child components:  find(scope, '[bf-s$="_id"]')
   const [_s3] = $(__scope, 's3')
   const [_s0, _s2] = $t(__scope, 's0', 's2')
 
-  // 6. Dynamic text updates
+  // 5. Dynamic text updates
   createEffect(() => {
     const __val = count()
-    if (_s0) _s0.nodeValue = String(__val)
+    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
   })
 
-  // 7. Reactive attribute updates
+  // 6. Reactive attribute updates
   createEffect(() => {
     if (_s3) { _s3.disabled = !!(count() > 10) }
   })
 
-  // 8. Conditional updates
-  // insert(_s4, () => isOpen() ? panelHtml : null)
+  // 7. Conditional updates (insert with comment markers)
+  // insert(__scope, 's4', () => isOpen(), trueBranch, falseBranch)
 
-  // 9. Loop updates
-  // reconcileElements(_s5, items(), getKey, renderItem)
+  // 8. Loop updates (mapArray with reconciliation)
+  // mapArray(() => items(), _s5, null, (item, idx, existing) => { ... })
 
-  // 10. Event handlers
-  if (_s3) _s3.onclick = handleClick
+  // 9. Event handlers
+  if (_s3) _s3.addEventListener('click', handleClick)
 
-  // 11. Reactive prop bindings / child component props
-  // 12. Ref callbacks
-  // 13. User-defined effects and onMounts
+  // 10. Reactive prop bindings / child component props
+  // 11. Ref callbacks
+  // 12. User-defined effects and onMounts
   createEffect(() => { console.log('Count changed:', count()) })
   onMount(() => { console.log('Mounted') })
 
-  // 14. Provider setup and child component initialization
+  // 13. Provider setup and child component initialization
 }
 
 // Registration: hydrate() registers the component and initializes all
@@ -260,7 +255,10 @@ export function initCounter(__scope, props = {}) {
 // 1. Static template (no signal deps) → always included
 // 2. CSR fallback template → only when used as a child component
 // Top-level-only components with signals skip template to save bytes.
-hydrate('Counter', { init: initCounter })
+hydrate('Counter', {
+  init: initCounter,
+  template: (_p) => `<div><p bf="s1">Count: <!--bf:s0-->${(0)}<!--/--></p>...</div>`
+})
 ```
 
 ### 5. Import Detection
@@ -268,7 +266,7 @@ hydrate('Counter', { init: initCounter })
 Only used imports are included:
 
 ```javascript
-import { $, $t, createEffect, createMemo, createSignal, hydrate, onMount } from '@barefootjs/client'
+import { $, $t, createEffect, createMemo, createSignal, hydrate, onMount } from '@barefootjs/client-runtime'
 ```
 
 ### 6. Template Registration
@@ -278,7 +276,7 @@ import { $, $t, createEffect, createMemo, createSignal, hydrate, onMount } from 
 ```javascript
 hydrate('Button', {
   init: initButton,
-  template: (props) => `<button class="${props.className ?? ''}" bf="s0">${props.children}</button>`
+  template: (_p) => `<button ${(_p.className ?? '') != null ? 'class="' + (_p.className ?? '') + '"' : ''} bf="s0">${_p.children}</button>`
 })
 ```
 
@@ -288,7 +286,7 @@ hydrate('Button', {
 // StatusBadge is used by Dashboard in the same file → gets CSR fallback
 hydrate('StatusBadge', {
   init: initStatusBadge,
-  template: (props) => `<span bf="s0">${props.active ? 'on' : 'off'}</span>`
+  template: (_p) => `<span bf="s0">${_p.active ? 'on' : 'off'}</span>`
 })
 
 // Dashboard is top-level only → no template (saves bytes)
