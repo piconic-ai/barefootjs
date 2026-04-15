@@ -5,16 +5,14 @@ description: How adapters convert the compiler's IR into server-renderable templ
 
 # Adapter Architecture
 
-An adapter converts the compiler's Intermediate Representation (IR) into a template format your server can render. This page explains how adapters work, the interface they implement, and the IR contract they consume.
+An adapter converts the compiler's IR into a template format your server can render.
 
 
-## The Role of an Adapter
+## Role
 
-The BarefootJS compiler runs in two phases:
-
-1. **Phase 1** parses JSX and produces a `ComponentIR` — a JSON tree that captures the component structure, reactive expressions, event handlers, and type information. This IR is backend-agnostic.
-2. **Phase 2a** passes the IR to an adapter, which generates a marked template in the target language.
-3. **Phase 2b** generates client JS directly from the IR (adapters are not involved in this step).
+1. **Phase 1** parses JSX → backend-agnostic `ComponentIR` (JSON tree)
+2. **Phase 2a** adapter converts IR → marked template in target language
+3. **Phase 2b** generates client JS from IR (no adapter involved)
 
 ```
 ComponentIR (JSON)
@@ -33,12 +31,10 @@ ComponentIR (JSON)
 Marked Template + optional types
 ```
 
-The adapter's job is to translate each IR node into the correct syntax for the target template language, inserting hydration markers (`bf-*` attributes) so the client JS can find and wire up interactive elements.
+Each IR node is translated into the target template language with hydration markers (`bf-*` attributes).
 
 
-## The `TemplateAdapter` Interface
-
-Every adapter implements the `TemplateAdapter` interface:
+## `TemplateAdapter` Interface
 
 ```typescript
 interface TemplateAdapter {
@@ -68,8 +64,6 @@ interface TemplateAdapter {
 
 ### `generate()`
 
-The main entry point. Receives the full `ComponentIR` and returns an `AdapterOutput`:
-
 ```typescript
 interface AdapterOutput {
   template: string     // The generated template code
@@ -89,8 +83,6 @@ interface AdapterGenerateOptions {
 
 ### Node rendering methods
 
-Each method translates one IR node type into the target template language:
-
 | Method | IR Node | Responsibility |
 |--------|---------|----------------|
 | `renderElement()` | `IRElement` | HTML elements with attributes, events, and hydration markers |
@@ -102,8 +94,6 @@ Each method translates one IR node type into the target template language:
 
 ### Hydration marker methods
 
-These generate the `bf-*` attributes in the target language's syntax:
-
 | Method | Marker | Purpose |
 |--------|--------|---------|
 | `renderScopeMarker()` | `bf-s` | Component boundary for scoped hydration |
@@ -111,9 +101,9 @@ These generate the `bf-*` attributes in the target language's syntax:
 | `renderCondMarker()` | `bf-c` | Conditional block for DOM switching |
 
 
-## The `BaseAdapter` Class
+## `BaseAdapter` Class
 
-For convenience, the compiler provides a `BaseAdapter` abstract class that implements the `TemplateAdapter` interface and adds a `renderChildren()` utility:
+`BaseAdapter` implements the `TemplateAdapter` interface with a `renderChildren()` utility:
 
 ```typescript
 abstract class BaseAdapter implements TemplateAdapter {
@@ -128,12 +118,12 @@ abstract class BaseAdapter implements TemplateAdapter {
 }
 ```
 
-Extending `BaseAdapter` is optional — you can implement `TemplateAdapter` directly if preferred.
+Extending `BaseAdapter` is optional.
 
 
 ## IR Node Types
 
-The IR tree is composed of these node types. Each adapter must handle all of them:
+Each adapter must handle all IR node types:
 
 ### `IRElement`
 
@@ -225,7 +215,7 @@ A nested component invocation.
 
 ## Hydration Markers
 
-Adapters insert `bf-*` attributes into the template so the client JS knows where to attach behavior:
+`bf-*` attributes tell the client JS where to attach behavior:
 
 | Marker | Example | Purpose |
 |--------|---------|---------|
@@ -233,22 +223,19 @@ Adapters insert `bf-*` attributes into the template so the client JS knows where
 | `bf` | `<p bf="slot_0">` | Interactive element — target for effects and event handlers |
 | `bf-c` | `<div bf-c="slot_2">` | Conditional block — target for DOM switching |
 
-The client JS uses these markers to find elements within a scope boundary, without interfering with nested component scopes.
 
 
 ## Script Registration
 
-Client components need their client JS loaded in the browser. Adapters handle this by registering scripts during server rendering:
+Adapters register client JS during server rendering to ensure each script loads exactly once:
 
-- **Hono**: Uses `useRequestContext()` to collect script paths. The `BfScripts` component renders the collected `<script>` tags.
-- **Go Template**: Uses a `ScriptCollector` that tracks which component scripts are needed. The server renders the script tags at the end of the page.
-
-This ensures each component's client JS is loaded exactly once, regardless of how many instances appear on the page.
+- **Hono**: `useRequestContext()` collects script paths; `BfScripts` renders the `<script>` tags.
+- **Go Template**: `ScriptCollector` tracks needed scripts; renders `<script>` tags at page end.
 
 
 ## Type Generation
 
-For typed backend languages, adapters can implement `generateTypes()` to produce type definitions alongside the template. The Go Template adapter generates:
+For typed backends, `generateTypes()` produces type definitions alongside the template. The Go Template adapter generates:
 
 - **Go structs** for component input and props types
 - **JSON tags** for prop serialization
@@ -272,4 +259,4 @@ func NewCounterProps(input CounterInput) CounterProps {
 }
 ```
 
-Adapters for dynamically-typed languages (like Hono/TypeScript) can skip this by not implementing `generateTypes()`.
+Dynamically-typed adapters (like Hono) skip this.

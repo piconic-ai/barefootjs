@@ -5,7 +5,7 @@ description: Registers a cleanup function that runs when the owning effect re-ru
 
 # onCleanup
 
-Registers a cleanup function in the current reactive context. Called when the owning effect re-runs or the component is destroyed.
+Registers a cleanup function. Called when the owning effect re-runs or the component is destroyed.
 
 ```tsx
 import { onCleanup } from '@barefootjs/client'
@@ -23,12 +23,12 @@ createEffect(() => {
 })
 ```
 
-When the effect re-runs (because a dependency changed), the cleanup function runs first, clearing the previous interval before a new one is created.
+On re-run, the cleanup function runs first, clearing the previous interval before creating a new one.
 
 
 ## Multiple Cleanups
 
-You can call `onCleanup` multiple times within the same context. Cleanups execute in reverse order (last registered, first called):
+`onCleanup` can be called multiple times. Cleanups execute in reverse order (last registered, first called):
 
 ```tsx
 createEffect(() => {

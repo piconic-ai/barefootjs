@@ -5,7 +5,7 @@ description: Marker-driven hydration that makes server-rendered HTML interactive
 
 # Hydration Model
 
-Hydration is the process of making server-rendered HTML interactive. BarefootJS uses a **marker-driven** approach.
+BarefootJS uses **marker-driven** hydration to make server-rendered HTML interactive.
 
 ## Hydration Markers
 
@@ -51,7 +51,7 @@ Page is interactive
 
 ## Scoped Queries
 
-Each component only hydrates its own elements. The runtime's `find()` function searches within a scope boundary, excluding nested component scopes. This prevents components from interfering with each other.
+`find()` searches within a scope boundary, excluding nested component scopes.
 
 ```html
 <div bf-s="TodoApp_x1">        <!-- TodoApp scope -->

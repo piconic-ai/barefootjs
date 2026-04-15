@@ -5,7 +5,7 @@ description: Bridge between the compiler's IR and your backend's template langua
 
 # Adapters
 
-Adapters are the bridge between the compiler's IR and your backend's template language. The compiler produces a backend-agnostic Intermediate Representation (IR); an adapter converts it into a template your server can render.
+An adapter converts the compiler's IR into a template your server can render. The same JSX source produces correct output for any adapter.
 
 ```
 JSX Source
@@ -15,8 +15,6 @@ JSX Source
 [Phase 2a] IR → Adapter → Marked Template  (server)
 [Phase 2b] IR → Client JS                  (browser)
 ```
-
-The same JSX source produces correct output for any adapter. Your component library works across stacks.
 
 ## Available Adapters
 

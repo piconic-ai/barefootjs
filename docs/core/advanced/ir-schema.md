@@ -5,7 +5,7 @@ description: JSON tree structure of the Intermediate Representation consumed by 
 
 # IR Schema Reference
 
-The Intermediate Representation (IR) is a pure JSON tree structure that sits between JSX parsing and template/client-JS generation. It is **JSX-independent** — adapters consume IR without any knowledge of the original JSX syntax.
+The IR is a JSON tree between JSX parsing and output generation. Adapters consume IR without knowledge of the original JSX syntax.
 
 ## Pipeline Position
 
@@ -14,11 +14,9 @@ JSX Source → [Phase 1: analyzer + jsx-to-ir] → IR → [Phase 2a: adapter] �
                                                    → [Phase 2b: ir-to-client-js] → Client JS
 ```
 
-## Source
+## Node Types
 
-The IR type definitions live in [`packages/jsx/src/types.ts`](../../../packages/jsx/src/types.ts). All node types, attributes, and metadata are defined in this file.
-
-Key node types:
+Defined in [`packages/jsx/src/types.ts`](../../../packages/jsx/src/types.ts):
 
 | Type | Description |
 |------|-------------|
@@ -36,7 +34,7 @@ Key node types:
 
 ## Hydration Markers
 
-The `slotId` and `needsScope` fields in the IR map to HTML attributes in the rendered template:
+`slotId` and `needsScope` map to HTML attributes:
 
 | IR Field | HTML Output | Purpose |
 |----------|------------|---------|
@@ -44,13 +42,12 @@ The `slotId` and `needsScope` fields in the IR map to HTML attributes in the ren
 | `slotId: "0"` | `bf="0"` | Reference for interactive elements |
 | Conditional `slotId` | `bf-c="1"` | Anchor for conditional branches |
 
-The client runtime uses these markers to locate elements that need hydration without a full DOM traversal.
 
 ---
 
 ## Debugging
 
-Pass `outputIR: true` to output the IR as JSON:
+Pass `outputIR: true` to inspect the IR:
 
 ```typescript
 import { compileJSXSync } from '@barefootjs/jsx'

@@ -5,12 +5,12 @@ description: How prop access patterns determine whether reactive updates propaga
 
 # Props Reactivity
 
-Props in BarefootJS can be reactive. The compiler wraps dynamic prop expressions in getters, so **how you access props determines whether updates propagate**.
+**How you access props determines whether updates propagate.** The compiler wraps dynamic prop expressions in getters.
 
 
 ## Direct Access — Reactive
 
-Accessing props via `props.xxx` maintains reactivity. Each access calls the underlying getter:
+`props.xxx` maintains reactivity. Each access calls the underlying getter:
 
 ```tsx
 function Display(props: { value: number }) {
@@ -24,7 +24,7 @@ function Display(props: { value: number }) {
 
 ## Destructuring — Captures Once
 
-Destructuring calls the getter immediately and stores the result. The value is captured at that moment and does not update:
+Destructuring calls the getter once and stores the result. The value does not update:
 
 ```tsx
 function Display({ value }: { value: number }) {
@@ -35,7 +35,7 @@ function Display({ value }: { value: number }) {
 }
 ```
 
-The compiler emits a warning (`BF043`) when it detects props destructuring in a client component, since this is a common source of bugs:
+The compiler emits `BF043` when it detects props destructuring in a client component:
 
 ```
 warning[BF043]: Props destructuring breaks reactivity
@@ -48,7 +48,7 @@ warning[BF043]: Props destructuring breaks reactivity
    = help: Access props via `props.value` to maintain reactivity
 ```
 
-If you intentionally want to capture a value once (e.g., for an initial value), suppress the warning with the `@bf-ignore` directive:
+Suppress with `@bf-ignore` when capturing intentionally (e.g., initial values):
 
 ```tsx
 // @bf-ignore props-destructuring
@@ -59,18 +59,9 @@ function Counter({ initial }: { initial: number }) {
 ```
 
 
-## When Destructuring Is Fine
+## When Destructuring Is Safe
 
-Destructuring is safe when you use the value as an **initial value** for local state:
-
-```tsx
-function Counter({ initial }: { initial: number }) {
-  const [count, setCount] = createSignal(initial) // OK — initial value only
-  return <button onClick={() => setCount(n => n + 1)}>{count()}</button>
-}
-```
-
-It is also safe for values that never change, such as an `id` or a static label.
+Destructuring is safe for **initial values** of local state and for values that never change (`id`, static labels).
 
 
 ## Summary
@@ -84,7 +75,7 @@ It is also safe for values that never change, such as an `id` or a static label.
 
 ## How It Works
 
-When a parent passes a dynamic expression, the compiler transforms it into a getter on the props object:
+The compiler transforms dynamic prop expressions into getters:
 
 ```tsx
 // Parent
@@ -94,7 +85,7 @@ When a parent passes a dynamic expression, the compiler transforms it into a get
 { get value() { return count() } }
 ```
 
-- `props.value` → calls the getter → calls `count()` → dependency is tracked
-- `const { value } = props` → calls the getter once → stores the number → no further tracking
+- `props.value` → calls getter → calls `count()` → dependency tracked
+- `const { value } = props` → calls getter once → stores the number → no further tracking
 
-This is the same model as SolidJS. If you are coming from React, where destructuring props is idiomatic and safe, this is the most important behavioral difference to be aware of.
+This is the same model as SolidJS. If you are coming from React, this is the key behavioral difference.

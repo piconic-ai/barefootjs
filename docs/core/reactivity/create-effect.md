@@ -26,12 +26,12 @@ createEffect(() => {
 setCount(1) // Effect re-runs, title becomes "Count: 1"
 ```
 
-Dependencies are tracked automatically — every signal getter called during execution is recorded. No dependency array is needed.
+Dependencies are tracked automatically. No dependency array is needed.
 
 
-## Automatic Dependency Tracking
+## Conditional Dependencies
 
-The effect tracks whichever signals are actually read in each run. If a conditional branch skips a signal read, that signal is not a dependency for that run:
+Dependencies change per run. If a branch skips a signal read, that signal is not tracked for that run:
 
 ```tsx
 const [showName, setShowName] = createSignal(true)
@@ -50,7 +50,7 @@ createEffect(() => {
 
 ## Cleanup
 
-Effects often set up resources that need to be torn down before the next run. There are two ways to register cleanup.
+Two ways to register cleanup for resources that need teardown before re-run.
 
 ### Return a function
 
@@ -75,7 +75,7 @@ createEffect(() => {
 
 ## Common Patterns
 
-### Syncing with localStorage
+### localStorage sync
 
 ```tsx
 const [theme, setTheme] = createSignal('light')
@@ -85,7 +85,7 @@ createEffect(() => {
 })
 ```
 
-### Fetching data
+### Data fetching
 
 ```tsx
 const [query, setQuery] = createSignal('')
@@ -105,9 +105,9 @@ createEffect(() => {
 
 When `query` changes, the previous fetch is aborted before the new one starts.
 
-### Updating DOM attributes
+### Reactive attributes
 
-The compiler generates effects like this for reactive attributes:
+The compiler generates effects for reactive attributes:
 
 ```tsx
 // Source

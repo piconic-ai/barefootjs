@@ -64,15 +64,15 @@
 
 ## Documentation Conventions
 
-Throughout this documentation, code examples use **switchable tabs** for the following:
+Code examples use **switchable tabs** for adapter output and package manager commands. Preferences persist across pages.
 
-**Adapter** — Examples show output for your selected adapter:
+**Adapter** — Hono (default) or Go Template:
 
 <!-- tabs:adapter -->
 - Hono (default)
 - Go Template
 
-**Package Manager** — Install commands match your toolchain:
+**Package Manager** — npm (default), bun, pnpm, or yarn:
 
 <!-- tabs:pm -->
 - npm (default)
@@ -80,7 +80,4 @@ Throughout this documentation, code examples use **switchable tabs** for the fol
 - pnpm
 - yarn
 
-These preferences persist across pages.
-
-> **Note for non-JavaScript developers:**
-> Sections marked with 💡 provide brief explanations of JSX and TypeScript concepts for developers coming from Go, Python, or other backend languages.
+> Sections marked with 💡 explain JSX and TypeScript concepts for developers from Go, Python, or other backend languages.

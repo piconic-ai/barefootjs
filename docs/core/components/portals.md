@@ -5,7 +5,7 @@ description: Render elements outside their parent DOM hierarchy for overlays, mo
 
 # Portals
 
-A portal renders an element outside its parent DOM hierarchy. This is useful for overlays, modals, and tooltips that need to escape `overflow: hidden`, `z-index` stacking contexts, or other CSS containment.
+Portals render elements outside their parent DOM hierarchy — useful for overlays, modals, and tooltips that need to escape `overflow: hidden` or `z-index` stacking contexts.
 
 ```tsx
 import { createPortal } from '@barefootjs/client'
@@ -14,7 +14,7 @@ import { createPortal } from '@barefootjs/client'
 
 ## `createPortal`
 
-Moves an element to a different container in the DOM.
+Moves an element to a different DOM container.
 
 ```tsx
 createPortal(children, container?, options?)
@@ -46,7 +46,7 @@ function createPortal(
 
 ## Basic Usage
 
-Portals are typically created inside a `ref` callback. The element is moved to `document.body` (or another container) after it is mounted:
+Create portals inside `ref` callbacks:
 
 ```tsx
 "use client"
@@ -86,7 +86,7 @@ export function Tooltip(props: { text: string; children?: Child }) {
 
 ## SSR Portal Detection
 
-When a portal is server-rendered, it is already in the correct position in the DOM. `isSSRPortal` checks whether an element was already portaled during SSR to prevent double-portaling:
+`isSSRPortal` checks whether an element was already portaled during SSR to prevent double-portaling:
 
 ```tsx
 import { isSSRPortal } from '@barefootjs/client'
@@ -99,7 +99,7 @@ const handleMount = (el: HTMLElement) => {
 }
 ```
 
-SSR portals are marked with `bf-pi` attributes. After hydration, call `cleanupPortalPlaceholder` to remove the SSR placeholder:
+After hydration, remove SSR placeholders:
 
 ```tsx
 import { cleanupPortalPlaceholder } from '@barefootjs/client'
@@ -110,9 +110,7 @@ cleanupPortalPlaceholder(portalId)
 
 ## Owner Scope
 
-By default, an element moved to `document.body` via a portal is outside its original component's scope. This means the runtime's `find()` function cannot locate it when searching within the component boundary.
-
-The `ownerScope` option solves this by linking the portaled element back to its parent component:
+A portaled element is outside its original component's scope, so `find()` cannot locate it. The `ownerScope` option links it back:
 
 ```tsx
 const handleMount = (el: HTMLElement) => {
@@ -121,12 +119,12 @@ const handleMount = (el: HTMLElement) => {
 }
 ```
 
-The portal sets `bf-po` on the moved element, so scoped queries from the owner component still find it.
+`bf-po` on the moved element lets scoped queries from the owner still find it.
 
 
 ## Dialog Example
 
-A common use of portals is moving dialog overlays and content to `document.body`:
+Dialog overlays are a common portal use case:
 
 ```tsx
 "use client"
@@ -159,12 +157,12 @@ function DialogOverlay() {
 }
 ```
 
-The overlay is rendered inside the `<Dialog>` component tree (so it can access `DialogContext`), but is moved to `document.body` by the portal (so it escapes any CSS containment).
+The overlay accesses `DialogContext` from the component tree but is moved to `document.body` to escape CSS containment.
 
 
 ## Cleanup
 
-Use `portal.unmount()` to remove a portaled element. Combine with `onCleanup` to clean up when a component is destroyed:
+Combine `portal.unmount()` with `onCleanup`:
 
 ```tsx
 import { createPortal, onCleanup } from '@barefootjs/client'
@@ -181,11 +179,9 @@ const handleMount = (el: HTMLElement) => {
 
 ## Custom Container
 
-By default, `createPortal` appends to `document.body`. You can specify a different container:
+Specify a different container instead of the default `document.body`:
 
 ```tsx
 const container = document.getElementById('modal-root')!
 createPortal(el, container)
 ```
-
-This is useful when you have a dedicated mount point in your HTML layout for modals or notifications.

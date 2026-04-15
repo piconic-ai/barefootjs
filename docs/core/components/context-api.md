@@ -5,7 +5,7 @@ description: Share state with deeply nested children without prop drilling using
 
 # Context API
 
-Context lets a parent component share state with deeply nested children without passing props through every level. It is the foundation of compound component patterns like Dialog, Accordion, and Tabs.
+Context shares state with deeply nested children without prop drilling. It is the foundation of compound components (Dialog, Accordion, Tabs).
 
 ```tsx
 import { createContext, useContext } from '@barefootjs/client'
@@ -33,7 +33,7 @@ type Context<T> = {
 
 ## `Context.Provider`
 
-Provides a value to all descendant components. Any component inside the provider tree can read the value with `useContext`.
+Provides a value to all descendants. Components inside the provider tree read it with `useContext`.
 
 ```tsx
 <MyContext.Provider value={someValue}>
@@ -41,7 +41,7 @@ Provides a value to all descendant components. Any component inside the provider
 </MyContext.Provider>
 ```
 
-The compiler transforms `<Context.Provider>` into an internal `provideContext()` call. At runtime, the value is set synchronously before children initialize, so `useContext` always sees the provided value.
+The compiler transforms this into a `provideContext()` call. The value is set synchronously before children initialize.
 
 
 ## `useContext`
@@ -98,7 +98,7 @@ export function ThemedButton(props: { children?: Child }) {
 
 ## Compound Components
 
-Context is most commonly used for compound components — a group of related components that share internal state. The root component provides the state; sub-components consume it.
+A group of related components sharing internal state. The root provides state; sub-components consume it.
 
 ### Example: Accordion
 
@@ -182,7 +182,7 @@ function AccordionContent(props: { itemId: string; children?: Child }) {
 
 ## Reactive Context Values
 
-Context values can contain signal getters. When a child component reads a signal getter from context inside a `createEffect`, the effect re-runs when the signal changes:
+Context values can contain signal getters. Effects that read them re-run when the signal changes:
 
 ```tsx
 // Provider passes signal getter
@@ -198,12 +198,12 @@ createEffect(() => {
 })
 ```
 
-The signal getter `ctx.activeItem()` is called inside the effect, so the effect subscribes to `activeItem`. When `activeItem` changes (via `toggle`), only the affected effects re-run.
+`ctx.activeItem()` inside the effect subscribes to `activeItem`. When it changes, only affected effects re-run.
 
 
 ## Context Without a Default
 
-When `createContext` is called without a default value, `useContext` throws if no `Provider` ancestor is found. This is the recommended pattern for compound components where a provider is always expected:
+Without a default value, `useContext` throws if no `Provider` ancestor exists. Recommended for compound components:
 
 ```tsx
 const DialogContext = createContext<DialogContextValue>()
@@ -218,12 +218,12 @@ function DialogTrigger(props: { children?: Child }) {
 }
 ```
 
-This catches composition errors early. If a sub-component is accidentally used outside its parent, the error message identifies the missing provider.
+This catches composition errors early — the error identifies the missing provider.
 
 
 ## Context With a Default
 
-When a default is provided, `useContext` always succeeds:
+With a default, `useContext` always succeeds:
 
 ```tsx
 const ThemeContext = createContext<'light' | 'dark'>('light')
@@ -232,4 +232,4 @@ const ThemeContext = createContext<'light' | 'dark'>('light')
 const theme = useContext(ThemeContext)
 ```
 
-Use this pattern for optional contexts where a sensible fallback exists.
+Use for optional contexts with a sensible fallback.

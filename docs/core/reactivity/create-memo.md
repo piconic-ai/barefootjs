@@ -13,7 +13,7 @@ import { createMemo } from '@barefootjs/client'
 const getter = createMemo<T>(fn: () => T): Memo<T>
 ```
 
-Returns a read-only getter function typed as `Memo<T>` (alias for `Reactive<() => T>`). The `Reactive<T>` brand is a compile-time marker that the compiler uses to identify reactive expressions.
+Returns a read-only getter typed as `Memo<T>` (alias for `Reactive<() => T>`).
 
 
 ## Basic Usage
@@ -53,7 +53,7 @@ const filteredTodos = createMemo(() => {
 createEffect(() => console.log(filteredTodos().length))
 ```
 
-For simple expressions used only once, a memo is not necessary — the signal getter in JSX is sufficient:
+For simple expressions used once, a memo is unnecessary:
 
 ```tsx
 // No memo needed
@@ -88,4 +88,4 @@ Each memo in the chain only recomputes when its direct dependencies change.
 | Triggers other effects | Yes (acts as a signal) | No |
 | Used for | Derived data | Side effects (DOM, fetch, logging) |
 
-Internally, `createMemo` is sugar over `createSignal` + `createEffect` — it creates a signal and an effect that updates it when dependencies change. This means a memo behaves exactly like a read-only signal to the rest of the reactive system.
+Internally, `createMemo` is sugar over `createSignal` + `createEffect`. A memo behaves like a read-only signal to the rest of the reactive system.

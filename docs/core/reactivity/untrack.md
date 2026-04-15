@@ -5,7 +5,7 @@ description: Executes a function without tracking signal dependencies in the cur
 
 # untrack
 
-Executes a function without tracking signal dependencies. Signal reads inside the function do not register the current effect as a subscriber.
+Executes a function without tracking signal dependencies.
 
 ```tsx
 import { untrack } from '@barefootjs/client'
@@ -37,7 +37,7 @@ setName('Bob') // Effect does NOT re-run
 
 ## When to Use
 
-### Reading a value without subscribing
+### Read without subscribing
 
 ```tsx
 createEffect(() => {
@@ -47,7 +47,7 @@ createEffect(() => {
 })
 ```
 
-### Logging without creating dependencies
+### Log without dependencies
 
 ```tsx
 createEffect(() => {
@@ -56,9 +56,9 @@ createEffect(() => {
 })
 ```
 
-### Breaking circular patterns
+### Break circular dependencies
 
-If two signals depend on each other through effects, `untrack` can break the cycle by reading one without subscribing:
+`untrack` breaks cycles where two signals depend on each other through effects:
 
 ```tsx
 createEffect(() => {

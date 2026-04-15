@@ -5,8 +5,6 @@ description: Compiler internals, IR schema, error codes, and performance optimiz
 
 # Advanced
 
-This section covers BarefootJS internals for contributors, adapter authors, and developers who want deeper understanding of the compilation pipeline.
-
 - [IR Schema Reference](./advanced/ir-schema.md) — The intermediate representation node types and metadata
 - [Compiler Internals](./advanced/compiler-internals.md) — Pipeline phases, reactivity analysis, and code generation
 - [Error Codes Reference](./advanced/error-codes.md) — All compiler errors and warnings with solutions

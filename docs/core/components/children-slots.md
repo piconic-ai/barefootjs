@@ -5,12 +5,10 @@ description: Accept nested JSX content via the children prop and enable polymorp
 
 # Children & Slots
 
-Components accept nested JSX content through the `children` prop. The `Slot` component enables polymorphic rendering with the `asChild` pattern.
+Nested JSX content is passed via the `children` prop. The `Slot` component enables polymorphic rendering with `asChild`.
 
 
 ## Children
-
-Any JSX nested inside a component tag is passed as the `children` prop:
 
 ```tsx
 <Card>
@@ -30,8 +28,6 @@ function Card(props: { children?: Child }) {
 
 ## Passing Children Through
 
-A component can pass `children` to a child element or another component:
-
 ```tsx
 function Panel(props: { title: string; children?: Child }) {
   return (
@@ -43,12 +39,12 @@ function Panel(props: { title: string; children?: Child }) {
 }
 ```
 
-Wrapping `children` in a fragment (`<>{props.children}</>`) is treated as **transparent** — the compiler skips the fragment and processes children directly without extra hydration markers. See [Fragment](../rendering/fragment.md) for details.
+Wrapping `children` in a fragment (`<>{props.children}</>`) is **transparent** — the compiler skips the fragment without extra hydration markers. See [Fragment](../rendering/fragment.md).
 
 
 ## The `Slot` Component
 
-`Slot` renders the child element with merged props and classes. It enables the **`asChild` pattern**, where a component's styling and behavior are applied to its child element instead of a wrapper:
+`Slot` merges props and classes onto its child element, enabling the **`asChild` pattern**:
 
 ```tsx
 import { Slot } from './slot'
@@ -65,12 +61,7 @@ function Button({ className, asChild, children, ...props }: ButtonProps) {
 
 ### How `Slot` Works
 
-When `Slot` receives a valid element as `children`, it:
-
-1. Extracts the child element's tag and props
-2. Merges `className` from both `Slot` and the child (concatenated, space-separated)
-3. Spreads remaining props from `Slot` onto the child
-4. Renders the child's tag with the merged result
+`Slot` extracts the child's tag, merges `className` (space-separated), spreads remaining props, and renders the child's tag with the merged result.
 
 ```tsx
 // Input
@@ -87,7 +78,7 @@ If `children` is not a valid element (e.g., a string), `Slot` falls back to rend
 
 ## The `asChild` Pattern
 
-`asChild` lets a component delegate rendering to its child element. This is useful when you want a component's styling without its default HTML tag.
+`asChild` delegates rendering to the child element — the component's styling without its default HTML tag.
 
 ### Default rendering (no `asChild`)
 
@@ -105,13 +96,13 @@ If `children` is not a valid element (e.g., a string), `Slot` falls back to rend
 // Renders: <a href="/dashboard" className="btn btn-primary">Go to Dashboard</a>
 ```
 
-The `<a>` tag receives Button's classes and props. The component controls styling; the caller controls the underlying element.
+The `<a>` tag receives Button's classes and props. The component controls styling; the caller controls the element.
 
 ### When to Use `asChild`
 
-- **Navigation buttons** — Render a `<a>` with button styling
-- **Custom triggers** — Render a custom element as a dialog or dropdown trigger
-- **Accessibility** — Use the semantically correct element while reusing component styles
+- Navigation buttons (render `<a>` with button styling)
+- Custom triggers (dialog or dropdown)
+- Semantic elements with reused component styles
 
 ```tsx
 // Dialog trigger as a custom element
@@ -121,9 +112,7 @@ The `<a>` tag receives Button's classes and props. The component controls stylin
 ```
 
 
-## Compound Component Children
-
-Compound components use children to compose sub-components declaratively:
+## Compound Components
 
 ```tsx
 <Dialog open={open()} onOpenChange={setOpen}>
@@ -142,12 +131,10 @@ Compound components use children to compose sub-components declaratively:
 </Dialog>
 ```
 
-Each sub-component reads shared state from a context provider defined in the root component. See [Context API](./context-api.md) for how this works.
+Sub-components read shared state from a context provider. See [Context API](./context-api.md).
 
 
-## Children in List Rendering
-
-When rendering lists, pass data and callbacks to child components via props:
+## List Rendering
 
 ```tsx
 {todos().map(todo => (
@@ -160,4 +147,4 @@ When rendering lists, pass data and callbacks to child components via props:
 ))}
 ```
 
-The `key` attribute is required for efficient list updates. The compiler emits warning `BF023` if `key` is missing.
+`key` is required for efficient list updates (warning `BF023` if missing).

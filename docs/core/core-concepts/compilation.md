@@ -98,11 +98,9 @@ The server renders the HTML. The browser runs only the client JS to make it inte
 
 ## Adapters
 
-The IR is backend-agnostic. An **adapter** converts it to the template format your server needs:
+An **adapter** converts the backend-agnostic IR to the template format your server needs. See [Adapters](../adapters.md) for details.
 
 | Adapter | Output | Backend |
 |---------|--------|---------|
 | `HonoAdapter` | `.hono.tsx` | Hono / JSX-based servers |
 | `GoTemplateAdapter` | `.tmpl` + `_types.go` | Go `html/template` |
-
-The same JSX source produces correct output for each adapter. See [Adapters](../adapters.md) for details.

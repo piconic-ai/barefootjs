@@ -5,13 +5,9 @@ description: Strategies to minimize bundle size, reduce hydration cost, and opti
 
 # Performance Optimization
 
-BarefootJS is designed for performance by default — server-side rendering with minimal client JavaScript. This guide covers strategies to minimize bundle size, reduce hydration cost, and optimize runtime reactivity.
+## Zero-JS by Default
 
-## How BarefootJS Achieves Performance
-
-### Zero-JS by Default
-
-Components without reactive state generate **no client JavaScript at all**. Only components with `"use client"` produce client-side code:
+Components without `"use client"` generate **no client JavaScript**:
 
 ```tsx
 // Server-only — 0 bytes of client JS
@@ -25,22 +21,15 @@ export function Header() {
 }
 ```
 
-### Minimal Hydration
+## Minimal Hydration
 
-Unlike frameworks that ship the full component tree to the client, BarefootJS sends only:
-- Signal initialization
-- Event handler bindings
-- Effect setup for reactive updates
-
-The HTML structure is never re-created on the client — it was already rendered by the server.
+Only signals, event handlers, and effects are sent to the client. The HTML structure is never re-created — the server already rendered it.
 
 ---
 
 ## Reducing Client JS Size
 
-### Minimize Signal Count
-
-Each signal adds tracking overhead. Use `createMemo` for derived values instead of separate signals:
+### Use Memos for Derived Values
 
 ```tsx
 // ❌ Redundant signal
@@ -53,9 +42,9 @@ const [count, setCount] = createSignal(0)
 const doubled = createMemo(() => count() * 2)  // Computed, no extra signal
 ```
 
-### Use Static Arrays When Possible
+### Prefer Static Arrays
 
-If a list doesn't change after initial render, the compiler detects it as a **static array** and skips list reconciliation:
+The compiler detects static arrays and skips reconciliation:
 
 ```tsx
 // Static — no reconciliation generated
@@ -71,9 +60,7 @@ const [items, setItems] = createSignal([...])
 
 ## Optimizing Hydration
 
-### Use Keys for List Reconciliation
-
-Always provide stable keys for dynamic lists. Without keys, the reconciler can't reuse DOM nodes:
+### Stable Keys for Lists
 
 ```tsx
 // ✅ Stable key — DOM nodes reused when list changes
@@ -83,17 +70,15 @@ Always provide stable keys for dynamic lists. Without keys, the reconciler can't
 {items().map((item, i) => <li key={i}>{item.name}</li>)}
 ```
 
-### Preserve Focus in Lists
+### Focus Preservation
 
-The reconciler automatically preserves focused elements during list updates. If a focused input is in a list item, it won't lose focus when the list re-renders. This is built-in — no action needed on your part.
+The reconciler preserves focused elements during list updates automatically.
 
 ---
 
 ## Optimizing Reactivity
 
-### Use `untrack` for One-Time Reads
-
-When you need a signal's current value without subscribing to changes:
+### `untrack` for One-Time Reads
 
 ```tsx
 createEffect(() => {
@@ -103,9 +88,7 @@ createEffect(() => {
 })
 ```
 
-### Avoid Effects for Derived Data
-
-`createMemo` is cheaper than `createEffect` + `createSignal`:
+### Memo Over Effect + Signal
 
 ```tsx
 // ❌ Effect → Signal chain (two subscriptions)
@@ -116,9 +99,7 @@ createEffect(() => setTotal(price() * quantity()))
 const total = createMemo(() => price() * quantity())
 ```
 
-### Guard Effect Side Effects
-
-Effects with the same result can skip expensive operations:
+### Guard DOM Updates
 
 ```tsx
 createEffect(() => {
@@ -129,6 +110,6 @@ createEffect(() => {
 })
 ```
 
-> **Note:** The compiler already generates guarded updates for text content and common attributes. This tip applies to custom effects.
+The compiler already generates guarded updates for text content and common attributes. This applies to custom effects only.
 
 

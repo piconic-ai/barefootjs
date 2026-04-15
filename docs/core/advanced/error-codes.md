@@ -5,9 +5,9 @@ description: Complete list of BF-prefixed compiler error codes with explanations
 
 # Error Codes Reference
 
-BarefootJS compiler errors follow the format `BF` + 3-digit code. Errors include source location and actionable suggestions.
+Errors follow the format `BF` + 3-digit code with source location and fix suggestions.
 
-## Error Format
+## Format
 
 ```
 error[BF001]: 'use client' directive required for components with createSignal
@@ -26,7 +26,7 @@ error[BF001]: 'use client' directive required for components with createSignal
 
 ### BF001 — Missing `"use client"` Directive
 
-**Trigger:** A component uses reactive APIs (`createSignal`, `createEffect`, event handlers) but the file doesn't start with `"use client"`.
+**Trigger:** Reactive APIs used without `"use client"`.
 
 ```tsx
 // ❌ BF001
@@ -37,7 +37,7 @@ export function Counter() {
 }
 ```
 
-**Fix:** Add the directive at the top of the file:
+**Fix:**
 
 ```tsx
 // ✅ Fixed
@@ -48,7 +48,7 @@ export function Counter() { ... }
 
 ### BF002 — Invalid Directive Position
 
-**Trigger:** `"use client"` is not the first statement in the file.
+**Trigger:** `"use client"` not first statement.
 
 ```tsx
 // ❌ BF002
@@ -56,13 +56,13 @@ import { createSignal } from '@barefootjs/client'
 "use client"
 ```
 
-**Fix:** Move the directive to the very first line (before any imports).
+**Fix:** Move to the first line (before imports).
 
 ### BF003 — Client Component Importing Server Component
 
-**Trigger:** A `"use client"` component imports from a file that doesn't have `"use client"`.
+**Trigger:** Client component imports from a file without `"use client"`.
 
-**Fix:** Either add `"use client"` to the imported file, or restructure the import to only reference types/constants (which are safe to import).
+**Fix:** Add `"use client"` to the imported file, or import only types/constants.
 
 ---
 
@@ -70,7 +70,7 @@ import { createSignal } from '@barefootjs/client'
 
 ### BF010 — Unknown Signal Reference
 
-**Trigger:** Code references a signal getter that wasn't declared in the component.
+**Trigger:** Undeclared signal getter referenced.
 
 ```tsx
 "use client"
@@ -79,7 +79,7 @@ export function Counter() {
 }
 ```
 
-**Fix:** Declare the signal:
+**Fix:**
 
 ```tsx
 const [count, setCount] = createSignal(0)
@@ -87,7 +87,7 @@ const [count, setCount] = createSignal(0)
 
 ### BF011 — Signal Used Outside Component
 
-**Trigger:** `createSignal` is called at module level instead of inside a component function.
+**Trigger:** `createSignal` at module level.
 
 ```tsx
 // ❌ BF011 — module-level signal
@@ -98,7 +98,7 @@ export function Counter() {
 }
 ```
 
-**Fix:** Move the signal inside the component:
+**Fix:**
 
 ```tsx
 export function Counter() {
@@ -109,7 +109,7 @@ export function Counter() {
 
 ### BF012 — Invalid Signal Usage
 
-**Trigger:** Signal API used in an unsupported pattern.
+**Trigger:** Unsupported signal API pattern.
 
 ---
 
@@ -117,26 +117,22 @@ export function Counter() {
 
 ### BF020 — Invalid JSX Expression
 
-**Trigger:** An expression in JSX braces can't be compiled.
+**Trigger:** Uncompilable JSX expression.
 
 ### BF021 — Unsupported JSX Pattern
 
-**Trigger:** An array method chain before `.map()` cannot be compiled to an SSR template. Unsupported patterns fall back to client-side evaluation.
+**Trigger:** Array method chain before `.map()` cannot compile to SSR template.
 
 #### SSR-Compatible Chains
-
-Only the following chain patterns are SSR-compiled as preprocessing before `.map()`:
 
 - `.filter().map()`
 - `.sort().map()` / `.toSorted().map()`
 - `.filter().sort().map()`
 - `.sort().filter().map()`
 
-Other method chains such as `.reduce()`, `.slice()`, `.flatMap()` are not detected and fall back to client-side evaluation.
+Other chains (`.reduce()`, `.slice()`, `.flatMap()`) fall back to client-side evaluation.
 
 #### filter: Supported Predicates
-
-Arrow function expression bodies composed of the following elements:
 
 - Property access: `t.done`, `t.price`
 - Literals: `'active'`, `5`, `true`
@@ -158,7 +154,7 @@ Arrow function expression bodies composed of the following elements:
 
 #### sort: Supported Comparators
 
-Only simple subtraction patterns of the form `(a, b) => a.field - b.field`:
+Simple subtraction: `(a, b) => a.field - b.field`:
 
 ```tsx
 // ✅ SSR-compilable
@@ -172,8 +168,6 @@ Only simple subtraction patterns of the form `(a, b) => a.field - b.field`:
 
 #### Workaround
 
-Add `/* @client */` to evaluate on the client side:
-
 ```tsx
 {/* @client */ todos().filter(t => t.items.some(i => i.done)).map(t => (
   <li>{t.name}</li>
@@ -182,11 +176,11 @@ Add `/* @client */` to evaluate on the client side:
 
 ### BF022 — Invalid JSX Attribute
 
-**Trigger:** An attribute value can't be compiled.
+**Trigger:** Uncompilable attribute value.
 
 ### BF023 — Missing Key in List
 
-**Trigger:** A `.map()` loop doesn't provide a `key` prop for reconciliation.
+**Trigger:** `.map()` loop without `key` prop.
 
 ```tsx
 // ❌ BF023
@@ -206,11 +200,11 @@ Add `/* @client */` to evaluate on the client side:
 
 ### BF030 — Type Inference Failed
 
-**Trigger:** The compiler can't infer the type of a signal or expression for the target template language.
+**Trigger:** Type inference failed for signal or expression.
 
 ### BF031 — Props Type Mismatch
 
-**Trigger:** A prop value doesn't match the declared type in the component's interface.
+**Trigger:** Prop value doesn't match declared type.
 
 ---
 
@@ -218,19 +212,19 @@ Add `/* @client */` to evaluate on the client side:
 
 ### BF040 — Component Not Found
 
-**Trigger:** A referenced child component can't be resolved.
+**Trigger:** Unresolvable child component reference.
 
 ### BF041 — Circular Dependency
 
-**Trigger:** Two components import each other.
+**Trigger:** Mutual component imports.
 
 ### BF042 — Invalid Component Name
 
-**Trigger:** Component name doesn't follow PascalCase convention.
+**Trigger:** Non-PascalCase component name.
 
 ### BF043 — Props Destructuring (Warning)
 
-**Trigger:** Props are destructured in the function parameter, which captures values once and may lose reactivity.
+**Trigger:** Props destructured in function parameter.
 
 ```tsx
 // ⚠️ BF043
@@ -266,14 +260,14 @@ function Child({ initialCount }: Props) {
 
 ### BF044 — Signal/Memo Getter Not Called
 
-**Trigger:** A signal or memo getter is passed as a value without calling it, so the receiving side gets the getter function instead of the current value.
+**Trigger:** Signal/memo getter passed without calling it.
 
 ```tsx
 // ⚠️ BF044
 <Child count={count} />  // Passing getter function, not the value
 ```
 
-**Fix:** Call the getter:
+**Fix:**
 
 ```tsx
 // ✅ Fixed
@@ -284,7 +278,7 @@ function Child({ initialCount }: Props) {
 
 ## Suppressing Warnings
 
-Use `@bf-ignore` to suppress specific warnings:
+Suppress with `@bf-ignore`:
 
 ```tsx
 // @bf-ignore props-destructuring

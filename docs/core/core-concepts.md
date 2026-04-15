@@ -5,8 +5,6 @@ description: Two-phase compilation, signal-based reactivity, hydration, and clea
 
 # Core Concepts
 
-BarefootJS has a small number of key ideas. Understanding them makes everything else click.
-
 ## Pages
 
 | Topic | Description |

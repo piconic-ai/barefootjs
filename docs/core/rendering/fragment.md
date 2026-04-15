@@ -29,9 +29,7 @@ No extra hydration markers are generated for transparent fragments.
 
 ## Fragments and Hydration
 
-Fragments don't produce a DOM node, so the compiler handles hydration differently from regular elements.
-
-For conditional fragments, the compiler uses HTML comment markers as boundaries:
+Fragments don't produce a DOM node. For conditional fragments, the compiler uses HTML comment markers as boundaries:
 
 ```html
 <!--bf-cond-start:slot_0-->

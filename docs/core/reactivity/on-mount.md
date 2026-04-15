@@ -27,7 +27,7 @@ Unlike `createEffect`, this function never re-runs. It executes once at initiali
 
 ## Common Patterns
 
-### Reading browser state
+### Browser state
 
 ```tsx
 onMount(() => {
@@ -36,7 +36,7 @@ onMount(() => {
 })
 ```
 
-### Setting up event listeners
+### Event listeners
 
 ```tsx
 onMount(() => {
@@ -46,7 +46,7 @@ onMount(() => {
 })
 ```
 
-### Focusing an element
+### Focus
 
 ```tsx
 onMount(() => {
@@ -57,13 +57,7 @@ onMount(() => {
 
 ## How It Works
 
-`onMount` is equivalent to:
-
-```tsx
-createEffect(() => untrack(fn))
-```
-
-The function runs inside an effect context (so `onCleanup` works), but `untrack` prevents any signal reads from being tracked as dependencies.
+`onMount` is equivalent to `createEffect(() => untrack(fn))`. The function runs inside an effect context (so `onCleanup` works), but `untrack` prevents dependency tracking.
 
 
 ## `onMount` vs `createEffect`

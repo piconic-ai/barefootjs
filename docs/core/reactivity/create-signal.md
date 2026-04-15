@@ -24,7 +24,7 @@ type Signal<T> = [
 ]
 ```
 
-The getter carries the `Reactive<T>` phantom brand — a compile-time marker that the compiler uses to identify reactive expressions. The brand has no runtime cost.
+The getter carries the `Reactive<T>` phantom brand — a compile-time marker for reactive expression detection. No runtime cost.
 
 
 ## Basic Usage
@@ -49,7 +49,7 @@ The getter is a **function call** — `count()`, not `count`. This is how the re
 
 ## Equality Check
 
-The setter uses `Object.is` to compare the new value with the current value. If they are identical, no effects are triggered:
+The setter uses `Object.is` to compare values. Identical values do not trigger effects:
 
 ```tsx
 const [name, setName] = createSignal('Alice')
@@ -73,7 +73,7 @@ setTodos([...todos(), { text: 'Walk dog' }])
 
 ## With Effects
 
-When a signal is read inside an effect, the effect automatically subscribes to changes:
+Reading a signal inside an effect subscribes the effect to changes:
 
 ```tsx
 const [count, setCount] = createSignal(0)
@@ -89,7 +89,7 @@ setCount(2) // Logs: "Count is: 2"
 
 ## With JSX
 
-In BarefootJS components, signal getters in JSX expressions create fine-grained DOM updates:
+Signal getters in JSX expressions create fine-grained DOM updates:
 
 ```tsx
 "use client"
@@ -112,7 +112,7 @@ The compiler generates an effect that updates only the `<p>` text content when `
 
 ## Type Inference
 
-The type parameter is inferred from the initial value:
+Type is inferred from the initial value:
 
 ```tsx
 const [count, setCount] = createSignal(0)        // Signal<number>

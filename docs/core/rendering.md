@@ -5,8 +5,6 @@ description: BarefootJS-specific JSX behavior covering compatibility, fragments,
 
 # Templates & Rendering
 
-This section covers BarefootJS-specific JSX behavior. Standard JSX knowledge is assumed.
-
 ## Pages
 
 | Topic | Description |

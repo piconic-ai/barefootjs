@@ -5,14 +5,12 @@ description: Type component props with TypeScript interfaces and preserve type i
 
 # Props & Type Safety
 
-Component props in BarefootJS are typed with TypeScript interfaces. The compiler preserves type information through compilation, and the adapter uses it to generate type-safe marked templates.
+The compiler preserves TypeScript type information through compilation. Adapters use it to generate type-safe templates.
 
-Props in client components are reactive — **how you access them matters**. See [Props Reactivity](../reactivity/props-reactivity.md) for the full explanation. This page focuses on typing patterns.
+Props in client components are reactive — see [Props Reactivity](../reactivity/props-reactivity.md). This page covers typing patterns.
 
 
 ## Defining Props
-
-Define props as an interface or type alias and annotate the function parameter:
 
 ```tsx
 interface GreetingProps {
@@ -37,7 +35,7 @@ function Button(props: { variant?: 'default' | 'primary'; children?: Child }) {
 }
 ```
 
-For props that are only used as an initial value for a signal, default parameter syntax is also fine. Note that the compiler emits warning `BF043` for destructuring, so add `@bf-ignore` to signal intent:
+For initial-value-only props, default parameter syntax works. Add `@bf-ignore` to suppress the `BF043` destructuring warning:
 
 ```tsx
 // @bf-ignore props-destructuring
@@ -50,7 +48,7 @@ function Counter({ initial = 0 }: { initial?: number }) {
 
 ## Extending HTML Attributes
 
-For components that wrap native elements, extend the corresponding HTML attribute type:
+Extend HTML attribute types for components wrapping native elements:
 
 ```tsx
 import type { ButtonHTMLAttributes } from '@barefootjs/jsx'
@@ -69,12 +67,12 @@ function Button(props: ButtonProps) {
 }
 ```
 
-This lets callers pass any standard button attribute (`type`, `disabled`, `aria-label`, etc.) alongside custom props.
+Callers can pass standard button attributes (`type`, `disabled`, `aria-label`, etc.) alongside custom props.
 
 
 ## Rest Spreading
 
-Use rest syntax to forward unknown props to the underlying element. Since rest spreading captures values once, use it for server components or for attributes that don't need reactive updates:
+Rest spreading captures values once, so use it for server components or non-reactive attributes:
 
 ```tsx
 function Card(props: { title: string; children?: Child } & HTMLAttributes) {
@@ -96,4 +94,4 @@ function Card(props: { title: string; children?: Child } & HTMLAttributes) {
 
 ## Type Preservation
 
-The compiler captures TypeScript type information for props and carries it through the IR. Each adapter uses this information to generate type-safe server output. For details on how types are mapped to specific backends, see [Adapters](../adapters.md).
+The compiler carries TypeScript type information through the IR. Each adapter uses it for type-safe server output. See [Adapters](../adapters.md) for backend-specific type mapping.

@@ -5,12 +5,10 @@ description: Standard JSX syntax support in BarefootJS, including control flow a
 
 # JSX Compatibility
 
-BarefootJS uses standard JSX syntax. If you have written React or SolidJS components, most patterns work as you expect.
+Standard JSX syntax works. This page covers BarefootJS-specific behavior and limitations.
 
 
 ## Control Flow
-
-Standard JavaScript control flow in JSX works:
 
 ```tsx
 // Ternary
@@ -29,15 +27,13 @@ return <div>...</div>
 
 ## List Rendering
 
-`.map()` renders lists:
-
 ```tsx
 {todos().map(todo => (
   <TodoItem key={todo.id} todo={todo} />
 ))}
 ```
 
-`.filter().map()` chains work when the predicate uses supported expressions — simple single expressions and block bodies with variable declarations, `if`/`return` statements:
+`.filter().map()` chains work when the predicate uses simple expressions or block bodies with `if`/`return`:
 
 ```tsx
 // ✅ Simple predicate
@@ -75,8 +71,6 @@ Some comparators (e.g., `localeCompare`, block bodies) are not supported and wil
 
 ## Event Handling
 
-`on*` attributes bind event handlers. The handler receives the native DOM event:
-
 ```tsx
 <button onClick={() => setCount(n => n + 1)}>+1</button>
 <input onInput={(e) => setText((e.target as HTMLInputElement).value)} />
@@ -85,8 +79,6 @@ Some comparators (e.g., `localeCompare`, block bodies) are not supported and wil
 
 
 ## Dynamic Attributes
-
-Expressions in attributes are reactive:
 
 ```tsx
 <button disabled={!accepted()}>Submit</button>
@@ -97,13 +89,11 @@ Expressions in attributes are reactive:
 
 ## Limitations
 
-BarefootJS compiles JSX into marked templates (Go `html/template`, Hono JSX, etc.) **and** client JS. Some JavaScript expressions cannot be translated into marked template syntax.
-
-When the compiler encounters an unsupported expression, it emits a **compile error** (`BF021`). Add [`/* @client */`](./client-directive.md) to explicitly opt into client-only evaluation for these expressions.
+Some JavaScript expressions cannot be translated into marked template syntax. The compiler emits `BF021` for these. Add [`/* @client */`](./client-directive.md) to opt into client-only evaluation.
 
 ### Unsupported patterns
 
-**Nested higher-order methods** — a higher-order method inside a predicate of another:
+**Nested higher-order methods:**
 
 ```tsx
 // ❌ Compile error (BF021)
@@ -113,7 +103,7 @@ When the compiler encounters an unsupported expression, it emits a **compile err
 {/* @client */ items().filter(x => x.tags().filter(t => t.active).length > 0)}
 ```
 
-**Unsupported array methods** — `.reduce()`, `.forEach()`, `.flatMap()` and others cannot be translated to marked template syntax:
+**Unsupported array methods** (`.reduce()`, `.forEach()`, `.flatMap()`):
 
 ```tsx
 // ❌ Compile error (BF021)
@@ -123,7 +113,7 @@ When the compiler encounters an unsupported expression, it emits a **compile err
 {/* @client */ items().reduce((sum, x) => sum + x.price, 0)}
 ```
 
-**Destructuring in predicate parameters** — the compiler requires a single named parameter:
+**Destructuring in predicate parameters:**
 
 ```tsx
 // ❌ Compile error (BF021)
@@ -133,7 +123,7 @@ When the compiler encounters an unsupported expression, it emits a **compile err
 {items().filter(t => t.done).map(...)}
 ```
 
-**Function expressions** — `function` keyword syntax is not supported:
+**Function expressions** (`function` keyword):
 
 ```tsx
 // ❌ Compile error (BF021)
@@ -143,7 +133,7 @@ When the compiler encounters an unsupported expression, it emits a **compile err
 {items().filter(x => x.done)}
 ```
 
-**Unsupported sort comparators** — `localeCompare` and block body comparators cannot be compiled:
+**Unsupported sort comparators** (`localeCompare`, block bodies):
 
 ```tsx
 // ❌ Compile error (BF021)

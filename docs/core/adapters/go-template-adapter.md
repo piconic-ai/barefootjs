@@ -5,7 +5,7 @@ description: Generate Go html/template files and type definitions from the compi
 
 # Go Template Adapter
 
-The Go Template adapter generates Go `html/template` files (`.tmpl`) and Go type definitions (`_types.go`) from the compiler's IR. It is designed for Go backends using the standard `html/template` package.
+Generates Go `html/template` files (`.tmpl`) and type definitions (`_types.go`) from the compiler's IR.
 
 ```
 npm install @barefootjs/go-template
@@ -115,8 +115,6 @@ export function Counter({ initial = 0 }: { initial?: number }) {
 
 ## Expression Translation
 
-The adapter translates JavaScript expressions into Go template syntax. This is the most complex part of the adapter, as the two languages have fundamentally different expression models.
-
 ### Property Access
 
 ```
@@ -156,8 +154,6 @@ Field names are automatically capitalized to follow Go conventions.
 
 
 ## Array Methods
-
-The adapter translates JavaScript array methods into Go template functions and blocks.
 
 ### `.map()`
 
@@ -210,11 +206,11 @@ For complex filter predicates, the adapter generates template block functions.
 
 ## Type Generation
 
-The Go adapter generates type-safe Go code alongside the template. For each component, it produces:
+For each component, the adapter generates:
 
-1. **Input struct** — The external API (what the caller passes)
-2. **Props struct** — The internal representation (includes hydration fields)
-3. **Constructor function** — `New{Component}Props()` with default values
+1. **Input struct** — external API
+2. **Props struct** — internal representation (includes hydration fields)
+3. **Constructor** — `New{Component}Props()` with defaults
 
 ### Type Mapping
 
@@ -229,8 +225,6 @@ The Go adapter generates type-safe Go code alongside the template. For each comp
 
 ### Nested Components
 
-When a component renders child components, the adapter generates Props structs for the children and includes them as fields in the parent's Props struct:
-
 ```tsx
 export function TodoList({ items }: { items: TodoItem[] }) {
   return (
@@ -241,12 +235,9 @@ export function TodoList({ items }: { items: TodoItem[] }) {
 }
 ```
 
-The generated Go types include a `TodoItems` field of type `[]TodoItemProps`, pre-populated by the constructor function.
-
-
 ## Conditional Rendering
 
-Ternary expressions translate to `{{if}}...{{else}}...{{end}}` blocks:
+Ternaries become `{{if}}...{{else}}...{{end}}`:
 
 **Source:**
 
@@ -263,18 +254,18 @@ Ternary expressions translate to `{{if}}...{{else}}...{{end}}` blocks:
 
 ## Script Registration
 
-The adapter uses a `ScriptCollector` pattern. Each client component registers its script with:
+Each client component registers its script:
 
 ```go-template
 {{template "bf_register_script" "Counter"}}
 ```
 
-The Go server's `ScriptCollector` tracks which scripts are needed and renders the appropriate `<script>` tags at the end of the page. Each component's script is included at most once.
+The `ScriptCollector` tracks needed scripts and renders `<script>` tags at page end. Each script loads at most once.
 
 
 ## Go Helper Functions
 
-The adapter assumes these helper functions are available in the Go template `FuncMap`:
+These helper functions must be in the Go template `FuncMap`:
 
 | Function | Purpose |
 |----------|---------|
@@ -287,4 +278,4 @@ The adapter assumes these helper functions are available in the Go template `Fun
 | `bf_json` | JSON-encode a value for props serialization |
 | `bf_concat` | String concatenation |
 
-These are provided by the BarefootJS Go runtime package.
+Provided by the BarefootJS Go runtime package.

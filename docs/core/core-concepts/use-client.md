@@ -5,7 +5,7 @@ description: Marking components for client-side interactivity
 
 # The `"use client"` Directive
 
-Components that use reactive primitives (`createSignal`, `createEffect`, etc.) must include the `"use client"` directive at the top of the file:
+Components with reactive primitives (`createSignal`, `createEffect`, etc.) require `"use client"` at the top of the file:
 
 ```tsx
 "use client"
@@ -17,13 +17,7 @@ export function Counter() {
 }
 ```
 
-This tells the compiler:
-
-- **Generate client JS** for this component
-- **Add hydration markers** to the marked template
-- **Validate** that reactive APIs are only used in client components
-
-Without the directive, the compiler produces a server-only template with no client JS. A component without `"use client"` that tries to use `createSignal` will get an error:
+The directive tells the compiler to generate client JS and add hydration markers to the template. Without it, the compiler produces a server-only template. Using reactive APIs without the directive triggers an error:
 
 ```
 error[BF001]: 'use client' directive required for components with createSignal
@@ -38,7 +32,7 @@ error[BF001]: 'use client' directive required for components with createSignal
 
 ## Security Boundary
 
-`"use client"` marks a **security boundary**. Code in a client component is compiled into JavaScript that runs in the browser — meaning it is **visible to the user**. Never include secrets, database access, or other sensitive logic in a `"use client"` file.
+`"use client"` marks a **security boundary**. Code in a client component runs in the browser and is visible to the user. Never include secrets, database access, or other sensitive logic in a `"use client"` file.
 
 ```tsx
 // server-only.tsx — NO "use client"
@@ -67,11 +61,11 @@ export function Counter() {
 
 ## Server and Client Component Composition
 
-Server components and client components have a clear composition rule:
+Composition follows a one-way rule:
 
-- **Server component → Client component**: A server component can render a client component as a child. The server renders the HTML with hydration markers, and the client JS takes over in the browser.
-- **Client component → Client component**: A client component can render other client components.
-- **Client component → Server component**: Not allowed. A client component cannot import and render a server-only component, because server-only code does not exist on the client.
+- **Server → Client**: Allowed. The server renders HTML with hydration markers; the client JS takes over.
+- **Client → Client**: Allowed.
+- **Client → Server**: Not allowed. Server-only code does not exist on the client.
 
 ```tsx
 // Page.tsx — server component
@@ -95,4 +89,4 @@ import { Counter } from './Counter'    // ✅ Client → Client
 import { UserList } from './UserList'  // ❌ Client → Server (error)
 ```
 
-Think of `"use client"` as a one-way gate: once you cross into client territory, everything below must also be a client component.
+Once you cross into client territory, everything below must also be a client component.

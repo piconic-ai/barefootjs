@@ -5,7 +5,7 @@ description: Mark JSX expressions for client-only evaluation when the compiler c
 
 # /* @client */ Directive
 
-The `/* @client */` comment directive marks a JSX expression for **client-only evaluation**. The server renders a placeholder; the browser evaluates the expression at runtime.
+Marks a JSX expression for **client-only evaluation**. The server renders a placeholder; the browser evaluates the expression at runtime.
 
 ```tsx
 {/* @client */ expression}
@@ -14,7 +14,7 @@ The `/* @client */` comment directive marks a JSX expression for **client-only e
 
 ## When to Use
 
-When the compiler encounters an expression it cannot translate to a marked template, it emits a **compile error** (`BF021`). Adding `/* @client */` resolves the error by explicitly opting into client-only evaluation.
+The compiler emits `BF021` for expressions it cannot translate to a marked template. `/* @client */` resolves the error by opting into client-only evaluation.
 
 ```
 error[BF021]: Expression cannot be compiled to marked template
@@ -32,7 +32,7 @@ See [JSX Compatibility — Limitations](./jsx-compatibility.md#limitations) for 
 
 ## How It Works
 
-With `/* @client */`, the compiler skips marked template generation for the expression. The server outputs a comment marker and the client JS evaluates the expression entirely:
+The compiler skips template generation for the expression. The server outputs a comment marker; the client JS evaluates it:
 
 **Server output:**
 
@@ -51,8 +51,6 @@ insert(scope, 'slot_5', () => todos().filter(t => !t.done).length)
 ## Examples
 
 ### Unsupported patterns
-
-Patterns that the compiler cannot translate to marked templates require `/* @client */`:
 
 ```tsx
 // Nested higher-order methods
@@ -79,4 +77,4 @@ Compare with the [TodoAppSSR version](https://github.com/barefootjs/barefootjs/b
 
 ## Trade-off
 
-`/* @client */` means the expression has **no server-rendered content** — the user sees the placeholder until client JS loads and evaluates. Use it only when the compiler cannot generate a marked template equivalent. For expressions that the compiler can handle, omit the directive to get server-rendered initial values.
+`/* @client */` means **no server-rendered content** for the expression — users see a placeholder until client JS loads. Omit the directive when the compiler can generate a template equivalent to get server-rendered initial values.

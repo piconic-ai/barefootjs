@@ -5,12 +5,12 @@ description: Step-by-step guide to building a custom adapter using the TestAdapt
 
 # Writing a Custom Adapter
 
-This guide walks through building a custom adapter, using the `TestAdapter` (`packages/jsx/src/adapters/test-adapter.ts`) as a concrete example. The TestAdapter is a minimal, working adapter included in the compiler package — it generates simple JSX output and demonstrates every method you need to implement.
+Build a custom adapter using the `TestAdapter` (`packages/jsx/src/adapters/test-adapter.ts`) as reference — a minimal working adapter that generates JSX output.
 
 
 ## Step 1: Implement `TemplateAdapter`
 
-Create a class that extends `BaseAdapter` (or implements `TemplateAdapter` directly):
+Extend `BaseAdapter` or implement `TemplateAdapter` directly:
 
 ```typescript
 import type {
@@ -53,12 +53,9 @@ export class TestAdapter extends BaseAdapter {
 }
 ```
 
-The `generate()` method is the entry point. It receives the full `ComponentIR` and returns an `AdapterOutput` containing the generated template, optional types, and the file extension.
-
-
 ## Step 2: Implement `renderNode()`
 
-The dispatcher routes each IR node to the correct rendering method:
+Route each IR node to the correct rendering method:
 
 ```typescript
 renderNode(node: IRNode): string {
@@ -76,16 +73,9 @@ renderNode(node: IRNode): string {
 }
 ```
 
-Each `case` maps to one of the required `TemplateAdapter` methods. The `text` and `fragment` cases are simple enough to handle inline.
-
-
 ## Step 3: Implement Element Rendering
 
-Elements are the most common node type. You need to:
-
-1. Render the HTML tag and attributes
-2. Insert hydration markers (`bf-s`, `bf`)
-3. Render children recursively
+Render the tag, attributes, hydration markers, and children:
 
 ```typescript
 renderElement(element: IRElement): string {
@@ -110,8 +100,6 @@ renderElement(element: IRElement): string {
 ```
 
 ### Attributes
-
-The `renderAttributes()` helper handles static attributes, dynamic expressions, spread attributes, and event handlers:
 
 ```typescript
 private renderAttributes(element: IRElement): string {
@@ -141,12 +129,12 @@ private renderAttributes(element: IRElement): string {
 }
 ```
 
-**Note:** The TestAdapter renders event handlers as no-op stubs (`() => {}`) since JSX expects them to be present. In non-JSX adapters (like Go Template), event handlers are simply omitted — they only exist in the client JS.
+The TestAdapter renders event handlers as no-op stubs for JSX. Non-JSX adapters omit them — handlers exist only in client JS.
 
 
 ## Step 4: Implement Expression Rendering
 
-Expressions render dynamic values. Reactive expressions with a `slotId` get wrapped in a `<span>` with a hydration marker so the client JS can update them:
+Reactive expressions with a `slotId` get a hydration marker for client JS updates:
 
 ```typescript
 renderExpression(expr: IRExpression): string {
@@ -160,12 +148,12 @@ renderExpression(expr: IRExpression): string {
 }
 ```
 
-Since the TestAdapter outputs JSX, expressions pass through as-is (`{count()}`). A non-JSX adapter would need to convert the JavaScript expression into the target template language (e.g., `count()` → `{{.Count}}` for Go).
+Non-JSX adapters convert expressions to the target language (e.g., `count()` → `{{.Count}}`).
 
 
 ## Step 5: Implement Conditional Rendering
 
-Ternary expressions in JSX stay as JSX ternaries in the TestAdapter output:
+Ternaries pass through in JSX adapters:
 
 ```typescript
 renderConditional(cond: IRConditional): string {
@@ -186,12 +174,12 @@ renderConditional(cond: IRConditional): string {
 {isActive ? <span>Active</span> : <span>Inactive</span>}
 ```
 
-A non-JSX adapter would translate this into the target language's conditional syntax (e.g., `{{if .IsActive}}...{{else}}...{{end}}` for Go).
+Non-JSX adapters translate to the target conditional syntax (e.g., `{{if .IsActive}}...{{else}}...{{end}}`).
 
 
 ## Step 6: Implement Loop Rendering
 
-Array `.map()` calls stay as JSX map expressions:
+`.map()` calls stay as JSX:
 
 ```typescript
 renderLoop(loop: IRLoop): string {
@@ -212,12 +200,12 @@ renderLoop(loop: IRLoop): string {
 {items.map((item) => <li>{item.name}</li>)}
 ```
 
-A non-JSX adapter would translate this into the target language's iteration syntax (e.g., `{{range .Items}}...{{end}}` for Go).
+Non-JSX adapters translate to the target iteration syntax (e.g., `{{range .Items}}...{{end}}`).
 
 
 ## Step 7: Implement Component Rendering
 
-Nested components are rendered as JSX elements with the parent's scope ID passed through:
+Pass the parent's scope ID to nested components:
 
 ```typescript
 renderComponent(comp: IRComponent): string {
@@ -234,12 +222,7 @@ renderComponent(comp: IRComponent): string {
 }
 ```
 
-The `__bfScope` prop passes the parent's scope ID so nested components can participate in the hydration hierarchy.
-
-
 ## Step 8: Implement Hydration Markers
-
-These methods generate the `bf-*` attributes in the target language's syntax:
 
 ```typescript
 renderScopeMarker(instanceIdExpr: string): string {
@@ -255,12 +238,9 @@ renderCondMarker(condId: string): string {
 }
 ```
 
-The TestAdapter uses JSX expression syntax (`{...}`) for the scope marker since the value is dynamic. The slot and cond markers use plain string attributes since slot IDs are compile-time constants.
-
-
 ## Step 9: Generate Signal Initializers
 
-Client components need signal getters to return initial values during SSR. The TestAdapter creates stub functions:
+Signal getters return initial values during SSR via stub functions:
 
 ```typescript
 private generateSignalInitializers(ir: ComponentIR): string {
@@ -279,18 +259,15 @@ private generateSignalInitializers(ir: ComponentIR): string {
 }
 ```
 
-For example, `const [count, setCount] = createSignal(initial)` becomes:
+`const [count, setCount] = createSignal(initial)` becomes:
 ```typescript
 const count = () => initial   // getter returns initial value
 const setCount = () => {}     // setter is a no-op on the server
 ```
 
-This allows the template to evaluate `count()` during SSR and render the initial value.
-
-
 ## Optional: Type Generation
 
-If your backend language is typed, implement `generateTypes()`. The TestAdapter generates a hydration-extended props type:
+For typed backends, implement `generateTypes()`:
 
 ```typescript
 generateTypes(ir: ComponentIR): string | null {
@@ -311,9 +288,7 @@ generateTypes(ir: ComponentIR): string | null {
 For dynamically-typed backends, return `null`.
 
 
-## Testing Your Adapter
-
-Use the compiler to verify your adapter output:
+## Testing
 
 ```typescript
 import { compileJsxToIR } from '@barefootjs/jsx'
@@ -356,7 +331,7 @@ console.log(output.template)
 
 ## Checklist
 
-When building a custom adapter, ensure you handle:
+Ensure you handle:
 
 - [ ] All IR node types (`element`, `text`, `expression`, `conditional`, `loop`, `component`, `fragment`, `slot`)
 - [ ] Hydration markers (`bf-s`, `bf`, `bf-c`) on interactive elements
@@ -369,7 +344,7 @@ When building a custom adapter, ensure you handle:
 - [ ] Script registration for client JS loading
 - [ ] `/* @client */` directive (skip client-only expressions server-side)
 
-Production adapters handle additional concerns beyond what the TestAdapter covers:
+Production adapters also handle:
 
 - [ ] Void HTML elements (`<input>`, `<br>`, etc.) — no closing tag
 - [ ] Expression translation to the target template language

@@ -5,36 +5,20 @@ description: CSS Cascade Layers ensure user styles always beat component default
 
 # Clean Overrides (CSS Layers)
 
-BarefootJS uses CSS Cascade Layers to guarantee that user-supplied classes always override component base classes — without runtime JS, without merge functions, and without worrying about generation order.
+BarefootJS uses CSS Cascade Layers to guarantee that user-supplied classes always override component base classes — no runtime JS, no merge functions, no generation-order concerns.
 
-## The Problem
+## Why Layers?
 
-When a component defines base classes and a user passes override classes, both have equal CSS specificity. The winner depends on which CSS rule appears later in the stylesheet — which in turn depends on the order the CSS toolchain happens to generate them.
+When a component's base classes and a user's override classes have equal specificity, the winner depends on stylesheet generation order. This is fragile.
 
-```tsx
-// Component defines base classes
-<button className="bg-primary text-white">
-
-// User wants to override the background
-<Button className="bg-red-500">
-```
-
-If `bg-primary` is generated after `bg-red-500` in the CSS output, the user's override silently fails. This is fragile and order-dependent.
-
-## The Solution
-
-CSS Cascade Layers provide a spec-level mechanism for controlling style priority. Styles in a named `@layer` always lose to un-layered styles, regardless of specificity or source order.
-
-BarefootJS puts component base classes into `@layer components`. User-supplied classes remain un-layered. The cascade guarantees the user wins:
+CSS Cascade Layers solve this: styles in a named `@layer` always lose to un-layered styles, regardless of specificity or source order. BarefootJS puts component base classes into `@layer components`. User-supplied classes remain un-layered:
 
 ```css
 /* Layer ordering: lowest → highest priority */
 @layer preflights, base, shortcuts, components, default;
 ```
 
-Un-layered styles (user overrides) always beat any layer — this is defined by the CSS spec, not by any toolchain convention.
-
-## How It Works
+## Compile-Time Prefixing
 
 The compiler's `cssLayerPrefix` option prefixes component base classes at compile time.
 
@@ -93,13 +77,13 @@ Applied classes:
 Result: bg-red-500 wins. Always.
 ```
 
-## Key Properties
+## Properties
 
-- **Zero runtime cost** — Prefixing happens at compile time. No JS runs in the browser to merge classes.
-- **Works with any CSS tool** — The `layer-components:` prefix convention is supported by UnoCSS. Any tool that supports CSS Cascade Layers can use this approach.
-- **No merge function needed** — The CSS cascade handles class conflict resolution natively.
-- **Language-independent** — The prefixing is applied to the IR, so Go, Rust, and Node adapters all benefit equally.
-- **Preserves both classes** — Both classes remain in the DOM. DevTools shows exactly what was applied and what was overridden.
+- **Zero runtime cost** — Prefixing happens at compile time.
+- **Works with any CSS tool** — UnoCSS supports the `layer-components:` prefix. Any tool with Cascade Layer support works.
+- **No merge function needed** — The CSS cascade handles conflict resolution natively.
+- **Language-independent** — Prefixing is applied to the IR, so all adapters benefit equally.
+- **Preserves both classes** — Both classes remain in the DOM. DevTools shows what was applied and overridden.
 
 ## Configuration
 

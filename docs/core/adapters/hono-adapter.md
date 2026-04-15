@@ -5,7 +5,7 @@ description: Generate Hono JSX templates from the compiler's IR for Hono-based s
 
 # Hono Adapter
 
-The Hono adapter generates Hono JSX (`.hono.tsx`) files from the compiler's IR. It is designed for Hono-based servers and any JSX-compatible TypeScript backend.
+Generates Hono JSX (`.hono.tsx`) files from the compiler's IR. Works with Hono and any JSX-compatible TypeScript backend.
 
 ```
 npm install @barefootjs/hono
@@ -47,7 +47,7 @@ const adapter = new HonoAdapter({
 
 ### Server Component
 
-A server-only component (no `"use client"`) produces a plain Hono JSX function:
+Without `"use client"`, no hydration markers or client JS:
 
 **Source:**
 
@@ -65,11 +65,7 @@ export function Greeting({ name }: { name: string }) {
 }
 ```
 
-No hydration markers, no client JS.
-
 ### Client Component
-
-A client component produces a Hono JSX function with hydration markers and props serialization:
 
 **Source:**
 
@@ -106,20 +102,16 @@ export function Counter({ initial = 0, __instanceId, __bfScope }: CounterPropsWi
 }
 ```
 
-Key aspects of the output:
-
-- **`bf-s`** on the root element identifies the component boundary
-- **`bf="slot_N"`** marks elements that the client JS will target
-- **Signal stubs** (`count = () => initial ?? 0`) allow the template to render the initial value server-side
-- **`bf-p`** attribute serializes props as JSON for client-side hydration
-- **Event handlers are removed** — they exist only in the client JS
+- `bf-s` — component boundary
+- `bf="slot_N"` — client JS targets
+- Signal stubs (`count = () => initial ?? 0`) — render initial values server-side
+- `bf-p` — serialized props for client hydration
+- Event handlers are removed (client JS only)
 
 
 ## Script Collection
 
-Script collection is handled as a build-time post-processing step. After compiling with HonoAdapter, the build script injects `useRequestContext()` calls into the generated marked templates to register client scripts during SSR.
-
-At the end of the page, the `BfScripts` component renders the collected `<script>` tags:
+A build-time post-processing step injects `useRequestContext()` calls into generated templates. `BfScripts` renders the collected `<script>` tags:
 
 ```tsx
 import { BfScripts } from '@barefootjs/hono'
@@ -136,12 +128,12 @@ export function Layout({ children }) {
 }
 ```
 
-This ensures each component's client JS is loaded exactly once, even if the component appears multiple times on the page. See `site/ui/build.ts` for the `addScriptCollection()` implementation pattern.
+Each component's client JS loads once regardless of instance count. See `site/ui/build.ts` for the `addScriptCollection()` pattern.
 
 
 ## Hydration Props
 
-The adapter extends every client component's props with hydration-related fields:
+Every client component's props are extended with hydration fields:
 
 | Prop | Purpose |
 |------|---------|
@@ -150,12 +142,12 @@ The adapter extends every client component's props with hydration-related fields
 | `__bfChild` | Marks this component as a child instance (adds `~` prefix to `bf-s` value) |
 | `data-key` | Stable key for list-rendered instances |
 
-These props are used internally by the hydration system and do not need to be passed manually when using components.
+These are used internally — no manual passing needed.
 
 
 ## Conditional Rendering
 
-Ternary expressions in JSX compile to conditional output with hydration markers:
+Ternaries compile with `bf-c` markers:
 
 **Source:**
 
@@ -169,12 +161,7 @@ Ternary expressions in JSX compile to conditional output with hydration markers:
 {isActive() ? <span bf-c="slot_2">Active</span> : <span bf-c="slot_2">Inactive</span>}
 ```
 
-The client JS uses the `bf-c` marker to swap DOM nodes when the condition changes.
-
-
 ## Loop Rendering
-
-Array `.map()` calls compile to JSX map expressions:
 
 **Source:**
 
@@ -188,4 +175,4 @@ Array `.map()` calls compile to JSX map expressions:
 {items().map(item => <li>{item.name}</li>)}
 ```
 
-For loops with child components, the adapter generates unique instance IDs per iteration using the loop index or a `key` prop.
+For child components in loops, the adapter generates unique instance IDs per iteration using the loop index or `key`.

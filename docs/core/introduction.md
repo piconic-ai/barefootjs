@@ -82,44 +82,22 @@ hydrate('Counter', { init: initCounter })
 No framework runtime. No virtual DOM. Just the minimum JavaScript needed for interactivity.
 
 
-## Why BarefootJS?
+## Design Principles
 
-### The Problem
-
-Modern frontend frameworks ship large JavaScript runtimes to the browser, even when most of the page is static content. Server-side rendering helps with initial load, but hydration still requires downloading and executing the full framework.
-
-If your backend is Go, Python, or Perl, the gap is wider: you either maintain separate template and JavaScript codebases, or adopt a JavaScript-only stack.
-
-### The BarefootJS Approach
-
-BarefootJS compiles JSX into **native templates for your backend** and **minimal client JS** — bridging server rendering and client interactivity without a runtime.
-
-- **Backend agnostic** — The same JSX source produces templates for any backend (Go, TypeScript, etc.)
-- **Fine-grained reactivity** — Signals track dependencies at the expression level, updating only the affected DOM nodes
-- **Minimal client JS** — Each component ships only the JavaScript it needs, not a framework runtime
-- **Full type safety** — TypeScript types flow through the entire compilation pipeline
-
-
-## Design Philosophy
-
-**1. Compile, don't ship a runtime.**
+**Compile, don't ship a runtime.**
 The compiler does the heavy lifting at build time. The browser receives only the JavaScript it needs — no framework, no virtual DOM diffing.
 
-**2. Backend agnostic.**
+**Backend agnostic.**
 The same JSX source produces templates for Hono, Go `html/template`, and any future adapter. Your component library works across stacks.
 
-**3. Fine-grained reactivity.**
+**Fine-grained reactivity.**
 Inspired by SolidJS, signals track dependencies at the expression level. When state changes, only the affected DOM nodes update — not the entire component tree.
 
-**4. Progressive enhancement.**
-Server-rendered HTML works without JavaScript. Client scripts enhance the page with interactivity. If JavaScript fails to load, users still see content.
+**Progressive enhancement.**
+Server-rendered HTML works without JavaScript. Client scripts add interactivity. If JavaScript fails to load, users still see content.
 
-**5. Familiar syntax, no lock-in.**
-JSX is the authoring format, but the output is standard HTML and vanilla JavaScript. There is no proprietary template language to learn and no framework to migrate away from.
+**Full type safety.**
+TypeScript types flow through the entire compilation pipeline.
 
-
-## Who is it for?
-
-- **Full-stack TypeScript developers** who want reactive UI without shipping a framework runtime to the browser
-- **Backend teams** (Go, Python, etc.) who need interactive components without adopting a JavaScript-only stack
-- **Performance-focused teams** who need minimal client JS with fine-grained DOM updates
+**No lock-in.**
+JSX is the authoring format, but the output is standard HTML and vanilla JavaScript. No proprietary template language. No framework to migrate away from.
