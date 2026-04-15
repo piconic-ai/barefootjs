@@ -8,7 +8,7 @@ import { Hono } from 'hono'
 import { landingRenderer } from './renderer'
 import { initHighlighter } from './components/shared/highlighter'
 import { Hero } from './components/hero'
-import { FiveFeaturesSection, UIComponentsSection } from './components/features'
+import { FeaturesSection, UIComponentsSection } from './components/features'
 
 /**
  * Create the landing page app with routes.
@@ -26,7 +26,7 @@ export async function createLandingApp() {
     return c.render(
       <>
         <Hero />
-        <FiveFeaturesSection />
+        <FeaturesSection />
         <UIComponentsSection />
       </>,
       {

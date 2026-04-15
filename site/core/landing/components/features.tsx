@@ -4,7 +4,7 @@
  * Displays Fine-grained reactivity benchmark and UI components showcase.
  */
 
-const fiveFeatures = [
+const features = [
   {
     num: '01',
     title: 'Backend Freedom',
@@ -12,33 +12,28 @@ const fiveFeatures = [
   },
   {
     num: '02',
-    title: 'Selective Hydration',
-    description: 'JS only where needed',
+    title: 'MPA-style',
+    description: 'Add to existing apps',
   },
   {
     num: '03',
-    title: 'Signals',
-    description: 'Fine-grained reactivity',
+    title: 'Fine-grained',
+    description: 'Signal-based reactivity',
   },
   {
     num: '04',
-    title: 'Clean Overrides',
-    description: 'Your styles always win',
-  },
-  {
-    num: '05',
-    title: 'Type-safe',
-    description: 'TSX + TypeScript',
+    title: 'AI-native',
+    description: 'CLI + fast IR tests',
   },
 ]
 
-export function FiveFeaturesSection() {
+export function FeaturesSection() {
   return (
     <section className="py-32 px-6 sm:px-12 border-t">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex flex-wrap">
-          {fiveFeatures.map((feature) => (
-            <div className="w-full sm:w-1/2 md:w-1/3 lg:w-1/5 p-6 sm:p-8 flex flex-col border-b lg:border-b-0 lg:border-r last:border-r-0 sm:[&:nth-child(2n)]:border-r-0 md:[&:nth-child(2n)]:border-r md:[&:nth-child(3n)]:border-r-0 lg:[&:nth-child(3n)]:border-r">
+          {features.map((feature) => (
+            <div className="w-full sm:w-1/2 lg:w-1/4 p-6 sm:p-8 flex flex-col border-b lg:border-b-0 lg:border-r last:border-r-0 sm:[&:nth-child(2n)]:border-r-0 lg:[&:nth-child(2n)]:border-r">
               <span className="text-xs font-mono text-[var(--gradient-start)] tracking-wider mb-4">
                 {feature.num}
               </span>

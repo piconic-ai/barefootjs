@@ -185,8 +185,8 @@ export async function Hero() {
             Reactive TSX for <span className="gradient-text whitespace-nowrap">any backend</span>
           </h1>
           <p className="fade-in-1 text-lg text-muted-foreground mb-8 max-w-lg">
-            Write TSX with signals. Compile to templates your backend understands.
-            No VDOM on the client, just selective hydration.
+            Signal-based JSX that compiles to any backend's template language.
+            Add fine-grained reactivity to server-rendered pages — no SPA required.
           </p>
           <div className="fade-in-2 flex flex-wrap gap-3">
             <a
