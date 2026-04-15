@@ -90,20 +90,14 @@ No framework runtime. No virtual DOM. Just the minimum JavaScript needed for int
 
 ## Design Principles
 
-**Compile, don't ship a runtime.**
-The compiler does the heavy lifting at build time. The browser receives only the JavaScript it needs — no framework, no virtual DOM diffing.
+**Backend Freedom.**
+The same JSX source produces templates for Hono, Go `html/template`, and any future adapter. Your component library works across stacks. No Node.js lock-in — use the server language your team already knows.
 
-**Backend agnostic.**
-The same JSX source produces templates for Hono, Go `html/template`, and any future adapter. Your component library works across stacks.
+**MPA-style development.**
+Add interactive UI to existing server-rendered apps without adopting a full SPA framework. Each page is a normal route; client JavaScript is only loaded where you mark it.
 
 **Fine-grained reactivity.**
-Inspired by SolidJS, signals track dependencies at the expression level. When state changes, only the affected DOM nodes update — not the entire component tree.
+Signals track dependencies at the expression level. When state changes, only the affected DOM nodes update — no virtual DOM diffing, no component-tree re-render. [Benchmarked at SolidJS-equivalent performance](https://github.com/barefootjs/barefootjs/issues/236), orders of magnitude faster than vDOM reconciliation.
 
-**Progressive enhancement.**
-Server-rendered HTML works without JavaScript. Client scripts add interactivity. If JavaScript fails to load, users still see content.
-
-**Full type safety.**
-TypeScript types flow through the entire compilation pipeline.
-
-**No lock-in.**
-JSX is the authoring format, but the output is standard HTML and vanilla JavaScript. No proprietary template language. No framework to migrate away from.
+**AI-native development.**
+The compiler produces an IR that can be tested without a browser, enabling fast component tests via `renderToTest()`. Combined with a CLI for component discovery (`barefoot search`, `barefoot ui`), AI agents can autonomously scaffold, test, and iterate on UI components.

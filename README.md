@@ -13,12 +13,12 @@
 
 ---
 
-## Features
+## Design Principles
 
-- **Zero runtime overhead (SSR)** - Server renders pure templates, no JS framework needed
-- **Fine-grained reactivity** - Signal-based updates, only re-render what changed
-- **Type-safe** - Full TypeScript support with preserved type information
-- **Backend agnostic** - Currently supports Hono/JSX, designed for Go, Python, etc.
+- **Backend Freedom** — Same JSX works with Hono, Go, Mojolicious, etc. No Node.js lock-in.
+- **MPA-style development** — Add interactivity to existing server apps without an SPA framework.
+- **Fine-grained reactivity** — Signal-based, only affected DOM nodes update. SolidJS-equivalent performance.
+- **AI-native development** — IR enables browser-free testing. CLI for component discovery. AI agents can develop autonomously.
 
 ---
 
