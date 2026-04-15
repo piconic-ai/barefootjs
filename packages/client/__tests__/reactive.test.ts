@@ -415,6 +415,46 @@ describe('createEffect', () => {
   })
 })
 
+describe('circular dependency detection', () => {
+  test('deep memo chain (150 levels) works without hitting any limit', () => {
+    const [source, setSource] = createSignal(1)
+    const memos: ReturnType<typeof createMemo<number>>[] = []
+
+    // Build a chain: source → memo0 → memo1 → ... → memo149
+    memos.push(createMemo(() => source() + 1))
+    for (let i = 1; i < 150; i++) {
+      const prev = memos[i - 1]
+      memos.push(createMemo(() => prev() + 1))
+    }
+
+    expect(memos[149]()).toBe(151) // 1 + 150
+    setSource(10)
+    expect(memos[149]()).toBe(160) // 10 + 150
+  })
+
+  test('circular dependency (effect writes to its own signal) is detected', () => {
+    expect(() => {
+      const [count, setCount] = createSignal(0)
+      createEffect(() => {
+        setCount(count() + 1)
+      })
+    }).toThrow('Circular dependency detected')
+  })
+
+  test('indirect circular dependency is detected', () => {
+    expect(() => {
+      const [a, setA] = createSignal(0)
+      const [b, setB] = createSignal(0)
+      createEffect(() => {
+        setB(a() + 1)
+      })
+      createEffect(() => {
+        setA(b() + 1)
+      })
+    }).toThrow('Circular dependency detected')
+  })
+})
+
 describe('onMount', () => {
   test('runs once on mount', () => {
     let runCount = 0

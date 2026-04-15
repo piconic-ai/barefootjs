@@ -34,8 +34,7 @@ type EffectContext = {
 
 let Owner: EffectContext | null = null
 let Listener: EffectContext | null = null
-let effectDepth = 0
-const MAX_EFFECT_RUNS = 100
+const runningEffects = new Set<EffectContext>()
 
 /**
  * Create a reactive value
@@ -116,10 +115,8 @@ export function createEffect(fn: EffectFn): void {
 function runEffect(effect: EffectContext): void {
   if (effect.disposed) return
 
-  effectDepth++
-  if (effectDepth > MAX_EFFECT_RUNS) {
-    effectDepth = 0
-    throw new Error(`Effect exceeded maximum run limit (${MAX_EFFECT_RUNS}). Possible circular dependency.`)
+  if (runningEffects.has(effect)) {
+    throw new Error('Circular dependency detected: effect is re-entering itself.')
   }
 
   if (effect.cleanup) {
@@ -137,6 +134,7 @@ function runEffect(effect: EffectContext): void {
   Owner = effect
   Listener = effect
 
+  runningEffects.add(effect)
   try {
     const result = effect.fn()
     if (typeof result === 'function') {
@@ -145,7 +143,7 @@ function runEffect(effect: EffectContext): void {
   } finally {
     Owner = prevOwner
     Listener = prevListener
-    effectDepth--
+    runningEffects.delete(effect)
   }
 }
 
