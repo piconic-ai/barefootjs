@@ -21,13 +21,10 @@ type ItemScope<T> = {
   setItem: (v: T) => void
 }
 
-/** Find loop boundary comment markers in a container.
- *  Searches direct children first, then walks descendants for nested cases
- *  (e.g., loop markers inside a child component like SelectContent). */
+/** Find loop boundary comment markers in a container. */
 function findLoopMarkers(container: HTMLElement): { start: Comment | null; end: Comment | null } {
   let start: Comment | null = null
   let end: Comment | null = null
-  // Try direct children first (fast path)
   for (const node of Array.from(container.childNodes)) {
     if (node.nodeType === Node.COMMENT_NODE) {
       const value = (node as Comment).nodeValue
@@ -36,17 +33,6 @@ function findLoopMarkers(container: HTMLElement): { start: Comment | null; end: 
     }
   }
   if (start && end) return { start, end }
-  // Fallback: walk descendants (handles loops inside child components)
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_COMMENT)
-  start = null
-  end = null
-  let comment: Comment | null
-  while ((comment = walker.nextNode() as Comment | null)) {
-    const value = comment.nodeValue
-    if (value === BF_LOOP_START) start = comment
-    else if (value === BF_LOOP_END) end = comment
-    if (start && end) return { start, end }
-  }
   return { start: null, end: null }
 }
 

@@ -324,9 +324,14 @@ function emitBranchInnerLoops(
     const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param)
     // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
     const wrappedTemplate = inner.itemTemplate
-    const containerSelector = inner.containerSlotId ? `'[bf="${inner.containerSlotId}"]'` : 'null'
+    // Find the container for the inner loop. Try bf= attribute (plain elements) first,
+    // then bf-s$ suffix match (component scope elements like SelectContent).
+    const csl = inner.containerSlotId
+    const containerExpr = csl
+      ? `(${scopeVar}.querySelector('[bf="${csl}"]') ?? ${scopeVar}.querySelector('[bf-s$="_${csl}"]') ?? ${scopeVar})`
+      : scopeVar
 
-    lines.push(`${indent}{ const __bic${uid} = ${containerSelector !== 'null' ? `${scopeVar}.querySelector(${containerSelector})` : scopeVar}`)
+    lines.push(`${indent}{ const __bic${uid} = ${containerExpr}`)
     lines.push(`${indent}if (__bic${uid}) mapArray(() => ${arrayExpr} || [], __bic${uid}, ${keyFn}, (${inner.param}, __bidx${uid}, __existing) => {`)
     lines.push(`${indent}  const __bel${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${wrappedTemplate}\`; return __t.content.firstElementChild.cloneNode(true) })()`)
     if (inner.key) {
