@@ -48,6 +48,27 @@ const dashboardSource = `
   }
 `
 
+// Component with dynamic attribute bindings (style, aria-*, class)
+const sliderLikeSource = `
+  'use client'
+  import { createSignal, createMemo } from '@barefootjs/client-runtime'
+
+  export function RangeInput() {
+    const [value, setValue] = createSignal(50)
+    const pct = createMemo(() => value() / 100)
+    return (
+      <div>
+        <div style={\`width: \${pct()}%\`} />
+        <span
+          aria-valuenow={value()}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        />
+      </div>
+    )
+  }
+`
+
 const todoSource = `
   'use client'
   import { createSignal, createMemo } from '@barefootjs/client-runtime'
@@ -115,6 +136,26 @@ describe('buildComponentGraph', () => {
     // count is consumed by memo:doubled and effect:e0
     expect(countSignal.consumers).toContain('memo:doubled')
     expect(countSignal.consumers).toContain('effect:e0')
+  })
+
+  test('extracts dynamic attribute bindings (style, aria-*)', () => {
+    const graph = buildComponentGraph(sliderLikeSource, 'RangeInput.tsx')
+    const attrBindings = graph.domBindings.filter(d => d.type === 'attribute')
+    expect(attrBindings.length).toBeGreaterThanOrEqual(1)
+    // style depends on the memo `pct`
+    const styleBinding = attrBindings.find(d => d.label.includes('style'))
+    expect(styleBinding).toBeDefined()
+    expect(styleBinding!.deps).toContain('pct')
+    // aria-valuenow depends on `value`
+    const ariaBinding = attrBindings.find(d => d.label.includes('aria-valuenow'))
+    expect(ariaBinding).toBeDefined()
+    expect(ariaBinding!.deps).toContain('value')
+  })
+
+  test('includes attr bindings in memo consumer list', () => {
+    const graph = buildComponentGraph(sliderLikeSource, 'RangeInput.tsx')
+    const pct = graph.memos.find(m => m.name === 'pct')!
+    expect(pct.consumers.some(c => c.includes('style'))).toBe(true)
   })
 
   test('returns empty graph for stateless component', () => {

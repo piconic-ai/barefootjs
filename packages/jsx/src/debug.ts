@@ -12,6 +12,7 @@ import type {
   IRConditional,
   IRElement,
   IRLoop,
+  IRTemplateLiteral,
   SignalInfo,
   MemoInfo,
   EffectInfo,
@@ -325,7 +326,9 @@ export function formatComponentGraph(graph: ComponentGraph): string {
     for (const d of graph.domBindings) {
       const arrow = d.type === 'event' ? ' ->' : ' <-'
       const depStr = d.deps.join(', ')
-      lines.push(`    ${d.type} "${d.slotId}"${arrow} ${depStr}`)
+      // For attribute bindings use the attr name; for others use slotId
+      const id = d.type === 'attribute' ? `"${d.label}"` : `"${d.slotId}"`
+      lines.push(`    ${d.type} ${id}${arrow} ${depStr}`)
     }
   }
 
@@ -496,6 +499,22 @@ function collectDomBindings(
 ): void {
   switch (node.type) {
     case 'element': {
+      // Dynamic attribute bindings (style, class, aria-*, data-*, etc.)
+      for (const attr of node.attrs) {
+        if (!attr.dynamic) continue
+        const expr = attrValueToString(attr.value)
+        if (!expr) continue
+        const deps = extractReactiveDeps(expr, signalGetters, memoNames)
+        if (deps.length > 0) {
+          bindings.push({
+            kind: 'dom',
+            label: attr.name,
+            slotId: node.slotId ?? '?',
+            deps,
+            type: 'attribute',
+          })
+        }
+      }
       // Event handlers
       for (const event of node.events) {
         const deps = extractReactiveDeps(event.handler, signalGetters, memoNames)
@@ -576,6 +595,16 @@ function collectDomBindings(
       break
     }
   }
+}
+
+/** Convert an IRAttribute value to a flat string for reactive dep extraction. */
+function attrValueToString(value: string | IRTemplateLiteral | null): string | null {
+  if (value === null) return null
+  if (typeof value === 'string') return value
+  // IRTemplateLiteral: join all ternary expressions
+  return value.parts
+    .map(p => p.type === 'ternary' ? `${p.condition} ${p.whenTrue} ${p.whenFalse}` : '')
+    .join(' ')
 }
 
 /** Extract reactive getter names (signal/memo calls) from an expression. */
