@@ -570,7 +570,7 @@ export interface CompileOptions {
 export interface FileOutput {
   path: string
   content: string
-  type: 'markedTemplate' | 'clientJs' | 'ir' | 'sourceMap'
+  type: 'markedTemplate' | 'clientJs' | 'ir' | 'sourceMap' | 'types'
 }
 
 export interface CompileResult {

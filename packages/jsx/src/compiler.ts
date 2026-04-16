@@ -132,6 +132,15 @@ export async function compileJSX(
     type: 'markedTemplate',
   })
 
+  // Emit adapter types as a separate FileOutput
+  if (adapterOutput.types) {
+    files.push({
+      path: entryPath.replace(/\.tsx?$/, '.types'),
+      content: adapterOutput.types,
+      type: 'types',
+    })
+  }
+
   const clientJsPath = entryPath.replace(/\.tsx?$/, '.client.js')
   if (options.sourceMaps) {
     const result = generateClientJsWithSourceMap(componentIR, undefined, options.localImportPrefixes, {
@@ -205,7 +214,7 @@ function compileMultipleComponentsSync(
   }
 
   // --- Pass 2: adapter.generate + generateClientJs ---
-  const allOutputs: { imports: string; types: string; moduleExports: string; component: string; clientJs?: string }[] = []
+  const allOutputs: { imports: string; types: string; moduleExports: string; component: string; clientJs?: string; adapterTypes?: string }[] = []
 
   for (const { componentIR } of entries) {
     const adapterOutput = adapter.generate(componentIR)
@@ -257,6 +266,7 @@ function compileMultipleComponentsSync(
       moduleExports: moduleExports || '',
       component,
       clientJs: generateClientJs(componentIR, componentNames, options.localImportPrefixes) || undefined,
+      adapterTypes: adapterOutput.types || undefined,
     })
     errors.push(...componentIR.errors)
   }
@@ -319,6 +329,16 @@ function compileMultipleComponentsSync(
     content: combinedTemplate,
     type: 'markedTemplate',
   })
+
+  // Emit combined adapter types if any
+  const adapterTypesOutputs = allOutputs.map(o => o.adapterTypes).filter(Boolean) as string[]
+  if (adapterTypesOutputs.length > 0) {
+    files.push({
+      path: filePath.replace(/\.tsx?$/, '.types'),
+      content: adapterTypesOutputs.join('\n\n'),
+      type: 'types',
+    })
+  }
 
   // Combine client JS if any
   const clientJsOutputs = allOutputs.map(o => o.clientJs).filter(Boolean) as string[]
@@ -500,6 +520,15 @@ export function compileJSXSync(
     content,
     type: 'markedTemplate',
   })
+
+  // Emit adapter types as a separate FileOutput
+  if (adapterOutput.types) {
+    files.push({
+      path: filePath.replace(/\.tsx?$/, '.types'),
+      content: adapterOutput.types,
+      type: 'types',
+    })
+  }
 
   const clientJsPath = filePath.replace(/\.tsx?$/, '.client.js')
   if (options.sourceMaps) {

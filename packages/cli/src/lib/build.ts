@@ -1,7 +1,7 @@
 // Core build module: shared pipeline for `barefoot build`.
 
 import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
-import type { TemplateAdapter } from '@barefootjs/jsx'
+import type { TemplateAdapter, OutputLayout, PostBuildContext } from '@barefootjs/jsx'
 import { mkdir, readdir, stat } from 'node:fs/promises'
 import { resolve, basename, relative } from 'node:path'
 import { resolveRelativeImports } from './resolve-imports'
@@ -27,6 +27,10 @@ export interface BuildConfig {
   clientOnly: boolean
   /** Adapter-specific post-processing hook for marked templates */
   transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string
+  /** Custom output directory layout */
+  outputLayout?: OutputLayout
+  /** Post-build hook called after minification, before manifest write */
+  postBuild?: (ctx: PostBuildContext) => Promise<void> | void
 }
 
 export interface BuildResult {
@@ -115,7 +119,7 @@ export function generateHash(content: string): string {
  */
 export function resolveBuildConfigFromTs(
   projectDir: string,
-  tsConfig: { adapter: TemplateAdapter; components?: string[]; outDir?: string; minify?: boolean; contentHash?: boolean; clientOnly?: boolean; transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string },
+  tsConfig: { adapter: TemplateAdapter; components?: string[]; outDir?: string; minify?: boolean; contentHash?: boolean; clientOnly?: boolean; transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string; outputLayout?: OutputLayout; postBuild?: (ctx: PostBuildContext) => Promise<void> | void },
   overrides?: { minify?: boolean }
 ): BuildConfig {
   const componentDirs = (tsConfig.components ?? ['components']).map(
@@ -132,14 +136,30 @@ export function resolveBuildConfigFromTs(
     contentHash: tsConfig.contentHash ?? false,
     clientOnly: tsConfig.clientOnly ?? false,
     transformMarkedTemplate: tsConfig.transformMarkedTemplate,
+    outputLayout: tsConfig.outputLayout,
+    postBuild: tsConfig.postBuild,
   }
 }
 
 // ── Main build pipeline ──────────────────────────────────────────────────
 
 export async function build(config: BuildConfig): Promise<BuildResult> {
-  const componentsOutDir = resolve(config.outDir, 'components')
-  await mkdir(componentsOutDir, { recursive: true })
+  // Resolve output directories based on layout
+  const layout = config.outputLayout
+  const templatesSubdir = layout?.templates ?? 'components'
+  const clientJsSubdir = layout?.clientJs ?? 'components'
+  const runtimeSubdir = layout?.runtime ?? clientJsSubdir
+
+  const templatesOutDir = resolve(config.outDir, templatesSubdir)
+  const clientJsOutDir = resolve(config.outDir, clientJsSubdir)
+  const runtimeOutDir = resolve(config.outDir, runtimeSubdir)
+
+  // Create all output directories
+  await Promise.all([
+    mkdir(templatesOutDir, { recursive: true }),
+    mkdir(clientJsOutDir, { recursive: true }),
+    ...(runtimeSubdir !== clientJsSubdir ? [mkdir(runtimeOutDir, { recursive: true })] : []),
+  ])
 
   // 1. Build and copy barefoot.js runtime
   const domPkgDir = resolve(config.projectDir, 'node_modules/@barefootjs/client-runtime')
@@ -161,10 +181,10 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
 
   if (domDistFile) {
     await Bun.write(
-      resolve(componentsOutDir, 'barefoot.js'),
+      resolve(runtimeOutDir, 'barefoot.js'),
       Bun.file(domDistFile)
     )
-    console.log('Generated: components/barefoot.js')
+    console.log(`Generated: ${runtimeSubdir}/barefoot.js`)
   } else {
     console.warn('Warning: @barefootjs/client-runtime dist not found. Skipping barefoot.js copy.')
   }
@@ -180,12 +200,15 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
 
   // 4. Manifest
   const manifest: Record<string, { clientJs?: string; markedTemplate: string }> = {
-    '__barefoot__': { markedTemplate: '', clientJs: 'components/barefoot.js' },
+    '__barefoot__': { markedTemplate: '', clientJs: `${runtimeSubdir}/barefoot.js` },
   }
 
   let compiledCount = 0
   let skippedCount = 0
   let errorCount = 0
+
+  // Collected types from all components (for postBuild hook)
+  const collectedTypes = new Map<string, string>()
 
   // 5. Compile each component
   for (const entryPath of allFiles) {
@@ -231,6 +254,8 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
         markedJsxContent = file.content
       } else if (file.type === 'clientJs') {
         clientJsContent = file.content
+      } else if (file.type === 'types') {
+        collectedTypes.set(baseNameNoExt, file.content)
       }
     }
 
@@ -249,8 +274,8 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
 
     // 5c. Write client JS
     if (hasClientJs) {
-      await Bun.write(resolve(componentsOutDir, clientJsFilename), clientJsContent)
-      console.log(`Generated: components/${clientJsFilename}`)
+      await Bun.write(resolve(clientJsOutDir, clientJsFilename), clientJsContent)
+      console.log(`Generated: ${clientJsSubdir}/${clientJsFilename}`)
     }
 
     // 5d. Write marked template (skip in clientOnly mode)
@@ -259,15 +284,15 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
       if (hasClientJs && config.transformMarkedTemplate) {
         outputContent = config.transformMarkedTemplate(markedJsxContent, baseNameNoExt, clientJsFilename)
       }
-      await Bun.write(resolve(componentsOutDir, baseFileName), outputContent)
-      console.log(`Generated: components/${baseFileName}`)
+      await Bun.write(resolve(templatesOutDir, baseFileName), outputContent)
+      console.log(`Generated: ${templatesSubdir}/${baseFileName}`)
     }
 
     // 5e. Manifest entry
     if (!config.clientOnly) {
       manifest[baseNameNoExt] = {
-        markedTemplate: `components/${baseFileName}`,
-        clientJs: hasClientJs ? `components/${clientJsFilename}` : undefined,
+        markedTemplate: `${templatesSubdir}/${baseFileName}`,
+        clientJs: hasClientJs ? `${clientJsSubdir}/${clientJsFilename}` : undefined,
       }
     }
 
@@ -317,13 +342,25 @@ export async function build(config: BuildConfig): Promise<BuildResult> {
     }
   }
 
+  // 7b. Post-build hook (after minification, before manifest write)
+  if (config.postBuild) {
+    await config.postBuild({
+      types: collectedTypes,
+      outDir: config.outDir,
+      projectDir: config.projectDir,
+      manifest,
+    })
+  }
+
   // 8. Write manifest (skip in clientOnly mode)
   if (!config.clientOnly) {
+    // Write manifest to the templates directory (or components if no custom layout)
+    const manifestDir = resolve(config.outDir, templatesSubdir)
     await Bun.write(
-      resolve(componentsOutDir, 'manifest.json'),
+      resolve(manifestDir, 'manifest.json'),
       JSON.stringify(manifest, null, 2)
     )
-    console.log('Generated: components/manifest.json')
+    console.log(`Generated: ${templatesSubdir}/manifest.json`)
   }
 
   return { compiledCount, skippedCount, errorCount, manifest }

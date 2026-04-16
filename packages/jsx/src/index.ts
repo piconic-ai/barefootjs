@@ -61,6 +61,26 @@ export type { SourceMapV3 } from './ir-to-client-js/source-map'
 export { combineParentChildClientJs } from './combine-client-js'
 
 // Build options (shared by adapters and CLI)
+export interface OutputLayout {
+  /** Subdirectory for marked templates (default: 'components') */
+  templates: string
+  /** Subdirectory for client JS files (default: 'components') */
+  clientJs: string
+  /** Subdirectory for runtime (barefoot.js) (default: same as clientJs) */
+  runtime: string
+}
+
+export interface PostBuildContext {
+  /** Collected types: componentName → types content */
+  types: Map<string, string>
+  /** Absolute path to the output directory */
+  outDir: string
+  /** Absolute path to the project directory */
+  projectDir: string
+  /** Build manifest */
+  manifest: Record<string, { clientJs?: string; markedTemplate: string }>
+}
+
 export interface BuildOptions {
   /** Source component directories relative to config file */
   components?: string[]
@@ -72,6 +92,10 @@ export interface BuildOptions {
   contentHash?: boolean
   /** Output only client JS, skip marked templates and manifest */
   clientOnly?: boolean
+  /** Custom output directory layout */
+  outputLayout?: OutputLayout
+  /** Post-build hook called after minification, before manifest write */
+  postBuild?: (ctx: PostBuildContext) => Promise<void> | void
 }
 
 // CSS Layer Prefixer

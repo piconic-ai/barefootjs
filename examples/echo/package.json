@@ -2,7 +2,7 @@
   "name": "barefootjs-echo-example",
   "version": "0.0.1",
   "scripts": {
-    "build": "bun run build.ts",
+    "build": "bun run ../../packages/cli/src/index.ts build",
     "dev": "go run .",
     "setup": "go mod tidy",
     "test:e2e": "bunx playwright test",
