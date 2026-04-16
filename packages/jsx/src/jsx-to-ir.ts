@@ -537,11 +537,7 @@ function transformSelfClosingAsyncElement(
   const fallbackProp = props.find(p => p.name === 'fallback')
 
   if (!fallbackProp) {
-    throw createError(
-      ErrorCodes.MISSING_PROP,
-      '<Async /> requires a \'fallback\' prop',
-      getSourceLocation(node, ctx.sourceFile, ctx.filePath)
-    )
+    throw new Error('<Async /> requires a \'fallback\' prop')
   }
 
   // Parse fallback from the self-closing element's attributes

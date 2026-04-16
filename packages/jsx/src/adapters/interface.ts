@@ -76,12 +76,16 @@ export abstract class BaseAdapter implements TemplateAdapter {
   abstract renderConditional(cond: IRConditional): string
   abstract renderLoop(loop: IRLoop): string
   abstract renderComponent(comp: IRComponent): string
-  abstract renderAsync(node: IRAsync): string
   abstract renderScopeMarker(instanceIdExpr: string): string
   abstract renderSlotMarker(slotId: string): string
   abstract renderCondMarker(condId: string): string
 
   renderChildren(children: IRNode[]): string {
     return children.map((child) => this.renderNode(child)).join('')
+  }
+
+  /** Default: render fallback + children inline (no streaming). Override for streaming support. */
+  renderAsync(node: IRAsync): string {
+    return this.renderNode(node.fallback) + this.renderChildren(node.children)
   }
 }
