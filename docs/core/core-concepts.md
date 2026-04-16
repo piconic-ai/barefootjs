@@ -9,7 +9,7 @@ BarefootJS compiles JSX into server templates and minimal client JS for any back
 
 ## Backend Freedom
 
-UI component libraries require Node.js. BarefootJS compiles JSX to native templates for Hono, Go `html/template`, or any custom adapter. One source, any backend.
+Server rendering with JSX usually means running Node.js. BarefootJS compiles JSX to native templates for Hono, Go `html/template`, or any custom adapter — no Node.js at serving time.
 
 ## MPA-style Development
 
@@ -17,7 +17,7 @@ Components render to static HTML by default. `"use client"` marks those that nee
 
 ## Fine-grained Reactivity
 
-Signals wire state to DOM nodes at compile time. When state changes, only the affected node updates — no virtual DOM, no component re-render.
+The compiler analyzes which DOM nodes depend on which signals and generates code that connects them. When state changes, only the affected node updates — no virtual DOM, no component re-render.
 
 ## AI-native Development
 

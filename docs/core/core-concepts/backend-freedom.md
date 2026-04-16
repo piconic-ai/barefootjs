@@ -5,9 +5,9 @@ description: How adapters let the same JSX run on any server — Hono, Go, and b
 
 # Backend Freedom
 
-The compiler generates native server templates from JSX — no Node.js runtime required.
+JSX gives you components with props, composition, and type checking. But server rendering with JSX usually means running Node.js on the server.
 
-Most UI component libraries assume Node.js. If your backend is Go or another language, you either run a separate Node.js service for rendering or hand-write UI without a component system. BarefootJS compiles JSX into a backend-agnostic IR, then an adapter converts it to your server's template format:
+BarefootJS compiles JSX at build time into your backend's native template format. Go serves `.tmpl` files directly, Hono renders `.hono.tsx` — no Node.js needed at serving time. The compiler produces a backend-agnostic IR, then an adapter converts it:
 
 ```
 JSX → IR (backend-agnostic) → Adapter → Template

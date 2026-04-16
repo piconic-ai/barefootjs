@@ -10,10 +10,10 @@ Add interactive components to server-rendered pages without changing your archit
 Existing options require trade-offs:
 
 - **jQuery / vanilla JS** — No component model. Hard to maintain at scale.
-- **SPA framework** — Requires rewriting pages, a client-side router, and SSR hydration.
-- **Islands (Astro, Fresh)** — Tied to a specific meta-framework and runtime.
+- **SPA framework (Next.js, Nuxt)** — Even with server components, you adopt the framework's build pipeline, routing, and deployment model.
+- **Islands (Astro, Fresh)** — Server rendering with selective hydration, but your server must be Astro or Fresh.
 
-BarefootJS renders every component to static HTML by default. `"use client"` marks the components that need interactivity — only those ship JavaScript:
+BarefootJS outputs templates for your existing server. The compiler is a build step — your routing and deployment don't change. `"use client"` marks the components that need interactivity; only those ship JavaScript:
 
 ```tsx
 // ProductPage.tsx — server component
@@ -33,4 +33,4 @@ export function ProductPage({ product }) {
 }
 ```
 
-`h1`, `p`, `img` produce zero JS. Only `ReviewStars` and `AddToCart` ship client JavaScript. HTML is visible before JS loads and works without it.
+`h1`, `p`, `img` produce zero JS. Only `ReviewStars` and `AddToCart` ship client JavaScript. Server-rendered HTML is visible immediately; interactive components become functional after hydration.

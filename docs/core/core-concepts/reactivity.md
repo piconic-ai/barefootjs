@@ -5,7 +5,7 @@ description: Signal-based reactivity — no virtual DOM, updates at the DOM node
 
 # Fine-grained Reactivity
 
-The compiler wires each signal to its DOM target at build time. When state changes, only that DOM node updates — no virtual DOM, no component re-render.
+The compiler analyzes which DOM nodes depend on which signals and generates code that connects them at hydration. When state changes, only that DOM node updates — no virtual DOM, no component re-render.
 
 Inspired by [SolidJS](https://www.solidjs.com/). The key difference from React: **components run once**, not on every state change.
 
@@ -30,6 +30,6 @@ The getter is a function call — `count()`, not `count`. The runtime tracks whi
 setCount(1) → signal notifies subscribers → effect updates the DOM node
 ```
 
-The compiler determined at build time which DOM node depends on `count`. No tree diffing occurs at runtime.
+The compiler analyzed which DOM node depends on `count` and generated an effect that updates it directly. No tree diffing at runtime.
 
 For the full API, see [Reactivity](../reactivity.md).
