@@ -361,9 +361,10 @@ export class GoTemplateAdapter extends BaseAdapter {
         const param = ir.metadata.propsParams.find(p => p.name === propName)
         if (!param) continue
         const propGoType = this.typeInfoToGo(param.type, param.defaultValue)
-        if (propGoType === 'interface{}') {
+        // Override when prop type is generic (interface{} or contains interface{})
+        if (propGoType.includes('interface{}')) {
           const signalGoType = this.typeInfoToGo(signal.type, signal.initialValue)
-          if (signalGoType !== 'interface{}') {
+          if (!signalGoType.includes('interface{}')) {
             overrides.set(propName, signalGoType)
           }
         }
@@ -461,7 +462,7 @@ export class GoTemplateAdapter extends BaseAdapter {
       if (referencedProp) {
         const propGoType = this.typeInfoToGo(referencedProp.type, referencedProp.defaultValue)
         // Prefer signal's own type when prop type is too generic
-        if (propGoType === 'interface{}') {
+        if (propGoType.includes('interface{}')) {
           goType = this.typeInfoToGo(signal.type, signal.initialValue)
         } else {
           goType = propGoType
@@ -799,6 +800,11 @@ export class GoTemplateAdapter extends BaseAdapter {
         // Check if raw type name matches a locally-defined type
         if (typeInfo.raw && this.localTypeNames.has(typeInfo.raw)) {
           return typeInfo.raw
+        }
+        // Try to parse raw type string as a known pattern (e.g., Array<Todo>)
+        if (typeInfo.raw) {
+          const resolved = this.tsTypeStringToGo(typeInfo.raw)
+          if (resolved !== 'interface{}') return resolved
         }
         return 'interface{}'
       case 'unknown':
