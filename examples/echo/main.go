@@ -47,19 +47,24 @@ func defaultLayout(ctx *bf.RenderContext) string {
     <h1>%s</h1>`, ctx.Heading)
 	}
 
+	extraCSS := ""
+	if css, ok := ctx.Extra["extra_css"].(string); ok && css != "" {
+		extraCSS = "\n    " + css
+	}
+
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
     <title>%s</title>
     <link rel="stylesheet" href="/shared/styles/components.css">
-    <link rel="stylesheet" href="/shared/styles/todo-app.css">%s
+    <link rel="stylesheet" href="/shared/styles/todo-app.css">%s%s
 </head>
 <body>%s
     <div id="app">%s</div>
     <p><a href="/">← Back</a></p>
     %s%s
 </body>
-</html>`, ctx.Title, headingStyle, headingHTML, ctx.ComponentHTML, ctx.Portals, ctx.Scripts)
+</html>`, ctx.Title, headingStyle, extraCSS, headingHTML, ctx.ComponentHTML, ctx.Portals, ctx.Scripts)
 }
 
 // In-memory todo storage
@@ -108,6 +113,7 @@ func main() {
 	e.GET("/conditional-return", conditionalReturnHandler)
 	e.GET("/conditional-return-link", conditionalReturnLinkHandler)
 	e.GET("/ai-chat", aiChatHandler)
+	e.GET("/api/ai-chat", aiChatSSEHandler)
 
 	// Todo API endpoints
 	e.GET("/api/todos", getTodosAPI)
@@ -145,7 +151,7 @@ func indexHandler(c echo.Context) error {
         <li><a href="/toggle">Toggle</a></li>
         <li><a href="/todos">Todo (@client)</a></li>
         <li><a href="/todos-ssr">Todo (no @client markers)</a></li>
-        <li><a href="/ai-chat">AI Chat (Streaming SSR)</a></li>
+        <li><a href="/ai-chat">AI Chat (SSE Streaming)</a></li>
     </ul>
 </body>
 </html>
@@ -393,116 +399,51 @@ func resetTodosAPI(c echo.Context) error {
 // AI Chat — Streaming SSR Example
 // ---------------------------------------------------------------------------
 
-type ChatMessage struct {
-	Role      string `json:"role"`
-	Content   string `json:"content"`
-	Timestamp string `json:"timestamp"`
-}
-
-func fetchMockChatHistory() []ChatMessage {
-	time.Sleep(1500 * time.Millisecond) // simulate slow DB/API
-	return []ChatMessage{
-		{Role: "user", Content: "BarefootJSとは何ですか？", Timestamp: "14:01"},
-		{Role: "assistant", Content: "BarefootJSは、JSXをMarked Template + Client JSにコンパイルするフレームワークです。Signal-based reactivityをどのバックエンドでも使えるようにします。", Timestamp: "14:01"},
-		{Role: "user", Content: "Streaming SSRはどう動きますか？", Timestamp: "14:02"},
-		{Role: "assistant", Content: "Out-of-Order Streamingプロトコルを使います。サーバーはまずfallback UIを送信し、データが準備できたら&lt;template&gt;チャンクを追記します。", Timestamp: "14:02"},
-		{Role: "user", Content: "どのバックエンドで使えますか？", Timestamp: "14:03"},
-		{Role: "assistant", Content: "HTTP chunked transfer encodingをサポートするすべてのバックエンドで動作します。Hono、Go (Echo)、Perl (Mojolicious) などのアダプタが用意されています。", Timestamp: "14:03"},
-	}
-}
-
-func fetchMockSuggestions() []string {
-	time.Sleep(800 * time.Millisecond)
-	return []string{
-		"コンポーネントの作り方を教えて",
-		"Signalの仕組みは？",
-		"テストはどう書く？",
-	}
-}
-
-func renderChatMessages(msgs []ChatMessage) string {
-	var html string
-	for _, m := range msgs {
-		html += fmt.Sprintf(`<div class="chat-msg chat-%s"><div class="chat-bubble"><p>%s</p><time>%s</time></div></div>`, m.Role, m.Content, m.Timestamp)
-	}
-	return `<div class="chat-messages">` + html + `</div>`
-}
-
-func renderSuggestions(qs []string) string {
-	var html string
-	for _, q := range qs {
-		html += fmt.Sprintf(`<button class="suggestion-chip">%s</button>`, q)
-	}
-	return `<div class="chat-suggestions">` + html + `</div>`
+var fakeResponses = []string{
+	"[Dummy response] This text is streaming one character at a time via SSE. In production, replace /api/ai-chat with a real LLM API.",
+	"[Dummy response] BarefootJS compiles JSX to Go html/template + client JS. Signals drive reactivity on any backend.",
+	"[Dummy response] SSE (Server-Sent Events) lets the server push data to the client over a single HTTP connection.",
+	"[Dummy response] The Go/Echo backend streams each character with a 30ms delay to simulate token-by-token LLM output.",
+	"[Dummy response] Out-of-Order Streaming SSR and interactive SSE streaming are two different features of BarefootJS.",
 }
 
 func aiChatHandler(c echo.Context) error {
-	sr := bf.NewStreamRenderer(loadTemplates(), func(ctx *bf.RenderContext) string {
-		return fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-    <title>%s</title>
-    <link rel="stylesheet" href="/shared/styles/components.css">
-    <link rel="stylesheet" href="/shared/styles/ai-chat.css">
-    %s
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    </style>
-</head>
-<body>
-    <h1>AI Chat — Streaming SSR (Go/Echo)</h1>
-    <div class="chat-container">
-        %s
-        %s
-        <div class="chat-input-area">
-            <input type="text" class="chat-input" placeholder="メッセージを入力..." disabled />
-            <button class="chat-send" disabled>送信</button>
-        </div>
-    </div>
-
-    <div style="margin-top:2rem">
-        <h2>Interactive Component (hydrated after streaming)</h2>
-        <div id="app">%s</div>
-    </div>
-    <p><a href="/">← Back</a></p>
-    %s%s
-</body>
-</html>`,
-			ctx.Title,
-			bf.StreamingBootstrap(),
-			// Chat history async boundary (fallback = skeleton)
-			bf.BfAsyncBoundary("a0", `<div class="chat-skeleton"><div class="skeleton-msg skeleton-user"><div class="skeleton-line" style="width:60%"></div></div><div class="skeleton-msg skeleton-bot"><div class="skeleton-line" style="width:90%"></div><div class="skeleton-line" style="width:70%"></div></div><div class="skeleton-msg skeleton-user"><div class="skeleton-line" style="width:50%"></div></div><div class="skeleton-msg skeleton-bot"><div class="skeleton-line" style="width:85%"></div><div class="skeleton-line" style="width:60%"></div></div></div>`),
-			// Suggestions async boundary
-			bf.BfAsyncBoundary("a1", `<div class="suggestions-skeleton"><div class="skeleton-chip"></div><div class="skeleton-chip"></div><div class="skeleton-chip"></div></div>`),
-			ctx.ComponentHTML,
-			ctx.Portals,
-			ctx.Scripts,
-		)
-	})
-
-	props := NewCounterProps(CounterInput{Initial: 0})
-
-	return sr.Stream(c.Response(), bf.StreamOptions{
-		ComponentName: "Counter",
-		Props:         &props,
-		Title:         "AI Chat — Streaming SSR",
-		Boundaries: []bf.AsyncBoundary{
-			{
-				ID:           "a0",
-				FallbackHTML: "",
-				Resolve: func() (string, error) {
-					msgs := fetchMockChatHistory()
-					return renderChatMessages(msgs), nil
-				},
-			},
-			{
-				ID:           "a1",
-				FallbackHTML: "",
-				Resolve: func() (string, error) {
-					qs := fetchMockSuggestions()
-					return renderSuggestions(qs), nil
-				},
-			},
+	props := NewAIChatInteractiveProps(AIChatInteractiveInput{})
+	return c.Render(http.StatusOK, "AIChatInteractive", bf.RenderOptions{
+		Props:   &props,
+		Title:   "AI Chat — SSE Streaming (Go/Echo)",
+		Heading: "AI Chat — SSE Streaming",
+		Extra: map[string]interface{}{
+			"extra_css": `<link rel="stylesheet" href="/shared/styles/ai-chat.css">`,
 		},
 	})
+}
+
+func aiChatSSEHandler(c echo.Context) error {
+	idx := int(time.Now().UnixNano()) % len(fakeResponses)
+	if idx < 0 {
+		idx = -idx
+	}
+	text := fakeResponses[idx]
+
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().WriteHeader(http.StatusOK)
+
+	flusher, ok := c.Response().Writer.(http.Flusher)
+	if !ok {
+		return echo.ErrInternalServerError
+	}
+
+	for _, ch := range text {
+		encoded, _ := json.Marshal(string(ch))
+		fmt.Fprintf(c.Response().Writer, "data: %s\n\n", encoded)
+		flusher.Flush()
+		time.Sleep(30 * time.Millisecond)
+	}
+
+	fmt.Fprint(c.Response().Writer, "data: [DONE]\n\n")
+	flusher.Flush()
+	return nil
 }
