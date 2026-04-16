@@ -101,4 +101,20 @@ sub scripts ($self) {
     return join("\n", @tags);
 }
 
+# ---------------------------------------------------------------------------
+# Streaming SSR (Out-of-Order)
+# ---------------------------------------------------------------------------
+
+sub streaming_bootstrap ($self) {
+    return q{<script>(function(){function s(id){var a=document.querySelector('[bf-async="'+id+'"]');var t=document.querySelector('template[bf-async-resolve="'+id+'"]');if(!a||!t)return;a.replaceChildren(t.content.cloneNode(true));a.removeAttribute('bf-async');t.remove();requestAnimationFrame(function(){if(window.__bf_hydrate)window.__bf_hydrate()})};window.__bf_swap=s})()</script>};
+}
+
+sub async_boundary ($self, $id, $fallback_html) {
+    return qq{<div bf-async="$id">$fallback_html</div>};
+}
+
+sub async_resolve ($self, $id, $content_html) {
+    return qq{<template bf-async-resolve="$id">$content_html</template><script>__bf_swap("$id")</script>};
+}
+
 1;

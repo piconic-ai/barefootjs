@@ -16,6 +16,8 @@ import type {
   IRFragment,
   IRSlot,
   IRIfStatement,
+  IRProvider,
+  IRAsync,
   IRTemplateLiteral,
   CompilerError,
 } from '@barefootjs/jsx'
@@ -126,6 +128,10 @@ export class MojoAdapter extends BaseAdapter {
         return this.renderSlot(node as IRSlot)
       case 'if-statement':
         return this.renderIfStatement(node as IRIfStatement)
+      case 'provider':
+        return this.renderChildren((node as IRProvider).children)
+      case 'async':
+        return this.renderAsync(node as IRAsync)
       default:
         return ''
     }
@@ -375,6 +381,16 @@ export class MojoAdapter extends BaseAdapter {
 
   private renderSlot(_slot: IRSlot): string {
     return `<%= content %>`
+  }
+
+  renderAsync(node: IRAsync): string {
+    const fallback = this.renderNode(node.fallback)
+    const children = this.renderChildren(node.children)
+    // Use the BarefootJS.pm streaming helpers for OOS streaming.
+    // bf->async_boundary() wraps the fallback in a <div bf-async="aX"> placeholder.
+    // The resolved content is rendered below for non-streaming fallback;
+    // in streaming mode, Mojo's write_chunk delivers it as a resolve chunk.
+    return `<%== bf->async_boundary('${node.id}', begin %>${fallback}<% end) %>\n${children}`
   }
 
   // ===========================================================================
