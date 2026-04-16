@@ -43,6 +43,7 @@ const components = [
   '../shared/components/TodoAppSSR.tsx',
   '../shared/components/ReactiveProps.tsx',
   '../shared/components/PortalExample.tsx',
+  '../shared/components/AIChatInteractive.tsx',
 ]
 
 const adapter = new MojoAdapter({
@@ -137,7 +138,7 @@ for (const componentPath of components) {
     writeFileSync(resolve(templatesDir, `${targetComponentName}.html.ep`), output.template)
     console.log(`  Template: ${targetComponentName}.html.ep`)
 
-    if (ctx.hasDefaultExport) {
+    if (ctx.hasDefaultExport || mainComponentIR === null) {
       mainComponentIR = ir
     }
   }

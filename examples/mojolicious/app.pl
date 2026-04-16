@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite -signatures;
 use lib '../../packages/mojolicious/lib';
-use Mojo::JSON qw(true false);
+use Mojo::JSON qw(true false encode_json);
 
 # Load BarefootJS plugin
 plugin 'BarefootJS';
@@ -120,7 +120,7 @@ get '/' => sub ($c) {
             <li><a href="/toggle">Toggle</a></li>
             <li><a href="/todos">Todo (@client)</a></li>
             <li><a href="/todos-ssr">Todo (no @client markers)</a></li>
-            <li><a href="/ai-chat">AI Chat (Streaming SSR)</a></li>
+            <li><a href="/ai-chat">AI Chat (SSE Streaming)</a></li>
         </ul>
     </body>
     </html>
@@ -255,76 +255,51 @@ get '/portal' => sub ($c) {
 };
 
 # ---------------------------------------------------------------------------
-# AI Chat — Streaming SSR Example
+# AI Chat — SSE Streaming Example
 # ---------------------------------------------------------------------------
 
-my @mock_chat = (
-    { role => 'user',      content => 'BarefootJSとは何ですか？',                                                                          timestamp => '14:01' },
-    { role => 'assistant', content => 'BarefootJSは、JSXをMarked Template + Client JSにコンパイルするフレームワークです。Signal-based reactivityをどのバックエンドでも使えるようにします。', timestamp => '14:01' },
-    { role => 'user',      content => 'Streaming SSRはどう動きますか？',                                                                     timestamp => '14:02' },
-    { role => 'assistant', content => 'Out-of-Order Streamingプロトコルを使います。サーバーはまずfallback UIを送信し、データが準備できたら&lt;template&gt;チャンクを追記します。',              timestamp => '14:02' },
-    { role => 'user',      content => 'どのバックエンドで使えますか？',                                                                       timestamp => '14:03' },
-    { role => 'assistant', content => 'HTTP chunked transfer encodingをサポートするすべてのバックエンドで動作します。Hono、Go (Echo)、Perl (Mojolicious) などのアダプタが用意されています。',   timestamp => '14:03' },
-);
-
-my @mock_suggestions = (
-    'コンポーネントの作り方を教えて',
-    'Signalの仕組みは？',
-    'テストはどう書く？',
+my @ai_responses = (
+    "[Dummy response] This text is streaming one character at a time via SSE. In production, replace /api/ai-chat with a real LLM API.",
+    "[Dummy response] BarefootJS compiles JSX to Mojolicious templates + client JS. Signals drive reactivity on any backend.",
+    "[Dummy response] SSE (Server-Sent Events) lets the server push data to the client over a single HTTP connection.",
+    "[Dummy response] The Mojolicious backend streams each character with a 30ms delay to simulate token-by-token LLM output.",
+    "[Dummy response] Out-of-Order Streaming SSR and interactive SSE streaming are two different features of BarefootJS.",
 );
 
 get '/ai-chat' => sub ($c) {
-    my $bf = $c->bf;
+    $c->render_component('AIChatInteractive',
+        title   => 'AI Chat — SSE Streaming (Mojolicious)',
+        heading => 'AI Chat — SSE Streaming',
+        stash   => {
+            messages      => [],
+            input         => '',
+            streamingText => '',
+            isStreaming   => 0,
+            extra_css     => '<link rel="stylesheet" href="/styles/ai-chat.css">',
+        },
+    );
+};
 
-    my $skeleton_chat = '<div class="chat-skeleton"><div class="skeleton-msg skeleton-user"><div class="skeleton-line" style="width:60%"></div></div><div class="skeleton-msg skeleton-bot"><div class="skeleton-line" style="width:90%"></div><div class="skeleton-line" style="width:70%"></div></div><div class="skeleton-msg skeleton-user"><div class="skeleton-line" style="width:50%"></div></div><div class="skeleton-msg skeleton-bot"><div class="skeleton-line" style="width:85%"></div><div class="skeleton-line" style="width:60%"></div></div></div>';
+get '/api/ai-chat' => sub ($c) {
+    my $text = $ai_responses[int(rand(scalar @ai_responses))];
+    my @chars = split //, $text;
 
-    my $skeleton_suggestions = '<div class="suggestions-skeleton"><div class="skeleton-chip"></div><div class="skeleton-chip"></div><div class="skeleton-chip"></div></div>';
+    $c->res->headers->content_type('text/event-stream');
+    $c->res->headers->cache_control('no-cache');
+    $c->res->headers->connection('keep-alive');
 
-    # Send initial page with fallback skeletons (fast TTFB)
-    my $initial_html = <<"HTML";
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>AI Chat — Streaming SSR (Mojolicious)</title>
-    <link rel="stylesheet" href="/styles/components.css">
-    <link rel="stylesheet" href="/styles/ai-chat.css">
-    @{[ $bf->streaming_bootstrap ]}
-    <style>body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }</style>
-</head>
-<body>
-    <h1>AI Chat — Streaming SSR (Mojolicious)</h1>
-    <div class="chat-container">
-        @{[ $bf->async_boundary('a0', $skeleton_chat) ]}
-        @{[ $bf->async_boundary('a1', $skeleton_suggestions) ]}
-        <div class="chat-input-area">
-            <input type="text" class="chat-input" placeholder="メッセージを入力..." disabled />
-            <button class="chat-send" disabled>送信</button>
-        </div>
-    </div>
-    <p><a href="/">← Back</a></p>
-HTML
-
-    $c->write_chunk($initial_html);
-
-    # Resolve suggestions (faster: 0.8s delay)
-    Mojo::IOLoop->timer(0.8 => sub {
-        my $chips = join '', map { qq{<button class="suggestion-chip">$_</button>} } @mock_suggestions;
-        my $suggestions_html = qq{<div class="chat-suggestions">$chips</div>};
-        $c->write_chunk($bf->async_resolve('a1', $suggestions_html));
-    });
-
-    # Resolve chat history (slower: 1.5s delay)
-    Mojo::IOLoop->timer(1.5 => sub {
-        my $msgs = join '', map {
-            my $role = $_->{role};
-            qq{<div class="chat-msg chat-$role"><div class="chat-bubble"><p>$_->{content}</p><time>$_->{timestamp}</time></div></div>};
-        } @mock_chat;
-        my $chat_html = qq{<div class="chat-messages">$msgs</div>};
-        $c->write_chunk($bf->async_resolve('a0', $chat_html));
-
-        # Close the response after all boundaries resolve
-        $c->write_chunk('</body></html>' => sub { shift->finish });
+    my $i = 0;
+    my $timer_id;
+    $c->on(finish => sub { Mojo::IOLoop->remove($timer_id) if $timer_id });
+    $timer_id = Mojo::IOLoop->recurring(0.03 => sub ($loop) {
+        if ($i < scalar @chars) {
+            my $char = $chars[$i++];
+            $c->write('data: ' . encode_json($char) . "\n\n");
+        } else {
+            Mojo::IOLoop->remove($timer_id);
+            undef $timer_id;
+            $c->write("data: [DONE]\n\n" => sub { $c->finish });
+        }
     });
 };
 
@@ -384,6 +359,10 @@ __DATA__
     <title><%= $title %></title>
     <link rel="stylesheet" href="/styles/components.css">
     <link rel="stylesheet" href="/styles/todo-app.css">
+    % my $extra_css = stash('extra_css') // '';
+    % if ($extra_css) {
+    <%== $extra_css %>
+    % }
     % if ($heading) {
     <style>
         body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
