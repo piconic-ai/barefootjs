@@ -23,6 +23,7 @@ export type {
   IRSlot,
   IRIfStatement,
   IRProvider,
+  IRAsync,
   IRMetadata,
   IRTemplateLiteral,
   IRTemplatePart,

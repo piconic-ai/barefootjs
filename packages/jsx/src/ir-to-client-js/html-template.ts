@@ -181,6 +181,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       return ''
 
     case 'provider':
+    case 'async':
       return node.children.map(recurse).join('')
 
     default:
@@ -287,6 +288,7 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       return ''
 
     case 'provider':
+    case 'async':
       return node.children.map(recurse).join('')
 
     default:
@@ -547,6 +549,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       return ''
 
     case 'provider':
+    case 'async':
       return node.children.map(recurse).join('')
 
     default:
@@ -651,6 +654,7 @@ export function canGenerateStaticTemplate(
       return true
 
     case 'provider':
+    case 'async':
       return node.children.every((c) => canGenerateStaticTemplate(c, propNames, inlinableConstants, unsafeLocalNames))
 
     case 'text':
@@ -841,6 +845,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     }
 
     case 'provider':
+    case 'async':
       return node.children.map(recurse).join('')
 
     default:

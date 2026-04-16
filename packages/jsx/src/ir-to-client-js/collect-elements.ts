@@ -19,6 +19,7 @@ const loopSiblingOffsets = new WeakMap<IRNode, number>()
 /** Check if an IR node produces a DOM child element (for sibling offset counting). */
 function producesDomChild(node: IRNode): boolean {
   return node.type === 'element' || node.type === 'component' || node.type === 'provider'
+    || node.type === 'async'
     || node.type === 'text' || (node.type === 'expression' && !node.reactive)
     || node.type === 'conditional'
 }
@@ -85,6 +86,7 @@ function collectInnerLoops(nodes: IRNode[], outerLoopParam?: string, ctx?: Clien
       case 'fragment':
       case 'component':
       case 'provider':
+      case 'async':
         for (const child of n.children) walk(child, parentSlotId)
         break
       case 'conditional': {
@@ -456,6 +458,13 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         collectElements(child, ctx, insideConditional)
       }
       break
+
+    case 'async':
+      // Async boundaries are transparent for client JS — just traverse children
+      for (const child of node.children) {
+        collectElements(child, ctx, insideConditional)
+      }
+      break
   }
 }
 
@@ -548,6 +557,7 @@ function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
       case 'if-statement':
         break
       case 'provider':
+      case 'async':
         for (const child of n.children) walk(child)
         break
     }
@@ -633,6 +643,7 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
       case 'fragment':
       case 'component':
       case 'provider':
+      case 'async':
         for (const child of n.children) walk(child)
         break
       // Don't recurse into nested conditionals
@@ -690,6 +701,7 @@ function collectBranchConditionals(node: IRNode, ctx: ClientJsContext): Conditio
       case 'fragment':
       case 'component':
       case 'provider':
+      case 'async':
         for (const child of n.children) walk(child)
         break
       // Don't recurse into loops (they handle their own reconciliation)

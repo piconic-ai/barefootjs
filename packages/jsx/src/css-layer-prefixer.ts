@@ -221,6 +221,7 @@ function walkIR(node: IRNode, visitor: (node: IRNode) => void): void {
       if (node.alternate) walkIR(node.alternate, visitor)
       break
     case 'provider':
+    case 'async':
       for (const child of node.children) walkIR(child, visitor)
       break
   }

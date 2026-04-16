@@ -86,6 +86,7 @@ export type IRNode =
   | IRFragment
   | IRIfStatement
   | IRProvider
+  | IRAsync
 
 export interface IRElement {
   type: 'element'
@@ -281,6 +282,25 @@ export interface IRProvider {
   type: 'provider'
   contextName: string   // "MenuContext" (extracted from X.Provider)
   valueProp: IRProp     // The 'value' prop expression
+  children: IRNode[]
+  loc: SourceLocation
+}
+
+/**
+ * Async streaming boundary node for out-of-order SSR.
+ *
+ * Maps to `<Async fallback={...}>children</Async>` in JSX.
+ * Adapters translate this to their native streaming mechanism:
+ *   - Hono: `<Suspense fallback={...}>` (native streaming)
+ *   - Go: `bfAsyncBoundary()` + OOS resolve chunks
+ */
+export interface IRAsync {
+  type: 'async'
+  /** Unique boundary ID (e.g., "a0", "a1") — assigned by the compiler */
+  id: string
+  /** Fallback content shown while loading (e.g., skeleton UI) */
+  fallback: IRNode
+  /** Resolved content rendered after data loads */
   children: IRNode[]
   loc: SourceLocation
 }

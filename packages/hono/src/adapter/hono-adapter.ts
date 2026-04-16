@@ -16,6 +16,7 @@ import {
   type IRFragment,
   type IRIfStatement,
   type IRProvider,
+  type IRAsync,
   type IRTemplateLiteral,
   type ParamInfo,
   type AdapterOutput,
@@ -115,6 +116,11 @@ export class HonoAdapter extends JsxAdapter {
     }
     if (utilImports.length > 0) {
       lines.push(`import { ${utilImports.join(', ')} } from '@barefootjs/hono/utils'`)
+    }
+
+    // Import Suspense when async boundaries are used
+    if (componentCode.includes('<Suspense')) {
+      lines.push(`import { Suspense } from 'hono/jsx/streaming'`)
     }
 
     // Re-export template imports (client-side packages already filtered by compiler)
@@ -427,6 +433,8 @@ export class HonoAdapter extends JsxAdapter {
         return ''
       case 'provider':
         return this.renderChildren((node as IRProvider).children)
+      case 'async':
+        return this.renderAsync(node as IRAsync)
       default:
         return ''
     }
@@ -622,6 +630,12 @@ export class HonoAdapter extends JsxAdapter {
     }
 
     return lines.join('\n')
+  }
+
+  renderAsync(node: IRAsync): string {
+    const fallback = this.renderNode(node.fallback)
+    const children = this.renderChildren(node.children)
+    return `<Suspense fallback={<>${fallback}</>}>${children}</Suspense>`
   }
 
   renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean; isLoopItemRoot?: boolean }): string {

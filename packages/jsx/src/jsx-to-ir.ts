@@ -62,6 +62,8 @@ interface TransformContext {
   _destructuredPropNames?: Set<string> | null
   /** Active loop parameter names for slotId assignment to loop-param-dependent expressions */
   loopParams: Set<string>
+  /** Counter for async boundary IDs (a0, a1, ...) */
+  asyncIdCounter: number
 }
 
 /**
@@ -130,6 +132,7 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     sourceFile: analyzer.sourceFile,
     filePath: analyzer.filePath,
     slotIdCounter: 0,
+    asyncIdCounter: 0,
     isRoot: true,
     insideComponentChildren: false,
     loopParams: new Set(),
@@ -315,6 +318,11 @@ function transformJsxElement(
     return transformProviderElement(node, ctx, tagName)
   }
 
+  // Detect Async streaming boundary: <Async fallback={...}>
+  if (tagName === 'Async') {
+    return transformAsyncElement(node, ctx)
+  }
+
   const isComponent = /^[A-Z]/.test(tagName)
 
   if (isComponent) {
@@ -373,6 +381,11 @@ function transformSelfClosingElement(
   // Detect Context.Provider pattern: <X.Provider ... />
   if (tagName.endsWith('.Provider') && /^[A-Z]/.test(tagName)) {
     return transformSelfClosingProviderElement(node, ctx, tagName)
+  }
+
+  // Detect Async streaming boundary: <Async ... />
+  if (tagName === 'Async') {
+    return transformSelfClosingAsyncElement(node, ctx)
   }
 
   const isComponent = /^[A-Z]/.test(tagName)
@@ -448,6 +461,117 @@ function transformSelfClosingProviderElement(
     type: 'provider',
     contextName,
     valueProp,
+    children: [],
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+  }
+}
+
+// =============================================================================
+// Async Streaming Boundary Transformation
+// =============================================================================
+
+function transformAsyncElement(
+  node: ts.JsxElement,
+  ctx: TransformContext
+): IRNode {
+  const props = processComponentProps(node.openingElement.attributes, ctx)
+  const fallbackProp = props.find(p => p.name === 'fallback')
+
+  if (!fallbackProp) {
+    throw new Error('<Async> requires a \'fallback\' prop')
+  }
+
+  // Parse the fallback JSX expression into an IR node
+  const fallbackNode = parseFallbackProp(fallbackProp, ctx, node)
+
+  const children = transformChildren(node.children, ctx)
+  const id = `a${ctx.asyncIdCounter++}`
+
+  return {
+    type: 'async',
+    id,
+    fallback: fallbackNode,
+    children,
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+  }
+}
+
+/**
+ * Parse the fallback prop's JSX expression into an IR node.
+ * The fallback is typically a JSX element: fallback={<Skeleton />}
+ */
+function parseFallbackProp(
+  prop: IRProp,
+  ctx: TransformContext,
+  parentNode: ts.Node
+): IRNode {
+  // Walk the parent node's attributes to find the actual AST node for fallback
+  const openingEl = (parentNode as ts.JsxElement).openingElement
+  for (const attr of openingEl.attributes.properties) {
+    if (ts.isJsxAttribute(attr) && attr.name.getText(ctx.sourceFile) === 'fallback') {
+      const initializer = attr.initializer
+      if (initializer && ts.isJsxExpression(initializer) && initializer.expression) {
+        const expr = initializer.expression
+        // If it's a JSX element, transform it
+        if (ts.isJsxElement(expr) || ts.isJsxSelfClosingElement(expr) || ts.isJsxFragment(expr)) {
+          const result = transformNode(expr, ctx)
+          if (result) return result
+        }
+      }
+    }
+  }
+
+  // Fallback to a text node with the prop value
+  return {
+    type: 'text',
+    value: prop.value,
+    loc: getSourceLocation(parentNode, ctx.sourceFile, ctx.filePath),
+  }
+}
+
+function transformSelfClosingAsyncElement(
+  node: ts.JsxSelfClosingElement,
+  ctx: TransformContext
+): IRNode {
+  const props = processComponentProps(node.attributes, ctx)
+  const fallbackProp = props.find(p => p.name === 'fallback')
+
+  if (!fallbackProp) {
+    throw createError(
+      ErrorCodes.MISSING_PROP,
+      '<Async /> requires a \'fallback\' prop',
+      getSourceLocation(node, ctx.sourceFile, ctx.filePath)
+    )
+  }
+
+  // Parse fallback from the self-closing element's attributes
+  let fallbackNode: IRNode | null = null
+  for (const attr of node.attributes.properties) {
+    if (ts.isJsxAttribute(attr) && attr.name.getText(ctx.sourceFile) === 'fallback') {
+      const initializer = attr.initializer
+      if (initializer && ts.isJsxExpression(initializer) && initializer.expression) {
+        const expr = initializer.expression
+        if (ts.isJsxElement(expr) || ts.isJsxSelfClosingElement(expr) || ts.isJsxFragment(expr)) {
+          fallbackNode = transformNode(expr, ctx)
+        }
+      }
+    }
+  }
+
+  if (!fallbackNode) {
+    fallbackNode = {
+      type: 'text',
+      value: fallbackProp.value,
+      loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+    }
+  }
+
+  const id = `a${ctx.asyncIdCounter++}`
+
+  return {
+    type: 'async',
+    id,
+    fallback: fallbackNode,
     children: [],
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }

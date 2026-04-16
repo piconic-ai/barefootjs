@@ -25,6 +25,7 @@ import type {
   ParsedStatement,
   IRIfStatement,
   IRProvider,
+  IRAsync,
 } from '@barefootjs/jsx'
 import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr, parseExpression, isSupported } from '@barefootjs/jsx'
 
@@ -1006,6 +1007,8 @@ export class GoTemplateAdapter extends BaseAdapter {
         return this.renderIfStatement(node as IRIfStatement, ctx)
       case 'provider':
         return this.renderChildren((node as IRProvider).children)
+      case 'async':
+        return this.renderAsync(node as IRAsync)
       default:
         return ''
     }
@@ -2312,6 +2315,18 @@ export class GoTemplateAdapter extends BaseAdapter {
     // Use Go template's block for slots
     const slotName = slot.name === 'default' ? 'children' : slot.name
     return `{{block "${slotName}" .}}{{end}}`
+  }
+
+  renderAsync(node: IRAsync): string {
+    const fallback = this.renderNode(node.fallback)
+    const children = this.renderChildren(node.children)
+    // Go templates use the OOS protocol: render a placeholder with fallback,
+    // the StreamRenderer resolves boundaries and streams replacement chunks.
+    return `{{bfAsyncBoundary "${node.id}" "${this.escapeGoString(fallback)}"}}\n${children}`
+  }
+
+  private escapeGoString(s: string): string {
+    return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
   }
 
   private renderAttributes(element: IRElement): string {

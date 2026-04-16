@@ -298,6 +298,10 @@ export function collectIdentifiersFromIRTree(node: IRNode, set: Set<string>): vo
       for (const child of node.children) collectIdentifiersFromIRTree(child, set)
       break
 
+    case 'async':
+      for (const child of node.children) collectIdentifiersFromIRTree(child, set)
+      break
+
     case 'slot':
       break
   }
@@ -343,6 +347,7 @@ export function addLoopSubtreeIdentifiers(node: IRNode, set: Set<string>): void 
       if (node.alternate) addLoopSubtreeIdentifiers(node.alternate, set)
       break
     case 'provider':
+    case 'async':
       for (const child of node.children) addLoopSubtreeIdentifiers(child, set)
       break
   }

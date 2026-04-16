@@ -12,6 +12,7 @@ import type {
   IRConditional,
   IRLoop,
   IRComponent,
+  IRAsync,
 } from '../types'
 
 export interface TemplateSections {
@@ -52,6 +53,7 @@ export interface TemplateAdapter {
   renderConditional(cond: IRConditional): string
   renderLoop(loop: IRLoop): string
   renderComponent(comp: IRComponent): string
+  renderAsync(node: IRAsync): string
 
   // Hydration markers
   renderScopeMarker(instanceIdExpr: string): string
@@ -74,6 +76,7 @@ export abstract class BaseAdapter implements TemplateAdapter {
   abstract renderConditional(cond: IRConditional): string
   abstract renderLoop(loop: IRLoop): string
   abstract renderComponent(comp: IRComponent): string
+  abstract renderAsync(node: IRAsync): string
   abstract renderScopeMarker(instanceIdExpr: string): string
   abstract renderSlotMarker(slotId: string): string
   abstract renderCondMarker(condId: string): string

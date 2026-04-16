@@ -104,6 +104,7 @@ export function collectEventHandlersFromIR(node: IRNode): string[] {
       }
       break
     case 'provider':
+    case 'async':
       for (const child of node.children) {
         handlers.push(...collectEventHandlersFromIR(child))
       }
@@ -134,6 +135,7 @@ function traverseElements(node: IRNode, visitor: (el: IRElement, domDepth: numbe
     case 'fragment':
     case 'component':
     case 'provider':
+    case 'async':
       for (const child of node.children) {
         traverseElements(child, visitor, domDepth)
       }
@@ -260,6 +262,7 @@ export function collectLoopChildEventsWithNesting(
       case 'fragment':
       case 'component':
       case 'provider':
+      case 'async':
         for (const child of n.children) walk(child, domDepth)
         break
       case 'conditional':
@@ -302,6 +305,7 @@ function traverseForComponents(
     case 'element':
     case 'fragment':
     case 'provider':
+    case 'async':
       for (const child of node.children) {
         traverseForComponents(child, components)
       }
