@@ -1,9 +1,12 @@
 ---
 title: Hydration Model
 description: Marker-driven hydration that makes server-rendered HTML interactive
+redirect: ./how-it-works.md
 ---
 
 # Hydration Model
+
+> **Moved.** This page is now part of [How It Works](./how-it-works.md#hydration). For deeper details, see [Compiler Internals](../advanced/compiler-internals.md).
 
 BarefootJS uses **marker-driven** hydration to make server-rendered HTML interactive.
 

@@ -1,9 +1,12 @@
 ---
 title: Clean Overrides
 description: CSS Cascade Layers ensure user styles always beat component defaults
+redirect: ./how-it-works.md
 ---
 
 # Clean Overrides (CSS Layers)
+
+> **Moved.** This page is now part of [How It Works](./how-it-works.md#clean-overrides-css-layers).
 
 BarefootJS uses CSS Cascade Layers to guarantee that user-supplied classes always override component base classes — no runtime JS, no merge functions, no generation-order concerns.
 

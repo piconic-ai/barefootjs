@@ -1,9 +1,12 @@
 ---
 title: Two-Phase Compilation
 description: How BarefootJS compiles JSX into marked templates and client JS
+redirect: ./how-it-works.md
 ---
 
 # Two-Phase Compilation
+
+> **Moved.** This page is now part of [How It Works](./how-it-works.md#two-phase-compilation). For deeper details, see [Compiler Internals](../advanced/compiler-internals.md).
 
 The compiler transforms a single JSX source file into two separate outputs:
 

@@ -5,7 +5,7 @@ description: How to author, compose, and type components in BarefootJS, includin
 
 # Components
 
-For the `"use client"` directive and the server/client boundary, see [Core Concepts — `"use client"`](./core-concepts/use-client.md).
+For the `"use client"` directive and the server/client boundary, see [Backend Freedom](./core-concepts/backend-freedom.md#the-use-client-directive).
 
 ## Pages
 

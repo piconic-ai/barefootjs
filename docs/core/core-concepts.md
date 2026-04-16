@@ -1,16 +1,18 @@
 ---
 title: Core Concepts
-description: Two-phase compilation, signal-based reactivity, hydration, and clean overrides
+description: The four design principles and a technical overview of how BarefootJS works
 ---
 
 # Core Concepts
 
+Each page maps to a design principle — the "why" of BarefootJS. The final page provides a technical overview of "how."
+
 ## Pages
 
-| Topic | Description |
-|-------|-------------|
-| [Two-Phase Compilation](./core-concepts/compilation.md) | The compiler transforms JSX into a marked template and client JS via an intermediate representation |
-| [Signal-Based Reactivity](./core-concepts/reactivity.md) | Fine-grained reactivity with signals, effects, and memos — inspired by SolidJS |
-| [Hydration Model](./core-concepts/hydration.md) | Marker-driven hydration that makes server-rendered HTML interactive |
-| [`"use client"` Directive](./core-concepts/use-client.md) | Marking components for client-side interactivity and the server/client boundary |
-| [Clean Overrides](./core-concepts/clean-overrides.md) | CSS Cascade Layers ensure user styles always beat component defaults |
+| # | Topic | Design Principle |
+|---|-------|-----------------|
+| 1 | [Backend Freedom](./core-concepts/backend-freedom.md) | How adapters let the same JSX run on any server |
+| 2 | [MPA-style Development](./core-concepts/mpa-style.md) | Server-rendering by default, JS only where marked |
+| 3 | [Fine-grained Reactivity](./core-concepts/reactivity.md) | Signals, effects, memos — no virtual DOM needed |
+| 4 | [AI-native Development](./core-concepts/ai-native.md) | Testable IR, CLI discovery, AI-assisted workflows |
+| 5 | [How It Works](./core-concepts/how-it-works.md) | Two-phase compilation, hydration markers, clean overrides |

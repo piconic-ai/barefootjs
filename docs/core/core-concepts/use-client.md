@@ -1,9 +1,12 @@
 ---
 title: '"use client" Directive'
 description: Marking components for client-side interactivity
+redirect: ./backend-freedom.md
 ---
 
 # The `"use client"` Directive
+
+> **Moved.** This page is now part of [Backend Freedom](./backend-freedom.md#the-use-client-directive).
 
 Components with reactive primitives (`createSignal`, `createEffect`, etc.) require `"use client"` at the top of the file:
 
