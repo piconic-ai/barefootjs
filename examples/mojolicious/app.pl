@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite -signatures;
 use lib '../../packages/mojolicious/lib';
-use Mojo::JSON qw(true false);
+use Mojo::JSON qw(true false encode_json);
 
 # Load BarefootJS plugin
 plugin 'BarefootJS';
@@ -120,6 +120,7 @@ get '/' => sub ($c) {
             <li><a href="/toggle">Toggle</a></li>
             <li><a href="/todos">Todo (@client)</a></li>
             <li><a href="/todos-ssr">Todo (no @client markers)</a></li>
+            <li><a href="/ai-chat">AI Chat (SSE Streaming)</a></li>
         </ul>
     </body>
     </html>
@@ -254,6 +255,55 @@ get '/portal' => sub ($c) {
 };
 
 # ---------------------------------------------------------------------------
+# AI Chat — SSE Streaming Example
+# ---------------------------------------------------------------------------
+
+my @ai_responses = (
+    "[Dummy response] This text is streaming one character at a time via SSE. In production, replace /api/ai-chat with a real LLM API.",
+    "[Dummy response] BarefootJS compiles JSX to Mojolicious templates + client JS. Signals drive reactivity on any backend.",
+    "[Dummy response] SSE (Server-Sent Events) lets the server push data to the client over a single HTTP connection.",
+    "[Dummy response] The Mojolicious backend streams each character with a 30ms delay to simulate token-by-token LLM output.",
+    "[Dummy response] Out-of-Order Streaming SSR and interactive SSE streaming are two different features of BarefootJS.",
+);
+
+get '/ai-chat' => sub ($c) {
+    $c->render_component('AIChatInteractive',
+        title   => 'AI Chat — SSE Streaming (Mojolicious)',
+        heading => 'AI Chat — SSE Streaming',
+        stash   => {
+            messages      => [],
+            input         => '',
+            streamingText => '',
+            isStreaming   => 0,
+            extra_css     => '<link rel="stylesheet" href="/styles/ai-chat.css">',
+        },
+    );
+};
+
+get '/api/ai-chat' => sub ($c) {
+    my $text = $ai_responses[int(rand(scalar @ai_responses))];
+    my @chars = split //, $text;
+
+    $c->res->headers->content_type('text/event-stream');
+    $c->res->headers->cache_control('no-cache');
+    $c->res->headers->connection('keep-alive');
+
+    my $i = 0;
+    my $timer_id;
+    $c->on(finish => sub { Mojo::IOLoop->remove($timer_id) if $timer_id });
+    $timer_id = Mojo::IOLoop->recurring(0.03 => sub ($loop) {
+        if ($i < scalar @chars) {
+            my $char = $chars[$i++];
+            $c->write('data: ' . encode_json($char) . "\n\n");
+        } else {
+            Mojo::IOLoop->remove($timer_id);
+            undef $timer_id;
+            $c->write("data: [DONE]\n\n" => sub { $c->finish });
+        }
+    });
+};
+
+# ---------------------------------------------------------------------------
 # Todo API
 # ---------------------------------------------------------------------------
 
@@ -309,6 +359,10 @@ __DATA__
     <title><%= $title %></title>
     <link rel="stylesheet" href="/styles/components.css">
     <link rel="stylesheet" href="/styles/todo-app.css">
+    % my $extra_css = stash('extra_css') // '';
+    % if ($extra_css) {
+    <%== $extra_css %>
+    % }
     % if ($heading) {
     <style>
         body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }

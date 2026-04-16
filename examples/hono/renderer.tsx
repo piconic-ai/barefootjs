@@ -27,6 +27,7 @@ export const renderer = jsxRenderer(
           <script type="importmap" dangerouslySetInnerHTML={{ __html: importMapScript }} />
           <link rel="stylesheet" href="/shared/styles/components.css" />
           <link rel="stylesheet" href="/shared/styles/todo-app.css" />
+          <link rel="stylesheet" href="/shared/styles/ai-chat.css" />
           <style>{`
             body:not(:has(.todoapp)) {
               font-family: system-ui, sans-serif;

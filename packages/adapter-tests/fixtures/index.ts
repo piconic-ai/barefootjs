@@ -35,6 +35,7 @@ import { fixture as styleObjectDynamic } from './style-object-dynamic'
 import { fixture as fragment } from './fragment'
 import { fixture as fragmentConditional } from './fragment-conditional'
 import { fixture as clientOnly } from './client-only'
+import { fixture as clientOnlyLoopWithSiblingCond } from './client-only-loop-with-sibling-cond'
 import { fixture as eventHandlers } from './event-handlers'
 import { fixture as defaultProps } from './default-props'
 import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
@@ -87,6 +88,7 @@ export const jsxFixtures: JSXFixture[] = [
   fragment,
   fragmentConditional,
   clientOnly,
+  clientOnlyLoopWithSiblingCond,
   eventHandlers,
   defaultProps,
   nullishCoalescingText,

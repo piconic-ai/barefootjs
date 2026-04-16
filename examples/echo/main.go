@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	bf "github.com/barefootjs/runtime/bf"
 	"github.com/labstack/echo/v4"
@@ -46,19 +47,24 @@ func defaultLayout(ctx *bf.RenderContext) string {
     <h1>%s</h1>`, ctx.Heading)
 	}
 
+	extraCSS := ""
+	if css, ok := ctx.Extra["extra_css"].(string); ok && css != "" {
+		extraCSS = "\n    " + css
+	}
+
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
     <title>%s</title>
     <link rel="stylesheet" href="/shared/styles/components.css">
-    <link rel="stylesheet" href="/shared/styles/todo-app.css">%s
+    <link rel="stylesheet" href="/shared/styles/todo-app.css">%s%s
 </head>
 <body>%s
     <div id="app">%s</div>
     <p><a href="/">← Back</a></p>
     %s%s
 </body>
-</html>`, ctx.Title, headingStyle, headingHTML, ctx.ComponentHTML, ctx.Portals, ctx.Scripts)
+</html>`, ctx.Title, headingStyle, extraCSS, headingHTML, ctx.ComponentHTML, ctx.Portals, ctx.Scripts)
 }
 
 // In-memory todo storage
@@ -106,6 +112,8 @@ func main() {
 	e.GET("/portal", portalHandler)
 	e.GET("/conditional-return", conditionalReturnHandler)
 	e.GET("/conditional-return-link", conditionalReturnLinkHandler)
+	e.GET("/ai-chat", aiChatHandler)
+	e.GET("/api/ai-chat", aiChatSSEHandler)
 
 	// Todo API endpoints
 	e.GET("/api/todos", getTodosAPI)
@@ -143,6 +151,7 @@ func indexHandler(c echo.Context) error {
         <li><a href="/toggle">Toggle</a></li>
         <li><a href="/todos">Todo (@client)</a></li>
         <li><a href="/todos-ssr">Todo (no @client markers)</a></li>
+        <li><a href="/ai-chat">AI Chat (SSE Streaming)</a></li>
     </ul>
 </body>
 </html>
@@ -384,4 +393,57 @@ func deleteTodoAPI(c echo.Context) error {
 func resetTodosAPI(c echo.Context) error {
 	resetTodos()
 	return c.NoContent(http.StatusOK)
+}
+
+// ---------------------------------------------------------------------------
+// AI Chat — Streaming SSR Example
+// ---------------------------------------------------------------------------
+
+var fakeResponses = []string{
+	"[Dummy response] This text is streaming one character at a time via SSE. In production, replace /api/ai-chat with a real LLM API.",
+	"[Dummy response] BarefootJS compiles JSX to Go html/template + client JS. Signals drive reactivity on any backend.",
+	"[Dummy response] SSE (Server-Sent Events) lets the server push data to the client over a single HTTP connection.",
+	"[Dummy response] The Go/Echo backend streams each character with a 30ms delay to simulate token-by-token LLM output.",
+	"[Dummy response] Out-of-Order Streaming SSR and interactive SSE streaming are two different features of BarefootJS.",
+}
+
+func aiChatHandler(c echo.Context) error {
+	props := NewAIChatInteractiveProps(AIChatInteractiveInput{})
+	return c.Render(http.StatusOK, "AIChatInteractive", bf.RenderOptions{
+		Props:   &props,
+		Title:   "AI Chat — SSE Streaming (Go/Echo)",
+		Heading: "AI Chat — SSE Streaming",
+		Extra: map[string]interface{}{
+			"extra_css": `<link rel="stylesheet" href="/shared/styles/ai-chat.css">`,
+		},
+	})
+}
+
+func aiChatSSEHandler(c echo.Context) error {
+	idx := int(time.Now().UnixNano()) % len(fakeResponses)
+	if idx < 0 {
+		idx = -idx
+	}
+	text := fakeResponses[idx]
+
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().WriteHeader(http.StatusOK)
+
+	flusher, ok := c.Response().Writer.(http.Flusher)
+	if !ok {
+		return echo.ErrInternalServerError
+	}
+
+	for _, ch := range text {
+		encoded, _ := json.Marshal(string(ch))
+		fmt.Fprintf(c.Response().Writer, "data: %s\n\n", encoded)
+		flusher.Flush()
+		time.Sleep(30 * time.Millisecond)
+	}
+
+	fmt.Fprint(c.Response().Writer, "data: [DONE]\n\n")
+	flusher.Flush()
+	return nil
 }

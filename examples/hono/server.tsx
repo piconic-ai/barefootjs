@@ -7,7 +7,6 @@
 
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/bun'
-import { Suspense } from 'hono/jsx/streaming'
 import { renderer } from './renderer'
 import Counter from '@/components/Counter'
 import Toggle from '@/components/Toggle'
@@ -15,9 +14,9 @@ import TodoApp from '@/components/TodoApp'
 import TodoAppSSR from '@/components/TodoAppSSR'
 import ReactiveProps, { PropsReactivityComparison } from '@/components/ReactiveProps'
 import Form from '@/components/Form'
-import { AsyncCounterWrapper } from './components/AsyncCounterWrapper'
 import PortalExample from '@/components/PortalExample'
 import ConditionalReturn from '@/components/ConditionalReturn'
+import { AIChatPage } from './components/AIChatPage'
 
 const app = new Hono()
 
@@ -54,7 +53,7 @@ app.get('/', (c) => {
           <li><a href="/toggle">Toggle</a></li>
           <li><a href="/todos">Todo (@client)</a></li>
           <li><a href="/todos-ssr">Todo (no @client markers)</a></li>
-          <li><a href="/async-counter">Async Counter (Suspense + BarefootJS)</a></li>
+          <li><a href="/ai-chat">AI Chat (SSE Streaming)</a></li>
         </ul>
       </nav>
     </div>
@@ -170,17 +169,45 @@ app.get('/conditional-return-link', (c) => {
   )
 })
 
-// Async Counter with Suspense + BarefootJS (streaming + interactivity)
-app.get('/async-counter', (c) => {
-  return c.render(
-    <div>
-      <h1>Async Counter with Suspense + BarefootJS</h1>
-      <Suspense fallback={<p className="loading">Loading counter...</p>}>
-        <AsyncCounterWrapper />
-      </Suspense>
-      <p><a href="/">← Back</a></p>
-    </div>
-  )
+// AI Chat with SSE streaming
+app.get('/ai-chat', (c) => {
+  return c.render(<AIChatPage />)
+})
+
+// SSE endpoint: streams a dummy response token by token.
+// Replace this endpoint with a real LLM streaming API (e.g. OpenAI, Anthropic) for production use.
+const FAKE_RESPONSES = [
+  '[Dummy response] This text is streaming one character at a time via Server-Sent Events. Replace /api/ai-chat in server.tsx with a real LLM API to make this chat functional.',
+  '[Dummy response] BarefootJS streams tokens using the SSE protocol. Each character arrives as a separate "data:" event. Wire up OpenAI or Anthropic here for real AI responses.',
+  '[Dummy response] This response is randomly selected from a fixed list in server.tsx — it does not understand your message. Swap the endpoint for a real streaming LLM to fix that.',
+  '[Dummy response] Lorem ipsum dolor sit amet. This is placeholder content demonstrating token-by-token SSE delivery. See /api/ai-chat in server.tsx to connect a real model.',
+  '[Dummy response] I am not a real AI. This demo exists only to show how BarefootJS handles SSE streaming on the client side. Replace me with a real LLM endpoint!',
+]
+
+app.get('/api/ai-chat', () => {
+  const text = FAKE_RESPONSES[Math.floor(Math.random() * FAKE_RESPONSES.length)]
+  const chars = [...text] // Unicode-safe split
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const enc = new TextEncoder()
+      for (const ch of chars) {
+        controller.enqueue(enc.encode(`data: ${JSON.stringify(ch)}\n\n`))
+        await new Promise(r => setTimeout(r, 30))
+      }
+      controller.enqueue(enc.encode('data: [DONE]\n\n'))
+      controller.close()
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
+  })
 })
 
 // REST API

@@ -56,6 +56,7 @@ export class GoTemplateAdapter extends BaseAdapter {
   private componentName: string = ''
   private options: Required<GoTemplateAdapterOptions>
   private inLoop: boolean = false
+  private loopParamStack: string[] = []
   private errors: CompilerError[] = []
   private propsObjectName: string | null = null
 
@@ -1145,6 +1146,13 @@ export class GoTemplateAdapter extends BaseAdapter {
           return `.${this.capitalizeFieldName(expr.property)}`
         }
 
+        // Inside a loop, the loop param variable refers to the current item (dot).
+        // e.g., `msg.role` inside `{{range $_, $msg := .Messages}}` → `.Role`
+        const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
+        if (expr.object.kind === 'identifier' && currentLoopParam && expr.object.name === currentLoopParam) {
+          return `.${this.capitalizeFieldName(expr.property)}`
+        }
+
         const obj = this.renderParsedExpr(expr.object)
         // Handle .length -> len
         if (expr.property === 'length') {
@@ -2172,9 +2180,9 @@ export class GoTemplateAdapter extends BaseAdapter {
   }
 
   renderLoop(loop: IRLoop): string {
-    // clientOnly loops should not be rendered at SSR time
+    // clientOnly loops: emit SSR markers so client can insert DOM nodes
     if (loop.clientOnly) {
-      return ''
+      return `{{bfComment "loop"}}{{bfComment "/loop"}}`
     }
 
     let goArray = this.convertExpressionToGo(loop.array)
@@ -2190,7 +2198,9 @@ export class GoTemplateAdapter extends BaseAdapter {
     }
 
     this.inLoop = true
+    this.loopParamStack.push(param)
     const children = this.renderChildren(loop.children)
+    this.loopParamStack.pop()
     this.inLoop = false
 
     // Apply sort if present: wrap array with bf_sort pipeline
@@ -2219,10 +2229,10 @@ export class GoTemplateAdapter extends BaseAdapter {
         filterCond = 'true'
       }
 
-      return `{{range $${index}, $${param} := ${goArray}}}{{if ${filterCond}}}${children}{{end}}{{end}}`
+      return `{{bfComment "loop"}}{{range $${index}, $${param} := ${goArray}}}{{if ${filterCond}}}${children}{{end}}{{end}}{{bfComment "/loop"}}`
     }
 
-    return `{{range $${index}, $${param} := ${goArray}}}${children}{{end}}`
+    return `{{bfComment "loop"}}{{range $${index}, $${param} := ${goArray}}}${children}{{end}}{{bfComment "/loop"}}`
   }
 
   /**
@@ -2355,10 +2365,10 @@ export class GoTemplateAdapter extends BaseAdapter {
           const { condition: goCond, preamble } = this.convertConditionToGo(value)
           parts.push(`${preamble}{{if ${goCond}}}${attrName}{{end}}`)
         } else {
-          // Check for ternary/conditional expressions using the parser
+          // Check for ternary/conditional or template literal expressions using the parser
           const parsed = parseExpression(value.trim())
-          if (parsed.kind === 'conditional') {
-            // Conditional expressions return complete Go template syntax
+          if (parsed.kind === 'conditional' || parsed.kind === 'template-literal') {
+            // These produce inline Go template syntax with embedded {{...}} actions
             const goValue = this.renderParsedExpr(parsed)
             parts.push(`${attrName}="${goValue}"`)
           } else {

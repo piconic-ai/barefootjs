@@ -555,9 +555,13 @@ export class HonoAdapter extends JsxAdapter {
   }
 
   renderLoop(loop: IRLoop): string {
-    // clientOnly loops should not be rendered at SSR time
+    // clientOnly loops must not render items at SSR time, but must still emit
+    // <!--bf-loop--><!--bf-/loop--> boundary markers so that mapArray() on the
+    // client can locate the correct anchor node when inserting items.
+    // Without the markers, mapArray() resolves anchor = null and appends new
+    // elements after sibling markers (e.g. <!--bf-cond-start-->). (#872)
     if (loop.clientOnly) {
-      return ''
+      return `{bfComment('loop')}{bfComment('/loop')}`
     }
 
     // Preserve type annotations for loop params in .tsx output

@@ -502,3 +502,36 @@ func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps
 		Count: 0,
 	}
 }
+
+// AIChatInteractiveInput is the user-facing input type.
+type AIChatInteractiveInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+}
+
+// AIChatInteractiveProps is the props type for the AIChatInteractive component.
+type AIChatInteractiveProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Messages []interface{} `json:"messages"`
+	Input string `json:"input"`
+	StreamingText string `json:"streamingText"`
+	IsStreaming bool `json:"isStreaming"`
+}
+
+// NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.
+func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "AIChatInteractive_" + randomID(6)
+	}
+
+	return AIChatInteractiveProps{
+		ScopeID: scopeID,
+		Messages: nil,
+		Input: "",
+		StreamingText: "",
+		IsStreaming: false,
+	}
+}

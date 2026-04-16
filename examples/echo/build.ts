@@ -24,6 +24,7 @@ const components = [
   '../shared/components/Form.tsx',
   '../shared/components/PortalExample.tsx',
   '../shared/components/ConditionalReturn.tsx',
+  '../shared/components/AIChatInteractive.tsx',
 ]
 
 // Output directories
@@ -195,8 +196,9 @@ for (const componentPath of components) {
       }
     }
 
-    // Keep track of the main (default exported) component for client JS
-    if (ctx.hasDefaultExport) {
+    // Keep track of the main component for client JS.
+    // Prefer the default export; fall back to the first compiled component.
+    if (ctx.hasDefaultExport || mainComponentIR === null) {
       mainComponentIR = ir
     }
   }
