@@ -78,30 +78,28 @@ interface SidebarNavProps {
 
 /**
  * Renders the sidebar navigation.
- * Groups and links are rendered as separate lists to work around
- * a compiler limitation with conditional JSX inside map().
+ * Entries are rendered in the order they appear in the array,
+ * preserving the intended navigation ordering.
  */
 export function SidebarNav({ entries, currentPath }: SidebarNavProps) {
-  const groups = entries.filter(isGroup) as SidebarGroup[]
-  const links = entries.filter(e => !isGroup(e)) as SidebarLink[]
-
   return (
     <div className="space-y-1">
-      {groups.map(group => (
-        <SidebarGroupSection
-          key={group.title}
-          group={group}
-          currentPath={currentPath}
-        />
-      ))}
-      {links.map(link => (
-        <SidebarItemLink
-          key={link.href}
-          title={link.title}
-          href={link.href}
-          isActive={currentPath === link.href}
-        />
-      ))}
+      {entries.map(entry =>
+        isGroup(entry) ? (
+          <SidebarGroupSection
+            key={entry.title}
+            group={entry}
+            currentPath={currentPath}
+          />
+        ) : (
+          <SidebarItemLink
+            key={entry.href}
+            title={entry.title}
+            href={entry.href}
+            isActive={currentPath === entry.href}
+          />
+        )
+      )}
     </div>
   )
 }
