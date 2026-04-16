@@ -49,11 +49,11 @@ export const navigation: NavItem[] = [
     title: 'Core Concepts',
     slug: 'core-concepts',
     children: [
-      { title: 'Two-Phase Compilation', slug: 'core-concepts/compilation' },
-      { title: 'Signal-Based Reactivity', slug: 'core-concepts/reactivity' },
-      { title: 'Hydration Model', slug: 'core-concepts/hydration' },
-      { title: '"use client" Directive', slug: 'core-concepts/use-client' },
-      { title: 'Clean Overrides', slug: 'core-concepts/clean-overrides' },
+      { title: 'Backend Freedom', slug: 'core-concepts/backend-freedom' },
+      { title: 'MPA-style Development', slug: 'core-concepts/mpa-style' },
+      { title: 'Fine-grained Reactivity', slug: 'core-concepts/reactivity' },
+      { title: 'AI-native Development', slug: 'core-concepts/ai-native' },
+      { title: 'How It Works', slug: 'core-concepts/how-it-works' },
     ],
   },
   {
