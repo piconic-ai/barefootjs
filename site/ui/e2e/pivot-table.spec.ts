@@ -225,6 +225,41 @@ test.describe('Pivot Table Block', () => {
       await s.locator('.axis-zone-columns .pivot-field-quarter .field-remove-btn').click()
       await expect(s.locator('.axis-zone-available .pivot-field-quarter')).toBeVisible()
     })
+
+    test('dragging available field into rows shows X button on new field', async ({ page }) => {
+      const s = section(page)
+
+      // Rows starts with [region, product] (max 2). Remove one to make room.
+      await s.locator('.axis-zone-rows .pivot-field-region .field-remove-btn').click()
+
+      // Salesperson is now available — drag it into Rows
+      const source = s.locator('.axis-zone-available .pivot-field-salesperson')
+      const target = s.locator('.axis-zone-rows')
+      await source.dragTo(target)
+
+      // Salesperson should now appear in Rows zone with a remove button
+      const newField = s.locator('.axis-zone-rows .pivot-field-salesperson')
+      await expect(newField).toBeVisible()
+      await expect(newField.locator('.field-remove-btn')).toBeVisible()
+    })
+
+    test('re-adding a removed field to rows shows X button', async ({ page }) => {
+      const s = section(page)
+
+      // Remove Product from rows → it moves to Available
+      await s.locator('.axis-zone-rows .pivot-field-product .field-remove-btn').click()
+      await expect(s.locator('.axis-zone-available .pivot-field-product')).toBeVisible()
+
+      // Drag Product back into rows
+      const source = s.locator('.axis-zone-available .pivot-field-product')
+      const target = s.locator('.axis-zone-rows')
+      await source.dragTo(target)
+
+      // X button must be visible on the re-added field
+      const newField = s.locator('.axis-zone-rows .pivot-field-product')
+      await expect(newField).toBeVisible()
+      await expect(newField.locator('.field-remove-btn')).toBeVisible()
+    })
   })
 
   test.describe('Grand Totals', () => {

@@ -335,29 +335,11 @@ export function parseHTML(html: string): DocumentFragment {
  * Check if a value contains DOM elements (HTMLElement instances).
  */
 function hasDomElements(value: unknown): boolean {
-  if (value instanceof HTMLElement) return true
+  if (value instanceof Element) return true
   if (Array.isArray(value)) return value.some(hasDomElements)
   return false
 }
 
-
-/**
- * Insert DOM children into a shell element.
- * - HTMLElement → appendChild directly
- * - Array → iterate, appendChild each element, create text nodes for strings
- * - string/number → create text node
- */
-function insertDomChildren(element: HTMLElement, children: unknown): void {
-  if (children instanceof HTMLElement) {
-    element.appendChild(children)
-  } else if (Array.isArray(children)) {
-    for (const child of children) {
-      insertDomChildren(element, child)
-    }
-  } else if (typeof children === 'string' || typeof children === 'number') {
-    element.appendChild(document.createTextNode(String(children)))
-  }
-}
 
 /**
  * Insert getter children into an element.
@@ -367,11 +349,11 @@ function insertDomChildren(element: HTMLElement, children: unknown): void {
  * Arrays may contain a mix of DOM elements and HTML strings.
  */
 function insertGetterChildren(element: HTMLElement, children: unknown): void {
-  if (children instanceof HTMLElement) {
+  if (children instanceof Element) {
     element.appendChild(children)
   } else if (Array.isArray(children)) {
     for (const child of (children as unknown[]).flat()) {
-      if (child instanceof HTMLElement) {
+      if (child instanceof Element) {
         element.appendChild(child)
       } else if (typeof child === 'string' && child.length > 0) {
         element.appendChild(parseHTML(child.trim()))
