@@ -14,19 +14,47 @@ import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate }
 import { PROPS_PARAM } from './utils'
 import { buildInlinableConstants, buildSignalAndMemoMaps, buildCsrInlinableConstants } from './emit-registration'
 import { IMPORT_PLACEHOLDER, detectUsedImports } from './imports'
+import { buildSourceMapFromIR, type SourceMapV3 } from './source-map'
+
+export interface ClientJsResult {
+  code: string
+  sourceMap?: SourceMapV3
+}
 
 /** Public entry point: IR → client JS string. Returns '' if no client JS is needed. */
 export function generateClientJs(ir: ComponentIR, siblingComponents?: string[], localImportPrefixes?: string[]): string {
+  return generateClientJsWithSourceMap(ir, siblingComponents, localImportPrefixes).code
+}
+
+/**
+ * Generate client JS with optional source map.
+ * When sourceMaps is true, returns both the JS code and a V3 source map.
+ */
+export function generateClientJsWithSourceMap(
+  ir: ComponentIR,
+  siblingComponents?: string[],
+  localImportPrefixes?: string[],
+  options?: { sourceMaps?: boolean; generatedFileName?: string },
+): ClientJsResult {
   const ctx = createContext(ir)
   collectElements(ir.root, ctx)
   ir.errors.push(...ctx.warnings)
 
   if (!needsClientJs(ctx)) {
-    // Stateless components still need template registration so renderChild() can find them (#435)
-    return generateTemplateOnlyMount(ir, ctx)
+    const code = generateTemplateOnlyMount(ir, ctx)
+    return { code }
   }
 
-  return generateInitFunction(ir, ctx, siblingComponents, localImportPrefixes)
+  const code = generateInitFunction(ir, ctx, siblingComponents, localImportPrefixes)
+
+  if (options?.sourceMaps && code) {
+    const fileName = options.generatedFileName ?? `${ir.metadata.componentName}.client.js`
+    const sourceMap = buildSourceMapFromIR(code, ir, fileName)
+    const codeWithUrl = code + `\n//# sourceMappingURL=${fileName}.map`
+    return { code: codeWithUrl, sourceMap }
+  }
+
+  return { code }
 }
 
 /**

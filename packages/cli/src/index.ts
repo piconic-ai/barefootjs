@@ -28,9 +28,12 @@ Commands:
   preview:generate <comp> [--force]  Generate preview file from component metadata
   tokens [--category <cat>]   List design tokens (categories: typography, spacing, etc.)
   meta:extract                Extract metadata from ui/components/ui/*.tsx
+  inspect <component>         Show signal dependency graph from IR
+  why-update <comp> <signal>  Show update propagation path for a signal/memo
 
 Options:
   --json                      Output in JSON format
+  --debug                     (test) Output signal change trace log
 
 Workflow:
   1. barefoot init                         — Initialize project
@@ -39,7 +42,9 @@ Workflow:
   4. barefoot ui <component>               — Learn props and usage
   5. barefoot core <topic>                 — Read framework docs
   6. bun test <path>                       — Verify
-  7. barefoot preview <component>          — Visual preview in browser`)
+  7. barefoot preview <component>          — Visual preview in browser
+  8. barefoot inspect <component>          — Debug: signal dependency graph
+  9. barefoot why-update <comp> <signal>   — Debug: update propagation path`)
 }
 
 switch (command) {
@@ -80,8 +85,15 @@ switch (command) {
   }
 
   case 'test': {
-    const { run } = await import('./commands/test')
-    run(commandArgs, ctx)
+    // barefoot test --debug <component> routes to debug-test command
+    if (commandArgs.includes('--debug')) {
+      const debugArgs = commandArgs.filter(a => a !== '--debug')
+      const { run } = await import('./commands/debug-test')
+      await run(debugArgs, ctx)
+    } else {
+      const { run } = await import('./commands/test')
+      run(commandArgs, ctx)
+    }
     break
   }
 
@@ -117,6 +129,18 @@ switch (command) {
 
   case 'meta:extract': {
     const { run } = await import('./commands/meta-extract')
+    await run(commandArgs, ctx)
+    break
+  }
+
+  case 'inspect': {
+    const { run } = await import('./commands/inspect')
+    await run(commandArgs, ctx)
+    break
+  }
+
+  case 'why-update': {
+    const { run } = await import('./commands/why-update')
     await run(commandArgs, ctx)
     break
   }

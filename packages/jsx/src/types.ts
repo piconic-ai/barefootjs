@@ -550,7 +550,7 @@ export interface CompileOptions {
 export interface FileOutput {
   path: string
   content: string
-  type: 'markedTemplate' | 'clientJs' | 'ir'
+  type: 'markedTemplate' | 'clientJs' | 'ir' | 'sourceMap'
 }
 
 export interface CompileResult {

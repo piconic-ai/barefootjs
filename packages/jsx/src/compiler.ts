@@ -15,7 +15,7 @@ import type {
 import type { TemplateAdapter } from './adapters/interface'
 import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer'
 import { jsxToIR } from './jsx-to-ir'
-import { generateClientJs, analyzeClientNeeds } from './ir-to-client-js'
+import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js'
 import { generateModuleExports } from './module-exports'
 import { applyCssLayerPrefix } from './css-layer-prefixer'
 
@@ -132,14 +132,25 @@ export async function compileJSX(
     type: 'markedTemplate',
   })
 
-  const clientJs = generateClientJs(componentIR, undefined, options.localImportPrefixes)
-  errors.push(...componentIR.errors)
-  if (clientJs) {
-    files.push({
-      path: entryPath.replace(/\.tsx?$/, '.client.js'),
-      content: clientJs,
-      type: 'clientJs',
+  const clientJsPath = entryPath.replace(/\.tsx?$/, '.client.js')
+  if (options.sourceMaps) {
+    const result = generateClientJsWithSourceMap(componentIR, undefined, options.localImportPrefixes, {
+      sourceMaps: true,
+      generatedFileName: clientJsPath.split('/').pop(),
     })
+    errors.push(...componentIR.errors)
+    if (result.code) {
+      files.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
+      if (result.sourceMap) {
+        files.push({ path: clientJsPath + '.map', content: JSON.stringify(result.sourceMap), type: 'sourceMap' as FileOutput['type'] })
+      }
+    }
+  } else {
+    const clientJs = generateClientJs(componentIR, undefined, options.localImportPrefixes)
+    errors.push(...componentIR.errors)
+    if (clientJs) {
+      files.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
+    }
   }
 
   return { files, errors }
@@ -490,14 +501,25 @@ export function compileJSXSync(
     type: 'markedTemplate',
   })
 
-  const clientJs = generateClientJs(componentIR, undefined, options.localImportPrefixes)
-  errors.push(...componentIR.errors)
-  if (clientJs) {
-    files.push({
-      path: filePath.replace(/\.tsx?$/, '.client.js'),
-      content: clientJs,
-      type: 'clientJs',
+  const clientJsPath = filePath.replace(/\.tsx?$/, '.client.js')
+  if (options.sourceMaps) {
+    const result = generateClientJsWithSourceMap(componentIR, undefined, options.localImportPrefixes, {
+      sourceMaps: true,
+      generatedFileName: clientJsPath.split('/').pop(),
     })
+    errors.push(...componentIR.errors)
+    if (result.code) {
+      files.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
+      if (result.sourceMap) {
+        files.push({ path: clientJsPath + '.map', content: JSON.stringify(result.sourceMap), type: 'sourceMap' as FileOutput['type'] })
+      }
+    }
+  } else {
+    const clientJs = generateClientJs(componentIR, undefined, options.localImportPrefixes)
+    errors.push(...componentIR.errors)
+    if (clientJs) {
+      files.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
+    }
   }
 
   return { files, errors }

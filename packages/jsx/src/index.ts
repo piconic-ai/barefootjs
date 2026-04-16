@@ -49,7 +49,12 @@ export { JsxAdapter } from './adapters/jsx-adapter'
 export type { JsxAdapterConfig } from './adapters/jsx-adapter'
 
 // Client JS Generator
-export { generateClientJs, analyzeClientNeeds } from './ir-to-client-js'
+export { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js'
+export type { ClientJsResult } from './ir-to-client-js'
+
+// Source Map
+export { SourceMapGenerator, buildSourceMapFromIR } from './ir-to-client-js/source-map'
+export type { SourceMapV3 } from './ir-to-client-js/source-map'
 
 // Client JS Combiner (for build scripts)
 export { combineParentChildClientJs } from './combine-client-js'
@@ -77,6 +82,19 @@ export { ErrorCodes, createError, formatError, generateCodeFrame } from './error
 // Expression Parser
 export { parseExpression, isSupported, exprToString, parseBlockBody } from './expression-parser'
 export type { ParsedExpr, ParsedStatement, SupportLevel, SupportResult, TemplatePart } from './expression-parser'
+
+// Debug analysis
+export {
+  buildComponentGraph,
+  buildGraphFromIR,
+  traceUpdatePath,
+  formatComponentGraph,
+  formatUpdatePath,
+  formatSignalTrace,
+  generateStaticTrace,
+  graphToJSON,
+} from './debug'
+export type { ComponentGraph, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace } from './debug'
 
 // HTML constants
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants'
