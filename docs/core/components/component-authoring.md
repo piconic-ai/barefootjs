@@ -40,7 +40,7 @@ export function Counter() {
 }
 ```
 
-The compiler produces a **marked template** (server HTML with `bf-*` attributes) and **client JS** (signals, effects, event handlers). See [Two-Phase Compilation](../core-concepts/compilation.md) for details.
+The compiler produces a **marked template** (server HTML with `bf-*` attributes) and **client JS** (signals, effects, event handlers). See [How It Works](../core-concepts/how-it-works.md#two-phase-compilation) for details.
 
 ### When `"use client"` Is Required
 

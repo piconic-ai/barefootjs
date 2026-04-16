@@ -4,11 +4,11 @@
 
 ## Core Concepts
 
-- [Clean Overrides](https://barefootjs.dev/docs/core-concepts/clean-overrides.md): CSS Cascade Layers ensure user styles always beat component defaults
-- [Two-Phase Compilation](https://barefootjs.dev/docs/core-concepts/compilation.md): How BarefootJS compiles JSX into marked templates and client JS
-- [Hydration Model](https://barefootjs.dev/docs/core-concepts/hydration.md): Marker-driven hydration that makes server-rendered HTML interactive
-- [Signal-Based Reactivity](https://barefootjs.dev/docs/core-concepts/reactivity.md): Fine-grained reactivity with signals, effects, and memos
-- ["use client" Directive](https://barefootjs.dev/docs/core-concepts/use-client.md): Marking components for client-side interactivity
+- [Backend Freedom](https://barefootjs.dev/docs/core-concepts/backend-freedom.md): How adapters let the same JSX run on any server — Hono, Go, and beyond
+- [MPA-style Development](https://barefootjs.dev/docs/core-concepts/mpa-style.md): Server-rendering by default, with client JavaScript only where you need it
+- [Fine-grained Reactivity](https://barefootjs.dev/docs/core-concepts/reactivity.md): Signal-based reactivity with signals, effects, and memos — no virtual DOM needed
+- [AI-native Development](https://barefootjs.dev/docs/core-concepts/ai-native.md): Testable IR, CLI discovery, and workflows designed for AI-assisted development
+- [How It Works](https://barefootjs.dev/docs/core-concepts/how-it-works.md): Two-phase compilation, hydration markers, and clean overrides — a technical overview
 
 ## Reactivity
 

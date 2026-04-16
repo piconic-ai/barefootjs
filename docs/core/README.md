@@ -16,11 +16,11 @@
 
 ### 3. [Core Concepts](./core-concepts.md)
 
-- [Two-Phase Compilation](./core-concepts/compilation.md) — JSX → IR → marked template + client JS
-- [Signal-Based Reactivity](./core-concepts/reactivity.md) — Fine-grained reactivity with signals, effects, and memos
-- [Hydration Model](./core-concepts/hydration.md) — Marker-driven hydration for server-rendered HTML
-- [`"use client"` Directive](./core-concepts/use-client.md) — Marking components for client-side interactivity
-- [Clean Overrides](./core-concepts/clean-overrides.md) — CSS Cascade Layers for reliable style overrides
+- [Backend Freedom](./core-concepts/backend-freedom.md) — How adapters let the same JSX run on any server
+- [MPA-style Development](./core-concepts/mpa-style.md) — Server-rendering by default, JS only where marked
+- [Fine-grained Reactivity](./core-concepts/reactivity.md) — Signals, effects, memos — no virtual DOM needed
+- [AI-native Development](./core-concepts/ai-native.md) — Testable IR, CLI discovery, AI-assisted workflows
+- [How It Works](./core-concepts/how-it-works.md) — Two-phase compilation, hydration markers, clean overrides
 
 ### 4. [Reactivity](./reactivity.md)
 

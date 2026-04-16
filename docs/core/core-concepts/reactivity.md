@@ -1,9 +1,12 @@
 ---
-title: Signal-Based Reactivity
-description: Fine-grained reactivity with signals, effects, and memos
+title: Fine-grained Reactivity
+description: Signal-based reactivity with signals, effects, and memos — no virtual DOM needed
 ---
 
-# Signal-Based Reactivity
+# Fine-grained Reactivity
+
+> **Design Principle — Fine-grained reactivity.**
+> Signals track dependencies at the expression level. When state changes, only the affected DOM nodes update — no virtual DOM diffing, no component-tree re-render.
 
 BarefootJS uses fine-grained reactivity inspired by SolidJS. The core primitives are **signals**, **effects**, and **memos**.
 
