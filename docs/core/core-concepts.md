@@ -5,14 +5,22 @@ description: The four design principles and a technical overview of how Barefoot
 
 # Core Concepts
 
-Each page maps to a design principle — the "why" of BarefootJS. The final page provides a technical overview of "how."
+## [Backend Freedom](./core-concepts/backend-freedom.md)
 
-## Pages
+The same JSX source produces templates for Hono, Go `html/template`, and any future adapter. Your component library works across stacks. No Node.js lock-in — use the server language your team already knows.
 
-| # | Topic | Design Principle |
-|---|-------|-----------------|
-| 1 | [Backend Freedom](./core-concepts/backend-freedom.md) | How adapters let the same JSX run on any server |
-| 2 | [MPA-style Development](./core-concepts/mpa-style.md) | Server-rendering by default, JS only where marked |
-| 3 | [Fine-grained Reactivity](./core-concepts/reactivity.md) | Signals, effects, memos — no virtual DOM needed |
-| 4 | [AI-native Development](./core-concepts/ai-native.md) | Testable IR, CLI discovery, AI-assisted workflows |
-| 5 | [How It Works](./core-concepts/how-it-works.md) | Two-phase compilation, hydration markers, clean overrides |
+## [MPA-style Development](./core-concepts/mpa-style.md)
+
+Add interactive UI to existing server-rendered apps without adopting a full SPA framework. Each page is a normal route; client JavaScript is only loaded where you mark it.
+
+## [Fine-grained Reactivity](./core-concepts/reactivity.md)
+
+Signals track dependencies at the expression level. When state changes, only the affected DOM nodes update — no virtual DOM diffing, no component-tree re-render.
+
+## [AI-native Development](./core-concepts/ai-native.md)
+
+The compiler produces an IR that can be tested without a browser, enabling fast component tests via `renderToTest()`. Combined with a CLI for component discovery (`barefoot search`, `barefoot ui`), AI agents can autonomously scaffold, test, and iterate on UI components.
+
+## [How It Works](./core-concepts/how-it-works.md)
+
+Two-phase compilation, hydration markers, and clean overrides — a technical overview of the implementation.

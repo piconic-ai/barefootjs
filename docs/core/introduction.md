@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: What is BarefootJS, why it exists, and its design philosophy
+description: What is BarefootJS and how its two-phase compilation works
 ---
 
 # Introduction
@@ -85,19 +85,3 @@ hydrate('Counter', {
 })
 ```
 
-No framework runtime. No virtual DOM. Just the minimum JavaScript needed for interactivity.
-
-
-## Design Principles
-
-**Backend Freedom.**
-The same JSX source produces templates for Hono, Go `html/template`, and any future adapter. Your component library works across stacks. No Node.js lock-in — use the server language your team already knows.
-
-**MPA-style development.**
-Add interactive UI to existing server-rendered apps without adopting a full SPA framework. Each page is a normal route; client JavaScript is only loaded where you mark it.
-
-**Fine-grained reactivity.**
-Signals track dependencies at the expression level. When state changes, only the affected DOM nodes update — no virtual DOM diffing, no component-tree re-render. [Benchmarked at SolidJS-equivalent performance](https://github.com/barefootjs/barefootjs/issues/236), orders of magnitude faster than vDOM reconciliation.
-
-**AI-native development.**
-The compiler produces an IR that can be tested without a browser, enabling fast component tests via `renderToTest()`. Combined with a CLI for component discovery (`barefoot search`, `barefoot ui`), AI agents can autonomously scaffold, test, and iterate on UI components.
