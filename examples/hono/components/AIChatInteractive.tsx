@@ -5,9 +5,6 @@
  *
  * Client-side chat with SSE streaming responses.
  * Each user message triggers a streaming AI response via /api/ai-chat.
- *
- * Note: The messages list and streaming indicator are placed in separate containers
- * to avoid SSR/CSR ordering issues with mapArray and conditional rendering.
  */
 
 import { createSignal, createEffect } from '@barefootjs/client'
@@ -64,7 +61,6 @@ export function AIChatInteractive() {
 
   return (
     <div className="chat-container">
-      {/* Completed messages — mapArray manages this container */}
       <div className="chat-messages" id="chat-messages">
         {/* @client */ messages().map((msg: Message) => (
           <div key={msg.id} className={`chat-msg chat-${msg.role}`}>
@@ -73,18 +69,14 @@ export function AIChatInteractive() {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Streaming message — separate container to avoid mapArray ordering issues */}
-      {/* @client */ isStreaming() && (
-        <div className="chat-streaming">
+        {/* @client */ isStreaming() && (
           <div className="chat-msg chat-assistant">
             <div className="chat-bubble">
               <p>{streamingText()}<span className="streaming-cursor">▌</span></p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="chat-input-area">
         <input

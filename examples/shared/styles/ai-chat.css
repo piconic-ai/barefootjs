@@ -50,9 +50,6 @@
 }
 .suggestion-chip:hover { background: #f0f0f0; }
 
-/* Streaming message (separate container for SSR/CSR ordering) */
-.chat-streaming { padding: 0 1rem 0.75rem; }
-
 /* Input area */
 .chat-input-area {
   display: flex;

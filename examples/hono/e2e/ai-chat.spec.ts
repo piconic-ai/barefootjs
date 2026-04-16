@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('AI Chat (SSE Streaming)', () => {
+  test.setTimeout(15000)
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/ai-chat')
   })
