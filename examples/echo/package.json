@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "build": "bun run ../../packages/cli/src/index.ts build",
+    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
     "dev": "go run .",
     "setup": "go mod tidy",
     "test:e2e": "bunx playwright test",

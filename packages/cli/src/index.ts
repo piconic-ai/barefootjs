@@ -15,7 +15,7 @@ function printUsage() {
   console.log(`Usage: barefoot <command> [options]
 
 Commands:
-  build [--minify]            Compile components using barefoot.config.ts
+  build [--minify] [--force] [--watch]  Compile components using barefoot.config.ts
   init [--name <name>] [--from <url>]  Initialize a new BarefootJS project
   add <component...> [--force] [--registry <url>] Add components to your project
   search <query> [--dir <path>] [--registry <url>] Search components and documentation

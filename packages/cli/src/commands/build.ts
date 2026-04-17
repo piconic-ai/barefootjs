@@ -1,7 +1,7 @@
 // `barefoot build` — Compile JSX components using barefoot.config.ts.
 
 import type { CliContext } from '../context'
-import { resolveBuildConfigFromTs, build } from '../lib/build'
+import { resolveBuildConfigFromTs, build, watch } from '../lib/build'
 import { findBuildConfig, loadBuildConfig } from '../lib/config-loader'
 
 export async function run(args: string[], ctx: CliContext): Promise<void> {
@@ -21,15 +21,36 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   if (args.includes('--minify')) overrides.minify = true
   const config = resolveBuildConfigFromTs(projectDir, tsConfig, overrides)
 
+  const force = args.includes('--force')
+  const watchMode = args.includes('--watch')
+
   console.log(`Adapter: ${config.adapter.name}`)
   console.log(`Source dirs: ${config.componentDirs.join(', ')}`)
   console.log(`Output dir: ${config.outDir}`)
+  if (watchMode) console.log('Mode: watch')
+  if (force) console.log('Force: cache ignored')
   console.log('')
 
-  const result = await build(config)
+  if (watchMode) {
+    const controller = new AbortController()
+    const stop = () => controller.abort()
+    process.on('SIGINT', stop)
+    process.on('SIGTERM', stop)
+    try {
+      await watch(config, { signal: controller.signal })
+    } finally {
+      process.off('SIGINT', stop)
+      process.off('SIGTERM', stop)
+    }
+    return
+  }
+
+  const result = await build(config, { force })
 
   console.log('')
-  console.log(`Build complete: ${result.compiledCount} compiled, ${result.skippedCount} skipped, ${result.errorCount} errors`)
+  console.log(
+    `Build complete: ${result.compiledCount} compiled, ${result.cachedCount} cached, ${result.skippedCount} skipped, ${result.errorCount} errors`,
+  )
 
   if (result.errorCount > 0) {
     process.exit(1)

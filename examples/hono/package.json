@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "scripts": {
     "build": "bun run ../../packages/cli/src/index.ts build",
-    "dev": "bun run --watch server.tsx",
+    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "dev": "bun run build && concurrently -n build,server -c cyan,green 'bun run build:watch' 'bun run --watch server.tsx'",
     "test:e2e": "bunx playwright test",
     "test:e2e:ui": "bunx playwright test --ui"
   },
