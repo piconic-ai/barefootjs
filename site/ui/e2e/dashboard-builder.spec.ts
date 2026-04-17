@@ -260,7 +260,7 @@ test.describe('Dashboard Builder Block', () => {
       const s = section(page)
       const cell = s.locator('.widget-cell').first()
       const before = await cell.getAttribute('data-widget-size')
-      expect(before).toBe('md')
+      expect(before).toBe('sm')
 
       await cell.locator('.widget-size-toggle').click()
       const after = await cell.getAttribute('data-widget-size')

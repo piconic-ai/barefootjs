@@ -47,10 +47,10 @@ function nextWidgetId(): number {
 }
 
 const initialWidgets: WidgetConfig[] = [
-  { id: 1, type: 'stat', title: 'Revenue', size: 'md' },
-  { id: 2, type: 'progress', title: 'Quarterly Goal', size: 'md' },
-  { id: 3, type: 'todo', title: 'Action Items', size: 'md' },
-  { id: 4, type: 'chart', title: 'Weekly Visits', size: 'md' },
+  { id: 1, type: 'stat', title: 'Revenue', size: 'sm' },
+  { id: 2, type: 'progress', title: 'Quarterly Goal', size: 'sm' },
+  { id: 3, type: 'todo', title: 'Action Items', size: 'sm' },
+  { id: 4, type: 'chart', title: 'Weekly Visits', size: 'sm' },
 ]
 
 const WIDGET_LABELS: Record<WidgetType, string> = {
@@ -383,7 +383,13 @@ function chartPresetFor(id: number): ChartBar[] {
 }
 
 function widgetSizeClass(size: WidgetSize): string {
-  return size === 'lg' ? 'md:col-span-2' : ''
+  // Three distinct sizes on the 3-column grid (md+):
+  //   SM: 1/3 width (col-span-1)
+  //   MD: 2/3 width (col-span-2)
+  //   LG: full row (col-span-3)
+  if (size === 'sm') return 'md:col-span-1 min-h-[9rem]'
+  if (size === 'lg') return 'md:col-span-3 min-h-[9rem]'
+  return 'md:col-span-2 min-h-[9rem]'
 }
 
 function widgetSizeLabel(size: WidgetSize): string {
@@ -393,13 +399,16 @@ function widgetSizeLabel(size: WidgetSize): string {
 export function DashboardBuilderDemo() {
   const [widgets, setWidgets] = createSignal<WidgetConfig[]>(initialWidgets)
 
-  // Layout memo: grid column classes computed from widget count
+  // Layout memo: grid track count and gap density, reactive to widget count.
+  // Widgets span 1/2/3 of the grid based on their size, so the grid must
+  // expose up to 3 tracks for the LG widget to fill. Gap tightens as more
+  // widgets pack into the same grid.
   const gridCols = createMemo(() => {
     const count = widgets().length
-    if (count <= 1) return 'grid-cols-1'
-    if (count === 2) return 'grid-cols-1 md:grid-cols-2'
-    if (count === 3) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-    return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+    if (count === 0) return 'grid-cols-1 gap-0'
+    if (count <= 2) return 'grid-cols-1 md:grid-cols-3 gap-4'
+    if (count <= 5) return 'grid-cols-1 md:grid-cols-3 gap-3'
+    return 'grid-cols-1 md:grid-cols-3 gap-2'
   })
 
   // Memos derived from widgets() — demonstrate layout/config reactivity
@@ -421,7 +430,7 @@ export function DashboardBuilderDemo() {
       id: nextWidgetId(),
       type,
       title: titles[type],
-      size: 'md' as WidgetSize,
+      size: 'sm' as WidgetSize,
     }])
   }
 
@@ -495,7 +504,7 @@ export function DashboardBuilderDemo() {
       </div>
 
       {/* Widget grid */}
-      <div className={`dashboard-grid grid gap-3 ${gridCols()}`}>
+      <div className={`dashboard-grid grid ${gridCols()}`}>
         {widgets().map((w: WidgetConfig) => (
           <div
             key={w.id}
