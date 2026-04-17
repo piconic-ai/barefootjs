@@ -1,20 +1,11 @@
 ---
 title: AI-native Development
-description: Testable IR, CLI discovery, and workflows designed for AI-assisted development
+description: Millisecond component tests via IR, CLI-driven component discovery
 ---
 
 # AI-native Development
 
-> **Design Principle — AI-native development.**
-> The compiler produces an IR that can be tested without a browser, enabling fast component tests via `renderToTest()`. Combined with a CLI for component discovery (`barefoot search`, `barefoot ui`), AI agents can autonomously scaffold, test, and iterate on UI components.
-
-## Testable Without a Browser
-
-The compiler produces a structured **Intermediate Representation** (IR) — a JSON tree that describes a component's structure, reactive bindings, event handlers, and accessibility attributes. This IR can be inspected and tested directly, without rendering to a DOM or launching a browser.
-
-### `renderToTest()`
-
-`renderToTest()` compiles a JSX component and returns its IR for assertions:
+`renderToTest()` verifies component structure, signals, events, and accessibility against the compiler's IR — in milliseconds, without a browser. Real interactions and visual behavior still need E2E tests, but structural issues are caught before you get there:
 
 ```tsx
 import { renderToTest } from '@barefootjs/test-utils'
@@ -28,47 +19,25 @@ test('Counter has a button with click handler', () => {
 })
 ```
 
-Tests run in milliseconds — no browser, no DOM, no waiting. This makes component development fast and CI-friendly.
+See [IR Schema Reference](../advanced/ir-schema.md) for the full specification.
 
-### What the IR Captures
+## CLI for AI Workflows
 
-The IR contains everything needed to verify a component's behavior:
-
-- **Structure** — Element tree, attributes, text content
-- **Reactivity** — Signals, effects, memos, and their dependencies
-- **Events** — Handler bindings and target elements
-- **Accessibility** — ARIA attributes, roles, keyboard interactions
-- **Styles** — Class bindings, conditional classes
-
-See [IR Schema Reference](../advanced/ir-schema.md) for the full node type specification.
-
-## CLI for Component Discovery
-
-The `barefoot` CLI provides structured access to component APIs and documentation:
+The `barefoot` CLI provides structured access to discovery, scaffolding, and debugging. All commands support `--json` for machine-readable output.
 
 ```bash
-# Search for components by name, category, or tags
-barefoot search dialog
+# Discover
+barefoot search dialog              # Find by name/category/tags
+barefoot ui accordion               # Props, examples, a11y
+barefoot core signals               # Framework docs
 
-# Get full component reference: props, examples, accessibility
-barefoot ui accordion
+# Scaffold
+barefoot scaffold settings-form input switch button  # Component skeleton + IR test
+barefoot test:template Button                        # Generate IR test from existing source
 
-# Look up core framework docs
-barefoot core signals
+# Inspect reactive structure
+barefoot inspect Counter             # Signal dependency graph
+barefoot why-update Counter count    # Trace update path: signal → DOM
 ```
 
-AI agents use these commands to discover available components, understand their APIs, and generate correct usage without reading source files.
-
-## AI-Assisted Workflow
-
-The combination of testable IR and CLI discovery enables a complete AI-assisted development loop:
-
-```
-1. barefoot search → Find the right component
-2. barefoot ui <name> → Learn its API
-3. Write JSX using the component
-4. renderToTest() → Verify structure and behavior
-5. Iterate until tests pass
-```
-
-Each step produces structured, parseable output. No screenshots, no browser automation, no flaky visual assertions.
+Both humans and AI agents use these commands to generate and debug components without reading source files.

@@ -1,15 +1,13 @@
 ---
 title: How It Works
-description: Two-phase compilation, hydration markers, and clean overrides — a technical overview
+description: Two-phase compilation and hydration markers
 ---
 
 # How It Works
 
-This page provides a technical overview of how BarefootJS transforms JSX into interactive server-rendered pages. The concepts here underpin all four design principles but are implementation details — you can use BarefootJS without understanding them.
-
 ## Two-Phase Compilation
 
-The compiler transforms a single JSX source file into two separate outputs:
+One JSX source file produces two outputs:
 
 ```
 JSX Source
@@ -20,16 +18,16 @@ JSX Source
 [Phase 2b] IR → Client JS        (browser)
 ```
 
-**Phase 1** parses the JSX once and produces a JSON IR tree. The IR captures the component structure, reactive expressions, event handlers, and type information — independent of any backend.
+**Phase 1** produces a JSON IR tree — component structure, reactive expressions, event handlers, type information. Backend-independent.
 
-**Phase 2** takes the IR and generates two outputs:
+**Phase 2** generates:
 
-- **Marked Template** — An HTML template for your server, with `bf-*` attributes marking interactive elements. The adapter determines the output format.
-- **Client JS** — A minimal script that creates signals, wires up effects, and binds event handlers to the marked elements.
+- **Marked Template** — HTML with `bf-*` attributes marking interactive elements. The adapter determines the format.
+- **Client JS** — Creates signals, wires effects, binds event handlers to marked elements.
 
-### Example
+### Counter Example
 
-Given this source:
+Source:
 
 ```tsx
 "use client"
@@ -46,12 +44,12 @@ export function Counter() {
 }
 ```
 
-Phase 1 produces an IR that records:
-- A signal `count` with setter `setCount` and initial value `0`
-- A reactive text expression `count()` → slot `s0`
-- A click handler on the button → slot `s1`
+The IR records:
+- Signal `count` with initial value `0`
+- Reactive text expression `count()` → slot `s0`
+- Click handler on button → slot `s1`
 
-Phase 2a produces a marked template:
+Marked template (Phase 2a):
 
 <!-- tabs:adapter -->
 <!-- tab:Hono -->
@@ -77,7 +75,7 @@ export function Counter({ __instanceId, ... }) {
 ```
 <!-- /tabs -->
 
-Phase 2b produces client JS:
+Client JS (Phase 2b):
 
 ```js
 import { $, $t, createEffect, createSignal, hydrate } from '@barefootjs/client-runtime'
@@ -104,19 +102,19 @@ hydrate('Counter', {
 })
 ```
 
-For deeper details, see [Compiler Internals](../advanced/compiler-internals.md) and [IR Schema Reference](../advanced/ir-schema.md).
+See [Compiler Internals](../advanced/compiler-internals.md) and [IR Schema Reference](../advanced/ir-schema.md).
 
 ## Hydration
 
-BarefootJS uses **marker-driven** hydration to make server-rendered HTML interactive.
+Marker-driven hydration attaches behavior to server-rendered HTML.
 
-### Hydration Markers
+### Markers
 
-The compiler inserts `bf-*` attributes into the marked template. These tell the client JS where to attach behavior:
+`bf-*` attributes in the marked template tell client JS where to attach:
 
 | Marker | Purpose | Example |
 |--------|---------|---------|
-| `bf-s` | Component scope boundary (`~` prefix = child) | `<div bf-s="Counter_a1b2">`, `<div bf-s="~Item_c3d4">` |
+| `bf-s` | Component scope boundary (`~` = child) | `<div bf-s="Counter_a1b2">` |
 | `bf` | Interactive element (slot) | `<p bf="s0">` |
 | `bf-p` | Serialized props JSON | `<div bf-p='{"initial":5}'>` |
 | `bf-c` | Conditional block | `<div bf-c="s2">` |
@@ -125,65 +123,25 @@ The compiler inserts `bf-*` attributes into the marked template. These tell the 
 | `bf-pp` | Portal placeholder | `<template bf-pp="bf-portal-1">` |
 | `bf-i` | List item marker | `<li bf-i>` |
 
-### Hydration Flow
+### Flow
 
-1. The server renders HTML with markers and embeds component props in `bf-p` attributes
-2. The browser loads the client JS
-3. `hydrate()` finds all uninitialized `bf-s` elements
-4. For each scope, the init function runs — creating signals, binding effects, attaching event handlers
-5. The runtime tracks the scope internally to prevent double initialization
-6. The page is now interactive
+1. Server renders HTML with markers, embeds props in `bf-p`
+2. Browser loads client JS
+3. `hydrate()` finds uninitialized `bf-s` elements
+4. Init function runs per scope — signals, effects, handlers
+5. Runtime tracks scopes to prevent double initialization
 
 ### Scoped Queries
 
-`$()` and `$t()` search within a scope boundary, excluding nested component scopes.
+`$()` and `$t()` search within a scope, excluding child component scopes:
 
 ```html
-<div bf-s="TodoApp_x1">        <!-- TodoApp scope -->
-  <h1 bf="s0">Todo</h1>            <!-- belongs to TodoApp -->
-  <div bf-s="~TodoItem_y1">     <!-- TodoItem scope (excluded from TodoApp queries) -->
+<div bf-s="TodoApp_x1">
+  <h1 bf="s0">Todo</h1>
+  <div bf-s="~TodoItem_y1">
     <span bf="s0">Buy milk</span>
   </div>
 </div>
 ```
 
-When TodoApp's init calls `$(__scope, 's0')`, it finds the `<h1>`, not the `<span>` inside TodoItem. The `~` prefix on `bf-s` marks a child component scope, which is excluded from parent queries.
-
-## Clean Overrides (CSS Layers)
-
-BarefootJS uses CSS Cascade Layers to guarantee that user-supplied classes always override component base classes — no runtime JS, no merge functions, no generation-order concerns.
-
-### How It Works
-
-CSS Cascade Layers solve style conflicts: styles in a named `@layer` always lose to un-layered styles, regardless of specificity or source order. BarefootJS puts component base classes into `@layer components`. User-supplied classes remain un-layered:
-
-```css
-/* Layer ordering: lowest → highest priority */
-@layer preflights, base, shortcuts, components, default;
-```
-
-The compiler's `cssLayerPrefix` option prefixes component base classes at compile time:
-
-```tsx
-// Source
-const baseClasses = 'inline-flex items-center bg-primary text-primary-foreground'
-
-// Compiled (with cssLayerPrefix: 'components')
-const baseClasses = 'layer-components:inline-flex layer-components:items-center layer-components:bg-primary layer-components:text-primary-foreground'
-```
-
-The CSS toolchain (e.g., UnoCSS) emits those classes inside `@layer components`. User classes remain un-layered and always win:
-
-```
-<Button className="bg-red-500">
-
-Applied classes:
-  layer-components:bg-primary     → @layer components  (lower priority)
-  bg-red-500                      → un-layered          (higher priority)
-
-Result: bg-red-500 wins. Always.
-```
-
-- **Zero runtime cost** — Prefixing happens at compile time.
-- **Works with any CSS tool** — Any tool with Cascade Layer support works.
-- **Language-independent** — Prefixing is applied to the IR, so all adapters benefit equally.
+`$(__scope, 's0')` in TodoApp finds `<h1>`, not the `<span>` inside TodoItem. The `~` prefix marks a child scope excluded from parent queries.

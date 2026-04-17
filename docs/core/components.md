@@ -16,3 +16,4 @@ For the `"use client"` directive and the server/client boundary, see [Backend Fr
 | [Children & Slots](./components/children-slots.md) | Children prop, the `Slot` component, and the `asChild` pattern |
 | [Context API](./components/context-api.md) | Sharing state across compound components with `createContext` / `useContext` |
 | [Portals](./components/portals.md) | Rendering elements outside their parent DOM hierarchy |
+| [Style Overrides](./components/styling.md) | How user-supplied classes override component base classes via CSS Cascade Layers |

@@ -1,67 +1,35 @@
 ---
 title: Fine-grained Reactivity
-description: Signal-based reactivity with signals, effects, and memos — no virtual DOM needed
+description: Signal-based reactivity — no virtual DOM, updates at the DOM node level
 ---
 
 # Fine-grained Reactivity
 
-> **Design Principle — Fine-grained reactivity.**
-> Signals track dependencies at the expression level. When state changes, only the affected DOM nodes update — no virtual DOM diffing, no component-tree re-render.
+The compiler analyzes which DOM nodes depend on which signals and generates code that connects them at hydration. When state changes, only that DOM node updates — no virtual DOM, no component re-render.
 
-BarefootJS uses fine-grained reactivity inspired by SolidJS. The core primitives are **signals**, **effects**, and **memos**.
+Inspired by [SolidJS](https://www.solidjs.com/). The key difference from React: **components run once**, not on every state change.
 
-All reactive getters carry the `Reactive<T>` phantom brand — a compile-time marker that enables the compiler to detect reactivity via TypeScript's type system. The brand has no runtime cost.
-
-## Signals
-
-A signal holds a reactive value. It returns a getter/setter pair:
+## Signals, Effects, Memos
 
 ```tsx
-const [count, setCount] = createSignal(0)
+const [count, setCount] = createSignal(0)     // reactive value
+const doubled = createMemo(() => count() * 2)  // cached derived value
 
-count()              // Read: returns 0
-setCount(5)          // Write: set to 5
-setCount(n => n + 1) // Write: updater function
-```
-
-The getter is a **function call** — `count()`, not `count`. This is how the reactivity system tracks dependencies. The getter is typed as `Reactive<() => T>`.
-
-## Effects
-
-An effect runs a function whenever its signal dependencies change:
-
-```tsx
 createEffect(() => {
-  console.log('Count is:', count())
+  console.log('Count is:', count())            // re-runs when count changes
 })
+
+setCount(1)  // triggers the effect, recomputes doubled
 ```
 
-The system records that `count` was read. When `count` changes, the effect re-runs. No dependency array is needed.
+The getter is a function call — `count()`, not `count`. The runtime tracks which signals each effect reads. No dependency arrays.
 
-## Memos
-
-A memo is a cached derived value:
-
-```tsx
-const doubled = createMemo(() => count() * 2)
-
-doubled() // Returns the cached result
-```
-
-Like effects, memos track dependencies automatically. Unlike effects, they return a value and only recompute when dependencies change.
-
-## Update Flow
-
-Updates happen at the **expression level** — only the DOM nodes that depend on a signal are updated.
+## How Updates Reach the DOM
 
 ```
-setCount(1)
-    ↓
-Signal notifies subscribers
-    ↓
-Effect re-runs: _s0.nodeValue = String(count())
-    ↓
-Only <p> updates. The rest of the DOM is untouched.
+setCount(1) → signal notifies subscribers → effect updates the DOM node
 ```
 
-For the full API reference, see [Reactivity](../reactivity.md).
+The compiler analyzed which DOM node depends on `count` and generated an effect that updates it directly. No tree diffing at runtime.
+
+For the full API, see [Reactivity](../reactivity.md).

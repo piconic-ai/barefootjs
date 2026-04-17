@@ -5,86 +5,27 @@ description: How adapters let the same JSX run on any server — Hono, Go, and b
 
 # Backend Freedom
 
-> **Design Principle — Backend Freedom.**
-> The same JSX source produces templates for Hono, Go `html/template`, and any future adapter. Your component library works across stacks. No Node.js lock-in — use the server language your team already knows.
+JSX gives you components with props, composition, and type checking. But server rendering with JSX usually means running Node.js on the server.
 
-## One Source, Any Backend
-
-BarefootJS compiles JSX into a backend-agnostic **Intermediate Representation** (IR). An **adapter** then converts the IR into the template format your server needs:
+BarefootJS compiles JSX at build time into your backend's native template format. Go renders `.tmpl` with `html/template`; Perl renders `.html.ep` with Mojolicious; Hono renders the generated `.tsx`. For non-Node backends, no Node.js runs at serving time. The compiler produces a backend-agnostic IR, then an adapter converts it:
 
 ```
-JSX Source
-    ↓
-  Compiler → IR (backend-agnostic)
-    ↓
-  Adapter → Template for your backend
+JSX → IR (backend-agnostic) → Adapter → Template
 ```
 
-| Adapter | Output | Backend |
-|---------|--------|---------|
-| `HonoAdapter` | `.hono.tsx` | Hono / JSX-based servers |
-| `GoTemplateAdapter` | `.tmpl` + `_types.go` | Go `html/template` |
+| Language | Adapter | Notes |
+|----------|---------|-------|
+| TypeScript | [HonoAdapter](../adapters/hono-adapter.md) | Hono / JSX-based TS servers |
+| TypeScript | [TestAdapter](https://github.com/barefootjs/barefootjs/tree/main/packages/test) | IR-based component testing |
+| Go | [GoTemplateAdapter](../adapters/go-template-adapter.md) | `html/template` |
+| Perl | [MojoliciousAdapter](https://github.com/barefootjs/barefootjs/tree/main/packages/mojolicious) | Mojolicious EP templates |
 
-Because the IR is independent of any server framework, the same component works unchanged across all supported backends. You can switch backends or support multiple backends from a single component library.
+### Planned
 
-## The `"use client"` Directive
+| Language | Adapter |
+|----------|---------|
+| Rust | (TBD) |
+| Python | Jinja2Adapter |
+| Ruby | ERBAdapter |
 
-Components with reactive primitives (`createSignal`, `createEffect`, etc.) require `"use client"` at the top of the file:
-
-```tsx
-"use client"
-import { createSignal } from '@barefootjs/client'
-
-export function Counter() {
-  const [count, setCount] = createSignal(0)
-  return <button onClick={() => setCount(n => n + 1)}>{count()}</button>
-}
-```
-
-The directive tells the compiler to generate client JS and add hydration markers to the template. Without it, the compiler produces a server-only template. Using reactive APIs without the directive triggers error `BF001`.
-
-### Security Boundary
-
-`"use client"` marks a **security boundary**. Code in a client component runs in the browser and is visible to the user. Never include secrets, database access, or other sensitive logic in a `"use client"` file.
-
-```tsx
-// server-only.tsx — NO "use client"
-// This code stays on the server. Safe for secrets.
-export function UserList() {
-  const users = db.query('SELECT * FROM users')
-  return (
-    <ul>
-      {users.map(u => <li>{u.name}</li>)}
-    </ul>
-  )
-}
-```
-
-### Server and Client Component Composition
-
-Composition follows a one-way rule:
-
-- **Server → Client**: Allowed. The server renders HTML with hydration markers; the client JS takes over.
-- **Client → Client**: Allowed.
-- **Client → Server**: Not allowed. Server-only code does not exist on the client.
-
-```tsx
-// Page.tsx — server component
-import { Counter } from './Counter'    // "use client"
-import { UserList } from './UserList'  // server-only
-
-export function Page() {
-  return (
-    <div>
-      <UserList />   {/* ✅ Server → Server */}
-      <Counter />    {/* ✅ Server → Client */}
-    </div>
-  )
-}
-```
-
-Once you cross into client territory, everything below must also be a client component.
-
-## Writing a Custom Adapter
-
-The IR contract is stable, so you can write adapters for any backend. See [Adapter Architecture](../adapters/adapter-architecture.md) for the `TemplateAdapter` interface and [Writing a Custom Adapter](../adapters/custom-adapter.md) for a step-by-step guide.
+The IR contract is stable. You can [write a custom adapter](../adapters/custom-adapter.md) for any backend.

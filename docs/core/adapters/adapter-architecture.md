@@ -39,7 +39,7 @@ Each IR node is translated into the target template language with hydration mark
 ```typescript
 interface TemplateAdapter {
   name: string       // Adapter identifier (e.g., 'hono', 'go-template')
-  extension: string  // Output file extension (e.g., '.hono.tsx', '.tmpl')
+  extension: string  // Output file extension (e.g., '.tsx', '.tmpl')
 
   // Main entry point
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput

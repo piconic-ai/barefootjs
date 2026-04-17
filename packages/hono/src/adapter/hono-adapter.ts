@@ -48,7 +48,7 @@ export interface HonoAdapterOptions {
 
 export class HonoAdapter extends JsxAdapter {
   name = 'hono'
-  extension = '.hono.tsx'
+  extension = '.tsx'
 
   protected jsxConfig: JsxAdapterConfig = { preserveTypes: true }
 

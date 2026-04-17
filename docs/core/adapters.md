@@ -20,7 +20,7 @@ JSX Source
 
 | Adapter | Output | Backend | Package |
 |---------|--------|---------|---------|
-| [`HonoAdapter`](./adapters/hono-adapter.md) | `.hono.tsx` | Hono / JSX-based servers | `@barefootjs/hono` |
+| [`HonoAdapter`](./adapters/hono-adapter.md) | `.tsx` | Hono / JSX-based servers | `@barefootjs/hono` |
 | [`GoTemplateAdapter`](./adapters/go-template-adapter.md) | `.tmpl` + `_types.go` | Go `html/template` | `@barefootjs/go-template` |
 
 ## Pages

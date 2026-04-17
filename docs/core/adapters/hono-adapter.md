@@ -5,7 +5,7 @@ description: Generate Hono JSX templates from the compiler's IR for Hono-based s
 
 # Hono Adapter
 
-Generates Hono JSX (`.hono.tsx`) files from the compiler's IR. Works with Hono and any JSX-compatible TypeScript backend.
+Generates Hono JSX (`.tsx`) files from the compiler's IR. Works with Hono and any JSX-compatible TypeScript backend.
 
 ```
 npm install @barefootjs/hono
@@ -21,7 +21,7 @@ import { HonoAdapter } from '@barefootjs/hono'
 const adapter = new HonoAdapter()
 const result = compile(source, { adapter })
 
-// result.template  → .hono.tsx file content
+// result.template  → .tsx file content
 // result.clientJs  → .client.js file content
 ```
 
@@ -57,7 +57,7 @@ export function Greeting(props: { name: string }) {
 }
 ```
 
-**Output (.hono.tsx):**
+**Output (.tsx):**
 
 ```tsx
 import { bfText, bfTextEnd } from '@barefootjs/hono/utils'
@@ -94,7 +94,7 @@ export function Counter(props: { initial?: number }) {
 }
 ```
 
-**Output (.hono.tsx):**
+**Output (.tsx):**
 
 ```tsx
 import { bfText, bfTextEnd } from '@barefootjs/hono/utils'
