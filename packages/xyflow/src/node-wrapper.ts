@@ -482,6 +482,14 @@ export function createNodeRenderer<NodeType extends NodeBase>(
       existingIds.delete(id)
 
       if (!nodeInstances.has(id)) {
+        // Reserve the Map slot BEFORE creating the wrapper. createNodeWrapper
+        // performs synchronous signal writes (via updateNodeInternals and
+        // handle-bound calculations), which can re-trigger this very effect
+        // before the loop finishes. Without a pre-reserved entry, a re-entrant
+        // fire would see the id as missing and create a duplicate DOM node
+        // for the same id.
+        const pending = {} as NodeInstance
+        nodeInstances.set(id, pending)
         const instance = createNodeWrapper(
           internalNode as InternalNodeBase<NodeType>,
           store,
