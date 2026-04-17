@@ -84,6 +84,7 @@ import { SpreadsheetRefPage } from './pages/components/spreadsheet'
 import { PermissionMatrixRefPage } from './pages/components/permission-matrix'
 import { FormBuilderRefPage } from './pages/components/form-builder'
 import { PivotTableRefPage } from './pages/components/pivot-table'
+import { DashboardBuilderRefPage } from './pages/components/dashboard-builder'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -570,6 +571,11 @@ export function createApp() {
   // Pivot Table block page
   app.get('/components/pivot-table', (c) => {
     return c.render(<PivotTableRefPage />)
+  })
+
+  // Dashboard Builder block page
+  app.get('/components/dashboard-builder', (c) => {
+    return c.render(<DashboardBuilderRefPage />)
   })
 
   // Bar Chart reference page
