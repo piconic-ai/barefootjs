@@ -207,4 +207,46 @@ describe('hydrate() template generation for signal-bearing components', () => {
     // The word 'size' inside 'size-4' should not be replaced with the constant value
     expect(content).not.toMatch(/'\(props\.size/)
   })
+
+  test('block-body memo with local decls: wraps body in IIFE instead of dropping decls', () => {
+    // Regression for a bug surfaced by the Dashboard Builder block:
+    // createMemo(() => { const i = sig(); return i < 0 ? 'a' : items()[i] ? items()[i].label : 'a' })
+    // used to emit only the trailing return expression into the SSR template,
+    // leaving `i` unbound at runtime. The fix keeps the whole body in scope
+    // by wrapping block bodies with local decls in an IIFE.
+    const source = `
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client-runtime'
+      interface Props { initialBars: { label: string; value: number }[] }
+      export function ChartWidget(props: Props) {
+        const [bars] = createSignal(props.initialBars)
+        const [selectedIndex] = createSignal(-1)
+        const selectedLabel = createMemo(() => {
+          const i = selectedIndex()
+          if (i < 0) return 'Total'
+          const b = bars()[i]
+          return b ? b.label : 'Total'
+        })
+        return <div className="chart-selected-label">{selectedLabel()}</div>
+      }
+    `
+    const result = compileJSXSync(source, 'ChartWidget.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // The hydrate template for ChartWidget must contain the full IIFE-wrapped
+    // memo body, not just the trailing `return` expression. Looking for the
+    // `const b =` decl inside the template literal is the strongest signal
+    // that local bindings survived inlining.
+    const templateMatch = content.match(/hydrate\('ChartWidget',\s*\{[^`]*template:[^`]*`([\s\S]*?)`\s*\}/)
+    expect(templateMatch).toBeTruthy()
+    const template = templateMatch![1]
+    expect(template).toContain('const i =')
+    expect(template).toContain('const b =')
+    // Must be wrapped in an IIFE form so bindings stay in scope at template eval time
+    expect(template).toMatch(/\(\(\)\s*=>\s*\{[\s\S]*const b =/)
+  })
 })

@@ -261,11 +261,17 @@ export function buildSignalAndMemoMaps(ctx: ClientJsContext): {
     if (arrowMatch) {
       const body = arrowMatch[1].trim()
       if (body.startsWith('{')) {
-        // Block body: extract return expression.
-        // Use greedy .+ to capture the full return value including nested braces
-        // (e.g., return { a, b, c } must capture the entire object literal).
-        const returnMatch = body.match(/return\s+(.+)\s*[;}]?\s*}$/)
-        expr = returnMatch ? returnMatch[1] : expr
+        // Block body: detect the trivial `{ return <expr>; }` shape. A bare
+        // return expression can be inlined directly. Any other body (local
+        // `const`/`let` declarations, guard clauses, multiple statements)
+        // must be wrapped in an IIFE so that intermediate bindings remain in
+        // scope when the expression is inlined into the SSR template.
+        const simpleReturn = body.match(/^\{\s*return\s+([\s\S]+?)\s*;?\s*\}$/)
+        if (simpleReturn) {
+          expr = simpleReturn[1]
+        } else {
+          expr = `(() => ${body})()`
+        }
       } else {
         expr = body
       }
