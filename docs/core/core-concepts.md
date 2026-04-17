@@ -25,4 +25,4 @@ The compiler analyzes which DOM nodes depend on which signals and generates code
 
 ## How It Works
 
-Two-phase compilation, hydration markers, and CSS layer overrides — a technical deep-dive.
+Two-phase compilation and hydration markers — a technical deep-dive.

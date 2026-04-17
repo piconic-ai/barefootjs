@@ -87,6 +87,7 @@ export const navigation: NavItem[] = [
       { title: 'Children & Slots', slug: 'components/children-slots' },
       { title: 'Context API', slug: 'components/context-api' },
       { title: 'Portals', slug: 'components/portals' },
+      { title: 'Style Overrides', slug: 'components/styling' },
     ],
   },
   {
