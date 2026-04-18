@@ -6,6 +6,10 @@ use Mojo::JSON qw(true false encode_json);
 # Load BarefootJS plugin
 plugin 'BarefootJS';
 
+# Dev-only browser auto-reload (no-op in production). The companion snippet
+# is emitted in the layout below via `bf_dev_snippet`.
+plugin 'BarefootJS::DevReload';
+
 # Serve static files (client JS, barefoot.js)
 app->static->paths->[0] = app->home->child('dist');
 
@@ -383,5 +387,6 @@ __DATA__
     <div id="app"><%= content %></div>
     <p><a href="/">← Back</a></p>
     <%== bf->scripts %>
+    <%== bf_dev_snippet %>
 </body>
 </html>
