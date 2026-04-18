@@ -159,7 +159,7 @@ export function createEdgeRenderer<
         // Clear and re-render custom content
         group.innerHTML = ''
 
-        const edgeProps: EdgeComponentProps = {
+        const edgeProps: EdgeComponentProps<EdgeType> = {
           id: edge.id,
           source: edge.source,
           target: edge.target,
@@ -169,10 +169,10 @@ export function createEdgeRenderer<
           targetY: edgePos.targetY,
           sourcePosition: edgePos.sourcePosition,
           targetPosition: edgePos.targetPosition,
-          data: (edge as any).data,
+          data: edge.data,
           selected: !!edge.selected,
           animated: !!edge.animated,
-          label: (edge as any).label,
+          label: (edge as EdgeType & { label?: string }).label,
           svgGroup: group,
         }
 
@@ -365,7 +365,7 @@ export function createEdgeLabelRenderer<
       if (!pos) continue
 
       // Only render label if the edge has one
-      const labelText = (edge as any).label
+      const labelText = (edge as EdgeType & { label?: string }).label
       if (!labelText) {
         // No label — remove if previously existed
         const existing = labelElements.get(edge.id)
