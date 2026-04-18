@@ -16,6 +16,7 @@ import type {
   IRSlot,
   IRIfStatement,
   IRProvider,
+  IRAsync,
 } from '@barefootjs/jsx'
 
 type IRAttribute = IRElement['attrs'][number]
@@ -49,6 +50,12 @@ function convert(node: IRNode, cmap: Map<string, string>): TestNode {
       return convertIfStatement(node, cmap)
     case 'provider':
       return convertProvider(node, cmap)
+    case 'async':
+      return convertAsync(node, cmap)
+    default: {
+      const _exhaustive: never = node
+      throw new Error(`Unhandled IR node type: ${(_exhaustive as IRNode).type}`)
+    }
   }
 }
 
@@ -317,6 +324,30 @@ function convertProvider(node: IRProvider, cmap: Map<string, string>): TestNode 
   const children = node.children.map(c => convert(c, cmap))
 
   if (children.length === 1) return children[0]
+
+  return new TestNode({
+    tag: null,
+    type: 'fragment',
+    children,
+    text: null,
+    props: {},
+    classes: [],
+    role: null,
+    aria: {},
+    dataState: null,
+    events: [],
+    reactive: false,
+    componentName: null,
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Async
+// ---------------------------------------------------------------------------
+
+function convertAsync(node: IRAsync, cmap: Map<string, string>): TestNode {
+  // Represent the resolved content as a fragment; tests assert on final state.
+  const children = node.children.map(c => convert(c, cmap))
 
   return new TestNode({
     tag: null,
