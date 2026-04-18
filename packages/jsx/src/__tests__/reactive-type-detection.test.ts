@@ -8,7 +8,7 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
 import path from 'path'
-import { isReactiveType, containsReactiveExpression } from '../reactivity-checker'
+import { isReactiveType, containsReactiveExpression, analyzeReactivity } from '../reactivity-checker'
 import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
 import type { IRExpression, IRConditional } from '../types'
@@ -344,6 +344,121 @@ describe('containsReactiveExpression', () => {
 
     expect(refDecl).toBeDefined()
     expect(containsReactiveExpression(refDecl!.initializer!, checker)).toBe(false)
+  })
+})
+
+// =============================================================================
+// Unit Tests: analyzeReactivity (rich reasoning)
+// =============================================================================
+
+describe('analyzeReactivity', () => {
+  function initializerOf(sourceFile: ts.SourceFile, name: string): ts.Expression {
+    const decl = findNode(sourceFile, node =>
+      ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name
+    ) as ts.VariableDeclaration | undefined
+    if (!decl?.initializer) throw new Error(`no initializer for ${name}`)
+    return decl.initializer
+  }
+
+  test('signal call — reason: brand via callee', () => {
+    const { sourceFile, checker } = createTestProgram(`
+      const [count, setCount] = createSignal(0);
+      const result = count();
+    `)
+    const analysis = analyzeReactivity(initializerOf(sourceFile, 'result'), checker)
+
+    expect(analysis.isReactive).toBe(true)
+    expect(analysis.reason.kind).toBe('brand')
+    if (analysis.reason.kind === 'brand') {
+      expect(analysis.reason.via).toBe('callee')
+      expect(analysis.reason.nodeText).toBe('count()')
+    }
+  })
+
+  test('bare signal reference — reason: brand via identifier', () => {
+    const { sourceFile, checker } = createTestProgram(`
+      const [count, setCount] = createSignal(0);
+      const ref = count;
+    `)
+    const analysis = analyzeReactivity(initializerOf(sourceFile, 'ref'), checker)
+
+    expect(analysis.isReactive).toBe(true)
+    expect(analysis.reason.kind).toBe('brand')
+    if (analysis.reason.kind === 'brand') {
+      expect(analysis.reason.via).toBe('identifier')
+      expect(analysis.reason.nodeText).toBe('count')
+    }
+  })
+
+  test('method call on branded object — reason: brand via callee', () => {
+    const { sourceFile, checker } = createTestProgram(`
+      const username = useField('username');
+      const result = username.error();
+    `)
+    const analysis = analyzeReactivity(initializerOf(sourceFile, 'result'), checker)
+
+    expect(analysis.isReactive).toBe(true)
+    expect(analysis.reason.kind).toBe('brand')
+    if (analysis.reason.kind === 'brand') {
+      expect(analysis.reason.via).toBe('callee')
+      expect(analysis.reason.nodeText).toBe('username.error()')
+    }
+  })
+
+  test('reactive inside non-reactive call — reason: child via sub-expression', () => {
+    const { sourceFile, checker } = createTestProgram(`
+      function formatDate(d: number): string { return String(d); }
+      const [count, setCount] = createSignal(0);
+      const result = formatDate(count());
+    `)
+    const analysis = analyzeReactivity(initializerOf(sourceFile, 'result'), checker)
+
+    expect(analysis.isReactive).toBe(true)
+    expect(analysis.reason.kind).toBe('child')
+    if (analysis.reason.kind === 'child') {
+      expect(analysis.reason.via).toBe('sub-expression')
+      expect(analysis.reason.childText).toBe('count()')
+      expect(analysis.reason.childReason.kind).toBe('brand')
+    }
+  })
+
+  test('binary expression with reactive operand — reason: child via sub-expression', () => {
+    const { sourceFile, checker } = createTestProgram(`
+      const [count, setCount] = createSignal(0);
+      const result = count() > 0;
+    `)
+    const analysis = analyzeReactivity(initializerOf(sourceFile, 'result'), checker)
+
+    expect(analysis.isReactive).toBe(true)
+    expect(analysis.reason.kind).toBe('child')
+    if (analysis.reason.kind === 'child') {
+      expect(analysis.reason.childText).toBe('count()')
+      expect(analysis.reason.childReason.kind).toBe('brand')
+      if (analysis.reason.childReason.kind === 'brand') {
+        expect(analysis.reason.childReason.via).toBe('callee')
+      }
+    }
+  })
+
+  test('string literal — reason: not-reactive', () => {
+    const { sourceFile, checker } = createTestProgram(`
+      const result = "hello";
+    `)
+    const analysis = analyzeReactivity(initializerOf(sourceFile, 'result'), checker)
+
+    expect(analysis.isReactive).toBe(false)
+    expect(analysis.reason.kind).toBe('not-reactive')
+  })
+
+  test('setter function — reason: not-reactive', () => {
+    const { sourceFile, checker } = createTestProgram(`
+      const [count, setCount] = createSignal(0);
+      const ref = setCount;
+    `)
+    const analysis = analyzeReactivity(initializerOf(sourceFile, 'ref'), checker)
+
+    expect(analysis.isReactive).toBe(false)
+    expect(analysis.reason.kind).toBe('not-reactive')
   })
 })
 
