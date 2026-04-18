@@ -142,6 +142,50 @@ export interface HTMLBaseAttributes extends BaseEventAttributes {
 }
 
 // ============================================================================
+// SVG Presentation Attributes
+// ============================================================================
+
+/**
+ * SVG presentation attributes (fill, stroke, opacity, and related).
+ *
+ * Accepts both kebab-case (SVG-native) and camelCase (React-compatible)
+ * spellings. The hono/jsx runtime converts camelCase to kebab-case at
+ * render time, so both forms resolve to the correct SVG attribute in the
+ * rendered DOM.
+ */
+export interface SVGPresentationAttributes {
+  fill?: string
+  stroke?: string
+  opacity?: number | string
+
+  // stroke — camelCase
+  strokeWidth?: number | string
+  strokeLinecap?: 'butt' | 'round' | 'square' | string
+  strokeLinejoin?: 'miter' | 'round' | 'bevel' | string
+  strokeDasharray?: string | number
+  strokeDashoffset?: string | number
+  strokeMiterlimit?: number | string
+  strokeOpacity?: number | string
+
+  // stroke — kebab-case
+  'stroke-width'?: number | string
+  'stroke-linecap'?: 'butt' | 'round' | 'square' | string
+  'stroke-linejoin'?: 'miter' | 'round' | 'bevel' | string
+  'stroke-dasharray'?: string | number
+  'stroke-dashoffset'?: string | number
+  'stroke-miterlimit'?: number | string
+  'stroke-opacity'?: number | string
+
+  // fill — camelCase
+  fillOpacity?: number | string
+  fillRule?: 'nonzero' | 'evenodd' | 'inherit' | string
+
+  // fill — kebab-case
+  'fill-opacity'?: number | string
+  'fill-rule'?: 'nonzero' | 'evenodd' | 'inherit' | string
+}
+
+// ============================================================================
 // Form Attribute Helper Types (for Hono compatibility)
 // ============================================================================
 
@@ -163,7 +207,9 @@ export type HTMLAttributeAnchorTarget =
 // Button Element Attributes
 // ============================================================================
 
-export interface ButtonHTMLAttributes extends HTMLBaseAttributes {
+export interface ButtonHTMLAttributes extends Omit<HTMLBaseAttributes, 'ref'> {
+  ref?: (element: HTMLButtonElement) => void
+
   autofocus?: boolean | null
   disabled?: boolean | null
   form?: string
@@ -192,7 +238,9 @@ export interface ButtonHTMLAttributes extends HTMLBaseAttributes {
 // Input Element Attributes
 // ============================================================================
 
-export interface InputHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInput' | 'onChange'> {
+export interface InputHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInput' | 'onChange' | 'ref'> {
+  ref?: (element: HTMLInputElement) => void
+
   accept?: string
   alt?: string
   autocomplete?: string
@@ -239,7 +287,9 @@ export interface InputHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInput' 
 // Textarea Element Attributes
 // ============================================================================
 
-export interface TextareaHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInput' | 'onChange'> {
+export interface TextareaHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInput' | 'onChange' | 'ref'> {
+  ref?: (element: HTMLTextAreaElement) => void
+
   autocomplete?: string
   autofocus?: boolean | null
   cols?: number
@@ -269,7 +319,9 @@ export interface TextareaHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInpu
 // Select Element Attributes
 // ============================================================================
 
-export interface SelectHTMLAttributes extends Omit<HTMLBaseAttributes, 'onChange'> {
+export interface SelectHTMLAttributes extends Omit<HTMLBaseAttributes, 'onChange' | 'ref'> {
+  ref?: (element: HTMLSelectElement) => void
+
   autocomplete?: string
   autofocus?: boolean | null
   disabled?: boolean | null
@@ -290,7 +342,9 @@ export interface SelectHTMLAttributes extends Omit<HTMLBaseAttributes, 'onChange
 // Form Element Attributes
 // ============================================================================
 
-export interface FormHTMLAttributes extends HTMLBaseAttributes {
+export interface FormHTMLAttributes extends Omit<HTMLBaseAttributes, 'ref'> {
+  ref?: (element: HTMLFormElement) => void
+
   acceptCharset?: string
   action?: string | Function
   autocomplete?: 'on' | 'off'
@@ -306,7 +360,9 @@ export interface FormHTMLAttributes extends HTMLBaseAttributes {
 // Anchor Element Attributes
 // ============================================================================
 
-export interface AnchorHTMLAttributes extends HTMLBaseAttributes {
+export interface AnchorHTMLAttributes extends Omit<HTMLBaseAttributes, 'ref'> {
+  ref?: (element: HTMLAnchorElement) => void
+
   download?: string | boolean
   href?: string
   hreflang?: string
@@ -323,7 +379,9 @@ export interface AnchorHTMLAttributes extends HTMLBaseAttributes {
 // Image Element Attributes
 // ============================================================================
 
-export interface ImgHTMLAttributes extends HTMLBaseAttributes {
+export interface ImgHTMLAttributes extends Omit<HTMLBaseAttributes, 'ref'> {
+  ref?: (element: HTMLImageElement) => void
+
   alt?: string
   crossorigin?: 'anonymous' | 'use-credentials' | ''
   decoding?: 'async' | 'auto' | 'sync'
@@ -341,7 +399,9 @@ export interface ImgHTMLAttributes extends HTMLBaseAttributes {
 // Label Element Attributes
 // ============================================================================
 
-export interface LabelHTMLAttributes extends HTMLBaseAttributes {
+export interface LabelHTMLAttributes extends Omit<HTMLBaseAttributes, 'ref'> {
+  ref?: (element: HTMLLabelElement) => void
+
   for?: string
   form?: string
 }
@@ -350,7 +410,9 @@ export interface LabelHTMLAttributes extends HTMLBaseAttributes {
 // Option Element Attributes
 // ============================================================================
 
-export interface OptionHTMLAttributes extends HTMLBaseAttributes {
+export interface OptionHTMLAttributes extends Omit<HTMLBaseAttributes, 'ref'> {
+  ref?: (element: HTMLOptionElement) => void
+
   disabled?: boolean | null
   label?: string
   selected?: boolean | null

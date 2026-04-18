@@ -21,6 +21,7 @@ import type {
   ImgHTMLAttributes,
   LabelHTMLAttributes,
   OptionHTMLAttributes,
+  SVGPresentationAttributes,
 } from '../html-types'
 
 // Stub function types (for type checking only - no runtime implementation)
@@ -182,18 +183,21 @@ export declare namespace JSX {
     area: HTMLBaseAttributes & { alt?: string; coords?: string; download?: string; href?: string; media?: string; ping?: string; rel?: string; shape?: string; target?: string }
 
     // SVG (basic support)
-    svg: HTMLBaseAttributes & { viewBox?: string; xmlns?: string; width?: number | string; height?: number | string; fill?: string; stroke?: string }
-    path: HTMLBaseAttributes & { d?: string; fill?: string; stroke?: string; 'stroke-width'?: number | string; 'stroke-linecap'?: string; 'stroke-linejoin'?: string }
-    circle: HTMLBaseAttributes & { cx?: number | string; cy?: number | string; r?: number | string; fill?: string; stroke?: string }
-    rect: HTMLBaseAttributes & { x?: number | string; y?: number | string; width?: number | string; height?: number | string; rx?: number | string; ry?: number | string; fill?: string; stroke?: string }
-    line: HTMLBaseAttributes & { x1?: number | string; y1?: number | string; x2?: number | string; y2?: number | string; stroke?: string; 'stroke-width'?: number | string }
-    polyline: HTMLBaseAttributes & { points?: string; fill?: string; stroke?: string }
-    polygon: HTMLBaseAttributes & { points?: string; fill?: string; stroke?: string }
-    text: HTMLBaseAttributes & { x?: number | string; y?: number | string; dx?: number | string; dy?: number | string; fill?: string }
-    tspan: HTMLBaseAttributes
-    g: HTMLBaseAttributes & { transform?: string }
+    // SVG presentation attributes accept both kebab-case (SVG-native) and
+    // camelCase (React-compatible). The hono/jsx runtime converts camelCase
+    // to kebab-case at render time.
+    svg: HTMLBaseAttributes & SVGPresentationAttributes & { viewBox?: string; xmlns?: string; width?: number | string; height?: number | string }
+    path: HTMLBaseAttributes & SVGPresentationAttributes & { d?: string }
+    circle: HTMLBaseAttributes & SVGPresentationAttributes & { cx?: number | string; cy?: number | string; r?: number | string }
+    rect: HTMLBaseAttributes & SVGPresentationAttributes & { x?: number | string; y?: number | string; width?: number | string; height?: number | string; rx?: number | string; ry?: number | string }
+    line: HTMLBaseAttributes & SVGPresentationAttributes & { x1?: number | string; y1?: number | string; x2?: number | string; y2?: number | string }
+    polyline: HTMLBaseAttributes & SVGPresentationAttributes & { points?: string }
+    polygon: HTMLBaseAttributes & SVGPresentationAttributes & { points?: string }
+    text: HTMLBaseAttributes & SVGPresentationAttributes & { x?: number | string; y?: number | string; dx?: number | string; dy?: number | string }
+    tspan: HTMLBaseAttributes & SVGPresentationAttributes
+    g: HTMLBaseAttributes & SVGPresentationAttributes & { transform?: string }
     defs: HTMLBaseAttributes
-    use: HTMLBaseAttributes & { href?: string; x?: number | string; y?: number | string; width?: number | string; height?: number | string }
+    use: HTMLBaseAttributes & SVGPresentationAttributes & { href?: string; x?: number | string; y?: number | string; width?: number | string; height?: number | string }
     symbol: HTMLBaseAttributes & { viewBox?: string }
     clipPath: HTMLBaseAttributes
     marker: HTMLBaseAttributes & { viewBox?: string; refX?: number | string; refY?: number | string; markerWidth?: number | string; markerHeight?: number | string; markerUnits?: string; orient?: string | number }
