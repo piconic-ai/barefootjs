@@ -4,6 +4,7 @@ import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
 import type { TemplateAdapter, OutputLayout, PostBuildContext } from '@barefootjs/jsx'
 import { mkdir, readdir, stat, unlink } from 'node:fs/promises'
 import { resolve, basename, relative, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { resolveRelativeImports } from './resolve-imports'
 import {
   emptyCache,
@@ -161,9 +162,31 @@ export function resolveBuildConfigFromTs(
 }
 
 /**
+ * Locate the @barefootjs/cli package.json regardless of whether this module is
+ * running from source (packages/cli/src/lib/build.ts) or from the published
+ * bundle (packages/cli/dist/index.js). Returns null if it can't be found.
+ */
+async function findCliPackageJson(): Promise<string | null> {
+  const here = dirname(fileURLToPath(import.meta.url))
+  const candidates = [
+    resolve(here, '../package.json'),      // bundled dist/index.js
+    resolve(here, '../../package.json'),   // source src/lib/build.ts
+  ]
+  for (const cand of candidates) {
+    if (await fileExists(cand)) return cand
+  }
+  return null
+}
+
+/**
  * Compute the invalidation hash shared by every cache entry. Captures the
  * configuration surface that would change build output globally (so a shift
  * here invalidates the whole cache, not a single entry).
+ *
+ * The CLI's own package.json is mixed in so any library upgrade — and
+ * therefore any change to the cache schema that ships with it — implicitly
+ * invalidates the on-disk cache without needing a hand-maintained version
+ * counter.
  */
 export async function computeGlobalHash(config: BuildConfig): Promise<string> {
   const parts: string[] = [
@@ -173,6 +196,10 @@ export async function computeGlobalHash(config: BuildConfig): Promise<string> {
     String(config.clientOnly),
     JSON.stringify(config.outputLayout ?? null),
   ]
+  const cliPkgPath = await findCliPackageJson()
+  if (cliPkgPath) {
+    parts.push(await readText(cliPkgPath))
+  }
   const configCandidates = [
     resolve(config.projectDir, 'barefoot.config.ts'),
     resolve(config.projectDir, 'barefoot.config.js'),
@@ -496,7 +523,6 @@ export async function build(
 
   // 9. Persist cache
   const nextCache: BuildCache = {
-    version: cache.version,
     globalHash,
     entries: nextEntries,
   }

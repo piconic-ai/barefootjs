@@ -138,10 +138,20 @@ describe('loadCache / saveCache', () => {
     }
   })
 
-  test('returns null when cache version mismatches', async () => {
+  test('returns null when cache file is malformed', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'bf-cache-'))
     try {
-      await Bun.write(join(dir, '.buildcache.json'), JSON.stringify({ version: 999, globalHash: '', entries: {} }))
+      await Bun.write(join(dir, '.buildcache.json'), '{ not valid json')
+      expect(await loadCache(dir)).toBeNull()
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('returns null when cache shape is unexpected', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bf-cache-'))
+    try {
+      await Bun.write(join(dir, '.buildcache.json'), JSON.stringify({ wrongShape: true }))
       expect(await loadCache(dir)).toBeNull()
     } finally {
       rmSync(dir, { recursive: true, force: true })

@@ -4,7 +4,6 @@
 import { resolve } from 'node:path'
 import { fileExists, hashString, readText, writeText } from './runtime'
 
-export const CACHE_VERSION = 2
 export const CACHE_FILENAME = '.buildcache.json'
 
 export interface CacheEntry {
@@ -26,8 +25,9 @@ export interface CacheEntry {
 }
 
 export interface BuildCache {
-  version: number
-  /** Invalidates every entry when it changes (config file, compiler version, etc.) */
+  /** Invalidates every entry when it changes. Includes the CLI package.json so
+   *  any library upgrade (and therefore any change to the cache schema that
+   *  ships with it) implicitly discards the old cache. */
   globalHash: string
   entries: Record<string, CacheEntry>
 }
@@ -38,7 +38,7 @@ export function hashContent(content: string): string {
 }
 
 export function emptyCache(globalHash: string): BuildCache {
-  return { version: CACHE_VERSION, globalHash, entries: {} }
+  return { globalHash, entries: {} }
 }
 
 export async function loadCache(outDir: string): Promise<BuildCache | null> {
@@ -46,7 +46,9 @@ export async function loadCache(outDir: string): Promise<BuildCache | null> {
   if (!(await fileExists(path))) return null
   try {
     const parsed = JSON.parse(await readText(path)) as BuildCache
-    if (parsed.version !== CACHE_VERSION) return null
+    if (typeof parsed.globalHash !== 'string' || typeof parsed.entries !== 'object') {
+      return null
+    }
     return parsed
   } catch {
     return null
