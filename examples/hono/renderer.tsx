@@ -7,6 +7,7 @@
 
 import { jsxRenderer } from 'hono/jsx-renderer'
 import { BfScripts } from '../../packages/hono/src/scripts'
+import { BfDevReload } from '../../packages/hono/src/dev'
 
 // Import map for resolving @barefootjs/client-runtime in client JS
 const importMapScript = JSON.stringify({
@@ -51,6 +52,7 @@ export const renderer = jsxRenderer(
         <body>
           {children}
           <BfScripts />
+          <BfDevReload />
         </body>
       </html>
     )

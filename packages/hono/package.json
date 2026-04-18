@@ -34,6 +34,10 @@
       "types": "./src/preload.tsx",
       "import": "./src/preload.tsx"
     },
+    "./dev": {
+      "types": "./src/dev.tsx",
+      "import": "./src/dev.tsx"
+    },
     "./jsx/jsx-runtime": {
       "types": "./src/jsx/jsx-runtime/index.d.ts",
       "import": "./src/jsx/jsx-runtime/index.ts"

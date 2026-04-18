@@ -7,6 +7,7 @@
 
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/bun'
+import { createDevReloader } from '@barefootjs/hono/dev'
 import { renderer } from './renderer'
 import Counter from '@/components/Counter'
 import Toggle from '@/components/Toggle'
@@ -32,6 +33,9 @@ app.use('/shared/*', serveStatic({
   root: '../shared',
   rewriteRequestPath: (path) => path.replace('/shared', ''),
 }))
+
+// Dev-only browser auto-reload (no-op in production).
+app.get('/_bf/reload', createDevReloader({ distDir: './dist' }))
 
 // In-memory todo storage
 type Todo = { id: number; text: string; done: boolean }
