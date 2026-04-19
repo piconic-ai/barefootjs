@@ -184,14 +184,20 @@ async function main() {
   // editor so Monaco's TS service can resolve them on first parse.
   try {
     const res = await fetch('/static/playground/types-bundle.json')
-    if (res.ok) {
-      const bundle = (await res.json()) as Record<string, string>
-      for (const [path, contents] of Object.entries(bundle)) {
-        monaco.languages.typescript.typescriptDefaults.addExtraLib(contents, path)
-      }
+    if (!res.ok) {
+      throw new Error(`types-bundle.json responded ${res.status}`)
     }
-  } catch {
-    // Non-fatal: editor still works, just without typed JSX.
+    const bundle = (await res.json()) as Record<string, string>
+    for (const [path, contents] of Object.entries(bundle)) {
+      monaco.languages.typescript.typescriptDefaults.addExtraLib(contents, path)
+    }
+  } catch (error) {
+    // Non-fatal: editor still works, just without typed JSX. Surface it so
+    // broken type loading is debuggable from the browser devtools.
+    console.warn(
+      'Failed to load playground type bundle; JSX typings may be unavailable.',
+      error,
+    )
   }
 
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
