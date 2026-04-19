@@ -36,7 +36,7 @@ function SiteHeader() {
 export const renderer = jsxRenderer(
   ({ children }) => {
     return (
-      <html lang="ja" className="dark">
+      <html lang="en" className="dark">
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />

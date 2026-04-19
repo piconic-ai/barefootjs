@@ -86,7 +86,7 @@ func defaultLayout(ctx *bf.RenderContext) string {
 	}
 
 	return fmt.Sprintf(`<!DOCTYPE html>
-<html lang="ja" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -285,7 +285,7 @@ func indexHandler(c echo.Context) error {
     </ul>`, basePath, basePath, basePath, basePath, basePath)
 
 	return c.HTML(http.StatusOK, fmt.Sprintf(`<!DOCTYPE html>
-<html lang="ja" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

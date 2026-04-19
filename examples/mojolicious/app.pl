@@ -426,7 +426,7 @@ __DATA__
 @@ layouts/default.html.ep
 % my $bp = stash('base_path') // '';
 <!DOCTYPE html>
-<html lang="ja" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
