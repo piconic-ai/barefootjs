@@ -42,7 +42,22 @@ function buildIframeSrcdoc(opts: {
       '@barefootjs/client/runtime': '/static/components/barefoot.js',
     },
   })
-  const safeClientJs = clientJs.replace(/<\/script/gi, '<\\/script')
+  // The compiler emits top-level `import { ... } from '...'` and
+  // `export function ...`. Neither is valid inside the `try {}` block we wrap
+  // the code with, so rewrite:
+  //   - static imports → dynamic `await import(...)` + destructure
+  //   - `export function` / `export const` → drop the `export` keyword
+  // (the exports aren't used inside the iframe — hydrate() + the closure-
+  //  captured init function do all the registration.)
+  const rewrittenClientJs = clientJs
+    .replace(
+      /^\s*import\s*\{([^}]+)\}\s*from\s*(['"][^'"]+['"])\s*;?/m,
+      // Trailing \n restores the line break the \s* would otherwise eat, so
+      // `export function ...` doesn't end up fused onto this line.
+      'const {$1} = await import($2);\n',
+    )
+    .replace(/^\s*export\s+(function|const|let|var|class)\b/gm, '$1')
+  const safeClientJs = rewrittenClientJs.replace(/<\/script/gi, '<\\/script')
   return `<!DOCTYPE html>
 <html>
   <head>
