@@ -59,15 +59,23 @@ func (r *EchoRenderer) Render(w io.Writer, name string, data interface{}, c echo
 	return err
 }
 
+// siteHeader returns the shared BarefootJS header HTML. Matches the class
+// layout used by examples/hono/renderer.tsx and examples/mojolicious/app.pl
+// so all three adapters look identical.
+const siteHeaderHTML = `<header class="bf-header">
+    <div class="bf-header-inner">
+        <a href="https://barefootjs.dev" class="bf-header-logo" aria-label="Barefoot.js">
+            <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
+        </a>
+        <div class="bf-header-sep"></div>
+        <a href="/examples" class="bf-header-link">Examples</a>
+    </div>
+</header>`
+
 // defaultLayout renders the standard HTML page structure
 func defaultLayout(ctx *bf.RenderContext) string {
-	headingStyle := ""
 	headingHTML := ""
 	if ctx.Heading != "" {
-		headingStyle = `
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    </style>`
 		headingHTML = fmt.Sprintf(`
     <h1>%s</h1>`, ctx.Heading)
 	}
@@ -78,18 +86,23 @@ func defaultLayout(ctx *bf.RenderContext) string {
 	}
 
 	return fmt.Sprintf(`<!DOCTYPE html>
-<html>
+<html lang="ja" class="dark">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>%s</title>
+    <link rel="stylesheet" href="%s/shared/styles/tokens.css">
+    <link rel="stylesheet" href="%s/shared/styles/layout.css">
     <link rel="stylesheet" href="%s/shared/styles/components.css">
-    <link rel="stylesheet" href="%s/shared/styles/todo-app.css">%s%s
+    <link rel="stylesheet" href="%s/shared/styles/todo-app.css">%s
 </head>
-<body>%s
+<body>
+%s%s
     <div id="app">%s</div>
     <p><a href="%s">← Back</a></p>
     %s%s
 </body>
-</html>`, ctx.Title, basePath, basePath, headingStyle, extraCSS, headingHTML, ctx.ComponentHTML, basePath, ctx.Portals, ctx.Scripts)
+</html>`, ctx.Title, basePath, basePath, basePath, basePath, extraCSS, siteHeaderHTML, headingHTML, ctx.ComponentHTML, basePath, ctx.Portals, ctx.Scripts)
 }
 
 // Per-session in-memory todo storage. Each browser gets an opaque session
@@ -260,19 +273,7 @@ func main() {
 }
 
 func indexHandler(c echo.Context) error {
-	return c.HTML(http.StatusOK, fmt.Sprintf(`
-<!DOCTYPE html>
-<html>
-<head>
-    <title>BarefootJS + Echo Example</title>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        h1 { color: #333; }
-        a { color: #0066cc; }
-    </style>
-</head>
-<body>
-    <p><a href="/examples">← All adapters</a></p>
+	body := fmt.Sprintf(`
     <h1>BarefootJS + Echo Example</h1>
     <p>This example demonstrates server-side rendering with Go Echo and BarefootJS.</p>
     <ul>
@@ -281,10 +282,22 @@ func indexHandler(c echo.Context) error {
         <li><a href="%s/todos">Todo (@client)</a></li>
         <li><a href="%s/todos-ssr">Todo (no @client markers)</a></li>
         <li><a href="%s/ai-chat">AI Chat (SSE Streaming)</a></li>
-    </ul>
+    </ul>`, basePath, basePath, basePath, basePath, basePath)
+
+	return c.HTML(http.StatusOK, fmt.Sprintf(`<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarefootJS + Echo Example</title>
+    <link rel="stylesheet" href="%s/shared/styles/tokens.css">
+    <link rel="stylesheet" href="%s/shared/styles/layout.css">
+    <link rel="stylesheet" href="%s/shared/styles/components.css">
+</head>
+<body>
+%s%s
 </body>
-</html>
-`, basePath, basePath, basePath, basePath, basePath))
+</html>`, basePath, basePath, basePath, siteHeaderHTML, body))
 }
 
 func counterHandler(c echo.Context) error {

@@ -184,31 +184,11 @@ $r->get('/styles/*asset' => sub ($c) {
 });
 
 $r->get('/' => sub ($c) {
-    $c->render(inline => <<~HTML);
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>BarefootJS + Mojolicious Example</title>
-        <style>
-            body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-            h1 { color: #333; }
-            a { color: #0066cc; }
-        </style>
-    </head>
-    <body>
-        <p><a href="/examples">← All adapters</a></p>
-        <h1>BarefootJS + Mojolicious Example</h1>
-        <p>This example demonstrates server-side rendering with Mojolicious and BarefootJS.</p>
-        <ul>
-            <li><a href="$BASE_PATH/counter">Counter</a></li>
-            <li><a href="$BASE_PATH/toggle">Toggle</a></li>
-            <li><a href="$BASE_PATH/todos">Todo (\@client)</a></li>
-            <li><a href="$BASE_PATH/todos-ssr">Todo (no \@client markers)</a></li>
-            <li><a href="$BASE_PATH/ai-chat">AI Chat (SSE Streaming)</a></li>
-        </ul>
-    </body>
-    </html>
-    HTML
+    $c->stash(
+        title   => 'BarefootJS + Mojolicious Example',
+        heading => 'BarefootJS + Mojolicious Example',
+    );
+    $c->render(template => 'home', layout => 'default');
 });
 
 $r->get('/counter' => sub ($c) {
@@ -446,23 +426,22 @@ __DATA__
 @@ layouts/default.html.ep
 % my $bp = stash('base_path') // '';
 <!DOCTYPE html>
-<html>
+<html lang="ja" class="dark">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= $title %></title>
+    <link rel="stylesheet" href="<%= $bp %>/styles/tokens.css">
+    <link rel="stylesheet" href="<%= $bp %>/styles/layout.css">
     <link rel="stylesheet" href="<%= $bp %>/styles/components.css">
     <link rel="stylesheet" href="<%= $bp %>/styles/todo-app.css">
     % my $extra_css = stash('extra_css') // '';
     % if ($extra_css) {
     <%== $extra_css %>
     % }
-    % if ($heading) {
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    </style>
-    % }
 </head>
 <body>
+    %= include 'partials/site_header'
     % if ($heading) {
     <h1><%= $heading %></h1>
     % }
@@ -472,3 +451,25 @@ __DATA__
     <%== bf_dev_snippet %>
 </body>
 </html>
+
+@@ partials/site_header.html.ep
+<header class="bf-header">
+    <div class="bf-header-inner">
+        <a href="https://barefootjs.dev" class="bf-header-logo" aria-label="Barefoot.js">
+            <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
+        </a>
+        <div class="bf-header-sep"></div>
+        <a href="/examples" class="bf-header-link">Examples</a>
+    </div>
+</header>
+
+@@ home.html.ep
+% my $bp = stash('base_path') // '';
+<p>This example demonstrates server-side rendering with Mojolicious and BarefootJS.</p>
+<ul>
+    <li><a href="<%= $bp %>/counter">Counter</a></li>
+    <li><a href="<%= $bp %>/toggle">Toggle</a></li>
+    <li><a href="<%= $bp %>/todos">Todo (@client)</a></li>
+    <li><a href="<%= $bp %>/todos-ssr">Todo (no @client markers)</a></li>
+    <li><a href="<%= $bp %>/ai-chat">AI Chat (SSE Streaming)</a></li>
+</ul>
