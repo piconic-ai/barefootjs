@@ -151,6 +151,7 @@ export const renderer = jsxRenderer(
               logoHref="/"
               coreHref="/docs/introduction"
               uiHref={uiHref}
+              playgroundHref="/playground"
               searchSlot={<SearchPlaceholder />}
               themeSwitcher={<ThemeSwitcher />}
             />

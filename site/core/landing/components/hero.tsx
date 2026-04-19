@@ -196,6 +196,12 @@ export async function Hero() {
               Get Started
             </a>
             <a
+              href="/playground"
+              className="btn-secondary"
+            >
+              Open Playground
+            </a>
+            <a
               href="https://github.com/barefootjs/barefootjs"
               className="btn-secondary"
             >

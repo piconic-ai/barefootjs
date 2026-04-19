@@ -10,10 +10,11 @@
 import { Logo } from './logo'
 
 export interface HeaderProps {
-  activePage?: 'core' | 'ui'
+  activePage?: 'core' | 'ui' | 'playground'
   logoHref?: string
   coreHref?: string
   uiHref?: string
+  playgroundHref?: string
   searchSlot?: any
   leftSlot?: any
   themeSwitcher?: any
@@ -32,17 +33,17 @@ export function Header({
   logoHref = 'https://barefootjs.dev',
   coreHref = 'https://barefootjs.dev/docs/introduction',
   uiHref = 'https://ui.barefootjs.dev',
+  playgroundHref = 'https://barefootjs.dev/playground',
   searchSlot,
   leftSlot,
   themeSwitcher,
 }: HeaderProps) {
-  const coreClass = activePage === 'core'
-    ? 'relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors no-underline text-foreground'
-    : 'px-3 py-1.5 text-sm font-medium rounded-md transition-colors no-underline text-muted-foreground hover:text-foreground hover:bg-accent/50'
-
-  const uiClass = activePage === 'ui'
-    ? 'relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors no-underline text-foreground'
-    : 'px-3 py-1.5 text-sm font-medium rounded-md transition-colors no-underline text-muted-foreground hover:text-foreground hover:bg-accent/50'
+  const navLinkBase = 'relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors no-underline'
+  const navLinkActive = `${navLinkBase} text-foreground`
+  const navLinkInactive = `${navLinkBase} text-muted-foreground hover:text-foreground hover:bg-accent/50`
+  const coreClass = activePage === 'core' ? navLinkActive : navLinkInactive
+  const uiClass = activePage === 'ui' ? navLinkActive : navLinkInactive
+  const playgroundClass = activePage === 'playground' ? navLinkActive : navLinkInactive
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-[var(--header-height)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
@@ -73,6 +74,12 @@ export function Header({
             <a href={uiHref} className={uiClass}>
               UI
               {activePage === 'ui' && (
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full" style="background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end))" />
+              )}
+            </a>
+            <a href={playgroundHref} className={playgroundClass}>
+              Playground
+              {activePage === 'playground' && (
                 <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full" style="background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end))" />
               )}
             </a>

@@ -73,7 +73,7 @@ export const landingRenderer = jsxRenderer(
             <link rel="stylesheet" href="/static/uno.css" />
           </head>
           <body>
-            <Header logoHref="/" coreHref="/docs/introduction" uiHref={uiHref} searchSlot={<SearchPlaceholder />} themeSwitcher={<ThemeSwitcher />} />
+            <Header logoHref="/" coreHref="/docs/introduction" uiHref={uiHref} playgroundHref="/playground" searchSlot={<SearchPlaceholder />} themeSwitcher={<ThemeSwitcher />} />
             <main>
               {children}
             </main>
