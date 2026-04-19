@@ -34,9 +34,9 @@ export async function createApp(content: ContentMap, pages: Page[]): Promise<Hon
   // Playground (GET /playground)
   app.route('/playground', createPlaygroundApp())
 
-  // Examples adapter index (GET /examples). The adapter demos themselves
+  // Examples adapter index (GET /integrations). The adapter demos themselves
   // live on separate services, so this is just the catalog page.
-  app.route('/examples', createExamplesApp())
+  app.route('/integrations', createExamplesApp())
 
   return app
 }

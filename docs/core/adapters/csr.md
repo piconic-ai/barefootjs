@@ -76,4 +76,4 @@ The component must be registered first by importing its `.client.js` file — th
 </html>
 ```
 
-See [`examples/csr/`](https://github.com/barefootjs/barefootjs/tree/main/examples/csr) for a runnable end-to-end example.
+See [`integrations/csr/`](https://github.com/barefootjs/barefootjs/tree/main/integrations/csr) for a runnable end-to-end example.

@@ -9,7 +9,7 @@ on:
       - 'packages/hono/**'
       - 'packages/preview/**'
       - 'packages/adapter-tests/**'
-      - 'examples/hono/**'
+      - 'integrations/hono/**'
       - 'site/ui/**'
       - '.github/workflows/ci-hono.yml'
   pull_request:
@@ -20,7 +20,7 @@ on:
       - 'packages/hono/**'
       - 'packages/preview/**'
       - 'packages/adapter-tests/**'
-      - 'examples/hono/**'
+      - 'integrations/hono/**'
       - 'site/ui/**'
       - '.github/workflows/ci-hono.yml'
 
@@ -69,21 +69,21 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/hono' build
 
-      - name: Build examples/hono
-        run: cd examples/hono && bun run build
+      - name: Build integrations/hono
+        run: cd integrations/hono && bun run build
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - name: Run examples/hono E2E tests
-        run: cd examples/hono && bun run test:e2e
+      - name: Run integrations/hono E2E tests
+        run: cd integrations/hono && bun run test:e2e
 
-      - name: Upload Playwright report (examples/hono)
+      - name: Upload Playwright report (integrations/hono)
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report-examples-hono
-          path: examples/hono/playwright-report/
+          name: playwright-report-integrations-hono
+          path: integrations/hono/playwright-report/
           retention-days: 30
 
   e2e-site-ui:

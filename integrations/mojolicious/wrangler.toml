@@ -1,0 +1,31 @@
+name = "barefootjs-mojolicious-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "MojoContainer"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "MOJO_CONTAINER"
+class_name = "MojoContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MojoContainer"]
+
+# Two patterns: `/integrations/mojolicious/*` matches /integrations/mojolicious/...
+# but not the bare /integrations/mojolicious, so add the no-slash variant
+# explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/mojolicious"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/mojolicious/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/mojolicious"

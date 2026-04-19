@@ -8,7 +8,7 @@ on:
       - 'site/**'
       - 'ui/**'
       - 'docs/core/**'
-      - 'examples/**'
+      - 'integrations/**'
       - '.github/workflows/deploy.yml'
 
   # Allow manual trigger with site selection
@@ -22,10 +22,10 @@ on:
           - all
           - core
           - ui
-          - examples
-          - examples-hono
-          - examples-echo
-          - examples-mojolicious
+          - integrations
+          - integrations-hono
+          - integrations-echo
+          - integrations-mojolicious
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -100,9 +100,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-  deploy-examples-hono:
+  deploy-integrations-hono:
     if: >-
-      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'examples' || github.event.inputs.site == 'examples-hono')
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'integrations' || github.event.inputs.site == 'integrations-hono')
       || github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
@@ -123,17 +123,17 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/hono' build
 
-      - name: Build example
-        run: cd examples/hono && bun run build
+      - name: Build integration
+        run: cd integrations/hono && bun run build
 
       - name: Deploy to Cloudflare Workers
-        run: cd examples/hono && bunx wrangler deploy
+        run: cd integrations/hono && bunx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-  deploy-examples-echo:
+  deploy-integrations-echo:
     if: >-
-      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'examples' || github.event.inputs.site == 'examples-echo')
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'integrations' || github.event.inputs.site == 'integrations-echo')
       || github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
@@ -154,20 +154,20 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/go-template' build
 
-      - name: Build example
-        run: cd examples/echo && bun run build
+      - name: Build integration
+        run: cd integrations/echo && bun run build
 
       # wrangler deploy builds the Cloudflare Container image from the
-      # example's Dockerfile, which needs Docker on the runner.
+      # integration's Dockerfile, which needs Docker on the runner.
       # ubuntu-latest ships with a running Docker daemon by default.
       - name: Deploy to Cloudflare Workers
-        run: cd examples/echo && bunx wrangler deploy
+        run: cd integrations/echo && bunx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-  deploy-examples-mojolicious:
+  deploy-integrations-mojolicious:
     if: >-
-      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'examples' || github.event.inputs.site == 'examples-mojolicious')
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'integrations' || github.event.inputs.site == 'integrations-mojolicious')
       || github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
@@ -188,13 +188,13 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/mojolicious' build
 
-      - name: Build example
-        run: cd examples/mojolicious && bun run build
+      - name: Build integration
+        run: cd integrations/mojolicious && bun run build
 
       # wrangler deploy builds the Cloudflare Container image from the
-      # example's Dockerfile, which needs Docker on the runner.
+      # integration's Dockerfile, which needs Docker on the runner.
       # ubuntu-latest ships with a running Docker daemon by default.
       - name: Deploy to Cloudflare Workers
-        run: cd examples/mojolicious && bunx wrangler deploy
+        run: cd integrations/mojolicious && bunx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -139,22 +139,22 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/go-template' build
 
-      - name: Build examples/echo
-        run: cd examples/echo && bun run build
+      - name: Build integrations/echo
+        run: cd integrations/echo && bun run build
 
       - name: Download Go dependencies
-        run: cd examples/echo && go mod download
+        run: cd integrations/echo && go mod download
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - name: Run examples/echo E2E tests
-        run: cd examples/echo && bun run test:e2e
+      - name: Run integrations/echo E2E tests
+        run: cd integrations/echo && bun run test:e2e
 
-      - name: Upload Playwright report (examples/echo)
+      - name: Upload Playwright report (integrations/echo)
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report-examples-echo
-          path: examples/echo/playwright-report/
+          name: playwright-report-integrations-echo
+          path: integrations/echo/playwright-report/
           retention-days: 30

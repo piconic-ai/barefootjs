@@ -2,7 +2,7 @@
  * Shared Header Component
  *
  * Unified header used across all sites (docs, ui, lp).
- * Layout: [leftSlot] Logo | Core UI --- [searchSlot] GitHub ThemeSwitcher
+ * Layout: [leftSlot] Logo | Core UI Playground Integrations --- [searchSlot] GitHub ThemeSwitcher
  *
  * Server component (NOT "use client") — interactive parts are passed via slots.
  */
@@ -10,11 +10,12 @@
 import { Logo } from './logo'
 
 export interface HeaderProps {
-  activePage?: 'core' | 'ui' | 'playground'
+  activePage?: 'core' | 'ui' | 'playground' | 'integrations'
   logoHref?: string
   coreHref?: string
   uiHref?: string
   playgroundHref?: string
+  integrationsHref?: string
   searchSlot?: any
   leftSlot?: any
   themeSwitcher?: any
@@ -34,6 +35,7 @@ export function Header({
   coreHref = 'https://barefootjs.dev/docs/introduction',
   uiHref = 'https://ui.barefootjs.dev',
   playgroundHref = 'https://barefootjs.dev/playground',
+  integrationsHref = 'https://barefootjs.dev/integrations',
   searchSlot,
   leftSlot,
   themeSwitcher,
@@ -44,6 +46,7 @@ export function Header({
   const coreClass = activePage === 'core' ? navLinkActive : navLinkInactive
   const uiClass = activePage === 'ui' ? navLinkActive : navLinkInactive
   const playgroundClass = activePage === 'playground' ? navLinkActive : navLinkInactive
+  const integrationsClass = activePage === 'integrations' ? navLinkActive : navLinkInactive
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-[var(--header-height)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
@@ -80,6 +83,12 @@ export function Header({
             <a href={playgroundHref} className={playgroundClass}>
               Playground
               {activePage === 'playground' && (
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full" style="background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end))" />
+              )}
+            </a>
+            <a href={integrationsHref} className={integrationsClass}>
+              Integrations
+              {activePage === 'integrations' && (
                 <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full" style="background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end))" />
               )}
             </a>

@@ -1,0 +1,22 @@
+{
+  "name": "barefootjs-echo-example",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/copy-shared.ts",
+    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "dev": "APP_ENV=development BASE_PATH=/integrations/echo go run .",
+    "setup": "go mod tidy",
+    "deploy": "bun run build && wrangler deploy",
+    "test:e2e": "bunx playwright test",
+    "test:e2e:ui": "bunx playwright test --ui"
+  },
+  "devDependencies": {
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/go-template": "workspace:*",
+    "@cloudflare/containers": "^0.3.2",
+    "@cloudflare/workers-types": "^4",
+    "@playwright/test": "^1.41.0",
+    "bun-types": "^1.1.0",
+    "wrangler": "^4"
+  }
+}

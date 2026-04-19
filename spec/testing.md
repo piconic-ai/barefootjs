@@ -384,7 +384,7 @@ Test the client-side runtime: signal creation, effect tracking, DOM operations, 
 
 ## Layer 6: E2E Tests
 
-**Location:** `site/ui/e2e/` (doc site), `examples/*/e2e/` (example apps)
+**Location:** `site/ui/e2e/` (doc site), `integrations/*/e2e/` (Integration apps)
 **Runner:** Playwright
 **Speed:** seconds
 
@@ -430,12 +430,12 @@ test.describe('Checkbox', () => {
 })
 ```
 
-### Shared E2E test suites for examples
+### Shared E2E test suites for integrations
 
-Example apps (`examples/echo/`, `examples/hono/`, `examples/mojolicious/`) share E2E test suites from `examples/shared/e2e/`. Each shared test function is parameterized with a `baseUrl` and optional path:
+Integration apps (`integrations/echo/`, `integrations/hono/`, `integrations/mojolicious/`) share E2E test suites from `integrations/shared/e2e/`. Each shared test function is parameterized with a `baseUrl` and optional path:
 
 ```typescript
-// examples/shared/e2e/toggle.spec.ts (shared suite)
+// integrations/shared/e2e/toggle.spec.ts (shared suite)
 export function toggleTests(baseUrl: string) {
   test.describe('Toggle Component', () => {
     test.beforeEach(async ({ page }) => {
@@ -445,7 +445,7 @@ export function toggleTests(baseUrl: string) {
   })
 }
 
-// examples/mojolicious/e2e/toggle.spec.ts (example wrapper)
+// integrations/mojolicious/e2e/toggle.spec.ts (example wrapper)
 import { toggleTests } from '../../shared/e2e/toggle.spec'
 toggleTests('http://localhost:3004')
 ```
@@ -470,7 +470,7 @@ Each example's `playwright.config.ts` configures the webServer command, port, an
 | New compiler transformation rule | Compiler Unit | `packages/jsx/src/__tests__/my-rule.test.ts` |
 | New compiler error code | Compiler Unit | Add to existing or new error-specific test file |
 | New adapter or adapter bug fix | Adapter Conformance | Add/fix fixture in `packages/adapter-tests/fixtures/` |
-| New example app E2E | E2E (shared suite) | Wrapper in `examples/*/e2e/` calling shared test function |
+| New example app E2E | E2E (shared suite) | Wrapper in `integrations/*/e2e/` calling shared test function |
 | New runtime primitive | Runtime Unit | `packages/dom/__tests__/my-primitive.test.ts` |
 | Click/keyboard behavior | E2E | `site/ui/e2e/my-component.spec.ts` |
 | Hydration bug (user reports) | Fix in compiler, verify with E2E | Root cause in `packages/jsx/`, E2E confirms fix |

@@ -2,9 +2,9 @@
 /**
  * Dev-all proxy: expose every adapter and the main site under one origin.
  *
- *   localhost:4000/examples/hono/*             → localhost:3001 (wrangler dev)
- *   localhost:4000/examples/echo/*             → localhost:8080 (go run .)
- *   localhost:4000/examples/mojolicious/*      → localhost:3004 (perl app.pl)
+ *   localhost:4000/integrations/hono/*             → localhost:3001 (wrangler dev)
+ *   localhost:4000/integrations/echo/*             → localhost:8080 (go run .)
+ *   localhost:4000/integrations/mojolicious/*      → localhost:3004 (perl app.pl)
  *   localhost:4000/*                           → localhost:3000 (site/core)
  *
  * Each adapter mounts under /examples/<name>, so we dispatch by path prefix
@@ -22,9 +22,9 @@ type Route = {
 }
 
 const routes: readonly Route[] = [
-  { prefix: '/examples/hono',        target: 'http://localhost:3001', label: 'Hono (Workers)' },
-  { prefix: '/examples/echo',        target: 'http://localhost:8080', label: 'Echo (Go)' },
-  { prefix: '/examples/mojolicious', target: 'http://localhost:3004', label: 'Mojolicious (Perl)' },
+  { prefix: '/integrations/hono',        target: 'http://localhost:3001', label: 'Hono (Workers)' },
+  { prefix: '/integrations/echo',        target: 'http://localhost:8080', label: 'Echo (Go)' },
+  { prefix: '/integrations/mojolicious', target: 'http://localhost:3004', label: 'Mojolicious (Perl)' },
 ] as const
 
 const DEFAULT_TARGET = 'http://localhost:3005' // site/core

@@ -9,11 +9,11 @@ dist
 *.tgz
 
 # Cloudflare Workers artifacts
-examples/*/public
-examples/*/.wrangler
+integrations/*/public
+integrations/*/.wrangler
 
 # Mojolicious example: staged BarefootJS Perl plugin copy
-examples/mojolicious/lib
+integrations/mojolicious/lib
 
 # code coverage
 coverage
@@ -42,11 +42,11 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Finder (MacOS) folder config
 .DS_Store
 
-# examples
-examples/*/*.js
-examples/*/bun.lock
-examples/*/package-lock.json
-examples/*/node_modules
+# integrations
+integrations/*/*.js
+integrations/*/bun.lock
+integrations/*/package-lock.json
+integrations/*/node_modules
 
 # Claude Code local overrides
 CLAUDE.local.md
