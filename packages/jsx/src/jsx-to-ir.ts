@@ -2346,6 +2346,12 @@ function propagateSlotIdToLoops(children: IRNode[], slotId: string): void {
     } else if (child.type === 'fragment') {
       // Recurse into fragments (they're transparent containers)
       propagateSlotIdToLoops(child.children, slotId)
+    } else if (child.type === 'conditional') {
+      // Recurse into conditional branches so loops inside fragment branches
+      // (which lack an enclosing element) inherit the ancestor element's slotId.
+      // Stops at element boundaries — inner elements set their own slotId first.
+      propagateSlotIdToLoops([child.whenTrue], slotId)
+      propagateSlotIdToLoops([child.whenFalse], slotId)
     }
     // Don't recurse into elements - they handle their own children
   }

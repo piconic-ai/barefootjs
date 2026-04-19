@@ -593,7 +593,11 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
         parentSlotId = prevSlot
         break
       case 'loop': {
-        if (!parentSlotId) break
+        // parentSlotId comes from an enclosing element inside this branch;
+        // fall back to the loop's own slotId, which jsx-to-ir propagates from
+        // the nearest ancestor element when the branch itself is a fragment.
+        const containerSlot = parentSlotId ?? n.slotId
+        if (!containerSlot) break
 
         // Detect composite: native element root + nested components
         const hasNestedComps = (n.nestedComponents?.length ?? 0) > 0
@@ -634,7 +638,7 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
           index: n.index,
           key: n.key,
           template: childTemplate,
-          containerSlotId: parentSlotId,
+          containerSlotId: containerSlot,
           mapPreamble: n.mapPreamble ?? null,
           nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
           childEvents,
