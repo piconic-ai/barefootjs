@@ -459,13 +459,12 @@ __DATA__
             <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
         </a>
         <div class="bf-header-sep"></div>
-        <a href="https://barefootjs.dev/examples" class="bf-header-link">Examples</a>
+        <a href="/examples" class="bf-header-link">Examples</a>
     </div>
 </header>
 
 @@ home.html.ep
 % my $bp = stash('base_path') // '';
-<p><a href="/examples">← All adapters</a></p>
 <p>This example demonstrates server-side rendering with Mojolicious and BarefootJS.</p>
 <ul>
     <li><a href="<%= $bp %>/counter">Counter</a></li>

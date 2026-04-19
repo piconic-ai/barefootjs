@@ -68,7 +68,7 @@ const siteHeaderHTML = `<header class="bf-header">
             <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
         </a>
         <div class="bf-header-sep"></div>
-        <a href="https://barefootjs.dev/examples" class="bf-header-link">Examples</a>
+        <a href="/examples" class="bf-header-link">Examples</a>
     </div>
 </header>`
 
@@ -274,7 +274,6 @@ func main() {
 
 func indexHandler(c echo.Context) error {
 	body := fmt.Sprintf(`
-    <p><a href="/examples">← All adapters</a></p>
     <h1>BarefootJS + Echo Example</h1>
     <p>This example demonstrates server-side rendering with Go Echo and BarefootJS.</p>
     <ul>
