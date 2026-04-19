@@ -18,7 +18,8 @@
     "test": "bun test --cwd . packages/",
     "test:e2e": "bun run --filter '*' test:e2e",
     "clean": "bun run --filter '*' clean",
-    "dev:all": "concurrently -k -n proxy,site,hono,echo,mojo -c blue,yellow,cyan,green,magenta 'bun run scripts/dev-all.ts' 'PORT=3005 bun run --filter barefootjs-site dev' 'bun run --filter barefootjs-hono-jsx-example dev' 'bun run --filter barefootjs-echo-example dev' 'bun run --filter barefootjs-mojolicious-example dev'",
+    "dev:all": "bun run dev:clean && concurrently -k -n proxy,site,hono,echo,mojo -c blue,yellow,cyan,green,magenta 'bun run scripts/dev-all.ts' 'PORT=3005 bun run --filter barefootjs-site dev' 'bun run --filter barefootjs-hono-jsx-example dev' 'bun run --filter barefootjs-echo-example dev' 'bun run --filter barefootjs-mojolicious-example dev'",
+    "dev:clean": "bun run scripts/dev-clean.ts",
     "meta:extract": "bun run packages/cli/src/index.ts meta:extract",
     "barefoot": "bun run packages/cli/src/index.ts"
   },
