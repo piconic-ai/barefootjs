@@ -12,6 +12,14 @@ binding = "ASSETS"
 # because the Worker doesn't register those paths.
 run_worker_first = true
 
+# Two patterns because Cloudflare route globs do not match the "/*" suffix
+# as empty — `/examples/hono/*` matches /examples/hono/counter and
+# /examples/hono/, but not /examples/hono (no trailing slash), which is the
+# canonical URL served by Hono's `app.get('/')` under basePath.
+[[routes]]
+pattern = "barefootjs.dev/examples/hono"
+zone_name = "barefootjs.dev"
+
 [[routes]]
 pattern = "barefootjs.dev/examples/hono/*"
 zone_name = "barefootjs.dev"

@@ -16,6 +16,12 @@ class_name = "EchoContainer"
 tag = "v1"
 new_sqlite_classes = ["EchoContainer"]
 
+# Two patterns: `/examples/echo/*` matches /examples/echo/... but not the
+# bare /examples/echo, so add the no-slash variant explicitly.
+[[routes]]
+pattern = "barefootjs.dev/examples/echo"
+zone_name = "barefootjs.dev"
+
 [[routes]]
 pattern = "barefootjs.dev/examples/echo/*"
 zone_name = "barefootjs.dev"
