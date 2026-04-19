@@ -24,11 +24,15 @@
  * explicitly enabled.
  */
 
-/** @jsxImportSource hono/jsx */
-
 import type { Context } from 'hono'
 import { mkdir, readFile, watch } from 'node:fs/promises'
 import { resolve } from 'node:path'
+
+// Re-export BfDevReload from its dependency-free home so `import { BfDevReload }
+// from '@barefootjs/hono/dev'` keeps working for existing callers. Runtimes that
+// can't load node:fs (Workers, edge) should import it directly from
+// '@barefootjs/hono/dev-reload' to avoid pulling this file's fs imports.
+export { BfDevReload, type BfDevReloadProps } from './dev-reload'
 
 export interface CreateDevReloaderOptions {
   /** Directory that `barefoot build` writes output into (contains `.dev/build-id`). */
@@ -37,19 +41,11 @@ export interface CreateDevReloaderOptions {
   enabled?: boolean
 }
 
-export interface BfDevReloadProps {
-  /** Override the dev gate. Defaults to `process.env.NODE_ENV !== 'production'`. */
-  enabled?: boolean
-  /** SSE endpoint registered with `createDevReloader`. Defaults to `/_bf/reload`. */
-  endpoint?: string
-}
-
 // Sentinel path contract with `@barefootjs/cli`. These values must match
 // `DEV_SENTINEL_SUBDIR` / `DEV_SENTINEL_FILENAME` in `packages/cli/src/lib/build.ts`
 // — duplicated intentionally to avoid a runtime dep on the CLI.
 const DEV_SUBDIR = '.dev'
 const BUILD_ID_FILE = 'build-id'
-const SCROLL_STORAGE_KEY = '__bf_devreload_scroll'
 /**
  * Heartbeat interval for idle keepalive. Must stay comfortably under Bun's
  * default 10s idleTimeout — otherwise the server would close a quiet SSE
@@ -156,28 +152,3 @@ export function createDevReloader(
   }
 }
 
-function clientSnippet(endpoint: string, storageKey: string): string {
-  // Small IIFE: subscribes to SSE, preserves scrollY across reload, logs errors
-  // only. Intentionally dependency-free and idempotent across duplicate mounts.
-  return `(()=>{if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem(${JSON.stringify(
-    storageKey,
-  )});if(s){sessionStorage.removeItem(${JSON.stringify(
-    storageKey,
-  )});var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource(${JSON.stringify(
-    endpoint,
-  )});es.addEventListener('reload',function(){try{sessionStorage.setItem(${JSON.stringify(
-    storageKey,
-  )},String(window.scrollY))}catch(e){}location.reload()});es.addEventListener('error',function(){/* auto-reconnects */})})();`
-}
-
-/**
- * Inline `<script>` that opens an EventSource to the reloader endpoint,
- * reloads the page on `reload`, and preserves scrollY across reloads.
- * Renders nothing in production.
- */
-export function BfDevReload(props: BfDevReloadProps = {}) {
-  const { enabled = isDevDefault(), endpoint = '/_bf/reload' } = props
-  if (!enabled) return null
-  const snippet = clientSnippet(endpoint, SCROLL_STORAGE_KEY)
-  return <script dangerouslySetInnerHTML={{ __html: snippet }} />
-}

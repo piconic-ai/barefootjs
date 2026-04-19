@@ -7,6 +7,7 @@
 
 import { jsxRenderer } from 'hono/jsx-renderer'
 import { BfScripts } from '../../packages/hono/src/scripts'
+import { BfDevReload } from '../../packages/hono/src/dev-reload'
 
 const BASE_PATH = process.env.BASE_PATH ?? '/examples/hono'
 
@@ -53,6 +54,7 @@ export const renderer = jsxRenderer(
         <body>
           {children}
           <BfScripts />
+          <BfDevReload endpoint={`${BASE_PATH}/_bf/reload`} />
         </body>
       </html>
     )

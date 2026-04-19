@@ -38,6 +38,14 @@
       "types": "./src/dev.tsx",
       "import": "./src/dev.tsx"
     },
+    "./dev-reload": {
+      "types": "./src/dev-reload.tsx",
+      "import": "./src/dev-reload.tsx"
+    },
+    "./dev-worker": {
+      "types": "./src/dev-worker.ts",
+      "import": "./src/dev-worker.ts"
+    },
     "./jsx/jsx-runtime": {
       "types": "./src/jsx/jsx-runtime/index.d.ts",
       "import": "./src/jsx/jsx-runtime/index.ts"

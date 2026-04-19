@@ -6,6 +6,7 @@
  */
 
 import { Hono } from 'hono'
+import { createDevReloader } from '@barefootjs/hono/dev-worker'
 import { renderer } from './renderer'
 import Counter from '@/components/Counter'
 import Toggle from '@/components/Toggle'
@@ -23,6 +24,12 @@ const link = (path: string) => `${BASE_PATH}${path === '/' ? '' : path}`
 const app = new Hono().basePath(BASE_PATH)
 
 app.use(renderer)
+
+// Dev-only browser auto-reload. Detects Worker cold starts via a boot id
+// sent in SSE Last-Event-ID — a code change restarts the isolate, the
+// stream drops, the client reconnects, the boot id differs, reload fires.
+// No-op in production (NODE_ENV=production).
+app.get('/_bf/reload', createDevReloader())
 
 // In-memory todo storage. Workers isolates are ephemeral, so this resets
 // on cold start — acceptable for a demo.
