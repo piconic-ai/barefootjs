@@ -58,16 +58,16 @@ function buildIframeSrcdoc(opts: {
     <meta charset="UTF-8" />
     <script type="importmap">${importMap}</script>
     <style>
-      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-      body { margin: 0; padding: 16px; }
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; background: oklch(0.145 0 0); color: oklch(0.985 0 0); }
+      body { margin: 0; padding: 16px; background: oklch(0.145 0 0); color: oklch(0.985 0 0); }
       #app:empty::before {
         content: 'Preview is empty — did your component return JSX?';
-        color: #888;
+        color: oklch(0.708 0 0);
         font-size: 13px;
       }
       #playground-error {
         position: fixed; inset: 0; padding: 16px;
-        background: #fff5f5; color: #a00;
+        background: oklch(0.25 0.05 22); color: oklch(0.85 0.15 22);
         font: 12px/1.4 ui-monospace, monospace;
         white-space: pre-wrap; overflow: auto;
         display: none;
@@ -177,6 +177,7 @@ async function main() {
   }
   setTab('preview')
 
+  statusEl.dataset.state = 'working'
   statusEl.textContent = 'Loading editor…'
   const monaco = await loadMonaco()
 
@@ -228,9 +229,7 @@ async function main() {
   )
   const editor = monaco.editor.create(editorEl, {
     model,
-    theme: matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'vs-dark'
-      : 'vs',
+    theme: 'vs-dark',
     automaticLayout: true,
     minimap: { enabled: false },
     fontSize: 13,
@@ -239,12 +238,19 @@ async function main() {
   })
 
   statusEl.textContent = 'Starting compiler…'
+  statusEl.dataset.state = 'working'
   const worker = new Worker(window.PLAYGROUND_WORKER_URL, { type: 'module' })
 
   let nextId = 1
   let ready = false
   let pendingSource: string | null = null
   let debounceHandle: number | null = null
+
+  type StatusState = 'working' | 'ready' | 'error'
+  function setStatus(label: string, state: StatusState) {
+    statusEl.textContent = label
+    statusEl.dataset.state = state
+  }
 
   function showErrors(errors: { severity: string; message: string }[]) {
     errorEl.hidden = false
@@ -262,7 +268,7 @@ async function main() {
       pendingSource = source
       return
     }
-    statusEl.textContent = 'Compiling…'
+    setStatus('Compiling…', 'working')
     worker.postMessage({ id: nextId++, source })
   }
 
@@ -270,7 +276,7 @@ async function main() {
     const msg = event.data
     if (msg && msg.ready === true) {
       ready = true
-      statusEl.textContent = 'Ready'
+      setStatus('Ready', 'ready')
       if (pendingSource !== null) {
         const src = pendingSource
         pendingSource = null
@@ -283,14 +289,18 @@ async function main() {
 
     if (msg.ok === false) {
       showErrors(msg.errors)
-      statusEl.textContent = 'Errors'
+      setStatus('Build failed', 'error')
       return
     }
 
     clearErrors()
-    statusEl.textContent = msg.warnings?.length
-      ? `Compiled (${msg.warnings.length} warning${msg.warnings.length === 1 ? '' : 's'})`
-      : 'Compiled'
+    const warnings = msg.warnings?.length ?? 0
+    setStatus(
+      warnings > 0
+        ? `Preview up to date · ${warnings} warning${warnings === 1 ? '' : 's'}`
+        : 'Preview up to date',
+      'ready',
+    )
 
     clientJsPanel.textContent = msg.clientJs
     irPanel.textContent = JSON.stringify(msg.ir, null, 2)
@@ -305,6 +315,7 @@ async function main() {
     showErrors([
       { severity: 'error', message: `Worker crashed: ${e.message}` },
     ])
+    setStatus('Build failed', 'error')
   })
 
   function scheduleCompile() {
@@ -318,7 +329,10 @@ async function main() {
 
 main().catch((err) => {
   const status = document.getElementById('pg-status')
-  if (status) status.textContent = 'Failed to initialise'
+  if (status) {
+    status.textContent = 'Failed to initialise'
+    status.dataset.state = 'error'
+  }
   const errorEl = document.getElementById('pg-error')
   if (errorEl) {
     errorEl.hidden = false

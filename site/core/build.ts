@@ -269,6 +269,15 @@ if (await Bun.file(icon64).exists()) {
   console.log('Copied: dist/icon-64.png, dist/static/icon-64.png')
 }
 
+for (const name of ['logo.svg', 'logo-for-dark.svg', 'logo-for-light.svg']) {
+  const src = resolve(IMAGES_DIR, name)
+  if (await Bun.file(src).exists()) {
+    await Bun.write(resolve(DIST_DIR, name), Bun.file(src))
+    await Bun.write(resolve(DIST_STATIC_DIR, name), Bun.file(src))
+    console.log(`Copied: dist/${name}, dist/static/${name}`)
+  }
+}
+
 // ── 7. Copy .ts modules from landing/components (non-component modules) ──
 async function copyTsModules(srcDir: string, destDir: string): Promise<void> {
   const entries = await readdir(srcDir, { withFileTypes: true }).catch(() => [])

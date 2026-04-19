@@ -32,42 +32,52 @@ export function createPlaygroundApp() {
 
   app.get('/', (c) => {
     const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Playground — Barefoot.js</title>
   <meta name="description" content="In-browser playground for BarefootJS: edit JSX, see the compiled output, and preview live." />
+  <meta name="color-scheme" content="dark" />
   <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png" />
   <link rel="stylesheet" href="/static/globals.css" />
   <link rel="stylesheet" href="/static/uno.css" />
   <style>
     html, body { height: 100%; margin: 0; }
-    body { font-family: var(--font-sans, system-ui, sans-serif); background: var(--background, #fff); color: var(--foreground, #111); display: flex; flex-direction: column; }
-    .pg-header { padding: 10px 16px; border-bottom: 1px solid var(--border, #e5e7eb); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-    .pg-header a { color: inherit; text-decoration: none; font-weight: 600; }
-    .pg-status { margin-left: auto; font: 12px ui-monospace, monospace; color: var(--muted-foreground, #666); }
+    body { font-family: var(--font-sans, system-ui, sans-serif); background: var(--background); color: var(--foreground); display: flex; flex-direction: column; }
+    .pg-header { height: var(--header-height, 52px); padding: 0 16px; border-bottom: 1px solid var(--border); background: var(--background); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    @media (min-width: 640px) { .pg-header { padding: 0 24px; gap: 24px; } }
+    .pg-header a { color: inherit; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; }
+    .pg-logo { height: 1.65rem; width: auto; display: block; }
+    .pg-sep { display: none; width: 1px; height: 20px; background: var(--border); }
+    @media (min-width: 640px) { .pg-sep { display: block; } }
+    .pg-status { margin-left: auto; font: 12px ui-monospace, monospace; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 6px; }
+    .pg-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .pg-status[data-state="ready"] { color: oklch(0.75 0.14 150); }
+    .pg-status[data-state="working"] { color: oklch(0.75 0.12 80); }
+    .pg-status[data-state="error"] { color: oklch(0.70 0.19 22); }
     .pg-main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
     @media (max-width: 900px) { .pg-main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } }
-    .pg-pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; border-right: 1px solid var(--border, #e5e7eb); }
+    .pg-pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; border-right: 1px solid var(--border); }
     .pg-pane:last-child { border-right: none; }
-    .pg-pane-header { padding: 6px 12px; font: 12px ui-monospace, monospace; color: var(--muted-foreground, #666); border-bottom: 1px solid var(--border, #e5e7eb); display: flex; gap: 4px; align-items: center; }
+    .pg-pane-header { padding: 6px 12px; font: 12px ui-monospace, monospace; color: var(--muted-foreground); border-bottom: 1px solid var(--border); display: flex; gap: 4px; align-items: center; }
     .pg-editor { flex: 1; min-height: 0; }
     .pg-tab { background: transparent; border: 1px solid transparent; padding: 3px 10px; border-radius: 4px; font: inherit; color: inherit; cursor: pointer; }
-    .pg-tab[aria-selected="true"] { border-color: var(--border, #e5e7eb); background: var(--muted, #f5f5f5); }
-    .pg-tab-body { flex: 1; min-height: 0; overflow: auto; }
+    .pg-tab[aria-selected="true"] { border-color: var(--border); background: var(--muted); color: var(--foreground); }
+    .pg-tab-body { flex: 1; min-height: 0; overflow: auto; background: var(--background); }
     .pg-tab-body[hidden] { display: none; }
-    #pg-preview { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
-    .pg-code { margin: 0; padding: 12px; font: 12px/1.5 ui-monospace, monospace; white-space: pre; background: var(--muted, #f5f5f5); height: 100%; box-sizing: border-box; }
-    #pg-error { margin: 0; padding: 10px 16px; font: 12px/1.4 ui-monospace, monospace; color: #c00; background: #fff5f5; border-top: 1px solid #fcc; white-space: pre-wrap; flex-shrink: 0; }
+    #pg-preview { width: 100%; height: 100%; border: 0; background: var(--background); display: block; color-scheme: dark; }
+    .pg-code { margin: 0; padding: 12px; font: 12px/1.5 ui-monospace, monospace; white-space: pre; background: var(--muted); color: var(--foreground); height: 100%; box-sizing: border-box; }
+    #pg-error { margin: 0; padding: 10px 16px; font: 12px/1.4 ui-monospace, monospace; color: oklch(0.80 0.15 22); background: oklch(0.25 0.05 22); border-top: 1px solid oklch(0.40 0.12 22); white-space: pre-wrap; flex-shrink: 0; }
     #pg-error[hidden] { display: none; }
   </style>
 </head>
 <body>
   <header class="pg-header">
-    <a href="/">← Barefoot.js</a>
-    <span style="color: var(--muted-foreground, #666); font-size: 14px;">Playground</span>
-    <span id="pg-status" class="pg-status">Loading…</span>
+    <a href="/" aria-label="Barefoot.js home"><img class="pg-logo" src="/static/logo-for-dark.svg" alt="Barefoot.js" /></a>
+    <span class="pg-sep" aria-hidden="true"></span>
+    <span style="color: var(--muted-foreground); font-size: 14px;">Playground</span>
+    <span id="pg-status" class="pg-status" data-state="working">Loading…</span>
   </header>
   <div class="pg-main">
     <section class="pg-pane">
