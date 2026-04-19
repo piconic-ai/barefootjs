@@ -73,16 +73,28 @@ a {
 }
 
 .bf-header-logo {
-  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
   text-decoration: none;
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: var(--tracking-tight);
   transition: opacity var(--duration-fast);
 }
 
 .bf-header-logo:hover {
   opacity: 0.85;
+}
+
+/*
+ * Render the "Barefoot.js" wordmark as a CSS mask so the logo tracks the
+ * current foreground color automatically — the host page controls the
+ * fill instead of the SVG, and the external SVG file stays framework-free.
+ */
+.bf-header-logo-img {
+  display: block;
+  width: 115px;
+  height: 26px;
+  background: var(--foreground);
+  -webkit-mask: url('./logo.svg') no-repeat center / contain;
+  mask: url('./logo.svg') no-repeat center / contain;
 }
 
 .bf-header-sep {
