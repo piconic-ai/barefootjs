@@ -43,50 +43,63 @@ const PAGE_TITLES: Record<AdminRouteKey, string> = {
   settings: 'Settings',
 }
 
+// NavIcon uses a single-return JSX body with conditional children rather
+// than a multi-return switch. The compiler's sibling-function inlining
+// (`extractSingleJsxReturn` in packages/jsx/src/analyzer.ts) only matches
+// helpers with a single JSX return; a switch-with-multiple-returns was
+// silently dropped from the emitted marked template, causing
+// `ReferenceError: NavIcon is not defined` at SSR. Tracked as a separate
+// compiler issue — remove this workaround once multi-return helpers are
+// preserved in marked-template output.
 function NavIcon({ name }: { name: string }) {
-  switch (name) {
-    case 'home':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      {name === 'home' ? (
+        <>
           <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-      )
-    case 'chart':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        </>
+      ) : null}
+      {name === 'chart' ? (
+        <>
           <path d="M3 3v18h18" />
           <path d="M7 14l4-4 4 4 5-5" />
-        </svg>
-      )
-    case 'list':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        </>
+      ) : null}
+      {name === 'list' ? (
+        <>
           <path d="M8 6h13" />
           <path d="M8 12h13" />
           <path d="M8 18h13" />
           <circle cx="4" cy="6" r="1" />
           <circle cx="4" cy="12" r="1" />
           <circle cx="4" cy="18" r="1" />
-        </svg>
-      )
-    case 'bell':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        </>
+      ) : null}
+      {name === 'bell' ? (
+        <>
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-        </svg>
-      )
-    case 'cog':
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        </>
+      ) : null}
+      {name === 'cog' ? (
+        <>
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      )
-    default:
-      return null
-  }
+        </>
+      ) : null}
+    </svg>
+  )
 }
 
 interface AdminShellProps {
