@@ -86,8 +86,11 @@ function emitBranchBindings(
       const cv = varSlotId(loop.containerSlotId)
       lines.push(`      const [__loop_${cv}] = $(__branchScope, '${loop.containerSlotId}')`)
 
-      if (loop.useElementReconciliation && loop.nestedComponents?.length) {
-        // Composite loop: items contain child components — use createComponent in renderItem.
+      if (loop.useElementReconciliation && (loop.nestedComponents?.length || loop.innerLoops?.length)) {
+        // Composite loop: items contain child components OR inner loops that
+        // require their own mapArray reconciliation — use the composite
+        // renderItem path (createComponent for nested components, emitInnerLoopSetup
+        // for inner loops).
         emitCompositeBranchLoop(lines, loop, cv)
       } else {
         const keyFn = loop.key

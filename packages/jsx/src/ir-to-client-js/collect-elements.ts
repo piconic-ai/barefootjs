@@ -599,9 +599,20 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
         const containerSlot = parentSlotId ?? n.slotId
         if (!containerSlot) break
 
-        // Detect composite: native element root + nested components
+        // Detect composite: native element root + nested components, OR a loop
+        // with inner loops that need their own mapArray reconciliation. Mirrors
+        // the top-level `useElementReconciliation` rule (collect-elements.ts
+        // around line 283) so a `.map()` directly inside an outer `.map()` gets
+        // its own reactive mapArray even when the outer loop lives inside a
+        // conditional branch.
         const hasNestedComps = (n.nestedComponents?.length ?? 0) > 0
-        const useElementReconciliation = !n.childComponent && !n.isStaticArray && hasNestedComps
+        const innerLoopsCollected = !n.childComponent
+          ? collectInnerLoops(n.children, n.param)
+          : undefined
+        const hasInnerLoops = (innerLoopsCollected?.length ?? 0) > 0
+        const useElementReconciliation = !n.childComponent
+          && !n.isStaticArray
+          && (hasNestedComps || hasInnerLoops)
 
         // Build the item template from loop children.
         // Use loopDepth=0: this loop gets its own reconcileElements (independent
@@ -647,7 +658,7 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
           childReactiveTexts: childReactiveTexts.length > 0 ? childReactiveTexts : undefined,
           childReactiveAttrs: childReactiveAttrs.length > 0 ? childReactiveAttrs : undefined,
           childConditionals: childConditionals.length > 0 ? childConditionals : undefined,
-          innerLoops: useElementReconciliation ? collectInnerLoops(n.children, n.param) : undefined,
+          innerLoops: useElementReconciliation ? innerLoopsCollected : undefined,
           useElementReconciliation: useElementReconciliation || undefined,
         })
         // Don't recurse into the loop — nested loops are handled by the loop's own reconciliation
