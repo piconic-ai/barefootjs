@@ -131,6 +131,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'pivot-table', title: 'Pivot Table', description: 'Dynamic row/column grouping with multi-level aggregation, drag axis config, and expand/collapse groups' },
   { slug: 'dashboard-builder', title: 'Dashboard Builder', description: 'Dynamic widget composition with per-widget signal isolation, dynamic component switching per item, and layout memo driven by widget count' },
   { slug: 'calendar-scheduler', title: 'Calendar Scheduler', description: '2D grid calendar with month/week view toggle, 4-level overlap layout memo chain, per-cell complex conditionals, and deep nested event handlers' },
+  { slug: 'state-machine-playground', title: 'State Machine Playground', description: 'Interactive state machine explorer with preset workflows, per-state multi-conditional classes flipping together on transition, a reactive transitions loop source, and a history filter/group memo chain' },
 ]
 
 // Helper: get components filtered by category

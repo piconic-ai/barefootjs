@@ -86,6 +86,7 @@ import { FormBuilderRefPage } from './pages/components/form-builder'
 import { PivotTableRefPage } from './pages/components/pivot-table'
 import { DashboardBuilderRefPage } from './pages/components/dashboard-builder'
 import { CalendarSchedulerRefPage } from './pages/components/calendar-scheduler'
+import { StateMachinePlaygroundRefPage } from './pages/components/state-machine-playground'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -582,6 +583,11 @@ export function createApp() {
   // Calendar Scheduler block page
   app.get('/components/calendar-scheduler', (c) => {
     return c.render(<CalendarSchedulerRefPage />)
+  })
+
+  // State Machine Playground block page
+  app.get('/components/state-machine-playground', (c) => {
+    return c.render(<StateMachinePlaygroundRefPage />)
   })
 
   // Bar Chart reference page
