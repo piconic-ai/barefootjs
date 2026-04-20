@@ -1,0 +1,42 @@
+name: CI — CLI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/cli/**'
+      - 'packages/client/**'
+      - 'packages/jsx/**'
+      - 'ui/**'
+      - '.github/workflows/ci-cli.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/cli/**'
+      - 'packages/client/**'
+      - 'packages/jsx/**'
+      - 'ui/**'
+      - '.github/workflows/ci-cli.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/jsx' build
+
+      - name: Run unit tests
+        run: cd packages/cli && bun test
