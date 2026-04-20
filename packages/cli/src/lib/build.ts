@@ -248,10 +248,17 @@ export async function build(
       : emptyCache(globalHash)
   let anyOutputChanged = false
 
-  // 1. Runtime file — copy barefoot.js (and the shared reactive module it
-  //    imports) via writeIfChanged so unchanged runtime is quiet.
+  // 1. Runtime file — copy the standalone runtime bundle (reactive inlined)
+  //    to barefoot.js. The sibling `./runtime` entry keeps
+  //    `@barefootjs/client/reactive` as an external import so downstream
+  //    bundlers can dedupe it against the main entry; when we ship a file
+  //    for the browser to load directly, we need the self-contained build.
   const domPkgDir = resolve(config.projectDir, 'node_modules/@barefootjs/client')
   const domDistCandidates = [
+    resolve(config.projectDir, '../../packages/client/dist/runtime/standalone.js'),
+    resolve(domPkgDir, 'dist/runtime/standalone.js'),
+    // Legacy fallback for older @barefootjs/client dists that only shipped
+    // the single runtime entry.
     resolve(config.projectDir, '../../packages/client/dist/runtime/index.js'),
     resolve(domPkgDir, 'dist/runtime/index.js'),
   ]
@@ -267,46 +274,14 @@ export async function build(
   }
 
   if (domDistFile) {
-    // Copy the shared reactive module next to barefoot.js. The runtime
-    // dist keeps `@barefootjs/client/reactive` as an external import so
-    // downstream bundlers can dedupe it against the main entry; in the
-    // CLI output we rewrite that to a relative `./reactive.js` sibling.
-    const reactiveDistFile = resolve(dirname(domDistFile), '../reactive.js')
-    let reactiveAvailable = false
-    try {
-      await stat(reactiveDistFile)
-      reactiveAvailable = true
-    } catch {
-      // continue without — older client dists inlined reactive.
-    }
-
-    if (reactiveAvailable) {
-      const reactiveOutPath = resolve(runtimeOutDir, 'reactive.js')
-      let reactiveContent: string | Uint8Array
-      if (config.minify) {
-        reactiveContent = transpile(await readText(reactiveDistFile), { loader: 'js', minify: true })
-      } else {
-        reactiveContent = await readBytes(reactiveDistFile)
-      }
-      const wroteReactive = await writeIfChanged(reactiveOutPath, reactiveContent)
-      if (wroteReactive) {
-        anyOutputChanged = true
-        console.log(`Generated: ${runtimeSubdir}/reactive.js`)
-      }
-    }
-
     const runtimeOutPath = resolve(runtimeOutDir, 'barefoot.js')
-    let runtimeContent: string
+    let runtimeContent: string | Uint8Array
     if (config.minify) {
+      // Minify at copy time so the minify pass below doesn't need to touch
+      // barefoot.js (keeping it out of the per-build write loop).
       runtimeContent = transpile(await readText(domDistFile), { loader: 'js', minify: true })
     } else {
-      runtimeContent = await readText(domDistFile)
-    }
-    if (reactiveAvailable) {
-      runtimeContent = runtimeContent.replace(
-        /from\s*['"]@barefootjs\/client\/reactive['"]/g,
-        `from './reactive.js'`,
-      )
+      runtimeContent = await readBytes(domDistFile)
     }
     const wrote = await writeIfChanged(runtimeOutPath, runtimeContent)
     if (wrote) {

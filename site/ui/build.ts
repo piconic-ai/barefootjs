@@ -89,9 +89,12 @@ const componentFiles = [...uiComponentFiles, ...docsComponentFiles, ...sharedCom
 await rm(DIST_DIR, { recursive: true, force: true })
 await mkdir(DIST_COMPONENTS_DIR, { recursive: true })
 
-// Build and copy barefoot.js from @barefootjs/client
+// Build and copy barefoot.js from @barefootjs/client.
+// Use the standalone runtime (reactive primitives inlined) so the browser
+// can load the file directly. The sibling `./runtime` entry keeps reactive
+// external for bundler-side deduplication.
 const barefootFileName = 'barefoot.js'
-const domDistFile = resolve(DOM_PKG_DIR, 'dist/runtime/index.js')
+const domDistFile = resolve(DOM_PKG_DIR, 'dist/runtime/standalone.js')
 
 if (!await Bun.file(domDistFile).exists()) {
   console.log('Building @barefootjs/client...')

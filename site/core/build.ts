@@ -52,8 +52,11 @@ await Bun.write(resolve(DIST_DIR, 'content.json'), JSON.stringify(content))
 console.log(`Bundled: ${pages.length} pages → dist/content.json`)
 
 // ── 2. Build and copy barefoot.js runtime ─────────────────────
+// Use the standalone runtime (reactive primitives inlined) so the
+// browser can load the file directly. The sibling `./runtime` entry
+// keeps reactive external for bundler-side deduplication.
 const barefootFileName = 'barefoot.js'
-const domDistFile = resolve(DOM_PKG_DIR, 'dist/runtime/index.js')
+const domDistFile = resolve(DOM_PKG_DIR, 'dist/runtime/standalone.js')
 
 if (!await Bun.file(domDistFile).exists()) {
   console.log('Building @barefootjs/client...')

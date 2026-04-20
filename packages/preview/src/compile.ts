@@ -50,8 +50,9 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
     await symlink(previewNodeModules, distNodeModules, 'dir')
   }
 
-  // 1. Copy barefoot.js runtime
-  const domDistFile = resolve(DOM_PKG_DIR, 'dist/runtime/index.js')
+  // 1. Copy barefoot.js runtime — use the standalone runtime (reactive
+  //    primitives inlined) so the browser can load the file directly.
+  const domDistFile = resolve(DOM_PKG_DIR, 'dist/runtime/standalone.js')
   if (!await Bun.file(domDistFile).exists()) {
     console.log('Building @barefootjs/client...')
     const proc = Bun.spawn(['bun', 'run', 'build'], { cwd: DOM_PKG_DIR })
