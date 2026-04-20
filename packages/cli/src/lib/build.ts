@@ -552,7 +552,7 @@ const RELATIVE_IMPORT_SCAN_RE = /(?:^|\n)\s*(?:import|export)\s+(?:[^'"\n]+from\
  * cache: when an imported file changes, the importer's cache entry becomes
  * stale and must be recompiled (so its combined client JS picks up the change).
  */
-async function collectRelativeImportDeps(
+export async function collectRelativeImportDeps(
   entryPath: string,
   sourceContent: string,
 ): Promise<string[]> {

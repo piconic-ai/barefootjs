@@ -4,6 +4,7 @@ import {
   discoverComponentFiles,
   generateHash,
   resolveBuildConfigFromTs,
+  collectRelativeImportDeps,
 } from '../lib/build'
 import { mkdirSync, writeFileSync, rmSync } from 'fs'
 import { resolve } from 'path'
@@ -154,6 +155,91 @@ describe('resolveBuildConfigFromTs', () => {
     })
 
     expect(config.outDir).toBe('/test/project/build/output')
+  })
+})
+
+// ── collectRelativeImportDeps ───────────────────────────────────────────
+
+describe('collectRelativeImportDeps', () => {
+  const testDir = resolve(tmpdir(), `bf-test-collect-deps-${Date.now()}`)
+  const entry = resolve(testDir, 'entry.tsx')
+
+  function setup() {
+    mkdirSync(testDir, { recursive: true })
+    writeFileSync(entry, '')
+  }
+
+  function cleanup() {
+    rmSync(testDir, { recursive: true, force: true })
+  }
+
+  test('resolves `./foo` to ./foo.ts when a file exists', async () => {
+    setup()
+    writeFileSync(resolve(testDir, 'foo.ts'), 'export const x = 1')
+    const deps = await collectRelativeImportDeps(entry, `import { x } from './foo'`)
+    expect(deps).toEqual([resolve(testDir, 'foo.ts')])
+    cleanup()
+  })
+
+  test('resolves `./foo` to ./foo.tsx when a file exists', async () => {
+    setup()
+    writeFileSync(resolve(testDir, 'foo.tsx'), 'export function X() {}')
+    const deps = await collectRelativeImportDeps(entry, `import { X } from './foo'`)
+    expect(deps).toEqual([resolve(testDir, 'foo.tsx')])
+    cleanup()
+  })
+
+  test('resolves `./dir` to ./dir/index.ts when dir exists with an index file', async () => {
+    setup()
+    mkdirSync(resolve(testDir, 'dir'))
+    writeFileSync(resolve(testDir, 'dir/index.ts'), 'export const x = 1')
+    const deps = await collectRelativeImportDeps(entry, `import { x } from './dir'`)
+    expect(deps).toEqual([resolve(testDir, 'dir/index.ts')])
+    cleanup()
+  })
+
+  test('skips bare directory paths without an index file (regression: EISDIR on readText)', async () => {
+    setup()
+    mkdirSync(resolve(testDir, 'empty'))
+    const deps = await collectRelativeImportDeps(entry, `import { x } from './empty'`)
+    expect(deps).toEqual([])
+    cleanup()
+  })
+
+  test('ignores bare-match directory when `/index.ts` sibling exists (no EISDIR)', async () => {
+    // The bare `./dir` path is a directory and must NOT be picked — the
+    // collector must fall through to the `/index.ts` candidate instead.
+    setup()
+    mkdirSync(resolve(testDir, 'nodes'))
+    writeFileSync(resolve(testDir, 'nodes/index.ts'), 'export const nodeTypes = {}')
+    const deps = await collectRelativeImportDeps(entry, `import { nodeTypes } from './nodes'`)
+    expect(deps).toEqual([resolve(testDir, 'nodes/index.ts')])
+    cleanup()
+  })
+
+  test('skips imports that resolve to nothing', async () => {
+    setup()
+    const deps = await collectRelativeImportDeps(entry, `import { x } from './missing'`)
+    expect(deps).toEqual([])
+    cleanup()
+  })
+
+  test('ignores bare (non-relative) imports', async () => {
+    setup()
+    const deps = await collectRelativeImportDeps(entry, `import { x } from 'some-pkg'`)
+    expect(deps).toEqual([])
+    cleanup()
+  })
+
+  test('deduplicates repeated relative imports', async () => {
+    setup()
+    writeFileSync(resolve(testDir, 'foo.ts'), 'export const x = 1')
+    const deps = await collectRelativeImportDeps(
+      entry,
+      `import { x } from './foo'\nimport { x as y } from './foo'`,
+    )
+    expect(deps).toEqual([resolve(testDir, 'foo.ts')])
+    cleanup()
   })
 })
 
