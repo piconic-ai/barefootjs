@@ -6,7 +6,7 @@
  * handles event binding for both branches.
  */
 
-import { createEffect } from '../reactive'
+import { createEffect } from '@barefootjs/client/reactive'
 import { find } from './query'
 import { setParentScopeId, parseHTML } from './component'
 import { BF_COND, BF_SCOPE, BF_CHILD_PREFIX } from '@barefootjs/shared'
