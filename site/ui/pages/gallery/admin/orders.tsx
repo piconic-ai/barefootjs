@@ -1,5 +1,5 @@
 import { AdminShell } from '@/components/gallery/admin/admin-shell'
-import { AdminOrdersDemo } from '@/components/gallery/admin/admin-orders-demo'
+import { AdminOrdersDemo } from '@/components/gallery/admin/orders-demo'
 import { GalleryMeta } from './gallery-meta'
 
 export function AdminOrdersPage() {

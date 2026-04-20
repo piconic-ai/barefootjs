@@ -1,5 +1,5 @@
 import { AdminShell } from '@/components/gallery/admin/admin-shell'
-import { AdminNotificationsDemo } from '@/components/gallery/admin/admin-notifications-demo'
+import { AdminNotificationsDemo } from '@/components/gallery/admin/notifications-demo'
 import { GalleryMeta } from './gallery-meta'
 
 export function AdminNotificationsPage() {

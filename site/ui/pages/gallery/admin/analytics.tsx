@@ -1,5 +1,5 @@
 import { AdminShell } from '@/components/gallery/admin/admin-shell'
-import { AdminAnalyticsDemo } from '@/components/gallery/admin/admin-analytics-demo'
+import { AdminAnalyticsDemo } from '@/components/gallery/admin/analytics-demo'
 import { GalleryMeta } from './gallery-meta'
 
 export function AdminAnalyticsPage() {

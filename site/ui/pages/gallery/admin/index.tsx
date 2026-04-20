@@ -1,5 +1,5 @@
 import { AdminShell } from '@/components/gallery/admin/admin-shell'
-import { AdminOverviewDemo } from '@/components/gallery/admin/admin-overview-demo'
+import { AdminOverviewDemo } from '@/components/gallery/admin/overview-demo'
 import { GalleryMeta } from './gallery-meta'
 
 export function AdminOverviewPage() {
