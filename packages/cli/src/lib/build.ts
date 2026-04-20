@@ -568,11 +568,18 @@ async function collectRelativeImportDeps(
     const candidates = [base, ...EXT_CANDIDATES.map((ext) => base + ext)]
     for (const cand of candidates) {
       if (seen.has(cand)) continue
-      if (await fileExists(cand)) {
-        seen.add(cand)
-        results.push(cand)
-        break
+      // Require a regular file. A bare `./dir` import resolves to a directory
+      // here, and hashing that path via readText would throw EISDIR. The
+      // `/index.ts[x]` candidates already cover the directory-as-module case.
+      try {
+        const s = await stat(cand)
+        if (!s.isFile()) continue
+      } catch {
+        continue
       }
+      seen.add(cand)
+      results.push(cand)
+      break
     }
   }
   return results
