@@ -11,7 +11,7 @@ import { Hono } from 'hono'
 import { createDocsApp } from './docs-app'
 import { createLandingApp } from './landing/routes'
 import { createPlaygroundApp } from './playground/routes'
-import { createExamplesApp } from './examples/routes'
+import { createIntegrationsApp } from './integrations/routes'
 import type { Page, ContentMap } from './lib/content'
 
 /**
@@ -34,9 +34,9 @@ export async function createApp(content: ContentMap, pages: Page[]): Promise<Hon
   // Playground (GET /playground)
   app.route('/playground', createPlaygroundApp())
 
-  // Examples adapter index (GET /integrations). The adapter demos themselves
+  // Integrations adapter index (GET /integrations). The adapter demos themselves
   // live on separate services, so this is just the catalog page.
-  app.route('/integrations', createExamplesApp())
+  app.route('/integrations', createIntegrationsApp())
 
   return app
 }
