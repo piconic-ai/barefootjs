@@ -152,6 +152,7 @@ export const renderer = jsxRenderer(
               coreHref="/docs/introduction"
               uiHref={uiHref}
               playgroundHref="/playground"
+              integrationsHref="/integrations"
               searchSlot={<SearchPlaceholder />}
               themeSwitcher={<ThemeSwitcher />}
             />

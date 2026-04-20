@@ -140,8 +140,10 @@ export const renderer = jsxRenderer(
     const c = useRequestContext()
     const currentPath = c.req.path
     const hostname = new URL(c.req.url).hostname
-    const logoHref = hostname === 'localhost' ? 'http://localhost:3001/' : 'https://barefootjs.dev'
-    const coreHref = hostname === 'localhost' ? 'http://localhost:3001/docs/introduction' : 'https://barefootjs.dev/docs/introduction'
+    const logoHref = hostname === 'localhost' ? 'http://localhost:4000/' : 'https://barefootjs.dev'
+    const coreHref = hostname === 'localhost' ? 'http://localhost:4000/docs/introduction' : 'https://barefootjs.dev/docs/introduction'
+    const playgroundHref = hostname === 'localhost' ? 'http://localhost:4000/playground' : 'https://barefootjs.dev/playground'
+    const integrationsHref = hostname === 'localhost' ? 'http://localhost:4000/integrations' : 'https://barefootjs.dev/integrations'
 
     const pageTitle = title || 'BarefootJS Components'
 
@@ -181,7 +183,7 @@ export const renderer = jsxRenderer(
             `}</style>
           </head>
           <body>
-            <Header activePage="ui" logoHref={logoHref} coreHref={coreHref} uiHref="/" searchSlot={<SearchButton />} themeSwitcher={<ThemeSwitcher />} />
+            <Header activePage="ui" logoHref={logoHref} coreHref={coreHref} uiHref="/" playgroundHref={playgroundHref} integrationsHref={integrationsHref} searchSlot={<SearchButton />} themeSwitcher={<ThemeSwitcher />} />
             <MobileMenu />
             <MobilePageNav prev={navLinks.prev} next={navLinks.next} />
             <CommandPalette />
