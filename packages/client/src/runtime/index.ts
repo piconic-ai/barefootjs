@@ -1,5 +1,13 @@
 // Re-export all user-facing @barefootjs/client APIs so compiler-generated
 // code can use a single import source.
+//
+// The reactive runtime has module-local state (`Listener`, `Owner`, the
+// pending-effect queue) and MUST NOT be duplicated across bundles —
+// otherwise a signal created via one copy is invisible to an effect
+// registered via the other. Both `@barefootjs/client` (main) and this
+// `/runtime` entry pull the reactive primitives from the shared
+// `@barefootjs/client/reactive` subpath so downstream bundlers see a
+// single physical module.
 export {
   createSignal,
   createEffect,
@@ -15,7 +23,7 @@ export {
   type Memo,
   type CleanupFn,
   type EffectFn,
-} from '../reactive'
+} from '@barefootjs/client/reactive'
 
 export { splitProps } from '../split-props'
 export { __slot, type SlotMarker } from '../slot'

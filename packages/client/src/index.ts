@@ -1,3 +1,6 @@
+// Reactive primitives live at the shared `@barefootjs/client/reactive`
+// subpath so main and the `/runtime` entry point reference a single
+// physical module — see src/runtime/index.ts for the rationale.
 export {
   createSignal,
   createEffect,
@@ -13,7 +16,7 @@ export {
   type Memo,
   type CleanupFn,
   type EffectFn,
-} from './reactive'
+} from '@barefootjs/client/reactive'
 
 export { splitProps } from './split-props'
 

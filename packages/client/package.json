@@ -10,6 +10,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./reactive": {
+      "types": "./dist/reactive.d.ts",
+      "import": "./dist/reactive.js"
+    },
     "./runtime": {
       "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
@@ -21,7 +25,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm && bun build ./src/runtime/index.ts --outdir ./dist/runtime --format esm",
+    "build:js": "bun build ./src/reactive.ts --outdir ./dist --format esm && bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client/reactive' && bun build ./src/runtime/index.ts --outdir ./dist/runtime --format esm --external '@barefootjs/client/reactive'",
     "build:types": "tsc --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist"
