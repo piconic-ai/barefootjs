@@ -11,12 +11,10 @@
  *   and event count — multiple conditional branches inside a .map() body.
  * - Multi-level memo for overlap layout: weekEvents → weekEventsByDay →
  *   overlapGroups → eventPositions (4-level chain for week view).
- * - Outer-loop param capture in handlers: day-panel and week-slot handlers
- *   capture the outer loop's `d.key` / `cell.key` item (single nesting level).
- *
- * Note: Interactive event selection uses a day-panel (flat loop) rather than
- * nested-loop click handlers, working around a known compiler limitation
- * (nested-loop data-key lookup uses wrong depth for inner loop elements).
+ * - Outer-loop param capture in handlers: week-view hour-slot and event
+ *   handlers are nested inside the weekDays() outer loop, inside the
+ *   viewMode === 'week' conditional. This exercises the click dispatcher
+ *   path that resolves both outer and inner loop keys via data-key / data-key-1.
  */
 
 import { createSignal, createMemo } from '@barefootjs/client'
@@ -304,6 +302,24 @@ export function CalendarSchedulerDemo() {
     setShowCreateForm(false)
   }
 
+  // Week-view nested-loop click handlers. Each handler captures both the outer
+  // loop param (d.key) and inner loop param (h / evt.id), exercising the
+  // data-key / data-key-1 dispatcher path across the viewMode conditional branch.
+  function openCreateInWeek(dateKey: string, hour: number) {
+    setSelectedDate(dateKey)
+    setSelectedEventId(null)
+    setCreatingForHour(hour)
+    setNewTitle('')
+    setNewColor('blue')
+    setShowCreateForm(true)
+  }
+
+  function selectWeekEvent(dateKey: string, id: number) {
+    setSelectedDate(dateKey)
+    setSelectedEventId(id)
+    setShowCreateForm(false)
+  }
+
   function confirmCreate() {
     const title = newTitle().trim()
     const date = selectedDate()
@@ -571,31 +587,34 @@ export function CalendarSchedulerDemo() {
                 ))}
               </div>
 
-              {/* Day columns — visual only (overlap layout memo chain drives positioning) */}
+              {/* Day columns — nested loops with click handlers capturing outer (d.key)
+                  and inner (h / evt.id) params across the viewMode conditional. */}
               {weekDays().map(d => (
                 <div
                   key={d.key}
                   className="week-day-col relative flex-1 border-l border-border"
                   style={`height: ${24 * HOUR_PX}px`}
                 >
-                  {/* Hour rows (background grid) */}
+                  {/* Hour rows: click to create event at that hour */}
                   {HOURS.map(h => (
                     <div
                       key={String(h)}
-                      className="week-hour-slot absolute w-full border-b border-border"
+                      className="week-hour-slot absolute w-full border-b border-border cursor-pointer hover:bg-accent/30"
                       style={`top: ${h * HOUR_PX}px; height: ${HOUR_PX}px`}
+                      onClick={() => openCreateInWeek(d.key, h)}
                     />
                   ))}
 
-                  {/* Positioned events (visual display driven by 4-level memo chain) */}
+                  {/* Positioned events (click to select) */}
                   {(weekEventsByDay()[d.key] ?? []).map(evt => {
                     const pos = eventPositions()[evt.id]
                     if (!pos) return null
                     return (
                       <div
                         key={String(evt.id)}
-                        className={`week-event absolute overflow-hidden rounded border px-1 py-0.5 text-xs ${COLOR_CLASSES[evt.color]}`}
+                        className={`week-event absolute overflow-hidden rounded border px-1 py-0.5 text-xs cursor-pointer hover:opacity-80 ${COLOR_CLASSES[evt.color]}`}
                         style={`top: ${pos.top}px; height: ${pos.height}px; left: ${pos.left}%; width: ${pos.width}%; z-index: 1`}
+                        onClick={() => selectWeekEvent(d.key, evt.id)}
                       >
                         <div className="font-medium truncate">{evt.title}</div>
                         <div className="opacity-75">{formatHour(evt.startHour)}</div>

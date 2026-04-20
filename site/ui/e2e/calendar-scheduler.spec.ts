@@ -333,4 +333,50 @@ test.describe('Calendar Scheduler Block', () => {
       expect(eventCountAfter).not.toBe(eventCountBefore)
     })
   })
+
+  // --- Nested-Loop Click Handlers (week view inside viewMode conditional) ---
+  //
+  // These exercise the compiler path where click handlers are attached to
+  // elements inside nested .map() loops inside a conditional branch. Both the
+  // outer loop key (d.key via data-key) and the inner loop key (h or evt.id
+  // via data-key-1) must be resolvable by the event dispatcher.
+
+  test.describe('Week View Nested-Loop Click Handlers', () => {
+    test('clicking a week hour slot opens the day panel with that date', async ({ page }) => {
+      const s = section(page)
+      await s.locator('.week-view-btn').click()
+      const todayColIdx = new Date().getDay()
+      const col = s.locator('.week-day-col').nth(todayColIdx)
+      // Click an hour slot inside the nested loop
+      await col.locator('.week-hour-slot').nth(8).click()
+      await expect(s.locator('.day-panel')).toBeVisible()
+      await expect(s.locator('.event-create-form')).toBeVisible()
+    })
+
+    test('clicking a week event selects the event and shows its detail', async ({ page }) => {
+      const s = section(page)
+      await s.locator('.week-view-btn').click()
+      const todayColIdx = new Date().getDay()
+      const col = s.locator('.week-day-col').nth(todayColIdx)
+      const firstEvent = col.locator('.week-event').first()
+      const title = await firstEvent.locator('.font-medium').textContent()
+      await firstEvent.click()
+      await expect(s.locator('.day-panel')).toBeVisible()
+      await expect(s.locator('.selected-event-detail')).toBeVisible()
+      await expect(s.locator('.selected-event-detail')).toContainText(title!.trim())
+    })
+
+    test('clicking different columns captures the correct outer loop param', async ({ page }) => {
+      const s = section(page)
+      await s.locator('.week-view-btn').click()
+      // Use hour 5 (5 AM) — no seeded events here, so nothing intercepts the click.
+      // Click column 0 → day panel shows column 0's date
+      await s.locator('.week-day-col').nth(0).locator('.week-hour-slot').nth(5).click()
+      const firstDate = await s.locator('.day-panel-date').textContent()
+      // Click column 2 → day panel shows column 2's date (different)
+      await s.locator('.week-day-col').nth(2).locator('.week-hour-slot').nth(5).click()
+      const secondDate = await s.locator('.day-panel-date').textContent()
+      expect(secondDate).not.toBe(firstDate)
+    })
+  })
 })

@@ -673,11 +673,14 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): ConditionalBra
  */
 function buildConditionalMetadata(node: IRNode & { type: 'conditional' }, ctx: ClientJsContext): ConditionalElement {
   const restNames = buildRestSpreadNames(ctx)
+  // Use loopDepth=-1 so the first loop encountered inside the branch emits
+  // data-key (depth 0) for its items, matching the mapArray item template
+  // and event dispatcher convention. Matches irToComponentTemplate/generateCsrTemplate.
   return {
     slotId: node.slotId!,
     condition: node.condition,
-    whenTrueHtml: irToHtmlTemplate(node.whenTrue, restNames),
-    whenFalseHtml: irToHtmlTemplate(node.whenFalse, restNames),
+    whenTrueHtml: irToHtmlTemplate(node.whenTrue, restNames, -1),
+    whenFalseHtml: irToHtmlTemplate(node.whenFalse, restNames, -1),
     whenTrueEvents: collectConditionalBranchEvents(node.whenTrue),
     whenFalseEvents: collectConditionalBranchEvents(node.whenFalse),
     whenTrueRefs: collectConditionalBranchRefs(node.whenTrue),
