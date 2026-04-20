@@ -5,7 +5,7 @@
  * desk components can be ported with minimal changes.
  */
 
-import { untrack } from '@barefootjs/client'
+import { untrack } from '@barefootjs/client/runtime'
 import { addEdge as addEdgeUtil, reconnectEdge as reconnectEdgeUtil, pointToRendererPoint } from '@xyflow/system'
 import { useFlow } from './hooks'
 import type { NodeBase, EdgeBase, Viewport, XYPosition } from './types'

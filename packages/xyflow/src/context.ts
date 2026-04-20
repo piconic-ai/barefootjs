@@ -1,4 +1,4 @@
-import { createContext } from '@barefootjs/client'
+import { createContext } from '@barefootjs/client/runtime'
 import type { FlowStore } from './types'
 
 /**

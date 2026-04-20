@@ -3,7 +3,7 @@ import {
   createEffect,
   onCleanup,
   untrack,
-} from '@barefootjs/client'
+} from '@barefootjs/client/runtime'
 import { updateNodeInternals, updateAbsolutePositions, calcAutoPan, clampPositionToParent } from '@xyflow/system'
 import type {
   NodeBase,

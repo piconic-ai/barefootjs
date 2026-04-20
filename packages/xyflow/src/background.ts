@@ -1,4 +1,4 @@
-import { createEffect, onCleanup } from '@barefootjs/client'
+import { createEffect, onCleanup } from '@barefootjs/client/runtime'
 import { useFlow } from './hooks'
 import { SVG_NS } from './constants'
 import type { FlowStore } from './types'

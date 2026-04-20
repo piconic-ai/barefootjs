@@ -1,4 +1,4 @@
-import { onCleanup, untrack } from '@barefootjs/client'
+import { onCleanup, untrack } from '@barefootjs/client/runtime'
 import {
   XYResizer,
   XY_RESIZER_HANDLE_POSITIONS,

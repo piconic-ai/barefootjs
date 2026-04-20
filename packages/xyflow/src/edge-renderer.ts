@@ -1,7 +1,7 @@
 import {
   createEffect,
   onCleanup,
-} from '@barefootjs/client'
+} from '@barefootjs/client/runtime'
 import {
   getBezierPath,
   getSmoothStepPath,

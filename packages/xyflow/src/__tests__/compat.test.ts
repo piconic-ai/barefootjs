@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createRoot } from '@barefootjs/client'
+import { createRoot } from '@barefootjs/client/runtime'
 import { createFlowStore } from '../store'
 
 /**

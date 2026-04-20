@@ -1,4 +1,4 @@
-import { createSignal, onCleanup } from '@barefootjs/client'
+import { createSignal, onCleanup } from '@barefootjs/client/runtime'
 import { useFlow } from './hooks'
 import { applyPositionStyle } from './utils'
 

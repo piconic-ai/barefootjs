@@ -1,4 +1,4 @@
-import { untrack } from '@barefootjs/client'
+import { untrack } from '@barefootjs/client/runtime'
 import { getSmoothStepPath, Position, reconnectEdge as reconnectEdgeUtil } from '@xyflow/system'
 import type { FlowStore, NodeBase, EdgeBase, Connection } from './types'
 import { SVG_NS } from './constants'

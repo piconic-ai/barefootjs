@@ -1,4 +1,4 @@
-import { onCleanup, untrack } from '@barefootjs/client'
+import { onCleanup, untrack } from '@barefootjs/client/runtime'
 import type { NodeBase, EdgeBase, InternalNodeBase, Transform } from '@xyflow/system'
 import type { FlowStore, InternalFlowStore, SelectionMode } from './types'
 
