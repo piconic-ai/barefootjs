@@ -63,11 +63,13 @@ function vanillaCreate(tbody: HTMLElement, count: number): HTMLElement[] {
 // ---------------------------------------------------------------------------
 // BarefootJS
 // ---------------------------------------------------------------------------
+// Import directly from the reactive source to avoid going through the
+// package's subpath exports, which rely on the built dist being present.
 import {
   createSignal as bfSignal,
   createEffect as bfEffect,
   createRoot as bfRoot,
-} from '../packages/client/src/index.ts'
+} from '../packages/client/src/reactive.ts'
 
 interface BfRow {
   label: [() => string, (v: string | ((p: string) => string)) => void]
