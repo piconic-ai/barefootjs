@@ -247,7 +247,7 @@ export function createNodeWrapper<NodeType extends NodeBase>(
 
           const containerBounds = container.getBoundingClientRect()
           const mousePos = { x: lastMouseX - containerBounds.left, y: lastMouseY - containerBounds.top }
-          const [xMovement, yMovement] = calcAutoPan(mousePos, containerBounds)
+          const [xMovement = 0, yMovement = 0] = calcAutoPan(mousePos, containerBounds)
 
           if (xMovement !== 0 || yMovement !== 0) {
             const [, , scale] = store.getTransform()

@@ -56,7 +56,7 @@ export function attachConnectionHandler<
   nodeId: string,
   handleType: 'source' | 'target',
   container: HTMLElement,
-  edgesSvg: SVGSVGElement,
+  _edgesSvg: SVGSVGElement,
   store: FlowStore<NodeType, EdgeType>,
 ): void {
   handleEl.addEventListener('mousedown', (e) => {
