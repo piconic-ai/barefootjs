@@ -19,6 +19,7 @@ import {
   emitRestAttrApplications,
   emitRefCallbacks,
   emitEffectsAndOnMounts,
+  emitInitStatements,
   emitProviderAndChildInits,
   emitStaticArrayChildInits,
 } from './emit-init-sections'
@@ -239,6 +240,15 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
     emittedAny = true
   }
   if (emittedAny) {
+    lines.push('')
+  }
+
+  // Emit bare imperative statements preserved from the component body (#930).
+  // These run at init time after signals/memos so they can reference them,
+  // but before effects/onMounts/DOM wiring so they can install global
+  // listeners that trigger signal updates without racing the effects.
+  emitInitStatements(lines, ctx)
+  if (ctx.initStatements.length > 0) {
     lines.push('')
   }
 

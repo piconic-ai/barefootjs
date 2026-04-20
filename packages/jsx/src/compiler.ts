@@ -493,6 +493,7 @@ export function buildMetadata(
     memos: ctx.memos,
     effects: ctx.effects,
     onMounts: ctx.onMounts,
+    initStatements: ctx.initStatements,
     imports: ctx.imports,
     templateImports: filterTemplateImports(ctx.imports),
     localFunctions: ctx.localFunctions,

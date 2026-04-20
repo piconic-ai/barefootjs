@@ -425,6 +425,23 @@ export interface OnMountInfo {
   loc: SourceLocation
 }
 
+/**
+ * A bare imperative statement at the top level of a component body that is
+ * not otherwise captured (i.e., not a signal/memo/constant declaration,
+ * effect/onMount call, JSX return, or conditional return).
+ *
+ * Emitted verbatim inside the component's init function in source order,
+ * after signal/memo/constant declarations so they can legally reference
+ * component-scope names. Typical examples: a `typeof window !== 'undefined'`
+ * guard that attaches a window event listener, a `console.log`, or a
+ * `try/catch` around `localStorage.getItem`.
+ */
+export interface InitStatementInfo {
+  /** Raw JS source of the statement (TypeScript types already stripped). */
+  body: string
+  loc: SourceLocation
+}
+
 export interface ImportInfo {
   source: string
   specifiers: ImportSpecifier[]
@@ -505,6 +522,12 @@ export interface IRMetadata {
   memos: MemoInfo[]
   effects: EffectInfo[]
   onMounts: OnMountInfo[]
+  /**
+   * Bare imperative statements at the top of the component body that are
+   * not one of the recognized reactive primitives or a JSX return.
+   * Emitted verbatim inside init() after signal/memo declarations (#930).
+   */
+  initStatements: InitStatementInfo[]
   imports: ImportInfo[]
   /** Imports filtered for template use (client-side packages stripped).
    *  Computed by the compiler — adapters should use this instead of `imports`. */

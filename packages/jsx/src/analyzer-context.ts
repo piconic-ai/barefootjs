@@ -10,6 +10,7 @@ import type {
   MemoInfo,
   EffectInfo,
   OnMountInfo,
+  InitStatementInfo,
   ImportInfo,
   FunctionInfo,
   ConstantInfo,
@@ -60,6 +61,8 @@ export interface AnalyzerContext {
   memos: MemoInfo[]
   effects: EffectInfo[]
   onMounts: OnMountInfo[]
+  /** Bare imperative statements at the top of the component body (#930). */
+  initStatements: InitStatementInfo[]
   imports: ImportInfo[]
   localFunctions: FunctionInfo[]
   localConstants: ConstantInfo[]
@@ -100,6 +103,15 @@ export interface AnalyzerContext {
   /** TypeScript type checker for type-based reactivity detection (null = regex fallback) */
   checker: ts.TypeChecker | null
 
+  /**
+   * The component body Block (when the component has a block body, not an
+   * expression-body arrow). Used transiently during analyzeComponentBody()
+   * so visitComponentBody() can identify statements that are direct children
+   * of the component body — i.e., top-level statements — and preserve the
+   * unrecognized ones as init statements (#930). null outside analyze calls.
+   */
+  componentBodyBlock: ts.Block | null
+
   /** Return node text with TypeScript type syntax removed. */
   getJS(node: ts.Node): string
 }
@@ -121,6 +133,7 @@ export function createAnalyzerContext(
     memos: [],
     effects: [],
     onMounts: [],
+    initStatements: [],
     imports: [],
     localFunctions: [],
     localConstants: [],
@@ -144,6 +157,7 @@ export function createAnalyzerContext(
 
     typeExcludeRanges: collectAllTypeRanges(sourceFile),
     checker: null,
+    componentBodyBlock: null,
     getJS(node: ts.Node): string {
       return reconstructWithoutTypes(node, sourceFile, this.typeExcludeRanges)
     },

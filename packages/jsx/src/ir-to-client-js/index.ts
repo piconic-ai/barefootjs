@@ -110,6 +110,7 @@ function createContext(ir: ComponentIR): ClientJsContext {
     memos: ir.metadata.memos,
     effects: ir.metadata.effects,
     onMounts: ir.metadata.onMounts,
+    initStatements: ir.metadata.initStatements ?? [],
     localFunctions: ir.metadata.localFunctions,
     localConstants: ir.metadata.localConstants,
     propsParams: ir.metadata.propsParams,
@@ -140,6 +141,7 @@ function needsClientJs(ctx: ClientJsContext): boolean {
     ctx.memos.length > 0 ||
     ctx.effects.length > 0 ||
     ctx.onMounts.length > 0 ||
+    ctx.initStatements.length > 0 ||
     ctx.interactiveElements.length > 0 ||
     ctx.dynamicElements.length > 0 ||
     ctx.conditionalElements.length > 0 ||

@@ -259,6 +259,26 @@ export function emitEffectsAndOnMounts(lines: string[], ctx: ClientJsContext): v
   }
 }
 
+/**
+ * Emit user-written top-level imperative statements preserved from the
+ * component body (#930). Each statement is re-indented and inserted verbatim
+ * so it runs once during init, after signal/memo declarations.
+ *
+ * Examples: `if (typeof window !== 'undefined') { window.addEventListener(...) }`,
+ * `console.log(...)`, `try { localStorage.getItem(...) } catch {}`.
+ */
+export function emitInitStatements(lines: string[], ctx: ClientJsContext): void {
+  for (const stmt of ctx.initStatements) {
+    // Re-indent the source text (which may span multiple lines) so it nests
+    // neatly inside init(). Preserve blank lines as-is.
+    const indented = stmt.body
+      .split('\n')
+      .map((ln, i) => (i === 0 || ln === '' ? ln : '  ' + ln))
+      .join('\n')
+    lines.push(`  ${indented}`)
+  }
+}
+
 /** Emit provideContext calls and initChild calls for child components. */
 export function emitProviderAndChildInits(lines: string[], ctx: ClientJsContext): void {
   if (ctx.providerSetups.length > 0) {

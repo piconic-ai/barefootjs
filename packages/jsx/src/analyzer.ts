@@ -335,7 +335,14 @@ function analyzeComponentBody(
   // Visit component body
   const body = ts.isFunctionDeclaration(node) ? node.body : getArrowFunctionBody(node)
   if (body) {
+    // Track the component body Block so visitComponentBody can identify
+    // statements that are its direct children (top-level). Any statement
+    // that is a direct child of this Block and is not otherwise recognized
+    // (signal/memo/effect/onMount/function/JSX-return/conditional-return)
+    // is preserved as an InitStatementInfo so it runs at init time. See #930.
+    ctx.componentBodyBlock = ts.isBlock(body) ? body : null
     visitComponentBody(body, ctx)
+    ctx.componentBodyBlock = null
   }
 }
 
@@ -349,6 +356,12 @@ function getArrowFunctionBody(
 }
 
 function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
+  // Is this statement a direct child of the component body Block? Only
+  // top-level statements are candidates for the "preserve unrecognized
+  // statements" path — statements nested inside control flow are reached
+  // through recursion and must not be double-captured.
+  const isTopLevel = ctx.componentBodyBlock !== null && node.parent === ctx.componentBodyBlock
+
   // Variable declarations (signals, memos, constants)
   if (ts.isVariableStatement(node)) {
     for (const decl of node.declarationList.declarations) {
@@ -375,6 +388,13 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
       // Don't recurse into onMount body to avoid collecting inner variables
       return
     }
+    // Any other top-level expression statement (e.g., console.log, a bare
+    // function call with side effects) is preserved verbatim as an init
+    // statement so it runs once at mount time. See #930 for motivation.
+    if (isTopLevel) {
+      collectInitStatement(node, ctx)
+      return
+    }
   }
 
   // Function declarations inside component
@@ -397,6 +417,37 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
       // Don't recurse into the if block since we've already captured it
       return
     }
+    // An if statement at the top of the component body that does NOT return
+    // JSX is a side-effect guard (e.g., `if (typeof window !== 'undefined')
+    // { window.addEventListener(...) }`). Preserve it verbatim. Nested if
+    // statements inside blocks are reached via recursion and skipped here
+    // (isTopLevel is false for them).
+    if (isTopLevel) {
+      collectInitStatement(node, ctx)
+      return
+    }
+  }
+
+  // Other top-level imperative statements that carry side effects and don't
+  // fit into any of the specialized buckets (try/catch, switch, do/while,
+  // for, while, block). Preserve verbatim. For-in/of and while are rare in
+  // component bodies but should not be silently dropped if present.
+  if (
+    isTopLevel &&
+    (
+      ts.isTryStatement(node) ||
+      ts.isSwitchStatement(node) ||
+      ts.isForStatement(node) ||
+      ts.isForInStatement(node) ||
+      ts.isForOfStatement(node) ||
+      ts.isWhileStatement(node) ||
+      ts.isDoStatement(node) ||
+      ts.isThrowStatement(node) ||
+      (ts.isBlock(node) && node.parent === ctx.componentBodyBlock)
+    )
+  ) {
+    collectInitStatement(node, ctx)
+    return
   }
 
   // Return statement with JSX
@@ -646,6 +697,28 @@ function collectOnMount(node: ts.CallExpression, ctx: AnalyzerContext): void {
 
   ctx.onMounts.push({
     body,
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+  })
+}
+
+// =============================================================================
+// Top-level Init Statements (#930)
+// =============================================================================
+
+/**
+ * Collect a top-level imperative statement from the component body. These
+ * are statements like `if (typeof window !== 'undefined') { window.addEventListener(...) }`
+ * or `console.log('init')` that aren't captured by any specialized bucket
+ * (signals, memos, effects, onMount, JSX returns, conditional returns).
+ *
+ * The statement is preserved verbatim (with TypeScript types stripped) and
+ * emitted into the component's init function in source order, after signal
+ * and memo declarations. This fixes silent data loss where the compiler
+ * previously threw these statements away. See #930 (bug-2).
+ */
+function collectInitStatement(node: ts.Statement, ctx: AnalyzerContext): void {
+  ctx.initStatements.push({
+    body: ctx.getJS(node),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
 }
