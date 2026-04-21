@@ -71,6 +71,16 @@ export interface DomBinding {
    * to the wrap-by-default gate (handlers are bound, not re-evaluated).
    */
   classification: 'reactive' | 'fallback'
+  /**
+   * Source expression text for the binding, when available. Populated for
+   * text / attribute / conditional / loop / child-prop bindings so
+   * `barefoot why-wrap` can print the expression alongside the slotId —
+   * users locate bindings by expression, not by internal slot label.
+   *
+   * Omitted for event handlers (whose body is already surfaced by
+   * `why-update`) and for cases where the IR lacks a flat string form.
+   */
+  expression?: string
 }
 
 export interface ComponentGraph {
@@ -419,6 +429,7 @@ export function graphToJSON(graph: ComponentGraph): object {
       deps: d.deps,
       type: d.type,
       classification: d.classification,
+      ...(d.expression !== undefined && { expression: d.expression }),
     })),
   }
 }
@@ -550,6 +561,7 @@ function collectDomBindings(
             deps,
             type: 'attribute',
             classification: isReactive ? 'reactive' : 'fallback',
+            expression: expr,
           })
         }
       }
@@ -585,6 +597,7 @@ function collectDomBindings(
           deps,
           type: 'text',
           classification: isReactive ? 'reactive' : 'fallback',
+          expression: node.expr,
         })
       }
       break
@@ -601,6 +614,7 @@ function collectDomBindings(
           deps,
           type: 'conditional',
           classification: isReactive ? 'reactive' : 'fallback',
+          expression: node.condition,
         })
       }
       collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames)
@@ -625,6 +639,52 @@ function collectDomBindings(
             deps,
             type: 'loop',
             classification: isReactive ? 'reactive' : 'fallback',
+            expression: node.array,
+          })
+        }
+      }
+      for (const child of node.children) {
+        collectDomBindings(child, bindings, signalGetters, memoNames)
+      }
+      break
+    }
+    case 'component': {
+      // Child-component prop bindings (#942 DRY-consolidated in #952).
+      // Emitter gate in collect-elements.ts:442 is
+      // `hasPropsRef || needsEffectWrapper(expandedValue) || prop.callsReactiveGetters || prop.hasFunctionCalls`.
+      // `deps.length > 0` + `prop.value.includes('props.')` together
+      // approximate the first two branches (statically-proven reactive);
+      // the AST flags cover the fallback case.
+      //
+      // Before #944 this case fell through silently, so fallback-wrapped
+      // child props like `<Card title={formatTitle(page)} />` — the exact
+      // motivating example for #942 — never reached `why-wrap`'s output.
+      // The switch now iterates props and recurses into children, mirroring
+      // the `case 'element'` structure.
+      //
+      // Label uses `"ComponentName.propName"` so output distinguishes
+      // native-element attributes from child-component props without
+      // introducing a new `DomBinding.type` variant (keeps the existing
+      // type union stable for consumers).
+      for (const prop of node.props) {
+        if (prop.name === '...' || prop.name.startsWith('...')) continue
+        if (!prop.dynamic) continue
+        if (prop.jsxChildren) continue // JSX-as-prop handled via child traversal
+        const propValue = typeof prop.value === 'string' ? prop.value : ''
+        if (!propValue) continue
+        const deps = extractReactiveDeps(propValue, signalGetters, memoNames)
+        const hasPropsRef = propValue.includes('props.')
+        const isReactive = deps.length > 0 || hasPropsRef
+        const isFallback = !isReactive && (prop.callsReactiveGetters || prop.hasFunctionCalls)
+        if (isReactive || isFallback) {
+          bindings.push({
+            kind: 'dom',
+            label: `${node.name}.${prop.name}`,
+            slotId: node.slotId ?? '?',
+            deps,
+            type: 'attribute',
+            classification: isReactive ? 'reactive' : 'fallback',
+            expression: propValue,
           })
         }
       }

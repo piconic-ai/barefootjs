@@ -82,6 +82,9 @@ describe('barefoot why-wrap', () => {
       // The text binding's slotId appears in the report line.
       expect(output).toMatch(/text "s\d+"/)
       expect(output).toContain('~')
+      // The actual expression text is printed so users can locate the
+      // binding in their source without running `inspect` separately.
+      expect(output).toContain('formatTitle(page)')
       // Guidance footer — helps the user know what to do next.
       expect(output).toContain('createMemo')
     } finally {
@@ -112,7 +115,7 @@ describe('barefoot why-wrap', () => {
       const parsed = JSON.parse(output) as {
         componentName: string
         sourceFile: string
-        fallbacks: Array<{ classification: string; type: string; label: string; deps: string[]; slotId: string }>
+        fallbacks: Array<{ classification: string; type: string; label: string; deps: string[]; slotId: string; expression?: string }>
       }
       expect(parsed.componentName).toBe('Tag')
       expect(parsed.fallbacks.length).toBeGreaterThan(0)
@@ -124,6 +127,7 @@ describe('barefoot why-wrap', () => {
       expect(attrFallback).toBeDefined()
       expect(attrFallback!.label).toBe('class')
       expect(attrFallback!.deps).toEqual([])
+      expect(attrFallback!.expression).toBe('format(label)')
     } finally {
       logSpy.mockRestore()
       rmSync(path.dirname(file), { recursive: true, force: true })
@@ -137,7 +141,7 @@ describe('barefoot why-wrap', () => {
     const errSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       const { run } = await import('../commands/why-wrap')
-      expect(run(['NoSuchComponent12345'], makeCtx(false))).rejects.toThrow('exit 1')
+      await expect(run(['NoSuchComponent12345'], makeCtx(false))).rejects.toThrow('exit 1')
       expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Cannot find'))
     } finally {
       exitSpy.mockRestore()
@@ -152,7 +156,7 @@ describe('barefoot why-wrap', () => {
     const errSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       const { run } = await import('../commands/why-wrap')
-      expect(run([], makeCtx(false))).rejects.toThrow('exit 1')
+      await expect(run([], makeCtx(false))).rejects.toThrow('exit 1')
       expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Component name required'))
       expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Usage:'))
     } finally {

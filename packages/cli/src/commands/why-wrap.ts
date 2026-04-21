@@ -47,6 +47,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
         deps: f.deps,
         type: f.type,
         classification: f.classification,
+        ...(f.expression !== undefined && { expression: f.expression }),
       })),
     }, null, 2))
     return
@@ -58,11 +59,17 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   }
 
   console.log(`${graph.componentName} — ${fallbacks.length} fallback-wrapped expression(s)`)
-  for (const f of fallbacks) {
+  // Column-align the `~ expression` column so the eye scans down the
+  // expressions rather than the labels. Width covers the longest
+  // `type "id"` cell across this component's fallbacks.
+  const cells = fallbacks.map(f => {
     const id = f.type === 'attribute' ? f.label : f.slotId
-    console.log(`  ${f.type} "${id}"  ~ (wrapped by Solid-style fallback)`)
-    console.log(`    The analyzer couldn't prove this expression's reactivity from a`)
-    console.log(`    signal/memo/prop read, so a createEffect is emitted to be safe.`)
+    return { f, cell: `${f.type} "${id}"` }
+  })
+  const width = cells.reduce((w, c) => Math.max(w, c.cell.length), 0)
+  for (const { f, cell } of cells) {
+    const expr = f.expression ?? '(expression not captured)'
+    console.log(`  ${cell.padEnd(width)}  ~ ${expr}`)
   }
   console.log()
   console.log('Fallback wraps run one createEffect per expression. Each subscribes to')
