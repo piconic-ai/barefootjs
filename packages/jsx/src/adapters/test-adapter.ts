@@ -227,8 +227,11 @@ export class TestAdapter extends JsxAdapter {
   renderLoop(loop: IRLoop): string {
     const indexParam = loop.index ? `, ${loop.index}` : ''
     const children = this.renderChildren(loop.children)
+    // Wrap with fragment when children start with `{` so the arrow body isn't
+    // parsed as a block statement (matches hono-adapter behavior).
+    const safeChildren = children.startsWith('{') ? `<>${children}</>` : children
 
-    return `{${loop.array}.map((${loop.param}${indexParam}) => ${children})}`
+    return `{${loop.array}.map((${loop.param}${indexParam}) => ${safeChildren})}`
   }
 
   renderComponent(comp: IRComponent): string {

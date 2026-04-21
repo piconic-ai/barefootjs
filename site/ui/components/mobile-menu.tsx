@@ -8,7 +8,7 @@
 
 import { createSignal, createEffect } from '@barefootjs/client'
 import { XIcon, ChevronRightIcon } from '@ui/components/ui/icon'
-import { categoryOrder, categoryLabels, getComponentsByCategory, blockEntries } from './shared/component-registry'
+import { navSections, isNavGroup } from './shared/nav-data'
 
 const summaryClass = 'flex w-full items-center justify-between py-2.5 px-4 text-base font-medium text-foreground hover:bg-accent/50 rounded-md transition-colors cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden'
 const menuLinkClass = 'block py-2.5 px-4 text-base rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 no-underline'
@@ -51,27 +51,12 @@ export function MobileMenu() {
       if (details) details.open = true
     }
 
-    if (currentPath === '/') {
-      openCategory('docs')
-    } else if (currentPath.startsWith('/components/') && currentPath !== '/components') {
-      // Open the matching component category
-      for (const cat of categoryOrder) {
-        const entries = getComponentsByCategory(cat)
-        if (entries.some(e => currentPath === `/components/${e.slug}`)) {
-          openCategory(`components-${cat}`)
-          break
+    for (const section of navSections) {
+      for (const entry of section.entries) {
+        if (isNavGroup(entry) && entry.matchPath?.(currentPath)) {
+          openCategory(entry.key)
         }
       }
-      // Check blocks
-      if (blockEntries.some(e => currentPath === `/components/${e.slug}`)) {
-        openCategory('blocks')
-      }
-    } else if (currentPath.startsWith('/charts/')) {
-      openCategory('charts')
-    } else if (currentPath.startsWith('/docs/forms')) {
-      openCategory('forms')
-    } else if (currentPath.startsWith('/docs/cli') || currentPath === '/studio') {
-      openCategory('tools')
     }
 
     const openMenu = (): void => {
@@ -201,84 +186,32 @@ export function MobileMenu() {
 
           <nav className="p-4 overflow-y-auto h-[calc(100%-48px)]">
             <div className="space-y-1">
-              {/* Docs */}
-              <details data-category="docs" className="mb-2 group">
-                <summary className={summaryClass}>
-                  <span>Docs</span>
-                  <ChevronRightIcon size="sm" className={chevronClass} />
-                </summary>
-                <div className="pl-2 py-1 space-y-0.5">
-                  <a href="/" className={menuLinkClass}>Introduction</a>
-                </div>
-              </details>
-
-              {/* Components — grouped by category */}
-              <div className="pt-3 mt-3 border-t">
-                <span className="block px-4 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Components</span>
-              </div>
-              {categoryOrder.map((cat) => (
-                <details data-category={`components-${cat}`} className="mb-2 group">
-                  <summary className={summaryClass}>
-                    <span>{categoryLabels[cat]}</span>
-                    <ChevronRightIcon size="sm" className={chevronClass} />
-                  </summary>
-                  <div className="pl-2 py-1 space-y-0.5">
-                    {getComponentsByCategory(cat).map((entry) => (
-                      <a href={`/components/${entry.slug}`} className={menuLinkClass}>{entry.title}</a>
-                    ))}
-                  </div>
-                </details>
+              {navSections.map((section, sectionIndex) => (
+                <>
+                  {section.heading && (
+                    <div className={sectionIndex === 0 ? '' : 'pt-3 mt-3 border-t'}>
+                      <span className="block px-4 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.heading}</span>
+                    </div>
+                  )}
+                  {section.entries.map((entry) =>
+                    isNavGroup(entry) ? (
+                      <details data-category={entry.key} className="mb-2 group" open={entry.defaultOpen}>
+                        <summary className={summaryClass}>
+                          <span>{entry.title}</span>
+                          <ChevronRightIcon size="sm" className={chevronClass} />
+                        </summary>
+                        <div className="pl-2 py-1 space-y-0.5">
+                          {entry.links.map((link) => (
+                            <a href={link.href} className={menuLinkClass}>{link.title}</a>
+                          ))}
+                        </div>
+                      </details>
+                    ) : (
+                      <a href={entry.href} className={menuLinkClass}>{entry.title}</a>
+                    )
+                  )}
+                </>
               ))}
-              <details data-category="charts" className="mb-2 group">
-                <summary className={summaryClass}>
-                  <span>Charts</span>
-                  <ChevronRightIcon size="sm" className={chevronClass} />
-                </summary>
-                <div className="pl-2 py-1 space-y-0.5">
-                  <a href="/charts/area-chart" className={menuLinkClass}>Area Chart</a>
-                  <a href="/charts/bar-chart" className={menuLinkClass}>Bar Chart</a>
-                  <a href="/charts/line-chart" className={menuLinkClass}>Line Chart</a>
-                  <a href="/charts/pie-chart" className={menuLinkClass}>Pie Chart</a>
-                  <a href="/charts/radar-chart" className={menuLinkClass}>Radar Chart</a>
-                  <a href="/charts/radial-chart" className={menuLinkClass}>Radial Chart</a>
-                </div>
-              </details>
-
-              {/* Patterns */}
-              <div className="pt-3 mt-3 border-t">
-                <span className="block px-4 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Patterns</span>
-              </div>
-              <details data-category="forms" className="mb-2 group">
-                <summary className={summaryClass}>
-                  <span>Forms</span>
-                  <ChevronRightIcon size="sm" className={chevronClass} />
-                </summary>
-                <div className="pl-2 py-1 space-y-0.5">
-                  <a href="/docs/forms/controlled-input" className={menuLinkClass}>Controlled Input</a>
-                  <a href="/docs/forms/create-form" className={menuLinkClass}>createForm</a>
-                  <a href="/docs/forms/field-arrays" className={menuLinkClass}>Field Arrays</a>
-                  <a href="/docs/forms/submit" className={menuLinkClass}>Submit</a>
-                  <a href="/docs/forms/validation" className={menuLinkClass}>Validation</a>
-                </div>
-              </details>
-              <details data-category="blocks" className="mb-2 group">
-                <summary className={summaryClass}>
-                  <span>Blocks</span>
-                  <ChevronRightIcon size="sm" className={chevronClass} />
-                </summary>
-                <div className="pl-2 py-1 space-y-0.5">
-                  {blockEntries.map((entry) => (
-                    <a href={`/components/${entry.slug}`} className={menuLinkClass}>{entry.title}</a>
-                  ))}
-                </div>
-              </details>
-
-              {/* Tools */}
-              <div className="pt-3 mt-3 border-t">
-                <span className="block px-4 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tools</span>
-              </div>
-              <a href="/docs/cli" className={menuLinkClass}>CLI</a>
-              <a href="/studio" className={menuLinkClass}>Studio</a>
             </div>
           </nav>
         </div>

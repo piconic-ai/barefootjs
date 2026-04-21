@@ -21,7 +21,7 @@ declare module 'hono' {
 import { BfScripts } from '../../packages/hono/src/scripts'
 import { BfPortals } from '../../packages/hono/src/portals'
 import { BfPreload, type Manifest } from '../../packages/hono/src/preload'
-import { SidebarNav, type SidebarEntry } from '../shared/components/sidebar-page-nav'
+import { SidebarNav } from '../shared/components/sidebar-page-nav'
 import { Header } from '../shared/components/header'
 import { MobileMenu } from '@/components/mobile-menu'
 import { MobilePageNav } from '../shared/components/mobile-page-nav'
@@ -59,80 +59,7 @@ function WithPredictableIds({ children }: { children: any }) {
 }
 
 import { themeInitScript } from '@barefootjs/site-shared/lib/theme-init'
-import { categoryOrder, categoryLabels, getComponentsByCategory, blockEntries } from './components/shared/component-registry'
-
-// Sidebar menu data — split into sections with visual separators
-const startEntries: SidebarEntry[] = [
-  {
-    title: 'Docs',
-    defaultOpen: true,
-    links: [
-      { title: 'Introduction', href: '/' },
-    ],
-  },
-]
-
-// Component categories + Charts generated from registry
-const componentEntries: SidebarEntry[] = [
-  ...categoryOrder.map((category) => ({
-    title: categoryLabels[category],
-    defaultOpen: false,
-    links: getComponentsByCategory(category).map((entry) => ({
-      title: entry.title,
-      href: `/components/${entry.slug}`,
-    })),
-  })),
-  {
-    title: 'Charts',
-    links: [
-      { title: 'Area Chart', href: '/charts/area-chart' },
-      { title: 'Bar Chart', href: '/charts/bar-chart' },
-      { title: 'Line Chart', href: '/charts/line-chart' },
-      { title: 'Pie Chart', href: '/charts/pie-chart' },
-      { title: 'Radar Chart', href: '/charts/radar-chart' },
-      { title: 'Radial Chart', href: '/charts/radial-chart' },
-    ],
-  },
-]
-
-// Patterns — composition guides and page-level layouts
-const patternEntries: SidebarEntry[] = [
-  {
-    title: 'Forms',
-    links: [
-      { title: 'Controlled Input', href: '/docs/forms/controlled-input' },
-      { title: 'createForm', href: '/docs/forms/create-form' },
-      { title: 'Field Arrays', href: '/docs/forms/field-arrays' },
-      { title: 'Submit', href: '/docs/forms/submit' },
-      { title: 'Validation', href: '/docs/forms/validation' },
-    ],
-  },
-  {
-    title: 'Blocks',
-    defaultOpen: false,
-    links: blockEntries.map((entry) => ({
-      title: entry.title,
-      href: `/components/${entry.slug}`,
-    })),
-  },
-]
-
-// Gallery — multi-page demo apps (see issue #929)
-const galleryEntries: SidebarEntry[] = [
-  {
-    title: 'Apps',
-    defaultOpen: false,
-    links: [
-      { title: 'Admin Dashboard', href: '/gallery/admin' },
-    ],
-  },
-]
-
-// Tools — CLI and design system utilities
-const toolEntries: SidebarEntry[] = [
-  { title: 'CLI', href: '/docs/cli' },
-  { title: 'Studio', href: '/studio' },
-]
+import { navSections } from './components/shared/nav-data'
 
 // Import map for resolving bare module specifiers in client JS
 const importMapScript = JSON.stringify({
@@ -206,23 +133,16 @@ export const renderer = jsxRenderer(
                 aria-label="Main navigation"
                 data-sidebar-menu
               >
-                <SidebarNav entries={startEntries} currentPath={currentPath} />
-                <div className="pt-3 mt-3 border-t">
-                  <span className="block px-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Components</span>
-                </div>
-                <SidebarNav entries={componentEntries} currentPath={currentPath} />
-                <div className="pt-3 mt-3 border-t">
-                  <span className="block px-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Patterns</span>
-                </div>
-                <SidebarNav entries={patternEntries} currentPath={currentPath} />
-                <div className="pt-3 mt-3 border-t">
-                  <span className="block px-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gallery</span>
-                </div>
-                <SidebarNav entries={galleryEntries} currentPath={currentPath} />
-                <div className="pt-3 mt-3 border-t">
-                  <span className="block px-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tools</span>
-                </div>
-                <SidebarNav entries={toolEntries} currentPath={currentPath} />
+                {navSections.map((section, i) => (
+                  <>
+                    {section.heading && (
+                      <div className={i === 0 ? '' : 'pt-3 mt-3 border-t'}>
+                        <span className="block px-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.heading}</span>
+                      </div>
+                    )}
+                    <SidebarNav entries={section.entries} currentPath={currentPath} />
+                  </>
+                ))}
               </nav>
             )}
             <div className={isChrome ? 'sm:pl-56' : ''}>

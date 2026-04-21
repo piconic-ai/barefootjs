@@ -154,6 +154,43 @@ console.log('still works')
     expect(result).toContain("console.log('still works')")
   })
 
+  test('recursively inlines transitive .ts imports', async () => {
+    // Leaf module — depended on by the middle layer
+    writeFileSync(resolve(COMPONENTS_DIR, 'leaf.ts'), `
+export const FRUITS = ['apple', 'banana']
+`)
+    // Middle module — references the leaf at module-load time
+    writeFileSync(resolve(COMPONENTS_DIR, 'middle.ts'), `
+import { FRUITS } from './leaf'
+export const COUNT = FRUITS.length
+`)
+    // Client JS imports middle but not leaf
+    const clientJs = `import { COUNT } from './middle'
+console.log(COUNT)
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Comp-trans.js'), clientJs)
+
+    const manifest = {
+      Comp: { clientJs: 'components/Comp-trans.js', markedTemplate: 'components/Comp.tsx' },
+    }
+
+    await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-trans.js')).text()
+    // Both leaf and middle should be inlined, with leaf's declaration first
+    // so that middle's reference to FRUITS resolves at module init.
+    expect(result).toContain('FRUITS')
+    expect(result).toContain('COUNT')
+    expect(result).not.toContain("from './middle'")
+    expect(result).not.toContain("from './leaf'")
+    const fruitsIdx = result.indexOf("const FRUITS")
+    const countIdx = result.indexOf("const COUNT")
+    expect(fruitsIdx).toBeGreaterThan(-1)
+    expect(countIdx).toBeGreaterThan(fruitsIdx)
+    // No stray `{ FRUITS, ... }` block statement left over from the export.
+    expect(result).not.toMatch(/^\s*\{\s*FRUITS\s*\}/m)
+  })
+
   test('resolves from sourceDirs when not found relative to client JS', async () => {
     // Module exists in SOURCE_DIR, not in COMPONENTS_DIR
     writeFileSync(resolve(SOURCE_DIR, 'helpers.ts'), `
