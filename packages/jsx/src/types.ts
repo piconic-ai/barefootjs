@@ -462,6 +462,36 @@ export interface ImportInfo {
   loc: SourceLocation
 }
 
+/**
+ * Reactive factory helper metadata (#931). Collected when a same-file
+ * function matches the factory shape: exactly one top-level `return` whose
+ * argument is an array literal of identifiers, and at least one reactive
+ * primitive call (`createSignal`, `createMemo`, `createEffect`, etc.) in
+ * the body.
+ *
+ * When a component calls the factory in a tuple-destructure context, the
+ * body is inlined at the call site so downstream signal/memo collection
+ * sees an ordinary `createSignal(...)` declaration.
+ */
+export interface ReactiveFactoryInfo {
+  /** Parameter names, in declaration order. */
+  params: string[]
+  /**
+   * Raw JS source of the factory body block *without braces* and with the
+   * return tuple removed. Identifiers are renamed at the call site.
+   */
+  bodySource: string
+  /** Identifier names inside the returned array literal, in order. */
+  returnTupleIdentifiers: string[]
+  /**
+   * Names declared anywhere in the factory body (local bindings). Used by
+   * the call-site inliner to apply unique-suffix renaming and keep
+   * identifiers hygienic across repeat calls of the same factory.
+   */
+  localBindings: string[]
+  loc: SourceLocation
+}
+
 export interface ImportSpecifier {
   name: string
   alias: string | null

@@ -6,7 +6,7 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo } from './types'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types'
 import { rewriteBarePropRefs } from './prop-rewrite'
 import {
   type AnalyzerContext,
@@ -114,6 +114,23 @@ export function analyzeComponent(
   targetComponentName?: string,
   program?: ts.Program
 ): AnalyzerContext {
+  // Pre-pass: inline calls to same-file reactive factory helpers so the
+  // downstream analyzer sees ordinary `createSignal(...)` declarations
+  // instead of `const [a, b] = customFactory(...)` (#931). Skipped when
+  // no recognisable factories are present, so it is a no-op for the
+  // common case.
+  const prescan = prescanReactiveFactoriesInSource(source, filePath)
+  const rewritten = prescan.factories.size > 0
+    ? rewriteFactoryCallsInSource(source, prescan)
+    : null
+  if (rewritten) {
+    source = rewritten
+    // The pre-built ts.Program (if any) references the original source,
+    // so discard it — the analyzer will rebuild a fresh program if
+    // type-based detection is needed.
+    program = undefined
+  }
+
   let sourceFile: ts.SourceFile | undefined
   let checker: ts.TypeChecker | null = null
 
@@ -1558,6 +1575,10 @@ function validateContext(ctx: AnalyzerContext): void {
   // declaration cause a ReferenceError in ESM strict mode. Flag them
   // at compile time instead of shipping broken client JS. (#933)
   validateInitStatementReferences(ctx)
+
+  // BF110: flag tuple-destructures that would have been silent runtime
+  // failures before factory inlining landed (#931).
+  validateReactiveFactoryCalls(ctx)
 }
 
 function validateInitStatementReferences(ctx: AnalyzerContext): void {
@@ -1668,6 +1689,340 @@ export function listComponentFunctions(
   ts.forEachChild(sourceFile, collectComponents)
 
   return componentNames
+}
+
+// =============================================================================
+// Reactive Factory Pre-pass (#931)
+// =============================================================================
+
+// Names of reactive primitives that a factory body must contain for the
+// factory to qualify for inlining. Identifier resolution happens at the
+// source text level, so these are matched as bare identifiers.
+const REACTIVE_PRIMITIVES = new Set([
+  'createSignal', 'createMemo', 'createEffect',
+  'createDisposableEffect', 'onMount', 'onCleanup',
+])
+
+interface PrescanResult {
+  factories: Map<string, ReactiveFactoryInfo>
+  sourceFile: ts.SourceFile
+}
+
+/**
+ * Scan a source string for module-level function declarations that match
+ * the reactive-factory shape (single `return [a, b, ...]` exit + at least
+ * one reactive primitive call in the body). Returns a map from factory
+ * name to its metadata, and the parsed source file for call-site rewriting.
+ */
+function prescanReactiveFactoriesInSource(
+  source: string,
+  filePath: string
+): PrescanResult {
+  const sourceFile = ts.createSourceFile(
+    filePath + '.prescan',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  )
+  const factories = new Map<string, ReactiveFactoryInfo>()
+
+  function visitTop(node: ts.Node): void {
+    if (ts.isFunctionDeclaration(node) && node.name && node.body) {
+      const info = detectReactiveFactory(node, sourceFile, filePath)
+      if (info) factories.set(node.name.text, info)
+    }
+    // Not recursing into function bodies: factory helpers are at module
+    // scope only for this round (issue #931 "In scope" §1).
+  }
+
+  ts.forEachChild(sourceFile, visitTop)
+
+  return { factories, sourceFile }
+}
+
+function detectReactiveFactory(
+  node: ts.FunctionDeclaration,
+  sourceFile: ts.SourceFile,
+  filePath: string
+): ReactiveFactoryInfo | null {
+  if (!node.body || !node.name) return null
+
+  // Require: exactly one top-level `return` whose argument is an array
+  // literal of plain identifiers (optionally wrapped in `as const` / parens).
+  let tupleReturn: ts.ArrayLiteralExpression | null = null
+  let returnCount = 0
+  for (const stmt of node.body.statements) {
+    if (!ts.isReturnStatement(stmt)) continue
+    returnCount++
+    if (!stmt.expression) return null
+    let expr: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+    // Accept `... as const` / `<const>...`
+    if (ts.isAsExpression(expr)) expr = expr.expression
+    if (ts.isTypeAssertionExpression(expr)) expr = expr.expression
+    if (!ts.isArrayLiteralExpression(expr)) return null
+    tupleReturn = expr
+  }
+  if (returnCount !== 1 || !tupleReturn) return null
+
+  // Every element must be a plain identifier (no spreads, computed,
+  // call expressions). Otherwise the caller-side rename would not be sound.
+  const returnTupleIdentifiers: string[] = []
+  for (const el of tupleReturn.elements) {
+    if (!ts.isIdentifier(el)) return null
+    returnTupleIdentifiers.push(el.text)
+  }
+  if (returnTupleIdentifiers.length === 0) return null
+
+  // Body must contain at least one reactive primitive call so that the
+  // factory is actually the right thing to inline (not just a tuple-returning
+  // helper that happens to look similar).
+  let hasReactiveCall = false
+  function checkForReactive(n: ts.Node): void {
+    if (hasReactiveCall) return
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) &&
+        REACTIVE_PRIMITIVES.has(n.expression.text)) {
+      hasReactiveCall = true
+      return
+    }
+    ts.forEachChild(n, checkForReactive)
+  }
+  checkForReactive(node.body)
+  if (!hasReactiveCall) return null
+
+  // Collect local bindings in the factory body for identifier hygiene at
+  // inlining time. Only direct-child declarations of the block are
+  // considered — good enough for the typical helper shape.
+  const localBindings: string[] = []
+  for (const stmt of node.body.statements) {
+    if (ts.isVariableStatement(stmt)) {
+      for (const decl of stmt.declarationList.declarations) {
+        addBindingNames(decl.name, localBindings)
+      }
+    } else if (ts.isFunctionDeclaration(stmt) && stmt.name) {
+      localBindings.push(stmt.name.text)
+    }
+  }
+
+  // Serialize the body without the outer braces and without the return
+  // statement — the return tuple is dissolved into caller-named identifiers.
+  const bodyStatements = node.body.statements
+    .filter(s => !ts.isReturnStatement(s))
+    .map(s => s.getText(sourceFile))
+    .join('\n')
+
+  const params = node.parameters.map(p => {
+    if (ts.isIdentifier(p.name)) return p.name.text
+    // Destructured params are uncommon for this helper shape and out of
+    // initial scope; return a placeholder so we can skip the factory.
+    return ''
+  })
+  if (params.some(p => p === '')) return null
+
+  return {
+    params,
+    bodySource: bodyStatements,
+    returnTupleIdentifiers,
+    localBindings,
+    loc: getSourceLocation(node, sourceFile, filePath),
+  }
+}
+
+function addBindingNames(name: ts.BindingName, out: string[]): void {
+  if (ts.isIdentifier(name)) {
+    out.push(name.text)
+    return
+  }
+  if (ts.isObjectBindingPattern(name)) {
+    for (const el of name.elements) addBindingNames(el.name, out)
+    return
+  }
+  if (ts.isArrayBindingPattern(name)) {
+    for (const el of name.elements) {
+      if (ts.isOmittedExpression(el)) continue
+      addBindingNames(el.name, out)
+    }
+  }
+}
+
+/**
+ * Rewrite a source string by replacing each `const [a, b, ...] = factory(args)`
+ * call at the source level with the inlined factory body — params
+ * substituted with argument expressions, return tuple identifiers renamed
+ * to caller destructure names, other local bindings suffix-renamed for
+ * per-call uniqueness.
+ *
+ * Returns the rewritten source, or the original string if no inlining
+ * applies (e.g., factory arity mismatch — those are left alone so the
+ * analyzer can emit BF110 with an accurate source location).
+ */
+function rewriteFactoryCallsInSource(
+  source: string,
+  prescan: PrescanResult
+): string {
+  const { factories, sourceFile } = prescan
+
+  // Collect edits: { start, end, replacement } tuples.
+  type Edit = { start: number; end: number; replacement: string }
+  const edits: Edit[] = []
+  let callSiteIndex = 0
+
+  function visitStmt(node: ts.Node, inComponent: boolean): void {
+    if (ts.isVariableStatement(node) && inComponent) {
+      for (const decl of node.declarationList.declarations) {
+        maybeRewriteDecl(node, decl)
+      }
+    }
+    ts.forEachChild(node, (child) => {
+      // Recurse into function bodies so destructured factory calls in
+      // nested scopes (e.g. inside a component function) are picked up,
+      // but do not descend into other module-level helper bodies — their
+      // own factory calls (recursive factory definitions) are out of
+      // scope for this round.
+      if (ts.isFunctionDeclaration(child) && child.name && factories.has(child.name.text)) return
+      visitStmt(child, inComponent || isPascalCaseComponentFn(child))
+    })
+  }
+
+  function maybeRewriteDecl(stmt: ts.VariableStatement, decl: ts.VariableDeclaration): void {
+    if (!ts.isArrayBindingPattern(decl.name)) return
+    if (!decl.initializer || !ts.isCallExpression(decl.initializer)) return
+    if (!ts.isIdentifier(decl.initializer.expression)) return
+    const factoryName = decl.initializer.expression.text
+    const factory = factories.get(factoryName)
+    if (!factory) return
+
+    // Arity check — bail out on mismatch so the analyzer can report BF110
+    // on the untouched source.
+    const elements = decl.name.elements
+    if (elements.length !== factory.returnTupleIdentifiers.length) return
+
+    // Caller-side identifier names (one per tuple slot). Omitted slots
+    // and nested destructure patterns are out of scope — bail out so the
+    // analyzer can emit BF110.
+    const callerNames: string[] = []
+    for (const el of elements) {
+      if (ts.isOmittedExpression(el) || !ts.isIdentifier(el.name)) return
+      callerNames.push(el.name.text)
+    }
+
+    const argTexts = decl.initializer.arguments.map(a => a.getText(sourceFile))
+    const thisCallIndex = callSiteIndex++
+    const suffix = `_bf${thisCallIndex}`
+
+    // Apply renames to the factory body source.
+    let body = factory.bodySource
+    // 1. Suffix-rename internal bindings (exclude params + return tuple
+    //    + caller names to avoid collisions).
+    const internalRenames = new Set<string>(factory.localBindings)
+    for (const p of factory.params) internalRenames.delete(p)
+    for (const r of factory.returnTupleIdentifiers) internalRenames.delete(r)
+    for (const name of internalRenames) {
+      body = body.replace(new RegExp(`\\b${escapeRegex(name)}\\b`, 'g'), name + suffix)
+    }
+    // 2. Parameters → argument expressions. Atomic arguments (bare
+    //    identifiers, numeric literals, string literals) are spliced
+    //    directly; anything more complex is wrapped in parens to preserve
+    //    operator precedence at the splice site.
+    const atomicArg = /^(?:[\w$.]+|'[^'\\]*'|"[^"\\]*"|-?\d+(?:\.\d+)?)$/
+    for (let i = 0; i < factory.params.length; i++) {
+      const p = factory.params[i]
+      const a = argTexts[i] ?? 'undefined'
+      const wrapped = atomicArg.test(a.trim()) ? a.trim() : `(${a})`
+      body = body.replace(new RegExp(`\\b${escapeRegex(p)}\\b`, 'g'), wrapped)
+    }
+    // 3. Return tuple identifiers → caller destructure names.
+    for (let i = 0; i < factory.returnTupleIdentifiers.length; i++) {
+      const n = factory.returnTupleIdentifiers[i]
+      const caller = callerNames[i]
+      body = body.replace(new RegExp(`\\b${escapeRegex(n)}\\b`, 'g'), caller)
+    }
+
+    edits.push({
+      start: stmt.getStart(sourceFile),
+      end: stmt.getEnd(),
+      replacement: body,
+    })
+  }
+
+  visitStmt(sourceFile, false)
+
+  if (edits.length === 0) return source
+
+  // Apply edits from bottom to top so earlier offsets stay valid.
+  edits.sort((a, b) => b.start - a.start)
+  let out = source
+  for (const e of edits) {
+    out = out.slice(0, e.start) + e.replacement + out.slice(e.end)
+  }
+  return out
+}
+
+function isPascalCaseComponentFn(node: ts.Node): boolean {
+  if (ts.isFunctionDeclaration(node) && node.name) {
+    return /^[A-Z]/.test(node.name.text)
+  }
+  if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && ts.isArrowFunction(node.initializer)) {
+    return /^[A-Z]/.test(node.name.text)
+  }
+  return false
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// =============================================================================
+// BF110 diagnostic (#931)
+// =============================================================================
+
+/**
+ * Scan a compiled component context for tuple-destructures whose callee is
+ * neither `createSignal` / `createMemo` nor an inlinable reactive factory.
+ * These are the silent-failure shapes that produced broken client JS prior
+ * to factory inlining — emit BF110 so users get a clear message instead.
+ */
+export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
+  if (!ctx.componentNode) return
+  const body = ts.isFunctionDeclaration(ctx.componentNode)
+    ? ctx.componentNode.body
+    : (ts.isBlock(ctx.componentNode.body) ? ctx.componentNode.body : null)
+  if (!body) return
+
+  for (const stmt of body.statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      if (!ts.isArrayBindingPattern(decl.name)) continue
+      if (!decl.initializer || !ts.isCallExpression(decl.initializer)) continue
+      if (!ts.isIdentifier(decl.initializer.expression)) continue
+      const callee = decl.initializer.expression.text
+      if (callee === 'createSignal' || callee === 'createMemo') continue
+      // Inlined factories were rewritten away before this analysis, so
+      // anything still matching the shape is a destructure of an
+      // unrecognised callee (imported helper, ad-hoc tuple fn, factory
+      // with arity mismatch).
+      ctx.errors.push(
+        createError(
+          ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY,
+          getSourceLocation(stmt, ctx.sourceFile, ctx.filePath),
+          {
+            severity: 'error',
+            message:
+              `Tuple destructuring of '${callee}(...)': this helper is not a ` +
+              `recognised reactive factory (createSignal / createMemo / a ` +
+              `same-file helper that wraps them with a single \`return [a, b, ...]\`).`,
+            suggestion: {
+              message:
+                `Inline the createSignal call at the call site, or move the ` +
+                `helper into this file as a function that returns a tuple of ` +
+                `identifiers at its single exit point.`,
+            },
+          }
+        )
+      )
+    }
+  }
 }
 
 // =============================================================================

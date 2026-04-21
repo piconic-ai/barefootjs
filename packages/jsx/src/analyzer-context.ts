@@ -19,6 +19,7 @@ import type {
   CompilerError,
   SourceLocation,
   ParamInfo,
+  ReactiveFactoryInfo,
 } from './types'
 import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types'
 
@@ -74,6 +75,16 @@ export interface AnalyzerContext {
     jsxReturn: ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFragment
     params: string[]
   }>
+  /**
+   * Maps function names to reactive-factory info (#931). A reactive factory
+   * is a same-file helper whose body declares reactive primitives and
+   * returns a tuple of identifiers, e.g.
+   *   `function createCounter(initial) { const [c,s] = createSignal(initial); return [c, s] as const }`.
+   * When a component destructures the result of a factory call, the factory
+   * body is inlined at the call site so the compiler sees ordinary
+   * `createSignal` declarations.
+   */
+  reactiveFactories: Map<string, ReactiveFactoryInfo>
 
   // Props
   propsType: TypeInfo | null
@@ -140,6 +151,7 @@ export function createAnalyzerContext(
     typeDefinitions: [],
     jsxConstants: new Map(),
     jsxFunctions: new Map(),
+    reactiveFactories: new Map(),
 
     propsType: null,
     propsParams: [],

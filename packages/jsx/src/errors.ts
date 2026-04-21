@@ -50,6 +50,9 @@ export const ErrorCodes = {
 
   // Init statement errors (BF052)
   UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
+
+  // Reactive factory errors (BF110-BF119)
+  UNRECOGNIZED_REACTIVE_FACTORY: 'BF110',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -98,6 +101,9 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.UNDECLARED_INIT_STATEMENT_REFERENCE]:
     'Init statement references an undeclared identifier. Declare it at module scope, inside the component, or import it — otherwise ESM strict mode throws ReferenceError at runtime.',
+
+  [ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY]:
+    'Tuple destructuring of a non-reactive factory call. The compiler only recognizes createSignal / createMemo calls and same-file helpers that wrap them with a single `return [a, b]` exit.',
 }
 
 // =============================================================================
