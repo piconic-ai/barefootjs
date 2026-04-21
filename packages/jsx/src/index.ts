@@ -94,6 +94,19 @@ export interface PostBuildContext {
   markChanged?: () => void
 }
 
+/**
+ * Vendor code-splitting spec for a single package.
+ *
+ * - `true` / `{ chunk: true }` — locate the package's browser-ready entry
+ *   (umd → unpkg → jsdelivr → import condition) and copy it to the output dir.
+ * - `{ url }` — CDN passthrough: skip local copy, use the URL as-is in the importmap.
+ * - `preload: true` — emit a `<link rel="modulepreload">` hint for this entry.
+ */
+export type ExternalSpec =
+  | true
+  | { chunk?: true; preload?: boolean }
+  | { url: string; preload?: boolean }
+
 export interface BuildOptions {
   /** Source component directories relative to config file */
   components?: string[]
@@ -109,6 +122,21 @@ export interface BuildOptions {
   outputLayout?: OutputLayout
   /** Post-build hook called after minification, before manifest write */
   postBuild?: (ctx: PostBuildContext) => Promise<void> | void
+  /**
+   * Vendor packages to split out as separately-cached browser chunks.
+   * The CLI copies each package's browser-ready bundle to the output dir,
+   * then emits `dist/barefoot-externals.json` with the importmap and
+   * `--external` flag list for use in the app's own `bun build`.
+   *
+   * `@barefootjs/client*` dedup entries are added automatically whenever
+   * this field is non-empty, preventing reactive-primitive duplication (#927).
+   */
+  externals?: Record<string, ExternalSpec>
+  /**
+   * URL base path for vendor chunks in the emitted importmap.
+   * Defaults to `/<runtimeSubdir>/` (e.g., `/static/components/`).
+   */
+  externalsBasePath?: string
 }
 
 // CSS Layer Prefixer

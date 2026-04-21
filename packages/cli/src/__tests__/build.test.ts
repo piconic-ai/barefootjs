@@ -5,6 +5,8 @@ import {
   generateHash,
   resolveBuildConfigFromTs,
   collectRelativeImportDeps,
+  vendorChunkFilename,
+  processExternals,
 } from '../lib/build'
 import { mkdirSync, writeFileSync, rmSync } from 'fs'
 import { resolve } from 'path'
@@ -240,6 +242,173 @@ describe('collectRelativeImportDeps', () => {
     )
     expect(deps).toEqual([resolve(testDir, 'foo.ts')])
     cleanup()
+  })
+})
+
+// ── vendorChunkFilename ──────────────────────────────────────────────────
+
+describe('vendorChunkFilename', () => {
+  test('unscoped package', () => {
+    expect(vendorChunkFilename('yjs')).toBe('yjs.js')
+  })
+
+  test('scoped package uses last segment', () => {
+    expect(vendorChunkFilename('@barefootjs/xyflow')).toBe('xyflow.js')
+  })
+
+  test('scoped package with deeper path', () => {
+    expect(vendorChunkFilename('@scope/pkg')).toBe('pkg.js')
+  })
+})
+
+// ── resolveBuildConfigFromTs: externals ──────────────────────────────────
+
+describe('resolveBuildConfigFromTs with externals', () => {
+  const projectDir = '/test/project'
+  const mockAdapter = { name: 'mock', extension: '.mock' } as any
+
+  test('passes through externals', () => {
+    const externals = { '@barefootjs/xyflow': true as const, yjs: { preload: true } }
+    const config = resolveBuildConfigFromTs(projectDir, { adapter: mockAdapter, externals })
+    expect(config.externals).toEqual(externals)
+  })
+
+  test('passes through externalsBasePath', () => {
+    const config = resolveBuildConfigFromTs(projectDir, {
+      adapter: mockAdapter,
+      externalsBasePath: '/cdn/v1/',
+    })
+    expect(config.externalsBasePath).toBe('/cdn/v1/')
+  })
+
+  test('externals undefined by default', () => {
+    const config = resolveBuildConfigFromTs(projectDir, { adapter: mockAdapter })
+    expect(config.externals).toBeUndefined()
+    expect(config.externalsBasePath).toBeUndefined()
+  })
+})
+
+// ── processExternals ─────────────────────────────────────────────────────
+
+describe('processExternals', () => {
+  const mockAdapter = { name: 'mock', extension: '.mock' } as any
+
+  function makeTmpDir() {
+    const dir = resolve(tmpdir(), `bf-test-externals-${Date.now()}`)
+    mkdirSync(dir, { recursive: true })
+    return dir
+  }
+
+  function makeConfig(projectDir: string, outDir: string, extra: Record<string, any> = {}) {
+    return {
+      projectDir,
+      adapter: mockAdapter,
+      componentDirs: [],
+      outDir,
+      minify: false,
+      contentHash: false,
+      clientOnly: false,
+      ...extra,
+    }
+  }
+
+  test('returns false and emits nothing when externals is empty', async () => {
+    const outDir = makeTmpDir()
+    try {
+      const changed = await processExternals(makeConfig(outDir, outDir), 'components', outDir)
+      expect(changed).toBe(false)
+      expect(require('fs').existsSync(resolve(outDir, 'barefoot-externals.json'))).toBe(false)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('CDN passthrough: records url in importmap, skips file copy', async () => {
+    const outDir = makeTmpDir()
+    try {
+      const config = makeConfig(outDir, outDir, {
+        externals: { lodash: { url: 'https://esm.sh/lodash@4.17.21' } },
+      })
+      await processExternals(config, 'components', outDir)
+      const raw = require('fs').readFileSync(resolve(outDir, 'barefoot-externals.json'), 'utf8')
+      const manifest = JSON.parse(raw)
+      expect(manifest.importmap.imports.lodash).toBe('https://esm.sh/lodash@4.17.21')
+      // CDN file should NOT be copied locally
+      expect(require('fs').existsSync(resolve(outDir, 'lodash.js'))).toBe(false)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('preload: true adds URL to preloads array', async () => {
+    const outDir = makeTmpDir()
+    try {
+      const config = makeConfig(outDir, outDir, {
+        externals: { lodash: { url: 'https://esm.sh/lodash@4.17.21', preload: true } },
+      })
+      await processExternals(config, 'components', outDir)
+      const manifest = JSON.parse(
+        require('fs').readFileSync(resolve(outDir, 'barefoot-externals.json'), 'utf8')
+      )
+      expect(manifest.preloads).toContain('https://esm.sh/lodash@4.17.21')
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('auto-dedup: @barefootjs/client* entries always added', async () => {
+    const outDir = makeTmpDir()
+    try {
+      const config = makeConfig(outDir, outDir, {
+        externals: { lodash: { url: 'https://esm.sh/lodash' } },
+        externalsBasePath: '/static/components/',
+      })
+      await processExternals(config, 'components', outDir)
+      const manifest = JSON.parse(
+        require('fs').readFileSync(resolve(outDir, 'barefoot-externals.json'), 'utf8')
+      )
+      const { imports } = manifest.importmap
+      expect(imports['@barefootjs/client']).toBe('/static/components/barefoot.js')
+      expect(imports['@barefootjs/client/runtime']).toBe('/static/components/barefoot.js')
+      expect(imports['@barefootjs/client/reactive']).toBe('/static/components/barefoot.js')
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('externals array includes all packages + dedup keys', async () => {
+    const outDir = makeTmpDir()
+    try {
+      const config = makeConfig(outDir, outDir, {
+        externals: { yjs: { url: 'https://esm.sh/yjs' } },
+      })
+      await processExternals(config, 'components', outDir)
+      const manifest = JSON.parse(
+        require('fs').readFileSync(resolve(outDir, 'barefoot-externals.json'), 'utf8')
+      )
+      expect(manifest.externals).toContain('yjs')
+      expect(manifest.externals).toContain('@barefootjs/client')
+      expect(manifest.externals).toContain('@barefootjs/client/runtime')
+      expect(manifest.externals).toContain('@barefootjs/client/reactive')
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('externalsBasePath defaults to /<runtimeSubdir>/', async () => {
+    const outDir = makeTmpDir()
+    try {
+      const config = makeConfig(outDir, outDir, {
+        externals: { yjs: { url: 'https://esm.sh/yjs' } },
+      })
+      await processExternals(config, 'components', outDir)
+      const manifest = JSON.parse(
+        require('fs').readFileSync(resolve(outDir, 'barefoot-externals.json'), 'utf8')
+      )
+      expect(manifest.importmap.imports['@barefootjs/client']).toBe('/components/barefoot.js')
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
   })
 })
 
