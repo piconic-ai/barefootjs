@@ -195,9 +195,10 @@ describe('Init statements referencing module-scope declarations (#933)', () => {
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
 
     const clientJs = result.files.find(f => f.type === 'clientJs')!.content
-    expect(clientJs).toContain('STORAGE_KEY')
-    const declIdx = clientJs.search(/var\s+STORAGE_KEY/)
-    expect(declIdx).toBeGreaterThan(-1)
+    // STORAGE_KEY must be declared somewhere reachable from the init
+    // statement — at module scope or inside the init function is fine,
+    // since the init statement runs inside the init function.
+    expect(clientJs).toMatch(/(?:const|var|let)\s+STORAGE_KEY\s*=/)
   })
 
   test('init statement touching only locally-declared names does not hoist anything new', () => {
