@@ -1,7 +1,7 @@
 // Core build module: shared pipeline for `barefoot build`.
 
 import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
-import type { TemplateAdapter, OutputLayout, PostBuildContext } from '@barefootjs/jsx'
+import type { TemplateAdapter, OutputLayout, PostBuildContext, ExternalSpec } from '@barefootjs/jsx'
 import { mkdir, readdir, stat, unlink } from 'node:fs/promises'
 import { resolve, basename, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -43,6 +43,10 @@ export interface BuildConfig {
   outputLayout?: OutputLayout
   /** Post-build hook called after minification, before manifest write */
   postBuild?: (ctx: PostBuildContext) => Promise<void> | void
+  /** Vendor packages to split out as separately-cached browser chunks */
+  externals?: Record<string, ExternalSpec>
+  /** URL base path for vendor chunks in the emitted importmap (default: /<runtimeSubdir>/) */
+  externalsBasePath?: string
 }
 
 export interface BuildResult {
@@ -139,7 +143,7 @@ export function generateHash(content: string): string {
  */
 export function resolveBuildConfigFromTs(
   projectDir: string,
-  tsConfig: { adapter: TemplateAdapter; components?: string[]; outDir?: string; minify?: boolean; contentHash?: boolean; clientOnly?: boolean; transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string; outputLayout?: OutputLayout; postBuild?: (ctx: PostBuildContext) => Promise<void> | void },
+  tsConfig: { adapter: TemplateAdapter; components?: string[]; outDir?: string; minify?: boolean; contentHash?: boolean; clientOnly?: boolean; transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string; outputLayout?: OutputLayout; postBuild?: (ctx: PostBuildContext) => Promise<void> | void; externals?: Record<string, ExternalSpec>; externalsBasePath?: string },
   overrides?: { minify?: boolean }
 ): BuildConfig {
   const componentDirs = (tsConfig.components ?? ['components']).map(
@@ -158,6 +162,8 @@ export function resolveBuildConfigFromTs(
     transformMarkedTemplate: tsConfig.transformMarkedTemplate,
     outputLayout: tsConfig.outputLayout,
     postBuild: tsConfig.postBuild,
+    externals: tsConfig.externals,
+    externalsBasePath: tsConfig.externalsBasePath,
   }
 }
 
@@ -290,6 +296,11 @@ export async function build(
     }
   } else {
     console.warn('Warning: @barefootjs/client dist not found. Skipping barefoot.js copy.')
+  }
+
+  // 1b. Externals — copy vendor chunks, emit importmap + barefoot-externals.json
+  if (await processExternals(config, runtimeSubdir, runtimeOutDir)) {
+    anyOutputChanged = true
   }
 
   // 2. Discover component files
@@ -561,6 +572,136 @@ export async function build(
     manifest,
     changed: anyOutputChanged,
   }
+}
+
+// ── Externals processing ─────────────────────────────────────────────────
+
+const BF_CLIENT_DEDUP_KEYS = [
+  '@barefootjs/client',
+  '@barefootjs/client/runtime',
+  '@barefootjs/client/reactive',
+]
+
+/**
+ * Derive the output filename for a vendored chunk from its package name.
+ * `@barefootjs/xyflow` → `xyflow.js`, `yjs` → `yjs.js`.
+ */
+export function vendorChunkFilename(pkgName: string): string {
+  const base = pkgName.includes('/') ? pkgName.split('/').pop()! : pkgName
+  return `${base}.js`
+}
+
+/**
+ * Locate the browser-ready entry for a package.
+ * Preference order: `exports["."].umd` → `unpkg` → `jsdelivr` → `exports["."].import` → `main`.
+ */
+async function resolvePkgBrowserEntry(pkgDir: string): Promise<string | null> {
+  const pkgJsonPath = resolve(pkgDir, 'package.json')
+  if (!(await fileExists(pkgJsonPath))) return null
+  const pkg = JSON.parse(await readText(pkgJsonPath))
+  const candidates = [
+    pkg.exports?.['.']?.umd,
+    pkg.unpkg,
+    pkg.jsdelivr,
+    pkg.exports?.['.']?.import,
+    pkg.main,
+  ].filter((v): v is string => typeof v === 'string')
+  for (const rel of candidates) {
+    const abs = resolve(pkgDir, rel)
+    if (await fileExists(abs)) return abs
+  }
+  return null
+}
+
+export interface ExternalsManifest {
+  /** Entries for `<script type="importmap">` */
+  importmap: { imports: Record<string, string> }
+  /** URLs to emit as `<link rel="modulepreload">` */
+  preloads: string[]
+  /** Package names to pass as `--external` to bun build */
+  externals: string[]
+}
+
+/**
+ * Process the `externals` config: copy vendor chunks to outDir, build the
+ * importmap JSON, and write `barefoot-externals.json`.
+ */
+export async function processExternals(
+  config: BuildConfig,
+  runtimeSubdir: string,
+  runtimeOutDir: string,
+): Promise<boolean> {
+  if (!config.externals || Object.keys(config.externals).length === 0) return false
+
+  const basePath = config.externalsBasePath ?? `/${runtimeSubdir}/`
+  const base = basePath.endsWith('/') ? basePath : basePath + '/'
+
+  const imports: Record<string, string> = {}
+  const preloads: string[] = []
+  let anyChanged = false
+
+  for (const [pkgName, spec] of Object.entries(config.externals)) {
+    const isChunk = spec === true || (typeof spec === 'object' && !('url' in spec))
+    const isCdn = typeof spec === 'object' && 'url' in spec
+    const wantPreload = typeof spec === 'object' && spec.preload === true
+
+    if (isCdn) {
+      const url = (spec as { url: string }).url
+      imports[pkgName] = url
+      if (wantPreload) preloads.push(url)
+      continue
+    }
+
+    if (isChunk) {
+      const pkgDir = resolve(config.projectDir, 'node_modules', pkgName)
+      const srcFile = await resolvePkgBrowserEntry(pkgDir)
+      if (!srcFile) {
+        console.warn(`Warning: externals — could not resolve browser entry for "${pkgName}". Skipping.`)
+        continue
+      }
+
+      const filename = vendorChunkFilename(pkgName)
+      const destPath = resolve(runtimeOutDir, filename)
+      let content: string | Uint8Array = await readBytes(srcFile)
+      if (config.minify) {
+        content = transpile(content instanceof Uint8Array ? new TextDecoder().decode(content) : content, { loader: 'js', minify: true })
+      }
+      if (await writeIfChanged(destPath, content)) {
+        anyChanged = true
+        console.log(`Generated: ${runtimeSubdir}/${filename}`)
+      }
+
+      const url = `${base}${filename}`
+      imports[pkgName] = url
+      if (wantPreload) preloads.push(url)
+    }
+  }
+
+  // Auto-dedup @barefootjs/client* — always emitted when externals is non-empty
+  const barefootUrl = `${base}barefoot.js`
+  for (const key of BF_CLIENT_DEDUP_KEYS) {
+    imports[key] = barefootUrl
+  }
+
+  // All packages that go into --external for the user's bun build
+  const allExternals = [
+    ...Object.keys(config.externals),
+    ...BF_CLIENT_DEDUP_KEYS.filter(k => !(k in config.externals!)),
+  ]
+
+  const manifest: ExternalsManifest = {
+    importmap: { imports },
+    preloads,
+    externals: allExternals,
+  }
+
+  const manifestPath = resolve(config.outDir, 'barefoot-externals.json')
+  if (await writeIfChanged(manifestPath, JSON.stringify(manifest, null, 2))) {
+    anyChanged = true
+    console.log('Generated: barefoot-externals.json')
+  }
+
+  return anyChanged
 }
 
 // ── Dependency scanner ───────────────────────────────────────────────────
