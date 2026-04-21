@@ -577,10 +577,16 @@ export class HonoAdapter extends JsxAdapter {
     let mapExpr: string
     // Use typed mapPreamble when available to preserve type annotations in .tsx output
     const preamble = loop.typedMapPreamble ?? loop.mapPreamble
+    // When the rendered children are a JSX expression-container (e.g. a single
+    // ternary `{cond ? <A/> : <B/>}` from renderConditional), they cannot be
+    // used directly as an arrow body — `(x) => {…}` is parsed as a block
+    // statement and the function returns undefined. Wrap with a fragment so
+    // the body is unambiguously a JSX expression.
+    const safeChildren = children.startsWith('{') ? `<>${children}</>` : children
     if (preamble) {
-      mapExpr = `{${loop.array}.map((${loop.param}${paramAnnotation}${indexParam}) => { ${preamble} return ${children} })}`
+      mapExpr = `{${loop.array}.map((${loop.param}${paramAnnotation}${indexParam}) => { ${preamble} return ${safeChildren} })}`
     } else {
-      mapExpr = `{${loop.array}.map((${loop.param}${paramAnnotation}${indexParam}) => ${children})}`
+      mapExpr = `{${loop.array}.map((${loop.param}${paramAnnotation}${indexParam}) => ${safeChildren})}`
     }
     // Wrap with loop boundary markers so reconciliation doesn't affect siblings.
     // bfComment is a helper that renders an HTML comment in JSX.
