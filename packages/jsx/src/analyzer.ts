@@ -171,8 +171,15 @@ export function analyzeComponent(
     targetComponentName = findDefaultExportedComponent(sourceFile)
   }
 
+  // Pre-scan named exports (`export { Foo, Bar }`) so the multi-return
+  // JSX helper reclassifier (#932) can refuse to demote functions that
+  // other files import as components. Inline `export function Foo` is
+  // picked up via the modifier, but named-export declarations only land
+  // at the end of the file — too late for the visit.
+  const namedExports = collectNamedExports(sourceFile)
+
   // Single pass visitor
-  visit(sourceFile, ctx, targetComponentName)
+  visit(sourceFile, ctx, targetComponentName, namedExports)
 
   // Post-processing validations
   validateContext(ctx)
@@ -209,6 +216,32 @@ function findDefaultExportedComponent(sourceFile: ts.SourceFile): string | undef
   return defaultExportName
 }
 
+/**
+ * Collect the set of top-level names exported via `export { Name }` or
+ * `export { Name as Alias }`. Used by the multi-return JSX helper
+ * reclassifier (#932) to keep any PascalCase function that other files
+ * import as a component on the component-compilation path.
+ */
+function collectNamedExports(sourceFile: ts.SourceFile): Set<string> {
+  const exported = new Set<string>()
+  for (const stmt of sourceFile.statements) {
+    if (
+      ts.isExportDeclaration(stmt) &&
+      stmt.exportClause &&
+      ts.isNamedExports(stmt.exportClause)
+    ) {
+      for (const spec of stmt.exportClause.elements) {
+        // `export { LocalName as ExternalName }` — the declaration we
+        // care about is identified by the local (`propertyName`) or, if
+        // no alias, `name`.
+        const local = (spec.propertyName ?? spec.name).text
+        exported.add(local)
+      }
+    }
+  }
+  return exported
+}
+
 // =============================================================================
 // Single Pass Visitor
 // =============================================================================
@@ -216,7 +249,8 @@ function findDefaultExportedComponent(sourceFile: ts.SourceFile): string | undef
 function visit(
   node: ts.Node,
   ctx: AnalyzerContext,
-  targetComponentName?: string
+  targetComponentName?: string,
+  namedExports?: Set<string>
 ): void {
   // Check for 'use client' directive at module level
   if (ts.isExpressionStatement(node) && ts.isStringLiteral(node.expression)) {
@@ -249,9 +283,15 @@ function visit(
   // helper so the marked-template emitter can include it in any
   // component that references it (<HelperName />).
   //
-  // `"use client"` files are left alone — their multi-return components
-  // are legitimately stateful (createSignal + onClick branches per
-  // variant) and rely on `conditionalReturns` handling at IR time.
+  // Reclassification only applies to *internal* helpers — functions that
+  // aren't exported (inline `export function` or trailing `export { X }`).
+  // Exported PascalCase functions are part of this file's public API and
+  // other files import them as components; demoting them would break
+  // cross-file consumers.
+  //
+  // `"use client"` files are also left alone — their multi-return
+  // components are legitimately stateful (createSignal + onClick branches
+  // per variant) and rely on `conditionalReturns` handling at IR time.
   if (
     !ctx.hasUseClientDirective &&
     ts.isFunctionDeclaration(node) &&
@@ -259,9 +299,12 @@ function visit(
     node.body &&
     isMultiReturnJsxFunctionBody(node.body)
   ) {
-    const isExported = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
-    collectFunction(node, ctx, true, isExported)
-    return
+    const hasInlineExport = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
+    const hasNamedExport = namedExports?.has(node.name.text) ?? false
+    if (!hasInlineExport && !hasNamedExport) {
+      collectFunction(node, ctx, true, false)
+      return
+    }
   }
 
   // Component function
@@ -356,7 +399,7 @@ function visit(
     }
   }
 
-  ts.forEachChild(node, (child) => visit(child, ctx, targetComponentName))
+  ts.forEachChild(node, (child) => visit(child, ctx, targetComponentName, namedExports))
 }
 
 // =============================================================================
@@ -1745,6 +1788,7 @@ export function listComponentFunctions(
     ts.isStringLiteral(stmt.expression) &&
     (stmt.expression.text === 'use client' || stmt.expression.text === "'use client'")
   )
+  const namedExports = collectNamedExports(sourceFile)
 
   function collectComponents(node: ts.Node): void {
     // Exported function declaration
@@ -1754,8 +1798,18 @@ export function listComponentFunctions(
       // verbatim as helpers rather than compiled as standalone components
       // (see #932 — the component pipeline drops their body). Skip them
       // here so `compileMultipleComponents` does not emit a broken file
-      // for them.
-      if (!hasUseClient && node.body && isMultiReturnJsxFunctionBody(node.body)) {
+      // for them. Only applies to *internal* helpers; anything exported
+      // (inline or via `export { Name }`) is part of the file's public
+      // API and must stay on the component-compilation path.
+      const hasInlineExport = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
+      const hasNamedExport = namedExports.has(node.name.text)
+      const isExported = hasInlineExport || hasNamedExport
+      if (
+        !hasUseClient &&
+        !isExported &&
+        node.body &&
+        isMultiReturnJsxFunctionBody(node.body)
+      ) {
         // fall through to forEachChild
       } else {
         componentNames.push(node.name.text)

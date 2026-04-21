@@ -141,4 +141,43 @@ describe('Multi-return JSX helper preservation (#932)', () => {
     // reach the template output somewhere.
     expect(markedTemplate).toMatch(/PackageIcon|<svg|<path/)
   })
+
+  test('exported-via-named-export multi-return component stays a component', () => {
+    // Regression guard (#932): shadcn-style stateless components like
+    // `ButtonGroupText` have two JSX returns (asChild / default branches)
+    // and are re-exported via `export { Name }` at the bottom of the file.
+    // They must NOT be reclassified as helpers — other files import them
+    // as components and expect compiled component output.
+    const source = `
+      function ButtonGroupText({ asChild, children }: { asChild?: boolean, children?: unknown }) {
+        if (asChild) {
+          return <span className="as-child">{children}</span>
+        }
+        return <div className="default">{children}</div>
+      }
+
+      export { ButtonGroupText }
+    `
+    const result = compileJSXSync(source, 'button-group.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const markedTemplate = result.files.find(f => f.type === 'markedTemplate')
+    expect(markedTemplate).toBeDefined()
+    expect(markedTemplate!.content).toMatch(/ButtonGroupText/)
+  })
+
+  test('inline `export function` multi-return component stays a component', () => {
+    const source = `
+      export function ButtonGroupText({ asChild, children }: { asChild?: boolean, children?: unknown }) {
+        if (asChild) {
+          return <span>{children}</span>
+        }
+        return <div>{children}</div>
+      }
+    `
+    const result = compileJSXSync(source, 'button-group.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const markedTemplate = result.files.find(f => f.type === 'markedTemplate')
+    expect(markedTemplate).toBeDefined()
+    expect(markedTemplate!.content).toMatch(/ButtonGroupText/)
+  })
 })
