@@ -108,6 +108,13 @@ import { LineChartRefPage } from './pages/charts/line-chart'
 // Studio page
 import { StudioPage } from './pages/studio'
 
+// Gallery pages (Phase 9)
+import { AdminOverviewPage } from './pages/gallery/admin/index'
+import { AdminAnalyticsPage } from './pages/gallery/admin/analytics'
+import { AdminOrdersPage } from './pages/gallery/admin/orders'
+import { AdminNotificationsPage } from './pages/gallery/admin/notifications'
+import { AdminSettingsPage } from './pages/gallery/admin/settings'
+
 // Form pattern pages
 import { ControlledInputPage } from './pages/forms/controlled-input'
 import { ValidationPage } from './pages/forms/validation'
@@ -588,6 +595,27 @@ export function createApp() {
   // State Machine Playground block page
   app.get('/components/state-machine-playground', (c) => {
     return c.render(<StateMachinePlaygroundRefPage />)
+  })
+
+  // Gallery — Admin app (Phase 9 pilot)
+  app.get('/gallery/admin', (c) => {
+    return c.render(<AdminOverviewPage />)
+  })
+
+  app.get('/gallery/admin/analytics', (c) => {
+    return c.render(<AdminAnalyticsPage />)
+  })
+
+  app.get('/gallery/admin/orders', (c) => {
+    return c.render(<AdminOrdersPage />)
+  })
+
+  app.get('/gallery/admin/notifications', (c) => {
+    return c.render(<AdminNotificationsPage />)
+  })
+
+  app.get('/gallery/admin/settings', (c) => {
+    return c.render(<AdminSettingsPage />)
   })
 
   // Bar Chart reference page

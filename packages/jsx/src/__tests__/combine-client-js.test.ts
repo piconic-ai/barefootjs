@@ -162,6 +162,48 @@ describe('combineParentChildClientJs', () => {
     expect(combined).not.toContain('component-name match')
   })
 
+  test('resolves children when manifest keys are path-qualified (different files, same basename)', () => {
+    // Two files with the same basename in different directories must not
+    // collide when they both carry child placeholders. With path-qualified
+    // manifest keys, the combiner's component-name → file-key fallback must
+    // still resolve each child to the correct file.
+    //
+    // Repro: `site/ui/components/settings-demo.tsx` and
+    //        `site/ui/components/gallery/admin/settings-demo.tsx`
+    const files = new Map([
+      ['settings-demo', [
+        "import { hydrate } from '@barefootjs/client/runtime'",
+        "import '/* @bf-child:Tabs */'",
+        "hydrate('SettingsDemo', (el) => { /* top-level settings */ })",
+      ].join('\n')],
+      ['gallery/admin/settings-demo', [
+        "import { hydrate } from '@barefootjs/client/runtime'",
+        "import '/* @bf-child:Tabs */'",
+        "hydrate('AdminSettingsDemo', (el) => { /* admin settings */ })",
+      ].join('\n')],
+      ['tabs', [
+        "import { hydrate } from '@barefootjs/client/runtime'",
+        "hydrate('Tabs', (el) => {})",
+      ].join('\n')],
+    ])
+
+    const result = combineParentChildClientJs(files)
+
+    // Both parents must combine correctly — neither should lose its Tabs inlining
+    expect(result.has('settings-demo')).toBe(true)
+    expect(result.has('gallery/admin/settings-demo')).toBe(true)
+
+    const topCombined = result.get('settings-demo')!
+    expect(topCombined).toContain("hydrate('SettingsDemo',")
+    expect(topCombined).toContain("hydrate('Tabs',")
+    expect(topCombined).not.toContain('@bf-child:')
+
+    const adminCombined = result.get('gallery/admin/settings-demo')!
+    expect(adminCombined).toContain("hydrate('AdminSettingsDemo',")
+    expect(adminCombined).toContain("hydrate('Tabs',")
+    expect(adminCombined).not.toContain('@bf-child:')
+  })
+
   test('deduplicates imports from shared sources', () => {
     const files = new Map([
       ['Parent', [

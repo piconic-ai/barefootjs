@@ -10,6 +10,7 @@ import type {
   MemoInfo,
   EffectInfo,
   OnMountInfo,
+  InitStatementInfo,
   FunctionInfo,
   ConstantInfo,
   ParamInfo,
@@ -22,6 +23,8 @@ export interface ClientJsContext {
   memos: MemoInfo[]
   effects: EffectInfo[]
   onMounts: OnMountInfo[]
+  /** Top-level imperative statements preserved from the component body (#930). */
+  initStatements: InitStatementInfo[]
   localFunctions: FunctionInfo[]
   localConstants: ConstantInfo[]
   propsParams: ParamInfo[]

@@ -35,6 +35,22 @@ function isTsOrTsxFile(filename: string): boolean {
   return filename.endsWith('.tsx') || filename.endsWith('.ts')
 }
 
+// Safety net: with path-qualified manifest keys a collision shouldn't happen,
+// but surface it loudly if it ever does (e.g. identical relative paths across
+// component roots). Silent overwrite was the root cause of #930/bug-3.
+function assertNoManifestCollision(
+  manifest: Record<string, unknown>,
+  key: string,
+  incomingRelPath: string,
+): void {
+  if (manifest[key] !== undefined) {
+    throw new Error(
+      `Manifest key collision: "${key}" would be overwritten by ${incomingRelPath}. ` +
+      `Two component files resolve to the same manifest key — rename one or move it so its path differs.`
+    )
+  }
+}
+
 // Copy all TS/TSX files from a directory (non-recursive)
 async function copyTsFiles(srcDir: string, destDir: string, prefix: string = ''): Promise<void> {
   await mkdir(destDir, { recursive: true })
@@ -230,6 +246,19 @@ for (const entryPath of componentFiles) {
     const parts = relativePath.split('/')
     baseNameNoExt = parts[parts.length - 2] || baseNameNoExt
   }
+  // Path-qualified manifest key so two files with the same basename in
+  // different directories don't collide. Colocated index.tsx uses its
+  // parent directory's path. Top-level files keep the plain basename for
+  // backwards compatibility with existing consumers that look up by name.
+  //
+  // e.g. `components/settings-demo.tsx`         -> "settings-demo"
+  //      `components/gallery/admin/settings-demo.tsx` -> "gallery/admin/settings-demo"
+  //      `components/ui/tabs/index.tsx`         -> "ui/tabs"
+  const manifestKey: string = dirPath === '.'
+    ? baseNameNoExt
+    : baseFileName === 'index.tsx'
+      ? dirPath
+      : `${dirPath}/${baseNameNoExt}`
 
   // Create subdirectory if needed
   const outputDir = dirPath === '.' ? DIST_COMPONENTS_DIR : resolve(DIST_COMPONENTS_DIR, dirPath)
@@ -255,7 +284,8 @@ for (const entryPath of componentFiles) {
       .replace(/^['"]use client['"];?\s*/m, '')
     await Bun.write(resolve(outputDir, baseFileName), transformedSource)
     console.log(`Generated: dist/components/${relativePath}`)
-    manifest[baseNameNoExt] = { markedTemplate: `components/${relativePath}` }
+    assertNoManifestCollision(manifest, manifestKey, relativePath)
+    manifest[manifestKey] = { markedTemplate: `components/${relativePath}` }
     continue
   }
 
@@ -263,7 +293,8 @@ for (const entryPath of componentFiles) {
   if (markedJsxContent && !clientJsContent) {
     await Bun.write(resolve(outputDir, baseFileName), markedJsxContent)
     console.log(`Generated: dist/components/${relativePath}`)
-    manifest[baseNameNoExt] = { markedTemplate: `components/${relativePath}` }
+    assertNoManifestCollision(manifest, manifestKey, relativePath)
+    manifest[manifestKey] = { markedTemplate: `components/${relativePath}` }
     continue
   }
 
@@ -289,14 +320,15 @@ for (const entryPath of componentFiles) {
     console.log(`Generated: dist/components/${relativePath}`)
   }
 
-  // Manifest entry - use component name from file
-  const componentName = baseNameNoExt
+  // Manifest entry - use path-qualified key to avoid collisions between
+  // files with the same basename in different directories.
   const markedJsxPath = `components/${relativePath}`
   const clientJsPath = hasClientJs
     ? `components/${dirPath === '.' ? clientJsFilename : `${dirPath}/${clientJsFilename}`}`
     : undefined
 
-  manifest[componentName] = {
+  assertNoManifestCollision(manifest, manifestKey, relativePath)
+  manifest[manifestKey] = {
     markedTemplate: markedJsxPath,
     clientJs: clientJsPath,
   }

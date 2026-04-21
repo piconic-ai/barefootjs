@@ -117,6 +117,17 @@ const patternEntries: SidebarEntry[] = [
   },
 ]
 
+// Gallery — multi-page demo apps (see issue #929)
+const galleryEntries: SidebarEntry[] = [
+  {
+    title: 'Apps',
+    defaultOpen: false,
+    links: [
+      { title: 'Admin Dashboard', href: '/gallery/admin' },
+    ],
+  },
+]
+
 // Tools — CLI and design system utilities
 const toolEntries: SidebarEntry[] = [
   { title: 'CLI', href: '/docs/cli' },
@@ -150,6 +161,8 @@ export const renderer = jsxRenderer(
     // Resolve prev/next links for mobile page navigation
     const slugMatch = currentPath.match(/\/(?:docs\/)?components\/([^/]+)/)
     const navLinks = slugMatch ? getNavLinks(slugMatch[1]) : {}
+    const isGallery = currentPath.startsWith('/gallery/')
+    const isChrome = currentPath !== '/studio' && !isGallery
     return (
       <WithPredictableIds>
         <html lang="en">
@@ -187,7 +200,7 @@ export const renderer = jsxRenderer(
             <MobileMenu />
             <MobilePageNav prev={navLinks.prev} next={navLinks.next} />
             <CommandPalette />
-            {currentPath !== '/studio' && (
+            {isChrome && (
               <nav
                 className="hidden sm:block fixed top-14 left-0 w-56 h-[calc(100vh-56px)] overflow-y-auto border-r bg-background p-4"
                 aria-label="Main navigation"
@@ -203,13 +216,25 @@ export const renderer = jsxRenderer(
                 </div>
                 <SidebarNav entries={patternEntries} currentPath={currentPath} />
                 <div className="pt-3 mt-3 border-t">
+                  <span className="block px-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gallery</span>
+                </div>
+                <SidebarNav entries={galleryEntries} currentPath={currentPath} />
+                <div className="pt-3 mt-3 border-t">
                   <span className="block px-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tools</span>
                 </div>
                 <SidebarNav entries={toolEntries} currentPath={currentPath} />
               </nav>
             )}
-            <div className={currentPath === '/studio' ? '' : 'sm:pl-56'}>
-              <main className={currentPath === '/studio' ? '' : 'max-w-[1000px] mx-auto px-0 sm:px-4'}>
+            <div className={isChrome ? 'sm:pl-56' : ''}>
+              <main
+                className={
+                  currentPath === '/studio'
+                    ? ''
+                    : isGallery
+                    ? 'max-w-[1200px] mx-auto px-2 sm:px-4 py-4'
+                    : 'max-w-[1000px] mx-auto px-0 sm:px-4'
+                }
+              >
                 {children}
               </main>
             </div>

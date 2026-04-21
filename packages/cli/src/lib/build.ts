@@ -405,6 +405,19 @@ export async function build(
     if (result.types) collectedTypes.set(result.typesKey!, result.types)
 
     if (result.manifestKey && result.manifestEntry) {
+      // Detect silent overwrites. Two sources resolving to the same manifest key
+      // would leave one of them out of the final manifest — and the combiner
+      // would then fail to inline its @bf-child placeholders. Surface loudly.
+      const existing = manifest[result.manifestKey]
+      if (
+        existing !== undefined &&
+        existing.markedTemplate !== result.manifestEntry.markedTemplate
+      ) {
+        throw new Error(
+          `Manifest key collision: "${result.manifestKey}" would be overwritten by ${relative(config.projectDir, entryPath)}. ` +
+          `Two component files share a basename — rename one to give each a unique manifest key.`
+        )
+      }
       manifest[result.manifestKey] = result.manifestEntry
     }
 
