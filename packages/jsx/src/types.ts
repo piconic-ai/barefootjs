@@ -392,6 +392,10 @@ export interface IRProp extends AttrMeta {
   loc: SourceLocation
   /** When the prop value is a JSX element/fragment, store the transformed IR nodes here */
   jsxChildren?: IRNode[]
+  /** When true, prop expression calls signal getters or memos (computed from AST). (#942 DRY consolidation) */
+  callsReactiveGetters?: boolean
+  /** When true, prop expression contains any `identifier()` pattern (computed from AST). (#942 DRY consolidation) */
+  hasFunctionCalls?: boolean
 }
 
 // =============================================================================

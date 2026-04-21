@@ -422,35 +422,24 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           const expandedValue = expandDynamicPropValue(prop.value, ctx)
           propsForInit.push(`get ${quotePropName(prop.name)}() { return ${expandedValue} }`)
 
-          // Solid-style wrap-by-default fallback (#942, follow-up to
-          // #937/#939/#940/#941). Wrap child-component prop bindings in
-          // createEffect not only for statically-proven-reactive values,
-          // but also for any expression the analyzer can't prove
-          // non-reactive — anything containing a function call. Pure
-          // literals and bare identifiers (no calls) stay un-wrapped via
-          // the other branches of this if/else.
+          // Solid-style wrap-by-default fallback (#942, DRY-consolidated
+          // with #939/#941/#943 via IRProp AST flags). Wrap child-component
+          // prop bindings in createEffect not only for statically-proven
+          // reactive values, but also for any expression the analyzer
+          // can't prove non-reactive — AST flags carry that signal from
+          // Phase 1. Pure literals and bare identifiers (no calls) stay
+          // un-wrapped via the other branches of this if/else.
           //
-          // False positive (extra createEffect that subscribes to nothing)
-          // is harmless; false negative (silent drop of a reactive read in
-          // a child prop like `<Card title={format(x)} />`) is the bug
-          // class this closes. Phase 2 has no AST access here, so a cheap
-          // regex on the expanded expression is sufficient.
-          //
-          // Single- and double-quoted strings are stripped before the
-          // regex runs, to avoid false positives on object-literal prop
-          // values like `{ color: 'hsl(221 83% 53%)' }`. A single
-          // alternation regex handles both quote kinds in one pass, so
-          // there is no order dependency for inputs that mix them
-          // (e.g. `"It's fine"`). Template literals are left intact
-          // because `${calls()}` inside them is live code.
+          // `hasPropsRef` stays as a string-level check because the
+          // props-param rename lives in Phase 1 (IRProp.value already has
+          // `props.xxx` substituted); string-literal stripping isn't
+          // needed for it, and `prop.callsReactiveGetters` /
+          // `prop.hasFunctionCalls` are computed structurally from the AST
+          // so they can't false-match call-like substrings inside string
+          // literals (e.g. `{ color: 'hsl(221 83% 53%)' }`).
           const hasPropsRef = expandedValue.includes('props.')
           const hasReactiveExpr = needsEffectWrapper(expandedValue, ctx)
-          const withoutStringLiterals = expandedValue.replace(
-            /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g,
-            '',
-          )
-          const hasCallOutsideString = /\b\w+\s*\(/.test(withoutStringLiterals)
-          if (hasPropsRef || hasReactiveExpr || hasCallOutsideString) {
+          if (hasPropsRef || hasReactiveExpr || prop.callsReactiveGetters || prop.hasFunctionCalls) {
             const attrName = prop.name === 'className' ? 'class' : prop.name
             ctx.reactiveChildProps.push({
               componentName: node.name,

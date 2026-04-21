@@ -2143,6 +2143,20 @@ function processComponentProps(
       propTemplateValue = rewriteBarePropRefs(propValue, attr.initializer.expression, ctx)
     }
 
+    // AST-derived reactivity flags for Solid-style wrap-by-default fallback
+    // (#942 DRY consolidation). Lets collect-elements.ts decide wrapping
+    // structurally instead of regex-scanning the expanded string — a regex
+    // over expression text can false-match call-like substrings inside
+    // string literals (e.g. `'hsl(221 83% 53%)'`). JSX-as-prop is handled
+    // above via `jsxChildren` and string-literal attrs have no expression
+    // to analyze; only regular dynamic expression attrs carry flags.
+    let callsReactive = false
+    let hasCalls = false
+    if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+      callsReactive = exprCallsReactiveGetters(attr.initializer.expression, ctx)
+      hasCalls = exprHasFunctionCalls(attr.initializer.expression)
+    }
+
     props.push({
       name,
       value: propValue,
@@ -2150,6 +2164,8 @@ function processComponentProps(
       dynamic,
       isLiteral,
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
+      callsReactiveGetters: callsReactive || undefined,
+      hasFunctionCalls: hasCalls || undefined,
       ...pickAttrMeta(attrResult),
     })
   }
