@@ -17,11 +17,84 @@ export interface ResolveRelativeImportsOptions {
   sourceDirs?: string[]
 }
 
+async function resolveSourceFile(importPath: string, searchDirs: string[]): Promise<string> {
+  for (const dir of searchDirs) {
+    const basePath = resolve(dir, importPath)
+    for (const ext of ['.ts', '.tsx', '.js']) {
+      if (await fileExists(basePath + ext)) return basePath + ext
+    }
+  }
+  return ''
+}
+
+/**
+ * Process a single file's relative imports, mutating `content` in place.
+ * Recurses into transitively-imported `.ts` modules so that, e.g.,
+ * `client.tsx → nav-data.ts → component-registry.ts` all end up inlined
+ * in the right declaration order.
+ */
+async function inlineRelativeImports(
+  content: string,
+  searchDirs: string[],
+  inlinedPaths: Set<string>,
+  loggingPath: string
+): Promise<string> {
+  const re = new RegExp(RELATIVE_IMPORT_RE.source, RELATIVE_IMPORT_RE.flags)
+  const matches = [...content.matchAll(re)]
+  if (matches.length === 0) return content
+
+  for (const match of matches) {
+    const importPath = match[1]
+    const fullMatch = match[0]
+    const sourceFile = await resolveSourceFile(importPath, searchDirs)
+
+    if (!sourceFile || inlinedPaths.has(sourceFile)) {
+      content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
+      continue
+    }
+
+    if (sourceFile.endsWith('.tsx')) {
+      content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
+      console.log(`Stripped server component import: ${importPath} from ${loggingPath}`)
+      continue
+    }
+
+    inlinedPaths.add(sourceFile)
+    const sourceContent = await readText(sourceFile)
+    let jsCode = transpile(sourceContent, { loader: 'ts' })
+
+    // Recursively resolve relative imports inside the inlined module before
+    // stripping its import lines. Resolution is anchored to the source file's
+    // own directory so transitive paths (e.g. './component-registry') resolve
+    // correctly regardless of where the parent client JS lives.
+    jsCode = await inlineRelativeImports(
+      jsCode,
+      [dirname(sourceFile), ...searchDirs.slice(1)],
+      inlinedPaths,
+      loggingPath,
+    )
+
+    // Convert exports/imports of the inlined module to plain declarations.
+    // Also drop bare `export { foo, bar };` blocks emitted by the transpiler —
+    // stripping just the `export` keyword leaves a stray block statement.
+    jsCode = jsCode
+      .replace(/^import\s+.*$/gm, '')
+      .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm, '')
+      .replace(/^export\s+/gm, '')
+      .trim()
+
+    content = content.replace(fullMatch, jsCode)
+    console.log(`Inlined: ${importPath} into ${loggingPath}`)
+  }
+
+  return content
+}
+
 /**
  * Resolve relative imports in compiled client JS files.
  *
  * For each client JS file in the manifest:
- * - `.ts` imports: transpile and inline the code
+ * - `.ts` imports: transpile and inline the code (recursively for transitive `.ts` deps)
  * - `.tsx` imports: strip (server component, already rendered at SSR time)
  * - Not found / already inlined: strip
  */
@@ -38,61 +111,16 @@ export async function resolveRelativeImports(options: ResolveRelativeImportsOpti
       continue
     }
 
-    // Reset the global regex for each file
-    const re = new RegExp(RELATIVE_IMPORT_RE.source, RELATIVE_IMPORT_RE.flags)
-    const matches = [...content.matchAll(re)]
-    if (matches.length === 0) continue
-
     const inlinedPaths = new Set<string>()
+    const next = await inlineRelativeImports(
+      content,
+      [dirname(filePath), ...sourceDirs],
+      inlinedPaths,
+      entry.clientJs,
+    )
 
-    for (const match of matches) {
-      const importPath = match[1]
-      const fullMatch = match[0]
-
-      // Try to resolve source file: first relative to client JS, then sourceDirs
-      const searchDirs = [dirname(filePath), ...sourceDirs]
-      let sourceFile = ''
-      for (const dir of searchDirs) {
-        const basePath = resolve(dir, importPath)
-        for (const ext of ['.ts', '.tsx', '.js']) {
-          if (await fileExists(basePath + ext)) {
-            sourceFile = basePath + ext
-            break
-          }
-        }
-        if (sourceFile) break
-      }
-
-      if (!sourceFile || inlinedPaths.has(sourceFile)) {
-        // Already inlined or not found — strip the import
-        content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
-        continue
-      }
-
-      // Only inline pure TS modules (no JSX). TSX files with JSX are server
-      // components whose rendering was already done at SSR time — their imports
-      // in client JS are for component name matching only, not runtime execution.
-      if (sourceFile.endsWith('.tsx')) {
-        content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
-        console.log(`Stripped server component import: ${importPath} from ${entry.clientJs}`)
-        continue
-      }
-
-      // Transpile and inline pure TS utility modules
-      const sourceContent = await readText(sourceFile)
-      let jsCode = transpile(sourceContent, { loader: 'ts' })
-
-      // Convert exports to plain declarations for inlining
-      jsCode = jsCode
-        .replace(/^import\s+.*$/gm, '')
-        .replace(/^export\s+/gm, '')
-        .trim()
-
-      content = content.replace(fullMatch, jsCode)
-      inlinedPaths.add(sourceFile)
-      console.log(`Inlined: ${importPath} into ${entry.clientJs}`)
+    if (next !== content) {
+      await writeText(filePath, next)
     }
-
-    await writeText(filePath, content)
   }
 }
