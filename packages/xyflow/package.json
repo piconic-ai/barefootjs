@@ -5,9 +5,12 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/xyflow.browser.min.js",
+  "jsdelivr": "./dist/xyflow.browser.min.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "umd": "./dist/xyflow.browser.min.js",
       "import": "./dist/index.js"
     }
   },
@@ -16,8 +19,9 @@
     "src"
   ],
   "scripts": {
-    "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client' --external '@barefootjs/client/runtime'",
+    "build": "bun run build:js && bun run build:browser && bun run build:types",
+    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
+    "build:browser": "bun build ./src/index.ts --outdir ./dist --entry-naming 'xyflow.browser.min.[ext]' --format esm --minify --sourcemap --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
     "build:types": "tsc --emitDeclarationOnly --outDir ./dist",
     "test": "bun test src/",
     "test:e2e": "bunx playwright test",
