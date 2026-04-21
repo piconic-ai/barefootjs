@@ -970,7 +970,15 @@ function transformConditional(
   const condition = ctx.getJS(node.condition)
   const reactive = isReactiveExpression(condition, ctx, node.condition)
   const loopParamReactive = !reactive && referencesLoopParam(condition, ctx)
-  const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
+  // Solid-style wrap-by-default fallback (#941, follow-up to #937/#939).
+  // A condition the analyzer can't prove reactive but that contains a
+  // function call is likely a silent-drop waiting to happen — allocate
+  // a slotId so the collector can wrap it. See `case 'conditional'` in
+  // collect-elements.ts for the matching gate.
+  const callsReactive = exprCallsReactiveGetters(node.condition, ctx)
+  const hasCalls = exprHasFunctionCalls(node.condition)
+  const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
+  const slotId = needsSlot ? generateSlotId(ctx) : null
 
   // Transform both branches
   const whenTrue = transformConditionalBranch(node.whenTrue, ctx)
@@ -985,6 +993,8 @@ function transformConditional(
     whenTrue,
     whenFalse,
     slotId,
+    callsReactiveGetters: callsReactive || undefined,
+    hasFunctionCalls: hasCalls || undefined,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -996,7 +1006,11 @@ function transformLogicalAnd(
   const condition = ctx.getJS(node.left)
   const reactive = isReactiveExpression(condition, ctx, node.left)
   const loopParamReactive = !reactive && referencesLoopParam(condition, ctx)
-  const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
+  // Wrap-by-default fallback (#941) — see transformConditional.
+  const callsReactive = exprCallsReactiveGetters(node.left, ctx)
+  const hasCalls = exprHasFunctionCalls(node.left)
+  const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
+  const slotId = needsSlot ? generateSlotId(ctx) : null
 
   const whenTrue = transformConditionalBranch(node.right, ctx)
   const whenFalse: IRExpression = {
@@ -1017,6 +1031,8 @@ function transformLogicalAnd(
     whenTrue,
     whenFalse,
     slotId,
+    callsReactiveGetters: callsReactive || undefined,
+    hasFunctionCalls: hasCalls || undefined,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -1050,7 +1066,14 @@ function transformNullishCoalescing(
   const condition = isNullish ? `${leftText} != null` : leftText
   const reactive = isReactiveExpression(leftText, ctx, node.left)
   const loopParamReactive = !reactive && referencesLoopParam(leftText, ctx)
-  const slotId = (reactive || loopParamReactive) ? generateSlotId(ctx) : null
+  // Wrap-by-default fallback (#941) — see transformConditional. The call
+  // flags are computed from node.left (the operand that stands in for the
+  // condition). Hoisted here so both the IRConditional slotId decision and
+  // the whenTrue IRExpression can share the same values.
+  const callsReactive = exprCallsReactiveGetters(node.left, ctx)
+  const hasCalls = exprHasFunctionCalls(node.left)
+  const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
+  const slotId = needsSlot ? generateSlotId(ctx) : null
 
   // whenTrue: the left-hand value itself
   const templateLeftText = rewriteBarePropRefs(leftText, node.left, ctx)
@@ -1061,8 +1084,8 @@ function transformNullishCoalescing(
     typeInfo: inferExpressionType(node.left, ctx),
     reactive,
     slotId: null,
-    callsReactiveGetters: exprCallsReactiveGetters(node.left, ctx) || undefined,
-    hasFunctionCalls: exprHasFunctionCalls(node.left) || undefined,
+    callsReactiveGetters: callsReactive || undefined,
+    hasFunctionCalls: hasCalls || undefined,
     loc: getSourceLocation(node.left, ctx.sourceFile, ctx.filePath),
   }
 
@@ -1082,6 +1105,8 @@ function transformNullishCoalescing(
     whenTrue,
     whenFalse,
     slotId,
+    callsReactiveGetters: callsReactive || undefined,
+    hasFunctionCalls: hasCalls || undefined,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }

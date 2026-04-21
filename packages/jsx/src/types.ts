@@ -136,6 +136,10 @@ export interface IRConditional {
   loc: SourceLocation
   /** When true, condition should be evaluated on client side only */
   clientOnly?: boolean
+  /** When true, condition calls signal getters or memos (has reactive `foo()` pattern). */
+  callsReactiveGetters?: boolean
+  /** When true, condition contains function call(s) — any `identifier()` pattern (computed from AST). */
+  hasFunctionCalls?: boolean
 }
 
 /**

@@ -250,12 +250,22 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
     case 'conditional':
       if (node.clientOnly && node.slotId) {
         ctx.clientOnlyConditionals.push(buildConditionalMetadata(node, ctx))
-      } else if (node.reactive && node.slotId) {
-        if (insideConditional) {
-          // Nested conditionals are collected by the parent via collectBranchConditionals.
-          // Don't push to ctx.conditionalElements — they'll be emitted inside the parent's bindEvents.
-        } else {
-          ctx.conditionalElements.push(buildConditionalMetadata(node, ctx))
+      } else if (node.slotId) {
+        // Solid-style wrap-by-default fallback (#941, follow-up to #937/#939).
+        // Wrap not only statically-proven-reactive conditions, but also any
+        // condition containing a function call — otherwise the silent-drop
+        // failure class freezes the branch at its SSR-time value.
+        const shouldWrap =
+          node.reactive ||
+          node.callsReactiveGetters ||
+          node.hasFunctionCalls
+        if (shouldWrap) {
+          if (insideConditional) {
+            // Nested conditionals are collected by the parent via collectBranchConditionals.
+            // Don't push to ctx.conditionalElements — they'll be emitted inside the parent's bindEvents.
+          } else {
+            ctx.conditionalElements.push(buildConditionalMetadata(node, ctx))
+          }
         }
       }
       // Recurse into conditional branches with insideConditional = true
@@ -749,7 +759,9 @@ function collectBranchConditionals(node: IRNode, ctx: ClientJsContext): Conditio
   function walk(n: IRNode): void {
     switch (n.type) {
       case 'conditional':
-        if (n.reactive && n.slotId) {
+        // Wrap-by-default fallback (#941) — mirror the top-level gate in
+        // `case 'conditional'` at collectElements().
+        if (n.slotId && (n.reactive || n.callsReactiveGetters || n.hasFunctionCalls)) {
           result.push(buildConditionalMetadata(n, ctx))
         }
         // Don't recurse further — the nested conditional handles its own branches
