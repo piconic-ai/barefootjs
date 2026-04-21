@@ -1696,9 +1696,11 @@ function transformMapCall(
   // latent crash in the `mapArray` renderItem emitter — see #949 and
   // the emitter-side `destructureLoopParam` helper, which now unwraps
   // the signal accessor at renderItem body entry. No more skip.
+  const callsReactive = exprCallsReactiveGetters(arrayExpr, ctx)
+  const hasCalls = exprHasFunctionCalls(arrayExpr)
   const isStaticArray =
     !isSignalOrMemoArray(array, ctx)
-    && !exprHasFunctionCalls(arrayExpr)
+    && !hasCalls
 
   // Collect nested components for both static and dynamic arrays.
   // Static arrays: needed for initChild hydration.
@@ -1720,6 +1722,8 @@ function transformMapCall(
     // The parent element will assign its slotId to the loop after transformation
     slotId: null,
     isStaticArray,
+    callsReactiveGetters: callsReactive || undefined,
+    hasFunctionCalls: hasCalls || undefined,
     childComponent,
     nestedComponents,
     filterPredicate,

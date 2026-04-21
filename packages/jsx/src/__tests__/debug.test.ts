@@ -296,4 +296,304 @@ describe('graphToJSON', () => {
     expect(json).toHaveProperty('effects')
     expect(json).toHaveProperty('domBindings')
   })
+
+  test('domBindings entries carry classification', () => {
+    // #944: JSON consumers (tooling, editor integrations) rely on the
+    // classification field to filter fallbacks without re-running static
+    // analysis. Guard against accidental regression in graphToJSON.
+    const graph = buildComponentGraph(counterSource, 'Counter.tsx')
+    const json = graphToJSON(graph) as { domBindings: Array<{ classification: string }> }
+    expect(json.domBindings.length).toBeGreaterThan(0)
+    for (const d of json.domBindings) {
+      expect(d).toHaveProperty('classification')
+      expect(['reactive', 'fallback']).toContain(d.classification)
+    }
+  })
+})
+
+// =============================================================================
+// #944: classification — reactive vs fallback-wrapped DOM bindings
+// =============================================================================
+
+describe('DomBinding classification (#944)', () => {
+  test('signal getter in text interpolation is reactive', () => {
+    const graph = buildComponentGraph(counterSource, 'Counter.tsx')
+    const textBindings = graph.domBindings.filter(d => d.type === 'text')
+    expect(textBindings.length).toBeGreaterThan(0)
+    for (const b of textBindings) {
+      expect(b.classification).toBe('reactive')
+      expect(b.deps).toContain('count')
+    }
+  })
+
+  test('event handler is always reactive (not subject to wrap-by-default)', () => {
+    // Handlers bind once; they aren't re-evaluated per signal change, so
+    // the wrap-by-default gate doesn't apply. They should never show up
+    // as fallback.
+    const graph = buildComponentGraph(counterSource, 'Counter.tsx')
+    const eventBindings = graph.domBindings.filter(d => d.type === 'event')
+    expect(eventBindings.length).toBeGreaterThan(0)
+    for (const b of eventBindings) {
+      expect(b.classification).toBe('reactive')
+    }
+  })
+
+  test('opaque call in text interpolation is fallback', () => {
+    // `formatTitle(page)` is an imported helper; `page` is a local const.
+    // Neither is a signal/memo/prop. #939 widened the emitter to wrap
+    // these so the DOM updates match runtime reads; #944 surfaces them
+    // here as `classification: 'fallback'` so users can find candidates.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { formatTitle } from './format'
+
+      export function Page() {
+        const [, setFoo] = createSignal(0)
+        const page = 'home'
+        return <h1 onClick={() => setFoo(1)}>{formatTitle(page)}</h1>
+      }
+    `
+    const graph = buildComponentGraph(source, 'Page.tsx')
+    const text = graph.domBindings.find(d => d.type === 'text')
+    expect(text).toBeDefined()
+    expect(text!.classification).toBe('fallback')
+    // Fallback bindings typically have empty deps — the effect subscribes
+    // to whatever it happens to read at runtime, possibly nothing.
+    expect(text!.deps).toEqual([])
+  })
+
+  test('opaque call in attribute is fallback', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { format } from './fmt'
+
+      export function Tag() {
+        const [, setFoo] = createSignal(0)
+        const label = 'hi'
+        return <button class={format(label)} onClick={() => setFoo(1)}>x</button>
+      }
+    `
+    const graph = buildComponentGraph(source, 'Tag.tsx')
+    const attr = graph.domBindings.find(d => d.type === 'attribute')
+    expect(attr).toBeDefined()
+    expect(attr!.classification).toBe('fallback')
+    expect(attr!.label).toBe('class')
+  })
+
+  test('opaque call in conditional is fallback', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { shouldShow } from './rules'
+
+      export function Panel() {
+        const [, setFoo] = createSignal(0)
+        const mode = 'draft'
+        return <div onClick={() => setFoo(1)}>{shouldShow(mode) ? <span>on</span> : <span>off</span>}</div>
+      }
+    `
+    const graph = buildComponentGraph(source, 'Panel.tsx')
+    const cond = graph.domBindings.find(d => d.type === 'conditional')
+    expect(cond).toBeDefined()
+    expect(cond!.classification).toBe('fallback')
+  })
+
+  test('opaque call producing loop array is fallback', () => {
+    // `getItems()` is an imported helper — the analyzer can't prove it
+    // reactive, but it has calls so the emitter routes it through
+    // `!isStaticArray` (mapArray) to match runtime reads. #944 marks it
+    // as fallback so users can find the candidate for refactor.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { getItems } from './items'
+
+      export function List() {
+        const [, setFoo] = createSignal(0)
+        return (
+          <ul onClick={() => setFoo(1)}>
+            {getItems().map(item => <li>{item}</li>)}
+          </ul>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'List.tsx')
+    const loop = graph.domBindings.find(d => d.type === 'loop')
+    expect(loop).toBeDefined()
+    expect(loop!.classification).toBe('fallback')
+  })
+
+  test('signal-driven loop array is reactive', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function List() {
+        const [items, setItems] = createSignal([1, 2, 3])
+        return (
+          <ul onClick={() => setItems(i => [...i, i.length])}>
+            {items().map(item => <li>{item}</li>)}
+          </ul>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'List.tsx')
+    const loop = graph.domBindings.find(d => d.type === 'loop')
+    expect(loop).toBeDefined()
+    expect(loop!.classification).toBe('reactive')
+    expect(loop!.deps).toContain('items')
+  })
+
+  test('opaque call in child-component prop is fallback (#944 concern 1)', () => {
+    // `<Card title={formatTitle(page)} />` — the #942 motivating example.
+    // The child-prop emitter wraps this in a reactive child-prop entry via
+    // `prop.callsReactiveGetters || prop.hasFunctionCalls`, but before the
+    // review fix `collectDomBindings` had no `case 'component'` branch, so
+    // the binding silently missed the graph — under-reporting in a CLI
+    // whose purpose is to surface exactly these.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { formatTitle } from './format'
+      import { Card } from './Card'
+
+      export function Dashboard() {
+        const [, setFoo] = createSignal(0)
+        const page = 'home'
+        return (
+          <div onClick={() => setFoo(1)}>
+            <Card title={formatTitle(page)} />
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'Dashboard.tsx')
+    const cardProp = graph.domBindings.find(d => d.label === 'Card.title')
+    expect(cardProp).toBeDefined()
+    expect(cardProp!.classification).toBe('fallback')
+    expect(cardProp!.type).toBe('attribute')
+    expect(cardProp!.expression).toBe('formatTitle(page)')
+  })
+
+  test('props.xxx in child-component prop is reactive (#944 concern 1)', () => {
+    // The `hasPropsRef` branch in the emitter gate — direct `props.title`
+    // read is reactive, not fallback. Guard the debug-side approximation
+    // (`propValue.includes('props.')`) so this case doesn't get demoted
+    // to fallback by accident.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { Card } from './Card'
+
+      export function Dashboard(props: { title: string }) {
+        const [, setFoo] = createSignal(0)
+        return (
+          <div onClick={() => setFoo(1)}>
+            <Card title={props.title} />
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'Dashboard.tsx')
+    const cardProp = graph.domBindings.find(d => d.label === 'Card.title')
+    expect(cardProp).toBeDefined()
+    expect(cardProp!.classification).toBe('reactive')
+  })
+
+  test('fallback inside child-component subtree is still collected (#944 concern 1)', () => {
+    // The previous silent-fall-through also skipped recursion into
+    // `node.children`, so any fallback reached only through a component
+    // subtree was doubly invisible. Pin the recursion.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { formatTitle } from './format'
+      import { Dialog } from './Dialog'
+
+      export function Page() {
+        const [, setFoo] = createSignal(0)
+        const page = 'home'
+        return (
+          <Dialog>
+            <h1 onClick={() => setFoo(1)}>{formatTitle(page)}</h1>
+          </Dialog>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'Page.tsx')
+    const text = graph.domBindings.find(d => d.type === 'text')
+    expect(text).toBeDefined()
+    expect(text!.classification).toBe('fallback')
+  })
+
+  test('domBindings carry expression text for non-event sites (#944 concern 2)', () => {
+    // why-wrap relies on the expression field to print something a human
+    // can locate in source. Pin the field on every non-event site so the
+    // CLI output doesn't silently degrade to slotId-only labels.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { formatTitle, getStyle, shouldShow, getItems } from './helpers'
+      import { Card } from './Card'
+
+      export function Everything() {
+        const [, setFoo] = createSignal(0)
+        const mode = 'draft'
+        return (
+          <div onClick={() => setFoo(1)}>
+            <h1 style={getStyle(mode)}>{formatTitle(mode)}</h1>
+            {shouldShow(mode) ? <span>on</span> : <span>off</span>}
+            <ul>{getItems().map(i => <li>{i}</li>)}</ul>
+            <Card title={formatTitle(mode)} />
+          </div>
+        )
+      }
+    `
+    const graph = buildComponentGraph(source, 'Everything.tsx')
+    const byType = (t: string) => graph.domBindings.filter(d => d.type === t)
+    const text = byType('text').find(d => d.classification === 'fallback')
+    const attr = byType('attribute').find(d => d.classification === 'fallback' && d.label === 'style')
+    const cond = byType('conditional').find(d => d.classification === 'fallback')
+    const loop = byType('loop').find(d => d.classification === 'fallback')
+    const childProp = graph.domBindings.find(d => d.label === 'Card.title')
+    expect(text?.expression).toContain('formatTitle')
+    expect(attr?.expression).toContain('getStyle')
+    expect(cond?.expression).toContain('shouldShow')
+    expect(loop?.expression).toContain('getItems')
+    expect(childProp?.expression).toContain('formatTitle')
+    // Event handlers: no expression field — rationale in DomBinding doc.
+    const event = graph.domBindings.find(d => d.type === 'event')
+    expect(event).toBeDefined()
+    expect(event!.expression).toBeUndefined()
+  })
+
+  test('formatComponentGraph marks fallback bindings with ~ prefix', () => {
+    // The visual marker is the primary UX for `barefoot inspect`.
+    // Guard the prefix format so `why-wrap` output doesn't silently drift.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { formatTitle } from './format'
+
+      export function Page() {
+        const [count, setCount] = createSignal(0)
+        const page = 'home'
+        return <h1 onClick={() => setCount(c => c + 1)}>{formatTitle(page)} {count()}</h1>
+      }
+    `
+    const graph = buildComponentGraph(source, 'Page.tsx')
+    const output = formatComponentGraph(graph)
+    // Fallback text binding for formatTitle(page) — marked with '~'.
+    expect(output).toMatch(/~ text "/)
+    // Reactive text binding for count() — marked with two leading spaces
+    // (no tilde). The exact prefix matters: it's the visual diff.
+    expect(output).toMatch(/dom bindings:[\s\S]*?text "/)
+    // No fallback marker on the reactive binding's line.
+    const lines = output.split('\n')
+    const countLine = lines.find(l => l.includes('count') && l.includes('text'))
+    expect(countLine).toBeDefined()
+    expect(countLine!).not.toMatch(/~ text/)
+  })
 })

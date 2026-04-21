@@ -55,8 +55,9 @@ Use the `barefoot` CLI (`bun run barefoot`) to look up component APIs, framework
 - `barefoot search <query>` — Find components and docs by name/category/tags
 - `barefoot ui <component>` — Component reference (props, examples, a11y)
 - `barefoot core <topic>` — Core docs (signals, compiler constraints, error codes, etc.)
-- `barefoot inspect <component>` — Show signal dependency graph (signals, memos, DOM bindings)
+- `barefoot inspect <component>` — Show signal dependency graph (signals, memos, DOM bindings). Bindings wrapped by the Solid-style fallback (#937) are prefixed with `~`.
 - `barefoot why-update <component> <signal>` — Trace update propagation path from a signal to DOM
+- `barefoot why-wrap <component>` — List fallback-wrapped expressions (#937). Each is a candidate for `createMemo` refactor — the runtime effect subscribes to whatever it reads at runtime, possibly nothing.
 - `barefoot test --debug <component>` — Show signal initialization trace and effect bindings
 
 Before editing a stateful component (`"use client"`), run `barefoot inspect` first to understand its reactive structure. All inspection commands support `--json` for machine-readable output.

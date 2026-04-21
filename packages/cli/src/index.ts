@@ -30,6 +30,7 @@ Commands:
   meta:extract                Extract metadata from ui/components/ui/*.tsx
   inspect <component>         Show signal dependency graph from IR
   why-update <comp> <signal>  Show update propagation path for a signal/memo
+  why-wrap <component>        Show Solid-style wrap-by-default fallback bindings (#937)
 
 Options:
   --json                      Output in JSON format
@@ -141,6 +142,12 @@ switch (command) {
 
   case 'why-update': {
     const { run } = await import('./commands/why-update')
+    await run(commandArgs, ctx)
+    break
+  }
+
+  case 'why-wrap': {
+    const { run } = await import('./commands/why-wrap')
     await run(commandArgs, ctx)
     break
   }
