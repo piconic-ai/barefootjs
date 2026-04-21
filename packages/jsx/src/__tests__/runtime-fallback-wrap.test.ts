@@ -102,10 +102,10 @@ describe('Solid-style wrap-by-default fallback (#937)', () => {
     `
 
     const clientJs = getClientJs(source, 'Greeting.tsx')
-    // No createEffect for the text — only the event handler and signal setup.
-    // We look specifically for the absence of a createEffect that writes the
-    // literal into a text node.
-    expect(clientJs).not.toMatch(/createEffect\([^)]*\)\s*=>\s*\{[^}]*['"]hello['"]/)
+    // A pure literal has no slotId and no dynamic binding — nothing to
+    // update at runtime. The only signal in this component is read-only in
+    // the event handler, so no createEffect should be emitted at all.
+    expect(clientJs).not.toContain('createEffect')
   })
 
   test('bare identifier (no calls) stays un-wrapped', () => {
@@ -124,6 +124,10 @@ describe('Solid-style wrap-by-default fallback (#937)', () => {
     `
 
     const clientJs = getClientJs(source, 'Label.tsx')
+    // Guard against the identifier being dropped entirely from the module —
+    // an over-eager regression could satisfy the negative assertion below by
+    // removing `label` altogether. We assert presence in the init scope too.
+    expect(clientJs).toContain('label')
     // No text-update createEffect should be emitted for a static bare ident.
     expect(clientJs).not.toMatch(/nodeValue\s*=\s*String\(label/)
   })
