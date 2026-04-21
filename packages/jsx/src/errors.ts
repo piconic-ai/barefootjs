@@ -47,6 +47,9 @@ export const ErrorCodes = {
 
   // Import errors (BF050-BF059)
   WRONG_PACKAGE_IMPORT: 'BF051',
+
+  // Init statement errors (BF052)
+  UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -92,6 +95,9 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.WRONG_PACKAGE_IMPORT]:
     'Import from wrong package.',
+
+  [ErrorCodes.UNDECLARED_INIT_STATEMENT_REFERENCE]:
+    'Init statement references an undeclared identifier. Declare it at module scope, inside the component, or import it — otherwise ESM strict mode throws ReferenceError at runtime.',
 }
 
 // =============================================================================

@@ -141,3 +141,104 @@ describe('Component-body top-level imperative statements (#930, bug-2)', () => {
     expect(clientJs).toContain('catch')
   })
 })
+
+describe('Init statements referencing module-scope declarations (#933)', () => {
+  test('module-level `let` written by an init statement is hoisted into client JS', () => {
+    // Regression: the bug-2 fix preserved `currentScopeId = props.scopeId`
+    // but dropped the `let currentScopeId` declaration. Writing to an
+    // undeclared identifier in ESM strict mode throws ReferenceError and
+    // breaks hydration.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      let currentScopeId: string | undefined = undefined
+
+      export function Scoped(props: { scopeId?: string }) {
+        currentScopeId = props.scopeId
+        const [n, setN] = createSignal(0)
+        return <span>{n()}</span>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Scoped.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+    // Declaration must exist at module scope before the init function so
+    // the subsequent assignment `currentScopeId = ...` resolves.
+    expect(clientJs).toContain('currentScopeId')
+    const declIdx = clientJs.search(/var\s+currentScopeId/)
+    const initFnIdx = clientJs.indexOf('export function initScoped')
+    expect(declIdx).toBeGreaterThan(-1)
+    expect(initFnIdx).toBeGreaterThan(-1)
+    expect(declIdx).toBeLessThan(initFnIdx)
+  })
+
+  test('module-level `const` read by an init statement is preserved', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      const STORAGE_KEY = 'my-app:v1'
+
+      export function Persisted() {
+        const [v, setV] = createSignal('')
+        try {
+          setV(localStorage.getItem(STORAGE_KEY) || '')
+        } catch (e) {}
+        return <span>{v()}</span>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Persisted.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+    expect(clientJs).toContain('STORAGE_KEY')
+    const declIdx = clientJs.search(/var\s+STORAGE_KEY/)
+    expect(declIdx).toBeGreaterThan(-1)
+  })
+
+  test('init statement touching only locally-declared names does not hoist anything new', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Local() {
+        const [n, setN] = createSignal(0)
+        if (typeof window !== 'undefined') {
+          window.addEventListener('x', () => setN(1))
+        }
+        return <span>{n()}</span>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Local.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+    // No stray module-level var hoisting for builtins / component-local names.
+    expect(clientJs).not.toMatch(/var\s+window\s*=/)
+    expect(clientJs).not.toMatch(/var\s+setN\s*=/)
+  })
+
+  test('unresolved free identifier in an init statement emits BF052', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Broken(props: { v?: string }) {
+        unknownGlobal = props.v
+        const [n, setN] = createSignal(0)
+        return <span>{n()}</span>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Broken.tsx', { adapter })
+    const bf052 = result.errors.find(e => e.code === 'BF052')
+    expect(bf052).toBeDefined()
+    expect(bf052!.severity).toBe('error')
+    expect(bf052!.message.toLowerCase()).toContain('unknownglobal')
+  })
+})

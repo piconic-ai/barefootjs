@@ -720,7 +720,87 @@ function collectInitStatement(node: ts.Statement, ctx: AnalyzerContext): void {
   ctx.initStatements.push({
     body: ctx.getJS(node),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+    freeIdentifiers: extractFreeIdentifiersFromNode(node),
+    assignedIdentifiers: extractAssignedIdentifiersFromNode(node),
   })
+}
+
+/**
+ * Collect identifiers that appear on the left-hand side of an assignment
+ * (simple `=`, compound `+=` / `-=` / etc., or `++` / `--`). These identifiers
+ * must resolve to a real declaration at emit time — writing to an undeclared
+ * name throws a ReferenceError in ESM strict mode. Destructuring targets are
+ * also collected.
+ */
+function extractAssignedIdentifiersFromNode(node: ts.Node): Set<string> {
+  const ids = new Set<string>()
+
+  function addFromTarget(target: ts.Expression | ts.BindingElement): void {
+    if (ts.isIdentifier(target)) {
+      ids.add(target.text)
+      return
+    }
+    if (ts.isParenthesizedExpression(target)) {
+      addFromTarget(target.expression)
+      return
+    }
+    if (ts.isArrayLiteralExpression(target)) {
+      for (const el of target.elements) {
+        if (ts.isOmittedExpression(el)) continue
+        if (ts.isSpreadElement(el)) { addFromTarget(el.expression); continue }
+        addFromTarget(el)
+      }
+      return
+    }
+    if (ts.isObjectLiteralExpression(target)) {
+      for (const prop of target.properties) {
+        if (ts.isShorthandPropertyAssignment(prop)) { ids.add(prop.name.text); continue }
+        if (ts.isPropertyAssignment(prop)) { addFromTarget(prop.initializer); continue }
+        if (ts.isSpreadAssignment(prop)) { addFromTarget(prop.expression); continue }
+      }
+      return
+    }
+    // PropertyAccessExpression / ElementAccessExpression: assignment to a
+    // property of an object doesn't create an implicit global, so we skip it.
+  }
+
+  function visit(n: ts.Node): void {
+    if (ts.isBinaryExpression(n)) {
+      const op = n.operatorToken.kind
+      if (
+        op === ts.SyntaxKind.EqualsToken ||
+        op === ts.SyntaxKind.PlusEqualsToken ||
+        op === ts.SyntaxKind.MinusEqualsToken ||
+        op === ts.SyntaxKind.AsteriskEqualsToken ||
+        op === ts.SyntaxKind.SlashEqualsToken ||
+        op === ts.SyntaxKind.PercentEqualsToken ||
+        op === ts.SyntaxKind.AsteriskAsteriskEqualsToken ||
+        op === ts.SyntaxKind.AmpersandEqualsToken ||
+        op === ts.SyntaxKind.BarEqualsToken ||
+        op === ts.SyntaxKind.CaretEqualsToken ||
+        op === ts.SyntaxKind.LessThanLessThanEqualsToken ||
+        op === ts.SyntaxKind.GreaterThanGreaterThanEqualsToken ||
+        op === ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken ||
+        op === ts.SyntaxKind.AmpersandAmpersandEqualsToken ||
+        op === ts.SyntaxKind.BarBarEqualsToken ||
+        op === ts.SyntaxKind.QuestionQuestionEqualsToken
+      ) {
+        addFromTarget(n.left)
+      }
+    }
+    if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) {
+      if (
+        n.operator === ts.SyntaxKind.PlusPlusToken ||
+        n.operator === ts.SyntaxKind.MinusMinusToken
+      ) {
+        addFromTarget(n.operand)
+      }
+    }
+    ts.forEachChild(n, visit)
+  }
+
+  visit(node)
+  return ids
 }
 
 // =============================================================================
@@ -1021,6 +1101,7 @@ function collectConstant(
   // Skip if it's a signal or memo
   if (isSignalDeclaration(node) || isMemoDeclaration(node)) return
 
+  const isModule = _isModule
   const name = node.name.text
   const value = node.initializer
     ? ctx.getJS(node.initializer)
@@ -1109,6 +1190,7 @@ function collectConstant(
     valueBranches,
     declarationKind,
     isExported,
+    isModule: isModule || undefined,
     type,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     freeIdentifiers,
@@ -1471,6 +1553,56 @@ function validateContext(ctx: AnalyzerContext): void {
       )
     }
   }
+
+  // BF052: init statements that write to an identifier with no visible
+  // declaration cause a ReferenceError in ESM strict mode. Flag them
+  // at compile time instead of shipping broken client JS. (#933)
+  validateInitStatementReferences(ctx)
+}
+
+function validateInitStatementReferences(ctx: AnalyzerContext): void {
+  if (ctx.initStatements.length === 0) return
+
+  const resolved = collectResolvedNames(ctx)
+  for (const stmt of ctx.initStatements) {
+    if (!stmt.assignedIdentifiers) continue
+    for (const name of stmt.assignedIdentifiers) {
+      if (resolved.has(name)) continue
+      ctx.errors.push(
+        createError(ErrorCodes.UNDECLARED_INIT_STATEMENT_REFERENCE, stmt.loc, {
+          message:
+            `Init statement assigns to '${name}' but no declaration is in scope. ` +
+            `Declare it at module scope (e.g., \`let ${name} = undefined\`) or ` +
+            `inside the component function before assigning.`,
+          suggestion: {
+            message:
+              `Writing to an undeclared identifier throws ReferenceError in ESM ` +
+              `strict mode at runtime, silently breaking hydration.`,
+          },
+        })
+      )
+    }
+  }
+}
+
+function collectResolvedNames(ctx: AnalyzerContext): Set<string> {
+  const names = new Set<string>()
+  for (const c of ctx.localConstants) names.add(c.name)
+  for (const f of ctx.localFunctions) names.add(f.name)
+  for (const s of ctx.signals) {
+    names.add(s.getter)
+    if (s.setter) names.add(s.setter)
+  }
+  for (const m of ctx.memos) names.add(m.name)
+  for (const p of ctx.propsParams) names.add(p.name)
+  if (ctx.propsObjectName) names.add(ctx.propsObjectName)
+  if (ctx.restPropsName) names.add(ctx.restPropsName)
+  for (const imp of ctx.imports) {
+    for (const spec of imp.specifiers) {
+      names.add(spec.alias ?? spec.name)
+    }
+  }
+  return names
 }
 
 // Identifiers from `@barefootjs/client` whose implementations live in the

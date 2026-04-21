@@ -86,6 +86,17 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   // because collectUsedIdentifiers didn't extract from a specific context.
   collectIdentifiersFromIRTree(_ir.root, usedIdentifiers)
 
+  // Init statements (#930) reference identifiers via raw source text — not
+  // visible to IR-based identifier collection. Add their pre-computed free
+  // identifier sets so module-level declarations they depend on (#933) are
+  // not dropped from the output.
+  for (const stmt of ctx.initStatements) {
+    if (!stmt.freeIdentifiers) continue
+    for (const id of stmt.freeIdentifiers) {
+      usedIdentifiers.add(id)
+    }
+  }
+
   const neededProps = new Set<string>()
   const neededConstants: ConstantInfo[] = []
   const moduleLevelConstants: ConstantInfo[] = []
@@ -103,6 +114,17 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
       // createContext() and new WeakMap() must be at module level to enable
       // cross-component sharing (unique Symbol / identity-based store)
       if (constant.systemConstructKind) {
+        moduleLevelConstants.push(constant)
+        moduleLevelConstantNames.add(constant.name)
+        continue
+      }
+
+      // Module-level declarations (`let x` / `const x` outside the component
+      // function) must be emitted at module scope so that init statements
+      // assigning to them resolve correctly in ESM strict mode. Emitting
+      // them inside the init function would either shadow the user's
+      // intended shared state or leave writes unresolved. (#933)
+      if (constant.isModule) {
         moduleLevelConstants.push(constant)
         moduleLevelConstantNames.add(constant.name)
         continue

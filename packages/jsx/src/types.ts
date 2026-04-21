@@ -440,6 +440,19 @@ export interface InitStatementInfo {
   /** Raw JS source of the statement (TypeScript types already stripped). */
   body: string
   loc: SourceLocation
+  /**
+   * Free identifier references used by this statement. Used by the emitter
+   * to decide which module-level declarations must be preserved (#933) and
+   * to flag writes to undeclared globals.
+   */
+  freeIdentifiers?: Set<string>
+  /**
+   * Identifiers this statement assigns to (LHS of `=`, compound assignments,
+   * `++`, `--`). A subset of `freeIdentifiers` that must resolve to an
+   * actual declaration, otherwise ESM strict mode throws a ReferenceError
+   * at runtime.
+   */
+  assignedIdentifiers?: Set<string>
 }
 
 export interface ImportInfo {
@@ -480,6 +493,8 @@ export interface ConstantInfo {
   valueBranches?: string[]
   declarationKind: 'const' | 'let'
   isExported?: boolean
+  /** When true, declared at module level (outside the component function). */
+  isModule?: boolean
   type: TypeInfo | null
   loc: SourceLocation
   /** Pre-computed free identifier references in the value expression (computed at analysis time). */
