@@ -182,6 +182,20 @@ export interface IRLoop {
   isStaticArray: boolean
 
   /**
+   * When true, array expression calls signal getters or memos (computed from AST).
+   * Derived Phase 1 so debug tooling (#944) can classify the wrap decision
+   * without re-deriving reactivity from the expression string.
+   */
+  callsReactiveGetters?: boolean
+  /**
+   * When true, array expression contains any `identifier()` pattern (computed from AST).
+   * Combined with `callsReactiveGetters` this distinguishes reactive loops
+   * (`items().map(...)` where `items` is a signal) from fallback-wrapped loops
+   * (`getItems().map(...)` where `getItems` is an opaque call).
+   */
+  hasFunctionCalls?: boolean
+
+  /**
    * When the loop body is a single component, store its info here
    * for createComponent-based rendering instead of template strings.
    * This enables proper parent-to-child prop passing (including event handlers).

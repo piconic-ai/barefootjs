@@ -58,6 +58,19 @@ export interface DomBinding {
   slotId: string
   deps: string[]
   type: 'text' | 'event' | 'conditional' | 'loop' | 'attribute'
+  /**
+   * Classification inherited from the emitter's wrap decision (#944):
+   *  - 'reactive': static analysis proved the binding reads a signal, memo,
+   *    or reactive prop. `deps` is populated from those proven sources.
+   *  - 'fallback': Solid-style wrap-by-default (#937) wrapped it because
+   *    the expression contains a call the analyzer can't prove pure.
+   *    `deps` may be empty — the effect subscribes to whatever signals it
+   *    happens to read at runtime, possibly none.
+   *
+   * Event handlers are always classified 'reactive' — they are not subject
+   * to the wrap-by-default gate (handlers are bound, not re-evaluated).
+   */
+  classification: 'reactive' | 'fallback'
 }
 
 export interface ComponentGraph {
@@ -320,7 +333,10 @@ export function formatComponentGraph(graph: ComponentGraph): string {
     }
   }
 
-  // DOM bindings
+  // DOM bindings. Fallback-wrapped expressions (#937 Solid-style
+  // wrap-by-default) are marked with a leading `~` so users can spot
+  // expressions whose reactivity couldn't be statically proven — these
+  // are the candidates `barefoot why-wrap` surfaces for optimisation.
   if (graph.domBindings.length > 0) {
     lines.push(`  dom bindings:`)
     for (const d of graph.domBindings) {
@@ -328,7 +344,8 @@ export function formatComponentGraph(graph: ComponentGraph): string {
       const depStr = d.deps.join(', ')
       // For attribute bindings use the attr name; for others use slotId
       const id = d.type === 'attribute' ? `"${d.label}"` : `"${d.slotId}"`
-      lines.push(`    ${d.type} ${id}${arrow} ${depStr}`)
+      const marker = d.classification === 'fallback' ? '~ ' : '  '
+      lines.push(`    ${marker}${d.type} ${id}${arrow} ${depStr}`)
     }
   }
 
@@ -401,6 +418,7 @@ export function graphToJSON(graph: ComponentGraph): object {
       slotId: d.slotId,
       deps: d.deps,
       type: d.type,
+      classification: d.classification,
     })),
   }
 }
@@ -490,7 +508,19 @@ export function formatSignalTrace(traces: SignalTrace[]): string {
 // Helpers
 // =============================================================================
 
-/** Collect DOM bindings (text updates, event handlers, etc.) from the IR tree. */
+/**
+ * Collect DOM bindings (text updates, event handlers, etc.) from the IR tree.
+ *
+ * Emits one `DomBinding` per expression the emitter wraps in `createEffect` at
+ * client JS generation time. The gate matches `ir-to-client-js/collect-elements.ts`
+ * so `barefoot inspect` / `barefoot why-update` / `barefoot why-wrap` see the
+ * same reactive footprint the runtime sees.
+ *
+ * Each binding carries a `classification`:
+ *  - `'reactive'`: static analysis proved the expression reads a signal/memo/prop.
+ *  - `'fallback'`: Solid-style wrap-by-default (#937) wrapped it because the
+ *    expression contains a call the analyzer can't prove pure.
+ */
 function collectDomBindings(
   node: IRNode,
   bindings: DomBinding[],
@@ -500,33 +530,40 @@ function collectDomBindings(
   switch (node.type) {
     case 'element': {
       // Dynamic attribute bindings (style, class, aria-*, data-*, etc.)
+      // Widened to match the emitter's gate in collect-elements.ts:
+      // `needsEffectWrapper(...) || attr.callsReactiveGetters || attr.hasFunctionCalls`.
+      // `deps.length > 0` is the debug-side proxy for `needsEffectWrapper` —
+      // both recognise known signal / memo / prop names, so a non-empty
+      // deps list is the statically-proven-reactive case.
       for (const attr of node.attrs) {
         if (!attr.dynamic) continue
         const expr = attrValueToString(attr.value)
         if (!expr) continue
         const deps = extractReactiveDeps(expr, signalGetters, memoNames)
-        if (deps.length > 0) {
+        const isReactive = deps.length > 0
+        const isFallback = !isReactive && (attr.callsReactiveGetters || attr.hasFunctionCalls)
+        if (isReactive || isFallback) {
           bindings.push({
             kind: 'dom',
             label: attr.name,
             slotId: node.slotId ?? '?',
             deps,
             type: 'attribute',
+            classification: isReactive ? 'reactive' : 'fallback',
           })
         }
       }
-      // Event handlers
+      // Event handlers — always tracked, always 'reactive' (handlers are
+      // bound, not re-evaluated; no wrap-by-default gate applies).
       for (const event of node.events) {
-        const deps = extractReactiveDeps(event.handler, signalGetters, memoNames)
-        if (deps.length > 0 || true) {
-          bindings.push({
-            kind: 'dom',
-            label: `${event.name} handler "${node.slotId ?? '?'}"`,
-            slotId: node.slotId ?? '?',
-            deps: extractSetterRefs(event.handler, signalGetters),
-            type: 'event',
-          })
-        }
+        bindings.push({
+          kind: 'dom',
+          label: `${event.name} handler "${node.slotId ?? '?'}"`,
+          slotId: node.slotId ?? '?',
+          deps: extractSetterRefs(event.handler, signalGetters),
+          type: 'event',
+          classification: 'reactive',
+        })
       }
       // Recurse
       for (const child of node.children) {
@@ -535,7 +572,11 @@ function collectDomBindings(
       break
     }
     case 'expression': {
-      if (node.reactive && node.slotId) {
+      // Widened to match emitter gate in collect-elements.ts:
+      // `node.reactive || node.callsReactiveGetters || node.hasFunctionCalls`.
+      const isReactive = node.reactive
+      const isFallback = !isReactive && (node.callsReactiveGetters || node.hasFunctionCalls)
+      if ((isReactive || isFallback) && node.slotId) {
         const deps = extractReactiveDeps(node.expr, signalGetters, memoNames)
         bindings.push({
           kind: 'dom',
@@ -543,12 +584,15 @@ function collectDomBindings(
           slotId: node.slotId,
           deps,
           type: 'text',
+          classification: isReactive ? 'reactive' : 'fallback',
         })
       }
       break
     }
     case 'conditional': {
-      if (node.reactive && node.slotId) {
+      const isReactive = node.reactive
+      const isFallback = !isReactive && (node.callsReactiveGetters || node.hasFunctionCalls)
+      if ((isReactive || isFallback) && node.slotId) {
         const deps = extractReactiveDeps(node.condition, signalGetters, memoNames)
         bindings.push({
           kind: 'dom',
@@ -556,6 +600,7 @@ function collectDomBindings(
           slotId: node.slotId,
           deps,
           type: 'conditional',
+          classification: isReactive ? 'reactive' : 'fallback',
         })
       }
       collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames)
@@ -563,15 +608,23 @@ function collectDomBindings(
       break
     }
     case 'loop': {
+      // IRLoop compresses reactive/fallback behind `!isStaticArray`. We
+      // distinguish here via the dedicated flags added in #944:
+      // `callsReactiveGetters` catches `items()` where `items` is a signal;
+      // `hasFunctionCalls` without reactive-getter hit is the fallback case
+      // (e.g. `getItems().map(...)` with an opaque helper).
       if (node.slotId) {
         const deps = extractReactiveDeps(node.array, signalGetters, memoNames)
-        if (deps.length > 0) {
+        const isReactive = deps.length > 0 || node.callsReactiveGetters === true
+        const isFallback = !isReactive && node.hasFunctionCalls === true
+        if (isReactive || isFallback) {
           bindings.push({
             kind: 'dom',
             label: `loop "${node.slotId}"`,
             slotId: node.slotId,
             deps,
             type: 'loop',
+            classification: isReactive ? 'reactive' : 'fallback',
           })
         }
       }
