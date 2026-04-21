@@ -540,7 +540,19 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
         // e.g., `classes` → `` `${baseClasses} ${variantClasses[variant]} ${className}` ``
         const expandedValueStr = expandConstantForReactivity(valueStr, ctx)
 
-        if (needsEffectWrapper(expandedValueStr, ctx)) {
+        // Solid-style wrap-by-default fallback (#940, follow-up to #937/#939):
+        // wrap attribute bindings in createEffect not only for statically-proven
+        // reactive expressions, but also for any expression the analyzer can't
+        // prove non-reactive — i.e. anything that contains a function call.
+        // Pure static literals and bare identifiers (no calls) stay un-wrapped
+        // because their SSR value is already in the DOM.
+        //
+        // False positive (extra createEffect that subscribes to nothing) is
+        // harmless; false negative (silent drop of a reactive read) is the
+        // bug class this gate closes. Phase 2 has no AST access, so a cheap
+        // regex over the expanded expression is sufficient here.
+        const hasFunctionCall = /\b\w+\s*\(/.test(expandedValueStr)
+        if (needsEffectWrapper(expandedValueStr, ctx) || hasFunctionCall) {
           ctx.reactiveAttrs.push({
             slotId: element.slotId,
             attrName: attr.name,
