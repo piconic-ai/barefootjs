@@ -1393,6 +1393,11 @@ function transformMapCall(
 
   let array: string = ''
   let templateArray: string | undefined
+  // Track the AST node that corresponds to `array` so the isStaticArray
+  // decision below can run `exprHasFunctionCalls` on it. Updated every
+  // time `array` is assigned; initial value is the full mapSource, which
+  // matches the fallback path at the bottom of this if/else chain.
+  let arrayExpr: ts.Expression = mapSource
   let filterPredicate: FilterPredicateResult | undefined
   let sortComparator: SortComparatorResult | undefined
   let chainOrder: 'filter-sort' | 'sort-filter' | undefined
@@ -1404,6 +1409,7 @@ function transformMapCall(
   const setArray = (node: ts.Expression) => {
     array = ctx.getJS(node)
     templateArray = rewriteBarePropRefs(array, node, ctx)
+    arrayExpr = node
   }
 
   const filterInfo = isFilterCall(mapSource)
@@ -1518,10 +1524,12 @@ function transformMapCall(
       } else {
         // Simple filter().map()
         array = ctx.getJS(filterInfo.array)
+        arrayExpr = filterInfo.array
       }
     }
   } else {
     array = ctx.getJS(mapSource)
+    arrayExpr = mapSource
   }
 
   // Get callback function
@@ -1668,10 +1676,22 @@ function transformMapCall(
     }
   }
 
-  // Determine if array is static (prop) or dynamic (signal/memo)
-  // Static arrays don't need reconcileList - SSR elements are hydrated directly
-  // Only signal and memo arrays need reconcileList for dynamic DOM updates
-  const isStaticArray = !isSignalOrMemoArray(array, ctx)
+  // Determine if array is static (prop) or dynamic (signal/memo).
+  // Static arrays don't need reconcileList — SSR elements are hydrated
+  // directly. Signal / memo arrays need reconcileList for dynamic DOM
+  // updates.
+  //
+  // Solid-style wrap-by-default fallback (#943, follow-up to
+  // #937/#939/#940/#941/#942): if the array expression AST contains a
+  // function call but the analyzer can't recognise the callee as a
+  // signal / memo, we still force reconciliation. `getItems().map(...)`
+  // where `getItems` is an imported helper previously silent-dropped
+  // into the static-render path, freezing the SSR-time list on the
+  // client. Over-reconciling an array that happens to contain a pure
+  // call costs one extra `reconcileList` per loop; under-reconciling
+  // is the silent-drop bug this closes.
+  const isStaticArray =
+    !isSignalOrMemoArray(array, ctx) && !exprHasFunctionCalls(arrayExpr)
 
   // Collect nested components for both static and dynamic arrays.
   // Static arrays: needed for initChild hydration.
