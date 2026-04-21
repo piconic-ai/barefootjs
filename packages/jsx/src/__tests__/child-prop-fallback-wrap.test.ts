@@ -3,19 +3,26 @@
  * prop bindings on child components — `<Card title={expr} />`. Follow-up
  * to #937 (architecture) and #939 (text interpolation pilot).
  *
- * Before this change, `collect-elements.ts` gated `reactiveChildProps`
- * on `hasPropsRef || needsEffectWrapper(...)`. The latter is an
- * allow-list that only recognises known signal getters, memos, and
- * prop parameter names. Any child-component prop expression the
- * analyzer couldn't prove reactive — e.g. `<Card title={formatTitle(
- * page)} />` where `formatTitle` is imported — was silently dropped.
- * At SSR the prop was evaluated once; the child component's DOM stayed
- * frozen at its initial render on the client.
+ * Before #942, `collect-elements.ts` gated `reactiveChildProps` on
+ * `hasPropsRef || needsEffectWrapper(...)`. The latter is an allow-list
+ * that only recognises known signal getters, memos, and prop parameter
+ * names. Any child-component prop expression the analyzer couldn't
+ * prove reactive — e.g. `<Card title={formatTitle(page)} />` where
+ * `formatTitle` is imported — was silently dropped. At SSR the prop was
+ * evaluated once; the child component's DOM stayed frozen at its
+ * initial render on the client.
  *
- * The fix adds a third branch to the OR gate: `/\b\w+\s*\(/.test(
- * expandedValue)`. Over-wrap (extra createEffect that subscribes to
- * nothing) is harmless — one closure at init time. Under-wrap is the
- * silent-drop bug we're closing.
+ * #942 originally closed this by adding a third branch to the OR gate:
+ * `/\b\w+\s*\(/.test(expandedValue)` with string-literal stripping to
+ * avoid false matches on `{ color: 'hsl(...)' }`. #952 then
+ * DRY-consolidated #942 into the same AST-flag shape that #939 / #941
+ * / #943 already used: the gate now reads
+ * `prop.callsReactiveGetters || prop.hasFunctionCalls` and both flags
+ * are computed Phase 1 over the prop's source AST expression — no
+ * post-expansion string scan, no string-strip workaround. Over-wrap
+ * (extra createEffect that subscribes to nothing) stays harmless;
+ * under-wrap (silent drop of a reactive read in a child prop) stays
+ * the class of bug we're closing.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -187,6 +194,44 @@ describe('Solid-style wrap-by-default fallback for child-component props (#942)'
     `
 
     const clientJs = getClientJs(source, 'Palette.tsx')
+    expect(clientJs).not.toContain('Reactive child component props')
+  })
+
+  test('local-const arrow binding stays un-wrapped (#952 source-level vs post-expansion guard)', () => {
+    // #952 replaced the post-expansion regex gate with AST flags computed
+    // on the prop's source expression. This changes behaviour for a
+    // specific shape that the fixture sweep surfaced empirically but no
+    // unit test locked in: a child-component prop whose value is a bare
+    // identifier bound to a local const whose initializer contains a
+    // call or constructor.
+    //
+    // Source: `<DatePicker formatDate={fmtDate} />` where
+    // `const fmtDate = (d) => d.toLocaleDateString(...)`. The #942 regex
+    // expanded `fmtDate` first, then matched `toLocaleDateString(` on
+    // the expansion — forcing wrap. The #952 AST flags see only the
+    // source identifier `fmtDate` (no CallExpression), so
+    // `hasFunctionCalls` is false and the prop stays un-wrapped. That is
+    // the correct semantic under #937: wrap based on what the prop's
+    // source expression *does*, not on what its transitive inlining
+    // happens to contain. The child component still receives the
+    // function value once via `initChild`'s `get formatDate()` property.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { DatePicker } from './DatePicker'
+
+      export function Form() {
+        const [, setFoo] = createSignal(0)
+        const fmtDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short' })
+        return (
+          <div onClick={() => setFoo(1)}>
+            <DatePicker formatDate={fmtDate} />
+          </div>
+        )
+      }
+    `
+
+    const clientJs = getClientJs(source, 'Form.tsx')
     expect(clientJs).not.toContain('Reactive child component props')
   })
 
