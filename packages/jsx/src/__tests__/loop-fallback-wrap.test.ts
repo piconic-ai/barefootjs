@@ -182,6 +182,43 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     expect(clientJs).toContain('outer()')
   })
 
+  test('destructured map param skips widening (latent mapArray bug)', () => {
+    // `mapArray` passes the item as a signal accessor (a function) to the
+    // renderItem callback; destructuring a function throws
+    // "function is not iterable" at runtime. The emitter currently
+    // interpolates `elem.param` verbatim into the renderItem arrow head,
+    // so `([, cfg]) => ...` on a dynamic array crashes at hydration.
+    //
+    // Until the emitter is taught to unwrap `item()` for destructured
+    // params, the #943 widening skips these cases to avoid regressing
+    // previously-working SSR-only components. The call shape is present
+    // but the array stays on the static path — a known trade-off, not a
+    // silent-drop (the frozen SSR output is the existing behaviour).
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      const chartConfig = { a: { color: 'red' }, b: { color: 'blue' } }
+
+      export function Legend() {
+        const [, setFoo] = createSignal(0)
+        return (
+          <div onClick={() => setFoo(1)}>
+            {Object.entries(chartConfig).map(([, cfg]) => (
+              <span key={cfg.color}>{cfg.color}</span>
+            ))}
+          </div>
+        )
+      }
+    `
+
+    const clientJs = getClientJs(source, 'Legend.tsx')
+    // Destructured param + call on array → widening is intentionally
+    // skipped. No mapArray emitted; the inline `.map().join('')` static
+    // template remains.
+    expect(clientJs).not.toMatch(/\bmapArray\s*\(/)
+  })
+
   test('loop with child component on unrecognised-call array reconciles', () => {
     // Composite rendering path: the loop body is a single component.
     // Previously the `listOf()` silent-drop meant Items were rendered
