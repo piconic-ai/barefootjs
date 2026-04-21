@@ -34,9 +34,9 @@ import { emitAttrUpdate } from './emit-reactive'
  * remove / reorder / key change) work correctly because a new renderItem
  * call produces fresh locals. Same-key fine-grained reactivity through
  * destructured bindings requires template-time rewriting of binding
- * references to `__bfItem().path` — tracked as an Option 3 follow-up.
+ * references to `__bfItem().path` — tracked in #951 (Option 3 follow-up).
  * See the pinning test in `map-array.test.ts::destructured locals
- * captured once (known limitation)`.
+ * captured once — frozen on same-key update (known limitation)`.
  */
 function destructureLoopParam(param: string): { head: string; unwrap: string } {
   if (param.startsWith('[') || param.startsWith('{')) {

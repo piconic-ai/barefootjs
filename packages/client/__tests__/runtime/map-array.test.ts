@@ -390,9 +390,9 @@ describe('mapArray', () => {
   // at first render. mapArray skips renderItem for same-key setItem
   // updates, which means the locals freeze — fine-grained reactivity
   // through destructured bindings needs Option 3 (template-time
-  // rewriting to `__bfItem().path`). This test locks that behaviour
-  // in so a future Option 3 PR turns a red test green rather than
-  // silently changing semantics.
+  // rewriting to `__bfItem().path`), tracked in #951. This test locks
+  // the current behaviour in so the Option 3 PR must consciously flip
+  // it from green to red rather than silently changing semantics.
   test('destructured locals captured once — frozen on same-key update (known limitation)', () => {
     const [items, setItems] = createSignal<[string, string][]>([['1', 'A']])
 
