@@ -875,12 +875,18 @@ function transformExpression(
   // so fine-grained effects can target them for per-item signal updates
   const refsLoopParam = ctx.loopParams.size > 0
     && Array.from(ctx.loopParams).some(p => new RegExp(`\\b${p}\\b`).test(exprText))
-  const needsSlot = reactive || isClientOnly || refsLoopParam
-  const slotId = needsSlot ? generateSlotId(ctx) : null
 
-  // Compute AST-derived flags for Phase 2 optimization
+  // Compute AST-derived flags. `callsReactive` recognises signal-getter / memo
+  // calls even inside deeper expressions (e.g., `format(count())`); `hasCalls`
+  // is broader — any identifier() pattern. Both serve as Solid-style
+  // wrap-by-default hints (#937): if the analyzer can't prove the expression
+  // non-reactive but it contains calls, we allocate a slotId so the client JS
+  // path can wrap the read in createEffect as a safe fallback.
   const callsReactive = exprCallsReactiveGetters(expr, ctx)
   const hasCalls = exprHasFunctionCalls(expr)
+
+  const needsSlot = reactive || isClientOnly || refsLoopParam || callsReactive || hasCalls
+  const slotId = needsSlot ? generateSlotId(ctx) : null
 
   const templateExpr = rewriteBarePropRefs(exprText, expr, ctx)
   return {

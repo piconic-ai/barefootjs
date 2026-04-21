@@ -218,14 +218,32 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           slotId: node.slotId,
           expression: node.expr,
         })
-      } else if (node.reactive && node.slotId && !insideConditional) {
-        // Only collect as top-level dynamic element if NOT inside a conditional.
-        // Conditional text effects are collected per-branch and emitted inside bindEvents.
-        ctx.dynamicElements.push({
-          slotId: node.slotId,
-          expression: node.expr,
-          insideConditional: false,
-        })
+      } else if (node.slotId && !insideConditional) {
+        // Solid-style wrap-by-default fallback (#937): wrap in createEffect not
+        // only for statically-proven-reactive expressions, but also for any
+        // expression the analyzer can't prove non-reactive — i.e. anything
+        // that contains a function call or a signal-getter call. Pure static
+        // literals and bare identifiers (no calls) stay un-wrapped because
+        // their SSR value is already in the DOM.
+        //
+        // False positive (extra createEffect that subscribes to nothing) is
+        // harmless; false negative (silent drop of a reactive read) is the
+        // bug class this gate closes — see #931, #932.
+        //
+        // Only collect as a top-level dynamic element when NOT inside a
+        // conditional. Conditional text effects are collected per-branch and
+        // emitted inside bindEvents.
+        const shouldWrap =
+          node.reactive ||
+          node.callsReactiveGetters ||
+          node.hasFunctionCalls
+        if (shouldWrap) {
+          ctx.dynamicElements.push({
+            slotId: node.slotId,
+            expression: node.expr,
+            insideConditional: false,
+          })
+        }
       }
       break
 
