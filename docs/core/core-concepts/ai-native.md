@@ -38,6 +38,7 @@ barefoot test:template Button                        # Generate IR test from exi
 # Inspect reactive structure
 barefoot inspect Counter             # Signal dependency graph
 barefoot why-update Counter count    # Trace update path: signal → DOM
+barefoot why-wrap AnalyticsDemo      # List Solid-style wrap-by-default fallback bindings
 ```
 
 Both humans and AI agents use these commands to generate and debug components without reading source files.
