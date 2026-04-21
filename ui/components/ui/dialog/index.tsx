@@ -48,10 +48,6 @@ interface DialogContextValue {
 
 const DialogContext = createContext<DialogContextValue>()
 
-// Scope ID context for SSR portal support
-// This is set by Dialog and used by DialogOverlay/DialogContent
-let currentDialogScopeId: string | undefined = undefined
-
 // DialogOverlay base classes (aligned with shadcn/ui)
 // Portal: element is moved to document.body during hydration
 const dialogOverlayBaseClasses = 'fixed inset-0 z-50 bg-black/80 transition-opacity duration-200'
@@ -113,8 +109,6 @@ interface DialogProps {
  * @param props.onOpenChange - Callback when open state should change
  */
 function Dialog(props: DialogProps) {
-  // Set the scope ID for child components to use
-  currentDialogScopeId = props.scopeId || props.__instanceId || props.__bfScope
   return (
     <DialogContext.Provider value={{
       open: () => props.open ?? false,
