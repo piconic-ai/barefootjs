@@ -814,62 +814,16 @@ function transformExpression(
   checkBareSignalOrMemoIdentifier(expr, ctx)
 
   // Check for @client directive in prefix style: {/* @client */ expr}
-  // getFullText() includes leading trivia (comments, whitespace)
+  // getFullText() includes leading trivia (comments, whitespace). This is a
+  // JsxExpression-level concern — the core dispatcher never sees the comment —
+  // so detection and post-processing stay in the wrapper.
   const fullText = node.getFullText(ctx.sourceFile)
   const isClientOnly = fullText.includes('@client')
 
-  // Ternary expression: {cond ? a : b}
-  if (ts.isConditionalExpression(expr)) {
-    const result = transformConditional(expr, ctx)
-    if (isClientOnly) {
-      result.clientOnly = true
-      // Ensure slotId is assigned for client-only expressions
-      if (!result.slotId) {
-        result.slotId = generateSlotId(ctx)
-      }
-    }
-    return result
-  }
-
-  // Logical AND: {cond && <Component />}
-  if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
-    const result = transformLogicalAnd(expr, ctx)
-    if (isClientOnly) {
-      result.clientOnly = true
-      if (!result.slotId) {
-        result.slotId = generateSlotId(ctx)
-      }
-    }
-    return result
-  }
-
-  // Nullish coalescing / logical OR with JSX: {children ?? <Icon />}, {label || <Fallback />}
-  if (
-    ts.isBinaryExpression(expr) &&
-    (expr.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
-      expr.operatorToken.kind === ts.SyntaxKind.BarBarToken) &&
-    containsJsxInExpression(expr.right)
-  ) {
-    const result = transformNullishCoalescing(expr, ctx)
-    if (isClientOnly) {
-      result.clientOnly = true
-      if (!result.slotId) {
-        result.slotId = generateSlotId(ctx)
-      }
-    }
-    return result
-  }
-
-  // Array map: {items.map(item => <li>{item}</li>)}
-  if (ts.isCallExpression(expr) && isMapCall(expr)) {
-    const mapResult = transformMapCall(expr, ctx, isClientOnly)
-    if (mapResult) {
-      return mapResult
-    }
-    // Callback body is not JSX (e.g., function call). Fall through to expression handling.
-  }
-
-  // Inline JSX constants at the IR level (#547)
+  // #547: Inline a JSX constant referenced by identifier. Unique to JSX-child
+  // position — conditional branches and return position don't resolve
+  // Identifier to JSX. Keep outside the core so the core's Identifier case
+  // stays classified as Scalar leaf per spec Appendix A.
   if (ts.isIdentifier(expr)) {
     const jsxNode = ctx.analyzer.jsxConstants.get(expr.text)
     if (jsxNode) {
@@ -877,18 +831,27 @@ function transformExpression(
     }
   }
 
-  // Inline JSX function calls at the IR level (#569)
-  if (ts.isCallExpression(expr)) {
-    const callee = expr.expression
-    if (ts.isIdentifier(callee)) {
-      const jsxFunc = ctx.analyzer.jsxFunctions.get(callee.text)
-      if (jsxFunc) {
-        return transformJsxFunctionCall(expr, jsxFunc, ctx, isClientOnly)
+  // Delegate all other JSX-structural dispatch to the shared core (#971).
+  // The core handles ConditionalExpression / BinaryExpression (`&&`, `||`,
+  // `??` with JSX right) / CallExpression (`.map`, inline JSX helper), plus
+  // Transparent unwrapping and Scalar-leaf → null.
+  const ir = transformJsxExpression(expr, ctx, isClientOnly)
+  if (ir !== null) {
+    // The pre-refactor behaviour only applied clientOnly/slotId post-processing
+    // to IRConditional results (from the ternary / `&&` / `||` / `??` paths).
+    // IRLoop handles `isClientOnly` internally via `transformMapCall`; other
+    // shapes (IRElement / IRFragment / IRLoop / IRComponent from inline JSX
+    // helpers) are unchanged. Mirror that exactly here.
+    if (isClientOnly && ir.type === 'conditional') {
+      ir.clientOnly = true
+      if (!ir.slotId) {
+        ir.slotId = generateSlotId(ctx)
       }
     }
+    return ir
   }
 
-  // Regular expression
+  // Scalar fallback — unchanged from pre-refactor.
   const exprText = ctx.getJS(expr)
   const reactive = isReactiveExpression(exprText, ctx, expr)
   // @client expressions always need slotId and are treated as reactive for client-side evaluation
@@ -1219,6 +1182,7 @@ function assertNever(expr: never): never {
 function transformJsxExpression(
   expr: ts.Expression,
   ctx: TransformContext,
+  isClientOnly = false,
 ): IRNode | null {
   const node: JsxEmbeddableExpression = expr as JsxEmbeddableExpression
   switch (node.kind) {
@@ -1229,7 +1193,7 @@ function transformJsxExpression(
     case ts.SyntaxKind.NonNullExpression:
     case ts.SyntaxKind.TypeAssertionExpression:
     case ts.SyntaxKind.PartiallyEmittedExpression:
-      return transformJsxExpression(node.expression, ctx)
+      return transformJsxExpression(node.expression, ctx, isClientOnly)
 
     // --- JSX-structural: delegate to shape transformer ---
     case ts.SyntaxKind.JsxElement:
@@ -1257,14 +1221,17 @@ function transformJsxExpression(
     }
     case ts.SyntaxKind.CallExpression: {
       if (isMapCall(node)) {
-        const mapResult = transformMapCall(node, ctx)
+        // `isClientOnly` gates sort/filter extraction inside transformMapCall
+        // (client-only loops keep the map callback verbatim). Thread through
+        // so JSX-child position preserves pre-refactor behaviour.
+        const mapResult = transformMapCall(node, ctx, isClientOnly)
         if (mapResult) return mapResult
       }
       const callee = node.expression
       if (ts.isIdentifier(callee)) {
         const jsxFunc = ctx.analyzer.jsxFunctions.get(callee.text)
         if (jsxFunc) {
-          return transformJsxFunctionCall(node, jsxFunc, ctx, false)
+          return transformJsxFunctionCall(node, jsxFunc, ctx, isClientOnly)
         }
       }
       return null
