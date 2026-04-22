@@ -122,9 +122,6 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bunx playwright install chromium
 
-      - name: Install Playwright system deps
-        run: bunx playwright install-deps chromium
-
       - name: Run site/ui E2E tests (shard ${{ matrix.shard }}/4)
         run: cd site/ui && bunx playwright test --shard=${{ matrix.shard }}/4
 
