@@ -114,15 +114,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          # Key on package.json (committed, deterministic) — not bun.lock
+          # which is gitignored and re-solved per run.
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browser binaries
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: bunx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps only
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: bunx playwright install-deps chromium
+        run: bunx playwright install chromium
 
       - name: Run site/ui E2E tests (shard ${{ matrix.shard }}/4)
         run: cd site/ui && bunx playwright test --shard=${{ matrix.shard }}/4
