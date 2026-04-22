@@ -442,6 +442,7 @@ describe('processExternals', () => {
       )
       expect(warningMsg).toBeDefined()
       expect(warningMsg).toContain('no umd/unpkg/jsdelivr found')
+      expect(warningMsg).toContain('rebundle: true')
     } finally {
       rmSync(projectDir, { recursive: true, force: true })
       rmSync(outDir, { recursive: true, force: true })
@@ -481,6 +482,78 @@ describe('processExternals', () => {
 
       const fallbackWarning = warnCalls.find(m =>
         m.includes('fake-umd-pkg') && m.includes('import/main entry')
+      )
+      expect(fallbackWarning).toBeUndefined()
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('rebundle: true produces self-contained ESM without bare external imports', async () => {
+    const projectDir = makeTmpDir()
+    const outDir = makeTmpDir()
+    try {
+      // dep-pkg: a simple dependency that will be inlined
+      const depDir = resolve(projectDir, 'node_modules', 'dep-pkg')
+      mkdirSync(depDir, { recursive: true })
+      writeFileSync(resolve(depDir, 'package.json'), JSON.stringify({ name: 'dep-pkg', version: '1.0.0', main: './index.js' }))
+      writeFileSync(resolve(depDir, 'index.js'), `export const INLINED = 'from-dep-pkg'`)
+
+      // needs-rebundle: imports from dep-pkg (bare external that browsers can't resolve)
+      const pkgDir = resolve(projectDir, 'node_modules', 'needs-rebundle')
+      mkdirSync(pkgDir, { recursive: true })
+      writeFileSync(
+        resolve(pkgDir, 'package.json'),
+        JSON.stringify({ name: 'needs-rebundle', version: '1.0.0', exports: { '.': { import: './index.mjs' } } })
+      )
+      writeFileSync(resolve(pkgDir, 'index.mjs'), `import { INLINED } from 'dep-pkg'\nexport const value = INLINED`)
+
+      const config = makeConfig(projectDir, outDir, {
+        externals: { 'needs-rebundle': { rebundle: true } as const },
+      })
+
+      await processExternals(config, 'components', outDir)
+
+      const outFile = resolve(outDir, 'needs-rebundle.js')
+      expect(require('fs').existsSync(outFile)).toBe(true)
+      const content = require('fs').readFileSync(outFile, 'utf8')
+      // dep-pkg code must be inlined — no bare 'dep-pkg' import should remain
+      expect(content).toContain('from-dep-pkg')
+      expect(content).not.toMatch(/from ['"]dep-pkg['"]/)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('rebundle: true does NOT emit import/main fallback warning', async () => {
+    const projectDir = makeTmpDir()
+    const outDir = makeTmpDir()
+    try {
+      const pkgDir = resolve(projectDir, 'node_modules', 'rebundle-pkg')
+      mkdirSync(pkgDir, { recursive: true })
+      writeFileSync(
+        resolve(pkgDir, 'package.json'),
+        JSON.stringify({ name: 'rebundle-pkg', version: '1.0.0', exports: { '.': { import: './index.mjs' } } })
+      )
+      writeFileSync(resolve(pkgDir, 'index.mjs'), `export const x = 1`)
+
+      const config = makeConfig(projectDir, outDir, {
+        externals: { 'rebundle-pkg': { rebundle: true } as const },
+      })
+
+      const warnCalls: string[] = []
+      const originalWarn = console.warn
+      console.warn = (...args: unknown[]) => { warnCalls.push(args.join(' ')) }
+      try {
+        await processExternals(config, 'components', outDir)
+      } finally {
+        console.warn = originalWarn
+      }
+
+      const fallbackWarning = warnCalls.find(m =>
+        m.includes('rebundle-pkg') && m.includes('import/main entry')
       )
       expect(fallbackWarning).toBeUndefined()
     } finally {
