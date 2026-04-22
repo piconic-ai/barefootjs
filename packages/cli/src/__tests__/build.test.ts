@@ -410,6 +410,84 @@ describe('processExternals', () => {
       rmSync(outDir, { recursive: true, force: true })
     }
   })
+
+  test('chunk with only import/main entry emits a warning', async () => {
+    const projectDir = makeTmpDir()
+    const outDir = makeTmpDir()
+    try {
+      // Create a fake package that has only an `import` field (no umd/unpkg/jsdelivr).
+      const pkgDir = resolve(projectDir, 'node_modules', 'fake-pkg')
+      mkdirSync(pkgDir, { recursive: true })
+      writeFileSync(
+        resolve(pkgDir, 'package.json'),
+        JSON.stringify({ name: 'fake-pkg', version: '1.0.0', exports: { '.': { import: './index.mjs' } } })
+      )
+      writeFileSync(resolve(pkgDir, 'index.mjs'), `import { something } from 'lib0/observable'\nexport const x = 1`)
+
+      const config = makeConfig(projectDir, outDir, {
+        externals: { 'fake-pkg': true as const },
+      })
+
+      const warnCalls: string[] = []
+      const originalWarn = console.warn
+      console.warn = (...args: unknown[]) => { warnCalls.push(args.join(' ')) }
+      try {
+        await processExternals(config, 'components', outDir)
+      } finally {
+        console.warn = originalWarn
+      }
+
+      const warningMsg = warnCalls.find(m =>
+        m.includes('fake-pkg') && m.includes('import/main entry')
+      )
+      expect(warningMsg).toBeDefined()
+      expect(warningMsg).toContain('no umd/unpkg/jsdelivr found')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('chunk with umd entry does NOT emit an import/main fallback warning', async () => {
+    const projectDir = makeTmpDir()
+    const outDir = makeTmpDir()
+    try {
+      // Create a fake package that has an explicit `umd` field.
+      const pkgDir = resolve(projectDir, 'node_modules', 'fake-umd-pkg')
+      mkdirSync(pkgDir, { recursive: true })
+      writeFileSync(
+        resolve(pkgDir, 'package.json'),
+        JSON.stringify({
+          name: 'fake-umd-pkg',
+          version: '1.0.0',
+          exports: { '.': { umd: './dist/index.umd.js', import: './dist/index.mjs' } },
+        })
+      )
+      mkdirSync(resolve(pkgDir, 'dist'), { recursive: true })
+      writeFileSync(resolve(pkgDir, 'dist/index.umd.js'), 'var fakePkg = (function(){return {}})();')
+
+      const config = makeConfig(projectDir, outDir, {
+        externals: { 'fake-umd-pkg': true as const },
+      })
+
+      const warnCalls: string[] = []
+      const originalWarn = console.warn
+      console.warn = (...args: unknown[]) => { warnCalls.push(args.join(' ')) }
+      try {
+        await processExternals(config, 'components', outDir)
+      } finally {
+        console.warn = originalWarn
+      }
+
+      const fallbackWarning = warnCalls.find(m =>
+        m.includes('fake-umd-pkg') && m.includes('import/main entry')
+      )
+      expect(fallbackWarning).toBeUndefined()
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
 })
 
 // ── minification ────────────────────────────────────────────────────────

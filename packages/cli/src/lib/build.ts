@@ -591,25 +591,50 @@ export function vendorChunkFilename(pkgName: string): string {
   return `${base}.js`
 }
 
+interface PkgBrowserEntry {
+  /** Absolute path to the resolved file. */
+  path: string
+  /**
+   * True when the file was resolved via a browser-ready field (`umd`, `unpkg`,
+   * or `jsdelivr`). False when we fell back to `exports["."].import` or `main`,
+   * which may still contain bare external imports that are not browser-ready.
+   */
+  isBrowserReady: boolean
+}
+
 /**
  * Locate the browser-ready entry for a package.
  * Preference order: `exports["."].umd` → `unpkg` → `jsdelivr` → `exports["."].import` → `main`.
+ * Returns `isBrowserReady: false` when the resolved file came from an
+ * `import`/`main` fallback rather than an explicit browser field.
  */
-async function resolvePkgBrowserEntry(pkgDir: string): Promise<string | null> {
+async function resolvePkgBrowserEntry(pkgDir: string): Promise<PkgBrowserEntry | null> {
   const pkgJsonPath = resolve(pkgDir, 'package.json')
   if (!(await fileExists(pkgJsonPath))) return null
   const pkg = JSON.parse(await readText(pkgJsonPath))
-  const candidates = [
+
+  // Browser-ready candidates: these fields are intended for direct browser use.
+  const browserCandidates = [
     pkg.exports?.['.']?.umd,
     pkg.unpkg,
     pkg.jsdelivr,
+  ].filter((v): v is string => typeof v === 'string')
+  for (const rel of browserCandidates) {
+    const abs = resolve(pkgDir, rel)
+    if (await fileExists(abs)) return { path: abs, isBrowserReady: true }
+  }
+
+  // Fallback candidates: may contain bare external imports not suitable for
+  // direct browser loading without a bundler or importmap.
+  const fallbackCandidates = [
     pkg.exports?.['.']?.import,
     pkg.main,
   ].filter((v): v is string => typeof v === 'string')
-  for (const rel of candidates) {
+  for (const rel of fallbackCandidates) {
     const abs = resolve(pkgDir, rel)
-    if (await fileExists(abs)) return abs
+    if (await fileExists(abs)) return { path: abs, isBrowserReady: false }
   }
+
   return null
 }
 
@@ -654,12 +679,23 @@ export async function processExternals(
 
     if (isChunk) {
       const pkgDir = resolve(config.projectDir, 'node_modules', pkgName)
-      const srcFile = await resolvePkgBrowserEntry(pkgDir)
-      if (!srcFile) {
+      const entry = await resolvePkgBrowserEntry(pkgDir)
+      if (!entry) {
         console.warn(`Warning: externals — could not resolve browser entry for "${pkgName}". Skipping.`)
         continue
       }
 
+      // Warn when the resolved file came from an import/main fallback. These
+      // files may contain bare external imports (e.g. "lib0/observable") that
+      // the browser cannot resolve without a bundler or a matching importmap.
+      if (!entry.isBrowserReady) {
+        console.warn(
+          `Warning: externals — "${pkgName}" resolved via import/main entry (no umd/unpkg/jsdelivr found). ` +
+          `The copied file may contain external imports that are not browser-ready.`
+        )
+      }
+
+      const srcFile = entry.path
       const filename = vendorChunkFilename(pkgName)
       const destPath = resolve(runtimeOutDir, filename)
       let content: string | Uint8Array = await readBytes(srcFile)
