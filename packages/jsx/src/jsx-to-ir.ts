@@ -1132,60 +1132,217 @@ function transformNullishCoalescing(
   }
 }
 
+/**
+ * JSX-embeddable expression dispatcher core (#971).
+ *
+ * Exhaustive `switch (expr.kind)` over every `ts.SyntaxKind` that
+ * `ts.Expression` can hold, classified per the spec appendix
+ * `spec/compiler.md` > Appendix A. Returns an `IRNode` for JSX-structural
+ * kinds (element/fragment/conditional/binary-with-JSX/map/inline-JSX-helper),
+ * unwraps and recurses for Transparent kinds, and returns `null` for
+ * Scalar-leaf / Forbidden / Unreachable kinds so callers can apply their
+ * own wrapper logic (scalar fallback, `@client` directive, scope wrapping).
+ *
+ * The `default` branch calls `assertNever` on a fully-narrowed union,
+ * which makes a missing `case` a TypeScript compile-time error — not a
+ * silent runtime drop. PR 6 of the #971 series adds a dedicated
+ * regression test for this guarantee.
+ */
+type JsxEmbeddableExpression =
+  // Transparent
+  | ts.ParenthesizedExpression
+  | ts.AsExpression
+  | ts.SatisfiesExpression
+  | ts.NonNullExpression
+  | ts.TypeAssertion
+  | ts.PartiallyEmittedExpression
+  // JSX-structural
+  | ts.JsxElement
+  | ts.JsxFragment
+  | ts.JsxSelfClosingElement
+  | ts.ConditionalExpression
+  | ts.BinaryExpression
+  | ts.CallExpression
+  // Scalar leaf
+  | ts.Identifier
+  | ts.StringLiteral
+  | ts.NumericLiteral
+  | ts.BigIntLiteral
+  | ts.RegularExpressionLiteral
+  | ts.NoSubstitutionTemplateLiteral
+  | ts.TemplateExpression
+  | ts.TaggedTemplateExpression
+  | ts.TrueLiteral
+  | ts.FalseLiteral
+  | ts.NullLiteral
+  | ts.ThisExpression
+  | ts.SuperExpression
+  | ts.ImportExpression
+  | ts.PropertyAccessExpression
+  | ts.ElementAccessExpression
+  | ts.PrefixUnaryExpression
+  | ts.PostfixUnaryExpression
+  | ts.TypeOfExpression
+  | ts.VoidExpression
+  | ts.DeleteExpression
+  | ts.NewExpression
+  | ts.ObjectLiteralExpression
+  | ts.ArrowFunction
+  | ts.FunctionExpression
+  | ts.ClassExpression
+  | ts.MetaProperty
+  | ts.ExpressionWithTypeArguments
+  | ts.CommaListExpression
+  | ts.SyntheticExpression
+  | ts.ArrayLiteralExpression
+  // Forbidden in render position (errors promoted in PR 5)
+  | ts.AwaitExpression
+  | ts.YieldExpression
+  // Unreachable at render position (parser prevents reaching here in well-formed sources)
+  | ts.SpreadElement
+  | ts.OmittedExpression
+  | ts.JsxExpression
+  | ts.JsxOpeningElement
+  | ts.JsxOpeningFragment
+  | ts.JsxClosingFragment
+  | ts.JsxAttributes
+  | ts.MissingDeclaration
+
+function assertNever(expr: never): never {
+  const kind = (expr as { kind?: number } | null)?.kind
+  throw new Error(
+    `transformJsxExpression: unhandled ts.SyntaxKind ${kind !== undefined ? ts.SyntaxKind[kind] : 'unknown'} ` +
+      `(kind=${kind}). Update spec/compiler.md Appendix A and the switch in jsx-to-ir.ts.`,
+  )
+}
+
+function transformJsxExpression(
+  expr: ts.Expression,
+  ctx: TransformContext,
+): IRNode | null {
+  const node: JsxEmbeddableExpression = expr as JsxEmbeddableExpression
+  switch (node.kind) {
+    // --- Transparent: unwrap and recurse ---
+    case ts.SyntaxKind.ParenthesizedExpression:
+    case ts.SyntaxKind.AsExpression:
+    case ts.SyntaxKind.SatisfiesExpression:
+    case ts.SyntaxKind.NonNullExpression:
+    case ts.SyntaxKind.TypeAssertionExpression:
+    case ts.SyntaxKind.PartiallyEmittedExpression:
+      return transformJsxExpression(node.expression, ctx)
+
+    // --- JSX-structural: delegate to shape transformer ---
+    case ts.SyntaxKind.JsxElement:
+      return transformJsxElement(node, ctx)
+    case ts.SyntaxKind.JsxFragment:
+      return transformFragment(node, ctx)
+    case ts.SyntaxKind.JsxSelfClosingElement:
+      return transformSelfClosingElement(node, ctx)
+    case ts.SyntaxKind.ConditionalExpression:
+      return transformConditional(node, ctx)
+    case ts.SyntaxKind.BinaryExpression: {
+      if (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
+        return transformLogicalAnd(node, ctx)
+      }
+      if (
+        (node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+          node.operatorToken.kind === ts.SyntaxKind.BarBarToken) &&
+        containsJsxInExpression(node.right)
+      ) {
+        return transformNullishCoalescing(node, ctx)
+      }
+      // Any other binary operator (`+`, `===`, assignments, comma, …) or
+      // `||`/`??` with a non-JSX right operand is a scalar — caller handles.
+      return null
+    }
+    case ts.SyntaxKind.CallExpression: {
+      if (isMapCall(node)) {
+        const mapResult = transformMapCall(node, ctx)
+        if (mapResult) return mapResult
+      }
+      const callee = node.expression
+      if (ts.isIdentifier(callee)) {
+        const jsxFunc = ctx.analyzer.jsxFunctions.get(callee.text)
+        if (jsxFunc) {
+          return transformJsxFunctionCall(node, jsxFunc, ctx, false)
+        }
+      }
+      return null
+    }
+
+    // --- Scalar leaf: caller emits IRExpression ---
+    case ts.SyntaxKind.Identifier:
+    case ts.SyntaxKind.StringLiteral:
+    case ts.SyntaxKind.NumericLiteral:
+    case ts.SyntaxKind.BigIntLiteral:
+    case ts.SyntaxKind.RegularExpressionLiteral:
+    case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+    case ts.SyntaxKind.TemplateExpression:
+    case ts.SyntaxKind.TaggedTemplateExpression:
+    case ts.SyntaxKind.TrueKeyword:
+    case ts.SyntaxKind.FalseKeyword:
+    case ts.SyntaxKind.NullKeyword:
+    case ts.SyntaxKind.ThisKeyword:
+    case ts.SyntaxKind.SuperKeyword:
+    case ts.SyntaxKind.ImportKeyword:
+    case ts.SyntaxKind.PropertyAccessExpression:
+    case ts.SyntaxKind.ElementAccessExpression:
+    case ts.SyntaxKind.PrefixUnaryExpression:
+    case ts.SyntaxKind.PostfixUnaryExpression:
+    case ts.SyntaxKind.TypeOfExpression:
+    case ts.SyntaxKind.VoidExpression:
+    case ts.SyntaxKind.DeleteExpression:
+    case ts.SyntaxKind.NewExpression:
+    case ts.SyntaxKind.ObjectLiteralExpression:
+    case ts.SyntaxKind.ArrowFunction:
+    case ts.SyntaxKind.FunctionExpression:
+    case ts.SyntaxKind.ClassExpression:
+    case ts.SyntaxKind.MetaProperty:
+    case ts.SyntaxKind.ExpressionWithTypeArguments:
+    case ts.SyntaxKind.CommaListExpression:
+    case ts.SyntaxKind.SyntheticExpression:
+    case ts.SyntaxKind.ArrayLiteralExpression:
+      return null
+
+    // --- Forbidden in render position ---
+    // Spec A.3.3 / A.3.5 reserve BF050 (`AwaitExpression`) and BF051
+    // (`YieldExpression`) for PR 5 once the dispatcher is the single
+    // entry point; for now preserve today's scalar-fallback behaviour.
+    case ts.SyntaxKind.AwaitExpression:
+    case ts.SyntaxKind.YieldExpression:
+      return null
+
+    // --- Unreachable at render position ---
+    // Parser prevents these in well-formed sources; listed for exhaustiveness
+    // so an upstream TypeScript change that repurposes one of these kinds
+    // surfaces as a compile error here instead of silently drifting.
+    case ts.SyntaxKind.SpreadElement:
+    case ts.SyntaxKind.OmittedExpression:
+    case ts.SyntaxKind.JsxExpression:
+    case ts.SyntaxKind.JsxOpeningElement:
+    case ts.SyntaxKind.JsxOpeningFragment:
+    case ts.SyntaxKind.JsxClosingFragment:
+    case ts.SyntaxKind.JsxAttributes:
+    case ts.SyntaxKind.MissingDeclaration:
+      return null
+
+    default:
+      return assertNever(node)
+  }
+}
+
 function transformConditionalBranch(
   node: ts.Expression,
-  ctx: TransformContext
+  ctx: TransformContext,
 ): IRNode {
-  // JSX element
-  if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) {
-    return transformNode(node, ctx)!
-  }
+  const ir = transformJsxExpression(node, ctx)
+  if (ir !== null) return ir
 
-  // Parenthesized expression
-  if (ts.isParenthesizedExpression(node)) {
-    return transformConditionalBranch(node.expression, ctx)
-  }
-
-  // Nested ternary: cond1 ? <A/> : cond2 ? <B/> : <C/>
-  if (ts.isConditionalExpression(node)) {
-    return transformConditional(node, ctx)
-  }
-
-  // Logical AND in branch: cond1 ? <A/> : (cond2 && <B/>)
-  if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
-    return transformLogicalAnd(node, ctx)
-  }
-
-  // Nullish coalescing / logical OR with JSX in branch
-  if (
-    ts.isBinaryExpression(node) &&
-    (node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
-      node.operatorToken.kind === ts.SyntaxKind.BarBarToken) &&
-    containsJsxInExpression(node.right)
-  ) {
-    return transformNullishCoalescing(node, ctx)
-  }
-
-  // Inline JSX function calls in conditional branches (#569)
-  if (ts.isCallExpression(node)) {
-    const callee = node.expression
-    if (ts.isIdentifier(callee)) {
-      const jsxFunc = ctx.analyzer.jsxFunctions.get(callee.text)
-      if (jsxFunc) {
-        return transformJsxFunctionCall(node, jsxFunc, ctx, false)
-      }
-    }
-  }
-
-  // Map call returning JSX in conditional branch (#783)
-  if (ts.isCallExpression(node) && isMapCall(node)) {
-    const mapResult = transformMapCall(node, ctx)
-    if (mapResult) {
-      return mapResult
-    }
-  }
-
-  // Regular expression (including null)
+  // Scalar / null / forbidden / unreachable kinds fall through to branch-level
+  // IRExpression. This preserves the pre-refactor behaviour where a
+  // non-JSX-structural expression in a conditional branch renders as its JS
+  // value. `null` specifically renders as empty via the adapter's scalar
+  // pathway.
   const exprText = ctx.getJS(node)
   return {
     type: 'expression',
