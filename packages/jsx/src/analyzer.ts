@@ -429,6 +429,22 @@ function analyzeComponentBody(
     // (signal/memo/effect/onMount/function/JSX-return/conditional-return)
     // is preserved as an InitStatementInfo so it runs at init time. See #930.
     ctx.componentBodyBlock = ts.isBlock(body) ? body : null
+
+    // Arrow shorthand body (`() => <expr>`): the body *is* the JSX return
+    // expression. Capture it directly here so `visitComponentBody` does
+    // not have to rediscover it via recursion — the recursion-fallback
+    // path was the #968 silent-drop mechanism and is removed in #971 PR 5.
+    // ParenthesizedExpression is stripped so `() => (<div/>)` captures the
+    // inner `<div/>` (equivalent to the pre-refactor `return (<div/>)`
+    // unwrap at the block level).
+    if (!ctx.componentBodyBlock) {
+      let shorthand = body as ts.Expression
+      while (ts.isParenthesizedExpression(shorthand)) {
+        shorthand = shorthand.expression
+      }
+      ctx.jsxReturn = shorthand
+    }
+
     visitComponentBody(body, ctx)
     ctx.componentBodyBlock = null
   }
@@ -538,38 +554,31 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
     return
   }
 
-  // Return statement with JSX (or a top-level ternary, #968)
+  // Return statement: capture whatever expression is returned. The Phase 1
+  // dispatcher core (`transformJsxExpression`) is the single arbiter of
+  // whether the return expression yields IR — it classifies every
+  // `ts.SyntaxKind` per spec `Appendix A`. Non-JSX-structural returns
+  // (scalar literals, forbidden kinds, etc.) yield `null` and `jsxToIR`
+  // treats that as "no IR emitted", matching pre-refactor behaviour.
+  //
+  // `ParenthesizedExpression` is stripped so `return (<div/>)` captures the
+  // inner `<div/>` directly — same semantics as the pre-refactor explicit
+  // unwrap, and avoids an extra synthetic scope wrapper at the root.
+  //
+  // The recursion-as-discriminator path (previously at lines 566-587 of this
+  // file: an "arrow function with implicit return" block plus a generic
+  // descent) was the #968 silent-drop mechanism — it registered the first
+  // nested JSX descendant as `jsxReturn`, so `return cond && <A/>`
+  // silently became `<A/>`. With the explicit return / arrow-shorthand
+  // paths now covering every legitimate capture site, the recursion no
+  // longer touches `jsxReturn`; it retains its other job (walking through
+  // statements to collect signals / memos / effects / functions).
   if (ts.isReturnStatement(node) && node.expression) {
-    if (
-      ts.isJsxElement(node.expression) ||
-      ts.isJsxFragment(node.expression) ||
-      ts.isJsxSelfClosingElement(node.expression) ||
-      ts.isConditionalExpression(node.expression)
-    ) {
-      ctx.jsxReturn = node.expression
+    let retExpr = node.expression
+    while (ts.isParenthesizedExpression(retExpr)) {
+      retExpr = retExpr.expression
     }
-    // Handle parenthesized JSX / ternary: return ( <div>...</div> )
-    if (ts.isParenthesizedExpression(node.expression)) {
-      const inner = node.expression.expression
-      if (
-        ts.isJsxElement(inner) ||
-        ts.isJsxFragment(inner) ||
-        ts.isJsxSelfClosingElement(inner) ||
-        ts.isConditionalExpression(inner)
-      ) {
-        ctx.jsxReturn = inner
-      }
-    }
-  }
-
-  // Arrow function with implicit return (JSX body)
-  if (
-    (ts.isJsxElement(node) ||
-      ts.isJsxFragment(node) ||
-      ts.isJsxSelfClosingElement(node)) &&
-    !ctx.jsxReturn
-  ) {
-    ctx.jsxReturn = node
+    ctx.jsxReturn = retExpr
   }
 
   // Skip recursion into function bodies (arrow functions, function expressions, function declarations)

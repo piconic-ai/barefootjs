@@ -35,6 +35,13 @@ runJSXConformanceTests({
     'style-object-dynamic',
     'branch-self-closing',
     'nullish-coalescing-jsx',
+    // Same conditional-marker / data-key divergences at return position.
+    // `return-nullish-coalescing` hits the same `bf-c` vs comment-marker
+    // split as `nullish-coalescing-jsx`. `return-map` uses the
+    // `data-key` serialisation that differs between Hono (runtime helper)
+    // and Go (template variable).
+    'return-nullish-coalescing',
+    'return-map',
   ],
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {

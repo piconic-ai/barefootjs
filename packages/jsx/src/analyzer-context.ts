@@ -96,14 +96,16 @@ export interface AnalyzerContext {
   /** Deferred BF043 info; emitted only for stateful components in validateContext() */
   propsDestructuring: PropsDestructuringInfo | null
 
-  // JSX return — also allows top-level `cond ? <A/> : <B/>` conditional expressions
-  // so root-level ternaries compile into IRConditional (#968).
-  jsxReturn:
-    | ts.JsxElement
-    | ts.JsxFragment
-    | ts.JsxSelfClosingElement
-    | ts.ConditionalExpression
-    | null
+  // JSX return — widened to any `ts.Expression` so the Phase 1 dispatcher
+  // core (`transformJsxExpression`) is the single source of truth for
+  // what a component can return. Non-JSX-structural returns (plain scalar
+  // values, forbidden kinds, unrecognized shapes) route through the same
+  // dispatcher and produce `null`, which `jsxToIR` treats as "no IR" —
+  // same as pre-refactor. The recursion-as-discriminator capture path in
+  // `visitComponentBody` is gone with #971 PR 5, so this field is only
+  // ever set by the explicit `return` handler or the arrow-shorthand
+  // capture — no silent-drop surface.
+  jsxReturn: ts.Expression | null
 
   // Conditional returns (if statements with JSX returns)
   conditionalReturns: ConditionalReturn[]
