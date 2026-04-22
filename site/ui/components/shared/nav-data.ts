@@ -103,7 +103,10 @@ export const navSections: NavSection[] = [
         key: 'gallery-apps',
         title: 'Apps',
         defaultOpen: false,
-        links: [{ title: 'Admin Dashboard', href: '/gallery/admin' }],
+        links: [
+          { title: 'Admin Dashboard', href: '/gallery/admin' },
+          { title: 'E-Commerce Shop', href: '/gallery/shop' },
+        ],
         matchPath: (p) => p.startsWith('/gallery/'),
       },
     ],

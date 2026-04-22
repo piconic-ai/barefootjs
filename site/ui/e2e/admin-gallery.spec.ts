@@ -112,11 +112,11 @@ test.describe('Gallery: Admin app', () => {
 
     test('gallery meta link is outside the admin shell', async ({ page }) => {
       await page.goto('/gallery/admin')
-      const githubLinks = page.locator('a[href*="issues/929"]')
+      const githubLinks = page.locator('a[href*="components/gallery/admin"]')
       await expect(githubLinks).toHaveCount(1)
       // The link must be a sibling of (not descendant of) the admin shell.
       const insideShell = await page
-        .locator('.admin-shell a[href*="issues/929"]')
+        .locator('.admin-shell a[href*="components/gallery/admin"]')
         .count()
       expect(insideShell).toBe(0)
     })

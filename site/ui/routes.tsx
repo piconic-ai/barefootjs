@@ -114,6 +114,9 @@ import { AdminAnalyticsPage } from './pages/gallery/admin/analytics'
 import { AdminOrdersPage } from './pages/gallery/admin/orders'
 import { AdminNotificationsPage } from './pages/gallery/admin/notifications'
 import { AdminSettingsPage } from './pages/gallery/admin/settings'
+import { ShopCatalogPage } from './pages/gallery/shop/index'
+import { ShopCartPage } from './pages/gallery/shop/cart'
+import { ShopCheckoutPage } from './pages/gallery/shop/checkout'
 
 // Form pattern pages
 import { ControlledInputPage } from './pages/forms/controlled-input'
@@ -616,6 +619,19 @@ export function createApp() {
 
   app.get('/gallery/admin/settings', (c) => {
     return c.render(<AdminSettingsPage />)
+  })
+
+  // Gallery — Shop app (Phase 9)
+  app.get('/gallery/shop', (c) => {
+    return c.render(<ShopCatalogPage />)
+  })
+
+  app.get('/gallery/shop/cart', (c) => {
+    return c.render(<ShopCartPage />)
+  })
+
+  app.get('/gallery/shop/checkout', (c) => {
+    return c.render(<ShopCheckoutPage />)
   })
 
   // Bar Chart reference page
