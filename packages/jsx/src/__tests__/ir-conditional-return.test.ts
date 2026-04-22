@@ -163,3 +163,94 @@ describe('top-level ternary return (#968)', () => {
     expect(clientJs?.content).toContain("insert(__scope, 's0', () => on()")
   })
 })
+
+describe('return-position dispatcher unification (#971)', () => {
+  // The #968 ConditionalExpression special-case and the #971 PR 5 refactor
+  // converge on the same behaviour: the analyzer captures the whole return
+  // expression (any `ts.Expression`) and the Phase 1 dispatcher core decides
+  // how to lower it. These tests verify that the refactor eliminates the
+  // last silent-drop classes — top-level `&&`, `||`, `??` with JSX, and
+  // `.map` returning JSX — all of which previously tripped the
+  // recursion-as-discriminator fallback in `visitComponentBody`.
+
+  test('top-level `return cond && <span/>` renders a conditional, not the JSX unconditionally', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Guard() {
+        const [show, setShow] = createSignal(false)
+        return show() && <span>Shown</span>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Guard.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const marked = result.files.find(f => f.type === 'markedTemplate')
+    // Synthetic scope wrapper provides the bf-s anchor; the conditional
+    // itself is emitted in the template as `{cond ? <A/> : null}` —
+    // transformLogicalAnd lowers `&&` into an IRConditional with whenFalse=null.
+    // If the analyzer were still silently picking the JSX on the right,
+    // the template would contain a bare `<span>Shown</span>` root with no
+    // ternary — that was the pre-refactor #968-class failure mode.
+    expect(marked?.content).toContain('display:contents')
+    expect(marked?.content).toContain('show() ?')
+    expect(marked?.content).toContain('<span>Shown</span>')
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs?.content).toContain("insert(__scope, 's0', () => show()")
+  })
+
+  test('top-level `return prop ?? <Default/>` renders the JSX through a conditional', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Banner(props: { label?: string }) {
+        const [count, setCount] = createSignal(0)
+        return props.label ?? <span>Default</span>
+      }
+    `
+
+    const result = compileJSXSync(source, 'Banner.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const marked = result.files.find(f => f.type === 'markedTemplate')
+    expect(marked?.content).toContain('display:contents')
+    // ?? desugars to `left != null`; the conditional reconciler must see
+    // the left operand's value — not silently render the fallback.
+    expect(marked?.content).toContain('!= null')
+  })
+
+  test('top-level `return items().map(n => <li/>)` compiles to a loop instead of failing', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function List() {
+        const [items, setItems] = createSignal<string[]>(['a'])
+        return items().map(n => <li key={n}>{n}</li>)
+      }
+    `
+
+    const result = compileJSXSync(source, 'List.tsx', { adapter })
+    // Pre-refactor this threw "No marked template in compile output" because
+    // the analyzer's recursion-fallback explicitly skips function bodies, so
+    // `jsxReturn` never saw the `<li/>` inside the map callback. The
+    // dispatcher unification handles it the same way `.map` is handled in
+    // JSX-child position (#783).
+    expect(result.errors).toHaveLength(0)
+
+    const marked = result.files.find(f => f.type === 'markedTemplate')
+    expect(marked).toBeDefined()
+    expect(marked?.content).toContain('display:contents')
+    // The `.map` call survives to the template inside the synthetic wrapper —
+    // if the analyzer were still silently walking into the callback and
+    // picking up the `<li/>`, the template would contain a bare `<li/>`
+    // root with no map. Same IRLoop emission path as `map-basic` at
+    // JSX-child position (#783).
+    expect(marked?.content).toContain('items().map')
+    expect(marked?.content).toContain('<li key=')
+  })
+})

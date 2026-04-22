@@ -188,30 +188,45 @@ export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
   if (!analyzer.jsxReturn) return null
 
   const ctx = createTransformContext(analyzer)
+  const jsxReturn = analyzer.jsxReturn
 
-  // Top-level ternary return (#968): `return cond ? <A/> : <B/>`.
-  // The ConditionalExpression isn't a JSX node, so transformNode won't
-  // handle it — dispatch directly to transformConditional and wrap in a
-  // synthetic scope element so hydration can locate __scope via bf-s.
-  // The wrapper carries the scope, so clear ctx.isRoot to avoid also
-  // marking the truthy branch's root element as a scope anchor.
-  if (ts.isConditionalExpression(analyzer.jsxReturn)) {
-    ctx.isRoot = false
-    const conditional = transformConditional(analyzer.jsxReturn, ctx)
-    return wrapInScopeElement(conditional)
+  // Direct JSX return — the IR root is an `IRElement` / `IRFragment` that
+  // already carries its own scope anchor (unless it's a Provider-only root,
+  // which needs the synthetic-wrapper fallback below).
+  if (
+    ts.isJsxElement(jsxReturn) ||
+    ts.isJsxSelfClosingElement(jsxReturn) ||
+    ts.isJsxFragment(jsxReturn)
+  ) {
+    const ir = transformNode(jsxReturn, ctx)
+
+    // Auto-generate scope wrapper for provider-only roots that lack a scope
+    // element. When a component returns only a Provider wrapping children
+    // (no native HTML element), `findScope()` would return null during
+    // hydration. Wrapping in a synthetic `<div style="display:contents">`
+    // provides the necessary bf-s anchor.
+    if (ir && needsScopeWrapper(ir)) {
+      return wrapInScopeElement(ir)
+    }
+
+    return ir
   }
 
-  const ir = transformNode(analyzer.jsxReturn, ctx)
-
-  // Auto-generate scope wrapper for provider-only roots that lack a scope element.
-  // When a component returns only a Provider wrapping children (no native HTML element),
-  // findScope() would return null during hydration. Wrapping in a synthetic
-  // <div style="display:contents"> provides the necessary bf-s anchor.
-  if (ir && needsScopeWrapper(ir)) {
-    return wrapInScopeElement(ir)
-  }
-
-  return ir
+  // Non-JSX-direct return — delegate to the `transformJsxExpression` core
+  // (#971) and wrap in a synthetic scope element. This single path covers
+  // `ConditionalExpression` (#968 — `return cond ? <A/> : <B/>`),
+  // `BinaryExpression` with JSX right (`return cond && <A/>`,
+  // `return a ?? <A/>`, `return a || <A/>`), and `CallExpression` for
+  // `.map` / inline JSX helper (`return items.map(n => <li/>)`). If the
+  // dispatcher returns `null` (scalar or forbidden kind), the component
+  // produces no IR — same as the pre-refactor "return 42" path.
+  //
+  // `ctx.isRoot` is cleared because the synthetic wrapper carries the
+  // scope; the inner IR must not double-mark a nested element as root.
+  ctx.isRoot = false
+  const ir = transformJsxExpression(jsxReturn, ctx)
+  if (ir === null) return null
+  return wrapInScopeElement(ir)
 }
 
 // =============================================================================

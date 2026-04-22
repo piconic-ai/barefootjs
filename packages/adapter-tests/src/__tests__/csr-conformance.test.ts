@@ -32,6 +32,12 @@ describe('CSR Conformance Tests', () => {
     // Synthetic scope wrapper has style="display:contents" before bf-s (#968).
     // Same attribute-ordering divergence as style-object-static/-dynamic.
     'top-level-ternary',
+    // Same synthetic-wrapper attribute-order divergence as top-level-ternary
+    // (#971 PR 5 uses the identical wrapper for non-JSX-direct returns).
+    'return-logical-and',
+    'return-logical-or',
+    'return-nullish-coalescing',
+    'return-map',
   ])
 
   for (const fixture of jsxFixtures) {

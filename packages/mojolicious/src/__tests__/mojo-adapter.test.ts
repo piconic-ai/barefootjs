@@ -32,6 +32,13 @@ runJSXConformanceTests({
     'logical-or-jsx',
     'nullish-coalescing-jsx',
     'branch-map',
+    // Return-position variants of the same bare-prop / loop-variable
+    // Perl-scoping divergence — `return-logical-or` / `return-nullish-coalescing`
+    // reference `$label` / `$banner` directly; `return-map` iterates over
+    // `$items` without a `my` declaration. Out of scope for the #971 refactor.
+    'return-logical-or',
+    'return-nullish-coalescing',
+    'return-map',
   ],
   onRenderError: (err, id) => {
     if (err instanceof PerlNotAvailableError) {
