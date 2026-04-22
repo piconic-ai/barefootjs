@@ -17,6 +17,7 @@ import {
 } from './build-cache'
 import { writeIfChanged } from './fs-utils'
 import { fileExists, readBytes, readText, transpile } from './runtime'
+import { build as esbuildBuild } from 'esbuild'
 
 export { resolveRelativeImports } from './resolve-imports'
 
@@ -685,26 +686,42 @@ export async function processExternals(
         continue
       }
 
-      // Warn when the resolved file came from an import/main fallback. These
-      // files may contain bare external imports (e.g. "lib0/observable") that
-      // the browser cannot resolve without a bundler or a matching importmap.
-      if (!entry.isBrowserReady) {
+      const wantRebundle = typeof spec === 'object' && !('url' in spec) && spec.rebundle === true
+
+      // Warn when the resolved file came from an import/main fallback and rebundle is not set.
+      // These files may contain bare external imports (e.g. "lib0/observable") that the browser
+      // cannot resolve without a bundler or importmap. Set rebundle: true to inline them.
+      if (!entry.isBrowserReady && !wantRebundle) {
         console.warn(
           `Warning: externals — "${pkgName}" resolved via import/main entry (no umd/unpkg/jsdelivr found). ` +
-          `The copied file may contain external imports that are not browser-ready.`
+          `The copied file may contain external imports that are not browser-ready. ` +
+          `Set rebundle: true to re-bundle it into a self-contained ESM file.`
         )
       }
 
       const srcFile = entry.path
       const filename = vendorChunkFilename(pkgName)
       const destPath = resolve(runtimeOutDir, filename)
-      let content: string | Uint8Array = await readBytes(srcFile)
-      if (config.minify) {
-        content = transpile(content instanceof Uint8Array ? new TextDecoder().decode(content) : content, { loader: 'js', minify: true })
-      }
-      if (await writeIfChanged(destPath, content)) {
+
+      if (wantRebundle) {
+        await esbuildBuild({
+          entryPoints: [srcFile],
+          outfile: destPath,
+          format: 'esm',
+          bundle: true,
+          minify: config.minify ?? false,
+        })
         anyChanged = true
-        console.log(`Generated: ${runtimeSubdir}/${filename}`)
+        console.log(`Generated (bundled): ${runtimeSubdir}/${filename}`)
+      } else {
+        let content: string | Uint8Array = await readBytes(srcFile)
+        if (config.minify) {
+          content = transpile(content instanceof Uint8Array ? new TextDecoder().decode(content) : content, { loader: 'js', minify: true })
+        }
+        if (await writeIfChanged(destPath, content)) {
+          anyChanged = true
+          console.log(`Generated: ${runtimeSubdir}/${filename}`)
+        }
       }
 
       const url = `${base}${filename}`

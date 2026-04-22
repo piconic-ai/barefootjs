@@ -101,10 +101,13 @@ export interface PostBuildContext {
  *   (umd → unpkg → jsdelivr → import condition) and copy it to the output dir.
  * - `{ url }` — CDN passthrough: skip local copy, use the URL as-is in the importmap.
  * - `preload: true` — emit a `<link rel="modulepreload">` hint for this entry.
+ * - `rebundle: true` — re-bundle the resolved entry with esbuild into a self-contained
+ *   ESM file, inlining all dependencies. Useful for packages (e.g. `yjs`) whose
+ *   `dist/*.mjs` files still contain bare external imports that browsers cannot resolve.
  */
 export type ExternalSpec =
   | true
-  | { chunk?: true; preload?: boolean }
+  | { chunk?: true; preload?: boolean; rebundle?: boolean }
   | { url: string; preload?: boolean }
 
 export interface BuildOptions {
