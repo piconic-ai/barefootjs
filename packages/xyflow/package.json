@@ -22,7 +22,7 @@
     "build": "bun run build:js && bun run build:browser && bun run build:types",
     "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
     "build:browser": "bun build ./src/index.ts --outdir ./dist --entry-naming 'xyflow.browser.min.[ext]' --format esm --minify --sourcemap --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
-    "build:types": "tsc --emitDeclarationOnly --outDir ./dist",
+    "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test src/",
     "test:e2e": "bunx playwright test",
     "clean": "rm -rf dist"

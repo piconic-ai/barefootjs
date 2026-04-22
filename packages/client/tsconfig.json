@@ -12,7 +12,6 @@
     "skipLibCheck": true,
     "rootDir": "./src",
     "outDir": "./dist",
-    "baseUrl": ".",
     "paths": {
       "@barefootjs/client/reactive": ["./src/reactive.ts"]
     }
