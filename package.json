@@ -15,7 +15,7 @@
   "scripts": {
     "setup": "bun install && bun run --filter 'barefootjs-echo-example' setup",
     "build": "bun run --filter '@barefootjs/client' build && bun run --filter '@barefootjs/jsx' build && bun run --filter '@barefootjs/hono' --filter '@barefootjs/go-template' build && bun run --filter '*' build",
-    "test": "bun test --cwd . packages/",
+    "test": "bun test --cwd . __tests__",
     "test:e2e": "bun run --filter '*' test:e2e",
     "clean": "bun run --filter '*' clean",
     "dev": "docker compose up",
@@ -31,6 +31,7 @@
     "@happy-dom/global-registrator": "^20.0.11",
     "@playwright/test": "^1.57.0",
     "@types/bun": "latest",
+    "@types/node": "^22.10.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "concurrently": "^9.1.0",
@@ -38,6 +39,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "solid-js": "^1.9.12",
+    "@typescript/native-preview": "beta",
     "typescript": "^5.9.3"
   },
   "dependencies": {
