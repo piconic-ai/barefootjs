@@ -46,11 +46,21 @@ Quick decision guide:
 - **Template HTML output** → Adapter conformance fixture
 - **Client JS behavior** → CSR conformance fixture
 - **Click/keyboard behavior** → E2E test
+- **Static attribute / class / ARIA changes** → Component IR test. Do NOT add an E2E test for static-only changes; that's an anti-pattern (see `spec/testing.md`).
 - **Hydration correctness** is a compiler invariant. Fix in `packages/jsx/`, verify with E2E.
+
+`renderToTest` resolution limits (known): the IR analyzer does NOT resolve `Record<T, string>[key]` indexed lookups or default-prop values. For variant components (`const sizeClasses: Record<Size, string> = {...}` + `${sizeClasses[size]}`), the `.classes` array in IR only contains the base class tokens, not the per-variant ones. Verify variant resolution at the adapter conformance layer instead, or add a fixture in `packages/adapter-tests/fixtures/`. See `ui/components/ui/button/index.test.tsx` for the existing workaround pattern.
+
+Workflow for editing a UI component:
+1. Run `bun run barefoot ui <component>` (and `barefoot inspect <component>` if `"use client"`) for the API surface.
+2. Add or update the IR test (red).
+3. Edit the component.
+4. Re-run the IR test (green).
+5. Update `site/ui/e2e/<component>.spec.ts` **only if** user-facing interactive behavior (click / keyboard / hover / hydration) changed.
 
 ## CLI
 
-Use the `barefoot` CLI (`bun run barefoot`) to look up component APIs, framework docs, and inspect signal graphs. Do not read source files to learn APIs.
+Use the `barefoot` CLI (`bun run barefoot`) first to look up component APIs, framework docs, and inspect signal graphs. When the CLI output is insufficient for the task (e.g. you need to know the class-composition pattern, internal helper constants, or `...props` spread behavior before editing), reading the source file is acceptable — but the CLI must be your first reference, not the source.
 
 - `barefoot search <query>` — Find components and docs by name/category/tags
 - `barefoot ui <component>` — Component reference (props, examples, a11y)
