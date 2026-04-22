@@ -39,6 +39,18 @@ JSX Source
 4. **Adapter-based output** - IR can be rendered to different template formats
 5. **Rich error reporting** - Source location + suggestions
 
+### Phase 1 Dispatch: JSX-Embeddable Expressions
+
+Phase 1 must accept the same set of expression shapes at every position where a user can embed an expression that contributes to rendered output:
+
+- Component return position (`return expr`, arrow-body expression)
+- JSX child position (`{expr}` inside an element)
+- Conditional branch position (`cond ? whenTrue : whenFalse`, `cond && whenTrue`)
+- Attribute value position (`attr={expr}`)
+
+Historically these positions had parallel allow-lists, which meant each new supported shape had to be added in several places and omissions surfaced as silent mis-render. The canonical classification of every `ts.SyntaxKind` that can appear as a `ts.Expression` is maintained in
+[Appendix A: ts.SyntaxKind classification for JSX-embeddable expressions](#appendix-a-tssyntaxkind-classification-for-jsx-embeddable-expressions). The Phase 1 dispatcher is expected to be an exhaustive `switch (expr.kind)` keyed to that table, with `assertNever` guarding the default branch so that any future `ts.SyntaxKind` added by upstream TypeScript is a compile-time error rather than a silent runtime drop.
+
 ---
 
 ## Reactivity Model
@@ -613,3 +625,130 @@ const isActive = createMemo(() => selected() === id)
 1. **Type inference depth** - How deeply to resolve types like `Pick<T, K>`?
 2. **Source maps** - Generate source maps for Client JS debugging?
 3. **Constant ordering** - How to handle dependencies more robustly?
+
+---
+
+## Appendix A: ts.SyntaxKind classification for JSX-embeddable expressions
+
+This appendix enumerates every `ts.SyntaxKind` value that `ts.Expression` (and its subtypes `UnaryExpression`, `UpdateExpression`, `LeftHandSideExpression`, `MemberExpression`, `PrimaryExpression`) can hold, and assigns each kind to one of five classes used by the Phase 1 dispatcher.
+
+Source of truth: `typescript@5.9.3`, `node_modules/typescript/lib/typescript.d.ts` (declarations `interface Expression`, `interface UnaryExpression`, `interface UpdateExpression`, `interface LeftHandSideExpression`, `interface MemberExpression`, `interface PrimaryExpression`). The BarefootJS `package.json` pins TypeScript at `^5.9.3`; `packages/jsx/package.json` at `^5.0.0`. When upgrading TypeScript, re-run this enumeration and extend the table before merging the bump.
+
+### A.1 Classes
+
+| Class | Semantics | Dispatcher action |
+|---|---|---|
+| **Transparent** | The kind wraps an inner `ts.Expression` with no runtime effect on render output. | Unwrap to `.expression` and recurse. |
+| **JSX-structural** | The kind can carry JSX or JSX-shaped subtrees that Phase 1 must translate into a dedicated IR node. | Delegate to a shape-specific transformer that returns an `IRNode`. |
+| **Scalar leaf** | The kind evaluates to a runtime JS value that the template emits via the scalar path (text interpolation or attribute value). No JSX descent. | Produce an `IRExpression` carrying the raw JS source. |
+| **Forbidden in render position** | The kind is syntactically valid in TypeScript but is not meaningful in BarefootJS render output, or its semantics conflict with synchronous, non-generator client hydration. | Emit a dedicated BF error code. |
+| **Unreachable at render position** | The kind is only valid as a nested child of another kind (e.g. `SpreadElement` only inside `ArrayLiteralExpression \| CallExpression \| NewExpression`), or is synthesized by the TypeScript transformer API and never produced by parsing user source. | Dispatcher case is present for exhaustiveness but delegates to a `case _: never` guard inside `assertNever`, treated as a compiler bug if reached. |
+
+The `default` branch of the `switch` is reserved for the `assertNever` exhaustiveness check: every enumerated kind above must have an explicit `case` label. A future TypeScript release that introduces a new `ts.Expression`-valued `SyntaxKind` produces a TypeScript compile error in `transformJsxExpression`, not a silent runtime regression.
+
+### A.2 Classification table
+
+Kinds are ordered by class, then alphabetically. `"expr"` in the "Parent type chain" column is shorthand for `extends Expression`.
+
+| `ts.SyntaxKind` | Class | Parent type chain | Notes |
+|---|---|---|---|
+| `ParenthesizedExpression` | Transparent | `PrimaryExpression` | Unwrap `.expression`. |
+| `AsExpression` | Transparent | `Expression` | `x as T` — type-only, unwrap `.expression`. |
+| `TypeAssertionExpression` | Transparent | `UnaryExpression` | Legacy `<T>x` form. Unwrap `.expression`. |
+| `SatisfiesExpression` | Transparent | `Expression` | `x satisfies T` — type-only, unwrap. |
+| `NonNullExpression` | Transparent | `LeftHandSideExpression` | `x!` — type-only at runtime, unwrap. |
+| `PartiallyEmittedExpression` | Transparent | `LeftHandSideExpression` | Synthesized by transformers (e.g. after type-only stripping). Unwrap `.expression`. |
+| `JsxElement` | JSX-structural | `PrimaryExpression` | `<tag>…</tag>` — `transformJsxElement`. |
+| `JsxFragment` | JSX-structural | `PrimaryExpression` | `<>…</>` — `transformFragment`. |
+| `JsxSelfClosingElement` | JSX-structural | `PrimaryExpression` | `<tag/>` — `transformSelfClosingElement`. |
+| `ConditionalExpression` | JSX-structural | `Expression` | `cond ? a : b` — `transformConditional` (both branches recurse through the same dispatcher). |
+| `BinaryExpression` | JSX-structural *(operator-gated)* | `Expression` | Only `&&`, `\|\|`, `??` with a JSX-capable right operand route to `transformBinaryJsx`. Any other operator (including `,`, `+`, comparisons, assignments) is Scalar leaf. |
+| `CallExpression` | JSX-structural *(callee-gated)* | `LeftHandSideExpression` | `.map(...)` on an array-typed receiver → `transformMapCall`; known inline-JSX helpers (`jsx`, `jsxs`, `jsxDEV`) → `transformJsxFunctionCall`; otherwise Scalar leaf. |
+| `ArrayLiteralExpression` | Scalar leaf *(today)* | `PrimaryExpression` | See ruling A.3.1 below. |
+| `Identifier` | Scalar leaf | `PrimaryExpression` | `foo` — pass-through in `IRExpression`; reactivity layer decides wrapping. |
+| `PrivateIdentifier` | Forbidden | `Node` (not Expression) | Only valid inside class member bodies; reaching the dispatcher is a TypeScript-level error. Listed here for completeness; the `switch` does not case on it. |
+| `StringLiteral` | Scalar leaf | `LiteralExpression` | |
+| `NumericLiteral` | Scalar leaf | `LiteralExpression` | |
+| `BigIntLiteral` | Scalar leaf | `LiteralExpression` | |
+| `RegularExpressionLiteral` | Scalar leaf | `LiteralExpression` | |
+| `NoSubstitutionTemplateLiteral` | Scalar leaf | `LiteralExpression` | `` `literal` `` with no `${}`. |
+| `TemplateExpression` | Scalar leaf | `PrimaryExpression` | `` `hello ${name}` `` — pass through as JS string expression. |
+| `TaggedTemplateExpression` | Scalar leaf | `MemberExpression` | See ruling A.3.2 below. |
+| `TrueKeyword` | Scalar leaf | `PrimaryExpression` | `TrueLiteral`. |
+| `FalseKeyword` | Scalar leaf | `PrimaryExpression` | `FalseLiteral`. |
+| `NullKeyword` | Scalar leaf | `PrimaryExpression` | Renders as empty (branch-level fallback applies in conditional contexts). |
+| `ThisKeyword` | Scalar leaf | `PrimaryExpression` | |
+| `SuperKeyword` | Scalar leaf | `PrimaryExpression` | Only valid inside class methods; still Scalar leaf if reached at render position. |
+| `ImportKeyword` | Scalar leaf | `PrimaryExpression` | Appears as the callee of `import(...)`; standalone is Forbidden (parser rejects it). |
+| `PropertyAccessExpression` | Scalar leaf | `MemberExpression` | `props.x`, `foo.bar.baz`. Reactivity layer decides wrapping. |
+| `ElementAccessExpression` | Scalar leaf | `MemberExpression` | `foo[key]`. |
+| `PrefixUnaryExpression` | Scalar leaf | `UpdateExpression` | `!x`, `-x`, `++x` (the last has a write side effect, but compilation path is still scalar). |
+| `PostfixUnaryExpression` | Scalar leaf | `UpdateExpression` | `x++`, `x--`. |
+| `TypeOfExpression` | Scalar leaf | `UnaryExpression` | `typeof x`. |
+| `VoidExpression` | Scalar leaf | `UnaryExpression` | `void x`. |
+| `DeleteExpression` | Scalar leaf | `UnaryExpression` | `delete x.y`. |
+| `NewExpression` | Scalar leaf | `PrimaryExpression` | `new Foo(...)`. |
+| `ObjectLiteralExpression` | Scalar leaf | `PrimaryExpression` | `{ a: 1 }` — rendered as `[object Object]` today; same as JS coercion. |
+| `ArrowFunction` | Scalar leaf | `Expression` | `() => x`. Event handlers route through a different path (attribute dispatcher) before reaching here. |
+| `FunctionExpression` | Scalar leaf | `PrimaryExpression` | `function () { … }`. |
+| `ClassExpression` | Scalar leaf | `PrimaryExpression` | `class { … }`. Rare at render position. |
+| `MetaProperty` | Scalar leaf | `PrimaryExpression` | `new.target`, `import.meta`. |
+| `ExpressionWithTypeArguments` | Scalar leaf | `MemberExpression` | `Foo<T>(...)` callee form at type-arg sites. |
+| `CommaListExpression` | Scalar leaf | `Expression` | Synthesized by transformers (`(a, b, c)` after simplification). |
+| `SyntheticExpression` | Scalar leaf | `Expression` | Synthesized by the transformer API; carries a `type` field only. |
+| `AwaitExpression` | Forbidden | `UnaryExpression` | See ruling A.3.3 below. |
+| `YieldExpression` | Forbidden | `Expression` | See ruling A.3.5 below. |
+| `SpreadElement` | Unreachable at render position | `Expression` | See ruling A.3.4 below. |
+| `OmittedExpression` | Unreachable at render position | `Expression` | Array-hole sentinel (`[1,,3]`). Not produced at render position. |
+| `JsxExpression` | Unreachable at render position | `Expression` | Only appears inside `JsxElement \| JsxFragment \| JsxAttributeLike` — its inner expression is what the dispatcher receives. |
+| `JsxOpeningElement` | Unreachable at render position | `Expression` | Internal child of `JsxElement`. |
+| `JsxOpeningFragment` | Unreachable at render position | `Expression` | Internal child of `JsxFragment`. |
+| `JsxClosingFragment` | Unreachable at render position | `Expression` | Internal child of `JsxFragment`. |
+| `JsxAttributes` | Unreachable at render position | `PrimaryExpression` | Only valid as the `attributes` field of `JsxOpeningLikeElement`. |
+| `MissingDeclaration` | Unreachable at render position | `PrimaryExpression` | Only produced in error-recovery parses. |
+
+### A.3 Judgement-call rulings
+
+#### A.3.1 `ArrayLiteralExpression` containing JSX
+
+An array literal whose elements contain JSX (`[<A/>, <B/>]`) is classified as **Scalar leaf** in the current compiler. The IR has no dedicated node for "array of JSX children"; the existing list path is `IRLoop`, which requires a callable mapper. Treating array literals as JSX-structural would require introducing either a synthetic `IRLoop` wrapper over a fixed-length iterable or a new `IRArray` node, neither of which this refactor is scoped to do.
+
+Practical consequence: `{[<A/>, <B/>]}` at a JSX child position emits an `IRExpression` whose JS string is the array literal; the backend template engine will stringify it by default. Users who want JSX-structural rendering should switch to a `.map(...)` or sibling expressions. This matches today's behavior — the refactor preserves it.
+
+Future direction (not in scope): if a user demand emerges, add a dedicated `IRArray` node and promote `ArrayLiteralExpression` to JSX-structural with the same gating as `CallExpression` (only when an element has JSX kind).
+
+#### A.3.2 `TaggedTemplateExpression`
+
+Tagged templates (`html\`<div/>\``) are not a supported render shape. BarefootJS does not ship an htm-style runtime; if a user's tag returns JSX-like structure it is opaque to the compiler. Ruling: **Scalar leaf** — emit the tagged template as an `IRExpression` (raw JS). Reactivity layer decides whether to wrap.
+
+If the user's tag happens to produce a DOM node or a string, the adapter's scalar path handles it the same as any other runtime-computed string. If the tag produces something non-scalar (e.g. a framework-specific renderable), the output is undefined — but this is not a regression relative to today.
+
+#### A.3.3 `AwaitExpression` at render position
+
+`"use client"` components are synchronous at hydration time: the client runtime does not `await` during first render. Server-side (hono/jsx) components **can** be async, but BarefootJS's Phase 1 IR is emitted once and reused for both SSR and CSR — an IR node tagged "await this" would have different meaning on each side.
+
+Ruling: **Forbidden** at render position. Emit `BF050 — AwaitExpression not allowed in render position` with suggestion "compute the value outside render and pass it via a signal". Rationale: the alternative (silently dropping the `await` on the client side) reproduces the #968 failure mode this refactor is designed to eliminate.
+
+If a user needs async data on the server only, they can resolve it in the route handler and pass it as a prop; the Phase 1 dispatcher does not see the `await`.
+
+#### A.3.4 `SpreadElement` as standalone
+
+`SpreadElement` is only valid as a child of `ArrayLiteralExpression`, `CallExpression`, or `NewExpression` per `typescript.d.ts:5069`. A parser will not accept a standalone `...x` at render position. Ruling: **Unreachable at render position** — the dispatcher includes an explicit `case` solely so that the exhaustiveness check succeeds, and the case body calls `assertNever` with a message tagging this as a compiler bug if ever reached.
+
+`SpreadElement` inside an `ArrayLiteralExpression` or `CallExpression` is handled by those parents' dedicated transformers, which iterate `.elements` / `.arguments` with spread-aware logic; the child spread never re-enters `transformJsxExpression` at the top level.
+
+#### A.3.5 `YieldExpression`
+
+`"use client"` components are not generators. A `yield` inside a render path implies a generator function, which BarefootJS does not support. Server-side components are not generators either (hono/jsx renders once).
+
+Ruling: **Forbidden**. Emit `BF051 — YieldExpression not allowed in render position` with suggestion "components must not be generators".
+
+### A.4 Verification
+
+The classification table above is the source of truth for `transformJsxExpression`. Verification path:
+
+1. The dispatcher's `switch (expr.kind)` has one `case` label per Transparent / JSX-structural / Scalar leaf / Forbidden / Unreachable entry.
+2. The `default` branch calls `assertNever(expr)` with the `expr: never` type check, which fails at `tsc` compile time if any enumerated kind is missing.
+3. A compile-time regression test (added in a later PR of the #971 series) deliberately omits one `case` to assert that `tsc` reports an error — this prevents the exhaustiveness check from being silently weakened by a future edit.
+
+When TypeScript upstream adds a new `ts.Expression`-valued `SyntaxKind`, the expected workflow is: (a) the next `tsc` run fails on `transformJsxExpression`, (b) the author classifies the new kind using this appendix's five-class rubric, (c) the appendix and the `switch` are updated in the same PR.
