@@ -214,10 +214,13 @@ function Toast(props: ToastProps) {
   const handleMount = (el: HTMLElement) => {
     const providerEl = el.closest('[data-slot="toast-provider"]') as HTMLElement
     let dismissTimer: ReturnType<typeof setTimeout> | null = null
+    let exitTimer: ReturnType<typeof setTimeout> | null = null
 
     // Transition to hidden after exit animation completes
-    el.addEventListener('transitionend', () => {
+    el.addEventListener('transitionend', (e) => {
+      if (e.target !== el) return
       if (el.dataset.state === 'exiting') {
+        if (exitTimer) { clearTimeout(exitTimer); exitTimer = null }
         el.dataset.state = 'hidden'
         el.className = `hidden ${toastBaseClasses} ${toastVariantClass} ${className}`
       }
@@ -232,6 +235,7 @@ function Toast(props: ToastProps) {
       if (isOpen) {
         // Clear dismiss timer when entering
         if (dismissTimer) { clearTimeout(dismissTimer); dismissTimer = null }
+        if (exitTimer)    { clearTimeout(exitTimer);    exitTimer    = null }
 
         // Entering state
         el.dataset.state = 'entering'
@@ -253,12 +257,22 @@ function Toast(props: ToastProps) {
         }
       } else {
         if (dismissTimer) { clearTimeout(dismissTimer); dismissTimer = null }
+        if (exitTimer)    { clearTimeout(exitTimer);    exitTimer    = null }
 
         const currentState = el.dataset.state
         if (currentState === 'visible' || currentState === 'entering') {
-          // Exiting state — transitionend listener handles the rest
           el.dataset.state = 'exiting'
           el.className = `${stateClasses.exiting} ${toastBaseClasses} ${toastVariantClass} ${className}`
+
+          // Fallback: if transitionend is dropped (CI load, backgrounded tab, etc.),
+          // still finalize exit. Idempotent with the transitionend listener.
+          exitTimer = setTimeout(() => {
+            exitTimer = null
+            if (el.dataset.state === 'exiting') {
+              el.dataset.state = 'hidden'
+              el.className = `hidden ${toastBaseClasses} ${toastVariantClass} ${className}`
+            }
+          }, 1000) // duration-slow (300ms) + generous buffer
         }
       }
     })
