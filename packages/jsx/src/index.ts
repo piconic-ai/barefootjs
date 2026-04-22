@@ -116,7 +116,7 @@ export type ExternalSpec =
  * Use this for modules that are not barefoot components (e.g. plain TS entry
  * points that import external vendor packages).
  */
-export interface BunBundleEntry {
+export interface BundleEntry {
   /** Entry file path relative to the config file */
   entry: string
   /** Output filename placed in the client JS output directory */
@@ -161,7 +161,7 @@ export interface BuildOptions {
    * init entry points) that import vendor packages listed in `externals`.
    * Each entry is bundled as ESM with all `externals` automatically excluded.
    */
-  bunBuild?: BunBundleEntry[]
+  bundleEntries?: BundleEntry[]
 }
 
 // CSS Layer Prefixer

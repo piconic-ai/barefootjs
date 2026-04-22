@@ -315,7 +315,7 @@ describe('processExternals', () => {
   test('returns false and emits nothing when externals is empty', async () => {
     const outDir = makeTmpDir()
     try {
-      const changed = await processExternals(makeConfig(outDir, outDir), 'components', outDir)
+      const { changed } = await processExternals(makeConfig(outDir, outDir), 'components', outDir)
       expect(changed).toBe(false)
       expect(require('fs').existsSync(resolve(outDir, 'barefoot-externals.json'))).toBe(false)
     } finally {
