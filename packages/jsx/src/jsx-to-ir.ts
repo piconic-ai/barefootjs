@@ -188,6 +188,19 @@ export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
   if (!analyzer.jsxReturn) return null
 
   const ctx = createTransformContext(analyzer)
+
+  // Top-level ternary return (#968): `return cond ? <A/> : <B/>`.
+  // The ConditionalExpression isn't a JSX node, so transformNode won't
+  // handle it — dispatch directly to transformConditional and wrap in a
+  // synthetic scope element so hydration can locate __scope via bf-s.
+  // The wrapper carries the scope, so clear ctx.isRoot to avoid also
+  // marking the truthy branch's root element as a scope anchor.
+  if (ts.isConditionalExpression(analyzer.jsxReturn)) {
+    ctx.isRoot = false
+    const conditional = transformConditional(analyzer.jsxReturn, ctx)
+    return wrapInScopeElement(conditional)
+  }
+
   const ir = transformNode(analyzer.jsxReturn, ctx)
 
   // Auto-generate scope wrapper for provider-only roots that lack a scope element.
@@ -298,6 +311,14 @@ function transformNode(node: ts.Node, ctx: TransformContext): IRNode | null {
   // Expression: {expr}
   if (ts.isJsxExpression(node)) {
     return transformExpression(node, ctx)
+  }
+
+  // Top-level ternary return: `return cond ? <A/> : <B/>` (#968).
+  // Used when reached via `transformNode(analyzer.jsxReturn, ...)` from
+  // buildIfStatementChain. jsxToIR's main path handles the scope wrapper
+  // and calls transformConditional directly.
+  if (ts.isConditionalExpression(node)) {
+    return transformConditional(node, ctx)
   }
 
   return null

@@ -96,8 +96,14 @@ export interface AnalyzerContext {
   /** Deferred BF043 info; emitted only for stateful components in validateContext() */
   propsDestructuring: PropsDestructuringInfo | null
 
-  // JSX return
-  jsxReturn: ts.JsxElement | ts.JsxFragment | ts.JsxSelfClosingElement | null
+  // JSX return — also allows top-level `cond ? <A/> : <B/>` conditional expressions
+  // so root-level ternaries compile into IRConditional (#968).
+  jsxReturn:
+    | ts.JsxElement
+    | ts.JsxFragment
+    | ts.JsxSelfClosingElement
+    | ts.ConditionalExpression
+    | null
 
   // Conditional returns (if statements with JSX returns)
   conditionalReturns: ConditionalReturn[]

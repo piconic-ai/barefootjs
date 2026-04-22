@@ -68,7 +68,8 @@ function extractCondMarkers(html: string): string[] {
 }
 
 // Stateless fixtures have no client JS — skip.
-// if-statement: SSR renders one branch but client JS references markers from all branches.
+// if-statement, top-level-ternary: SSR renders one branch but client JS
+// references markers from all branches.
 const statelessFixtures = new Set([
   'props-static',
   'nested-elements',
@@ -80,6 +81,7 @@ const statelessFixtures = new Set([
   'child-component',
   'static-array-children',
   'if-statement',
+  'top-level-ternary',
 ])
 
 describe('SSR-Hydration Contract', () => {

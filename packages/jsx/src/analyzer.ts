@@ -538,22 +538,24 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
     return
   }
 
-  // Return statement with JSX
+  // Return statement with JSX (or a top-level ternary, #968)
   if (ts.isReturnStatement(node) && node.expression) {
     if (
       ts.isJsxElement(node.expression) ||
       ts.isJsxFragment(node.expression) ||
-      ts.isJsxSelfClosingElement(node.expression)
+      ts.isJsxSelfClosingElement(node.expression) ||
+      ts.isConditionalExpression(node.expression)
     ) {
       ctx.jsxReturn = node.expression
     }
-    // Handle parenthesized JSX: return ( <div>...</div> )
+    // Handle parenthesized JSX / ternary: return ( <div>...</div> )
     if (ts.isParenthesizedExpression(node.expression)) {
       const inner = node.expression.expression
       if (
         ts.isJsxElement(inner) ||
         ts.isJsxFragment(inner) ||
-        ts.isJsxSelfClosingElement(inner)
+        ts.isJsxSelfClosingElement(inner) ||
+        ts.isConditionalExpression(inner)
       ) {
         ctx.jsxReturn = inner
       }

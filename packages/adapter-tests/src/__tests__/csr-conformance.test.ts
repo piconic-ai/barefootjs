@@ -29,6 +29,9 @@ describe('CSR Conformance Tests', () => {
     // Static style object is converted at compile time — no runtime needed.
     // Attribute ordering differs between SSR (style first) and CSR injection (bf-s first).
     'style-object-static',
+    // Synthetic scope wrapper has style="display:contents" before bf-s (#968).
+    // Same attribute-ordering divergence as style-object-static/-dynamic.
+    'top-level-ternary',
   ])
 
   for (const fixture of jsxFixtures) {
