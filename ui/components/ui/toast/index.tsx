@@ -217,7 +217,8 @@ function Toast(props: ToastProps) {
     let exitTimer: ReturnType<typeof setTimeout> | null = null
 
     // Transition to hidden after exit animation completes
-    el.addEventListener('transitionend', () => {
+    el.addEventListener('transitionend', (e) => {
+      if (e.target !== el) return
       if (el.dataset.state === 'exiting') {
         if (exitTimer) { clearTimeout(exitTimer); exitTimer = null }
         el.dataset.state = 'hidden'
