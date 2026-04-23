@@ -42,7 +42,7 @@ export interface ClientJsContext {
   reactiveChildProps: ReactiveChildProp[]
   reactiveAttrs: ReactiveAttribute[]
   clientOnlyElements: ClientOnlyElement[]
-  clientOnlyConditionals: ClientOnlyConditional[]
+  clientOnlyConditionals: ConditionalElement[]
   providerSetups: Array<{ contextName: string; valueExpr: string }>
   /** HTML elements with unresolved spread attrs (open types, need applyRestAttrs at runtime) */
   restAttrElements: RestAttrElement[]
@@ -139,7 +139,8 @@ export interface BranchLoop extends LoopCore {
  * — events, refs, child components, text effects, nested loops, and nested
  * conditionals. Replaces the six parallel `whenTrueXxx` / `whenFalseXxx`
  * field pairs that used to live directly on `ConditionalElement` and
- * `ClientOnlyConditional` (pre-Phase 3 shape).
+ * `ConditionalElement` (pre-Phase 3 shape; `ClientOnlyConditional` was a
+ * structurally-identical sibling type, now replaced by `ConditionalElement`).
  */
 export interface BranchSummary {
   events: ConditionalBranchEvent[]
@@ -291,14 +292,6 @@ export interface ClientOnlyElement {
   expression: string
 }
 
-export interface ClientOnlyConditional {
-  slotId: string
-  condition: string
-  whenTrueHtml: string
-  whenFalseHtml: string
-  whenTrue: BranchSummary
-  whenFalse: BranchSummary
-}
 
 export interface RestAttrElement {
   slotId: string
