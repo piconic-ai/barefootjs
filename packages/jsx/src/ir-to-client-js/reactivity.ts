@@ -137,6 +137,49 @@ export function needsEffectWrapper(expr: string, ctx: ClientJsContext): boolean 
 }
 
 /**
+ * Why a given expression should be treated as reactive inside a loop item.
+ *
+ * Surfaces the two distinct reasons loop-child collectors care about:
+ * - `signal-or-memo-or-prop` — the expression reads a signal getter, a memo,
+ *   or a prop name (what `needsEffectWrapper` already classifies).
+ * - `loop-param` — the expression reads the loop parameter, which becomes a
+ *   per-item signal accessor at runtime; the string-level `needsEffectWrapper`
+ *   does not know about loop params.
+ *
+ * `none` means neither applies and the collector can skip the expression.
+ *
+ * Consolidates the duplicated
+ * `needsEffectWrapper(expanded, ctx) || exprReferencesIdent(expanded, loopParam)`
+ * check shared by `collectLoopChildReactiveTexts`,
+ * `collectLoopChildReactiveAttrs`, and `collectLoopChildConditionals`.
+ */
+export type ReactivitySource =
+  | { kind: 'none' }
+  | { kind: 'signal-or-memo-or-prop' }
+  | { kind: 'loop-param'; param: string }
+
+/**
+ * Classify a (constant-expanded) expression as reactive inside a loop item.
+ * See `ReactivitySource` for the two reasons we care about. Loop-param
+ * matching takes precedence so `loop-param` is reported even when the
+ * expression also reads a signal — the `kind` is purely informational and
+ * collectors only care about `kind !== 'none'`.
+ */
+export function classifyReactivity(
+  expr: string,
+  ctx: ClientJsContext,
+  loopParam?: string,
+): ReactivitySource {
+  if (loopParam && exprReferencesIdent(expr, loopParam)) {
+    return { kind: 'loop-param', param: loopParam }
+  }
+  if (needsEffectWrapper(expr, ctx)) {
+    return { kind: 'signal-or-memo-or-prop' }
+  }
+  return { kind: 'none' }
+}
+
+/**
  * Recursively collect all event handler expressions from an IR node tree.
  * Used to extract function identifiers from loop children.
  */
@@ -373,11 +416,8 @@ export function collectLoopChildReactiveTexts(
       const expanded = expandConstantForReactivity(n.expr, ctx)
       // Include if expression reads signals OR references the loop parameter
       // (loop param becomes a signal accessor via per-item signals).
-      const isReactive = needsEffectWrapper(expanded, ctx)
-      const refsLoopParam = loopParam ? exprReferencesIdent(expanded, loopParam) : false
-      if (isReactive || refsLoopParam) {
-        texts.push({ slotId: n.slotId, expression: expanded, insideConditional: insideConditional || undefined })
-      }
+      if (classifyReactivity(expanded, ctx, loopParam).kind === 'none') return
+      texts.push({ slotId: n.slotId, expression: expanded, insideConditional: insideConditional || undefined })
     },
     conditional: ({ descend }) => {
       descend(true)
@@ -413,13 +453,14 @@ export function collectLoopChildConditionals(
       // inside branches will be handled by insert()'s own bindEvents.
       // Non-reactive, non-loop-param conditionals are ignored entirely.
       if (!n.slotId) return
-      const isReactive = n.reactive
-      const refsLoopParam = loopParam ? exprReferencesIdent(n.condition, loopParam) : false
-      if (!isReactive && !refsLoopParam) return
+      const refsLoopParamInSource = loopParam ? exprReferencesIdent(n.condition, loopParam) : false
+      // Pre-gate using AST `reactive` flag on the source condition before
+      // paying for constant expansion — matches the legacy short-circuit.
+      if (!n.reactive && !refsLoopParamInSource) return
       const expanded = expandConstantForReactivity(n.condition, ctx)
       // Loop-param conditionals are reactive via per-item signal accessors;
-      // needsEffectWrapper only knows about signals/memos/props, not loop params.
-      if (!refsLoopParam && !needsEffectWrapper(expanded, ctx)) return
+      // classifyReactivity sees both paths (signal/memo/prop + loop-param).
+      if (classifyReactivity(expanded, ctx, loopParam).kind === 'none') return
 
       const loopParamsForCond = loopParam ? [loopParam] : undefined
       const whenTrueHtml = irToHtmlTemplate(n.whenTrue, undefined, 0, loopParamsForCond)
@@ -470,16 +511,13 @@ export function collectLoopChildReactiveAttrs(
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
         const expanded = expandConstantForReactivity(valueStr, ctx)
-        const isReactive = needsEffectWrapper(expanded, ctx)
-        const refsLoopParam = loopParam ? exprReferencesIdent(expanded, loopParam) : false
-        if (isReactive || refsLoopParam) {
-          attrs.push({
-            childSlotId: el.slotId,
-            attrName: attr.name,
-            expression: expanded,
-            ...pickAttrMeta(attr),
-          })
-        }
+        if (classifyReactivity(expanded, ctx, loopParam).kind === 'none') continue
+        attrs.push({
+          childSlotId: el.slotId,
+          attrName: attr.name,
+          expression: expanded,
+          ...pickAttrMeta(attr),
+        })
       }
     }
   })
