@@ -448,6 +448,13 @@ export interface MemoInfo {
 export interface EffectInfo {
   body: string
   deps: string[]
+  /**
+   * When set, the effect was captured as `const <captureName> = createEffect(...)`
+   * (Solid-style disposer capture). Emission wraps the canonical `createEffect`
+   * call in a `const` binding so user code referencing the captured name keeps
+   * working.
+   */
+  captureName?: string
   loc: SourceLocation
 }
 

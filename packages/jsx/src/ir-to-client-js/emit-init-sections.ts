@@ -251,7 +251,14 @@ export function emitRefCallbacks(
 /** Emit user-defined createEffect and onMount calls. */
 export function emitEffectsAndOnMounts(lines: string[], ctx: ClientJsContext): void {
   for (const effect of ctx.effects) {
-    lines.push(`  createEffect(${effect.body})`)
+    if (effect.captureName) {
+      // Preserve the `const <name> = createEffect(...)` form so user code
+      // calling the captured disposer (or any future return value) still
+      // resolves at runtime.
+      lines.push(`  const ${effect.captureName} = createEffect(${effect.body})`)
+    } else {
+      lines.push(`  createEffect(${effect.body})`)
+    }
   }
 
   for (const onMount of ctx.onMounts) {

@@ -493,8 +493,15 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
         collectSignalTupleRef(decl, ctx)
         continue
       }
-      if (isMemoDeclaration(decl)) {
+      if (isMemoDeclaration(decl, ctx)) {
         collectMemo(decl, ctx)
+        continue
+      }
+      if (isEffectDisposerCapture(decl, ctx)) {
+        // `const dispose = createEffect(() => { ... })` — capture the binding
+        // name so emission can preserve the assignment and the effect body
+        // both run at mount.
+        collectEffect(decl.initializer as ts.CallExpression, ctx, (decl.name as ts.Identifier).text)
         continue
       }
       if (ts.isIdentifier(decl.name)) {
@@ -506,12 +513,12 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
 
   // Effect calls - collect the effect but don't recurse into it
   if (ts.isExpressionStatement(node)) {
-    if (isEffectCall(node.expression)) {
+    if (isEffectCall(node.expression, ctx)) {
       collectEffect(node.expression as ts.CallExpression, ctx)
       // Don't recurse into createEffect body to avoid collecting inner variables
       return
     }
-    if (isOnMountCall(node.expression)) {
+    if (isOnMountCall(node.expression, ctx)) {
       collectOnMount(node.expression as ts.CallExpression, ctx)
       // Don't recurse into onMount body to avoid collecting inner variables
       return
@@ -1051,15 +1058,10 @@ function flushPendingSignalTuples(ctx: AnalyzerContext): void {
 // Memo Detection & Collection
 // =============================================================================
 
-function isMemoDeclaration(node: ts.VariableDeclaration): boolean {
+function isMemoDeclaration(node: ts.VariableDeclaration, ctx: AnalyzerContext): boolean {
   if (!ts.isIdentifier(node.name)) return false
   if (!node.initializer || !ts.isCallExpression(node.initializer)) return false
-
-  const callExpr = node.initializer
-  return (
-    ts.isIdentifier(callExpr.expression) &&
-    callExpr.expression.text === 'createMemo'
-  )
+  return resolvePrimitiveKind(node.initializer, ctx) === 'memo'
 }
 
 function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
@@ -1091,20 +1093,39 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
 // Effect Detection & Collection
 // =============================================================================
 
-function isEffectCall(node: ts.Expression): boolean {
+function isEffectCall(node: ts.Expression, ctx: AnalyzerContext): boolean {
   if (!ts.isCallExpression(node)) return false
-  return (
-    ts.isIdentifier(node.expression) && node.expression.text === 'createEffect'
-  )
+  return resolvePrimitiveKind(node, ctx) === 'effect'
 }
 
-function collectEffect(node: ts.CallExpression, ctx: AnalyzerContext): void {
+/**
+ * Detects the "disposer capture" pattern: `const dispose = createEffect(...)`.
+ * Solid users commonly bind the effect's disposer so they can tear the effect
+ * down explicitly (e.g., on route change). Prior to this helper the
+ * declaration fell through to `collectConstant`, which preserved the raw
+ * `createEffect(...)` call in the SSR template — a render-time crash.
+ */
+function isEffectDisposerCapture(
+  node: ts.VariableDeclaration,
+  ctx: AnalyzerContext
+): boolean {
+  if (!ts.isIdentifier(node.name)) return false
+  if (!node.initializer || !ts.isCallExpression(node.initializer)) return false
+  return resolvePrimitiveKind(node.initializer, ctx) === 'effect'
+}
+
+function collectEffect(
+  node: ts.CallExpression,
+  ctx: AnalyzerContext,
+  captureName?: string
+): void {
   const body = node.arguments[0] ? ctx.getJS(node.arguments[0]) : ''
   const deps = extractDependencies(body, ctx)
 
   ctx.effects.push({
     body,
     deps,
+    captureName,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
 }
@@ -1113,11 +1134,9 @@ function collectEffect(node: ts.CallExpression, ctx: AnalyzerContext): void {
 // onMount Detection & Collection
 // =============================================================================
 
-function isOnMountCall(node: ts.Expression): boolean {
+function isOnMountCall(node: ts.Expression, ctx: AnalyzerContext): boolean {
   if (!ts.isCallExpression(node)) return false
-  return (
-    ts.isIdentifier(node.expression) && node.expression.text === 'onMount'
-  )
+  return resolvePrimitiveKind(node, ctx) === 'onMount'
 }
 
 function collectOnMount(node: ts.CallExpression, ctx: AnalyzerContext): void {
@@ -1568,13 +1587,15 @@ function collectConstant(
 ): void {
   if (!ts.isIdentifier(node.name)) return
 
-  // Skip if it's a signal or memo. The index-access and tuple-ref forms
-  // are caught in visitComponentBody before this function is reached, but
-  // the belt-and-suspenders check guards direct callers (e.g., the
-  // module-level path at line 366) from double-collecting a signal.
-  if (isSignalDeclaration(node, ctx) || isMemoDeclaration(node)) return
+  // Skip if it's a signal, memo, captured effect disposer, or one of the
+  // signal AST-shape variants (index-access / tuple-ref). The primary path
+  // in visitComponentBody catches these first, but the belt-and-suspenders
+  // check guards direct callers (e.g., the module-level path at line 366)
+  // from double-collecting.
+  if (isSignalDeclaration(node, ctx) || isMemoDeclaration(node, ctx)) return
   if (isSignalTupleDeclaration(node)) return
   if (isSignalIndexAccess(node, ctx) !== null) return
+  if (isEffectDisposerCapture(node, ctx)) return
 
   const isModule = _isModule
   const name = node.name.text
