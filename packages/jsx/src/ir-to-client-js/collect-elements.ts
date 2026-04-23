@@ -67,17 +67,75 @@ export function computeLoopSiblingOffsets(root: IRNode): Map<IRLoop, number> {
 }
 
 /**
- * Collect inner loop metadata from an IR subtree.
- * Returns NestedLoop for each loop node found within the tree,
- * tracking the nearest ancestor element's slotId as container.
+ * Options controlling `collectInnerLoops` traversal and payload collection.
+ *
+ * The "general" traversal (default) descends into every subtree finding
+ * every inner loop, tracking depth; the "branch" traversal (all three
+ * options set, produced by `branchInnerLoopOptions()`) is used by
+ * `collectLoopChildConditionals` to gather 1-level inner loops within a
+ * conditional branch, where deeper loops and nested conditionals are
+ * handled by the caller's separate collection paths (avoiding the
+ * double-initialization bug fixed in #929).
  */
-function collectInnerLoops(
+export interface CollectInnerLoopsOptions {
+  /**
+   * Collect per-item `childComponents` / `childEvents` / `childConditionals`
+   * on each emitted NestedLoop. Used by branch callers whose `insert()`
+   * bindEvents must wire each inner-loop item's event handlers, components,
+   * and nested conditionals at runtime.
+   */
+  collectItemBindings?: boolean
+  /**
+   * Fixed template placeholder depth. When set, `irToPlaceholderTemplate`
+   * uses this value instead of the tracked depth counter. Branch callers
+   * always operate at depth 1 (loops inside a conditional inside a loop
+   * item), independent of the general counter.
+   */
+  templateDepth?: number
+  /**
+   * Flat traversal: do NOT recurse into loop-body children or into
+   * conditional branches. Branch callers need this because nested loops
+   * have their own mapArray reconciliation and nested conditionals are
+   * collected via `childConditionals` in the enclosing
+   * `collectLoopChildConditionals` walk — descending here would
+   * double-emit their metadata.
+   */
+  flatBranchMode?: boolean
+}
+
+/** Options preset for the "branch inner loops" use case. */
+export const branchInnerLoopOptions: CollectInnerLoopsOptions = {
+  collectItemBindings: true,
+  templateDepth: 1,
+  flatBranchMode: true,
+}
+
+/**
+ * Collect inner-loop metadata from an IR subtree. Returns one `NestedLoop`
+ * per `IRLoop` node found in the tree, using the nearest ancestor element's
+ * slot id as the mapArray container.
+ *
+ * This is the unified collector shared by:
+ *   - `collectElements` case 'loop' (via `decideLoopRendering`)
+ *   - `collectBranchLoops` (via `decideLoopRendering`, branch-of-conditional loops)
+ *   - `collectLoopChildConditionals` (with `branchInnerLoopOptions`, inner loops
+ *     inside a conditional branch of a loop item — #830 Path A)
+ *
+ * Before Phase 2 (#1001), the third call site lived in `reactivity.ts` as
+ * `collectBranchInnerLoops`; see that history for why the option preset
+ * hard-codes `templateDepth: 1` and `flatBranchMode: true`.
+ */
+export function collectInnerLoops(
   nodes: IRNode[],
   siblingOffsets: Map<IRLoop, number>,
   outerLoopParam?: string,
   ctx?: ClientJsContext,
+  options?: CollectInnerLoopsOptions,
 ): NestedLoop[] {
   const result: NestedLoop[] = []
+  const flat = options?.flatBranchMode === true
+  const fixedDepth = options?.templateDepth
+  const collectBindings = options?.collectItemBindings === true
   let depth = 0
   let insideCond = false
 
@@ -90,10 +148,11 @@ function collectInnerLoops(
       }
       case 'loop': {
         depth++
+        const emitDepth = fixedDepth ?? depth
         // Generate item template for CSR rendering in mapArray.
         // Pass loopParams so expressions are wrapped at generation time (not post-hoc regex).
         const loopParamsForTemplate = outerLoopParam ? [outerLoopParam, n.param] : undefined
-        const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, depth, loopParamsForTemplate)).join('')
+        const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, emitDepth, loopParamsForTemplate)).join('')
         // Check if array expression references the outer loop param
         const refsOuter = outerLoopParam
           ? new RegExp(`\\b${outerLoopParam}\\b`).test(n.array)
@@ -105,9 +164,57 @@ function collectInnerLoops(
             innerReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
           }
         }
+
+        // Per-item bindings for branch-mode callers (child components,
+        // events, nested conditionals) — matches the pre-Phase 2
+        // `collectBranchInnerLoops` behaviour.
+        let childComponents: import('../types').IRLoopChildComponent[] | undefined
+        let childEvents: LoopChildEvent[] | undefined
+        let childConditionals: import('./types').LoopChildConditional[] | undefined
+        if (collectBindings) {
+          // skipConditionals=true: components inside conditional branches
+          // are collected separately via `childConditionals[i].whenTrueComponents`
+          // (below). Including them here would double-init event handlers.
+          const rawComps: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: IRNode[] }> = []
+          for (const child of n.children) {
+            rawComps.push(...collectConditionalBranchChildComponents(child, true))
+          }
+          if (rawComps.length > 0) {
+            childComponents = rawComps.map(c => ({
+              name: c.name,
+              slotId: c.slotId,
+              props: c.props.map(p => ({
+                name: p.name,
+                value: p.value,
+                dynamic: p.dynamic ?? false,
+                isLiteral: p.isLiteral ?? false,
+                isEventHandler: p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase(),
+              })),
+              children: c.children,
+              loopDepth: emitDepth,
+            }))
+          }
+
+          const evs: LoopChildEvent[] = []
+          for (const child of n.children) {
+            evs.push(...collectLoopChildEventsWithNesting(child))
+          }
+          if (evs.length > 0) childEvents = evs
+
+          if (ctx) {
+            const conds = collectLoopChildConditionals(
+              { type: 'fragment', children: n.children, loc: n.loc } as unknown as IRNode,
+              ctx,
+              siblingOffsets,
+              n.param,
+            )
+            if (conds.length > 0) childConditionals = conds
+          }
+        }
+
         result.push({
           kind: 'nested',
-          depth,
+          depth: emitDepth,
           array: n.array,
           param: n.param,
           key: n.key,
@@ -115,10 +222,16 @@ function collectInnerLoops(
           template,
           refsOuterParam: refsOuter,
           childReactiveTexts: innerReactiveTexts.length > 0 ? innerReactiveTexts : undefined,
-          insideConditional: insideCond || undefined,
-          siblingOffset: siblingOffsets.get(n) || undefined,
+          childComponents,
+          childEvents,
+          childConditionals,
+          insideConditional: !flat && insideCond ? true : undefined,
+          siblingOffset: flat ? undefined : (siblingOffsets.get(n) || undefined),
         })
-        for (const child of n.children) walk(child, parentSlotId)
+        // Branch-mode callers handle deeper nesting via their own collection paths.
+        if (!flat) {
+          for (const child of n.children) walk(child, parentSlotId)
+        }
         depth--
         break
       }
@@ -136,6 +249,7 @@ function collectInnerLoops(
         break
       }
       case 'conditional': {
+        if (flat) break
         const prev = insideCond
         insideCond = true
         walk(n.whenTrue, parentSlotId)
@@ -369,7 +483,7 @@ export function collectElements(
           childEvents.push(...collectLoopChildEventsWithNesting(child))
           childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, node.param))
           childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, node.param))
-          childConditionals.push(...collectLoopChildConditionals(child, ctx, node.param))
+          childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, node.param))
         }
 
         if (node.childComponent) {
@@ -660,10 +774,10 @@ function collectBranchLoops(
         // the top-level `useElementReconciliation` rule so a `.map()` directly
         // inside an outer `.map()` gets its own reactive mapArray even when
         // the outer loop lives inside a conditional branch.
-        // Pass `undefined` for ctx to match the pre-existing branch behavior:
-        // inner-loop reactive-text collection is handled by the separate
-        // `collectBranchInnerLoops` path in reactivity.ts, not here. Phase 2
-        // unifies those two collectors; until then preserve the split.
+        // Pass `undefined` for ctx to preserve the legacy branch behaviour:
+        // reactive-text collection on inner loops reached from this call path
+        // is handled at the enclosing branch-loop level below (`if (ctx)` block
+        // around `collectLoopChildReactiveTexts`), not per inner loop.
         const { useElementReconciliation, innerLoops: innerLoopsCollected } =
           decideLoopRendering(n, siblingOffsets, undefined)
 
@@ -694,7 +808,7 @@ function collectBranchLoops(
             childEvents.push(...collectLoopChildEventsWithNesting(child))
             childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
             childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param))
-            childConditionals.push(...collectLoopChildConditionals(child, ctx, n.param))
+            childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, n.param))
           }
         }
 

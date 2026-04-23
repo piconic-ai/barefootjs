@@ -468,10 +468,14 @@ export function collectLoopChildReactiveTexts(
 export function collectLoopChildConditionals(
   node: IRNode,
   ctx: ClientJsContext,
+  siblingOffsets: Map<import('../types').IRLoop, number>,
   loopParam?: string,
 ): LoopChildConditional[] {
   const conditionals: LoopChildConditional[] = []
   const { irToHtmlTemplate } = require('./html-template')
+  // Lazy require avoids the collect-elements.ts ↔ reactivity.ts import
+  // cycle; same pattern as irToHtmlTemplate / irToPlaceholderTemplate above.
+  const { collectInnerLoops, branchInnerLoopOptions } = require('./collect-elements')
 
   function walk(n: IRNode): void {
     if (n.type === 'conditional' && n.slotId) {
@@ -487,6 +491,8 @@ export function collectLoopChildConditionals(
         const loopParamsForCond = loopParam ? [loopParam] : undefined
         const whenTrueHtml = irToHtmlTemplate(n.whenTrue, undefined, 0, loopParamsForCond)
         const whenFalseHtml = irToHtmlTemplate(n.whenFalse, undefined, 0, loopParamsForCond)
+        const trueInner = collectInnerLoops([n.whenTrue], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
+        const falseInner = collectInnerLoops([n.whenFalse], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
         conditionals.push({
           slotId: n.slotId,
           condition: expanded,
@@ -494,10 +500,10 @@ export function collectLoopChildConditionals(
           whenFalseHtml,
           whenTrueComponents: collectConditionalBranchChildComponents(n.whenTrue),
           whenFalseComponents: collectConditionalBranchChildComponents(n.whenFalse),
-          whenTrueInnerLoops: collectBranchInnerLoops(n.whenTrue, loopParam, ctx),
-          whenFalseInnerLoops: collectBranchInnerLoops(n.whenFalse, loopParam, ctx),
-          whenTrueConditionals: collectLoopChildConditionals(n.whenTrue, ctx, loopParam),
-          whenFalseConditionals: collectLoopChildConditionals(n.whenFalse, ctx, loopParam),
+          whenTrueInnerLoops: trueInner.length > 0 ? trueInner : undefined,
+          whenFalseInnerLoops: falseInner.length > 0 ? falseInner : undefined,
+          whenTrueConditionals: collectLoopChildConditionals(n.whenTrue, ctx, siblingOffsets, loopParam),
+          whenFalseConditionals: collectLoopChildConditionals(n.whenFalse, ctx, siblingOffsets, loopParam),
           whenTrueEvents: collectConditionalBranchEvents(n.whenTrue),
           whenFalseEvents: collectConditionalBranchEvents(n.whenFalse),
         })
@@ -517,103 +523,6 @@ export function collectLoopChildConditionals(
 
   walk(node)
   return conditionals
-}
-
-/**
- * Collect inner loop info from a conditional branch IR node.
- * Used to set up mapArray inside insert() bindEvents for loops
- * that are inside conditional branches of loop items.
- */
-function collectBranchInnerLoops(
-  node: IRNode,
-  outerLoopParam?: string,
-  ctx?: ClientJsContext,
-): LoopChildConditional['whenTrueInnerLoops'] {
-  const { irToPlaceholderTemplate } = require('./html-template')
-  const loops: import('./types').NestedLoop[] = []
-
-  // Pass the current container's slotId down through the tree.
-  // A loop uses parentContainerSlotId as its container.
-  // When entering a component, its slotId becomes the container for its children,
-  // but NOT for its siblings — this prevents a sibling component's slotId from
-  // being used as the loop container.
-  function walk(n: IRNode, parentContainerSlotId: string | null = null): void {
-    if (n.type === 'element') {
-      const mySlotId = n.slotId ?? parentContainerSlotId
-      for (const child of n.children) walk(child, mySlotId)
-    } else if (n.type === 'loop') {
-      const loopParamsForTemplate = outerLoopParam ? [outerLoopParam, n.param] : undefined
-      const template = n.children.map((c: IRNode) => irToPlaceholderTemplate(c, undefined, 1, loopParamsForTemplate)).join('')
-      const refsOuter = outerLoopParam
-        ? new RegExp(`\\b${outerLoopParam}\\b`).test(n.array)
-        : false
-      const childReactiveTexts: Array<{ slotId: string; expression: string }> = []
-      if (refsOuter && ctx) {
-        for (const child of n.children) {
-          childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
-        }
-      }
-      // Collect child components and events inside inner loop items.
-      // Walk loop body children (not the loop node itself, which traverseForComponents skips).
-      // `skipConditionals=true`: components inside conditional branches are
-      // collected separately as `childConditionals[i].whenTrueComponents`
-      // below. Including them here too would cause `initChild` to be emitted
-      // twice (once in the outer ssr path, once in the insert() bindEvents),
-      // which double-wires the click handler and makes the two `onCheckedChange`
-      // calls cancel each other out (#929).
-      const rawComps: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: import('../types').IRNode[] }> = []
-      for (const child of n.children) {
-        rawComps.push(...collectConditionalBranchChildComponents(child, true))
-      }
-      const childComponents = rawComps.map(c => ({
-        name: c.name,
-        slotId: c.slotId,
-        props: c.props.map(p => ({
-          name: p.name,
-          value: p.value,
-          dynamic: p.dynamic ?? false,
-          isLiteral: p.isLiteral ?? false,
-          isEventHandler: p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase(),
-        })),
-        children: c.children,
-        loopDepth: 1,
-      }))
-      const childEvents: import('./types').LoopChildEvent[] = []
-      for (const child of n.children) {
-        childEvents.push(...collectLoopChildEventsWithNesting(child))
-      }
-      // Collect conditionals inside inner loop body (#830 Path B)
-      const childConditionals = ctx
-        ? collectLoopChildConditionals(
-            { type: 'fragment', children: n.children } as any,
-            ctx,
-            n.param,
-          )
-        : []
-      loops.push({
-        kind: 'nested',
-        depth: 1,
-        array: n.array,
-        param: n.param,
-        key: n.key,
-        containerSlotId: parentContainerSlotId,
-        template,
-        refsOuterParam: refsOuter,
-        childReactiveTexts: childReactiveTexts.length > 0 ? childReactiveTexts : undefined,
-        childComponents: childComponents.length > 0 ? childComponents : undefined,
-        childEvents: childEvents.length > 0 ? childEvents : undefined,
-        childConditionals: childConditionals.length > 0 ? childConditionals : undefined,
-      })
-    } else if (n.type === 'fragment' || n.type === 'component' || n.type === 'provider') {
-      // For component nodes (e.g., SelectContent), pass slotId to children so inner loops
-      // use the component element as their container rather than the branch scope.
-      const mySlotId = (n.type === 'component' && n.slotId) ? n.slotId : parentContainerSlotId
-      for (const child of n.children) walk(child, mySlotId)
-    }
-  }
-
-  walk(node, null)
-  return loops.length > 0 ? loops : undefined
 }
 
 /**
