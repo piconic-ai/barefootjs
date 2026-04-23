@@ -11,6 +11,12 @@ export type BackgroundProps = {
   size?: number
   color?: string
   lineWidth?: number
+  /**
+   * Shifts the pattern as a fraction of the gap.
+   * 0 (default): lines pass through tile centers (same as @xyflow/react default).
+   * 0.5: shifts by half a gap so lines align to tile edges.
+   */
+  offset?: number
 }
 
 /**
@@ -30,6 +36,7 @@ export function initBackground(scope: Element, props: Record<string, unknown>): 
   const size = (props.size as number) ?? 1
   const color = (props.color as string) ?? '#ddd'
   const lineWidth = (props.lineWidth as number) ?? 1
+  const offset = (props.offset as number) ?? 0
 
   // Create SVG background
   const svg = document.createElementNS(SVG_NS, 'svg')
@@ -71,8 +78,8 @@ export function initBackground(scope: Element, props: Record<string, unknown>): 
 
     pattern.setAttribute('width', String(scaledGap))
     pattern.setAttribute('height', String(scaledGap))
-    pattern.setAttribute('x', String(vp.x % scaledGap))
-    pattern.setAttribute('y', String(vp.y % scaledGap))
+    pattern.setAttribute('x', String(vp.x % scaledGap - scaledGap * offset))
+    pattern.setAttribute('y', String(vp.y % scaledGap - scaledGap * offset))
 
     if (variant === 'dots') {
       const circle = patternContent as SVGCircleElement
