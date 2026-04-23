@@ -866,18 +866,29 @@ function buildConditionalMetadata(
     condition: node.condition,
     whenTrueHtml: irToHtmlTemplate(node.whenTrue, restNames, -1),
     whenFalseHtml: irToHtmlTemplate(node.whenFalse, restNames, -1),
-    whenTrueEvents: collectConditionalBranchEvents(node.whenTrue),
-    whenFalseEvents: collectConditionalBranchEvents(node.whenFalse),
-    whenTrueRefs: collectConditionalBranchRefs(node.whenTrue),
-    whenFalseRefs: collectConditionalBranchRefs(node.whenFalse),
-    whenTrueChildComponents: buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenTrue), ctx),
-    whenFalseChildComponents: buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenFalse), ctx),
-    whenTrueTextEffects: collectBranchTextEffects(node.whenTrue),
-    whenFalseTextEffects: collectBranchTextEffects(node.whenFalse),
-    whenTrueLoops: collectBranchLoops(node.whenTrue, ctx, siblingOffsets),
-    whenFalseLoops: collectBranchLoops(node.whenFalse, ctx, siblingOffsets),
-    whenTrueConditionals: collectBranchConditionals(node.whenTrue, ctx, siblingOffsets),
-    whenFalseConditionals: collectBranchConditionals(node.whenFalse, ctx, siblingOffsets),
+    whenTrue: summarizeBranch(node.whenTrue, ctx, siblingOffsets),
+    whenFalse: summarizeBranch(node.whenFalse, ctx, siblingOffsets),
+  }
+}
+
+/**
+ * Bundle every reactive entity collected from a single conditional branch
+ * subtree into a `BranchSummary`. One call replaces the six parallel
+ * `collectBranch*` calls that used to populate the flat `whenTrueXxx` /
+ * `whenFalseXxx` fields on `ConditionalElement`.
+ */
+function summarizeBranch(
+  node: IRNode,
+  ctx: ClientJsContext,
+  siblingOffsets: Map<IRLoop, number>,
+): import('./types').BranchSummary {
+  return {
+    events: collectConditionalBranchEvents(node),
+    refs: collectConditionalBranchRefs(node),
+    childComponents: buildBranchChildComponents(collectConditionalBranchChildComponents(node), ctx),
+    textEffects: collectBranchTextEffects(node),
+    loops: collectBranchLoops(node, ctx, siblingOffsets),
+    conditionals: collectBranchConditionals(node, ctx, siblingOffsets),
   }
 }
 

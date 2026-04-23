@@ -4,7 +4,7 @@
  * and event delegation within loop containers.
  */
 
-import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, BranchLoop, ConditionalBranchConditional, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
+import type { ClientJsContext, ConditionalBranchEvent, BranchLoop, BranchSummary, ConditionalElement, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
 import type { IRLoopChildComponent } from '../types'
 import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
@@ -68,14 +68,10 @@ function destructureLoopParam(param: string): { head: string; unwrap: string } {
  */
 function emitBranchBindings(
   lines: string[],
-  events: ConditionalBranchEvent[],
-  refs: ConditionalBranchRef[],
-  childComponents: ConditionalBranchChildComponent[],
+  branch: BranchSummary,
   eventNameFn: (eventName: string) => string,
-  textEffects: ConditionalBranchTextEffect[] = [],
-  branchLoops: BranchLoop[] = [],
-  branchConditionals: ConditionalBranchConditional[] = []
 ): void {
+  const { events, refs, childComponents, textEffects, loops: branchLoops, conditionals: branchConditionals } = branch
   const allSlotIds = new Set<string>()
   for (const event of events) allSlotIds.add(event.slotId)
   for (const ref of refs) allSlotIds.add(ref.slotId)
@@ -208,7 +204,7 @@ function emitBranchBindings(
  */
 function emitNestedBranchConditional(
   lines: string[],
-  elem: ConditionalBranchConditional,
+  elem: ConditionalElement,
   eventNameFn: (eventName: string) => string,
 ): void {
   const whenTrueWithCond = addCondAttrToTemplate(elem.whenTrueHtml, elem.slotId)
@@ -217,12 +213,12 @@ function emitNestedBranchConditional(
   lines.push(`      insert(__branchScope, '${elem.slotId}', () => ${elem.condition}, {`)
   lines.push(`        template: () => \`${whenTrueWithCond}\`,`)
   lines.push(`        bindEvents: (__branchScope) => {`)
-  emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, eventNameFn, elem.whenTrueTextEffects, elem.whenTrueLoops, elem.whenTrueConditionals)
+  emitBranchBindings(lines, elem.whenTrue, eventNameFn)
   lines.push(`        }`)
   lines.push(`      }, {`)
   lines.push(`        template: () => \`${whenFalseWithCond}\`,`)
   lines.push(`        bindEvents: (__branchScope) => {`)
-  emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, eventNameFn, elem.whenFalseTextEffects, elem.whenFalseLoops, elem.whenFalseConditionals)
+  emitBranchBindings(lines, elem.whenFalse, eventNameFn)
   lines.push(`        }`)
   lines.push(`      })`)
 }
@@ -289,12 +285,12 @@ export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): v
     lines.push(`  insert(__scope, '${elem.slotId}', () => ${elem.condition}, {`)
     lines.push(`    template: () => \`${whenTrueWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, toDomEventName, elem.whenTrueTextEffects, elem.whenTrueLoops, elem.whenTrueConditionals)
+    emitBranchBindings(lines, elem.whenTrue, toDomEventName)
     lines.push(`    }`)
     lines.push(`  }, {`)
     lines.push(`    template: () => \`${whenFalseWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, toDomEventName, elem.whenFalseTextEffects, elem.whenFalseLoops, elem.whenFalseConditionals)
+    emitBranchBindings(lines, elem.whenFalse, toDomEventName)
     lines.push(`    }`)
     lines.push(`  })`)
     lines.push('')
@@ -312,12 +308,12 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
     lines.push(`  insert(__scope, '${elem.slotId}', () => ${elem.condition}, {`)
     lines.push(`    template: () => \`${whenTrueWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenTrueEvents, elem.whenTrueRefs, elem.whenTrueChildComponents, rawEventName, elem.whenTrueTextEffects, elem.whenTrueLoops, elem.whenTrueConditionals)
+    emitBranchBindings(lines, elem.whenTrue, rawEventName)
     lines.push(`    }`)
     lines.push(`  }, {`)
     lines.push(`    template: () => \`${whenFalseWithCond}\`,`)
     lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenFalseEvents, elem.whenFalseRefs, elem.whenFalseChildComponents, rawEventName, elem.whenFalseTextEffects, elem.whenFalseLoops, elem.whenFalseConditionals)
+    emitBranchBindings(lines, elem.whenFalse, rawEventName)
     lines.push(`    }`)
     lines.push(`  })`)
     lines.push('')

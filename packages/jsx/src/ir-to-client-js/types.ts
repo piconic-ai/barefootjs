@@ -134,23 +134,29 @@ export interface BranchLoop extends LoopCore {
   useElementReconciliation?: boolean
 }
 
+/**
+ * All reactive entities collected from one branch of a reactive conditional
+ * — events, refs, child components, text effects, nested loops, and nested
+ * conditionals. Replaces the six parallel `whenTrueXxx` / `whenFalseXxx`
+ * field pairs that used to live directly on `ConditionalElement` and
+ * `ClientOnlyConditional` (pre-Phase 3 shape).
+ */
+export interface BranchSummary {
+  events: ConditionalBranchEvent[]
+  refs: ConditionalBranchRef[]
+  childComponents: ConditionalBranchChildComponent[]
+  textEffects: ConditionalBranchTextEffect[]
+  loops: BranchLoop[]
+  conditionals: ConditionalElement[]
+}
+
 export interface ConditionalElement {
   slotId: string
   condition: string
   whenTrueHtml: string
   whenFalseHtml: string
-  whenTrueEvents: ConditionalBranchEvent[]
-  whenFalseEvents: ConditionalBranchEvent[]
-  whenTrueRefs: ConditionalBranchRef[]
-  whenFalseRefs: ConditionalBranchRef[]
-  whenTrueChildComponents: ConditionalBranchChildComponent[]
-  whenFalseChildComponents: ConditionalBranchChildComponent[]
-  whenTrueTextEffects: ConditionalBranchTextEffect[]
-  whenFalseTextEffects: ConditionalBranchTextEffect[]
-  whenTrueLoops: BranchLoop[]
-  whenFalseLoops: BranchLoop[]
-  whenTrueConditionals: ConditionalBranchConditional[]
-  whenFalseConditionals: ConditionalBranchConditional[]
+  whenTrue: BranchSummary
+  whenFalse: BranchSummary
 }
 
 /**
@@ -290,18 +296,8 @@ export interface ClientOnlyConditional {
   condition: string
   whenTrueHtml: string
   whenFalseHtml: string
-  whenTrueEvents: ConditionalBranchEvent[]
-  whenFalseEvents: ConditionalBranchEvent[]
-  whenTrueRefs: ConditionalBranchRef[]
-  whenFalseRefs: ConditionalBranchRef[]
-  whenTrueChildComponents: ConditionalBranchChildComponent[]
-  whenFalseChildComponents: ConditionalBranchChildComponent[]
-  whenTrueTextEffects: ConditionalBranchTextEffect[]
-  whenFalseTextEffects: ConditionalBranchTextEffect[]
-  whenTrueLoops: BranchLoop[]
-  whenFalseLoops: BranchLoop[]
-  whenTrueConditionals: ConditionalBranchConditional[]
-  whenFalseConditionals: ConditionalBranchConditional[]
+  whenTrue: BranchSummary
+  whenFalse: BranchSummary
 }
 
 export interface RestAttrElement {
