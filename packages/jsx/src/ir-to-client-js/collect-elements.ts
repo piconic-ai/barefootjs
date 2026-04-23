@@ -5,7 +5,7 @@
 import { type IRNode, type IRElement, type IRProp, pickAttrMeta } from '../types'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchConditional, ConditionalBranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildEvent, LoopChildReactiveAttr, NestedLoopInfo } from './types'
 import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
-import { needsEffectWrapper, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildConditionals } from './reactivity'
+import { decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildConditionals } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 
@@ -233,11 +233,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         // Only collect as a top-level dynamic element when NOT inside a
         // conditional. Conditional text effects are collected per-branch and
         // emitted inside bindEvents.
-        const shouldWrap =
-          node.reactive ||
-          node.callsReactiveGetters ||
-          node.hasFunctionCalls
-        if (shouldWrap) {
+        if (decideWrapFromAstFlags(node).wrap) {
           ctx.dynamicElements.push({
             slotId: node.slotId,
             expression: node.expr,
@@ -255,11 +251,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         // Wrap not only statically-proven-reactive conditions, but also any
         // condition containing a function call — otherwise the silent-drop
         // failure class freezes the branch at its SSR-time value.
-        const shouldWrap =
-          node.reactive ||
-          node.callsReactiveGetters ||
-          node.hasFunctionCalls
-        if (shouldWrap) {
+        if (decideWrapFromAstFlags(node).wrap) {
           if (insideConditional) {
             // Nested conditionals are collected by the parent via collectBranchConditionals.
             // Don't push to ctx.conditionalElements — they'll be emitted inside the parent's bindEvents.
@@ -437,9 +429,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           // `prop.hasFunctionCalls` are computed structurally from the AST
           // so they can't false-match call-like substrings inside string
           // literals (e.g. `{ color: 'hsl(221 83% 53%)' }`).
-          const hasPropsRef = expandedValue.includes('props.')
-          const hasReactiveExpr = needsEffectWrapper(expandedValue, ctx)
-          if (hasPropsRef || hasReactiveExpr || prop.callsReactiveGetters || prop.hasFunctionCalls) {
+          if (decideWrapForChildProp(expandedValue, ctx, prop).wrap) {
             const attrName = prop.name === 'className' ? 'class' : prop.name
             ctx.reactiveChildProps.push({
               componentName: node.name,
@@ -583,11 +573,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
         // they can't false-match call-like substrings inside string
         // literals (e.g. `style={{ color: 'hsl(221 83% 53%)' }}`) and
         // don't depend on the expansion order of local constants.
-        if (
-          needsEffectWrapper(expandedValueStr, ctx)
-          || attr.callsReactiveGetters
-          || attr.hasFunctionCalls
-        ) {
+        if (decideWrapForAttr(expandedValueStr, ctx, attr).wrap) {
           ctx.reactiveAttrs.push({
             slotId: element.slotId,
             attrName: attr.name,
@@ -786,7 +772,7 @@ function collectBranchConditionals(node: IRNode, ctx: ClientJsContext): Conditio
       case 'conditional':
         // Wrap-by-default fallback (#941) — mirror the top-level gate in
         // `case 'conditional'` at collectElements().
-        if (n.slotId && (n.reactive || n.callsReactiveGetters || n.hasFunctionCalls)) {
+        if (n.slotId && decideWrapFromAstFlags(n).wrap) {
           result.push(buildConditionalMetadata(n, ctx))
         }
         // Don't recurse further — the nested conditional handles its own branches

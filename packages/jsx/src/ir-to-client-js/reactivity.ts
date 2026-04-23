@@ -29,6 +29,79 @@ import { expandConstantForReactivity } from './prop-handling'
  * - Skips `children` props because children are server-rendered and should not
  *   trigger `createEffect` wrapping on the client
  */
+/**
+ * Decision about whether an expression should be wrapped in `createEffect`
+ * for client-side reactivity. The `reason` field surfaces *why* the wrap
+ * was chosen (proven reactive vs Solid-style fallback) so the wrap-by-default
+ * gates (#937 / #939–#943) stay debuggable rather than collapsing into a
+ * single boolean.
+ */
+export type WrapDecision =
+  | { wrap: false }
+  | { wrap: true; reason: WrapReason }
+
+export type WrapReason =
+  /** Phase 1 analyzer proved the expression reads a signal/memo/prop. */
+  | 'proven-reactive'
+  /** Expression contains a call that looks like a signal getter / memo (AST flag). */
+  | 'fallback-getter-calls'
+  /** Expression contains an arbitrary `identifier()` call (AST flag — Solid-style fallback). */
+  | 'fallback-function-calls'
+  /** String-level `needsEffectWrapper` matched (signal getter / memo / prop name in expanded value). */
+  | 'string-reactive'
+  /** Expanded child-component prop value contains a `props.xxx` reference. */
+  | 'props-access'
+
+/**
+ * AST-flag based wrap decision for IRExpression / IRConditional / nested
+ * IRConditional nodes. Replaces the duplicated
+ * `node.reactive || node.callsReactiveGetters || node.hasFunctionCalls`
+ * predicate (#937 / #941). Pure literals and bare identifiers (no calls)
+ * stay un-wrapped because their SSR value is already in the DOM.
+ */
+export function decideWrapFromAstFlags(node: {
+  reactive?: boolean
+  callsReactiveGetters?: boolean
+  hasFunctionCalls?: boolean
+}): WrapDecision {
+  if (node.reactive) return { wrap: true, reason: 'proven-reactive' }
+  if (node.callsReactiveGetters) return { wrap: true, reason: 'fallback-getter-calls' }
+  if (node.hasFunctionCalls) return { wrap: true, reason: 'fallback-function-calls' }
+  return { wrap: false }
+}
+
+/**
+ * Wrap decision for native-element reactive attributes (#940). Combines the
+ * string-level `needsEffectWrapper` check (recognises signal getters / memos /
+ * prop names inside expanded local-const references) with the AST flags from
+ * the source attribute expression.
+ */
+export function decideWrapForAttr(
+  expandedValue: string,
+  ctx: ClientJsContext,
+  attr: { callsReactiveGetters?: boolean; hasFunctionCalls?: boolean },
+): WrapDecision {
+  if (needsEffectWrapper(expandedValue, ctx)) return { wrap: true, reason: 'string-reactive' }
+  if (attr.callsReactiveGetters) return { wrap: true, reason: 'fallback-getter-calls' }
+  if (attr.hasFunctionCalls) return { wrap: true, reason: 'fallback-function-calls' }
+  return { wrap: false }
+}
+
+/**
+ * Wrap decision for child-component reactive props (#942). Adds a `props.xxx`
+ * substring check on top of the attr decision: when the parent's prop is
+ * forwarded into a child component, the child needs to re-read it through
+ * createEffect so parent re-renders propagate.
+ */
+export function decideWrapForChildProp(
+  expandedValue: string,
+  ctx: ClientJsContext,
+  prop: { callsReactiveGetters?: boolean; hasFunctionCalls?: boolean },
+): WrapDecision {
+  if (expandedValue.includes('props.')) return { wrap: true, reason: 'props-access' }
+  return decideWrapForAttr(expandedValue, ctx, prop)
+}
+
 export function needsEffectWrapper(expr: string, ctx: ClientJsContext): boolean {
   for (const signal of ctx.signals) {
     if (new RegExp(`\\b${signal.getter}\\s*\\(`).test(expr)) {
