@@ -88,7 +88,7 @@ export const renderer = jsxRenderer(
     // Resolve prev/next links for mobile page navigation
     const slugMatch = currentPath.match(/\/(?:docs\/)?components\/([^/]+)/)
     const navLinks = slugMatch ? getNavLinks(slugMatch[1]) : {}
-    const isGallery = currentPath === '/gallery' || currentPath.startsWith('/gallery/')
+    const isGallery = currentPath.startsWith('/gallery/')
     const isChrome = currentPath !== '/studio' && !isGallery
     return (
       <WithPredictableIds>

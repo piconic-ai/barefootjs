@@ -90,7 +90,6 @@ import { LineChartRefPage } from './pages/charts/line-chart'
 import { StudioPage } from './pages/studio'
 
 // Gallery pages (Phase 9)
-import { GalleryIndexPage } from './pages/gallery/index'
 import { GalleryAdminLandingPage } from './pages/gallery/admin/landing'
 import { AdminOverviewPage } from './pages/gallery/admin/index'
 import { AdminAnalyticsPage } from './pages/gallery/admin/analytics'
@@ -502,11 +501,6 @@ export function createApp() {
   // State Machine Playground block page
   app.get('/components/state-machine-playground', (c) => {
     return c.render(<StateMachinePlaygroundRefPage />)
-  })
-
-  // Gallery — index (Phase 9 Phase 4)
-  app.get('/gallery', (c) => {
-    return c.render(<GalleryIndexPage />)
   })
 
   // Gallery — Admin app (Phase 9 pilot)

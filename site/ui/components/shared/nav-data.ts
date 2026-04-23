@@ -99,7 +99,6 @@ export const navSections: NavSection[] = [
   {
     heading: 'Gallery',
     entries: [
-      { title: 'All Apps', href: '/gallery' },
       {
         key: 'gallery-apps',
         title: 'Apps',
