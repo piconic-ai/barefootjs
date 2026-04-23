@@ -7,7 +7,7 @@ import {
   collectRelativeImportDeps,
   vendorChunkFilename,
   processExternals,
-  processBunBuild,
+  processBundleEntries,
 } from '../lib/build'
 import { emptyCache, type BuildCache, type CacheEntry } from '../lib/build-cache'
 import { mkdirSync, writeFileSync, rmSync, existsSync, statSync, readFileSync, realpathSync } from 'fs'
@@ -591,12 +591,12 @@ export function __bf_init_Counter(el, props) {
   })
 })
 
-// ── processBunBuild ──────────────────────────────────────────────────────
+// ── processBundleEntries ──────────────────────────────────────────────────────
 
-describe('processBunBuild', () => {
+describe('processBundleEntries', () => {
   const mockAdapter = { name: 'mock', extension: '.mock' } as any
 
-  function makeTmpDir(label = 'bun-build') {
+  function makeTmpDir(label = 'bundle-entries') {
     const dir = resolve(tmpdir(), `bf-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
     mkdirSync(dir, { recursive: true })
     // Resolve symlinks (e.g. /tmp → /private/tmp on macOS) so paths match
@@ -623,7 +623,7 @@ describe('processBunBuild', () => {
       const config = makeConfig(outDir, outDir)
       const cache: BuildCache = emptyCache('global-hash')
       const nextEntries: Record<string, CacheEntry> = {}
-      const changed = await processBunBuild(config, outDir, 'components', [], cache, nextEntries, false)
+      const changed = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
       expect(changed).toBe(false)
       expect(Object.keys(nextEntries).length).toBe(0)
     } finally {
@@ -646,7 +646,7 @@ describe('processBunBuild', () => {
       const cache: BuildCache = emptyCache('global-hash')
       const nextEntries: Record<string, CacheEntry> = {}
 
-      const changed = await processBunBuild(config, outDir, 'components', [], cache, nextEntries, false)
+      const changed = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
       expect(changed).toBe(true)
 
       const outPath = resolve(outDir, 'entry.js')
@@ -680,7 +680,7 @@ describe('processBunBuild', () => {
       // First build populates the cache.
       const cache1: BuildCache = emptyCache('global-hash')
       const entries1: Record<string, CacheEntry> = {}
-      await processBunBuild(config, outDir, 'components', [], cache1, entries1, false)
+      await processBundleEntries(config, outDir, 'components', [], cache1, entries1, false)
 
       const outPath = resolve(outDir, 'entry.js')
       const mtime1 = statSync(outPath).mtimeMs
@@ -689,7 +689,7 @@ describe('processBunBuild', () => {
       const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
       const entries2: Record<string, CacheEntry> = {}
       await new Promise((r) => setTimeout(r, 20)) // ensure a distinguishable mtime if rebuilt
-      const changed = await processBunBuild(config, outDir, 'components', [], cache2, entries2, false)
+      const changed = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
 
       expect(changed).toBe(false)
       const mtime2 = statSync(outPath).mtimeMs
@@ -719,7 +719,7 @@ describe('processBunBuild', () => {
       // First build.
       const cache1: BuildCache = emptyCache('global-hash')
       const entries1: Record<string, CacheEntry> = {}
-      await processBunBuild(config, outDir, 'components', [], cache1, entries1, false)
+      await processBundleEntries(config, outDir, 'components', [], cache1, entries1, false)
       const outBefore = readFileSync(resolve(outDir, 'entry.js'), 'utf8')
       expect(outBefore).toContain('original')
 
@@ -728,7 +728,7 @@ describe('processBunBuild', () => {
 
       const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
       const entries2: Record<string, CacheEntry> = {}
-      const changed = await processBunBuild(config, outDir, 'components', [], cache2, entries2, false)
+      const changed = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
       expect(changed).toBe(true)
 
       const outAfter = readFileSync(resolve(outDir, 'entry.js'), 'utf8')
@@ -754,14 +754,14 @@ describe('processBunBuild', () => {
       // First build.
       const cache1: BuildCache = emptyCache('global-hash')
       const entries1: Record<string, CacheEntry> = {}
-      await processBunBuild(config, outDir, 'components', [], cache1, entries1, false)
+      await processBundleEntries(config, outDir, 'components', [], cache1, entries1, false)
 
       // Simulate a user deleting the output — cache is fresh, file is gone.
       rmSync(resolve(outDir, 'entry.js'))
 
       const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
       const entries2: Record<string, CacheEntry> = {}
-      const changed = await processBunBuild(config, outDir, 'components', [], cache2, entries2, false)
+      const changed = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
       expect(changed).toBe(true)
       expect(existsSync(resolve(outDir, 'entry.js'))).toBe(true)
     } finally {
@@ -783,11 +783,11 @@ describe('processBunBuild', () => {
 
       const cache1: BuildCache = emptyCache('global-hash')
       const entries1: Record<string, CacheEntry> = {}
-      await processBunBuild(config, outDir, 'components', [], cache1, entries1, false)
+      await processBundleEntries(config, outDir, 'components', [], cache1, entries1, false)
 
       const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
       const entries2: Record<string, CacheEntry> = {}
-      const changed = await processBunBuild(config, outDir, 'components', [], cache2, entries2, true)
+      const changed = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, true)
       expect(changed).toBe(true)
     } finally {
       rmSync(projectDir, { recursive: true, force: true })

@@ -312,7 +312,7 @@ export async function build(
   if (externalsChanged) anyOutputChanged = true
 
   // 1c. bundleEntries entries — bundle with esbuild using auto-applied externals
-  if (await processBunBuild(config, clientJsOutDir, clientJsSubdir, allExternals, cache, nextEntries, force)) {
+  if (await processBundleEntries(config, clientJsOutDir, clientJsSubdir, allExternals, cache, nextEntries, force)) {
     anyOutputChanged = true
   }
 
@@ -785,7 +785,7 @@ export async function processExternals(
  * and externals are excluded). On subsequent runs, the entry is rebuilt only
  * if the source or any dep hash has changed, or the output file is missing.
  */
-export async function processBunBuild(
+export async function processBundleEntries(
   config: BuildConfig,
   clientJsOutDir: string,
   clientJsSubdir: string,
@@ -838,7 +838,7 @@ export async function processBunBuild(
       absWorkingDir,
     })
     anyChanged = true
-    console.log(`Generated (bun-build): ${clientJsSubdir}/${entry.outfile}`)
+    console.log(`Generated (entry): ${clientJsSubdir}/${entry.outfile}`)
 
     // Harvest project-local deps from esbuild's metafile. Keys are relative
     // to absWorkingDir. Skip node_modules (versioning is pinned by the
