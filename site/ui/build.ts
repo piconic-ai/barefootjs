@@ -14,7 +14,7 @@
  * - Files without "use client" are processed for dependency resolution only
  */
 
-import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
+import { compileJSX, combineParentChildClientJs, createProgramForCorpus } from '@barefootjs/jsx'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { mkdir, readdir, rm } from 'node:fs/promises'
 import { dirname, resolve, join, relative } from 'node:path'
@@ -192,6 +192,18 @@ const manifest: Record<string, { clientJs?: string; markedTemplate: string }> = 
 // Create HonoAdapter (script collection is handled manually via addScriptCollection)
 const adapter = new HonoAdapter()
 
+// Shared ts.Program built once with every component file as a root, so
+// each `compileJSX` call below reuses the same TypeChecker. This enables
+// type-based reactive primitive detection (import aliases, namespace
+// imports) across the whole corpus for a fixed amortized cost — rather
+// than spinning up a fresh Program per file. Measured overhead on
+// site/ui/components (~196 files): ~440 ms for this construction, vs.
+// ~98 seconds if every file built its own Program.
+const programBuildStart = performance.now()
+const sharedProgram = createProgramForCorpus(componentFiles)
+const programBuildMs = performance.now() - programBuildStart
+console.log(`Built shared ts.Program for ${componentFiles.length} files in ${programBuildMs.toFixed(0)} ms`)
+
 // Compile each component
 // All components are compiled. The compiler determines whether client JS is needed
 // based on event handlers and reactive primitives, not just "use client" directive.
@@ -206,7 +218,12 @@ for (const entryPath of componentFiles) {
 
   const result = await compileJSX(entryPath, async (path) => {
     return await Bun.file(path).text()
-  }, { adapter, cssLayerPrefix: isUiComponent ? 'components' : undefined, localImportPrefixes: ['@/', '@ui/'] })
+  }, {
+    adapter,
+    cssLayerPrefix: isUiComponent ? 'components' : undefined,
+    localImportPrefixes: ['@/', '@ui/'],
+    program: sharedProgram,
+  })
 
   // Separate errors and warnings
   const errors = result.errors.filter(e => e.severity === 'error')

@@ -472,7 +472,7 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
   // Variable declarations (signals, memos, constants)
   if (ts.isVariableStatement(node)) {
     for (const decl of node.declarationList.declarations) {
-      if (isSignalDeclaration(decl)) {
+      if (isSignalDeclaration(decl, ctx)) {
         collectSignal(decl, ctx)
       } else if (isMemoDeclaration(decl)) {
         collectMemo(decl, ctx)
@@ -662,15 +662,145 @@ function collectScopeVariables(
 // Signal Detection & Collection
 // =============================================================================
 
-function isSignalDeclaration(node: ts.VariableDeclaration): boolean {
+/**
+ * Canonical names of reactive primitives exported by `@barefootjs/client`.
+ * The fast path checks these directly; the symbol-resolution fallback
+ * kicks in for aliases and namespace imports when a TypeChecker is
+ * available.
+ */
+const PRIMITIVE_CANONICAL_NAMES: Record<string, 'signal' | 'memo' | 'effect' | 'onMount' | 'onCleanup'> = {
+  createSignal: 'signal',
+  createMemo: 'memo',
+  createEffect: 'effect',
+  onMount: 'onMount',
+  onCleanup: 'onCleanup',
+}
+
+type PrimitiveKind = (typeof PRIMITIVE_CANONICAL_NAMES)[keyof typeof PRIMITIVE_CANONICAL_NAMES]
+
+/**
+ * Resolve a call expression to its reactive-primitive kind, or null if it
+ * isn't one. Two strategies layered in priority order:
+ *
+ *  1. Fast path — callee is an Identifier whose text matches a canonical
+ *     name (createSignal, createMemo, createEffect, onMount, onCleanup).
+ *     Zero TypeChecker work. Covers 99% of real code.
+ *
+ *  2. Slow path — when (1) didn't match, consult the TypeChecker to
+ *     resolve the callee's symbol back through alias and namespace
+ *     imports. Recognises `import { createSignal as sig }`, `bf.createSignal`
+ *     (where `bf` is a namespace import from @barefootjs/client), and
+ *     re-exports that preserve the original name.
+ *
+ * The slow path is only reached when a checker is present (which, once
+ * shared Programs are wired into builds, will be nearly always) AND the
+ * fast path missed.
+ */
+function resolvePrimitiveKind(
+  callExpr: ts.CallExpression,
+  ctx: AnalyzerContext
+): PrimitiveKind | null {
+  // Fast path: direct identifier with canonical name.
+  if (ts.isIdentifier(callExpr.expression)) {
+    const hit = PRIMITIVE_CANONICAL_NAMES[callExpr.expression.text]
+    if (hit) return hit
+    // Identifier didn't match a canonical name — it might be an alias
+    // like `sig` pointing to `createSignal`. Resolve via checker.
+    return resolveCalleeViaChecker(callExpr.expression, ctx)
+  }
+
+  // Property access: maybe `namespace.createSignal`.
+  if (ts.isPropertyAccessExpression(callExpr.expression)) {
+    const propName = callExpr.expression.name.text
+    const hit = PRIMITIVE_CANONICAL_NAMES[propName]
+    if (!hit) return null
+    // Property name matches — verify the object is a namespace import
+    // from @barefootjs/client before trusting it.
+    if (isBarefootClientNamespace(callExpr.expression.expression, ctx)) {
+      return hit
+    }
+  }
+
+  return null
+}
+
+/**
+ * Walk an identifier's symbol back to its original declaration and check
+ * whether it came from `@barefootjs/client` under a canonical primitive
+ * name. Returns null when the checker is unavailable or the symbol does
+ * not resolve to a known primitive.
+ */
+function resolveCalleeViaChecker(
+  ident: ts.Identifier,
+  ctx: AnalyzerContext
+): PrimitiveKind | null {
+  if (!ctx.checker) return null
+  let symbol: ts.Symbol | undefined
+  try {
+    symbol = ctx.checker.getSymbolAtLocation(ident)
+  } catch {
+    return null
+  }
+  if (!symbol) return null
+  // Follow alias chains: `import { createSignal as sig }` produces a
+  // symbol flagged as Alias; getAliasedSymbol hops to the canonical
+  // export declaration.
+  let target: ts.Symbol = symbol
+  if (symbol.flags & ts.SymbolFlags.Alias) {
+    try {
+      target = ctx.checker.getAliasedSymbol(symbol)
+    } catch {
+      return null
+    }
+  }
+  const originalName = target.getName()
+  const hit = PRIMITIVE_CANONICAL_NAMES[originalName]
+  if (!hit) return null
+  // Confirm the declaration actually lives in @barefootjs/client so we
+  // don't match a user-defined function that happens to share the name.
+  for (const decl of target.declarations ?? []) {
+    const sourceName = decl.getSourceFile().fileName
+    if (sourceName.includes('@barefootjs/client') || sourceName.includes('packages/client/')) {
+      return hit
+    }
+  }
+  return null
+}
+
+/**
+ * Check whether an expression refers to a namespace import of
+ * `@barefootjs/client`, e.g. `import * as bf from '@barefootjs/client'` →
+ * `bf` would return true here. Used to validate `bf.createSignal(...)`.
+ */
+function isBarefootClientNamespace(
+  expr: ts.Expression,
+  ctx: AnalyzerContext
+): boolean {
+  if (!ts.isIdentifier(expr)) return false
+  if (!ctx.checker) return false
+  let symbol: ts.Symbol | undefined
+  try {
+    symbol = ctx.checker.getSymbolAtLocation(expr)
+  } catch {
+    return false
+  }
+  if (!symbol) return false
+  for (const decl of symbol.declarations ?? []) {
+    if (!ts.isNamespaceImport(decl)) continue
+    const importDecl = decl.parent.parent
+    if (!ts.isImportDeclaration(importDecl)) continue
+    const mod = importDecl.moduleSpecifier
+    if (ts.isStringLiteral(mod) && mod.text === '@barefootjs/client') {
+      return true
+    }
+  }
+  return false
+}
+
+function isSignalDeclaration(node: ts.VariableDeclaration, ctx: AnalyzerContext): boolean {
   if (!ts.isArrayBindingPattern(node.name)) return false
   if (!node.initializer || !ts.isCallExpression(node.initializer)) return false
-
-  const callExpr = node.initializer
-  return (
-    ts.isIdentifier(callExpr.expression) &&
-    callExpr.expression.text === 'createSignal'
-  )
+  return resolvePrimitiveKind(node.initializer, ctx) === 'signal'
 }
 
 function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
@@ -1243,7 +1373,7 @@ function collectConstant(
   if (!ts.isIdentifier(node.name)) return
 
   // Skip if it's a signal or memo
-  if (isSignalDeclaration(node) || isMemoDeclaration(node)) return
+  if (isSignalDeclaration(node, ctx) || isMemoDeclaration(node)) return
 
   const isModule = _isModule
   const name = node.name.text
