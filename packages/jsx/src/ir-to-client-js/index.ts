@@ -6,7 +6,7 @@
 
 import type { ComponentIR } from '../types'
 import type { ClientJsContext } from './types'
-import { collectElements } from './collect-elements'
+import { collectElements, computeLoopSiblingOffsets } from './collect-elements'
 import { generateInitFunction } from './generate-init'
 import { collectUsedIdentifiers, collectUsedFunctions, collectIdentifiersFromIRTree } from './identifiers'
 import { valueReferencesReactiveData } from './prop-handling'
@@ -37,7 +37,8 @@ export function generateClientJsWithSourceMap(
   options?: { sourceMaps?: boolean; generatedFileName?: string },
 ): ClientJsResult {
   const ctx = createContext(ir)
-  collectElements(ir.root, ctx)
+  const siblingOffsets = computeLoopSiblingOffsets(ir.root)
+  collectElements(ir.root, ctx, siblingOffsets)
   ir.errors.push(...ctx.warnings)
 
   if (!needsClientJs(ctx)) {
@@ -64,7 +65,8 @@ export function generateClientJsWithSourceMap(
  */
 export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedProps: string[] } {
   const ctx = createContext(ir)
-  collectElements(ir.root, ctx)
+  const siblingOffsets = computeLoopSiblingOffsets(ir.root)
+  collectElements(ir.root, ctx, siblingOffsets)
 
   if (!needsClientJs(ctx)) {
     return { needsInit: false, usedProps: [] }

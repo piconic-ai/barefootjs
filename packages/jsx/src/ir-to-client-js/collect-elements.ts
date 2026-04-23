@@ -2,19 +2,12 @@
  * IR tree traversal → collect elements into ClientJsContext.
  */
 
-import { type IRNode, type IRElement, type IRProp, pickAttrMeta } from '../types'
+import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMeta } from '../types'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchConditional, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
 import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
 import { decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildConditionals } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
-
-/**
- * WeakMap to store the number of non-loop DOM siblings before each loop node
- * in its parent element. Populated during collectElements element traversal,
- * read when constructing TopLevelLoops.
- */
-const loopSiblingOffsets = new WeakMap<IRNode, number>()
 
 /** Check if an IR node produces a DOM child element (for sibling offset counting). */
 function producesDomChild(node: IRNode): boolean {
@@ -25,11 +18,65 @@ function producesDomChild(node: IRNode): boolean {
 }
 
 /**
+ * Pre-pass: for every loop node in the IR tree, record the number of non-loop
+ * DOM siblings that appear before it in its parent element. Read when
+ * constructing TopLevelLoop and NestedLoop so the client JS can offset
+ * children[idx] access past statically-rendered siblings.
+ *
+ * Computed once up front (instead of during collection) so the offset data
+ * lives in an explicit value rather than a module-level WeakMap mutated by
+ * two separate traversals.
+ */
+export function computeLoopSiblingOffsets(root: IRNode): Map<IRLoop, number> {
+  const offsets = new Map<IRLoop, number>()
+
+  function walk(n: IRNode): void {
+    switch (n.type) {
+      case 'element': {
+        let nonLoopCount = 0
+        for (const child of n.children) {
+          if (child.type === 'loop') {
+            if (nonLoopCount > 0) offsets.set(child, nonLoopCount)
+          } else if (producesDomChild(child)) {
+            nonLoopCount++
+          }
+        }
+        for (const child of n.children) walk(child)
+        break
+      }
+      case 'fragment':
+      case 'component':
+      case 'provider':
+      case 'async':
+      case 'loop':
+        for (const child of n.children) walk(child)
+        break
+      case 'conditional':
+        walk(n.whenTrue)
+        walk(n.whenFalse)
+        break
+      case 'if-statement':
+        walk(n.consequent)
+        if (n.alternate) walk(n.alternate)
+        break
+    }
+  }
+
+  walk(root)
+  return offsets
+}
+
+/**
  * Collect inner loop metadata from an IR subtree.
  * Returns NestedLoop for each loop node found within the tree,
  * tracking the nearest ancestor element's slotId as container.
  */
-function collectInnerLoops(nodes: IRNode[], outerLoopParam?: string, ctx?: ClientJsContext): NestedLoop[] {
+function collectInnerLoops(
+  nodes: IRNode[],
+  siblingOffsets: Map<IRLoop, number>,
+  outerLoopParam?: string,
+  ctx?: ClientJsContext,
+): NestedLoop[] {
   const result: NestedLoop[] = []
   let depth = 0
   let insideCond = false
@@ -38,15 +85,6 @@ function collectInnerLoops(nodes: IRNode[], outerLoopParam?: string, ctx?: Clien
     switch (n.type) {
       case 'element': {
         const mySlotId = n.slotId ?? parentSlotId
-        // Count non-loop siblings for inner loop offset
-        let nonLoopCount = 0
-        for (const child of n.children) {
-          if (child.type === 'loop') {
-            if (nonLoopCount > 0) loopSiblingOffsets.set(child, nonLoopCount)
-          } else if (producesDomChild(child)) {
-            nonLoopCount++
-          }
-        }
         for (const child of n.children) walk(child, mySlotId)
         break
       }
@@ -78,7 +116,7 @@ function collectInnerLoops(nodes: IRNode[], outerLoopParam?: string, ctx?: Clien
           refsOuterParam: refsOuter,
           childReactiveTexts: innerReactiveTexts.length > 0 ? innerReactiveTexts : undefined,
           insideConditional: insideCond || undefined,
-          siblingOffset: loopSiblingOffsets.get(n) || undefined,
+          siblingOffset: siblingOffsets.get(n) || undefined,
         })
         for (const child of n.children) walk(child, parentSlotId)
         depth--
@@ -112,6 +150,32 @@ function collectInnerLoops(nodes: IRNode[], outerLoopParam?: string, ctx?: Clien
   return result
 }
 
+
+/**
+ * Decide whether a loop's runtime rendering needs element reconciliation
+ * (reconcileElements + composite item rendering) rather than the simple
+ * template-per-item path, and collect inner-loop metadata for its body.
+ *
+ * Used by both the top-level `case 'loop'` in `collectElements` and the
+ * branch-loop collector in `collectBranchLoops`. Each call site applies
+ * its own final-emission rule over `innerLoops` (top-level also emits
+ * them on `isStaticArray && innerLoops.length`, branch only on
+ * `useElementReconciliation`).
+ */
+function decideLoopRendering(
+  loop: IRLoop,
+  siblingOffsets: Map<IRLoop, number>,
+  ctx: ClientJsContext | undefined,
+): { useElementReconciliation: boolean; innerLoops: NestedLoop[] | undefined } {
+  const hasNestedComps = (loop.nestedComponents?.length ?? 0) > 0
+  const innerLoops = !loop.childComponent
+    ? collectInnerLoops(loop.children, siblingOffsets, loop.param, ctx)
+    : undefined
+  const hasInnerLoops = (innerLoops?.length ?? 0) > 0
+  const useElementReconciliation =
+    !loop.childComponent && !loop.isStaticArray && (hasNestedComps || hasInnerLoops)
+  return { useElementReconciliation, innerLoops }
+}
 
 /** Check whether an array of IR nodes contains any component nodes (recursively). */
 function jsxChildrenContainComponent(nodes: IRNode[]): boolean {
@@ -180,6 +244,35 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
   return propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'
 }
 
+/**
+ * Push reactive child-prop entries for a component node into `ctx.reactiveChildProps`.
+ * Mirrors the wrap-decision pass done during propsExpr construction; kept as a dedicated
+ * side-effect helper so `buildComponentPropsExpr` stays a pure function.
+ */
+function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): void {
+  for (const prop of node.props) {
+    if (prop.name === '...' || prop.name.startsWith('...')) continue
+    if (prop.jsxChildren) continue
+    const isEventHandler =
+      prop.name.startsWith('on') &&
+      prop.name.length > 2 &&
+      prop.name[2] === prop.name[2].toUpperCase()
+    if (isEventHandler) continue
+    if (!prop.dynamic) continue
+    const expandedValue = expandDynamicPropValue(prop.value, ctx)
+    if (!decideWrapForChildProp(expandedValue, ctx, prop).wrap) continue
+    const attrName = prop.name === 'className' ? 'class' : prop.name
+    ctx.reactiveChildProps.push({
+      componentName: node.name,
+      slotId: node.slotId,
+      propName: prop.name,
+      attrName,
+      expression: expandedValue,
+      ...pickAttrMeta(prop),
+    })
+  }
+}
+
 /** Convert raw component info from IR traversal to ConditionalBranchChildComponent with built propsExpr. */
 function buildBranchChildComponents(
   rawComponents: Array<{ name: string; slotId: string | null; props: IRProp[] }>,
@@ -193,23 +286,17 @@ function buildBranchChildComponents(
 }
 
 /** Recursively walk the IR tree and populate ctx with interactive/dynamic/loop/conditional elements. */
-export function collectElements(node: IRNode, ctx: ClientJsContext, insideConditional = false): void {
+export function collectElements(
+  node: IRNode,
+  ctx: ClientJsContext,
+  siblingOffsets: Map<IRLoop, number>,
+  insideConditional = false,
+): void {
   switch (node.type) {
     case 'element':
       collectFromElement(node, ctx, insideConditional)
-      // Pre-compute sibling offsets for any loop children in this element
-      {
-        let nonLoopCount = 0
-        for (const child of node.children) {
-          if (child.type === 'loop') {
-            if (nonLoopCount > 0) loopSiblingOffsets.set(child, nonLoopCount)
-          } else if (producesDomChild(child)) {
-            nonLoopCount++
-          }
-        }
-      }
       for (const child of node.children) {
-        collectElements(child, ctx, insideConditional)
+        collectElements(child, ctx, siblingOffsets, insideConditional)
       }
       break
 
@@ -246,7 +333,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
 
     case 'conditional':
       if (node.clientOnly && node.slotId) {
-        ctx.clientOnlyConditionals.push(buildConditionalMetadata(node, ctx))
+        ctx.clientOnlyConditionals.push(buildConditionalMetadata(node, ctx, siblingOffsets))
       } else if (node.slotId) {
         // Solid-style wrap-by-default fallback (#941, follow-up to #937/#939).
         // Wrap not only statically-proven-reactive conditions, but also any
@@ -257,14 +344,14 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
             // Nested conditionals are collected by the parent via collectBranchConditionals.
             // Don't push to ctx.conditionalElements — they'll be emitted inside the parent's bindEvents.
           } else {
-            ctx.conditionalElements.push(buildConditionalMetadata(node, ctx))
+            ctx.conditionalElements.push(buildConditionalMetadata(node, ctx, siblingOffsets))
           }
         }
       }
       // Recurse into conditional branches with insideConditional = true
       // to collect nested conditionals, events, refs, child components, and reactive attrs
-      collectElements(node.whenTrue, ctx, true)
-      collectElements(node.whenFalse, ctx, true)
+      collectElements(node.whenTrue, ctx, siblingOffsets, true)
+      collectElements(node.whenFalse, ctx, siblingOffsets, true)
       break
 
     case 'loop':
@@ -296,14 +383,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         // Determine rendering strategy for dynamic arrays:
         // Use element reconciliation when the loop body has nested components,
         // or when inner loops need their own mapArray for events/reactive text.
-        const hasNestedComps = (node.nestedComponents?.length ?? 0) > 0
-        const innerLoops = !node.childComponent
-          ? collectInnerLoops(node.children, node.param, ctx)
-          : undefined
-        const hasInnerLoops = (innerLoops?.length ?? 0) > 0
-        const useElementReconciliation = !node.childComponent
-          && !node.isStaticArray
-          && (hasNestedComps || hasInnerLoops)
+        const { useElementReconciliation, innerLoops } = decideLoopRendering(node, siblingOffsets, ctx)
 
         let template = ''
         if (node.childComponent) {
@@ -334,7 +414,7 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
           isStaticArray: node.isStaticArray,
           useElementReconciliation,
           innerLoops: (useElementReconciliation || (node.isStaticArray && innerLoops?.length)) ? innerLoops : undefined,
-          siblingOffset: loopSiblingOffsets.get(node) || undefined,
+          siblingOffset: siblingOffsets.get(node) || undefined,
           filterPredicate: node.filterPredicate ? {
             param: node.filterPredicate.param,
             raw: node.filterPredicate.raw,
@@ -376,103 +456,22 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         }
       }
 
-      // Detect unexpanded spread props (open type — Phase 1 couldn't resolve keys)
-      // Only handle spreads whose source matches the component's rest/props parameter name.
-      // Other identifiers (e.g., local variables) may not exist in the compiled init scope.
-      // Always use PROPS_PARAM as the actual source since the init function parameter is PROPS_PARAM.
-      // Find the spread prop matching the component's rest/props parameter.
-      // A component may have multiple spreads (e.g., <Tag {...childProps} {...props}>).
-      // We need to find the one that matches, not just the first spread.
-      const restName = ctx.restPropsName
-      const propsObjName = ctx.propsObjectName
-      const knownSpreadProp = node.props.find(p =>
-        (p.name === '...' || p.name.startsWith('...')) &&
-        (p.value === restName || p.value === propsObjName)
-      )
-      const spreadSource = knownSpreadProp ? PROPS_PARAM : null
-
-      const propsForInit: string[] = []
-      const explicitPropNames: string[] = []
-      for (const prop of node.props) {
-        if (prop.name === '...' || prop.name.startsWith('...')) continue
-        explicitPropNames.push(prop.name)
-        const isEventHandler =
-          prop.name.startsWith('on') &&
-          prop.name.length > 2 &&
-          prop.name[2] === prop.name[2].toUpperCase()
-        if (isEventHandler) {
-          propsForInit.push(`${quotePropName(prop.name)}: ${prop.value}`)
-        } else if (prop.jsxChildren) {
-          // JSX prop: generate getter using IR children → JS expression
-          const jsxExpr = irChildrenToJsExpr(prop.jsxChildren)
-          if (jsxChildrenContainComponent(prop.jsxChildren)) {
-            // Wrap with __slot() so callee text effects skip nodeValue update,
-            // preserving server-rendered component DOM for hydration.
-            propsForInit.push(`get ${quotePropName(prop.name)}() { return __slot(() => ${jsxExpr}) }`)
-          } else {
-            propsForInit.push(`get ${quotePropName(prop.name)}() { return ${jsxExpr} }`)
-          }
-        } else if (prop.dynamic) {
-          const expandedValue = expandDynamicPropValue(prop.value, ctx)
-          propsForInit.push(`get ${quotePropName(prop.name)}() { return ${expandedValue} }`)
-
-          // Solid-style wrap-by-default fallback (#942, DRY-consolidated
-          // with #939/#941/#943 via IRProp AST flags). Wrap child-component
-          // prop bindings in createEffect not only for statically-proven
-          // reactive values, but also for any expression the analyzer
-          // can't prove non-reactive — AST flags carry that signal from
-          // Phase 1. Pure literals and bare identifiers (no calls) stay
-          // un-wrapped via the other branches of this if/else.
-          //
-          // `hasPropsRef` stays as a string-level check because the
-          // props-param rename lives in Phase 1 (IRProp.value already has
-          // `props.xxx` substituted); string-literal stripping isn't
-          // needed for it, and `prop.callsReactiveGetters` /
-          // `prop.hasFunctionCalls` are computed structurally from the AST
-          // so they can't false-match call-like substrings inside string
-          // literals (e.g. `{ color: 'hsl(221 83% 53%)' }`).
-          if (decideWrapForChildProp(expandedValue, ctx, prop).wrap) {
-            const attrName = prop.name === 'className' ? 'class' : prop.name
-            ctx.reactiveChildProps.push({
-              componentName: node.name,
-              slotId: node.slotId,
-              propName: prop.name,
-              attrName,
-              expression: expandedValue,
-              ...pickAttrMeta(prop),
-            })
-          }
-        } else if (prop.isLiteral) {
-          propsForInit.push(`${quotePropName(prop.name)}: ${JSON.stringify(prop.value)}`)
-        } else {
-          propsForInit.push(`${quotePropName(prop.name)}: ${prop.value}`)
-        }
-      }
-
-      let propsExpr: string
-      if (spreadSource) {
-        // Use forwardProps() to merge spread source with explicit overrides
-        const overrides = propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'
-        const excludeKeys = JSON.stringify(explicitPropNames)
-        propsExpr = `forwardProps(${spreadSource}, ${overrides}, ${excludeKeys})`
-      } else {
-        propsExpr = propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'
-      }
+      collectReactiveChildProps(node, ctx)
 
       ctx.childInits.push({
         name: node.name,
         slotId: node.slotId,
-        propsExpr,
+        propsExpr: buildComponentPropsExpr(node.props, ctx),
       })
       for (const child of node.children) {
-        collectElements(child, ctx, insideConditional)
+        collectElements(child, ctx, siblingOffsets, insideConditional)
       }
       // Traverse JSX prop children so events, reactive expressions,
       // and nested components inside JSX props are collected
       for (const prop of node.props) {
         if (prop.jsxChildren) {
           for (const child of prop.jsxChildren) {
-            collectElements(child, ctx, insideConditional)
+            collectElements(child, ctx, siblingOffsets, insideConditional)
           }
         }
       }
@@ -480,14 +479,14 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
 
     case 'fragment':
       for (const child of node.children) {
-        collectElements(child, ctx, insideConditional)
+        collectElements(child, ctx, siblingOffsets, insideConditional)
       }
       break
 
     case 'if-statement':
-      collectElements(node.consequent, ctx, insideConditional)
+      collectElements(node.consequent, ctx, siblingOffsets, insideConditional)
       if (node.alternate) {
-        collectElements(node.alternate, ctx, insideConditional)
+        collectElements(node.alternate, ctx, siblingOffsets, insideConditional)
       }
       break
 
@@ -497,14 +496,14 @@ export function collectElements(node: IRNode, ctx: ClientJsContext, insideCondit
         valueExpr: node.valueProp.value,
       })
       for (const child of node.children) {
-        collectElements(child, ctx, insideConditional)
+        collectElements(child, ctx, siblingOffsets, insideConditional)
       }
       break
 
     case 'async':
       // Async boundaries are transparent for client JS — just traverse children
       for (const child of node.children) {
-        collectElements(child, ctx, insideConditional)
+        collectElements(child, ctx, siblingOffsets, insideConditional)
       }
       break
   }
@@ -632,7 +631,11 @@ function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
  * Only collects top-level loops (not nested loops inside other loops).
  * Detects composite loops (with child components) and collects extra metadata.
  */
-function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): BranchLoop[] {
+function collectBranchLoops(
+  node: IRNode,
+  ctx: ClientJsContext | undefined,
+  siblingOffsets: Map<IRLoop, number>,
+): BranchLoop[] {
   const loops: BranchLoop[] = []
   let parentSlotId: string | null = null
   const restNames = ctx ? buildRestSpreadNames(ctx) : undefined
@@ -654,18 +657,15 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): BranchLoop[] {
 
         // Detect composite: native element root + nested components, OR a loop
         // with inner loops that need their own mapArray reconciliation. Mirrors
-        // the top-level `useElementReconciliation` rule (collect-elements.ts
-        // around line 283) so a `.map()` directly inside an outer `.map()` gets
-        // its own reactive mapArray even when the outer loop lives inside a
-        // conditional branch.
-        const hasNestedComps = (n.nestedComponents?.length ?? 0) > 0
-        const innerLoopsCollected = !n.childComponent
-          ? collectInnerLoops(n.children, n.param)
-          : undefined
-        const hasInnerLoops = (innerLoopsCollected?.length ?? 0) > 0
-        const useElementReconciliation = !n.childComponent
-          && !n.isStaticArray
-          && (hasNestedComps || hasInnerLoops)
+        // the top-level `useElementReconciliation` rule so a `.map()` directly
+        // inside an outer `.map()` gets its own reactive mapArray even when
+        // the outer loop lives inside a conditional branch.
+        // Pass `undefined` for ctx to match the pre-existing branch behavior:
+        // inner-loop reactive-text collection is handled by the separate
+        // `collectBranchInnerLoops` path in reactivity.ts, not here. Phase 2
+        // unifies those two collectors; until then preserve the split.
+        const { useElementReconciliation, innerLoops: innerLoopsCollected } =
+          decideLoopRendering(n, siblingOffsets, undefined)
 
         // Build the item template from loop children.
         // Use loopDepth=0: this loop gets its own reconcileElements (independent
@@ -738,7 +738,11 @@ function collectBranchLoops(node: IRNode, ctx?: ClientJsContext): BranchLoop[] {
  * Build full conditional metadata for a reactive conditional node.
  * Shared by top-level conditionals and nested branch conditionals.
  */
-function buildConditionalMetadata(node: IRNode & { type: 'conditional' }, ctx: ClientJsContext): ConditionalElement {
+function buildConditionalMetadata(
+  node: IRNode & { type: 'conditional' },
+  ctx: ClientJsContext,
+  siblingOffsets: Map<IRLoop, number>,
+): ConditionalElement {
   const restNames = buildRestSpreadNames(ctx)
   // Use loopDepth=-1 so the first loop encountered inside the branch emits
   // data-key (depth 0) for its items, matching the mapArray item template
@@ -756,10 +760,10 @@ function buildConditionalMetadata(node: IRNode & { type: 'conditional' }, ctx: C
     whenFalseChildComponents: buildBranchChildComponents(collectConditionalBranchChildComponents(node.whenFalse), ctx),
     whenTrueTextEffects: collectBranchTextEffects(node.whenTrue),
     whenFalseTextEffects: collectBranchTextEffects(node.whenFalse),
-    whenTrueLoops: collectBranchLoops(node.whenTrue, ctx),
-    whenFalseLoops: collectBranchLoops(node.whenFalse, ctx),
-    whenTrueConditionals: collectBranchConditionals(node.whenTrue, ctx),
-    whenFalseConditionals: collectBranchConditionals(node.whenFalse, ctx),
+    whenTrueLoops: collectBranchLoops(node.whenTrue, ctx, siblingOffsets),
+    whenFalseLoops: collectBranchLoops(node.whenFalse, ctx, siblingOffsets),
+    whenTrueConditionals: collectBranchConditionals(node.whenTrue, ctx, siblingOffsets),
+    whenFalseConditionals: collectBranchConditionals(node.whenFalse, ctx, siblingOffsets),
   }
 }
 
@@ -767,7 +771,11 @@ function buildConditionalMetadata(node: IRNode & { type: 'conditional' }, ctx: C
  * Collect nested reactive conditionals from a branch for emission inside bindEvents.
  * Finds reactive conditional nodes within a branch subtree (not recursing into loops).
  */
-function collectBranchConditionals(node: IRNode, ctx: ClientJsContext): ConditionalElement[] {
+function collectBranchConditionals(
+  node: IRNode,
+  ctx: ClientJsContext,
+  siblingOffsets: Map<IRLoop, number>,
+): ConditionalElement[] {
   const result: ConditionalElement[] = []
 
   function walk(n: IRNode): void {
@@ -776,7 +784,7 @@ function collectBranchConditionals(node: IRNode, ctx: ClientJsContext): Conditio
         // Wrap-by-default fallback (#941) — mirror the top-level gate in
         // `case 'conditional'` at collectElements().
         if (n.slotId && decideWrapFromAstFlags(n).wrap) {
-          result.push(buildConditionalMetadata(n, ctx))
+          result.push(buildConditionalMetadata(n, ctx, siblingOffsets))
         }
         // Don't recurse further — the nested conditional handles its own branches
         break
