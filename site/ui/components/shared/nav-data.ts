@@ -54,19 +54,6 @@ export const navSections: NavSection[] = [
         })),
         matchPath: (p) => getComponentsByCategory(category).some((e) => p === `/components/${e.slug}`),
       })),
-      {
-        key: 'charts',
-        title: 'Charts',
-        links: [
-          { title: 'Area Chart', href: '/charts/area-chart' },
-          { title: 'Bar Chart', href: '/charts/bar-chart' },
-          { title: 'Line Chart', href: '/charts/line-chart' },
-          { title: 'Pie Chart', href: '/charts/pie-chart' },
-          { title: 'Radar Chart', href: '/charts/radar-chart' },
-          { title: 'Radial Chart', href: '/charts/radial-chart' },
-        ],
-        matchPath: (p) => p.startsWith('/charts/'),
-      },
     ],
   },
   {
@@ -85,6 +72,19 @@ export const navSections: NavSection[] = [
         matchPath: (p) => p.startsWith('/docs/forms'),
       },
       {
+        key: 'charts',
+        title: 'Charts',
+        links: [
+          { title: 'Area Chart', href: '/charts/area-chart' },
+          { title: 'Bar Chart', href: '/charts/bar-chart' },
+          { title: 'Line Chart', href: '/charts/line-chart' },
+          { title: 'Pie Chart', href: '/charts/pie-chart' },
+          { title: 'Radar Chart', href: '/charts/radar-chart' },
+          { title: 'Radial Chart', href: '/charts/radial-chart' },
+        ],
+        matchPath: (p) => p.startsWith('/charts/'),
+      },
+      {
         key: 'blocks',
         title: 'Blocks',
         defaultOpen: false,
@@ -94,14 +94,9 @@ export const navSections: NavSection[] = [
         })),
         matchPath: (p) => blockEntries.some((e) => p === `/components/${e.slug}`),
       },
-    ],
-  },
-  {
-    heading: 'Gallery',
-    entries: [
       {
-        key: 'gallery-apps',
-        title: 'Apps',
+        key: 'gallery',
+        title: 'Gallery',
         defaultOpen: false,
         links: [
           { title: 'Admin Dashboard', href: '/gallery/admin' },
