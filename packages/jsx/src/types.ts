@@ -158,6 +158,11 @@ export interface IRLoopChildComponent {
   children: IRNode[] // Child nodes for nested component rendering
   loopDepth?: number // 0 = direct child of outer loop, 1+ = inside nested inner loops
   innerLoopArray?: string // Array expression of the innermost enclosing loop (for disambiguation)
+  // True when this component sits inside a `conditional` / `if-statement` branch
+  // below the enclosing loop body. Such components are initialized by the
+  // conditional's `insert()` bindEvents at runtime; emitting them again from
+  // the outer initializer would double-wire event handlers (#929).
+  insideConditional?: boolean
 }
 
 export interface IRLoop {

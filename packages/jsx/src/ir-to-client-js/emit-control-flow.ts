@@ -1042,8 +1042,14 @@ function buildDepthLevels(
   childEvents: LoopChildEvent[],
 ): DepthLevel[] {
   return innerLoops.map(loop => ({
+    // Exclude components that sit inside a conditional branch of the loop
+    // body. Those are handled by the conditional's `insert()` bindEvents
+    // and must not be re-initialized here, otherwise `initChild` runs twice
+    // and double-wires event handlers (#929).
     comps: nestedComps.filter(c =>
-      (c.loopDepth ?? 0) === loop.depth && c.innerLoopArray === loop.array
+      (c.loopDepth ?? 0) === loop.depth
+      && c.innerLoopArray === loop.array
+      && !c.insideConditional
     ),
     events: childEvents.filter(ev => {
       if (ev.nestedLoops.length === 0) return false

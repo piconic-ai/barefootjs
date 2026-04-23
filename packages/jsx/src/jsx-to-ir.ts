@@ -1907,7 +1907,7 @@ function transformMapCall(
 function collectNestedComponents(nodes: IRNode[]): IRLoopChildComponent[] {
   const result: IRLoopChildComponent[] = []
 
-  function traverse(node: IRNode, loopDepth: number, innerLoopArray?: string): void {
+  function traverse(node: IRNode, loopDepth: number, innerLoopArray: string | undefined, insideConditional: boolean): void {
     if (node.type === 'component') {
       result.push({
         name: node.name,
@@ -1924,29 +1924,39 @@ function collectNestedComponents(nodes: IRNode[]): IRLoopChildComponent[] {
         children: node.children,
         loopDepth,
         innerLoopArray,
+        insideConditional: insideConditional || undefined,
       })
       // Also traverse component children to find deeply nested components
       if (node.children) {
-        node.children.forEach(c => traverse(c, loopDepth, innerLoopArray))
+        node.children.forEach(c => traverse(c, loopDepth, innerLoopArray, insideConditional))
       }
     }
     if (node.type === 'element' && node.children) {
-      node.children.forEach(c => traverse(c, loopDepth, innerLoopArray))
+      node.children.forEach(c => traverse(c, loopDepth, innerLoopArray, insideConditional))
     }
     if (node.type === 'fragment' && node.children) {
-      node.children.forEach(c => traverse(c, loopDepth, innerLoopArray))
+      node.children.forEach(c => traverse(c, loopDepth, innerLoopArray, insideConditional))
     }
     if (node.type === 'loop' && node.children) {
-      // Entering an inner loop — increment depth, record array expression
-      node.children.forEach(c => traverse(c, loopDepth + 1, node.array))
+      // Entering an inner loop — increment depth, record array expression.
+      // Reset `insideConditional`: the loop body starts a fresh scope and its
+      // own body-level conditionals are tracked by the inner loop's own
+      // collection path.
+      node.children.forEach(c => traverse(c, loopDepth + 1, node.array, false))
     }
     if (node.type === 'conditional') {
-      traverse(node.whenTrue, loopDepth, innerLoopArray)
-      traverse(node.whenFalse, loopDepth, innerLoopArray)
+      traverse(node.whenTrue, loopDepth, innerLoopArray, true)
+      traverse(node.whenFalse, loopDepth, innerLoopArray, true)
+    }
+    if (node.type === 'if-statement') {
+      traverse(node.consequent, loopDepth, innerLoopArray, true)
+      if (node.alternate) {
+        traverse(node.alternate, loopDepth, innerLoopArray, true)
+      }
     }
   }
 
-  nodes.forEach(n => traverse(n, 0))
+  nodes.forEach(n => traverse(n, 0, undefined, false))
   return result
 }
 

@@ -288,18 +288,27 @@ export function collectLoopChildEventsWithNesting(
 /**
  * Collect child component nodes from a conditional branch for use with insert().
  * These components will be re-initialized via initChild() in the branch's bindEvents callback.
+ *
+ * @param node - The root IR node to traverse.
+ * @param skipConditionals - When true, do not descend into nested `conditional`
+ *   branches. Used when the caller collects those conditionals separately
+ *   (e.g., inner-loop direct children vs. `childConditionals`), avoiding the
+ *   double-initialization bug where the same component is emitted by both the
+ *   outer path and the `insert()` bindEvents path (#929).
  */
 export function collectConditionalBranchChildComponents(
   node: IRNode,
+  skipConditionals = false,
 ): Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }> {
   const components: Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }> = []
-  traverseForComponents(node, components)
+  traverseForComponents(node, components, skipConditionals)
   return components
 }
 
 function traverseForComponents(
   node: IRNode,
   components: Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }>,
+  skipConditionals = false,
 ): void {
   switch (node.type) {
     case 'element':
@@ -307,7 +316,7 @@ function traverseForComponents(
     case 'provider':
     case 'async':
       for (const child of node.children) {
-        traverseForComponents(child, components)
+        traverseForComponents(child, components, skipConditionals)
       }
       break
     case 'component':
@@ -319,17 +328,19 @@ function traverseForComponents(
       })
       // Recurse into JSX children passed to this component
       for (const child of node.children) {
-        traverseForComponents(child, components)
+        traverseForComponents(child, components, skipConditionals)
       }
       break
     case 'conditional':
-      traverseForComponents(node.whenTrue, components)
-      traverseForComponents(node.whenFalse, components)
+      if (skipConditionals) return
+      traverseForComponents(node.whenTrue, components, skipConditionals)
+      traverseForComponents(node.whenFalse, components, skipConditionals)
       break
     case 'if-statement':
-      traverseForComponents(node.consequent, components)
+      if (skipConditionals) return
+      traverseForComponents(node.consequent, components, skipConditionals)
       if (node.alternate) {
-        traverseForComponents(node.alternate, components)
+        traverseForComponents(node.alternate, components, skipConditionals)
       }
       break
   }
@@ -468,11 +479,17 @@ function collectBranchInnerLoops(
           reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
         }
       }
-      // Collect child components and events inside inner loop items
-      // Walk loop body children (not the loop node itself, which traverseForComponents skips)
+      // Collect child components and events inside inner loop items.
+      // Walk loop body children (not the loop node itself, which traverseForComponents skips).
+      // `skipConditionals=true`: components inside conditional branches are
+      // collected separately as `childConditionals[i].whenTrueComponents`
+      // below. Including them here too would cause `initChild` to be emitted
+      // twice (once in the outer ssr path, once in the insert() bindEvents),
+      // which double-wires the click handler and makes the two `onCheckedChange`
+      // calls cancel each other out (#929).
       const rawComps: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: import('../types').IRNode[] }> = []
       for (const child of n.children) {
-        rawComps.push(...collectConditionalBranchChildComponents(child))
+        rawComps.push(...collectConditionalBranchChildComponents(child, true))
       }
       const childComponents = rawComps.map(c => ({
         name: c.name,

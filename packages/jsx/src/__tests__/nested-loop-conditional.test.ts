@@ -233,4 +233,99 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     expect(bindEventsMatch![1]).toContain('qsa(__branchScope')
     expect(bindEventsMatch![1]).not.toContain('$(__branchScope')
   })
+
+  test('child component inside nested conditional is only initialized once (#929)', () => {
+    // Regression: The file browser pattern has a Checkbox inside a
+    // `child.type === 'folder' ? <folder-branch> : <file-branch>` conditional,
+    // itself inside a nested `node.children.map(child => ...)`. Before the fix,
+    // `collectConditionalBranchChildComponents` recursed into conditional
+    // branches even when collecting the inner loop's direct child components,
+    // causing the same Checkbox to be emitted by both the outer ssr path and
+    // the insert() bindEvents. The two initChild() calls wired up two click
+    // handlers, and two `onCheckedChange` invocations per click cancelled
+    // each other out, leaving the nested checkbox visually unresponsive.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { Checkbox } from '@ui/components/ui/checkbox'
+
+      type TreeNode = { id: number; name: string; type: 'file' | 'folder'; selected: boolean; children: TreeNode[] }
+
+      export function FileBrowser() {
+        const [tree, setTree] = createSignal<TreeNode[]>([])
+        const toggle = (id: number) => {
+          setTree(prev => prev.map(n => n.id === id ? { ...n, selected: !n.selected } : n))
+        }
+        return (
+          <div>
+            {tree().map(node => (
+              <div key={node.id}>
+                {node.children.map(child => (
+                  <div key={child.id}>
+                    {child.type === 'folder' ? (
+                      <div>
+                        <Checkbox checked={child.selected} onCheckedChange={() => toggle(child.id)} />
+                        <span>{child.name}</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <Checkbox checked={child.selected} onCheckedChange={() => toggle(child.id)} />
+                        <span>{child.name}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'FileBrowser.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // Locate the nested mapArray callback body — the second mapArray in the file
+    // is the inner `node.children.map(child => ...)`.
+    const mapCalls = content.match(/mapArray\([\s\S]*?\}\)\s*\}/g)
+    expect(mapCalls).not.toBeNull()
+    expect(mapCalls!.length).toBeGreaterThanOrEqual(2)
+
+    // Pick the inner mapArray. It references `child.id` as the key function.
+    const innerMapArray = mapCalls!.find(m => /\(child\)\s*=>\s*String\(child\.id\)/.test(m))
+    expect(innerMapArray).toBeDefined()
+
+    // Count initChild('Checkbox', ...) occurrences inside the inner callback,
+    // but exclude those inside `bindEvents:` (insert branches), which handle
+    // the conditional separately.
+    const body = innerMapArray!
+    const bindEventsRegions: string[] = []
+    const bindEventsRe = /bindEvents:\s*\(__branchScope\)\s*=>\s*\{/g
+    let m: RegExpExecArray | null
+    while ((m = bindEventsRe.exec(body)) !== null) {
+      let depth = 1
+      let i = m.index + m[0].length
+      const start = i
+      while (i < body.length && depth > 0) {
+        if (body[i] === '{') depth++
+        else if (body[i] === '}') depth--
+        i++
+      }
+      bindEventsRegions.push(body.slice(start, i - 1))
+    }
+    // Body outside bindEvents: replace each bindEvents region with a marker.
+    let outsideBody = body
+    for (const region of bindEventsRegions) {
+      outsideBody = outsideBody.replace(region, '/*BINDEVENTS*/')
+    }
+    const outsideInitChildCount = (outsideBody.match(/initChild\('Checkbox'/g) || []).length
+
+    // The outer-level ssr path should NOT emit initChild('Checkbox', ...)
+    // for the Checkbox that lives inside the conditional. It is handled by
+    // the insert() bindEvents (which runs once per branch activation).
+    expect(outsideInitChildCount).toBe(0)
+  })
 })
