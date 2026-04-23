@@ -3,7 +3,7 @@
  */
 
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMeta } from '../types'
-import type { ClientJsContext, ConditionalBranchChildComponent, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildConditional, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
+import type { ClientJsContext, ConditionalBranchChildComponent, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBranchSummary, LoopChildConditional, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
 import { attrValueToString, exprReferencesIdent, quotePropName, PROPS_PARAM } from './utils'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
@@ -167,7 +167,7 @@ export function collectInnerLoops(
         let childConditionals: import('./types').LoopChildConditional[] | undefined
         if (collectBindings) {
           // skipConditionals=true: components inside conditional branches
-          // are collected separately via `childConditionals[i].whenTrueComponents`
+          // are collected separately via `childConditionals[i].whenTrue.childComponents`
           // (below). Including them here would double-init event handlers.
           const rawComps: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: IRNode[] }> = []
           for (const child of n.children) {
@@ -865,24 +865,38 @@ export function collectLoopChildConditionals(
       const loopParamsForCond = loopParam ? [loopParam] : undefined
       const whenTrueHtml = irToHtmlTemplate(n.whenTrue, undefined, 0, loopParamsForCond)
       const whenFalseHtml = irToHtmlTemplate(n.whenFalse, undefined, 0, loopParamsForCond)
-      const trueInner = collectInnerLoops([n.whenTrue], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
-      const falseInner = collectInnerLoops([n.whenFalse], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
       conditionals.push({
         slotId: n.slotId,
         condition: expanded,
         whenTrueHtml,
         whenFalseHtml,
-        whenTrueComponents: collectConditionalBranchChildComponents(n.whenTrue),
-        whenFalseComponents: collectConditionalBranchChildComponents(n.whenFalse),
-        whenTrueInnerLoops: trueInner.length > 0 ? trueInner : undefined,
-        whenFalseInnerLoops: falseInner.length > 0 ? falseInner : undefined,
-        whenTrueConditionals: collectLoopChildConditionals(n.whenTrue, ctx, siblingOffsets, loopParam),
-        whenFalseConditionals: collectLoopChildConditionals(n.whenFalse, ctx, siblingOffsets, loopParam),
-        whenTrueEvents: collectConditionalBranchEvents(n.whenTrue),
-        whenFalseEvents: collectConditionalBranchEvents(n.whenFalse),
+        whenTrue: summarizeLoopChildBranch(n.whenTrue, ctx, siblingOffsets, loopParam),
+        whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam),
       })
     },
   })
 
   return conditionals
+}
+
+/**
+ * Bundle every reactive entity collected from one branch of a
+ * `LoopChildConditional` into a `LoopChildBranchSummary`. Mirrors the
+ * top-level `summarizeBranch` helper (#1009): one call replaces the four
+ * parallel `whenTrueXxx` / `whenFalseXxx` collection calls that used to
+ * sit inline in `collectLoopChildConditionals`.
+ */
+function summarizeLoopChildBranch(
+  node: IRNode,
+  ctx: ClientJsContext,
+  siblingOffsets: Map<IRLoop, number>,
+  loopParam?: string,
+): LoopChildBranchSummary {
+  const inner = collectInnerLoops([node], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
+  return {
+    childComponents: collectConditionalBranchChildComponents(node),
+    innerLoops: inner.length > 0 ? inner : undefined,
+    conditionals: collectLoopChildConditionals(node, ctx, siblingOffsets, loopParam),
+    events: collectConditionalBranchEvents(node),
+  }
 }

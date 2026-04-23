@@ -524,18 +524,18 @@ function emitNestedLoopChildConditionals(
     lines.push(`${indent}insert(${scopeVar}, '${cond.slotId}', () => ${wrap(cond.condition)}, {`)
     lines.push(`${indent}  template: () => \`${whenTrueWithCond}\`,`)
     lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-    emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenTrueEvents, wrap)
-    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrueComponents, loopParam, wrap)
-    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrueInnerLoops, loopParam, wrap)
-    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrueConditionals, wrap, loopParam)
+    emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenTrue.events, wrap)
+    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrue.childComponents, loopParam, wrap)
+    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrue.innerLoops, loopParam, wrap)
+    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrue.conditionals, wrap, loopParam)
     lines.push(`${indent}  }`)
     lines.push(`${indent}}, {`)
     lines.push(`${indent}  template: () => \`${whenFalseWithCond}\`,`)
     lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-    emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenFalseEvents, wrap)
-    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalseComponents, loopParam, wrap)
-    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalseInnerLoops, loopParam, wrap)
-    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalseConditionals, wrap, loopParam)
+    emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenFalse.events, wrap)
+    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalse.childComponents, loopParam, wrap)
+    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalse.innerLoops, loopParam, wrap)
+    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalse.conditionals, wrap, loopParam)
     lines.push(`${indent}  }`)
     lines.push(`${indent}})`)
   }
@@ -607,10 +607,10 @@ function emitLoopChildReactiveEffects(
       lines.push(`${indent}insert(${elVar}, '${cond.slotId}', () => ${wrap(cond.condition)}, {`)
       lines.push(`${indent}  template: () => \`${whenTrueWithCond}\`,`)
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-      emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenTrueEvents, wrap)
-      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrueComponents, loopParam)
-      emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrueInnerLoops, loopParam)
-      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrueConditionals, wrap, loopParam)
+      emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenTrue.events, wrap)
+      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrue.childComponents, loopParam)
+      emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrue.innerLoops, loopParam)
+      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrue.conditionals, wrap, loopParam)
       for (const text of textsForBranch(cond.whenTrueHtml)) {
         const varName = `__rt_${varSlotId(text.slotId)}`
         lines.push(`${indent}    { const [${varName}] = $t(__branchScope, '${text.slotId}')`)
@@ -620,10 +620,10 @@ function emitLoopChildReactiveEffects(
       lines.push(`${indent}}, {`)
       lines.push(`${indent}  template: () => \`${whenFalseWithCond}\`,`)
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-      emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenFalseEvents, wrap)
-      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalseComponents, loopParam)
-      emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalseInnerLoops, loopParam)
-      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalseConditionals, wrap, loopParam)
+      emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenFalse.events, wrap)
+      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalse.childComponents, loopParam)
+      emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalse.innerLoops, loopParam)
+      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalse.conditionals, wrap, loopParam)
       for (const text of textsForBranch(cond.whenFalseHtml)) {
         const varName = `__rt_${varSlotId(text.slotId)}`
         lines.push(`${indent}    { const [${varName}] = $t(__branchScope, '${text.slotId}')`)
@@ -1170,7 +1170,7 @@ function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: Composit
   // Exclude components inside reactive conditionals — managed by insert()
   const condCompSlotIds = new Set<string>()
   for (const cond of ctx.elem.childConditionals ?? []) {
-    for (const comp of [...cond.whenTrueComponents, ...cond.whenFalseComponents]) {
+    for (const comp of [...cond.whenTrue.childComponents, ...cond.whenFalse.childComponents]) {
       if (comp.slotId) condCompSlotIds.add(comp.slotId)
     }
   }

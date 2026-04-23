@@ -211,25 +211,43 @@ export interface LoopChildReactiveText {
   insideConditional?: boolean // true if text node is inside a conditional branch (insert() may replace it)
 }
 
+/**
+ * All reactive entities collected from one branch of a `LoopChildConditional`
+ * — child components, inner loops, nested conditionals, and events.
+ *
+ * Mirrors the top-level `BranchSummary` refactor (#1009): replaces the eight
+ * parallel `whenTrueXxx` / `whenFalseXxx` fields that used to live directly
+ * on `LoopChildConditional` with a single bundle per branch.
+ *
+ * Differs from `BranchSummary` by carrying loop-scoped types —
+ * `NestedLoop` instead of `BranchLoop`, recursive `LoopChildConditional`
+ * instead of `ConditionalElement`, raw component data instead of
+ * pre-built `propsExpr` strings — because these structs are consumed
+ * inside a loop item's `mapArray` callback, not at the top-level init.
+ */
+export interface LoopChildBranchSummary {
+  /**
+   * Raw child components inside the branch (for initChild / createComponent).
+   * Unlike `BranchSummary.childComponents` (pre-built `propsExpr`), these
+   * carry raw `props` + `children` — `propsExpr` is built by the emitter
+   * inside the loop's mapArray callback where the loop param is in scope.
+   */
+  childComponents: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: import('../types').IRNode[] }>
+  /** Inner loops inside the branch that need mapArray setup. */
+  innerLoops?: NestedLoop[]
+  /** Nested conditionals inside the branch (recursive — Path A, #830). */
+  conditionals?: LoopChildConditional[]
+  /** Events on elements inside the branch — attached via insert() bindEvents (#839). */
+  events?: ConditionalBranchEvent[]
+}
+
 export interface LoopChildConditional {
   slotId: string       // bf-c slot ID for insert() targeting
   condition: string    // Reactive condition expression
   whenTrueHtml: string // HTML template for true branch
   whenFalseHtml: string // HTML template for false branch (usually comment markers)
-  whenTrueComponents: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: import('../types').IRNode[] }>
-  whenFalseComponents: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: import('../types').IRNode[] }>
-  /** Inner loops inside whenTrue branch that need mapArray setup */
-  whenTrueInnerLoops?: NestedLoop[]
-  /** Inner loops inside whenFalse branch that need mapArray setup */
-  whenFalseInnerLoops?: NestedLoop[]
-  /** Nested conditionals inside whenTrue branch (recursive — Path A, #830) */
-  whenTrueConditionals?: LoopChildConditional[]
-  /** Nested conditionals inside whenFalse branch (recursive — Path A, #830) */
-  whenFalseConditionals?: LoopChildConditional[]
-  /** Events on elements inside whenTrue branch — attached via insert() bindEvents (#839) */
-  whenTrueEvents?: ConditionalBranchEvent[]
-  /** Events on elements inside whenFalse branch — attached via insert() bindEvents (#839) */
-  whenFalseEvents?: ConditionalBranchEvent[]
+  whenTrue: LoopChildBranchSummary
+  whenFalse: LoopChildBranchSummary
 }
 
 export interface TopLevelLoop extends LoopCore {
