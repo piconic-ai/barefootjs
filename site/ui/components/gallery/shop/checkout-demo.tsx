@@ -1,7 +1,8 @@
 "use client"
 /**
- * CheckoutDemo Component
+ * ShopCheckoutDemo
  *
+ * Gallery-specific checkout for /gallery/shop/checkout.
  * 3-step checkout flow: Shipping → Payment → Review & Confirm.
  * Exercises: multi-branch conditional rendering, composite loop inside
  * conditional (#724), controlled RadioGroup/Select, shared signals across
@@ -43,19 +44,7 @@ const steps = [
   { id: 3, title: 'Confirm' },
 ]
 
-/**
- * Multi-step checkout — compiler stress test
- *
- * Stress points:
- * - Multi-branch conditional: 3 steps via nested ternary
- * - Composite loop inside conditional: order items with Badge in review step
- * - Shared signals across branches: form state persists across step switches
- * - Derived validation memos: shippingValid, paymentValid
- * - Controlled RadioGroup: payment method selection
- * - Controlled Select: country picker
- * - Conditional inside loop: quantity badge when > 1
- */
-export function CheckoutDemo() {
+export function ShopCheckoutDemo() {
   const [step, setStep] = createSignal(1)
   const [orderPlaced, setOrderPlaced] = createSignal(false)
 
@@ -74,10 +63,8 @@ export function CheckoutDemo() {
   const [cardExpiry, setCardExpiry] = createSignal('')
   const [cardCvc, setCardCvc] = createSignal('')
 
-  // Order items (from Cart, can be modified during checkout)
   const [items, setItems] = createSignal<OrderItem[]>(initialItems)
 
-  // Validation memos
   const emailValid = createMemo(() => {
     const v = email()
     return v.length > 0 && v.includes('@') && v.includes('.')
@@ -102,7 +89,6 @@ export function CheckoutDemo() {
     paymentMethod() === 'paypal' || cardValid()
   )
 
-  // Price memos
   const subtotal = createMemo(() =>
     items().reduce((sum, item) => sum + item.price * item.quantity, 0)
   )
@@ -127,14 +113,16 @@ export function CheckoutDemo() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       {/* Step indicator */}
-      <div className="flex items-center gap-2">
+      <div className="checkout-steps flex items-center gap-2">
         {steps.map((s, i) => (
           <div key={s.id} className="flex items-center gap-2">
             {i > 0 ? (
               <div className="h-px w-6 bg-border" />
             ) : null}
             <button
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${step() >= s.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+              className={`checkout-step flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${step() >= s.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+              data-step={s.id}
+              data-active={step() >= s.id ? 'true' : 'false'}
               onClick={() => { if (s.id < step()) setStep(s.id) }}
             >
               {s.id}
@@ -150,9 +138,9 @@ export function CheckoutDemo() {
 
       {/* Step content — multi-branch conditional */}
       {orderPlaced() ? (
-        <div className="rounded-lg border p-8 text-center space-y-3">
+        <div className="checkout-success rounded-lg border p-8 text-center space-y-3">
           <p className="text-3xl">🎉</p>
-          <p className="text-lg font-semibold">Order Placed!</p>
+          <p className="checkout-success-msg text-lg font-semibold">Order Placed!</p>
           <p className="text-sm text-muted-foreground">
             Confirmation sent to {email()}
           </p>
@@ -252,7 +240,7 @@ export function CheckoutDemo() {
           </div>
 
           <div className="flex justify-end">
-            <Button disabled={!shippingValid()} onClick={() => setStep(2)}>
+            <Button className="checkout-continue" disabled={!shippingValid()} onClick={() => setStep(2)}>
               Continue to Payment
             </Button>
           </div>
@@ -278,7 +266,6 @@ export function CheckoutDemo() {
             </div>
           </RadioGroup>
 
-          {/* Conditional card form — only shown when credit-card selected */}
           {paymentMethod() === 'credit-card' ? (
             <div className="space-y-4 rounded-lg border p-4">
               <div className="space-y-2">
@@ -329,7 +316,6 @@ export function CheckoutDemo() {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Review Order</h3>
 
-          {/* Order items — composite loop inside conditional (validates #724) */}
           {items().length > 0 ? (
             <div className="rounded-lg border divide-y">
               {items().map(item => (
@@ -360,7 +346,6 @@ export function CheckoutDemo() {
             <p className="text-sm text-muted-foreground">No items</p>
           )}
 
-          {/* Shipping summary */}
           <div className="rounded-lg border p-4 space-y-2">
             <p className="text-sm font-medium">Ship to</p>
             <p className="text-sm text-muted-foreground">
@@ -372,7 +357,6 @@ export function CheckoutDemo() {
             </p>
           </div>
 
-          {/* Payment summary */}
           <div className="rounded-lg border p-4 space-y-2">
             <p className="text-sm font-medium">Pay with</p>
             <p className="text-sm text-muted-foreground">
@@ -382,7 +366,6 @@ export function CheckoutDemo() {
             </p>
           </div>
 
-          {/* Price breakdown */}
           <div className="rounded-lg border p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
@@ -399,7 +382,7 @@ export function CheckoutDemo() {
             <Separator />
             <div className="flex justify-between font-semibold">
               <span>Total</span>
-              <span>{formatPrice(total())}</span>
+              <span className="checkout-total">{formatPrice(total())}</span>
             </div>
           </div>
 
@@ -407,7 +390,7 @@ export function CheckoutDemo() {
             <Button variant="outline" onClick={() => setStep(2)}>
               Back
             </Button>
-            <Button onClick={handlePlaceOrder}>
+            <Button className="place-order-btn" onClick={handlePlaceOrder}>
               Place Order — {formatPrice(total())}
             </Button>
           </div>

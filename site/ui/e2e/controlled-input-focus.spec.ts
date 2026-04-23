@@ -34,10 +34,10 @@ test.describe('Controlled input focus preservation in loops', () => {
   })
 
   test('comments: editing textarea preserves focus', async ({ page }) => {
-    await page.goto('/components/comments')
+    await page.goto('/gallery/social/thread')
     await page.waitForLoadState('networkidle')
 
-    const firstComment = page.locator('[bf-s^="CommentsDemo_"]:not([data-slot])').first().locator('.comment-item').first()
+    const firstComment = page.locator('[bf-s^="SocialThreadDemo_"]:not([data-slot])').first().locator('.comment-item').first()
     await firstComment.locator('button:has-text("Edit")').click()
 
     const textarea = firstComment.locator('textarea')

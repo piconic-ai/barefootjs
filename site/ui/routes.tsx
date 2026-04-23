@@ -58,34 +58,15 @@ import { ProgressRefPage } from './pages/components/progress'
 import { DirectionRefPage } from './pages/components/direction'
 import { DrawerRefPage } from './pages/components/drawer'
 import { SheetRefPage } from './pages/components/sheet'
-import { DashboardRefPage } from './pages/components/dashboard'
-import { AnalyticsDashboardRefPage } from './pages/components/analytics-dashboard'
-import { UserProfileRefPage } from './pages/components/user-profile'
-import { ProductCardsRefPage } from './pages/components/product-cards'
-import { PricingRefPage } from './pages/components/pricing'
 import { FileUploadRefPage } from './pages/components/file-upload'
-import { MailRefPage } from './pages/components/mail'
-import { KanbanRefPage } from './pages/components/kanban'
-import { LoginRefPage } from './pages/components/login'
-import { SettingsRefPage } from './pages/components/settings'
-import { SidebarRefPage } from './pages/components/sidebar'
-import { ChatRefPage } from './pages/components/chat'
 import { MusicPlayerRefPage } from './pages/components/music-player'
 import { MultiStepFormRefPage } from './pages/components/multi-step-form'
-import { TasksTableRefPage } from './pages/components/tasks-table'
-import { SocialFeedRefPage } from './pages/components/social-feed'
-import { FileBrowserRefPage } from './pages/components/file-browser'
-import { CartRefPage } from './pages/components/cart'
-import { CheckoutRefPage } from './pages/components/checkout'
-import { CommentsRefPage } from './pages/components/comments'
-import { NotificationsCenterRefPage } from './pages/components/notifications-center'
 import { InventoryManagerRefPage } from './pages/components/inventory-manager'
 import { SpreadsheetRefPage } from './pages/components/spreadsheet'
 import { PermissionMatrixRefPage } from './pages/components/permission-matrix'
 import { FormBuilderRefPage } from './pages/components/form-builder'
 import { PivotTableRefPage } from './pages/components/pivot-table'
 import { DashboardBuilderRefPage } from './pages/components/dashboard-builder'
-import { CalendarSchedulerRefPage } from './pages/components/calendar-scheduler'
 import { StateMachinePlaygroundRefPage } from './pages/components/state-machine-playground'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
@@ -468,66 +449,6 @@ export function createApp() {
     return c.render(<SheetRefPage />)
   })
 
-  // Dashboard block page
-  app.get('/components/dashboard', (c) => {
-    return c.render(<DashboardRefPage />)
-  })
-
-  // Analytics Dashboard block page
-  app.get('/components/analytics-dashboard', (c) => {
-    return c.render(<AnalyticsDashboardRefPage />)
-  })
-
-  // User Profile block page
-  app.get('/components/user-profile', (c) => {
-    return c.render(<UserProfileRefPage />)
-  })
-
-  // Product Cards block page
-  app.get('/components/product-cards', (c) => {
-    return c.render(<ProductCardsRefPage />)
-  })
-
-  // Pricing block page
-  app.get('/components/pricing', (c) => {
-    return c.render(<PricingRefPage />)
-  })
-
-  // File Upload block page
-  app.get('/components/file-upload', (c) => {
-    return c.render(<FileUploadRefPage />)
-  })
-
-  // Mail block page
-  app.get('/components/mail', (c) => {
-    return c.render(<MailRefPage />)
-  })
-
-  // Kanban block page
-  app.get('/components/kanban', (c) => {
-    return c.render(<KanbanRefPage />)
-  })
-
-  // Login block page
-  app.get('/components/login', (c) => {
-    return c.render(<LoginRefPage />)
-  })
-
-  // Settings block page
-  app.get('/components/settings', (c) => {
-    return c.render(<SettingsRefPage />)
-  })
-
-  // Sidebar reference page (migrated from /docs/components/sidebar)
-  app.get('/components/sidebar', (c) => {
-    return c.render(<SidebarRefPage />)
-  })
-
-  // Chat block page
-  app.get('/components/chat', (c) => {
-    return c.render(<ChatRefPage />)
-  })
-
   // Music Player block page
   app.get('/components/music-player', (c) => {
     return c.render(<MusicPlayerRefPage />)
@@ -538,39 +459,9 @@ export function createApp() {
     return c.render(<MultiStepFormRefPage />)
   })
 
-  // Tasks Table block page
-  app.get('/components/tasks-table', (c) => {
-    return c.render(<TasksTableRefPage />)
-  })
-
-  // Social Feed block page
-  app.get('/components/social-feed', (c) => {
-    return c.render(<SocialFeedRefPage />)
-  })
-
-  // File Browser block page
-  app.get('/components/file-browser', (c) => {
-    return c.render(<FileBrowserRefPage />)
-  })
-
-  // Cart block page
-  app.get('/components/cart', (c) => {
-    return c.render(<CartRefPage />)
-  })
-
-  // Checkout block page
-  app.get('/components/checkout', (c) => {
-    return c.render(<CheckoutRefPage />)
-  })
-
-  // Comments block page
-  app.get('/components/comments', (c) => {
-    return c.render(<CommentsRefPage />)
-  })
-
-  // Notifications Center block page
-  app.get('/components/notifications-center', (c) => {
-    return c.render(<NotificationsCenterRefPage />)
+  // File Upload block page
+  app.get('/components/file-upload', (c) => {
+    return c.render(<FileUploadRefPage />)
   })
 
   // Inventory Manager block page
@@ -601,11 +492,6 @@ export function createApp() {
   // Dashboard Builder block page
   app.get('/components/dashboard-builder', (c) => {
     return c.render(<DashboardBuilderRefPage />)
-  })
-
-  // Calendar Scheduler block page
-  app.get('/components/calendar-scheduler', (c) => {
-    return c.render(<CalendarSchedulerRefPage />)
   })
 
   // State Machine Playground block page

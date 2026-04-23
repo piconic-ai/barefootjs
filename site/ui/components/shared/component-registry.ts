@@ -101,36 +101,18 @@ export const componentEntries: ComponentEntry[] = [
   { slug: 'tooltip', title: 'Tooltip', description: 'Informational text on hover', category: 'layout' },
 ]
 
-// Blocks — page-level composition patterns
+// Blocks — compiler stress-test patterns kept as standalone /components entries.
+// Blocks subsumed by gallery apps have been retired (see issue #929 Phase 3).
 export const blockEntries: BlockEntry[] = [
-  { slug: 'analytics-dashboard', title: 'Analytics Dashboard', description: 'Website analytics with multi-level memo chains, dynamic charts, inner loops, and controlled input' },
   { slug: 'file-upload', title: 'File Upload', description: 'File upload manager with drag & drop, progress simulation, and effect cleanup' },
-  { slug: 'pricing', title: 'Pricing', description: 'SaaS pricing with billing toggle, plan cards, and feature comparison table' },
-  { slug: 'product-cards', title: 'Product Cards', description: 'E-commerce product grid with multi-signal filtering, cart, and view mode toggle' },
-  { slug: 'user-profile', title: 'User Profile', description: 'Developer profile with inline editing, filterable repos, star toggle, and activity feed' },
-  { slug: 'dashboard', title: 'Dashboard', description: 'Sales dashboard with stats, filterable orders table, and activity feed' },
-  { slug: 'mail', title: 'Mail', description: 'Mail inbox with search, star toggle, bulk select, delete confirmation, and detail panel' },
-  { slug: 'kanban', title: 'Kanban Board', description: 'Task board with nested loops and cross-column movement' },
-  { slug: 'login', title: 'Login', description: 'Login form with validation and social auth' },
-  { slug: 'settings', title: 'Settings', description: 'Multi-tab settings page with forms and dialogs' },
-  { slug: 'sidebar', title: 'Sidebar', description: 'Collapsible navigation panel' },
-  { slug: 'chat', title: 'Chat', description: 'Messaging interface with auto-scroll, typing indicator, and unread counts' },
   { slug: 'music-player', title: 'Music Player', description: 'Media player with timer, effect cleanup, and slider binding' },
   { slug: 'multi-step-form', title: 'Multi-Step Form', description: 'Wizard form with step validation, cross-step state, and review' },
-  { slug: 'tasks-table', title: 'Tasks Table', description: 'Data table with sort, filter, pagination, and row selection' },
-  { slug: 'social-feed', title: 'Social Feed', description: 'Feed with posts, comments, replies — deeply nested loops and conditionals' },
-  { slug: 'file-browser', title: 'File Browser', description: 'Tree-structured file browser with expand/collapse, multi-select, and CRUD' },
-  { slug: 'cart', title: 'Cart', description: 'Shopping cart with inline quantity editing, discount, and derived pricing chain' },
-  { slug: 'checkout', title: 'Checkout', description: 'Multi-step checkout with shipping, payment, and order review' },
-  { slug: 'comments', title: 'Comments', description: 'Comment thread with inline editing, sorting, reactions, and nested replies' },
-  { slug: 'notifications-center', title: 'Notifications Center', description: 'Notification center with streaming, date grouping, type filtering, and bulk actions' },
   { slug: 'inventory-manager', title: 'Inventory Manager', description: 'CRUD inventory table with inline editing, undo/redo, search/filter, and validation' },
-  { slug: 'permission-matrix', title: 'Permission Matrix', description: 'Role x Permission grid with inheritance cascade, diamond memo dependencies, and bulk operations' },
   { slug: 'spreadsheet', title: 'Spreadsheet', description: 'Spreadsheet grid with cell editing, formula evaluation, selection, and 2D nested loops' },
+  { slug: 'permission-matrix', title: 'Permission Matrix', description: 'Role x Permission grid with inheritance cascade, diamond memo dependencies, and bulk operations' },
   { slug: 'form-builder', title: 'Form Builder', description: 'Signal-driven form builder with heterogeneous loop, dynamic field type switching, nested groups, and conditional visibility' },
   { slug: 'pivot-table', title: 'Pivot Table', description: 'Dynamic row/column grouping with multi-level aggregation, drag axis config, and expand/collapse groups' },
   { slug: 'dashboard-builder', title: 'Dashboard Builder', description: 'Dynamic widget composition with per-widget signal isolation, dynamic component switching per item, and layout memo driven by widget count' },
-  { slug: 'calendar-scheduler', title: 'Calendar Scheduler', description: '2D grid calendar with month/week view toggle, 4-level overlap layout memo chain, per-cell complex conditionals, and deep nested event handlers' },
   { slug: 'state-machine-playground', title: 'State Machine Playground', description: 'Interactive state machine explorer with preset workflows, per-state multi-conditional classes flipping together on transition, a reactive transitions loop source, and a history filter/group memo chain' },
 ]
 
