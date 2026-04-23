@@ -85,6 +85,12 @@ describe('barefoot why-wrap', () => {
       // The actual expression text is printed so users can locate the
       // binding in their source without running `inspect` separately.
       expect(output).toContain('formatTitle(page)')
+      // `formatTitle(page)` triggers the AST-level `hasFunctionCalls` flag
+      // but not `callsReactiveGetters` (formatTitle isn't a known signal),
+      // so the emitter's wrap reason is `fallback-function-calls`. Surface
+      // that in the report so users can distinguish it from other fallback
+      // shapes (e.g., signal-like calls on non-reactive sources).
+      expect(output).toContain('[fallback-function-calls]')
       // Guidance footer — helps the user know what to do next.
       expect(output).toContain('createMemo')
     } finally {
@@ -115,7 +121,7 @@ describe('barefoot why-wrap', () => {
       const parsed = JSON.parse(output) as {
         componentName: string
         sourceFile: string
-        fallbacks: Array<{ classification: string; type: string; label: string; deps: string[]; slotId: string; expression?: string }>
+        fallbacks: Array<{ classification: string; type: string; label: string; deps: string[]; slotId: string; expression?: string; wrapReason?: string }>
       }
       expect(parsed.componentName).toBe('Tag')
       expect(parsed.fallbacks.length).toBeGreaterThan(0)
@@ -128,6 +134,11 @@ describe('barefoot why-wrap', () => {
       expect(attrFallback!.label).toBe('class')
       expect(attrFallback!.deps).toEqual([])
       expect(attrFallback!.expression).toBe('format(label)')
+      // `format(label)` is an opaque call — AST flag `hasFunctionCalls` is
+      // set but `callsReactiveGetters` is not. Lock in the `wrapReason`
+      // vocabulary so editor integrations can switch on the enum without
+      // re-deriving it from the expression.
+      expect(attrFallback!.wrapReason).toBe('fallback-function-calls')
     } finally {
       logSpy.mockRestore()
       rmSync(path.dirname(file), { recursive: true, force: true })

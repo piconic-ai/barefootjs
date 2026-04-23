@@ -21,6 +21,8 @@ import { analyzeComponent, listComponentFunctions } from './analyzer'
 import { jsxToIR } from './jsx-to-ir'
 import { buildMetadata } from './compiler'
 import { analyzeClientNeeds } from './ir-to-client-js'
+import type { WrapReason } from './ir-to-client-js/reactivity'
+import { decideWrapFromAstFlags } from './ir-to-client-js/reactivity'
 
 // =============================================================================
 // Types
@@ -81,6 +83,16 @@ export interface DomBinding {
    * `why-update`) and for cases where the IR lacks a flat string form.
    */
   expression?: string
+  /**
+   * Structural trigger that decided the emitter's wrap-by-default call
+   * (#937, DRY-consolidated in PR #991). Mirrors the `WrapReason` enum on
+   * `WrapDecision` in `ir-to-client-js/reactivity.ts` so users debugging
+   * `why-wrap` see the same vocabulary the compiler uses internally.
+   *
+   * Populated for text / attribute / conditional / loop / child-prop
+   * bindings; omitted for event handlers (not subject to the wrap gate).
+   */
+  wrapReason?: WrapReason
 }
 
 export interface ComponentGraph {
@@ -520,6 +532,25 @@ export function formatSignalTrace(traces: SignalTrace[]): string {
 // =============================================================================
 
 /**
+ * Derive a `WrapReason` for bindings that mix string-level evidence (known
+ * signal/memo/prop names in the expression → `deps.length > 0`, or a
+ * `props.xxx` reference) with the AST flags the analyzer attaches to each
+ * attribute/prop/loop. Mirrors `decideWrapForAttr` / `decideWrapForChildProp`
+ * in `ir-to-client-js/reactivity.ts` but uses `deps` as the stand-in for the
+ * string-level `needsEffectWrapper` check (debug.ts has no `ClientJsContext`).
+ */
+function inferWrapReasonForAttrLike(
+  hasStringReactive: boolean,
+  hasPropsRef: boolean,
+  flags: { callsReactiveGetters?: boolean; hasFunctionCalls?: boolean },
+): WrapReason | undefined {
+  if (hasPropsRef) return 'props-access'
+  if (hasStringReactive) return 'string-reactive'
+  const decision = decideWrapFromAstFlags(flags)
+  return decision.wrap ? decision.reason : undefined
+}
+
+/**
  * Collect DOM bindings (text updates, event handlers, etc.) from the IR tree.
  *
  * Emits one `DomBinding` per expression the emitter wraps in `createEffect` at
@@ -552,8 +583,8 @@ function collectDomBindings(
         if (!expr) continue
         const deps = extractReactiveDeps(expr, signalGetters, memoNames)
         const isReactive = deps.length > 0
-        const isFallback = !isReactive && (attr.callsReactiveGetters || attr.hasFunctionCalls)
-        if (isReactive || isFallback) {
+        const wrapReason = inferWrapReasonForAttrLike(isReactive, false, attr)
+        if (wrapReason) {
           bindings.push({
             kind: 'dom',
             label: attr.name,
@@ -562,6 +593,7 @@ function collectDomBindings(
             type: 'attribute',
             classification: isReactive ? 'reactive' : 'fallback',
             expression: expr,
+            wrapReason,
           })
         }
       }
@@ -586,9 +618,8 @@ function collectDomBindings(
     case 'expression': {
       // Widened to match emitter gate in collect-elements.ts:
       // `node.reactive || node.callsReactiveGetters || node.hasFunctionCalls`.
-      const isReactive = node.reactive
-      const isFallback = !isReactive && (node.callsReactiveGetters || node.hasFunctionCalls)
-      if ((isReactive || isFallback) && node.slotId) {
+      const decision = decideWrapFromAstFlags(node)
+      if (decision.wrap && node.slotId) {
         const deps = extractReactiveDeps(node.expr, signalGetters, memoNames)
         bindings.push({
           kind: 'dom',
@@ -596,16 +627,16 @@ function collectDomBindings(
           slotId: node.slotId,
           deps,
           type: 'text',
-          classification: isReactive ? 'reactive' : 'fallback',
+          classification: decision.reason === 'proven-reactive' ? 'reactive' : 'fallback',
           expression: node.expr,
+          wrapReason: decision.reason,
         })
       }
       break
     }
     case 'conditional': {
-      const isReactive = node.reactive
-      const isFallback = !isReactive && (node.callsReactiveGetters || node.hasFunctionCalls)
-      if ((isReactive || isFallback) && node.slotId) {
+      const decision = decideWrapFromAstFlags(node)
+      if (decision.wrap && node.slotId) {
         const deps = extractReactiveDeps(node.condition, signalGetters, memoNames)
         bindings.push({
           kind: 'dom',
@@ -613,8 +644,9 @@ function collectDomBindings(
           slotId: node.slotId,
           deps,
           type: 'conditional',
-          classification: isReactive ? 'reactive' : 'fallback',
+          classification: decision.reason === 'proven-reactive' ? 'reactive' : 'fallback',
           expression: node.condition,
+          wrapReason: decision.reason,
         })
       }
       collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames)
@@ -632,6 +664,17 @@ function collectDomBindings(
         const isReactive = deps.length > 0 || node.callsReactiveGetters === true
         const isFallback = !isReactive && node.hasFunctionCalls === true
         if (isReactive || isFallback) {
+          // IRLoop has no `.reactive` flag (unlike IRExpression/IRConditional),
+          // so we derive the WrapReason inline rather than via
+          // `inferWrapReasonForAttrLike`: a loop whose array calls a signal
+          // getter (`items()` where `items` is a signal) is proven-reactive,
+          // not fallback — flip the string evidence before handing the AST
+          // flags to the helper.
+          const wrapReason: WrapReason = deps.length > 0
+            ? 'string-reactive'
+            : node.callsReactiveGetters
+              ? 'proven-reactive'
+              : 'fallback-function-calls'
           bindings.push({
             kind: 'dom',
             label: `loop "${node.slotId}"`,
@@ -640,6 +683,7 @@ function collectDomBindings(
             type: 'loop',
             classification: isReactive ? 'reactive' : 'fallback',
             expression: node.array,
+            wrapReason,
           })
         }
       }
@@ -675,8 +719,8 @@ function collectDomBindings(
         const deps = extractReactiveDeps(propValue, signalGetters, memoNames)
         const hasPropsRef = propValue.includes('props.')
         const isReactive = deps.length > 0 || hasPropsRef
-        const isFallback = !isReactive && (prop.callsReactiveGetters || prop.hasFunctionCalls)
-        if (isReactive || isFallback) {
+        const wrapReason = inferWrapReasonForAttrLike(deps.length > 0, hasPropsRef, prop)
+        if (wrapReason) {
           bindings.push({
             kind: 'dom',
             label: `${node.name}.${prop.name}`,
@@ -685,6 +729,7 @@ function collectDomBindings(
             type: 'attribute',
             classification: isReactive ? 'reactive' : 'fallback',
             expression: propValue,
+            wrapReason,
           })
         }
       }

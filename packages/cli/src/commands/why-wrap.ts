@@ -48,6 +48,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
         type: f.type,
         classification: f.classification,
         ...(f.expression !== undefined && { expression: f.expression }),
+        ...(f.wrapReason !== undefined && { wrapReason: f.wrapReason }),
       })),
     }, null, 2))
     return
@@ -69,7 +70,11 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const width = cells.reduce((w, c) => Math.max(w, c.cell.length), 0)
   for (const { f, cell } of cells) {
     const expr = f.expression ?? '(expression not captured)'
-    console.log(`  ${cell.padEnd(width)}  ~ ${expr}`)
+    // Reason is appended at EOL so the `~ expression` column stays aligned
+    // for the eye-scan case; debuggers who care about *why* the wrap fired
+    // can read the bracketed tag on the right.
+    const reason = f.wrapReason ? `  [${f.wrapReason}]` : ''
+    console.log(`  ${cell.padEnd(width)}  ~ ${expr}${reason}`)
   }
   console.log()
   console.log('Fallback wraps run one createEffect per expression. Each subscribes to')

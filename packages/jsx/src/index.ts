@@ -196,6 +196,7 @@ export {
   graphToJSON,
 } from './debug'
 export type { ComponentGraph, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace } from './debug'
+export type { WrapReason } from './ir-to-client-js/reactivity'
 
 // HTML constants
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants'
