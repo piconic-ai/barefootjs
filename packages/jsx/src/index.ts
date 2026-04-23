@@ -167,6 +167,15 @@ export interface BuildOptions {
 // CSS Layer Prefixer
 export { applyCssLayerPrefix } from './css-layer-prefixer'
 
+// Compiler instrumentation (bench + perf debugging)
+export {
+  enableCompilerInstrumentation,
+  disableCompilerInstrumentation,
+  resetCompilerCounters,
+  getCompilerCounters,
+  type CompilerCounters,
+} from './instrumentation'
+
 // Errors
 export { ErrorCodes, createError, formatError, generateCodeFrame } from './errors'
 

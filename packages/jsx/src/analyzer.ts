@@ -8,6 +8,7 @@
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types'
 import { rewriteBarePropRefs } from './prop-rewrite'
+import { incrementCounter } from './instrumentation'
 import {
   type AnalyzerContext,
   type ConditionalReturn,
@@ -58,6 +59,7 @@ export function createProgramForFile(
   source: string,
   filePath: string
 ): { program: ts.Program; sourceFile: ts.SourceFile; checker: ts.TypeChecker } | null {
+  incrementCounter('programCreations')
   try {
     const normalizedPath = path.resolve(filePath)
 
@@ -114,6 +116,7 @@ export function analyzeComponent(
   targetComponentName?: string,
   program?: ts.Program
 ): AnalyzerContext {
+  incrementCounter('filesAnalyzed')
   // Pre-pass: inline calls to same-file reactive factory helpers so the
   // downstream analyzer sees ordinary `createSignal(...)` declarations
   // instead of `const [a, b] = customFactory(...)` (#931). Skipped when

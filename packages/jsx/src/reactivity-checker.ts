@@ -11,8 +11,18 @@
  */
 
 import ts from 'typescript'
+import { incrementCounter } from './instrumentation'
 
 const REACTIVE_BRAND = '__reactive'
+
+/**
+ * Instrumented wrapper around checker.getTypeAtLocation so we can count
+ * query frequency when the bench harness enables instrumentation.
+ */
+function queryType(checker: ts.TypeChecker, node: ts.Node): ts.Type {
+  incrementCounter('typeCheckerQueries')
+  return checker.getTypeAtLocation(node)
+}
 
 /**
  * Check if a TypeScript type has the Reactive<T> brand.
@@ -79,7 +89,7 @@ function analyze(node: ts.Node, checker: ts.TypeChecker): ReactivityAnalysis {
   // then recurse only into the object part (not the name) to avoid redundant checks.
   if (ts.isPropertyAccessExpression(node)) {
     try {
-      const type = checker.getTypeAtLocation(node)
+      const type = queryType(checker, node)
       if (isReactiveType(type)) {
         return {
           isReactive: true,
@@ -107,7 +117,7 @@ function analyze(node: ts.Node, checker: ts.TypeChecker): ReactivityAnalysis {
   // Identifiers: brand is attached directly to the identifier's type.
   if (ts.isIdentifier(node)) {
     try {
-      const type = checker.getTypeAtLocation(node)
+      const type = queryType(checker, node)
       if (isReactiveType(type)) {
         return {
           isReactive: true,
@@ -123,7 +133,7 @@ function analyze(node: ts.Node, checker: ts.TypeChecker): ReactivityAnalysis {
   // Call expressions: the callee might be Reactive<() => T>.
   if (ts.isCallExpression(node)) {
     try {
-      const calleeType = checker.getTypeAtLocation(node.expression)
+      const calleeType = queryType(checker, node.expression)
       if (isReactiveType(calleeType)) {
         return {
           isReactive: true,
@@ -178,5 +188,6 @@ export function analyzeReactivity(node: ts.Node, checker: ts.TypeChecker): React
  * need the reasoning chain.
  */
 export function containsReactiveExpression(node: ts.Node, checker: ts.TypeChecker): boolean {
+  incrementCounter('reactivityChecks')
   return brandTypeReactivityAnalyzer.analyze(node, checker).isReactive
 }
