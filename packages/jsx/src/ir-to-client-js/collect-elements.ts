@@ -8,6 +8,7 @@ import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
 import { decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildConditionals } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
+import { walkIR } from './walker'
 
 /** Check if an IR node produces a DOM child element (for sibling offset counting). */
 function producesDomChild(node: IRNode): boolean {
@@ -708,34 +709,20 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
  */
 function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
   const effects: ConditionalBranchTextEffect[] = []
-  function walk(n: IRNode): void {
-    switch (n.type) {
-      case 'expression':
-        if (n.reactive && n.slotId && !n.clientOnly) {
-          effects.push({ slotId: n.slotId, expression: n.expr })
-        }
-        break
-      case 'element':
-        for (const child of n.children) walk(child)
-        break
-      case 'component':
-        for (const child of n.children) walk(child)
-        break
-      case 'fragment':
-        for (const child of n.children) walk(child)
-        break
-      // Do NOT recurse into nested conditionals — they have their own insert()
-      case 'conditional':
-        break
-      case 'if-statement':
-        break
-      case 'provider':
-      case 'async':
-        for (const child of n.children) walk(child)
-        break
-    }
-  }
-  walk(node)
+  walkIR(node, null, {
+    expression: ({ node: n }) => {
+      if (n.reactive && n.slotId && !n.clientOnly) {
+        effects.push({ slotId: n.slotId, expression: n.expr })
+      }
+    },
+    // Do NOT recurse into nested conditionals / if-statements — they have
+    // their own insert(). Loops are not inspected either; the legacy
+    // walker's switch omitted the 'loop' case entirely.
+    conditional: () => {},
+    ifStatement: () => {},
+    loop: () => {},
+    // element / fragment / component / provider / async use default descent.
+  })
   return effects
 }
 
@@ -751,100 +738,87 @@ function collectBranchLoops(
   siblingOffsets: Map<IRLoop, number>,
 ): BranchLoop[] {
   const loops: BranchLoop[] = []
-  let parentSlotId: string | null = null
   const restNames = ctx ? buildRestSpreadNames(ctx) : undefined
 
-  function walk(n: IRNode): void {
-    switch (n.type) {
-      case 'element':
-        const prevSlot = parentSlotId
-        if (n.slotId) parentSlotId = n.slotId
-        for (const child of n.children) walk(child)
-        parentSlotId = prevSlot
-        break
-      case 'loop': {
-        // parentSlotId comes from an enclosing element inside this branch;
-        // fall back to the loop's own slotId, which jsx-to-ir propagates from
-        // the nearest ancestor element when the branch itself is a fragment.
-        const containerSlot = parentSlotId ?? n.slotId
-        if (!containerSlot) break
+  walkIR<string | null>(node, null, {
+    element: ({ node: el, scope: parentSlotId, descend }) => {
+      descend(el.slotId ?? parentSlotId)
+    },
+    loop: ({ node: n, scope: parentSlotId }) => {
+      // parentSlotId comes from an enclosing element inside this branch;
+      // fall back to the loop's own slotId, which jsx-to-ir propagates from
+      // the nearest ancestor element when the branch itself is a fragment.
+      const containerSlot = parentSlotId ?? n.slotId
+      if (!containerSlot) return
 
-        // Detect composite: native element root + nested components, OR a loop
-        // with inner loops that need their own mapArray reconciliation. Mirrors
-        // the top-level `useElementReconciliation` rule so a `.map()` directly
-        // inside an outer `.map()` gets its own reactive mapArray even when
-        // the outer loop lives inside a conditional branch.
-        // Pass `undefined` for ctx to preserve the legacy branch behaviour:
-        // reactive-text collection on inner loops reached from this call path
-        // is handled at the enclosing branch-loop level below (`if (ctx)` block
-        // around `collectLoopChildReactiveTexts`), not per inner loop.
-        const { useElementReconciliation, innerLoops: innerLoopsCollected } =
-          decideLoopRendering(n, siblingOffsets, undefined)
+      // Detect composite: native element root + nested components, OR a loop
+      // with inner loops that need their own mapArray reconciliation. Mirrors
+      // the top-level `useElementReconciliation` rule so a `.map()` directly
+      // inside an outer `.map()` gets its own reactive mapArray even when
+      // the outer loop lives inside a conditional branch.
+      // Pass `undefined` for ctx to preserve the legacy branch behaviour:
+      // reactive-text collection on inner loops reached from this call path
+      // is handled at the enclosing branch-loop level below (`if (ctx)` block
+      // around `collectLoopChildReactiveTexts`), not per inner loop.
+      const { useElementReconciliation, innerLoops: innerLoopsCollected } =
+        decideLoopRendering(n, siblingOffsets, undefined)
 
-        // Build the item template from loop children.
-        // Use loopDepth=0: this loop gets its own reconcileElements (independent
-        // from the conditional's template), so items use data-key (not data-key-1).
-        // Pass loopParams so expressions reference the per-item signal accessor,
-        // keeping the template consistent with reactive effect expressions that
-        // use `param()` to read the current item value.
-        let childTemplate: string
-        if (useElementReconciliation && n.children[0]) {
-          childTemplate = irToPlaceholderTemplate(n.children[0], restNames, 0, [n.param])
-        } else {
-          childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0, [n.param])).join('')
-        }
-
-        // Collect child events, reactive texts/attrs, and conditionals for ALL
-        // branch loops — simple loops also need reactive wiring when their
-        // item body reads non-item signals (e.g., memos). Previously these
-        // were only collected for composite loops, which caused reactive
-        // reads inside simple loop bodies to silently no-op for existing items.
-        const childEvents: LoopChildEvent[] = []
-        const childReactiveTexts: import('./types').LoopChildReactiveText[] = []
-        const childReactiveAttrs: import('./types').LoopChildReactiveAttr[] = []
-        const childConditionals: import('./types').LoopChildConditional[] = []
-        if (ctx) {
-          for (const child of n.children) {
-            childEvents.push(...collectLoopChildEventsWithNesting(child))
-            childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
-            childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param))
-            childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, n.param))
-          }
-        }
-
-        loops.push({
-          kind: 'branch',
-          array: n.array,
-          param: n.param,
-          index: n.index,
-          key: n.key,
-          template: childTemplate,
-          containerSlotId: containerSlot,
-          mapPreamble: n.mapPreamble ?? null,
-          nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
-          childEvents,
-          childReactiveTexts: childReactiveTexts.length > 0 ? childReactiveTexts : undefined,
-          childReactiveAttrs: childReactiveAttrs.length > 0 ? childReactiveAttrs : undefined,
-          childConditionals: childConditionals.length > 0 ? childConditionals : undefined,
-          innerLoops: useElementReconciliation ? innerLoopsCollected : undefined,
-          useElementReconciliation: useElementReconciliation || undefined,
-        })
-        // Don't recurse into the loop — nested loops are handled by the loop's own reconciliation
-        break
+      // Build the item template from loop children.
+      // Use loopDepth=0: this loop gets its own reconcileElements (independent
+      // from the conditional's template), so items use data-key (not data-key-1).
+      // Pass loopParams so expressions reference the per-item signal accessor,
+      // keeping the template consistent with reactive effect expressions that
+      // use `param()` to read the current item value.
+      let childTemplate: string
+      if (useElementReconciliation && n.children[0]) {
+        childTemplate = irToPlaceholderTemplate(n.children[0], restNames, 0, [n.param])
+      } else {
+        childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0, [n.param])).join('')
       }
-      case 'fragment':
-      case 'component':
-      case 'provider':
-      case 'async':
-        for (const child of n.children) walk(child)
-        break
-      // Don't recurse into nested conditionals
-      case 'conditional':
-      case 'if-statement':
-        break
-    }
-  }
-  walk(node)
+
+      // Collect child events, reactive texts/attrs, and conditionals for ALL
+      // branch loops — simple loops also need reactive wiring when their
+      // item body reads non-item signals (e.g., memos). Previously these
+      // were only collected for composite loops, which caused reactive
+      // reads inside simple loop bodies to silently no-op for existing items.
+      const childEvents: LoopChildEvent[] = []
+      const childReactiveTexts: import('./types').LoopChildReactiveText[] = []
+      const childReactiveAttrs: import('./types').LoopChildReactiveAttr[] = []
+      const childConditionals: import('./types').LoopChildConditional[] = []
+      if (ctx) {
+        for (const child of n.children) {
+          childEvents.push(...collectLoopChildEventsWithNesting(child))
+          childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
+          childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param))
+          childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, n.param))
+        }
+      }
+
+      loops.push({
+        kind: 'branch',
+        array: n.array,
+        param: n.param,
+        index: n.index,
+        key: n.key,
+        template: childTemplate,
+        containerSlotId: containerSlot,
+        mapPreamble: n.mapPreamble ?? null,
+        nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
+        childEvents,
+        childReactiveTexts: childReactiveTexts.length > 0 ? childReactiveTexts : undefined,
+        childReactiveAttrs: childReactiveAttrs.length > 0 ? childReactiveAttrs : undefined,
+        childConditionals: childConditionals.length > 0 ? childConditionals : undefined,
+        innerLoops: useElementReconciliation ? innerLoopsCollected : undefined,
+        useElementReconciliation: useElementReconciliation || undefined,
+      })
+      // Don't recurse into the loop — nested loops are handled by the loop's own reconciliation.
+    },
+    // Don't recurse into nested conditionals / if-statements.
+    conditional: () => {},
+    ifStatement: () => {},
+    // fragment / component / provider / async auto-descend carrying parentSlotId.
+  })
+
   return loops
 }
 
@@ -902,30 +876,18 @@ function collectBranchConditionals(
   siblingOffsets: Map<IRLoop, number>,
 ): ConditionalElement[] {
   const result: ConditionalElement[] = []
-
-  function walk(n: IRNode): void {
-    switch (n.type) {
-      case 'conditional':
-        // Wrap-by-default fallback (#941) — mirror the top-level gate in
-        // `case 'conditional'` at collectElements().
-        if (n.slotId && decideWrapFromAstFlags(n).wrap) {
-          result.push(buildConditionalMetadata(n, ctx, siblingOffsets))
-        }
-        // Don't recurse further — the nested conditional handles its own branches
-        break
-      case 'element':
-      case 'fragment':
-      case 'component':
-      case 'provider':
-      case 'async':
-        for (const child of n.children) walk(child)
-        break
-      // Don't recurse into loops (they handle their own reconciliation)
-      case 'loop':
-      case 'if-statement':
-        break
-    }
-  }
-  walk(node)
+  walkIR(node, null, {
+    conditional: ({ node: n }) => {
+      // Wrap-by-default fallback (#941) — mirror the top-level gate in
+      // `case 'conditional'` at collectElements().
+      if (n.slotId && decideWrapFromAstFlags(n).wrap) {
+        result.push(buildConditionalMetadata(n, ctx, siblingOffsets))
+      }
+      // Don't recurse further — the nested conditional handles its own branches.
+    },
+    // Don't recurse into loops / if-statements — they have their own reconciliation paths.
+    loop: () => {},
+    ifStatement: () => {},
+  })
   return result
 }

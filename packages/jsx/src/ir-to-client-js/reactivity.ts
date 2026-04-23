@@ -407,9 +407,12 @@ export function collectLoopChildConditionals(
   // cycle; same pattern as irToHtmlTemplate / irToPlaceholderTemplate above.
   const { collectInnerLoops, branchInnerLoopOptions } = require('./collect-elements')
 
-  function walk(n: IRNode): void {
-    if (n.type === 'conditional' && n.slotId) {
-      // Include conditionals that are reactive OR reference the loop param
+  walkIR(node, null, {
+    conditional: ({ node: n }) => {
+      // Don't recurse into conditional branches — nested conditionals
+      // inside branches will be handled by insert()'s own bindEvents.
+      // Non-reactive, non-loop-param conditionals are ignored entirely.
+      if (!n.slotId) return
       const isReactive = n.reactive
       const refsLoopParam = loopParam ? exprReferencesIdent(n.condition, loopParam) : false
       if (!isReactive && !refsLoopParam) return
@@ -417,41 +420,35 @@ export function collectLoopChildConditionals(
       // Loop-param conditionals are reactive via per-item signal accessors;
       // needsEffectWrapper only knows about signals/memos/props, not loop params.
       if (!refsLoopParam && !needsEffectWrapper(expanded, ctx)) return
-      {
-        const loopParamsForCond = loopParam ? [loopParam] : undefined
-        const whenTrueHtml = irToHtmlTemplate(n.whenTrue, undefined, 0, loopParamsForCond)
-        const whenFalseHtml = irToHtmlTemplate(n.whenFalse, undefined, 0, loopParamsForCond)
-        const trueInner = collectInnerLoops([n.whenTrue], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
-        const falseInner = collectInnerLoops([n.whenFalse], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
-        conditionals.push({
-          slotId: n.slotId,
-          condition: expanded,
-          whenTrueHtml,
-          whenFalseHtml,
-          whenTrueComponents: collectConditionalBranchChildComponents(n.whenTrue),
-          whenFalseComponents: collectConditionalBranchChildComponents(n.whenFalse),
-          whenTrueInnerLoops: trueInner.length > 0 ? trueInner : undefined,
-          whenFalseInnerLoops: falseInner.length > 0 ? falseInner : undefined,
-          whenTrueConditionals: collectLoopChildConditionals(n.whenTrue, ctx, siblingOffsets, loopParam),
-          whenFalseConditionals: collectLoopChildConditionals(n.whenFalse, ctx, siblingOffsets, loopParam),
-          whenTrueEvents: collectConditionalBranchEvents(n.whenTrue),
-          whenFalseEvents: collectConditionalBranchEvents(n.whenFalse),
-        })
-      }
-      // Don't recurse into conditional branches — nested conditionals
-      // inside branches will be handled by insert()'s own bindEvents
-      return
-    }
-    if (n.type === 'element') {
-      for (const child of n.children) walk(child)
-    }
-    if (n.type === 'fragment' || n.type === 'component' || n.type === 'provider') {
-      for (const child of n.children) walk(child)
-    }
-    // Don't recurse into nested loops — they have their own mapArray
-  }
 
-  walk(node)
+      const loopParamsForCond = loopParam ? [loopParam] : undefined
+      const whenTrueHtml = irToHtmlTemplate(n.whenTrue, undefined, 0, loopParamsForCond)
+      const whenFalseHtml = irToHtmlTemplate(n.whenFalse, undefined, 0, loopParamsForCond)
+      const trueInner = collectInnerLoops([n.whenTrue], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
+      const falseInner = collectInnerLoops([n.whenFalse], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
+      conditionals.push({
+        slotId: n.slotId,
+        condition: expanded,
+        whenTrueHtml,
+        whenFalseHtml,
+        whenTrueComponents: collectConditionalBranchChildComponents(n.whenTrue),
+        whenFalseComponents: collectConditionalBranchChildComponents(n.whenFalse),
+        whenTrueInnerLoops: trueInner.length > 0 ? trueInner : undefined,
+        whenFalseInnerLoops: falseInner.length > 0 ? falseInner : undefined,
+        whenTrueConditionals: collectLoopChildConditionals(n.whenTrue, ctx, siblingOffsets, loopParam),
+        whenFalseConditionals: collectLoopChildConditionals(n.whenFalse, ctx, siblingOffsets, loopParam),
+        whenTrueEvents: collectConditionalBranchEvents(n.whenTrue),
+        whenFalseEvents: collectConditionalBranchEvents(n.whenFalse),
+      })
+    },
+    // element / fragment / component / provider auto-descend with same scope.
+    // loop / async / if-statement skipped — nested loops have their own
+    // mapArray, async + if-statement don't appear in loop-body conditionals.
+    loop: () => {},
+    async: () => {},
+    ifStatement: () => {},
+  })
+
   return conditionals
 }
 
