@@ -3,9 +3,9 @@
  */
 
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMeta } from '../types'
-import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchConditional, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
+import type { ClientJsContext, ConditionalBranchChildComponent, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
 import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
-import { decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEvents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildConditionals } from './reactivity'
+import { decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildConditionals } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 import { walkIR } from './walker'
@@ -30,40 +30,22 @@ function producesDomChild(node: IRNode): boolean {
  */
 export function computeLoopSiblingOffsets(root: IRNode): Map<IRLoop, number> {
   const offsets = new Map<IRLoop, number>()
-
-  function walk(n: IRNode): void {
-    switch (n.type) {
-      case 'element': {
-        let nonLoopCount = 0
-        for (const child of n.children) {
-          if (child.type === 'loop') {
-            if (nonLoopCount > 0) offsets.set(child, nonLoopCount)
-          } else if (producesDomChild(child)) {
-            nonLoopCount++
-          }
+  walkIR(root, null, {
+    element: ({ node: el, descend }) => {
+      let nonLoopCount = 0
+      for (const child of el.children) {
+        if (child.type === 'loop') {
+          if (nonLoopCount > 0) offsets.set(child, nonLoopCount)
+        } else if (producesDomChild(child)) {
+          nonLoopCount++
         }
-        for (const child of n.children) walk(child)
-        break
       }
-      case 'fragment':
-      case 'component':
-      case 'provider':
-      case 'async':
-      case 'loop':
-        for (const child of n.children) walk(child)
-        break
-      case 'conditional':
-        walk(n.whenTrue)
-        walk(n.whenFalse)
-        break
-      case 'if-statement':
-        walk(n.consequent)
-        if (n.alternate) walk(n.alternate)
-        break
-    }
-  }
-
-  walk(root)
+      descend()
+    },
+    // All container kinds (fragment / component / provider / async / loop /
+    // conditional / if-statement) rely on walkIR's default descent with the
+    // same scope. Leaves (text / expression / slot) are no-ops.
+  })
   return offsets
 }
 

@@ -5,6 +5,7 @@
 import type { IRNode, IRLoopChildComponent } from '../types'
 import { attrValueToString } from './utils'
 import type { ClientJsContext } from './types'
+import { walkIR } from './walker'
 
 /** JavaScript keywords and common globals to skip during identifier extraction. */
 const KEYWORDS_AND_GLOBALS = new Set([
@@ -237,74 +238,54 @@ export function isKeywordOrGlobal(id: string): boolean {
  * miss identifiers in new/unexpected locations, this covers the entire tree.
  */
 export function collectIdentifiersFromIRTree(node: IRNode, set: Set<string>): void {
-  switch (node.type) {
-    case 'element':
-      for (const attr of node.attrs) {
+  walkIR(node, null, {
+    element: ({ node: el, descend }) => {
+      for (const attr of el.attrs) {
         if (attr.dynamic && attr.value) {
           const v = typeof attr.value === 'string' ? attr.value : attrValueToString(attr.value)
           if (v) extractIdentifiers(v, set)
         }
       }
-      for (const event of node.events) extractIdentifiers(event.handler, set)
-      for (const child of node.children) collectIdentifiersFromIRTree(child, set)
-      break
-
-    case 'component':
-      for (const prop of node.props) {
+      for (const event of el.events) extractIdentifiers(event.handler, set)
+      descend()
+    },
+    component: ({ node: c, descend, descendJsxChildren }) => {
+      for (const prop of c.props) {
         if (prop.dynamic) extractIdentifiers(prop.value, set)
-        if (prop.jsxChildren) {
-          for (const child of prop.jsxChildren) collectIdentifiersFromIRTree(child, set)
-        }
       }
-      for (const child of node.children) collectIdentifiersFromIRTree(child, set)
-      break
-
-    case 'expression':
-      extractIdentifiers(node.expr, set)
-      break
-
-    case 'conditional':
-      extractIdentifiers(node.condition, set)
-      collectIdentifiersFromIRTree(node.whenTrue, set)
-      collectIdentifiersFromIRTree(node.whenFalse, set)
-      break
-
-    case 'if-statement':
-      extractIdentifiers(node.condition, set)
-      for (const sv of node.scopeVariables) extractIdentifiers(sv.initializer, set)
-      collectIdentifiersFromIRTree(node.consequent, set)
-      if (node.alternate) collectIdentifiersFromIRTree(node.alternate, set)
-      break
-
-    case 'loop':
-      extractIdentifiers(node.array, set)
-      if (node.filterPredicate) extractIdentifiers(node.filterPredicate.raw, set)
-      if (node.sortComparator) extractIdentifiers(node.sortComparator.raw, set)
-      if (node.mapPreamble) extractIdentifiers(node.mapPreamble, set)
-      for (const child of node.children) collectIdentifiersFromIRTree(child, set)
-      if (node.childComponent) collectIdentifiersFromChildComponent(node.childComponent, set)
-      if (node.nestedComponents) {
-        for (const comp of node.nestedComponents) collectIdentifiersFromChildComponent(comp, set)
+      descend()
+      descendJsxChildren()
+    },
+    expression: ({ node: ex }) => {
+      extractIdentifiers(ex.expr, set)
+    },
+    conditional: ({ node: c, descend }) => {
+      extractIdentifiers(c.condition, set)
+      descend()
+    },
+    ifStatement: ({ node: i, descend }) => {
+      extractIdentifiers(i.condition, set)
+      for (const sv of i.scopeVariables) extractIdentifiers(sv.initializer, set)
+      descend()
+    },
+    loop: ({ node: l, descend }) => {
+      extractIdentifiers(l.array, set)
+      if (l.filterPredicate) extractIdentifiers(l.filterPredicate.raw, set)
+      if (l.sortComparator) extractIdentifiers(l.sortComparator.raw, set)
+      if (l.mapPreamble) extractIdentifiers(l.mapPreamble, set)
+      descend()
+      if (l.childComponent) collectIdentifiersFromChildComponent(l.childComponent, set)
+      if (l.nestedComponents) {
+        for (const comp of l.nestedComponents) collectIdentifiersFromChildComponent(comp, set)
       }
-      break
-
-    case 'fragment':
-      for (const child of node.children) collectIdentifiersFromIRTree(child, set)
-      break
-
-    case 'provider':
-      extractIdentifiers(node.contextName, set)
-      if (node.valueProp.dynamic) extractIdentifiers(node.valueProp.value, set)
-      for (const child of node.children) collectIdentifiersFromIRTree(child, set)
-      break
-
-    case 'async':
-      for (const child of node.children) collectIdentifiersFromIRTree(child, set)
-      break
-
-    case 'slot':
-      break
-  }
+    },
+    provider: ({ node: p, descend }) => {
+      extractIdentifiers(p.contextName, set)
+      if (p.valueProp.dynamic) extractIdentifiers(p.valueProp.value, set)
+      descend()
+    },
+    // fragment / async use the walker's default auto-descent; slot is a leaf.
+  })
 }
 
 function collectIdentifiersFromChildComponent(comp: IRLoopChildComponent, set: Set<string>): void {
@@ -321,34 +302,16 @@ function collectIdentifiersFromChildComponent(comp: IRLoopChildComponent, set: S
  * the flattened ClientJsContext — walking them would break constant inlining.
  */
 export function addLoopSubtreeIdentifiers(node: IRNode, set: Set<string>): void {
-  switch (node.type) {
-    case 'loop':
-      // Found a loop — walk its ENTIRE subtree deeply
-      collectIdentifiersFromIRTree(node, set)
-      break
-    case 'element':
-    case 'fragment':
-      for (const child of node.children) addLoopSubtreeIdentifiers(child, set)
-      break
-    case 'component':
-      for (const child of node.children) addLoopSubtreeIdentifiers(child, set)
-      for (const prop of node.props) {
-        if (prop.jsxChildren) {
-          for (const child of prop.jsxChildren) addLoopSubtreeIdentifiers(child, set)
-        }
-      }
-      break
-    case 'conditional':
-      addLoopSubtreeIdentifiers(node.whenTrue, set)
-      addLoopSubtreeIdentifiers(node.whenFalse, set)
-      break
-    case 'if-statement':
-      addLoopSubtreeIdentifiers(node.consequent, set)
-      if (node.alternate) addLoopSubtreeIdentifiers(node.alternate, set)
-      break
-    case 'provider':
-    case 'async':
-      for (const child of node.children) addLoopSubtreeIdentifiers(child, set)
-      break
-  }
+  walkIR(node, null, {
+    loop: ({ node: l }) => {
+      // Found a loop — walk its ENTIRE subtree deeply via the identifier-extraction pass.
+      collectIdentifiersFromIRTree(l, set)
+    },
+    component: ({ descend, descendJsxChildren }) => {
+      descend()
+      descendJsxChildren()
+    },
+    // element / fragment / conditional / if-statement / provider / async rely
+    // on walkIR's default descent until they hit a loop subtree.
+  })
 }
