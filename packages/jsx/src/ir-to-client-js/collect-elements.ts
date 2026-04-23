@@ -386,158 +386,154 @@ function buildBranchChildComponents(
   }))
 }
 
-/** Recursively walk the IR tree and populate ctx with interactive/dynamic/loop/conditional elements. */
+/**
+ * Walk the IR tree and populate `ctx` with every interactive / dynamic /
+ * loop / conditional element that needs client-side wiring. Implemented
+ * on top of `walkIR` — the per-kind visitor directly encodes this pass's
+ * stop rules (loops are terminal because their body uses loop-scoped
+ * variables; conditional branches flip the `insideConditional` scope flag
+ * so text effects and conditional pushes gate correctly).
+ */
 export function collectElements(
   node: IRNode,
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, number>,
   insideConditional = false,
 ): void {
-  switch (node.type) {
-    case 'element':
-      collectFromElement(node, ctx, insideConditional)
-      for (const child of node.children) {
-        collectElements(child, ctx, siblingOffsets, insideConditional)
+  walkIR<boolean>(node, insideConditional, {
+    element: ({ node: el, scope: inCond, descend }) => {
+      collectFromElement(el, ctx, inCond)
+      descend()
+    },
+    expression: ({ node: ex, scope: inCond }) => {
+      if (ex.clientOnly && ex.slotId) {
+        ctx.clientOnlyElements.push({ slotId: ex.slotId, expression: ex.expr })
+        return
       }
-      break
-
-    case 'expression':
-      if (node.clientOnly && node.slotId) {
-        ctx.clientOnlyElements.push({
-          slotId: node.slotId,
-          expression: node.expr,
+      if (!ex.slotId || inCond) return
+      // Solid-style wrap-by-default fallback (#937): wrap in createEffect not
+      // only for statically-proven-reactive expressions, but also for any
+      // expression the analyzer can't prove non-reactive — i.e. anything
+      // that contains a function call or a signal-getter call. Pure static
+      // literals and bare identifiers (no calls) stay un-wrapped because
+      // their SSR value is already in the DOM.
+      //
+      // False positive (extra createEffect that subscribes to nothing) is
+      // harmless; false negative (silent drop of a reactive read) is the
+      // bug class this gate closes — see #931, #932.
+      //
+      // Only collect as a top-level dynamic element when NOT inside a
+      // conditional. Conditional text effects are collected per-branch and
+      // emitted inside bindEvents.
+      if (decideWrapFromAstFlags(ex).wrap) {
+        ctx.dynamicElements.push({
+          slotId: ex.slotId,
+          expression: ex.expr,
+          insideConditional: false,
         })
-      } else if (node.slotId && !insideConditional) {
-        // Solid-style wrap-by-default fallback (#937): wrap in createEffect not
-        // only for statically-proven-reactive expressions, but also for any
-        // expression the analyzer can't prove non-reactive — i.e. anything
-        // that contains a function call or a signal-getter call. Pure static
-        // literals and bare identifiers (no calls) stay un-wrapped because
-        // their SSR value is already in the DOM.
-        //
-        // False positive (extra createEffect that subscribes to nothing) is
-        // harmless; false negative (silent drop of a reactive read) is the
-        // bug class this gate closes — see #931, #932.
-        //
-        // Only collect as a top-level dynamic element when NOT inside a
-        // conditional. Conditional text effects are collected per-branch and
-        // emitted inside bindEvents.
-        if (decideWrapFromAstFlags(node).wrap) {
-          ctx.dynamicElements.push({
-            slotId: node.slotId,
-            expression: node.expr,
-            insideConditional: false,
-          })
-        }
       }
-      break
-
-    case 'conditional':
-      if (node.clientOnly && node.slotId) {
-        ctx.clientOnlyConditionals.push(buildConditionalMetadata(node, ctx, siblingOffsets))
-      } else if (node.slotId) {
+    },
+    conditional: ({ node: c, scope: inCond, descend }) => {
+      if (c.clientOnly && c.slotId) {
+        ctx.clientOnlyConditionals.push(buildConditionalMetadata(c, ctx, siblingOffsets))
+      } else if (c.slotId) {
         // Solid-style wrap-by-default fallback (#941, follow-up to #937/#939).
         // Wrap not only statically-proven-reactive conditions, but also any
         // condition containing a function call — otherwise the silent-drop
         // failure class freezes the branch at its SSR-time value.
-        if (decideWrapFromAstFlags(node).wrap) {
-          if (insideConditional) {
-            // Nested conditionals are collected by the parent via collectBranchConditionals.
-            // Don't push to ctx.conditionalElements — they'll be emitted inside the parent's bindEvents.
-          } else {
-            ctx.conditionalElements.push(buildConditionalMetadata(node, ctx, siblingOffsets))
-          }
+        if (decideWrapFromAstFlags(c).wrap && !inCond) {
+          // Top-level reactive conditional. Nested conditionals (inCond=true)
+          // are collected by the enclosing conditional via `collectBranchConditionals`
+          // and emitted inside that conditional's bindEvents.
+          ctx.conditionalElements.push(buildConditionalMetadata(c, ctx, siblingOffsets))
         }
       }
-      // Recurse into conditional branches with insideConditional = true
-      // to collect nested conditionals, events, refs, child components, and reactive attrs
-      collectElements(node.whenTrue, ctx, siblingOffsets, true)
-      collectElements(node.whenFalse, ctx, siblingOffsets, true)
-      break
+      // Recurse into both branches with insideConditional = true so
+      // nested conditionals / events / refs / child components / reactive
+      // attrs get collected under the parent's bindEvents path.
+      descend(true)
+    },
+    loop: ({ node: l, scope: inCond }) => {
+      // Loops inside conditionals are handled by the conditional template's inline
+      // .map() expression. Don't collect them separately — insert() re-renders the
+      // branch when template output changes (tracked via signal reads in the template
+      // function). Loop body is also never descended into from this pass: loop-scoped
+      // variables are only available inside the iteration. Event handler identifiers
+      // are extracted explicitly below for the closure capture set.
+      if (!l.slotId || inCond) return
 
-    case 'loop':
-      // Loops inside conditionals are handled by the conditional template's inline .map()
-      // expression. Don't collect them separately — insert() re-renders the branch when
-      // template output changes (tracked via signal reads in the template function).
-      if (node.slotId && !insideConditional) {
-        const childHandlers: string[] = []
-        const childEvents: LoopChildEvent[] = []
-        const childReactiveAttrs: LoopChildReactiveAttr[] = []
-        const childReactiveTexts: import('./types').LoopChildReactiveText[] = []
-        const childConditionals: import('./types').LoopChildConditional[] = []
-        for (const child of node.children) {
-          childHandlers.push(...collectEventHandlersFromIR(child))
-          childEvents.push(...collectLoopChildEventsWithNesting(child))
-          childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, node.param))
-          childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, node.param))
-          childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, node.param))
-        }
-
-        if (node.childComponent) {
-          for (const prop of node.childComponent.props) {
-            if (prop.isEventHandler) {
-              childHandlers.push(prop.value)
-            }
-          }
-        }
-
-        // Determine rendering strategy for dynamic arrays:
-        // Use element reconciliation when the loop body has nested components,
-        // or when inner loops need their own mapArray for events/reactive text.
-        const { useElementReconciliation, innerLoops } = decideLoopRendering(node, siblingOffsets, ctx)
-
-        let template = ''
-        if (node.childComponent) {
-          template = '' // childComponent path uses createComponent directly
-        } else if (node.children[0]) {
-          // Pass loopParams so expressions are wrapped at generation time,
-          // avoiding post-hoc regex wrapping that corrupts literal attribute values.
-          template = useElementReconciliation
-            ? irToPlaceholderTemplate(node.children[0], buildRestSpreadNames(ctx), 0, [node.param])
-            : irToHtmlTemplate(node.children[0], buildRestSpreadNames(ctx), 0, [node.param])
-        }
-
-        ctx.loopElements.push({
-          kind: 'top-level',
-          slotId: node.slotId,
-          array: node.array,
-          param: node.param,
-          index: node.index,
-          key: node.key,
-          template,
-          childEventHandlers: childHandlers,
-          childEvents,
-          childReactiveAttrs,
-          childReactiveTexts,
-          childConditionals,
-          childComponent: node.childComponent,
-          nestedComponents: node.nestedComponents,
-          isStaticArray: node.isStaticArray,
-          useElementReconciliation,
-          innerLoops: (useElementReconciliation || (node.isStaticArray && innerLoops?.length)) ? innerLoops : undefined,
-          siblingOffset: siblingOffsets.get(node) || undefined,
-          filterPredicate: node.filterPredicate ? {
-            param: node.filterPredicate.param,
-            raw: node.filterPredicate.raw,
-          } : undefined,
-          sortComparator: node.sortComparator ? {
-            paramA: node.sortComparator.paramA,
-            paramB: node.sortComparator.paramB,
-            raw: node.sortComparator.raw,
-          } : undefined,
-          chainOrder: node.chainOrder,
-          mapPreamble: node.mapPreamble,
-        })
+      const childHandlers: string[] = []
+      const childEvents: LoopChildEvent[] = []
+      const childReactiveAttrs: LoopChildReactiveAttr[] = []
+      const childReactiveTexts: import('./types').LoopChildReactiveText[] = []
+      const childConditionals: import('./types').LoopChildConditional[] = []
+      for (const child of l.children) {
+        childHandlers.push(...collectEventHandlersFromIR(child))
+        childEvents.push(...collectLoopChildEventsWithNesting(child))
+        childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, l.param))
+        childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, l.param))
+        childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, l.param))
       }
-      // Don't traverse into loop children for interactive elements collection
-      // (they use loop variables that are only available inside the loop iteration).
-      // But we DO extract event handler identifiers above for function inclusion.
-      break
 
-    case 'component':
-      if (node.slotId) {
-        // Reactive props need effects to update the element when values change
-        for (const prop of node.props) {
+      if (l.childComponent) {
+        for (const prop of l.childComponent.props) {
+          if (prop.isEventHandler) childHandlers.push(prop.value)
+        }
+      }
+
+      // Determine rendering strategy for dynamic arrays:
+      // Use element reconciliation when the loop body has nested components,
+      // or when inner loops need their own mapArray for events/reactive text.
+      const { useElementReconciliation, innerLoops } = decideLoopRendering(l, siblingOffsets, ctx)
+
+      let template = ''
+      if (l.childComponent) {
+        template = '' // childComponent path uses createComponent directly
+      } else if (l.children[0]) {
+        // Pass loopParams so expressions are wrapped at generation time,
+        // avoiding post-hoc regex wrapping that corrupts literal attribute values.
+        template = useElementReconciliation
+          ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0, [l.param])
+          : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, [l.param])
+      }
+
+      ctx.loopElements.push({
+        kind: 'top-level',
+        slotId: l.slotId,
+        array: l.array,
+        param: l.param,
+        index: l.index,
+        key: l.key,
+        template,
+        childEventHandlers: childHandlers,
+        childEvents,
+        childReactiveAttrs,
+        childReactiveTexts,
+        childConditionals,
+        childComponent: l.childComponent,
+        nestedComponents: l.nestedComponents,
+        isStaticArray: l.isStaticArray,
+        useElementReconciliation,
+        innerLoops: (useElementReconciliation || (l.isStaticArray && innerLoops?.length)) ? innerLoops : undefined,
+        siblingOffset: siblingOffsets.get(l) || undefined,
+        filterPredicate: l.filterPredicate ? {
+          param: l.filterPredicate.param,
+          raw: l.filterPredicate.raw,
+        } : undefined,
+        sortComparator: l.sortComparator ? {
+          paramA: l.sortComparator.paramA,
+          paramB: l.sortComparator.paramB,
+          raw: l.sortComparator.raw,
+        } : undefined,
+        chainOrder: l.chainOrder,
+        mapPreamble: l.mapPreamble,
+      })
+      // Don't descend — loop-scoped variables are only available inside the iteration.
+    },
+    component: ({ node: c, descend, descendJsxChildren }) => {
+      if (c.slotId) {
+        // Reactive props need effects to update the element when values change.
+        for (const prop of c.props) {
           if (prop.jsxChildren) continue
           if (prop.name.startsWith('on') && prop.name.length > 2) continue
           const value = prop.value
@@ -547,67 +543,39 @@ export function collectElements(
             const isSignalGetter = ctx.signals.some((s) => s.getter === fnName)
             if (isMemo || isSignalGetter) {
               ctx.reactiveProps.push({
-                slotId: node.slotId,
+                slotId: c.slotId,
                 propName: prop.name,
                 expression: fnName,
-                componentName: node.name,
+                componentName: c.name,
               })
             }
           }
         }
       }
 
-      collectReactiveChildProps(node, ctx)
+      collectReactiveChildProps(c, ctx)
 
       ctx.childInits.push({
-        name: node.name,
-        slotId: node.slotId,
-        propsExpr: buildComponentPropsExpr(node.props, ctx),
+        name: c.name,
+        slotId: c.slotId,
+        propsExpr: buildComponentPropsExpr(c.props, ctx),
       })
-      for (const child of node.children) {
-        collectElements(child, ctx, siblingOffsets, insideConditional)
-      }
-      // Traverse JSX prop children so events, reactive expressions,
-      // and nested components inside JSX props are collected
-      for (const prop of node.props) {
-        if (prop.jsxChildren) {
-          for (const child of prop.jsxChildren) {
-            collectElements(child, ctx, siblingOffsets, insideConditional)
-          }
-        }
-      }
-      break
 
-    case 'fragment':
-      for (const child of node.children) {
-        collectElements(child, ctx, siblingOffsets, insideConditional)
-      }
-      break
-
-    case 'if-statement':
-      collectElements(node.consequent, ctx, siblingOffsets, insideConditional)
-      if (node.alternate) {
-        collectElements(node.alternate, ctx, siblingOffsets, insideConditional)
-      }
-      break
-
-    case 'provider':
+      descend()
+      // Traverse JSX prop children so events, reactive expressions, and nested
+      // components inside JSX props are collected.
+      descendJsxChildren()
+    },
+    provider: ({ node: p, descend }) => {
       ctx.providerSetups.push({
-        contextName: node.contextName,
-        valueExpr: node.valueProp.value,
+        contextName: p.contextName,
+        valueExpr: p.valueProp.value,
       })
-      for (const child of node.children) {
-        collectElements(child, ctx, siblingOffsets, insideConditional)
-      }
-      break
-
-    case 'async':
-      // Async boundaries are transparent for client JS — just traverse children
-      for (const child of node.children) {
-        collectElements(child, ctx, siblingOffsets, insideConditional)
-      }
-      break
-  }
+      descend()
+    },
+    // fragment / if-statement / async use the walker's default auto-descent
+    // with the same scope (insideConditional flag unchanged).
+  })
 }
 
 /** Extract events, refs, and reactive attributes from a single IR element into ctx. */
