@@ -61,23 +61,31 @@ export function initBackground(scope: Element, props: Record<string, unknown>): 
 
   el.appendChild(svg)
 
-  // Update pattern with viewport
+  // Update pattern with viewport. Line/cross path data uses scaledGap as pixel
+  // coordinates (same approach as @xyflow/react) so coordinates are always
+  // exact and do not rely on SVG percentage resolution.
   createEffect(() => {
     const vp = store.viewport()
     const scaledGap = gap * vp.zoom
-    if (!scaledGap || !isFinite(scaledGap)) return
+    if (!scaledGap || !Number.isFinite(scaledGap)) return
 
     pattern.setAttribute('width', String(scaledGap))
     pattern.setAttribute('height', String(scaledGap))
     pattern.setAttribute('x', String(vp.x % scaledGap))
     pattern.setAttribute('y', String(vp.y % scaledGap))
 
-    // Update size based on zoom for dots
     if (variant === 'dots') {
       const circle = patternContent as SVGCircleElement
       circle.setAttribute('r', String(size * Math.max(vp.zoom, 0.5)))
       circle.setAttribute('cx', String(scaledGap / 2))
       circle.setAttribute('cy', String(scaledGap / 2))
+    } else if (variant === 'lines') {
+      const path = patternContent as SVGPathElement
+      path.setAttribute('d', `M${scaledGap / 2} 0 V${scaledGap}`)
+    } else {
+      const path = patternContent as SVGPathElement
+      const half = scaledGap / 2
+      path.setAttribute('d', `M${half} 0 V${scaledGap} M0 ${half} H${scaledGap}`)
     }
   })
 
@@ -97,38 +105,13 @@ function createPatternContent(
     return circle
   }
 
-  if (variant === 'lines') {
-    const line = document.createElementNS(SVG_NS, 'line')
-    line.setAttribute('x1', '0')
-    line.setAttribute('y1', '0')
-    line.setAttribute('x2', '0')
-    line.setAttribute('y2', '10000')
-    line.setAttribute('stroke', color)
-    line.setAttribute('stroke-width', String(lineWidth))
-    return line
-  }
-
-  // cross: draw lines at tile edges (x=0 and y=0) so the pattern tiles into a full grid.
-  // Using percentage values here resolves against the viewport (patternUnits="userSpaceOnUse"),
-  // not the pattern tile, so lines at 50%/100% end up outside the tile and get clipped away.
-  const g = document.createElementNS(SVG_NS, 'g')
-  const line1 = document.createElementNS(SVG_NS, 'line')
-  line1.setAttribute('x1', '0')
-  line1.setAttribute('y1', '0')
-  line1.setAttribute('x2', '10000')
-  line1.setAttribute('y2', '0')
-  line1.setAttribute('stroke', color)
-  line1.setAttribute('stroke-width', String(lineWidth))
-
-  const line2 = document.createElementNS(SVG_NS, 'line')
-  line2.setAttribute('x1', '0')
-  line2.setAttribute('y1', '0')
-  line2.setAttribute('x2', '0')
-  line2.setAttribute('y2', '10000')
-  line2.setAttribute('stroke', color)
-  line2.setAttribute('stroke-width', String(lineWidth))
-
-  g.appendChild(line1)
-  g.appendChild(line2)
-  return g
+  // lines and cross both use a <path> whose 'd' attribute is updated reactively
+  // with pixel values derived from scaledGap. This avoids SVG percentage values
+  // which resolve against the viewport under patternUnits="userSpaceOnUse" and
+  // would place lines outside the tile, causing them to be clipped away.
+  const path = document.createElementNS(SVG_NS, 'path')
+  path.setAttribute('stroke', color)
+  path.setAttribute('stroke-width', String(lineWidth))
+  path.setAttribute('fill', 'none')
+  return path
 }
