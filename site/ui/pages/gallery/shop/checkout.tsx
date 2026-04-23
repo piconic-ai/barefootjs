@@ -1,5 +1,5 @@
 import { ShopShell } from '@/components/gallery/shop/shop-shell'
-import { CheckoutDemo } from '@/components/checkout-demo'
+import { ShopCheckoutDemo } from '@/components/gallery/shop/checkout-demo'
 import { GalleryMeta } from '../admin/gallery-meta'
 
 export function ShopCheckoutPage() {
@@ -7,7 +7,7 @@ export function ShopCheckoutPage() {
     <>
       <GalleryMeta appName="E-Commerce Shop" sourceHref="https://github.com/barefootjs/barefootjs/tree/main/site/ui/components/gallery/shop" />
       <ShopShell currentRoute="checkout">
-        <CheckoutDemo />
+        <ShopCheckoutDemo />
       </ShopShell>
     </>
   )
