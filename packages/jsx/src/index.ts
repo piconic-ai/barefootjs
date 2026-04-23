@@ -35,7 +35,7 @@ export type {
 } from './types'
 
 // Analyzer
-export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, type AnalyzerContext } from './analyzer'
+export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, createProgramForFile, needsTypeBasedDetection, type AnalyzerContext } from './analyzer'
 
 // JSX to IR transformer
 export { jsxToIR } from './jsx-to-ir'
