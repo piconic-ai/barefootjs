@@ -151,6 +151,32 @@ function collectInnerLoops(
 }
 
 
+/**
+ * Decide whether a loop's runtime rendering needs element reconciliation
+ * (reconcileElements + composite item rendering) rather than the simple
+ * template-per-item path, and collect inner-loop metadata for its body.
+ *
+ * Used by both the top-level `case 'loop'` in `collectElements` and the
+ * branch-loop collector in `collectBranchLoops`. Each call site applies
+ * its own final-emission rule over `innerLoops` (top-level also emits
+ * them on `isStaticArray && innerLoops.length`, branch only on
+ * `useElementReconciliation`).
+ */
+function decideLoopRendering(
+  loop: IRLoop,
+  siblingOffsets: Map<IRLoop, number>,
+  ctx: ClientJsContext | undefined,
+): { useElementReconciliation: boolean; innerLoops: NestedLoop[] | undefined } {
+  const hasNestedComps = (loop.nestedComponents?.length ?? 0) > 0
+  const innerLoops = !loop.childComponent
+    ? collectInnerLoops(loop.children, siblingOffsets, loop.param, ctx)
+    : undefined
+  const hasInnerLoops = (innerLoops?.length ?? 0) > 0
+  const useElementReconciliation =
+    !loop.childComponent && !loop.isStaticArray && (hasNestedComps || hasInnerLoops)
+  return { useElementReconciliation, innerLoops }
+}
+
 /** Check whether an array of IR nodes contains any component nodes (recursively). */
 function jsxChildrenContainComponent(nodes: IRNode[]): boolean {
   for (const node of nodes) {
@@ -357,14 +383,7 @@ export function collectElements(
         // Determine rendering strategy for dynamic arrays:
         // Use element reconciliation when the loop body has nested components,
         // or when inner loops need their own mapArray for events/reactive text.
-        const hasNestedComps = (node.nestedComponents?.length ?? 0) > 0
-        const innerLoops = !node.childComponent
-          ? collectInnerLoops(node.children, siblingOffsets, node.param, ctx)
-          : undefined
-        const hasInnerLoops = (innerLoops?.length ?? 0) > 0
-        const useElementReconciliation = !node.childComponent
-          && !node.isStaticArray
-          && (hasNestedComps || hasInnerLoops)
+        const { useElementReconciliation, innerLoops } = decideLoopRendering(node, siblingOffsets, ctx)
 
         let template = ''
         if (node.childComponent) {
@@ -638,18 +657,15 @@ function collectBranchLoops(
 
         // Detect composite: native element root + nested components, OR a loop
         // with inner loops that need their own mapArray reconciliation. Mirrors
-        // the top-level `useElementReconciliation` rule (collect-elements.ts
-        // around line 283) so a `.map()` directly inside an outer `.map()` gets
-        // its own reactive mapArray even when the outer loop lives inside a
-        // conditional branch.
-        const hasNestedComps = (n.nestedComponents?.length ?? 0) > 0
-        const innerLoopsCollected = !n.childComponent
-          ? collectInnerLoops(n.children, siblingOffsets, n.param)
-          : undefined
-        const hasInnerLoops = (innerLoopsCollected?.length ?? 0) > 0
-        const useElementReconciliation = !n.childComponent
-          && !n.isStaticArray
-          && (hasNestedComps || hasInnerLoops)
+        // the top-level `useElementReconciliation` rule so a `.map()` directly
+        // inside an outer `.map()` gets its own reactive mapArray even when
+        // the outer loop lives inside a conditional branch.
+        // Pass `undefined` for ctx to match the pre-existing branch behavior:
+        // inner-loop reactive-text collection is handled by the separate
+        // `collectBranchInnerLoops` path in reactivity.ts, not here. Phase 2
+        // unifies those two collectors; until then preserve the split.
+        const { useElementReconciliation, innerLoops: innerLoopsCollected } =
+          decideLoopRendering(n, siblingOffsets, undefined)
 
         // Build the item template from loop children.
         // Use loopDepth=0: this loop gets its own reconcileElements (independent
