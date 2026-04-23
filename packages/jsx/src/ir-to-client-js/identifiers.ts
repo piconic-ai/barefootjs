@@ -95,10 +95,10 @@ export function collectUsedIdentifiers(ctx: ClientJsContext): Set<string> {
     extractIdentifiers(elem.condition, used)
     extractTemplateIdentifiers(elem.whenTrueHtml, used)
     extractTemplateIdentifiers(elem.whenFalseHtml, used)
-    for (const event of elem.whenTrueEvents) {
+    for (const event of elem.whenTrue.events) {
       extractIdentifiers(event.handler, used)
     }
-    for (const event of elem.whenFalseEvents) {
+    for (const event of elem.whenFalse.events) {
       extractIdentifiers(event.handler, used)
     }
   }
@@ -154,19 +154,19 @@ export function collectUsedIdentifiers(ctx: ClientJsContext): Set<string> {
   }
 
   for (const elem of ctx.conditionalElements) {
-    for (const ref of elem.whenTrueRefs) {
+    for (const ref of elem.whenTrue.refs) {
       extractIdentifiers(ref.callback, used)
     }
-    for (const ref of elem.whenFalseRefs) {
+    for (const ref of elem.whenFalse.refs) {
       extractIdentifiers(ref.callback, used)
     }
   }
 
   for (const elem of ctx.clientOnlyConditionals) {
-    for (const ref of elem.whenTrueRefs) {
+    for (const ref of elem.whenTrue.refs) {
       extractIdentifiers(ref.callback, used)
     }
-    for (const ref of elem.whenFalseRefs) {
+    for (const ref of elem.whenFalse.refs) {
       extractIdentifiers(ref.callback, used)
     }
   }

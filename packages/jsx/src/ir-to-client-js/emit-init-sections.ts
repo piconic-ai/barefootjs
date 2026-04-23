@@ -19,16 +19,16 @@ import { inferDefaultValue, toDomEventName, wrapHandlerInBlock, varSlotId, quote
 export function collectConditionalSlotIds(ctx: ClientJsContext): Set<string> {
   const conditionalSlotIds = new Set<string>()
   for (const cond of ctx.conditionalElements) {
-    for (const event of cond.whenTrueEvents) {
+    for (const event of cond.whenTrue.events) {
       conditionalSlotIds.add(event.slotId)
     }
-    for (const event of cond.whenFalseEvents) {
+    for (const event of cond.whenFalse.events) {
       conditionalSlotIds.add(event.slotId)
     }
-    for (const ref of cond.whenTrueRefs) {
+    for (const ref of cond.whenTrue.refs) {
       conditionalSlotIds.add(ref.slotId)
     }
-    for (const ref of cond.whenFalseRefs) {
+    for (const ref of cond.whenFalse.refs) {
       conditionalSlotIds.add(ref.slotId)
     }
   }

@@ -3,7 +3,7 @@
  */
 
 import type { ComponentIR, ConstantInfo, FunctionInfo, IRNode } from '../types'
-import type { ClientJsContext, ConditionalBranchConditional, BranchLoop } from './types'
+import type { ClientJsContext, ConditionalElement } from './types'
 import { varSlotId, bodyReferencesComponentScope, PROPS_PARAM } from './utils'
 import { collectUsedIdentifiers, collectUsedFunctions, collectIdentifiersFromIRTree } from './identifiers'
 import { valueReferencesReactiveData, getControlledPropName, detectPropsWithPropertyAccess } from './prop-handling'
@@ -510,15 +510,15 @@ export function collectComponentNamesFromIR(nodes: IRNode[], names: Set<string>)
  * composite loops within conditional branches (e.g., Badge inside a branch loop).
  */
 function collectChildNamesFromBranches(
-  cond: { whenTrueLoops: BranchLoop[]; whenFalseLoops: BranchLoop[]; whenTrueConditionals?: ConditionalBranchConditional[]; whenFalseConditionals?: ConditionalBranchConditional[] },
+  cond: Pick<ConditionalElement, 'whenTrue' | 'whenFalse'>,
   names: Set<string>,
 ): void {
-  for (const loop of [...cond.whenTrueLoops, ...cond.whenFalseLoops]) {
+  for (const loop of [...cond.whenTrue.loops, ...cond.whenFalse.loops]) {
     if (loop.nestedComponents) {
       for (const comp of loop.nestedComponents) names.add(comp.name)
     }
   }
-  for (const nested of [...(cond.whenTrueConditionals ?? []), ...(cond.whenFalseConditionals ?? [])]) {
+  for (const nested of [...cond.whenTrue.conditionals, ...cond.whenFalse.conditionals]) {
     collectChildNamesFromBranches(nested, names)
   }
 }
