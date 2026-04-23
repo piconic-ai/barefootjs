@@ -449,6 +449,10 @@ function analyzeComponentBody(
     }
 
     visitComponentBody(body, ctx)
+    // Fold any resolved `const s = createSignal(...); const v = s[0]`
+    // pairs into regular SignalInfo entries. Must run after visit so
+    // accessors declared later in the body are visible.
+    flushPendingSignalTuples(ctx)
     ctx.componentBodyBlock = null
   }
 }
@@ -474,9 +478,26 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
     for (const decl of node.declarationList.declarations) {
       if (isSignalDeclaration(decl, ctx)) {
         collectSignal(decl, ctx)
-      } else if (isMemoDeclaration(decl)) {
+        continue
+      }
+      // Index-access patterns must be checked before the tuple-ref form so
+      // a chained expression like `const s = createSignal(0)[0]` — parsed
+      // with the element access at the root — does not fall through to
+      // isSignalTupleDeclaration (which only matches a bare call).
+      const indexMatch = isSignalIndexAccess(decl, ctx)
+      if (indexMatch) {
+        collectSignalFromIndexAccess(decl, indexMatch, ctx)
+        continue
+      }
+      if (isSignalTupleDeclaration(decl)) {
+        collectSignalTupleRef(decl, ctx)
+        continue
+      }
+      if (isMemoDeclaration(decl)) {
         collectMemo(decl, ctx)
-      } else if (ts.isIdentifier(decl.name)) {
+        continue
+      }
+      if (ts.isIdentifier(decl.name)) {
         const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
         collectConstant(decl, ctx, false, isLet ? 'let' : 'const')
       }
@@ -849,6 +870,181 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     type,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
+}
+
+/**
+ * Detects `const s = createSignal(...)` — the tuple is stored in an
+ * Identifier rather than destructured. The accessor(s) appear in later
+ * declarations as `const v = s[0]` / `const sv = s[1]`. The declaration
+ * itself is registered as a pending tuple ref and resolved later.
+ */
+function isSignalTupleDeclaration(node: ts.VariableDeclaration): boolean {
+  if (!ts.isIdentifier(node.name)) return false
+  if (!node.initializer || !ts.isCallExpression(node.initializer)) return false
+  const callExpr = node.initializer
+  return (
+    ts.isIdentifier(callExpr.expression) &&
+    callExpr.expression.text === 'createSignal'
+  )
+}
+
+type SignalIndexAccessMatch =
+  | { kind: 'direct'; index: 0 | 1; callExpr: ts.CallExpression }
+  | { kind: 'tupleRef'; index: 0 | 1; tupleName: string }
+
+/**
+ * Detects two index-access patterns:
+ *   Pattern A (direct)    — `const v = createSignal(...)[N]`
+ *   Pattern C (tuple ref) — `const v = s[N]` where `s` is a known tuple ref
+ *
+ * N must be the numeric literal `0` (getter) or `1` (setter).
+ */
+function isSignalIndexAccess(
+  node: ts.VariableDeclaration,
+  ctx: AnalyzerContext
+): SignalIndexAccessMatch | null {
+  if (!ts.isIdentifier(node.name)) return null
+  if (!node.initializer || !ts.isElementAccessExpression(node.initializer)) return null
+  const access = node.initializer
+  if (!ts.isNumericLiteral(access.argumentExpression)) return null
+  const indexValue = Number(access.argumentExpression.text)
+  if (indexValue !== 0 && indexValue !== 1) return null
+  const index = indexValue as 0 | 1
+
+  // Pattern A: createSignal(...)[N]
+  if (ts.isCallExpression(access.expression)) {
+    const call = access.expression
+    if (
+      ts.isIdentifier(call.expression) &&
+      call.expression.text === 'createSignal'
+    ) {
+      return { kind: 'direct', index, callExpr: call }
+    }
+    return null
+  }
+
+  // Pattern C: s[N] where s is a known tuple ref
+  if (ts.isIdentifier(access.expression)) {
+    const tupleName = access.expression.text
+    if (ctx.signalTupleRefs.has(tupleName)) {
+      return { kind: 'tupleRef', index, tupleName }
+    }
+    return null
+  }
+
+  return null
+}
+
+function collectSignalTupleRef(
+  node: ts.VariableDeclaration,
+  ctx: AnalyzerContext
+): void {
+  const name = (node.name as ts.Identifier).text
+  const callExpr = node.initializer as ts.CallExpression
+
+  const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+  const typedInitialValue = callExpr.arguments[0]
+    ? callExpr.arguments[0].getText(ctx.sourceFile)
+    : undefined
+
+  let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+  if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
+    type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
+  } else {
+    type = inferTypeFromValue(initialValue)
+  }
+
+  ctx.signalTupleRefs.set(name, {
+    initialValue,
+    typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
+    type,
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+    getter: null,
+    setter: null,
+  })
+}
+
+function collectSignalFromIndexAccess(
+  node: ts.VariableDeclaration,
+  match: SignalIndexAccessMatch,
+  ctx: AnalyzerContext
+): void {
+  const varName = (node.name as ts.Identifier).text
+
+  if (match.kind === 'direct') {
+    // Pattern A — each declaration is a standalone signal. Pair [0] -> getter
+    // or [1] -> setter; the missing half stays null.
+    const callExpr = match.callExpr
+    const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
+    const typedInitialValue = callExpr.arguments[0]
+      ? callExpr.arguments[0].getText(ctx.sourceFile)
+      : undefined
+
+    let type: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+    if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
+      type = typeNodeToTypeInfo(callExpr.typeArguments[0], ctx.sourceFile) ?? type
+    } else {
+      type = inferTypeFromValue(initialValue)
+    }
+
+    const loc = getSourceLocation(node, ctx.sourceFile, ctx.filePath)
+    if (match.index === 0) {
+      ctx.signals.push({
+        getter: varName,
+        setter: null,
+        initialValue,
+        typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
+        type,
+        loc,
+      })
+    } else {
+      // Setter-only access: emission requires a getter name. Synthesize one
+      // so the `const [g, s] = createSignal(init)` shape stays valid; the
+      // synthesized getter is unreferenced in user code.
+      ctx.signals.push({
+        getter: `__bf_unused_getter_${ctx.signals.length}`,
+        setter: varName,
+        initialValue,
+        typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
+        type,
+        loc,
+      })
+    }
+    return
+  }
+
+  // Pattern C — fold accessor into the pending tuple ref. If the same index
+  // is claimed twice, keep the first binding (matches how destructuring
+  // would collide at the language level).
+  const pending = ctx.signalTupleRefs.get(match.tupleName)
+  if (!pending) return
+  if (match.index === 0) {
+    if (!pending.getter) pending.getter = varName
+  } else {
+    if (!pending.setter) pending.setter = varName
+  }
+}
+
+/**
+ * Flush resolved signal tuple refs into ctx.signals. Entries without at
+ * least one accessor are ignored (no DOM-observable effect) and leave
+ * the original `const s = createSignal(...)` line unresolved — callers
+ * that care can surface a diagnostic, but silently skipping matches the
+ * "compile as if nothing special happened" contract for orphan refs.
+ */
+function flushPendingSignalTuples(ctx: AnalyzerContext): void {
+  for (const pending of ctx.signalTupleRefs.values()) {
+    if (!pending.getter && !pending.setter) continue
+    ctx.signals.push({
+      getter: pending.getter ?? `__bf_unused_getter_${ctx.signals.length}`,
+      setter: pending.setter,
+      initialValue: pending.initialValue,
+      typedInitialValue: pending.typedInitialValue,
+      type: pending.type,
+      loc: pending.loc,
+    })
+  }
+  ctx.signalTupleRefs.clear()
 }
 
 // =============================================================================
@@ -1372,8 +1568,13 @@ function collectConstant(
 ): void {
   if (!ts.isIdentifier(node.name)) return
 
-  // Skip if it's a signal or memo
+  // Skip if it's a signal or memo. The index-access and tuple-ref forms
+  // are caught in visitComponentBody before this function is reached, but
+  // the belt-and-suspenders check guards direct callers (e.g., the
+  // module-level path at line 366) from double-collecting a signal.
   if (isSignalDeclaration(node, ctx) || isMemoDeclaration(node)) return
+  if (isSignalTupleDeclaration(node)) return
+  if (isSignalIndexAccess(node, ctx) !== null) return
 
   const isModule = _isModule
   const name = node.name.text

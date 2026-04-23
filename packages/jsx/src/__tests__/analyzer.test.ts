@@ -245,6 +245,128 @@ describe('analyzeComponent', () => {
     expect(ctx.signals[0].initialValue).toBe('[1, 2, 3]')
   })
 
+  test('extracts signal via direct index access: const count = createSignal(0)[0]', () => {
+    const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Counter() {
+          const count = createSignal(0)[0]
+          return <div>{count()}</div>
+        }
+      `
+
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+
+    expect(ctx.signals).toHaveLength(1)
+    expect(ctx.signals[0].getter).toBe('count')
+    expect(ctx.signals[0].setter).toBeNull()
+    expect(ctx.signals[0].initialValue).toBe('0')
+  })
+
+  test('extracts signal via direct setter-only index access: const setCount = createSignal(0)[1]', () => {
+    const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Counter() {
+          const setCount = createSignal(0)[1]
+          setCount(1)
+          return <div>no getter</div>
+        }
+      `
+
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+
+    expect(ctx.signals).toHaveLength(1)
+    expect(ctx.signals[0].setter).toBe('setCount')
+    expect(ctx.signals[0].getter.startsWith('__bf_unused_getter_')).toBe(true)
+    expect(ctx.signals[0].initialValue).toBe('0')
+  })
+
+  test('extracts signal via late extraction: const s = createSignal(0); const v = s[0]', () => {
+    const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Counter() {
+          const s = createSignal(0)
+          const v = s[0]
+          return <div>{v()}</div>
+        }
+      `
+
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+
+    expect(ctx.signals).toHaveLength(1)
+    expect(ctx.signals[0].getter).toBe('v')
+    expect(ctx.signals[0].setter).toBeNull()
+    expect(ctx.signals[0].initialValue).toBe('0')
+  })
+
+  test('extracts signal via late extraction with both getter and setter', () => {
+    const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Counter() {
+          const s = createSignal(0)
+          const count = s[0]
+          const setCount = s[1]
+          return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+        }
+      `
+
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+
+    expect(ctx.signals).toHaveLength(1)
+    expect(ctx.signals[0].getter).toBe('count')
+    expect(ctx.signals[0].setter).toBe('setCount')
+    expect(ctx.signals[0].initialValue).toBe('0')
+  })
+
+  test('preserves type argument across index-access patterns', () => {
+    const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Counter() {
+          const count = createSignal<number>(0)[0]
+          return <div>{count()}</div>
+        }
+      `
+
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+
+    expect(ctx.signals).toHaveLength(1)
+    expect(ctx.signals[0].getter).toBe('count')
+    expect(ctx.signals[0].type.kind).toBe('primitive')
+    if (ctx.signals[0].type.kind === 'primitive') {
+      expect(ctx.signals[0].type.primitive).toBe('number')
+    }
+  })
+
+  test('does not confuse unrelated tuple-like access with signals', () => {
+    const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Things() {
+          const [count, setCount] = createSignal(0)
+          const items = [1, 2, 3]
+          const first = items[0]
+          return <div>{count()} {first}</div>
+        }
+      `
+
+    const ctx = analyzeComponent(source, 'Things.tsx')
+
+    // Only one signal (the destructured one) — `items` is an array literal,
+    // not a createSignal tuple, so items[0] must not become a signal.
+    expect(ctx.signals).toHaveLength(1)
+    expect(ctx.signals[0].getter).toBe('count')
+  })
+
   test('detects export default function pattern', () => {
     const source = `
         'use client'

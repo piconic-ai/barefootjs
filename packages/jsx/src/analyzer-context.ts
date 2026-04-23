@@ -33,6 +33,24 @@ export interface PropsDestructuringInfo {
 }
 
 /**
+ * Pending signal tuple reference used for the "late extraction" pattern:
+ *   const s = createSignal(0)
+ *   const v = s[0]
+ *
+ * On seeing the first line we register `s` in AnalyzerContext.signalTupleRefs;
+ * on seeing the second line we set `getter` (or `setter` for `[1]`). Resolved
+ * entries are flushed into `signals` after visitComponentBody completes.
+ */
+export interface PendingSignalTuple {
+  initialValue: string
+  typedInitialValue?: string
+  type: TypeInfo
+  loc: SourceLocation
+  getter: string | null
+  setter: string | null
+}
+
+/**
  * Represents an if statement with a JSX return in a component function.
  */
 export interface ConditionalReturn {
@@ -85,6 +103,11 @@ export interface AnalyzerContext {
    * `createSignal` declarations.
    */
   reactiveFactories: Map<string, ReactiveFactoryInfo>
+  /**
+   * Intermediate `const s = createSignal(...)` tuples awaiting `s[0]`/`s[1]`
+   * extraction. Flushed into `signals` at the end of visitComponentBody.
+   */
+  signalTupleRefs: Map<string, PendingSignalTuple>
 
   // Props
   propsType: TypeInfo | null
@@ -160,6 +183,7 @@ export function createAnalyzerContext(
     jsxConstants: new Map(),
     jsxFunctions: new Map(),
     reactiveFactories: new Map(),
+    signalTupleRefs: new Map(),
 
     propsType: null,
     propsParams: [],
