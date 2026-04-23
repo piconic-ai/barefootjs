@@ -133,23 +133,34 @@ export function collectInnerLoops(
   ctx?: ClientJsContext,
   options?: CollectInnerLoopsOptions,
 ): NestedLoop[] {
+  type Scope = {
+    parentSlotId: string | null
+    depth: number
+    insideCond: boolean
+  }
   const result: NestedLoop[] = []
   const flat = options?.flatBranchMode === true
   const fixedDepth = options?.templateDepth
   const collectBindings = options?.collectItemBindings === true
-  let depth = 0
-  let insideCond = false
+  const initialScope: Scope = { parentSlotId: null, depth: 0, insideCond: false }
 
-  function walk(n: IRNode, parentSlotId: string | null): void {
-    switch (n.type) {
-      case 'element': {
-        const mySlotId = n.slotId ?? parentSlotId
-        for (const child of n.children) walk(child, mySlotId)
-        break
-      }
-      case 'loop': {
-        depth++
-        const emitDepth = fixedDepth ?? depth
+  for (const root of nodes) {
+    walkIR<Scope>(root, initialScope, {
+      element: ({ node: el, scope, descend }) => {
+        descend({ ...scope, parentSlotId: el.slotId ?? scope.parentSlotId })
+      },
+      component: ({ node: c, scope, descend }) => {
+        // Use the component's own slotId as the container for inner loops,
+        // so loops inside child components (e.g., SelectContent) use that
+        // component's element as the mapArray container instead of __branchScope.
+        descend({ ...scope, parentSlotId: c.slotId ?? scope.parentSlotId })
+      },
+      conditional: ({ scope, descend }) => {
+        if (flat) return
+        descend({ ...scope, insideCond: true })
+      },
+      loop: ({ node: n, scope, descend }) => {
+        const emitDepth = fixedDepth ?? scope.depth + 1
         // Generate item template for CSR rendering in mapArray.
         // Pass loopParams so expressions are wrapped at generation time (not post-hoc regex).
         const loopParamsForTemplate = outerLoopParam ? [outerLoopParam, n.param] : undefined
@@ -158,7 +169,7 @@ export function collectInnerLoops(
         const refsOuter = outerLoopParam
           ? new RegExp(`\\b${outerLoopParam}\\b`).test(n.array)
           : false
-        // Collect reactive text expressions inside inner loop items
+        // Collect reactive text expressions inside inner loop items.
         const innerReactiveTexts: Array<{ slotId: string; expression: string }> = []
         if (refsOuter && ctx) {
           for (const child of n.children) {
@@ -219,49 +230,24 @@ export function collectInnerLoops(
           array: n.array,
           param: n.param,
           key: n.key,
-          containerSlotId: parentSlotId,
+          containerSlotId: scope.parentSlotId,
           template,
           refsOuterParam: refsOuter,
           childReactiveTexts: innerReactiveTexts.length > 0 ? innerReactiveTexts : undefined,
           childComponents,
           childEvents,
           childConditionals,
-          insideConditional: !flat && insideCond ? true : undefined,
+          insideConditional: !flat && scope.insideCond ? true : undefined,
           siblingOffset: flat ? undefined : (siblingOffsets.get(n) || undefined),
         })
         // Branch-mode callers handle deeper nesting via their own collection paths.
         if (!flat) {
-          for (const child of n.children) walk(child, parentSlotId)
+          descend({ ...scope, depth: scope.depth + 1 })
         }
-        depth--
-        break
-      }
-      case 'fragment':
-      case 'provider':
-      case 'async':
-        for (const child of n.children) walk(child, parentSlotId)
-        break
-      case 'component': {
-        // Use the component's own slotId as the container for inner loops,
-        // so loops inside child components (e.g., SelectContent) use that
-        // component's element as the mapArray container instead of __branchScope.
-        const mySlotId = n.slotId ?? parentSlotId
-        for (const child of n.children) walk(child, mySlotId)
-        break
-      }
-      case 'conditional': {
-        if (flat) break
-        const prev = insideCond
-        insideCond = true
-        walk(n.whenTrue, parentSlotId)
-        walk(n.whenFalse, parentSlotId)
-        insideCond = prev
-        break
-      }
-    }
+      },
+      // fragment / provider / async auto-descend with the same scope.
+    })
   }
-
-  nodes.forEach(n => walk(n, null))
   return result
 }
 
