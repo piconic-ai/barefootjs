@@ -8,7 +8,7 @@ import { attrValueToString, quotePropName, PROPS_PARAM } from './utils'
 import { decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildConditionals } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
-import { walkIR } from './walker'
+import { walkIR, stopAt } from './walker'
 
 /** Check if an IR node produces a DOM child element (for sibling offset counting). */
 function producesDomChild(node: IRNode): boolean {
@@ -646,18 +646,16 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
 function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
   const effects: ConditionalBranchTextEffect[] = []
   walkIR(node, null, {
+    // Do NOT recurse into nested conditionals / if-statements — they have
+    // their own insert(). Loops are not inspected either; the legacy
+    // walker's switch omitted the 'loop' case entirely.
+    // element / fragment / component / provider / async use default descent.
+    ...stopAt<null>('conditional', 'ifStatement', 'loop'),
     expression: ({ node: n }) => {
       if (n.reactive && n.slotId && !n.clientOnly) {
         effects.push({ slotId: n.slotId, expression: n.expr })
       }
     },
-    // Do NOT recurse into nested conditionals / if-statements — they have
-    // their own insert(). Loops are not inspected either; the legacy
-    // walker's switch omitted the 'loop' case entirely.
-    conditional: () => {},
-    ifStatement: () => {},
-    loop: () => {},
-    // element / fragment / component / provider / async use default descent.
   })
   return effects
 }
@@ -677,6 +675,9 @@ function collectBranchLoops(
   const restNames = ctx ? buildRestSpreadNames(ctx) : undefined
 
   walkIR<string | null>(node, null, {
+    // Don't recurse into nested conditionals / if-statements.
+    // fragment / component / provider / async auto-descend carrying parentSlotId.
+    ...stopAt<string | null>('conditional', 'ifStatement'),
     element: ({ node: el, scope: parentSlotId, descend }) => {
       descend(el.slotId ?? parentSlotId)
     },
@@ -749,10 +750,6 @@ function collectBranchLoops(
       })
       // Don't recurse into the loop — nested loops are handled by the loop's own reconciliation.
     },
-    // Don't recurse into nested conditionals / if-statements.
-    conditional: () => {},
-    ifStatement: () => {},
-    // fragment / component / provider / async auto-descend carrying parentSlotId.
   })
 
   return loops
@@ -813,6 +810,8 @@ function collectBranchConditionals(
 ): ConditionalElement[] {
   const result: ConditionalElement[] = []
   walkIR(node, null, {
+    // Don't recurse into loops / if-statements — they have their own reconciliation paths.
+    ...stopAt<null>('loop', 'ifStatement'),
     conditional: ({ node: n }) => {
       // Wrap-by-default fallback (#941) — mirror the top-level gate in
       // `case 'conditional'` at collectElements().
@@ -821,9 +820,6 @@ function collectBranchConditionals(
       }
       // Don't recurse further — the nested conditional handles its own branches.
     },
-    // Don't recurse into loops / if-statements — they have their own reconciliation paths.
-    loop: () => {},
-    ifStatement: () => {},
   })
   return result
 }

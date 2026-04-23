@@ -15,7 +15,7 @@ import type {
 } from './types'
 import { attrValueToString, exprReferencesIdent } from './utils'
 import { expandConstantForReactivity } from './prop-handling'
-import { walkIR } from './walker'
+import { walkIR, stopAt } from './walker'
 
 /**
  * Phase 2 reactivity detection: determines if a code expression needs `createEffect`
@@ -379,7 +379,14 @@ function traverseForComponents(
   components: Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }>,
   skipConditionals = false,
 ): void {
+  // Loops never contain collected components via this walker; halting there
+  // matches the pre-walker behaviour (no 'loop' case in the switch).
+  // skipConditionals also halts at nested conditionals / if-statements.
+  const stops = skipConditionals
+    ? stopAt<null>('loop', 'conditional', 'ifStatement')
+    : stopAt<null>('loop')
   walkIR(node, null, {
+    ...stops,
     component: ({ node, descend }) => {
       components.push({
         name: node.name,
@@ -390,11 +397,6 @@ function traverseForComponents(
       // Recurse into children passed to this component.
       descend()
     },
-    // Loops never contain collected components via this walker; halting
-    // here matches the pre-walker behaviour (no 'loop' case in the switch).
-    loop: () => {},
-    conditional: skipConditionals ? () => {} : undefined,
-    ifStatement: skipConditionals ? () => {} : undefined,
   })
 }
 
@@ -411,6 +413,10 @@ export function collectLoopChildReactiveTexts(
 ): LoopChildReactiveText[] {
   const texts: LoopChildReactiveText[] = []
   walkIR(node, false, {
+    // Skip loop/async/if-statement subtrees — the original walker omitted
+    // them; they have their own scopes (inner-loop reconciliation, async
+    // boundaries, statement-level control flow).
+    ...stopAt<boolean>('loop', 'async', 'ifStatement'),
     expression: ({ node: n, scope: insideConditional }) => {
       if (!n.slotId) return
       const expanded = expandConstantForReactivity(n.expr, ctx)
@@ -422,10 +428,6 @@ export function collectLoopChildReactiveTexts(
     conditional: ({ descend }) => {
       descend(true)
     },
-    // Skip loop/async/if-statement subtrees — the original walker omitted them.
-    loop: () => {},
-    async: () => {},
-    ifStatement: () => {},
   })
   return texts
 }
@@ -448,6 +450,10 @@ export function collectLoopChildConditionals(
   const { collectInnerLoops, branchInnerLoopOptions } = require('./collect-elements')
 
   walkIR(node, null, {
+    // element / fragment / component / provider auto-descend with same scope.
+    // loop / async / if-statement skipped — nested loops have their own
+    // mapArray, async + if-statement don't appear in loop-body conditionals.
+    ...stopAt<null>('loop', 'async', 'ifStatement'),
     conditional: ({ node: n }) => {
       // Don't recurse into conditional branches — nested conditionals
       // inside branches will be handled by insert()'s own bindEvents.
@@ -482,12 +488,6 @@ export function collectLoopChildConditionals(
         whenFalseEvents: collectConditionalBranchEvents(n.whenFalse),
       })
     },
-    // element / fragment / component / provider auto-descend with same scope.
-    // loop / async / if-statement skipped — nested loops have their own
-    // mapArray, async + if-statement don't appear in loop-body conditionals.
-    loop: () => {},
-    async: () => {},
-    ifStatement: () => {},
   })
 
   return conditionals

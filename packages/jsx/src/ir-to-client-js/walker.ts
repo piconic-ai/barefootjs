@@ -293,3 +293,36 @@ export function walkIR<Scope>(
 function assertNever(x: never): never {
   throw new Error(`IRWalker: unhandled IRNode kind: ${JSON.stringify(x)}`)
 }
+
+/**
+ * Build a partial visitor that halts descent at the given IR node kinds.
+ *
+ * Each listed kind is wired to a no-op callback. Because a present callback
+ * takes full control of descent (see `walkIR`), omitting `descend()` inside
+ * the no-op means the walker stops at that kind without traversing its
+ * children. Spreads into a larger visitor:
+ *
+ *     walkIR(root, scope, {
+ *       ...stopAt('loop', 'async', 'ifStatement'),
+ *       expression: (...) => { ... },
+ *     })
+ *
+ * Declarative alternative to scattering `kind: () => {}` empty callbacks
+ * across every branch/loop-scoped collector. Collectors inside this
+ * directory share a small set of "where to stop" recipes — loops have
+ * their own reconciliation path, `async` boundaries suspend traversal,
+ * `if-statement` is statement-level control flow, and nested conditionals
+ * inside a branch own their own `insert()` call — so expressing those
+ * stop rules uniformly keeps the intent in one place and makes new
+ * collectors pick the right recipe by name rather than by copy-paste.
+ */
+export function stopAt<Scope>(
+  ...kinds: Array<keyof IRVisitor<Scope>>
+): Partial<IRVisitor<Scope>> {
+  const visitor: Partial<IRVisitor<Scope>> = {}
+  const noop = () => {}
+  for (const kind of kinds) {
+    ;(visitor as Record<string, () => void>)[kind as string] = noop
+  }
+  return visitor
+}
