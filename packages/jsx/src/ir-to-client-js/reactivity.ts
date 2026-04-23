@@ -250,68 +250,64 @@ export function collectLoopChildEvents(node: IRNode): LoopChildEvent[] {
  */
 export function collectLoopChildEventsWithNesting(
   node: IRNode,
-  nestingStack: NestedLoop[] = [],
+  initialNestingStack: NestedLoop[] = [],
 ): LoopChildEvent[] {
-  const events: LoopChildEvent[] = []
-
-  let lastElementSlotId: string | null = null
-
-  function walk(n: IRNode, domDepth = 0): void {
-    switch (n.type) {
-      case 'element': {
-        const prevSlotId = lastElementSlotId
-        if (n.slotId) lastElementSlotId = n.slotId
-        if (n.slotId) {
-          for (const event of n.events) {
-            events.push({
-              eventName: event.name,
-              childSlotId: n.slotId,
-              handler: event.handler,
-              nestedLoops: [...nestingStack],
-              domDepth,
-            })
-          }
-        }
-        for (const child of n.children) walk(child, domDepth + 1)
-        lastElementSlotId = prevSlotId
-        break
-      }
-      case 'loop':
-        // Enter nested loop — push nesting info with container element's slotId
-        nestingStack.push({
-          kind: 'nested',
-          depth: nestingStack.length + 1,
-          array: n.array,
-          param: n.param,
-          key: n.key,
-          containerSlotId: lastElementSlotId,
-        })
-        for (const child of n.children) walk(child, domDepth)
-        nestingStack.pop()
-        break
-      case 'fragment':
-      case 'component':
-      case 'provider':
-      case 'async':
-        for (const child of n.children) walk(child, domDepth)
-        break
-      case 'conditional':
-        // Reactive conditionals (slotId set) are managed by insert() + bindEvents.
-        // Their events are collected into LoopChildConditional.whenTrue/FalseEvents
-        // and emitted inside bindEvents — not via delegation (#839).
-        if (!n.slotId) {
-          walk(n.whenTrue, domDepth)
-          walk(n.whenFalse, domDepth)
-        }
-        break
-      case 'if-statement':
-        walk(n.consequent, domDepth)
-        if (n.alternate) walk(n.alternate, domDepth)
-        break
-    }
+  type Scope = {
+    nestingStack: NestedLoop[]
+    lastElementSlotId: string | null
+    domDepth: number
   }
-
-  walk(node)
+  const events: LoopChildEvent[] = []
+  const initialScope: Scope = {
+    nestingStack: initialNestingStack,
+    lastElementSlotId: null,
+    domDepth: 0,
+  }
+  walkIR(node, initialScope, {
+    element: ({ node: el, scope, descend }) => {
+      if (el.slotId) {
+        for (const event of el.events) {
+          events.push({
+            eventName: event.name,
+            childSlotId: el.slotId,
+            handler: event.handler,
+            nestedLoops: [...scope.nestingStack],
+            domDepth: scope.domDepth,
+          })
+        }
+      }
+      descend({
+        ...scope,
+        lastElementSlotId: el.slotId ?? scope.lastElementSlotId,
+        domDepth: scope.domDepth + 1,
+      })
+    },
+    loop: ({ node: l, scope, descend }) => {
+      // Enter nested loop — push nesting info with container element's slotId.
+      descend({
+        ...scope,
+        nestingStack: [
+          ...scope.nestingStack,
+          {
+            kind: 'nested',
+            depth: scope.nestingStack.length + 1,
+            array: l.array,
+            param: l.param,
+            key: l.key,
+            containerSlotId: scope.lastElementSlotId,
+          },
+        ],
+      })
+    },
+    conditional: ({ node: c, scope, descend }) => {
+      // Reactive conditionals (slotId set) are managed by insert() + bindEvents.
+      // Their events are collected into LoopChildConditional.whenTrue/FalseEvents
+      // and emitted inside bindEvents — not via delegation (#839).
+      if (!c.slotId) descend(scope)
+    },
+    // fragment / component / provider / async / if-statement use the default
+    // auto-descent, which preserves scope (no domDepth bump, no stack push).
+  })
   return events
 }
 
