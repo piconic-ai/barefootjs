@@ -4,11 +4,25 @@
  * and event delegation within loop containers.
  */
 
-import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, BranchLoop, ConditionalBranchConditional, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop } from './types'
+import type { ClientJsContext, ConditionalBranchEvent, ConditionalBranchRef, ConditionalBranchChildComponent, ConditionalBranchTextEffect, BranchLoop, ConditionalBranchConditional, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
 import type { IRLoopChildComponent } from '../types'
 import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
+
+/**
+ * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
+ * the loop has no key expression. Narrowing on `loop.kind` keeps `index`
+ * off `NestedLoop` (nested loops never thread an explicit index parameter)
+ * and lets the compiler verify we handled every flavour exhaustively.
+ */
+function loopKeyFn(loop: CollectedLoop): string {
+  if (loop.key === null) return 'null'
+  const params = loop.kind === 'nested'
+    ? loop.param
+    : `${loop.param}${loop.index ? `, ${loop.index}` : ''}`
+  return `(${params}) => String(${loop.key})`
+}
 
 /**
  * Compute the mapArray renderItem parameter head and any unwrap statement
@@ -131,9 +145,7 @@ function emitBranchBindings(
         // for inner loops).
         emitCompositeBranchLoop(lines, loop, cv)
       } else {
-        const keyFn = loop.key
-          ? `(${loop.param}${loop.index ? `, ${loop.index}` : ''}) => String(${loop.key})`
-          : 'null'
+        const keyFn = loopKeyFn(loop)
         const indexParam = loop.index || '__idx'
         const hasReactiveEffects = (loop.childReactiveAttrs?.length ?? 0) > 0
           || (loop.childReactiveTexts?.length ?? 0) > 0
@@ -252,9 +264,7 @@ function emitCompositeBranchLoop(
     depthLevels,
   }
 
-  const keyFn = loop.key
-    ? `(${loop.param}${loop.index ? `, ${loop.index}` : ''}) => String(${loop.key})`
-    : 'null'
+  const keyFn = loopKeyFn(loop)
 
   const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param)
 
@@ -389,9 +399,7 @@ function emitBranchInnerLoops(
 
     const uid = `br_${i}`
     const arrayExpr = wrapOuter(inner.array)
-    const keyFn = inner.key
-      ? `(${inner.param}) => String(${inner.key})`
-      : 'null'
+    const keyFn = loopKeyFn(inner)
     const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param)
     // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
     const wrappedTemplate = inner.template
@@ -728,9 +736,7 @@ function emitStaticArrayUpdates(lines: string[], elem: TopLevelLoop): void {
  * Then emits event delegation handlers if needed.
  */
 function emitDynamicLoopUpdates(lines: string[], elem: TopLevelLoop): void {
-  const keyFn = elem.key
-    ? `(${elem.param}${elem.index ? `, ${elem.index}` : ''}) => String(${elem.key})`
-    : 'null'
+  const keyFn = loopKeyFn(elem)
 
   if (elem.useElementReconciliation && (elem.nestedComponents?.length || elem.innerLoops?.length)) {
     emitCompositeElementReconciliation(lines, elem, keyFn)
@@ -1251,11 +1257,10 @@ function emitInnerLoopSetup(
     const containerSelector = inner.containerSlotId ? `'[bf="${inner.containerSlotId}"]'` : 'null'
 
     if (inner.refsOuterParam && inner.template && outerLoopParam) {
-      // Reactive inner loop: use mapArray for proper add/remove/update
-      // Key function receives plain item value (not accessor) per mapArray contract
-      const keyFn = inner.key
-        ? `(${inner.param}) => String(${inner.key})`
-        : 'null'
+      // Reactive inner loop: use mapArray for proper add/remove/update.
+      // NestedLoop never carries `index`, so loopKeyFn emits `(param) => ...`
+      // — matching the plain-item-value contract that mapArray expects.
+      const keyFn = loopKeyFn(inner)
       // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
       const wrappedTemplate = inner.template!
       const { head: innerHead, unwrap: innerUnwrap } = destructureLoopParam(inner.param)
