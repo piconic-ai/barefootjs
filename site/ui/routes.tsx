@@ -121,6 +121,11 @@ import { ProductivityMailPage } from './pages/gallery/productivity/mail'
 import { ProductivityFilesPage } from './pages/gallery/productivity/files'
 import { ProductivityBoardPage } from './pages/gallery/productivity/board'
 import { ProductivityCalendarPage } from './pages/gallery/productivity/calendar'
+import { SaasLandingPage } from './pages/gallery/saas/index'
+import { SaasPricingPage } from './pages/gallery/saas/pricing'
+import { SaasLoginPage } from './pages/gallery/saas/login'
+import { SaasBlogPage } from './pages/gallery/saas/blog'
+import { SaasBlogPostPage } from './pages/gallery/saas/blog-post'
 
 // Form pattern pages
 import { ControlledInputPage } from './pages/forms/controlled-input'
@@ -657,6 +662,28 @@ export function createApp() {
 
   app.get('/gallery/productivity/calendar', (c) => {
     return c.render(<ProductivityCalendarPage />)
+  })
+
+  // Gallery — SaaS Marketing app (Phase 9)
+  app.get('/gallery/saas', (c) => {
+    return c.render(<SaasLandingPage />)
+  })
+
+  app.get('/gallery/saas/pricing', (c) => {
+    return c.render(<SaasPricingPage />)
+  })
+
+  app.get('/gallery/saas/login', (c) => {
+    return c.render(<SaasLoginPage />)
+  })
+
+  app.get('/gallery/saas/blog', (c) => {
+    return c.render(<SaasBlogPage />)
+  })
+
+  app.get('/gallery/saas/blog/:slug', (c) => {
+    const slug = c.req.param('slug')
+    return c.render(<SaasBlogPostPage slug={slug} />)
   })
 
   // Bar Chart reference page
