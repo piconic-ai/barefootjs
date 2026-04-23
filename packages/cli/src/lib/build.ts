@@ -260,6 +260,7 @@ export async function build(
     loadedCache && loadedCache.globalHash === globalHash
       ? loadedCache
       : emptyCache(globalHash)
+  const nextEntries: Record<string, CacheEntry> = {}
   let anyOutputChanged = false
 
   // 1. Runtime file — copy the standalone runtime bundle (reactive inlined)
@@ -311,7 +312,7 @@ export async function build(
   if (externalsChanged) anyOutputChanged = true
 
   // 1c. bundleEntries entries — bundle with esbuild using auto-applied externals
-  if (await processBunBuild(config, clientJsOutDir, clientJsSubdir, allExternals)) {
+  if (await processBundleEntries(config, clientJsOutDir, clientJsSubdir, allExternals, cache, nextEntries, force)) {
     anyOutputChanged = true
   }
 
@@ -365,7 +366,6 @@ export async function build(
   }
 
   // 4. Compile each component (or reuse from cache)
-  const nextEntries: Record<string, CacheEntry> = {}
   for (const entryPath of allFiles) {
     const sourceContent = sourceContents.get(entryPath)!
     if (!hasUseClientDirective(sourceContent)) {
@@ -456,7 +456,13 @@ export async function build(
   }
 
   // 5. Prune outputs for cache entries whose source was deleted since last build.
-  const toDelete = Object.keys(cache.entries).filter((p) => !allFilesSet.has(p))
+  //    - Component entries: keyed by source path; delete if path is no longer in allFilesSet.
+  //    - Bundle entries ("bundle:" prefix): delete if no longer present in nextEntries
+  //      (i.e. removed from config.bundleEntries).
+  const toDelete = Object.keys(cache.entries).filter((key) => {
+    if (key.startsWith('bundle:')) return !(key in nextEntries)
+    return !allFilesSet.has(key)
+  })
   for (const deletedPath of toDelete) {
     const entry = cache.entries[deletedPath]
     for (const output of entry.outputs) {
@@ -773,12 +779,20 @@ export async function processExternals(
  * Bundle entries listed in `config.bundleEntries` directly with esbuild.
  * Each entry is compiled as an ESM bundle with all externals from
  * `config.externals` (plus any per-entry overrides) excluded from the bundle.
+ *
+ * Results are cached by source+deps hash. Dependencies are harvested from
+ * esbuild's metafile on first build (project-local files only — node_modules
+ * and externals are excluded). On subsequent runs, the entry is rebuilt only
+ * if the source or any dep hash has changed, or the output file is missing.
  */
-async function processBunBuild(
+export async function processBundleEntries(
   config: BuildConfig,
   clientJsOutDir: string,
   clientJsSubdir: string,
   allExternals: string[],
+  cache: BuildCache,
+  nextEntries: Record<string, CacheEntry>,
+  force: boolean,
 ): Promise<boolean> {
   if (!config.bundleEntries || config.bundleEntries.length === 0) return false
 
@@ -786,16 +800,71 @@ async function processBunBuild(
   for (const entry of config.bundleEntries) {
     const entryExternals = [...allExternals, ...(entry.externals ?? [])]
     const outfilePath = resolve(clientJsOutDir, entry.outfile)
-    await esbuildBuild({
+    const absEntry = resolve(entry.entry)
+    const cacheKey = `bundle:${absEntry}`
+
+    const sourceContent = await readText(absEntry)
+    const sourceHash = hashContent(sourceContent)
+
+    // Cache lookup: reuse if source + every recorded dep still matches and the
+    // output file hasn't been removed by hand.
+    const cached = cache.entries[cacheKey]
+    if (!force && cached !== undefined && (await fileExists(outfilePath))) {
+      const depPaths = Object.keys(cached.deps)
+      const depHashes = new Map<string, string>()
+      await Promise.all(
+        depPaths.map(async (depPath) => {
+          if (await fileExists(depPath)) {
+            depHashes.set(depPath, hashContent(await readText(depPath)))
+          }
+        }),
+      )
+      const lookupDepHash = (absPath: string): string | null => depHashes.get(absPath) ?? null
+      if (isEntryFresh(cached, sourceHash, lookupDepHash)) {
+        nextEntries[cacheKey] = cached
+        continue
+      }
+    }
+
+    const absWorkingDir = process.cwd()
+    const result = await esbuildBuild({
       entryPoints: [entry.entry],
       outfile: outfilePath,
       format: 'esm',
       bundle: true,
       minify: config.minify,
       external: entryExternals,
+      metafile: true,
+      absWorkingDir,
     })
     anyChanged = true
-    console.log(`Generated (bun-build): ${clientJsSubdir}/${entry.outfile}`)
+    console.log(`Generated (entry): ${clientJsSubdir}/${entry.outfile}`)
+
+    // Harvest project-local deps from esbuild's metafile. Keys are relative
+    // to absWorkingDir. Skip node_modules (versioning is pinned by the
+    // lockfile / package.json, which the global cache hash covers) and any
+    // external (those aren't bundled, so their contents don't affect the output).
+    const externalsSet = new Set(entryExternals)
+    const depsMap: Record<string, string> = { [absEntry]: sourceHash }
+    const metafile = result.metafile
+    if (metafile) {
+      for (const inputPath of Object.keys(metafile.inputs)) {
+        if (externalsSet.has(inputPath)) continue
+        const abs = resolve(absWorkingDir, inputPath)
+        if (abs === absEntry) continue
+        if (abs.includes('/node_modules/')) continue
+        if (await fileExists(abs)) {
+          depsMap[abs] = hashContent(await readText(abs))
+        }
+      }
+    }
+
+    nextEntries[cacheKey] = {
+      hash: sourceHash,
+      deps: depsMap,
+      outputs: [relative(config.outDir, outfilePath)],
+      manifestKey: null,
+    }
   }
   return anyChanged
 }
