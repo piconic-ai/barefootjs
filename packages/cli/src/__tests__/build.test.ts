@@ -7,8 +7,10 @@ import {
   collectRelativeImportDeps,
   vendorChunkFilename,
   processExternals,
+  processBunBuild,
 } from '../lib/build'
-import { mkdirSync, writeFileSync, rmSync } from 'fs'
+import { emptyCache, type BuildCache, type CacheEntry } from '../lib/build-cache'
+import { mkdirSync, writeFileSync, rmSync, existsSync, statSync, readFileSync, realpathSync } from 'fs'
 import { resolve } from 'path'
 import { tmpdir } from 'os'
 
@@ -586,5 +588,210 @@ export function __bf_init_Counter(el, props) {
     expect(result).toContain('counter')
     // Hydration hook identifier must survive minification
     expect(result).toContain('__bf_init_Counter')
+  })
+})
+
+// ── processBunBuild ──────────────────────────────────────────────────────
+
+describe('processBunBuild', () => {
+  const mockAdapter = { name: 'mock', extension: '.mock' } as any
+
+  function makeTmpDir(label = 'bun-build') {
+    const dir = resolve(tmpdir(), `bf-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+    mkdirSync(dir, { recursive: true })
+    // Resolve symlinks (e.g. /tmp → /private/tmp on macOS) so paths match
+    // what esbuild's metafile reports.
+    return realpathSync(dir)
+  }
+
+  function makeConfig(projectDir: string, outDir: string, extra: Record<string, any> = {}) {
+    return {
+      projectDir,
+      adapter: mockAdapter,
+      componentDirs: [],
+      outDir,
+      minify: false,
+      contentHash: false,
+      clientOnly: false,
+      ...extra,
+    } as any
+  }
+
+  test('returns false and writes nothing when bundleEntries is empty', async () => {
+    const outDir = makeTmpDir()
+    try {
+      const config = makeConfig(outDir, outDir)
+      const cache: BuildCache = emptyCache('global-hash')
+      const nextEntries: Record<string, CacheEntry> = {}
+      const changed = await processBunBuild(config, outDir, 'components', [], cache, nextEntries, false)
+      expect(changed).toBe(false)
+      expect(Object.keys(nextEntries).length).toBe(0)
+    } finally {
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('first build: emits output and records cache entry with deps', async () => {
+    const projectDir = makeTmpDir('src')
+    const outDir = makeTmpDir('out')
+    try {
+      const helperPath = resolve(projectDir, 'helper.ts')
+      const entryPath = resolve(projectDir, 'entry.ts')
+      writeFileSync(helperPath, 'export const FOO = 1\n')
+      writeFileSync(entryPath, `import { FOO } from './helper'\nexport const X = FOO + 1\n`)
+
+      const config = makeConfig(projectDir, outDir, {
+        bundleEntries: [{ entry: entryPath, outfile: 'entry.js' }],
+      })
+      const cache: BuildCache = emptyCache('global-hash')
+      const nextEntries: Record<string, CacheEntry> = {}
+
+      const changed = await processBunBuild(config, outDir, 'components', [], cache, nextEntries, false)
+      expect(changed).toBe(true)
+
+      const outPath = resolve(outDir, 'entry.js')
+      expect(existsSync(outPath)).toBe(true)
+      const outContent = readFileSync(outPath, 'utf8')
+      // helper.ts should be inlined
+      expect(outContent).toContain('FOO')
+
+      const cacheKey = `bundle:${entryPath}`
+      expect(nextEntries[cacheKey]).toBeDefined()
+      // Entry source + helper should both be tracked as deps.
+      expect(nextEntries[cacheKey].deps[entryPath]).toBeDefined()
+      expect(nextEntries[cacheKey].deps[helperPath]).toBeDefined()
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('cache hit: skips rebuild when source and deps unchanged', async () => {
+    const projectDir = makeTmpDir('src')
+    const outDir = makeTmpDir('out')
+    try {
+      const entryPath = resolve(projectDir, 'entry.ts')
+      writeFileSync(entryPath, 'export const X = 1\n')
+
+      const config = makeConfig(projectDir, outDir, {
+        bundleEntries: [{ entry: entryPath, outfile: 'entry.js' }],
+      })
+
+      // First build populates the cache.
+      const cache1: BuildCache = emptyCache('global-hash')
+      const entries1: Record<string, CacheEntry> = {}
+      await processBunBuild(config, outDir, 'components', [], cache1, entries1, false)
+
+      const outPath = resolve(outDir, 'entry.js')
+      const mtime1 = statSync(outPath).mtimeMs
+
+      // Second run with the populated cache and no source change should reuse.
+      const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
+      const entries2: Record<string, CacheEntry> = {}
+      await new Promise((r) => setTimeout(r, 20)) // ensure a distinguishable mtime if rebuilt
+      const changed = await processBunBuild(config, outDir, 'components', [], cache2, entries2, false)
+
+      expect(changed).toBe(false)
+      const mtime2 = statSync(outPath).mtimeMs
+      expect(mtime2).toBe(mtime1)
+      // Cache entry carried forward.
+      const cacheKey = `bundle:${entryPath}`
+      expect(entries2[cacheKey]).toBe(entries1[cacheKey])
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('cache miss: dep change invalidates cache and rebuilds', async () => {
+    const projectDir = makeTmpDir('src')
+    const outDir = makeTmpDir('out')
+    try {
+      const helperPath = resolve(projectDir, 'helper.ts')
+      const entryPath = resolve(projectDir, 'entry.ts')
+      writeFileSync(helperPath, 'export const MSG = "original"\n')
+      writeFileSync(entryPath, `import { MSG } from './helper'\nexport const X = MSG\n`)
+
+      const config = makeConfig(projectDir, outDir, {
+        bundleEntries: [{ entry: entryPath, outfile: 'entry.js' }],
+      })
+
+      // First build.
+      const cache1: BuildCache = emptyCache('global-hash')
+      const entries1: Record<string, CacheEntry> = {}
+      await processBunBuild(config, outDir, 'components', [], cache1, entries1, false)
+      const outBefore = readFileSync(resolve(outDir, 'entry.js'), 'utf8')
+      expect(outBefore).toContain('original')
+
+      // Change a transitive dep, not the entry itself.
+      writeFileSync(helperPath, 'export const MSG = "updated"\n')
+
+      const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
+      const entries2: Record<string, CacheEntry> = {}
+      const changed = await processBunBuild(config, outDir, 'components', [], cache2, entries2, false)
+      expect(changed).toBe(true)
+
+      const outAfter = readFileSync(resolve(outDir, 'entry.js'), 'utf8')
+      expect(outAfter).toContain('updated')
+      expect(outAfter).not.toContain('original')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('cache miss: rebuilds when output file is missing even if cache says fresh', async () => {
+    const projectDir = makeTmpDir('src')
+    const outDir = makeTmpDir('out')
+    try {
+      const entryPath = resolve(projectDir, 'entry.ts')
+      writeFileSync(entryPath, 'export const X = 1\n')
+
+      const config = makeConfig(projectDir, outDir, {
+        bundleEntries: [{ entry: entryPath, outfile: 'entry.js' }],
+      })
+
+      // First build.
+      const cache1: BuildCache = emptyCache('global-hash')
+      const entries1: Record<string, CacheEntry> = {}
+      await processBunBuild(config, outDir, 'components', [], cache1, entries1, false)
+
+      // Simulate a user deleting the output — cache is fresh, file is gone.
+      rmSync(resolve(outDir, 'entry.js'))
+
+      const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
+      const entries2: Record<string, CacheEntry> = {}
+      const changed = await processBunBuild(config, outDir, 'components', [], cache2, entries2, false)
+      expect(changed).toBe(true)
+      expect(existsSync(resolve(outDir, 'entry.js'))).toBe(true)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('force: true rebuilds everything regardless of cache', async () => {
+    const projectDir = makeTmpDir('src')
+    const outDir = makeTmpDir('out')
+    try {
+      const entryPath = resolve(projectDir, 'entry.ts')
+      writeFileSync(entryPath, 'export const X = 1\n')
+
+      const config = makeConfig(projectDir, outDir, {
+        bundleEntries: [{ entry: entryPath, outfile: 'entry.js' }],
+      })
+
+      const cache1: BuildCache = emptyCache('global-hash')
+      const entries1: Record<string, CacheEntry> = {}
+      await processBunBuild(config, outDir, 'components', [], cache1, entries1, false)
+
+      const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
+      const entries2: Record<string, CacheEntry> = {}
+      const changed = await processBunBuild(config, outDir, 'components', [], cache2, entries2, true)
+      expect(changed).toBe(true)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
   })
 })
