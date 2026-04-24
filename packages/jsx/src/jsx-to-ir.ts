@@ -22,6 +22,7 @@ import {
   type IRProp,
   type IRTemplateLiteral,
   type IRTemplatePart,
+  type LoopParamBinding,
   type SourceLocation,
   type TypeInfo,
   pickAttrMeta,
@@ -1537,6 +1538,86 @@ function extractFilterPredicate(
   return { result: { param, predicate, raw } }
 }
 
+/**
+ * Build the list of destructured bindings for a `.map()` callback parameter.
+ *
+ * Returns:
+ * - `null` when the parameter is a plain identifier (no destructuring).
+ * - `{ unsupported: true }` when the pattern contains a rest element or a
+ *   non-literal computed property key — shapes that can't be expressed as a
+ *   single fixed accessor path. Callers surface these as `BF025`.
+ * - An array of `{ name, path }` otherwise. Each `path` is a JS accessor
+ *   suffix starting with `.` or `[` and is appended to the synthetic
+ *   `__bfItem()` call in the emitted client JS.
+ */
+function extractLoopParamBindings(
+  pattern: ts.BindingName,
+  ctx: TransformContext,
+): LoopParamBinding[] | { unsupported: true } | null {
+  if (ts.isIdentifier(pattern)) return null
+
+  const bindings: LoopParamBinding[] = []
+  let unsupported = false
+
+  // `.foo` is only valid when `foo` parses as an IdentifierName. Numeric or
+  // reserved-keyed properties fall back to `["foo"]` bracket access so the
+  // emitted JS accessor suffix is always syntactically valid.
+  const appendDotAccess = (prefix: string, key: string): string => {
+    return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
+      ? `${prefix}.${key}`
+      : `${prefix}[${JSON.stringify(key)}]`
+  }
+
+  const walk = (p: ts.ArrayBindingPattern | ts.ObjectBindingPattern, prefix: string): void => {
+    if (unsupported) return
+    if (ts.isArrayBindingPattern(p)) {
+      p.elements.forEach((el, index) => {
+        if (unsupported) return
+        if (ts.isOmittedExpression(el)) return
+        if (el.dotDotDotToken) { unsupported = true; return }
+        const path = `${prefix}[${index}]`
+        if (ts.isIdentifier(el.name)) {
+          bindings.push({ name: el.name.text, path })
+        } else {
+          walk(el.name, path)
+        }
+      })
+      return
+    }
+    // ObjectBindingPattern
+    for (const el of p.elements) {
+      if (unsupported) return
+      if (el.dotDotDotToken) { unsupported = true; return }
+      let keyText: string | null = null
+      if (el.propertyName) {
+        const pn = el.propertyName
+        if (ts.isIdentifier(pn)) keyText = pn.text
+        else if (ts.isStringLiteral(pn)) keyText = pn.text
+        else if (ts.isNumericLiteral(pn)) keyText = pn.text
+        else { unsupported = true; return }
+      } else if (ts.isIdentifier(el.name)) {
+        keyText = el.name.text
+      } else {
+        unsupported = true
+        return
+      }
+      const path = appendDotAccess(prefix, keyText)
+      if (ts.isIdentifier(el.name)) {
+        bindings.push({ name: el.name.text, path })
+      } else {
+        walk(el.name, path)
+      }
+    }
+  }
+
+  if (ts.isArrayBindingPattern(pattern) || ts.isObjectBindingPattern(pattern)) {
+    walk(pattern, '')
+    if (unsupported) return { unsupported: true }
+    return bindings
+  }
+  return null
+}
+
 function transformMapCall(
   node: ts.CallExpression,
   ctx: TransformContext,
@@ -1699,6 +1780,7 @@ function transformMapCall(
   let index: string | null = null
   let indexType: string | undefined
   let children: IRNode[] = []
+  let paramBindings: LoopParamBinding[] | undefined
 
   if (ts.isArrowFunction(callback)) {
     // Extract parameter names and type annotations
@@ -1707,6 +1789,22 @@ function transformMapCall(
       param = firstParam.name.getText(ctx.sourceFile)
       if (firstParam.type) {
         paramType = firstParam.type.getText(ctx.sourceFile)
+      }
+      // Destructured param (`([, cfg]) => ...`, `({ x, y }) => ...`): walk
+      // the binding pattern into per-binding accessor paths so the client
+      // JS emitter can rewrite references to `__bfItem().path` (#951). Rest
+      // elements and computed keys can't be expressed as a fixed path — we
+      // raise `BF025` and leave `paramBindings` undefined so the emitter
+      // falls back to the #950 unwrap behaviour.
+      const bindingResult = extractLoopParamBindings(firstParam.name, ctx)
+      if (bindingResult && !Array.isArray(bindingResult)) {
+        ctx.analyzer.errors.push(
+          createError(ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST,
+            getSourceLocation(firstParam, ctx.sourceFile, ctx.filePath),
+          )
+        )
+      } else if (Array.isArray(bindingResult)) {
+        paramBindings = bindingResult
       }
     }
     if (callback.parameters.length > 1) {
@@ -1717,8 +1815,16 @@ function transformMapCall(
       }
     }
 
-    // Register loop params so expressions referencing them get slotId
-    ctx.loopParams.add(param)
+    // Register loop params so expressions referencing them get slotId.
+    // For destructured patterns, register the individual binding names —
+    // `\b${param}\b` never matches a bare name like `cfg` when `param` is
+    // `[, cfg]`, which would otherwise leave reactive-expression detection
+    // silently broken for destructured callbacks.
+    if (paramBindings) {
+      for (const b of paramBindings) ctx.loopParams.add(b.name)
+    } else {
+      ctx.loopParams.add(param)
+    }
     if (index) ctx.loopParams.add(index)
 
     // Transform callback body
@@ -1790,7 +1896,11 @@ function transformMapCall(
     }
 
     // Unregister loop params
-    ctx.loopParams.delete(param)
+    if (paramBindings) {
+      for (const b of paramBindings) ctx.loopParams.delete(b.name)
+    } else {
+      ctx.loopParams.delete(param)
+    }
     if (index) ctx.loopParams.delete(index)
   }
 
@@ -1895,6 +2005,7 @@ function transformMapCall(
     paramType,
     indexType,
     typedMapPreamble,
+    paramBindings,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }

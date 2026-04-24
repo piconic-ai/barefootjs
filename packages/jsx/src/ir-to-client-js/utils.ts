@@ -3,7 +3,7 @@
  * No dependencies on ClientJsContext or other internal modules.
  */
 
-import type { IRTemplateLiteral } from '../types'
+import type { IRTemplateLiteral, LoopParamBinding } from '../types'
 import type { TopLevelLoop } from './types'
 import {
   BF_KEY as DATA_KEY,
@@ -191,14 +191,57 @@ function escapeRegExp(s: string): string {
  * String-context aware: skips replacements inside string literals and template
  * literal string parts (e.g., CSS class name "preview-field" stays unchanged
  * when paramName is "field"). Handles arbitrarily nested template literals.
+ *
+ * When `bindings` is supplied (destructured `.map()` callback, #951), each
+ * binding name is rewritten to `__bfItem()${path}` instead of wrapping the
+ * raw pattern text. `paramName` is ignored in that case — destructured
+ * callbacks never expose the pattern itself as a local.
  */
-export function wrapLoopParamAsAccessor(expr: string, paramName: string): string {
+export function wrapLoopParamAsAccessor(expr: string, paramName: string, bindings?: readonly LoopParamBinding[]): string {
+  if (bindings && bindings.length > 0) {
+    // Build a single alternation regex so rewriting is a one-pass operation.
+    // Iterating per-binding risks re-matching the replacement text (e.g. a
+    // binding named `a` with path `.a` would cascade into `__bfItem().a`
+    // then back into `__bfItem().__bfItem().a`).
+    const byName = new Map<string, string>()
+    for (const b of bindings) byName.set(b.name, b.path)
+    const alt = bindings.map(b => escapeRegExp(b.name)).join('|')
+    const re = new RegExp(`\\b(${alt})\\b`, 'g')
+    return _replaceInExprContexts(expr, re, (_m: string, name: string) => `__bfItem()${byName.get(name)!}`)
+  }
   const re = new RegExp(`\\b${escapeRegExp(paramName)}\\b(?!\\s*\\()(?!-)`, 'g')
   return _replaceInExprContexts(expr, re, `${paramName}()`)
 }
 
+/**
+ * Rewrite each destructured binding reference to `${accessor}${path}` in
+ * `expr`, reusing the string-context-aware replacement that keeps literal
+ * text untouched (#951).
+ *
+ * Used by the event-delegation emitter, which resolves the current item
+ * via `arr.find(item => ...)` at click time and therefore wants `item`
+ * as the accessor prefix instead of `__bfItem()`.
+ */
+export function substituteLoopBindings(
+  expr: string,
+  bindings: readonly LoopParamBinding[],
+  accessor: string,
+): string {
+  if (!bindings || bindings.length === 0) return expr
+  const byName = new Map<string, string>()
+  for (const b of bindings) byName.set(b.name, b.path)
+  const alt = bindings.map(b => escapeRegExp(b.name)).join('|')
+  const re = new RegExp(`\\b(${alt})\\b`, 'g')
+  return _replaceInExprContexts(expr, re, (_m: string, name: string) => `${accessor}${byName.get(name)!}`)
+}
+
+// Matches the JS `String.prototype.replace` replacer signature. The lib's
+// own type uses `any[]` for the rest args because regex capture groups and
+// offsets have heterogeneous types; narrow them at the callback instead.
+type Replacement = string | ((substring: string, ...args: any[]) => string)
+
 /** Replace `re` with `replacement` only in expression contexts (not in string literals). */
-function _replaceInExprContexts(code: string, re: RegExp, replacement: string): string {
+function _replaceInExprContexts(code: string, re: RegExp, replacement: Replacement): string {
   let result = ''
   let i = 0
   let exprStart = 0
@@ -206,7 +249,10 @@ function _replaceInExprContexts(code: string, re: RegExp, replacement: string): 
   const flushExpr = (end: number) => {
     if (end > exprStart) {
       re.lastIndex = 0
-      result += code.slice(exprStart, end).replace(re, replacement)
+      const slice = code.slice(exprStart, end)
+      result += typeof replacement === 'string'
+        ? slice.replace(re, replacement)
+        : slice.replace(re, replacement as (substring: string, ...args: any[]) => string)
     }
     exprStart = end
   }
@@ -244,7 +290,7 @@ function _skipQuotedString(code: string, start: number): number {
 }
 
 /** Process a template literal from the opening backtick. Returns [result, nextIndex]. */
-function _processTemplateLiteral(code: string, start: number, re: RegExp, replacement: string): [string, number] {
+function _processTemplateLiteral(code: string, start: number, re: RegExp, replacement: Replacement): [string, number] {
   let result = '`'
   let i = start + 1
   while (i < code.length) {
@@ -271,7 +317,7 @@ function _processTemplateLiteral(code: string, start: number, re: RegExp, replac
 }
 
 /** Process inside ${...}. Returns [content without closing }, nextIndex after }]. */
-function _processInterpolation(code: string, start: number, re: RegExp, replacement: string): [string, number] {
+function _processInterpolation(code: string, start: number, re: RegExp, replacement: Replacement): [string, number] {
   let i = start
   let depth = 1
   let exprStart = i
@@ -280,7 +326,10 @@ function _processInterpolation(code: string, start: number, re: RegExp, replacem
   const flushExpr = (end: number) => {
     if (end > exprStart) {
       re.lastIndex = 0
-      result += code.slice(exprStart, end).replace(re, replacement)
+      const slice = code.slice(exprStart, end)
+      result += typeof replacement === 'string'
+        ? slice.replace(re, replacement)
+        : slice.replace(re, replacement as (substring: string, ...args: any[]) => string)
     }
     exprStart = end
   }
@@ -318,14 +367,30 @@ function _processInterpolation(code: string, start: number, re: RegExp, replacem
 }
 
 /**
+ * A loop parameter binding spec for template-time rewriting. Either a plain
+ * parameter name (simple-identifier callback) or the pattern text plus the
+ * destructured bindings whose references should be rewritten to
+ * `__bfItem().path` (#951).
+ */
+export interface LoopParamSpec {
+  param: string
+  bindings?: readonly LoopParamBinding[]
+}
+
+/**
  * Apply wrapLoopParamAsAccessor for multiple loop params.
  * Used during template generation to wrap expression values at IR level,
  * avoiding post-hoc regex replacement on full template strings.
+ *
+ * Accepts either a bare param name or a spec carrying destructure bindings.
  */
-export function wrapExprWithLoopParams(expr: string, loopParams?: string[]): string {
+export function wrapExprWithLoopParams(expr: string, loopParams?: ReadonlyArray<string | LoopParamSpec>): string {
   if (!loopParams) return expr
   let result = expr
-  for (const p of loopParams) result = wrapLoopParamAsAccessor(result, p)
+  for (const p of loopParams) {
+    const spec = typeof p === 'string' ? { param: p } : p
+    result = wrapLoopParamAsAccessor(result, spec.param, spec.bindings)
+  }
   return result
 }
 

@@ -2,7 +2,7 @@
  * Reactivity detection: reactive expression checking, event/ref collection.
  */
 
-import { type IRNode, type IRElement, type IRProp, pickAttrMeta } from '../types'
+import { type IRNode, type IRElement, type IRProp, type LoopParamBinding, pickAttrMeta } from '../types'
 import type {
   ClientJsContext,
   ConditionalBranchEvent,
@@ -163,13 +163,26 @@ export type ReactivitySource =
  * matching takes precedence so `loop-param` is reported even when the
  * expression also reads a signal — the `kind` is purely informational and
  * collectors only care about `kind !== 'none'`.
+ *
+ * For destructured `.map()` callbacks (#951), `loopParamBindings` lists each
+ * destructured binding name; any reference to one of those names is treated
+ * as a `loop-param` hit. The pattern text itself (e.g. `{ id, label }`)
+ * never word-matches on a bare binding like `id`, so the straight
+ * `loopParam` check misses destructured references without this widening.
  */
 export function classifyReactivity(
   expr: string,
   ctx: ClientJsContext,
   loopParam?: string,
+  loopParamBindings?: readonly LoopParamBinding[],
 ): ReactivitySource {
-  if (loopParam && exprReferencesIdent(expr, loopParam)) {
+  if (loopParamBindings && loopParamBindings.length > 0) {
+    for (const b of loopParamBindings) {
+      if (exprReferencesIdent(expr, b.name)) {
+        return { kind: 'loop-param', param: loopParam ?? b.name }
+      }
+    }
+  } else if (loopParam && exprReferencesIdent(expr, loopParam)) {
     return { kind: 'loop-param', param: loopParam }
   }
   if (needsEffectWrapper(expr, ctx)) {
@@ -409,6 +422,7 @@ export function collectLoopChildReactiveTexts(
   node: IRNode,
   ctx: ClientJsContext,
   loopParam?: string,
+  loopParamBindings?: readonly LoopParamBinding[],
 ): LoopChildReactiveText[] {
   const texts: LoopChildReactiveText[] = []
   walkIR(node, false, {
@@ -421,7 +435,7 @@ export function collectLoopChildReactiveTexts(
       const expanded = expandConstantForReactivity(n.expr, ctx)
       // Include if expression reads signals OR references the loop parameter
       // (loop param becomes a signal accessor via per-item signals).
-      if (classifyReactivity(expanded, ctx, loopParam).kind === 'none') return
+      if (classifyReactivity(expanded, ctx, loopParam, loopParamBindings).kind === 'none') return
       texts.push({ slotId: n.slotId, expression: expanded, insideConditional: insideConditional || undefined })
     },
     conditional: ({ descend }) => {
@@ -440,6 +454,7 @@ export function collectLoopChildReactiveAttrs(
   node: IRNode,
   ctx: ClientJsContext,
   loopParam?: string,
+  loopParamBindings?: readonly LoopParamBinding[],
 ): LoopChildReactiveAttr[] {
   const attrs: LoopChildReactiveAttr[] = []
   traverseElements(node, (el) => {
@@ -449,7 +464,7 @@ export function collectLoopChildReactiveAttrs(
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
         const expanded = expandConstantForReactivity(valueStr, ctx)
-        if (classifyReactivity(expanded, ctx, loopParam).kind === 'none') continue
+        if (classifyReactivity(expanded, ctx, loopParam, loopParamBindings).kind === 'none') continue
         attrs.push({
           childSlotId: el.slotId,
           attrName: attr.name,

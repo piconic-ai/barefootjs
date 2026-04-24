@@ -272,6 +272,32 @@ export interface IRLoop {
   indexType?: string
   /** mapPreamble with TypeScript type annotations preserved, for .tsx output */
   typedMapPreamble?: string
+
+  /**
+   * When `.map(callback)` destructures its item parameter (array or object
+   * pattern), this captures each destructured binding's name and the
+   * accessor path into the item. The client-JS emitter rewrites binding
+   * references to `__bfItem().path` so fine-grained effects read the
+   * per-item signal accessor instead of a once-captured local (#951).
+   *
+   * Example: `.map(([, cfg]) => ...)` produces `[{ name: 'cfg', path: '[1]' }]`.
+   * Example: `.map(({ user: { name } }) => ...)` produces `[{ name: 'name', path: '.user.name' }]`.
+   *
+   * Absent when the param is a simple identifier or when the pattern
+   * contains unsupported shapes (rest element, computed property key) —
+   * those cases raise `BF025` at Phase 1.
+   */
+  paramBindings?: LoopParamBinding[]
+}
+
+/**
+ * Destructured binding extracted from a `.map()` callback's item parameter.
+ * The `path` is a JS accessor suffix (starts with `.` or `[`) appended to
+ * the synthetic `__bfItem()` call in the emitted client JS.
+ */
+export interface LoopParamBinding {
+  name: string
+  path: string
 }
 
 export interface IRComponent {

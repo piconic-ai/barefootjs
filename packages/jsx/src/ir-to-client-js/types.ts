@@ -115,6 +115,14 @@ export interface LoopCore {
   param: string
   /** Key expression — e.g. `item.id`. `null` when the loop has no explicit key. */
   key: string | null
+  /**
+   * Destructured-binding accessor paths when `param` is an array/object
+   * binding pattern (#951). The client-JS emitter rewrites each binding
+   * name to `__bfItem().path` so fine-grained effects read the per-item
+   * signal accessor instead of a once-captured local. Absent for
+   * simple-name callbacks.
+   */
+  paramBindings?: readonly import('../types').LoopParamBinding[]
 }
 
 /** Loop info extracted from a conditional branch for reactive reconciliation. */

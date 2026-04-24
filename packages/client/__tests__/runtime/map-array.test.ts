@@ -384,16 +384,20 @@ describe('mapArray', () => {
     expect(container.children[1].textContent).toBe('C')
   })
 
-  // Pinning test for the #949 known limitation. The fix (see
-  // destructureLoopParam in emit-control-flow.ts) unwraps the accessor
-  // once at renderItem body entry, so destructured locals are captured
-  // at first render. mapArray skips renderItem for same-key setItem
-  // updates, which means the locals freeze — fine-grained reactivity
-  // through destructured bindings needs Option 3 (template-time
-  // rewriting to `__bfItem().path`), tracked in #951. This test locks
-  // the current behaviour in so the Option 3 PR must consciously flip
-  // it from green to red rather than silently changing semantics.
-  test('destructured locals captured once — frozen on same-key update (known limitation)', () => {
+  // #951 regression guard. Compiled output for a destructured `.map()`
+  // callback no longer emits `const [, b] = __bfItem()` at body entry —
+  // references to `b` are rewritten to `__bfItem()[1]` at IR emission
+  // time, so fine-grained effects read the live per-item accessor.
+  // mapArray still reuses the DOM node on same-key setItem updates, but
+  // effects registered inside renderItem re-run when the signal changes,
+  // so the DOM refreshes.
+  //
+  // This test mirrors the compiled output shape: no local destructure,
+  // effects read `__bfItem()[1]` directly. The predecessor pinning test
+  // locked in the pre-#951 captured-once semantics; flipping it here is
+  // intentional. See `jsx-to-ir.ts::extractLoopParamBindings` and
+  // `emit-control-flow.ts::destructureLoopParam`.
+  test('destructured locals refresh via signal accessor on same-key setItem (#951)', () => {
     const [items, setItems] = createSignal<[string, string][]>([['1', 'A']])
 
     mapArray(
@@ -401,33 +405,37 @@ describe('mapArray', () => {
       container,
       (item) => item[0],
       (__bfItem) => {
-        const [, b] = __bfItem()
         const li = document.createElement('li')
-        // Read `b` once — mirrors captured-semantics in compiled output.
-        li.setAttribute('data-b', b)
-        li.textContent = b
+        // Compiler-generated shape: each destructured reference becomes
+        // an `__bfItem().path` accessor read inside a createEffect.
+        // `bf-test-val` makes the assertion target clearly a barefoot-test
+        // marker, not a generic user attribute.
+        createEffect(() => {
+          li.setAttribute('bf-test-val', __bfItem()[1])
+          li.textContent = __bfItem()[1]
+        })
         return li
       },
     )
 
     const firstEl = container.children[0]
     expect(firstEl.textContent).toBe('A')
-    expect(firstEl.getAttribute('data-b')).toBe('A')
+    expect(firstEl.getAttribute('bf-test-val')).toBe('A')
 
-    // Same key '1', new inner value — mapArray fires setItem and
-    // reuses the DOM node, but `b` was captured on first render so
-    // the DOM attribute / text stay at the original value.
+    // Same key '1', new inner value — mapArray reuses the DOM node and
+    // fires setItem. The effects re-run because they read the per-item
+    // accessor, so the DOM text/attribute refresh to the new value.
     setItems([['1', 'B']])
 
     expect(container.children[0]).toBe(firstEl)
-    expect(firstEl.textContent).toBe('A')
-    expect(firstEl.getAttribute('data-b')).toBe('A')
+    expect(firstEl.textContent).toBe('B')
+    expect(firstEl.getAttribute('bf-test-val')).toBe('B')
 
-    // Array-level update (different key) produces a fresh renderItem
-    // call, so `b` is re-captured from the new value — this path works.
+    // Array-level update (different key) still produces a fresh
+    // renderItem call, so a new DOM node is created.
     setItems([['2', 'C']])
 
-    expect(container.children[0].getAttribute('data-b')).toBe('C')
+    expect(container.children[0].getAttribute('bf-test-val')).toBe('C')
     expect(container.children[0].textContent).toBe('C')
   })
 })

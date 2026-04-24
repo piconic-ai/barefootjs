@@ -414,6 +414,7 @@ For non-JS backends, ensure proper UTF-8 handling:
 | BF011 | Signal used outside component |
 | BF020 | Invalid JSX expression |
 | BF021 | Unsupported JSX pattern (e.g., filter predicate or sort comparator too complex for template compilation) |
+| BF025 | Unsupported destructure shape in `.map()` callback (rest element or computed property key) |
 | BF030 | Type inference failed |
 | BF031 | Props type mismatch |
 | BF043 | Props destructuring breaks reactivity |

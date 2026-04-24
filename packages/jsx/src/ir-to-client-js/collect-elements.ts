@@ -145,7 +145,11 @@ export function collectInnerLoops(
         const emitDepth = fixedDepth ?? scope.depth + 1
         // Generate item template for CSR rendering in mapArray.
         // Pass loopParams so expressions are wrapped at generation time (not post-hoc regex).
-        const loopParamsForTemplate = outerLoopParam ? [outerLoopParam, n.param] : undefined
+        // Forward destructured bindings (#951) so inner-loop template
+        // references to the destructured locals are rewritten.
+        const loopParamsForTemplate = outerLoopParam
+          ? [outerLoopParam, { param: n.param, bindings: n.paramBindings }]
+          : undefined
         const template = n.children.map(c => irToPlaceholderTemplate(c, undefined, emitDepth, loopParamsForTemplate)).join('')
         // Check if array expression references the outer loop param
         const refsOuter = outerLoopParam
@@ -155,7 +159,7 @@ export function collectInnerLoops(
         const innerReactiveTexts: Array<{ slotId: string; expression: string }> = []
         if (refsOuter && ctx) {
           for (const child of n.children) {
-            innerReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
+            innerReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
           }
         }
 
@@ -201,6 +205,7 @@ export function collectInnerLoops(
               ctx,
               siblingOffsets,
               n.param,
+              n.paramBindings,
             )
             if (conds.length > 0) childConditionals = conds
           }
@@ -211,6 +216,7 @@ export function collectInnerLoops(
           depth: emitDepth,
           array: n.array,
           param: n.param,
+          paramBindings: n.paramBindings,
           key: n.key,
           containerSlotId: scope.parentSlotId,
           template,
@@ -452,9 +458,9 @@ export function collectElements(
       for (const child of l.children) {
         childHandlers.push(...collectEventHandlersFromIR(child))
         childEvents.push(...collectLoopChildEventsWithNesting(child))
-        childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, l.param))
-        childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, l.param))
-        childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, l.param))
+        childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, l.param, l.paramBindings))
+        childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, l.param, l.paramBindings))
+        childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, l.param, l.paramBindings))
       }
 
       if (l.childComponent) {
@@ -474,9 +480,12 @@ export function collectElements(
       } else if (l.children[0]) {
         // Pass loopParams so expressions are wrapped at generation time,
         // avoiding post-hoc regex wrapping that corrupts literal attribute values.
+        // Forward destructured bindings (#951) so references like `cfg.color`
+        // in the emitted template literal are rewritten to `__bfItem()[1].color`.
+        const loopParamSpec = [{ param: l.param, bindings: l.paramBindings }]
         template = useElementReconciliation
-          ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0, [l.param])
-          : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, [l.param])
+          ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0, loopParamSpec)
+          : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, loopParamSpec)
       }
 
       ctx.loopElements.push({
@@ -484,6 +493,7 @@ export function collectElements(
         slotId: l.slotId,
         array: l.array,
         param: l.param,
+        paramBindings: l.paramBindings,
         index: l.index,
         key: l.key,
         template,
@@ -707,10 +717,11 @@ function collectBranchLoops(
       // keeping the template consistent with reactive effect expressions that
       // use `param()` to read the current item value.
       let childTemplate: string
+      const branchLoopParamSpec = [{ param: n.param, bindings: n.paramBindings }]
       if (useElementReconciliation && n.children[0]) {
-        childTemplate = irToPlaceholderTemplate(n.children[0], restNames, 0, [n.param])
+        childTemplate = irToPlaceholderTemplate(n.children[0], restNames, 0, branchLoopParamSpec)
       } else {
-        childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0, [n.param])).join('')
+        childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0, branchLoopParamSpec)).join('')
       }
 
       // Collect child events, reactive texts/attrs, and conditionals for ALL
@@ -725,9 +736,9 @@ function collectBranchLoops(
       if (ctx) {
         for (const child of n.children) {
           childEvents.push(...collectLoopChildEventsWithNesting(child))
-          childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param))
-          childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param))
-          childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, n.param))
+          childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
+          childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings))
+          childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, n.param, n.paramBindings))
         }
       }
 
@@ -735,6 +746,7 @@ function collectBranchLoops(
         kind: 'branch',
         array: n.array,
         param: n.param,
+        paramBindings: n.paramBindings,
         index: n.index,
         key: n.key,
         template: childTemplate,
@@ -840,8 +852,22 @@ export function collectLoopChildConditionals(
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, number>,
   loopParam?: string,
+  loopParamBindings?: readonly import('../types').LoopParamBinding[],
 ): LoopChildConditional[] {
   const conditionals: LoopChildConditional[] = []
+
+  // Widen the source-level "references loop param" check so destructured
+  // callbacks fire too — the pattern text `[, cfg]` never word-matches on
+  // bare `cfg` but individual binding names do (#951).
+  const refsAnyBinding = (expr: string): boolean => {
+    if (loopParamBindings && loopParamBindings.length > 0) {
+      for (const b of loopParamBindings) {
+        if (exprReferencesIdent(expr, b.name)) return true
+      }
+      return false
+    }
+    return loopParam ? exprReferencesIdent(expr, loopParam) : false
+  }
 
   walkIR(node, null, {
     // element / fragment / component / provider auto-descend with same scope.
@@ -853,16 +879,18 @@ export function collectLoopChildConditionals(
       // inside branches will be handled by insert()'s own bindEvents.
       // Non-reactive, non-loop-param conditionals are ignored entirely.
       if (!n.slotId) return
-      const refsLoopParamInSource = loopParam ? exprReferencesIdent(n.condition, loopParam) : false
+      const refsLoopParamInSource = refsAnyBinding(n.condition)
       // Pre-gate using AST `reactive` flag on the source condition before
       // paying for constant expansion — matches the legacy short-circuit.
       if (!n.reactive && !refsLoopParamInSource) return
       const expanded = expandConstantForReactivity(n.condition, ctx)
       // Loop-param conditionals are reactive via per-item signal accessors;
       // classifyReactivity sees both paths (signal/memo/prop + loop-param).
-      if (classifyReactivity(expanded, ctx, loopParam).kind === 'none') return
+      if (classifyReactivity(expanded, ctx, loopParam, loopParamBindings).kind === 'none') return
 
-      const loopParamsForCond = loopParam ? [loopParam] : undefined
+      const loopParamsForCond = loopParam
+        ? [{ param: loopParam, bindings: loopParamBindings }]
+        : undefined
       const whenTrueHtml = irToHtmlTemplate(n.whenTrue, undefined, 0, loopParamsForCond)
       const whenFalseHtml = irToHtmlTemplate(n.whenFalse, undefined, 0, loopParamsForCond)
       conditionals.push({
@@ -870,8 +898,8 @@ export function collectLoopChildConditionals(
         condition: expanded,
         whenTrueHtml,
         whenFalseHtml,
-        whenTrue: summarizeLoopChildBranch(n.whenTrue, ctx, siblingOffsets, loopParam),
-        whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam),
+        whenTrue: summarizeLoopChildBranch(n.whenTrue, ctx, siblingOffsets, loopParam, loopParamBindings),
+        whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam, loopParamBindings),
       })
     },
   })
@@ -891,12 +919,13 @@ function summarizeLoopChildBranch(
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, number>,
   loopParam?: string,
+  loopParamBindings?: readonly import('../types').LoopParamBinding[],
 ): LoopChildBranchSummary {
   const inner = collectInnerLoops([node], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
   return {
     childComponents: collectConditionalBranchChildComponents(node),
     innerLoops: inner.length > 0 ? inner : undefined,
-    conditionals: collectLoopChildConditionals(node, ctx, siblingOffsets, loopParam),
+    conditionals: collectLoopChildConditionals(node, ctx, siblingOffsets, loopParam, loopParamBindings),
     events: collectConditionalBranchEvents(node),
   }
 }

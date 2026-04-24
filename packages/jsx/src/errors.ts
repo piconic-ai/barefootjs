@@ -30,6 +30,7 @@ export const ErrorCodes = {
   INVALID_JSX_ATTRIBUTE: 'BF022',
   MISSING_KEY_IN_LIST: 'BF023',
   MISSING_KEY_IN_NESTED_LIST: 'BF024',
+  UNSUPPORTED_DESTRUCTURE_REST: 'BF025',
 
   // Type errors (BF030-BF039)
   TYPE_INFERENCE_FAILED: 'BF030',
@@ -81,6 +82,8 @@ const errorMessages: Record<ErrorCode, string> = {
     'Missing key attribute in list rendering. Add a key prop for efficient updates',
   [ErrorCodes.MISSING_KEY_IN_NESTED_LIST]:
     'Nested .map() loop requires key attribute for event delegation. Add a key prop to elements in the inner loop',
+  [ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST]:
+    'Rest element or computed property key in .map() callback destructure is not supported. Rewrite the callback to destructure explicit bindings (e.g., `({ a, b }) => ...`) so the compiler can rewrite references to per-item signal accessors.',
 
   [ErrorCodes.TYPE_INFERENCE_FAILED]: 'Failed to infer type',
   [ErrorCodes.PROPS_TYPE_MISMATCH]: 'Props type mismatch',

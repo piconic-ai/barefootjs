@@ -187,15 +187,17 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     expect(clientJs).toContain('o.children')
   })
 
-  test('destructured map param now reconciles (#949 emitter fix)', () => {
+  test('destructured map param now reconciles (#949 emitter fix, #951 inline rewrite)', () => {
     // `mapArray` passes the item as a signal accessor (a function) to the
     // renderItem callback; destructuring a function would throw
     // "function is not iterable" at runtime. Before #949 the emitter
     // interpolated `elem.param` verbatim into the renderItem arrow head,
     // so this path was excluded from the #943 widening to avoid the
-    // crash. With #949 the emitter renames the param to a synthetic
-    // accessor and unwraps once at body entry, so destructured-param
-    // callbacks are safe to reconcile like any other dynamic array.
+    // crash. #950 introduced a synthetic-accessor renderItem head plus an
+    // entry-point unwrap (`const [, cfg] = __bfItem();`). #951 replaces
+    // that unwrap by rewriting each destructured binding reference to
+    // `__bfItem().path` at IR emission time, so fine-grained effects read
+    // the live per-item accessor on same-key setItem updates.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -216,10 +218,12 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
 
     const clientJs = getClientJs(source, 'Legend.tsx')
     // mapArray is emitted (widening now applies). renderItem uses the
-    // synthetic `__bfItem` param and unwraps at entry.
+    // synthetic `__bfItem` param; references to `cfg` are rewritten
+    // inline and no unwrap statement is emitted.
     expect(clientJs).toContain('mapArray(')
     expect(clientJs).toContain('(__bfItem, ')
-    expect(clientJs).toContain('const [, cfg] = __bfItem();')
+    expect(clientJs).not.toContain('const [, cfg] = __bfItem();')
+    expect(clientJs).toContain('__bfItem()[1].color')
   })
 
   test('loop with child component on unrecognised-call array reconciles', () => {
@@ -248,12 +252,13 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     expect(clientJs).toContain('listOf()')
   })
 
-  test('typed destructured map param also reconciles (#949)', () => {
+  test('typed destructured map param also reconciles (#949, #951)', () => {
     // TypeScript type annotations on the binding pattern live in
     // `firstParam.type`, not `firstParam.name`. The emitter extracts
     // `param` from `firstParam.name.getText()`, so a typed destructure
-    // still yields `param = "[, cfg]"`. Once #949 landed, the
-    // destructureLoopParam helper picks up both plain and typed forms.
+    // still yields `param = "[, cfg]"`. The #951 IR rewriter walks the
+    // same AST binding name, so type annotations don't disrupt
+    // binding-path extraction.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -276,16 +281,18 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     const clientJs = getClientJs(source, 'TypedLegend.tsx')
     expect(clientJs).toContain('mapArray(')
     expect(clientJs).toContain('(__bfItem, ')
-    expect(clientJs).toContain('const [, cfg] = __bfItem();')
+    expect(clientJs).not.toContain('const [, cfg] = __bfItem();')
+    expect(clientJs).toContain('__bfItem()[1].color')
   })
 
-  test('object-destructured map param on signal array reconciles (#949)', () => {
+  test('object-destructured map param on signal array reconciles (#949, #951)', () => {
     // Object-pattern destructure on a signal array. Before #949 this
     // produced `({ label, value }, __idx, __existing) =>` as the
     // renderItem head, and mapArray's accessor contract meant the
-    // destructure tried to unpack a function at hydration. With the
-    // emitter fix, the synthetic accessor + entry unwrap keeps the
-    // destructured bindings in scope for the template body.
+    // destructure tried to unpack a function at hydration. #951 drops
+    // the body-entry unwrap and rewrites every `label` / `value`
+    // reference to `__bfItem().label` / `__bfItem().value` so same-key
+    // setItem updates refresh the DOM.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -305,6 +312,8 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     const clientJs = getClientJs(source, 'Fields.tsx')
     expect(clientJs).toContain('mapArray(')
     expect(clientJs).toContain('(__bfItem, ')
-    expect(clientJs).toContain('const { label, value } = __bfItem();')
+    expect(clientJs).not.toContain('const { label, value } = __bfItem();')
+    expect(clientJs).toContain('__bfItem().label')
+    expect(clientJs).toContain('__bfItem().value')
   })
 })

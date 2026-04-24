@@ -5,8 +5,8 @@
  */
 
 import type { ClientJsContext, ConditionalBranchEvent, BranchLoop, BranchSummary, ConditionalElement, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
-import type { IRLoopChildComponent } from '../types'
-import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
+import type { IRLoopChildComponent, LoopParamBinding } from '../types'
+import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent, substituteLoopBindings } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
 
@@ -25,14 +25,31 @@ function loopKeyFn(loop: CollectedLoop): string {
 }
 
 /**
+ * Return true when `expr` references the loop's param — either the simple
+ * identifier itself, or any of its destructured binding names (#951). The
+ * pattern text (e.g. `[, cfg]`) never word-matches on a bare name, so the
+ * simple `exprReferencesIdent(expr, elem.param)` check misses destructured
+ * callbacks without this widening.
+ */
+function exprRefsLoopBinding(expr: string, loop: { param: string; paramBindings?: readonly LoopParamBinding[] }): boolean {
+  if (loop.paramBindings && loop.paramBindings.length > 0) {
+    for (const b of loop.paramBindings) {
+      if (exprReferencesIdent(expr, b.name)) return true
+    }
+    return false
+  }
+  return exprReferencesIdent(expr, loop.param)
+}
+
+/**
  * Compute the mapArray renderItem parameter head and any unwrap statement
- * needed when the map callback destructures its item parameter (#949).
+ * needed when the map callback destructures its item parameter.
  *
  * mapArray passes the item to renderItem as a signal accessor (function).
  * Interpolating `[a, b]` or `{ x, y }` verbatim into the arrow head crashes
- * at hydration with "function is not iterable". We rename the param to a
- * synthetic accessor name and unwrap once at body entry, so destructured
- * bindings become plain locals that the rest of the emitted body can read.
+ * at hydration with "function is not iterable" (#949). We rename the param
+ * to a synthetic accessor name and — for patterns the IR rewriter can't
+ * fully express as per-binding accessor paths — unwrap once at body entry.
  *
  * The `__bf_` prefix is a barefoot-reserved namespace — avoids any chance
  * of collision if the user writes `.map(item => ...)` with a matching name.
@@ -43,17 +60,23 @@ function loopKeyFn(loop: CollectedLoop): string {
  * upstream contract changes, the prefix check must be widened in lockstep
  * or the #949 crash resurfaces silently.
  *
- * Known limitation: destructured locals are captured at first render and
- * will not refresh on same-key setItem updates. Array-level updates (add /
- * remove / reorder / key change) work correctly because a new renderItem
- * call produces fresh locals. Same-key fine-grained reactivity through
- * destructured bindings requires template-time rewriting of binding
- * references to `__bfItem().path` — tracked in #951 (Option 3 follow-up).
- * See the pinning test in `map-array.test.ts::destructured locals
- * captured once — frozen on same-key update (known limitation)`.
+ * Option 3 path (#951): when `paramBindings` is supplied, every
+ * destructured reference has already been rewritten to `__bfItem().path`
+ * in template strings, event handlers, reactive attrs, and preambles. No
+ * body-entry unwrap is emitted — the destructured locals simply don't
+ * exist in the generated code, so same-key `setItem` updates read the
+ * live accessor and refresh the DOM. When `paramBindings` is missing
+ * (rest element, computed property key — see `BF025`), we fall back to
+ * the original unwrap so the captured-semantics path still compiles.
  */
-function destructureLoopParam(param: string): { head: string; unwrap: string } {
+function destructureLoopParam(
+  param: string,
+  paramBindings?: readonly LoopParamBinding[],
+): { head: string; unwrap: string } {
   if (param.startsWith('[') || param.startsWith('{')) {
+    if (paramBindings && paramBindings.length > 0) {
+      return { head: '__bfItem', unwrap: '' }
+    }
     return {
       head: '__bfItem',
       unwrap: `const ${param} = __bfItem();`,
@@ -147,7 +170,7 @@ function emitBranchBindings(
           || (loop.childReactiveTexts?.length ?? 0) > 0
           || (loop.childConditionals?.length ?? 0) > 0
 
-        const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param)
+        const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
         const unwrapInline = pUnwrap ? `${pUnwrap} ` : ''
 
         if (!hasReactiveEffects) {
@@ -179,6 +202,7 @@ function emitBranchBindings(
             loop.childReactiveTexts ?? [],
             loop.childConditionals,
             loop.param,
+            loop.paramBindings,
           )
           lines.push(`        return __el`)
           lines.push(`      })`)
@@ -262,7 +286,7 @@ function emitCompositeBranchLoop(
 
   const keyFn = loopKeyFn(loop)
 
-  const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param)
+  const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
 
   // Wrap everything in a disposable effect for branch cleanup
   // Clear template-generated children so mapArray creates fresh elements
@@ -344,8 +368,9 @@ function emitBranchChildComponentInits(
   components: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children?: import('../types').IRNode[] }>,
   loopParam?: string,
   wrapFn?: (expr: string) => string,
+  loopParamBindings?: readonly LoopParamBinding[],
 ): void {
-  const wrap = wrapFn ?? (loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr)
+  const wrap = wrapFn ?? (loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings) : (expr: string) => expr)
   for (const comp of components) {
     // Use slotId suffix match only when available to avoid matching
     // siblings of the same component type (e.g. two Buttons with different slotIds).
@@ -385,9 +410,10 @@ function emitBranchInnerLoops(
   innerLoops: import('./types').NestedLoop[] | undefined,
   outerLoopParam?: string,
   outerWrapFn?: (expr: string) => string,
+  outerLoopParamBindings?: readonly LoopParamBinding[],
 ): void {
   if (!innerLoops || !outerLoopParam) return
-  const wrapOuter = outerWrapFn ?? ((expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam))
+  const wrapOuter = outerWrapFn ?? ((expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings))
 
   for (let i = 0; i < innerLoops.length; i++) {
     const inner = innerLoops[i]
@@ -396,7 +422,7 @@ function emitBranchInnerLoops(
     const uid = `br_${i}`
     const arrayExpr = wrapOuter(inner.array)
     const keyFn = loopKeyFn(inner)
-    const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param)
+    const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings)
     // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
     const wrappedTemplate = inner.template
     // Find the container for the inner loop. Try bf= attribute (plain elements) first,
@@ -406,7 +432,7 @@ function emitBranchInnerLoops(
       ? `(${scopeVar}.querySelector('[bf="${csl}"]') ?? ${scopeVar}.querySelector('[bf-s$="_${csl}"]') ?? ${scopeVar})`
       : scopeVar
 
-    const { head: innerHead, unwrap: innerUnwrap } = destructureLoopParam(inner.param)
+    const { head: innerHead, unwrap: innerUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
 
     lines.push(`${indent}{ const __bic${uid} = ${containerExpr}`)
     lines.push(`${indent}if (__bic${uid}) mapArray(() => ${arrayExpr} || [], __bic${uid}, ${keyFn}, (${innerHead}, __bidx${uid}, __existing) => {`)
@@ -415,11 +441,11 @@ function emitBranchInnerLoops(
     }
     lines.push(`${indent}  let __bel${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${wrappedTemplate}\`; return __t.content.firstElementChild.cloneNode(true) })()`)
     if (inner.key) {
-      const wrappedKey = wrapLoopParamAsAccessor(inner.key, inner.param)
+      const wrappedKey = wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings)
       lines.push(`${indent}  __bel${uid}.setAttribute('${keyAttrName(1)}', String(${wrappedKey}))`)
     }
     // Components and events inside inner loop items
-    const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param)
+    const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings)
     // Recursively wrap IR nodes for inner loop param accessor conversion
     const wrapIRNodeBranch = (node: any): any => {
       if (node.type === 'component') {
@@ -440,9 +466,9 @@ function emitBranchInnerLoops(
     }))
     if (comps.length > 0 || events.length > 0) {
       lines.push(`${indent}  if (!__existing) {`)
-      emitComponentAndEventSetup(lines, `${indent}    `, `__bel${uid}`, comps, events, 'csr', outerLoopParam)
+      emitComponentAndEventSetup(lines, `${indent}    `, `__bel${uid}`, comps, events, 'csr', outerLoopParam, outerLoopParamBindings)
       lines.push(`${indent}  } else {`)
-      emitComponentAndEventSetup(lines, `${indent}    `, `__bel${uid}`, comps, events, 'ssr', outerLoopParam)
+      emitComponentAndEventSetup(lines, `${indent}    `, `__bel${uid}`, comps, events, 'ssr', outerLoopParam, outerLoopParamBindings)
       lines.push(`${indent}  }`)
     }
     // Reactive text effects for inner loop items
@@ -516,6 +542,7 @@ function emitNestedLoopChildConditionals(
   conditionals: LoopChildConditional[] | undefined,
   wrap: (expr: string) => string,
   loopParam?: string,
+  loopParamBindings?: readonly LoopParamBinding[],
 ): void {
   if (!conditionals || conditionals.length === 0) return
   for (const cond of conditionals) {
@@ -525,17 +552,17 @@ function emitNestedLoopChildConditionals(
     lines.push(`${indent}  template: () => \`${whenTrueWithCond}\`,`)
     lines.push(`${indent}  bindEvents: (__branchScope) => {`)
     emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenTrue.events, wrap)
-    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrue.childComponents, loopParam, wrap)
-    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrue.innerLoops, loopParam, wrap)
-    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrue.conditionals, wrap, loopParam)
+    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrue.childComponents, loopParam, wrap, loopParamBindings)
+    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrue.innerLoops, loopParam, wrap, loopParamBindings)
+    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrue.conditionals, wrap, loopParam, loopParamBindings)
     lines.push(`${indent}  }`)
     lines.push(`${indent}}, {`)
     lines.push(`${indent}  template: () => \`${whenFalseWithCond}\`,`)
     lines.push(`${indent}  bindEvents: (__branchScope) => {`)
     emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenFalse.events, wrap)
-    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalse.childComponents, loopParam, wrap)
-    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalse.innerLoops, loopParam, wrap)
-    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalse.conditionals, wrap, loopParam)
+    emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalse.childComponents, loopParam, wrap, loopParamBindings)
+    emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalse.innerLoops, loopParam, wrap, loopParamBindings)
+    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalse.conditionals, wrap, loopParam, loopParamBindings)
     lines.push(`${indent}  }`)
     lines.push(`${indent}})`)
   }
@@ -549,8 +576,9 @@ function emitLoopChildReactiveEffects(
   texts: TopLevelLoop['childReactiveTexts'],
   conditionals?: TopLevelLoop['childConditionals'],
   loopParam?: string,
+  loopParamBindings?: readonly LoopParamBinding[],
 ): void {
-  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr
+  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings) : (expr: string) => expr
   // Reactive attribute effects
   const attrsBySlot = new Map<string, typeof attrs>()
   for (const attr of attrs) {
@@ -608,9 +636,9 @@ function emitLoopChildReactiveEffects(
       lines.push(`${indent}  template: () => \`${whenTrueWithCond}\`,`)
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
       emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenTrue.events, wrap)
-      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrue.childComponents, loopParam)
-      emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrue.innerLoops, loopParam)
-      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrue.conditionals, wrap, loopParam)
+      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenTrue.childComponents, loopParam, undefined, loopParamBindings)
+      emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenTrue.innerLoops, loopParam, undefined, loopParamBindings)
+      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrue.conditionals, wrap, loopParam, loopParamBindings)
       for (const text of textsForBranch(cond.whenTrueHtml)) {
         const varName = `__rt_${varSlotId(text.slotId)}`
         lines.push(`${indent}    { const [${varName}] = $t(__branchScope, '${text.slotId}')`)
@@ -621,9 +649,9 @@ function emitLoopChildReactiveEffects(
       lines.push(`${indent}  template: () => \`${whenFalseWithCond}\`,`)
       lines.push(`${indent}  bindEvents: (__branchScope) => {`)
       emitLoopCondBranchEventBindings(lines, `${indent}    `, cond.whenFalse.events, wrap)
-      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalse.childComponents, loopParam)
-      emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalse.innerLoops, loopParam)
-      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalse.conditionals, wrap, loopParam)
+      emitBranchChildComponentInits(lines, `${indent}    `, cond.whenFalse.childComponents, loopParam, undefined, loopParamBindings)
+      emitBranchInnerLoops(lines, `${indent}    `, '__branchScope', cond.whenFalse.innerLoops, loopParam, undefined, loopParamBindings)
+      emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalse.conditionals, wrap, loopParam, loopParamBindings)
       for (const text of textsForBranch(cond.whenFalseHtml)) {
         const varName = `__rt_${varSlotId(text.slotId)}`
         lines.push(`${indent}    { const [${varName}] = $t(__branchScope, '${text.slotId}')`)
@@ -756,8 +784,9 @@ function emitDynamicLoopUpdates(lines: string[], elem: TopLevelLoop): void {
 function buildComponentPropsExpr(
   comp: { props: Array<{ name: string; value: string; isEventHandler: boolean; isLiteral: boolean }>, children?: import('../types').IRNode[] },
   loopParam?: string,
+  loopParamBindings?: readonly LoopParamBinding[],
 ): string {
-  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr
+  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings) : (expr: string) => expr
   const entries = comp.props.map((p) => {
     if (p.isEventHandler) {
       return `${quotePropName(p.name)}: ${wrap(p.value)}`
@@ -782,12 +811,12 @@ function emitComponentLoopReconciliation(lines: string[], elem: TopLevelLoop, ke
   const { name } = elem.childComponent!
   const vLoop = varSlotId(elem.slotId)
   const propsExpr = buildComponentPropsExpr(elem.childComponent!, elem.param)
-  const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param)
+  const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param, elem.paramBindings)
   const indexParam = elem.index || '__idx'
   const chainedExpr = buildChainedArrayExpr(elem)
   // Only init components at loopDepth 0 — inner-loop components are handled by their own loop
   const nestedComps = (elem.nestedComponents ?? []).filter(c => !c.loopDepth)
-  const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(elem.param)
+  const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
 
   lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => {`)
   if (pUnwrap) {
@@ -810,7 +839,7 @@ function emitComponentLoopReconciliation(lines: string[], elem: TopLevelLoop, ke
       const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
       const childrenRefsLoop = rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, elem.param)
       if (childrenRefsLoop) {
-        const wrappedChildren = wrapLoopParamAsAccessor(rawChildrenExpr, elem.param)
+        const wrappedChildren = wrapLoopParamAsAccessor(rawChildrenExpr, elem.param, elem.paramBindings)
         lines.push(`      { const __c = qsa(__existing, '${selector}'); if (__c) { initChild('${comp.name}', __c, ${nestedPropsExpr}); createEffect(() => { const __v = ${wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
       } else {
         lines.push(`      { const __c = qsa(__existing, '${selector}'); if (__c) initChild('${comp.name}', __c, ${nestedPropsExpr}) }`)
@@ -818,7 +847,7 @@ function emitComponentLoopReconciliation(lines: string[], elem: TopLevelLoop, ke
     }
     // Emit reactive effects for conditionals/texts inside component children
     if (elem.childConditionals && elem.childConditionals.length > 0) {
-      emitLoopChildReactiveEffects(lines, '      ', '__existing', [], [], elem.childConditionals, elem.param)
+      emitLoopChildReactiveEffects(lines, '      ', '__existing', [], [], elem.childConditionals, elem.param, elem.paramBindings)
     }
     lines.push(`      return __existing`)
     lines.push(`    }`)
@@ -832,14 +861,14 @@ function emitComponentLoopReconciliation(lines: string[], elem: TopLevelLoop, ke
       const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
       const childrenRefsLoop = rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, elem.param)
       if (childrenRefsLoop) {
-        const wrappedChildren = wrapLoopParamAsAccessor(rawChildrenExpr, elem.param)
+        const wrappedChildren = wrapLoopParamAsAccessor(rawChildrenExpr, elem.param, elem.paramBindings)
         lines.push(`    { const __c = qsa(__csrEl, '${selector}'); if (__c) { initChild('${comp.name}', __c, ${nestedPropsExpr}); createEffect(() => { const __v = ${wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
       } else {
         lines.push(`    { const __c = qsa(__csrEl, '${selector}'); if (__c) initChild('${comp.name}', __c, ${nestedPropsExpr}) }`)
       }
     }
     if (elem.childConditionals && elem.childConditionals.length > 0) {
-      emitLoopChildReactiveEffects(lines, '    ', '__csrEl', [], [], elem.childConditionals, elem.param)
+      emitLoopChildReactiveEffects(lines, '    ', '__csrEl', [], [], elem.childConditionals, elem.param, elem.paramBindings)
     }
     lines.push(`    return __csrEl`)
   } else {
@@ -886,12 +915,12 @@ function emitPlainElementLoopReconciliation(lines: string[], elem: TopLevelLoop,
   const vLoop = varSlotId(elem.slotId)
   const chainedExpr = buildChainedArrayExpr(elem)
   const indexParam = elem.index || '__idx'
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param)
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
 
   const hasReactiveEffects = elem.childReactiveAttrs.length > 0
     || elem.childReactiveTexts.length > 0
     || (elem.childConditionals?.length ?? 0) > 0
-  const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(elem.param)
+  const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
   const unwrapInline = pUnwrap ? `${pUnwrap} ` : ''
 
   if (!hasReactiveEffects) {
@@ -910,7 +939,7 @@ function emitPlainElementLoopReconciliation(lines: string[], elem: TopLevelLoop,
     }
     // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
     lines.push(`    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${elem.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
-    emitLoopChildReactiveEffects(lines, '    ', '__el', elem.childReactiveAttrs, elem.childReactiveTexts, elem.childConditionals, elem.param)
+    emitLoopChildReactiveEffects(lines, '    ', '__el', elem.childReactiveAttrs, elem.childReactiveTexts, elem.childConditionals, elem.param, elem.paramBindings)
     lines.push(`    return __el`)
     lines.push(`  })`)
   }
@@ -919,19 +948,39 @@ function emitPlainElementLoopReconciliation(lines: string[], elem: TopLevelLoop,
 /** Emit event delegation for dynamic (non-static) loop child events. */
 function emitDynamicLoopEventDelegation(lines: string[], elem: TopLevelLoop): void {
   const vLoop = varSlotId(elem.slotId)
+  const hasBindings = (elem.paramBindings?.length ?? 0) > 0
 
   if (elem.key) {
-    // Dynamic keyed: find item by data-key attribute
-    const keyWithItem = elem.key.replace(new RegExp(`\\b${elem.param}\\b`, 'g'), 'item')
+    // Dynamic keyed: find item by data-key attribute.
+    // For destructured `.map(({ id }) => ...)`, the raw regex replace below
+    // can't reach binding names (the pattern text `{ id }` never word-matches
+    // on `id`), so we substitute bindings with `item.<path>` directly (#951).
+    const keyWithItem = hasBindings
+      ? substituteLoopBindings(elem.key, elem.paramBindings!, 'item')
+      : elem.key.replace(new RegExp(`\\b${elem.param}\\b`, 'g'), 'item')
     emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
       if (ev.nestedLoops.length === 0) {
-        // Direct child of outer loop — single-level lookup
+        // Direct child of outer loop — single-level lookup.
+        // For destructured outer param, `const { id } = arr.find(item => ...)`
+        // would throw a TDZ ReferenceError if the find callback references the
+        // outer `id` while the `const` is still being declared. Land on a
+        // plain `__bfLoopItem` local first, then destructure once the lookup
+        // is done (#951).
         ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[${DATA_KEY}]')`)
         ls.push(`      if (li) {`)
         ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
-        ls.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
-        if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
-        ls.push(`        if (${elem.param}) ${handlerCall}`)
+        if (hasBindings) {
+          ls.push(`        const __bfLoopItem = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
+          ls.push(`        if (__bfLoopItem) {`)
+          ls.push(`          const ${elem.param} = __bfLoopItem`)
+          if (elem.mapPreamble) ls.push(`          ${elem.mapPreamble}`)
+          ls.push(`          ${handlerCall}`)
+          ls.push(`        }`)
+        } else {
+          ls.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
+          if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
+          ls.push(`        if (${elem.param}) ${handlerCall}`)
+        }
         ls.push(`      }`)
       } else {
         // Nested loop event — multi-level data-key-N resolution
@@ -945,19 +994,32 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: TopLevelLoop): vo
         // Resolve outer loop key
         ls.push(`      const outerLi = ${evVar}El.closest('[${DATA_KEY}]')`)
         ls.push(`      const outerKey = outerLi?.getAttribute('${DATA_KEY}')`)
-        // Resolve outer loop variable
-        ls.push(`      const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === outerKey)`)
-        // Resolve inner loop variables via the outer param's nested array
+        // Resolve outer loop variable — TDZ-safe for destructured params.
+        if (hasBindings) {
+          ls.push(`      const __bfLoopItem = ${elem.array}.find(item => String(${keyWithItem}) === outerKey)`)
+          ls.push(`      const ${elem.param} = __bfLoopItem ?? ({})`)
+        } else {
+          ls.push(`      const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === outerKey)`)
+        }
+        // Resolve inner loop variables via the outer param's nested array.
+        // Destructured inner params get the same `substituteLoopBindings`
+        // treatment; otherwise fall through to the legacy regex replace.
         for (const nested of ev.nestedLoops) {
           // `nested.key` can be null for unkeyed loops; coerce to '' so the
           // resolution silently no-ops (String('') never matches a real
           // key), matching prior behavior when NestedLoop.key was
           // always a string defaulting to ''.
-          const innerKeyExpr = (nested.key ?? '').replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
-          ls.push(`      const ${nested.param} = ${elem.param} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
+          const rawKey = nested.key ?? ''
+          const innerKeyExpr = nested.paramBindings && nested.paramBindings.length > 0
+            ? substituteLoopBindings(rawKey, nested.paramBindings, 'item')
+            : rawKey.replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
+          const outerRef = hasBindings ? '__bfLoopItem' : elem.param
+          ls.push(`      const ${nested.param} = ${outerRef} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
         }
-        // Guard all resolved variables
-        const allParams = [elem.param, ...ev.nestedLoops.map(n => n.param)]
+        // Guard all resolved variables — for destructured outer we use the
+        // __bfLoopItem sentinel because the pattern text itself isn't truthy-testable.
+        const outerGuard = hasBindings ? '__bfLoopItem' : elem.param
+        const allParams = [outerGuard, ...ev.nestedLoops.map(n => n.param)]
         if (elem.mapPreamble) ls.push(`      ${elem.mapPreamble}`)
         ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
       }
@@ -968,9 +1030,18 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: TopLevelLoop): vo
       ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
       ls.push(`      if (li && li.parentElement) {`)
       ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
-      ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
-      if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
-      ls.push(`        if (${elem.param}) ${handlerCall}`)
+      if (hasBindings) {
+        ls.push(`        const __bfLoopItem = ${elem.array}[idx]`)
+        ls.push(`        if (__bfLoopItem) {`)
+        ls.push(`          const ${elem.param} = __bfLoopItem`)
+        if (elem.mapPreamble) ls.push(`          ${elem.mapPreamble}`)
+        ls.push(`          ${handlerCall}`)
+        ls.push(`        }`)
+      } else {
+        ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
+        if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
+        ls.push(`        if (${elem.param}) ${handlerCall}`)
+      }
       ls.push(`      }`)
     })
   }
@@ -983,18 +1054,31 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: TopLevelLoop): vo
 function emitBranchLoopEventDelegation(lines: string[], loop: BranchLoop, cv: string): void {
   const containerVar = `__loop_${cv}`
   const childEvents = loop.childEvents
+  const hasBindings = (loop.paramBindings?.length ?? 0) > 0
 
   if (loop.key) {
-    // Keyed: find item by data-key attribute
-    const keyWithItem = loop.key.replace(new RegExp(`\\b${loop.param}\\b`, 'g'), 'item')
+    // Keyed: find item by data-key attribute. See emitDynamicLoopEventDelegation
+    // for the destructured-param TDZ-safe shape (#951).
+    const keyWithItem = hasBindings
+      ? substituteLoopBindings(loop.key, loop.paramBindings!, 'item')
+      : loop.key.replace(new RegExp(`\\b${loop.param}\\b`, 'g'), 'item')
     emitLoopEventDelegation(lines, containerVar, childEvents, (ls, ev, handlerCall) => {
       if (ev.nestedLoops.length === 0) {
         ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[${DATA_KEY}]')`)
         ls.push(`      if (li) {`)
         ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
-        ls.push(`        const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === key)`)
-        if (loop.mapPreamble) ls.push(`        ${loop.mapPreamble}`)
-        ls.push(`        if (${loop.param}) ${handlerCall}`)
+        if (hasBindings) {
+          ls.push(`        const __bfLoopItem = ${loop.array}.find(item => String(${keyWithItem}) === key)`)
+          ls.push(`        if (__bfLoopItem) {`)
+          ls.push(`          const ${loop.param} = __bfLoopItem`)
+          if (loop.mapPreamble) ls.push(`          ${loop.mapPreamble}`)
+          ls.push(`          ${handlerCall}`)
+          ls.push(`        }`)
+        } else {
+          ls.push(`        const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === key)`)
+          if (loop.mapPreamble) ls.push(`        ${loop.mapPreamble}`)
+          ls.push(`        if (${loop.param}) ${handlerCall}`)
+        }
         ls.push(`      }`)
       } else {
         // Nested loop event — multi-level data-key-N resolution
@@ -1006,13 +1090,23 @@ function emitBranchLoopEventDelegation(lines: string[], loop: BranchLoop, cv: st
         }
         ls.push(`      const outerLi = ${evVar}El.closest('[${DATA_KEY}]')`)
         ls.push(`      const outerKey = outerLi?.getAttribute('${DATA_KEY}')`)
-        ls.push(`      const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === outerKey)`)
+        if (hasBindings) {
+          ls.push(`      const __bfLoopItem = ${loop.array}.find(item => String(${keyWithItem}) === outerKey)`)
+          ls.push(`      const ${loop.param} = __bfLoopItem ?? ({})`)
+        } else {
+          ls.push(`      const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === outerKey)`)
+        }
         for (const nested of ev.nestedLoops) {
           // See sibling comment above — `nested.key` may be null.
-          const innerKeyExpr = (nested.key ?? '').replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
-          ls.push(`      const ${nested.param} = ${loop.param} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
+          const rawKey = nested.key ?? ''
+          const innerKeyExpr = nested.paramBindings && nested.paramBindings.length > 0
+            ? substituteLoopBindings(rawKey, nested.paramBindings, 'item')
+            : rawKey.replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
+          const outerRef = hasBindings ? '__bfLoopItem' : loop.param
+          ls.push(`      const ${nested.param} = ${outerRef} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
         }
-        const allParams = [loop.param, ...ev.nestedLoops.map(n => n.param)]
+        const outerGuard = hasBindings ? '__bfLoopItem' : loop.param
+        const allParams = [outerGuard, ...ev.nestedLoops.map(n => n.param)]
         if (loop.mapPreamble) ls.push(`      ${loop.mapPreamble}`)
         ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
       }
@@ -1023,9 +1117,18 @@ function emitBranchLoopEventDelegation(lines: string[], loop: BranchLoop, cv: st
       ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
       ls.push(`      if (li && li.parentElement) {`)
       ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
-      ls.push(`        const ${loop.param} = ${loop.array}[idx]`)
-      if (loop.mapPreamble) ls.push(`        ${loop.mapPreamble}`)
-      ls.push(`        if (${loop.param}) ${handlerCall}`)
+      if (hasBindings) {
+        ls.push(`        const __bfLoopItem = ${loop.array}[idx]`)
+        ls.push(`        if (__bfLoopItem) {`)
+        ls.push(`          const ${loop.param} = __bfLoopItem`)
+        if (loop.mapPreamble) ls.push(`          ${loop.mapPreamble}`)
+        ls.push(`          ${handlerCall}`)
+        ls.push(`        }`)
+      } else {
+        ls.push(`        const ${loop.param} = ${loop.array}[idx]`)
+        if (loop.mapPreamble) ls.push(`        ${loop.mapPreamble}`)
+        ls.push(`        if (${loop.param}) ${handlerCall}`)
+      }
       ls.push(`      }`)
     })
   }
@@ -1078,8 +1181,8 @@ interface CompositeLoopContext {
 }
 
 /** Emit a single addEventListener call for a child event on a given element. */
-function emitEventSetup(ls: string[], indent: string, elVar: string, ev: LoopChildEvent, loopParam?: string): void {
-  let handler = loopParam ? wrapLoopParamAsAccessor(ev.handler, loopParam) : ev.handler
+function emitEventSetup(ls: string[], indent: string, elVar: string, ev: LoopChildEvent, loopParam?: string, loopParamBindings?: readonly LoopParamBinding[]): void {
+  let handler = loopParam ? wrapLoopParamAsAccessor(ev.handler, loopParam, loopParamBindings) : ev.handler
   handler = wrapHandlerInBlock(handler)
   ls.push(`${indent}{ const __e = qsa(${elVar}, '[bf="${ev.childSlotId}"]'); if (__e) __e.addEventListener('${toDomEventName(ev.eventName)}', ${handler}) }`)
 }
@@ -1117,10 +1220,11 @@ function emitComponentAndEventSetup(
   events: LoopChildEvent[],
   mode: 'csr' | 'ssr',
   loopParam?: string,
+  loopParamBindings?: readonly LoopParamBinding[],
 ): void {
-  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam) : (expr: string) => expr
+  const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings) : (expr: string) => expr
   for (const comp of comps) {
-    const propsExpr = buildComponentPropsExpr(comp, loopParam)
+    const propsExpr = buildComponentPropsExpr(comp, loopParam, loopParamBindings)
     // Check if children are text-equivalent and reference the loop param — if so,
     // emit a createEffect to reactively update textContent when the signal changes.
     // Text-equivalent: expression, text, or conditional with text-only branches.
@@ -1128,7 +1232,8 @@ function emitComponentAndEventSetup(
       ? comp.children.every(c => c.type === 'expression' || c.type === 'text' || isTextOnlyConditional(c))
       : false
     const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
-    const childrenRefsLoop = loopParam != null && rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, loopParam)
+    const childrenRefsLoop = loopParam != null && rawChildrenExpr != null
+      && exprRefsLoopBinding(rawChildrenExpr, { param: loopParam, paramBindings: loopParamBindings })
     if (mode === 'csr') {
       const phId = comp.slotId || comp.name
       const keyProp = comp.props.find(p => p.name === 'key')
@@ -1154,7 +1259,7 @@ function emitComponentAndEventSetup(
     }
   }
   for (const ev of events) {
-    emitEventSetup(ls, indent, elVar, ev, loopParam)
+    emitEventSetup(ls, indent, elVar, ev, loopParam, loopParamBindings)
   }
 }
 
@@ -1165,7 +1270,8 @@ function emitComponentAndEventSetup(
  */
 function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: CompositeLoopContext): void {
   const param = ctx.elem.param
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, param)
+  const paramBindings = ctx.elem.paramBindings
+  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, param, paramBindings)
 
   // Exclude components inside reactive conditionals — managed by insert()
   const condCompSlotIds = new Set<string>()
@@ -1190,25 +1296,25 @@ function emitCompositeRenderItemBody(ls: string[], indent: string, ctx: Composit
   ls.push(`${indent}if (__existing) {`)
   ls.push(`${indent}  __el = __existing`)
   // SSR: initialize nested components via initChild
-  emitComponentAndEventSetup(ls, `${indent}  `, '__el', filteredComps, ctx.outerEvents, 'ssr', param)
+  emitComponentAndEventSetup(ls, `${indent}  `, '__el', filteredComps, ctx.outerEvents, 'ssr', param, paramBindings)
   // SSR: inner loop initialization
-  emitInnerLoopSetup(ls, `${indent}  `, '__el', ctx.depthLevels, 'ssr', param)
+  emitInnerLoopSetup(ls, `${indent}  `, '__el', ctx.depthLevels, 'ssr', param, paramBindings)
   ls.push(`${indent}} else {`)
   // CSR: create element from template, replace placeholders with createComponent
   ls.push(`${indent}  const __tpl = document.createElement('template')`)
   // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
   ls.push(`${indent}  __tpl.innerHTML = \`${ctx.elem.template}\``)
   ls.push(`${indent}  __el = __tpl.content.firstElementChild.cloneNode(true)`)
-  emitComponentAndEventSetup(ls, `${indent}  `, '__el', filteredComps, ctx.outerEvents, 'csr', param)
+  emitComponentAndEventSetup(ls, `${indent}  `, '__el', filteredComps, ctx.outerEvents, 'csr', param, paramBindings)
   // CSR: inner loop initialization
-  emitInnerLoopSetup(ls, `${indent}  `, '__el', ctx.depthLevels, 'csr', param)
+  emitInnerLoopSetup(ls, `${indent}  `, '__el', ctx.depthLevels, 'csr', param, paramBindings)
   ls.push(`${indent}}`)
 
   const reactiveAttrs = ctx.elem.childReactiveAttrs ?? []
   const reactiveTexts = ctx.elem.childReactiveTexts ?? []
   const reactiveConditionals = ctx.elem.childConditionals ?? []
   if (reactiveAttrs.length > 0 || reactiveTexts.length > 0 || reactiveConditionals.length > 0) {
-    emitLoopChildReactiveEffects(ls, indent, '__el', reactiveAttrs, reactiveTexts, reactiveConditionals, param)
+    emitLoopChildReactiveEffects(ls, indent, '__el', reactiveAttrs, reactiveTexts, reactiveConditionals, param, paramBindings)
   }
 
   ls.push(`${indent}return __el`)
@@ -1227,9 +1333,10 @@ function emitInnerLoopSetup(
   levels: DepthLevel[],
   mode: 'csr' | 'ssr',
   outerLoopParam?: string,
+  outerLoopParamBindings?: readonly LoopParamBinding[],
 ): void {
   const wrapOuter = outerLoopParam
-    ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam) : (expr: string) => expr
+    ? (expr: string) => wrapLoopParamAsAccessor(expr, outerLoopParam, outerLoopParamBindings) : (expr: string) => expr
   let i = 0
   while (i < levels.length) {
     const level = levels[i]
@@ -1259,7 +1366,7 @@ function emitInnerLoopSetup(
       const keyFn = loopKeyFn(inner)
       // Template is already wrapped at generation time (irToPlaceholderTemplate with loopParams)
       const wrappedTemplate = inner.template!
-      const { head: innerHead, unwrap: innerUnwrap } = destructureLoopParam(inner.param)
+      const { head: innerHead, unwrap: innerUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
       ls.push(`${indent}// Reactive inner loop: ${inner.array}`)
       ls.push(`${indent}{ const __ic${uid} = ${containerSelector !== 'null' ? `qsa(${parentElVar}, ${containerSelector})` : parentElVar}`)
       ls.push(`${indent}if (__ic${uid}) mapArray(() => ${arrayExpr} || [], __ic${uid}, ${keyFn}, (${innerHead}, __innerIdx${uid}, __existing) => {`)
@@ -1270,7 +1377,7 @@ function emitInnerLoopSetup(
       ls.push(`${indent}  let __innerEl${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${wrappedTemplate}\`; return __t.content.firstElementChild.cloneNode(true) })()`)
       if (inner.key) {
         // Inside renderItem, inner.param is an accessor
-        const wrappedKey = wrapLoopParamAsAccessor(inner.key, inner.param)
+        const wrappedKey = wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings)
         ls.push(`${indent}  __innerEl${uid}.setAttribute('${keyAttrName(inner.depth)}', String(${wrappedKey}))`)
       }
       // Set up components and events — wrap inner loop param as accessor
@@ -1279,7 +1386,7 @@ function emitInnerLoopSetup(
         // Children IR nodes must be wrapped recursively so nested component props
         // (e.g., SelectItem value inside SelectContent inside Select) also get
         // the inner loop param converted to signal accessor form.
-        const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param)
+        const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings)
         const wrapIRNode = (node: any): any => {
           if (node.type === 'component') {
             return {
@@ -1310,19 +1417,19 @@ function emitInnerLoopSetup(
           handler: wrapInner(ev.handler),
         }))
         ls.push(`${indent}  if (!__existing) {`)
-        emitComponentAndEventSetup(ls, `${indent}    `, `__innerEl${uid}`, wrappedComps, wrappedEvents, 'csr', outerLoopParam)
+        emitComponentAndEventSetup(ls, `${indent}    `, `__innerEl${uid}`, wrappedComps, wrappedEvents, 'csr', outerLoopParam, outerLoopParamBindings)
         ls.push(`${indent}  } else {`)
-        emitComponentAndEventSetup(ls, `${indent}    `, `__innerEl${uid}`, wrappedComps, wrappedEvents, 'ssr', outerLoopParam)
+        emitComponentAndEventSetup(ls, `${indent}    `, `__innerEl${uid}`, wrappedComps, wrappedEvents, 'ssr', outerLoopParam, outerLoopParamBindings)
         ls.push(`${indent}  }`)
       }
       // Recurse for child levels
       if (childLevels.length > 0) {
-        emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${uid}`, childLevels, mode, outerLoopParam)
+        emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${uid}`, childLevels, mode, outerLoopParam, outerLoopParamBindings)
       }
       // Reactive text effects for inner loop items
       if (inner.childReactiveTexts && inner.childReactiveTexts.length > 0) {
         for (const text of inner.childReactiveTexts) {
-          const wrappedExpr = wrapLoopParamAsAccessor(wrapOuter(text.expression), inner.param)
+          const wrappedExpr = wrapLoopParamAsAccessor(wrapOuter(text.expression), inner.param, inner.paramBindings)
           if (text.insideConditional) {
             // Text is inside a conditional branch: insert() may replace the DOM element,
             // making a captured text node stale. Re-query $t inside the effect so each
@@ -1347,10 +1454,10 @@ function emitInnerLoopSetup(
       if (inner.key) {
         ls.push(`${indent}  __innerEl${uid}.setAttribute('${keyAttrName(inner.depth)}', String(${inner.key}))`)
       }
-      emitComponentAndEventSetup(ls, `${indent}  `, `__innerEl${uid}`, level.comps, level.events, mode, outerLoopParam)
+      emitComponentAndEventSetup(ls, `${indent}  `, `__innerEl${uid}`, level.comps, level.events, mode, outerLoopParam, outerLoopParamBindings)
       // Recurse for child levels (nested deeper loops)
       if (childLevels.length > 0) {
-        emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${uid}`, childLevels, mode, outerLoopParam)
+        emitInnerLoopSetup(ls, `${indent}  `, `__innerEl${uid}`, childLevels, mode, outerLoopParam, outerLoopParamBindings)
       }
       ls.push(`${indent}}) }`)
     }
@@ -1384,7 +1491,7 @@ function emitCompositeElementReconciliation(
     depthLevels,
   }
 
-  const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(elem.param)
+  const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
   lines.push(`  mapArray(() => ${chainedExpr}, _${vLoop}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => {`)
   if (pUnwrap) {
     lines.push(`    ${pUnwrap}`)

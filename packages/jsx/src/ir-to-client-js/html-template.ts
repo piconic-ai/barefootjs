@@ -5,6 +5,7 @@
 import type { IRNode } from '../types'
 import { isBooleanAttr } from '../html-constants'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, BF_LOOP_START, BF_LOOP_END, exprReferencesIdent, wrapExprWithLoopParams } from './utils'
+import type { LoopParamSpec } from './utils'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -59,7 +60,7 @@ function templateAttrExpr(attrName: string, valExpr: string, attr: { presenceOrU
  *  @param loopDepth - Current nesting depth inside inner loops. 0 = outer loop level.
  *    When > 0, `key` attributes are converted to `data-key-{depth}` instead of `data-key`.
  */
-export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: string[]): string {
+export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>): string {
   const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams)
   const wrapExpr = (expr: string) => wrapExprWithLoopParams(expr, loopParams)
 
@@ -195,7 +196,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
  * elements (`<div data-bf-ph="sN"></div>`) instead of renderChild() calls.
  * The placeholders are replaced with real createComponent() elements at runtime.
  */
-export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: string[]): string {
+export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>): string {
   const recurse = (n: IRNode): string => irToPlaceholderTemplate(n, restSpreadNames, loopDepth, loopParams)
   const wrapExpr = (expr: string) => wrapExprWithLoopParams(expr, loopParams)
 
