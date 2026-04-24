@@ -5,6 +5,13 @@ test.describe('Async Infinite Scroll Block', () => {
     page.on('pageerror', error => {
       console.log('Page error:', error.message)
     })
+    // Stub Math.random before any page script runs so the demo's 12%
+    // random error injection in fetchPage never fires for pagination
+    // flows. Individual tests that need to exercise the error path
+    // override Math.random locally (see the "Error state" suite).
+    await page.addInitScript(() => {
+      Math.random = () => 0.5
+    })
     await page.goto('/components/infinite-scroll')
   })
 
