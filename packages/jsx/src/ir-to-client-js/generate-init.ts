@@ -5,7 +5,13 @@
 import type { ComponentIR, ConstantInfo, FunctionInfo, IRNode } from '../types'
 import type { ClientJsContext, ConditionalElement } from './types'
 import { varSlotId, PROPS_PARAM } from './utils'
-import { collectUsedIdentifiers, collectUsedFunctions, collectIdentifiersFromIRTree, extractIdentifiers } from './identifiers'
+import {
+  buildReferencesGraph,
+  graphAssignedIdentifiers,
+  graphFunctionReferences,
+  graphUsedFunctions,
+  graphUsedIdentifiers,
+} from './build-references'
 import { valueReferencesReactiveData, getControlledPropName, detectPropsWithPropertyAccess } from './prop-handling'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectUserDomImports, collectExternalImports } from './imports'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
@@ -72,39 +78,19 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   lines.push(`  if (!__scope) return`)
   lines.push('')
 
-  // --- Analysis: collect used identifiers and determine dependencies ---
+  // --- Analysis: derive reachability from the component's reference graph ---
+  //
+  // The graph is built once and queried for every reachability question
+  // `generate-init.ts` used to answer via three separate extraction
+  // passes (`collectUsedIdentifiers`, `collectUsedFunctions`,
+  // `collectIdentifiersFromIRTree`) plus a manual init-statement merge.
+  // Each query below is a pure function over the same graph. See
+  // `spec/compiler-analysis-ir.md` for the target invariants.
 
-  const usedIdentifiers = collectUsedIdentifiers(ctx)
-  const usedFunctions = collectUsedFunctions(ctx)
-  for (const fn of usedFunctions) {
-    usedIdentifiers.add(fn)
-  }
-
-  // Walk the full IR tree to catch identifiers in ANY context —
-  // nested component props, loop child components, conditional branches, etc.
-  // This eliminates the "whack-a-mole" pattern where new JSX patterns break
-  // because collectUsedIdentifiers didn't extract from a specific context.
-  collectIdentifiersFromIRTree(_ir.root, usedIdentifiers)
-
-  // Init statements (#930) reference identifiers via raw source text — not
-  // visible to IR-based identifier collection. Add their pre-computed free
-  // identifier sets so module-level declarations they depend on (#933) are
-  // not dropped from the output, and track assignment targets separately
-  // so those specific declarations are routed to module scope (where the
-  // assignment needs them to live).
-  const initStmtAssignedIdentifiers = new Set<string>()
-  for (const stmt of ctx.initStatements) {
-    if (stmt.freeIdentifiers) {
-      for (const id of stmt.freeIdentifiers) {
-        usedIdentifiers.add(id)
-      }
-    }
-    if (stmt.assignedIdentifiers) {
-      for (const id of stmt.assignedIdentifiers) {
-        initStmtAssignedIdentifiers.add(id)
-      }
-    }
-  }
+  const graph = buildReferencesGraph(ctx, _ir.root)
+  const usedIdentifiers = graphUsedIdentifiers(graph)
+  const usedFunctions = graphUsedFunctions(graph)
+  const initStmtAssignedIdentifiers = graphAssignedIdentifiers(graph)
 
   const neededProps = new Set<string>()
   const neededConstants: ConstantInfo[] = []
@@ -252,13 +238,16 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
     }
   }
 
+  // Forward reachability over the pre-built function→name edges from the
+  // references graph. The loop still sweeps until no further demotions
+  // happen; each sweep is a graph lookup (`graphFunctionReferences`)
+  // rather than a regex re-tokenisation of the function body.
   let changed = true
   while (changed) {
     changed = false
     const stillModuleLevel: FunctionInfo[] = []
     for (const fn of pendingModuleLevel) {
-      const refs = new Set<string>()
-      extractIdentifiers(fn.body, refs)
+      const refs = graphFunctionReferences(graph, fn.name)
       // Parameters shadow outer names inside the function body.
       for (const p of fn.params) refs.delete(p.name)
       const referencesInit = [...refs].some(r => initRequiredNames.has(r))

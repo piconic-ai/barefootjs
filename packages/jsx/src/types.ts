@@ -651,10 +651,119 @@ export interface IRMetadata {
   localFunctions: FunctionInfo[]
   localConstants: ConstantInfo[]
   /** Pre-computed client JS analysis for adapter use */
-  clientAnalysis?: {
-    needsInit: boolean
-    usedProps: string[]
-  }
+  clientAnalysis?: ClientAnalysis
+}
+
+// =============================================================================
+// Client Analysis (references graph + derived facts)
+// =============================================================================
+
+/**
+ * Where a reference appears in the emitted client JS. The emitter's rule
+ * set is expressed as graph queries parameterised by this tag, so the
+ * "whack-a-mole" pattern — a new rule landing as a new `if` inside
+ * `generate-init.ts` — is replaced by typed edge-context matching.
+ *
+ * See `spec/compiler-analysis-ir.md` for the full rationale.
+ */
+export type ReferenceContext =
+  /**
+   * Reference appears in a declaration body that runs at `init()` time:
+   * signal initial value, memo body, effect body, onMount body, constant
+   * initializer, function body, or any reachable transitive reference
+   * from these. Default context for declaration-to-declaration edges.
+   */
+  | 'init-body'
+  /**
+   * Reference is a function name used as an event handler on a DOM
+   * element (e.g. `onClick={handleAdd}`). Distinct tag so the emitter
+   * can treat handler references separately from body references
+   * (e.g. the handler itself is always reachable; its body is a
+   * descendant init-body edge).
+   */
+  | 'event-handler'
+  /**
+   * Reference appears in a string the SSR / CSR template closure reads:
+   * loop template HTML, conditional branch HTML, dynamic-text
+   * expression, reactive-attribute expression, reactive prop binding.
+   * These references survive into the template and therefore need
+   * their referents at module scope (or safely inlined).
+   */
+  | 'template-closure'
+  /**
+   * Reference appears in a bare imperative top-of-component statement
+   * (#930). Distinct from `init-body` because the statement may have
+   * side effects on declarations (assignment-target edges) and because
+   * `InitStatementInfo.freeIdentifiers` already isolates these from
+   * ordinary declaration bodies.
+   */
+  | 'init-statement'
+  /**
+   * LHS of an assignment inside an init-statement (#933). A subset of
+   * `init-statement` edges where the target must resolve to a real
+   * declaration, otherwise ESM strict mode throws a ReferenceError.
+   * Triggers module-scope routing for the target in Stage C.
+   */
+  | 'assignment-target'
+
+/**
+ * The declaration a reference edge originates from. `null` when the
+ * edge is rooted at a structural position with no backing declaration
+ * (template closure root, component-wide event-handler registry, etc.).
+ */
+export interface ReferenceSource {
+  kind:
+    | 'constant'
+    | 'function'
+    | 'signal'
+    | 'memo'
+    | 'effect'
+    | 'on-mount'
+    | 'init-statement'
+    | 'component-root'
+  /** Declaration name. `null` for anonymous sources (component-root, etc.). */
+  name: string | null
+}
+
+export interface ReferenceEdge {
+  from: ReferenceSource | null
+  to: string
+  context: ReferenceContext
+}
+
+/**
+ * Name-level reference graph for a component. Populated once by the
+ * analyzer; queried by the emitter. Replaces `collectUsedIdentifiers` /
+ * `collectUsedFunctions` / `collectIdentifiersFromIRTree`, the function
+ * fixpoint, and the duplicated prop-reachability loop in
+ * `analyzeClientNeeds` — all of which are derivable from `edges`.
+ *
+ * See `spec/compiler-analysis-ir.md` §"Target IR shape".
+ */
+export interface ReferencesGraph {
+  edges: ReferenceEdge[]
+  /**
+   * Names declared by this component — all constants, functions, signal
+   * getters/setters, memos, props, and the props object (if present).
+   * Edges with `to` outside this set are references to external names
+   * (imports, builtins, loop params) and should not be followed during
+   * reachability queries on declarations.
+   */
+  declaredNames: Set<string>
+  /** Prop names (propsParams plus `propsObjectName` when present). */
+  propNames: Set<string>
+}
+
+export interface ClientAnalysis {
+  needsInit: boolean
+  usedProps: string[]
+  /**
+   * Reference graph over the component's declarations. Populated by
+   * the analyzer at the same point `needsInit` / `usedProps` are
+   * computed. Consumed by `generate-init.ts` and by future stages
+   * (scope routing, CSR template visibility) of issue #1021.
+   */
+  references?: ReferencesGraph
 }
 
 // =============================================================================

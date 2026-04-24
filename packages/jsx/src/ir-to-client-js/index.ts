@@ -8,7 +8,7 @@ import type { ComponentIR } from '../types'
 import type { ClientJsContext } from './types'
 import { collectElements, computeLoopSiblingOffsets } from './collect-elements'
 import { generateInitFunction } from './generate-init'
-import { collectUsedIdentifiers, collectUsedFunctions, collectIdentifiersFromIRTree } from './identifiers'
+import { buildReferencesGraph, graphUsedIdentifiers } from './build-references'
 import { valueReferencesReactiveData } from './prop-handling'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template'
 import { PROPS_PARAM } from './utils'
@@ -72,13 +72,11 @@ export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedP
     return { needsInit: false, usedProps: [] }
   }
 
-  // Replicate the props-detection logic from generate-init.ts
-  const usedIdentifiers = collectUsedIdentifiers(ctx)
-  collectIdentifiersFromIRTree(ir.root, usedIdentifiers)  // comprehensive fallback
-  const usedFunctions = collectUsedFunctions(ctx)
-  for (const fn of usedFunctions) {
-    usedIdentifiers.add(fn)
-  }
+  // Use the shared reference graph instead of replicating the extraction
+  // passes. Byte-identical to the old three-call composition; see
+  // `spec/compiler-analysis-ir.md` for the graph invariants.
+  const graph = buildReferencesGraph(ctx, ir.root)
+  const usedIdentifiers = graphUsedIdentifiers(graph)
 
   const neededProps = new Set<string>()
 
