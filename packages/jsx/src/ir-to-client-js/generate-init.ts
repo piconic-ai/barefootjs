@@ -11,7 +11,8 @@ import {
   graphUsedIdentifiers,
 } from './build-references'
 import { computeDeclarationScopes } from './compute-scope'
-import { valueReferencesReactiveData, getControlledPropName, detectPropsWithPropertyAccess } from './prop-handling'
+import { valueReferencesReactiveData, getControlledPropName } from './prop-handling'
+import { computePropUsage } from './compute-prop-usage'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectUserDomImports, collectExternalImports } from './imports'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
 import {
@@ -121,19 +122,11 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
     }
   }
 
-  const propsWithPropertyAccess = detectPropsWithPropertyAccess(ctx, neededConstants)
-
-  const propsUsedAsLoopArrays = new Set<string>()
-  for (const loop of ctx.loopElements) {
-    const arrayName = loop.array.trim()
-    if (ctx.propsParams.some((p) => p.name === arrayName)) {
-      propsUsedAsLoopArrays.add(arrayName)
-    }
-  }
+  const propUsage = computePropUsage(ctx, neededConstants)
 
   // --- Output: generate code in correct order ---
 
-  emitPropsExtraction(lines, ctx, neededProps, propsWithPropertyAccess, propsUsedAsLoopArrays)
+  emitPropsExtraction(lines, ctx, neededProps, propUsage)
 
   // Build unified Declaration[] and sort by dependency order (#508)
   const controlledSignals: Array<{ signal: typeof ctx.signals[0]; propName: string }> = []

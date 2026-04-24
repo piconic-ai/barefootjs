@@ -6,9 +6,10 @@
  * Control flow, reactive updates, and registration are in separate modules.
  */
 
-import type { SignalInfo } from '../types'
+import type { PropUsage, SignalInfo } from '../types'
 import type { Declaration } from './declaration-sort'
 import type { ClientJsContext } from './types'
+import { propHasPropertyAccess } from './compute-prop-usage'
 import { inferDefaultValue, toDomEventName, wrapHandlerInBlock, varSlotId, quotePropName, PROPS_PARAM } from './utils'
 
 
@@ -40,8 +41,7 @@ export function emitPropsExtraction(
   lines: string[],
   ctx: ClientJsContext,
   neededProps: Set<string>,
-  propsWithPropertyAccess: Set<string>,
-  propsUsedAsLoopArrays: Set<string>
+  propUsage: Map<string, PropUsage>,
 ): void {
   // Props used as conditional guards must remain falsy when undefined,
   // so we must NOT default them to {} (which is truthy).
@@ -60,15 +60,16 @@ export function emitPropsExtraction(
   if (neededProps.size > 0 && !ctx.propsObjectName) {
     for (const propName of neededProps) {
       const prop = ctx.propsParams.find((p) => p.name === propName)
+      const usage = propUsage.get(propName)
       const defaultVal = prop?.defaultValue
       if (defaultVal) {
         // Wrap arrow function defaults in parentheses to avoid operator precedence issues
         // e.g., `props.onInput ?? () => {}` is a syntax error; must be `props.onInput ?? (() => {})`
         const wrappedDefault = prop?.defaultContainsArrow ? `(${defaultVal})` : defaultVal
         lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? ${wrappedDefault}`)
-      } else if (propsUsedAsLoopArrays.has(propName)) {
+      } else if (usage?.usedAsLoopArray) {
         lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? []`)
-      } else if (propsWithPropertyAccess.has(propName) && !propsUsedAsConditions.has(propName)) {
+      } else if (propHasPropertyAccess(usage) && !propsUsedAsConditions.has(propName)) {
         lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? {}`)
       } else if (prop?.optional && prop?.type) {
         const inferredDefault = inferDefaultValue(prop.type)

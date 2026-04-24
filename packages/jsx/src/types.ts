@@ -776,6 +776,27 @@ export interface ReferencesGraph {
  */
 export type DeclarationScope = 'module' | 'init' | 'skip'
 
+/**
+ * How a prop identifier is accessed somewhere the emitter scans. Used
+ * by `emitPropsExtraction` to pick the right default for the prop's
+ * destructure: `.xxx` access needs `{}` (to avoid "cannot read
+ *  properties of undefined"), `[…]` access likewise.
+ *
+ * `bare` is tracked for completeness but has no consumer today — future
+ * rules (e.g., "prop is read only as a value, so static template can
+ * inline it") would gate on it.
+ */
+export type PropAccessKind = 'bare' | 'property' | 'index'
+
+export interface PropUsage {
+  propName: string
+  /** Every access kind observed across the sources the emitter scans. */
+  accessKinds: ReadonlySet<PropAccessKind>
+  /** True when the prop is consumed as a loop's array expression
+   *  (`<loop>.array`). Triggers the `[]` default in the destructure. */
+  usedAsLoopArray: boolean
+}
+
 export interface ClientAnalysis {
   needsInit: boolean
   usedProps: string[]

@@ -2,9 +2,9 @@
  * Props expansion, dependency analysis, and controlled component detection.
  */
 
-import type { ConstantInfo, ParamInfo, SignalInfo } from '../types'
+import type { ParamInfo, SignalInfo } from '../types'
 import type { ClientJsContext } from './types'
-import { PROPS_PARAM, exprReferencesIdent } from './utils'
+import { exprReferencesIdent } from './utils'
 
 /**
  * Expand dynamic prop value by resolving local constants.
@@ -143,41 +143,3 @@ export function getControlledPropName(
   return null
 }
 
-/**
- * Detect props that are used with property access (e.g., highlightedCommands.pnpm).
- * These props need a default value of {} to avoid "cannot read properties of undefined".
- */
-export function detectPropsWithPropertyAccess(
-  ctx: ClientJsContext,
-  neededConstants: ConstantInfo[]
-): Set<string> {
-  const result = new Set<string>()
-  const sources: string[] = []
-
-  for (const elem of ctx.conditionalElements) {
-    sources.push(elem.whenTrueHtml, elem.whenFalseHtml, elem.condition)
-  }
-  for (const elem of ctx.loopElements) {
-    sources.push(elem.template)
-  }
-  for (const elem of ctx.dynamicElements) {
-    sources.push(elem.expression)
-  }
-  for (const constant of neededConstants) {
-    if (constant.value) sources.push(constant.value)
-  }
-
-  for (const prop of ctx.propsParams) {
-    const dotPattern = new RegExp(`\\b${prop.name}\\.[a-zA-Z_]`)
-    const bracketPattern = new RegExp(`\\b${prop.name}\\s*\\[`)
-
-    for (const source of sources) {
-      if (dotPattern.test(source) || bracketPattern.test(source)) {
-        result.add(prop.name)
-        break
-      }
-    }
-  }
-
-  return result
-}
