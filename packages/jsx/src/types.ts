@@ -754,6 +754,28 @@ export interface ReferencesGraph {
   propNames: Set<string>
 }
 
+/**
+ * Emission scope for a local declaration (constant / function). Stage C
+ * of issue #1021 replaces the cascade of `if (c.systemConstructKind) ...`
+ * / `if (c.isModule && assigned) ...` branches in `generate-init.ts`
+ * with a single lookup keyed by this enum.
+ *
+ * - `module` — emitted at module level, OUTSIDE the init function.
+ *   Required for `createContext()` / `new WeakMap()` (unique identity
+ *   for cross-component sharing), for declarations that init-statements
+ *   assign to (#933, ESM strict-mode ReferenceError avoidance), and for
+ *   module-level functions whose bodies do NOT reference init-scope
+ *   names.
+ * - `init` — emitted INSIDE the init function body. This is the default
+ *   for signals, memos, and any declaration that transitively reads
+ *   reactive values or per-instance props.
+ * - `skip` — not emitted at all. Covers JSX inlined at IR level (#547),
+ *   JSX-returning helpers inlined at call sites (#569), multi-return
+ *   JSX helpers preserved only for the SSR marked template (#932), and
+ *   declarations that are simply unused by the emitted client JS.
+ */
+export type DeclarationScope = 'module' | 'init' | 'skip'
+
 export interface ClientAnalysis {
   needsInit: boolean
   usedProps: string[]
