@@ -114,10 +114,10 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'state-machine-playground', title: 'State Machine Playground', description: 'Interactive state machine explorer with preset workflows, per-state multi-conditional classes flipping together on transition, a reactive transitions loop source, and a history filter/group memo chain' },
   { slug: 'theme-customizer', title: 'Theme Customizer', description: 'Three signal-driven context providers (palette, spacing, typography) wrapping a 12-level deep consumer tree. Tests Provider value propagation, multi-provider ordering, stale-read safety, and dynamic token add/remove' },
   { slug: 'infinite-scroll', title: 'Async Infinite Scroll', description: 'IntersectionObserver-triggered pagination with <Async> streaming boundary, mapArray append, per-item like/save actions, and effect cleanup on unmount. Tests the IRAsync + mapArray compiler path, reactive list growth, and error/empty-state branches' },
+  { slug: 'toast-queue', title: 'Toast Queue', description: 'Signal-backed notification queue with N simultaneous portals, auto-dismiss timers, manual dismiss, stack ordering, and per-toast cleanup on dynamic unmount' },
 ]
 
 // Helper: get components filtered by category
 export function getComponentsByCategory(category: ComponentCategory): ComponentEntry[] {
   return componentEntries.filter(e => e.category === category)
 }
-

@@ -68,6 +68,7 @@ import { DashboardBuilderRefPage } from './pages/components/dashboard-builder'
 import { StateMachinePlaygroundRefPage } from './pages/components/state-machine-playground'
 import { ThemeCustomizerRefPage } from './pages/components/theme-customizer'
 import { InfiniteScrollRefPage } from './pages/components/infinite-scroll'
+import { ToastQueueRefPage } from './pages/components/toast-queue'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -497,6 +498,11 @@ export function createApp() {
   // Async Infinite Scroll block page
   app.get('/components/infinite-scroll', (c) => {
     return c.render(<InfiniteScrollRefPage />)
+  })
+
+  // Toast Queue block page
+  app.get('/components/toast-queue', (c) => {
+    return c.render(<ToastQueueRefPage />)
   })
 
   // Gallery — Admin app (Phase 9 pilot)
