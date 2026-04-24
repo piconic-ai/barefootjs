@@ -4,7 +4,7 @@
 
 import type { ComponentIR, ConstantInfo, FunctionInfo, IRNode } from '../types'
 import type { ClientJsContext, ConditionalElement } from './types'
-import { varSlotId, bodyReferencesComponentScope, PROPS_PARAM } from './utils'
+import { varSlotId, PROPS_PARAM } from './utils'
 import { collectUsedIdentifiers, collectUsedFunctions, collectIdentifiersFromIRTree, extractIdentifiers } from './identifiers'
 import { valueReferencesReactiveData, getControlledPropName, detectPropsWithPropertyAccess } from './prop-handling'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectUserDomImports, collectExternalImports } from './imports'
@@ -203,83 +203,81 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
     })
   }
 
-  // Build component-scope name set to check if module-level functions
-  // reference component internals (signals, memos, constants, props).
-  // Functions that reference component-scope names must stay inside init.
-  const componentScopeNames = new Set<string>()
+  // Classify local functions into module-level vs init-scope via a single
+  // fixpoint over a dependency graph rooted at "must-be-in-init" names.
+  //
+  // Seed `initRequiredNames` with reactive roots (signals, memos, props) and
+  // the constants routed to init scope (`neededConstants`). Constants destined
+  // for module scope (`systemConstructKind`, `initStmtAssigned`) are NOT in
+  // `neededConstants`, so functions that reference only those can still live
+  // at module level.
+  //
+  // Then walk every module-level candidate: if its body references any name
+  // in the set, demote it to init scope and add its own name to the set so
+  // transitive callers are demoted in the next iteration. Loop until stable.
+  const initRequiredNames = new Set<string>()
   for (const s of ctx.signals) {
-    componentScopeNames.add(s.getter)
-    if (s.setter) componentScopeNames.add(s.setter)
+    initRequiredNames.add(s.getter)
+    if (s.setter) initRequiredNames.add(s.setter)
   }
-  for (const m of ctx.memos) componentScopeNames.add(m.name)
-  for (const c of ctx.localConstants) componentScopeNames.add(c.name)
-  for (const p of ctx.propsParams) componentScopeNames.add(p.name)
-  if (ctx.propsObjectName) componentScopeNames.add(ctx.propsObjectName)
+  for (const m of ctx.memos) initRequiredNames.add(m.name)
+  for (const p of ctx.propsParams) initRequiredNames.add(p.name)
+  if (ctx.propsObjectName) initRequiredNames.add(ctx.propsObjectName)
+  for (const c of neededConstants) initRequiredNames.add(c.name)
 
-  // Collect functions (module-level functions that don't reference component
-  // internals are emitted outside init for SSR template accessibility)
-  const moduleLevelFunctions: FunctionInfo[] = []
+  // Seed candidates: filter out inlined/unused functions and JSX helpers.
+  // Functions flagged !isModule by the JSX→IR analyzer are always init-scope
+  // and bypass the fixpoint entirely.
+  // Multi-return JSX helpers (#932) are preserved verbatim for the SSR marked
+  // template, but their body contains raw JSX syntax that is not valid
+  // JavaScript. Skip them here so client JS stays parseable; hydration of the
+  // referencing component does not need the helper at runtime (the SVG / JSX
+  // was already rendered by SSR). Do NOT rely on `containsJsx` — that regex
+  // flag also matches helpers whose body has JSX-like strings inside string
+  // literals (e.g. a code-snippet builder), and skipping those would regress
+  // real client-side logic.
+  let pendingModuleLevel: FunctionInfo[] = []
   for (const fn of ctx.localFunctions) {
     if (fn.isJsxFunction) continue  // Inlined at call sites (#569)
-    // Multi-return JSX helpers (#932) are preserved verbatim for the SSR
-    // marked template, but their body contains raw JSX syntax that is
-    // not valid JavaScript. Skip them here so client JS stays parseable;
-    // hydration of the referencing component does not need the helper at
-    // runtime (the SVG / JSX was already rendered by SSR). Do NOT rely on
-    // `containsJsx` — that regex flag also matches helpers whose body has
-    // JSX-like strings inside string literals (e.g. a code-snippet
-    // builder), and skipping those would regress real client-side logic.
     if (fn.isMultiReturnJsxHelper) continue
     if (!usedIdentifiers.has(fn.name)) continue
-    if (fn.isModule && !bodyReferencesComponentScope(fn.body, componentScopeNames)) {
-      moduleLevelFunctions.push(fn)
-      continue
+    if (fn.isModule) {
+      pendingModuleLevel.push(fn)
+    } else {
+      declarations.push({
+        kind: 'function',
+        info: fn,
+        sourceIndex: fn.loc.start.line,
+      })
     }
-    declarations.push({
-      kind: 'function',
-      info: fn,
-      sourceIndex: fn.loc.start.line,
-    })
   }
 
-  // Second pass: demote module-level function candidates that transitively
-  // reference init-scope functions. A module-level function hoisted for SSR
-  // template accessibility must not call functions that are inside init —
-  // those names are out of scope at the module level.
-  //
-  // Example: fetchPage (module-level candidate) calls articlesForPage which
-  // references ARTICLES (a component-local constant, hence inside init).
-  // Without this pass, fetchPage is emitted at module scope but articlesForPage
-  // is inside init, causing "articlesForPage is not defined" at runtime.
-  {
-    // Names of functions currently in init-scope declarations
-    const initScopeFnNames = new Set<string>()
-    for (const decl of declarations) {
-      if (decl.kind === 'function') initScopeFnNames.add(decl.info.name)
-    }
-
-    // Propagate: if a module-level candidate calls an init-scope function,
-    // move it to declarations too (repeat until stable).
-    let changed = true
-    while (changed) {
-      changed = false
-      const stillModuleLevel: FunctionInfo[] = []
-      for (const fn of moduleLevelFunctions) {
-        const refs = new Set<string>()
-        extractIdentifiers(fn.body, refs)
-        const refsInitFn = [...refs].some(r => initScopeFnNames.has(r))
-        if (refsInitFn) {
-          declarations.push({ kind: 'function', info: fn, sourceIndex: fn.loc.start.line })
-          initScopeFnNames.add(fn.name)
-          changed = true
-        } else {
-          stillModuleLevel.push(fn)
-        }
+  let changed = true
+  while (changed) {
+    changed = false
+    const stillModuleLevel: FunctionInfo[] = []
+    for (const fn of pendingModuleLevel) {
+      const refs = new Set<string>()
+      extractIdentifiers(fn.body, refs)
+      // Parameters shadow outer names inside the function body.
+      for (const p of fn.params) refs.delete(p.name)
+      const referencesInit = [...refs].some(r => initRequiredNames.has(r))
+      if (referencesInit) {
+        declarations.push({
+          kind: 'function',
+          info: fn,
+          sourceIndex: fn.loc.start.line,
+        })
+        initRequiredNames.add(fn.name)
+        changed = true
+      } else {
+        stillModuleLevel.push(fn)
       }
-      moduleLevelFunctions.length = 0
-      moduleLevelFunctions.push(...stillModuleLevel)
     }
+    pendingModuleLevel = stillModuleLevel
   }
+
+  const moduleLevelFunctions: FunctionInfo[] = pendingModuleLevel
 
   // Collect signals
   for (const signal of ctx.signals) {
