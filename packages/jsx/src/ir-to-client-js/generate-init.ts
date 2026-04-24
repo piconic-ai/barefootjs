@@ -7,11 +7,10 @@ import type { ClientJsContext, ConditionalElement } from './types'
 import { varSlotId, PROPS_PARAM } from './utils'
 import {
   buildReferencesGraph,
-  graphAssignedIdentifiers,
-  graphFunctionReferences,
   graphUsedFunctions,
   graphUsedIdentifiers,
 } from './build-references'
+import { computeDeclarationScopes } from './compute-scope'
 import { valueReferencesReactiveData, getControlledPropName, detectPropsWithPropertyAccess } from './prop-handling'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectUserDomImports, collectExternalImports } from './imports'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
@@ -90,61 +89,28 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   const graph = buildReferencesGraph(ctx, _ir.root)
   const usedIdentifiers = graphUsedIdentifiers(graph)
   const usedFunctions = graphUsedFunctions(graph)
-  const initStmtAssignedIdentifiers = graphAssignedIdentifiers(graph)
+  const { constantScope, functionScope } = computeDeclarationScopes(ctx, graph)
 
+  // Route each local constant by its precomputed scope. The cascade that
+  // used to branch on `systemConstructKind`, `isModule + initStmtAssigned`,
+  // and provider context hoisting now lives in `compute-scope.ts`; this
+  // file just reads the answer.
   const neededProps = new Set<string>()
   const neededConstants: ConstantInfo[] = []
   const moduleLevelConstants: ConstantInfo[] = []
-  const moduleLevelConstantNames = new Set<string>()
-
   for (const constant of ctx.localConstants) {
-    if (constant.isJsx) continue  // Inlined at IR level (#547)
-    if (constant.isJsxFunction) continue  // Inlined at call sites (#569)
-    if (usedIdentifiers.has(constant.name)) {
-      if (!constant.value) {
-        neededConstants.push(constant)
-        continue
-      }
-
-      // createContext() and new WeakMap() must be at module level to enable
-      // cross-component sharing (unique Symbol / identity-based store)
-      if (constant.systemConstructKind) {
-        moduleLevelConstants.push(constant)
-        moduleLevelConstantNames.add(constant.name)
-        continue
-      }
-
-      // A module-level declaration that an init statement writes to must
-      // be emitted at module scope, otherwise the assignment resolves to
-      // an undeclared identifier in ESM strict mode and hydration throws
-      // `ReferenceError` (#933). Pure-read module constants keep the
-      // existing `neededConstants` (inside-init) path — moving them out
-      // would regress unrelated components whose module consts are
-      // scoped per-instance today.
-      if (constant.isModule && initStmtAssignedIdentifiers.has(constant.name)) {
-        moduleLevelConstants.push(constant)
-        moduleLevelConstantNames.add(constant.name)
-        continue
-      }
-
-      neededConstants.push(constant)
-
+    const scope = constantScope.get(constant.name)
+    if (scope === 'skip') continue
+    if (scope === 'module') {
+      moduleLevelConstants.push(constant)
+      continue
+    }
+    // scope === 'init'
+    neededConstants.push(constant)
+    if (constant.value) {
       const refs = valueReferencesReactiveData(constant.value, ctx)
       for (const propName of refs.usedProps) {
         neededProps.add(propName)
-      }
-    }
-  }
-
-  // Ensure context variables used by providers are at module level
-  for (const provider of ctx.providerSetups) {
-    if (!moduleLevelConstantNames.has(provider.contextName)) {
-      const contextConstant = ctx.localConstants.find(
-        (c) => c.name === provider.contextName && c.systemConstructKind === 'createContext'
-      )
-      if (contextConstant) {
-        moduleLevelConstants.push(contextConstant)
-        moduleLevelConstantNames.add(contextConstant.name)
       }
     }
   }
@@ -189,84 +155,24 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
     })
   }
 
-  // Classify local functions into module-level vs init-scope via a single
-  // fixpoint over a dependency graph rooted at "must-be-in-init" names.
-  //
-  // Seed `initRequiredNames` with reactive roots (signals, memos, props) and
-  // the constants routed to init scope (`neededConstants`). Constants destined
-  // for module scope (`systemConstructKind`, `initStmtAssigned`) are NOT in
-  // `neededConstants`, so functions that reference only those can still live
-  // at module level.
-  //
-  // Then walk every module-level candidate: if its body references any name
-  // in the set, demote it to init scope and add its own name to the set so
-  // transitive callers are demoted in the next iteration. Loop until stable.
-  const initRequiredNames = new Set<string>()
-  for (const s of ctx.signals) {
-    initRequiredNames.add(s.getter)
-    if (s.setter) initRequiredNames.add(s.setter)
-  }
-  for (const m of ctx.memos) initRequiredNames.add(m.name)
-  for (const p of ctx.propsParams) initRequiredNames.add(p.name)
-  if (ctx.propsObjectName) initRequiredNames.add(ctx.propsObjectName)
-  for (const c of neededConstants) initRequiredNames.add(c.name)
-
-  // Seed candidates: filter out inlined/unused functions and JSX helpers.
-  // Functions flagged !isModule by the JSX→IR analyzer are always init-scope
-  // and bypass the fixpoint entirely.
-  // Multi-return JSX helpers (#932) are preserved verbatim for the SSR marked
-  // template, but their body contains raw JSX syntax that is not valid
-  // JavaScript. Skip them here so client JS stays parseable; hydration of the
-  // referencing component does not need the helper at runtime (the SVG / JSX
-  // was already rendered by SSR). Do NOT rely on `containsJsx` — that regex
-  // flag also matches helpers whose body has JSX-like strings inside string
-  // literals (e.g. a code-snippet builder), and skipping those would regress
-  // real client-side logic.
-  let pendingModuleLevel: FunctionInfo[] = []
+  // Route each local function by its precomputed scope. The fixpoint
+  // that used to live here now lives inside `computeDeclarationScopes`
+  // (compute-scope.ts).
+  const moduleLevelFunctions: FunctionInfo[] = []
   for (const fn of ctx.localFunctions) {
-    if (fn.isJsxFunction) continue  // Inlined at call sites (#569)
-    if (fn.isMultiReturnJsxHelper) continue
-    if (!usedIdentifiers.has(fn.name)) continue
-    if (fn.isModule) {
-      pendingModuleLevel.push(fn)
-    } else {
-      declarations.push({
-        kind: 'function',
-        info: fn,
-        sourceIndex: fn.loc.start.line,
-      })
+    const scope = functionScope.get(fn.name)
+    if (scope === 'skip') continue
+    if (scope === 'module') {
+      moduleLevelFunctions.push(fn)
+      continue
     }
+    // scope === 'init'
+    declarations.push({
+      kind: 'function',
+      info: fn,
+      sourceIndex: fn.loc.start.line,
+    })
   }
-
-  // Forward reachability over the pre-built function→name edges from the
-  // references graph. The loop still sweeps until no further demotions
-  // happen; each sweep is a graph lookup (`graphFunctionReferences`)
-  // rather than a regex re-tokenisation of the function body.
-  let changed = true
-  while (changed) {
-    changed = false
-    const stillModuleLevel: FunctionInfo[] = []
-    for (const fn of pendingModuleLevel) {
-      const refs = graphFunctionReferences(graph, fn.name)
-      // Parameters shadow outer names inside the function body.
-      for (const p of fn.params) refs.delete(p.name)
-      const referencesInit = [...refs].some(r => initRequiredNames.has(r))
-      if (referencesInit) {
-        declarations.push({
-          kind: 'function',
-          info: fn,
-          sourceIndex: fn.loc.start.line,
-        })
-        initRequiredNames.add(fn.name)
-        changed = true
-      } else {
-        stillModuleLevel.push(fn)
-      }
-    }
-    pendingModuleLevel = stillModuleLevel
-  }
-
-  const moduleLevelFunctions: FunctionInfo[] = pendingModuleLevel
 
   // Collect signals
   for (const signal of ctx.signals) {
