@@ -55,14 +55,25 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     reactiveEffects,
     branchClearChildren,
     topIndent,
-    bodyIndent,
+    bodyIndent: rawBodyIndent,
   } = plan
+
+  // When wrapping the mapArray in createDisposableEffect (branch case), the
+  // renderItem body is one level deeper. Push everything inside that body
+  // by 2 extra spaces so the output stays well-formed.
+  const bodyIndent = branchClearChildren ? rawBodyIndent + '  ' : rawBodyIndent
+  const mapArrayIndent = branchClearChildren ? topIndent + '  ' : topIndent
 
   if (branchClearChildren) {
     // Clear template-generated children so mapArray creates fresh elements
     // with properly initialized components via createComponent in renderItem.
     lines.push(`${topIndent}if (${containerVar}) getLoopChildren(${containerVar}).forEach(__el => __el.remove())`)
-    lines.push(`${topIndent}if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
+    // Wrap the mapArray call in createDisposableEffect so the inner
+    // createEffects (mapArray's own + per-item child effects) are released
+    // when the surrounding branch swaps away (observation O-2). The branch
+    // arm's bindEvents writer expects a `__disposers` array in scope.
+    lines.push(`${topIndent}__disposers.push(createDisposableEffect(() => {`)
+    lines.push(`${mapArrayIndent}if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
   } else {
     lines.push(`${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
   }
@@ -104,5 +115,11 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   }
 
   lines.push(`${bodyIndent}return __el`)
-  lines.push(`${topIndent}})`)
+  if (branchClearChildren) {
+    // Close inner mapArray + createDisposableEffect wrapper.
+    lines.push(`${mapArrayIndent}})`)
+    lines.push(`${topIndent}}))`)
+  } else {
+    lines.push(`${topIndent}})`)
+  }
 }

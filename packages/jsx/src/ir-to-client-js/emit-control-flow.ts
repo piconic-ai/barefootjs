@@ -128,30 +128,37 @@ export function emitBranchLoopBody(lines: string[], branchLoops: readonly Branch
       const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
       const unwrapInline = pUnwrap ? `${pUnwrap} ` : ''
 
+      // Wrap the mapArray() call in a disposable effect so the inner
+      // createEffect created by mapArray is registered as a child of this
+      // disposable owner — branch swap then dispose()s the entry, releasing
+      // both the effect and its dependency subscriptions. Without the wrap
+      // the inner effect leaks: a hidden branch keeps re-rendering items
+      // whenever its signals change (observation O-2).
+      lines.push(`      __disposers.push(createDisposableEffect(() => {`)
       if (!hasReactiveEffects) {
         // Simple case: no reactive effects — return existing DOM as-is.
         // Template expressions use loopParam() to read the current item, so the
         // signal accessor stays intact without any unwrap.
         if (loop.mapPreamble) {
-          lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${loop.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+          lines.push(`        if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${loop.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
         } else {
-          lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+          lines.push(`        if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
         }
       } else {
         // Multi-line renderItem with fine-grained effects — applies to both
         // SSR (existing DOM) and CSR (freshly created) paths so reactive reads
         // of non-item signals propagate to existing items too.
-        lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => {`)
+        lines.push(`        if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => {`)
         if (pUnwrap) {
-          lines.push(`        ${pUnwrap}`)
+          lines.push(`          ${pUnwrap}`)
         }
         if (loop.mapPreamble) {
-          lines.push(`        ${loop.mapPreamble}`)
+          lines.push(`          ${loop.mapPreamble}`)
         }
-        lines.push(`        const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
+        lines.push(`          const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
         emitLoopChildReactiveEffects(
           lines,
-          '        ',
+          '          ',
           '__el',
           loop.childReactiveAttrs ?? [],
           loop.childReactiveTexts ?? [],
@@ -159,9 +166,10 @@ export function emitBranchLoopBody(lines: string[], branchLoops: readonly Branch
           loop.param,
           loop.paramBindings,
         )
-        lines.push(`        return __el`)
-        lines.push(`      })`)
+        lines.push(`          return __el`)
+        lines.push(`        })`)
       }
+      lines.push(`      }))`)
       emitBranchLoopEventDelegation(lines, loop, cv)
     }
   }

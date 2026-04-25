@@ -147,15 +147,24 @@ function emitArmBody(
     emitBranchLoopBody(lines, body.loopsRaw)
   }
 
-  // Nested conditionals: leadingIndent = current bodyIndent, but bodyIndent
-  // stays the SAME (6 spaces) — bug-for-bug compat with the legacy emitter
-  // which uses a hard-coded 6-space indent inside emitBranchBindings
-  // regardless of nesting depth. See header comment for details.
+  // Nested conditionals: wrap in a disposable effect so the inner
+  // `insert()` (and its child createEffects, mapArrays, …) is registered
+  // as a child of this owner — branch swap then dispose()s the entry,
+  // releasing the inner effect tree. Without the wrap the inner effects
+  // leak (observation O-2): hidden nested conditionals keep re-evaluating
+  // their condition signal, and any inner mapArray they own keeps
+  // re-rendering on signal change.
+  //
+  // leadingIndent = current bodyIndent + 2 (inside the disposable arrow);
+  // bodyIndent stays the SAME (6 spaces inside the inner insert) for
+  // compat with the legacy emitter's hard-coded indent.
   for (const cond of body.conditionals) {
+    lines.push(`${indent}__disposers.push(createDisposableEffect(() => {`)
     stringifyInsert(lines, cond, {
-      leadingIndent: indent,
+      leadingIndent: indent + '  ',
       bodyIndent: indent,
     })
+    lines.push(`${indent}}))`)
   }
 
   lines.push(`${indent}return () => __disposers.forEach(d => d())`)

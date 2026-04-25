@@ -2407,4 +2407,67 @@ describe('Client JS generation', () => {
       expect(result.errors).toHaveLength(0)
     })
   })
+
+  describe('branch-scoped effect disposal (O-2)', () => {
+    test('mapArray inside a conditional branch is wrapped in createDisposableEffect', () => {
+      // Regression for the dispose-leak in branch-scoped loops:
+      // before the fix, `bindEvents` emitted a bare `if (__loop_) mapArray(...)`
+      // and the inner effect created by mapArray was registered as a child of
+      // the *outer* insert() effect — never disposed on branch swap. Hidden
+      // branches kept re-rendering items whenever their signals changed.
+      // Fix: wrap the mapArray call in `createDisposableEffect` and push it
+      // into the existing `__disposers` array so the cleanup function returned
+      // from `bindEvents` releases it on swap.
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Page() {
+          const [show, setShow] = createSignal(true)
+          const [items, setItems] = createSignal([{ id: 1, n: 'a' }])
+          return (
+            <div onClick={() => setShow(v => !v)}>
+              {show()
+                ? <ul>{items().map(item => <li key={item.id}>{item.n}</li>)}</ul>
+                : <span>off</span>}
+            </div>
+          )
+        }
+      `
+      const result = compileJSXSync(source, 'Page.tsx', { adapter })
+      expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+      const js = result.files.find(f => f.type === 'clientJs')!.content
+      // The branch arm's mapArray call must live inside a
+      // createDisposableEffect that is pushed into __disposers.
+      expect(js).toMatch(/__disposers\.push\(createDisposableEffect\(\(\)\s*=>\s*\{[\s\S]*?mapArray\(/)
+    })
+
+    test('nested conditional inside a conditional branch is wrapped in createDisposableEffect', () => {
+      // Same shape for inner insert(): without the wrap the inner
+      // condition signal subscription leaks through every branch swap.
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Page() {
+          const [a, setA] = createSignal(true)
+          const [b, setB] = createSignal(true)
+          return (
+            <div onClick={() => setA(v => !v)}>
+              {a()
+                ? (b() ? <span>ab</span> : <span>aB</span>)
+                : <span>noA</span>}
+              <button onClick={() => setB(v => !v)}>tb</button>
+            </div>
+          )
+        }
+      `
+      const result = compileJSXSync(source, 'Page.tsx', { adapter })
+      expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+      const js = result.files.find(f => f.type === 'clientJs')!.content
+      // The inner insert() must live inside a createDisposableEffect that
+      // is pushed into __disposers.
+      expect(js).toMatch(/__disposers\.push\(createDisposableEffect\(\(\)\s*=>\s*\{[\s\S]*?insert\(__branchScope/)
+    })
+  })
 })
