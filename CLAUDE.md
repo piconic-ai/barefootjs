@@ -17,7 +17,7 @@ Adapters: HonoAdapter (`packages/hono/`), GoTemplateAdapter (`packages/go-templa
   - `jsx-to-ir.ts` — Phase 1: JSX to IR
   - `ir-to-client-js.ts` — Phase 2: IR to client JS
   - `analyzer.ts` — Reactivity analysis
-- `packages/dom/src/` — Client runtime (createSignal, createEffect, etc.)
+- `packages/client/src/` — Client runtime (createSignal, createEffect, etc.) and DOM runtime under `./runtime`
 - `packages/hono/` — Hono/JSX adapter
 - `packages/go-template/` — Go html/template adapter
 - `ui/` — UI component registry
@@ -37,7 +37,7 @@ See `spec/testing.md` for full testing specification with APIs, patterns, and ex
 | Component IR | Structure, a11y, signals, classes | `ui/components/ui/*/index.test.tsx` | ms |
 | Adapter conformance | IR → HTML output per adapter | `packages/adapter-tests/fixtures/` | ms |
 | CSR conformance | Client JS → correct DOM output | `packages/adapter-tests/src/__tests__/csr-conformance.test.ts` | ms |
-| Runtime unit | Signals, DOM ops, hydration primitives | `packages/dom/__tests__/` | ms |
+| Runtime unit | Signals, DOM ops, hydration primitives | `packages/client/__tests__/` | ms |
 | E2E | User interactions, hydration, visual | `site/ui/e2e/` | seconds |
 
 Quick decision guide:
