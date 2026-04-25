@@ -78,50 +78,47 @@ export function stringifyPlainLoop(
 
 export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void {
   const { containerVar, arrayExpr, param, indexParam, childIndexExpr, attrsBySlot, texts } = plan
+  const hasAttrs = attrsBySlot.length > 0
+  const hasTexts = texts.length > 0
+  if (!hasAttrs && !hasTexts) return
 
-  // Block 1: reactive attributes.
-  if (attrsBySlot.length > 0) {
-    lines.push(`  // Reactive attributes in static array children`)
-    lines.push(`  if (${containerVar}) {`)
-    lines.push(`    ${arrayExpr}.forEach((${param}, ${indexParam}) => {`)
-    lines.push(`      const __iterEl = ${containerVar}.children[${childIndexExpr}]`)
-    lines.push(`      if (__iterEl) {`)
-    for (const [slotId, attrs] of attrsBySlot) {
-      const varName = `__t_${varSlotId(slotId)}`
-      lines.push(`        const ${varName} = qsa(__iterEl, '[bf="${slotId}"]')`)
-      lines.push(`        if (${varName}) {`)
-      for (const attr of attrs) {
-        lines.push(`          createEffect(() => {`)
-        for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.expression, attr)) {
-          lines.push(`            ${stmt}`)
-        }
-        lines.push(`          })`)
+  // Single forEach pass that handles both reactive attrs and reactive texts.
+  // Pre-O-4 the legacy emitter wrote two parallel forEach blocks (one per
+  // concern) over the same array — a wasted second iteration plus a second
+  // `__iterEl = container.children[…]` lookup. Merging them keeps the loop
+  // contract identical (`createEffect`s subscribe to the same signals;
+  // attrs run before texts within each iteration) while halving the
+  // setup cost.
+  const heading = hasAttrs && hasTexts
+    ? '// Reactive attributes and texts in static array children'
+    : hasAttrs
+      ? '// Reactive attributes in static array children'
+      : '// Reactive texts in static array children'
+  lines.push(`  ${heading}`)
+  lines.push(`  if (${containerVar}) {`)
+  lines.push(`    ${arrayExpr}.forEach((${param}, ${indexParam}) => {`)
+  lines.push(`      const __iterEl = ${containerVar}.children[${childIndexExpr}]`)
+  lines.push(`      if (__iterEl) {`)
+  for (const [slotId, attrs] of attrsBySlot) {
+    const varName = `__t_${varSlotId(slotId)}`
+    lines.push(`        const ${varName} = qsa(__iterEl, '[bf="${slotId}"]')`)
+    lines.push(`        if (${varName}) {`)
+    for (const attr of attrs) {
+      lines.push(`          createEffect(() => {`)
+      for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.expression, attr)) {
+        lines.push(`            ${stmt}`)
       }
-      lines.push(`        }`)
+      lines.push(`          })`)
     }
-    lines.push(`      }`)
-    lines.push(`    })`)
-    lines.push(`  }`)
-    lines.push('')
+    lines.push(`        }`)
   }
-
-  // Block 2: reactive texts. NOTE — the second forEach scans the same array
-  // again. This duplication is observation O-4 and will be merged in a
-  // follow-up PR; PR 2-a preserves the legacy shape.
-  if (texts.length > 0) {
-    lines.push(`  // Reactive texts in static array children`)
-    lines.push(`  if (${containerVar}) {`)
-    lines.push(`    ${arrayExpr}.forEach((${param}, ${indexParam}) => {`)
-    lines.push(`      const __iterEl = ${containerVar}.children[${childIndexExpr}]`)
-    lines.push(`      if (__iterEl) {`)
-    for (const text of texts) {
-      const vn = `__rt_${varSlotId(text.slotId)}`
-      lines.push(`        { const [${vn}] = $t(__iterEl, '${text.slotId}')`)
-      lines.push(`        if (${vn}) createEffect(() => { ${vn}.textContent = String(${text.expression}) }) }`)
-    }
-    lines.push(`      }`)
-    lines.push(`    })`)
-    lines.push(`  }`)
-    lines.push('')
+  for (const text of texts) {
+    const vn = `__rt_${varSlotId(text.slotId)}`
+    lines.push(`        { const [${vn}] = $t(__iterEl, '${text.slotId}')`)
+    lines.push(`        if (${vn}) createEffect(() => { ${vn}.textContent = String(${text.expression}) }) }`)
   }
+  lines.push(`      }`)
+  lines.push(`    })`)
+  lines.push(`  }`)
+  lines.push('')
 }

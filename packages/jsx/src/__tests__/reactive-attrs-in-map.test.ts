@@ -202,6 +202,39 @@ describe('reactive attributes inside .map() callbacks', () => {
     expect(clientJs!.content).not.toContain('.className =')
   })
 
+  test('static array: reactive attrs and texts share a single forEach pass', () => {
+    // Regression for the "double forEach" bug: the legacy emitter wrote
+    // two separate forEach blocks over the same static array — one for
+    // reactive attrs, one for reactive texts. That meant scanning the
+    // array twice and looking up `__iterEl = container.children[idx]`
+    // twice per item. The merged version emits a single forEach with
+    // both effects inside its body.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      const items = [{ id: 1, name: 'a' }, { id: 2, name: 'b' }]
+      export function L() {
+        const [active, setActive] = createSignal(1)
+        return (
+          <ul>
+            {items.map(item => (
+              <li class={active() === item.id ? 'on' : ''}>{item.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'L.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const js = result.files.find(f => f.type === 'clientJs')!.content
+    // Both effects must still be present.
+    expect(js).toContain("setAttribute('class'")
+    expect(js).toMatch(/textContent\s*=\s*String\(item\.name\)/)
+    // But there must be exactly one `items.forEach` call (not two).
+    const forEachMatches = js.match(/items\.forEach\(/g) ?? []
+    expect(forEachMatches.length).toBe(1)
+  })
+
   test('keyed loop: `key` prop is not emitted as a reactive DOM attribute', () => {
     // Regression guard for the "key duplicate emission" bug:
     // `<li key={item.id}>` used to be both rendered as `data-key=` in the
