@@ -152,10 +152,13 @@ describe('Compiler-Runtime Contract', () => {
       // data-key for outer items and data-key-1 for inner items, matching
       // what the event dispatcher searches for.
       expect(js).not.toContain('data-key-2')
-      // Outer loop items must have data-key in the SSR branch template
-      expect(js).toMatch(/data-key="['"] \+ \(group\.id\)/)
-      // Inner loop items must have data-key-1 in the SSR branch template
-      expect(js).toMatch(/data-key-1="['"] \+ \(item\.id\)/)
+      // Outer loop items must have data-key in the SSR branch template.
+      // Post-O-7 the emission is an unguarded template-literal interpolation
+      // (`data-key="${group.id}"`) instead of a `... != null ? ... : ''`
+      // ternary string concat.
+      expect(js).toMatch(/data-key="\$\{group\.id\}"/)
+      // Inner loop items must have data-key-1 in the SSR branch template.
+      expect(js).toMatch(/data-key-1="\$\{item\.id\}"/)
     })
 
     test('loop inside conditional wires reactive conditionals in mapArray callback', () => {

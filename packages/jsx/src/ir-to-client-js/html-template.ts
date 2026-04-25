@@ -53,6 +53,13 @@ function templateAttrExpr(attrName: string, valExpr: string, attr: { presenceOrU
   if (attrName === 'style') {
     return `\${((v) => v != null ? 'style="' + v + '"' : '')(styleToCss(${valExpr}))}`
   }
+  // `data-key` / `data-key-N` is a reconciliation contract — every loop item
+  // must carry one. Emit unconditionally; if the user passes `key={undefined}`
+  // we want it to surface as `data-key="undefined"` (and ultimately a runtime
+  // assertion in mapArray) rather than silently fall back to "no key".
+  if (attrName === 'data-key' || attrName.startsWith('data-key-')) {
+    return `${attrName}="\${${valExpr}}"`
+  }
   return `\${(${valExpr}) != null ? '${attrName}="' + (${valExpr}) + '"' : ''}`
 }
 
