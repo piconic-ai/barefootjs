@@ -280,6 +280,32 @@ interface FilterPredicate {
 
 Adapters should render the filter as a conditional wrapper inside the loop (e.g., `if (condition) { children }`), not by pre-filtering the array. The filter param may differ from the loop param (e.g., filter uses `t`, loop uses `todo`) — adapters must map between them.
 
+### Loop emission shapes (client JS)
+
+The client JS emitter classifies each `IRLoop` into one of four shapes for code generation. The category is captured by the corresponding `*LoopPlan` type in `packages/jsx/src/ir-to-client-js/control-flow/plan/types.ts`:
+
+| Shape | Body | Plan type | Client emission |
+|---|---|---|---|
+| **Static** | array is a constant literal (no signal) | `StaticLoopPlan` | `arr.forEach(...)` for reactive attrs / texts only |
+| **Plain** | dynamic array, body is a plain element with no child components and no inner loops | `PlainLoopPlan` | `mapArray(() => arr, container, keyFn, renderItem)` returning a clone of the template |
+| **Component** | dynamic array, body is a single child component (with optional nested child components) | `ComponentLoopPlan` | `mapArray(...)` whose `renderItem` calls `initChild` (SSR) or `createComponent` (CSR) |
+| **Composite** | dynamic array, body is a plain element that **contains** at least one child component or inner loop | `CompositeLoopPlan` | `mapArray(...)` whose `renderItem` rebuilds the body element and dispatches both component init and inner-loop setup |
+
+"Composite" specifically denotes the *plain-element-with-children* case. A loop whose body is a bare component is **Component**, not Composite — keeping the two separate avoids the historical "composite means two different things" confusion.
+
+### Loop param evaluation contexts
+
+A user-written `item.x` reference inside a loop body is rewritten differently depending on which of four contexts the expression lands in:
+
+| Context | `item` is... | Why |
+|---|---|---|
+| Hydrate / insert template (SSR-side string) | plain value | Template renders once from initial state; no per-tick re-eval |
+| Dynamic loop renderItem (`mapArray` callback) | signal accessor `item()` | mapArray passes a signal so per-item updates re-fire fine-grained effects |
+| Nested dynamic loop renderItem | both parent and self are accessors | Same reason; outer accessor wraps the array expression of the inner mapArray |
+| Static array forEach | plain value | Array is constant; no reactivity needed |
+
+`wrapLoopParamAsAccessor(expr, param, paramBindings)` is the single function that performs the rewrite for the renderItem contexts. Destructured params (`map(({ id, name }) => ...)`) are rewritten to `__bfItem().id` etc. via `paramBindings` (#951).
+
 ### Metadata
 
 Each compiled component includes metadata:

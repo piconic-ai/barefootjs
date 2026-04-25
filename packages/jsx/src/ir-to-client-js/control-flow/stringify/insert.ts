@@ -28,9 +28,10 @@
  * preserve it; a follow-up PR can fix it now that the indent is data-driven.
  */
 
-import { toDomEventName, wrapHandlerInBlock, varSlotId } from '../../utils'
+import { varSlotId } from '../../utils'
 import { emitBranchLoopBody } from '../../emit-control-flow'
 import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types'
+import { emitListenerLine } from './event-listener'
 
 export interface StringifyInsertOptions {
   /** Indent on the `insert(` line itself. */
@@ -74,8 +75,6 @@ function emitArmBody(
   mode: 'dom' | 'raw',
   indent: string,
 ): void {
-  const eventNameFn = mode === 'dom' ? toDomEventName : (n: string) => n
-
   // 1. Combine event-bearing slots and ref slots into a single `$()` query.
   //    Order: events-first, then refs (matches legacy emitter).
   const allSlotIds = new Set<string>()
@@ -99,8 +98,7 @@ function emitArmBody(
   for (const [slotId, slotEvents] of eventsBySlot) {
     const v = varSlotId(slotId)
     for (const ev of slotEvents) {
-      const wrapped = wrapHandlerInBlock(ev.handler)
-      lines.push(`${indent}if (_${v}) _${v}.addEventListener('${eventNameFn(ev.eventName)}', ${wrapped})`)
+      emitListenerLine(lines, indent, `_${v}`, ev.eventName, ev.handler, mode)
     }
   }
 

@@ -6,11 +6,12 @@
 
 import type { ClientJsContext, BranchLoop, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
 import type { IRLoopChildComponent, LoopParamBinding } from '../types'
-import { toDomEventName, wrapHandlerInBlock, varSlotId, quotePropName, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
+import { varSlotId, quotePropName, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
 import { buildInsertPlan } from './control-flow/plan/build-insert'
 import { stringifyInsert } from './control-flow/stringify/insert'
+import { emitListenerLine, emitListenerBlock } from './control-flow/stringify/event-listener'
 import { buildPlainLoopPlan, buildStaticLoopPlan } from './control-flow/plan/build-loop'
 import { stringifyPlainLoop, stringifyStaticLoop } from './control-flow/stringify/loop'
 import { buildComponentLoopPlan } from './control-flow/plan/build-component-loop'
@@ -387,9 +388,12 @@ function emitLoopCondBranchEventBindings(
     // to find descendants when the nearest bf-s is the component root.
     lines.push(`${indent}{ const _${v} = qsa(__branchScope, '[bf="${slotId}"]')`)
     for (const ev of slotEvents) {
-      const handler = wrapHandlerInBlock(wrap(ev.handler))
-      lines.push(`${indent}  if (_${v}) _${v}.addEventListener('${toDomEventName(ev.eventName)}', ${handler}) }`)
+      emitListenerLine(lines, `${indent}  `, `_${v}`, ev.eventName, wrap(ev.handler))
     }
+    // Close the block opened above. (Multi-listener-per-slot share one query;
+    // legacy emitter put the close brace inline with the LAST listener line —
+    // moving it to its own line keeps each emitListenerLine call uniform.)
+    lines.push(`${indent}}`)
   }
 }
 
@@ -666,9 +670,8 @@ export function buildDepthLevels(
 
 /** Emit a single addEventListener call for a child event on a given element. */
 function emitEventSetup(ls: string[], indent: string, elVar: string, ev: LoopChildEvent, loopParam?: string, loopParamBindings?: readonly LoopParamBinding[]): void {
-  let handler = loopParam ? wrapLoopParamAsAccessor(ev.handler, loopParam, loopParamBindings) : ev.handler
-  handler = wrapHandlerInBlock(handler)
-  ls.push(`${indent}{ const __e = qsa(${elVar}, '[bf="${ev.childSlotId}"]'); if (__e) __e.addEventListener('${toDomEventName(ev.eventName)}', ${handler}) }`)
+  const handler = loopParam ? wrapLoopParamAsAccessor(ev.handler, loopParam, loopParamBindings) : ev.handler
+  emitListenerBlock(ls, indent, elVar, ev.childSlotId, '__e', ev.eventName, handler)
 }
 
 /** Build the component-finder CSS selector for SSR hydration initChild. */
