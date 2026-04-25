@@ -7,8 +7,8 @@
  * `form = createForm({onSubmit: async () => {}})` (#508).
  */
 
-import type { ConstantInfo, FunctionInfo, MemoInfo, SignalInfo } from '../types'
-import { extractIdentifiers } from './identifiers'
+import type { ConstantInfo, FunctionInfo, MemoInfo, ReferencesGraph, SignalInfo } from '../types'
+import { graphDeclarationReferences } from './build-references'
 
 // =============================================================================
 // Declaration types
@@ -38,27 +38,26 @@ export function providedNames(decl: Declaration): string[] {
 }
 
 /**
- * Extract identifiers referenced by a declaration's initializer/body.
+ * Identifiers referenced by a declaration's initializer/body, read from
+ * the precomputed graph instead of re-extracting via regex. For signals
+ * the graph is keyed by the getter name (the canonical declaration
+ * name). Function params are subtracted because the fixpoint convention
+ * treats params as locally bound, not deps.
  */
-function referencedIdentifiers(decl: Declaration): Set<string> {
-  const refs = new Set<string>()
+function referencedIdentifiers(decl: Declaration, graph: ReferencesGraph): Set<string> {
   switch (decl.kind) {
     case 'constant':
-      if (decl.info.value) extractIdentifiers(decl.info.value, refs)
-      break
+      return graphDeclarationReferences(graph, 'constant', decl.info.name)
     case 'signal':
-      extractIdentifiers(decl.info.initialValue, refs)
-      break
+      return graphDeclarationReferences(graph, 'signal', decl.info.getter)
     case 'memo':
-      extractIdentifiers(decl.info.computation, refs)
-      break
-    case 'function':
-      extractIdentifiers(decl.info.body, refs)
-      // Function params are local, not deps
+      return graphDeclarationReferences(graph, 'memo', decl.info.name)
+    case 'function': {
+      const refs = graphDeclarationReferences(graph, 'function', decl.info.name)
       for (const p of decl.info.params) refs.delete(p.name)
-      break
+      return refs
+    }
   }
-  return refs
 }
 
 // =============================================================================
@@ -75,7 +74,8 @@ function referencedIdentifiers(decl: Declaration): Set<string> {
  */
 export function sortDeclarations(
   declarations: Declaration[],
-  declNameSet: Set<string>
+  declNameSet: Set<string>,
+  graph: ReferencesGraph,
 ): Declaration[] {
   const n = declarations.length
   if (n <= 1) return declarations
@@ -96,7 +96,7 @@ export function sortDeclarations(
   }
 
   for (let i = 0; i < n; i++) {
-    const refs = referencedIdentifiers(declarations[i])
+    const refs = referencedIdentifiers(declarations[i], graph)
     const ownNames = new Set(providedNames(declarations[i]))
     const depIndices = new Set<number>()
 

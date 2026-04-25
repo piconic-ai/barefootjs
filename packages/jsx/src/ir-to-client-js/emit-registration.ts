@@ -7,44 +7,8 @@
 import type { ComponentIR, IRFragment, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
 import { PROPS_PARAM, inferDefaultValue, exprReferencesIdent } from './utils'
-import { graphFunctionReferences } from './build-references'
+import { computeInlinability, toLegacyInlinability } from './compute-inlinability'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template'
-
-// JavaScript built-in identifiers that are always available at any scope
-const JS_BUILTINS = new Set([
-  'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
-  'typeof', 'instanceof', 'void', 'delete', 'new', 'in', 'of',
-  'this', 'super', 'return', 'throw', 'if', 'else',
-  'for', 'while', 'do', 'switch', 'case', 'break', 'continue',
-  'try', 'catch', 'finally', 'yield', 'await', 'async',
-  'let', 'const', 'var', 'function', 'class',
-  'Math', 'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean',
-  'Date', 'RegExp', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Promise',
-  'Error', 'TypeError', 'RangeError', 'SyntaxError',
-  'console', 'window', 'document', 'globalThis', 'navigator',
-  'parseInt', 'parseFloat', 'isNaN', 'isFinite',
-  'encodeURIComponent', 'decodeURIComponent', 'encodeURI', 'decodeURI',
-  'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
-  'requestAnimationFrame', 'cancelAnimationFrame',
-  'Symbol', 'Proxy', 'Reflect', 'BigInt',
-])
-
-/**
- * Check that an expression value only references identifiers known within
- * the component scope (or JavaScript built-ins). Returns false if the value
- * contains references to file-scope variables that won't be available in
- * the generated client JS module scope.
- *
- * Uses pre-computed freeIdentifiers from the analyzer phase (ConstantInfo.freeIdentifiers).
- */
-function valueOnlyUsesKnownNames(freeIds: Set<string>, knownNames: Set<string>): boolean {
-  for (const id of freeIds) {
-    if (JS_BUILTINS.has(id)) continue
-    if (knownNames.has(id)) continue
-    return false
-  }
-  return true
-}
 
 /**
  * Resolve chained references within a constants map.
@@ -94,29 +58,12 @@ export function resolveChainedRefs(constants: Map<string, string>, freeIdsMap?: 
   }
 }
 
-/** Does any edge from this function point at a name declared inside
- *  the component? Direct graph replacement for the pre-Stage C.3
- *  `bodyReferencesComponentScope(fn.body, componentScopeNames)` check.
- *  Stays regex-semantics-compatible because the graph's function→name
- *  edges are built via `extractIdentifiers`, i.e. the same
- *  word-boundary pattern `bodyReferencesComponentScope` used. */
-function functionReferencesDeclaredName(graph: ReferencesGraph, fnName: string): boolean {
-  const refs = graphFunctionReferences(graph, fnName)
-  for (const r of refs) {
-    if (graph.declaredNames.has(r)) return true
-  }
-  return false
-}
-
 /**
  * Build the inlinable constants map and unsafe local names set from a context.
- * Extracted for reuse by both emitRegistrationAndHydration and generateTemplateOnlyMount (#435).
  *
- * `graph.declaredNames` is the one source of truth for "what counts as a
- * component-scope name" — the same set `generate-init.ts` routes scope
- * decisions off. Pre-Stage C.3 this function rebuilt the set inline and
- * used a regex helper (`bodyReferencesComponentScope`) to test whether
- * module-level functions referenced it; both are now graph queries.
+ * Thin adapter over `computeInlinability` — the tagged-union classifier
+ * lives in `compute-inlinability.ts`; this function reconstructs the
+ * legacy Map/Set shape for the template pipeline.
  */
 export function buildInlinableConstants(
   ctx: ClientJsContext,
@@ -125,117 +72,8 @@ export function buildInlinableConstants(
   inlinableConstants: Map<string, string>
   unsafeLocalNames: Set<string>
 } {
-  const inlinableConstants = new Map<string, string>()
-  const unsafeLocalNames = new Set<string>()
-
-  const signalGetters = new Set(ctx.signals.map(s => s.getter))
-  const signalSetters = new Set(ctx.signals.filter(s => s.setter).map(s => s.setter!))
-  const memoNames = new Set(ctx.memos.map(m => m.name))
-
-  for (const fn of ctx.localFunctions) {
-    // Module-level functions that don't reference component internals
-    // are emitted at module scope, so they are available in the template.
-    if (fn.isModule && !functionReferencesDeclaredName(graph, fn.name)) continue
-    unsafeLocalNames.add(fn.name)
-  }
-
-  for (const constant of ctx.localConstants) {
-    if (constant.isJsx) continue  // Inlined at IR level (#547)
-    if (!constant.value) {
-      // `let x` with no initializer — not safe for template inlining
-      unsafeLocalNames.add(constant.name)
-      continue
-    }
-    const trimmedValue = constant.value.trim()
-
-    // Use AST-derived flag instead of string inspection
-    if (constant.containsArrow) {
-      unsafeLocalNames.add(constant.name)
-      continue
-    }
-
-    // Use AST-derived flag instead of regex
-    if (constant.systemConstructKind) {
-      continue
-    }
-
-    // Use pre-computed freeIdentifiers instead of regex
-    let dependsOnReactive = false
-    const freeIds = constant.freeIdentifiers
-    if (freeIds) {
-      for (const sigName of signalGetters) {
-        if (freeIds.has(sigName)) { dependsOnReactive = true; break }
-      }
-      if (!dependsOnReactive) {
-        for (const setterName of signalSetters) {
-          if (freeIds.has(setterName)) { dependsOnReactive = true; break }
-        }
-      }
-      if (!dependsOnReactive) {
-        for (const mName of memoNames) {
-          if (freeIds.has(mName)) { dependsOnReactive = true; break }
-        }
-      }
-    }
-
-    if (dependsOnReactive) {
-      unsafeLocalNames.add(constant.name)
-      continue
-    }
-
-    if (!valueOnlyUsesKnownNames(constant.freeIdentifiers!, graph.declaredNames)) {
-      unsafeLocalNames.add(constant.name)
-      continue
-    }
-
-    inlinableConstants.set(constant.name, constant.templateValue?.trim() ?? trimmedValue)
-  }
-
-  // Build freeIdentifiers lookup for resolveChainedRefs
-  const freeIdsMap = new Map<string, Set<string>>()
-  for (const constant of ctx.localConstants) {
-    if (constant.freeIdentifiers) {
-      freeIdsMap.set(constant.name, constant.freeIdentifiers)
-    }
-  }
-
-  resolveChainedRefs(inlinableConstants, freeIdsMap)
-
-  // Demote constants whose value still references an unsafe name.
-  // Use freeIdentifiers from the original constant for initial check,
-  // then fall back to checking the resolved value (which may have been
-  // expanded by resolveChainedRefs and no longer matches the original freeIdentifiers).
-  const toRemove: string[] = []
-  for (const [constName, constValue] of inlinableConstants) {
-    const constFreeIds = freeIdsMap.get(constName)
-    let isUnsafe = false
-    if (constFreeIds) {
-      for (const unsafeName of unsafeLocalNames) {
-        if (constFreeIds.has(unsafeName)) { isUnsafe = true; break }
-      }
-    }
-    // After chained resolution, the constValue may contain identifiers
-    // from inlined constants that are themselves unsafe. Fall back to
-    // regex for the resolved value since freeIdentifiers reflect the
-    // original source, not the resolved string.
-    if (!isUnsafe) {
-      for (const unsafeName of unsafeLocalNames) {
-        if (exprReferencesIdent(constValue, unsafeName)) {
-          isUnsafe = true
-          break
-        }
-      }
-    }
-    if (isUnsafe) {
-      toRemove.push(constName)
-    }
-  }
-  for (const removeName of toRemove) {
-    inlinableConstants.delete(removeName)
-    unsafeLocalNames.add(removeName)
-  }
-
-  return { inlinableConstants, unsafeLocalNames }
+  const analysis = computeInlinability(ctx, graph)
+  return toLegacyInlinability(analysis, resolveChainedRefs, ctx, exprReferencesIdent)
 }
 
 /**

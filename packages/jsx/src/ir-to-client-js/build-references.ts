@@ -24,8 +24,7 @@
  * the same insertion order — which `emitPropsExtraction` relies on for
  * deterministic prop destructure line ordering.
  *
- * Stage B of issue #1021 — analysis-on-IR refactor. See
- * `spec/compiler-analysis-ir.md` for the target shape.
+ * Stage B of issue #1021 — analysis-on-IR refactor.
  */
 
 import type {
@@ -42,8 +41,12 @@ import type { ClientJsContext } from './types'
 import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers'
 import { walkIR } from './walker'
 
-const COMPONENT_ROOT: ReferenceSource = { kind: 'component-root', name: null }
-const INIT_STATEMENT_SOURCE: ReferenceSource = { kind: 'init-statement', name: null }
+// All non-declaration edge origins share a single null source — no
+// query on the graph distinguishes them on read today. Stage E
+// simplification of the pre-Stage E `'component-root'`, `'effect'`,
+// `'on-mount'`, `'init-statement'` kinds which were populated but
+// never queried. See issue #1021 Stage E reassessment.
+const ROOT_SOURCE: ReferenceSource | null = null
 const BARE_IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
 export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): ReferencesGraph {
@@ -96,59 +99,59 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
   // identifiers.ts L79-83
   for (const elem of ctx.interactiveElements) {
     for (const event of elem.events) {
-      addExprEdges(COMPONENT_ROOT, event.handler, 'init-body')
+      addExprEdges(ROOT_SOURCE, event.handler, 'init-body')
     }
   }
 
   // identifiers.ts L85-87
   for (const elem of ctx.dynamicElements) {
-    addExprEdges(COMPONENT_ROOT, elem.expression, 'template-closure')
+    addExprEdges(ROOT_SOURCE, elem.expression, 'template-closure')
   }
 
   // identifiers.ts L89-93
   for (const elem of ctx.conditionalElements) {
-    addExprEdges(COMPONENT_ROOT, elem.condition, 'template-closure')
-    addTemplateEdges(COMPONENT_ROOT, elem.whenTrueHtml, 'template-closure')
-    addTemplateEdges(COMPONENT_ROOT, elem.whenFalseHtml, 'template-closure')
+    addExprEdges(ROOT_SOURCE, elem.condition, 'template-closure')
+    addTemplateEdges(ROOT_SOURCE, elem.whenTrueHtml, 'template-closure')
+    addTemplateEdges(ROOT_SOURCE, elem.whenFalseHtml, 'template-closure')
   }
 
   // identifiers.ts L95-105
   for (const elem of ctx.clientOnlyConditionals) {
-    addExprEdges(COMPONENT_ROOT, elem.condition, 'template-closure')
-    addTemplateEdges(COMPONENT_ROOT, elem.whenTrueHtml, 'template-closure')
-    addTemplateEdges(COMPONENT_ROOT, elem.whenFalseHtml, 'template-closure')
+    addExprEdges(ROOT_SOURCE, elem.condition, 'template-closure')
+    addTemplateEdges(ROOT_SOURCE, elem.whenTrueHtml, 'template-closure')
+    addTemplateEdges(ROOT_SOURCE, elem.whenFalseHtml, 'template-closure')
     for (const event of elem.whenTrue.events) {
-      addExprEdges(COMPONENT_ROOT, event.handler, 'init-body')
+      addExprEdges(ROOT_SOURCE, event.handler, 'init-body')
     }
     for (const event of elem.whenFalse.events) {
-      addExprEdges(COMPONENT_ROOT, event.handler, 'init-body')
+      addExprEdges(ROOT_SOURCE, event.handler, 'init-body')
     }
   }
 
   // identifiers.ts L107-135
   for (const elem of ctx.loopElements) {
-    addExprEdges(COMPONENT_ROOT, elem.array, 'template-closure')
-    addTemplateEdges(COMPONENT_ROOT, elem.template, 'template-closure')
+    addExprEdges(ROOT_SOURCE, elem.array, 'template-closure')
+    addTemplateEdges(ROOT_SOURCE, elem.template, 'template-closure')
     for (const handler of elem.childEventHandlers) {
-      addExprEdges(COMPONENT_ROOT, handler, 'init-body')
+      addExprEdges(ROOT_SOURCE, handler, 'init-body')
     }
     if (elem.childComponent) {
       for (const prop of elem.childComponent.props) {
-        addExprEdges(COMPONENT_ROOT, prop.value, 'template-closure')
+        addExprEdges(ROOT_SOURCE, prop.value, 'template-closure')
       }
     }
     if (elem.nestedComponents) {
       for (const comp of elem.nestedComponents) {
         for (const prop of comp.props) {
-          addExprEdges(COMPONENT_ROOT, prop.value, 'template-closure')
+          addExprEdges(ROOT_SOURCE, prop.value, 'template-closure')
         }
       }
     }
-    if (elem.filterPredicate) addExprEdges(COMPONENT_ROOT, elem.filterPredicate.raw, 'template-closure')
-    if (elem.sortComparator) addExprEdges(COMPONENT_ROOT, elem.sortComparator.raw, 'template-closure')
-    if (elem.mapPreamble) addExprEdges(COMPONENT_ROOT, elem.mapPreamble, 'template-closure')
+    if (elem.filterPredicate) addExprEdges(ROOT_SOURCE, elem.filterPredicate.raw, 'template-closure')
+    if (elem.sortComparator) addExprEdges(ROOT_SOURCE, elem.sortComparator.raw, 'template-closure')
+    if (elem.mapPreamble) addExprEdges(ROOT_SOURCE, elem.mapPreamble, 'template-closure')
     for (const attr of elem.childReactiveAttrs) {
-      addExprEdges(COMPONENT_ROOT, attr.expression, 'template-closure')
+      addExprEdges(ROOT_SOURCE, attr.expression, 'template-closure')
     }
   }
 
@@ -164,36 +167,36 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
 
   // identifiers.ts L145-147
   for (const effect of ctx.effects) {
-    addExprEdges({ kind: 'effect', name: null }, effect.body, 'init-body')
+    addExprEdges(ROOT_SOURCE, effect.body, 'init-body')
   }
 
   // identifiers.ts L149-151
   for (const onMount of ctx.onMounts) {
-    addExprEdges({ kind: 'on-mount', name: null }, onMount.body, 'init-body')
+    addExprEdges(ROOT_SOURCE, onMount.body, 'init-body')
   }
 
   // identifiers.ts L153-155
   for (const elem of ctx.refElements) {
-    addExprEdges(COMPONENT_ROOT, elem.callback, 'init-body')
+    addExprEdges(ROOT_SOURCE, elem.callback, 'init-body')
   }
 
   // identifiers.ts L157-164 — conditional ref callbacks (top-level)
   for (const elem of ctx.conditionalElements) {
     for (const ref of elem.whenTrue.refs) {
-      addExprEdges(COMPONENT_ROOT, ref.callback, 'init-body')
+      addExprEdges(ROOT_SOURCE, ref.callback, 'init-body')
     }
     for (const ref of elem.whenFalse.refs) {
-      addExprEdges(COMPONENT_ROOT, ref.callback, 'init-body')
+      addExprEdges(ROOT_SOURCE, ref.callback, 'init-body')
     }
   }
 
   // identifiers.ts L166-173 — client-only conditional ref callbacks
   for (const elem of ctx.clientOnlyConditionals) {
     for (const ref of elem.whenTrue.refs) {
-      addExprEdges(COMPONENT_ROOT, ref.callback, 'init-body')
+      addExprEdges(ROOT_SOURCE, ref.callback, 'init-body')
     }
     for (const ref of elem.whenFalse.refs) {
-      addExprEdges(COMPONENT_ROOT, ref.callback, 'init-body')
+      addExprEdges(ROOT_SOURCE, ref.callback, 'init-body')
     }
   }
 
@@ -211,18 +214,18 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
 
   // identifiers.ts L183-185
   for (const child of ctx.childInits) {
-    addExprEdges(COMPONENT_ROOT, child.propsExpr, 'template-closure')
+    addExprEdges(ROOT_SOURCE, child.propsExpr, 'template-closure')
   }
 
   // identifiers.ts L187-189
   for (const attr of ctx.reactiveAttrs) {
-    addExprEdges(COMPONENT_ROOT, attr.expression, 'template-closure')
+    addExprEdges(ROOT_SOURCE, attr.expression, 'template-closure')
   }
 
   // identifiers.ts L191-194
   for (const provider of ctx.providerSetups) {
-    addExprEdges(COMPONENT_ROOT, provider.contextName, 'init-body')
-    addExprEdges(COMPONENT_ROOT, provider.valueExpr, 'init-body')
+    addExprEdges(ROOT_SOURCE, provider.contextName, 'init-body')
+    addExprEdges(ROOT_SOURCE, provider.valueExpr, 'init-body')
   }
 
   // ============================================================================
@@ -237,7 +240,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
   for (const elem of ctx.interactiveElements) {
     for (const event of elem.events) {
       if (BARE_IDENT_RE.test(event.handler)) {
-        edges.push({ from: COMPONENT_ROOT, to: event.handler, context: 'event-handler' })
+        edges.push({ from: ROOT_SOURCE, to: event.handler, context: 'event-handler' })
       }
     }
   }
@@ -256,38 +259,38 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
       for (const attr of el.attrs) {
         if (attr.dynamic && attr.value) {
           const v = typeof attr.value === 'string' ? attr.value : attrValueToString(attr.value)
-          if (v) addExprEdges(COMPONENT_ROOT, v, 'template-closure')
+          if (v) addExprEdges(ROOT_SOURCE, v, 'template-closure')
         }
       }
-      for (const ev of el.events) addExprEdges(COMPONENT_ROOT, ev.handler, 'init-body')
+      for (const ev of el.events) addExprEdges(ROOT_SOURCE, ev.handler, 'init-body')
       descend()
     },
     component: ({ node: c, descend, descendJsxChildren }) => {
       for (const prop of c.props) {
-        if (prop.dynamic) addExprEdges(COMPONENT_ROOT, prop.value, 'template-closure')
+        if (prop.dynamic) addExprEdges(ROOT_SOURCE, prop.value, 'template-closure')
       }
       descend()
       descendJsxChildren()
     },
     expression: ({ node: ex }) => {
-      addExprEdges(COMPONENT_ROOT, ex.expr, 'template-closure')
+      addExprEdges(ROOT_SOURCE, ex.expr, 'template-closure')
     },
     conditional: ({ node: c, descend }) => {
-      addExprEdges(COMPONENT_ROOT, c.condition, 'template-closure')
+      addExprEdges(ROOT_SOURCE, c.condition, 'template-closure')
       descend()
     },
     ifStatement: ({ node: i, descend }) => {
-      addExprEdges(COMPONENT_ROOT, i.condition, 'template-closure')
+      addExprEdges(ROOT_SOURCE, i.condition, 'template-closure')
       for (const sv of i.scopeVariables) {
-        addExprEdges(COMPONENT_ROOT, sv.initializer, 'init-body')
+        addExprEdges(ROOT_SOURCE, sv.initializer, 'init-body')
       }
       descend()
     },
     loop: ({ node: l, descend }) => {
-      addExprEdges(COMPONENT_ROOT, l.array, 'template-closure')
-      if (l.filterPredicate) addExprEdges(COMPONENT_ROOT, l.filterPredicate.raw, 'template-closure')
-      if (l.sortComparator) addExprEdges(COMPONENT_ROOT, l.sortComparator.raw, 'template-closure')
-      if (l.mapPreamble) addExprEdges(COMPONENT_ROOT, l.mapPreamble, 'template-closure')
+      addExprEdges(ROOT_SOURCE, l.array, 'template-closure')
+      if (l.filterPredicate) addExprEdges(ROOT_SOURCE, l.filterPredicate.raw, 'template-closure')
+      if (l.sortComparator) addExprEdges(ROOT_SOURCE, l.sortComparator.raw, 'template-closure')
+      if (l.mapPreamble) addExprEdges(ROOT_SOURCE, l.mapPreamble, 'template-closure')
       descend()
       if (l.childComponent) walkChildComponent(l.childComponent)
       if (l.nestedComponents) {
@@ -295,15 +298,15 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
       }
     },
     provider: ({ node: p, descend }) => {
-      addExprEdges(COMPONENT_ROOT, p.contextName, 'init-body')
-      if (p.valueProp.dynamic) addExprEdges(COMPONENT_ROOT, p.valueProp.value, 'template-closure')
+      addExprEdges(ROOT_SOURCE, p.contextName, 'init-body')
+      if (p.valueProp.dynamic) addExprEdges(ROOT_SOURCE, p.valueProp.value, 'template-closure')
       descend()
     },
   }
 
   const walkChildComponent = (comp: IRLoopChildComponent): void => {
     for (const prop of comp.props) {
-      addExprEdges(COMPONENT_ROOT, prop.value, 'template-closure')
+      addExprEdges(ROOT_SOURCE, prop.value, 'template-closure')
     }
     for (const child of comp.children) walkIR(child, null, visitor)
   }
@@ -320,12 +323,12 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
   for (const stmt of ctx.initStatements) {
     if (stmt.freeIdentifiers) {
       for (const id of stmt.freeIdentifiers) {
-        edges.push({ from: INIT_STATEMENT_SOURCE, to: id, context: 'init-statement' })
+        edges.push({ from: ROOT_SOURCE, to: id, context: 'init-statement' })
       }
     }
     if (stmt.assignedIdentifiers) {
       for (const id of stmt.assignedIdentifiers) {
-        edges.push({ from: INIT_STATEMENT_SOURCE, to: id, context: 'assignment-target' })
+        edges.push({ from: ROOT_SOURCE, to: id, context: 'assignment-target' })
       }
     }
   }
@@ -373,9 +376,20 @@ export function graphAssignedIdentifiers(graph: ReferencesGraph): Set<string> {
  *  per-iteration `extractIdentifiers(fn.body, refs)` inside the
  *  function fixpoint (generate-init.ts L255-278). */
 export function graphFunctionReferences(graph: ReferencesGraph, fnName: string): Set<string> {
+  return graphDeclarationReferences(graph, 'function', fnName)
+}
+
+/** All names referenced from a specific named declaration's body /
+ *  initializer / computation. Replaces per-declaration regex
+ *  re-extraction in `declaration-sort.ts`. */
+export function graphDeclarationReferences(
+  graph: ReferencesGraph,
+  kind: 'constant' | 'function' | 'signal' | 'memo',
+  name: string,
+): Set<string> {
   const refs = new Set<string>()
   for (const edge of graph.edges) {
-    if (edge.from?.kind === 'function' && edge.from.name === fnName) {
+    if (edge.from?.kind === kind && edge.from.name === name) {
       refs.add(edge.to)
     }
   }

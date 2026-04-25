@@ -664,7 +664,7 @@ export interface IRMetadata {
  * "whack-a-mole" pattern — a new rule landing as a new `if` inside
  * `generate-init.ts` — is replaced by typed edge-context matching.
  *
- * See `spec/compiler-analysis-ir.md` for the full rationale.
+ * See issue #1021 for the full rationale.
  */
 export type ReferenceContext =
   /**
@@ -708,21 +708,18 @@ export type ReferenceContext =
 
 /**
  * The declaration a reference edge originates from. `null` when the
- * edge is rooted at a structural position with no backing declaration
- * (template closure root, component-wide event-handler registry, etc.).
+ * edge is rooted at a structural position with no backing named
+ * declaration (template closure, event handler body, effect body,
+ * onMount body, init statement, provider setup, etc.).
+ *
+ * Only the four declaration kinds below are queryable by source —
+ * those are the ones the sort / fixpoint / reachability queries need
+ * to identify. Other structural positions share a single `null`
+ * source because no query distinguishes them on read.
  */
 export interface ReferenceSource {
-  kind:
-    | 'constant'
-    | 'function'
-    | 'signal'
-    | 'memo'
-    | 'effect'
-    | 'on-mount'
-    | 'init-statement'
-    | 'component-root'
-  /** Declaration name. `null` for anonymous sources (component-root, etc.). */
-  name: string | null
+  kind: 'constant' | 'function' | 'signal' | 'memo'
+  name: string
 }
 
 export interface ReferenceEdge {
@@ -738,7 +735,7 @@ export interface ReferenceEdge {
  * fixpoint, and the duplicated prop-reachability loop in
  * `analyzeClientNeeds` — all of which are derivable from `edges`.
  *
- * See `spec/compiler-analysis-ir.md` §"Target IR shape".
+ * See issue #1021 for the target shape.
  */
 export interface ReferencesGraph {
   edges: ReferenceEdge[]
@@ -781,12 +778,8 @@ export type DeclarationScope = 'module' | 'init' | 'skip'
  * by `emitPropsExtraction` to pick the right default for the prop's
  * destructure: `.xxx` access needs `{}` (to avoid "cannot read
  *  properties of undefined"), `[…]` access likewise.
- *
- * `bare` is tracked for completeness but has no consumer today — future
- * rules (e.g., "prop is read only as a value, so static template can
- * inline it") would gate on it.
  */
-export type PropAccessKind = 'bare' | 'property' | 'index'
+export type PropAccessKind = 'property' | 'index'
 
 export interface PropUsage {
   propName: string
@@ -800,13 +793,6 @@ export interface PropUsage {
 export interface ClientAnalysis {
   needsInit: boolean
   usedProps: string[]
-  /**
-   * Reference graph over the component's declarations. Populated by
-   * the analyzer at the same point `needsInit` / `usedProps` are
-   * computed. Consumed by `generate-init.ts` and by future stages
-   * (scope routing, CSR template visibility) of issue #1021.
-   */
-  references?: ReferencesGraph
 }
 
 // =============================================================================

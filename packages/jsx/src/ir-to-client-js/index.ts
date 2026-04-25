@@ -9,7 +9,7 @@ import type { ClientJsContext } from './types'
 import { collectElements, computeLoopSiblingOffsets } from './collect-elements'
 import { generateInitFunction } from './generate-init'
 import { buildReferencesGraph, graphUsedIdentifiers } from './build-references'
-import { valueReferencesReactiveData } from './prop-handling'
+import { addConstantPropRefsToSet } from './init-declarations'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template'
 import { PROPS_PARAM } from './utils'
 import { buildInlinableConstants, buildSignalAndMemoMaps, buildCsrInlinableConstants } from './emit-registration'
@@ -73,23 +73,19 @@ export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedP
   }
 
   // Use the shared reference graph instead of replicating the extraction
-  // passes. Byte-identical to the old three-call composition; see
-  // `spec/compiler-analysis-ir.md` for the graph invariants.
+  // passes. Byte-identical to the old three-call composition (issue #1021).
   const graph = buildReferencesGraph(ctx, ir.root)
   const usedIdentifiers = graphUsedIdentifiers(graph)
 
   const neededProps = new Set<string>()
 
-  // Transitive props via constants
+  // Transitive props via constants — for each reachable, non-system-construct
+  // constant, pull any prop refs from its initializer into `neededProps`.
   for (const constant of ctx.localConstants) {
-    if (usedIdentifiers.has(constant.name)) {
-      if (!constant.value) continue
-      if (constant.systemConstructKind) continue
-      const refs = valueReferencesReactiveData(constant.value, ctx)
-      for (const propName of refs.usedProps) {
-        neededProps.add(propName)
-      }
-    }
+    if (!usedIdentifiers.has(constant.name)) continue
+    if (!constant.value) continue
+    if (constant.systemConstructKind) continue
+    addConstantPropRefsToSet(constant, ctx, graph, neededProps)
   }
 
   // Direct identifier matches

@@ -9,9 +9,7 @@
  * Replaces `detectPropsWithPropertyAccess` in `prop-handling.ts` and
  * the inline `propsUsedAsLoopArrays` loop in `generate-init.ts`.
  *
- * Stage C.2 of issue #1021. See `spec/compiler-analysis-ir.md`
- * §"Target IR shape" #3 for the target field and §"Invariants" #4 for
- * the guarantee this function underwrites.
+ * Stage C.2 of issue #1021 — analysis-on-IR refactor.
  */
 
 import type { ConstantInfo, PropAccessKind, PropUsage } from '../types'

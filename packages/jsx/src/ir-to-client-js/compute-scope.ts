@@ -6,10 +6,7 @@
  * and every local function, replacing the ad-hoc cascade that used to
  * live inline in `generate-init.ts`.
  *
- * Stage C of issue #1021 — analysis-on-IR refactor. See
- * `spec/compiler-analysis-ir.md` §"Target IR shape" for the routing
- * table and §"Invariants after Stages B–C–D" #2 for the guarantee this
- * function underwrites.
+ * Stage C of issue #1021 — analysis-on-IR refactor.
  */
 
 import type {

@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'bun:test'
 import { needsEffectWrapper } from '../../ir-to-client-js/reactivity'
-import { valueReferencesReactiveData } from '../../ir-to-client-js/prop-handling'
 import type { ClientJsContext } from '../../ir-to-client-js/types'
 
 const dummyLoc = { file: 'test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
@@ -14,6 +13,7 @@ function makeContext(overrides: Partial<ClientJsContext> = {}): ClientJsContext 
     onMounts: [],
     localFunctions: [],
     localConstants: [],
+    initStatements: [],
     propsParams: [],
     propsObjectName: null,
     restPropsName: null,
@@ -103,31 +103,3 @@ describe('needsEffectWrapper', () => {
   })
 })
 
-describe('valueReferencesReactiveData', () => {
-  test('extracts inherited props not in propsParams via pattern fallback', () => {
-    const ctx = makeContext({
-      propsObjectName: 'props',
-      propsParams: [{ name: 'checked', type: { kind: 'unknown', raw: 'boolean' }, optional: true }],
-    })
-    const result = valueReferencesReactiveData('props.checked || props.disabled', ctx)
-    expect(result.usesProps).toBe(true)
-    expect(result.usedProps).toContain('checked')
-    expect(result.usedProps).toContain('disabled')
-  })
-
-  test('does not duplicate props already found by propsParams loop', () => {
-    const ctx = makeContext({
-      propsObjectName: 'props',
-      propsParams: [{ name: 'disabled', type: { kind: 'unknown', raw: 'boolean' }, optional: true }],
-    })
-    const result = valueReferencesReactiveData('props.disabled', ctx)
-    expect(result.usedProps).toEqual(['disabled'])
-  })
-
-  test('excludes props.children from extraction', () => {
-    const ctx = makeContext({ propsObjectName: 'props', propsParams: [] })
-    const result = valueReferencesReactiveData('props.children', ctx)
-    expect(result.usedProps).toEqual([])
-    expect(result.usesProps).toBe(false)
-  })
-})

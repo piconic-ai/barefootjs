@@ -4,7 +4,6 @@
 
 import type { ParamInfo, SignalInfo } from '../types'
 import type { ClientJsContext } from './types'
-import { exprReferencesIdent } from './utils'
 
 /**
  * Expand dynamic prop value by resolving local constants.
@@ -35,57 +34,6 @@ export function expandConstantForReactivity(expr: string, ctx: ClientJsContext):
   if (ctx.propsObjectName) return expr
 
   return expandDynamicPropValue(expr, ctx)
-}
-
-/**
- * Check if a value references reactive data (props, signals, or memos).
- */
-export function valueReferencesReactiveData(
-  value: string,
-  ctx: ClientJsContext
-): { usesProps: boolean; usedProps: string[]; usesSignals: boolean; usesMemos: boolean } {
-  const usedProps: string[] = []
-  let usesSignals = false
-  let usesMemos = false
-
-  for (const prop of ctx.propsParams) {
-    if (exprReferencesIdent(value, prop.name)) {
-      usedProps.push(prop.name)
-    }
-  }
-
-  // Also extract prop names from props.xxx pattern directly.
-  // propsParams may be incomplete when extractPropsFromType couldn't resolve inherited
-  // props (e.g., CheckboxProps extends ButtonHTMLAttributes → 'disabled' not extracted).
-  // Always run this to catch props missed by the propsParams loop above.
-  if (ctx.propsObjectName) {
-    const propsAccess = new RegExp(`\\b${ctx.propsObjectName}\\.(\\w+)`, 'g')
-    let match: RegExpExecArray | null
-    while ((match = propsAccess.exec(value)) !== null) {
-      if (match[1] !== 'children' && !usedProps.includes(match[1])) {
-        usedProps.push(match[1])
-      }
-    }
-  }
-
-  for (const signal of ctx.signals) {
-    if (new RegExp(`\\b${signal.getter}\\s*\\(`).test(value)) {
-      usesSignals = true
-    }
-  }
-
-  for (const memo of ctx.memos) {
-    if (new RegExp(`\\b${memo.name}\\s*\\(`).test(value)) {
-      usesMemos = true
-    }
-  }
-
-  return {
-    usesProps: usedProps.length > 0,
-    usedProps,
-    usesSignals,
-    usesMemos,
-  }
 }
 
 /**

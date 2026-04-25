@@ -28,7 +28,8 @@ import type {
 } from '../types'
 import { computeDeclarationScopes } from './compute-scope'
 import { graphUsedIdentifiers } from './build-references'
-import { valueReferencesReactiveData, getControlledPropName } from './prop-handling'
+import { getControlledPropName } from './prop-handling'
+import { exprReferencesIdent } from './utils'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
 import {
   emitDeclaration,
@@ -78,12 +79,7 @@ export function classifyLocalDeclarations(
     }
     // scope === 'init'
     neededConstants.push(constant)
-    if (constant.value) {
-      const refs = valueReferencesReactiveData(constant.value, ctx)
-      for (const propName of refs.usedProps) {
-        neededProps.add(propName)
-      }
-    }
+    addConstantPropRefsToSet(constant, ctx, graph, neededProps)
   }
 
   for (const id of usedIdentifiers) {
@@ -124,6 +120,7 @@ export function emitSortedDeclarations(
   lines: string[],
   ctx: ClientJsContext,
   classification: LocalClassification,
+  graph: ReferencesGraph,
 ): void {
   const { neededConstants, initScopeFunctions, controlledSignals } = classification
   const declarations: Declaration[] = []
@@ -169,7 +166,7 @@ export function emitSortedDeclarations(
     }
   }
 
-  const sorted = sortDeclarations(declarations, declNameSet)
+  const sorted = sortDeclarations(declarations, declNameSet, graph)
 
   let emittedAny = false
   for (const decl of sorted) {
@@ -180,4 +177,53 @@ export function emitSortedDeclarations(
     emittedAny = true
   }
   if (emittedAny) lines.push('')
+}
+
+/**
+ * Collect prop names referenced by a constant's initializer into `out`.
+ *
+ * Two complementary sources, both AST/graph-backed:
+ *   1. `constant.freeIdentifiers ∩ graph.propNames` — catches bare prop
+ *      references (destructured-prop form).
+ *   2. `propsObjectName.xxx` member access — not visible through
+ *      `freeIdentifiers` (the analyzer intentionally skips member
+ *      properties). We still need this regex to catch the case where
+ *      the user writes `props.someName`, especially for names that
+ *      were missed by `extractPropsFromType` (e.g. inherited HTML
+ *      attrs). `children` is excluded as it is not a hydratable prop.
+ *
+ * Pre-Stage E.3 this was routed through `valueReferencesReactiveData`
+ * in `prop-handling.ts`, which did a regex scan per prop — O(|props|
+ * × |body|). The freeIdentifiers path here is O(|freeIds|) and AST-
+ * backed, so the common case stops being a regex loop.
+ */
+export function addConstantPropRefsToSet(
+  constant: ConstantInfo,
+  ctx: ClientJsContext,
+  _graph: ReferencesGraph,
+  out: Set<string>,
+): void {
+  if (!constant.value) return
+  // Iterate `propsParams` in source order so the insertion order into
+  // `out` matches the pre-Stage E.3 behaviour — which downstream
+  // `emitPropsExtraction` relies on for prop destructure line order.
+  //
+  // Uses `exprReferencesIdent` (regex word-boundary) rather than
+  // `freeIdentifiers` because `freeIdentifiers` excludes member-access
+  // property names: when the source writes `props.className`,
+  // `freeIdentifiers` contains only `props`, not `className`. Falling
+  // back to regex keeps semantics identical to the old
+  // `valueReferencesReactiveData` check.
+  for (const prop of ctx.propsParams) {
+    if (exprReferencesIdent(constant.value, prop.name)) {
+      out.add(prop.name)
+    }
+  }
+  if (ctx.propsObjectName) {
+    const re = new RegExp(`\\b${ctx.propsObjectName}\\.(\\w+)`, 'g')
+    let match: RegExpExecArray | null
+    while ((match = re.exec(constant.value)) !== null) {
+      if (match[1] !== 'children') out.add(match[1])
+    }
+  }
 }

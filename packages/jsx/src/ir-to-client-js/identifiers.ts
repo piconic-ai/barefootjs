@@ -8,7 +8,7 @@
  * `collectIdentifiersFromIRTree`) that walked `ClientJsContext` + the
  * IR tree to produce `usedIdentifiers` for `generate-init.ts`. Those
  * are gone — callers now query the graph. See
- * `spec/compiler-analysis-ir.md` for the Stage B rationale.
+ * issue #1021 Stage B for the rationale.
  */
 
 /** JavaScript keywords and common globals to skip during identifier extraction. */

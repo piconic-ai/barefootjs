@@ -4,8 +4,8 @@
  * Pipes analysis → emission → finalisation. Every non-trivial stage
  * lives in its own file; this function's job is to show the order of
  * the pipeline and the data flowing between stages. See
- * `spec/compiler-analysis-ir.md` §"Invariants after Stages B–C–D" #7
- * for the shape target (orchestrator only, no classification logic).
+ * See issue #1021 for the shape target (orchestrator only, no
+ * classification logic).
  */
 
 import type { ComponentIR } from '../types'
@@ -63,7 +63,7 @@ export function generateInitFunction(
 
   // --- Emission: init body (runs at hydration for each instance) ---
   emitPropsExtraction(lines, ctx, classification.neededProps, propUsage)
-  emitSortedDeclarations(lines, ctx, classification)
+  emitSortedDeclarations(lines, ctx, classification, graph)
   emitInitStatements(lines, ctx)
   if (ctx.initStatements.length > 0) lines.push('')
   emitPropsEventHandlers(lines, ctx, usedFunctions, classification.neededProps)
