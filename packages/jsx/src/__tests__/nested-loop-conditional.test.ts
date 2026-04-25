@@ -337,11 +337,14 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    // Locate the nested mapArray callback body — the second mapArray in the file
-    // is the inner `node.children.map(child => ...)`.
+    // Locate the nested mapArray callback body — the inner one is the
+    // `node.children.map(child => ...)` that uses `child.id` as its key.
+    // Note: pre-O-1 the inner mapArray was emitted twice (once per
+    // SSR/CSR side of the outer renderItem) so this regex used to find
+    // 2+ matches. After the O-1 dedup we only need at least 1.
     const mapCalls = content.match(/mapArray\([\s\S]*?\}\)\s*\}/g)
     expect(mapCalls).not.toBeNull()
-    expect(mapCalls!.length).toBeGreaterThanOrEqual(2)
+    expect(mapCalls!.length).toBeGreaterThanOrEqual(1)
 
     // Pick the inner mapArray. It references `child.id` as the key function.
     const innerMapArray = mapCalls!.find(m => /\(child\)\s*=>\s*String\(child\.id\)/.test(m))

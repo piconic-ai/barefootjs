@@ -188,4 +188,39 @@ describe('plain nested loops without conditional wrapper', () => {
     const mapArrayCount = (js.match(/\bmapArray\(/g) || []).length
     expect(mapArrayCount).toBeGreaterThanOrEqual(3)
   })
+
+  test('regression: composite renderItem hoists inner mapArray out of the SSR/CSR if/else (O-1)', () => {
+    // Before the fix, the composite renderItem's SSR/CSR split duplicated
+    // the entire inner-loop emission verbatim — both branches re-emitted
+    // the same `qsa(__el, '[bf="..."]')` + `mapArray(() => g().items, ...)`
+    // block. Doubled code size, doubled effect setup work, and any
+    // future bug fix would have needed to be applied in two places.
+    //
+    // Fix: hoist `emitInnerLoopSetup` after the if/else (the mapArray
+    // call it emits is mode-independent). For this 2-level fixture we
+    // expect exactly 2 mapArray call sites in the file (outer + the
+    // single deduped inner), not 3.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function L() {
+        const [groups, setGroups] = createSignal([{ id: 1, items: [{ id: 11, n: 'a' }] }])
+        return (
+          <ul onClick={() => setGroups(prev => [...prev])}>
+            {groups().map(g => (
+              <li key={g.id}>
+                <ul>{g.items.map(it => <li key={it.id}>{it.n}</li>)}</ul>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'L.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const js = result.files.find(f => f.type === 'clientJs')!.content
+
+    const innerMapArrayCount = (js.match(/mapArray\(\(\)\s*=>\s*g\(\)\.items/g) || []).length
+    expect(innerMapArrayCount).toBe(1)
+  })
 })

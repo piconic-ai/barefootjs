@@ -89,19 +89,32 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   const eventsArr = [...outerEvents]
   const levelsArr = [...depthLevels]
 
-  // SSR/CSR split
+  // SSR/CSR split — only the bits that genuinely differ live inside the
+  // if/else: __el initialisation and `emitComponentAndEventSetup`
+  // (createComponent vs initChild). Inner-loop setup is hoisted out below
+  // because the mapArray it emits is mode-independent — the outer if/else
+  // used to duplicate every inner loop's body verbatim (observation O-1).
   lines.push(`${bodyIndent}let __el`)
   lines.push(`${bodyIndent}if (__existing) {`)
   lines.push(`${innerIndent}__el = __existing`)
   emitComponentAndEventSetup(lines, innerIndent, '__el', compsArr, eventsArr, 'ssr', loopParam, loopParamBindings)
-  emitInnerLoopSetup(lines, innerIndent, '__el', levelsArr, 'ssr', loopParam, loopParamBindings)
   lines.push(`${bodyIndent}} else {`)
   lines.push(`${innerIndent}const __tpl = document.createElement('template')`)
   lines.push(`${innerIndent}__tpl.innerHTML = \`${template}\``)
   lines.push(`${innerIndent}__el = __tpl.content.firstElementChild.cloneNode(true)`)
   emitComponentAndEventSetup(lines, innerIndent, '__el', compsArr, eventsArr, 'csr', loopParam, loopParamBindings)
-  emitInnerLoopSetup(lines, innerIndent, '__el', levelsArr, 'csr', loopParam, loopParamBindings)
   lines.push(`${bodyIndent}}`)
+
+  // Inner-loop setup runs once for both SSR and CSR. The mode argument is
+  // forwarded to `emitInnerLoopSetup`'s static-forEach branch where it
+  // matters for inner `emitComponentAndEventSetup` calls; reactive inner
+  // loops dispatch SSR vs CSR per-item via mapArray's `__existing` check
+  // and don't read it. We pass `'ssr'` so a static inner loop nested
+  // inside a composite renderItem still gets the SSR initChild shape
+  // (matching the historical behaviour for hydration).
+  if (levelsArr.length > 0) {
+    emitInnerLoopSetup(lines, bodyIndent, '__el', levelsArr, 'ssr', loopParam, loopParamBindings)
+  }
 
   if (reactiveEffects) {
     emitLoopChildReactiveEffects(
