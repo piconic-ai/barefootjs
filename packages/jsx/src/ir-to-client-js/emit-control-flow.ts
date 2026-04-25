@@ -6,7 +6,7 @@
 
 import type { ClientJsContext, BranchLoop, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
 import type { IRLoopChildComponent, LoopParamBinding } from '../types'
-import { toDomEventName, wrapHandlerInBlock, varSlotId, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
+import { toDomEventName, wrapHandlerInBlock, varSlotId, quotePropName, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
 import { buildInsertPlan } from './control-flow/plan/build-insert'
@@ -607,38 +607,6 @@ function emitComponentLoopReconciliation(lines: string[], elem: TopLevelLoop, _k
   stringifyComponentLoop(lines, buildComponentLoopPlan(elem))
 }
 
-/**
- * Emit the hydration guard and data-key tagging for loop elements.
- * Shared between plain element and composite element reconciliation.
- * After tagging, calls afterTag callback for additional per-child setup (e.g., component init).
- */
-function emitHydrationTagging(
-  lines: string[],
-  elem: TopLevelLoop,
-  vLoop: string,
-  indexParam: string,
-  afterTag?: (lines: string[]) => void,
-): void {
-  // Hydration guard: check if loop children already have data-key.
-  // Use getLoopChildren (respects bf-loop markers from SSR) instead of
-  // firstElementChild to avoid false positives from non-loop siblings.
-  lines.push(`    const __loopChildren = getLoopChildren(_${vLoop})`)
-  lines.push(`    if (__loopChildren.length > 0 && !__loopChildren[0]?.hasAttribute('${DATA_KEY}')) {`)
-  lines.push(`      __loopChildren.forEach((__hChild, ${indexParam}) => {`)
-  lines.push(`        if (${indexParam} >= __arr.length) return`)
-  lines.push(`        const ${elem.param} = __arr[${indexParam}]`)
-  if (elem.key) {
-    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${elem.key}))`)
-  } else {
-    lines.push(`        __hChild.setAttribute('${DATA_KEY}', String(${indexParam}))`)
-  }
-  afterTag?.(lines)
-  lines.push(`      })`)
-  lines.push(`      if (__arr.length > 0) __renderItem(__arr[0], 0)`)
-  lines.push(`      return`)
-  lines.push(`    }`)
-}
-
 /** Emit mapArray for a plain element loop with unified CSR/SSR. */
 function emitPlainElementLoopReconciliation(lines: string[], elem: TopLevelLoop, _keyFn: string): void {
   // _keyFn ignored — buildPlainLoopPlan recomputes via loopKeyFn(elem) so
@@ -882,15 +850,11 @@ export function emitInnerLoopSetup(
           }
           return node
         }
-        const wrappedComps = level.comps.map(comp => {
-          const wrapped = {
-            ...comp,
-            props: comp.props.map(p => p.isLiteral ? p : ({ ...p, value: wrapInner(p.value) })),
-            children: comp.children?.map(wrapIRNode),
-          }
-          if (comp.name === 'Select') console.error('[DEBUG-WRAP] before:', comp.children?.length, 'after:', wrapped.children?.length)
-          return wrapped
-        })
+        const wrappedComps = level.comps.map(comp => ({
+          ...comp,
+          props: comp.props.map(p => p.isLiteral ? p : ({ ...p, value: wrapInner(p.value) })),
+          children: comp.children?.map(wrapIRNode),
+        }))
         const wrappedEvents = level.events.map(ev => ({
           ...ev,
           handler: wrapInner(ev.handler),
