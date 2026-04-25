@@ -126,6 +126,26 @@ export function generateInitFunction(
  * body string, skipping comment lines so JSDoc / explanatory comments
  * survive verbatim.
  *
+ * This is the canonical single place where init-body prop-name
+ * normalization happens. Companion of the `templateXxx` IR fields on
+ * the template side:
+ *   - Template path: analyzer pre-rewrites destructured bare prop
+ *     names → `_p.X` into `*.templateXxx` fields (case
+ *     `propsObjectName == null`).
+ *   - Init path (this helper): post-processes the emitted init body
+ *     rewriting `propsObjectName` → `_p` (case
+ *     `propsObjectName != null`).
+ *
+ * Kept as a late-stage normalization deliberately. Issue #1021 Stage
+ * E.5 considered moving the rewrite earlier (parallel `initXxx` IR
+ * fields, per-emit-site rewrite, or an auto-rewriting lines sink)
+ * and concluded that every alternative either (a) required
+ * enumerating ~20 emission sites across five files with a missing-
+ * one-breaks-it risk, (b) widened IR surface by 8+ fields for
+ * a single consumer, or (c) broke multi-line `lines.push` call
+ * patterns. The 12-line regex below runs once per component and is
+ * the right granularity for what it does.
+ *
  * No-op when the user already uses destructured props (`propsObjectName`
  * is `null`, handled by `?? 'props'` not matching `_p`). The hydrate
  * line is excluded structurally — callers append it AFTER this runs so
