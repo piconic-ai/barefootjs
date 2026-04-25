@@ -33,7 +33,7 @@ function Toggle({ toggleItems }: ToggleProps) {
     <div className="settings-panel" style="padding: 16px; border: 1px solid #ddd; border-radius: 8px;">
       <h3 style="margin-top: 0;">Settings</h3>
       {toggleItems.map((item) => (
-        <ToggleItem label={item.label} defaultOn={item.defaultOn} />
+        <ToggleItem key={item.label} label={item.label} defaultOn={item.defaultOn} />
       ))}
     </div>
   )
