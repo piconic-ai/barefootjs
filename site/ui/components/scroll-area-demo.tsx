@@ -23,7 +23,7 @@ export function ScrollAreaTagsDemo() {
       <div className="p-4">
         <h4 className="mb-4 text-sm font-medium leading-none">Tags</h4>
         {tags.map((tag) => (
-          <div>
+          <div key={tag}>
             <div className="text-sm" data-tag={tag}>{tag}</div>
             <Separator className="my-2" />
           </div>
@@ -51,7 +51,7 @@ export function ScrollAreaHorizontalDemo() {
     <ScrollArea className="w-96 whitespace-nowrap rounded-md border">
       <div className="flex w-max space-x-4 p-4">
         {works.map((work) => (
-          <figure className="shrink-0">
+          <figure key={work.title} className="shrink-0">
             <div className="overflow-hidden rounded-md">
               <div className="h-[150px] w-[200px] bg-muted flex items-center justify-center">
                 <span className="text-xs text-muted-foreground">{work.title}</span>
@@ -78,7 +78,7 @@ export function ScrollAreaBothAxesDemo() {
         <h4 className="mb-4 text-sm font-medium leading-none">Changelog</h4>
         <div className="space-y-4">
           {Array.from({ length: 20 }).map((_, i) => (
-            <div className="whitespace-nowrap">
+            <div key={i} className="whitespace-nowrap">
               <div className="text-sm font-medium">Release v{20 - i}.0.0</div>
               <p className="text-sm text-muted-foreground">
                 Added new features, fixed bugs, and improved performance across multiple modules and packages.

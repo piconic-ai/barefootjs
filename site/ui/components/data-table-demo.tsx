@@ -99,7 +99,7 @@ export function DataTablePreviewDemo() {
         </TableHeader>
         <TableBody>
           {sortedData().map((payment) => (
-            <TableRow>
+            <TableRow key={payment.id}>
               <TableCell className="font-medium">{payment.id}</TableCell>
               <TableCell>{payment.status}</TableCell>
               <TableCell>{payment.email}</TableCell>
@@ -181,7 +181,7 @@ export function DataTableUsageDemo() {
         </TableHeader>
         <TableBody>
           {paginatedData().map((payment) => (
-            <TableRow>
+            <TableRow key={payment.id}>
               <TableCell className="font-medium">{payment.id}</TableCell>
               <TableCell>{payment.status}</TableCell>
               <TableCell>{payment.email}</TableCell>
@@ -248,7 +248,7 @@ export function DataTableFilteringDemo() {
         </TableHeader>
         <TableBody>
           {paginatedData().map((payment) => (
-            <TableRow>
+            <TableRow key={payment.id}>
               <TableCell className="font-medium">{payment.id}</TableCell>
               <TableCell>{payment.status}</TableCell>
               <TableCell>{payment.email}</TableCell>
@@ -308,7 +308,7 @@ export function DataTableSelectionDemo() {
         </TableHeader>
         <TableBody>
           {payments.map((payment, index) => (
-            <TableRow data-state={selected()[index] ? 'selected' : undefined}>
+            <TableRow key={payment.id} data-state={selected()[index] ? 'selected' : undefined}>
               <TableCell>
                 <Checkbox
                   checked={selected()[index]}

@@ -173,6 +173,7 @@ export function DatePickerPresetsDemo() {
       <div className="flex flex-wrap gap-2" onClick={handlePresetClick}>
         {presets.map((preset, i) => (
           <button
+            key={i}
             type="button"
             data-preset={String(i)}
             className="inline-flex items-center rounded-md border bg-background px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"

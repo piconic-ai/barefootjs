@@ -71,8 +71,8 @@ export function PieChartDonutDemo() {
   return (
     <div className="w-full space-y-2">
       <div className="flex items-center gap-4 flex-wrap">
-        {Object.entries(chartConfig).map(([, cfg]) => (
-          <div className="flex items-center gap-1.5">
+        {Object.entries(chartConfig).map(([key, cfg]) => (
+          <div key={key} className="flex items-center gap-1.5">
             <span className="inline-block w-3 h-3 rounded-sm" style={`background:${cfg.color}`} />
             <span className="text-xs text-muted-foreground">{cfg.label}</span>
           </div>

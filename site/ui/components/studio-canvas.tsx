@@ -375,7 +375,7 @@ export function StudioCanvas() {
               </TableHeader>
               <TableBody>
                 {sortedTasks().map((task: Task) => (
-                  <TableRow>
+                  <TableRow key={task.name}>
                     <TableCell>{task.name}</TableCell>
                     <TableCell className={`text-right ${task.priorityOrder === 1 ? 'text-destructive' : task.priorityOrder === 3 ? 'text-muted-foreground' : ''}`}>
                       {task.priority}

@@ -12,7 +12,7 @@ export function CarouselPreviewDemo() {
       <Carousel>
         <CarouselContent>
           {[1, 2, 3, 4, 5].map((n) => (
-            <CarouselItem>
+            <CarouselItem key={n}>
               <div className="p-1">
                 <div className="flex items-center justify-center rounded-lg border bg-card p-6 aspect-square">
                   <span className="text-4xl font-semibold">{n}</span>
@@ -34,7 +34,7 @@ export function CarouselSizesDemo() {
       <Carousel>
         <CarouselContent className="-ml-2">
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <CarouselItem className="pl-2 basis-1/3">
+            <CarouselItem key={n} className="pl-2 basis-1/3">
               <div className="p-1">
                 <div className="flex items-center justify-center rounded-lg border bg-card p-4 aspect-square">
                   <span className="text-2xl font-semibold">{n}</span>
@@ -56,7 +56,7 @@ export function CarouselOrientationDemo() {
       <Carousel orientation="vertical" opts={{ align: 'start' }}>
         <CarouselContent orientation="vertical" className="h-[200px]">
           {[1, 2, 3, 4, 5].map((n) => (
-            <CarouselItem orientation="vertical" className="basis-1/2">
+            <CarouselItem key={n} orientation="vertical" className="basis-1/2">
               <div className="p-1">
                 <div className="flex items-center justify-center rounded-lg border bg-card p-4">
                   <span className="text-2xl font-semibold">{n}</span>

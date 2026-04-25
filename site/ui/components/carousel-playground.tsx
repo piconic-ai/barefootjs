@@ -90,7 +90,7 @@ function CarouselPlayground(_props: {}) {
             <Carousel orientation="horizontal">
               <CarouselContent>
                 {items.map((n) => (
-                  <CarouselItem>
+                  <CarouselItem key={n}>
                     <div className="flex aspect-square items-center justify-center rounded-lg border bg-card p-6">
                       <span className="text-3xl font-semibold">{n}</span>
                     </div>
@@ -106,7 +106,7 @@ function CarouselPlayground(_props: {}) {
             <Carousel orientation="vertical" opts={{ align: 'start' }}>
               <CarouselContent orientation="vertical" className="h-[200px]">
                 {items.map((n) => (
-                  <CarouselItem orientation="vertical" className="basis-1/2">
+                  <CarouselItem key={n} orientation="vertical" className="basis-1/2">
                     <div className="p-1">
                       <div className="flex items-center justify-center rounded-lg border bg-card p-4">
                         <span className="text-2xl font-semibold">{n}</span>

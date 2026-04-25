@@ -195,19 +195,19 @@ export function MobileMenu() {
                   )}
                   {section.entries.map((entry) =>
                     isNavGroup(entry) ? (
-                      <details data-category={entry.key} className="mb-2 group" open={entry.defaultOpen}>
+                      <details key={entry.key} data-category={entry.key} className="mb-2 group" open={entry.defaultOpen}>
                         <summary className={summaryClass}>
                           <span>{entry.title}</span>
                           <ChevronRightIcon size="sm" className={chevronClass} />
                         </summary>
                         <div className="pl-2 py-1 space-y-0.5">
                           {entry.links.map((link) => (
-                            <a href={link.href} className={menuLinkClass}>{link.title}</a>
+                            <a key={link.href} href={link.href} className={menuLinkClass}>{link.title}</a>
                           ))}
                         </div>
                       </details>
                     ) : (
-                      <a href={entry.href} className={menuLinkClass}>{entry.title}</a>
+                      <a key={entry.href} href={entry.href} className={menuLinkClass}>{entry.title}</a>
                     )
                   )}
                 </>

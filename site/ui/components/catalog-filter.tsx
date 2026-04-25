@@ -39,6 +39,7 @@ export function CatalogFilter() {
     <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
       {tagOptions.map(opt => (
         <Badge
+          key={opt.label}
           variant={activeTag() === opt.value ? 'default' : 'secondary'}
           className="cursor-pointer"
           onClick={() => setActiveTag(prev => prev === opt.value ? '' : opt.value)}

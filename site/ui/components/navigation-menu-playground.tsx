@@ -118,7 +118,7 @@ function NavigationMenuPlayground(_props: {}) {
               <SelectValue placeholder="Select delay..." />
             </SelectTrigger>
             <SelectContent>
-              {delayOptions.map(v => <SelectItem value={v}>{v}ms</SelectItem>)}
+              {delayOptions.map(v => <SelectItem key={v} value={v}>{v}ms</SelectItem>)}
             </SelectContent>
           </Select>
         </PlaygroundControl>
@@ -128,7 +128,7 @@ function NavigationMenuPlayground(_props: {}) {
               <SelectValue placeholder="Select close delay..." />
             </SelectTrigger>
             <SelectContent>
-              {closeDelayOptions.map(v => <SelectItem value={v}>{v}ms</SelectItem>)}
+              {closeDelayOptions.map(v => <SelectItem key={v} value={v}>{v}ms</SelectItem>)}
             </SelectContent>
           </Select>
         </PlaygroundControl>
