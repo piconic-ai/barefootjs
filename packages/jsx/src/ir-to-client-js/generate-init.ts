@@ -1,25 +1,25 @@
 /**
- * generateInitFunction orchestrator + generateElementRefs.
+ * `generateInitFunction` — client-JS orchestrator.
+ *
+ * Pipes analysis → emission → finalisation. Every non-trivial stage
+ * lives in its own file; this function's job is to show the order of
+ * the pipeline and the data flowing between stages. See
+ * `spec/compiler-analysis-ir.md` §"Invariants after Stages B–C–D" #7
+ * for the shape target (orchestrator only, no classification logic).
  */
 
-import type { ComponentIR, ConstantInfo, FunctionInfo, IRNode } from '../types'
-import type { ClientJsContext, ConditionalElement } from './types'
-import { varSlotId, PROPS_PARAM } from './utils'
+import type { ComponentIR } from '../types'
+import type { ClientJsContext } from './types'
+import { PROPS_PARAM } from './utils'
 import {
   buildReferencesGraph,
   graphUsedFunctions,
-  graphUsedIdentifiers,
 } from './build-references'
-import { computeDeclarationScopes } from './compute-scope'
-import { valueReferencesReactiveData, getControlledPropName } from './prop-handling'
 import { computePropUsage } from './compute-prop-usage'
-import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectUserDomImports, collectExternalImports } from './imports'
-import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
+import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER } from './imports'
 import {
   collectConditionalSlotIds,
   emitPropsExtraction,
-  emitDeclaration,
-  emitControlledSignalEffect,
   emitPropsEventHandlers,
   emitEventHandlers,
   emitRestAttrApplications,
@@ -32,195 +32,41 @@ import {
 import { emitConditionalUpdates, emitClientOnlyConditionals, emitLoopUpdates } from './emit-control-flow'
 import { emitDynamicTextUpdates, emitClientOnlyExpressions, emitReactiveAttributeUpdates, emitReactivePropBindings, emitReactiveChildProps } from './emit-reactive'
 import { emitRegistrationAndHydration } from './emit-registration'
+import { generateElementRefs } from './element-refs'
+import { emitChildComponentImports } from './child-components'
+import { classifyLocalDeclarations, emitSortedDeclarations } from './init-declarations'
+import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-level'
 
-/**
- * Orchestrate client JS code generation: analyze dependencies, emit code sections,
- * and resolve imports. Returns the complete init function + registration code.
- */
-export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, siblingComponents?: string[], localImportPrefixes?: string[]): string {
+export function generateInitFunction(
+  ir: ComponentIR,
+  ctx: ClientJsContext,
+  siblingComponents?: string[],
+  localImportPrefixes?: string[],
+): string {
   const lines: string[] = []
   const name = ctx.componentName
 
+  // --- Preamble: placeholders for deferred imports + module-level code ---
   lines.push(IMPORT_PLACEHOLDER)
-
-  // Child component imports (skip siblings in the same file)
-  const siblingSet = new Set(siblingComponents || [])
-  const childComponentNames = new Set<string>()
-  for (const loop of ctx.loopElements) {
-    if (loop.childComponent) {
-      childComponentNames.add(loop.childComponent.name)
-      collectComponentNamesFromIR(loop.childComponent.children, childComponentNames)
-    }
-    // Composite element reconciliation: collect component names from nestedComponents
-    if (loop.useElementReconciliation && loop.nestedComponents?.length) {
-      for (const comp of loop.nestedComponents) {
-        childComponentNames.add(comp.name)
-      }
-    }
-  }
-  for (const child of ctx.childInits) {
-    childComponentNames.add(child.name)
-  }
-  // Collect from conditional branch loops and nested conditionals
-  for (const cond of [...ctx.conditionalElements, ...ctx.clientOnlyConditionals]) {
-    collectChildNamesFromBranches(cond, childComponentNames)
-  }
-  for (const childName of childComponentNames) {
-    if (!siblingSet.has(childName)) {
-      lines.push(`import '/* @bf-child:${childName} */'`)
-    }
-  }
-
+  emitChildComponentImports(lines, ctx, new Set(siblingComponents || []))
   lines.push('')
   lines.push(MODULE_CONSTANTS_PLACEHOLDER)
-
   lines.push(`export function init${name}(__scope, ${PROPS_PARAM} = {}) {`)
   lines.push(`  if (!__scope) return`)
   lines.push('')
 
-  // --- Analysis: derive reachability from the component's reference graph ---
-  //
-  // The graph is built once and queried for every reachability question
-  // `generate-init.ts` used to answer via three separate extraction
-  // passes (`collectUsedIdentifiers`, `collectUsedFunctions`,
-  // `collectIdentifiersFromIRTree`) plus a manual init-statement merge.
-  // Each query below is a pure function over the same graph. See
-  // `spec/compiler-analysis-ir.md` for the target invariants.
-
-  const graph = buildReferencesGraph(ctx, _ir.root)
-  const usedIdentifiers = graphUsedIdentifiers(graph)
+  // --- Analysis: one graph, many queries; scope routing as data ---
+  const graph = buildReferencesGraph(ctx, ir.root)
   const usedFunctions = graphUsedFunctions(graph)
-  const { constantScope, functionScope } = computeDeclarationScopes(ctx, graph)
+  const classification = classifyLocalDeclarations(ctx, graph)
+  const propUsage = computePropUsage(ctx, classification.neededConstants)
 
-  // Route each local constant by its precomputed scope. The cascade that
-  // used to branch on `systemConstructKind`, `isModule + initStmtAssigned`,
-  // and provider context hoisting now lives in `compute-scope.ts`; this
-  // file just reads the answer.
-  const neededProps = new Set<string>()
-  const neededConstants: ConstantInfo[] = []
-  const moduleLevelConstants: ConstantInfo[] = []
-  for (const constant of ctx.localConstants) {
-    const scope = constantScope.get(constant.name)
-    if (scope === 'skip') continue
-    if (scope === 'module') {
-      moduleLevelConstants.push(constant)
-      continue
-    }
-    // scope === 'init'
-    neededConstants.push(constant)
-    if (constant.value) {
-      const refs = valueReferencesReactiveData(constant.value, ctx)
-      for (const propName of refs.usedProps) {
-        neededProps.add(propName)
-      }
-    }
-  }
-
-  for (const id of usedIdentifiers) {
-    if (ctx.propsParams.some((p) => p.name === id)) {
-      neededProps.add(id)
-    }
-  }
-
-  const propUsage = computePropUsage(ctx, neededConstants)
-
-  // --- Output: generate code in correct order ---
-
-  emitPropsExtraction(lines, ctx, neededProps, propUsage)
-
-  // Build unified Declaration[] and sort by dependency order (#508)
-  const controlledSignals: Array<{ signal: typeof ctx.signals[0]; propName: string }> = []
-  for (const signal of ctx.signals) {
-    const controlledPropName = getControlledPropName(signal, ctx.propsParams, ctx.propsObjectName)
-    if (controlledPropName) {
-      controlledSignals.push({ signal, propName: controlledPropName })
-    }
-  }
-
-  const declarations: Declaration[] = []
-
-  // Collect constants
-  for (const constant of neededConstants) {
-    declarations.push({
-      kind: 'constant',
-      info: constant,
-      sourceIndex: constant.loc.start.line,
-    })
-  }
-
-  // Route each local function by its precomputed scope. The fixpoint
-  // that used to live here now lives inside `computeDeclarationScopes`
-  // (compute-scope.ts).
-  const moduleLevelFunctions: FunctionInfo[] = []
-  for (const fn of ctx.localFunctions) {
-    const scope = functionScope.get(fn.name)
-    if (scope === 'skip') continue
-    if (scope === 'module') {
-      moduleLevelFunctions.push(fn)
-      continue
-    }
-    // scope === 'init'
-    declarations.push({
-      kind: 'function',
-      info: fn,
-      sourceIndex: fn.loc.start.line,
-    })
-  }
-
-  // Collect signals
-  for (const signal of ctx.signals) {
-    const controlled = controlledSignals.find(c => c.signal === signal)
-    declarations.push({
-      kind: 'signal',
-      info: signal,
-      controlledPropName: controlled?.propName ?? null,
-      sourceIndex: signal.loc.start.line,
-    })
-  }
-
-  // Collect memos
-  for (const memo of ctx.memos) {
-    declarations.push({
-      kind: 'memo',
-      info: memo,
-      sourceIndex: memo.loc.start.line,
-    })
-  }
-
-  // Build the set of all names defined by declarations for dependency filtering
-  const declNameSet = new Set<string>()
-  for (const decl of declarations) {
-    for (const name of providedNames(decl)) {
-      declNameSet.add(name)
-    }
-  }
-
-  const sorted = sortDeclarations(declarations, declNameSet)
-
-  // Emit sorted declarations
-  let emittedAny = false
-  for (const decl of sorted) {
-    emitDeclaration(lines, decl, ctx, controlledSignals)
-    if (decl.kind === 'signal' && decl.controlledPropName) {
-      emitControlledSignalEffect(lines, decl.info, decl.controlledPropName, ctx)
-    }
-    emittedAny = true
-  }
-  if (emittedAny) {
-    lines.push('')
-  }
-
-  // Emit bare imperative statements preserved from the component body (#930).
-  // These run at init time after signals/memos so they can reference them,
-  // but before effects/onMounts/DOM wiring so they can install global
-  // listeners that trigger signal updates without racing the effects.
+  // --- Emission: init body (runs at hydration for each instance) ---
+  emitPropsExtraction(lines, ctx, classification.neededProps, propUsage)
+  emitSortedDeclarations(lines, ctx, classification)
   emitInitStatements(lines, ctx)
-  if (ctx.initStatements.length > 0) {
-    lines.push('')
-  }
-
-  // Emit props-based event handlers (not local definitions)
-  emitPropsEventHandlers(lines, ctx, usedFunctions, neededProps)
+  if (ctx.initStatements.length > 0) lines.push('')
+  emitPropsEventHandlers(lines, ctx, usedFunctions, classification.neededProps)
 
   const elementRefs = generateElementRefs(ctx)
   if (elementRefs) {
@@ -235,7 +81,6 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   emitClientOnlyConditionals(lines, ctx)
 
   const conditionalSlotIds = collectConditionalSlotIds(ctx)
-
   emitRestAttrApplications(lines, ctx)
   emitEventHandlers(lines, ctx, conditionalSlotIds)
   emitReactivePropBindings(lines, ctx)
@@ -243,71 +88,32 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
   emitRefCallbacks(lines, ctx, conditionalSlotIds)
   emitEffectsAndOnMounts(lines, ctx)
   emitProviderAndChildInits(lines, ctx)
-  // Loop updates must run AFTER provider/child inits so that parent
-  // components have already provided their context (e.g., SelectContext)
-  // before loop children (e.g., SelectItem) call useContext().
+  // Loop updates must run AFTER provider/child inits so parent components
+  // have already provided their context before loop children useContext().
   emitLoopUpdates(lines, ctx)
   emitStaticArrayChildInits(lines, ctx)
-  const hydrateLine = emitRegistrationAndHydration(lines, ctx, _ir, graph)
 
-  let generatedCode = lines.join('\n')
+  const hydrateLine = emitRegistrationAndHydration(lines, ctx, ir, graph)
 
-  // Rename source-level props object name to the generated parameter name.
-  // User code may use `props.xxx` or a custom name like `p.xxx`;
-  // the init function parameter is always PROPS_PARAM.
-  // Both property access (props.xxx) and bare references (fn(props)) are renamed.
-  // The hydrate line is structurally excluded — it was not in `lines` during join,
-  // so template expressions (already using PROPS_PARAM) are never double-replaced.
-  const srcPropsName = ctx.propsObjectName ?? 'props'
-  if (srcPropsName !== PROPS_PARAM) {
-    generatedCode = generatedCode.split('\n')
-      .map(line => {
-        // Skip comment lines
-        if (line.trimStart().startsWith('//')) return line
-        return line.replace(new RegExp(`\\b${srcPropsName}\\b`, 'g'), PROPS_PARAM)
-      })
-      .join('\n')
-  }
-
-  // Append hydrate line after props renaming (template expressions are already correct)
+  // --- Finalisation: props rename → hydrate line → import / module-level
+  //     placeholder replacement.
+  //
+  // The props rename is a post-join string hack (replaces a bare
+  // user-level name like `props` or `p` with the generated `_p`
+  // parameter across every non-comment init-body line). Removing it
+  // needs analyzer-time pre-rewriting of every IR string field that
+  // can carry a prop reference — tracked as Stage E / follow-up. ---
+  let generatedCode = renamePropsObjectInInitBody(
+    lines.join('\n'),
+    ctx.propsObjectName,
+  )
   generatedCode += '\n' + hydrateLine
 
-  const usedImports = detectUsedImports(generatedCode)
-
-  for (const userImport of collectUserDomImports(_ir)) {
-    usedImports.add(userImport)
-  }
-
-  const sortedImports = [...usedImports].sort()
-  const importLine = `import { ${sortedImports.join(', ')} } from '${RUNTIME_MODULE}'`
-
-  // Collect external (non-DOM) imports used in the generated code
-  const externalImportLines = collectExternalImports(_ir, generatedCode, localImportPrefixes)
-  const allImportLines = [importLine, ...externalImportLines].join('\n')
-
-  // Module-level constants use `var` with nullish coalescing for safe
-  // re-declaration when multiple components in the same file share context
-  const moduleCodeLines: string[] = []
-  for (const constant of moduleLevelConstants) {
-    if (!constant.value) continue
-    moduleCodeLines.push(`var ${constant.name} = ${constant.name} ?? ${constant.value}`)
-  }
-
-  // Module-level functions: emitted at module scope so they are available
-  // in both the init function and the SSR template.
-  // Uses `var` + nullish coalescing for safe re-declaration when multiple
-  // components in the same bundle share the same helper function.
-  // Note: export is intentionally omitted — client JS files are self-contained
-  // entry points, not imported by other modules. Add export when a concrete
-  // cross-module use case arises.
-  for (const fn of moduleLevelFunctions) {
-    const paramStr = fn.params.map(p => p.name).join(', ')
-    moduleCodeLines.push(`var ${fn.name} = ${fn.name} ?? function(${paramStr}) ${fn.body}`)
-  }
-
-  const moduleConstantsCode = moduleCodeLines.length > 0
-    ? moduleCodeLines.join('\n') + '\n'
-    : ''
+  const allImportLines = resolveFinalImports(generatedCode, ir, localImportPrefixes)
+  const moduleConstantsCode = emitModuleLevelDeclarations(
+    classification.moduleLevelConstants,
+    classification.moduleLevelFunctions,
+  )
 
   return generatedCode
     .replace(IMPORT_PLACEHOLDER, allImportLines)
@@ -315,136 +121,24 @@ export function generateInitFunction(_ir: ComponentIR, ctx: ClientJsContext, sib
 }
 
 /**
- * Generate `const _slotId = find(...)` declarations for all elements
- * that need direct DOM references (events, dynamic text, loops, etc.).
+ * Rename the source-level props object name (`props` / user's custom
+ * name) to the generated parameter name `_p`. Runs on the joined init-
+ * body string, skipping comment lines so JSDoc / explanatory comments
+ * survive verbatim.
+ *
+ * No-op when the user already uses destructured props (`propsObjectName`
+ * is `null`, handled by `?? 'props'` not matching `_p`). The hydrate
+ * line is excluded structurally — callers append it AFTER this runs so
+ * template expressions already using `_p` are never double-replaced.
  */
-export function generateElementRefs(ctx: ClientJsContext): string {
-  const regularSlots = new Set<string>()
-  const textSlots = new Set<string>()
-  const componentSlots = new Set<string>()
-  const conditionalSlotIds = collectConditionalSlotIds(ctx)
-
-  for (const elem of ctx.interactiveElements) {
-    if (elem.slotId !== '__scope' && !conditionalSlotIds.has(elem.slotId)) {
-      regularSlots.add(elem.slotId)
-    }
-  }
-  // Dynamic text expressions use comment markers found via $t()
-  for (const elem of ctx.dynamicElements) {
-    if (!elem.insideConditional) {
-      textSlots.add(elem.slotId)
-    }
-  }
-  for (const elem of ctx.conditionalElements) {
-    regularSlots.add(elem.slotId)
-  }
-  for (const elem of ctx.loopElements) {
-    regularSlots.add(elem.slotId)
-  }
-  for (const elem of ctx.refElements) {
-    if (!conditionalSlotIds.has(elem.slotId)) {
-      regularSlots.add(elem.slotId)
-    }
-  }
-  for (const attr of ctx.reactiveAttrs) {
-    regularSlots.add(attr.slotId)
-  }
-  for (const prop of ctx.reactiveProps) {
-    componentSlots.add(prop.slotId)
-  }
-  for (const child of ctx.childInits) {
-    if (child.slotId) {
-      componentSlots.add(child.slotId)
-    }
-  }
-  for (const rest of ctx.restAttrElements) {
-    regularSlots.add(rest.slotId)
-  }
-
-  // Component slots take precedence over regular slots (#360).
-  // When a component contains a loop that inherits the component's slot ID
-  // (via propagateSlotIdToLoops), both need the same DOM element reference.
-  // Component elements use bf-s attributes, so $c() is the correct selector.
-  for (const slotId of componentSlots) {
-    regularSlots.delete(slotId)
-  }
-
-  if (regularSlots.size === 0 && textSlots.size === 0 && componentSlots.size === 0) return ''
-
-  const refLines: string[] = []
-
-  // Emit element ref declarations, batching 2+ slots into destructured calls
-  emitSlotRefs(refLines, [...regularSlots], '$')
-  emitSlotRefs(refLines, [...textSlots], '$t')
-  emitSlotRefs(refLines, [...componentSlots], '$c')
-
-  return refLines.join('\n')
+function renamePropsObjectInInitBody(code: string, propsObjectName: string | null): string {
+  const srcPropsName = propsObjectName ?? 'props'
+  if (srcPropsName === PROPS_PARAM) return code
+  return code
+    .split('\n')
+    .map(line => {
+      if (line.trimStart().startsWith('//')) return line
+      return line.replace(new RegExp(`\\b${srcPropsName}\\b`, 'g'), PROPS_PARAM)
+    })
+    .join('\n')
 }
-
-/**
- * Emit element ref declarations for a set of slot IDs using the given finder function.
- * Always emits destructured form: `const [_sN, ...] = fn(__scope, 'sN', ...)`
- */
-function emitSlotRefs(lines: string[], slotIds: string[], fn: string): void {
-  if (slotIds.length === 0) return
-  const vars = slotIds.map(id => `_${varSlotId(id)}`).join(', ')
-  const args = slotIds.map(id => `'${id}'`).join(', ')
-  lines.push(`  const [${vars}] = ${fn}(__scope, ${args})`)
-}
-
-/**
- * Recursively collect component names from IR children.
- * Used to ensure all nested components are imported, and to detect
- * which components are used as children (for conditional CSR fallback).
- */
-export function collectComponentNamesFromIR(nodes: IRNode[], names: Set<string>): void {
-  for (const node of nodes) {
-    if (node.type === 'component') {
-      names.add(node.name)
-      collectComponentNamesFromIR(node.children, names)
-      // Traverse JSX prop children for nested component references
-      for (const prop of node.props) {
-        if (prop.jsxChildren) {
-          collectComponentNamesFromIR(prop.jsxChildren, names)
-        }
-      }
-    } else if (node.type === 'element' || node.type === 'fragment' || node.type === 'provider') {
-      collectComponentNamesFromIR(node.children, names)
-    } else if (node.type === 'conditional') {
-      collectComponentNamesFromIR([node.whenTrue], names)
-      collectComponentNamesFromIR([node.whenFalse], names)
-    } else if (node.type === 'loop') {
-      collectComponentNamesFromIR(node.children, names)
-      if (node.childComponent) {
-        names.add(node.childComponent.name)
-        collectComponentNamesFromIR(node.childComponent.children, names)
-      }
-      if (node.nestedComponents) {
-        for (const nested of node.nestedComponents) {
-          names.add(nested.name)
-          collectComponentNamesFromIR(nested.children, names)
-        }
-      }
-    }
-  }
-}
-
-/**
- * Collect child component names from conditional branch loops and nested conditionals.
- * Ensures @bf-child import markers are generated for components inside
- * composite loops within conditional branches (e.g., Badge inside a branch loop).
- */
-function collectChildNamesFromBranches(
-  cond: Pick<ConditionalElement, 'whenTrue' | 'whenFalse'>,
-  names: Set<string>,
-): void {
-  for (const loop of [...cond.whenTrue.loops, ...cond.whenFalse.loops]) {
-    if (loop.nestedComponents) {
-      for (const comp of loop.nestedComponents) names.add(comp.name)
-    }
-  }
-  for (const nested of [...cond.whenTrue.conditionals, ...cond.whenFalse.conditionals]) {
-    collectChildNamesFromBranches(nested, names)
-  }
-}
-
