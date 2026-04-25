@@ -19,7 +19,7 @@ import {
   loopKeyFn,
   destructureLoopParam,
   buildDepthLevels,
-} from '../../emit-control-flow'
+} from '../legacy-helpers'
 import type { CompositeLoopPlan } from './types'
 
 export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPlan {

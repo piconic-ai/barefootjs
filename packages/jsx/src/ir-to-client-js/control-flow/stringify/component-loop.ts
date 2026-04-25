@@ -30,7 +30,7 @@
  * SSR-side nested-comp lines use 6 spaces (matches legacy).
  */
 
-import { emitLoopChildReactiveEffects } from '../../emit-control-flow'
+import { emitLoopChildReactiveEffects } from '../legacy-helpers'
 import type { ComponentLoopPlan, NestedComponentInit } from '../plan/types'
 
 export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan): void {

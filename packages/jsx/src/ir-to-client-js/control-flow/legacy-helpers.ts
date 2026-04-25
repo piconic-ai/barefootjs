@@ -1,29 +1,36 @@
 /**
- * Control flow emission: conditionals and loops.
- * Handles insert() for reactive conditionals, reconcileElements for dynamic loops,
- * and event delegation within loop containers.
+ * Stringify-layer helpers for control-flow emission.
+ *
+ * These functions all produce source lines directly (the older "string-push"
+ * style) and are called from both:
+ *   - `ir-to-client-js/control-flow.ts` (the public entry points)
+ *   - `control-flow/stringify/*` (the Plan stringifiers, where the
+ *     mode-dependent SSR/CSR shape and recursive branch/cond/inner-loop
+ *     structure still lives without a dedicated Plan layer)
+ *
+ * They were previously colocated with the entry points in the legacy
+ * `emit-control-flow.ts`. The split clarifies the dependency direction:
+ *
+ *   control-flow.ts -> control-flow/{plan,stringify}/* -> legacy-helpers.ts
+ *
+ * Each Plan-and-stringifier pair migration shrinks this file. The pure
+ * utility helpers at the top (loopKeyFn, destructureLoopParam,
+ * buildComponentPropsExpr, buildCompSelector, isTextOnlyConditional,
+ * buildDepthLevels, DepthLevel) are stable and shared.
  */
 
-import type { ClientJsContext, BranchLoop, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
-import type { IRLoopChildComponent, LoopParamBinding } from '../types'
-import { varSlotId, quotePropName, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
-import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
-import { emitAttrUpdate } from './emit-reactive'
-import { buildInsertPlan } from './control-flow/plan/build-insert'
-import { stringifyInsert } from './control-flow/stringify/insert'
-import { emitListenerLine, emitListenerBlock } from './control-flow/stringify/event-listener'
-import { buildPlainLoopPlan, buildStaticLoopPlan } from './control-flow/plan/build-loop'
-import { stringifyPlainLoop, stringifyStaticLoop } from './control-flow/stringify/loop'
-import { buildComponentLoopPlan } from './control-flow/plan/build-component-loop'
-import { stringifyComponentLoop } from './control-flow/stringify/component-loop'
-import { buildTopLevelCompositePlan, buildBranchCompositePlan } from './control-flow/plan/build-composite-loop'
-import { stringifyCompositeLoop } from './control-flow/stringify/composite-loop'
+import type { BranchLoop, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from '../types'
+import type { IRLoopChildComponent, LoopParamBinding } from '../../types'
+import { varSlotId, quotePropName, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from '../utils'
+import { addCondAttrToTemplate, irChildrenToJsExpr } from '../html-template'
+import { emitAttrUpdate } from '../emit-reactive'
+import { buildBranchCompositePlan } from './plan/build-composite-loop'
+import { stringifyCompositeLoop } from './stringify/composite-loop'
 import {
-  buildDynamicLoopDelegationPlan,
   buildBranchLoopDelegationPlan,
-  buildStaticArrayDelegationPlan,
-} from './control-flow/plan/build-event-delegation'
-import { stringifyEventDelegation } from './control-flow/stringify/event-delegation'
+} from './plan/build-event-delegation'
+import { stringifyEventDelegation } from './stringify/event-delegation'
+import { emitListenerLine, emitListenerBlock } from './stringify/event-listener'
 
 /**
  * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
@@ -118,7 +125,7 @@ export function emitBranchLoopBody(lines: string[], branchLoops: readonly Branch
       // require their own mapArray reconciliation — use the composite
       // renderItem path (createComponent for nested components, emitInnerLoopSetup
       // for inner loops).
-      emitCompositeBranchLoop(lines, loop, cv)
+      stringifyCompositeLoop(lines, buildBranchCompositePlan(loop, cv))
     } else {
       const keyFn = loopKeyFn(loop)
       const indexParam = loop.index || '__idx'
@@ -176,48 +183,6 @@ export function emitBranchLoopBody(lines: string[], branchLoops: readonly Branch
   }
 }
 
-/**
- * Emit composite loop reconciliation inside a conditional branch's bindEvents.
- * Mirrors emitCompositeElementReconciliation but scoped to a branch with disposal.
- * Generates: SSR hydration (initChild) + CSR renderItem (createComponent) + reconcileElements.
- */
-function emitCompositeBranchLoop(
-  lines: string[],
-  loop: BranchLoop,
-  cv: string,
-): void {
-  stringifyCompositeLoop(lines, buildBranchCompositePlan(loop, cv))
-}
-
-/** Emit insert() calls for server-rendered reactive conditionals with branch configs. */
-export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): void {
-  for (const elem of ctx.conditionalElements) {
-    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'dom' })
-    stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
-    lines.push('')
-  }
-}
-
-/** Emit insert() calls for client-only conditionals (not server-rendered). */
-export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext): void {
-  for (const elem of ctx.clientOnlyConditionals) {
-    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'raw' })
-    lines.push(`  // @client conditional: ${elem.slotId}`)
-    stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
-    lines.push('')
-  }
-}
-
-/** Emit loop updates: dispatches to static or dynamic handlers per element. */
-export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
-  for (const elem of ctx.loopElements) {
-    if (elem.isStaticArray) {
-      emitStaticArrayUpdates(lines, elem)
-    } else {
-      emitDynamicLoopUpdates(lines, elem)
-    }
-  }
-}
 
 /**
  * Emit fine-grained createEffect calls for reactive attributes inside a loop
@@ -229,7 +194,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
 function emitBranchChildComponentInits(
   lines: string[],
   indent: string,
-  components: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children?: import('../types').IRNode[] }>,
+  components: Array<{ name: string; slotId: string | null; props: import('../../types').IRProp[]; children?: import('../../types').IRNode[] }>,
   loopParam?: string,
   wrapFn?: (expr: string) => string,
   loopParamBindings?: readonly LoopParamBinding[],
@@ -271,7 +236,7 @@ function emitBranchInnerLoops(
   lines: string[],
   indent: string,
   scopeVar: string,
-  innerLoops: import('./types').NestedLoop[] | undefined,
+  innerLoops: import('../types').NestedLoop[] | undefined,
   outerLoopParam?: string,
   outerWrapFn?: (expr: string) => string,
   outerLoopParamBindings?: readonly LoopParamBinding[],
@@ -372,11 +337,11 @@ function emitBranchInnerLoops(
 function emitLoopCondBranchEventBindings(
   lines: string[],
   indent: string,
-  events: import('./types').ConditionalBranchEvent[] | undefined,
+  events: import('../types').ConditionalBranchEvent[] | undefined,
   wrap: (expr: string) => string,
 ): void {
   if (!events || events.length === 0) return
-  const eventsBySlot = new Map<string, import('./types').ConditionalBranchEvent[]>()
+  const eventsBySlot = new Map<string, import('../types').ConditionalBranchEvent[]>()
   for (const ev of events) {
     if (!eventsBySlot.has(ev.slotId)) eventsBySlot.set(ev.slotId, [])
     eventsBySlot.get(ev.slotId)!.push(ev)
@@ -531,55 +496,11 @@ export function emitLoopChildReactiveEffects(
 }
 
 /**
- * Emit reactive attribute effects and event delegation for static arrays.
- * Static arrays are server-rendered once; only signal-dependent attributes
- * and event handlers need client-side setup.
- */
-function emitStaticArrayUpdates(lines: string[], elem: TopLevelLoop): void {
-  // Static array initChild calls are deferred to emitStaticArrayChildInits()
-  // so that parent context providers (provideContext) run first.
-  stringifyStaticLoop(lines, buildStaticLoopPlan(elem))
-
-  // Event delegation for plain elements in static arrays (#537).
-  // Static arrays have no data-key/bf-i markers, so walk up from target to
-  // the container's direct child and use indexOf for index lookup.
-  if (!elem.childComponent && elem.childEvents.length > 0) {
-    stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem))
-  }
-}
-
-/**
- * Emit reconcileElements for a dynamic loop element.
- * Handles three sub-cases:
- *   - Composite (native elements + child components) → emitCompositeElementReconciliation
- *   - Component-only → reconcileElements + createComponent
- *   - Plain element → reconcileElements + template + hydration
- * Then emits event delegation handlers if needed.
- */
-function emitDynamicLoopUpdates(lines: string[], elem: TopLevelLoop): void {
-  const keyFn = loopKeyFn(elem)
-
-  if (elem.useElementReconciliation && (elem.nestedComponents?.length || elem.innerLoops?.length)) {
-    emitCompositeElementReconciliation(lines, elem, keyFn)
-  } else if (elem.childComponent) {
-    emitComponentLoopReconciliation(lines, elem, keyFn)
-  } else {
-    emitPlainElementLoopReconciliation(lines, elem, keyFn)
-  }
-  lines.push('')
-
-  // Event delegation for plain element loops (component loops handle events differently)
-  if (!elem.childComponent && !elem.useElementReconciliation && elem.childEvents.length > 0) {
-    emitDynamicLoopEventDelegation(lines, elem)
-  }
-}
-
-/**
  * Build a props object expression string from component prop definitions.
  * Shared by emitComponentLoopReconciliation and emitCompositeElementReconciliation.
  */
 export function buildComponentPropsExpr(
-  comp: { props: Array<{ name: string; value: string; isEventHandler: boolean; isLiteral: boolean }>, children?: import('../types').IRNode[] },
+  comp: { props: Array<{ name: string; value: string; isEventHandler: boolean; isLiteral: boolean }>, children?: import('../../types').IRNode[] },
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
 ): string {
@@ -601,27 +522,6 @@ export function buildComponentPropsExpr(
     }
   }
   return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
-}
-
-/** Emit mapArray for a loop whose body is a single child component. */
-function emitComponentLoopReconciliation(lines: string[], elem: TopLevelLoop, _keyFn: string): void {
-  // _keyFn ignored — buildComponentLoopPlan recomputes via loopKeyFn(elem)
-  // so the plan is self-contained. Kept in the signature so the dispatcher
-  // doesn't need to learn the new shape yet.
-  stringifyComponentLoop(lines, buildComponentLoopPlan(elem))
-}
-
-/** Emit mapArray for a plain element loop with unified CSR/SSR. */
-function emitPlainElementLoopReconciliation(lines: string[], elem: TopLevelLoop, _keyFn: string): void {
-  // _keyFn ignored — buildPlainLoopPlan recomputes via loopKeyFn(elem) so
-  // the plan is self-contained. Kept in the signature so the dispatcher
-  // (emitDynamicLoopUpdates) doesn't need to learn the new shape yet.
-  stringifyPlainLoop(lines, buildPlainLoopPlan(elem))
-}
-
-/** Emit event delegation for dynamic (non-static) loop child events. */
-function emitDynamicLoopEventDelegation(lines: string[], elem: TopLevelLoop): void {
-  stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem))
 }
 
 /**
@@ -914,18 +814,5 @@ export function emitInnerLoopSetup(
 
     i = j // skip past this level + its children
   }
-}
-
-/**
- * Emit reconcileElements with composite rendering for dynamic loops whose
- * native-element body contains child components.
- */
-function emitCompositeElementReconciliation(
-  lines: string[],
-  elem: TopLevelLoop,
-  _keyFn: string,
-): void {
-  // _keyFn ignored — buildTopLevelCompositePlan recomputes via loopKeyFn(elem).
-  stringifyCompositeLoop(lines, buildTopLevelCompositePlan(elem))
 }
 

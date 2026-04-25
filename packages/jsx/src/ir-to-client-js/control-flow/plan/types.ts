@@ -28,7 +28,7 @@ import type {
   TopLevelLoop,
 } from '../../types'
 import type { IRLoopChildComponent } from '../../../types'
-import type { DepthLevel } from '../../emit-control-flow'
+import type { DepthLevel } from '../legacy-helpers'
 
 // ─────────────────────────────────────────────────────────────────────
 // Top-level

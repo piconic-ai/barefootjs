@@ -25,7 +25,7 @@
  */
 
 import { varSlotId } from '../../utils'
-import { emitLoopChildReactiveEffects } from '../../emit-control-flow'
+import { emitLoopChildReactiveEffects } from '../legacy-helpers'
 import { emitAttrUpdate } from '../../emit-reactive'
 import type { PlainLoopPlan, StaticLoopPlan } from '../plan/types'
 

@@ -27,7 +27,7 @@ import {
   buildComponentPropsExpr,
   buildCompSelector,
   isTextOnlyConditional,
-} from '../../emit-control-flow'
+} from '../legacy-helpers'
 import { irChildrenToJsExpr } from '../../html-template'
 import type { ComponentLoopPlan, NestedComponentInit } from './types'
 

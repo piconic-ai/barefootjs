@@ -29,7 +29,7 @@ import {
   emitProviderAndChildInits,
   emitStaticArrayChildInits,
 } from './emit-init-sections'
-import { emitConditionalUpdates, emitClientOnlyConditionals, emitLoopUpdates } from './emit-control-flow'
+import { emitConditionalUpdates, emitClientOnlyConditionals, emitLoopUpdates } from './control-flow'
 import { emitDynamicTextUpdates, emitClientOnlyExpressions, emitReactiveAttributeUpdates, emitReactivePropBindings, emitReactiveChildProps } from './emit-reactive'
 import { emitRegistrationAndHydration } from './emit-registration'
 import { generateElementRefs } from './element-refs'

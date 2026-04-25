@@ -34,7 +34,7 @@ import {
   emitComponentAndEventSetup,
   emitInnerLoopSetup,
   emitLoopChildReactiveEffects,
-} from '../../emit-control-flow'
+} from '../legacy-helpers'
 import type { CompositeLoopPlan } from '../plan/types'
 
 export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan): void {

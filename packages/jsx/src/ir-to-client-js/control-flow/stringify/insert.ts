@@ -29,7 +29,7 @@
  */
 
 import { varSlotId } from '../../utils'
-import { emitBranchLoopBody } from '../../emit-control-flow'
+import { emitBranchLoopBody } from '../legacy-helpers'
 import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types'
 import { emitListenerLine } from './event-listener'
 

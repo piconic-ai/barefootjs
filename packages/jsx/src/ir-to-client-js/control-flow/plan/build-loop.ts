@@ -20,7 +20,7 @@ import {
 import {
   loopKeyFn,
   destructureLoopParam,
-} from '../../emit-control-flow'
+} from '../legacy-helpers'
 import type { PlainLoopPlan, StaticLoopPlan } from './types'
 
 export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
