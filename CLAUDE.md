@@ -49,8 +49,6 @@ Quick decision guide:
 - **Static attribute / class / ARIA changes** → Component IR test. Do NOT add an E2E test for static-only changes; that's an anti-pattern (see `spec/testing.md`).
 - **Hydration correctness** is a compiler invariant. Fix in `packages/jsx/`, verify with E2E.
 
-`renderToTest` is the only way to inspect IR structure in component tests — IR is an in-memory data structure accessed only through the test API.
-
 `renderToTest` resolution limits (known): the IR analyzer does NOT resolve `Record<T, string>[key]` indexed lookups or default-prop values. For variant components (`const sizeClasses: Record<Size, string> = {...}` + `${sizeClasses[size]}`), the `.classes` array in IR only contains the base class tokens, not the per-variant ones. Verify variant resolution at the adapter conformance layer instead, or add a fixture in `packages/adapter-tests/fixtures/`. See `ui/components/ui/button/index.test.tsx` for the existing workaround pattern.
 
 Workflow for editing a UI component:
