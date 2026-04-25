@@ -4,11 +4,13 @@
  * and event delegation within loop containers.
  */
 
-import type { ClientJsContext, ConditionalBranchEvent, BranchLoop, BranchSummary, ConditionalElement, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
+import type { ClientJsContext, BranchLoop, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
 import type { IRLoopChildComponent, LoopParamBinding } from '../types'
 import { toDomEventName, wrapHandlerInBlock, varSlotId, buildChainedArrayExpr, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent, substituteLoopBindings } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
+import { buildInsertPlan } from './control-flow/plan/build-insert'
+import { stringifyInsert } from './control-flow/stringify/insert'
 
 /**
  * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
@@ -86,165 +88,71 @@ function destructureLoopParam(
 }
 
 /**
- * Emit find() + event binding + ref callbacks + child component inits for a conditional branch.
- * Used by both emitConditionalUpdates and emitClientOnlyConditionals.
+ * Emit branch-scoped loop reconciliation. Extracted so the new Plan-based
+ * stringifier can reuse it verbatim while we incrementally migrate insert()
+ * shapes to Plan IR (PR 1) and only later move loops onto Plan (PR 2).
+ *
+ * The container lookup, mapArray dispatch, and reactive-effect wiring are
+ * the same lines previously inlined in `emitBranchBindings`.
  */
-function emitBranchBindings(
-  lines: string[],
-  branch: BranchSummary,
-  eventNameFn: (eventName: string) => string,
-): void {
-  const { events, refs, childComponents, textEffects, loops: branchLoops, conditionals: branchConditionals } = branch
-  const allSlotIds = new Set<string>()
-  for (const event of events) allSlotIds.add(event.slotId)
-  for (const ref of refs) allSlotIds.add(ref.slotId)
+export function emitBranchLoopBody(lines: string[], branchLoops: readonly BranchLoop[]): void {
+  for (const loop of branchLoops) {
+    const cv = varSlotId(loop.containerSlotId)
+    lines.push(`      const [__loop_${cv}] = $(__branchScope, '${loop.containerSlotId}')`)
 
-  const eventsBySlot = new Map<string, ConditionalBranchEvent[]>()
-  for (const event of events) {
-    if (!eventsBySlot.has(event.slotId)) {
-      eventsBySlot.set(event.slotId, [])
-    }
-    eventsBySlot.get(event.slotId)!.push(event)
-  }
+    if (loop.useElementReconciliation && (loop.nestedComponents?.length || loop.innerLoops?.length)) {
+      // Composite loop: items contain child components OR inner loops that
+      // require their own mapArray reconciliation — use the composite
+      // renderItem path (createComponent for nested components, emitInnerLoopSetup
+      // for inner loops).
+      emitCompositeBranchLoop(lines, loop, cv)
+    } else {
+      const keyFn = loopKeyFn(loop)
+      const indexParam = loop.index || '__idx'
+      const hasReactiveEffects = (loop.childReactiveAttrs?.length ?? 0) > 0
+        || (loop.childReactiveTexts?.length ?? 0) > 0
+        || (loop.childConditionals?.length ?? 0) > 0
 
-  if (allSlotIds.size > 0) {
-    const slotArr = [...allSlotIds]
-    const vars = slotArr.map(id => `_${varSlotId(id)}`).join(', ')
-    const args = slotArr.map(id => `'${id}'`).join(', ')
-    lines.push(`      const [${vars}] = $(__branchScope, ${args})`)
-  }
+      const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
+      const unwrapInline = pUnwrap ? `${pUnwrap} ` : ''
 
-  for (const [slotId, slotEvents] of eventsBySlot) {
-    const v = varSlotId(slotId)
-    for (const event of slotEvents) {
-      const wrappedHandler = wrapHandlerInBlock(event.handler)
-      lines.push(`      if (_${v}) _${v}.addEventListener('${eventNameFn(event.eventName)}', ${wrappedHandler})`)
-    }
-  }
-
-  for (const ref of refs) {
-    const v = varSlotId(ref.slotId)
-    lines.push(`      if (_${v}) (${ref.callback})(_${v})`)
-  }
-
-  // Initialize child components created by the branch swap
-  for (let i = 0; i < childComponents.length; i++) {
-    const comp = childComponents[i]
-    const varName = `__c${i}`
-    const selectorArg = comp.slotId || comp.name
-    lines.push(`      const [${varName}] = $c(__branchScope, '${selectorArg}')`)
-    lines.push(`      if (${varName}) initChild('${comp.name}', ${varName}, ${comp.propsExpr})`)
-  }
-
-  // Emit disposable effects scoped to this branch (text effects, loop reconciliation, nested conditionals).
-  // These only run while the branch is active and are disposed on branch switch.
-  const hasDisposables = textEffects.length > 0 || branchLoops.length > 0 || branchConditionals.length > 0
-  if (hasDisposables) {
-    lines.push(`      const __disposers = []`)
-
-    for (const te of textEffects) {
-      const v = varSlotId(te.slotId)
-      lines.push(`      const [__el_${v}] = $t(__branchScope, '${te.slotId}')`)
-      lines.push(`      __disposers.push(createDisposableEffect(() => {`)
-      lines.push(`        const __val = ${te.expression}`)
-      lines.push(`        if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val ?? '')`)
-      lines.push(`      }))`)
-    }
-
-    // Emit loop reconciliation effects for loops inside this branch.
-    // The loop's container is found via $() and updated reactively via reconcileElements.
-    for (const loop of branchLoops) {
-      const cv = varSlotId(loop.containerSlotId)
-      lines.push(`      const [__loop_${cv}] = $(__branchScope, '${loop.containerSlotId}')`)
-
-      if (loop.useElementReconciliation && (loop.nestedComponents?.length || loop.innerLoops?.length)) {
-        // Composite loop: items contain child components OR inner loops that
-        // require their own mapArray reconciliation — use the composite
-        // renderItem path (createComponent for nested components, emitInnerLoopSetup
-        // for inner loops).
-        emitCompositeBranchLoop(lines, loop, cv)
-      } else {
-        const keyFn = loopKeyFn(loop)
-        const indexParam = loop.index || '__idx'
-        const hasReactiveEffects = (loop.childReactiveAttrs?.length ?? 0) > 0
-          || (loop.childReactiveTexts?.length ?? 0) > 0
-          || (loop.childConditionals?.length ?? 0) > 0
-
-        const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
-        const unwrapInline = pUnwrap ? `${pUnwrap} ` : ''
-
-        if (!hasReactiveEffects) {
-          // Simple case: no reactive effects — return existing DOM as-is.
-          // Template expressions use loopParam() to read the current item, so the
-          // signal accessor stays intact without any unwrap.
-          if (loop.mapPreamble) {
-            lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${loop.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
-          } else {
-            lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
-          }
+      if (!hasReactiveEffects) {
+        // Simple case: no reactive effects — return existing DOM as-is.
+        // Template expressions use loopParam() to read the current item, so the
+        // signal accessor stays intact without any unwrap.
+        if (loop.mapPreamble) {
+          lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${loop.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
         } else {
-          // Multi-line renderItem with fine-grained effects — applies to both
-          // SSR (existing DOM) and CSR (freshly created) paths so reactive reads
-          // of non-item signals propagate to existing items too.
-          lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => {`)
-          if (pUnwrap) {
-            lines.push(`        ${pUnwrap}`)
-          }
-          if (loop.mapPreamble) {
-            lines.push(`        ${loop.mapPreamble}`)
-          }
-          lines.push(`        const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
-          emitLoopChildReactiveEffects(
-            lines,
-            '        ',
-            '__el',
-            loop.childReactiveAttrs ?? [],
-            loop.childReactiveTexts ?? [],
-            loop.childConditionals,
-            loop.param,
-            loop.paramBindings,
-          )
-          lines.push(`        return __el`)
-          lines.push(`      })`)
+          lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
         }
-        emitBranchLoopEventDelegation(lines, loop, cv)
+      } else {
+        // Multi-line renderItem with fine-grained effects — applies to both
+        // SSR (existing DOM) and CSR (freshly created) paths so reactive reads
+        // of non-item signals propagate to existing items too.
+        lines.push(`      if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => {`)
+        if (pUnwrap) {
+          lines.push(`        ${pUnwrap}`)
+        }
+        if (loop.mapPreamble) {
+          lines.push(`        ${loop.mapPreamble}`)
+        }
+        lines.push(`        const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
+        emitLoopChildReactiveEffects(
+          lines,
+          '        ',
+          '__el',
+          loop.childReactiveAttrs ?? [],
+          loop.childReactiveTexts ?? [],
+          loop.childConditionals,
+          loop.param,
+          loop.paramBindings,
+        )
+        lines.push(`        return __el`)
+        lines.push(`      })`)
       }
+      emitBranchLoopEventDelegation(lines, loop, cv)
     }
-
-    // Emit nested conditionals as insert() calls inside this branch.
-    // These are disposed when the parent branch switches, ensuring inner
-    // conditionals are re-set-up each time the parent branch activates.
-    for (const cond of branchConditionals) {
-      emitNestedBranchConditional(lines, cond, eventNameFn)
-    }
-
-    lines.push(`      return () => __disposers.forEach(d => d())`)
   }
-}
-
-/**
- * Emit a nested conditional as an insert() call inside a parent branch's bindEvents.
- * The insert is wrapped so its effects are disposed when the parent branch deactivates.
- */
-function emitNestedBranchConditional(
-  lines: string[],
-  elem: ConditionalElement,
-  eventNameFn: (eventName: string) => string,
-): void {
-  const whenTrueWithCond = addCondAttrToTemplate(elem.whenTrueHtml, elem.slotId)
-  const whenFalseWithCond = addCondAttrToTemplate(elem.whenFalseHtml, elem.slotId)
-
-  lines.push(`      insert(__branchScope, '${elem.slotId}', () => ${elem.condition}, {`)
-  lines.push(`        template: () => \`${whenTrueWithCond}\`,`)
-  lines.push(`        bindEvents: (__branchScope) => {`)
-  emitBranchBindings(lines, elem.whenTrue, eventNameFn)
-  lines.push(`        }`)
-  lines.push(`      }, {`)
-  lines.push(`        template: () => \`${whenFalseWithCond}\`,`)
-  lines.push(`        bindEvents: (__branchScope) => {`)
-  emitBranchBindings(lines, elem.whenFalse, eventNameFn)
-  lines.push(`        }`)
-  lines.push(`      })`)
 }
 
 /**
@@ -303,20 +211,8 @@ function emitCompositeBranchLoop(
 /** Emit insert() calls for server-rendered reactive conditionals with branch configs. */
 export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): void {
   for (const elem of ctx.conditionalElements) {
-    const whenTrueWithCond = addCondAttrToTemplate(elem.whenTrueHtml, elem.slotId)
-    const whenFalseWithCond = addCondAttrToTemplate(elem.whenFalseHtml, elem.slotId)
-
-    lines.push(`  insert(__scope, '${elem.slotId}', () => ${elem.condition}, {`)
-    lines.push(`    template: () => \`${whenTrueWithCond}\`,`)
-    lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenTrue, toDomEventName)
-    lines.push(`    }`)
-    lines.push(`  }, {`)
-    lines.push(`    template: () => \`${whenFalseWithCond}\`,`)
-    lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenFalse, toDomEventName)
-    lines.push(`    }`)
-    lines.push(`  })`)
+    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'dom' })
+    stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
     lines.push('')
   }
 }
@@ -324,22 +220,9 @@ export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): v
 /** Emit insert() calls for client-only conditionals (not server-rendered). */
 export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext): void {
   for (const elem of ctx.clientOnlyConditionals) {
-    const whenTrueWithCond = addCondAttrToTemplate(elem.whenTrueHtml, elem.slotId)
-    const whenFalseWithCond = addCondAttrToTemplate(elem.whenFalseHtml, elem.slotId)
-    const rawEventName = (eventName: string) => eventName
-
+    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'raw' })
     lines.push(`  // @client conditional: ${elem.slotId}`)
-    lines.push(`  insert(__scope, '${elem.slotId}', () => ${elem.condition}, {`)
-    lines.push(`    template: () => \`${whenTrueWithCond}\`,`)
-    lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenTrue, rawEventName)
-    lines.push(`    }`)
-    lines.push(`  }, {`)
-    lines.push(`    template: () => \`${whenFalseWithCond}\`,`)
-    lines.push(`    bindEvents: (__branchScope) => {`)
-    emitBranchBindings(lines, elem.whenFalse, rawEventName)
-    lines.push(`    }`)
-    lines.push(`  })`)
+    stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
     lines.push('')
   }
 }

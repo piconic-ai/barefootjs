@@ -1,0 +1,170 @@
+/**
+ * Stringify an `InsertPlan` to source lines.
+ *
+ * Output shape (must stay byte-identical to the legacy emitter):
+ *
+ *     <leadingIndent>insert(<scopeVar>, '<slotId>', () => <cond>, {
+ *     <leadingIndent>  template: () => `<true html>`,
+ *     <leadingIndent>  bindEvents: (__branchScope) => {
+ *                <arm body lines, each prefixed with bodyIndent>
+ *     <leadingIndent>  }
+ *     <leadingIndent>}, {
+ *     <leadingIndent>  template: () => `<false html>`,
+ *     <leadingIndent>  bindEvents: (__branchScope) => {
+ *                <arm body lines>
+ *     <leadingIndent>  }
+ *     <leadingIndent>})
+ *
+ * Indent convention (preserved from the legacy emitter, byte-identical):
+ *   - top-level insert call:        `  ` (2 spaces)
+ *   - top-level arm marker line:    `    ` (4 spaces) — `template:`, `bindEvents:`
+ *   - top-level body content:       `      ` (6 spaces) — events, ref, child comp
+ *   - nested insert call:           `      ` (6 spaces) — same as body indent
+ *   - nested arm marker line:       `        ` (8 spaces)
+ *   - nested body content:          `      ` (6 spaces) — bug-for-bug compat (#?)
+ *
+ * The "body content stays at 6 spaces regardless of depth" quirk is a known
+ * legacy oddity (see `emitBranchBindings` hard-coded indents). PR 1 must
+ * preserve it; a follow-up PR can fix it now that the indent is data-driven.
+ */
+
+import { toDomEventName, wrapHandlerInBlock, varSlotId } from '../../utils'
+import { emitBranchLoopBody } from '../../emit-control-flow'
+import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types'
+
+export interface StringifyInsertOptions {
+  /** Indent on the `insert(` line itself. */
+  leadingIndent: string
+  /** Indent for the arm-body content (lines emitted inside bindEvents). */
+  bodyIndent: string
+}
+
+export function stringifyInsert(
+  lines: string[],
+  plan: InsertPlan,
+  opts: StringifyInsertOptions,
+): void {
+  const { leadingIndent, bodyIndent } = opts
+  const scopeVar = scopeRefToVar(plan.scope)
+  const armIndent = leadingIndent + '  '
+
+  lines.push(`${leadingIndent}insert(${scopeVar}, '${plan.slotId}', () => ${plan.condition}, {`)
+  emitArm(lines, plan.arms[0], plan.eventNameMode, armIndent, bodyIndent)
+  lines.push(`${leadingIndent}}, {`)
+  emitArm(lines, plan.arms[1], plan.eventNameMode, armIndent, bodyIndent)
+  lines.push(`${leadingIndent}})`)
+}
+
+function emitArm(
+  lines: string[],
+  arm: InsertArm,
+  mode: 'dom' | 'raw',
+  armIndent: string,
+  bodyIndent: string,
+): void {
+  lines.push(`${armIndent}template: () => \`${arm.templateHtml}\`,`)
+  lines.push(`${armIndent}bindEvents: (__branchScope) => {`)
+  emitArmBody(lines, arm.body, mode, bodyIndent)
+  lines.push(`${armIndent}}`)
+}
+
+function emitArmBody(
+  lines: string[],
+  body: ArmBody,
+  mode: 'dom' | 'raw',
+  indent: string,
+): void {
+  const eventNameFn = mode === 'dom' ? toDomEventName : (n: string) => n
+
+  // 1. Combine event-bearing slots and ref slots into a single `$()` query.
+  //    Order: events-first, then refs (matches legacy emitter).
+  const allSlotIds = new Set<string>()
+  for (const ev of body.events) allSlotIds.add(ev.slotId)
+  for (const ref of body.refs) allSlotIds.add(ref.slotId)
+
+  if (allSlotIds.size > 0) {
+    const slotArr = [...allSlotIds]
+    const vars = slotArr.map(id => `_${varSlotId(id)}`).join(', ')
+    const args = slotArr.map(id => `'${id}'`).join(', ')
+    lines.push(`${indent}const [${vars}] = $(__branchScope, ${args})`)
+  }
+
+  // 2. Group events by slot — preserves legacy emit order (events-by-slot
+  //    in declaration order) without changing the underlying contract.
+  const eventsBySlot = new Map<string, typeof body.events>()
+  for (const ev of body.events) {
+    if (!eventsBySlot.has(ev.slotId)) eventsBySlot.set(ev.slotId, [])
+    eventsBySlot.get(ev.slotId)!.push(ev)
+  }
+  for (const [slotId, slotEvents] of eventsBySlot) {
+    const v = varSlotId(slotId)
+    for (const ev of slotEvents) {
+      const wrapped = wrapHandlerInBlock(ev.handler)
+      lines.push(`${indent}if (_${v}) _${v}.addEventListener('${eventNameFn(ev.eventName)}', ${wrapped})`)
+    }
+  }
+
+  for (const ref of body.refs) {
+    const v = varSlotId(ref.slotId)
+    lines.push(`${indent}if (_${v}) (${ref.callback})(_${v})`)
+  }
+
+  // 3. Child component initializations from the branch swap.
+  for (let i = 0; i < body.childComponents.length; i++) {
+    const comp = body.childComponents[i]
+    const varName = `__c${i}`
+    const selectorArg = comp.slotId || comp.name
+    lines.push(`${indent}const [${varName}] = $c(__branchScope, '${selectorArg}')`)
+    lines.push(`${indent}if (${varName}) initChild('${comp.name}', ${varName}, ${comp.propsExpr})`)
+  }
+
+  // 4. Disposable section: text effects + branch loops + nested conditionals.
+  //    Emitted inside the same `__disposers = []` / `return () => ...` envelope
+  //    so the legacy single-disposers-array shape is preserved (PR 1).
+  const hasDisposables =
+    body.textEffects.length > 0 ||
+    body.loopsRaw.length > 0 ||
+    body.conditionals.length > 0
+  if (!hasDisposables) return
+
+  lines.push(`${indent}const __disposers = []`)
+
+  for (const te of body.textEffects) {
+    const v = varSlotId(te.slotId)
+    lines.push(`${indent}const [__el_${v}] = $t(__branchScope, '${te.slotId}')`)
+    lines.push(`${indent}__disposers.push(createDisposableEffect(() => {`)
+    lines.push(`${indent}  const __val = ${te.expression}`)
+    lines.push(`${indent}  if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val ?? '')`)
+    lines.push(`${indent}}))`)
+  }
+
+  // Branch loops: delegate to the still-legacy emitter for PR 1. PR 2 will
+  // replace this with a Plan + stringifier pair. The legacy emitter writes
+  // its own `      ` (6 spaces) indent which matches our top-level body
+  // indent contract; nested inserts (PR 1 scope) call back into the same
+  // legacy lines.
+  if (body.loopsRaw.length > 0) {
+    emitBranchLoopBody(lines, body.loopsRaw)
+  }
+
+  // Nested conditionals: leadingIndent = current bodyIndent, but bodyIndent
+  // stays the SAME (6 spaces) — bug-for-bug compat with the legacy emitter
+  // which uses a hard-coded 6-space indent inside emitBranchBindings
+  // regardless of nesting depth. See header comment for details.
+  for (const cond of body.conditionals) {
+    stringifyInsert(lines, cond, {
+      leadingIndent: indent,
+      bodyIndent: indent,
+    })
+  }
+
+  lines.push(`${indent}return () => __disposers.forEach(d => d())`)
+}
+
+function scopeRefToVar(ref: ScopeRef): string {
+  switch (ref.kind) {
+    case 'top': return '__scope'
+    case 'branchScope': return '__branchScope'
+    case 'var': return ref.name
+  }
+}
