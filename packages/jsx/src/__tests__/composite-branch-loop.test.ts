@@ -55,8 +55,12 @@ describe('composite loops inside conditional branches (#724)', () => {
     // Should use reconcileElements inside the branch's bindEvents
     expect(js).toContain('mapArray(')
 
-    // Should use createComponent for Button inside renderItem (CSR path)
-    expect(js).toContain("createComponent('Button'")
+    // After O-1's mode-collapse PR, child component init goes through the
+    // runtime `upsertChild` helper instead of an emit-side
+    // createComponent/initChild dispatch. The helper resolves the SSR vs
+    // CSR shape at runtime — see `packages/client/src/runtime/registry.ts`.
+    expect(js).toContain("upsertChild(")
+    expect(js).toContain("'Button'")
 
     // Should use placeholder template (data-bf-ph) instead of inline renderChild
     expect(js).toContain('data-bf-ph')
@@ -181,8 +185,11 @@ describe('composite loops inside conditional branches (#724)', () => {
     expect(clientJs).toBeDefined()
     const js = clientJs!.content
 
-    // CSR path should call createComponent for elements (branch loops use CSR rendering)
-    expect(js).toContain("createComponent('Badge'")
+    // After O-1's mode-collapse PR, the SSR initChild and CSR createComponent
+    // emissions are unified into a single `upsertChild` runtime call that
+    // resolves the shape at runtime — see registry.ts.
+    expect(js).toContain("upsertChild(")
+    expect(js).toContain("'Badge'")
   })
 })
 

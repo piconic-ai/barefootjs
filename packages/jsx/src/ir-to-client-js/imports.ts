@@ -8,7 +8,7 @@ import type { ComponentIR, IRNode } from '../types'
 export const RUNTIME_IMPORT_CANDIDATES = [
   'createSignal', 'createMemo', 'createEffect', 'onCleanup', 'onMount',
   'hydrate', 'insert', 'reconcileElements', 'getLoopChildren', 'mapArray', 'createDisposableEffect',
-  'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'updateClientMarker',
+  'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'upsertChild', 'updateClientMarker',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss',

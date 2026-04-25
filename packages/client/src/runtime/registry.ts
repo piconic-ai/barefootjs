@@ -8,6 +8,7 @@
 import { BF_SCOPE, BF_CHILD_PREFIX } from '@barefootjs/shared'
 import { hydratedScopes } from './hydration-state'
 import { setCurrentScope } from './context'
+import { createComponent } from './component'
 import type { InitFn } from './types'
 
 /**
@@ -97,4 +98,46 @@ export function initChild(
   const prevScope = setCurrentScope(childScope)
   init(childScope, props)
   setCurrentScope(prevScope)
+}
+
+/**
+ * Upsert a child component at a slot inside `parent`. Resolves the SSR vs
+ * CSR shape at runtime in one place — so the compiler doesn't need a
+ * `mode: 'csr' | 'ssr'` argument for child component emission.
+ *
+ *   1. SSR: a `[bf-s$="_<slotId>"]` (or `[bf-s^="<name>_"]` when slotId is
+ *      null) element exists. Initialise it via initChild and return it.
+ *   2. CSR: a `[data-bf-ph="<slotId|name>"]` placeholder exists. Replace it
+ *      with `createComponent(name, props, key)` and return the new element.
+ *   3. Neither matches (already initialised on a previous reconcile pass) —
+ *      no-op, return null.
+ *
+ * The returned element is the live component scope element — callers can
+ * use it for follow-up effects (e.g. a children-textContent createEffect).
+ */
+export function upsertChild(
+  parent: Element,
+  name: string,
+  slotId: string | null,
+  props: Record<string, unknown>,
+  key?: string | number,
+): HTMLElement | null {
+  // SSR: scope element is already in the tree.
+  const ssrSelector = slotId
+    ? `[bf-s$="_${slotId}"]`
+    : `[bf-s^="~${name}_"], [bf-s^="${name}_"]`
+  const ssr = parent.querySelector(ssrSelector) as HTMLElement | null
+  if (ssr) {
+    initChild(name, ssr, props)
+    return ssr
+  }
+  // CSR: replace placeholder with a freshly-created component.
+  const phId = slotId ?? name
+  const ph = parent.querySelector(`[data-bf-ph="${phId}"]`) as HTMLElement | null
+  if (ph) {
+    const comp = createComponent(name, props, key)
+    ph.replaceWith(comp)
+    return comp
+  }
+  return null
 }
