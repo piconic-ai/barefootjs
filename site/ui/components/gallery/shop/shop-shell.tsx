@@ -61,6 +61,7 @@ export function ShopShell({ currentRoute, children }: ShopShellProps) {
             const active = item.key === currentRoute
             return (
               <a
+                key={item.key}
                 href={item.href}
                 data-shop-nav-item={item.key}
                 data-active={active ? 'true' : 'false'}

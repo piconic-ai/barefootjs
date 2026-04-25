@@ -118,6 +118,7 @@ export function AdminShell({ currentRoute, children }: AdminShellProps) {
             const active = item.key === currentRoute
             return (
               <a
+                key={item.key}
                 href={item.href}
                 data-admin-nav-item={item.key}
                 data-active={active ? 'true' : 'false'}
@@ -172,6 +173,7 @@ export function AdminShell({ currentRoute, children }: AdminShellProps) {
             const active = item.key === currentRoute
             return (
               <a
+                key={item.key}
                 href={item.href}
                 data-admin-mobile-nav-item={item.key}
                 data-active={active ? 'true' : 'false'}

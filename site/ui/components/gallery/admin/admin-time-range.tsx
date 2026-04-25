@@ -21,6 +21,7 @@ export function AdminTimeRange() {
     <div className="admin-time-range inline-flex items-center gap-1 rounded-md border bg-background p-1 text-sm">
       {ranges.map((value) => (
         <button
+          key={value}
           type="button"
           data-range={value}
           data-active={timeRange() === value ? 'true' : 'false'}

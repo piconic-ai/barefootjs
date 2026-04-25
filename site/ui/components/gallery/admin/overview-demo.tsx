@@ -232,7 +232,7 @@ export function AdminOverviewDemo() {
         <CardContent>
           <div className="space-y-4">
             {activities.map((activity) => (
-              <div className="flex items-center gap-4">
+              <div key={activity.id} className="flex items-center gap-4">
                 <Badge variant={activityBadgeVariant[activity.type]} className="w-20 justify-center">
                   {activityLabels[activity.type]}
                 </Badge>

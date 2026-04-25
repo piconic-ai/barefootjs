@@ -101,6 +101,7 @@ export function ProductivityShell({ currentRoute, children }: ProductivityShellP
             const active = item.key === currentRoute
             return (
               <a
+                key={item.key}
                 href={item.href}
                 data-productivity-nav-item={item.key}
                 data-active={active ? 'true' : 'false'}
@@ -152,6 +153,7 @@ export function ProductivityShell({ currentRoute, children }: ProductivityShellP
             const active = item.key === currentRoute
             return (
               <a
+                key={item.key}
                 href={item.href}
                 data-productivity-mobile-nav-item={item.key}
                 data-active={active ? 'true' : 'false'}

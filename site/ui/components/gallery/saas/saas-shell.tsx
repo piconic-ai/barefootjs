@@ -65,6 +65,7 @@ export function SaasShell({ currentRoute, children }: SaasShellProps) {
             const active = item.key === currentRoute
             return (
               <a
+                key={item.key}
                 href={item.href}
                 data-saas-nav-item={item.key}
                 data-active={active ? 'true' : 'false'}
@@ -107,6 +108,7 @@ export function SaasShell({ currentRoute, children }: SaasShellProps) {
           const active = item.key === currentRoute
           return (
             <a
+              key={item.key}
               href={item.href}
               data-saas-mobile-nav-item={item.key}
               data-active={active ? 'true' : 'false'}

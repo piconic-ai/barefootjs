@@ -98,6 +98,7 @@ export function SocialShell({ currentRoute, children }: SocialShellProps) {
             const active = item.key === currentRoute
             return (
               <a
+                key={item.key}
                 href={item.href}
                 data-social-nav-item={item.key}
                 data-active={active ? 'true' : 'false'}
@@ -149,6 +150,7 @@ export function SocialShell({ currentRoute, children }: SocialShellProps) {
             const active = item.key === currentRoute
             return (
               <a
+                key={item.key}
                 href={item.href}
                 data-social-mobile-nav-item={item.key}
                 data-active={active ? 'true' : 'false'}
