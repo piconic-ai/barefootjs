@@ -6,7 +6,7 @@
 
 import type { ClientJsContext, BranchLoop, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from './types'
 import type { IRLoopChildComponent, LoopParamBinding } from '../types'
-import { toDomEventName, wrapHandlerInBlock, varSlotId, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent, substituteLoopBindings } from './utils'
+import { toDomEventName, wrapHandlerInBlock, varSlotId, quotePropName, DATA_KEY, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from './utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from './html-template'
 import { emitAttrUpdate } from './emit-reactive'
 import { buildInsertPlan } from './control-flow/plan/build-insert'
@@ -17,6 +17,12 @@ import { buildComponentLoopPlan } from './control-flow/plan/build-component-loop
 import { stringifyComponentLoop } from './control-flow/stringify/component-loop'
 import { buildTopLevelCompositePlan, buildBranchCompositePlan } from './control-flow/plan/build-composite-loop'
 import { stringifyCompositeLoop } from './control-flow/stringify/composite-loop'
+import {
+  buildDynamicLoopDelegationPlan,
+  buildBranchLoopDelegationPlan,
+  buildStaticArrayDelegationPlan,
+} from './control-flow/plan/build-event-delegation'
+import { stringifyEventDelegation } from './control-flow/stringify/event-delegation'
 
 /**
  * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
@@ -525,20 +531,8 @@ function emitStaticArrayUpdates(lines: string[], elem: TopLevelLoop): void {
   // Event delegation for plain elements in static arrays (#537).
   // Static arrays have no data-key/bf-i markers, so walk up from target to
   // the container's direct child and use indexOf for index lookup.
-  // Event delegation stays on the legacy emitter — moves to Plan in PR 3.
   if (!elem.childComponent && elem.childEvents.length > 0) {
-    const v = varSlotId(elem.slotId)
-    emitLoopEventDelegation(lines, `_${v}`, elem.childEvents, (ls, ev, handlerCall, cVar) => {
-      ls.push(`      let __el = ${varSlotId(ev.childSlotId)}El`)
-      ls.push(`      while (__el.parentElement && __el.parentElement !== ${cVar}) __el = __el.parentElement`)
-      ls.push(`      if (__el.parentElement === ${cVar}) {`)
-      const idxOffset = elem.siblingOffset ? ` - ${elem.siblingOffset}` : ''
-      ls.push(`        const __idx = Array.from(${cVar}.children).indexOf(__el)${idxOffset}`)
-      ls.push(`        const ${elem.param} = ${elem.array}[__idx]`)
-      if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
-      ls.push(`        if (${elem.param}) ${handlerCall}`)
-      ls.push(`      }`)
-    })
+    stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem))
   }
 }
 
@@ -647,104 +641,7 @@ function emitPlainElementLoopReconciliation(lines: string[], elem: TopLevelLoop,
 
 /** Emit event delegation for dynamic (non-static) loop child events. */
 function emitDynamicLoopEventDelegation(lines: string[], elem: TopLevelLoop): void {
-  const vLoop = varSlotId(elem.slotId)
-  const hasBindings = (elem.paramBindings?.length ?? 0) > 0
-
-  if (elem.key) {
-    // Dynamic keyed: find item by data-key attribute.
-    // For destructured `.map(({ id }) => ...)`, the raw regex replace below
-    // can't reach binding names (the pattern text `{ id }` never word-matches
-    // on `id`), so we substitute bindings with `item.<path>` directly (#951).
-    const keyWithItem = hasBindings
-      ? substituteLoopBindings(elem.key, elem.paramBindings!, 'item')
-      : elem.key.replace(new RegExp(`\\b${elem.param}\\b`, 'g'), 'item')
-    emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
-      if (ev.nestedLoops.length === 0) {
-        // Direct child of outer loop — single-level lookup.
-        // For destructured outer param, `const { id } = arr.find(item => ...)`
-        // would throw a TDZ ReferenceError if the find callback references the
-        // outer `id` while the `const` is still being declared. Land on a
-        // plain `__bfLoopItem` local first, then destructure once the lookup
-        // is done (#951).
-        ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[${DATA_KEY}]')`)
-        ls.push(`      if (li) {`)
-        ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
-        if (hasBindings) {
-          ls.push(`        const __bfLoopItem = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
-          ls.push(`        if (__bfLoopItem) {`)
-          ls.push(`          const ${elem.param} = __bfLoopItem`)
-          if (elem.mapPreamble) ls.push(`          ${elem.mapPreamble}`)
-          ls.push(`          ${handlerCall}`)
-          ls.push(`        }`)
-        } else {
-          ls.push(`        const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === key)`)
-          if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
-          ls.push(`        if (${elem.param}) ${handlerCall}`)
-        }
-        ls.push(`      }`)
-      } else {
-        // Nested loop event — multi-level data-key-N resolution
-        const evVar = varSlotId(ev.childSlotId)
-        // Resolve inner loop keys (innermost first)
-        for (const nested of ev.nestedLoops) {
-          const dataAttr = keyAttrName(nested.depth)
-          ls.push(`      const innerLi${nested.depth} = ${evVar}El.closest('[${dataAttr}]')`)
-          ls.push(`      const innerKey${nested.depth} = innerLi${nested.depth}?.getAttribute('${dataAttr}')`)
-        }
-        // Resolve outer loop key
-        ls.push(`      const outerLi = ${evVar}El.closest('[${DATA_KEY}]')`)
-        ls.push(`      const outerKey = outerLi?.getAttribute('${DATA_KEY}')`)
-        // Resolve outer loop variable — TDZ-safe for destructured params.
-        if (hasBindings) {
-          ls.push(`      const __bfLoopItem = ${elem.array}.find(item => String(${keyWithItem}) === outerKey)`)
-          ls.push(`      const ${elem.param} = __bfLoopItem ?? ({})`)
-        } else {
-          ls.push(`      const ${elem.param} = ${elem.array}.find(item => String(${keyWithItem}) === outerKey)`)
-        }
-        // Resolve inner loop variables via the outer param's nested array.
-        // Destructured inner params get the same `substituteLoopBindings`
-        // treatment; otherwise fall through to the legacy regex replace.
-        for (const nested of ev.nestedLoops) {
-          // `nested.key` can be null for unkeyed loops; coerce to '' so the
-          // resolution silently no-ops (String('') never matches a real
-          // key), matching prior behavior when NestedLoop.key was
-          // always a string defaulting to ''.
-          const rawKey = nested.key ?? ''
-          const innerKeyExpr = nested.paramBindings && nested.paramBindings.length > 0
-            ? substituteLoopBindings(rawKey, nested.paramBindings, 'item')
-            : rawKey.replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
-          const outerRef = hasBindings ? '__bfLoopItem' : elem.param
-          ls.push(`      const ${nested.param} = ${outerRef} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
-        }
-        // Guard all resolved variables — for destructured outer we use the
-        // __bfLoopItem sentinel because the pattern text itself isn't truthy-testable.
-        const outerGuard = hasBindings ? '__bfLoopItem' : elem.param
-        const allParams = [outerGuard, ...ev.nestedLoops.map(n => n.param)]
-        if (elem.mapPreamble) ls.push(`      ${elem.mapPreamble}`)
-        ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
-      }
-    })
-  } else {
-    // Dynamic non-keyed: find item by index in parent children
-    emitLoopEventDelegation(lines, `_${vLoop}`, elem.childEvents, (ls, ev, handlerCall) => {
-      ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
-      ls.push(`      if (li && li.parentElement) {`)
-      ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
-      if (hasBindings) {
-        ls.push(`        const __bfLoopItem = ${elem.array}[idx]`)
-        ls.push(`        if (__bfLoopItem) {`)
-        ls.push(`          const ${elem.param} = __bfLoopItem`)
-        if (elem.mapPreamble) ls.push(`          ${elem.mapPreamble}`)
-        ls.push(`          ${handlerCall}`)
-        ls.push(`        }`)
-      } else {
-        ls.push(`        const ${elem.param} = ${elem.array}[idx]`)
-        if (elem.mapPreamble) ls.push(`        ${elem.mapPreamble}`)
-        ls.push(`        if (${elem.param}) ${handlerCall}`)
-      }
-      ls.push(`      }`)
-    })
-  }
+  stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem))
 }
 
 /**
@@ -752,86 +649,7 @@ function emitDynamicLoopEventDelegation(lines: string[], elem: TopLevelLoop): vo
  * Mirrors emitDynamicLoopEventDelegation but uses branch-scoped container variable.
  */
 function emitBranchLoopEventDelegation(lines: string[], loop: BranchLoop, cv: string): void {
-  const containerVar = `__loop_${cv}`
-  const childEvents = loop.childEvents
-  const hasBindings = (loop.paramBindings?.length ?? 0) > 0
-
-  if (loop.key) {
-    // Keyed: find item by data-key attribute. See emitDynamicLoopEventDelegation
-    // for the destructured-param TDZ-safe shape (#951).
-    const keyWithItem = hasBindings
-      ? substituteLoopBindings(loop.key, loop.paramBindings!, 'item')
-      : loop.key.replace(new RegExp(`\\b${loop.param}\\b`, 'g'), 'item')
-    emitLoopEventDelegation(lines, containerVar, childEvents, (ls, ev, handlerCall) => {
-      if (ev.nestedLoops.length === 0) {
-        ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[${DATA_KEY}]')`)
-        ls.push(`      if (li) {`)
-        ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
-        if (hasBindings) {
-          ls.push(`        const __bfLoopItem = ${loop.array}.find(item => String(${keyWithItem}) === key)`)
-          ls.push(`        if (__bfLoopItem) {`)
-          ls.push(`          const ${loop.param} = __bfLoopItem`)
-          if (loop.mapPreamble) ls.push(`          ${loop.mapPreamble}`)
-          ls.push(`          ${handlerCall}`)
-          ls.push(`        }`)
-        } else {
-          ls.push(`        const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === key)`)
-          if (loop.mapPreamble) ls.push(`        ${loop.mapPreamble}`)
-          ls.push(`        if (${loop.param}) ${handlerCall}`)
-        }
-        ls.push(`      }`)
-      } else {
-        // Nested loop event — multi-level data-key-N resolution
-        const evVar = varSlotId(ev.childSlotId)
-        for (const nested of ev.nestedLoops) {
-          const dataAttr = keyAttrName(nested.depth)
-          ls.push(`      const innerLi${nested.depth} = ${evVar}El.closest('[${dataAttr}]')`)
-          ls.push(`      const innerKey${nested.depth} = innerLi${nested.depth}?.getAttribute('${dataAttr}')`)
-        }
-        ls.push(`      const outerLi = ${evVar}El.closest('[${DATA_KEY}]')`)
-        ls.push(`      const outerKey = outerLi?.getAttribute('${DATA_KEY}')`)
-        if (hasBindings) {
-          ls.push(`      const __bfLoopItem = ${loop.array}.find(item => String(${keyWithItem}) === outerKey)`)
-          ls.push(`      const ${loop.param} = __bfLoopItem ?? ({})`)
-        } else {
-          ls.push(`      const ${loop.param} = ${loop.array}.find(item => String(${keyWithItem}) === outerKey)`)
-        }
-        for (const nested of ev.nestedLoops) {
-          // See sibling comment above — `nested.key` may be null.
-          const rawKey = nested.key ?? ''
-          const innerKeyExpr = nested.paramBindings && nested.paramBindings.length > 0
-            ? substituteLoopBindings(rawKey, nested.paramBindings, 'item')
-            : rawKey.replace(new RegExp(`\\b${nested.param}\\b`, 'g'), 'item')
-          const outerRef = hasBindings ? '__bfLoopItem' : loop.param
-          ls.push(`      const ${nested.param} = ${outerRef} && ${nested.array}.find(item => String(${innerKeyExpr}) === innerKey${nested.depth})`)
-        }
-        const outerGuard = hasBindings ? '__bfLoopItem' : loop.param
-        const allParams = [outerGuard, ...ev.nestedLoops.map(n => n.param)]
-        if (loop.mapPreamble) ls.push(`      ${loop.mapPreamble}`)
-        ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
-      }
-    })
-  } else {
-    // Non-keyed: find item by index in parent children
-    emitLoopEventDelegation(lines, containerVar, childEvents, (ls, ev, handlerCall) => {
-      ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
-      ls.push(`      if (li && li.parentElement) {`)
-      ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
-      if (hasBindings) {
-        ls.push(`        const __bfLoopItem = ${loop.array}[idx]`)
-        ls.push(`        if (__bfLoopItem) {`)
-        ls.push(`          const ${loop.param} = __bfLoopItem`)
-        if (loop.mapPreamble) ls.push(`          ${loop.mapPreamble}`)
-        ls.push(`          ${handlerCall}`)
-        ls.push(`        }`)
-      } else {
-        ls.push(`        const ${loop.param} = ${loop.array}[idx]`)
-        if (loop.mapPreamble) ls.push(`        ${loop.mapPreamble}`)
-        ls.push(`        if (${loop.param}) ${handlerCall}`)
-      }
-      ls.push(`      }`)
-    })
-  }
+  stringifyEventDelegation(lines, buildBranchLoopDelegationPlan(loop, cv))
 }
 
 /** Per-inner-loop data for composite loop emission. */
@@ -1122,67 +940,3 @@ function emitCompositeElementReconciliation(
   stringifyCompositeLoop(lines, buildTopLevelCompositePlan(elem))
 }
 
-/**
- * Callback that emits the item-lookup lines inside a loop event delegation handler.
- * Called once per event after target.closest() matched.
- */
-type ItemLookupEmitter = (
-  lines: string[],
-  ev: LoopChildEvent,
-  handlerCall: string,
-  containerVar: string,
-) => void
-
-/** Non-bubbling events that require addEventListener with capture for delegation. */
-const NON_BUBBLING_EVENTS = new Set([
-  'blur', 'focus', 'load', 'unload',
-  'mouseenter', 'mouseleave',
-  'pointerenter', 'pointerleave',
-])
-
-/**
- * Emit event delegation for child events inside a loop (static or dynamic).
- * The shared shell (event grouping, closest matching, handler call construction)
- * is handled here; the strategy-specific item-lookup is injected via callback.
- */
-function emitLoopEventDelegation(
-  lines: string[],
-  containerVar: string,
-  childEvents: LoopChildEvent[],
-  emitItemLookup: ItemLookupEmitter,
-): void {
-  const eventsByName = new Map<string, LoopChildEvent[]>()
-  for (const ev of childEvents) {
-    if (!eventsByName.has(ev.eventName)) {
-      eventsByName.set(ev.eventName, [])
-    }
-    eventsByName.get(ev.eventName)!.push(ev)
-  }
-
-  for (const [eventName, events] of eventsByName) {
-    // Sort deepest-first so child elements are checked before parents (#774)
-    events.sort((a, b) => b.domDepth - a.domDepth)
-    const useCapture = NON_BUBBLING_EVENTS.has(eventName)
-    if (useCapture) {
-      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${eventName}', (e) => {`)
-    } else {
-      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${toDomEventName(eventName)}', (e) => {`)
-    }
-    lines.push(`    const target = e.target`)
-    for (const ev of events) {
-      const childVar = varSlotId(ev.childSlotId)
-      lines.push(`    const ${childVar}El = target.closest('[bf="${ev.childSlotId}"]')`)
-      lines.push(`    if (${childVar}El) {`)
-      const handlerCall = `(${ev.handler.trim()})(e)`
-      emitItemLookup(lines, ev, handlerCall, containerVar)
-      lines.push(`      return`)
-      lines.push(`    }`)
-    }
-    if (useCapture) {
-      lines.push(`  }, true)`)
-    } else {
-      lines.push(`  })`)
-    }
-    lines.push('')
-  }
-}
