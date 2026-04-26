@@ -31,10 +31,8 @@ import { graphUsedIdentifiers } from './build-references'
 import { getControlledPropName } from './prop-handling'
 import { exprReferencesIdent } from './utils'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
-import {
-  emitDeclaration,
-  emitControlledSignalEffect,
-} from './emit-init-sections'
+import { buildDeclarationEmitPlan } from './plan/build-declaration-emit'
+import { stringifyDeclarationEmit } from './stringify/declaration-emit'
 import type { ClientJsContext } from './types'
 
 export interface ControlledSignal {
@@ -170,10 +168,8 @@ export function emitSortedDeclarations(
 
   let emittedAny = false
   for (const decl of sorted) {
-    emitDeclaration(lines, decl, ctx, controlledSignals)
-    if (decl.kind === 'signal' && decl.controlledPropName) {
-      emitControlledSignalEffect(lines, decl.info, decl.controlledPropName, ctx)
-    }
+    const plan = buildDeclarationEmitPlan(decl, ctx, controlledSignals)
+    stringifyDeclarationEmit(lines, plan)
     emittedAny = true
   }
   if (emittedAny) lines.push('')

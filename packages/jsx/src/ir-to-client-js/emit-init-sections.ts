@@ -6,8 +6,7 @@
  * Control flow, reactive updates, and registration are in separate modules.
  */
 
-import type { PropUsage, SignalInfo } from '../types'
-import type { Declaration } from './declaration-sort'
+import type { PropUsage } from '../types'
 import type { ClientJsContext } from './types'
 import { propHasPropertyAccess } from './compute-prop-usage'
 import { inferDefaultValue, toDomEventName, wrapHandlerInBlock, varSlotId, PROPS_PARAM } from './utils'
@@ -86,95 +85,6 @@ export function emitPropsExtraction(
     }
     lines.push('')
   }
-}
-
-/**
- * Emit a single declaration (constant, signal, memo, or function).
- * Dispatches by declaration kind. Used by the unified topological-sort emitter.
- */
-export function emitDeclaration(
-  lines: string[],
-  decl: Declaration,
-  ctx: ClientJsContext,
-  controlledSignals: Array<{ signal: SignalInfo; propName: string }>
-): void {
-  switch (decl.kind) {
-    case 'constant': {
-      const constant = decl.info
-      const keyword = constant.declarationKind ?? 'const'
-      if (constant.value !== undefined) {
-        lines.push(`  ${keyword} ${constant.name} = ${constant.value}`)
-      } else {
-        lines.push(`  ${keyword} ${constant.name}`)
-      }
-      break
-    }
-    case 'signal': {
-      const signal = decl.info
-      const propsName = ctx.propsObjectName ?? 'props'
-      const propsPrefix = `${propsName}.`
-
-      let initialValue: string
-      if (signal.initialValue.startsWith(propsPrefix) && !signal.initialValue.includes('??')) {
-        const propRef = `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
-        initialValue = `${propRef} ?? ${inferDefaultValue(signal.type)}`
-      } else {
-        const controlled = controlledSignals.find(c => c.signal === signal)
-        if (controlled) {
-          if (signal.initialValue.includes('??')) {
-            if (ctx.propsObjectName && signal.initialValue.startsWith(propsPrefix)) {
-              initialValue = `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
-            } else {
-              initialValue = signal.initialValue
-            }
-          } else {
-            const prop = ctx.propsParams.find(p => p.name === controlled.propName)
-            const defaultVal = prop?.defaultValue ?? inferDefaultValue(signal.type)
-            initialValue = `${PROPS_PARAM}.${controlled.propName} ?? ${defaultVal}`
-          }
-        } else if (ctx.propsObjectName && signal.initialValue.startsWith(propsPrefix)) {
-          initialValue = `${PROPS_PARAM}.` + signal.initialValue.slice(propsPrefix.length)
-        } else {
-          initialValue = signal.initialValue
-        }
-      }
-
-      if (signal.setter) {
-        lines.push(`  const [${signal.getter}, ${signal.setter}] = createSignal(${initialValue})`)
-      } else {
-        lines.push(`  const [${signal.getter}] = createSignal(${initialValue})`)
-      }
-      break
-    }
-    case 'memo': {
-      lines.push(`  const ${decl.info.name} = createMemo(${decl.info.computation})`)
-      break
-    }
-    case 'function': {
-      const fn = decl.info
-      const paramStr = fn.params.map((p) => p.name).join(', ')
-      lines.push(`  const ${fn.name} = (${paramStr}) => ${fn.body}`)
-      break
-    }
-  }
-}
-
-/** Emit createEffect for controlled signal synchronization. */
-export function emitControlledSignalEffect(
-  lines: string[],
-  signal: SignalInfo,
-  propName: string,
-  ctx: ClientJsContext
-): void {
-  const prop = ctx.propsParams.find(p => p.name === propName)
-  const accessor = prop?.defaultValue
-    ? `(${PROPS_PARAM}.${propName} ?? ${prop.defaultValue})`
-    : `${PROPS_PARAM}.${propName}`
-  if (!signal.setter) return // read-only signal, no controlled sync needed
-  lines.push(`  createEffect(() => {`)
-  lines.push(`    const __val = ${accessor}`)
-  lines.push(`    if (__val !== undefined) ${signal.setter}(__val)`)
-  lines.push(`  })`)
 }
 
 /** Emit props-based event handler bindings (handlers that come from props, not local definitions). */
