@@ -8,13 +8,22 @@
  */
 
 import { highlight, initHighlighter } from './shared/highlighter'
-import { SOURCE_CODE } from './shared/snippets'
+import {
+  SOURCE_CODE,
+  HONO_OUTPUT,
+  ECHO_OUTPUT,
+  MOJO_OUTPUT,
+  BROWSER_OUTPUT,
+  CLIENT_CODE,
+} from './shared/snippets'
 import { Tooltip } from '@/components/ui/tooltip'
 
 type Adapter = {
   id: string
   name: string
   lang: string
+  /** Compiled template snippet shown in the Tooltip on hover/focus. */
+  output: string
   // Either a logo url (svg in /static/logos/) or an inline svg string for icons
   // we don't have an asset for (Browser).
   logo?: string
@@ -28,10 +37,10 @@ const BROWSER_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 </svg>`
 
 const ADAPTERS: Adapter[] = [
-  { id: 'hono',        name: 'Hono',        lang: 'TypeScript',           logo: '/static/logos/hono-icon.svg' },
-  { id: 'echo',        name: 'Echo',        lang: 'Go',                    logo: '/static/logos/echo-icon.png' },
-  { id: 'mojolicious', name: 'Mojolicious', lang: 'Perl',                  logo: '/static/logos/mojo-icon.png' },
-  { id: 'browser',     name: 'Browser',     lang: 'Client Side Rendering', inlineIcon: BROWSER_ICON },
+  { id: 'hono',        name: 'Hono',        lang: 'TypeScript',            output: HONO_OUTPUT,    logo: '/static/logos/hono-icon.svg' },
+  { id: 'echo',        name: 'Echo',        lang: 'Go',                    output: ECHO_OUTPUT,    logo: '/static/logos/echo-icon.png' },
+  { id: 'mojolicious', name: 'Mojolicious', lang: 'Perl',                  output: MOJO_OUTPUT,    logo: '/static/logos/mojo-icon.png' },
+  { id: 'browser',     name: 'Browser',     lang: 'Client Side Rendering', output: BROWSER_OUTPUT, inlineIcon: BROWSER_ICON },
 ]
 
 const BAREFOOT_ICON = `<svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true" class="flow-build-icon">
@@ -201,16 +210,89 @@ const FLOW_DIAGRAM_SCRIPT = `(function () {
     });
   });
 
-  update();
-  window.addEventListener('resize', update);
+  // Single-open invariant: when the user opens one tooltip, close any
+  // others that are currently open. We dispatch click() on the other
+  // wrapper (which is what toggles the Tooltip's signal). A guard flag
+  // breaks the recursion since the dispatched click fires this same
+  // listener again.
+  var tooltipWrappers = diagram.querySelectorAll('.flow-adapters [data-slot="tooltip"]');
+  var suppressTooltipChain = false;
+  tooltipWrappers.forEach(function (wrapper) {
+    wrapper.addEventListener('click', function () {
+      if (suppressTooltipChain) return;
+      // Defer until after Tooltip's own click handler has applied the
+      // toggle, so we observe the post-click state.
+      setTimeout(function () {
+        suppressTooltipChain = true;
+        try {
+          tooltipWrappers.forEach(function (other) {
+            if (other === wrapper) return;
+            var oc = other.querySelector('[data-slot="tooltip-content"]');
+            if (oc && oc.getAttribute('data-state') === 'open') {
+              other.click();
+            }
+          });
+        } finally {
+          suppressTooltipChain = false;
+        }
+      }, 0);
+    });
+  });
+
+  // Mobile tooltip positioning: when a tooltip-content opens, pin it
+  // (position: fixed) just below the .flow-adapters row, full width
+  // minus margin. Avoids per-card centering that overflows the viewport
+  // and avoids relying on offsetParent quirks that produced wrong
+  // absolute coordinates with the wrapper-static layout hack.
+  var adaptersRow = diagram.querySelector('.flow-adapters');
+  function positionMobileTooltips() {
+    if (!isMobile() || !adaptersRow) return;
+    var rowRect = adaptersRow.getBoundingClientRect();
+    var top = rowRect.bottom + 8;
+    var contents = diagram.querySelectorAll('[data-slot="tooltip-content"]');
+    contents.forEach(function (el) {
+      el.style.position = 'fixed';
+      el.style.top = top + 'px';
+      el.style.left = '4vw';
+      el.style.right = '4vw';
+      el.style.bottom = 'auto';
+      el.style.width = 'auto';
+      el.style.maxWidth = 'none';
+    });
+  }
+  function clearMobileTooltipStyles() {
+    var contents = diagram.querySelectorAll('[data-slot="tooltip-content"]');
+    contents.forEach(function (el) {
+      el.style.position = '';
+      el.style.top = '';
+      el.style.left = '';
+      el.style.right = '';
+      el.style.bottom = '';
+      el.style.width = '';
+      el.style.maxWidth = '';
+    });
+  }
+  function syncMobileTooltips() {
+    if (isMobile()) positionMobileTooltips();
+    else clearMobileTooltipStyles();
+  }
+  // Watch state changes so we re-pin when an open transition runs.
+  var mo = new MutationObserver(syncMobileTooltips);
+  diagram.querySelectorAll('[data-slot="tooltip-content"]').forEach(function (el) {
+    mo.observe(el, { attributes: true, attributeFilter: ['data-state'] });
+  });
+  function refresh() { update(); syncMobileTooltips(); }
+  refresh();
+  window.addEventListener('resize', refresh);
+  window.addEventListener('scroll', syncMobileTooltips, { passive: true });
   if (typeof ResizeObserver !== 'undefined') {
-    var ro = new ResizeObserver(update);
+    var ro = new ResizeObserver(refresh);
     ro.observe(diagram);
   }
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(update);
+    document.fonts.ready.then(refresh);
   }
-  window.addEventListener('load', update);
+  window.addEventListener('load', refresh);
 })();`
 
 export async function Hero() {
@@ -260,13 +342,13 @@ export async function Hero() {
           </div>
 
           <div className="flow-adapters" role="tablist" aria-label="Output adapter">
-            <Tooltip content="client.js — Hydrate your template" placement="top">
+            <Tooltip content={CLIENT_CODE} placement="left">
               <div className="flow-output flow-output-client" aria-label="client.js">
                 <img src="/static/logos/javascript-icon.png" alt="" className="flow-adapter-logo" />
               </div>
             </Tooltip>
             {ADAPTERS.map((a, i) => (
-              <Tooltip content={`${a.name} — ${a.lang}`} placement="top">
+              <Tooltip content={a.output} placement="left">
                 <button
                   type="button"
                   className={`flow-output flow-adapter-tab${i === 0 ? ' is-active' : ''}`}

@@ -307,6 +307,34 @@
   margin-top: 120px;
 }
 
+/* ── Flow tooltip: render the compiled template snippet as code ──
+   Scoped via the parent .flow-adapters because className passed to
+   <Tooltip> isn't preserved through client hydration (bf-p only carries
+   props read reactively), so we can't rely on a custom class on the
+   wrapper itself. */
+.flow-adapters [data-slot="tooltip-content"] {
+  white-space: pre !important;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.55;
+  text-align: left;
+  background: oklch(0.18 0.015 250);
+  color: oklch(0.94 0.01 250);
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid oklch(0.32 0.02 250);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.4);
+  max-width: min(420px, 90vw);
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* Hide the little arrow — at this size the arrow becomes mismatched
+   against the rounded code block. */
+.flow-adapters [data-slot="tooltip-content"] > span[aria-hidden="true"] {
+  display: none;
+}
+
 .flow-adapter-tab {
   cursor: pointer;
   opacity: 0.65;
@@ -380,7 +408,7 @@ img.flow-adapter-logo {
    Adapter row is icon-only by default; tap a card to expand it inline. */
 @media (max-width: 820px) {
   .hero-b-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
     gap: 2rem;
     min-height: 0;
@@ -433,6 +461,23 @@ img.flow-adapter-logo {
   .flow-output {
     width: 56px;
     height: 56px;
+  }
+
+  /* On mobile the wide code tooltip is positioned (and sized) at runtime
+     by the inline FLOW_DIAGRAM_SCRIPT — it pins position: fixed below
+     .flow-adapters so the tooltip lives just under the row regardless
+     of which card was tapped, without overflowing the viewport.
+     Reset the Tailwind translate/scale/rotate (CSS individual transform
+     properties — not bundled into `transform`) that `top-1/2 -translate-y-1/2`
+     relies on; otherwise the fixed-positioned tooltip is shifted -50% of
+     its own height upward and lands above the row. */
+  .flow-adapters [data-slot="tooltip-content"] {
+    transform: none !important;
+    translate: none !important;
+    scale: 1 !important;
+    rotate: none !important;
+    margin: 0 !important;
+    max-height: 50vh;
   }
 
   /* On mobile, every adapter is "selectable" (no faded inactive state). */
