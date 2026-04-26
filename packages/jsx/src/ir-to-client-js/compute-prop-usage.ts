@@ -6,57 +6,49 @@
  * the access kinds observed for each prop (bare / property / index)
  * and whether the prop is consumed as a loop's array expression.
  *
- * Replaces `detectPropsWithPropertyAccess` in `prop-handling.ts` and
- * the inline `propsUsedAsLoopArrays` loop in `generate-init.ts`.
- *
- * Stage C.2 of issue #1021 — analysis-on-IR refactor.
+ * Stage C.2 of issue #1021 introduced this file; C1 of the post-#1054
+ * maintainability plan replaced the inline regex pair
+ * (`\\b<name>\\.[a-zA-Z_]` / `\\b<name>\\s*\\[`) with an AST walk via
+ * `collectPropAccesses` so optional-chaining (`<name>?.foo`) and
+ * computed access patterns are no longer silently missed.
  */
 
-import type { ConstantInfo, PropAccessKind, PropUsage } from '../types'
+import type { ConstantInfo, PropUsage } from '../types'
 import type { ClientJsContext } from './types'
+import { collectPropAccesses, type PropAccessKindMap } from './walk-prop-accesses'
 
 export function computePropUsage(
   ctx: ClientJsContext,
-  /** Constants the emitter is going to ship (scope === 'init'). Must
-   *  mirror the sources the pre-Stage C.2 `detectPropsWithPropertyAccess`
-   *  scanned, so that the `{}` default decision stays byte-identical. */
+  /** Constants the emitter is going to ship (scope === 'init'). Mirrors
+   *  the source set the pre-Stage C.2 `detectPropsWithPropertyAccess`
+   *  scanned, so the `{}` default decision stays byte-identical for any
+   *  source the regex did catch. */
   initScopeConstants: readonly ConstantInfo[],
 ): Map<string, PropUsage> {
-  const usage = new Map<string, PropUsage>()
+  const propNames = new Set(ctx.propsParams.map(p => p.name))
+  const accesses: PropAccessKindMap = new Map()
 
-  // Sources mirror the pre-refactor `detectPropsWithPropertyAccess`
-  // scan (prop-handling.ts L150-183): conditional branch HTML +
+  // Same source set as the legacy scan: conditional branch HTML +
   // condition, loop template, dynamic text expression, and init-scope
-  // constant initializers. Extending the scan would widen the `{}`
-  // default coverage — that is a deliberate Stage C.3 / later concern,
-  // not a Stage C.2 change.
-  const sources: string[] = []
+  // constant initializers.
   for (const elem of ctx.conditionalElements) {
-    sources.push(elem.whenTrueHtml, elem.whenFalseHtml, elem.condition)
+    collectPropAccesses(elem.whenTrueHtml, propNames, accesses)
+    collectPropAccesses(elem.whenFalseHtml, propNames, accesses)
+    collectPropAccesses(elem.condition, propNames, accesses)
   }
   for (const elem of ctx.loopElements) {
-    sources.push(elem.template)
+    collectPropAccesses(elem.template, propNames, accesses)
   }
   for (const elem of ctx.dynamicElements) {
-    sources.push(elem.expression)
+    collectPropAccesses(elem.expression, propNames, accesses)
   }
   for (const c of initScopeConstants) {
-    if (c.value) sources.push(c.value)
+    if (c.value) collectPropAccesses(c.value, propNames, accesses)
   }
 
+  const usage = new Map<string, PropUsage>()
   for (const prop of ctx.propsParams) {
-    const accessKinds = new Set<PropAccessKind>()
-    const dotPattern = new RegExp(`\\b${prop.name}\\.[a-zA-Z_]`)
-    const bracketPattern = new RegExp(`\\b${prop.name}\\s*\\[`)
-
-    for (const source of sources) {
-      if (dotPattern.test(source)) accessKinds.add('property')
-      if (bracketPattern.test(source)) accessKinds.add('index')
-      // Early exit once both kinds observed; `bare` is not tracked from
-      // this scan (`detectPropsWithPropertyAccess` never did).
-      if (accessKinds.size === 2) break
-    }
-
+    const accessKinds = accesses.get(prop.name) ?? new Set()
     let usedAsLoopArray = false
     for (const loop of ctx.loopElements) {
       if (loop.array.trim() === prop.name) {
@@ -64,12 +56,7 @@ export function computePropUsage(
         break
       }
     }
-
-    usage.set(prop.name, {
-      propName: prop.name,
-      accessKinds,
-      usedAsLoopArray,
-    })
+    usage.set(prop.name, { propName: prop.name, accessKinds, usedAsLoopArray })
   }
 
   return usage
