@@ -25,9 +25,19 @@ export function Counter({ count = 0 }) {
   )
 }`
 
-export const ECHO_OUTPUT = `{{/* Go Template */}}
+export const ECHO_OUTPUT = `{{/* Go html/template */}}
 <button bf-s="Counter" bf="slot_1">
   Count: <span bf="slot_0">{{ .Count }}</span>
+</button>`
+
+export const MOJO_OUTPUT = `% # Mojolicious template
+<button bf-s="Counter" bf="slot_1">
+  Count: <span bf="slot_0"><%= $count %></span>
+</button>`
+
+export const BROWSER_OUTPUT = `<!-- Rendered & hydrated in the browser -->
+<button bf-s="Counter" bf="slot_1">
+  Count: <span bf="slot_0">0</span>
 </button>`
 
 export const CLIENT_CODE = `// Counter.client.js

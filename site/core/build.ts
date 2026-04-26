@@ -272,12 +272,19 @@ if (await Bun.file(icon64).exists()) {
   console.log('Copied: dist/icon-64.png, dist/static/icon-64.png')
 }
 
-for (const name of ['logo.svg', 'logo-for-dark.svg', 'logo-for-light.svg']) {
+for (const name of ['logo.svg', 'logo-for-dark.svg', 'logo-for-light.svg', 'text.svg', 'icon.svg']) {
+  // text.svg / icon.svg are referenced from the landing hero diagram.
+  // They must be served over /static/ so the LP can load them in dev + prod.
+  const aliasMap: Record<string, string> = {
+    'text.svg': 'logo-text.svg',
+    'icon.svg': 'logo-icon.svg',
+  }
+  const destName = aliasMap[name] || name
   const src = resolve(IMAGES_DIR, name)
   if (await Bun.file(src).exists()) {
-    await Bun.write(resolve(DIST_DIR, name), Bun.file(src))
-    await Bun.write(resolve(DIST_STATIC_DIR, name), Bun.file(src))
-    console.log(`Copied: dist/${name}, dist/static/${name}`)
+    await Bun.write(resolve(DIST_DIR, destName), Bun.file(src))
+    await Bun.write(resolve(DIST_STATIC_DIR, destName), Bun.file(src))
+    console.log(`Copied: dist/${destName}, dist/static/${destName}`)
   }
 }
 
@@ -334,7 +341,7 @@ await mkdir(DIST_LOGOS_DIR, { recursive: true })
 await mkdir(DIST_STATIC_LOGOS_DIR, { recursive: true })
 const logoFiles = await readdir(LOGOS_SRC).catch(() => [] as string[])
 for (const file of logoFiles) {
-  if (file.endsWith('.svg')) {
+  if (file.endsWith('.svg') || file.endsWith('.png')) {
     await Bun.write(resolve(DIST_LOGOS_DIR, file), Bun.file(resolve(LOGOS_SRC, file)))
     await Bun.write(resolve(DIST_STATIC_LOGOS_DIR, file), Bun.file(resolve(LOGOS_SRC, file)))
   }

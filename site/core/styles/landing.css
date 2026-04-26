@@ -3,6 +3,524 @@
  * LP-specific styles. Base tokens and resets come from tokens.css + globals.css.
  */
 
+/* ── Hero B Design ────────────────────────────────────────── */
+
+.hero-b {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 5rem 1.5rem 3rem;
+}
+
+/* Always vertical: hero text on top, diagram below */
+.hero-b-content {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/*
+ * Hero grid (5 cols × 1 row):
+ *   left content | gutter | build node | gutter | adapter list
+ * The right column stretches the full container height so client.js sits
+ * up at the top — visually next to the hero heading — and Browser sits
+ * at the bottom, like the toes of a footprint fanning right.
+ */
+.hero-b-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 80px 110px 80px 240px;
+  align-items: stretch;
+  min-height: 620px;
+}
+
+.hero-b-left {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2.5rem;
+  z-index: 2;
+}
+
+.hero-b-grid > .flow-build {
+  /* Positioned absolutely; left/top are set by JS so the box sits at the
+     visual midpoint between the source panel's right edge and the adapter
+     column's left edge, vertically centered on the source panel. */
+  position: absolute;
+  z-index: 2;
+}
+
+.hero-b-grid > .flow-adapters {
+  grid-column: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* Don't stretch the Tooltip wrapper spans across the full column width —
+     keep them at their card's natural width so the tooltip's left:50% /
+     -translate-x-1/2 centers on the icon, not the column. */
+  align-items: center;
+  gap: 0;
+  position: relative;
+  z-index: 2;
+  align-self: stretch;
+  max-width: none;
+}
+
+.hero-b-grid > .flow-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hero-b-text {
+  max-width: 720px;
+}
+
+/* Source panel sits in the bottom half of the left column; let it grow
+   to fill whatever vertical space is left after the heading + buttons. */
+.hero-b-left .flow-source {
+  flex: 0 1 auto;
+  width: 100%;
+  max-width: 600px;
+  height: 320px;
+}
+
+.hero-b-heading {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  margin-bottom: 1.25rem;
+}
+
+.hero-b-accent {
+  color: var(--gradient-start);
+}
+
+.hero-b-body {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--muted-foreground);
+  margin-bottom: 2rem;
+}
+
+.hero-b-body strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.hero-b-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.hero-b-diagram {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* ── Flow Diagram ─────────────────────────────────────────── */
+
+/*
+ * Layout (matches reference design):
+ *
+ *   ┌────────────┐                 ┌─────────────┐
+ *   │            │                 │  client.js  │  ← always solid
+ *   │   source   │   ┌──────┐  ┌── ├─────────────┤
+ *   │            ├──→│ build│──┤── │   Hono      │  ← solid (active)
+ *   │            │   └──────┘  ├── ├─────────────┤
+ *   └────────────┘              ├── │   Echo     │
+ *                              ├── │ Mojolicious │  ← dashed
+ *                              └── │   Browser   │
+ *                                  └─────────────┘
+ */
+
+.flow-diagram {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) 220px minmax(340px, 1fr);
+  align-items: center;
+  gap: 0;
+  min-height: 500px;
+}
+
+/* Source code panel */
+.flow-source {
+  display: flex;
+  flex-direction: column;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  font-family: var(--font-mono);
+}
+
+.flow-source-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.875rem;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  flex-shrink: 0;
+}
+
+.flow-source-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-source-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.flow-source-filename {
+  font-size: 0.8125rem;
+  color: #c9d1d9;
+}
+
+.flow-source-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #8b949e;
+  text-transform: uppercase;
+}
+
+.flow-source-code {
+  flex: 1;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.flow-source-code pre {
+  margin: 0;
+  background: transparent !important;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  padding: 0.25rem 0.5rem;
+}
+
+.flow-source-code .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
+/*
+ * Connector column — fixed coordinate space matches SVG viewBox 200×500.
+ *   build box centred at x=100, y=250 (size 100×80)
+ *   adapter outputs span y=0..390 (5 boxes × 70 + 4 × 10 gap = 390)
+ *   adapter centres: 35, 115, 195, 275, 355 (offset within adapter list)
+ */
+.flow-connector {
+  position: relative;
+  width: 220px;
+  height: 500px;
+  margin: 0 auto;
+}
+
+.flow-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 220px;
+  height: 500px;
+  pointer-events: none;
+}
+
+/* Build box — square. The grid override above places it in the centre col. */
+.flow-build {
+  width: 110px;
+  height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  background: oklch(0.18 0.08 145);
+  border: 1px solid oklch(0.35 0.12 145);
+  border-radius: 0.625rem;
+}
+
+.flow-build-icon {
+  width: 44px;
+  height: 44px;
+  color: #ffffff;
+  display: block;
+}
+
+/* Force the logo text SVG to render white over the dark build box,
+   regardless of the page theme. */
+.flow-build-logo-text {
+  width: 78px;
+  height: auto;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+/* Adapter list (right column) — 5 boxes total, height 70, gap 10 → 390px */
+.flow-adapters {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  max-width: 220px;
+}
+
+/* Output card / adapter tab — icon-only square; descriptive text lives
+   in a <Tooltip> wrapper that surfaces on hover/focus. */
+.flow-output {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.flow-output-client {
+  /* Selected/active accent: same green as the active flow line so the
+     box reads as part of the live path, not a passive card. */
+  border-color: #22c55e;
+}
+
+/* Push the entire client.js tooltip wrapper down (not just the card
+   inside it), so the Tooltip's bottom-full placement sits flush above
+   the icon instead of above the wrapper's untouched top edge. */
+.hero-b-grid > .flow-adapters > [data-slot="tooltip"]:has(.flow-output-client) {
+  margin-top: 120px;
+}
+
+/* ── Flow tooltip: render the compiled template snippet as code ──
+   Scoped via the parent .flow-adapters because className passed to
+   <Tooltip> isn't preserved through client hydration (bf-p only carries
+   props read reactively), so we can't rely on a custom class on the
+   wrapper itself. */
+.flow-adapters [data-slot="tooltip-content"] {
+  white-space: pre !important;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.55;
+  text-align: left;
+  background: oklch(0.18 0.015 250);
+  color: oklch(0.94 0.01 250);
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid oklch(0.32 0.02 250);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.4);
+  max-width: min(420px, 90vw);
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* Hide the little arrow — at this size the arrow becomes mismatched
+   against the rounded code block. */
+.flow-adapters [data-slot="tooltip-content"] > span[aria-hidden="true"] {
+  display: none;
+}
+
+/* Desktop placement override: cards live in the right column, so a
+   centred placement="top" tooltip would overflow the viewport right.
+   Right-anchor the tooltip to the card's right edge so the wide code
+   block extends leftward into available space. */
+@media (min-width: 821px) {
+  .flow-adapters [data-slot="tooltip-content"] {
+    left: auto !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: calc(100% + 0.5rem) !important;
+    margin: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    scale: 1 !important;
+    rotate: none !important;
+  }
+
+  /* client.js sits at the top of the column with very little headroom
+     to the page header — flip its tooltip to BELOW the card so the
+     code block doesn't disappear under the header. */
+  .flow-adapters [data-slot="tooltip"]:has(.flow-output-client) [data-slot="tooltip-content"] {
+    top: calc(100% + 0.5rem) !important;
+    bottom: auto !important;
+  }
+}
+
+.flow-adapter-tab {
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.flow-adapter-tab:hover {
+  opacity: 0.9;
+}
+
+.flow-adapter-tab.is-active {
+  opacity: 1;
+  border-color: #22c55e;
+}
+
+/* Adapter brand logo (left of the tab) */
+.flow-adapter-logo {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: contain;
+}
+
+img.flow-adapter-logo {
+  /* PNG / SVG raster logos: keep aspect ratio inside the 36×36 slot */
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.flow-adapter-logo-inline svg,
+.flow-adapter-logo svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  color: var(--foreground);
+}
+
+/* Badge circle (used by client.js JS pill) */
+.flow-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: white;
+  font-family: var(--font-mono);
+}
+
+.flow-badge-green  { background: #22c55e; }
+
+@media (max-width: 900px) {
+  .flow-diagram {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    min-height: 0;
+  }
+  .flow-source { height: auto; min-height: 220px; }
+  .flow-connector { display: none; }
+}
+
+/* ── Hero B: mobile / narrow layout ─────────────────────────
+   Stack vertically: hero text → source → barefoot.js → adapter row.
+   Adapter row is icon-only by default; tap a card to expand it inline. */
+@media (max-width: 820px) {
+  .hero-b-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 2rem;
+    min-height: 0;
+  }
+  /* Lines remain visible — JS recomputes paths for the vertical stack
+     (source ↓ build, build ↓ adapter row). */
+
+  .hero-b-left {
+    grid-column: 1;
+    gap: 1.75rem;
+  }
+  .hero-b-left .flow-source {
+    height: auto;
+    min-height: 220px;
+    max-width: 100%;
+  }
+
+  .hero-b-grid > .flow-build {
+    position: static;
+    grid-column: 1;
+    justify-self: center;
+    width: 88px;
+    height: 88px;
+  }
+  .flow-build-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .flow-build-logo-text {
+    height: 12px;
+  }
+
+  /* Adapters become a single horizontal row, including client.js. */
+  .hero-b-grid > .flow-adapters {
+    grid-column: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-self: center;
+    gap: 0.5rem;
+    max-width: 100%;
+  }
+
+  /* Override desktop offset that pushes client.js next to the body copy. */
+  .hero-b-grid > .flow-adapters > [data-slot="tooltip"]:has(.flow-output-client) {
+    margin-top: 0;
+  }
+
+  /* Slightly tighter cards on mobile (still icon-only). */
+  .flow-output {
+    width: 56px;
+    height: 56px;
+  }
+
+  /* On mobile the wide code tooltip is positioned (and sized) at runtime
+     by the inline FLOW_DIAGRAM_SCRIPT — it pins position: fixed below
+     .flow-adapters so the tooltip lives just under the row regardless
+     of which card was tapped, without overflowing the viewport.
+     Reset the Tailwind translate/scale/rotate (CSS individual transform
+     properties — not bundled into `transform`) that `top-1/2 -translate-y-1/2`
+     relies on; otherwise the fixed-positioned tooltip is shifted -50% of
+     its own height upward and lands above the row. */
+  .flow-adapters [data-slot="tooltip-content"] {
+    transform: none !important;
+    translate: none !important;
+    scale: 1 !important;
+    rotate: none !important;
+    margin: 0 !important;
+    max-height: 50vh;
+  }
+
+  /* On mobile, every adapter is "selectable" (no faded inactive state). */
+  .flow-adapter-tab {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-b {
+    padding: 4rem 1rem 2rem;
+  }
+  .hero-b-heading {
+    font-size: 2.25rem;
+  }
+}
+
 /* ── Gradient text ────────────────────────────────────────── */
 
 .gradient-text {

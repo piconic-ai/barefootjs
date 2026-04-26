@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "bun run --watch server.tsx",
     "build": "bun run build.ts",
+    "test:e2e": "playwright test",
     "deploy": "bun run build && wrangler deploy"
   },
   "dependencies": {
