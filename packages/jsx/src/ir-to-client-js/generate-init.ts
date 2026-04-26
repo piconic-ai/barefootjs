@@ -17,25 +17,11 @@ import {
 } from './build-references'
 import { computePropUsage } from './compute-prop-usage'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER } from './imports'
-import {
-  collectConditionalSlotIds,
-  emitPropsExtraction,
-  emitPropsEventHandlers,
-  emitEventHandlers,
-  emitRestAttrApplications,
-  emitRefCallbacks,
-  emitEffectsAndOnMounts,
-  emitInitStatements,
-  emitProviderAndChildInits,
-  emitStaticArrayChildInits,
-} from './emit-init-sections'
-import { emitConditionalUpdates, emitClientOnlyConditionals, emitLoopUpdates } from './control-flow'
-import { emitDynamicTextUpdates, emitClientOnlyExpressions, emitReactiveAttributeUpdates, emitReactivePropBindings, emitReactiveChildProps } from './emit-reactive'
 import { emitRegistrationAndHydration } from './emit-registration'
-import { generateElementRefs } from './element-refs'
 import { emitChildComponentImports } from './child-components'
-import { classifyLocalDeclarations, emitSortedDeclarations } from './init-declarations'
+import { classifyLocalDeclarations } from './init-declarations'
 import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-level'
+import { buildPhaseCtx, PHASES, runPhases } from './phases'
 
 export function generateInitFunction(
   ir: ComponentIR,
@@ -61,37 +47,19 @@ export function generateInitFunction(
   const classification = classifyLocalDeclarations(ctx, graph)
   const propUsage = computePropUsage(ctx, classification.neededConstants)
 
-  // --- Emission: init body (runs at hydration for each instance) ---
-  emitPropsExtraction(lines, ctx, classification.neededProps, propUsage)
-  emitSortedDeclarations(lines, ctx, classification, graph)
-  emitInitStatements(lines, ctx)
-  if (ctx.initStatements.length > 0) lines.push('')
-  emitPropsEventHandlers(lines, ctx, usedFunctions, classification.neededProps)
-
-  const elementRefs = generateElementRefs(ctx)
-  if (elementRefs) {
-    lines.push(elementRefs)
-    lines.push('')
-  }
-
-  emitDynamicTextUpdates(lines, ctx)
-  emitClientOnlyExpressions(lines, ctx)
-  emitReactiveAttributeUpdates(lines, ctx)
-  emitConditionalUpdates(lines, ctx)
-  emitClientOnlyConditionals(lines, ctx)
-
-  const conditionalSlotIds = collectConditionalSlotIds(ctx)
-  emitRestAttrApplications(lines, ctx)
-  emitEventHandlers(lines, ctx, conditionalSlotIds)
-  emitReactivePropBindings(lines, ctx)
-  emitReactiveChildProps(lines, ctx)
-  emitRefCallbacks(lines, ctx, conditionalSlotIds)
-  emitEffectsAndOnMounts(lines, ctx)
-  emitProviderAndChildInits(lines, ctx)
-  // Loop updates must run AFTER provider/child inits so parent components
-  // have already provided their context before loop children useContext().
-  emitLoopUpdates(lines, ctx)
-  emitStaticArrayChildInits(lines, ctx)
+  // --- Emission: declarative phase pipeline. Each entry in `PHASES`
+  //     declares its inputs (dependsOn) and emission action (run); the
+  //     stable topological execution preserves the legacy by-position
+  //     order whenever no constraint forces a different one. ---
+  const phaseCtx = buildPhaseCtx({
+    ctx,
+    ir,
+    graph,
+    classification,
+    propUsage,
+    usedFunctions,
+  })
+  runPhases(lines, phaseCtx, PHASES)
 
   const hydrateLine = emitRegistrationAndHydration(lines, ctx, ir, graph)
 
