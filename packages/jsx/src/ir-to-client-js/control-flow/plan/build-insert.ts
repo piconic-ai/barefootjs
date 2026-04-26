@@ -13,6 +13,7 @@ import type {
   BranchSummary,
 } from '../../types'
 import { addCondAttrToTemplate } from '../../html-template'
+import { buildBranchLoopPlan } from './build-branch-loop'
 import type {
   InsertPlan,
   InsertArm,
@@ -74,9 +75,8 @@ function buildArmBody(branch: BranchSummary, options: BuildInsertOptions): ArmBo
       slotId: t.slotId,
       expression: t.expression,
     })),
-    // Branch-scoped loops: PR 1 keeps these as raw IR for legacy passthrough.
-    // PR 2 will replace with `LoopPlan[]`.
-    loopsRaw: branch.loops,
+    // Branch-scoped loops, fully Plan-built (Item 2 final migration).
+    loops: branch.loops.map(buildBranchLoopPlan),
     // Nested conditionals are themselves InsertPlans — built recursively so
     // the same stringifier handles arbitrary depth. Their scope is always
     // `__branchScope` (the parent arm's bindEvents argument), regardless of

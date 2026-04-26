@@ -2,21 +2,21 @@
  * Stringify a `ReactiveEffectsPlan` into source lines.
  *
  * The stringifier is a deterministic walk: every wrap and every partition
- * decision was already made by `buildReactiveEffectsPlan`.
- *
- * Conditional arm bodies (events / child component inits / inner loops /
- * nested conditionals) still flow through the legacy helpers — Item 2 of
- * `tmp/emit-survey/HANDOFF.md` Plan-ifies those next.
+ * decision was already made by `buildReactiveEffectsPlan`. Conditional arm
+ * bodies (events, child component inits, inner loops, nested conditionals,
+ * branch-scoped texts) flow through the per-arm stringifiers in
+ * `loop-child-arm.ts` — no legacy passthrough remains.
  */
 
-import { varSlotId, wrapLoopParamAsAccessor } from '../../utils'
+import { varSlotId } from '../../utils'
 import { emitAttrUpdate } from '../../emit-reactive'
 import {
-  emitBranchChildComponentInits,
-  emitBranchInnerLoops,
-  emitLoopCondBranchEventBindings,
-  emitNestedLoopChildConditionals,
-} from '../legacy-helpers'
+  stringifyBranchChildComponentInits,
+  stringifyBranchEventBindings,
+  stringifyBranchInnerLoops,
+  stringifyLoopChildConditionals,
+} from './loop-child-arm'
+import type { LoopChildArmPlan, LoopChildArmText } from '../plan/loop-child-arm'
 import type {
   NestedConditionalPlan,
   ReactiveEffectsPlan,
@@ -29,7 +29,7 @@ export interface StringifyReactiveEffectsOptions {
   /**
    * Element variable to attach effects to (e.g., `__el`, `__existing`,
    * `__csrEl`). The stringifier never inspects it — it is simply substituted
-   * into the qsa() / $t() call shapes.
+   * into the qsa() / $t() / insert() call shapes.
    */
   elVar: string
 }
@@ -61,10 +61,10 @@ export function stringifyReactiveEffects(
     emitOuterText(lines, indent, elVar, text)
   }
 
-  // 3. Reactive conditionals — each emits an insert(...) with arm bodies that
-  //    still delegate to the legacy bindEvents emitters (Item 2).
+  // 3. Reactive conditionals — each emits an insert(...) over `elVar` whose
+  //    arm bodies dispatch through the per-arm stringifiers.
   for (const cond of plan.conditionals) {
-    emitConditional(lines, indent, elVar, cond)
+    emitOuterConditional(lines, indent, elVar, cond)
   }
 }
 
@@ -79,50 +79,39 @@ function emitOuterText(
   lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }) }`)
 }
 
-function emitBranchText(
-  lines: string[],
-  indent: string,
-  text: ReactiveTextEffect,
-): void {
-  const varName = `__rt_${varSlotId(text.slotId)}`
-  lines.push(`${indent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)
-  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }) }`)
-}
-
-function emitConditional(
+function emitOuterConditional(
   lines: string[],
   indent: string,
   elVar: string,
   cond: NestedConditionalPlan,
 ): void {
-  // Re-derive the wrap closure for the legacy passthrough helpers; they each
-  // accept a `wrap` function. wrapLoopParamAsAccessor is idempotent — applying
-  // it to already-wrapped Plan strings would be a re-wrap bug, so the closure
-  // is only handed to helpers that receive *unwrapped* IR data.
-  const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, cond.loopParam, cond.loopParamBindings)
   const armIndent = `${indent}    `
 
   lines.push(`${indent}insert(${elVar}, '${cond.slotId}', () => ${cond.wrappedCondition}, {`)
   lines.push(`${indent}  template: () => \`${cond.whenTrueTemplateHtml}\`,`)
   lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-  emitLoopCondBranchEventBindings(lines, armIndent, cond.legacyWhenTrue.events, wrap)
-  emitBranchChildComponentInits(lines, armIndent, cond.legacyWhenTrue.childComponents, cond.loopParam, undefined, cond.loopParamBindings)
-  emitBranchInnerLoops(lines, armIndent, '__branchScope', cond.legacyWhenTrue.innerLoops, cond.loopParam, undefined, cond.loopParamBindings)
-  emitNestedLoopChildConditionals(lines, armIndent, '__branchScope', cond.legacyWhenTrue.conditionals, wrap, cond.loopParam, cond.loopParamBindings)
-  for (const text of cond.whenTrueTexts) {
-    emitBranchText(lines, armIndent, text)
-  }
+  emitArmBody(lines, cond.whenTrueArm, armIndent)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}, {`)
   lines.push(`${indent}  template: () => \`${cond.whenFalseTemplateHtml}\`,`)
   lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-  emitLoopCondBranchEventBindings(lines, armIndent, cond.legacyWhenFalse.events, wrap)
-  emitBranchChildComponentInits(lines, armIndent, cond.legacyWhenFalse.childComponents, cond.loopParam, undefined, cond.loopParamBindings)
-  emitBranchInnerLoops(lines, armIndent, '__branchScope', cond.legacyWhenFalse.innerLoops, cond.loopParam, undefined, cond.loopParamBindings)
-  emitNestedLoopChildConditionals(lines, armIndent, '__branchScope', cond.legacyWhenFalse.conditionals, wrap, cond.loopParam, cond.loopParamBindings)
-  for (const text of cond.whenFalseTexts) {
-    emitBranchText(lines, armIndent, text)
-  }
+  emitArmBody(lines, cond.whenFalseArm, armIndent)
   lines.push(`${indent}  }`)
   lines.push(`${indent}})`)
+}
+
+function emitArmBody(lines: string[], arm: LoopChildArmPlan, armIndent: string): void {
+  stringifyBranchEventBindings(lines, arm.events, armIndent)
+  stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
+  stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent)
+  stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent)
+  for (const text of arm.texts) {
+    emitArmText(lines, armIndent, text)
+  }
+}
+
+function emitArmText(lines: string[], indent: string, text: LoopChildArmText): void {
+  const varName = `__rt_${varSlotId(text.slotId)}`
+  lines.push(`${indent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)
+  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }) }`)
 }

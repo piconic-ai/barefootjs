@@ -16,8 +16,8 @@ import type {
   TopLevelLoop,
 } from '../../types'
 import type { IRLoopChildComponent } from '../../../types'
-import type { DepthLevel } from '../legacy-helpers'
 import type { ReactiveEffectsPlan } from './reactive-effects'
+import type { InnerLoopsPlan } from './inner-loop'
 
 /**
  * Plan for a top-level dynamic loop with a plain element body (no child
@@ -142,8 +142,8 @@ export interface CompositeLoopPlan {
   outerComps: readonly IRLoopChildComponent[]
   /** Outer-level child events (no nested-loop scope). */
   outerEvents: readonly LoopChildEvent[]
-  /** Per-inner-loop levels for `emitInnerLoopSetup` passthrough. */
-  depthLevels: readonly DepthLevel[]
+  /** Per-inner-loop plans (one per top-level depth, recursive via childLevels). */
+  innerLoops: InnerLoopsPlan
   /** Loop param identifier — needed for legacy passthroughs. */
   loopParam: string
   /** Destructured-binding metadata for the loop param. */

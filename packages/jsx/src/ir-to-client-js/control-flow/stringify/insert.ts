@@ -29,8 +29,8 @@
  */
 
 import { varSlotId } from '../../utils'
-import { emitBranchLoopBody } from '../legacy-helpers'
 import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types'
+import { stringifyBranchLoops } from './branch-loop'
 import { emitListenerLine } from './event-listener'
 
 export interface StringifyInsertOptions {
@@ -121,7 +121,7 @@ function emitArmBody(
   //    so the legacy single-disposers-array shape is preserved (PR 1).
   const hasDisposables =
     body.textEffects.length > 0 ||
-    body.loopsRaw.length > 0 ||
+    body.loops.length > 0 ||
     body.conditionals.length > 0
   if (!hasDisposables) return
 
@@ -136,13 +136,11 @@ function emitArmBody(
     lines.push(`${indent}}))`)
   }
 
-  // Branch loops: delegate to the still-legacy emitter for PR 1. PR 2 will
-  // replace this with a Plan + stringifier pair. The legacy emitter writes
-  // its own `      ` (6 spaces) indent which matches our top-level body
-  // indent contract; nested inserts (PR 1 scope) call back into the same
-  // legacy lines.
-  if (body.loopsRaw.length > 0) {
-    emitBranchLoopBody(lines, body.loopsRaw)
+  // Branch loops, now fully Plan-built. The stringifier writes its own
+  // `      ` (6 spaces) indent for byte-identical parity with the legacy
+  // emitter; nested inserts call back into the same shape.
+  if (body.loops.length > 0) {
+    stringifyBranchLoops(lines, body.loops)
   }
 
   // Nested conditionals: wrap in a disposable effect so the inner

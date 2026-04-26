@@ -4,7 +4,7 @@
  * Three legacy emission sites all built the same shape by hand:
  *   1. branch arm bindings    (`stringify/insert.ts::emitArmBody`)
  *   2. inline event setup     (`emit-control-flow.ts::emitEventSetup`)
- *   3. loop-cond branch bindings (`emit-control-flow.ts::emitLoopCondBranchEventBindings`)
+ *   3. loop-cond branch bindings (`stringify/loop-child-arm.ts::stringifyBranchEventBindings`)
  *
  * Each repeated `wrapHandlerInBlock(handler)` + DOM-event-name normalisation +
  * `if (elem) elem.addEventListener(...)` line. Centralising the shape here

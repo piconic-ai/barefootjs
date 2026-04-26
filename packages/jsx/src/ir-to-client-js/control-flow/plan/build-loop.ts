@@ -20,7 +20,7 @@ import {
 import {
   loopKeyFn,
   destructureLoopParam,
-} from '../legacy-helpers'
+} from '../shared'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects'
 import type { PlainLoopPlan, StaticLoopPlan } from './types'
 

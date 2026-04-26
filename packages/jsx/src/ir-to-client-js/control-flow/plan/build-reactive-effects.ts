@@ -11,15 +11,14 @@
  *      the outer renderItem scope.
  *   4. Apply `addCondAttrToTemplate` to the wrapped branch HTML so the
  *      stringifier emits a ready-to-interpolate template literal.
- *
- * The arm bodies (events / child components / inner loops / nested
- * conditionals) remain raw — handed back to the legacy helpers via
- * `legacyWhenTrue` / `legacyWhenFalse`. Item 2 plan-ifies those bodies and
- * removes the legacy fields.
+ *   5. Recurse into the per-arm sub-plans via `LoopChildArmPlan` —
+ *      events, child component inits, inner loops, nested conditionals.
+ *      No legacy passthrough remains.
  */
 
 import type {
   TopLevelLoop,
+  LoopChildBranchSummary,
   LoopChildConditional,
   LoopChildReactiveAttr,
   LoopChildReactiveText,
@@ -28,6 +27,16 @@ import type { LoopParamBinding } from '../../../types'
 import { pickAttrMeta } from '../../../types'
 import { wrapLoopParamAsAccessor } from '../../utils'
 import { addCondAttrToTemplate } from '../../html-template'
+import {
+  buildBranchChildComponentInitsPlan,
+  buildBranchEventBindingsPlan,
+  buildBranchInnerLoopsPlan,
+  buildLoopChildConditionalsPlan,
+} from './build-loop-child-arm'
+import type {
+  LoopChildArmPlan,
+  LoopChildArmText,
+} from './loop-child-arm'
 import type {
   NestedConditionalPlan,
   ReactiveAttrSlot,
@@ -102,15 +111,15 @@ export function buildReactiveEffectsPlan(
 
   // 3. Per-conditional plans. Branch-scoped texts are partitioned by which
   //    branch HTML mentions the slot (declaration order preserved). The
-  //    legacy emitter scanned `texts` once per branch with the same check.
+  //    arm bodies are fully Plan-built — no legacy passthrough.
   const conditionalPlans: NestedConditionalPlan[] = []
   if (conditionals) {
     for (const cond of conditionals) {
-      const trueTexts: ReactiveTextEffect[] = []
-      const falseTexts: ReactiveTextEffect[] = []
+      const trueTexts: LoopChildArmText[] = []
+      const falseTexts: LoopChildArmText[] = []
       for (const text of texts) {
         if (!textSlotsInConditionals.has(text.slotId)) continue
-        const wrapped: ReactiveTextEffect = {
+        const wrapped: LoopChildArmText = {
           slotId: text.slotId,
           wrappedExpression: wrap(text.expression),
         }
@@ -122,12 +131,8 @@ export function buildReactiveEffectsPlan(
         wrappedCondition: wrap(cond.condition),
         whenTrueTemplateHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
         whenFalseTemplateHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
-        whenTrueTexts: trueTexts,
-        whenFalseTexts: falseTexts,
-        legacyWhenTrue: cond.whenTrue,
-        legacyWhenFalse: cond.whenFalse,
-        loopParam,
-        loopParamBindings,
+        whenTrueArm: buildOuterArm(cond.whenTrue, trueTexts, wrap, loopParam, loopParamBindings),
+        whenFalseArm: buildOuterArm(cond.whenFalse, falseTexts, wrap, loopParam, loopParamBindings),
       })
     }
   }
@@ -136,6 +141,40 @@ export function buildReactiveEffectsPlan(
     attrSlots,
     outerTexts,
     conditionals: conditionalPlans,
+  }
+}
+
+function buildOuterArm(
+  branch: LoopChildBranchSummary,
+  texts: readonly LoopChildArmText[],
+  wrap: (expr: string) => string,
+  loopParam: string,
+  loopParamBindings: readonly LoopParamBinding[] | undefined,
+): LoopChildArmPlan {
+  return {
+    events: buildBranchEventBindingsPlan({
+      events: branch.events,
+      wrap,
+    }),
+    childComponents: buildBranchChildComponentInitsPlan({
+      components: branch.childComponents,
+      wrap,
+    }),
+    innerLoops: buildBranchInnerLoopsPlan({
+      innerLoops: branch.innerLoops,
+      scopeVar: '__branchScope',
+      outerLoopParam: loopParam,
+      outerLoopParamBindings: loopParamBindings,
+      wrapOuter: wrap,
+    }),
+    nestedConditionals: buildLoopChildConditionalsPlan({
+      conditionals: branch.conditionals,
+      scopeVar: '__branchScope',
+      wrap,
+      loopParam,
+      loopParamBindings,
+    }),
+    texts,
   }
 }
 
