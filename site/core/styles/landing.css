@@ -17,13 +17,72 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
+}
+
+/*
+ * Hero grid (5 cols × 1 row):
+ *   left content | gutter | build node | gutter | adapter list
+ * The right column stretches the full container height so client.js sits
+ * up at the top — visually next to the hero heading — and Browser sits
+ * at the bottom, like the toes of a footprint fanning right.
+ */
+.hero-b-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 80px 110px 80px 240px;
+  align-items: stretch;
+  min-height: 620px;
+}
+
+.hero-b-left {
+  grid-column: 1;
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  justify-content: space-between;
+  gap: 2.5rem;
+  z-index: 2;
+}
+
+.hero-b-grid > .flow-build {
+  /* Positioned absolutely; left/top are set by JS so the box sits at the
+     visual midpoint between the source panel's right edge and the adapter
+     column's left edge, vertically centered on the source panel. */
+  position: absolute;
+  z-index: 2;
+}
+
+.hero-b-grid > .flow-adapters {
+  grid-column: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0;
+  position: relative;
+  z-index: 2;
+  align-self: stretch;
+  max-width: none;
+}
+
+.hero-b-grid > .flow-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .hero-b-text {
-  max-width: 760px;
+  max-width: 720px;
+}
+
+/* Source panel sits in the bottom half of the left column; let it grow
+   to fill whatever vertical space is left after the heading + buttons. */
+.hero-b-left .flow-source {
+  flex: 0 1 auto;
+  width: 100%;
+  max-width: 600px;
+  height: 320px;
 }
 
 .hero-b-heading {
@@ -95,7 +154,6 @@
   border-radius: 0.5rem;
   overflow: hidden;
   font-family: var(--font-mono);
-  height: 360px;
 }
 
 .flow-source-header {
@@ -175,11 +233,8 @@
   pointer-events: none;
 }
 
-/* Build box (centre) — square */
+/* Build box — square. The grid override above places it in the centre col. */
 .flow-build {
-  position: absolute;
-  top: 195px;
-  left: 45px;
   width: 110px;
   height: 110px;
   display: flex;
@@ -190,7 +245,6 @@
   background: oklch(0.18 0.08 145);
   border: 1px solid oklch(0.35 0.12 145);
   border-radius: 0.625rem;
-  z-index: 1;
 }
 
 .flow-build-icon {
@@ -216,7 +270,7 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
-  max-width: 280px;
+  max-width: 220px;
 }
 
 /* Output card / adapter tab — single row: [icon] [name + lang] */
@@ -238,6 +292,10 @@
   /* Selected/active accent: same green as the active flow line so the
      box reads as part of the live path, not a passive card. */
   border-color: #22c55e;
+  /* Push client.js down so it sits next to the hero body copy — the
+     horizontal build → client.js line then crosses the description text
+     area, reinforcing the "client runtime hydrates this hero" feel. */
+  margin-top: 120px;
 }
 
 .flow-adapter-tab {

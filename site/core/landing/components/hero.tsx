@@ -81,92 +81,59 @@ async function buildDiagramHtml(): Promise<string> {
   }).join('')
 
   /*
-   * SVG coordinate system: 220 × 500 — matches the connector width exactly,
-   * so SVG x maps 1:1 to connector pixels and the line that exits the top
-   * of the build box really sits at its horizontal centre.
+   * Layout (CSS Grid 5 columns):
+   *   col 1 (1fr):    hero-b-left  — text+buttons (top), source panel (bottom)
+   *   col 2 (80px):   gutter for the source→build line
+   *   col 3 (110px):  build node (vertically centred)
+   *   col 4 (80px):   gutter for the build→adapter lines
+   *   col 5 (320px):  adapter list — full container height, justify space-between
    *
-   *   Build box: square 110×110, x=45..155, y=195..305 (centre 100, 250).
-   *   Source enters at y=250 (left edge x=0).
-   *   Right-side outputs exit toward x=220.
-   *
-   *   Adapter list (5 boxes × 70 + 4 × 10 = 390) sits vertically centred:
-   *     client.js   y=90, Hono y=170, Echo y=250 (straight from build),
-   *     Mojolicious y=330, Browser y=410.
-   *
-   *   client.js stays solid. Exactly one of Hono/Echo/Mojolicious/Browser
-   *   is solid; the rest are dashed. Active changes on click.
+   * SVG paths are computed at runtime against actual element rects; the static
+   * markup only seeds <path>/<circle> nodes that the inline script populates.
    */
   const G = '#22c55e'
-  // Inactive adapter line: low-saturation green, same family as the solid
-  // line so the two read as parallel rails when their elbows are offset.
   const Dg = 'rgba(34, 197, 94, 0.28)'
-  const ADAPTER_YS = [170, 250, 330, 410] // Hono, Echo, Mojolicious, Browser
-  // Active and inactive elbows live a few px apart so dashed/solid never
-  // share a vertical segment.
-  const ELBOW_ACTIVE = 188
-  const ELBOW_INACTIVE = 198
 
   return `
-    <div class="flow-diagram" id="flow-diagram">
-      <div class="flow-source">
-        <div class="flow-source-header">
-          <div class="flow-source-header-left">
-            <span class="flow-source-dot"></span>
-            <span class="flow-source-filename">Counter.tsx</span>
+    <div class="hero-b-grid" id="flow-diagram">
+      <!-- LEFT COL: hero text + source panel -->
+      <div class="hero-b-left">
+        <div class="hero-b-text">
+          <h1 class="hero-b-heading fade-in">
+            TSX in. <span class="hero-b-accent">Your template language out.</span>
+          </h1>
+          <p class="hero-b-body fade-in-1">
+            Barefoot compiles signal-based TSX directly into <strong>Hono</strong>, <strong>Echo</strong>, or the browser.
+            <br />
+            No virtual DOM. No SPA required.
+          </p>
+          <div class="hero-b-buttons fade-in-2">
+            <a href="/docs/introduction" class="btn-primary">Get Started</a>
+            <a href="/playground" class="btn-secondary">Playground →</a>
           </div>
-          <span class="flow-source-label">SOURCE</span>
         </div>
-        <div class="flow-source-code">
-          <pre class="shiki shiki-themes github-light github-dark" tabindex="0"><code>${codeHtml}</code></pre>
+        <div class="flow-source">
+          <div class="flow-source-header">
+            <div class="flow-source-header-left">
+              <span class="flow-source-dot"></span>
+              <span class="flow-source-filename">Counter.tsx</span>
+            </div>
+            <span class="flow-source-label">SOURCE</span>
+          </div>
+          <div class="flow-source-code">
+            <pre class="shiki shiki-themes github-light github-dark" tabindex="0"><code>${codeHtml}</code></pre>
+          </div>
         </div>
       </div>
 
-      <div class="flow-connector">
-        <div class="flow-build">
-          ${BAREFOOT_ICON}
-          <img src="/static/logo-text.svg" alt="Barefoot.js" class="flow-build-logo-text" />
-        </div>
-
-        <svg class="flow-lines" viewBox="0 0 220 500" aria-hidden="true" preserveAspectRatio="none">
-          <!-- source → build (left enters at y=250) -->
-          <path d="M 0 250 L 45 250" stroke="${G}" stroke-width="1.25" fill="none"/>
-          <circle cx="0" cy="250" r="2.5" fill="${G}"/>
-
-          <!-- build → client.js (always solid, exits from the centred top
-               edge of build, then turns right into the client.js card) -->
-          <path d="M 100 195 L 100 90 L 220 90"
-                stroke="${G}" stroke-width="1.25" fill="none"
-                stroke-linejoin="miter" stroke-linecap="butt"/>
-          <circle cx="220" cy="90" r="2.5" fill="${G}"/>
-
-          <!-- build → adapters (one solid for active, others dashed) -->
-          ${ADAPTER_YS.map((y, i) => {
-            const isActive = i === 0
-            const elbow = isActive ? ELBOW_ACTIVE : ELBOW_INACTIVE
-            const path = (isActive && y === 250)
-              ? `M 155 250 L 220 250`
-              : `M 155 250 L ${elbow} 250 L ${elbow} ${y} L 220 ${y}`
-            return `<path
-              class="flow-adapter-line"
-              data-adapter-line="${i}"
-              data-y="${y}"
-              d="${path}"
-              stroke="${isActive ? G : Dg}"
-              stroke-width="${isActive ? 1.25 : 1}"
-              stroke-dasharray="${isActive ? '' : '4,3'}"
-              fill="none"
-            /><circle
-              class="flow-adapter-dot"
-              data-adapter-dot="${i}"
-              cx="220" cy="${y}" r="2.5"
-              fill="${isActive ? G : Dg}"
-            />`
-          }).join('')}
-        </svg>
+      <!-- BUILD NODE (col 3) -->
+      <div class="flow-build">
+        ${BAREFOOT_ICON}
+        <img src="/static/logo-text.svg" alt="Barefoot.js" class="flow-build-logo-text" />
       </div>
 
+      <!-- ADAPTER LIST (col 5) — client.js on top, then Hono/Echo/Mojo/Browser -->
       <div class="flow-adapters" role="tablist" aria-label="Output adapter">
-        <!-- client.js: always solid, never selectable -->
         <div class="flow-output flow-output-client">
           <img src="/static/logos/javascript-icon.png" alt="" class="flow-adapter-logo" />
           <div class="flow-output-info">
@@ -176,6 +143,29 @@ async function buildDiagramHtml(): Promise<string> {
         </div>
         ${adapterTabs}
       </div>
+
+      <!-- SVG OVERLAY: connection lines spanning the whole grid.
+           viewBox + paths are recomputed at runtime against actual element rects
+           so lines always anchor to source / build / adapter edges regardless
+           of how the grid stretches. -->
+      <svg class="flow-lines" aria-hidden="true" preserveAspectRatio="none">
+        <path data-line="source-build" stroke="${G}" stroke-width="1.25" fill="none"/>
+        <path data-line="build-client" stroke="${G}" stroke-width="1.25" fill="none"/>
+        <circle data-dot="client" r="2.5" fill="${G}"/>
+        ${ADAPTERS.map((_, i) => `<path
+          class="flow-adapter-line"
+          data-adapter-line="${i}"
+          stroke="${i === 0 ? G : Dg}"
+          stroke-width="${i === 0 ? 1.25 : 1}"
+          stroke-dasharray="${i === 0 ? '' : '4,3'}"
+          fill="none"
+        /><circle
+          class="flow-adapter-dot"
+          data-adapter-dot="${i}"
+          r="2.5"
+          fill="${i === 0 ? G : Dg}"
+        />`).join('')}
+      </svg>
     </div>
 
     <script>
@@ -184,38 +174,128 @@ async function buildDiagramHtml(): Promise<string> {
         if (!diagram) return;
         var GREEN = '${G}';
         var GRAY = '${Dg}';
-        var ELBOW_ACTIVE = ${ELBOW_ACTIVE};
-        var ELBOW_INACTIVE = ${ELBOW_INACTIVE};
-        var tabs = diagram.querySelectorAll('.flow-adapter-tab');
-        var lines = diagram.querySelectorAll('.flow-adapter-line');
-        var dots = diagram.querySelectorAll('.flow-adapter-dot');
-        function pathFor(y, active) {
-          if (active && y === 250) return 'M 155 250 L 220 250';
-          var x = active ? ELBOW_ACTIVE : ELBOW_INACTIVE;
-          return 'M 155 250 L ' + x + ' 250 L ' + x + ' ' + y + ' L 220 ' + y;
+        var svg = diagram.querySelector('.flow-lines');
+        var source = diagram.querySelector('.flow-source');
+        var build = diagram.querySelector('.flow-build');
+        var clientCard = diagram.querySelector('.flow-output-client');
+        var adapterCards = diagram.querySelectorAll('.flow-adapter-tab');
+        var sourceBuildPath = svg.querySelector('[data-line="source-build"]');
+        var buildClientPath = svg.querySelector('[data-line="build-client"]');
+        var clientDot = svg.querySelector('[data-dot="client"]');
+        var adapterLines = svg.querySelectorAll('.flow-adapter-line');
+        var adapterDots = svg.querySelectorAll('.flow-adapter-dot');
+        var activeIdx = 0;
+
+        function rect(el) {
+          var g = diagram.getBoundingClientRect();
+          var r = el.getBoundingClientRect();
+          return {
+            left: r.left - g.left,
+            right: r.right - g.left,
+            top: r.top - g.top,
+            bottom: r.bottom - g.top,
+            cx: r.left + r.width / 2 - g.left,
+            cy: r.top + r.height / 2 - g.top,
+          };
         }
-        tabs.forEach(function (tab) {
+
+        function elbowPath(x1, y1, x2, y2, viaX) {
+          // Two right-angle bends: (x1,y1) → (viaX,y1) → (viaX,y2) → (x2,y2)
+          return 'M ' + x1 + ' ' + y1 +
+                 ' L ' + viaX + ' ' + y1 +
+                 ' L ' + viaX + ' ' + y2 +
+                 ' L ' + x2 + ' ' + y2;
+        }
+
+        function adapterPath(buildR, adapterCy, adapterLeft, _active) {
+          // Single shared elbow x for all adapter lines, so the vertical
+          // segments of active and inactive paths stack exactly on top of
+          // each other instead of running side-by-side as a double rule.
+          var gutter = adapterLeft - buildR.right;
+          var viaX = buildR.right + gutter * 0.5;
+          if (Math.abs(adapterCy - buildR.cy) < 1) {
+            return 'M ' + buildR.right + ' ' + buildR.cy + ' L ' + adapterLeft + ' ' + adapterCy;
+          }
+          return elbowPath(buildR.right, buildR.cy, adapterLeft, adapterCy, viaX);
+        }
+
+        function update() {
+          if (!source || !build || !clientCard) return;
+          var grid = diagram.getBoundingClientRect();
+          svg.setAttribute('viewBox', '0 0 ' + grid.width + ' ' + grid.height);
+          var srcR = rect(source);
+          // Position build node at the horizontal midpoint between source.right
+          // and the adapter column's left edge, vertically centered on the source.
+          var firstAdapter = adapterCards[0];
+          var adapterLeft = firstAdapter
+            ? rect(firstAdapter).left
+            : rect(clientCard).left;
+          var buildW = build.offsetWidth;
+          var buildH = build.offsetHeight;
+          var midX = (srcR.right + adapterLeft) / 2;
+          build.style.left = (midX - buildW / 2) + 'px';
+          build.style.top = (srcR.cy - buildH / 2) + 'px';
+          var buildR = rect(build);
+          var clientR = rect(clientCard);
+
+          // source → build elbow (gutter mid)
+          var leftGutterMid = (srcR.right + buildR.left) / 2;
+          sourceBuildPath.setAttribute('d',
+            elbowPath(srcR.right, srcR.cy, buildR.left, buildR.cy, leftGutterMid));
+
+          // build → client.js (vertical out the top of build, then horizontal)
+          buildClientPath.setAttribute('d',
+            'M ' + buildR.cx + ' ' + buildR.top +
+            ' L ' + buildR.cx + ' ' + clientR.cy +
+            ' L ' + clientR.left + ' ' + clientR.cy);
+          clientDot.setAttribute('cx', clientR.left);
+          clientDot.setAttribute('cy', clientR.cy);
+
+          // build → adapter cards
+          adapterCards.forEach(function (card, i) {
+            var aR = rect(card);
+            adapterLines[i].setAttribute('d',
+              adapterPath(buildR, aR.cy, aR.left, i === activeIdx));
+            adapterDots[i].setAttribute('cx', aR.left);
+            adapterDots[i].setAttribute('cy', aR.cy);
+          });
+        }
+
+        function setActive(idx) {
+          activeIdx = idx;
+          adapterCards.forEach(function (t, i) {
+            t.classList.toggle('is-active', i === idx);
+            t.setAttribute('aria-pressed', i === idx ? 'true' : 'false');
+          });
+          adapterLines.forEach(function (l, i) {
+            var active = i === idx;
+            l.setAttribute('stroke', active ? GREEN : GRAY);
+            l.setAttribute('stroke-width', active ? '1.25' : '1');
+            l.setAttribute('stroke-dasharray', active ? '' : '4,3');
+          });
+          adapterDots.forEach(function (d, i) {
+            d.setAttribute('fill', i === idx ? GREEN : GRAY);
+          });
+          update();
+        }
+
+        adapterCards.forEach(function (tab) {
           tab.addEventListener('click', function () {
-            var idx = parseInt(tab.getAttribute('data-index') || '0', 10);
-            tabs.forEach(function (t) {
-              t.classList.remove('is-active');
-              t.setAttribute('aria-pressed', 'false');
-            });
-            tab.classList.add('is-active');
-            tab.setAttribute('aria-pressed', 'true');
-            lines.forEach(function (l, i) {
-              var active = i === idx;
-              var y = parseInt(l.getAttribute('data-y') || '250', 10);
-              l.setAttribute('d', pathFor(y, active));
-              l.setAttribute('stroke', active ? GREEN : GRAY);
-              l.setAttribute('stroke-width', active ? '1.25' : '1');
-              l.setAttribute('stroke-dasharray', active ? '' : '4,3');
-            });
-            dots.forEach(function (d, i) {
-              d.setAttribute('fill', i === idx ? GREEN : GRAY);
-            });
+            setActive(parseInt(tab.getAttribute('data-index') || '0', 10));
           });
         });
+
+        update();
+        window.addEventListener('resize', update);
+        if (typeof ResizeObserver !== 'undefined') {
+          var ro = new ResizeObserver(update);
+          ro.observe(diagram);
+        }
+        // Re-run after fonts/images settle.
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(update);
+        }
+        window.addEventListener('load', update);
       })();
     </script>`
 }
@@ -225,27 +305,7 @@ export async function Hero() {
 
   return (
     <section className="hero-b">
-      <div className="hero-b-content">
-        <div className="hero-b-text">
-          <h1 className="hero-b-heading fade-in">
-            TSX in.{' '}
-            <span className="hero-b-accent">Your template language out.</span>
-          </h1>
-          <p className="hero-b-body fade-in-1">
-            Barefoot compiles signal-based TSX directly into{' '}
-            <strong>Hono</strong>, <strong>Echo</strong>, or the browser.
-            <br />
-            No virtual DOM. No SPA required.
-          </p>
-          <div className="hero-b-buttons fade-in-2">
-            <a href="/docs/introduction" className="btn-primary">Get Started</a>
-            <a href="/playground" className="btn-secondary">Playground →</a>
-          </div>
-        </div>
-        <div className="hero-b-diagram fade-in-3">
-          <div dangerouslySetInnerHTML={{ __html: diagramHtml }} />
-        </div>
-      </div>
+      <div className="hero-b-content" dangerouslySetInnerHTML={{ __html: diagramHtml }} />
     </section>
   )
 }
