@@ -414,7 +414,9 @@ export function GraphEditorDemo() {
             ))}
           </g>
 
-          {/* Connect-in-progress preview path. */}
+          {/* Connect-in-progress preview path. Must be pointer-transparent so
+              the pointerup hit-test (`document.elementFromPoint`) can see the
+              target node underneath the cursor instead of the preview itself. */}
           {connectPreview() !== null ? (
             <path
               className="graph-connect-preview"
@@ -424,6 +426,7 @@ export function GraphEditorDemo() {
               strokeWidth="1.5"
               strokeDasharray="4 4"
               fill="none"
+              pointerEvents="none"
             />
           ) : null}
 
