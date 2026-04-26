@@ -284,4 +284,65 @@ describe('plain nested loops without conditional wrapper', () => {
     expect(innerSection.length).toBeGreaterThan(0)
     expect(innerSection).not.toMatch(/\bcell\.flag\b/)
   })
+
+  test('regression #1064: static inner forEach also re-declares inner .map() block-body locals', () => {
+    // Sibling of #1052 in the **static** inner-loop emission path. When the
+    // outer array is a plain literal (not a signal) and the inner `.map()`
+    // callback's block-body declares locals referenced by a child component
+    // prop or event handler, the static `forEach` body did not declare those
+    // locals — `initChild`'s prop getter would throw `ReferenceError` when
+    // the child component first mounted.
+    //
+    // Fix: thread `inner.mapPreamble` through `InnerLoopStaticEmit` and emit
+    // it (raw — `forEach`'s param is the literal item, not a signal accessor)
+    // at the top of the forEach body so the component setup can resolve the
+    // locals.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      type Item = { id: number; n: number }
+
+      function MyChild(props: { label: string }) {
+        return <span>{props.label}</span>
+      }
+
+      export function StaticGrid() {
+        const items: Item[][] = [[{ id: 1, n: 5 }]]
+        const [, setX] = createSignal(0)
+        return (
+          <div onClick={() => setX(1)}>
+            {items.map((row, i) => (
+              <div key={i}>
+                {row.map((it) => {
+                  const lbl = \`item-\${it.n}\`
+                  return <MyChild key={it.id} label={lbl} />
+                })}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'StaticGrid.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const js = result.files.find(f => f.type === 'clientJs')!.content
+
+    // The static `forEach((it, ...) => { ... })` body must declare `lbl`
+    // before `initChild('MyChild', ...)` runs. `it` is the raw item here
+    // (forEach, not mapArray) so the preamble is emitted unwrapped.
+    expect(js).toMatch(
+      /\.forEach\(\(it, __innerIdx\) => \{[\s\S]*?const\s+lbl\s*=\s*`item-\$\{it\.n\}`[\s\S]*?initChild\('MyChild'/
+    )
+    // No `ReferenceError` shape: the `initChild('MyChild', ...)` getter must
+    // reach a declared `lbl` — the static body cannot rely on the outer
+    // `.map()` callback's scope (that scope only existed at SSR time).
+    const staticSection = js.slice(
+      js.indexOf('items.forEach('),
+      js.indexOf('hydrate(\'StaticGrid\''),
+    )
+    expect(staticSection).toMatch(/const\s+lbl\s*=/)
+    expect(staticSection).toMatch(/initChild\('MyChild'/)
+    expect(staticSection.indexOf('const lbl')).toBeLessThan(staticSection.indexOf('initChild'))
+  })
 })

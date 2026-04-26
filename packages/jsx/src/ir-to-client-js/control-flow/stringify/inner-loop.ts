@@ -23,6 +23,7 @@
  *     <indent>if (__ic<uid> && <arrayExpr>) <arrayExpr>.forEach((<param>, __innerIdx<uid>) => {
  *     <indent>  const __innerEl<uid> = __ic<uid>.children[__innerIdx<uid>]
  *     <indent>  if (!__innerEl<uid>) return
+ *     <indent>  <preludeStatements*>   // raw preamble (#1064)
  *     <indent>  __innerEl<uid>.setAttribute('<keyAttr>', String(<rawKey>))?
  *     <indent>  emitComponentAndEventSetup(...)
  *     <indent>  recurse on childLevels
@@ -107,6 +108,12 @@ function emitStatic(lines: string[], inner: InnerLoopPlan, indent: string): void
   lines.push(`${indent}if (__ic${uid} && ${inner.arrayExpr}) ${inner.arrayExpr}.forEach((${inner.param}, __innerIdx${uid}) => {`)
   lines.push(`${indent}  const __innerEl${uid} = __ic${uid}.children[__innerIdx${uid}]`)
   lines.push(`${indent}  if (!__innerEl${uid}) return`)
+  // Body-entry statements: inner-`.map()` preamble locals (raw, since the
+  // forEach param is the literal item — #1064). Emitted before component
+  // and event setup so their prop getters / handlers resolve the locals.
+  for (const stmt of emit.preludeStatements) {
+    lines.push(`${indent}  ${stmt}`)
+  }
   if (emit.rawKey) {
     lines.push(`${indent}  __innerEl${uid}.setAttribute('${keyAttrName(inner.keyDepth)}', String(${emit.rawKey}))`)
   }

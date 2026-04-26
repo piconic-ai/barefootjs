@@ -106,6 +106,15 @@ export interface InnerLoopStaticEmit {
   mode: 'static'
   /** Raw key expression (used as-is in setAttribute) — null when no key. */
   rawKey: string | null
+  /**
+   * Body-entry statements emitted in order at the top of the static
+   * `forEach(...)` body, after the existence guard. Holds the inner
+   * `.map()` callback preamble locals (#1064). Emitted unwrapped because
+   * the forEach param is the literal item, not a signal accessor — no
+   * accessor rewrite is needed. Empty when the source had no preamble.
+   * Mirrors the reactive emit's `preludeStatements` shape (#1052/#1063).
+   */
+  preludeStatements: readonly string[]
   /** Raw components (no inner-wrap; the static body has no signal accessor). */
   components: readonly IRLoopChildComponent[]
   /** Raw events (no inner-wrap). */

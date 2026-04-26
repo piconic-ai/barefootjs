@@ -194,9 +194,15 @@ function buildReactiveEmit(
 }
 
 function buildStaticEmit(inner: NestedLoop, level: DepthLevel): InnerLoopStaticEmit {
+  // Static `forEach` iterates with the literal item as its first param, so
+  // no signal-accessor rewrite is needed — emit the preamble verbatim
+  // before the component/event setup so prop getters and event handlers
+  // can resolve the locals (#1064).
+  const preludeStatements: string[] = inner.mapPreamble ? [inner.mapPreamble] : []
   return {
     mode: 'static',
     rawKey: inner.key ?? null,
+    preludeStatements,
     components: level.comps,
     events: level.events,
   }

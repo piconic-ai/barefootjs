@@ -103,6 +103,7 @@ function buildOuterNestedPlan(
     param: elem.param,
     indexParam,
     offsetExpr: elem.siblingOffset ? `${indexParam} + ${elem.siblingOffset}` : indexParam,
+    preludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
     propsExpr: buildStaticPropsExpr(comp.props),
   }
 }
@@ -128,12 +129,14 @@ function buildInnerLoopNestedPlan(
     outerOffsetExpr: elem.siblingOffset
       ? `${outerIndexParam} + ${elem.siblingOffset}`
       : outerIndexParam,
+    outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
     innerContainerSlotId: innerLoop.containerSlotId ?? null,
     innerArrayExpr: innerLoop.array,
     innerParam: innerLoop.param,
     innerOffsetExpr: innerLoop.siblingOffset
       ? `__innerIdx + ${innerLoop.siblingOffset}`
       : '__innerIdx',
+    innerPreludeStatements: innerLoop.mapPreamble ? [innerLoop.mapPreamble] : [],
     depth: innerLoop.depth,
     comps,
   }
