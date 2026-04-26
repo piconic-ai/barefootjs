@@ -48,7 +48,7 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     paramHead,
     paramUnwrap,
     indexParam,
-    mapPreambleRaw,
+    mapPreambleWrapped,
     template,
     reactiveEffects,
     eventDelegation,
@@ -64,8 +64,8 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
 
   if (reactiveEffects === null) {
     // Simple case: single-line renderItem.
-    if (mapPreambleRaw) {
-      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${mapPreambleRaw}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+    if (mapPreambleWrapped) {
+      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${mapPreambleWrapped}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
     } else {
       lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
     }
@@ -75,8 +75,8 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     if (paramUnwrap) {
       lines.push(`          ${paramUnwrap}`)
     }
-    if (mapPreambleRaw) {
-      lines.push(`          ${mapPreambleRaw}`)
+    if (mapPreambleWrapped) {
+      lines.push(`          ${mapPreambleWrapped}`)
     }
     lines.push(`          const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
     stringifyReactiveEffects(lines, reactiveEffects, { indent: '          ', elVar: '__el' })

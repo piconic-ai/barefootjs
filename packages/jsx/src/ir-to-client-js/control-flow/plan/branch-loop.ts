@@ -38,8 +38,16 @@ export interface BranchPlainLoopPlan {
   paramUnwrap: string
   /** Index parameter identifier (e.g. `__idx`). */
   indexParam: string
-  /** Pre-render preamble line — empty when not present. Already raw, no wrap. */
-  mapPreambleRaw: string
+  /**
+   * Inner `.map()` callback's `mapPreamble` (block-body local
+   * declarations), with loop-param references rewritten to
+   * signal-accessor form. The renderItem's first arg is the per-item
+   * signal accessor (`item: () => T`), so bare `item.x` would resolve to
+   * `(function).x === undefined` — wrapping is required to keep the
+   * preamble consistent with the template-literal references that already
+   * use `${item().x}` (#1065). Empty when the source had no preamble.
+   */
+  mapPreambleWrapped: string
   /** HTML template string for one item. */
   template: string
   /**

@@ -11,7 +11,7 @@
  */
 
 import type { BranchLoop } from '../../types'
-import { varSlotId } from '../../utils'
+import { varSlotId, wrapLoopParamAsAccessor } from '../../utils'
 import { buildBranchCompositePlan } from './build-composite-loop'
 import { buildBranchLoopDelegationPlan } from './build-event-delegation'
 import { buildReactiveEffectsPlan } from './build-reactive-effects'
@@ -51,7 +51,11 @@ export function buildBranchLoopPlan(loop: BranchLoop): BranchLoopPlan {
     paramHead,
     paramUnwrap,
     indexParam: loop.index || '__idx',
-    mapPreambleRaw: loop.mapPreamble || '',
+    // Wrap loop-param references to signal-accessor form so the preamble
+    // matches the template literal's already-wrapped reads (#1065).
+    mapPreambleWrapped: loop.mapPreamble
+      ? wrapLoopParamAsAccessor(loop.mapPreamble, loop.param, loop.paramBindings)
+      : '',
     template: loop.template,
     reactiveEffects: hasReactiveEffects
       ? buildReactiveEffectsPlan({
