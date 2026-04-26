@@ -83,6 +83,14 @@ export interface InnerLoopReactiveEmit {
   paramHead: string
   /** Body-entry unwrap statement (empty when no destructured param). */
   paramUnwrap: string
+  /**
+   * Inner `.map()` callback's `mapPreamble` (block-body local declarations),
+   * with both inner and outer loop param references rewritten to signal
+   * accessor form. Empty when the source had no preamble. Emitted at the
+   * top of the renderItem callback so the cloned-template IIFE and any
+   * subsequent reads can resolve the locals (#1052).
+   */
+  preambleWrapped: string
   /** Already-wrapped HTML template for one inner-loop item. */
   wrappedTemplate: string
   /** Pre-wrapped key expression for setAttribute, or null when no key. */

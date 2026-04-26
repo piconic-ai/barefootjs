@@ -61,6 +61,13 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string): vo
   if (emit.paramUnwrap) {
     lines.push(`${indent}  ${emit.paramUnwrap}`)
   }
+  // Hoist the inner `.map()` callback's preamble locals so the
+  // cloned-template IIFE below (and any later reads in this body) can
+  // resolve them. References to the inner/outer loop params are
+  // already in signal-accessor form (#1052).
+  if (emit.preambleWrapped) {
+    lines.push(`${indent}  ${emit.preambleWrapped}`)
+  }
   lines.push(`${indent}  let __innerEl${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${emit.wrappedTemplate}\`; return __t.content.firstElementChild.cloneNode(true) })()`)
   if (emit.wrappedKey) {
     lines.push(`${indent}  __innerEl${uid}.setAttribute('${keyAttrName(inner.keyDepth)}', String(${emit.wrappedKey}))`)

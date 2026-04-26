@@ -166,11 +166,23 @@ function buildReactiveEmit(
     insideConditional: !!text.insideConditional,
   }))
 
+  // The inner `.map()` callback's block-body locals (e.g.
+  // `const derivedClass = cell.flag ? 'on' : 'off'`) are baked into
+  // `inner.template` at the outer-loop SSR level, but the `mapArray`
+  // renderItem closure does not declare them — references inside the
+  // cloned-template IIFE would throw `ReferenceError`. Re-emit the
+  // preamble at the top of the renderItem with both inner and outer
+  // loop param references rewritten to signal-accessor form (#1052).
+  const preambleWrapped = inner.mapPreamble
+    ? wrapInner(wrapOuter(inner.mapPreamble))
+    : ''
+
   return {
     mode: 'reactive',
     keyFn: loopKeyFn(inner),
     paramHead,
     paramUnwrap,
+    preambleWrapped,
     wrappedTemplate: inner.template!,
     wrappedKey,
     components,

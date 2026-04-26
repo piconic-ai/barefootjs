@@ -181,6 +181,14 @@ export interface NestedLoop extends LoopCore {
   containerSlotId: string | null // Slot ID of the parent element containing the loop (for hydration)
   /** HTML template for a single inner loop item (for mapArray CSR rendering) */
   template?: string
+  /**
+   * Raw JS of pre-return statements in the inner `.map()` callback's block
+   * body. The reactive emitter re-emits this (with loop-param references
+   * rewritten to signal-accessor form) at the top of the `mapArray`
+   * `renderItem` callback so locals referenced by the cloned-template IIFE
+   * (and any subsequent reads) are in scope (#1052).
+   */
+  mapPreamble?: string
   /** Whether the inner array references the outer loop param (needs reactive mapArray) */
   refsOuterParam?: boolean
   /** Reactive text expressions inside inner loop items (slotId → expression) */

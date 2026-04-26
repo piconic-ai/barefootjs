@@ -223,4 +223,65 @@ describe('plain nested loops without conditional wrapper', () => {
     const innerMapArrayCount = (js.match(/mapArray\(\(\)\s*=>\s*g\(\)\.items/g) || []).length
     expect(innerMapArrayCount).toBe(1)
   })
+
+  test('regression #1052: inner .map() block-body locals are re-declared inside the mapArray renderItem', () => {
+    // Before the fix, an inner `.map()` callback that declares local
+    // variables (block body with `const x = ...`) and uses them in the
+    // returned JSX produced a broken renderItem callback: the locals
+    // appeared in the cloned-template IIFE but were never declared in
+    // the renderItem closure, raising `ReferenceError: x is not defined`
+    // when the inner mapArray needed to create new elements.
+    //
+    // Fix: thread the inner loop's `mapPreamble` through `NestedLoop`
+    // and re-emit it (with inner+outer loop param references rewritten
+    // to signal-accessor form) at the top of the renderItem callback so
+    // the IIFE and any subsequent reads see the locals.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      type Cell = { id: number; value: string; flag: boolean }
+
+      export function GridDemo() {
+        const [grid, setGrid] = createSignal<Cell[][]>([
+          [{ id: 1, value: 'a', flag: true }],
+        ])
+        return (
+          <div onClick={() => setGrid(prev => [...prev])}>
+            {grid().map((row, i) => (
+              <div key={i}>
+                {row.map((cell) => {
+                  const derivedClass = cell.flag ? 'on' : 'off'
+                  return (
+                    <span key={cell.id} className={derivedClass}>{cell.value}</span>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSXSync(source, 'GridDemo.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const js = result.files.find(f => f.type === 'clientJs')!.content
+
+    // The inner mapArray's renderItem must declare `derivedClass` so the
+    // new-element-creation IIFE doesn't throw `ReferenceError`. The
+    // declaration must use `cell()` — the signal-accessor form of the
+    // inner loop param — not the bare `cell` from the outer template.
+    expect(js).toMatch(
+      /\(cell, __innerIdx[^,]+, __existing\) => \{[\s\S]*?const\s+derivedClass\s*=\s*cell\(\)\.flag/
+    )
+    // Within the inner renderItem body (delimited by the outer
+    // `mapArray(() => row()` block), every reference to the inner loop
+    // param must be the accessor form — bare `cell.flag` would mean the
+    // preamble wrapping pass missed a reference.
+    const innerSection = js.slice(
+      js.indexOf('mapArray(() => row()'),
+      js.indexOf('return __innerEl1_0'),
+    )
+    expect(innerSection.length).toBeGreaterThan(0)
+    expect(innerSection).not.toMatch(/\bcell\.flag\b/)
+  })
 })
