@@ -353,5 +353,5 @@ Production adapters also handle:
 ### Reference Implementations
 
 - **TestAdapter** (`packages/jsx/src/adapters/test-adapter.ts`) — Minimal working adapter used throughout this guide
-- **HonoAdapter** (`packages/hono/src/adapter/hono-adapter.ts`) — Production JSX-to-JSX adapter with script collection via Hono's request context
-- **GoTemplateAdapter** (`packages/go-template/src/adapter/go-template-adapter.ts`) — Production adapter with expression translation, type generation, and array method mapping
+- **HonoAdapter** (`packages/adapter-hono/src/adapter/hono-adapter.ts`) — Production JSX-to-JSX adapter with script collection via Hono's request context
+- **GoTemplateAdapter** (`packages/adapter-go-template/src/adapter/go-template-adapter.ts`) — Production adapter with expression translation, type generation, and array method mapping

@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 class_name = "EchoContainer"
 image = "./Dockerfile"
 # Build from the repo root so the go.mod `replace` directive pointing at
-# ../../packages/go-template/runtime can resolve inside the image.
+# ../../packages/adapter-go-template/runtime can resolve inside the image.
 image_build_context = "../.."
 max_instances = 1
 

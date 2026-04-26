@@ -52,7 +52,7 @@ services:
       BASE_PATH: /integrations/echo
     volumes:
       - ./integrations/echo:/workspace/integrations/echo
-      - ./packages/go-template/runtime:/workspace/packages/go-template/runtime
+      - ./packages/adapter-go-template/runtime:/workspace/packages/adapter-go-template/runtime
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/root/.cache/go-build
 
@@ -66,7 +66,7 @@ services:
       MOJO_MODE: development
     volumes:
       - ./integrations/mojolicious:/workspace/integrations/mojolicious
-      - ./packages/mojolicious/lib:/workspace/packages/mojolicious/lib
+      - ./packages/adapter-mojolicious/lib:/workspace/packages/adapter-mojolicious/lib
 
   site-core:
     build:

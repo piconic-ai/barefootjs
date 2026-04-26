@@ -9,7 +9,7 @@ This project primarily uses TypeScript with Go template adapters. Use `bun` inst
 ## Architecture
 
 2-phase compilation: JSX → IR → Marked Template + Client JS
-Adapters: HonoAdapter (`packages/hono/`), GoTemplateAdapter (`packages/go-template/`)
+Adapters: HonoAdapter (`packages/adapter-hono/`), GoTemplateAdapter (`packages/adapter-go-template/`)
 
 ## Code Map
 
@@ -18,8 +18,8 @@ Adapters: HonoAdapter (`packages/hono/`), GoTemplateAdapter (`packages/go-templa
   - `ir-to-client-js.ts` — Phase 2: IR to client JS
   - `analyzer.ts` — Reactivity analysis
 - `packages/client/src/` — Client runtime (createSignal, createEffect, etc.) and DOM runtime under `./runtime`
-- `packages/hono/` — Hono/JSX adapter
-- `packages/go-template/` — Go html/template adapter
+- `packages/adapter-hono/` — Hono/JSX adapter
+- `packages/adapter-go-template/` — Go html/template adapter
 - `ui/` — UI component registry
 - `site/core/` — Main site: landing page + documentation (Hono + Cloudflare Workers)
   - `site/core/landing/` — Landing page components and routes

@@ -26,7 +26,7 @@ import {
   generateHash,
   resolveRelativeImports,
 } from '../../packages/cli/src/lib/build'
-import { addScriptCollection } from '../../packages/hono/src/build'
+import { addScriptCollection } from '../../packages/adapter-hono/src/build'
 
 const ROOT_DIR = dirname(import.meta.path)
 const CONTENT_DIR = resolve(ROOT_DIR, '../../docs/core')
@@ -439,7 +439,7 @@ const HONO_JSX_RUNTIME_SHIM = `declare module 'hono/jsx/jsx-runtime' {
 
 const typeBundle: Record<string, string> = {
   'file:///node_modules/@barefootjs/hono/jsx/jsx-runtime/index.d.ts':
-    await Bun.file(resolve(PKG_DIR, 'hono/src/jsx/jsx-runtime/index.d.ts')).text(),
+    await Bun.file(resolve(PKG_DIR, 'adapter-hono/src/jsx/jsx-runtime/index.d.ts')).text(),
   'file:///node_modules/@barefootjs/jsx/jsx-runtime/index.d.ts':
     await Bun.file(resolve(PKG_DIR, 'jsx/src/jsx-runtime/index.d.ts')).text(),
   'file:///node_modules/@barefootjs/jsx/html-types.d.ts':

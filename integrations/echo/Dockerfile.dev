@@ -5,7 +5,7 @@
 # template changes and rebuilds on the fly.
 #
 # Build context is the repo root so the go.mod `replace` path
-# (../../packages/go-template/runtime) resolves the same as on the host.
+# (../../packages/adapter-go-template/runtime) resolves the same as on the host.
 
 FROM golang:1.25-alpine
 

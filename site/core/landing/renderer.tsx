@@ -9,7 +9,7 @@ import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
 import { Header } from '../../shared/components/header'
 import { SearchPlaceholder } from '../../shared/components/search-placeholder'
 import { ThemeSwitcher } from '@/components/theme-switcher'
-import { BfScripts } from '../../../packages/hono/src/scripts'
+import { BfScripts } from '../../../packages/adapter-hono/src/scripts'
 import { themeInitScript } from '@barefootjs/site-shared/lib/theme-init'
 
 /**

@@ -26,7 +26,7 @@ import {
 } from '../../packages/cli/src/lib/build'
 import { loadIndex } from '../../packages/cli/src/lib/meta-loader'
 import { generateUiLlmsTxt } from '../../packages/cli/src/lib/llms-txt-generator'
-import { addScriptCollection } from '../../packages/hono/src/build'
+import { addScriptCollection } from '../../packages/adapter-hono/src/build'
 
 const ROOT_DIR = dirname(import.meta.path)
 

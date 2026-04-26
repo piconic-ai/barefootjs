@@ -8,7 +8,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import { compileJSXSync } from '..'
-import { HonoAdapter } from '../../../hono/src/adapter/hono-adapter'
+import { HonoAdapter } from '../../../adapter-hono/src/adapter/hono-adapter'
 
 const adapter = new HonoAdapter()
 function compileClient(source: string, filename = 'Test.tsx') {

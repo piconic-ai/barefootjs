@@ -3,7 +3,7 @@
  * mojolicious example directory so the same layout works in local dev and
  * inside the container image.
  *
- *   ./lib          ← packages/mojolicious/lib (BarefootJS Mojo plugin)
+ *   ./lib          ← packages/adapter-mojolicious/lib (BarefootJS Mojo plugin)
  *   ./dist/styles  ← integrations/shared/styles  (design-system stylesheets)
  */
 
@@ -21,5 +21,5 @@ async function mirror(src: string, dest: string) {
   console.log(`Copied ${src} → ${dest.replace(ROOT + '/', '')}`)
 }
 
-await mirror(join(ROOT, '../../packages/mojolicious/lib'), join(ROOT, 'lib'))
+await mirror(join(ROOT, '../../packages/adapter-mojolicious/lib'), join(ROOT, 'lib'))
 await mirror(join(ROOT, '../shared/styles'), join(ROOT, 'dist/styles'))

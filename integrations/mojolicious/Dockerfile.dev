@@ -20,4 +20,4 @@ EXPOSE 3000
 
 # morbo's default watch list covers app.pl, lib/, and templates/. Add the
 # bind-mounted plugin source so plugin edits also trigger a restart.
-CMD ["morbo", "-w", "app.pl", "-w", "lib", "-w", "/workspace/packages/mojolicious/lib", "app.pl"]
+CMD ["morbo", "-w", "app.pl", "-w", "lib", "-w", "/workspace/packages/adapter-mojolicious/lib", "app.pl"]

@@ -286,7 +286,7 @@ Then register in `fixtures/index.ts` and both adapter test suites will automatic
 Each adapter calls `runJSXConformanceTests()`:
 
 ```typescript
-// packages/hono/__tests__/hono-adapter.test.ts
+// packages/adapter-hono/__tests__/hono-adapter.test.ts
 runJSXConformanceTests({
   createAdapter: () => new HonoAdapter(),
   render: async ({ adapter, source, filePath, components }) => {

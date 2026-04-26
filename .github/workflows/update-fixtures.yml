@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'packages/jsx/**'
-      - 'packages/hono/**'
+      - 'packages/adapter-hono/**'
       - 'packages/client/**'
       - 'packages/adapter-tests/src/**'
       - 'packages/adapter-tests/scripts/**'

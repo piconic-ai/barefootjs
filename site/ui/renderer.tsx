@@ -18,9 +18,9 @@ declare module 'hono' {
     ): Response | Promise<Response>
   }
 }
-import { BfScripts } from '../../packages/hono/src/scripts'
-import { BfPortals } from '../../packages/hono/src/portals'
-import { BfPreload, type Manifest } from '../../packages/hono/src/preload'
+import { BfScripts } from '../../packages/adapter-hono/src/scripts'
+import { BfPortals } from '../../packages/adapter-hono/src/portals'
+import { BfPreload, type Manifest } from '../../packages/adapter-hono/src/preload'
 import { SidebarNav } from '../shared/components/sidebar-page-nav'
 import { Header } from '../shared/components/header'
 import { MobileMenu } from '@/components/mobile-menu'

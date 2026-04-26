@@ -10,7 +10,7 @@ import { describe, test, expect } from 'bun:test'
 import { compileJSXSync } from '../compiler'
 import { listComponentFunctions } from '../analyzer'
 import { TestAdapter } from '../adapters/test-adapter'
-import { HonoAdapter } from '../../../../packages/hono/src/adapter/hono-adapter'
+import { HonoAdapter } from '../../../../packages/adapter-hono/src/adapter/hono-adapter'
 
 const adapter = new TestAdapter()
 

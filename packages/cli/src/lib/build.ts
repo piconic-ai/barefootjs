@@ -1127,7 +1127,7 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
 
 // The `<outDir>/.dev/build-id` path is an inter-package contract between the
 // CLI (producer) and every adapter's dev reloader (consumer, e.g.
-// `packages/hono/src/dev.tsx`). Adapters re-declare the same literal strings
+// `packages/adapter-hono/src/dev.tsx`). Adapters re-declare the same literal strings
 // to avoid a runtime dependency on `@barefootjs/cli`; if these values change
 // here, update every adapter's dev reloader in the same PR.
 export const DEV_SENTINEL_SUBDIR = '.dev'

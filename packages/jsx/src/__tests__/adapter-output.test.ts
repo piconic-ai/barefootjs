@@ -8,7 +8,7 @@
 import { describe, test, expect } from 'bun:test'
 import { compileJSXSync, compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
-import { HonoAdapter } from '../../../../packages/hono/src/adapter/hono-adapter'
+import { HonoAdapter } from '../../../../packages/adapter-hono/src/adapter/hono-adapter'
 import { resolve, dirname } from 'node:path'
 
 const adapter = new TestAdapter()

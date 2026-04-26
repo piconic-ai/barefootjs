@@ -188,7 +188,7 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
   // 6. Rewrite imports and add JSX pragma in compiled .tsx files
-  const HONO_UTILS_PATH = resolve(ROOT_DIR, 'packages/hono/src/utils')
+  const HONO_UTILS_PATH = resolve(ROOT_DIR, 'packages/adapter-hono/src/utils')
   async function rewriteImports(dir: string) {
     const entries = await readdir(dir, { withFileTypes: true })
     for (const entry of entries) {

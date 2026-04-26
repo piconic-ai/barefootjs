@@ -4,7 +4,7 @@ import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
 import { analyzeClientNeeds } from '../ir-to-client-js'
 import { TestAdapter } from '../adapters/test-adapter'
-import { HonoAdapter } from '../../../../packages/hono/src/adapter/hono-adapter'
+import { HonoAdapter } from '../../../../packages/adapter-hono/src/adapter/hono-adapter'
 
 const adapter = new TestAdapter()
 

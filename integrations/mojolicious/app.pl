@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite -signatures;
 # `lib` is populated by scripts/copy-plugin.pl at build time (used in the
-# container); `../../packages/mojolicious/lib` is the workspace source (used
+# container); `../../packages/adapter-mojolicious/lib` is the workspace source (used
 # in local dev). Both are listed so either location resolves.
-use lib 'lib', '../../packages/mojolicious/lib';
+use lib 'lib', '../../packages/adapter-mojolicious/lib';
 use Mojo::JSON qw(true false encode_json);
 
 # Load BarefootJS plugin

@@ -6,7 +6,7 @@ on:
     paths:
       - 'packages/client/**'
       - 'packages/jsx/**'
-      - 'packages/hono/**'
+      - 'packages/adapter-hono/**'
       - 'packages/preview/**'
       - 'packages/adapter-tests/**'
       - 'integrations/hono/**'
@@ -15,7 +15,7 @@ on:
     paths:
       - 'packages/client/**'
       - 'packages/jsx/**'
-      - 'packages/hono/**'
+      - 'packages/adapter-hono/**'
       - 'packages/preview/**'
       - 'packages/adapter-tests/**'
       - 'integrations/hono/**'
@@ -43,7 +43,7 @@ jobs:
           bun run --filter '@barefootjs/hono' build
 
       - name: Run unit tests
-        run: bun test packages/hono
+        run: bun test packages/adapter-hono
 
   e2e-hono:
     runs-on: ubuntu-latest

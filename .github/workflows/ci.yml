@@ -13,7 +13,7 @@ on:
       - 'packages/adapter-tests/**'
       # site/ui is the Hono adapter's end-to-end target, so Hono changes must
       # re-run this workflow's e2e-site-ui job (ci-hono.yml no longer duplicates it).
-      - 'packages/hono/**'
+      - 'packages/adapter-hono/**'
       - 'ui/**'
       - 'site/ui/**'
       - '.github/workflows/ci.yml'
@@ -28,7 +28,7 @@ on:
       - 'packages/adapter-tests/**'
       # site/ui is the Hono adapter's end-to-end target, so Hono changes must
       # re-run this workflow's e2e-site-ui job (ci-hono.yml no longer duplicates it).
-      - 'packages/hono/**'
+      - 'packages/adapter-hono/**'
       - 'ui/**'
       - 'site/ui/**'
       - '.github/workflows/ci.yml'

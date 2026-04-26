@@ -15,8 +15,8 @@ FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 WORKDIR /src
 
 # Mirror the repo layout inside the image so the `replace` directive in
-# integrations/echo/go.mod (`../../packages/go-template/runtime`) resolves.
-COPY packages/go-template/runtime ./packages/go-template/runtime
+# integrations/echo/go.mod (`../../packages/adapter-go-template/runtime`) resolves.
+COPY packages/adapter-go-template/runtime ./packages/adapter-go-template/runtime
 COPY integrations/echo/go.mod integrations/echo/go.sum ./integrations/echo/
 
 WORKDIR /src/integrations/echo
