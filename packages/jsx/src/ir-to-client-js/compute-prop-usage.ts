@@ -6,11 +6,10 @@
  * the access kinds observed for each prop (bare / property / index)
  * and whether the prop is consumed as a loop's array expression.
  *
- * Stage C.2 of issue #1021 introduced this file; C1 of the post-#1054
- * maintainability plan replaced the inline regex pair
- * (`\\b<name>\\.[a-zA-Z_]` / `\\b<name>\\s*\\[`) with an AST walk via
- * `collectPropAccesses` so optional-chaining (`<name>?.foo`) and
- * computed access patterns are no longer silently missed.
+ * Detection runs through `collectPropAccesses` (an AST walk) so
+ * optional-chaining (`<name>?.foo`) and computed access patterns are
+ * caught — a regex `\\b<name>\\.[a-zA-Z_]` would silently miss the `?.`
+ * case.
  */
 
 import type { ConstantInfo, PropUsage } from '../types'

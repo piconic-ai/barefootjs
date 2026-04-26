@@ -5,8 +5,6 @@
  * Effects with a `captureName` keep their `const <name> = createEffect(...)`
  * form so user code calling the captured disposer (or any future return
  * value) still resolves at runtime.
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ClientJsContext } from '../types'

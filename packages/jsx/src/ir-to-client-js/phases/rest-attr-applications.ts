@@ -4,8 +4,6 @@
  *
  * The runtime helper applies the spread source's enumerable properties as
  * DOM attributes, skipping the keys statically set on the element.
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ClientJsContext } from '../types'

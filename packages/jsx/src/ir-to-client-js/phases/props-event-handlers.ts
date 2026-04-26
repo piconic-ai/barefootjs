@@ -6,8 +6,6 @@
  * function / constant or destructured prop), emit
  * `const handlerName = _p.handlerName`. Subsequent emission can call
  * `handlerName(...)` without writing the prop accessor inline.
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ClientJsContext } from '../types'

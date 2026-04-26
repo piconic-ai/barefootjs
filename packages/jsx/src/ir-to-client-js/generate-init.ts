@@ -11,10 +11,7 @@
 import type { ComponentIR } from '../types'
 import type { ClientJsContext } from './types'
 import { PROPS_PARAM } from './utils'
-import {
-  buildReferencesGraph,
-  graphUsedFunctions,
-} from './build-references'
+import { buildReferencesGraph } from './build-references'
 import { computePropUsage } from './compute-prop-usage'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER } from './imports'
 import { emitRegistrationAndHydration } from './emit-registration'
@@ -44,7 +41,6 @@ export function generateInitFunction(
 
   // --- Analysis: one graph, many queries; scope routing as data ---
   const graph = buildReferencesGraph(ctx, ir.root)
-  const usedFunctions = graphUsedFunctions(graph)
   const classification = classifyLocalDeclarations(ctx, graph)
   const propUsage = computePropUsage(ctx, classification.neededConstants)
 
@@ -58,7 +54,6 @@ export function generateInitFunction(
     graph,
     classification,
     propUsage,
-    usedFunctions,
   })
   runPhases(lines, phaseCtx, PHASES)
 

@@ -6,8 +6,6 @@
  * legacy single-place initialiser doesn't double-bind.
  *
  * Cached once per generate-init invocation (see `buildPhaseCtx`).
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ClientJsContext } from '../types'

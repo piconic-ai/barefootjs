@@ -9,8 +9,6 @@
  * The trailing blank line (only when statements were emitted) is owned
  * by this phase — it used to live as a conditional `lines.push('')` in
  * the orchestrator. Folding it in keeps the phase self-contained.
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ClientJsContext } from '../types'

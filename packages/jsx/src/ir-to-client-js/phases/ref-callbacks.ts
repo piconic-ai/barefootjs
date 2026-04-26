@@ -3,8 +3,6 @@
  *
  * Slots inside conditional branches are skipped — `insert(...)` bindEvents
  * runs the ref callback every time the branch swaps in.
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ClientJsContext } from '../types'

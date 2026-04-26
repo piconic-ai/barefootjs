@@ -17,6 +17,7 @@ import type { IRLoopChildComponent } from '../../types'
 import type { NestedLoop, TopLevelLoop } from '../types'
 import type { ClientJsContext } from '../types'
 import { quotePropName, varSlotId } from '../utils'
+import { buildCompSelector } from '../control-flow/shared'
 
 /** The inline prop shape carried on `IRLoopChildComponent.props`. */
 type LoopChildCompProp = IRLoopChildComponent['props'][number]
@@ -97,7 +98,7 @@ function buildOuterNestedPlan(
     kind: 'outer-nested',
     containerVar: `_${varSlotId(elem.slotId)}`,
     componentName: comp.name,
-    selector: buildNestedSelector(comp),
+    selector: buildCompSelector(comp),
     arrayExpr: elem.array,
     param: elem.param,
     indexParam,
@@ -114,7 +115,7 @@ function buildInnerLoopNestedPlan(
   const outerIndexParam = elem.index || '__idx'
   const comps: InnerLoopComp[] = innerComps.map(comp => ({
     componentName: comp.name,
-    selector: buildNestedSelector(comp),
+    selector: buildCompSelector(comp),
     propsExpr: buildStaticPropsExpr(comp.props),
   }))
 
@@ -160,9 +161,3 @@ function buildStaticPropsExpr(props: readonly LoopChildCompProp[]): PropsExpr {
   return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
 }
 
-/** Selector used by nested-comp init: slotId suffix match or name prefix. */
-function buildNestedSelector(comp: IRLoopChildComponent): string {
-  return comp.slotId
-    ? `[bf-s$="_${comp.slotId}"]`
-    : `[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
-}

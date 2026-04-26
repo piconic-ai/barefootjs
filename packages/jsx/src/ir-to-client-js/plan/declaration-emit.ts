@@ -10,8 +10,6 @@
  *
  * Every decision is resolved at build time so the stringifier emits one
  * line per declaration without inspecting `ctx`.
- *
- * A2 of the post-#1054 emit-init maintainability plan.
  */
 
 export interface ConstantEmitPlan {

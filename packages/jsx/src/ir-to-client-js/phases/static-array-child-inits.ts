@@ -9,8 +9,6 @@
  *
  * Must run AFTER `provider-and-child-inits` so context providers are
  * available when array children call `useContext()`.
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import { buildStaticArrayChildInitsPlan } from '../plan/build-static-array-child-init'

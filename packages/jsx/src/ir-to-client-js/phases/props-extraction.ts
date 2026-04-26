@@ -15,8 +15,6 @@
  * Skipped entirely when the component uses an opaque props object name
  * (`propsObjectName != null`) — in that case downstream code reads
  * `_p.X` directly via the late-stage rename.
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { PropUsage } from '../../types'

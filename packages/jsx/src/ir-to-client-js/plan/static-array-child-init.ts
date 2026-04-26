@@ -13,8 +13,7 @@
  * build time so the stringifier becomes a deterministic walk.
  *
  * Replaces the legacy 120-line `emitStaticArrayChildInits` whose emission
- * shapes were determined by inline branching on the IR. See repository
- * follow-up plan "A1" of the post-#1054 maintainability evaluation.
+ * shapes were determined by inline branching on the IR.
  */
 
 /** Pre-built `{ name: value, ... }` props object expression. */

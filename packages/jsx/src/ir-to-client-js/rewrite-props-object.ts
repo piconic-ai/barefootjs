@@ -20,8 +20,6 @@
  * may move it into analyzer-time IR rewriting (mirroring `templateXxx`
  * fields) and introduce a `PropRewritten<T>` brand type so missing the
  * rewrite becomes a compile-time error.
- *
- * C2 of the post-#1054 emit-init maintainability plan.
  */
 
 import ts from 'typescript'

@@ -9,8 +9,6 @@
  * Must run before `loop-updates` (encoded as `dependsOn` in `phases.ts`)
  * so context providers are in scope when loop children call
  * `useContext()`.
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ClientJsContext } from '../types'
