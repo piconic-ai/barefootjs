@@ -19,7 +19,7 @@ import {
   loopKeyFn,
   destructureLoopParam,
   buildDepthLevels,
-} from '../legacy-helpers'
+} from '../shared'
 import { buildReactiveEffectsPlan } from './build-reactive-effects'
 import { buildInnerLoopsPlan } from './build-inner-loop'
 import type { CompositeLoopPlan } from './types'

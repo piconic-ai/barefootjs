@@ -30,7 +30,7 @@
  * after the migration completes.
  */
 
-import { emitComponentAndEventSetup } from '../legacy-helpers'
+import { emitComponentAndEventSetup } from '../shared'
 import { stringifyInnerLoops } from './inner-loop'
 import { stringifyReactiveEffects } from './reactive-effects'
 import type { CompositeLoopPlan } from '../plan/types'

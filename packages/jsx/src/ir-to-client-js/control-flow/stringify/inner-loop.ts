@@ -30,7 +30,7 @@
  */
 
 import { keyAttrName } from '../../utils'
-import { emitComponentAndEventSetup } from '../legacy-helpers'
+import { emitComponentAndEventSetup } from '../shared'
 import type {
   InnerLoopPlan,
   InnerLoopsPlan,

@@ -2,7 +2,7 @@
  * Stringifiers for the per-arm Plans defined in `plan/loop-child-arm.ts`.
  *
  * Item 2 of `tmp/emit-survey/HANDOFF.md` migrates the recursive
- * branch ↔ loop ↔ conditional helpers from `legacy-helpers.ts` into Plan +
+ * branch ↔ loop ↔ conditional helpers from `shared.ts` into Plan +
  * stringify pairs. This file grows one stringifier at a time as each helper
  * is migrated.
  *
@@ -12,7 +12,7 @@
  */
 
 import { varSlotId, DATA_BF_PH, keyAttrName } from '../../utils'
-import { emitComponentAndEventSetup } from '../legacy-helpers'
+import { emitComponentAndEventSetup } from '../shared'
 import { emitListenerLine } from './event-listener'
 import type {
   BranchChildComponentInitsPlan,

@@ -24,7 +24,7 @@ import {
   buildComponentPropsExpr,
   buildCompSelector,
   isTextOnlyConditional,
-} from '../legacy-helpers'
+} from '../shared'
 import { irChildrenToJsExpr } from '../../html-template'
 import { buildReactiveEffectsPlan } from './build-reactive-effects'
 import type { ComponentLoopPlan, NestedComponentInit } from './types'

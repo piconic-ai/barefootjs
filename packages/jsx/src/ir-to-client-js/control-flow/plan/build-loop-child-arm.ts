@@ -21,7 +21,7 @@ import type {
 } from '../../../types'
 import { quotePropName, wrapLoopParamAsAccessor } from '../../utils'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from '../../html-template'
-import { destructureLoopParam, loopKeyFn } from '../legacy-helpers'
+import { destructureLoopParam, loopKeyFn } from '../shared'
 import type {
   BranchChildComponentInit,
   BranchChildComponentInitsPlan,

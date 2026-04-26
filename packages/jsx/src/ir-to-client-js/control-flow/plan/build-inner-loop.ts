@@ -26,11 +26,11 @@ import {
   exprReferencesIdent,
   wrapLoopParamAsAccessor,
 } from '../../utils'
-import type { DepthLevel } from '../legacy-helpers'
+import type { DepthLevel } from '../shared'
 import {
   destructureLoopParam,
   loopKeyFn,
-} from '../legacy-helpers'
+} from '../shared'
 import type {
   InnerLoopPlan,
   InnerLoopReactiveEmit,

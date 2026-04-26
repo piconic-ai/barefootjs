@@ -6,8 +6,8 @@
  * `ArmBody.conditionals`, so one stringifier handles arbitrary depth.
  */
 
-import type { BranchLoop } from '../../types'
 import type { ScopeRef } from './common'
+import type { BranchLoopPlan } from './branch-loop'
 
 /**
  * Plan for a single `insert(scope, slotId, () => cond, trueArm, falseArm)`
@@ -54,11 +54,10 @@ export interface ArmBody {
   /** Reactive text effects scoped to this branch. Each becomes `createDisposableEffect`. */
   textEffects: ArmTextEffect[]
   /**
-   * Branch-scoped loops. Currently kept as raw `BranchLoop` references and
-   * delegated to the legacy `emitBranchLoopBody` helper. A future PR will
-   * turn them into `LoopPlan` and stringify directly.
+   * Branch-scoped loops, fully Plan-built. Each entry is dispatched on
+   * `kind` ('plain' vs 'composite') by `stringifyBranchLoop`.
    */
-  loopsRaw: BranchLoop[]
+  loops: BranchLoopPlan[]
   /**
    * Nested conditionals within this branch. Built recursively as `InsertPlan`s
    * so the same stringifier handles them at any depth.

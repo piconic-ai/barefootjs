@@ -1,36 +1,21 @@
 /**
- * Stringify-layer helpers for control-flow emission.
+ * Shared utilities for control-flow emission.
  *
- * These functions all produce source lines directly (the older "string-push"
- * style) and are called from both:
- *   - `ir-to-client-js/control-flow.ts` (the public entry points)
- *   - `control-flow/stringify/*` (the Plan stringifiers, where the
- *     mode-dependent SSR/CSR shape and recursive branch/cond/inner-loop
- *     structure still lives without a dedicated Plan layer)
+ * Every recursive emit-style helper that used to live here has been
+ * Plan-ified — see `plan/` for the data carriers and `stringify/` for the
+ * deterministic walks. What remains is a small set of stable utilities
+ * shared across builders and one `emitComponentAndEventSetup` emitter that
+ * builders feed already-wrapped IR data through.
  *
- * They were previously colocated with the entry points in the legacy
- * `emit-control-flow.ts`. The split clarifies the dependency direction:
+ * The dependency direction is one-way:
  *
- *   control-flow.ts -> control-flow/{plan,stringify}/* -> legacy-helpers.ts
- *
- * Each Plan-and-stringifier pair migration shrinks this file. The pure
- * utility helpers at the top (loopKeyFn, destructureLoopParam,
- * buildComponentPropsExpr, buildCompSelector, isTextOnlyConditional,
- * buildDepthLevels, DepthLevel) are stable and shared.
+ *   control-flow.ts -> control-flow/{plan,stringify}/* -> shared.ts
  */
 
-import type { BranchLoop, LoopChildEvent, TopLevelLoop, NestedLoop, CollectedLoop } from '../types'
+import type { LoopChildEvent, TopLevelLoop, NestedLoop, CollectedLoop } from '../types'
 import type { IRLoopChildComponent, LoopParamBinding } from '../../types'
-import { varSlotId, quotePropName, wrapLoopParamAsAccessor, exprReferencesIdent } from '../utils'
+import { quotePropName, wrapLoopParamAsAccessor, exprReferencesIdent } from '../utils'
 import { irChildrenToJsExpr } from '../html-template'
-import { buildBranchCompositePlan } from './plan/build-composite-loop'
-import { stringifyCompositeLoop } from './stringify/composite-loop'
-import { buildReactiveEffectsPlan } from './plan/build-reactive-effects'
-import { stringifyReactiveEffects } from './stringify/reactive-effects'
-import {
-  buildBranchLoopDelegationPlan,
-} from './plan/build-event-delegation'
-import { stringifyEventDelegation } from './stringify/event-delegation'
 import { emitListenerBlock } from './stringify/event-listener'
 
 /**
@@ -109,81 +94,6 @@ export function destructureLoopParam(
 }
 
 /**
- * Emit branch-scoped loop reconciliation. Extracted so the new Plan-based
- * stringifier can reuse it verbatim while we incrementally migrate insert()
- * shapes to Plan IR (PR 1) and only later move loops onto Plan (PR 2).
- *
- * The container lookup, mapArray dispatch, and reactive-effect wiring are
- * the same lines previously inlined in `emitBranchBindings`.
- */
-export function emitBranchLoopBody(lines: string[], branchLoops: readonly BranchLoop[]): void {
-  for (const loop of branchLoops) {
-    const cv = varSlotId(loop.containerSlotId)
-    lines.push(`      const [__loop_${cv}] = $(__branchScope, '${loop.containerSlotId}')`)
-
-    if (loop.useElementReconciliation && (loop.nestedComponents?.length || loop.innerLoops?.length)) {
-      // Composite loop: items contain child components OR inner loops that
-      // require their own mapArray reconciliation — use the composite
-      // renderItem path (createComponent for nested components, emitInnerLoopSetup
-      // for inner loops).
-      stringifyCompositeLoop(lines, buildBranchCompositePlan(loop, cv))
-    } else {
-      const keyFn = loopKeyFn(loop)
-      const indexParam = loop.index || '__idx'
-      const hasReactiveEffects = (loop.childReactiveAttrs?.length ?? 0) > 0
-        || (loop.childReactiveTexts?.length ?? 0) > 0
-        || (loop.childConditionals?.length ?? 0) > 0
-
-      const { head: pHead, unwrap: pUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
-      const unwrapInline = pUnwrap ? `${pUnwrap} ` : ''
-
-      // Wrap the mapArray() call in a disposable effect so the inner
-      // createEffect created by mapArray is registered as a child of this
-      // disposable owner — branch swap then dispose()s the entry, releasing
-      // both the effect and its dependency subscriptions. Without the wrap
-      // the inner effect leaks: a hidden branch keeps re-rendering items
-      // whenever its signals change (observation O-2).
-      lines.push(`      __disposers.push(createDisposableEffect(() => {`)
-      if (!hasReactiveEffects) {
-        // Simple case: no reactive effects — return existing DOM as-is.
-        // Template expressions use loopParam() to read the current item, so the
-        // signal accessor stays intact without any unwrap.
-        if (loop.mapPreamble) {
-          lines.push(`        if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${loop.mapPreamble}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
-        } else {
-          lines.push(`        if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
-        }
-      } else {
-        // Multi-line renderItem with fine-grained effects — applies to both
-        // SSR (existing DOM) and CSR (freshly created) paths so reactive reads
-        // of non-item signals propagate to existing items too.
-        lines.push(`        if (__loop_${cv}) mapArray(() => ${loop.array}, __loop_${cv}, ${keyFn}, (${pHead}, ${indexParam}, __existing) => {`)
-        if (pUnwrap) {
-          lines.push(`          ${pUnwrap}`)
-        }
-        if (loop.mapPreamble) {
-          lines.push(`          ${loop.mapPreamble}`)
-        }
-        lines.push(`          const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${loop.template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
-        const branchReactivePlan = buildReactiveEffectsPlan({
-          attrs: loop.childReactiveAttrs ?? [],
-          texts: loop.childReactiveTexts ?? [],
-          conditionals: loop.childConditionals,
-          loopParam: loop.param,
-          loopParamBindings: loop.paramBindings,
-        })
-        stringifyReactiveEffects(lines, branchReactivePlan, { indent: '          ', elVar: '__el' })
-        lines.push(`          return __el`)
-        lines.push(`        })`)
-      }
-      lines.push(`      }))`)
-      emitBranchLoopEventDelegation(lines, loop, cv)
-    }
-  }
-}
-
-
-/**
  * Build a props object expression string from component prop definitions.
  * Shared by emitComponentLoopReconciliation and emitCompositeElementReconciliation.
  */
@@ -210,14 +120,6 @@ export function buildComponentPropsExpr(
     }
   }
   return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
-}
-
-/**
- * Emit event delegation for simple (non-composite) loops inside conditional branches (#766).
- * Mirrors emitDynamicLoopEventDelegation but uses branch-scoped container variable.
- */
-function emitBranchLoopEventDelegation(lines: string[], loop: BranchLoop, cv: string): void {
-  stringifyEventDelegation(lines, buildBranchLoopDelegationPlan(loop, cv))
 }
 
 /** Per-inner-loop data for composite loop emission. */
