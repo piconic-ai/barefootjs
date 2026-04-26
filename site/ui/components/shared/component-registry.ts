@@ -115,6 +115,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'theme-customizer', title: 'Theme Customizer', description: 'Three signal-driven context providers (palette, spacing, typography) wrapping a 12-level deep consumer tree. Tests Provider value propagation, multi-provider ordering, stale-read safety, and dynamic token add/remove' },
   { slug: 'infinite-scroll', title: 'Async Infinite Scroll', description: 'IntersectionObserver-triggered pagination with <Async> streaming boundary, mapArray append, per-item like/save actions, and effect cleanup on unmount. Tests the IRAsync + mapArray compiler path, reactive list growth, and error/empty-state branches' },
   { slug: 'toast-queue', title: 'Toast Queue', description: 'Signal-backed notification queue with N simultaneous portals, auto-dismiss timers, manual dismiss, stack ordering, and per-toast cleanup on dynamic unmount' },
+  { slug: 'graph-editor', title: 'Graph / DAG Editor', description: 'SVG-based node graph with reactive cx/cy/d/viewBox bindings, drag-to-move, drag-to-connect, and auto-layout toggle. Exercises the compiler\'s SVG namespace path that other blocks don\'t touch' },
 ]
 
 // Helper: get components filtered by category
