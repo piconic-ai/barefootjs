@@ -3,6 +3,359 @@
  * LP-specific styles. Base tokens and resets come from tokens.css + globals.css.
  */
 
+/* ── Hero B Design ────────────────────────────────────────── */
+
+.hero-b {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 5rem 1.5rem 3rem;
+}
+
+/* Always vertical: hero text on top, diagram below */
+.hero-b-content {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.hero-b-text {
+  max-width: 760px;
+}
+
+.hero-b-heading {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  margin-bottom: 1.25rem;
+}
+
+.hero-b-accent {
+  color: var(--gradient-start);
+}
+
+.hero-b-body {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--muted-foreground);
+  margin-bottom: 2rem;
+}
+
+.hero-b-body strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.hero-b-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.hero-b-diagram {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* ── Flow Diagram ─────────────────────────────────────────── */
+
+/*
+ * Layout (matches reference design):
+ *
+ *   ┌────────────┐                 ┌─────────────┐
+ *   │            │                 │  client.js  │  ← always solid
+ *   │   source   │   ┌──────┐  ┌── ├─────────────┤
+ *   │            ├──→│ build│──┤── │   Hono      │  ← solid (active)
+ *   │            │   └──────┘  ├── ├─────────────┤
+ *   └────────────┘              ├── │   Echo     │
+ *                              ├── │ Mojolicious │  ← dashed
+ *                              └── │   Browser   │
+ *                                  └─────────────┘
+ */
+
+.flow-diagram {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) 220px minmax(340px, 1fr);
+  align-items: center;
+  gap: 0;
+  min-height: 500px;
+}
+
+/* Source code panel */
+.flow-source {
+  display: flex;
+  flex-direction: column;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  height: 360px;
+}
+
+.flow-source-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.875rem;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  flex-shrink: 0;
+}
+
+.flow-source-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-source-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.flow-source-filename {
+  font-size: 0.8125rem;
+  color: #c9d1d9;
+}
+
+.flow-source-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #8b949e;
+  text-transform: uppercase;
+}
+
+.flow-source-code {
+  flex: 1;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.flow-source-code pre {
+  margin: 0;
+  background: transparent !important;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  padding: 0.25rem 0.5rem;
+}
+
+.flow-source-code .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
+/*
+ * Connector column — fixed coordinate space matches SVG viewBox 200×500.
+ *   build box centred at x=100, y=250 (size 100×80)
+ *   adapter outputs span y=0..390 (5 boxes × 70 + 4 × 10 gap = 390)
+ *   adapter centres: 35, 115, 195, 275, 355 (offset within adapter list)
+ */
+.flow-connector {
+  position: relative;
+  width: 220px;
+  height: 500px;
+  margin: 0 auto;
+}
+
+.flow-lines {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  width: 200px;
+  height: 500px;
+  pointer-events: none;
+}
+
+/* Build box (centre) — square */
+.flow-build {
+  position: absolute;
+  top: 195px;
+  left: 45px;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  background: oklch(0.18 0.08 145);
+  border: 1px solid oklch(0.35 0.12 145);
+  border-radius: 0.625rem;
+  z-index: 1;
+}
+
+.flow-build-icon {
+  width: 44px;
+  height: 44px;
+  color: #ffffff;
+  display: block;
+}
+
+/* Force the logo text SVG to render white over the dark build box,
+   regardless of the page theme. */
+.flow-build-logo-text {
+  width: 78px;
+  height: auto;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+/* Adapter list (right column) — 5 boxes total, height 70, gap 10 → 390px */
+.flow-adapters {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Output card / adapter tab */
+.flow-output {
+  display: flex;
+  align-items: stretch;
+  height: 70px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--card);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+}
+
+.flow-output-client {
+  border-color: oklch(0.4 0.1 145 / 0.7);
+}
+
+.flow-adapter-tab {
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  border-style: dashed;
+}
+
+.flow-adapter-tab:hover {
+  opacity: 0.85;
+}
+
+.flow-adapter-tab.is-active {
+  opacity: 1;
+  border-style: solid;
+  border-color: oklch(0.4 0.1 145 / 0.7);
+}
+
+.flow-output-left {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 0.875rem;
+  flex-shrink: 0;
+  min-width: 110px;
+  background: var(--card);
+}
+
+.flow-output-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.flow-output-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+}
+
+.flow-output-lang {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.flow-output-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  min-width: 0;
+  background: var(--background);
+}
+
+.flow-output-file {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-output-snippet {
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  color: oklch(0.62 0.15 145);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Badge circles */
+.flow-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: white;
+  font-family: var(--font-mono);
+}
+
+.flow-badge-green  { background: #22c55e; }
+.flow-badge-orange { background: #f97316; }
+.flow-badge-teal   { background: #0ea5e9; }
+.flow-badge-red    { background: #ef4444; }
+.flow-badge-yellow { background: #eab308; color: #1a1200; }
+
+@media (max-width: 900px) {
+  .flow-diagram {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    min-height: 0;
+  }
+  .flow-source { height: auto; min-height: 220px; }
+  .flow-connector { display: none; }
+}
+
+@media (max-width: 640px) {
+  .hero-b {
+    padding: 4rem 1rem 2rem;
+  }
+  .hero-b-heading {
+    font-size: 2.25rem;
+  }
+}
+
 /* ── Gradient text ────────────────────────────────────────── */
 
 .gradient-text {

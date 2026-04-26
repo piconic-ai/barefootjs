@@ -1,212 +1,230 @@
 /**
- * Hero section with code comparison demo
+ * Hero section — Design B
+ *
+ * Vertical layout: hero text on top, compiler flow diagram underneath.
+ *   source code → Barefoot build → client.js (always) + selectable adapter
+ *
+ * Stateless server component; no signals required.
  */
 
 import { highlight, initHighlighter } from './shared/highlighter'
-import { SOURCE_CODE, HONO_OUTPUT, ECHO_OUTPUT, CLIENT_CODE } from './shared/snippets'
+import { SOURCE_CODE } from './shared/snippets'
 
-async function highlightCode(code: string, lang: 'tsx' | 'javascript' | 'html') {
-  await initHighlighter()
-  const html = highlight(code, lang)
-  // Wrap in shiki structure for consistent styling
-  return `<pre class="shiki shiki-themes github-light github-dark" style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8" tabindex="0"><code>${html}</code></pre>`
+function esc(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
-async function CodeComparisonDemo() {
-  // Code snippets are embedded as module (Workers-compatible)
+type Adapter = {
+  id: string
+  badge: string
+  cls: string
+  name: string
+  lang: string
+  file: string
+  snip: string
+}
 
-  // Highlight all code snippets
-  const sourceHtml = await highlightCode(SOURCE_CODE, 'tsx')
-  const honoHtml = await highlightCode(HONO_OUTPUT, 'tsx')
-  const echoHtml = await highlightCode(ECHO_OUTPUT, 'html')
-  const clientHtml = await highlightCode(CLIENT_CODE, 'javascript')
+const ADAPTERS: Adapter[] = [
+  { id: 'hono',        badge: 'H', cls: 'flow-badge-orange', name: 'Hono',        lang: 'JSX', file: 'Counter.tsx',     snip: 'Count: <span bf="slot_...' },
+  { id: 'echo',        badge: 'E', cls: 'flow-badge-teal',   name: 'Echo',        lang: 'Go',  file: 'counter.tmpl',    snip: 'Count: <span bf="slot_...' },
+  { id: 'mojolicious', badge: 'M', cls: 'flow-badge-red',    name: 'Mojolicious', lang: 'EPL', file: 'counter.html.ep', snip: 'Count: <span bf="slot_...' },
+  { id: 'browser',     badge: 'B', cls: 'flow-badge-yellow', name: 'Browser',     lang: 'CSR', file: 'index.html',      snip: 'Count: <span bf="slot_...' },
+]
 
-  const html = `
-    <div class="code-demo" id="code-demo">
-      <!-- Source Panel (Left) -->
-      <div class="code-panel source-panel" id="source-panel">
-        <div class="code-header">
-          <div class="code-tabs">
-            <button class="code-tab active" id="tab-source">Counter.tsx</button>
-          </div>
+// Inline barefoot footprint icon (5 toes)
+const BAREFOOT_ICON = `<svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true" class="flow-build-icon">
+  <ellipse cx="18" cy="36" rx="9" ry="12" transform="rotate(-15 20 46)"/>
+  <ellipse cx="38" cy="34" rx="7" ry="10" transform="rotate(-8 38 44)"/>
+  <ellipse cx="54" cy="38" rx="6" ry="9" transform="rotate(0 54 50)"/>
+  <ellipse cx="68" cy="46" rx="4.5" ry="7" transform="rotate(8 68 56)"/>
+  <ellipse cx="80" cy="57" rx="3.5" ry="5.5" transform="rotate(15 80 60)"/>
+</svg>`
+
+async function buildDiagramHtml(): Promise<string> {
+  await initHighlighter()
+  const codeHtml = highlight(SOURCE_CODE, 'tsx')
+
+  // Adapter tabs (Hono / Echo / Mojolicious / Browser) — left-aligned in right column
+  const adapterTabs = ADAPTERS.map(
+    (a, i) => `
+    <button
+      type="button"
+      class="flow-output flow-adapter-tab${i === 0 ? ' is-active' : ''}"
+      data-adapter="${a.id}"
+      data-index="${i}"
+      aria-pressed="${i === 0 ? 'true' : 'false'}"
+    >
+      <div class="flow-output-left">
+        <span class="flow-badge ${a.cls}">${esc(a.badge)}</span>
+        <div class="flow-output-info">
+          <span class="flow-output-name">${esc(a.name)}</span>
+          <span class="flow-output-lang">${esc(a.lang)}</span>
         </div>
-        <div class="code-content">${sourceHtml}</div>
+      </div>
+      <div class="flow-output-right">
+        <span class="flow-output-file">${esc(a.file)}</span>
+        <span class="flow-output-snippet">${esc(a.snip)}</span>
+      </div>
+    </button>`,
+  ).join('')
+
+  /*
+   * SVG coordinate system: 200 × 500
+   *
+   *   Adapter list is vertically centred (height = 5×70 + 4×10 = 390px),
+   *   so within the 500px connector it spans y=55..445. Box centres:
+   *     client.js   (i=0): y =  90
+   *     Hono        (i=1): y = 170
+   *     Echo        (i=2): y = 250  ← straight from build
+   *     Mojolicious (i=3): y = 330
+   *     Browser     (i=4): y = 410
+   *
+   *   Build box: square 110×110, x=45..155, y=195..305 (centred at 100, 250).
+   *   Source line enters connector at y=250.
+   *
+   *   client.js stays solid (Always). Exactly one of Hono/Echo/Mojolicious/
+   *   Browser is solid; the rest are dashed. Active changes on click.
+   */
+  const G = '#22c55e'
+  const Dg = '#4b5563'
+  const ADAPTER_YS = [170, 250, 330, 410] // Hono, Echo, Mojolicious, Browser
+
+  return `
+    <div class="flow-diagram" id="flow-diagram">
+      <div class="flow-source">
+        <div class="flow-source-header">
+          <div class="flow-source-header-left">
+            <span class="flow-source-dot"></span>
+            <span class="flow-source-filename">Counter.tsx</span>
+          </div>
+          <span class="flow-source-label">SOURCE</span>
+        </div>
+        <div class="flow-source-code">
+          <pre class="shiki shiki-themes github-light github-dark" tabindex="0"><code>${codeHtml}</code></pre>
+        </div>
       </div>
 
-      <!-- Resizer -->
-      <div class="resizer" id="resizer"></div>
+      <div class="flow-connector">
+        <div class="flow-build">
+          ${BAREFOOT_ICON}
+          <img src="/static/logo-text.svg" alt="Barefoot.js" class="flow-build-logo-text" />
+        </div>
 
-      <!-- Output Panel (Right) -->
-      <div class="code-panel output-panel" id="output-panel">
-        <div class="code-header">
-          <div class="code-tabs">
-            <button class="code-tab active" data-output="template" id="tab-template">Template</button>
-            <button class="code-tab" data-output="client" id="tab-client">client.js</button>
-          </div>
-          <select class="backend-select" id="backend-select">
-            <option value="hono" selected>Hono</option>
-            <option value="echo">Echo</option>
-          </select>
-        </div>
-        <div class="code-content" id="output-content">
-          <div class="output-code" id="output-hono">${honoHtml}</div>
-          <div class="output-code" id="output-echo" style="display: none;">${echoHtml}</div>
-          <div class="output-code" id="output-client" style="display: none;">${clientHtml}</div>
-        </div>
+        <svg class="flow-lines" viewBox="0 0 200 500" aria-hidden="true" preserveAspectRatio="none">
+          <!-- source → build (left enters at y=250) -->
+          <path d="M 0 250 L 45 250" stroke="${G}" stroke-width="2" fill="none"/>
+          <circle cx="0" cy="250" r="3" fill="${G}"/>
+
+          <!-- build → client.js (always solid, exits from TOP of build) -->
+          <path d="M 100 195 L 100 90 L 200 90"
+                stroke="${G}" stroke-width="2" fill="none"/>
+          <circle cx="200" cy="90" r="3" fill="${G}"/>
+
+          <!-- build → adapters (one solid for active, others dashed) -->
+          ${ADAPTER_YS.map((y, i) => {
+            // Echo (i=1) is at y=250 = straight from build, no elbow needed
+            const path = y === 250
+              ? `M 155 250 L 200 250`
+              : `M 155 250 L 178 250 L 178 ${y} L 200 ${y}`
+            const isActive = i === 0
+            return `<path
+              class="flow-adapter-line"
+              data-adapter-line="${i}"
+              d="${path}"
+              stroke="${isActive ? G : Dg}"
+              stroke-width="${isActive ? 2 : 1.5}"
+              stroke-dasharray="${isActive ? '' : '5,4'}"
+              fill="none"
+            /><circle
+              class="flow-adapter-dot"
+              data-adapter-dot="${i}"
+              cx="200" cy="${y}" r="3"
+              fill="${isActive ? G : Dg}"
+            />`
+          }).join('')}
+        </svg>
       </div>
 
-      <script>
-        (function() {
-          var backendSelect = document.getElementById('backend-select');
-          var outputHono = document.getElementById('output-hono');
-          var outputEcho = document.getElementById('output-echo');
-          var outputClient = document.getElementById('output-client');
-          var tabTemplate = document.getElementById('tab-template');
-          var tabClient = document.getElementById('tab-client');
-
-          var currentOutput = 'template';
-          var currentBackend = 'hono';
-
-          function updateOutputDisplay() {
-            outputHono.style.display = 'none';
-            outputEcho.style.display = 'none';
-            outputClient.style.display = 'none';
-
-            if (currentOutput === 'template') {
-              backendSelect.style.display = 'block';
-              if (currentBackend === 'hono') {
-                outputHono.style.display = 'block';
-              } else {
-                outputEcho.style.display = 'block';
-              }
-            } else {
-              backendSelect.style.display = 'none';
-              outputClient.style.display = 'block';
-            }
-          }
-
-          function switchOutput(type) {
-            currentOutput = type;
-            tabTemplate.classList.toggle('active', type === 'template');
-            tabClient.classList.toggle('active', type === 'client');
-            updateOutputDisplay();
-          }
-
-          function switchBackend(backend) {
-            currentBackend = backend;
-            updateOutputDisplay();
-          }
-
-          tabTemplate.addEventListener('click', function() { switchOutput('template'); });
-          tabClient.addEventListener('click', function() { switchOutput('client'); });
-          backendSelect.addEventListener('change', function() { switchBackend(this.value); });
-
-          // Resizer functionality
-          var resizer = document.getElementById('resizer');
-          var sourcePanel = document.getElementById('source-panel');
-          var outputPanel = document.getElementById('output-panel');
-          var codeDemo = document.getElementById('code-demo');
-
-          var isResizing = false;
-          var minWidth = 120;
-          var blurThreshold = 180;
-
-          function updateBlurState() {
-            var sourceWidth = sourcePanel.getBoundingClientRect().width;
-            var outputWidth = outputPanel.getBoundingClientRect().width;
-            if (sourceWidth <= blurThreshold) {
-              sourcePanel.classList.add('blurred');
-            } else {
-              sourcePanel.classList.remove('blurred');
-            }
-            if (outputWidth <= blurThreshold) {
-              outputPanel.classList.add('blurred');
-            } else {
-              outputPanel.classList.remove('blurred');
-            }
-          }
-
-          // Initial blur state
-          setTimeout(updateBlurState, 100);
-
-          resizer.addEventListener('mousedown', function(e) {
-            isResizing = true;
-            resizer.classList.add('dragging');
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-            e.preventDefault();
-          });
-
-          document.addEventListener('mousemove', function(e) {
-            if (!isResizing) return;
-
-            var containerRect = codeDemo.getBoundingClientRect();
-            var containerWidth = containerRect.width;
-            var offsetX = e.clientX - containerRect.left;
-
-            var maxWidth = containerWidth - minWidth - 1;
-
-            var newSourceWidth = Math.max(minWidth, Math.min(maxWidth, offsetX));
-            var newOutputWidth = containerWidth - newSourceWidth - 1;
-
-            sourcePanel.style.flex = 'none';
-            sourcePanel.style.width = newSourceWidth + 'px';
-            outputPanel.style.flex = 'none';
-            outputPanel.style.width = newOutputWidth + 'px';
-
-            updateBlurState();
-          });
-
-          document.addEventListener('mouseup', function() {
-            if (isResizing) {
-              isResizing = false;
-              resizer.classList.remove('dragging');
-              document.body.style.cursor = '';
-              document.body.style.userSelect = '';
-            }
-          });
-        })();
-      </script>
+      <div class="flow-adapters" role="tablist" aria-label="Output adapter">
+        <!-- client.js: always solid, never selectable -->
+        <div class="flow-output flow-output-client">
+          <div class="flow-output-left">
+            <span class="flow-badge flow-badge-green">JS</span>
+            <div class="flow-output-info">
+              <span class="flow-output-name">client.js</span>
+              <span class="flow-output-lang">Always</span>
+            </div>
+          </div>
+          <div class="flow-output-right">
+            <span class="flow-output-file">HYDRATION RUNTIME</span>
+            <span class="flow-output-snippet">// binds signals to bf_...</span>
+          </div>
+        </div>
+        ${adapterTabs}
+      </div>
     </div>
-  `
 
-  return <div dangerouslySetInnerHTML={{ __html: html }} />
+    <script>
+      (function () {
+        var diagram = document.getElementById('flow-diagram');
+        if (!diagram) return;
+        var GREEN = '${G}';
+        var GRAY = '${Dg}';
+        var tabs = diagram.querySelectorAll('.flow-adapter-tab');
+        var lines = diagram.querySelectorAll('.flow-adapter-line');
+        var dots = diagram.querySelectorAll('.flow-adapter-dot');
+        tabs.forEach(function (tab) {
+          tab.addEventListener('click', function () {
+            var idx = parseInt(tab.getAttribute('data-index') || '0', 10);
+            tabs.forEach(function (t) {
+              t.classList.remove('is-active');
+              t.setAttribute('aria-pressed', 'false');
+            });
+            tab.classList.add('is-active');
+            tab.setAttribute('aria-pressed', 'true');
+            lines.forEach(function (l, i) {
+              var active = i === idx;
+              l.setAttribute('stroke', active ? GREEN : GRAY);
+              l.setAttribute('stroke-width', active ? '2' : '1.5');
+              l.setAttribute('stroke-dasharray', active ? '' : '5,4');
+            });
+            dots.forEach(function (d, i) {
+              d.setAttribute('fill', i === idx ? GREEN : GRAY);
+            });
+          });
+        });
+      })();
+    </script>`
 }
 
 export async function Hero() {
-  const codeDemo = await CodeComparisonDemo()
+  const diagramHtml = await buildDiagramHtml()
 
   return (
-    <section className="min-h-screen flex items-center px-6 sm:px-12 pt-20 pb-12">
-      <div className="w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-6 items-center">
-        {/* Left: Headline */}
-        <div>
-          <h1 className="fade-in text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground mb-6">
-            Reactive TSX for <span className="gradient-text whitespace-nowrap">any backend</span>
+    <section className="hero-b">
+      <div className="hero-b-content">
+        <div className="hero-b-text">
+          <h1 className="hero-b-heading fade-in">
+            TSX in.{' '}
+            <span className="hero-b-accent">Your template language out.</span>
           </h1>
-          <p className="fade-in-1 text-lg text-muted-foreground mb-8 max-w-lg">
-            Signal-based JSX that compiles to any backend's template language.
-            Add fine-grained reactivity to server-rendered pages — no SPA required.
+          <p className="hero-b-body fade-in-1">
+            Barefoot compiles signal-based TSX directly into{' '}
+            <strong>Hono</strong>, <strong>Echo</strong>, or the browser.
+            <br />
+            No virtual DOM. No SPA required.
           </p>
-          <div className="fade-in-2 flex flex-wrap gap-3">
-            <a
-              href="/docs/introduction"
-              className="btn-primary"
-            >
-              Get Started
-            </a>
-            <a
-              href="/playground"
-              className="btn-secondary"
-            >
-              Open Playground
-            </a>
+          <div className="hero-b-buttons fade-in-2">
+            <a href="/docs/introduction" className="btn-primary">Get Started</a>
+            <a href="/playground" className="btn-secondary">Playground →</a>
           </div>
         </div>
-
-        {/* Right: Code Comparison Demo */}
-        <div className="fade-in-3 min-w-0 overflow-hidden">
-          {codeDemo}
+        <div className="hero-b-diagram fade-in-3">
+          <div dangerouslySetInnerHTML={{ __html: diagramHtml }} />
         </div>
       </div>
     </section>
