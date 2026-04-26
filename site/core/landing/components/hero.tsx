@@ -217,26 +217,35 @@ const FLOW_DIAGRAM_SCRIPT = `(function () {
   // listener again.
   var tooltipWrappers = diagram.querySelectorAll('.flow-adapters [data-slot="tooltip"]');
   var suppressTooltipChain = false;
+  function closeOpenTooltipsExcept(keep) {
+    suppressTooltipChain = true;
+    try {
+      tooltipWrappers.forEach(function (other) {
+        if (other === keep) return;
+        var oc = other.querySelector('[data-slot="tooltip-content"]');
+        if (oc && oc.getAttribute('data-state') === 'open') {
+          other.click();
+        }
+      });
+    } finally {
+      suppressTooltipChain = false;
+    }
+  }
   tooltipWrappers.forEach(function (wrapper) {
     wrapper.addEventListener('click', function () {
       if (suppressTooltipChain) return;
-      // Defer until after Tooltip's own click handler has applied the
-      // toggle, so we observe the post-click state.
-      setTimeout(function () {
-        suppressTooltipChain = true;
-        try {
-          tooltipWrappers.forEach(function (other) {
-            if (other === wrapper) return;
-            var oc = other.querySelector('[data-slot="tooltip-content"]');
-            if (oc && oc.getAttribute('data-state') === 'open') {
-              other.click();
-            }
-          });
-        } finally {
-          suppressTooltipChain = false;
-        }
-      }, 0);
+      setTimeout(function () { closeOpenTooltipsExcept(wrapper); }, 0);
     });
+  });
+
+  // Click anywhere outside a tooltip → close any open tooltip.
+  document.addEventListener('click', function (e) {
+    if (suppressTooltipChain) return;
+    var target = e.target;
+    for (var i = 0; i < tooltipWrappers.length; i++) {
+      if (tooltipWrappers[i].contains(target)) return; // click is inside a tooltip wrapper
+    }
+    closeOpenTooltipsExcept(null);
   });
 
   // Mobile tooltip positioning: when a tooltip-content opens, pin it
@@ -342,13 +351,13 @@ export async function Hero() {
           </div>
 
           <div className="flow-adapters" role="tablist" aria-label="Output adapter">
-            <Tooltip content={CLIENT_CODE} placement="left">
+            <Tooltip content={CLIENT_CODE} placement="top">
               <div className="flow-output flow-output-client" aria-label="client.js">
                 <img src="/static/logos/javascript-icon.png" alt="" className="flow-adapter-logo" />
               </div>
             </Tooltip>
             {ADAPTERS.map((a, i) => (
-              <Tooltip content={a.output} placement="left">
+              <Tooltip content={a.output} placement="top">
                 <button
                   type="button"
                   className={`flow-output flow-adapter-tab${i === 0 ? ' is-active' : ''}`}

@@ -335,6 +335,32 @@
   display: none;
 }
 
+/* Desktop placement override: cards live in the right column, so a
+   centred placement="top" tooltip would overflow the viewport right.
+   Right-anchor the tooltip to the card's right edge so the wide code
+   block extends leftward into available space. */
+@media (min-width: 821px) {
+  .flow-adapters [data-slot="tooltip-content"] {
+    left: auto !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: calc(100% + 0.5rem) !important;
+    margin: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    scale: 1 !important;
+    rotate: none !important;
+  }
+
+  /* client.js sits at the top of the column with very little headroom
+     to the page header — flip its tooltip to BELOW the card so the
+     code block doesn't disappear under the header. */
+  .flow-adapters [data-slot="tooltip"]:has(.flow-output-client) [data-slot="tooltip-content"] {
+    top: calc(100% + 0.5rem) !important;
+    bottom: auto !important;
+  }
+}
+
 .flow-adapter-tab {
   cursor: pointer;
   opacity: 0.65;
