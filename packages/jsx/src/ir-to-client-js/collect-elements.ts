@@ -220,6 +220,7 @@ export function collectInnerLoops(
           key: n.key,
           containerSlotId: scope.parentSlotId,
           template,
+          mapPreamble: n.mapPreamble,
           refsOuterParam: refsOuter,
           childReactiveTexts: innerReactiveTexts.length > 0 ? innerReactiveTexts : undefined,
           childComponents,

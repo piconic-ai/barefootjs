@@ -8,7 +8,7 @@
  *     <indent>// Reactive inner loop: <arraySrc>
  *     <indent>{ const __ic<uid> = <containerExpr>
  *     <indent>if (__ic<uid>) mapArray(() => <arrayExpr> || [], __ic<uid>, <keyFn>, (<head>, __innerIdx<uid>, __existing) => {
- *     <indent>  <unwrap?>
+ *     <indent>  <preludeStatements*>   // unwrap, then preamble (#1052)
  *     <indent>  let __innerEl<uid> = __existing ?? clone(template)
  *     <indent>  __innerEl<uid>.setAttribute('<keyAttr>', String(<wrappedKey>))?
  *     <indent>  emitComponentAndEventSetup(...)
@@ -58,8 +58,11 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string): vo
   lines.push(`${indent}// Reactive inner loop: ${inner.arraySrc}`)
   lines.push(`${indent}{ const __ic${uid} = ${inner.containerExpr}`)
   lines.push(`${indent}if (__ic${uid}) mapArray(() => ${inner.arrayExpr} || [], __ic${uid}, ${emit.keyFn}, (${emit.paramHead}, __innerIdx${uid}, __existing) => {`)
-  if (emit.paramUnwrap) {
-    lines.push(`${indent}  ${emit.paramUnwrap}`)
+  // Body-entry statements: optional destructure unwrap, then optional
+  // inner-`.map()` preamble locals (signal-accessor wrapped, #1052).
+  // The clone IIFE below depends on both being in scope.
+  for (const stmt of emit.preludeStatements) {
+    lines.push(`${indent}  ${stmt}`)
   }
   lines.push(`${indent}  let __innerEl${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${emit.wrappedTemplate}\`; return __t.content.firstElementChild.cloneNode(true) })()`)
   if (emit.wrappedKey) {
