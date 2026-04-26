@@ -21,6 +21,7 @@ import {
   buildDepthLevels,
 } from '../legacy-helpers'
 import { buildReactiveEffectsPlan } from './build-reactive-effects'
+import { buildInnerLoopsPlan } from './build-inner-loop'
 import type { CompositeLoopPlan } from './types'
 
 export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPlan {
@@ -43,7 +44,12 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPla
     template: elem.template,
     outerComps: filterCondCompsOut(outerCompsByDepth, elem.childConditionals),
     outerEvents: elem.childEvents.filter(ev => ev.nestedLoops.length === 0),
-    depthLevels,
+    innerLoops: buildInnerLoopsPlan({
+      levels: depthLevels,
+      parentElVar: '__el',
+      outerLoopParam: elem.param,
+      outerLoopParamBindings: elem.paramBindings,
+    }),
     loopParam: elem.param,
     loopParamBindings: elem.paramBindings,
     reactiveEffects: hasReactive(elem)
@@ -85,7 +91,12 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string): Composit
     template: loop.template,
     outerComps: filterCondCompsOut(outerCompsByDepth, loop.childConditionals),
     outerEvents: childEvents.filter(ev => ev.nestedLoops.length === 0),
-    depthLevels,
+    innerLoops: buildInnerLoopsPlan({
+      levels: depthLevels,
+      parentElVar: '__el',
+      outerLoopParam: loop.param,
+      outerLoopParamBindings: loop.paramBindings,
+    }),
     loopParam: loop.param,
     loopParamBindings: loop.paramBindings,
     reactiveEffects: hasReactiveBranch(loop)

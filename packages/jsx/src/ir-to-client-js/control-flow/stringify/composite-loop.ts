@@ -30,10 +30,8 @@
  * after the migration completes.
  */
 
-import {
-  emitComponentAndEventSetup,
-  emitInnerLoopSetup,
-} from '../legacy-helpers'
+import { emitComponentAndEventSetup } from '../legacy-helpers'
+import { stringifyInnerLoops } from './inner-loop'
 import { stringifyReactiveEffects } from './reactive-effects'
 import type { CompositeLoopPlan } from '../plan/types'
 
@@ -49,7 +47,7 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     template,
     outerComps,
     outerEvents,
-    depthLevels,
+    innerLoops,
     loopParam,
     loopParamBindings,
     reactiveEffects,
@@ -87,7 +85,6 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   const innerIndent = bodyIndent + '  '
   const compsArr = [...outerComps]
   const eventsArr = [...outerEvents]
-  const levelsArr = [...depthLevels]
 
   // __el is either the existing SSR-rendered element or a fresh clone of
   // the template — both shapes accept the same mode-independent setup
@@ -99,8 +96,8 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   lines.push(`${innerIndent}return __tpl.content.firstElementChild.cloneNode(true)`)
   lines.push(`${bodyIndent}})()`)
   emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings)
-  if (levelsArr.length > 0) {
-    emitInnerLoopSetup(lines, bodyIndent, '__el', levelsArr, loopParam, loopParamBindings)
+  if (innerLoops.length > 0) {
+    stringifyInnerLoops(lines, innerLoops, bodyIndent)
   }
 
   if (reactiveEffects) {
