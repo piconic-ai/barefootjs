@@ -31,7 +31,7 @@ import { graphUsedIdentifiers } from './build-references'
 import { getControlledPropName } from './prop-handling'
 import { exprReferencesIdent } from './utils'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
-import { buildDeclarationEmitPlan } from './plan/build-declaration-emit'
+import { buildDeclarationEmitLookups, buildDeclarationEmitPlan } from './plan/build-declaration-emit'
 import { stringifyDeclarationEmit } from './stringify/declaration-emit'
 import type { ClientJsContext } from './types'
 
@@ -165,10 +165,11 @@ export function emitSortedDeclarations(
   }
 
   const sorted = sortDeclarations(declarations, declNameSet, graph)
+  const lookups = buildDeclarationEmitLookups(ctx, controlledSignals)
 
   let emittedAny = false
   for (const decl of sorted) {
-    const plan = buildDeclarationEmitPlan(decl, ctx, controlledSignals)
+    const plan = buildDeclarationEmitPlan(decl, ctx, lookups)
     stringifyDeclarationEmit(lines, plan)
     emittedAny = true
   }

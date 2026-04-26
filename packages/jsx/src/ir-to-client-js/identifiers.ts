@@ -70,14 +70,31 @@ export function extractIdentifiers(expr: string, set: Set<string>): void {
 }
 
 /**
+ * Yield each `${...}` substitution body inside a template-style string.
+ * Returns the inner expressions — the surrounding HTML / static text is
+ * stripped. Empty array when no substitutions are present.
+ *
+ * Uses a `[^}]+` character class rather than a balance-aware scanner —
+ * cheap and matches the legacy reach. Object literals inside `${...}`
+ * are not supported (they would split prematurely on the inner `}`).
+ */
+export function extractTemplateExpressions(template: string): string[] {
+  const re = /\$\{([^}]+)\}/g
+  const out: string[] = []
+  let match
+  while ((match = re.exec(template)) !== null) {
+    out.push(match[1])
+  }
+  return out
+}
+
+/**
  * Extract identifiers from template literal expressions.
  * Finds ${...} patterns and extracts identifiers from inside.
  */
 export function extractTemplateIdentifiers(template: string, set: Set<string>): void {
-  const templatePattern = /\$\{([^}]+)\}/g
-  let match
-  while ((match = templatePattern.exec(template)) !== null) {
-    extractIdentifiers(match[1], set)
+  for (const expr of extractTemplateExpressions(template)) {
+    extractIdentifiers(expr, set)
   }
 }
 

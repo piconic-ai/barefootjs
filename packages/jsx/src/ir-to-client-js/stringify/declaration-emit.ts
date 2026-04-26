@@ -19,8 +19,6 @@
  *     })
  *
  * Indent: every line is `  ` (2 spaces) — same as the legacy emitter.
- *
- * A2 of the post-#1054 emit-init maintainability plan.
  */
 
 import type {

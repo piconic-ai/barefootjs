@@ -7,8 +7,6 @@
  *
  * `__scope` is the synthetic root slot id used when the component's
  * root element carries the listener (no `bf=` slot).
- *
- * B3 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ClientJsContext } from '../types'

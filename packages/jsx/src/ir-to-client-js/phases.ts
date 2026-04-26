@@ -11,8 +11,6 @@
  * Adding a new phase: write a new `EmitPhase`, append it to `PHASES`,
  * declare its `dependsOn`. No hunting for the right insertion point in
  * a long manual sequence.
- *
- * B1 of the post-#1054 emit-init maintainability plan.
  */
 
 import type { ComponentIR, PropUsage, ReferencesGraph } from '../types'
@@ -38,6 +36,7 @@ import {
 } from './emit-reactive'
 import { emitSortedDeclarations } from './init-declarations'
 import { generateElementRefs } from './element-refs'
+import { graphUsedFunctions } from './build-references'
 
 /**
  * Inputs available to every phase. Built once by `generateInitFunction`
@@ -49,7 +48,6 @@ export interface PhaseCtx {
   graph: ReferencesGraph
   classification: LocalClassification
   propUsage: Map<string, PropUsage>
-  usedFunctions: Set<string>
   /** Slots that live inside a conditional branch (handled via `insert()`).
    *  Cached so `event-handlers` and `ref-callbacks` don't recompute. */
   conditionalSlotIds: Set<string>
@@ -64,14 +62,41 @@ export function buildPhaseCtx(args: Omit<PhaseCtx, 'conditionalSlotIds'>): Phase
 }
 
 /**
+ * String literal union of every phase id in `PHASES`. Typing `id` and
+ * `dependsOn` against this union turns a typo (e.g. `'props-extractio'`
+ * vs `'props-extraction'`) into a TypeScript error rather than a silent
+ * topological-sort reorder.
+ */
+export type PhaseId =
+  | 'props-extraction'
+  | 'sorted-declarations'
+  | 'init-statements'
+  | 'props-event-handlers'
+  | 'element-refs'
+  | 'dynamic-text-updates'
+  | 'client-only-expressions'
+  | 'reactive-attribute-updates'
+  | 'conditional-updates'
+  | 'client-only-conditionals'
+  | 'rest-attr-applications'
+  | 'event-handlers'
+  | 'reactive-prop-bindings'
+  | 'reactive-child-props'
+  | 'ref-callbacks'
+  | 'effects-and-on-mounts'
+  | 'provider-and-child-inits'
+  | 'loop-updates'
+  | 'static-array-child-inits'
+
+/**
  * One emission step. `run` appends to the shared `lines` array; if the
  * step needs to coordinate with another step (output ordering, shared
  * runtime guarantees), declare the upstream `id` in `dependsOn`.
  */
 export interface EmitPhase {
-  id: string
+  id: PhaseId
   /** Phase ids that must execute before this one. Missing ids → throw. */
-  dependsOn: readonly string[]
+  dependsOn: readonly PhaseId[]
   run: (lines: string[], pctx: PhaseCtx) => void
 }
 
@@ -101,7 +126,7 @@ export function runPhases(
     }
   }
 
-  const emitted = new Set<string>()
+  const emitted = new Set<PhaseId>()
   const remaining = phases.slice()
   while (remaining.length > 0) {
     const idx = remaining.findIndex(p => p.dependsOn.every(d => emitted.has(d)))
@@ -145,7 +170,7 @@ export const PHASES: readonly EmitPhase[] = [
   {
     id: 'props-event-handlers',
     dependsOn: ['init-statements'],
-    run: (lines, p) => emitPropsEventHandlers(lines, p.ctx, p.usedFunctions, p.classification.neededProps),
+    run: (lines, p) => emitPropsEventHandlers(lines, p.ctx, graphUsedFunctions(p.graph), p.classification.neededProps),
   },
   {
     id: 'element-refs',

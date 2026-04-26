@@ -16,12 +16,11 @@
  * Template-style sources (HTML strings with `${...}` interpolations) are
  * normalised by extracting each interpolation expression and parsing
  * those — the surrounding HTML is irrelevant for prop access.
- *
- * C1 of the post-#1054 emit-init maintainability plan.
  */
 
 import ts from 'typescript'
 import type { PropAccessKind } from '../types'
+import { extractTemplateExpressions } from './identifiers'
 
 /** Map from prop name → set of access kinds observed across all sources. */
 export type PropAccessKindMap = Map<string, Set<PropAccessKind>>
@@ -43,6 +42,15 @@ export function collectPropAccesses(
 ): void {
   if (propNames.size === 0) return
 
+  // Quick exit: if the source mentions none of the candidate names by
+  // substring, no AST walk is needed. Saves a TS parse per source for
+  // the common case where most strings touch only a handful of props.
+  let anyMentioned = false
+  for (const name of propNames) {
+    if (source.includes(name)) { anyMentioned = true; break }
+  }
+  if (!anyMentioned) return
+
   for (const expr of normaliseExpressionParts(source)) {
     const sourceFile = ts.createSourceFile(
       'p.ts',
@@ -58,21 +66,12 @@ export function collectPropAccesses(
 /**
  * Yield each parseable JS expression embedded in `source`. Pure
  * expressions yield the whole string; template-style strings yield only
- * the `${...}` substitution bodies.
+ * the `${...}` substitution bodies via the shared
+ * `extractTemplateExpressions` helper.
  */
 function normaliseExpressionParts(source: string): string[] {
   if (!source.includes('${')) return [source]
-  const parts: string[] = []
-  // Mirror `extractTemplateIdentifiers`'s `\$\{([^}]+)\}` heuristic so the
-  // `{}` default decision stays byte-identical with the regex era; using
-  // a character-class instead of full balance-aware extraction keeps the
-  // scanner cheap and matches the legacy reach.
-  const re = /\$\{([^}]+)\}/g
-  let match: RegExpExecArray | null
-  while ((match = re.exec(source)) !== null) {
-    parts.push(match[1])
-  }
-  return parts
+  return extractTemplateExpressions(source)
 }
 
 function visit(
