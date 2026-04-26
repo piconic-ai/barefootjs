@@ -143,7 +143,7 @@ describe('composite loops inside conditional branches (#724)', () => {
     expect(js).toContain('mapArray(')
 
     // Should have event delegation (addEventListener + closest pattern)
-    expect(js).toContain(".addEventListener('click', (e) => {")
+    expect(js).toContain(".addEventListener('click', (__bfEvt) => {")
     expect(js).toContain('target.closest')
     expect(js).toContain('handleDelete(item.id)')
 
@@ -333,7 +333,7 @@ describe('mapPreamble in event delegation handlers (#851)', () => {
     const js = clientJs!.content
 
     // Preamble must appear in event delegation handler (not only in renderItem)
-    expect(js).toContain(".addEventListener('click', (e) => {")
+    expect(js).toContain(".addEventListener('click', (__bfEvt) => {")
     const count = js.split('const label = item.name.toUpperCase()').length - 1
     expect(count).toBeGreaterThanOrEqual(2)
   })
@@ -374,7 +374,7 @@ describe('mapPreamble in event delegation handlers (#851)', () => {
     const js = clientJs!.content
 
     // Preamble must appear inside the delegation handler
-    expect(js).toContain(".addEventListener('click', (e) => {")
+    expect(js).toContain(".addEventListener('click', (__bfEvt) => {")
     const count = js.split('const isCurrent = item.id === currentId()').length - 1
     expect(count).toBeGreaterThanOrEqual(2)
   })

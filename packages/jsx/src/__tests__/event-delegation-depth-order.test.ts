@@ -48,7 +48,7 @@ describe('event delegation depth ordering (#774)', () => {
     const content = clientJs!.content
 
     // Should have event delegation with closest checks
-    expect(content).toContain(".addEventListener('click', (e) => {")
+    expect(content).toContain(".addEventListener('click', (__bfEvt) => {")
     expect(content).toContain('target.closest')
 
     // Child handler (handleDelete / button) must appear before parent handler
@@ -88,7 +88,7 @@ describe('event delegation depth ordering (#774)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    expect(content).toContain(".addEventListener('click', (e) => {")
+    expect(content).toContain(".addEventListener('click', (__bfEvt) => {")
 
     // Child handler (handleAction / button) must appear before parent handler
     // (handleItemClick / li) in the delegation handler.

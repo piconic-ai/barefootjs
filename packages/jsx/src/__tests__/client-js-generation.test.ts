@@ -1830,7 +1830,7 @@ describe('Client JS generation', () => {
       const js = clientJs!.content
 
       // Preamble must appear in event delegation handler as well as renderItem
-      expect(js).toContain(".addEventListener('click', (e) => {")
+      expect(js).toContain(".addEventListener('click', (__bfEvt) => {")
       const count = js.split('const label = item.name.toUpperCase()').length - 1
       expect(count).toBeGreaterThanOrEqual(2)
     })

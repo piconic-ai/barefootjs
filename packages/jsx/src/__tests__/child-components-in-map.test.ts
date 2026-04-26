@@ -480,7 +480,7 @@ describe('child components inside .map() (#344)', () => {
     const content = clientJs!.content
 
     // Event delegation should be generated for the static array
-    expect(content).toContain(".addEventListener('click', (e) => {")
+    expect(content).toContain(".addEventListener('click', (__bfEvt) => {")
     expect(content).toContain('target.closest')
     expect(content).toContain('Array.from(')
     expect(content).toContain('handleClick(item.id)')
@@ -644,7 +644,7 @@ describe('child components inside .map() (#344)', () => {
 
     // Dynamic array should use reconcileElements and event delegation
     expect(content).toContain('mapArray')
-    expect(content).toContain(".addEventListener('click', (e) => {")
+    expect(content).toContain(".addEventListener('click', (__bfEvt) => {")
     expect(content).toContain('handleClick(item.id)')
   })
 
