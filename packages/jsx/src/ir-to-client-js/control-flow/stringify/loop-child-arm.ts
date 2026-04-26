@@ -11,16 +11,15 @@
  * every nesting depth.
  */
 
-import { varSlotId, DATA_BF_PH, keyAttrName, wrapLoopParamAsAccessor } from '../../utils'
-import {
-  emitComponentAndEventSetup,
-  emitNestedLoopChildConditionals,
-} from '../legacy-helpers'
+import { varSlotId, DATA_BF_PH, keyAttrName } from '../../utils'
+import { emitComponentAndEventSetup } from '../legacy-helpers'
 import { emitListenerLine } from './event-listener'
 import type {
   BranchChildComponentInitsPlan,
   BranchEventBindingsPlan,
   BranchInnerLoopsPlan,
+  LoopChildArmPlan,
+  LoopChildConditionalPlan,
 } from '../plan/loop-child-arm'
 
 /**
@@ -113,21 +112,62 @@ export function stringifyBranchInnerLoops(
         lines.push(`${indent}  if (__rt) createEffect(() => { __rt.textContent = String(${text.wrappedExpression}) }) }`)
       }
     }
-    if (inner.legacyNestedConditionals && inner.legacyNestedConditionals.length > 0) {
-      // wrapBoth is rebuilt here (Plans store data, not closures).
-      const wrapOuter = (expr: string) => wrapLoopParamAsAccessor(expr, inner.outerLoopParam, inner.outerLoopParamBindings)
-      const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.innerLoopParam, inner.innerLoopParamBindings)
-      emitNestedLoopChildConditionals(
-        lines,
-        `${indent}  `,
-        `__bel${uid}`,
-        [...inner.legacyNestedConditionals],
-        wrapBoth,
-        inner.innerLoopParam,
-        inner.innerLoopParamBindings,
-      )
+    if (inner.nestedConditionals.length > 0) {
+      stringifyLoopChildConditionals(lines, inner.nestedConditionals, `${indent}  `)
     }
     lines.push(`${indent}  return __bel${uid}`)
     lines.push(`${indent}}) }`)
+  }
+}
+
+/**
+ * Emit `insert(...)` for each Plan in `conditionals` at the given indent.
+ * The Plan tree captures every nested-conditional / inner-loop concern, so
+ * the stringifier never re-enters legacy recursion. Branch-scoped texts
+ * (only present at the outer-conditional level) are emitted via
+ * `LoopChildArmPlan.texts`.
+ */
+export function stringifyLoopChildConditionals(
+  lines: string[],
+  conditionals: readonly LoopChildConditionalPlan[],
+  indent: string,
+): void {
+  for (const cond of conditionals) {
+    stringifyLoopChildConditional(lines, cond, indent)
+  }
+}
+
+function stringifyLoopChildConditional(
+  lines: string[],
+  cond: LoopChildConditionalPlan,
+  indent: string,
+): void {
+  const armIndent = `${indent}    `
+  lines.push(`${indent}insert(${cond.scopeVar}, '${cond.slotId}', () => ${cond.wrappedCondition}, {`)
+  lines.push(`${indent}  template: () => \`${cond.whenTrueTemplateHtml}\`,`)
+  lines.push(`${indent}  bindEvents: (__branchScope) => {`)
+  stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent)
+  lines.push(`${indent}  }`)
+  lines.push(`${indent}}, {`)
+  lines.push(`${indent}  template: () => \`${cond.whenFalseTemplateHtml}\`,`)
+  lines.push(`${indent}  bindEvents: (__branchScope) => {`)
+  stringifyLoopChildArm(lines, cond.whenFalseArm, armIndent)
+  lines.push(`${indent}  }`)
+  lines.push(`${indent}})`)
+}
+
+function stringifyLoopChildArm(
+  lines: string[],
+  arm: LoopChildArmPlan,
+  armIndent: string,
+): void {
+  stringifyBranchEventBindings(lines, arm.events, armIndent)
+  stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
+  stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent)
+  stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent)
+  for (const text of arm.texts) {
+    const varName = `__rt_${varSlotId(text.slotId)}`
+    lines.push(`${armIndent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)
+    lines.push(`${armIndent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }) }`)
   }
 }

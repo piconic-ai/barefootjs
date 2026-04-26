@@ -110,10 +110,11 @@ export interface BranchInnerLoop {
   /** Pre-wrapped reactive text effects for the inner-item body. */
   reactiveTexts: readonly BranchInnerLoopText[]
   /**
-   * Raw inner-loop child conditionals — still routed through the legacy
-   * `emitNestedLoopChildConditionals` recursion. Item 2d Plan-ifies these.
+   * Plan-built nested conditionals for the inner-item body. Recursion is
+   * captured fully in the Plan tree (#830 Path B); the stringifier walks
+   * it without re-entering legacy helpers.
    */
-  legacyNestedConditionals: readonly import('../../types').LoopChildConditional[] | undefined
+  nestedConditionals: readonly LoopChildConditionalPlan[]
   /** Inner loop param identifier — needed for the legacy recursion. */
   innerLoopParam: string
   /** Inner loop param destructuring metadata. */
@@ -125,3 +126,55 @@ export interface BranchInnerLoop {
 }
 
 export type BranchInnerLoopsPlan = readonly BranchInnerLoop[]
+
+/**
+ * One branch-scoped reactive text effect (slotId + already-wrapped
+ * expression). The top-level outer conditional's arms emit these inside
+ * `bindEvents`; recursive nested conditionals never carry texts.
+ */
+export interface LoopChildArmText {
+  slotId: string
+  wrappedExpression: string
+}
+
+/**
+ * Aggregate plan for the body of one arm (`whenTrue` / `whenFalse`) of a
+ * loop-scoped conditional. Each sub-plan is a Plan-built carrier produced
+ * by the matching `build*` helper:
+ *
+ *   - `events`            — `buildBranchEventBindingsPlan`
+ *   - `childComponents`   — `buildBranchChildComponentInitsPlan`
+ *   - `innerLoops`        — `buildBranchInnerLoopsPlan`
+ *   - `nestedConditionals`— `buildLoopChildConditionalPlan` (recursive)
+ *
+ * `texts` is only populated for the *outer* conditional — the recursion
+ * branch (`emitNestedLoopChildConditionals` legacy) never threaded text
+ * effects through, so nested arms always carry an empty list.
+ */
+export interface LoopChildArmPlan {
+  events: BranchEventBindingsPlan
+  childComponents: BranchChildComponentInitsPlan
+  innerLoops: BranchInnerLoopsPlan
+  nestedConditionals: readonly LoopChildConditionalPlan[]
+  texts: readonly LoopChildArmText[]
+}
+
+/**
+ * Plan for one `insert(scopeVar, slotId, () => cond, whenTrueArm,
+ * whenFalseArm)` inside a loop scope. The Plan tree is fully recursive
+ * via `LoopChildArmPlan.nestedConditionals` — the stringifier walks the
+ * tree without re-entering the legacy `emitNestedLoopChildConditionals`.
+ */
+export interface LoopChildConditionalPlan {
+  slotId: string
+  /** Element variable to pass as the first arg of `insert(...)`. */
+  scopeVar: string
+  /** Already-wrapped condition expression. */
+  wrappedCondition: string
+  /** Already wrapped + addCondAttrToTemplate'd whenTrue HTML. */
+  whenTrueTemplateHtml: string
+  /** Already wrapped + addCondAttrToTemplate'd whenFalse HTML. */
+  whenFalseTemplateHtml: string
+  whenTrueArm: LoopChildArmPlan
+  whenFalseArm: LoopChildArmPlan
+}

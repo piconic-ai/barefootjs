@@ -8,6 +8,8 @@
 
 import type {
   ConditionalBranchEvent,
+  LoopChildBranchSummary,
+  LoopChildConditional,
   LoopChildEvent,
   NestedLoop,
 } from '../../types'
@@ -18,7 +20,7 @@ import type {
   LoopParamBinding,
 } from '../../../types'
 import { quotePropName, wrapLoopParamAsAccessor } from '../../utils'
-import { irChildrenToJsExpr } from '../../html-template'
+import { addCondAttrToTemplate, irChildrenToJsExpr } from '../../html-template'
 import { destructureLoopParam, loopKeyFn } from '../legacy-helpers'
 import type {
   BranchChildComponentInit,
@@ -29,6 +31,8 @@ import type {
   BranchInnerLoop,
   BranchInnerLoopText,
   BranchInnerLoopsPlan,
+  LoopChildArmPlan,
+  LoopChildConditionalPlan,
 } from './loop-child-arm'
 
 export interface BuildBranchEventBindingsArgs {
@@ -234,7 +238,13 @@ export function buildBranchInnerLoopsPlan(
       legacyComponents,
       legacyEvents,
       reactiveTexts,
-      legacyNestedConditionals: inner.childConditionals,
+      nestedConditionals: buildLoopChildConditionalsPlan({
+        conditionals: inner.childConditionals,
+        scopeVar: `__belbr_${i}`,
+        wrap: wrapBoth,
+        loopParam: inner.param,
+        loopParamBindings: inner.paramBindings,
+      }),
       innerLoopParam: inner.param,
       innerLoopParamBindings: inner.paramBindings,
       outerLoopParam,
@@ -242,4 +252,101 @@ export function buildBranchInnerLoopsPlan(
     })
   }
   return plan
+}
+
+export interface BuildLoopChildConditionalsArgs {
+  conditionals: readonly LoopChildConditional[] | undefined
+  /** Element variable used as `insert(scopeVar, ...)` first arg. */
+  scopeVar: string
+  /** Wrap closure for condition / HTML / handlers. */
+  wrap: (expr: string) => string
+  /**
+   * Loop param identifier — the wrap that wires the recursion's nested
+   * inner loops uses this. Typically equals the inner loop's param when
+   * recursion is rooted in `buildBranchInnerLoopsPlan`, or the outer loop
+   * param at the top level.
+   */
+  loopParam: string
+  /** Loop param destructuring metadata. */
+  loopParamBindings?: readonly LoopParamBinding[]
+}
+
+/**
+ * Build a list of `LoopChildConditionalPlan`s — the recursive Plan-tree
+ * that replaces the legacy `emitNestedLoopChildConditionals` mutual
+ * recursion. Each conditional pre-builds:
+ *
+ *   - the wrapped condition expression
+ *   - the wrapped + addCondAttr'd whenTrue / whenFalse template HTML
+ *   - per-arm `LoopChildArmPlan`: events / child components / inner
+ *     loops / nested conditionals (recursion)
+ *
+ * `texts` always comes back empty — only the *outer* conditional in
+ * `buildReactiveEffectsPlan` carries branch-scoped text effects.
+ */
+export function buildLoopChildConditionalsPlan(
+  args: BuildLoopChildConditionalsArgs,
+): LoopChildConditionalPlan[] {
+  const { conditionals, scopeVar, wrap, loopParam, loopParamBindings } = args
+  if (!conditionals || conditionals.length === 0) return []
+
+  const plans: LoopChildConditionalPlan[] = []
+  for (const cond of conditionals) {
+    plans.push({
+      slotId: cond.slotId,
+      scopeVar,
+      wrappedCondition: wrap(cond.condition),
+      whenTrueTemplateHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
+      whenFalseTemplateHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
+      whenTrueArm: buildLoopChildArmPlan({
+        branch: cond.whenTrue,
+        wrap,
+        loopParam,
+        loopParamBindings,
+      }),
+      whenFalseArm: buildLoopChildArmPlan({
+        branch: cond.whenFalse,
+        wrap,
+        loopParam,
+        loopParamBindings,
+      }),
+    })
+  }
+  return plans
+}
+
+interface BuildLoopChildArmArgs {
+  branch: LoopChildBranchSummary
+  wrap: (expr: string) => string
+  loopParam: string
+  loopParamBindings?: readonly LoopParamBinding[]
+}
+
+function buildLoopChildArmPlan(args: BuildLoopChildArmArgs): LoopChildArmPlan {
+  const { branch, wrap, loopParam, loopParamBindings } = args
+  return {
+    events: buildBranchEventBindingsPlan({
+      events: branch.events,
+      wrap,
+    }),
+    childComponents: buildBranchChildComponentInitsPlan({
+      components: branch.childComponents,
+      wrap,
+    }),
+    innerLoops: buildBranchInnerLoopsPlan({
+      innerLoops: branch.innerLoops,
+      scopeVar: '__branchScope',
+      outerLoopParam: loopParam,
+      outerLoopParamBindings: loopParamBindings,
+      wrapOuter: wrap,
+    }),
+    nestedConditionals: buildLoopChildConditionalsPlan({
+      conditionals: branch.conditionals,
+      scopeVar: '__branchScope',
+      wrap,
+      loopParam,
+      loopParamBindings,
+    }),
+    texts: [],
+  }
 }

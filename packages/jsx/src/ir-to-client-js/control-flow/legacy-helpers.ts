@@ -19,24 +19,14 @@
  * buildDepthLevels, DepthLevel) are stable and shared.
  */
 
-import type { BranchLoop, LoopChildEvent, LoopChildConditional, TopLevelLoop, NestedLoop, CollectedLoop } from '../types'
+import type { BranchLoop, LoopChildEvent, TopLevelLoop, NestedLoop, CollectedLoop } from '../types'
 import type { IRLoopChildComponent, LoopParamBinding } from '../../types'
 import { varSlotId, quotePropName, keyAttrName, wrapLoopParamAsAccessor, exprReferencesIdent } from '../utils'
-import { addCondAttrToTemplate, irChildrenToJsExpr } from '../html-template'
+import { irChildrenToJsExpr } from '../html-template'
 import { buildBranchCompositePlan } from './plan/build-composite-loop'
 import { stringifyCompositeLoop } from './stringify/composite-loop'
 import { buildReactiveEffectsPlan } from './plan/build-reactive-effects'
 import { stringifyReactiveEffects } from './stringify/reactive-effects'
-import {
-  buildBranchChildComponentInitsPlan,
-  buildBranchEventBindingsPlan,
-  buildBranchInnerLoopsPlan,
-} from './plan/build-loop-child-arm'
-import {
-  stringifyBranchChildComponentInits,
-  stringifyBranchEventBindings,
-  stringifyBranchInnerLoops,
-} from './stringify/loop-child-arm'
 import {
   buildBranchLoopDelegationPlan,
 } from './plan/build-event-delegation'
@@ -192,44 +182,6 @@ export function emitBranchLoopBody(lines: string[], branchLoops: readonly Branch
   }
 }
 
-
-/**
- * Recursively emit insert() calls for nested conditionals inside loop items.
- * Handles Path A (conditional→conditional) and Path B (loop→conditional) by
- * mutual recursion with stringifyBranchInnerLoops (#830).
- */
-export function emitNestedLoopChildConditionals(
-  lines: string[],
-  indent: string,
-  scopeVar: string,
-  conditionals: LoopChildConditional[] | undefined,
-  wrap: (expr: string) => string,
-  loopParam?: string,
-  loopParamBindings?: readonly LoopParamBinding[],
-): void {
-  if (!conditionals || conditionals.length === 0) return
-  for (const cond of conditionals) {
-    const whenTrueWithCond = addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId)
-    const whenFalseWithCond = addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId)
-    lines.push(`${indent}insert(${scopeVar}, '${cond.slotId}', () => ${wrap(cond.condition)}, {`)
-    lines.push(`${indent}  template: () => \`${whenTrueWithCond}\`,`)
-    lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-    stringifyBranchEventBindings(lines, buildBranchEventBindingsPlan({ events: cond.whenTrue.events, wrap }), `${indent}    `)
-    stringifyBranchChildComponentInits(lines, buildBranchChildComponentInitsPlan({ components: cond.whenTrue.childComponents, wrap }), `${indent}    `)
-    stringifyBranchInnerLoops(lines, buildBranchInnerLoopsPlan({ innerLoops: cond.whenTrue.innerLoops, scopeVar: '__branchScope', outerLoopParam: loopParam ?? '', outerLoopParamBindings: loopParamBindings, wrapOuter: wrap }), `${indent}    `)
-    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenTrue.conditionals, wrap, loopParam, loopParamBindings)
-    lines.push(`${indent}  }`)
-    lines.push(`${indent}}, {`)
-    lines.push(`${indent}  template: () => \`${whenFalseWithCond}\`,`)
-    lines.push(`${indent}  bindEvents: (__branchScope) => {`)
-    stringifyBranchEventBindings(lines, buildBranchEventBindingsPlan({ events: cond.whenFalse.events, wrap }), `${indent}    `)
-    stringifyBranchChildComponentInits(lines, buildBranchChildComponentInitsPlan({ components: cond.whenFalse.childComponents, wrap }), `${indent}    `)
-    stringifyBranchInnerLoops(lines, buildBranchInnerLoopsPlan({ innerLoops: cond.whenFalse.innerLoops, scopeVar: '__branchScope', outerLoopParam: loopParam ?? '', outerLoopParamBindings: loopParamBindings, wrapOuter: wrap }), `${indent}    `)
-    emitNestedLoopChildConditionals(lines, `${indent}    `, '__branchScope', cond.whenFalse.conditionals, wrap, loopParam, loopParamBindings)
-    lines.push(`${indent}  }`)
-    lines.push(`${indent}})`)
-  }
-}
 
 /**
  * Build a props object expression string from component prop definitions.
