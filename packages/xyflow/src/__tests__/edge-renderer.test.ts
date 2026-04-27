@@ -14,6 +14,7 @@ import { createRoot } from '@barefootjs/client'
 import { createFlowStore } from '../store'
 import { createEdgeRenderer } from '../edge-renderer'
 import { SVG_NS } from '../constants'
+import type { EdgeBase } from '../types'
 
 describe('Edge processing in store', () => {
   test('edgeLookup is populated from edges', () => {
@@ -135,12 +136,17 @@ describe('createEdgeRenderer (per-edge scope)', () => {
   test('applies bf-flow__edge--selected class when edge is selected', () => {
     createRoot(() => {
       const { svg } = makeFlowDom()
+      // Annotate edges as EdgeBase[] so subsequent setEdges() calls accept
+      // the full EdgeBase shape (e.g. `selected`). Without this, TypeScript
+      // narrows EdgeType to the literal `{ id, source, target }` shape of
+      // the initial array, rejecting any extra optional fields below.
+      const initialEdges: EdgeBase[] = [{ id: 'e1', source: 'a', target: 'b' }]
       const store = createFlowStore({
         nodes: [
           { id: 'a', position: { x: 0, y: 0 }, data: {}, measured: { width: 150, height: 40 } },
           { id: 'b', position: { x: 200, y: 0 }, data: {}, measured: { width: 150, height: 40 } },
         ],
-        edges: [{ id: 'e1', source: 'a', target: 'b' }],
+        edges: initialEdges,
       })
       store.nodesInitialized()
       createEdgeRenderer(store, svg)
