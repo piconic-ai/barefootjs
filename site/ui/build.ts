@@ -30,6 +30,14 @@ import { addScriptCollection } from '../../packages/adapter-hono/src/build'
 
 const ROOT_DIR = dirname(import.meta.path)
 
+// `--clean` wipes dist before building (used by build:worker for CI / deploy).
+// Without it the build overwrites files in place, so a running
+// `bun run --watch server.tsx` never sees a window where
+// `dist/components/*.tsx` is missing. Wiping dist mid-run was the cause of
+// dev-time `Cannot find module '@/components/...'` errors when the dev
+// server reloaded during a rebuild.
+const CLEAN_DIST = process.argv.includes('--clean')
+
 // File type helpers
 function isTsOrTsxFile(filename: string): boolean {
   return filename.endsWith('.tsx') || filename.endsWith('.ts')
@@ -101,8 +109,11 @@ const docsComponentFiles = await discoverComponentFiles(DOCS_COMPONENTS_DIR)
 const sharedComponentFiles = await discoverFiles(SHARED_COMPONENTS_DIR)
 const componentFiles = [...uiComponentFiles, ...docsComponentFiles, ...sharedComponentFiles]
 
-// Clean dist directory to remove stale artifacts from previous builds
-await rm(DIST_DIR, { recursive: true, force: true })
+// Clean dist directory only when explicitly requested (--clean).
+// Default is incremental so dev server imports stay valid mid-rebuild.
+if (CLEAN_DIST) {
+  await rm(DIST_DIR, { recursive: true, force: true })
+}
 await mkdir(DIST_COMPONENTS_DIR, { recursive: true })
 
 // Build and copy barefoot.js from @barefootjs/client.
