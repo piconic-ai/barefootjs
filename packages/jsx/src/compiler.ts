@@ -219,14 +219,9 @@ function compileMultipleComponentsSync(
   // Find the default export name for scriptBaseName (multi-component files share one .client.js)
   const defaultExportName = entries.find(e => e.componentIR.metadata.hasDefaultExport)?.componentIR.metadata.componentName
 
-  // Union of inline-exported names across every sibling component in this
-  // file. Each component's `namedExports` blocks are emitted by
-  // `generateModuleExports` with this set as the filter so siblings'
-  // inline-exported names ARE pre-filtered out — otherwise
-  // `export { ChartContainer, BarChart, Bar }` emitted under both the
-  // ChartContainer and BarChart components would each filter out only
-  // its own name and the downstream line-dedup would keep both nearly
-  // identical lines, producing a duplicate-export SyntaxError.
+  // Union of sibling-component inline exports — passed to each per-component
+  // emit so the trailing `export { ... }` block is identical across siblings
+  // and the line-dedup pass collapses them.
   const fileWideInlineExported = new Set<string>()
   for (const { componentIR } of entries) {
     for (const name of collectInlineExportedNames(componentIR)) {

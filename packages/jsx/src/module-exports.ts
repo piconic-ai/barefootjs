@@ -8,25 +8,10 @@
 import type { ComponentIR, ParamInfo } from './types'
 
 /**
- * Generate module-level export statements for constants and functions.
- * Skips client-only constructs (createContext, new WeakMap).
- *
- * Also emits `export { ... } [from './path']` specifier-list declarations
- * captured by the analyzer as `namedExports`. Specifiers whose local name
- * matches an already inline-exported local declaration (`export const`,
- * `export function`) or a component name that the compiler will rewrite
- * to `export function ComponentName` are filtered out to avoid duplicate
- * exports — except when the source is a re-export (`from './path'`),
- * where the specifier refers to a foreign binding and is always preserved.
- *
- * In a multi-component file the caller may pass `extraInlineExported` —
- * the union of inline-exported names across all sibling components in the
- * file — so the named-export block filter matches what will actually be
- * inline-exported in the combined output. Otherwise the only inline-export
- * the filter knows about is this component's own exports, which causes
- * the per-component blocks to differ from each other and the line-dedup
- * pass downstream to keep all of them, producing duplicate-export
- * SyntaxErrors.
+ * Emit module-level exports for local declarations and `export { ... } [from '...']`
+ * specifier blocks. Specifiers whose local name appears in `extraInlineExported`
+ * (already emitted inline) are filtered, except for `from`-form re-exports and
+ * aliased forms that introduce a new external name.
  */
 export function generateModuleExports(
   ir: ComponentIR,
@@ -54,14 +39,6 @@ export function generateModuleExports(
     lines.push(`export function ${func.name}(${params}) ${func.body}`)
   }
 
-  // Emit specifier-list export blocks (`export { A, B } [from './path']`).
-  // For non-from blocks we drop specifiers that bind to locals already
-  // emitted with an inline `export` keyword above (constants/functions) or
-  // a component name that will be rewritten to `export function Name`.
-  // Listing them again as `export { X }` would produce a duplicate-binding
-  // error. `from`-form blocks (re-exports of foreign bindings) are always
-  // preserved verbatim — the specifier never collides with a local
-  // declaration.
   const inlineExported = collectInlineExportedNames(ir)
   for (const name of extraInlineExported) inlineExported.add(name)
 
@@ -70,13 +47,9 @@ export function generateModuleExports(
 
     const survivingSpecs = block.specifiers.filter((spec) => {
       if (isReexportFrom) return true
-      // Only drop the specifier when it would produce a *duplicate* of an
-      // existing inline export — i.e. the specifier exports under the
-      // same name as the inline declaration. `export { X as Y }` with
-      // an inline `export const X` is NOT a duplicate (it adds the
-      // external name `Y`), so the alias form must be preserved.
-      const externalName = spec.alias ?? spec.name
-      return !(inlineExported.has(spec.name) && externalName === spec.name)
+      // `export { X as Y }` with inline `export const X` is not a duplicate
+      // (Y is a new external name), so only drop when alias is absent.
+      return !(inlineExported.has(spec.name) && spec.alias == null)
     })
 
     if (survivingSpecs.length === 0) continue
@@ -98,13 +71,6 @@ export function generateModuleExports(
   return lines.length > 0 ? lines.join('\n') : null
 }
 
-/**
- * Set of local binding names that are already emitted inline-exported
- * (`export const X = ...`, `export function X(...)`, or the component
- * itself, which the compiler rewrites from `function Name` to
- * `export function Name`). Used by `generateModuleExports` to avoid
- * double-exporting via a trailing `export { ... }` block.
- */
 export function collectInlineExportedNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
   for (const c of ir.metadata.localConstants) {
@@ -113,11 +79,7 @@ export function collectInlineExportedNames(ir: ComponentIR): Set<string> {
   for (const f of ir.metadata.localFunctions) {
     if (f.isExported) names.add(f.name)
   }
-  // The component itself is rewritten to `export function ComponentName`
-  // by `applyExportKeyword` in compiler.ts when `metadata.isExported` is
-  // true — including the case where the source uses a trailing
-  // `export { ComponentName }` block. Filter that specifier out so the
-  // trailing block doesn't re-list it.
+  // Component itself is inline-exported by applyExportKeyword.
   if (ir.metadata.isExported && ir.metadata.componentName) {
     names.add(ir.metadata.componentName)
   }

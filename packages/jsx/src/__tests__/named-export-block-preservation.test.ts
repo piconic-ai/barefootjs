@@ -1,22 +1,8 @@
 /**
- * BarefootJS Compiler - Named-export block must survive into the marked template.
- *
- * `export { A, B }` and `export { A } from './path'` declarations at module
- * level were being dropped by the IR-to-template emitter, while inline
- * `export function/const` and `import` statements survived. Re-exporting an
- * imported symbol from a `"use client"` file (a common pattern when grouping
- * a chart's `Bar`, `Line`, `Area` siblings under a single `chart/index.tsx`
- * barrel) was therefore impossible — the dist file would `import { Bar }
- * from './bar'` but never re-export it, breaking SSR consumers.
- *
- * Invariant: the marked-template output must preserve every named-export
- * specifier that was present in the source, regardless of whether the
- * referent is a local declaration, an imported symbol, or a re-export from
- * another module. Inline `export function Foo` declarations must NOT be
- * double-emitted in a trailing `export { Foo }` block.
- *
- * Confirmed via real-world breakage in the chart Bar JSX-native PoC
- * (PR #1077, ui/components/ui/chart/index.tsx).
+ * Named-export specifier blocks (`export { A, B }` and `export { A } from './path'`)
+ * must reach the marked template. Without this, re-exporting an imported symbol
+ * from a "use client" barrel is impossible — the dist would import the symbol
+ * but never publish it. Inline `export function/const` must not double-emit.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -50,17 +36,8 @@ export {
 `
     const template = getMarkedTemplate(source)
 
-    // The import the re-export depends on must still survive (regression guard).
     expect(template).toContain(`import { Bar } from './bar'`)
-
-    // The re-export must appear so downstream consumers can `import { Bar }`
-    // from the compiled barrel. Either form (single block listing both, or
-    // separate specifier-list line for Bar) is acceptable — what matters is
-    // that `Bar` is module-exported.
     expect(template).toMatch(/export\s*\{[^}]*\bBar\b[^}]*\}/)
-
-    // ChartContainer is inline-exported via the function declaration; ensure
-    // we don't lose it either.
     expect(template).toContain('export function ChartContainer')
   })
 
@@ -77,12 +54,7 @@ export { ChartContainer }
 `
     const template = getMarkedTemplate(source)
 
-    // The re-export-from must survive so consumers receive Bar without the
-    // barrel having to import-then-export.
     expect(template).toMatch(/export\s*\{\s*Bar\s*\}\s*from\s*['"]\.\/bar['"]/)
-
-    // ChartContainer must still be exported (either inline or via the
-    // trailing export block).
     expect(
       /export function ChartContainer/.test(template) ||
         /export\s*\{[^}]*\bChartContainer\b[^}]*\}/.test(template)
@@ -101,10 +73,8 @@ export { ChartContainer as DefaultChartContainer }
 `
     const template = getMarkedTemplate(source)
 
-    // The local already ships as `export function ChartContainer` so it
-    // should appear once. The aliased re-export adds an additional
-    // external name (`DefaultChartContainer`) that does NOT collide with
-    // the inline export and must be preserved.
+    // Aliased re-export adds a new external name; both the inline and the
+    // alias must survive without duplicate-binding error.
     expect(template.match(/export function ChartContainer\b/g)?.length).toBe(1)
     expect(template).toMatch(/export\s*\{\s*ChartContainer\s+as\s+DefaultChartContainer\s*\}/)
   })
@@ -122,28 +92,24 @@ export { ChartContainer, Bar }
 `
     const template = getMarkedTemplate(source)
 
-    // ChartContainer is declared inline-exported AND listed in the trailing
-    // export block. The inline form must survive (it carries the body), and
-    // the trailing block's ChartContainer specifier must NOT cause a
-    // duplicate `export { ChartContainer }` line — that would be a redeclare
-    // error in the compiled output. Bar (which has no inline export) must
-    // be re-exported.
-    const inlineMatches = template.match(/export function ChartContainer\b/g) ?? []
-    expect(inlineMatches.length).toBe(1)
-
-    // Bar must appear in some `export { ... }` form so it reaches consumers.
+    expect(template.match(/export function ChartContainer\b/g)?.length).toBe(1)
     expect(template).toMatch(/export\s*\{[^}]*\bBar\b[^}]*\}/)
+    // The trailing block must filter ChartContainer out and emit `export { Bar }` only.
+    expect(template).not.toMatch(/export\s*\{[^}]*ChartContainer[^}]*\}\s*(?!from)/)
+  })
 
-    // No duplicate ChartContainer export specifier — i.e. there must not be
-    // both `export function ChartContainer` and a separate
-    // `export { ChartContainer }` (without a `from` clause) listing it
-    // again as a local re-export. A combined `export { ChartContainer, Bar }`
-    // would also be a redeclare; the trailing block must filter
-    // ChartContainer out and emit only `export { Bar }`.
-    const localBlockReexports =
-      template.match(/export\s*\{([^}]*)\}\s*(?!from)/g) ?? []
-    for (const block of localBlockReexports) {
-      expect(block).not.toMatch(/\bChartContainer\b/)
-    }
+  test('type-only re-export survives', () => {
+    const source = `'use client'
+import { createSignal } from '@barefootjs/client'
+
+function ChartContainer(props: { children: unknown }) {
+  return <div>{props.children}</div>
+}
+
+export type { BarProps } from './bar'
+`
+    const template = getMarkedTemplate(source)
+
+    expect(template).toMatch(/export\s+type\s*\{\s*BarProps\s*\}\s*from\s*['"]\.\/bar['"]/)
   })
 })
