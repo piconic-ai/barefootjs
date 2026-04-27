@@ -34,12 +34,13 @@
     "@types/node": "^22.10.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@typescript/native-preview": "beta",
     "concurrently": "^9.1.0",
     "happy-dom": "^20.0.11",
+    "pkg-pr-new": "^0.0.67",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "solid-js": "^1.9.12",
-    "@typescript/native-preview": "beta",
     "typescript": "^5.9.3"
   },
   "dependencies": {
