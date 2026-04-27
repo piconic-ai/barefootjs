@@ -1,4 +1,4 @@
-module github.com/barefootjs/barefootjs/integrations/echo
+module github.com/piconic-ai/barefootjs/integrations/echo
 
 go 1.25.6
 

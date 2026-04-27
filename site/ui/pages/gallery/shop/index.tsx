@@ -5,7 +5,7 @@ import { GalleryMeta } from '../admin/gallery-meta'
 export function ShopCatalogPage() {
   return (
     <>
-      <GalleryMeta appName="E-Commerce Shop" sourceHref="https://github.com/barefootjs/barefootjs/tree/main/site/ui/components/gallery/shop" />
+      <GalleryMeta appName="E-Commerce Shop" sourceHref="https://github.com/piconic-ai/barefootjs/tree/main/site/ui/components/gallery/shop" />
       <ShopShell currentRoute="catalog">
         <ShopCatalogDemo />
       </ShopShell>

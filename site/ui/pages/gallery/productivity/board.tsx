@@ -5,7 +5,7 @@ import { GalleryMeta } from '../admin/gallery-meta'
 export function ProductivityBoardPage() {
   return (
     <>
-      <GalleryMeta appName="Productivity Suite" sourceHref="https://github.com/barefootjs/barefootjs/tree/main/site/ui/components/gallery/productivity" />
+      <GalleryMeta appName="Productivity Suite" sourceHref="https://github.com/piconic-ai/barefootjs/tree/main/site/ui/components/gallery/productivity" />
       <ProductivityShell currentRoute="board">
         <ProductivityBoardDemo />
       </ProductivityShell>

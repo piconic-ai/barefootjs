@@ -4,7 +4,7 @@
 // The current preview package is a monorepo-internal dev tool (hardcoded
 // paths, Hono + Bun-specific `hono/bun`, `bunx unocss` shell-out). A
 // publish-ready rewrite is tracked in
-// https://github.com/barefootjs/barefootjs/issues/885.
+// https://github.com/piconic-ai/barefootjs/issues/885.
 //
 // When the CLI is run from inside the barefootjs monorepo (source tree
 // available), we still delegate to the existing preview package.
@@ -32,7 +32,7 @@ export async function run(args: string[], _ctx: CliContext): Promise<void> {
 
   if (!runPreview) {
     console.error('barefoot preview is not available in the npm distribution yet.')
-    console.error('Tracking issue: https://github.com/barefootjs/barefootjs/issues/885')
+    console.error('Tracking issue: https://github.com/piconic-ai/barefootjs/issues/885')
     console.error('Workaround: run the barefootjs monorepo locally with bun.')
     process.exit(1)
   }
