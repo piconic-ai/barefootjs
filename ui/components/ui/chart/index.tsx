@@ -3,39 +3,66 @@
 /**
  * Chart JSX Components
  *
- * "use client" wrappers that delegate to @barefootjs/chart init functions
- * via ref callbacks. Follows the Dialog pattern: ref runs during init,
- * before children's initChild calls, so provideContext/useContext works.
+ * Containers (ChartContainer, BarChart, AreaChart, LineChart, RadialChart,
+ * RadarChart, PieChart) are JSX-native: they own the `<svg viewBox>` and
+ * inner `<g transform>` directly and provide the chart context via
+ * `<XContext.Provider>` so child primitives can read it.
+ *
+ * Primitives (Bar, XAxis, YAxis, ...) still delegate to imperative
+ * `init*` callbacks until Step 2 of the Phase 9 chart migration (#1080).
  */
 
+import { createSignal, createMemo, createEffect, useContext } from '@barefootjs/client'
 import {
-  initChartContainer as chartContainerInit,
-  initBarChart as barChartInit,
+  applyChartCSSVariables,
+  BarChartContext,
+  AreaChartContext,
+  RadialChartContext,
+  RadarChartContext,
+  PieChartContext,
+  ChartConfigContext,
+  createBandScale,
+  createLinearScale,
+  createPointScale,
+  createRadarRadialScale,
   initBar as barInit,
-  initAreaChart as areaChartInit,
   initArea as areaInit,
   initCartesianGrid as cartesianGridInit,
   initXAxis as xAxisInit,
   initYAxis as yAxisInit,
   initChartTooltip as chartTooltipInit,
-  initRadialChart as radialChartInit,
   initRadialBar as radialBarInit,
   initRadialChartLabel as radialChartLabelInit,
-  initRadarChart as radarChartInit,
   initRadar as radarInit,
   initPolarGrid as polarGridInit,
   initPolarAngleAxis as polarAngleAxisInit,
   initRadarTooltip as radarTooltipInit,
-  initPieChart as pieChartInit,
   initPie as pieInit,
   initPieTooltip as pieTooltipInit,
   initAreaXAxis as areaXAxisInit,
   initAreaYAxis as areaYAxisInit,
   initAreaCartesianGrid as areaCartesianGridInit,
   initAreaChartTooltip as areaChartTooltipInit,
-  initLineChart as lineChartInit,
   initLine as lineInit,
 } from '@barefootjs/chart'
+import type {
+  BarRegistration,
+  AreaRegistration,
+  RadialBarRegistration,
+  RadarRegistration,
+  PieRegistration,
+} from '@barefootjs/chart'
+
+const CHART_BAR_MARGIN = { top: 10, right: 12, bottom: 30, left: 40 }
+const CHART_BAR_ASPECT = 0.5
+const CHART_AREA_MARGIN = CHART_BAR_MARGIN
+const CHART_AREA_ASPECT = 0.5
+const CHART_LINE_MARGIN = CHART_BAR_MARGIN
+const CHART_LINE_ASPECT = 0.5
+const CHART_RADIAL_MARGIN = 10
+const CHART_RADAR_MARGIN = { top: 40, right: 40, bottom: 40, left: 40 }
+const CHART_RADAR_ASPECT = 1
+const CHART_PIE_ASPECT = 1
 
 /** Color and label configuration for chart data series */
 type ChartConfig = Record<string, { label: string; color: string }>
@@ -187,25 +214,100 @@ interface PieTooltipProps {
 
 function ChartContainer(props: ChartContainerProps) {
   const handleMount = (el: HTMLElement) => {
-    chartContainerInit(el, props as unknown as Record<string, unknown>)
+    applyChartCSSVariables(el, props.config ?? {})
+    el.style.color = 'hsl(var(--foreground))'
   }
 
   return (
-    <div data-slot="chart-container" className={props.className ?? ''} ref={handleMount}>
-      {props.children}
-    </div>
+    <ChartConfigContext.Provider value={{ config: props.config ?? {} }}>
+      <div data-slot="chart-container" className={props.className ?? ''} ref={handleMount}>
+        {props.children}
+      </div>
+    </ChartConfigContext.Provider>
   )
 }
 
 function BarChart(props: BarChartProps) {
-  const handleMount = (el: HTMLElement) => {
-    barChartInit(el, props as unknown as Record<string, unknown>)
+  // Destructured `const { config } = useContext(...)` is silently dropped by
+  // the analyzer (it skips non-identifier VariableDeclaration names), so we
+  // bind the whole context object and read `.config` lazily.
+  const chartCtx = useContext(ChartConfigContext)
+
+  const [width, setWidth] = createSignal(500)
+  const [bars, setBars] = createSignal<BarRegistration[]>([])
+  const [xDataKey, setXDataKey] = createSignal('')
+  const [svgGroupEl, setSvgGroupEl] = createSignal<SVGGElement | null>(null)
+  const [containerEl, setContainerEl] = createSignal<HTMLElement | null>(null)
+  const [xScaleSig, setXScale] = createSignal<ReturnType<typeof createBandScale> | null>(null)
+  const [yScaleSig, setYScale] = createSignal<ReturnType<typeof createLinearScale> | null>(null)
+
+  const height = createMemo(() => Math.round(width() * CHART_BAR_ASPECT))
+  const innerWidth = createMemo(() => width() - CHART_BAR_MARGIN.left - CHART_BAR_MARGIN.right)
+  const innerHeight = createMemo(() => height() - CHART_BAR_MARGIN.top - CHART_BAR_MARGIN.bottom)
+
+  const registerBar = (bar: BarRegistration) => {
+    setBars((prev) => [...prev, bar])
+  }
+  const unregisterBar = (dataKey: string) => {
+    setBars((prev) => prev.filter((b) => b.dataKey !== dataKey))
   }
 
+  const handleContainer = (el: HTMLElement) => {
+    setContainerEl(el)
+    const rect = el.getBoundingClientRect()
+    setWidth(rect.width || 500)
+    el.style.height = `${Math.round((rect.width || 500) * CHART_BAR_ASPECT)}px`
+    el.style.minHeight = ''
+  }
+
+  const handleSvgGroup = (el: SVGGElement) => {
+    setSvgGroupEl(el)
+  }
+
+  // Recompute scales whenever data, registered bars, or xDataKey change.
+  // Wrap in arrow functions: D3 scales are functions, and signal setters
+  // interpret function args as updater functions.
+  createEffect(() => {
+    const currentBars = bars()
+    const key = xDataKey()
+    const data = props.data ?? []
+    const iw = innerWidth()
+    const ih = innerHeight()
+    if (!key || currentBars.length === 0) return
+    setXScale(() => createBandScale(data, key, iw))
+    setYScale(() => createLinearScale(data, currentBars.map((b) => b.dataKey), ih))
+  })
+
   return (
-    <div data-slot="bar-chart" ref={handleMount}>
-      {props.children}
-    </div>
+    <BarChartContext.Provider value={{
+      svgGroup: svgGroupEl,
+      container: containerEl,
+      data: () => props.data ?? [],
+      xDataKey,
+      xScale: xScaleSig,
+      yScale: yScaleSig,
+      innerWidth,
+      innerHeight,
+      config: () => chartCtx.config,
+      bars,
+      registerBar,
+      unregisterBar,
+      setXDataKey,
+    }}>
+      <div data-slot="bar-chart" ref={handleContainer}>
+        <svg
+          viewBox={`0 0 ${width()} ${height()}`}
+          style={`width:100%;height:${height()}px;display:block`}
+        >
+          <g
+            transform={`translate(${CHART_BAR_MARGIN.left},${CHART_BAR_MARGIN.top})`}
+            ref={handleSvgGroup}
+          >
+            {props.children}
+          </g>
+        </svg>
+      </div>
+    </BarChartContext.Provider>
   )
 }
 
@@ -250,14 +352,77 @@ function ChartTooltip(props: ChartTooltipProps) {
 }
 
 function RadialChart(props: RadialChartProps) {
-  const handleMount = (el: HTMLElement) => {
-    radialChartInit(el, props as unknown as Record<string, unknown>)
+  // Destructured `const { config } = useContext(...)` is silently dropped by
+  // the analyzer (it skips non-identifier VariableDeclaration names), so we
+  // bind the whole context object and read `.config` lazily.
+  const chartCtx = useContext(ChartConfigContext)
+
+  const [width, setWidth] = createSignal(300)
+  const [radialBars, setRadialBars] = createSignal<RadialBarRegistration[]>([])
+  const [svgGroupEl, setSvgGroupEl] = createSignal<SVGGElement | null>(null)
+  const [containerEl, setContainerEl] = createSignal<HTMLElement | null>(null)
+
+  // Square layout: height matches width.
+  const height = createMemo(() => width())
+  const cx = createMemo(() => width() / 2)
+  const cy = createMemo(() => height() / 2)
+  const innerW = createMemo(() => width() - CHART_RADIAL_MARGIN * 2)
+  const innerH = createMemo(() => height() - CHART_RADIAL_MARGIN * 2)
+  const maxRadius = createMemo(() => Math.min(innerW(), innerH()) / 2)
+
+  const registerRadialBar = (bar: RadialBarRegistration) => {
+    setRadialBars((prev) => [...prev, bar])
+  }
+  const unregisterRadialBar = (dataKey: string) => {
+    setRadialBars((prev) => prev.filter((b) => b.dataKey !== dataKey))
+  }
+
+  const handleContainer = (el: HTMLElement) => {
+    setContainerEl(el)
+    const rect = el.getBoundingClientRect()
+    const w = rect.width || 300
+    setWidth(w)
+    el.style.height = `${w}px`
+    el.style.minHeight = ''
+  }
+
+  const handleSvgGroup = (el: SVGGElement) => {
+    setSvgGroupEl(el)
   }
 
   return (
-    <div data-slot="radial-chart" ref={handleMount}>
-      {props.children}
-    </div>
+    <RadialChartContext.Provider value={{
+      svgGroup: svgGroupEl,
+      container: containerEl,
+      data: () => props.data ?? [],
+      innerRadius: () => {
+        const v = props.innerRadius
+        return v != null ? v : maxRadius() * 0.4
+      },
+      outerRadius: () => {
+        const v = props.outerRadius
+        return v != null ? v : maxRadius()
+      },
+      startAngle: () => props.startAngle ?? 0,
+      endAngle: () => props.endAngle ?? 360,
+      config: () => chartCtx.config,
+      centerX: cx,
+      centerY: cy,
+      radialBars,
+      registerRadialBar,
+      unregisterRadialBar,
+    }}>
+      <div data-slot="radial-chart" ref={handleContainer}>
+        <svg
+          viewBox={`0 0 ${width()} ${height()}`}
+          style={`width:100%;height:${height()}px;display:block`}
+        >
+          <g transform={`translate(${cx()},${cy()})`} ref={handleSvgGroup}>
+            {props.children}
+          </g>
+        </svg>
+      </div>
+    </RadialChartContext.Provider>
   )
 }
 
@@ -282,14 +447,79 @@ function RadialChartLabel(props: RadialChartLabelProps) {
 }
 
 function RadarChart(props: RadarChartProps) {
-  const handleMount = (el: HTMLElement) => {
-    radarChartInit(el, props as unknown as Record<string, unknown>)
+  // Destructured `const { config } = useContext(...)` is silently dropped by
+  // the analyzer (it skips non-identifier VariableDeclaration names), so we
+  // bind the whole context object and read `.config` lazily.
+  const chartCtx = useContext(ChartConfigContext)
+
+  const [width, setWidth] = createSignal(500)
+  const [radars, setRadars] = createSignal<RadarRegistration[]>([])
+  const [dataKey, setDataKey] = createSignal('')
+  const [svgGroupEl, setSvgGroupEl] = createSignal<SVGGElement | null>(null)
+  const [containerEl, setContainerEl] = createSignal<HTMLElement | null>(null)
+  const [radialScaleSig, setRadialScale] = createSignal<ReturnType<typeof createRadarRadialScale>>(null)
+
+  const height = createMemo(() => Math.round(width() * CHART_RADAR_ASPECT))
+  const innerW = createMemo(() => width() - CHART_RADAR_MARGIN.left - CHART_RADAR_MARGIN.right)
+  const innerH = createMemo(() => height() - CHART_RADAR_MARGIN.top - CHART_RADAR_MARGIN.bottom)
+  const radius = createMemo(() => Math.min(innerW(), innerH()) / 2)
+  const cx = createMemo(() => CHART_RADAR_MARGIN.left + innerW() / 2)
+  const cy = createMemo(() => CHART_RADAR_MARGIN.top + innerH() / 2)
+
+  const registerRadar = (radar: RadarRegistration) => {
+    setRadars((prev) => [...prev, radar])
+  }
+  const unregisterRadar = (dk: string) => {
+    setRadars((prev) => prev.filter((r) => r.dataKey !== dk))
   }
 
+  const handleContainer = (el: HTMLElement) => {
+    setContainerEl(el)
+    const rect = el.getBoundingClientRect()
+    const w = rect.width || 500
+    setWidth(w)
+    el.style.height = `${Math.round(w * CHART_RADAR_ASPECT)}px`
+    el.style.minHeight = ''
+  }
+
+  const handleSvgGroup = (el: SVGGElement) => {
+    setSvgGroupEl(el)
+  }
+
+  // Recompute radial scale when registered radars or data change.
+  createEffect(() => {
+    const currentRadars = radars()
+    const data = props.data ?? []
+    const r = radius()
+    if (currentRadars.length === 0) return
+    setRadialScale(() => createRadarRadialScale(data, currentRadars.map((rd) => rd.dataKey), r))
+  })
+
   return (
-    <div data-slot="radar-chart" ref={handleMount}>
-      {props.children}
-    </div>
+    <RadarChartContext.Provider value={{
+      svgGroup: svgGroupEl,
+      container: containerEl,
+      data: () => props.data ?? [],
+      dataKey,
+      radius,
+      radialScale: radialScaleSig,
+      config: () => chartCtx.config,
+      radars,
+      registerRadar,
+      unregisterRadar,
+      setDataKey,
+    }}>
+      <div data-slot="radar-chart" ref={handleContainer}>
+        <svg
+          viewBox={`0 0 ${width()} ${height()}`}
+          style={`width:100%;height:${height()}px;display:block`}
+        >
+          <g transform={`translate(${cx()},${cy()})`} ref={handleSvgGroup}>
+            {props.children}
+          </g>
+        </svg>
+      </div>
+    </RadarChartContext.Provider>
   )
 }
 
@@ -326,14 +556,61 @@ function RadarTooltip(props: RadarTooltipProps) {
 }
 
 function PieChart(props: PieChartProps) {
-  const handleMount = (el: HTMLElement) => {
-    pieChartInit(el, props as unknown as Record<string, unknown>)
+  // Destructured `const { config } = useContext(...)` is silently dropped by
+  // the analyzer (it skips non-identifier VariableDeclaration names), so we
+  // bind the whole context object and read `.config` lazily.
+  const chartCtx = useContext(ChartConfigContext)
+
+  const [width, setWidth] = createSignal(500)
+  const [pies, setPies] = createSignal<PieRegistration[]>([])
+  const [svgGroupEl, setSvgGroupEl] = createSignal<SVGGElement | null>(null)
+  const [containerEl, setContainerEl] = createSignal<HTMLElement | null>(null)
+
+  const height = createMemo(() => Math.round(width() * CHART_PIE_ASPECT))
+
+  const registerPie = (pie: PieRegistration) => {
+    setPies((prev) => [...prev, pie])
+  }
+  const unregisterPie = (dataKey: string) => {
+    setPies((prev) => prev.filter((p) => p.dataKey !== dataKey))
+  }
+
+  const handleContainer = (el: HTMLElement) => {
+    setContainerEl(el)
+    const rect = el.getBoundingClientRect()
+    const w = rect.width || 500
+    setWidth(w)
+    el.style.height = `${Math.round(w * CHART_PIE_ASPECT)}px`
+    el.style.minHeight = ''
+  }
+
+  const handleSvgGroup = (el: SVGGElement) => {
+    setSvgGroupEl(el)
   }
 
   return (
-    <div data-slot="pie-chart" ref={handleMount}>
-      {props.children}
-    </div>
+    <PieChartContext.Provider value={{
+      svgGroup: svgGroupEl,
+      container: containerEl,
+      data: () => props.data ?? [],
+      width,
+      height,
+      config: () => chartCtx.config,
+      pies,
+      registerPie,
+      unregisterPie,
+    }}>
+      <div data-slot="pie-chart" ref={handleContainer}>
+        <svg
+          viewBox={`0 0 ${width()} ${height()}`}
+          style={`width:100%;height:${height()}px;display:block`}
+        >
+          <g transform={`translate(${width() / 2},${height() / 2})`} ref={handleSvgGroup}>
+            {props.children}
+          </g>
+        </svg>
+      </div>
+    </PieChartContext.Provider>
   )
 }
 
@@ -354,14 +631,84 @@ function PieTooltip(props: PieTooltipProps) {
 }
 
 function AreaChart(props: AreaChartProps) {
-  const handleMount = (el: HTMLElement) => {
-    areaChartInit(el, props as unknown as Record<string, unknown>)
+  // Destructured `const { config } = useContext(...)` is silently dropped by
+  // the analyzer (it skips non-identifier VariableDeclaration names), so we
+  // bind the whole context object and read `.config` lazily.
+  const chartCtx = useContext(ChartConfigContext)
+
+  const [width, setWidth] = createSignal(500)
+  const [areas, setAreas] = createSignal<AreaRegistration[]>([])
+  const [xDataKey, setXDataKey] = createSignal('')
+  const [svgGroupEl, setSvgGroupEl] = createSignal<SVGGElement | null>(null)
+  const [containerEl, setContainerEl] = createSignal<HTMLElement | null>(null)
+  const [xScaleSig, setXScale] = createSignal<ReturnType<typeof createPointScale> | null>(null)
+  const [yScaleSig, setYScale] = createSignal<ReturnType<typeof createLinearScale> | null>(null)
+
+  const height = createMemo(() => Math.round(width() * CHART_AREA_ASPECT))
+  const innerWidth = createMemo(() => width() - CHART_AREA_MARGIN.left - CHART_AREA_MARGIN.right)
+  const innerHeight = createMemo(() => height() - CHART_AREA_MARGIN.top - CHART_AREA_MARGIN.bottom)
+
+  const registerArea = (area: AreaRegistration) => {
+    setAreas((prev) => [...prev, area])
+  }
+  const unregisterArea = (dataKey: string) => {
+    setAreas((prev) => prev.filter((a) => a.dataKey !== dataKey))
   }
 
+  const handleContainer = (el: HTMLElement) => {
+    setContainerEl(el)
+    const rect = el.getBoundingClientRect()
+    const w = rect.width || 500
+    setWidth(w)
+    el.style.height = `${Math.round(w * CHART_AREA_ASPECT)}px`
+    el.style.minHeight = ''
+  }
+
+  const handleSvgGroup = (el: SVGGElement) => {
+    setSvgGroupEl(el)
+  }
+
+  createEffect(() => {
+    const currentAreas = areas()
+    const key = xDataKey()
+    const data = props.data ?? []
+    const iw = innerWidth()
+    const ih = innerHeight()
+    if (!key || currentAreas.length === 0) return
+    setXScale(() => createPointScale(data, key, iw))
+    setYScale(() => createLinearScale(data, currentAreas.map((a) => a.dataKey), ih))
+  })
+
   return (
-    <div data-slot="area-chart" ref={handleMount}>
-      {props.children}
-    </div>
+    <AreaChartContext.Provider value={{
+      svgGroup: svgGroupEl,
+      container: containerEl,
+      data: () => props.data ?? [],
+      xDataKey,
+      xScale: xScaleSig,
+      yScale: yScaleSig,
+      innerWidth,
+      innerHeight,
+      config: () => chartCtx.config,
+      areas,
+      registerArea,
+      unregisterArea,
+      setXDataKey,
+    }}>
+      <div data-slot="area-chart" ref={handleContainer}>
+        <svg
+          viewBox={`0 0 ${width()} ${height()}`}
+          style={`width:100%;height:${height()}px;display:block`}
+        >
+          <g
+            transform={`translate(${CHART_AREA_MARGIN.left},${CHART_AREA_MARGIN.top})`}
+            ref={handleSvgGroup}
+          >
+            {props.children}
+          </g>
+        </svg>
+      </div>
+    </AreaChartContext.Provider>
   )
 }
 
@@ -406,14 +753,86 @@ function AreaChartTooltip(props: AreaChartTooltipProps) {
 }
 
 function LineChart(props: LineChartProps) {
-  const handleMount = (el: HTMLElement) => {
-    lineChartInit(el, props as unknown as Record<string, unknown>)
+  // LineChart provides BarChartContext so shared primitives (XAxis, YAxis,
+  // CartesianGrid, ChartTooltip, Line) work without modification.
+  // Destructured `const { config } = useContext(...)` is silently dropped by
+  // the analyzer (it skips non-identifier VariableDeclaration names), so we
+  // bind the whole context object and read `.config` lazily.
+  const chartCtx = useContext(ChartConfigContext)
+
+  const [width, setWidth] = createSignal(500)
+  const [bars, setBars] = createSignal<BarRegistration[]>([])
+  const [xDataKey, setXDataKey] = createSignal('')
+  const [svgGroupEl, setSvgGroupEl] = createSignal<SVGGElement | null>(null)
+  const [containerEl, setContainerEl] = createSignal<HTMLElement | null>(null)
+  const [xScaleSig, setXScale] = createSignal<ReturnType<typeof createBandScale> | null>(null)
+  const [yScaleSig, setYScale] = createSignal<ReturnType<typeof createLinearScale> | null>(null)
+
+  const height = createMemo(() => Math.round(width() * CHART_LINE_ASPECT))
+  const innerWidth = createMemo(() => width() - CHART_LINE_MARGIN.left - CHART_LINE_MARGIN.right)
+  const innerHeight = createMemo(() => height() - CHART_LINE_MARGIN.top - CHART_LINE_MARGIN.bottom)
+
+  const registerBar = (bar: BarRegistration) => {
+    setBars((prev) => [...prev, bar])
+  }
+  const unregisterBar = (dataKey: string) => {
+    setBars((prev) => prev.filter((b) => b.dataKey !== dataKey))
   }
 
+  const handleContainer = (el: HTMLElement) => {
+    setContainerEl(el)
+    const rect = el.getBoundingClientRect()
+    const w = rect.width || 500
+    setWidth(w)
+    el.style.height = `${Math.round(w * CHART_LINE_ASPECT)}px`
+    el.style.minHeight = ''
+  }
+
+  const handleSvgGroup = (el: SVGGElement) => {
+    setSvgGroupEl(el)
+  }
+
+  createEffect(() => {
+    const currentBars = bars()
+    const key = xDataKey()
+    const data = props.data ?? []
+    const iw = innerWidth()
+    const ih = innerHeight()
+    if (!key || currentBars.length === 0) return
+    setXScale(() => createBandScale(data, key, iw))
+    setYScale(() => createLinearScale(data, currentBars.map((b) => b.dataKey), ih))
+  })
+
   return (
-    <div data-slot="line-chart" ref={handleMount}>
-      {props.children}
-    </div>
+    <BarChartContext.Provider value={{
+      svgGroup: svgGroupEl,
+      container: containerEl,
+      data: () => props.data ?? [],
+      xDataKey,
+      xScale: xScaleSig,
+      yScale: yScaleSig,
+      innerWidth,
+      innerHeight,
+      config: () => chartCtx.config,
+      bars,
+      registerBar,
+      unregisterBar,
+      setXDataKey,
+    }}>
+      <div data-slot="line-chart" ref={handleContainer}>
+        <svg
+          viewBox={`0 0 ${width()} ${height()}`}
+          style={`width:100%;height:${height()}px;display:block`}
+        >
+          <g
+            transform={`translate(${CHART_LINE_MARGIN.left},${CHART_LINE_MARGIN.top})`}
+            ref={handleSvgGroup}
+          >
+            {props.children}
+          </g>
+        </svg>
+      </div>
+    </BarChartContext.Provider>
   )
 }
 

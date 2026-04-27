@@ -26,6 +26,24 @@ describe('ChartContainer', () => {
   })
 })
 
+// JSX-native containers all share the same shape: <div data-slot="X"><svg><g>{children}</g></svg></div>.
+// Walk that shape via TestNode.find so a regression to the imperative wrapper
+// (which would have no nested <svg>) is caught at the IR layer rather than e2e.
+function expectSvgContainerShape(result: ReturnType<typeof renderToTest>, slot: string): void {
+  expect(result.root.tag).toBe('div')
+  expect(result.root.props['data-slot']).toBe(slot)
+
+  const svg = result.root.find({ tag: 'svg' })
+  expect(svg).not.toBeNull()
+  // viewBox is reactive (driven by a signal), so the IR records the prop key
+  // even when the value is dynamic — assert presence, not exact value.
+  expect('viewBox' in svg!.props).toBe(true)
+
+  const g = svg!.find({ tag: 'g' })
+  expect(g).not.toBeNull()
+  expect('transform' in g!.props).toBe(true)
+}
+
 describe('BarChart', () => {
   const result = renderToTest(source, 'chart.tsx', 'BarChart')
 
@@ -33,8 +51,19 @@ describe('BarChart', () => {
     expect(result.errors).toEqual([])
   })
 
-  test('renders with data-slot=bar-chart', () => {
-    expect(result.root.props['data-slot']).toBe('bar-chart')
+  test('isClient is true', () => {
+    expect(result.isClient).toBe(true)
+  })
+
+  test('renders <div data-slot="bar-chart"><svg><g>{children}</g></svg></div>', () => {
+    expectSvgContainerShape(result, 'bar-chart')
+  })
+
+  test('declares the bar registration signals', () => {
+    // Failure here means the chart context plumbing was lost during refactor.
+    expect(result.signals).toContain('bars')
+    expect(result.signals).toContain('xDataKey')
+    expect(result.signals).toContain('width')
   })
 })
 
@@ -45,8 +74,8 @@ describe('LineChart', () => {
     expect(result.errors).toEqual([])
   })
 
-  test('renders with data-slot=line-chart', () => {
-    expect(result.root.props['data-slot']).toBe('line-chart')
+  test('renders SVG container shape', () => {
+    expectSvgContainerShape(result, 'line-chart')
   })
 })
 
@@ -57,8 +86,8 @@ describe('PieChart', () => {
     expect(result.errors).toEqual([])
   })
 
-  test('renders with data-slot=pie-chart', () => {
-    expect(result.root.props['data-slot']).toBe('pie-chart')
+  test('renders SVG container shape', () => {
+    expectSvgContainerShape(result, 'pie-chart')
   })
 })
 
@@ -69,8 +98,8 @@ describe('AreaChart', () => {
     expect(result.errors).toEqual([])
   })
 
-  test('renders with data-slot=area-chart', () => {
-    expect(result.root.props['data-slot']).toBe('area-chart')
+  test('renders SVG container shape', () => {
+    expectSvgContainerShape(result, 'area-chart')
   })
 })
 
@@ -81,8 +110,8 @@ describe('RadialChart', () => {
     expect(result.errors).toEqual([])
   })
 
-  test('renders with data-slot=radial-chart', () => {
-    expect(result.root.props['data-slot']).toBe('radial-chart')
+  test('renders SVG container shape', () => {
+    expectSvgContainerShape(result, 'radial-chart')
   })
 })
 
@@ -93,7 +122,7 @@ describe('RadarChart', () => {
     expect(result.errors).toEqual([])
   })
 
-  test('renders with data-slot=radar-chart', () => {
-    expect(result.root.props['data-slot']).toBe('radar-chart')
+  test('renders SVG container shape', () => {
+    expectSvgContainerShape(result, 'radar-chart')
   })
 })

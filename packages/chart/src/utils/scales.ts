@@ -40,3 +40,25 @@ export function createPointScale(
     .range([0, width])
     .padding(0.5)
 }
+
+/**
+ * Linear scale spanning `[0, max(data values across dataKeys)]`, mapped to
+ * `[0, radius]`. Used by RadarChart to convert numeric series values into
+ * polar radii. Returns null when no dataKeys are supplied so callers can
+ * cheaply gate downstream rendering on registration completing.
+ */
+export function createRadarRadialScale(
+  data: Record<string, unknown>[],
+  dataKeys: string[],
+  radius: number,
+): ScaleLinear<number, number> | null {
+  if (dataKeys.length === 0) return null
+  const maxValue =
+    max(data, (d) =>
+      max(dataKeys, (key) => {
+        const v = d[key]
+        return typeof v === 'number' ? v : 0
+      }),
+    ) ?? 0
+  return scaleLinear<number, number>().domain([0, maxValue]).nice().range([0, radius])
+}
