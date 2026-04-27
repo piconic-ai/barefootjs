@@ -1,6 +1,9 @@
 import {
   createEffect,
+  createMemo,
+  createRoot,
   onCleanup,
+  untrack,
 } from '@barefootjs/client'
 import {
   getBezierPath,
@@ -14,14 +17,23 @@ import type {
   NodeBase,
   EdgeBase,
   EdgePosition,
+  InternalNodeBase,
 } from '@xyflow/system'
 import type { FlowStore, EdgeComponentProps } from './types'
 import { SVG_NS } from './constants'
 import { attachReconnectionHandler } from './connection'
 
 /**
- * Reactively renders all edges as SVG paths.
- * A single effect re-draws all edges when edges or node positions change.
+ * Renders all edges as SVG paths via per-edge `createRoot` scopes — the
+ * Solid-style pattern that compiler-emitted JSX produces for
+ * `edges().map(e => <path d={...} />)`. The outer effect maintains the
+ * mounted set; each per-edge root owns the rendering effect for that
+ * edge alone.
+ *
+ * Custom edge types stay imperative because the user supplies the
+ * render function. Reconnect handle hover/grab logic in
+ * `attachReconnectionHandler` is pointer-paced and gets no leverage
+ * from signal binding — kept imperative for the same reason.
  */
 export function createEdgeRenderer<
   NodeType extends NodeBase = NodeBase,
@@ -54,268 +66,390 @@ export function createEdgeRenderer<
   const reconnectGroup = document.createElementNS(SVG_NS, 'g')
   reconnectOverlay.appendChild(reconnectGroup)
 
-  // Track edge path elements, hit areas, custom groups, and reconnection handles by edge id
-  const edgeElements = new Map<string, SVGPathElement>()
-  const hitElements = new Map<string, SVGPathElement>()
-  const customEdgeGroups = new Map<string, SVGGElement>()
-  const reconnectSourceHandles = new Map<string, SVGCircleElement>()
-  const reconnectTargetHandles = new Map<string, SVGCircleElement>()
+  // Sync reconnect overlay transform with viewport
+  createEffect(() => {
+    const vp = store.viewport()
+    reconnectGroup.setAttribute('transform', `translate(${vp.x}, ${vp.y}) scale(${vp.zoom})`)
+  })
 
-  // Expose label positions so the edge label renderer can read them
+  // The label renderer reads this map from its own effect, observed via
+  // each per-edge effect's positionEpoch read.
   const labelPositions = new Map<string, { x: number; y: number }>()
   ;(store as any)._edgeLabelPositions = labelPositions
 
+  // Per-edge scope: owns this edge's DOM elements + cleanup
+  type EdgeScope = {
+    dispose: () => void
+  }
+  const edgeScopes = new Map<string, EdgeScope>()
+
+  // Outer effect: structural diff. Per-edge updates (selected/animated/
+  // endpoint position) flow through each scope's own effect, which looks
+  // the edge up by id from `edgeLookup`.
   createEffect(() => {
     const edges = store.edges()
-    // Re-run when node positions change during drag (lightweight epoch bump)
-    // or when nodes are structurally changed (add/remove triggers nodes()).
-    store.positionEpoch()
-    store.nodes()
-    const nodeLookup = store.nodeLookup()
-
-    // Sync reconnect overlay transform with viewport
-    const vp = store.viewport()
-    reconnectGroup.setAttribute('transform', `translate(${vp.x}, ${vp.y}) scale(${vp.zoom})`)
-    const existingIds = new Set(edgeElements.keys())
+    const seen = new Set<string>()
 
     for (const edge of edges) {
       if (edge.hidden) continue
-
-      existingIds.delete(edge.id)
-
-      const sourceNode = nodeLookup.get(edge.source)
-      const targetNode = nodeLookup.get(edge.target)
-
-      if (!sourceNode || !targetNode) continue
-
-      // Get source/target positions from @xyflow/system.
-      // Use Strict mode when handle IDs are present so the exact handle is
-      // resolved by ID rather than by closest-position heuristic (Loose).
-      const hasHandleIds = !!(edge.sourceHandle || edge.targetHandle)
-      let edgePos = getEdgePosition({
-        id: edge.id,
-        sourceNode,
-        sourceHandle: edge.sourceHandle ?? null,
-        targetNode,
-        targetHandle: edge.targetHandle ?? null,
-        connectionMode: hasHandleIds ? ConnectionMode.Strict : ConnectionMode.Loose,
-      })
-
-      // Fallback: if no handle bounds, use node center positions
-      if (!edgePos) {
-        const sw = sourceNode.measured.width ?? 150
-        const sh = sourceNode.measured.height ?? 40
-        const tw = targetNode.measured.width ?? 150
-
-        const sourcePos = sourceNode.internals.positionAbsolute
-        const targetPos = targetNode.internals.positionAbsolute
-
-        edgePos = {
-          sourceX: sourcePos.x + sw / 2,
-          sourceY: sourcePos.y + sh,
-          targetX: targetPos.x + tw / 2,
-          targetY: targetPos.y,
-          sourcePosition: Position.Bottom,
-          targetPosition: Position.Top,
-        }
-      }
-
-      // Check for custom edge type
-      const edgeType = edge.type
-      const customEdgeType = edgeType && store.edgeTypes?.[edgeType]
-
-      if (customEdgeType && typeof customEdgeType === 'function') {
-        // Custom edge rendering via plain function
-        const midX = (edgePos.sourceX + edgePos.targetX) / 2
-        const midY = (edgePos.sourceY + edgePos.targetY) / 2
-        labelPositions.set(edge.id, { x: midX, y: midY })
-
-        let group = customEdgeGroups.get(edge.id)
-        if (!group) {
-          group = document.createElementNS(SVG_NS, 'g')
-          group.setAttribute('class', 'bf-flow__edge-custom')
-          group.dataset.id = edge.id
-          group.style.cursor = 'pointer'
-          group.style.pointerEvents = 'all'
-          group.addEventListener('mousedown', (e) => {
-            e.stopPropagation()
-            const container = store.domNode()
-            if (container) container.focus()
-            const edgeId = edge.id
-            store.unselectNodesAndEdges()
-            store.setEdges((prev) =>
-              prev.map((ed) =>
-                ed.id === edgeId ? { ...ed, selected: true } : ed,
-              ),
-            )
-          })
-          edgeGroup.appendChild(group)
-          customEdgeGroups.set(edge.id, group)
-
-          // Also track in edgeElements for cleanup
-          edgeElements.set(edge.id, group as unknown as SVGPathElement)
-        }
-
-        // Clear and re-render custom content
-        group.innerHTML = ''
-
-        const edgeProps: EdgeComponentProps<EdgeType> = {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          sourceX: edgePos.sourceX,
-          sourceY: edgePos.sourceY,
-          targetX: edgePos.targetX,
-          targetY: edgePos.targetY,
-          sourcePosition: edgePos.sourcePosition,
-          targetPosition: edgePos.targetPosition,
-          data: edge.data,
-          selected: !!edge.selected,
-          animated: !!edge.animated,
-          label: (edge as EdgeType & { label?: string }).label,
-          svgGroup: group,
-        }
-
-        customEdgeType(edgeProps)
-        continue
-      }
-
-      const pathData = getEdgePath(edge, edgePos)
-      if (!pathData) continue
-
-      const [path, labelX, labelY] = pathData
-
-      // Store label position for the edge label renderer
-      labelPositions.set(edge.id, { x: labelX, y: labelY })
-
-      let pathEl = edgeElements.get(edge.id)
-      if (!pathEl) {
-        // Invisible hit area for click selection (wider than visible path)
-        const hitPath = document.createElementNS(SVG_NS, 'path')
-        hitPath.setAttribute('fill', 'none')
-        hitPath.setAttribute('stroke', 'transparent')
-        hitPath.setAttribute('stroke-width', '20')
-        hitPath.dataset.hitId = edge.id
-        hitPath.style.cursor = 'pointer'
-        hitPath.style.pointerEvents = 'stroke'
-        hitPath.addEventListener('mousedown', (e) => {
-          e.stopPropagation()
-          // Focus container for keyboard events (Delete)
-          const container = store.domNode()
-          if (container) container.focus()
-          const edgeId = edge.id
-          store.unselectNodesAndEdges()
-          store.setEdges((prev) =>
-            prev.map((ed) =>
-              ed.id === edgeId ? { ...ed, selected: true } : ed,
-            ),
-          )
-        })
-        edgeGroup.appendChild(hitPath)
-        hitElements.set(edge.id, hitPath)
-
-        // Visible path
-        pathEl = document.createElementNS(SVG_NS, 'path')
-        pathEl.setAttribute('class', 'bf-flow__edge')
-        pathEl.dataset.id = edge.id
-        edgeGroup.appendChild(pathEl)
-        edgeElements.set(edge.id, pathEl)
-      }
-
-      pathEl.setAttribute('d', path)
-
-      // Update hit area path
-      const hitEl = hitElements.get(edge.id)
-      if (hitEl) hitEl.setAttribute('d', path)
-
-      pathEl.classList.toggle('bf-flow__edge--selected', !!edge.selected)
-      pathEl.classList.toggle('bf-flow__edge--animated', !!edge.animated)
-
-      // Edge reconnection handles
-      const isReconnectable = store.edgesReconnectable && (edge as any).reconnectable !== false
-      if (isReconnectable) {
-        // Source reconnection handle
-        let srcHandle = reconnectSourceHandles.get(edge.id)
-        if (!srcHandle) {
-          srcHandle = document.createElementNS(SVG_NS, 'circle') as SVGCircleElement
-          srcHandle.setAttribute('class', 'bf-flow__edge-reconnect bf-flow__edge-reconnect--source')
-          srcHandle.setAttribute('r', '10')
-          srcHandle.style.pointerEvents = 'all'
-          reconnectGroup.appendChild(srcHandle)
-          reconnectSourceHandles.set(edge.id, srcHandle)
-          // Darken edge on reconnect handle hover
-          const srcEdgeId = edge.id
-          srcHandle.addEventListener('mouseenter', () => {
-            edgeElements.get(srcEdgeId)?.classList.add('bf-flow__edge--reconnect-hover')
-          })
-          srcHandle.addEventListener('mouseleave', () => {
-            edgeElements.get(srcEdgeId)?.classList.remove('bf-flow__edge--reconnect-hover')
-          })
-          // Attach reconnection handler
-          const container = store.domNode()
-          if (container) {
-            attachReconnectionHandler(srcHandle, edge, 'source', container, svgContainer, store)
-          }
-        }
-        // Shift outward from node by radius (matching React Flow's shiftX/shiftY)
-        const srcR = 10
-        srcHandle.setAttribute('cx', String(edgePos.sourceX))
-        srcHandle.setAttribute('cy', String(edgePos.sourceY + srcR))
-
-        // Target reconnection handle
-        let tgtHandle = reconnectTargetHandles.get(edge.id)
-        if (!tgtHandle) {
-          tgtHandle = document.createElementNS(SVG_NS, 'circle') as SVGCircleElement
-          tgtHandle.setAttribute('class', 'bf-flow__edge-reconnect bf-flow__edge-reconnect--target')
-          tgtHandle.setAttribute('r', '10')
-          tgtHandle.style.pointerEvents = 'all'
-          reconnectGroup.appendChild(tgtHandle)
-          reconnectTargetHandles.set(edge.id, tgtHandle)
-          const tgtEdgeId = edge.id
-          tgtHandle.addEventListener('mouseenter', () => {
-            edgeElements.get(tgtEdgeId)?.classList.add('bf-flow__edge--reconnect-hover')
-          })
-          tgtHandle.addEventListener('mouseleave', () => {
-            edgeElements.get(tgtEdgeId)?.classList.remove('bf-flow__edge--reconnect-hover')
-          })
-          const container = store.domNode()
-          if (container) {
-            attachReconnectionHandler(tgtHandle, edge, 'target', container, svgContainer, store)
-          }
-        }
-        // Shift outward from node by radius (matching React Flow's shiftX/shiftY)
-        const tgtR = 10
-        tgtHandle.setAttribute('cx', String(edgePos.targetX))
-        tgtHandle.setAttribute('cy', String(edgePos.targetY - tgtR))
+      seen.add(edge.id)
+      if (!edgeScopes.has(edge.id)) {
+        edgeScopes.set(edge.id, mountEdgeScope(edge, store, edgeGroup, reconnectGroup, svgContainer, labelPositions))
       }
     }
 
-    // Remove edges that no longer exist
-    for (const removedId of existingIds) {
-      const el = edgeElements.get(removedId)
-      if (el) { el.remove(); edgeElements.delete(removedId) }
-      const hit = hitElements.get(removedId)
-      if (hit) { hit.remove(); hitElements.delete(removedId) }
-      const customGroup = customEdgeGroups.get(removedId)
-      if (customGroup) { customGroup.remove(); customEdgeGroups.delete(removedId) }
-      labelPositions.delete(removedId)
-      const srcH = reconnectSourceHandles.get(removedId)
-      if (srcH) { srcH.remove(); reconnectSourceHandles.delete(removedId) }
-      const tgtH = reconnectTargetHandles.get(removedId)
-      if (tgtH) { tgtH.remove(); reconnectTargetHandles.delete(removedId) }
+    for (const [id, scope] of edgeScopes) {
+      if (!seen.has(id)) {
+        scope.dispose()
+        edgeScopes.delete(id)
+        labelPositions.delete(id)
+      }
     }
   })
 
   onCleanup(() => {
+    for (const scope of edgeScopes.values()) scope.dispose()
+    edgeScopes.clear()
+    labelPositions.clear()
     edgeGroup.remove()
     reconnectOverlay.remove()
-    edgeElements.clear()
-    hitElements.clear()
-    customEdgeGroups.clear()
-    labelPositions.clear()
-    reconnectSourceHandles.clear()
-    reconnectTargetHandles.clear()
   })
+}
+
+/** Mount one edge in its own reactive root, dispatching to simple- or custom-edge mount. */
+function mountEdgeScope<
+  NodeType extends NodeBase,
+  EdgeType extends EdgeBase,
+>(
+  initialEdge: EdgeType,
+  store: FlowStore<NodeType, EdgeType>,
+  edgeGroup: SVGGElement,
+  reconnectGroup: SVGGElement,
+  svgContainer: SVGSVGElement,
+  labelPositions: Map<string, { x: number; y: number }>,
+): { dispose: () => void } {
+  let dispose!: () => void
+  const edgeId = initialEdge.id
+
+  createRoot((d) => {
+    dispose = d
+
+    const edgeType = initialEdge.type
+    const customEdgeType = edgeType && store.edgeTypes?.[edgeType]
+    const isCustom = customEdgeType && typeof customEdgeType === 'function'
+
+    if (isCustom) {
+      mountCustomEdge(edgeId, store, edgeGroup, labelPositions)
+    } else {
+      mountSimpleEdge(edgeId, store, edgeGroup, reconnectGroup, svgContainer, labelPositions)
+    }
+  })
+
+  return { dispose }
+}
+
+/**
+ * Simple-edge mount. JSX-equivalent of:
+ *   <path data-hit-id={id} stroke="transparent" stroke-width="20" d={path} onMouseDown={selectEdge} />
+ *   <path class="bf-flow__edge" data-id={id} d={path} class:selected={selected} class:animated={animated} />
+ *
+ * Both paths sit directly in `edgeGroup` (no per-edge wrapper `<g>`) to
+ * keep the selectors `attachReconnectionHandler` queries against intact.
+ */
+function mountSimpleEdge<
+  NodeType extends NodeBase,
+  EdgeType extends EdgeBase,
+>(
+  edgeId: string,
+  store: FlowStore<NodeType, EdgeType>,
+  edgeGroup: SVGGElement,
+  reconnectGroup: SVGGElement,
+  svgContainer: SVGSVGElement,
+  labelPositions: Map<string, { x: number; y: number }>,
+): void {
+  // Invisible hit area (wider stroke for click detection)
+  const hitPath = document.createElementNS(SVG_NS, 'path')
+  hitPath.setAttribute('fill', 'none')
+  hitPath.setAttribute('stroke', 'transparent')
+  hitPath.setAttribute('stroke-width', '20')
+  hitPath.dataset.hitId = edgeId
+  hitPath.style.cursor = 'pointer'
+  hitPath.style.pointerEvents = 'stroke'
+  hitPath.addEventListener('mousedown', (e) => {
+    e.stopPropagation()
+    const container = store.domNode()
+    if (container) container.focus()
+    store.unselectNodesAndEdges()
+    store.setEdges((prev) =>
+      prev.map((ed) =>
+        ed.id === edgeId ? { ...ed, selected: true } : ed,
+      ),
+    )
+  })
+  edgeGroup.appendChild(hitPath)
+
+  // Visible path
+  const pathEl = document.createElementNS(SVG_NS, 'path')
+  pathEl.setAttribute('class', 'bf-flow__edge')
+  pathEl.dataset.id = edgeId
+  edgeGroup.appendChild(pathEl)
+
+  let srcHandle: SVGCircleElement | null = null
+  let tgtHandle: SVGCircleElement | null = null
+
+  // Per-edge field memos. createSignal/createMemo dedupe on Object.is, so
+  // a memo over a primitive (boolean) only fires when its value actually
+  // changes. This isolates per-edge property updates: toggling another
+  // edge's `selected` no longer re-runs this edge's class effect.
+  const selected = createMemo(() => !!store.edgeLookup().get(edgeId)?.selected)
+  const animated = createMemo(() => !!store.edgeLookup().get(edgeId)?.animated)
+  const reconnectable = createMemo(
+    () =>
+      store.edgesReconnectable &&
+      (store.edgeLookup().get(edgeId) as { reconnectable?: boolean } | undefined)
+        ?.reconnectable !== false &&
+      !!store.edgeLookup().get(edgeId),
+  )
+
+  // Class effect: tracks only selected/animated (per-edge isolated).
+  createEffect(() => {
+    pathEl.classList.toggle('bf-flow__edge--selected', selected())
+    pathEl.classList.toggle('bf-flow__edge--animated', animated())
+  })
+
+  // Position effect: tracks position signals + edgeLookup (for source/
+  // target/handle ids). Re-runs on any edges array change, but the
+  // setAttribute calls are DOM-level no-ops when the resulting `d` string
+  // is identical, so unrelated edge updates don't dirty the path.
+  createEffect(() => {
+    const edge = store.edgeLookup().get(edgeId)
+    if (!edge) return
+
+    // BOTH reads are required. positionEpoch fires for in-flight drag
+    // updates (rAF-batched in node-wrapper); nodes() fires for the
+    // post-drag commit, where setNodes mutates nodeLookup in place
+    // (identity preserved → no positionEpoch bump). Reading nodes()
+    // catches that commit even when rAF was cancelled by mouseup.
+    store.positionEpoch()
+    store.nodes()
+    const nodeLookup = store.nodeLookup()
+
+    const sourceNode = nodeLookup.get(edge.source)
+    const targetNode = nodeLookup.get(edge.target)
+    if (!sourceNode || !targetNode) return
+
+    const edgePos = computeEdgePosition(edge, sourceNode, targetNode)
+    if (!edgePos) return
+
+    const pathData = getEdgePath(edge, edgePos)
+    if (!pathData) return
+
+    const [path, labelX, labelY] = pathData
+    labelPositions.set(edgeId, { x: labelX, y: labelY })
+
+    pathEl.setAttribute('d', path)
+    hitPath.setAttribute('d', path)
+
+    if (srcHandle && tgtHandle) {
+      const r = 10
+      srcHandle.setAttribute('cx', String(edgePos.sourceX))
+      srcHandle.setAttribute('cy', String(edgePos.sourceY + r))
+      tgtHandle.setAttribute('cx', String(edgePos.targetX))
+      tgtHandle.setAttribute('cy', String(edgePos.targetY - r))
+    }
+  })
+
+  // Reconnect lifecycle: tracks the reconnectable memo only. `untrack`
+  // the edge fetch so this effect doesn't re-run for unrelated edges-array
+  // changes.
+  createEffect(() => {
+    if (!reconnectable()) {
+      srcHandle?.remove()
+      srcHandle = null
+      tgtHandle?.remove()
+      tgtHandle = null
+      return
+    }
+    const edge = untrack(() => store.edgeLookup().get(edgeId))
+    if (!edge) return
+    if (!srcHandle) {
+      srcHandle = createReconnectHandle('source', edgeId, edgeGroup, reconnectGroup, edge, store, svgContainer)
+    }
+    if (!tgtHandle) {
+      tgtHandle = createReconnectHandle('target', edgeId, edgeGroup, reconnectGroup, edge, store, svgContainer)
+    }
+  })
+
+  onCleanup(() => {
+    hitPath.remove()
+    pathEl.remove()
+    srcHandle?.remove()
+    tgtHandle?.remove()
+  })
+}
+
+/** Custom-edge mount: rebuilds a managed `<g>`'s contents via the user-supplied render fn. */
+function mountCustomEdge<
+  NodeType extends NodeBase,
+  EdgeType extends EdgeBase,
+>(
+  edgeId: string,
+  store: FlowStore<NodeType, EdgeType>,
+  edgeGroup: SVGGElement,
+  labelPositions: Map<string, { x: number; y: number }>,
+): void {
+  const group = document.createElementNS(SVG_NS, 'g')
+  group.setAttribute('class', 'bf-flow__edge-custom')
+  group.dataset.id = edgeId
+  group.style.cursor = 'pointer'
+  group.style.pointerEvents = 'all'
+  group.addEventListener('mousedown', (e) => {
+    e.stopPropagation()
+    const container = store.domNode()
+    if (container) container.focus()
+    store.unselectNodesAndEdges()
+    store.setEdges((prev) =>
+      prev.map((ed) =>
+        ed.id === edgeId ? { ...ed, selected: true } : ed,
+      ),
+    )
+  })
+  edgeGroup.appendChild(group)
+
+  createEffect(() => {
+    const edge = store.edgeLookup().get(edgeId)
+    if (!edge) return
+
+    // See mountSimpleEdge for why both positionEpoch and nodes() are read.
+    store.positionEpoch()
+    store.nodes()
+    const nodeLookup = store.nodeLookup()
+
+    const sourceNode = nodeLookup.get(edge.source)
+    const targetNode = nodeLookup.get(edge.target)
+    if (!sourceNode || !targetNode) return
+
+    const edgePos = computeEdgePosition(edge, sourceNode, targetNode)
+    if (!edgePos) return
+
+    const midX = (edgePos.sourceX + edgePos.targetX) / 2
+    const midY = (edgePos.sourceY + edgePos.targetY) / 2
+    labelPositions.set(edgeId, { x: midX, y: midY })
+
+    // Clear and re-render custom content
+    group.innerHTML = ''
+
+    const edgeType = edge.type
+    const customEdgeType = edgeType && store.edgeTypes?.[edgeType]
+    if (typeof customEdgeType !== 'function') return
+
+    const edgeProps: EdgeComponentProps<EdgeType> = {
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      sourceX: edgePos.sourceX,
+      sourceY: edgePos.sourceY,
+      targetX: edgePos.targetX,
+      targetY: edgePos.targetY,
+      sourcePosition: edgePos.sourcePosition,
+      targetPosition: edgePos.targetPosition,
+      data: edge.data,
+      selected: !!edge.selected,
+      animated: !!edge.animated,
+      label: (edge as EdgeType & { label?: string }).label,
+      svgGroup: group,
+    }
+    customEdgeType(edgeProps)
+  })
+
+  onCleanup(() => {
+    group.remove()
+  })
+}
+
+/**
+ * Compute endpoint positions for an edge, falling back to node-center
+ * positioning when no handle bounds are available.
+ */
+function computeEdgePosition(
+  edge: EdgeBase,
+  sourceNode: InternalNodeBase,
+  targetNode: InternalNodeBase,
+): EdgePosition | null {
+  const hasHandleIds = !!(edge.sourceHandle || edge.targetHandle)
+  const edgePos = getEdgePosition({
+    id: edge.id,
+    sourceNode,
+    sourceHandle: edge.sourceHandle ?? null,
+    targetNode,
+    targetHandle: edge.targetHandle ?? null,
+    connectionMode: hasHandleIds ? ConnectionMode.Strict : ConnectionMode.Loose,
+  })
+
+  if (edgePos) return edgePos
+
+  const sw = sourceNode.measured.width ?? 150
+  const sh = sourceNode.measured.height ?? 40
+  const tw = targetNode.measured.width ?? 150
+  const sourcePos = sourceNode.internals.positionAbsolute
+  const targetPos = targetNode.internals.positionAbsolute
+
+  return {
+    sourceX: sourcePos.x + sw / 2,
+    sourceY: sourcePos.y + sh,
+    targetX: targetPos.x + tw / 2,
+    targetY: targetPos.y,
+    sourcePosition: Position.Bottom,
+    targetPosition: Position.Top,
+  }
+}
+
+/**
+ * Create a reconnection handle circle and wire it up.
+ * The element is appended to `reconnectGroup` (the overlay above nodes),
+ * but the hover effect targets the visible path inside `edgeGroup`.
+ */
+function createReconnectHandle<
+  NodeType extends NodeBase,
+  EdgeType extends EdgeBase,
+>(
+  endpointType: 'source' | 'target',
+  edgeId: string,
+  edgeGroup: SVGGElement,
+  reconnectGroup: SVGGElement,
+  edge: EdgeType,
+  store: FlowStore<NodeType, EdgeType>,
+  svgContainer: SVGSVGElement,
+): SVGCircleElement {
+  const handle = document.createElementNS(SVG_NS, 'circle') as SVGCircleElement
+  handle.setAttribute(
+    'class',
+    `bf-flow__edge-reconnect bf-flow__edge-reconnect--${endpointType}`,
+  )
+  handle.setAttribute('r', '10')
+  handle.style.pointerEvents = 'all'
+  reconnectGroup.appendChild(handle)
+
+  // Hover: darken the visible edge path while pointing at the handle.
+  // Resolve the edge element via querySelector each time so we don't
+  // hold a stale reference if the path was re-mounted.
+  handle.addEventListener('mouseenter', () => {
+    edgeGroup
+      .querySelector(`.bf-flow__edge[data-id="${edgeId}"]`)
+      ?.classList.add('bf-flow__edge--reconnect-hover')
+  })
+  handle.addEventListener('mouseleave', () => {
+    edgeGroup
+      .querySelector(`.bf-flow__edge[data-id="${edgeId}"]`)
+      ?.classList.remove('bf-flow__edge--reconnect-hover')
+  })
+
+  const container = store.domNode()
+  if (container) {
+    attachReconnectionHandler(handle, edge, endpointType, container, svgContainer, store)
+  }
+
+  return handle
 }
 
 /**
