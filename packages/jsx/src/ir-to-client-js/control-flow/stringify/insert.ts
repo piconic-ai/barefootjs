@@ -29,6 +29,7 @@
  */
 
 import { varSlotId } from '../../utils'
+import { emitAttrUpdate } from '../../emit-reactive'
 import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types'
 import { stringifyBranchLoops } from './branch-loop'
 import { emitListenerLine } from './event-listener'
@@ -116,16 +117,43 @@ function emitArmBody(
     lines.push(`${indent}if (${varName}) initChild('${comp.name}', ${varName}, ${comp.propsExpr})`)
   }
 
-  // 4. Disposable section: text effects + branch loops + nested conditionals.
+  // 4. Disposable section: reactive attrs + text effects + branch loops + nested conditionals.
   //    Emitted inside the same `__disposers = []` / `return () => ...` envelope
   //    so the legacy single-disposers-array shape is preserved (PR 1).
   const hasDisposables =
+    body.reactiveAttrs.length > 0 ||
     body.textEffects.length > 0 ||
     body.loops.length > 0 ||
     body.conditionals.length > 0
   if (!hasDisposables) return
 
   lines.push(`${indent}const __disposers = []`)
+
+  // Reactive attribute bindings inside the branch (#1071). Each effect
+  // resolves its target via `qsa(__branchScope, ...)` so a fresh DOM swap
+  // produces a fresh element reference; without this, the effect would
+  // keep writing to a stale, detached node placed there at first hydration.
+  // Group by slot so each `qsa` call covers all attrs on the same element,
+  // mirroring the init-level `attrsBySlot` shape in `emit-reactive.ts`.
+  const attrsBySlot = new Map<string, typeof body.reactiveAttrs>()
+  for (const attr of body.reactiveAttrs) {
+    if (!attrsBySlot.has(attr.slotId)) attrsBySlot.set(attr.slotId, [])
+    attrsBySlot.get(attr.slotId)!.push(attr)
+  }
+  for (const [slotId, attrs] of attrsBySlot) {
+    const v = varSlotId(slotId)
+    const elVar = `__ra_${v}`
+    lines.push(`${indent}{ const ${elVar} = qsa(__branchScope, '[bf="${slotId}"]')`)
+    lines.push(`${indent}if (${elVar}) {`)
+    for (const attr of attrs) {
+      lines.push(`${indent}  __disposers.push(createDisposableEffect(() => {`)
+      for (const stmt of emitAttrUpdate(elVar, attr.attrName, attr.expression, attr)) {
+        lines.push(`${indent}    ${stmt}`)
+      }
+      lines.push(`${indent}  }))`)
+    }
+    lines.push(`${indent}} }`)
+  }
 
   for (const te of body.textEffects) {
     const v = varSlotId(te.slotId)

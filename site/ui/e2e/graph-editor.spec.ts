@@ -250,15 +250,15 @@ test.describe('Graph Editor Block', () => {
       await page.mouse.down()
       // Step through so the connect-preview path renders along the way.
       await page.mouse.move((sx + ex) / 2, (sy + ey) / 2, { steps: 5 })
-      // Preview is always mounted; while dragging it must be visible.
-      await expect(preview).toHaveAttribute('display', 'inline')
+      // While dragging, the preview path is mounted via the conditional.
+      await expect(preview).toHaveCount(1)
       await page.mouse.move(ex, ey, { steps: 5 })
       await page.mouse.up()
 
       await expect(s.locator('[data-edge-id]')).toHaveCount(6)
       await expect(s.locator('.edge-count')).toHaveText('6 edges')
-      // The connect preview is hidden once drag ends.
-      await expect(preview).toHaveAttribute('display', 'none')
+      // The connect preview is unmounted once drag ends.
+      await expect(preview).toHaveCount(0)
     })
 
     test('drag-to-connect onto the source node itself does not create a self-edge', async ({ page }) => {

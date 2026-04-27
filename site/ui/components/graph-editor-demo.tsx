@@ -414,23 +414,20 @@ export function GraphEditorDemo() {
             ))}
           </g>
 
-          {/* Connect-in-progress preview path. Always mounted (toggled via
-              `display`) so the reactive `d` binding stays wired across drag
-              start/stop — the BF compiler does not currently re-attach
-              reactive bindings to a path that lives inside a conditional
-              branch (#135 follow-up). Pointer-transparent so the drop
-              hit-test sees through to the target node underneath. */}
-          <path
-            className="graph-connect-preview"
-            data-connect-preview
-            d={connectPreview() ?? ''}
-            stroke="#2563eb"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
-            fill="none"
-            pointerEvents="none"
-            display={connectPreview() !== null ? 'inline' : 'none'}
-          />
+          {/* Connect-in-progress preview path. Pointer-transparent so the
+              drop hit-test sees through to the target node underneath. */}
+          {connectPreview() !== null ? (
+            <path
+              className="graph-connect-preview"
+              data-connect-preview
+              d={connectPreview() ?? ''}
+              stroke="#2563eb"
+              strokeWidth="1.5"
+              strokeDasharray="4 4"
+              fill="none"
+              pointerEvents="none"
+            />
+          ) : null}
 
           {/* Nodes loop — every node has reactive cx/cy on its circle and
               x/y on its label, plus a connect handle whose cx/cy track the

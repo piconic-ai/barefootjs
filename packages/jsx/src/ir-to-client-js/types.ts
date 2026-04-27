@@ -104,6 +104,20 @@ export interface ConditionalBranchTextEffect {
 }
 
 /**
+ * Reactive attribute binding scoped to a single conditional branch (#1071).
+ * Each becomes a `createDisposableEffect` inside the branch's
+ * `bindEvents(__branchScope)` so the binding re-resolves its target on
+ * every DOM swap done by `insert()`. Attributes on the branch's root
+ * element or any descendant of it are routed here; init-level
+ * `ctx.reactiveAttrs` only carries non-branch attrs.
+ */
+export interface ConditionalBranchReactiveAttr extends AttrMeta {
+  slotId: string
+  attrName: string
+  expression: string
+}
+
+/**
  * Fields shared by every flavour of collected loop (top-level, branch-scoped, nested).
  * The three loop-info variants (`TopLevelLoop`, `BranchLoop`, `NestedLoop`) each extend
  * this base and add a `kind` discriminator so callers can narrow exhaustively.
@@ -155,6 +169,12 @@ export interface BranchSummary {
   refs: ConditionalBranchRef[]
   childComponents: ConditionalBranchChildComponent[]
   textEffects: ConditionalBranchTextEffect[]
+  /**
+   * Reactive attribute bindings on the branch's root element or descendants.
+   * Emitted inside `insert()` bindEvents so they re-attach when `insert()`
+   * swaps in a fresh element on the rising edge of the condition (#1071).
+   */
+  reactiveAttrs: ConditionalBranchReactiveAttr[]
   loops: BranchLoop[]
   conditionals: ConditionalElement[]
 }

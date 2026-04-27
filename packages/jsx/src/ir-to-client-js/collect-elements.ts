@@ -3,7 +3,7 @@
  */
 
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMeta } from '../types'
-import type { ClientJsContext, ConditionalBranchChildComponent, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBranchSummary, LoopChildConditional, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
+import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBranchSummary, LoopChildConditional, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
 import { attrValueToString, exprReferencesIdent, quotePropName, PROPS_PARAM } from './utils'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
@@ -571,8 +571,16 @@ export function collectElements(
   })
 }
 
-/** Extract events, refs, and reactive attributes from a single IR element into ctx. */
-function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideConditional = false): void {
+/**
+ * Extract events, refs, and reactive attributes from a single IR element into ctx.
+ *
+ * `insideConditional` gates the push to `ctx.reactiveAttrs`: when the element
+ * lives inside a conditional branch, the binding is collected separately by
+ * `collectBranchReactiveAttrs` and emitted inside the branch's `bindEvents`
+ * so it re-attaches on every DOM swap (#1071). Events, refs and rest-attr
+ * elements are unaffected — they have their own per-branch collection paths.
+ */
+function collectFromElement(element: IRElement, ctx: ClientJsContext, insideConditional = false): void {
   if (element.events.length > 0 && element.slotId) {
     ctx.interactiveElements.push({
       slotId: element.slotId,
@@ -637,6 +645,11 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
         // literals (e.g. `style={{ color: 'hsl(221 83% 53%)' }}`) and
         // don't depend on the expansion order of local constants.
         if (decideWrapForAttr(expandedValueStr, ctx, attr).wrap) {
+          // Slots inside a conditional branch are collected per-branch by
+          // `collectBranchReactiveAttrs` and emitted inside `insert()`
+          // bindEvents — keeping them out of init-level `ctx.reactiveAttrs`
+          // avoids binding to a stale node reference after a branch swap (#1071).
+          if (insideConditional) continue
           ctx.reactiveAttrs.push({
             slotId: element.slotId,
             attrName: attr.name,
@@ -647,6 +660,44 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, _insideCon
       }
     }
   }
+}
+
+/**
+ * Collect reactive attribute bindings from a conditional branch IR subtree (#1071).
+ * Walks the branch tree to find dynamic attributes that need a `createEffect`
+ * update on the live element — emitted inside `insert()` bindEvents so the
+ * binding re-resolves its target on every DOM swap.
+ *
+ * Does NOT recurse into nested conditionals (they get their own insert() call)
+ * or loops (whose body uses loop-scoped variables and is handled by the
+ * loop's own reconciliation path).
+ */
+function collectBranchReactiveAttrs(node: IRNode, ctx: ClientJsContext): ConditionalBranchReactiveAttr[] {
+  const attrs: ConditionalBranchReactiveAttr[] = []
+  walkIR(node, null, {
+    ...stopAt<null>('conditional', 'ifStatement', 'loop'),
+    element: ({ node: el, descend }) => {
+      if (!el.slotId) {
+        descend()
+        return
+      }
+      for (const attr of el.attrs) {
+        if (attr.name === '...' || !attr.dynamic || !attr.value) continue
+        const valueStr = attrValueToString(attr.value)
+        if (!valueStr) continue
+        const expanded = expandConstantForReactivity(valueStr, ctx)
+        if (!decideWrapForAttr(expanded, ctx, attr).wrap) continue
+        attrs.push({
+          slotId: el.slotId,
+          attrName: attr.name,
+          expression: expanded,
+          ...pickAttrMeta(attr),
+        })
+      }
+      descend()
+    },
+  })
+  return attrs
 }
 
 /**
@@ -807,6 +858,7 @@ function summarizeBranch(
     refs: collectConditionalBranchRefs(node),
     childComponents: buildBranchChildComponents(collectConditionalBranchChildComponents(node), ctx),
     textEffects: collectBranchTextEffects(node),
+    reactiveAttrs: collectBranchReactiveAttrs(node, ctx),
     loops: collectBranchLoops(node, ctx, siblingOffsets),
     conditionals: collectBranchConditionals(node, ctx, siblingOffsets),
   }

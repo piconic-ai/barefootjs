@@ -6,6 +6,7 @@
  * `ArmBody.conditionals`, so one stringifier handles arbitrary depth.
  */
 
+import type { AttrMeta } from '../../../types'
 import type { ScopeRef } from './common'
 import type { BranchLoopPlan } from './branch-loop'
 
@@ -41,8 +42,9 @@ export interface InsertArm {
  * Everything that happens inside `bindEvents: (__branchScope) => { ... }`.
  *
  * The order of fields matches the emission order (events → refs → child
- * components → disposable text effects → loop reconciliation → nested
- * conditionals). Stringifiers MUST follow this order to keep output stable.
+ * components → disposable reactive attrs → disposable text effects → loop
+ * reconciliation → nested conditionals). Stringifiers MUST follow this
+ * order to keep output stable.
  */
 export interface ArmBody {
   /** addEventListener calls bound to elements inside the arm. */
@@ -51,6 +53,13 @@ export interface ArmBody {
   refs: ArmRefBind[]
   /** initChild calls for child components materialized by the arm swap. */
   childComponents: ArmChildComponentInit[]
+  /**
+   * Reactive attribute bindings scoped to this branch (#1071). Each
+   * becomes a `createDisposableEffect` whose body resolves the target
+   * element from `__branchScope` on every run, so the binding follows
+   * the freshly-inserted DOM after a branch swap.
+   */
+  reactiveAttrs: ArmReactiveAttr[]
   /** Reactive text effects scoped to this branch. Each becomes `createDisposableEffect`. */
   textEffects: ArmTextEffect[]
   /**
@@ -86,5 +95,18 @@ export interface ArmChildComponentInit {
 
 export interface ArmTextEffect {
   slotId: string
+  expression: string
+}
+
+/**
+ * Reactive attribute binding inside a conditional branch (#1071). The
+ * stringifier emits `qsa(__branchScope, '[bf="<slotId>"]')` to resolve
+ * the target on every effect run, then dispatches through `emitAttrUpdate`
+ * for the per-attribute write shape (style / class / value / boolean /
+ * presence / generic).
+ */
+export interface ArmReactiveAttr extends AttrMeta {
+  slotId: string
+  attrName: string
   expression: string
 }

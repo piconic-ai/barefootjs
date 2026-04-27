@@ -71,6 +71,11 @@ function buildArmBody(branch: BranchSummary, options: BuildInsertOptions): ArmBo
       slotId: c.slotId,
       propsExpr: c.propsExpr,
     })),
+    // Branch-scoped reactive attribute bindings (#1071). Spread the
+    // collected entry as-is — `ConditionalBranchReactiveAttr` already
+    // extends `AttrMeta` so the meta flags carry through to the
+    // emitter (`emitAttrUpdate` consumes them).
+    reactiveAttrs: branch.reactiveAttrs.map(a => ({ ...a })),
     textEffects: branch.textEffects.map(t => ({
       slotId: t.slotId,
       expression: t.expression,
