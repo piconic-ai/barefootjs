@@ -5,7 +5,7 @@ import { GalleryMeta } from './gallery-meta'
 export function AdminNotificationsPage() {
   return (
     <>
-      <GalleryMeta appName="Admin Dashboard" sourceHref="https://github.com/barefootjs/barefootjs/tree/main/site/ui/components/gallery/admin" />
+      <GalleryMeta appName="Admin Dashboard" sourceHref="https://github.com/piconic-ai/barefootjs/tree/main/site/ui/components/gallery/admin" />
       <AdminShell currentRoute="notifications">
         <AdminNotificationsDemo />
       </AdminShell>

@@ -16,9 +16,9 @@ JSX → IR (backend-agnostic) → Adapter → Template
 | Language | Adapter | Notes |
 |----------|---------|-------|
 | TypeScript | [HonoAdapter](../adapters/hono-adapter.md) | Hono / JSX-based TS servers |
-| TypeScript | [TestAdapter](https://github.com/barefootjs/barefootjs/tree/main/packages/test) | IR-based component testing |
+| TypeScript | [TestAdapter](https://github.com/piconic-ai/barefootjs/tree/main/packages/test) | IR-based component testing |
 | Go | [GoTemplateAdapter](../adapters/go-template-adapter.md) | `html/template` |
-| Perl | [MojoliciousAdapter](https://github.com/barefootjs/barefootjs/tree/main/packages/adapter-mojolicious) | Mojolicious EP templates |
+| Perl | [MojoliciousAdapter](https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-mojolicious) | Mojolicious EP templates |
 
 ### Planned
 

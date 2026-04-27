@@ -9,7 +9,7 @@ interface SaasBlogPostPageProps {
 export function SaasBlogPostPage({ slug }: SaasBlogPostPageProps) {
   return (
     <>
-      <GalleryMeta appName="SaaS Marketing" sourceHref="https://github.com/barefootjs/barefootjs/tree/main/site/ui/components/gallery/saas" />
+      <GalleryMeta appName="SaaS Marketing" sourceHref="https://github.com/piconic-ai/barefootjs/tree/main/site/ui/components/gallery/saas" />
       <SaasShell currentRoute="blog">
         <SaasBlogPostDemo slug={slug} />
       </SaasShell>

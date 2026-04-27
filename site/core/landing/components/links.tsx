@@ -8,7 +8,7 @@ const links = [
   {
     title: 'Documentation',
     description: 'Learn how to use Barefoot.js in your project.',
-    href: 'https://github.com/barefootjs/barefootjs',
+    href: 'https://github.com/piconic-ai/barefootjs',
   },
   {
     title: 'UI Components',
@@ -18,7 +18,7 @@ const links = [
   {
     title: 'GitHub',
     description: 'View the source code and contribute.',
-    href: 'https://github.com/barefootjs/barefootjs',
+    href: 'https://github.com/piconic-ai/barefootjs',
   },
 ]
 

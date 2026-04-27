@@ -64,7 +64,7 @@ createEffect(() => {
 
 ### Explicit client-only evaluation
 
-Even for patterns the compiler supports, you can use `/* @client */` to skip server evaluation. The [TodoApp example](https://github.com/barefootjs/barefootjs/blob/main/integrations/shared/components/TodoApp.tsx) uses this approach:
+Even for patterns the compiler supports, you can use `/* @client */` to skip server evaluation. The [TodoApp example](https://github.com/piconic-ai/barefootjs/blob/main/integrations/shared/components/TodoApp.tsx) uses this approach:
 
 ```tsx
 // These expressions CAN compile without @client, but the developer
@@ -74,7 +74,7 @@ checked={/* @client */ todos().every(t => t.done)}
 <strong>{/* @client */ todos().filter(t => !t.done).length}</strong>
 ```
 
-Compare with the [TodoAppSSR version](https://github.com/barefootjs/barefootjs/blob/main/integrations/shared/components/TodoAppSSR.tsx), which omits `/* @client */` and lets the compiler generate marked template equivalents for the same expressions.
+Compare with the [TodoAppSSR version](https://github.com/piconic-ai/barefootjs/blob/main/integrations/shared/components/TodoAppSSR.tsx), which omits `/* @client */` and lets the compiler generate marked template equivalents for the same expressions.
 
 
 ## Trade-off

@@ -1,6 +1,6 @@
 # @barefootjs/form
 
-Signal-based form management for [BarefootJS](https://github.com/barefootjs/barefootjs). Provides reactive per-field state (value, error, touched, dirty), configurable validation timing, and [Standard Schema](https://github.com/standard-schema/standard-schema) integration for library-agnostic validation.
+Signal-based form management for [BarefootJS](https://github.com/piconic-ai/barefootjs). Provides reactive per-field state (value, error, touched, dirty), configurable validation timing, and [Standard Schema](https://github.com/standard-schema/standard-schema) integration for library-agnostic validation.
 
 ## Install
 

@@ -91,7 +91,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/barefootjs/barefootjs",
+    "url": "https://github.com/piconic-ai/barefootjs",
     "directory": "packages/adapter-hono"
   },
   "peerDependencies": {

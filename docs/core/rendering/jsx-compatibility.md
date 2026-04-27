@@ -143,4 +143,4 @@ Some JavaScript expressions cannot be translated into marked template syntax. Th
 {/* @client */ items().sort((a, b) => a.name.localeCompare(b.name)).map(...)}
 ```
 
-See the [TodoApp example](https://github.com/barefootjs/barefootjs/blob/main/integrations/shared/components/TodoApp.tsx) for a real-world component using `/* @client */`.
+See the [TodoApp example](https://github.com/piconic-ai/barefootjs/blob/main/integrations/shared/components/TodoApp.tsx) for a real-world component using `/* @client */`.

@@ -5,7 +5,7 @@ import { GalleryMeta } from '../admin/gallery-meta'
 export function SaasLoginPage() {
   return (
     <>
-      <GalleryMeta appName="SaaS Marketing" sourceHref="https://github.com/barefootjs/barefootjs/tree/main/site/ui/components/gallery/saas" />
+      <GalleryMeta appName="SaaS Marketing" sourceHref="https://github.com/piconic-ai/barefootjs/tree/main/site/ui/components/gallery/saas" />
       <SaasShell currentRoute="login">
         <SaasLoginDemo />
       </SaasShell>

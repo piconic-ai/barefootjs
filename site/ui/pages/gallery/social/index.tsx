@@ -5,7 +5,7 @@ import { GalleryMeta } from '../admin/gallery-meta'
 export function SocialFeedPage() {
   return (
     <>
-      <GalleryMeta appName="Social App" sourceHref="https://github.com/barefootjs/barefootjs/tree/main/site/ui/components/gallery/social" />
+      <GalleryMeta appName="Social App" sourceHref="https://github.com/piconic-ai/barefootjs/tree/main/site/ui/components/gallery/social" />
       <SocialShell currentRoute="feed">
         <SocialFeedPageDemo />
       </SocialShell>
