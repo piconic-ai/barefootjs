@@ -1,11 +1,10 @@
 /**
  * Stringify an `EventDelegationPlan` to source lines.
  *
- * Output shape (preserved byte-identical from the legacy
- * `emitLoopEventDelegation`):
+ * Output shape:
  *
- *     if (<container>) <container>.addEventListener('<eventName>', (e) => {
- *       const target = e.target
+ *     if (<container>) <container>.addEventListener('<eventName>', (__bfEvt) => {
+ *       const target = __bfEvt.target
  *       const <slot>El = target.closest('[bf="<slotId>"]')
  *       if (<slot>El) {
  *         <item-lookup specific>
@@ -14,6 +13,14 @@
  *       }
  *       ... more events sharing the same name (deepest-first)
  *     })   // or `}, true)` for non-bubbling events
+ *
+ * The synthetic event parameter is named `__bfEvt` (not `e`) so that user
+ * loop params named `e` (e.g. `edges.map(e => ...)`) do not shadow the
+ * event when their handler is inlined into this scope. See #135 / Block
+ * Graph Editor: an inline handler `onPointerDown={(ev) => setX(e.id)}`
+ * was previously called as `(handler)(e)` where `e` resolved to the loop
+ * item, not the event — so `ev.target` was undefined and
+ * `ev.stopPropagation()` threw at runtime.
  *
  * Item lookup shapes:
  *   - keyed (no nested loops):   `closest('[data-key]')` + `arr.find`
@@ -54,16 +61,16 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
     evs.sort((a, b) => b.domDepth - a.domDepth)
     const useCapture = NON_BUBBLING_EVENTS.has(eventName)
     if (useCapture) {
-      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${eventName}', (e) => {`)
+      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${eventName}', (__bfEvt) => {`)
     } else {
-      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${toDomEventName(eventName)}', (e) => {`)
+      lines.push(`  if (${containerVar}) ${containerVar}.addEventListener('${toDomEventName(eventName)}', (__bfEvt) => {`)
     }
-    lines.push(`    const target = e.target`)
+    lines.push(`    const target = __bfEvt.target`)
     for (const ev of evs) {
       const childVar = varSlotId(ev.childSlotId)
       lines.push(`    const ${childVar}El = target.closest('[bf="${ev.childSlotId}"]')`)
       lines.push(`    if (${childVar}El) {`)
-      const handlerCall = `(${ev.handler.trim()})(e)`
+      const handlerCall = `(${ev.handler.trim()})(__bfEvt)`
       switch (itemLookup.kind) {
         case 'keyed':
           emitKeyedLookup(lines, ev, handlerCall, itemLookup)

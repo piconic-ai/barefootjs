@@ -27,6 +27,7 @@
 import { varSlotId } from '../../utils'
 import { emitAttrUpdate } from '../../emit-reactive'
 import { stringifyReactiveEffects } from './reactive-effects'
+import { emitTemplateCloneInline } from './template-parse'
 import type { PlainLoopPlan, StaticLoopPlan } from '../plan/types'
 
 export function stringifyPlainLoop(
@@ -50,8 +51,9 @@ export function stringifyPlainLoop(
     // Single-line renderItem (no reactive effects).
     const unwrapInline = paramUnwrap ? `${paramUnwrap} ` : ''
     const preamble = mapPreambleWrapped ? `${mapPreambleWrapped}; ` : ''
+    const cloneExpr = emitTemplateCloneInline(template)
     lines.push(
-      `${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}${preamble}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`,
+      `${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}${preamble}if (__existing) return __existing; ${cloneExpr} })`,
     )
     return
   }
@@ -61,7 +63,8 @@ export function stringifyPlainLoop(
   const bodyIndent = topIndent + '  '
   if (paramUnwrap) lines.push(`${bodyIndent}${paramUnwrap}`)
   if (mapPreambleWrapped) lines.push(`${bodyIndent}${mapPreambleWrapped}`)
-  lines.push(`${bodyIndent}const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
+  const cloneExpr = emitTemplateCloneInline(template)
+  lines.push(`${bodyIndent}const __el = __existing ?? (() => { ${cloneExpr} })()`)
   stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__el' })
   lines.push(`${bodyIndent}return __el`)
   lines.push(`${topIndent}})`)

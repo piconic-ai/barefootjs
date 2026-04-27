@@ -183,6 +183,63 @@ export interface SVGPresentationAttributes {
   // fill — kebab-case
   'fill-opacity'?: number | string
   'fill-rule'?: 'nonzero' | 'evenodd' | 'inherit' | string
+
+  // Painting / interaction (apply to most SVG renderable elements)
+  display?: string
+  visibility?: 'visible' | 'hidden' | 'collapse' | string
+  cursor?: string
+  pointerEvents?: string
+  'pointer-events'?: string
+  vectorEffect?: 'none' | 'non-scaling-stroke' | string
+  'vector-effect'?: 'none' | 'non-scaling-stroke' | string
+
+  // Text presentation — camelCase
+  textAnchor?: 'start' | 'middle' | 'end' | string
+  dominantBaseline?: string
+  alignmentBaseline?: string
+  fontFamily?: string
+  fontSize?: number | string
+  fontWeight?: number | string
+  fontStyle?: 'normal' | 'italic' | 'oblique' | string
+  letterSpacing?: number | string
+  wordSpacing?: number | string
+
+  // Text presentation — kebab-case
+  'text-anchor'?: 'start' | 'middle' | 'end' | string
+  'dominant-baseline'?: string
+  'alignment-baseline'?: string
+  'font-family'?: string
+  'font-size'?: number | string
+  'font-weight'?: number | string
+  'font-style'?: 'normal' | 'italic' | 'oblique' | string
+  'letter-spacing'?: number | string
+  'word-spacing'?: number | string
+
+  // Color modifiers
+  color?: string
+  colorInterpolation?: string
+  'color-interpolation'?: string
+
+  // Clip / mask references
+  clipPath?: string
+  'clip-path'?: string
+  clipRule?: 'nonzero' | 'evenodd' | 'inherit' | string
+  'clip-rule'?: 'nonzero' | 'evenodd' | 'inherit' | string
+  mask?: string
+  filter?: string
+}
+
+/**
+ * Marker reference attributes shared by `<path>`, `<line>`, `<polyline>`,
+ * and `<polygon>`. Accepts both camelCase and kebab-case spellings.
+ */
+export interface SVGMarkerReferenceAttributes {
+  markerStart?: string
+  markerMid?: string
+  markerEnd?: string
+  'marker-start'?: string
+  'marker-mid'?: string
+  'marker-end'?: string
 }
 
 // ============================================================================

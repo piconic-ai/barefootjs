@@ -22,6 +22,7 @@ import type {
   LabelHTMLAttributes,
   OptionHTMLAttributes,
   SVGPresentationAttributes,
+  SVGMarkerReferenceAttributes,
 } from '../html-types'
 
 // Stub function types (for type checking only - no runtime implementation)
@@ -187,12 +188,12 @@ export declare namespace JSX {
     // camelCase (React-compatible). The hono/jsx runtime converts camelCase
     // to kebab-case at render time.
     svg: HTMLBaseAttributes & SVGPresentationAttributes & { viewBox?: string; xmlns?: string; width?: number | string; height?: number | string }
-    path: HTMLBaseAttributes & SVGPresentationAttributes & { d?: string }
+    path: HTMLBaseAttributes & SVGPresentationAttributes & SVGMarkerReferenceAttributes & { d?: string; pathLength?: number | string }
     circle: HTMLBaseAttributes & SVGPresentationAttributes & { cx?: number | string; cy?: number | string; r?: number | string }
     rect: HTMLBaseAttributes & SVGPresentationAttributes & { x?: number | string; y?: number | string; width?: number | string; height?: number | string; rx?: number | string; ry?: number | string }
-    line: HTMLBaseAttributes & SVGPresentationAttributes & { x1?: number | string; y1?: number | string; x2?: number | string; y2?: number | string }
-    polyline: HTMLBaseAttributes & SVGPresentationAttributes & { points?: string }
-    polygon: HTMLBaseAttributes & SVGPresentationAttributes & { points?: string }
+    line: HTMLBaseAttributes & SVGPresentationAttributes & SVGMarkerReferenceAttributes & { x1?: number | string; y1?: number | string; x2?: number | string; y2?: number | string }
+    polyline: HTMLBaseAttributes & SVGPresentationAttributes & SVGMarkerReferenceAttributes & { points?: string }
+    polygon: HTMLBaseAttributes & SVGPresentationAttributes & SVGMarkerReferenceAttributes & { points?: string }
     text: HTMLBaseAttributes & SVGPresentationAttributes & { x?: number | string; y?: number | string; dx?: number | string; dy?: number | string }
     tspan: HTMLBaseAttributes & SVGPresentationAttributes
     g: HTMLBaseAttributes & SVGPresentationAttributes & { transform?: string }

@@ -13,6 +13,7 @@
 
 import { varSlotId, DATA_BF_PH, keyAttrName } from '../../utils'
 import { emitComponentAndEventSetup } from '../shared'
+import { templateRootIsSvg } from './template-parse'
 import { emitListenerLine } from './event-listener'
 import type {
   BranchChildComponentInitsPlan,
@@ -86,7 +87,12 @@ export function stringifyBranchInnerLoops(
     if (inner.paramUnwrap) {
       lines.push(`${indent}  ${inner.paramUnwrap}`)
     }
-    lines.push(`${indent}  let __bel${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${inner.wrappedTemplate}\`; return __t.content.firstElementChild.cloneNode(true) })()`)
+    {
+      const isSvg = templateRootIsSvg(inner.wrappedTemplate)
+      const innerHtml = isSvg ? `<svg>${inner.wrappedTemplate}</svg>` : inner.wrappedTemplate
+      const childPath = isSvg ? '.firstElementChild.firstElementChild' : '.firstElementChild'
+      lines.push(`${indent}  let __bel${uid} = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = \`${innerHtml}\`; return __t.content${childPath}.cloneNode(true) })()`)
+    }
     if (inner.wrappedKey) {
       lines.push(`${indent}  __bel${uid}.setAttribute('${keyAttrName(inner.keyDepth)}', String(${inner.wrappedKey}))`)
     }

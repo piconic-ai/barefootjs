@@ -33,6 +33,7 @@
 import { emitComponentAndEventSetup } from '../shared'
 import { stringifyInnerLoops } from './inner-loop'
 import { stringifyReactiveEffects } from './reactive-effects'
+import { emitTemplateCloneLines } from './template-parse'
 import type { CompositeLoopPlan } from '../plan/types'
 
 export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan): void {
@@ -91,9 +92,7 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   // (upsertChild resolves SSR vs CSR per-component at runtime, inner-loop
   // mapArrays are mode-independent by definition).
   lines.push(`${bodyIndent}const __el = __existing ?? (() => {`)
-  lines.push(`${innerIndent}const __tpl = document.createElement('template')`)
-  lines.push(`${innerIndent}__tpl.innerHTML = \`${template}\``)
-  lines.push(`${innerIndent}return __tpl.content.firstElementChild.cloneNode(true)`)
+  for (const ln of emitTemplateCloneLines(template, innerIndent)) lines.push(ln)
   lines.push(`${bodyIndent}})()`)
   emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings)
   if (innerLoops.length > 0) {

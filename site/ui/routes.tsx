@@ -66,6 +66,7 @@ import { FormBuilderRefPage } from './pages/components/form-builder'
 import { PivotTableRefPage } from './pages/components/pivot-table'
 import { DashboardBuilderRefPage } from './pages/components/dashboard-builder'
 import { StateMachinePlaygroundRefPage } from './pages/components/state-machine-playground'
+import { GraphEditorRefPage } from './pages/components/graph-editor'
 import { ThemeCustomizerRefPage } from './pages/components/theme-customizer'
 import { InfiniteScrollRefPage } from './pages/components/infinite-scroll'
 import { ToastQueueRefPage } from './pages/components/toast-queue'
@@ -674,6 +675,11 @@ export function createApp() {
   // State Machine Playground block page
   app.get('/components/state-machine-playground', (c) => {
     return c.render(<StateMachinePlaygroundRefPage />)
+  })
+
+  // Graph / DAG Editor block page (Phase 9 Block #135)
+  app.get('/components/graph-editor', (c) => {
+    return c.render(<GraphEditorRefPage />)
   })
 
   // Theme Customizer block page

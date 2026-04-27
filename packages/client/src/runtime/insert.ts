@@ -240,8 +240,12 @@ function updateFragmentConditional(scope: Element, id: string, html: string): vo
     const endComment = node
     nodesToRemove.forEach(n => n.parentNode?.removeChild(n))
 
-    // Insert new content
-    const fragment = parseHTML(html)
+    // Insert new content. Pass the actual insertion parent so SVG-context
+    // parsing kicks in for fragments mounted inside an `<svg>` (#135).
+    const insertParent = (startComment.parentNode instanceof Element)
+      ? startComment.parentNode
+      : null
+    const fragment = parseHTML(html, insertParent)
     const newNodes: Node[] = []
     let child = fragment.firstChild
     while (child) {
@@ -252,8 +256,13 @@ function updateFragmentConditional(scope: Element, id: string, html: string): vo
     }
     newNodes.forEach(n => startComment!.parentNode?.insertBefore(n, endComment))
   } else if (condEl) {
-    // Single element: replace with new content
-    const parsed = parseHTML(html)
+    // Single element: replace with new content. The replacement's
+    // namespace is determined by the parent of the element being
+    // replaced.
+    const insertParent = (condEl.parentNode instanceof Element)
+      ? condEl.parentNode
+      : null
+    const parsed = parseHTML(html, insertParent)
     const firstChild = parsed.firstChild
 
     if (firstChild?.nodeType === 8 && firstChild?.nodeValue === `bf-cond-start:${id}`) {
@@ -275,7 +284,10 @@ function updateElementConditional(scope: Element, id: string, html: string): voi
   const condEl = scope.querySelector(`[${BF_COND}="${id}"]`)
   if (!condEl) return
 
-  const newEl = parseHTML(html).firstChild
+  const insertParent = (condEl.parentNode instanceof Element)
+    ? condEl.parentNode
+    : null
+  const newEl = parseHTML(html, insertParent).firstChild
   if (newEl) {
     condEl.replaceWith(newEl.cloneNode(true))
   }

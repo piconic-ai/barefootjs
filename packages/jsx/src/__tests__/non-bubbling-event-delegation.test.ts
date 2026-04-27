@@ -40,7 +40,7 @@ describe('non-bubbling event delegation (#852)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    expect(content).toContain(".addEventListener('mouseenter', (e) => {")
+    expect(content).toContain(".addEventListener('mouseenter', (__bfEvt) => {")
     expect(content).toContain('}, true)')
     expect(content).toContain('target.closest')
     expect(content).toContain('handleEnter(item.id)')
@@ -70,7 +70,7 @@ describe('non-bubbling event delegation (#852)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    expect(content).toContain(".addEventListener('mouseleave', (e) => {")
+    expect(content).toContain(".addEventListener('mouseleave', (__bfEvt) => {")
     expect(content).toContain('}, true)')
     expect(content).toContain('target.closest')
     expect(content).toContain('handleLeave(item.id)')
@@ -103,7 +103,7 @@ describe('non-bubbling event delegation (#852)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    expect(content).toContain(".addEventListener('pointerenter', (e) => {")
+    expect(content).toContain(".addEventListener('pointerenter', (__bfEvt) => {")
     expect(content).toContain('}, true)')
     expect(content).toContain('target.closest')
     expect(content).toContain('handleEnter(item.id)')
@@ -136,7 +136,7 @@ describe('non-bubbling event delegation (#852)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    expect(content).toContain(".addEventListener('pointerleave', (e) => {")
+    expect(content).toContain(".addEventListener('pointerleave', (__bfEvt) => {")
     expect(content).toContain('}, true)')
     expect(content).toContain('target.closest')
     expect(content).toContain('handleLeave(item.id)')
@@ -169,11 +169,11 @@ describe('non-bubbling event delegation (#852)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    expect(content).toContain(".addEventListener('click', (e) => {")
+    expect(content).toContain(".addEventListener('click', (__bfEvt) => {")
     // Bubble-phase listener closes without capture flag
     expect(content).toContain('})')
     // Must NOT have capture flag for click
-    expect(content).not.toContain(".addEventListener('click', (e) => {" + '\n' + '  }, true)')
+    expect(content).not.toContain(".addEventListener('click', (__bfEvt) => {" + '\n' + '  }, true)')
   })
 
   test('onFocus in loop uses capture-phase delegation (existing behavior regression guard)', () => {
@@ -203,7 +203,7 @@ describe('non-bubbling event delegation (#852)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    expect(content).toContain(".addEventListener('focus', (e) => {")
+    expect(content).toContain(".addEventListener('focus', (__bfEvt) => {")
     expect(content).toContain('}, true)')
     expect(content).toContain('target.closest')
     expect(content).toContain('handleFocus(item.id)')

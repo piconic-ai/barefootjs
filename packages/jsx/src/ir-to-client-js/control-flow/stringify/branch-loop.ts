@@ -13,6 +13,7 @@
 import { stringifyCompositeLoop } from './composite-loop'
 import { stringifyEventDelegation } from './event-delegation'
 import { stringifyReactiveEffects } from './reactive-effects'
+import { emitTemplateCloneInline } from './template-parse'
 import type {
   BranchLoopPlan,
   BranchPlainLoopPlan,
@@ -64,10 +65,11 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
 
   if (reactiveEffects === null) {
     // Simple case: single-line renderItem.
+    const cloneExpr = emitTemplateCloneInline(template)
     if (mapPreambleWrapped) {
-      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${mapPreambleWrapped}; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${mapPreambleWrapped}; ${cloneExpr} })`)
     } else {
-      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })`)
+      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${cloneExpr} })`)
     }
   } else {
     // Multi-line renderItem with fine-grained effects.
@@ -78,7 +80,8 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     if (mapPreambleWrapped) {
       lines.push(`          ${mapPreambleWrapped}`)
     }
-    lines.push(`          const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`${template}\`; return __tpl.content.firstElementChild.cloneNode(true) })()`)
+    const cloneExpr = emitTemplateCloneInline(template)
+    lines.push(`          const __el = __existing ?? (() => { ${cloneExpr} })()`)
     stringifyReactiveEffects(lines, reactiveEffects, { indent: '          ', elVar: '__el' })
     lines.push(`          return __el`)
     lines.push(`        })`)

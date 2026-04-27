@@ -20,7 +20,7 @@ const adapter = new TestAdapter()
 describe('curried event handlers in mapArray (#837)', () => {
   test('delegation path: curried handler result is called with event', () => {
     // onDragStart={handleDragStart(item.id)} where handleDragStart returns a function.
-    // The delegation callback must call (handleDragStart(item.id))(e), not just
+    // The delegation callback must call (handleDragStart(item.id))(__bfEvt), not just
     // evaluate handleDragStart(item.id) as a statement (which discards the result).
     const source = `
       'use client'
@@ -54,7 +54,7 @@ describe('curried event handlers in mapArray (#837)', () => {
     const content = clientJs!.content
 
     // Delegation callback must call the returned handler with (e)
-    expect(content).toContain('(handleDragStart(item.id))(e)')
+    expect(content).toContain('(handleDragStart(item.id))(__bfEvt)')
 
     // The broken pattern (discards return value, never passes e) must not appear
     expect(content).not.toMatch(/if \(item\) handleDragStart\(item\.id\)(?!\()/)
@@ -62,7 +62,7 @@ describe('curried event handlers in mapArray (#837)', () => {
 
   test('delegation path: regular arrow function handler still works', () => {
     // onClick={() => removeItem(item.id)} — non-curried arrow function handler.
-    // Must still generate correct delegation: (() => removeItem(item.id))(e).
+    // Must still generate correct delegation: (() => removeItem(item.id))(__bfEvt).
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -90,7 +90,7 @@ describe('curried event handlers in mapArray (#837)', () => {
     const content = clientJs!.content
 
     // Arrow function handler: called via (handler)(e)
-    expect(content).toContain('(() => removeItem(item.id))(e)')
+    expect(content).toContain('(() => removeItem(item.id))(__bfEvt)')
   })
 
   test('direct addEventListener path: curried handler passed as value (nested loop)', () => {
