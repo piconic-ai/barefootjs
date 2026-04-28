@@ -7,6 +7,7 @@
 import type {
   ComponentIR,
   ImportInfo,
+  ImportSpecifier,
   IRMetadata,
   CompileOptions,
   CompileResult,
@@ -28,16 +29,59 @@ export interface CompileOptionsWithAdapter extends CompileOptions {
 }
 
 /**
- * Client-side package sources that should be excluded from template imports.
- * These packages are only needed by client JS, not by server-side templates.
+ * Client-side package sources that need adapter-specific SSR handling.
+ * When the adapter provides a `clientShimSource`, imports from these paths
+ * are rewritten to that shim. Otherwise (e.g. go-template, which has no JS
+ * runtime at SSR), the imports are stripped wholesale.
  */
 const CLIENT_PACKAGE_SOURCES = new Set([
   '@barefootjs/client',
   '@barefootjs/client/runtime',
 ])
 
-function filterTemplateImports(imports: ImportInfo[]): ImportInfo[] {
-  return imports.filter(imp => !CLIENT_PACKAGE_SOURCES.has(imp.source))
+function rewriteTemplateImports(
+  imports: ImportInfo[],
+  shimSource: string | undefined,
+): ImportInfo[] {
+  if (!shimSource) {
+    return imports.filter(imp => !CLIENT_PACKAGE_SOURCES.has(imp.source))
+  }
+  const merged = new Map<string, ImportInfo>()
+  const result: ImportInfo[] = []
+  for (const imp of imports) {
+    if (!CLIENT_PACKAGE_SOURCES.has(imp.source)) {
+      result.push(imp)
+      continue
+    }
+    // Rewrite to the shim source. Multiple original sources collapse into a
+    // single import statement so the SSR template stays clean.
+    const existing = merged.get(shimSource)
+    if (existing) {
+      // Merge specifiers, deduplicating by (name, alias, isDefault, isNamespace)
+      const seen = new Set(existing.specifiers.map(specKey))
+      for (const spec of imp.specifiers) {
+        if (!seen.has(specKey(spec))) {
+          existing.specifiers.push(spec)
+          seen.add(specKey(spec))
+        }
+      }
+      // Type-only stays only if every contributing import is type-only
+      existing.isTypeOnly = existing.isTypeOnly && imp.isTypeOnly
+    } else {
+      const rewritten: ImportInfo = {
+        ...imp,
+        source: shimSource,
+        specifiers: imp.specifiers.map(s => ({ ...s })),
+      }
+      merged.set(shimSource, rewritten)
+      result.push(rewritten)
+    }
+  }
+  return result
+}
+
+function specKey(s: ImportSpecifier): string {
+  return `${s.isDefault ? 'd' : ''}${s.isNamespace ? 'n' : ''}:${s.name}:${s.alias ?? ''}`
 }
 
 /**
@@ -90,7 +134,7 @@ export async function compileJSX(
 
   const componentIR: ComponentIR = {
     version: '0.1',
-    metadata: buildMetadata(ctx),
+    metadata: buildMetadata(ctx, options.adapter.clientShimSource),
     root: ir,
     errors: [],
   }
@@ -120,7 +164,7 @@ export async function compileJSX(
   if (adapterOutput.sections) {
     const s = adapterOutput.sections
     const component = applyExportKeyword(s.component, componentIR)
-    content = [s.imports, s.types, moduleExports, component]
+    content = [s.imports, s.moduleConstants ?? '', s.types, moduleExports, component]
       .filter(Boolean).join('\n\n') + (s.defaultExport || '')
   } else {
     content = adapterOutput.template
@@ -199,7 +243,7 @@ function compileMultipleComponentsSync(
 
     const componentIR: ComponentIR = {
       version: '0.1',
-      metadata: buildMetadata(ctx),
+      metadata: buildMetadata(ctx, options.adapter.clientShimSource),
       root: ir,
       errors: [],
     }
@@ -229,6 +273,14 @@ function compileMultipleComponentsSync(
     }
   }
 
+  // Module-scope statements (e.g. SSR-side context bindings) are file-wide:
+  // every component in the same source file generates the same block, so we
+  // collect via exact-string dedup and emit once at the file level rather
+  // than per component (per-line dedup of imports drops repeated lines like
+  // closing `})` that recur across multiple multi-line bindings).
+  const moduleConstantsSet = new Set<string>()
+  const moduleConstantsOrdered: string[] = []
+
   for (const { componentIR } of entries) {
     const scriptBaseName = !componentIR.metadata.hasDefaultExport && defaultExportName ? defaultExportName : undefined
     const adapterOutput = adapter.generate(componentIR, { scriptBaseName })
@@ -244,6 +296,11 @@ function compileMultipleComponentsSync(
       imports = s.imports
       types = s.types
       component = applyExportKeyword(s.component, componentIR) + (s.defaultExport || '')
+      const mc = s.moduleConstants
+      if (mc && !moduleConstantsSet.has(mc)) {
+        moduleConstantsSet.add(mc)
+        moduleConstantsOrdered.push(mc)
+      }
     } else {
       // Fallback: parse template string (for adapters without sections)
       const lines = adapterOutput.template.split('\n')
@@ -385,6 +442,7 @@ function compileMultipleComponentsSync(
   // Combine all components
   const combinedTemplate = [
     mergedImports,
+    moduleConstantsOrdered.join('\n\n'),
     uniqueTypes.join('\n\n'),
     uniqueModuleExports.length > 0 ? uniqueModuleExports.join('\n') : '',
     ...allOutputs.map(o => o.component),
@@ -486,7 +544,8 @@ async function compileMultipleComponents(
 // =============================================================================
 
 export function buildMetadata(
-  ctx: ReturnType<typeof analyzeComponent>
+  ctx: ReturnType<typeof analyzeComponent>,
+  clientShimSource?: string
 ): IRMetadata {
   return {
     componentName: ctx.componentName || 'Unknown',
@@ -505,7 +564,7 @@ export function buildMetadata(
     onMounts: ctx.onMounts,
     initStatements: ctx.initStatements,
     imports: ctx.imports,
-    templateImports: filterTemplateImports(ctx.imports),
+    templateImports: rewriteTemplateImports(ctx.imports, clientShimSource),
     namedExports: ctx.namedExports,
     localFunctions: ctx.localFunctions,
     localConstants: ctx.localConstants,
@@ -549,7 +608,7 @@ export function compileJSXSync(
 
   const componentIR: ComponentIR = {
     version: '0.1',
-    metadata: buildMetadata(ctx),
+    metadata: buildMetadata(ctx, options.adapter.clientShimSource),
     root: ir,
     errors: [],
   }
@@ -579,7 +638,7 @@ export function compileJSXSync(
   if (adapterOutput.sections) {
     const s = adapterOutput.sections
     const component = applyExportKeyword(s.component, componentIR)
-    content = [s.imports, s.types, moduleExports, component]
+    content = [s.imports, s.moduleConstants ?? '', s.types, moduleExports, component]
       .filter(Boolean).join('\n\n') + (s.defaultExport || '')
   } else {
     content = adapterOutput.template

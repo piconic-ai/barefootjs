@@ -20,6 +20,14 @@ export interface TemplateSections {
   types: string
   component: string
   defaultExport: string
+  /**
+   * Module-scope statements (e.g. SSR-side context bindings emitted by the
+   * Hono adapter). Placed between `imports` and `types` in the assembled
+   * template. Multi-component compilation dedupes this section by exact
+   * string equality — adapters must emit the same content for every
+   * component in a source file.
+   */
+  moduleConstants?: string
 }
 
 export interface AdapterOutput {
@@ -48,6 +56,18 @@ export interface TemplateAdapter {
    * Required for adapters that look up templates by filename (e.g. Mojolicious).
    */
   templatesPerComponent?: boolean
+  /**
+   * Module specifier of the SSR shim for `@barefootjs/client` (and
+   * `/runtime`). When set, the compiler rewrites client-package imports in
+   * SSR templates to point at this shim instead of stripping them. The shim
+   * is expected to provide SSR-safe stubs for `useContext`, `provideContext`,
+   * pure helpers (`splitProps`, `unwrap`, ...), and throwing stubs for
+   * reactive primitives that the compiler should never reach at SSR.
+   *
+   * When undefined, the compiler keeps the legacy whole-package strip
+   * behaviour for adapters that do not run JS at SSR (e.g. go-template).
+   */
+  clientShimSource?: string
 
   // Main entry point - generates complete template from IR
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput

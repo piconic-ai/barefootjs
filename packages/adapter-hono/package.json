@@ -30,6 +30,10 @@
       "types": "./src/dialog-context.tsx",
       "import": "./src/dialog-context.tsx"
     },
+    "./client-shim": {
+      "types": "./src/client-shim.ts",
+      "import": "./src/client-shim.ts"
+    },
     "./preload": {
       "types": "./src/preload.tsx",
       "import": "./src/preload.tsx"
@@ -95,6 +99,7 @@
     "directory": "packages/adapter-hono"
   },
   "peerDependencies": {
+    "@barefootjs/client": "workspace:*",
     "@barefootjs/jsx": "workspace:*",
     "hono": "^4.0.0"
   },

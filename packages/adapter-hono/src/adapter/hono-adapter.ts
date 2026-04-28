@@ -49,6 +49,7 @@ export interface HonoAdapterOptions {
 export class HonoAdapter extends JsxAdapter {
   name = 'hono'
   extension = '.tsx'
+  clientShimSource = '@barefootjs/hono/client-shim'
 
   protected jsxConfig: JsxAdapterConfig = { preserveTypes: true }
 
@@ -77,6 +78,13 @@ export class HonoAdapter extends JsxAdapter {
     const types = this.generateTypes(ir, component)
     const componentCode = [types, component].filter(Boolean).join('\n')
     const imports = this.generateImports(ir, componentCode)
+    // Module-level Context bindings (`const Ctx = createContext()`) are
+    // skipped from the SSR signal-initializer block by JsxAdapter — they
+    // need to live at module scope so providers and consumers in the same
+    // render share the same Context object identity. Emitted in a dedicated
+    // section so multi-component dedup works on the full block (not per
+    // line, which would split multi-line `({...})` arguments).
+    const moduleConstants = this.generateModuleLevelContextBindings(ir)
 
     const defaultExport = ir.metadata.hasDefaultExport
       ? `\nexport default ${this.componentName}`
@@ -87,10 +95,11 @@ export class HonoAdapter extends JsxAdapter {
       types: types || '',
       component,
       defaultExport,
+      moduleConstants,
     }
 
     // Assemble template for backward compat (external consumers using output.template)
-    const template = [imports, types, component].filter(Boolean).join('\n\n') + defaultExport
+    const template = [imports, moduleConstants, types, component].filter(Boolean).join('\n\n') + defaultExport
 
     return {
       template,
@@ -98,6 +107,20 @@ export class HonoAdapter extends JsxAdapter {
       types: types || undefined,
       extension: this.extension,
     }
+  }
+
+  private generateModuleLevelContextBindings(ir: ComponentIR): string {
+    const lines: string[] = []
+    for (const c of ir.metadata.localConstants) {
+      if (!c.isModule) continue
+      if (c.isExported) continue
+      if (c.systemConstructKind !== 'createContext') continue
+      if (!c.value) continue
+      const keyword = c.declarationKind ?? 'const'
+      const value = this.jsxConfig.preserveTypes ? (c.typedValue ?? c.value) : c.value
+      lines.push(`${keyword} ${c.name} = ${value}`)
+    }
+    return lines.join('\n')
   }
 
   // ===========================================================================
@@ -123,7 +146,8 @@ export class HonoAdapter extends JsxAdapter {
       lines.push(`import { Suspense } from 'hono/jsx/streaming'`)
     }
 
-    // Re-export template imports (client-side packages already filtered by compiler)
+    // Re-emit template imports (compiler already rewrote @barefootjs/client to
+    // the shim source).
     for (const imp of ir.metadata.templateImports) {
       if (imp.specifiers.length === 0) {
         if (!imp.isTypeOnly) {
@@ -136,6 +160,13 @@ export class HonoAdapter extends JsxAdapter {
       } else {
         lines.push(`import ${this.formatImportSpecifiers(imp.specifiers)} from '${imp.source}'`)
       }
+    }
+
+    // Provider IR rendering emits `provideContextSSR(...)` calls. Emit the
+    // import on its own line so multi-component files dedupe it cleanly via
+    // the compiler's per-line import merging.
+    if (/\bprovideContextSSR\(/.test(componentCode)) {
+      lines.push(`import { provideContextSSR } from '@barefootjs/hono/client-shim'`)
     }
 
     return lines.join('\n')
@@ -431,8 +462,21 @@ export class HonoAdapter extends JsxAdapter {
         // If-statements are rendered at the component level, not inline
         // This case shouldn't normally be hit, but return empty for safety
         return ''
-      case 'provider':
-        return this.renderChildren((node as IRProvider).children)
+      case 'provider': {
+        const provider = node as IRProvider
+        const children = this.renderChildren(provider.children)
+        // Quote string-literal values; dynamic expressions emit raw.
+        const rawValue = provider.valueProp.value ?? ''
+        const valueExpr = provider.valueProp.dynamic ? rawValue : JSON.stringify(rawValue)
+        // Bridge BarefootJS Context to Hono's per-render context stack so
+        // descendants that call useContext() at SSR see the provided value.
+        // `provideContextSSR` is a helper exported from the client shim
+        // (`@barefootjs/hono/client-shim`); generateImports auto-injects the
+        // import when this expression is present in the rendered output.
+        // The outer fragment makes the form valid JSX whether the provider
+        // appears as the component root or nested inside JSX siblings.
+        return `<>{provideContextSSR(${provider.contextName}, ${valueExpr}, <>${children}</>)}</>`
+      }
       case 'async':
         return this.renderAsync(node as IRAsync)
       default:
