@@ -12,7 +12,7 @@
  * `init*` callbacks until Step 2 of the Phase 9 chart migration (#1080).
  */
 
-import { createSignal, createMemo, createEffect, useContext } from '@barefootjs/client'
+import { createSignal, createMemo, createEffect, onCleanup, useContext } from '@barefootjs/client'
 import {
   applyChartCSSVariables,
   BarChartContext,
@@ -25,23 +25,21 @@ import {
   createLinearScale,
   createPointScale,
   createRadarRadialScale,
+  buildRadialBarArcs,
+  CHART_CLASS_GRID,
+  CHART_CLASS_X_AXIS,
+  CHART_CLASS_Y_AXIS,
+  CHART_CLASS_POLAR_GRID,
+  CHART_CLASS_POLAR_ANGLE_AXIS,
+  CHART_CLASS_RADIAL_BAR,
   initBar as barInit,
   initArea as areaInit,
-  initCartesianGrid as cartesianGridInit,
-  initXAxis as xAxisInit,
-  initYAxis as yAxisInit,
   initChartTooltip as chartTooltipInit,
-  initRadialBar as radialBarInit,
   initRadialChartLabel as radialChartLabelInit,
   initRadar as radarInit,
-  initPolarGrid as polarGridInit,
-  initPolarAngleAxis as polarAngleAxisInit,
   initRadarTooltip as radarTooltipInit,
   initPie as pieInit,
   initPieTooltip as pieTooltipInit,
-  initAreaXAxis as areaXAxisInit,
-  initAreaYAxis as areaYAxisInit,
-  initAreaCartesianGrid as areaCartesianGridInit,
   initAreaChartTooltip as areaChartTooltipInit,
   initLine as lineInit,
 } from '@barefootjs/chart'
@@ -319,28 +317,201 @@ function Bar(props: BarProps) {
   return <span data-slot="bar" style="display:none" ref={handleMount} />
 }
 
+// Horizontal + vertical grid lines flattened into a single list. Two sibling
+// `.map()`s inside the same parent collide on `findLoopMarkers` (it picks the
+// last `<!--bf-loop-->` pair, so both maps end up writing to the same DOM
+// range). The reactive props are read inline rather than via a helper to keep
+// the analyzer's `propUsage` graph aware of `props.horizontal`/`props.vertical`
+// — when usage hides behind a function call the compiler falls back to
+// emitting unknown props as DOM attributes on the root element.
 function CartesianGrid(props: CartesianGridProps) {
-  const handleMount = (el: HTMLElement) => {
-    cartesianGridInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(BarChartContext)
 
-  return <span data-slot="cartesian-grid" style="display:none" ref={handleMount} />
+  const lines = createMemo(() => {
+    const result: { key: string; x1: number; x2: number; y1: number; y2: number }[] = []
+    const ys = ctx.yScale()
+    if (!ys) return result
+    const innerW = ctx.innerWidth()
+    if (props.horizontal !== false) {
+      for (const tick of ys.ticks()) {
+        const y = ys(tick)
+        result.push({ key: `h-${tick}`, x1: 0, x2: innerW, y1: y, y2: y })
+      }
+    }
+    if (props.vertical) {
+      const innerH = ctx.innerHeight()
+      const domainMax = ys.domain()[1] || 1
+      for (const tick of ys.ticks()) {
+        const x = (tick / domainMax) * innerW
+        result.push({ key: `v-${tick}`, x1: x, x2: x, y1: 0, y2: innerH })
+      }
+    }
+    return result
+  })
+
+  return (
+    <g className={CHART_CLASS_GRID}>
+      {lines().map((l) => (
+        <line
+          key={l.key}
+          x1={String(l.x1)}
+          x2={String(l.x2)}
+          y1={String(l.y1)}
+          y2={String(l.y2)}
+          stroke="currentColor"
+          strokeOpacity="0.1"
+        />
+      ))}
+    </g>
+  )
+}
+
+function AreaCartesianGrid(props: AreaCartesianGridProps) {
+  const ctx = useContext(AreaChartContext)
+
+  const lines = createMemo(() => {
+    const result: { key: string; x1: number; x2: number; y1: number; y2: number }[] = []
+    const ys = ctx.yScale()
+    if (!ys) return result
+    const innerW = ctx.innerWidth()
+    if (props.horizontal !== false) {
+      for (const tick of ys.ticks()) {
+        const y = ys(tick)
+        result.push({ key: `h-${tick}`, x1: 0, x2: innerW, y1: y, y2: y })
+      }
+    }
+    if (props.vertical) {
+      const innerH = ctx.innerHeight()
+      const domainMax = ys.domain()[1] || 1
+      for (const tick of ys.ticks()) {
+        const x = (tick / domainMax) * innerW
+        result.push({ key: `v-${tick}`, x1: x, x2: x, y1: 0, y2: innerH })
+      }
+    }
+    return result
+  })
+
+  return (
+    <g className={CHART_CLASS_GRID}>
+      {lines().map((l) => (
+        <line
+          key={l.key}
+          x1={String(l.x1)}
+          x2={String(l.x2)}
+          y1={String(l.y1)}
+          y2={String(l.y2)}
+          stroke="currentColor"
+          strokeOpacity="0.1"
+        />
+      ))}
+    </g>
+  )
 }
 
 function XAxis(props: XAxisProps) {
-  const handleMount = (el: HTMLElement) => {
-    xAxisInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(BarChartContext)
 
-  return <span data-slot="x-axis" style="display:none" ref={handleMount} />
+  // Inform the chart container which key drives the x scale. Runs as an
+  // effect so a reactive `dataKey` (e.g. via signal) re-syncs the scale.
+  createEffect(() => {
+    ctx.setXDataKey(props.dataKey)
+  })
+
+  const visible = createMemo(() => !props.hide && ctx.xScale() !== null)
+
+  const axisRangeRight = createMemo(() => {
+    const xs = ctx.xScale()
+    return xs ? xs.range()[1] : 0
+  })
+
+  const tickLabels = createMemo(() => {
+    if (!visible()) return []
+    const xs = ctx.xScale()
+    if (!xs) return []
+    const bandwidth = xs.bandwidth()
+    const formatter = props.tickFormatter
+    return xs.domain().map((value) => ({
+      x: (xs(value) ?? 0) + bandwidth / 2,
+      label: formatter ? formatter(value) : value,
+    }))
+  })
+
+  return (
+    <g
+      className={CHART_CLASS_X_AXIS}
+      transform={`translate(0,${ctx.innerHeight()})`}
+      style={visible() ? '' : 'display:none'}
+    >
+      <line
+        x1="0"
+        x2={String(axisRangeRight())}
+        y1="0"
+        y2="0"
+        stroke="currentColor"
+        strokeOpacity="0.1"
+      />
+      {tickLabels().map((t) => (
+        <text
+          key={String(t.label)}
+          x={String(t.x)}
+          y="20"
+          textAnchor="middle"
+          fill="currentColor"
+          opacity="0.5"
+          fontSize="12"
+        >{t.label}</text>
+      ))}
+    </g>
+  )
 }
 
 function YAxis(props: YAxisProps) {
-  const handleMount = (el: HTMLElement) => {
-    yAxisInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(BarChartContext)
 
-  return <span data-slot="y-axis" style="display:none" ref={handleMount} />
+  const visible = createMemo(() => !props.hide && ctx.yScale() !== null)
+
+  const axisLineRange = createMemo(() => {
+    const ys = ctx.yScale()
+    if (!ys) return { y1: 0, y2: 0 }
+    const range = ys.range()
+    return { y1: range[0], y2: range[1] }
+  })
+
+  const tickLabels = createMemo(() => {
+    if (!visible()) return []
+    const ys = ctx.yScale()
+    if (!ys) return []
+    const formatter = props.tickFormatter
+    return ys.ticks().map((tick) => ({
+      y: ys(tick),
+      label: formatter ? formatter(tick) : String(tick),
+    }))
+  })
+
+  return (
+    <g className={CHART_CLASS_Y_AXIS} style={visible() ? '' : 'display:none'}>
+      <line
+        x1="0"
+        x2="0"
+        y1={String(axisLineRange().y1)}
+        y2={String(axisLineRange().y2)}
+        stroke="currentColor"
+        strokeOpacity="0.1"
+      />
+      {tickLabels().map((t) => (
+        <text
+          key={String(t.label)}
+          x="-8"
+          y={String(t.y)}
+          textAnchor="end"
+          dominantBaseline="middle"
+          fill="currentColor"
+          opacity="0.5"
+          fontSize="12"
+        >{t.label}</text>
+      ))}
+    </g>
+  )
 }
 
 function ChartTooltip(props: ChartTooltipProps) {
@@ -427,11 +598,84 @@ function RadialChart(props: RadialChartProps) {
 }
 
 function RadialBar(props: RadialBarProps) {
-  const handleMount = (el: HTMLElement) => {
-    radialBarInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(RadialChartContext)
 
-  return <span data-slot="radial-bar" style="display:none" ref={handleMount} />
+  // Mirror initRadialBar's registration handshake: register on every
+  // dataKey change, deregister the previous key, and clean up on unmount.
+  let currentDataKey: string | null = null
+  createEffect(() => {
+    const dataKey = props.dataKey
+    const fill = props.fill ?? 'currentColor'
+    if (currentDataKey !== null) {
+      ctx.unregisterRadialBar(currentDataKey)
+    }
+    ctx.registerRadialBar({ dataKey, fill })
+    currentDataKey = dataKey
+  })
+  onCleanup(() => {
+    if (currentDataKey !== null) ctx.unregisterRadialBar(currentDataKey)
+  })
+
+  const arcSpecs = createMemo(() => {
+    const dataKey = props.dataKey
+    return buildRadialBarArcs(
+      ctx.data(),
+      dataKey,
+      ctx.innerRadius(),
+      ctx.outerRadius(),
+      ctx.startAngle(),
+      ctx.endAngle(),
+    )
+  })
+
+  // Each ring contributes a track <path> followed by a value <path>; to keep
+  // the keyed reconciler happy we flatten them into a single list keyed by
+  // ring index + role rather than nesting them under a Fragment.
+  const arcEntries = createMemo(() => {
+    const entries: { key: string; role: 'track' | 'value'; d: string; fill: string; index: number; value: number }[] = []
+    for (const spec of arcSpecs()) {
+      if (spec.trackD != null) {
+        entries.push({
+          key: `t-${spec.index}`,
+          role: 'track',
+          d: spec.trackD,
+          fill: 'currentColor',
+          index: spec.index,
+          value: spec.value,
+        })
+      }
+      if (spec.arcD != null) {
+        entries.push({
+          key: `v-${spec.index}`,
+          role: 'value',
+          d: spec.arcD,
+          fill: spec.itemFill ?? props.fill ?? 'currentColor',
+          index: spec.index,
+          value: spec.value,
+        })
+      }
+    }
+    return entries
+  })
+
+  return (
+    <g className={`${CHART_CLASS_RADIAL_BAR} ${CHART_CLASS_RADIAL_BAR}-${props.dataKey}`}>
+      {arcEntries().map((entry) =>
+        entry.role === 'track' ? (
+          <path key={entry.key} d={entry.d} fill={entry.fill} opacity="0.1" />
+        ) : (
+          <path
+            key={entry.key}
+            d={entry.d}
+            fill={entry.fill}
+            data-key={props.dataKey}
+            data-value={String(entry.value)}
+            data-index={String(entry.index)}
+          />
+        )
+      )}
+    </g>
+  )
 }
 
 function RadialChartLabel(props: RadialChartLabelProps) {
@@ -531,20 +775,142 @@ function Radar(props: RadarProps) {
   return <span data-slot="radar" style="display:none" ref={handleMount} />
 }
 
-function PolarGrid(props: PolarGridProps) {
-  const handleMount = (el: HTMLElement) => {
-    polarGridInit(el, props as unknown as Record<string, unknown>)
-  }
+type PolarGridShape =
+  | { key: string; kind: 'circle'; r: number }
+  | { key: string; kind: 'polygon'; points: string }
+  | { key: string; kind: 'spoke'; x2: number; y2: number }
 
-  return <span data-slot="polar-grid" style="display:none" ref={handleMount} />
+function PolarGrid(props: PolarGridProps) {
+  const ctx = useContext(RadarChartContext)
+
+  // Concentric rings + radial spokes flattened into one list. Two sibling
+  // `<g>` `.map()`s collide on the loop-marker lookup (see CartesianGrid).
+  const shapes = createMemo<PolarGridShape[]>(() => {
+    if (props.show === false) return []
+    const rs = ctx.radialScale()
+    if (!rs) return []
+    const data = ctx.data()
+    const n = data.length
+    if (n === 0) return []
+
+    const result: PolarGridShape[] = []
+    const angleStep = (2 * Math.PI) / n
+    const gridType = props.gridType ?? 'polygon'
+
+    for (const tick of rs.ticks(5)) {
+      const r = rs(tick)
+      if (r <= 0) continue
+      if (gridType === 'circle') {
+        result.push({ key: `c-${tick}`, kind: 'circle', r })
+      } else {
+        const points: string[] = []
+        for (let i = 0; i < n; i++) {
+          const angle = angleStep * i - Math.PI / 2
+          points.push(`${r * Math.cos(angle)},${r * Math.sin(angle)}`)
+        }
+        result.push({ key: `p-${tick}`, kind: 'polygon', points: points.join(' ') })
+      }
+    }
+
+    const radius = ctx.radius()
+    for (let i = 0; i < n; i++) {
+      const angle = angleStep * i - Math.PI / 2
+      result.push({
+        key: `s-${i}`,
+        kind: 'spoke',
+        x2: radius * Math.cos(angle),
+        y2: radius * Math.sin(angle),
+      })
+    }
+    return result
+  })
+
+  return (
+    <g className={CHART_CLASS_POLAR_GRID}>
+      {shapes().map((shape) =>
+        shape.kind === 'circle' ? (
+          <circle
+            key={shape.key}
+            cx="0"
+            cy="0"
+            r={String(shape.r)}
+            fill="none"
+            stroke="currentColor"
+            strokeOpacity="0.1"
+          />
+        ) : shape.kind === 'polygon' ? (
+          <polygon
+            key={shape.key}
+            points={shape.points}
+            fill="none"
+            stroke="currentColor"
+            strokeOpacity="0.1"
+          />
+        ) : (
+          <line
+            key={shape.key}
+            x1="0"
+            y1="0"
+            x2={String(shape.x2)}
+            y2={String(shape.y2)}
+            stroke="currentColor"
+            strokeOpacity="0.1"
+          />
+        )
+      )}
+    </g>
+  )
 }
 
 function PolarAngleAxis(props: PolarAngleAxisProps) {
-  const handleMount = (el: HTMLElement) => {
-    polarAngleAxisInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(RadarChartContext)
 
-  return <span data-slot="polar-angle-axis" style="display:none" ref={handleMount} />
+  // Mirror initPolarAngleAxis: a separate effect declares the axis key on
+  // the parent context so RadarChart can refresh its scale.
+  createEffect(() => {
+    if (props.dataKey) ctx.setDataKey(props.dataKey)
+  })
+
+  const labels = createMemo(() => {
+    if (props.hide) return []
+    const rs = ctx.radialScale()
+    if (!rs) return []
+    const data = ctx.data()
+    const axisKey = ctx.dataKey()
+    const n = data.length
+    if (n === 0 || !axisKey) return []
+    const radius = ctx.radius()
+    const angleStep = (2 * Math.PI) / n
+    const labelOffset = 16
+    const formatter = props.tickFormatter
+    return data.map((datum, i) => {
+      const raw = String(datum[axisKey])
+      const angle = angleStep * i - Math.PI / 2
+      return {
+        key: `${i}-${raw}`,
+        x: (radius + labelOffset) * Math.cos(angle),
+        y: (radius + labelOffset) * Math.sin(angle),
+        label: formatter ? formatter(raw) : raw,
+      }
+    })
+  })
+
+  return (
+    <g className={CHART_CLASS_POLAR_ANGLE_AXIS}>
+      {labels().map((l) => (
+        <text
+          key={l.key}
+          x={String(l.x)}
+          y={String(l.y)}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="currentColor"
+          fontSize="12"
+          opacity="0.6"
+        >{l.label}</text>
+      ))}
+    </g>
+  )
 }
 
 function RadarTooltip(props: RadarTooltipProps) {
@@ -720,28 +1086,109 @@ function Area(props: AreaProps) {
   return <span data-slot="area" style="display:none" ref={handleMount} />
 }
 
-function AreaCartesianGrid(props: AreaCartesianGridProps) {
-  const handleMount = (el: HTMLElement) => {
-    areaCartesianGridInit(el, props as unknown as Record<string, unknown>)
-  }
-
-  return <span data-slot="area-cartesian-grid" style="display:none" ref={handleMount} />
-}
-
 function AreaXAxis(props: AreaXAxisProps) {
-  const handleMount = (el: HTMLElement) => {
-    areaXAxisInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(AreaChartContext)
 
-  return <span data-slot="area-x-axis" style="display:none" ref={handleMount} />
+  createEffect(() => {
+    ctx.setXDataKey(props.dataKey)
+  })
+
+  const visible = createMemo(() => !props.hide && ctx.xScale() !== null)
+
+  const axisRangeRight = createMemo(() => {
+    const xs = ctx.xScale()
+    return xs ? xs.range()[1] : 0
+  })
+
+  // Point scale: each label sits exactly on the scaled position (no
+  // bandwidth/2 offset like the band scale used by BarChart's XAxis).
+  const tickLabels = createMemo(() => {
+    if (!visible()) return []
+    const xs = ctx.xScale()
+    if (!xs) return []
+    const formatter = props.tickFormatter
+    return xs.domain().map((value) => ({
+      x: xs(value) ?? 0,
+      label: formatter ? formatter(value) : value,
+    }))
+  })
+
+  return (
+    <g
+      className={CHART_CLASS_X_AXIS}
+      transform={`translate(0,${ctx.innerHeight()})`}
+      style={visible() ? '' : 'display:none'}
+    >
+      <line
+        x1="0"
+        x2={String(axisRangeRight())}
+        y1="0"
+        y2="0"
+        stroke="currentColor"
+        strokeOpacity="0.1"
+      />
+      {tickLabels().map((t) => (
+        <text
+          key={String(t.label)}
+          x={String(t.x)}
+          y="20"
+          textAnchor="middle"
+          fill="currentColor"
+          opacity="0.5"
+          fontSize="12"
+        >{t.label}</text>
+      ))}
+    </g>
+  )
 }
 
 function AreaYAxis(props: AreaYAxisProps) {
-  const handleMount = (el: HTMLElement) => {
-    areaYAxisInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(AreaChartContext)
 
-  return <span data-slot="area-y-axis" style="display:none" ref={handleMount} />
+  const visible = createMemo(() => !props.hide && ctx.yScale() !== null)
+
+  const axisLineRange = createMemo(() => {
+    const ys = ctx.yScale()
+    if (!ys) return { y1: 0, y2: 0 }
+    const range = ys.range()
+    return { y1: range[0], y2: range[1] }
+  })
+
+  const tickLabels = createMemo(() => {
+    if (!visible()) return []
+    const ys = ctx.yScale()
+    if (!ys) return []
+    const formatter = props.tickFormatter
+    return ys.ticks().map((tick) => ({
+      y: ys(tick),
+      label: formatter ? formatter(tick) : String(tick),
+    }))
+  })
+
+  return (
+    <g className={CHART_CLASS_Y_AXIS} style={visible() ? '' : 'display:none'}>
+      <line
+        x1="0"
+        x2="0"
+        y1={String(axisLineRange().y1)}
+        y2={String(axisLineRange().y2)}
+        stroke="currentColor"
+        strokeOpacity="0.1"
+      />
+      {tickLabels().map((t) => (
+        <text
+          key={String(t.label)}
+          x="-8"
+          y={String(t.y)}
+          textAnchor="end"
+          dominantBaseline="middle"
+          fill="currentColor"
+          opacity="0.5"
+          fontSize="12"
+        >{t.label}</text>
+      ))}
+    </g>
+  )
 }
 
 function AreaChartTooltip(props: AreaChartTooltipProps) {

@@ -126,3 +126,73 @@ describe('RadarChart', () => {
     expectSvgContainerShape(result, 'radar-chart')
   })
 })
+
+// JSX-native primitives migrated in Phase 9 step 2 (#1080) — each one returns
+// a single `<g>` decorated with the chart class constant so the e2e selectors
+// (`.chart-grid`, `.chart-x-axis`, ...) keep working without the cssLayerPrefixer.
+describe('CartesianGrid', () => {
+  const result = renderToTest(source, 'chart.tsx', 'CartesianGrid')
+
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+
+  test('isClient is true', () => {
+    expect(result.isClient).toBe(true)
+  })
+
+  test('renders <g> root with the chart-grid class', () => {
+    expect(result.root.tag).toBe('g')
+    expect(String(result.root.props['className'] ?? result.root.classes.join(' '))).toContain('CHART_CLASS_GRID')
+  })
+})
+
+describe('XAxis', () => {
+  const result = renderToTest(source, 'chart.tsx', 'XAxis')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})
+
+describe('YAxis', () => {
+  const result = renderToTest(source, 'chart.tsx', 'YAxis')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})
+
+describe('PolarGrid', () => {
+  const result = renderToTest(source, 'chart.tsx', 'PolarGrid')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})
+
+describe('PolarAngleAxis', () => {
+  const result = renderToTest(source, 'chart.tsx', 'PolarAngleAxis')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})
+
+describe('RadialBar', () => {
+  const result = renderToTest(source, 'chart.tsx', 'RadialBar')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})

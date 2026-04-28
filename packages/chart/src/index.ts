@@ -5,32 +5,41 @@ export { BarChartContext, RadialChartContext, RadarChartContext, PieChartContext
 // Scale utilities used by JSX-native chart containers.
 export { createBandScale, createLinearScale, createPointScale, createRadarRadialScale } from './utils/scales'
 
+// Arc geometry helpers for JSX-native radial primitives. d3-shape stays
+// inside this package so consumer bundles avoid pulling in bare specifiers
+// the browser import map does not resolve.
+export { buildRadialBarArcs, type RadialBarArcSpec } from './utils/arcs'
+
+// Stable CSS class names for chart primitives. Imported (rather than
+// declared inline) so the JSX compiler's cssLayerPrefixer leaves them alone
+// — the e2e selectors target the un-prefixed forms.
+export {
+  CHART_CLASS_GRID,
+  CHART_CLASS_X_AXIS,
+  CHART_CLASS_Y_AXIS,
+  CHART_CLASS_POLAR_GRID,
+  CHART_CLASS_POLAR_ANGLE_AXIS,
+  CHART_CLASS_RADIAL_BAR,
+} from './utils/classes'
+
 // Helper used by the JSX-native ChartContainer ref to project ChartConfig
 // entries onto CSS custom properties.
 export { applyChartCSSVariables } from './chart-container'
 
-// Imperative `init*` callbacks for chart primitives. Containers (BarChart,
-// AreaChart, LineChart, RadialChart, RadarChart, PieChart, ChartContainer)
-// are now JSX-native and live in `ui/components/ui/chart/index.tsx`; the
-// primitives below stay imperative until step 2 of #1080.
+// Imperative `init*` callbacks for the remaining chart primitives. Containers
+// (BarChart, AreaChart, ...) and the trivial primitives migrated in step 2
+// of #1080 are now JSX-native and live in `ui/components/ui/chart/index.tsx`.
+// The primitives below stay imperative until later steps migrate Bar / Area /
+// Line / Radar / Pie / tooltips.
 export { initBar } from './bar'
 export { initArea } from './area'
 export { initLine } from './line'
-export { initCartesianGrid } from './cartesian-grid'
-export { initXAxis } from './x-axis'
-export { initYAxis } from './y-axis'
 export { initChartTooltip } from './tooltip'
-export { initRadialBar } from './radial-bar'
 export { initRadialChartLabel } from './radial-chart-label'
 export { initRadar } from './radar'
-export { initPolarGrid } from './polar-grid'
-export { initPolarAngleAxis } from './polar-angle-axis'
 export { initRadarTooltip } from './radar-tooltip'
 export { initPie } from './pie'
 export { initPieTooltip } from './pie-tooltip'
-export { initAreaXAxis } from './area-x-axis'
-export { initAreaYAxis } from './area-y-axis'
-export { initAreaCartesianGrid } from './area-cartesian-grid'
 export { initAreaChartTooltip } from './area-tooltip'
 
 // Type exports
