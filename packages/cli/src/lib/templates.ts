@@ -26,9 +26,14 @@ export interface AdapterTemplate {
   prereqWarnings: () => string[]
 }
 
+// Starter Counter: uses the local <Button> at components/Button.tsx
+// to show the "compose your own components" pattern. Both files live
+// at the same level under components/ so the @/components/* path map
+// resolves uniformly post-build.
 const SHARED_COUNTER_TSX = `'use client'
 
 import { createSignal, createMemo } from '@barefootjs/client'
+import { Button } from '@/components/Button'
 
 interface CounterProps {
   initial?: number
@@ -43,15 +48,47 @@ export function Counter(props: CounterProps) {
       <p class="counter-value">count: {count()}</p>
       <p class="counter-doubled">doubled: {doubled()}</p>
       <div class="counter-buttons">
-        <button onClick={() => setCount(n => n + 1)}>+1</button>
-        <button onClick={() => setCount(n => n - 1)}>-1</button>
-        <button onClick={() => setCount(0)}>Reset</button>
+        <Button onClick={() => setCount(n => n + 1)}>+1</Button>
+        <Button onClick={() => setCount(n => n - 1)} variant="secondary">-1</Button>
+        <Button onClick={() => setCount(0)} variant="ghost">Reset</Button>
       </div>
     </div>
   )
 }
 
 export default Counter
+`
+
+// Starter Button at components/ui/button.tsx. Kept intentionally
+// minimal (vanilla CSS classes, no Tailwind / theme tokens) so the
+// component is readable as-is and visually matches public/styles.css.
+// To replace with the full registry Button, run:
+//   barefoot add button --force
+const SHARED_BUTTON_TSX = `import type { ButtonHTMLAttributes } from '@barefootjs/jsx'
+
+type Variant = 'primary' | 'secondary' | 'ghost'
+
+interface ButtonProps extends ButtonHTMLAttributes {
+  variant?: Variant
+  className?: string
+  children?: unknown
+}
+
+export function Button({
+  variant = 'primary',
+  className = '',
+  children,
+  ...props
+}: ButtonProps) {
+  const cls = [\`btn\`, \`btn-\${variant}\`, className].filter(Boolean).join(' ')
+  return (
+    <button class={cls} {...props}>
+      {children}
+    </button>
+  )
+}
+
+export default Button
 `
 
 const SHARED_COUNTER_CSS = `:root {
@@ -97,18 +134,41 @@ main {
   justify-content: center;
 }
 
-.counter-buttons button {
+.btn {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   border: 1px solid color-mix(in oklab, CanvasText 25%, transparent);
-  background: color-mix(in oklab, CanvasText 4%, Canvas);
-  color: CanvasText;
   font: inherit;
   cursor: pointer;
+  transition: background 120ms ease;
 }
 
-.counter-buttons button:hover {
+.btn-primary {
+  background: color-mix(in oklab, CanvasText 90%, Canvas);
+  color: Canvas;
+}
+
+.btn-primary:hover {
+  background: color-mix(in oklab, CanvasText 75%, Canvas);
+}
+
+.btn-secondary {
   background: color-mix(in oklab, CanvasText 8%, Canvas);
+  color: CanvasText;
+}
+
+.btn-secondary:hover {
+  background: color-mix(in oklab, CanvasText 14%, Canvas);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: CanvasText;
+}
+
+.btn-ghost:hover {
+  background: color-mix(in oklab, CanvasText 6%, Canvas);
 }
 
 .next-steps {
@@ -128,7 +188,7 @@ code {
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { jsxRenderer } from 'hono/jsx-renderer'
-import { BfScripts } from '@barefootjs/hono/scripts'
+import { existsSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { extname, join, normalize, resolve } from 'node:path'
 import Counter from '@/components/Counter'
@@ -144,6 +204,28 @@ const importMap = JSON.stringify({
   },
 })
 
+// Read the build manifest produced by \`barefoot build\` and turn it into
+// the list of <script type="module"> tags this page needs. \`__barefoot__\`
+// is the runtime; every other entry is a component's client JS bundle.
+//
+// We don't use \`@barefootjs/hono/scripts\` (BfScripts) here because the
+// starter aims for the simplest possible server: one source of truth
+// (the manifest), no JSX-runtime context plumbing.
+function readScripts(): string[] {
+  const manifestPath = join(DIST_DIR, 'components', 'manifest.json')
+  if (!existsSync(manifestPath)) return []
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, { clientJs?: string }>
+  const out: string[] = []
+  // barefoot.js must come first: it provides the hydration runtime that
+  // each component's client JS calls into via \`hydrate('Name', ...)\`.
+  if (manifest.__barefoot__?.clientJs) out.push('/static/' + manifest.__barefoot__.clientJs)
+  for (const [name, entry] of Object.entries(manifest)) {
+    if (name === '__barefoot__') continue
+    if (entry.clientJs) out.push('/static/' + entry.clientJs)
+  }
+  return out
+}
+
 const app = new Hono()
 
 app.use('*', jsxRenderer(({ children }) => (
@@ -157,7 +239,7 @@ app.use('*', jsxRenderer(({ children }) => (
     </head>
     <body>
       {children}
-      <BfScripts />
+      {readScripts().map(src => <script type="module" src={src} />)}
     </body>
   </html>
 )))
@@ -252,7 +334,10 @@ const HONO_TSCONFIG = `{
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/components/*": ["./dist/components/*"]
+      // Server components (no 'use client') aren't emitted to dist by
+      // \`barefoot build\`, so the path map falls back to the source so
+      // imports of those components still resolve.
+      "@/components/*": ["./dist/components/*", "./components/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "dist/components/**/*.tsx"],
@@ -269,6 +354,7 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
       'barefoot.config.ts': HONO_BAREFOOT_CONFIG_TS,
       'tsconfig.json': HONO_TSCONFIG,
       'components/Counter.tsx': SHARED_COUNTER_TSX,
+      'components/Button.tsx': SHARED_BUTTON_TSX,
       'public/styles.css': SHARED_COUNTER_CSS,
     },
     scripts: {

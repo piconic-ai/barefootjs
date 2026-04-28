@@ -311,8 +311,9 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   console.log(``)
   console.log(`Then try:`)
   console.log(`  • Edit components/Counter.tsx — saves rebuild and reload the page.`)
-  console.log(`  • Find a component:  ${cmd.exec('barefoot search button')}`)
-  console.log(`  • Add a component:   ${cmd.exec('barefoot add button')}`)
+  console.log(`  • Inspect the bundled <Button>:  ${cmd.exec('barefoot ui button')}`)
+  console.log(`  • Find more components:        ${cmd.exec('barefoot search <query>')}`)
+  console.log(`  • Add a component to ui/:      ${cmd.exec('barefoot add <name>')}`)
 }
 
 // ── Studio URL parsing ──
