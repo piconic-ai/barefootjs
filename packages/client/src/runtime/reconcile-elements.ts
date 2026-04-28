@@ -39,7 +39,7 @@ function findLoopMarkers(
       const value = (node as Comment).nodeValue ?? ''
       if (!startMarker && (value === BF_LOOP_START || value.startsWith(startPrefix))) {
         startMarker = node as Comment
-      } else if (value === BF_LOOP_END || value.startsWith(endPrefix)) {
+      } else if (!endMarker && (value === BF_LOOP_END || value.startsWith(endPrefix))) {
         endMarker = node as Comment
       }
     }

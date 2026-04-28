@@ -55,7 +55,7 @@ function findLoopMarkers(
       const value = (node as Comment).nodeValue ?? ''
       if (!start && (value === BF_LOOP_START || value.startsWith(startPrefix))) {
         start = node as Comment
-      } else if (value === BF_LOOP_END || value.startsWith(endPrefix)) {
+      } else if (!end && (value === BF_LOOP_END || value.startsWith(endPrefix))) {
         end = node as Comment
       }
     }

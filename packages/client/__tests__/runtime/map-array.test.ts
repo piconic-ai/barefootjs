@@ -445,12 +445,14 @@ describe('mapArray', () => {
   // returned the LAST start/end pair to every consumer — so the second loop
   // overwrote the first into the same DOM range.
   test('sibling mapArray calls under the same parent do not collide (#1087)', () => {
-    // Simulate the SSR shape: two scoped marker pairs, both empty initially.
+    // Simulate the SSR shape the compiler emits: two scoped marker pairs,
+    // both empty initially. Marker ids match the compiler's `lN` convention
+    // so this test covers the same shape compiled output produces.
     const parent = document.createElement('div')
-    parent.appendChild(document.createComment('bf-loop:s0'))
-    parent.appendChild(document.createComment('bf-/loop:s0'))
-    parent.appendChild(document.createComment('bf-loop:s1'))
-    parent.appendChild(document.createComment('bf-/loop:s1'))
+    parent.appendChild(document.createComment('bf-loop:l0'))
+    parent.appendChild(document.createComment('bf-/loop:l0'))
+    parent.appendChild(document.createComment('bf-loop:l1'))
+    parent.appendChild(document.createComment('bf-/loop:l1'))
     document.body.replaceChild(parent, container)
     container = parent
 
@@ -473,7 +475,7 @@ describe('mapArray', () => {
         createEffect(() => { span.textContent = item().text })
         return span
       },
-      's0',
+      'l0',
     )
     mapArray(
       b,
@@ -485,7 +487,7 @@ describe('mapArray', () => {
         createEffect(() => { span.textContent = item().text })
         return span
       },
-      's1',
+      'l1',
     )
 
     // Both lists must coexist after initial render.

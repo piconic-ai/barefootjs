@@ -50,8 +50,9 @@ export function normalizeHTML(html: string): string {
   return html
     // Remove loop boundary comment markers (template detail, not semantic).
     // Matches both legacy unscoped (`<!--bf-loop-->`) and scoped per-call-site
-    // (`<!--bf-loop:s7-->`) forms (#1087).
-    .replace(/<!--bf-\/?loop(?::[^>-]+)?-->/g, '')
+    // (`<!--bf-loop:l7-->`) forms (#1087). The marker id is `l\d+` — kept
+    // explicit so unrelated comments matching a looser pattern aren't stripped.
+    .replace(/<!--bf-\/?loop(?::l\d+)?-->/g, '')
     // Remove bf-p attribute (Hono uses JSON serialization, Go uses struct fields)
     .replace(/\s*bf-p="[^"]*"/g, '')
     // Normalize child scope ID prefix: bf-s="~parentId_sN" → bf-s="parentId_sN"
