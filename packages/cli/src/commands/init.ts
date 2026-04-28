@@ -78,6 +78,25 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
+  // Pre-flight: confirm the UI registry is reachable BEFORE writing
+  // anything to disk. The runnable starter requires the registry's
+  // Button component, and a vanilla fallback would force the user
+  // through a painful migration to UnoCSS + barefootjs UI later.
+  // Better to fail fast and have them retry online with no partial
+  // state to clean up.
+  try {
+    await probeRegistry(DEFAULT_REGISTRY_URL)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(`Error: cannot reach the BarefootJS UI registry at ${DEFAULT_REGISTRY_URL}`)
+    console.error(`  ${msg}`)
+    console.error(``)
+    console.error(`barefoot init needs the registry to scaffold a runnable starter (Counter`)
+    console.error(`uses Button from the registry, which the renderer wires through UnoCSS).`)
+    console.error(`Retry when online, or use --registry-only for the registry layout alone.`)
+    process.exit(1)
+  }
+
   const warnings = adapter.prereqWarnings()
   for (const w of warnings) console.warn(`  ! ${w}`)
 
@@ -85,6 +104,17 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   await scaffoldApp(projectDir, configPath, adapter, flags, ctx)
   printAppNextSteps(projectDir, adapter)
+}
+
+async function probeRegistry(url: string): Promise<void> {
+  const probeUrl = `${url.replace(/\/$/, '')}/button.json`
+  const res = await fetch(probeUrl, {
+    method: 'HEAD',
+    signal: AbortSignal.timeout(5000),
+  })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
 }
 
 async function runRegistryOnly(
@@ -159,15 +189,15 @@ async function runRegistryOnly(
       private: true,
       type: 'module',
       scripts: {
-        test: 'bun test',
+        // Registry-only mode emits no app code, so the test command
+        // is a no-op stub — same convention as app mode.
+        test: 'echo "no tests yet"',
       },
       dependencies: {
-        '@barefootjs/client': 'workspace:*',
-        '@barefootjs/jsx': 'workspace:*',
+        '@barefootjs/client': 'latest',
+        '@barefootjs/jsx': 'latest',
       },
-      devDependencies: {
-        '@barefootjs/test': 'workspace:*',
-      },
+      devDependencies: {},
     }
     writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')
     console.log('  Created package.json')
@@ -186,7 +216,6 @@ async function runRegistryOnly(
         strict: true,
         skipLibCheck: true,
         noEmit: true,
-        types: ['bun-types'],
       },
       include: ['**/*.ts', '**/*.tsx'],
       exclude: ['node_modules', 'dist'],
@@ -297,27 +326,15 @@ async function scaffoldApp(
     console.log('  Created package.json')
   }
 
-  // 5. Pull a real registry component so the starter Counter shows the
-  //    `barefoot add` flow as already done — the user lands on a page
-  //    that uses an actual UI registry component, not a hand-rolled stub.
-  await tryAddRegistryButton(projectDir, config)
+  // 5. Pull the registry Button. The pre-flight probe in run()
+  //    already verified reachability, so a failure here is unusual
+  //    (transient registry hiccup, malformed item, etc.) — let it
+  //    propagate so the user retries instead of ending up with a
+  //    half-scaffolded project that points at a missing import.
+  await addFromRegistry(['button'], DEFAULT_REGISTRY_URL, projectDir, config, true, true)
 }
 
 const DEFAULT_REGISTRY_URL = 'https://ui.barefootjs.dev/r/'
-
-async function tryAddRegistryButton(
-  projectDir: string,
-  config: BarefootConfig,
-): Promise<void> {
-  try {
-    await addFromRegistry(['button'], DEFAULT_REGISTRY_URL, projectDir, config, true, true)
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.log(`  ! Could not fetch the Button registry component: ${msg}`)
-    console.log(`    The starter Counter expects components/ui/button — add it later with`)
-    console.log(`    \`barefoot add button\` once you're online.`)
-  }
-}
 
 function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   const pm: PackageManager = detectPackageManager(projectDir)

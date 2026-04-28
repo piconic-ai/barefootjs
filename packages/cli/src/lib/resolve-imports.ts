@@ -18,30 +18,40 @@ export interface ResolveRelativeImportsOptions {
 }
 
 /**
- * Marker for "leave the import alone" — the file exists at runtime as a
- * separately-served artifact (e.g. `./barefoot.js` is the runtime bundle
- * that lives next to each component's client JS). Inlining would duplicate
- * code; stripping the import would break runtime references.
+ * Result of resolving a relative import against the on-disk dist
+ * layout. Each variant has a clear handling rule in
+ * `inlineRelativeImports`:
+ *
+ *   - `external` — file exists at runtime as a separately-served
+ *     artifact (e.g. `./barefoot.js` is the runtime bundle). Inlining
+ *     would duplicate code; stripping the import would break runtime
+ *     references. Leave the line alone.
+ *   - `inline`   — `.ts` source found; transpile and splice in.
+ *     `.tsx` is treated as a server component (already rendered at
+ *     SSR time) and the import line is stripped instead.
+ *   - `missing`  — nothing matched. Strip the import line.
  */
-const LEAVE_AS_EXTERNAL = '__bf_leave_as_external__'
+type ResolveResult =
+  | { kind: 'external' }
+  | { kind: 'inline'; path: string }
+  | { kind: 'missing' }
 
-async function resolveSourceFile(importPath: string, searchDirs: string[]): Promise<string> {
+async function resolveSourceFile(importPath: string, searchDirs: string[]): Promise<ResolveResult> {
   for (const dir of searchDirs) {
     const basePath = resolve(dir, importPath)
     // If the import path already points to an existing runtime artifact
-    // (e.g. `./barefoot.js`), keep the import as-is instead of trying to
-    // inline a `.ts` source that doesn't exist. Without this, watch's
-    // cached re-builds would silently strip the runtime import line from
-    // every component's client JS, and the browser would then fail with
-    // `ReferenceError: hydrate is not defined`.
+    // (e.g. `./barefoot.js`), keep the import as-is. Without this,
+    // watch's cached re-builds would silently strip the runtime import
+    // line from every component's client JS, and the browser would
+    // then fail with `ReferenceError: hydrate is not defined`.
     if (/\.(?:js|mjs|cjs)$/.test(importPath) && await fileExists(basePath)) {
-      return LEAVE_AS_EXTERNAL
+      return { kind: 'external' }
     }
     for (const ext of ['.ts', '.tsx', '.js']) {
-      if (await fileExists(basePath + ext)) return basePath + ext
+      if (await fileExists(basePath + ext)) return { kind: 'inline', path: basePath + ext }
     }
   }
-  return ''
+  return { kind: 'missing' }
 }
 
 /**
@@ -63,26 +73,26 @@ async function inlineRelativeImports(
   for (const match of matches) {
     const importPath = match[1]
     const fullMatch = match[0]
-    const sourceFile = await resolveSourceFile(importPath, searchDirs)
+    const result = await resolveSourceFile(importPath, searchDirs)
 
-    if (sourceFile === LEAVE_AS_EXTERNAL) {
+    if (result.kind === 'external') {
       // Existing runtime artifact (e.g. ./barefoot.js); keep import as-is.
       continue
     }
 
-    if (!sourceFile || inlinedPaths.has(sourceFile)) {
+    if (result.kind === 'missing' || inlinedPaths.has(result.path)) {
       content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
       continue
     }
 
-    if (sourceFile.endsWith('.tsx')) {
+    if (result.path.endsWith('.tsx')) {
       content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
       console.log(`Stripped server component import: ${importPath} from ${loggingPath}`)
       continue
     }
 
-    inlinedPaths.add(sourceFile)
-    const sourceContent = await readText(sourceFile)
+    inlinedPaths.add(result.path)
+    const sourceContent = await readText(result.path)
     let jsCode = transpile(sourceContent, { loader: 'ts' })
 
     // Recursively resolve relative imports inside the inlined module before
@@ -91,7 +101,7 @@ async function inlineRelativeImports(
     // correctly regardless of where the parent client JS lives.
     jsCode = await inlineRelativeImports(
       jsCode,
-      [dirname(sourceFile), ...searchDirs.slice(1)],
+      [dirname(result.path), ...searchDirs.slice(1)],
       inlinedPaths,
       loggingPath,
     )

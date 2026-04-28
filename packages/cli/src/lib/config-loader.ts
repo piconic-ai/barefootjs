@@ -22,6 +22,19 @@ export function findBuildConfig(startDir: string): string | null {
  * Bun imports .ts directly. Under Node we transpile via esbuild and write
  * a sibling .mjs so that `node_modules` resolution still walks the user's
  * project tree (a tmp-dir approach would resolve from the wrong root).
+ *
+ * Trade-offs of the current approach (worth revisiting later):
+ *
+ *   - **Cold-start cost**: spawns esbuild per `barefoot build`
+ *     invocation (~100 ms). Negligible during watch mode (one-off at
+ *     startup) but noticeable on cold CI builds.
+ *   - **Tmp file**: writes `.barefoot.config.<pid>.mjs` next to the
+ *     user's config and unlinks it in a `finally`. SIGKILL leaks the
+ *     file; concurrent invocations from the same PID (rare) collide.
+ *   - **Migration target**: when Node's loader API stabilises (or
+ *     `tsx`'s `register` API ships with the lifecycle guarantees we
+ *     need) we can register a TS-import hook for the duration of this
+ *     call instead of bundling — no temp file, no esbuild spawn.
  */
 export async function loadBuildConfig(configPath: string): Promise<BarefootBuildConfig> {
   const isBun = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined'

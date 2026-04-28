@@ -55,6 +55,11 @@ if (existsSync(targetDir)) {
   mkdirSync(targetDir, { recursive: true })
 }
 
+// `require.resolve` is Node-specific. `create-barefootjs` is invoked
+// via `npm create barefootjs@latest` / `npx`, both of which are Node
+// processes today; the package is not designed to run on Workers,
+// Deno, or Bun-as-edge. Bun's Node-compat layer also supplies
+// `createRequire`, so this works there too.
 let cliBin: string
 try {
   cliBin = require.resolve('@barefootjs/cli/dist/index.js')

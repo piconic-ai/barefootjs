@@ -57,6 +57,7 @@ export function Counter(props: CounterProps) {
 }
 `
 
+
 // Theme tokens (CSS variables) referenced by the registry components'
 // utility classes (`bg-primary`, `text-foreground`, etc.). Mirrors
 // integrations/shared/styles/tokens.css so registry components ship
@@ -297,14 +298,7 @@ export function createApp(): Hono {
   const publicBase = '/static'
   const publicDir = './public'
 
-  const devReloadEndpoint = '/_bf/reload'
-  const devReloadEnabled = !isProd
-
-  const renderer = createRenderer({
-    componentsBase,
-    devReloadEndpoint,
-    devReloadEnabled,
-  })
+  const renderer = createRenderer({ componentsBase })
 
   const app = new Hono()
 
@@ -326,11 +320,14 @@ export function createApp(): Hono {
     }),
   )
 
+  // \`<BfDevReload />\` in renderer.tsx reads the endpoint off the
+  // context this middleware publishes — when \`enabled: false\`, no
+  // context is set and the component renders nothing.
   app.use(
     '*',
     barefootDevReload({
-      endpoint: devReloadEndpoint,
-      enabled: devReloadEnabled,
+      endpoint: '/_bf/reload',
+      enabled: !isProd,
     }),
   )
 
@@ -350,15 +347,9 @@ declare module 'hono' {
 
 export interface CreateRendererOptions {
   componentsBase: string
-  devReloadEndpoint: string
-  devReloadEnabled: boolean
 }
 
-export function createRenderer({
-  componentsBase,
-  devReloadEndpoint,
-  devReloadEnabled,
-}: CreateRendererOptions) {
+export function createRenderer({ componentsBase }: CreateRendererOptions) {
   return jsxRenderer(({ children, title }) => (
     <html lang="en">
       <head>
@@ -371,7 +362,7 @@ export function createRenderer({
       <body>
         {children}
         <BfScripts base={componentsBase} manifest={manifest} />
-        {devReloadEnabled && <BfDevReload endpoint={devReloadEndpoint} />}
+        <BfDevReload />
       </body>
     </html>
   ))
