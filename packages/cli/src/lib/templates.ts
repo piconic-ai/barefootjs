@@ -258,10 +258,37 @@ export default defineConfig({
 `
 
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
-import { createApp } from '@barefootjs/hono/app'
+import { serveStatic } from '@hono/node-server/serve-static'
+import { Hono } from 'hono'
+import {
+  barefootRenderer,
+  barefootComponents,
+  barefootDevReload,
+} from '@barefootjs/hono/app'
 import { Counter } from '@/components/Counter'
 
-const app = createApp({ title: 'BarefootJS app' })
+const app = new Hono()
+
+// Document shell: import map, stylesheet links, component <script>s,
+// and the dev-reload snippet (when not in production).
+app.use('*', barefootRenderer({ title: 'BarefootJS app' }))
+
+// Compiled client JS produced by \`barefoot build\` is served from
+// dist/components at /static/components/*.
+app.use('*', barefootComponents())
+
+// SSE endpoint at /_bf/reload paired with the renderer's snippet so
+// the page reloads when tsx restarts the server.
+app.use('*', barefootDevReload())
+
+// Anything else under public/ is served at /static/*.
+app.use(
+  '/static/*',
+  serveStatic({
+    root: './public',
+    rewriteRequestPath: (path) => path.replace(/^\\/static/, ''),
+  }),
+)
 
 app.get('/', (c) =>
   c.render(
