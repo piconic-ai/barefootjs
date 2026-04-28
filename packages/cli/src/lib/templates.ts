@@ -264,7 +264,12 @@ import { Counter } from '@/components/Counter'
 const app = createApp()
 
 app.get('/', (c) =>
-  c.render(<Counter />, { title: 'BarefootJS app' }),
+  c.render(
+    <main>
+      <Counter />
+    </main>,
+    { title: 'BarefootJS app' },
+  ),
 )
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) }, (info) => {
@@ -282,7 +287,16 @@ import { createRenderer } from './renderer'
 export function createApp(): Hono {
   const isProd = process.env.NODE_ENV === 'production'
 
+  // Compiled component bundles: served from \`componentsBase\` URL,
+  // sourced from \`componentsDistDir\` on disk.
   const componentsBase = '/static/components'
+  const componentsDistDir = './dist/components'
+
+  // Everything else under public/: served from \`publicBase\` URL,
+  // sourced from \`publicDir\` on disk.
+  const publicBase = '/static'
+  const publicDir = './public'
+
   const devReloadEndpoint = '/_bf/reload'
   const devReloadEnabled = !isProd
 
@@ -299,16 +313,16 @@ export function createApp(): Hono {
   app.use(
     \`\${componentsBase}/*\`,
     serveStatic({
-      root: './dist/components',
+      root: componentsDistDir,
       rewriteRequestPath: (path) => path.replace(componentsBase, ''),
     }),
   )
 
   app.use(
-    '/static/*',
+    \`\${publicBase}/*\`,
     serveStatic({
-      root: './public',
-      rewriteRequestPath: (path) => path.replace(/^\\/static/, ''),
+      root: publicDir,
+      rewriteRequestPath: (path) => path.replace(publicBase, ''),
     }),
   )
 
