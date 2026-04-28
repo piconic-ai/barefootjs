@@ -48,6 +48,7 @@ jobs:
           bun run --filter '@barefootjs/go-template' build
           bun run --filter '@barefootjs/mojolicious' build
           bun run --filter '@barefootjs/cli' build
+          bun run --filter 'create-barefootjs' build
 
       # Single invocation across all preview-publishable packages.
       # `@barefootjs/preview` is private and `@barefootjs/adapter-tests` is an
@@ -65,5 +66,6 @@ jobs:
             './packages/adapter-go-template' \
             './packages/adapter-mojolicious' \
             './packages/cli' \
+            './packages/create-barefootjs' \
             './packages/shared' \
             './packages/streaming'
