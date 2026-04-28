@@ -1,0 +1,40 @@
+{
+  "name": "create-barefootjs",
+  "version": "0.0.1",
+  "description": "Scaffold a new BarefootJS app — `npm create barefootjs@latest <dir>`",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "create-barefootjs": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "clean": "rm -rf dist",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@barefootjs/cli": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "@types/node": "^22.0.0"
+  },
+  "keywords": [
+    "barefootjs",
+    "create",
+    "starter",
+    "scaffold"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/piconic-ai/barefootjs",
+    "directory": "packages/create-barefootjs"
+  },
+  "license": "MIT"
+}
