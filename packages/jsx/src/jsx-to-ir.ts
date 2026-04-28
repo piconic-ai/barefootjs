@@ -1637,6 +1637,81 @@ function findKeyJsxAttribute(
   return undefined
 }
 
+/**
+ * Recover the loop's `keyFn` source expression from the first child of a
+ * `.map(...)` body.
+ *
+ * Direct cases (`element`, `component`) read the `key` attribute / prop
+ * directly. Conditional bodies (`<cond ? <a key={X}/> : <b key={X}/>>`,
+ * #1098) recurse into both branches: if every branch resolves to the same
+ * key expression — compared after stripping insignificant whitespace —
+ * that expression is lifted to mapArray's keyFn argument. Heterogeneous
+ * keys, missing branches, or a non-string key value bail to `null` and
+ * mapArray falls back to index-based reconciliation as before.
+ *
+ * The string-equality check is intentionally conservative: a reactive
+ * conditional whose branches read `it.key` only one branch would silently
+ * pick the wrong reconciliation strategy if we tried to unify them, so we
+ * accept identical text and reject everything else.
+ */
+function extractLoopKey(node: IRNode): string | null {
+  if (node.type === 'element') {
+    const keyAttr = node.attrs.find((a) => a.name === 'key')
+    if (!keyAttr || !keyAttr.value || typeof keyAttr.value !== 'string') return null
+    return keyAttr.value
+  }
+  if (node.type === 'component') {
+    const keyProp = node.props.find((p) => p.name === 'key')
+    if (!keyProp || !keyProp.value || typeof keyProp.value !== 'string') return null
+    return keyProp.value
+  }
+  if (node.type === 'conditional') {
+    const a = extractLoopKey(node.whenTrue)
+    if (a === null) return null
+    const b = extractLoopKey(node.whenFalse)
+    if (b === null) return null
+    return normalizeKeyExpr(a) === normalizeKeyExpr(b) ? a : null
+  }
+  return null
+}
+
+/**
+ * Collapse insignificant whitespace so equivalent expressions written
+ * with different formatting (`it.key` vs `it .key`) compare equal.
+ * Whitespace inside string literals is preserved.
+ */
+function normalizeKeyExpr(expr: string): string {
+  let out = ''
+  let i = 0
+  while (i < expr.length) {
+    const ch = expr[i]
+    if (ch === "'" || ch === '"' || ch === '`') {
+      const quote = ch
+      out += ch
+      i++
+      while (i < expr.length) {
+        const c = expr[i]
+        if (c === '\\' && i + 1 < expr.length) {
+          out += c + expr[i + 1]
+          i += 2
+          continue
+        }
+        out += c
+        i++
+        if (c === quote) break
+      }
+      continue
+    }
+    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
+      i++
+      continue
+    }
+    out += ch
+    i++
+  }
+  return out
+}
+
 type KeyProblem = 'missing' | 'literal-undefined' | 'literal-null' | 'nullable-type'
 
 /**
@@ -2059,20 +2134,13 @@ function transformMapCall(
     checkLoopKey(node.arguments[0], ctx, isNested)
   }
 
-  // Look for key prop in first child (element or component)
-  let key: string | null = null
-  if (children.length > 0 && children[0].type === 'element') {
-    const keyAttr = children[0].attrs.find((a) => a.name === 'key')
-    // Key should be a simple string expression, not a template literal
-    if (keyAttr && keyAttr.value && typeof keyAttr.value === 'string') {
-      key = keyAttr.value
-    }
-  } else if (children.length > 0 && children[0].type === 'component') {
-    const keyProp = children[0].props.find((p) => p.name === 'key')
-    if (keyProp && keyProp.value) {
-      key = keyProp.value
-    }
-  }
+  // Look for the loop's keyFn source on the first child. `extractLoopKey`
+  // handles direct elements, child components, and — crucially — ternary
+  // bodies (#1098): when every branch of an `IRConditional` declares the
+  // same `key={EXPR}`, that EXPR is lifted out to mapArray's keyFn so a
+  // shape change (e.g. `<polygon>` ↔ `<circle>`) replaces the DOM node
+  // instead of mutating attributes on the wrong tag.
+  const key = children.length > 0 ? extractLoopKey(children[0]) : null
 
   // Extract childComponent info if the loop body is a single component
   // This enables createComponent-based rendering with proper prop passing
