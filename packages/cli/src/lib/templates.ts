@@ -44,10 +44,10 @@ export function Counter(props: CounterProps) {
   const doubled = createMemo(() => count() * 2)
 
   return (
-    <div class="counter">
-      <p class="counter-value">count: {count()}</p>
-      <p class="counter-doubled">doubled: {doubled()}</p>
-      <div class="counter-buttons">
+    <div className="counter">
+      <p className="counter-value">count: {count()}</p>
+      <p className="counter-doubled">doubled: {doubled()}</p>
+      <div className="counter-buttons">
         <Button onClick={() => setCount(n => n + 1)}>+1</Button>
         <Button onClick={() => setCount(n => n - 1)} variant="secondary">-1</Button>
         <Button onClick={() => setCount(0)} variant="ghost">Reset</Button>
@@ -83,7 +83,7 @@ export function Button({
 }: ButtonProps) {
   const cls = [\`btn\`, \`btn-\${variant}\`, className].filter(Boolean).join(' ')
   return (
-    <button class={cls} {...props}>
+    <button className={cls} {...props}>
       {children}
     </button>
   )
@@ -189,6 +189,7 @@ code {
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { jsxRenderer } from 'hono/jsx-renderer'
+import { createDevReloader } from '@barefootjs/hono/dev-worker'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { extname, join, normalize, resolve } from 'node:path'
@@ -241,9 +242,24 @@ app.use('*', jsxRenderer(({ children }) => (
     <body>
       {children}
       {readScripts().map(src => <script type="module" src={src} />)}
+      {process.env.NODE_ENV !== 'production' && (
+        <script dangerouslySetInnerHTML={{ __html: DEV_RELOAD_SNIPPET }} />
+      )}
     </body>
   </html>
 )))
+
+// Dev-only browser auto-reload via SSE: the page opens an EventSource on
+// /_bf/reload, the server emits a fresh boot id whenever this module is
+// re-evaluated by \`tsx watch\`, and the client reloads on mismatch.
+// No-op in production (NODE_ENV=production).
+app.get('/_bf/reload', createDevReloader())
+
+// Inlined client snippet (mirrors @barefootjs/hono/dev-reload's BfDevReload).
+// Inlined here so the server can emit it without importing a .tsx component
+// through tsx, whose per-file \`@jsxImportSource\` pragmas don't propagate
+// to dependencies and would crash with "React is not defined".
+const DEV_RELOAD_SNIPPET = \`(()=>{if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem('__bf_devreload_scroll');if(s){sessionStorage.removeItem('__bf_devreload_scroll');var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource('/_bf/reload');es.addEventListener('reload',function(){try{sessionStorage.setItem('__bf_devreload_scroll',String(window.scrollY))}catch(e){}location.reload()});es.addEventListener('error',function(){})})();\`
 
 app.get('/', (c) => c.render(
   <main>
