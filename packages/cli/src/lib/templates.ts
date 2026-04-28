@@ -55,8 +55,6 @@ export function Counter(props: CounterProps) {
     </div>
   )
 }
-
-export default Counter
 `
 
 // Theme tokens (CSS variables) referenced by the registry components'
@@ -261,7 +259,7 @@ export default defineConfig({
 
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
 import { createApp } from '@barefootjs/hono/app'
-import Counter from '@/components/Counter'
+import { Counter } from '@/components/Counter'
 
 const app = createApp({ title: 'BarefootJS app' })
 
