@@ -164,7 +164,7 @@ export async function compileJSX(
   if (adapterOutput.sections) {
     const s = adapterOutput.sections
     const component = applyExportKeyword(s.component, componentIR)
-    content = [s.imports, s.types, moduleExports, component]
+    content = [s.imports, s.moduleConstants ?? '', s.types, moduleExports, component]
       .filter(Boolean).join('\n\n') + (s.defaultExport || '')
   } else {
     content = adapterOutput.template
@@ -273,6 +273,14 @@ function compileMultipleComponentsSync(
     }
   }
 
+  // Module-scope statements (e.g. SSR-side context bindings) are file-wide:
+  // every component in the same source file generates the same block, so we
+  // collect via exact-string dedup and emit once at the file level rather
+  // than per component (per-line dedup of imports drops repeated lines like
+  // closing `})` that recur across multiple multi-line bindings).
+  const moduleConstantsSet = new Set<string>()
+  const moduleConstantsOrdered: string[] = []
+
   for (const { componentIR } of entries) {
     const scriptBaseName = !componentIR.metadata.hasDefaultExport && defaultExportName ? defaultExportName : undefined
     const adapterOutput = adapter.generate(componentIR, { scriptBaseName })
@@ -288,6 +296,11 @@ function compileMultipleComponentsSync(
       imports = s.imports
       types = s.types
       component = applyExportKeyword(s.component, componentIR) + (s.defaultExport || '')
+      const mc = s.moduleConstants
+      if (mc && !moduleConstantsSet.has(mc)) {
+        moduleConstantsSet.add(mc)
+        moduleConstantsOrdered.push(mc)
+      }
     } else {
       // Fallback: parse template string (for adapters without sections)
       const lines = adapterOutput.template.split('\n')
@@ -429,6 +442,7 @@ function compileMultipleComponentsSync(
   // Combine all components
   const combinedTemplate = [
     mergedImports,
+    moduleConstantsOrdered.join('\n\n'),
     uniqueTypes.join('\n\n'),
     uniqueModuleExports.length > 0 ? uniqueModuleExports.join('\n') : '',
     ...allOutputs.map(o => o.component),
@@ -624,7 +638,7 @@ export function compileJSXSync(
   if (adapterOutput.sections) {
     const s = adapterOutput.sections
     const component = applyExportKeyword(s.component, componentIR)
-    content = [s.imports, s.types, moduleExports, component]
+    content = [s.imports, s.moduleConstants ?? '', s.types, moduleExports, component]
       .filter(Boolean).join('\n\n') + (s.defaultExport || '')
   } else {
     content = adapterOutput.template

@@ -77,15 +77,14 @@ export class HonoAdapter extends JsxAdapter {
     const component = this.generateComponent(ir)
     const types = this.generateTypes(ir, component)
     const componentCode = [types, component].filter(Boolean).join('\n')
-    const baseImports = this.generateImports(ir, componentCode)
+    const imports = this.generateImports(ir, componentCode)
     // Module-level Context bindings (`const Ctx = createContext()`) are
     // skipped from the SSR signal-initializer block by JsxAdapter — they
     // need to live at module scope so providers and consumers in the same
-    // render share the same Context object identity.
+    // render share the same Context object identity. Emitted in a dedicated
+    // section so multi-component dedup works on the full block (not per
+    // line, which would split multi-line `({...})` arguments).
     const moduleConstants = this.generateModuleLevelContextBindings(ir)
-    const imports = moduleConstants
-      ? `${baseImports}\n\n${moduleConstants}`
-      : baseImports
 
     const defaultExport = ir.metadata.hasDefaultExport
       ? `\nexport default ${this.componentName}`
@@ -96,10 +95,11 @@ export class HonoAdapter extends JsxAdapter {
       types: types || '',
       component,
       defaultExport,
+      moduleConstants,
     }
 
     // Assemble template for backward compat (external consumers using output.template)
-    const template = [imports, types, component].filter(Boolean).join('\n\n') + defaultExport
+    const template = [imports, moduleConstants, types, component].filter(Boolean).join('\n\n') + defaultExport
 
     return {
       template,

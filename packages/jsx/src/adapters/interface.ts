@@ -20,6 +20,14 @@ export interface TemplateSections {
   types: string
   component: string
   defaultExport: string
+  /**
+   * Module-scope statements (e.g. SSR-side context bindings emitted by the
+   * Hono adapter). Placed between `imports` and `types` in the assembled
+   * template. Multi-component compilation dedupes this section by exact
+   * string equality — adapters must emit the same content for every
+   * component in a source file.
+   */
+  moduleConstants?: string
 }
 
 export interface AdapterOutput {
