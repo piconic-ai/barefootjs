@@ -559,7 +559,14 @@ export async function build(
   // 6b. Resolve relative imports (idempotent — writeIfChanged keeps it quiet)
   await resolveRelativeImports({ distDir: config.outDir, manifest })
 
-  // 6c. Rewrite bare @barefootjs/client imports to relative barefoot.js path
+  // 6c. Rewrite bare @barefootjs/client imports to relative barefoot.js path,
+  //     then dedupe if a file ends up with multiple imports from the same
+  //     source. Watch rebuilds can pull a freshly-compiled parent (still
+  //     using `@barefootjs/client/runtime`) together with a child that was
+  //     read back from disk in its previously-rewritten form (`./barefoot.js`).
+  //     Combine treats those as different sources and emits two import lines;
+  //     after the rewrite below they collapse to the same path, which is a
+  //     `SyntaxError: Identifier 'X' has already been declared` at runtime.
   {
     const runtimeRelFromClient = runtimeSubdir === clientJsSubdir
       ? './barefoot.js'
@@ -569,14 +576,16 @@ export async function build(
       const filePath = resolve(config.outDir, entry.clientJs)
       try {
         let content = await readText(filePath)
+        const before = content
         if (content.includes('@barefootjs/client')) {
           content = content.replace(
             /from ['"]@barefootjs\/client\/runtime['"]/g,
             `from '${runtimeRelFromClient}'`
           )
-          if (await writeIfChanged(filePath, content)) {
-            anyOutputChanged = true
-          }
+        }
+        content = mergeDuplicateNamedImports(content)
+        if (content !== before && await writeIfChanged(filePath, content)) {
+          anyOutputChanged = true
         }
       } catch {
         // File may not exist
@@ -662,6 +671,55 @@ const BF_CLIENT_DEDUP_KEYS = [
 export function vendorChunkFilename(pkgName: string): string {
   const base = pkgName.includes('/') ? pkgName.split('/').pop()! : pkgName
   return `${base}.js`
+}
+
+/**
+ * Collapse multiple `import { ... } from 'X'` lines that share the same source
+ * into a single line with the union of their names. No-op if every source
+ * appears at most once. Only handles the `import { a, b } from 'X'` form —
+ * default, namespace, and side-effect imports are passed through verbatim.
+ */
+export function mergeDuplicateNamedImports(content: string): string {
+  const lines = content.split('\n')
+  const namedImportRe = /^import\s+\{\s*([^}]+)\s*\}\s+from\s+(['"])([^'"]+)\2\s*;?\s*$/
+  const bySource = new Map<string, { firstIdx: number; names: Set<string>; quote: string }>()
+  const dropIndices = new Set<number>()
+  let changed = false
+
+  lines.forEach((line, idx) => {
+    const m = line.match(namedImportRe)
+    if (!m) return
+    const names = m[1].split(',').map(s => s.trim()).filter(Boolean)
+    const source = m[3]
+    const quote = m[2]
+    const existing = bySource.get(source)
+    if (!existing) {
+      bySource.set(source, { firstIdx: idx, names: new Set(names), quote })
+    } else {
+      for (const n of names) existing.names.add(n)
+      dropIndices.add(idx)
+      changed = true
+    }
+  })
+
+  if (!changed) return content
+
+  // Rewrite the first occurrence of each duplicated source with the merged set,
+  // and drop the later duplicates.
+  const out: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    if (dropIndices.has(i)) continue
+    let line = lines[i]
+    for (const { firstIdx, names, quote } of bySource.values()) {
+      if (firstIdx === i && names.size > 0) {
+        const sorted = [...names].sort().join(', ')
+        line = line.replace(namedImportRe, `import { ${sorted} } from ${quote}$3${quote}`)
+        break
+      }
+    }
+    out.push(line)
+  }
+  return out.join('\n')
 }
 
 interface PkgBrowserEntry {
