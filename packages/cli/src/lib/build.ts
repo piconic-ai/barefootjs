@@ -568,19 +568,23 @@ export async function build(
   //     after the rewrite below they collapse to the same path, which is a
   //     `SyntaxError: Identifier 'X' has already been declared` at runtime.
   {
-    const runtimeRelFromClient = runtimeSubdir === clientJsSubdir
-      ? './barefoot.js'
-      : './' + relative(clientJsSubdir, runtimeSubdir + '/barefoot.js')
+    const runtimeAbs = resolve(config.outDir, runtimeSubdir, 'barefoot.js')
     for (const [name, entry] of Object.entries(manifest)) {
       if (!entry.clientJs || name === '__barefoot__') continue
       const filePath = resolve(config.outDir, entry.clientJs)
+      // Compute the runtime path relative to THIS file's directory so
+      // nested client JS (e.g. dist/components/ui/button/index.client.js)
+      // gets the correct number of `..` segments instead of looking for
+      // a sibling `./barefoot.js` that doesn't exist.
+      let rel = relative(dirname(filePath), runtimeAbs)
+      if (!rel.startsWith('.')) rel = './' + rel
       try {
         let content = await readText(filePath)
         const before = content
         if (content.includes('@barefootjs/client')) {
           content = content.replace(
             /from ['"]@barefootjs\/client\/runtime['"]/g,
-            `from '${runtimeRelFromClient}'`
+            `from '${rel}'`,
           )
         }
         content = mergeDuplicateNamedImports(content)
@@ -671,6 +675,60 @@ const BF_CLIENT_DEDUP_KEYS = [
 export function vendorChunkFilename(pkgName: string): string {
   const base = pkgName.includes('/') ? pkgName.split('/').pop()! : pkgName
   return `${base}.js`
+}
+
+/**
+ * Derive the effective base name for a source file's outputs, preserving
+ * the file's full position under any configured `componentDirs` root so
+ * the on-disk layout in `dist/` mirrors the source layout. For a source
+ * like `<root>/components/ui/button/index.tsx` with componentDirs
+ * `['components']`:
+ *
+ *   - returns `{ baseFileName: 'ui/button/index.tsx',
+ *               baseNameNoExt: 'ui/button/index' }`
+ *
+ * — emitting `dist/components/ui/button/index.tsx` and keeping any
+ * `import { Slot } from '../slot'` in the compiled template valid because
+ * the sibling `dist/components/ui/slot/index.tsx` exists at the same
+ * relative depth.
+ *
+ * Falls back to plain basename when the file isn't under any of the
+ * configured input dirs (legacy / out-of-tree compilation).
+ */
+export function effectiveNamesFor(
+  entryPath: string,
+  componentDirs?: readonly string[],
+): { baseFileName: string; baseNameNoExt: string } {
+  const bn = basename(entryPath)
+
+  if (componentDirs && componentDirs.length > 0) {
+    for (const dir of componentDirs) {
+      const root = resolve(dir)
+      if (entryPath !== root && entryPath.startsWith(root + '/')) {
+        const rel = entryPath.slice(root.length + 1)
+        const noExt = rel.replace(/\.[^.]+$/, '')
+        return { baseFileName: rel, baseNameNoExt: noExt }
+      }
+    }
+  }
+
+  const noExt = bn.replace(/\.[^.]+$/, '')
+  return { baseFileName: bn, baseNameNoExt: noExt }
+}
+
+/**
+ * Output filename (relative to the templates dir) for a marked template.
+ * The compiler may emit the marked template under the same basename as
+ * the source; we splice in the subdir prefix so the on-disk layout
+ * matches the source.
+ */
+export function effectiveOutName(tplPath: string, entryBaseNoExt: string): string {
+  const bn = basename(tplPath)
+  // entryBaseNoExt may carry a subdir prefix like 'ui/button/index'.
+  const entryDir = entryBaseNoExt.includes('/')
+    ? entryBaseNoExt.slice(0, entryBaseNoExt.lastIndexOf('/'))
+    : ''
+  return entryDir ? `${entryDir}/${bn}` : bn
 }
 
 /**
@@ -1070,8 +1128,14 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
     sharedProgram,
   } = args
 
-  const baseFileName = basename(entryPath)
-  const baseNameNoExt = baseFileName.replace('.tsx', '')
+  // Preserve the source path's relative position under `componentDirs`
+  // when emitting outputs. For a typical UI-registry layout
+  // (`components/ui/button/index.tsx`) this produces
+  // `dist/components/ui/button.{tsx,client.js}` rather than collapsing
+  // every `<dir>/index.tsx` into a single `dist/components/index.tsx`,
+  // which silently overwrites siblings (manifest-key collision detection
+  // compares output paths, so it doesn't catch the duplicate either).
+  const { baseFileName, baseNameNoExt } = effectiveNamesFor(entryPath, config.componentDirs)
   let clientJsFilename = `${baseNameNoExt}.client.js`
 
   // Track deps: compileJSX only reads the entry file, so transitive deps via
@@ -1133,7 +1197,9 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
   if (hasClientJs) {
     const rel = `${clientJsSubdir}/${clientJsFilename}`
     outputs.push(rel)
-    if (await writeIfChanged(resolve(clientJsOutDir, clientJsFilename), clientJsContent)) {
+    const target = resolve(clientJsOutDir, clientJsFilename)
+    await mkdir(dirname(target), { recursive: true })
+    if (await writeIfChanged(target, clientJsContent)) {
       wroteAny = true
       console.log(`Generated: ${rel}`)
     }
@@ -1141,7 +1207,7 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
 
   if (!config.clientOnly && markedTemplates.length > 0) {
     for (const tpl of markedTemplates) {
-      const outName = basename(tpl.path)
+      const outName = effectiveOutName(tpl.path, baseNameNoExt)
       let outputContent = tpl.content
       if (hasClientJs && config.transformMarkedTemplate) {
         const componentId = outName.replace(/\.[^.]+$/, '')
@@ -1149,7 +1215,9 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
       }
       const rel = `${templatesSubdir}/${outName}`
       outputs.push(rel)
-      if (await writeIfChanged(resolve(templatesOutDir, outName), outputContent)) {
+      const target = resolve(templatesOutDir, outName)
+      await mkdir(dirname(target), { recursive: true })
+      if (await writeIfChanged(target, outputContent)) {
         wroteAny = true
         console.log(`Generated: ${rel}`)
       }
@@ -1160,11 +1228,11 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
   let manifestEntry: { markedTemplate: string; clientJs?: string } | undefined
   if (!config.clientOnly && markedTemplates.length > 0) {
     const primaryTpl =
-      markedTemplates.find(t => basename(t.path).startsWith(baseNameNoExt + '.'))
+      markedTemplates.find(t => effectiveOutName(t.path, baseNameNoExt).startsWith(baseNameNoExt + '.'))
       ?? markedTemplates[0]
     manifestKey = baseNameNoExt
     manifestEntry = {
-      markedTemplate: `${templatesSubdir}/${basename(primaryTpl.path)}`,
+      markedTemplate: `${templatesSubdir}/${effectiveOutName(primaryTpl.path, baseNameNoExt)}`,
       clientJs: hasClientJs ? `${clientJsSubdir}/${clientJsFilename}` : undefined,
     }
   }

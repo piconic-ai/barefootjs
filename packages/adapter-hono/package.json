@@ -72,6 +72,10 @@
     "./build": {
       "types": "./src/build.ts",
       "import": "./src/build.ts"
+    },
+    "./app": {
+      "types": "./src/app.ts",
+      "import": "./src/app.ts"
     }
   },
   "files": [

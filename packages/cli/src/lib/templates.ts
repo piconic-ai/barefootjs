@@ -26,14 +26,14 @@ export interface AdapterTemplate {
   prereqWarnings: () => string[]
 }
 
-// Starter Counter: uses the local <Button> at components/Button.tsx
-// to show the "compose your own components" pattern. Both files live
-// at the same level under components/ so the @/components/* path map
-// resolves uniformly post-build.
+// Starter Counter: uses the registry-fetched <Button> from
+// `components/ui/button/`. `barefoot init` adds it via `addFromRegistry`
+// during scaffolding, so the file is on disk before the user runs npm
+// install — no manual `barefoot add button` step is required.
 const SHARED_COUNTER_TSX = `'use client'
 
 import { createSignal, createMemo } from '@barefootjs/client'
-import { Button } from '@/components/Button'
+import { Button } from '@/components/ui/button'
 
 interface CounterProps {
   initial?: number
@@ -57,39 +57,6 @@ export function Counter(props: CounterProps) {
 }
 
 export default Counter
-`
-
-// Starter Button at components/Button.tsx. Marked 'use client' so the
-// build emits a hydration shim — that's what wires the parent Counter's
-// onClick prop to a real DOM event listener at runtime. Without it,
-// clicks on <Button> fire no handlers and the counter never updates.
-const SHARED_BUTTON_TSX = `'use client'
-
-import type { ButtonHTMLAttributes } from '@barefootjs/jsx'
-
-type Variant = 'primary' | 'secondary' | 'ghost'
-
-interface ButtonProps extends ButtonHTMLAttributes {
-  variant?: Variant
-  className?: string
-  children?: unknown
-}
-
-export function Button({
-  variant = 'primary',
-  className = '',
-  children,
-  ...props
-}: ButtonProps) {
-  const cls = [\`btn\`, \`btn-\${variant}\`, className].filter(Boolean).join(' ')
-  return (
-    <button className={cls} {...props}>
-      {children}
-    </button>
-  )
-}
-
-export default Button
 `
 
 const SHARED_COUNTER_CSS = `:root {
@@ -187,142 +154,27 @@ code {
 `
 
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
-import { Hono } from 'hono'
-import { jsxRenderer } from 'hono/jsx-renderer'
-import { createDevReloader } from '@barefootjs/hono/dev-worker'
-import { existsSync, readFileSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
-import { extname, join, normalize, resolve } from 'node:path'
+import { createApp } from '@barefootjs/hono/app'
 import Counter from '@/components/Counter'
 
-const PORT = Number(process.env.PORT ?? 3000)
-const DIST_DIR = resolve(process.cwd(), 'dist')
-const PUBLIC_DIR = resolve(process.cwd(), 'public')
+const app = createApp({ title: 'BarefootJS app' })
 
-const importMap = JSON.stringify({
-  imports: {
-    '@barefootjs/client': '/static/components/barefoot.js',
-    '@barefootjs/client/runtime': '/static/components/barefoot.js',
-  },
-})
+app.get('/', (c) =>
+  c.render(
+    <main>
+      <h1>It works.</h1>
+      <Counter />
+    </main>
+  )
+)
 
-// Read the build manifest produced by \`barefoot build\` and turn it into
-// the list of <script type="module"> tags this page needs. \`__barefoot__\`
-// is the runtime; every other entry is a component's client JS bundle.
-//
-// We don't use \`@barefootjs/hono/scripts\` (BfScripts) here because the
-// starter aims for the simplest possible server: one source of truth
-// (the manifest), no JSX-runtime context plumbing.
-function readScripts(): string[] {
-  const manifestPath = join(DIST_DIR, 'components', 'manifest.json')
-  if (!existsSync(manifestPath)) return []
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, { clientJs?: string }>
-  const out: string[] = []
-  // barefoot.js must come first: it provides the hydration runtime that
-  // each component's client JS calls into via \`hydrate('Name', ...)\`.
-  if (manifest.__barefoot__?.clientJs) out.push('/static/' + manifest.__barefoot__.clientJs)
-  for (const [name, entry] of Object.entries(manifest)) {
-    if (name === '__barefoot__') continue
-    if (entry.clientJs) out.push('/static/' + entry.clientJs)
-  }
-  return out
-}
-
-const app = new Hono()
-
-app.use('*', jsxRenderer(({ children }) => (
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>BarefootJS app</title>
-      <link rel="stylesheet" href="/static/styles.css" />
-      <script type="importmap" dangerouslySetInnerHTML={{ __html: importMap }} />
-    </head>
-    <body>
-      {children}
-      {readScripts().map(src => <script type="module" src={src} />)}
-      {process.env.NODE_ENV !== 'production' && (
-        <script dangerouslySetInnerHTML={{ __html: DEV_RELOAD_SNIPPET }} />
-      )}
-    </body>
-  </html>
-)))
-
-// Dev-only browser auto-reload via SSE: the page opens an EventSource on
-// /_bf/reload, the server emits a fresh boot id whenever this module is
-// re-evaluated by \`tsx watch\`, and the client reloads on mismatch.
-// No-op in production (NODE_ENV=production).
-app.get('/_bf/reload', createDevReloader())
-
-// Inlined client snippet (mirrors @barefootjs/hono/dev-reload's BfDevReload).
-// Inlined here so the server can emit it without importing a .tsx component
-// through tsx, whose per-file \`@jsxImportSource\` pragmas don't propagate
-// to dependencies and would crash with "React is not defined".
-const DEV_RELOAD_SNIPPET = \`(()=>{if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem('__bf_devreload_scroll');if(s){sessionStorage.removeItem('__bf_devreload_scroll');var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource('/_bf/reload');es.addEventListener('reload',function(){try{sessionStorage.setItem('__bf_devreload_scroll',String(window.scrollY))}catch(e){}location.reload()});es.addEventListener('error',function(){})})();\`
-
-app.get('/', (c) => c.render(
-  <main>
-    <h1>It works.</h1>
-    <Counter />
-    <section class="next-steps">
-      <h2>Next steps</h2>
-      <ul>
-        <li>Edit <code>components/Counter.tsx</code> — the page rebuilds and reloads.</li>
-        <li>Find more components: <code>npx barefoot search button</code></li>
-        <li>Add a component: <code>npx barefoot add button</code></li>
-      </ul>
-    </section>
-  </main>
-))
-
-// Serve compiled client JS from dist/components/ at /static/components/*
-app.get('/static/components/*', async (c) => {
-  const rel = c.req.path.replace('/static/components/', '')
-  const target = normalize(join(DIST_DIR, 'components', rel))
-  if (!target.startsWith(DIST_DIR)) return c.notFound()
-  try {
-    const body = await readFile(target)
-    return new Response(body, {
-      headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
-    })
-  } catch {
-    return c.notFound()
-  }
-})
-
-// Serve other static files from public/ at /static/*
-app.get('/static/*', async (c) => {
-  const rel = c.req.path.replace('/static/', '')
-  const target = normalize(join(PUBLIC_DIR, rel))
-  if (!target.startsWith(PUBLIC_DIR)) return c.notFound()
-  try {
-    const body = await readFile(target)
-    const ct = mimeFor(extname(target))
-    return new Response(body, { headers: { 'Content-Type': ct } })
-  } catch {
-    return c.notFound()
-  }
-})
-
-function mimeFor(ext: string): string {
-  switch (ext) {
-    case '.css': return 'text/css; charset=utf-8'
-    case '.js': return 'application/javascript; charset=utf-8'
-    case '.json': return 'application/json; charset=utf-8'
-    case '.svg': return 'image/svg+xml'
-    case '.png': return 'image/png'
-    case '.html': return 'text/html; charset=utf-8'
-    default: return 'application/octet-stream'
-  }
-}
-
-serve({ fetch: app.fetch, port: PORT }, (info) => {
+serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) }, (info) => {
   console.log(\`  ➜ http://localhost:\${info.port}\`)
 })
 
 export default app
 `
+
 
 const HONO_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/hono/build'
 
@@ -371,7 +223,6 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
       'barefoot.config.ts': HONO_BAREFOOT_CONFIG_TS,
       'tsconfig.json': HONO_TSCONFIG,
       'components/Counter.tsx': SHARED_COUNTER_TSX,
-      'components/Button.tsx': SHARED_BUTTON_TSX,
       'public/styles.css': SHARED_COUNTER_CSS,
     },
     scripts: {
@@ -385,6 +236,9 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
       '@barefootjs/cli': 'latest',
       '@barefootjs/client': 'latest',
       '@barefootjs/hono': 'latest',
+      // Required transitively by @barefootjs/hono via the registry button.
+      '@barefootjs/jsx': 'latest',
+      '@barefootjs/shared': 'latest',
       '@hono/node-server': '^1.13.0',
       hono: '^4.6.0',
     },

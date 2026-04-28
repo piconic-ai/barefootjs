@@ -296,6 +296,27 @@ async function scaffoldApp(
     writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')
     console.log('  Created package.json')
   }
+
+  // 5. Pull a real registry component so the starter Counter shows the
+  //    `barefoot add` flow as already done — the user lands on a page
+  //    that uses an actual UI registry component, not a hand-rolled stub.
+  await tryAddRegistryButton(projectDir, config)
+}
+
+const DEFAULT_REGISTRY_URL = 'https://ui.barefootjs.dev/r/'
+
+async function tryAddRegistryButton(
+  projectDir: string,
+  config: BarefootConfig,
+): Promise<void> {
+  try {
+    await addFromRegistry(['button'], DEFAULT_REGISTRY_URL, projectDir, config, true, true)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.log(`  ! Could not fetch the Button registry component: ${msg}`)
+    console.log(`    The starter Counter expects components/ui/button — add it later with`)
+    console.log(`    \`barefoot add button\` once you're online.`)
+  }
 }
 
 function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
@@ -310,10 +331,10 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   console.log(`       → http://localhost:${adapter.port}`)
   console.log(``)
   console.log(`Then try:`)
-  console.log(`  • Edit components/Counter.tsx — saves rebuild and reload the page.`)
-  console.log(`  • Inspect the bundled <Button>:  ${cmd.exec('barefoot ui button')}`)
-  console.log(`  • Find more components:        ${cmd.exec('barefoot search <query>')}`)
-  console.log(`  • Add a component to ui/:      ${cmd.exec('barefoot add <name>')}`)
+  console.log(`  • Edit components/Counter.tsx — the page rebuilds and reloads automatically.`)
+  console.log(`  • Inspect the bundled Button:    ${cmd.exec('barefoot ui button')}`)
+  console.log(`  • Browse the component registry: ${cmd.exec('barefoot search <query>')}`)
+  console.log(`  • Add another component:         ${cmd.exec('barefoot add input')}`)
 }
 
 // ── Studio URL parsing ──
