@@ -32,16 +32,23 @@ import {
   CHART_CLASS_POLAR_GRID,
   CHART_CLASS_POLAR_ANGLE_AXIS,
   CHART_CLASS_RADIAL_BAR,
-  initBar as barInit,
-  initArea as areaInit,
+  CHART_CLASS_RADIAL_LABEL,
+  CHART_CLASS_BAR,
+  CHART_CLASS_LINE,
+  CHART_CLASS_AREA,
+  CHART_CLASS_AREA_DOT,
+  CHART_CLASS_RADAR,
+  buildLinePath,
+  buildLinePoints,
+  buildAreaPaths,
+  buildAreaDots,
+  buildRadarVertices,
+  buildRadarPolygonPoints,
   initChartTooltip as chartTooltipInit,
-  initRadialChartLabel as radialChartLabelInit,
-  initRadar as radarInit,
   initRadarTooltip as radarTooltipInit,
   initPie as pieInit,
   initPieTooltip as pieTooltipInit,
   initAreaChartTooltip as areaChartTooltipInit,
-  initLine as lineInit,
 } from '@barefootjs/chart'
 import type {
   BarRegistration,
@@ -310,11 +317,96 @@ function BarChart(props: BarChartProps) {
 }
 
 function Bar(props: BarProps) {
-  const handleMount = (el: HTMLElement) => {
-    barInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(BarChartContext)
 
-  return <span data-slot="bar" style="display:none" ref={handleMount} />
+  let currentDataKey: string | null = null
+  createEffect(() => {
+    const dataKey = props.dataKey
+    const fill = props.fill ?? 'currentColor'
+    const radius = props.radius ?? 0
+    if (currentDataKey !== null) {
+      ctx.unregisterBar(currentDataKey)
+    }
+    ctx.registerBar({ dataKey, fill, radius })
+    currentDataKey = dataKey
+  })
+  onCleanup(() => {
+    if (currentDataKey !== null) ctx.unregisterBar(currentDataKey)
+  })
+
+  const bars = createMemo(() => {
+    const xs = ctx.xScale()
+    const ys = ctx.yScale()
+    if (!xs || !ys) return []
+
+    const allBars = ctx.bars()
+    const dataKey = props.dataKey
+    const barIndex = allBars.findIndex((b) => b.dataKey === dataKey)
+    if (barIndex < 0) return []
+
+    const fill = props.fill ?? 'currentColor'
+    const radius = props.radius ?? 0
+    const bandwidth = xs.bandwidth()
+    const barWidth = allBars.length > 1 ? bandwidth / allBars.length : bandwidth
+    const xKey = ctx.xDataKey()
+    const innerH = ctx.innerHeight()
+    const data = ctx.data()
+
+    const result: {
+      key: string
+      x: number
+      y: number
+      width: number
+      height: number
+      fill: string
+      rx: string | null
+      ry: string | null
+      xValue: string
+      yValue: number
+    }[] = []
+    const rxAttr = radius > 0 ? String(radius) : null
+    for (const datum of data) {
+      const xValue = String(datum[xKey])
+      const yValue = Number(datum[dataKey]) || 0
+      const x = (xs(xValue) ?? 0) + barIndex * barWidth
+      const y = ys(yValue)
+      const barHeight = innerH - y
+      if (barHeight <= 0) continue
+      result.push({
+        key: `${dataKey}-${xValue}`,
+        x,
+        y,
+        width: barWidth,
+        height: barHeight,
+        fill,
+        rx: rxAttr,
+        ry: rxAttr,
+        xValue,
+        yValue,
+      })
+    }
+    return result
+  })
+
+  return (
+    <g className={`${CHART_CLASS_BAR} ${CHART_CLASS_BAR}-${props.dataKey}`}>
+      {bars().map((b) => (
+        <rect
+          key={b.key}
+          x={String(b.x)}
+          y={String(b.y)}
+          width={String(b.width)}
+          height={String(b.height)}
+          fill={b.fill}
+          rx={b.rx}
+          ry={b.ry}
+          data-x={b.xValue}
+          data-y={String(b.yValue)}
+          data-key={props.dataKey}
+        />
+      ))}
+    </g>
+  )
 }
 
 // Horizontal + vertical grid lines flattened into a single list. Two sibling
@@ -515,11 +607,15 @@ function YAxis(props: YAxisProps) {
 }
 
 function ChartTooltip(props: ChartTooltipProps) {
-  const handleMount = (el: HTMLElement) => {
+  // The wrapper renders inside the parent chart's `<svg>`, so an HTML element
+  // (`<span>`) here would break SVG context — sibling JSX-native primitives
+  // would be parsed in HTML namespace and stop rendering. Use a `<g>` so the
+  // SVG content model is preserved.
+  const handleMount = (el: Element) => {
     chartTooltipInit(el, props as unknown as Record<string, unknown>)
   }
 
-  return <span data-slot="chart-tooltip" style="display:none" ref={handleMount} />
+  return <g data-slot="chart-tooltip" style="display:none" ref={handleMount} />
 }
 
 function RadialChart(props: RadialChartProps) {
@@ -679,14 +775,21 @@ function RadialBar(props: RadialBarProps) {
 }
 
 function RadialChartLabel(props: RadialChartLabelProps) {
-  const handleMount = (el: HTMLElement) => {
-    radialChartLabelInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(RadialChartContext)
+  const size = createMemo(() => ctx.innerRadius() * 2 * 0.7)
 
   return (
-    <span data-slot="radial-chart-label" ref={handleMount}>
-      {props.children}
-    </span>
+    <foreignObject
+      x={String(-size() / 2)}
+      y={String(-size() / 2)}
+      width={String(size())}
+      height={String(size())}
+      className={CHART_CLASS_RADIAL_LABEL}
+    >
+      <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+        {props.children}
+      </div>
+    </foreignObject>
   )
 }
 
@@ -768,11 +871,57 @@ function RadarChart(props: RadarChartProps) {
 }
 
 function Radar(props: RadarProps) {
-  const handleMount = (el: HTMLElement) => {
-    radarInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(RadarChartContext)
 
-  return <span data-slot="radar" style="display:none" ref={handleMount} />
+  let currentDataKey: string | null = null
+  createEffect(() => {
+    const dataKey = props.dataKey
+    const fill = props.fill ?? 'currentColor'
+    const fillOpacity = props.fillOpacity ?? 0.6
+    if (currentDataKey !== null) {
+      ctx.unregisterRadar(currentDataKey)
+    }
+    ctx.registerRadar({ dataKey, fill, fillOpacity })
+    currentDataKey = dataKey
+  })
+  onCleanup(() => {
+    if (currentDataKey !== null) ctx.unregisterRadar(currentDataKey)
+  })
+
+  const vertices = createMemo(() => {
+    const rs = ctx.radialScale()
+    if (!rs) return []
+    const axisKey = ctx.dataKey()
+    if (!axisKey) return []
+    return buildRadarVertices(ctx.data(), props.dataKey, axisKey, rs)
+  })
+
+  const polygonPoints = createMemo(() => buildRadarPolygonPoints(vertices()))
+
+  return (
+    <g className={`${CHART_CLASS_RADAR} ${CHART_CLASS_RADAR}-${props.dataKey}`}>
+      <polygon
+        points={polygonPoints()}
+        fill={props.fill ?? 'currentColor'}
+        fill-opacity={String(props.fillOpacity ?? 0.6)}
+        stroke={props.fill ?? 'currentColor'}
+        stroke-width="2"
+        data-key={props.dataKey}
+      />
+      {vertices().map((v) => (
+        <circle
+          key={v.key}
+          cx={String(v.x)}
+          cy={String(v.y)}
+          r="3"
+          fill={props.fill ?? 'currentColor'}
+          data-key={props.dataKey}
+          data-axis={v.label}
+          data-value={String(v.value)}
+        />
+      ))}
+    </g>
+  )
 }
 
 type PolarGridShape =
@@ -914,11 +1063,12 @@ function PolarAngleAxis(props: PolarAngleAxisProps) {
 }
 
 function RadarTooltip(props: RadarTooltipProps) {
-  const handleMount = (el: HTMLElement) => {
+  // SVG context preservation — see ChartTooltip note above.
+  const handleMount = (el: Element) => {
     radarTooltipInit(el, props as unknown as Record<string, unknown>)
   }
 
-  return <span data-slot="radar-tooltip" style="display:none" ref={handleMount} />
+  return <g data-slot="radar-tooltip" style="display:none" ref={handleMount} />
 }
 
 function PieChart(props: PieChartProps) {
@@ -989,11 +1139,12 @@ function Pie(props: PieProps) {
 }
 
 function PieTooltip(props: PieTooltipProps) {
-  const handleMount = (el: HTMLElement) => {
+  // SVG context preservation — see ChartTooltip note above.
+  const handleMount = (el: Element) => {
     pieTooltipInit(el, props as unknown as Record<string, unknown>)
   }
 
-  return <span data-slot="pie-tooltip" style="display:none" ref={handleMount} />
+  return <g data-slot="pie-tooltip" style="display:none" ref={handleMount} />
 }
 
 function AreaChart(props: AreaChartProps) {
@@ -1079,11 +1230,75 @@ function AreaChart(props: AreaChartProps) {
 }
 
 function Area(props: AreaProps) {
-  const handleMount = (el: HTMLElement) => {
-    areaInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(AreaChartContext)
 
-  return <span data-slot="area" style="display:none" ref={handleMount} />
+  let currentDataKey: string | null = null
+  createEffect(() => {
+    const dataKey = props.dataKey
+    const fill = props.fill ?? 'currentColor'
+    const stroke = props.stroke ?? fill
+    const fillOpacity = props.fillOpacity ?? 0.2
+    if (currentDataKey !== null) {
+      ctx.unregisterArea(currentDataKey)
+    }
+    ctx.registerArea({ dataKey, fill, stroke, fillOpacity })
+    currentDataKey = dataKey
+  })
+  onCleanup(() => {
+    if (currentDataKey !== null) ctx.unregisterArea(currentDataKey)
+  })
+
+  const paths = createMemo(() => {
+    const xs = ctx.xScale()
+    const ys = ctx.yScale()
+    if (!xs || !ys) return { area: '', line: '' }
+    return buildAreaPaths(
+      ctx.data(),
+      ctx.xDataKey(),
+      props.dataKey,
+      xs,
+      ys,
+      ctx.innerHeight(),
+    )
+  })
+
+  const dots = createMemo(() => {
+    const xs = ctx.xScale()
+    const ys = ctx.yScale()
+    if (!xs || !ys) return []
+    return buildAreaDots(ctx.data(), ctx.xDataKey(), props.dataKey, xs, ys)
+  })
+
+  return (
+    <g className={`${CHART_CLASS_AREA} ${CHART_CLASS_AREA}-${props.dataKey}`}>
+      <path
+        d={paths().area}
+        fill={props.fill ?? 'currentColor'}
+        fill-opacity={String(props.fillOpacity ?? 0.2)}
+        data-key={props.dataKey}
+      />
+      <path
+        d={paths().line}
+        fill="none"
+        stroke={props.stroke ?? props.fill ?? 'currentColor'}
+        stroke-width="2"
+        data-key={props.dataKey}
+      />
+      {dots().map((d) => (
+        <circle
+          key={d.key}
+          className={CHART_CLASS_AREA_DOT}
+          cx={String(d.cx)}
+          cy={String(d.cy)}
+          r="12"
+          fill="transparent"
+          data-x={d.xValue}
+          data-y={String(d.yValue)}
+          data-key={props.dataKey}
+        />
+      ))}
+    </g>
+  )
 }
 
 function AreaXAxis(props: AreaXAxisProps) {
@@ -1192,11 +1407,12 @@ function AreaYAxis(props: AreaYAxisProps) {
 }
 
 function AreaChartTooltip(props: AreaChartTooltipProps) {
-  const handleMount = (el: HTMLElement) => {
+  // SVG context preservation — see ChartTooltip note above.
+  const handleMount = (el: Element) => {
     areaChartTooltipInit(el, props as unknown as Record<string, unknown>)
   }
 
-  return <span data-slot="area-chart-tooltip" style="display:none" ref={handleMount} />
+  return <g data-slot="area-chart-tooltip" style="display:none" ref={handleMount} />
 }
 
 function LineChart(props: LineChartProps) {
@@ -1284,11 +1500,69 @@ function LineChart(props: LineChartProps) {
 }
 
 function Line(props: LineProps) {
-  const handleMount = (el: HTMLElement) => {
-    lineInit(el, props as unknown as Record<string, unknown>)
-  }
+  // LineChart shares BarChartContext (see LineChart's provider), so Line uses
+  // the bar registration channel — fill is repurposed as stroke colour.
+  const ctx = useContext(BarChartContext)
 
-  return <span data-slot="line" style="display:none" ref={handleMount} />
+  let currentDataKey: string | null = null
+  createEffect(() => {
+    const dataKey = props.dataKey
+    const stroke = props.stroke ?? 'currentColor'
+    if (currentDataKey !== null) {
+      ctx.unregisterBar(currentDataKey)
+    }
+    ctx.registerBar({ dataKey, fill: stroke, radius: 0 })
+    currentDataKey = dataKey
+  })
+  onCleanup(() => {
+    if (currentDataKey !== null) ctx.unregisterBar(currentDataKey)
+  })
+
+  const pathD = createMemo(() => {
+    const xs = ctx.xScale()
+    const ys = ctx.yScale()
+    if (!xs || !ys) return ''
+    return buildLinePath(
+      ctx.data(),
+      ctx.xDataKey(),
+      props.dataKey,
+      xs,
+      ys,
+      props.type ?? 'monotone',
+    )
+  })
+
+  const dots = createMemo(() => {
+    if (props.dot === false) return []
+    const xs = ctx.xScale()
+    const ys = ctx.yScale()
+    if (!xs || !ys) return []
+    return buildLinePoints(ctx.data(), ctx.xDataKey(), props.dataKey, xs, ys)
+  })
+
+  return (
+    <g className={`${CHART_CLASS_LINE} ${CHART_CLASS_LINE}-${props.dataKey}`}>
+      <path
+        d={pathD()}
+        fill="none"
+        stroke={props.stroke ?? 'currentColor'}
+        stroke-width={String(props.strokeWidth ?? 2)}
+        data-key={props.dataKey}
+      />
+      {dots().map((d) => (
+        <circle
+          key={d.key}
+          cx={String(d.cx)}
+          cy={String(d.cy)}
+          r="4"
+          fill={props.stroke ?? 'currentColor'}
+          data-x={d.xValue}
+          data-y={String(d.yValue)}
+          data-key={props.dataKey}
+        />
+      ))}
+    </g>
+  )
 }
 
 

@@ -196,3 +196,58 @@ describe('RadialBar', () => {
     expect(result.root.tag).toBe('g')
   })
 })
+
+// JSX-native primitives migrated in Phase 9 step 3 (#1080).
+describe('RadialChartLabel', () => {
+  const result = renderToTest(source, 'chart.tsx', 'RadialChartLabel')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('isClient is true', () => {
+    expect(result.isClient).toBe(true)
+  })
+  test('renders <foreignObject> root with the chart-radial-label class', () => {
+    expect(result.root.tag).toBe('foreignObject')
+    expect(String(result.root.props['className'] ?? result.root.classes.join(' '))).toContain('CHART_CLASS_RADIAL_LABEL')
+  })
+})
+
+describe('Bar', () => {
+  const result = renderToTest(source, 'chart.tsx', 'Bar')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})
+
+describe('Line', () => {
+  const result = renderToTest(source, 'chart.tsx', 'Line')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})
+
+describe('Area', () => {
+  const result = renderToTest(source, 'chart.tsx', 'Area')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})
+
+describe('Radar', () => {
+  const result = renderToTest(source, 'chart.tsx', 'Radar')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})

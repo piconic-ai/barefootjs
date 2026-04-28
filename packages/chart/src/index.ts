@@ -10,6 +10,15 @@ export { createBandScale, createLinearScale, createPointScale, createRadarRadial
 // the browser import map does not resolve.
 export { buildRadialBarArcs, type RadialBarArcSpec } from './utils/arcs'
 
+// Line geometry helpers for the JSX-native `Line` primitive (#1080 step 3).
+export { buildLinePath, buildLinePoints, type LinePoint } from './utils/lines'
+
+// Area geometry helpers for the JSX-native `Area` primitive (#1080 step 3).
+export { buildAreaPaths, buildAreaDots, type AreaPaths, type AreaDot } from './utils/areas'
+
+// Radar geometry helpers for the JSX-native `Radar` primitive (#1080 step 3).
+export { buildRadarVertices, buildRadarPolygonPoints, type RadarVertex } from './utils/radar'
+
 // Stable CSS class names for chart primitives. Imported (rather than
 // declared inline) so the JSX compiler's cssLayerPrefixer leaves them alone
 // — the e2e selectors target the un-prefixed forms.
@@ -20,6 +29,12 @@ export {
   CHART_CLASS_POLAR_GRID,
   CHART_CLASS_POLAR_ANGLE_AXIS,
   CHART_CLASS_RADIAL_BAR,
+  CHART_CLASS_RADIAL_LABEL,
+  CHART_CLASS_BAR,
+  CHART_CLASS_LINE,
+  CHART_CLASS_AREA,
+  CHART_CLASS_AREA_DOT,
+  CHART_CLASS_RADAR,
 } from './utils/classes'
 
 // Helper used by the JSX-native ChartContainer ref to project ChartConfig
@@ -31,12 +46,7 @@ export { applyChartCSSVariables } from './chart-container'
 // of #1080 are now JSX-native and live in `ui/components/ui/chart/index.tsx`.
 // The primitives below stay imperative until later steps migrate Bar / Area /
 // Line / Radar / Pie / tooltips.
-export { initBar } from './bar'
-export { initArea } from './area'
-export { initLine } from './line'
 export { initChartTooltip } from './tooltip'
-export { initRadialChartLabel } from './radial-chart-label'
-export { initRadar } from './radar'
 export { initRadarTooltip } from './radar-tooltip'
 export { initPie } from './pie'
 export { initPieTooltip } from './pie-tooltip'
