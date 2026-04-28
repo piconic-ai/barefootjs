@@ -1,10 +1,22 @@
 // `barefoot init` — Initialize a new BarefootJS project.
+//
+// Two modes:
+//
+//   1. Default (app mode): scaffold a runnable starter app for an adapter
+//      (currently Hono). Counter component + server + npm scripts so the
+//      user can `npm install && npm run dev` and see a working page.
+//
+//   2. --registry-only: scaffold just the component-registry directory
+//      layout (barefoot.json + tokens/ + meta/ + components/ui/), without
+//      a server. Useful for projects that only consume `barefoot add`.
 
 import { existsSync, mkdirSync, writeFileSync, copyFileSync, readFileSync } from 'fs'
 import path from 'path'
 import type { CliContext } from '../context'
 import type { BarefootConfig } from '../context'
 import { addFromRegistry } from './add'
+import { ADAPTERS, DEFAULT_ADAPTER, type AdapterTemplate } from '../lib/templates'
+import { detectPackageManager, commandsFor, type PackageManager } from '../lib/pm'
 
 const DEFAULT_CONFIG: BarefootConfig = {
   $schema: 'https://barefootjs.dev/schema/barefoot.json',
@@ -15,22 +27,36 @@ const DEFAULT_CONFIG: BarefootConfig = {
   },
 }
 
+interface InitFlags {
+  name?: string
+  fromUrl?: string
+  adapter: string
+  registryOnly: boolean
+}
+
+function parseFlags(args: string[]): InitFlags {
+  const flags: InitFlags = {
+    adapter: DEFAULT_ADAPTER,
+    registryOnly: false,
+  }
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]
+    if (a === '--name' && args[i + 1]) {
+      flags.name = args[++i]
+    } else if (a === '--from' && args[i + 1]) {
+      flags.fromUrl = args[++i]
+    } else if (a === '--adapter' && args[i + 1]) {
+      flags.adapter = args[++i]
+    } else if (a === '--registry-only') {
+      flags.registryOnly = true
+    }
+  }
+  return flags
+}
+
 export async function run(args: string[], ctx: CliContext): Promise<void> {
   const projectDir = process.cwd()
-
-  // Parse --name flag
-  let name: string | undefined
-  const nameIdx = args.indexOf('--name')
-  if (nameIdx !== -1 && args[nameIdx + 1]) {
-    name = args[nameIdx + 1]
-  }
-
-  // Parse --from flag
-  let fromUrl: string | undefined
-  const fromIdx = args.indexOf('--from')
-  if (fromIdx !== -1 && args[fromIdx + 1]) {
-    fromUrl = args[fromIdx + 1]
-  }
+  const flags = parseFlags(args)
 
   // Check if already initialized
   const configPath = path.join(projectDir, 'barefoot.json')
@@ -39,8 +65,36 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
+  if (flags.registryOnly) {
+    await runRegistryOnly(projectDir, configPath, flags, ctx)
+    return
+  }
+
+  const adapter = ADAPTERS[flags.adapter]
+  if (!adapter) {
+    const known = Object.keys(ADAPTERS).join(', ')
+    console.error(`Error: unknown adapter "${flags.adapter}". Available: ${known}`)
+    console.error(`(Other backends — Echo, Mojolicious — are showcased in the docs but not yet wired into init.)`)
+    process.exit(1)
+  }
+
+  const warnings = adapter.prereqWarnings()
+  for (const w of warnings) console.warn(`  ! ${w}`)
+
+  console.log(`Initializing BarefootJS app with the ${adapter.label} adapter...\n`)
+
+  await scaffoldApp(projectDir, configPath, adapter, flags, ctx)
+  printAppNextSteps(projectDir, adapter)
+}
+
+async function runRegistryOnly(
+  projectDir: string,
+  configPath: string,
+  flags: InitFlags,
+  ctx: CliContext,
+): Promise<void> {
   const config: BarefootConfig = { ...DEFAULT_CONFIG }
-  if (name) config.name = name
+  if (flags.name) config.name = flags.name
 
   // 1. Write barefoot.json
   writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n')
@@ -59,8 +113,8 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   // Apply token overrides from Studio URL if provided
   let studioConfig: StudioConfig | undefined
-  if (fromUrl) {
-    studioConfig = parseStudioUrl(fromUrl)
+  if (flags.fromUrl) {
+    studioConfig = parseStudioUrl(flags.fromUrl)
     if (studioConfig && existsSync(destTokensJson)) {
       applyTokenOverrides(destTokensJson, studioConfig)
       console.log(`  Applied Studio token overrides`)
@@ -101,7 +155,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const pkgJsonPath = path.join(projectDir, 'package.json')
   if (!existsSync(pkgJsonPath)) {
     const pkgJson = {
-      name: name || 'my-design-system',
+      name: flags.name || 'my-design-system',
       private: true,
       type: 'module',
       scripts: {
@@ -142,8 +196,8 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   }
 
   // 8. If --from was provided, fetch all components from the registry
-  if (fromUrl) {
-    const registryUrl = deriveRegistryUrl(fromUrl)
+  if (flags.fromUrl) {
+    const registryUrl = deriveRegistryUrl(flags.fromUrl)
     console.log(`\n  Fetching components from ${registryUrl}...`)
     try {
       // Use registry.json (build-registry output) instead of index.json (meta output)
@@ -158,18 +212,107 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
       }
     } catch (err) {
       console.log(`  Skipped component download: ${err instanceof Error ? err.message : err}`)
-      console.log(`  Run \`barefoot add <component...> --registry ${deriveRegistryUrl(fromUrl)}\` to add components later.`)
+      console.log(`  Run \`barefoot add <component...> --registry ${deriveRegistryUrl(flags.fromUrl)}\` to add components later.`)
     }
   }
 
+  const pm = detectPackageManager(projectDir)
+  const cmd = commandsFor(pm)
   console.log(`\nProject initialized successfully!`)
   console.log(`\nNext steps:`)
-  console.log(`  bun install                    # Install dependencies`)
-  if (!fromUrl) {
-    console.log(`  barefoot add button checkbox   # Add components`)
+  console.log(`  ${cmd.install}`)
+  if (!flags.fromUrl) {
+    console.log(`  ${cmd.exec('barefoot add button checkbox')}`)
   }
-  console.log(`  bun test                       # Run component tests`)
-  console.log(`  barefoot search <query>        # Search available components`)
+  console.log(`  ${cmd.run('test')}`)
+  console.log(`  ${cmd.exec('barefoot search <query>')}`)
+}
+
+// ── App scaffolding (default mode) ──
+
+async function scaffoldApp(
+  projectDir: string,
+  configPath: string,
+  adapter: AdapterTemplate,
+  flags: InitFlags,
+  _ctx: CliContext,
+): Promise<void> {
+  // 1. barefoot.json — components live next to server.tsx by default for
+  //    apps. The registry-only mode keeps the original `components/ui`
+  //    convention; here we use plain `components/` so user code and
+  //    `barefoot add` output coexist cleanly (barefoot add lands in
+  //    `components/ui/` per the path config).
+  const config: BarefootConfig = {
+    $schema: DEFAULT_CONFIG.$schema,
+    paths: {
+      components: 'components/ui',
+      tokens: 'tokens',
+      meta: 'meta',
+    },
+  }
+  if (flags.name) config.name = flags.name
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n')
+  console.log('  Created barefoot.json')
+
+  // 2. Adapter-contributed files (server, components/Counter, etc.)
+  for (const [relPath, contents] of Object.entries(adapter.files)) {
+    const target = path.join(projectDir, relPath)
+    if (existsSync(target)) {
+      console.log(`  Skipped ${relPath} (already exists)`)
+      continue
+    }
+    mkdirSync(path.dirname(target), { recursive: true })
+    writeFileSync(target, contents)
+    console.log(`  Created ${relPath}`)
+  }
+
+  // 3. meta/ — empty registry index so `barefoot search` doesn't error
+  //    on an unconfigured app.
+  const metaDir = path.resolve(projectDir, config.paths.meta)
+  mkdirSync(metaDir, { recursive: true })
+  writeFileSync(
+    path.join(metaDir, 'index.json'),
+    JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), components: [] }, null, 2) + '\n',
+  )
+  console.log(`  Created ${config.paths.meta}/index.json`)
+
+  // 4. package.json — merge adapter scripts/deps with a sensible default.
+  const pkgJsonPath = path.join(projectDir, 'package.json')
+  const pkgName = flags.name || path.basename(projectDir).replace(/[^a-z0-9-_]/gi, '-').toLowerCase() || 'barefoot-app'
+  const pkgJson = {
+    name: pkgName,
+    private: true,
+    type: 'module',
+    scripts: {
+      ...adapter.scripts,
+      test: 'echo "no tests yet"',
+    },
+    dependencies: { ...adapter.dependencies },
+    devDependencies: { ...adapter.devDependencies },
+  }
+  if (existsSync(pkgJsonPath)) {
+    console.log('  Skipped package.json (already exists — merge deps manually)')
+  } else {
+    writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')
+    console.log('  Created package.json')
+  }
+}
+
+function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
+  const pm: PackageManager = detectPackageManager(projectDir)
+  const cmd = commandsFor(pm)
+  console.log(`\nProject initialized!  (detected package manager: ${pm})`)
+  console.log(`\nNext steps:`)
+  console.log(`  1. Install dependencies`)
+  console.log(`       ${cmd.install}`)
+  console.log(`  2. Start the dev server`)
+  console.log(`       ${cmd.run('dev')}`)
+  console.log(`       → http://localhost:${adapter.port}`)
+  console.log(``)
+  console.log(`Then try:`)
+  console.log(`  • Edit components/Counter.tsx — saves rebuild and reload the page.`)
+  console.log(`  • Find a component:  ${cmd.exec('barefoot search button')}`)
+  console.log(`  • Add a component:   ${cmd.exec('barefoot add button')}`)
 }
 
 // ── Studio URL parsing ──
