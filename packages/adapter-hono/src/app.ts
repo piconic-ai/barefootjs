@@ -1,28 +1,30 @@
 /**
  * BarefootJS Hono middleware
  *
- * Three composable middlewares + a small helper, modeled after Hono's own
- * `jsxRenderer` / `serveStatic` pattern. Use them à la carte from your
- * `server.tsx` instead of taking a single opinionated factory.
+ * Three composable middlewares modelled on `hono/jsx-renderer`. They
+ * communicate via Hono's per-request context (`c.set` / `c.get`) so each
+ * one is independently mountable / replaceable / removable:
  *
  *   - `barefootRenderer(opts)` — sets `c.setRenderer` so `c.render(jsx)`
- *     wraps the user's JSX in the BarefootJS document shell (import map,
- *     stylesheet links, component script tags, dev-reload snippet).
+ *     wraps the user's JSX in a document shell. The renderer knows
+ *     **nothing** about component URLs or dev-reload paths; it just
+ *     splices in whatever the other middleware have pushed onto the
+ *     `bfHeadHtml` / `bfBodyHtml` context lists.
  *
- *   - `barefootComponents(opts)` — serves the compiled client JS bundles
- *     under `/static/components/*` directly from the build's `dist/`.
- *     Plain static handler, nothing more.
+ *   - `barefootComponents(opts)` — owns the `/static/components/*` URL
+ *     space end-to-end: serves the compiled client JS bundles produced
+ *     by `barefoot build`, and pushes the matching `<script type="module">`
+ *     tags + import map JSON onto the renderer's body/head lists. Change
+ *     `base` once and every reference moves with it.
  *
- *   - `barefootDevReload(opts)` — registers the `/_bf/reload` SSE
- *     endpoint that the renderer's inline script connects to. No-op when
- *     `NODE_ENV === 'production'`.
+ *   - `barefootDevReload(opts)` — owns `/_bf/reload`: serves the SSE
+ *     endpoint and pushes the EventSource client snippet onto the body
+ *     list. Skip the middleware (or set `enabled: false`) and **nothing**
+ *     dev-reload-related ends up on the page.
  *
- * Plus:
- *
- *   - `readComponentScripts(distDir)` — reads `dist/components/manifest.json`
- *     and returns the ordered list of script URLs the page should load.
- *     Exposed so callers writing their own renderer can build the script
- *     tags themselves.
+ * For ordinary `public/` files use Hono's own `serveStatic` from
+ * `@hono/node-server/serve-static` directly — `@barefootjs/hono` doesn't
+ * reinvent that.
  *
  * Implementation note: this file is intentionally `.ts` (no JSX) because
  * tsx's per-file `@jsxImportSource` pragma doesn't always propagate when
@@ -38,24 +40,40 @@ import { readFile } from 'node:fs/promises'
 import { join, normalize, resolve } from 'node:path'
 import { createDevReloader } from './dev-worker'
 
-const DEV_RELOAD_SNIPPET = `(()=>{if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem('__bf_devreload_scroll');if(s){sessionStorage.removeItem('__bf_devreload_scroll');var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource('/_bf/reload');es.addEventListener('reload',function(){try{sessionStorage.setItem('__bf_devreload_scroll',String(window.scrollY))}catch(e){}location.reload()});es.addEventListener('error',function(){})})();`
+// ── context keys ───────────────────────────────────────────────────────────
 
-const DEFAULT_IMPORT_MAP = JSON.stringify({
-  imports: {
-    '@barefootjs/client': '/static/components/barefoot.js',
-    '@barefootjs/client/runtime': '/static/components/barefoot.js',
-  },
-})
+/**
+ * Each middleware appends raw HTML strings to one of these per-request
+ * lists. The renderer concatenates them into the document shell. Lists
+ * (not single strings) so multiple middleware can contribute without
+ * stomping on each other.
+ */
+const HEAD_KEY = 'bfHeadHtml'
+const BODY_KEY = 'bfBodyHtml'
+
+function appendHead(c: Context, html: string): void {
+  const list = (c.get(HEAD_KEY) as string[] | undefined) ?? []
+  list.push(html)
+  c.set(HEAD_KEY, list)
+}
+
+function appendBody(c: Context, html: string): void {
+  const list = (c.get(BODY_KEY) as string[] | undefined) ?? []
+  list.push(html)
+  c.set(BODY_KEY, list)
+}
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
 /**
  * Read the build manifest produced by `barefoot build` and return the
  * list of `<script type="module" src=...>` URLs the page should include
- * — the runtime first, then each compiled component.
+ * — the runtime first, then each compiled component. Useful for callers
+ * writing their own renderer instead of using `barefootRenderer`.
  */
 export function readComponentScripts(
   distDir: string = resolve(process.cwd(), 'dist'),
+  baseUrl: string = '/static/components',
 ): string[] {
   const manifestPath = join(distDir, 'components', 'manifest.json')
   if (!existsSync(manifestPath)) return []
@@ -64,14 +82,21 @@ export function readComponentScripts(
     { clientJs?: string }
   >
   const out: string[] = []
+  const prefix = `${baseUrl.replace(/\/$/, '')}/`
   if (manifest.__barefoot__?.clientJs) {
-    out.push('/static/' + manifest.__barefoot__.clientJs)
+    // manifest.clientJs entries are relative to dist/, e.g. "components/barefoot.js"
+    out.push(prefix + relPathFromComponentsBase(manifest.__barefoot__.clientJs))
   }
   for (const [name, entry] of Object.entries(manifest)) {
     if (name === '__barefoot__') continue
-    if (entry.clientJs) out.push('/static/' + entry.clientJs)
+    if (entry.clientJs) out.push(prefix + relPathFromComponentsBase(entry.clientJs))
   }
   return out
+}
+
+/** "components/foo.client.js" → "foo.client.js"; passthrough otherwise. */
+function relPathFromComponentsBase(p: string): string {
+  return p.startsWith('components/') ? p.slice('components/'.length) : p
 }
 
 // ── 1. barefootRenderer ────────────────────────────────────────────────────
@@ -81,43 +106,31 @@ export interface BarefootRendererOptions {
   title?: string
   /** Stylesheet URL or list of URLs. Default: ["/static/styles.css"]. */
   stylesheet?: string | string[]
-  /** Absolute path to the build's dist/ directory. Default: `<cwd>/dist`. */
-  distDir?: string
   /**
-   * Inline `<script>` import map JSON. Defaults to mapping
-   * `@barefootjs/client` and `@barefootjs/client/runtime` to
-   * `/static/components/barefoot.js`. Pass your own JSON string to
-   * customise (or empty string to omit).
+   * Extra raw HTML to inject at the very end of `<head>`, after any
+   * content other middleware push via `bfHeadHtml`. For one-off needs;
+   * prefer authoring a middleware that pushes onto `bfHeadHtml` if the
+   * content is reusable across routes.
    */
-  importMap?: string
-  /**
-   * Inject the inline EventSource snippet so the page reloads on
-   * `/_bf/reload` mismatches. Default: `process.env.NODE_ENV !== 'production'`.
-   */
-  devReload?: boolean
-  /** Extra HTML to inject before `</head>`. */
   headHtml?: string
 }
 
 /**
- * Hono middleware that calls `c.setRenderer` so any subsequent
- * `c.render(jsx)` wraps the JSX in the BarefootJS document shell.
+ * Hono middleware that calls `c.setRenderer` so subsequent
+ * `c.render(jsx)` calls return the BarefootJS document shell with the
+ * user's JSX as the body.
  *
- * Pair with your route handlers:
- *
- * ```ts
- * app.use('*', barefootRenderer({ title: 'My App' }))
- * app.get('/', (c) => c.render(<main><Counter /></main>))
- * ```
+ * The renderer itself only knows about title + stylesheets. Anything
+ * URL-specific (component script tags, import maps, dev-reload snippet)
+ * is contributed by other middleware via `c.set('bfHeadHtml' | 'bfBodyHtml')`
+ * — so removing or relocating those middleware automatically removes or
+ * relocates their HTML, with no string changes here.
  */
 export function barefootRenderer(
   opts: BarefootRendererOptions = {},
 ): MiddlewareHandler {
   const title = opts.title ?? 'BarefootJS app'
   const stylesheets = ([] as string[]).concat(opts.stylesheet ?? '/static/styles.css')
-  const distDir = opts.distDir ?? resolve(process.cwd(), 'dist')
-  const importMap = opts.importMap ?? DEFAULT_IMPORT_MAP
-  const devReload = opts.devReload ?? (process.env.NODE_ENV !== 'production')
   const extraHead = opts.headHtml ?? ''
 
   return async (c, next) => {
@@ -125,14 +138,9 @@ export function barefootRenderer(
       const linkTags = stylesheets
         .map((href) => `<link rel="stylesheet" href="${href}" />`)
         .join('')
-      const scriptTags = readComponentScripts(distDir)
-        .map((src) => `<script type="module" src="${src}"></script>`)
-        .join('')
-      const devSnippet = devReload ? `<script>${DEV_RELOAD_SNIPPET}</script>` : ''
-      const importMapTag = importMap
-        ? `<script type="importmap">${importMap}</script>`
-        : ''
-      const body = html`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${title}</title>${raw(linkTags)}${raw(importMapTag)}${raw(extraHead)}</head><body>${children as any}${raw(scriptTags)}${raw(devSnippet)}</body></html>`
+      const headFromMiddleware = ((c.get(HEAD_KEY) as string[] | undefined) ?? []).join('')
+      const bodyFromMiddleware = ((c.get(BODY_KEY) as string[] | undefined) ?? []).join('')
+      const body = html`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${title}</title>${raw(linkTags)}${raw(headFromMiddleware)}${raw(extraHead)}</head><body>${children as any}${raw(bodyFromMiddleware)}</body></html>`
       return c.html(body)
     })
     await next()
@@ -144,21 +152,25 @@ export function barefootRenderer(
 export interface BarefootComponentsOptions {
   /** Absolute path to the build's dist/ directory. Default: `<cwd>/dist`. */
   distDir?: string
-  /** Mount path; files are served below this prefix. Default: "/static/components". */
+  /** Mount path; component bundles are served below this prefix. Default: "/static/components". */
   base?: string
+  /**
+   * Override the import map JSON. Default: maps `@barefootjs/client` and
+   * `@barefootjs/client/runtime` to `<base>/barefoot.js` so the runtime
+   * imports inside compiled client JS resolve.
+   */
+  importMap?: string
 }
 
 /**
- * Hono middleware that serves the compiled client JS bundles produced by
- * `barefoot build`. The renderer's import map points at this same base
- * URL, so any `<script type="module">` the renderer emits resolves here.
+ * Self-contained owner of the BarefootJS component URL space:
  *
- * For the rest of `public/`, use Hono's `serveStatic` directly:
+ *   - serves files under `<base>/*` from `<distDir>/components/`
+ *   - pushes a `<script type="importmap">` onto the page <head>
+ *   - pushes one `<script type="module">` per manifest entry onto <body>
  *
- * ```ts
- * import { serveStatic } from '@hono/node-server/serve-static'
- * app.get('/static/*', serveStatic({ root: './public', rewriteRequestPath: (p) => p.replace('/static', '') }))
- * ```
+ * Both halves use the same `base`, so changing it relocates everything
+ * consistently — the renderer never sees the URL.
  */
 export function barefootComponents(
   opts: BarefootComponentsOptions = {},
@@ -166,21 +178,39 @@ export function barefootComponents(
   const distDir = opts.distDir ?? resolve(process.cwd(), 'dist')
   const base = (opts.base ?? '/static/components').replace(/\/$/, '')
   const componentsRoot = resolve(distDir, 'components')
+  const importMap =
+    opts.importMap ??
+    JSON.stringify({
+      imports: {
+        '@barefootjs/client': `${base}/barefoot.js`,
+        '@barefootjs/client/runtime': `${base}/barefoot.js`,
+      },
+    })
 
-  return async (c: Context, next) => {
-    const path = c.req.path
-    if (!path.startsWith(base + '/')) return next()
-    const rel = path.slice(base.length + 1)
-    const target = normalize(join(componentsRoot, rel))
-    if (!target.startsWith(componentsRoot)) return next()
-    try {
-      const body = await readFile(target)
-      return new Response(body, {
-        headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
-      })
-    } catch {
-      return next()
+  return async (c, next) => {
+    // 1. Contribute to the document on every request (cheap).
+    appendHead(c, `<script type="importmap">${importMap}</script>`)
+    for (const src of readComponentScripts(distDir, base)) {
+      appendBody(c, `<script type="module" src="${src}"></script>`)
     }
+
+    // 2. If this request is for one of our static files, serve it.
+    const path = c.req.path
+    if (path.startsWith(base + '/')) {
+      const rel = path.slice(base.length + 1)
+      const target = normalize(join(componentsRoot, rel))
+      if (target.startsWith(componentsRoot)) {
+        try {
+          const body = await readFile(target)
+          return new Response(body, {
+            headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
+          })
+        } catch {
+          // fall through to next handler
+        }
+      }
+    }
+    await next()
   }
 }
 
@@ -189,18 +219,19 @@ export function barefootComponents(
 export interface BarefootDevReloadOptions {
   /** Override the dev gate. Default: `process.env.NODE_ENV !== 'production'`. */
   enabled?: boolean
-  /** SSE endpoint path. Default: "/_bf/reload" (matches the renderer's snippet). */
+  /** SSE endpoint path. Default: "/_bf/reload". */
   endpoint?: string
 }
 
 /**
- * Hono middleware that registers the SSE endpoint paired with the
- * EventSource client snippet emitted by `barefootRenderer({ devReload })`.
- * No-op in production. Mount it once at the root:
+ * Self-contained owner of the dev-reload URL space:
  *
- * ```ts
- * app.use('*', barefootDevReload())
- * ```
+ *   - serves the SSE endpoint at `<endpoint>` (default `/_bf/reload`)
+ *   - pushes an inline EventSource client `<script>` onto <body> that
+ *     connects to that same endpoint
+ *
+ * Disable, replace, or relocate by tweaking `endpoint` / `enabled`. The
+ * renderer is unaware that any of this is happening.
  */
 export function barefootDevReload(
   opts: BarefootDevReloadOptions = {},
@@ -211,10 +242,21 @@ export function barefootDevReload(
     return async (_c, next) => next()
   }
   const reloader = createDevReloader()
+  const snippet = buildDevReloadSnippet(endpoint)
+
   return async (c, next) => {
+    appendBody(c, `<script>${snippet}</script>`)
     if (c.req.method === 'GET' && c.req.path === endpoint) {
       return reloader(c as never)
     }
-    return next()
+    await next()
   }
+}
+
+function buildDevReloadSnippet(endpoint: string): string {
+  // Compact IIFE: idempotent across duplicate mounts, preserves scrollY
+  // across reload, logs nothing on transient SSE errors (the EventSource
+  // auto-reconnects).
+  const ep = JSON.stringify(endpoint)
+  return `(()=>{if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem('__bf_devreload_scroll');if(s){sessionStorage.removeItem('__bf_devreload_scroll');var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource(${ep});es.addEventListener('reload',function(){try{sessionStorage.setItem('__bf_devreload_scroll',String(window.scrollY))}catch(e){}location.reload()});es.addEventListener('error',function(){})})();`
 }
