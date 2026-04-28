@@ -11,7 +11,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@barefootjs/jsx",
+    "paths": {
+      "@barefootjs/jsx": ["../jsx/src"],
+      "@barefootjs/jsx/jsx-runtime": ["../jsx/src/jsx-runtime/index.d.ts"],
+      "@barefootjs/jsx/jsx-dev-runtime": ["../jsx/src/jsx-dev-runtime/index.d.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "src/__tests__"]

@@ -23,8 +23,9 @@
     "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
     "build:browser": "bun build ./src/index.ts --outdir ./dist --entry-naming 'xyflow.browser.min.[ext]' --format esm --minify --sourcemap --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
-    "test": "bun test src/",
+    "test": "bun test src/ && bun run typecheck:tests",
     "test:e2e": "bunx playwright test",
+    "typecheck:tests": "tsgo --noEmit -p src/__tests__/tsconfig.json",
     "clean": "rm -rf dist"
   },
   "keywords": [
@@ -44,12 +45,15 @@
     "directory": "packages/xyflow"
   },
   "peerDependencies": {
-    "@barefootjs/client": ">=0.0.1"
+    "@barefootjs/client": ">=0.0.1",
+    "@barefootjs/jsx": ">=0.0.1"
   },
   "dependencies": {
     "@xyflow/system": "^0.0.76"
   },
   "devDependencies": {
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/test": "workspace:*",
     "typescript": "^5.0.0"
   }
 }
