@@ -26,10 +26,10 @@
  * treats a function returning `HtmlEscapedString` as a valid JSX child.
  */
 
-import type { Context, Hono, MiddlewareHandler } from 'hono'
+import type { Context, MiddlewareHandler } from 'hono'
 import { html, raw } from 'hono/html'
 import type { HtmlEscapedString } from 'hono/utils/html'
-import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
+import { useRequestContext } from 'hono/jsx-renderer'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join, normalize, resolve } from 'node:path'
@@ -264,54 +264,3 @@ function buildDevReloadSnippet(endpoint: string): string {
   return `(()=>{if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem('__bf_devreload_scroll');if(s){sessionStorage.removeItem('__bf_devreload_scroll');var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource(${ep});es.addEventListener('reload',function(){try{sessionStorage.setItem('__bf_devreload_scroll',String(window.scrollY))}catch(e){}location.reload()});es.addEventListener('error',function(){})})();`
 }
 
-// ── barefoot() — bundled wrapper for the common case ──────────────────────
-
-export interface BarefootOptions
-  extends BarefootComponentsOptions,
-    BarefootDevReloadOptions {
-  /** Document <title>. Default: "BarefootJS app". */
-  title?: string
-  /** Stylesheet URL or list of URLs. Default: ["/static/styles.css"]. */
-  stylesheet?: string | string[]
-}
-
-/**
- * Mount the BarefootJS defaults onto a Hono app:
- *
- *   - `jsxRenderer` with a Layout that includes `<BfImportMap />`,
- *     `<BfScripts />`, and `<BfDevReload />` in their conventional
- *     positions
- *   - `barefootComponents()` for `/static/components/*`
- *   - `barefootDevReload()` for `/_bf/reload` (no-op in production)
- *
- * Returns the same Hono instance so calls chain cleanly:
- *
- * ```tsx
- * const app = barefoot(new Hono(), { title: 'My App' })
- * app.get('/', (c) => c.render(<Counter />))
- * ```
- *
- * Per-route props go through `c.render(jsx, { title })` exactly as
- * with `jsxRenderer` directly. For a custom Layout, skip `barefoot`
- * and compose the lower-level exports — `jsxRenderer` from
- * `hono/jsx-renderer` plus the JSX components and the two middleware
- * — yourself.
- */
-export function barefoot<App extends Hono<any, any, any>>(
-  app: App,
-  opts: BarefootOptions = {},
-): App {
-  const stylesheets = ([] as string[]).concat(opts.stylesheet ?? '/static/styles.css')
-
-  const renderer = jsxRenderer((props: { children?: unknown; title?: string }) => {
-    const title = props.title ?? opts.title ?? 'BarefootJS app'
-    const linkTags = stylesheets
-      .map((href) => `<link rel="stylesheet" href="${href}" />`)
-      .join('')
-    return html`<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${title}</title>${raw(linkTags)}${BfImportMap({})}</head><body>${props.children as never}${BfScripts({})}${BfDevReload({})}</body></html>`
-  })
-  app.use('*', renderer)
-  app.use('*', barefootComponents(opts))
-  app.use('*', barefootDevReload(opts))
-  return app
-}

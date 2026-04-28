@@ -250,7 +250,7 @@ export default defineConfig({
   // patterns here for \`unocss\` / \`unocss --watch\` invocations.
   cli: {
     entry: {
-      patterns: ['components/**/*.tsx', 'dist/components/**/*.tsx', 'server.tsx'],
+      patterns: ['components/**/*.tsx', 'dist/components/**/*.tsx', 'server.tsx', 'renderer.tsx'],
       outFile: 'public/uno.css',
     },
   },
@@ -260,17 +260,15 @@ export default defineConfig({
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
-import { barefoot } from '@barefootjs/hono/app'
+import { barefootComponents, barefootDevReload } from '@barefootjs/hono/app'
+import { renderer } from './renderer'
 import { Counter } from '@/components/Counter'
 
-declare module 'hono' {
-  interface ContextRenderer {
-    (children: unknown, props?: { title?: string }): Response
-  }
-}
+const app = new Hono()
 
-const app = barefoot(new Hono(), { title: 'BarefootJS app' })
-
+app.use('*', renderer)
+app.use('*', barefootComponents())
+app.use('*', barefootDevReload())
 app.use(
   '/static/*',
   serveStatic({
@@ -285,6 +283,7 @@ app.get('/', (c) =>
       <h1>It works.</h1>
       <Counter />
     </main>,
+    { title: 'BarefootJS app' },
   ),
 )
 
@@ -293,6 +292,33 @@ serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) }, (info) => {
 })
 
 export default app
+`
+
+const HONO_RENDERER_TSX = `import { jsxRenderer } from 'hono/jsx-renderer'
+import { BfImportMap, BfScripts, BfDevReload } from '@barefootjs/hono/app'
+
+declare module 'hono' {
+  interface ContextRenderer {
+    (children: unknown, props?: { title?: string }): Response
+  }
+}
+
+export const renderer = jsxRenderer(({ children, title }) => (
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>{title ?? 'BarefootJS app'}</title>
+      <link rel="stylesheet" href="/static/styles.css" />
+      <BfImportMap />
+    </head>
+    <body>
+      {children}
+      <BfScripts />
+      <BfDevReload />
+    </body>
+  </html>
+))
 `
 
 
@@ -340,6 +366,7 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
     port: 3000,
     files: {
       'server.tsx': HONO_SERVER_TSX,
+      'renderer.tsx': HONO_RENDERER_TSX,
       'barefoot.config.ts': HONO_BAREFOOT_CONFIG_TS,
       'tsconfig.json': HONO_TSCONFIG,
       'uno.config.ts': UNO_CONFIG_TS,
