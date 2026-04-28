@@ -259,10 +259,9 @@ export default defineConfig({
 
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
 import { createApp } from './factory'
-import { renderer } from './renderer'
 import { Counter } from '@/components/Counter'
 
-const app = createApp({ renderer })
+const app = createApp()
 
 app.get('/', (c) =>
   c.render(<Counter />, { title: 'BarefootJS app' }),
@@ -276,27 +275,32 @@ export default app
 `
 
 const HONO_FACTORY_TS = `import { Hono } from 'hono'
-import type { MiddlewareHandler } from 'hono'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { barefootDevReload } from '@barefootjs/hono/app'
+import { createRenderer } from './renderer'
 
-export const COMPONENTS_BASE = '/static/components'
-export const DEV_RELOAD_ENDPOINT = '/_bf/reload'
+export function createApp(): Hono {
+  const isProd = process.env.NODE_ENV === 'production'
 
-export interface CreateAppOptions {
-  renderer: MiddlewareHandler
-}
+  const componentsBase = '/static/components'
+  const devReloadEndpoint = '/_bf/reload'
+  const devReloadEnabled = !isProd
 
-export function createApp({ renderer }: CreateAppOptions): Hono {
+  const renderer = createRenderer({
+    componentsBase,
+    devReloadEndpoint,
+    devReloadEnabled,
+  })
+
   const app = new Hono()
 
   app.use('*', renderer)
 
   app.use(
-    \`\${COMPONENTS_BASE}/*\`,
+    \`\${componentsBase}/*\`,
     serveStatic({
       root: './dist/components',
-      rewriteRequestPath: (path) => path.replace(COMPONENTS_BASE, ''),
+      rewriteRequestPath: (path) => path.replace(componentsBase, ''),
     }),
   )
 
@@ -311,8 +315,8 @@ export function createApp({ renderer }: CreateAppOptions): Hono {
   app.use(
     '*',
     barefootDevReload({
-      endpoint: DEV_RELOAD_ENDPOINT,
-      enabled: process.env.NODE_ENV !== 'production',
+      endpoint: devReloadEndpoint,
+      enabled: devReloadEnabled,
     }),
   )
 
@@ -323,7 +327,6 @@ export function createApp({ renderer }: CreateAppOptions): Hono {
 const HONO_RENDERER_TSX = `import { jsxRenderer } from 'hono/jsx-renderer'
 import { BfImportMap, BfScripts, BfDevReload } from '@barefootjs/hono/app'
 import manifest from './dist/components/manifest.json'
-import { COMPONENTS_BASE, DEV_RELOAD_ENDPOINT } from './factory'
 
 declare module 'hono' {
   interface ContextRenderer {
@@ -331,22 +334,34 @@ declare module 'hono' {
   }
 }
 
-export const renderer = jsxRenderer(({ children, title }) => (
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>{title ?? 'BarefootJS app'}</title>
-      <link rel="stylesheet" href="/static/styles.css" />
-      <BfImportMap base={COMPONENTS_BASE} />
-    </head>
-    <body>
-      {children}
-      <BfScripts base={COMPONENTS_BASE} manifest={manifest} />
-      <BfDevReload endpoint={DEV_RELOAD_ENDPOINT} />
-    </body>
-  </html>
-))
+export interface CreateRendererOptions {
+  componentsBase: string
+  devReloadEndpoint: string
+  devReloadEnabled: boolean
+}
+
+export function createRenderer({
+  componentsBase,
+  devReloadEndpoint,
+  devReloadEnabled,
+}: CreateRendererOptions) {
+  return jsxRenderer(({ children, title }) => (
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title ?? 'BarefootJS app'}</title>
+        <link rel="stylesheet" href="/static/styles.css" />
+        <BfImportMap base={componentsBase} />
+      </head>
+      <body>
+        {children}
+        <BfScripts base={componentsBase} manifest={manifest} />
+        {devReloadEnabled && <BfDevReload endpoint={devReloadEndpoint} />}
+      </body>
+    </html>
+  ))
+}
 `
 
 // Empty manifest seed so the static \`import manifest from
