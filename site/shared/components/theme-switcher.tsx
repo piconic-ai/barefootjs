@@ -4,7 +4,9 @@
  * ThemeSwitcher Component (shared)
  *
  * A toggle button to switch between light and dark themes.
- * Uses system preference as initial default, persists user choice to localStorage.
+ * Uses system preference as initial default, persists user choice in a
+ * cookie scoped to the parent domain so the preference is shared between
+ * barefootjs.dev (site/core) and ui.barefootjs.dev (site/ui).
  * Inline SVG icons — no external icon dependency.
  */
 
@@ -15,6 +17,34 @@ export type Theme = 'light' | 'dark'
 export interface ThemeSwitcherProps {
   defaultTheme?: Theme | 'system'
   className?: string
+}
+
+const THEME_COOKIE_NAME = 'theme'
+// Setting Domain=barefootjs.dev makes the cookie available on the apex
+// and every subdomain (ui.*, future *). On other hosts (localhost,
+// preview deployments) the cookie is host-only.
+const THEME_COOKIE_PARENT_DOMAIN = 'barefootjs.dev'
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365
+
+function readThemeCookie(): Theme | null {
+  const match = document.cookie.match(/(?:^|;\s*)theme=([^;]*)/)
+  if (!match) return null
+  const value = decodeURIComponent(match[1])
+  return value === 'light' || value === 'dark' ? value : null
+}
+
+function writeThemeCookie(theme: Theme): void {
+  const host = location.hostname
+  const useParent = host === THEME_COOKIE_PARENT_DOMAIN || host.endsWith('.' + THEME_COOKIE_PARENT_DOMAIN)
+  const parts = [
+    `${THEME_COOKIE_NAME}=${theme}`,
+    'Path=/',
+    `Max-Age=${ONE_YEAR_SECONDS}`,
+    'SameSite=Lax',
+  ]
+  if (useParent) parts.push(`Domain=${THEME_COOKIE_PARENT_DOMAIN}`)
+  if (location.protocol === 'https:') parts.push('Secure')
+  document.cookie = parts.join('; ')
 }
 
 function SunIcon() {
@@ -38,13 +68,13 @@ export function ThemeSwitcher(props: ThemeSwitcherProps) {
   const [theme, setTheme] = createSignal<Theme>('light')
   const [initialized, setInitialized] = createSignal(false)
 
-  // Initialize theme from localStorage or system preference (client-side only)
+  // Initialize theme from cookie or system preference (client-side only)
   createEffect(() => {
     if (initialized()) return
     setInitialized(true)
 
-    const stored = localStorage.getItem('theme')
-    if (stored === 'light' || stored === 'dark') {
+    const stored = readThemeCookie()
+    if (stored) {
       setTheme(stored)
     } else {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -58,7 +88,7 @@ export function ThemeSwitcher(props: ThemeSwitcherProps) {
     const currentTheme = theme()
     const root = document.documentElement
     root.classList.toggle('dark', currentTheme === 'dark')
-    localStorage.setItem('theme', currentTheme)
+    writeThemeCookie(currentTheme)
   })
 
   // Toggle with smooth transition animation

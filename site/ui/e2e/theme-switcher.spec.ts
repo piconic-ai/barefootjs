@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('ThemeSwitcher', () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear localStorage before each test
+  test.beforeEach(async ({ context, page }) => {
+    // Clear theme cookie and any legacy localStorage value before each test
+    await context.clearCookies()
     await page.goto('/')
     await page.evaluate(() => localStorage.removeItem('theme'))
     await page.reload()
@@ -52,7 +53,7 @@ test.describe('ThemeSwitcher', () => {
     }
   })
 
-  test('persists theme preference in localStorage', async ({ page }) => {
+  test('persists theme preference in cookie', async ({ context, page }) => {
     const themeSwitcher = page.locator('header button[aria-label*="mode"]')
 
     // Get initial state and click to switch
@@ -62,10 +63,11 @@ test.describe('ThemeSwitcher', () => {
     // Toggle to the opposite state
     await themeSwitcher.click()
 
-    // Verify localStorage has the new value
+    // Verify cookie has the new value
     const expectedTheme = startedInLight ? 'dark' : 'light'
-    const storedTheme = await page.evaluate(() => localStorage.getItem('theme'))
-    expect(storedTheme).toBe(expectedTheme)
+    const cookies = await context.cookies()
+    const themeCookie = cookies.find((c) => c.name === 'theme')
+    expect(themeCookie?.value).toBe(expectedTheme)
 
     // Reload and verify persistence
     await page.reload()
@@ -77,6 +79,21 @@ test.describe('ThemeSwitcher', () => {
     } else {
       await expect(page.locator('html')).not.toHaveClass(/dark/)
     }
+  })
+
+  test('migrates legacy localStorage value to cookie on first load', async ({ context, page }) => {
+    // Seed localStorage before any page script runs and ensure no cookie exists.
+    await context.clearCookies()
+    await page.addInitScript(() => {
+      localStorage.setItem('theme', 'dark')
+    })
+    await page.goto('/')
+
+    // The init script should migrate to cookie and apply dark mode
+    await expect(page.locator('html')).toHaveClass(/dark/)
+    const cookies = await context.cookies()
+    const themeCookie = cookies.find((c) => c.name === 'theme')
+    expect(themeCookie?.value).toBe('dark')
   })
 
   test('header contains logo and UI link', async ({ page }) => {
