@@ -260,25 +260,55 @@ export default defineConfig({
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
+import { jsxRenderer } from 'hono/jsx-renderer'
 import {
-  barefootRenderer,
   barefootComponents,
   barefootDevReload,
+  BfImportMap,
+  BfScripts,
+  BfDevReload,
 } from '@barefootjs/hono/app'
 import { Counter } from '@/components/Counter'
 
+declare module 'hono' {
+  interface ContextRenderer {
+    (children: unknown, props?: { title?: string }): Response
+  }
+}
+
 const app = new Hono()
 
-// Document shell: import map, stylesheet links, component <script>s,
-// and the dev-reload snippet (when not in production).
-app.use('*', barefootRenderer({ title: 'BarefootJS app' }))
+// Hono's own jsxRenderer with a Layout you fully control. Pass props
+// to it via \`c.render(jsx, { title })\`. The BarefootJS pieces
+// (\`<BfImportMap />\`, \`<BfScripts />\`, \`<BfDevReload />\`) compose like
+// any other JSX component.
+app.use(
+  '*',
+  jsxRenderer(({ children, title }) => (
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title ?? 'BarefootJS app'}</title>
+        <link rel="stylesheet" href="/static/styles.css" />
+        <BfImportMap />
+      </head>
+      <body>
+        {children}
+        <BfScripts />
+        <BfDevReload />
+      </body>
+    </html>
+  )),
+)
 
-// Compiled client JS produced by \`barefoot build\` is served from
-// dist/components at /static/components/*.
+// /static/components/* — compiled client JS from \`barefoot build\`.
+// Sets the base on the request context so <BfImportMap /> and
+// <BfScripts /> point at this same prefix automatically.
 app.use('*', barefootComponents())
 
-// SSE endpoint at /_bf/reload paired with the renderer's snippet so
-// the page reloads when tsx restarts the server.
+// /_bf/reload — SSE endpoint paired with <BfDevReload />.
+// No-op when NODE_ENV=production.
 app.use('*', barefootDevReload())
 
 // Anything else under public/ is served at /static/*.
@@ -295,8 +325,9 @@ app.get('/', (c) =>
     <main>
       <h1>It works.</h1>
       <Counter />
-    </main>
-  )
+    </main>,
+    { title: 'BarefootJS app' },
+  ),
 )
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) }, (info) => {
