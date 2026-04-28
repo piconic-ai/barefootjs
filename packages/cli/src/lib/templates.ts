@@ -258,33 +258,14 @@ export default defineConfig({
 `
 
 const HONO_SERVER_TSX = `import { serve } from '@hono/node-server'
-import { serveStatic } from '@hono/node-server/serve-static'
-import { Hono } from 'hono'
-import { barefootComponents, barefootDevReload } from '@barefootjs/hono/app'
+import { createApp } from './factory'
 import { renderer } from './renderer'
 import { Counter } from '@/components/Counter'
 
-const app = new Hono()
-
-app.use('*', renderer)
-app.use('*', barefootComponents())
-app.use('*', barefootDevReload())
-app.use(
-  '/static/*',
-  serveStatic({
-    root: './public',
-    rewriteRequestPath: (path) => path.replace(/^\\/static/, ''),
-  }),
-)
+const app = createApp({ renderer })
 
 app.get('/', (c) =>
-  c.render(
-    <main>
-      <h1>It works.</h1>
-      <Counter />
-    </main>,
-    { title: 'BarefootJS app' },
-  ),
+  c.render(<Counter />, { title: 'BarefootJS app' }),
 )
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) }, (info) => {
@@ -294,8 +275,55 @@ serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 3000) }, (info) => {
 export default app
 `
 
+const HONO_FACTORY_TS = `import { Hono } from 'hono'
+import type { MiddlewareHandler } from 'hono'
+import { serveStatic } from '@hono/node-server/serve-static'
+import { barefootDevReload } from '@barefootjs/hono/app'
+
+export const COMPONENTS_BASE = '/static/components'
+export const DEV_RELOAD_ENDPOINT = '/_bf/reload'
+
+export interface CreateAppOptions {
+  renderer: MiddlewareHandler
+}
+
+export function createApp({ renderer }: CreateAppOptions): Hono {
+  const app = new Hono()
+
+  app.use('*', renderer)
+
+  app.use(
+    \`\${COMPONENTS_BASE}/*\`,
+    serveStatic({
+      root: './dist/components',
+      rewriteRequestPath: (path) => path.replace(COMPONENTS_BASE, ''),
+    }),
+  )
+
+  app.use(
+    '/static/*',
+    serveStatic({
+      root: './public',
+      rewriteRequestPath: (path) => path.replace(/^\\/static/, ''),
+    }),
+  )
+
+  app.use(
+    '*',
+    barefootDevReload({
+      endpoint: DEV_RELOAD_ENDPOINT,
+      enabled: process.env.NODE_ENV !== 'production',
+    }),
+  )
+
+  return app
+}
+`
+
 const HONO_RENDERER_TSX = `import { jsxRenderer } from 'hono/jsx-renderer'
 import { BfImportMap, BfScripts, BfDevReload } from '@barefootjs/hono/app'
+import manifest from './dist/components/manifest.json'
+import { COMPONENTS_BASE, DEV_RELOAD_ENDPOINT } from './factory'
 
 declare module 'hono' {
   interface ContextRenderer {
@@ -310,16 +338,22 @@ export const renderer = jsxRenderer(({ children, title }) => (
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>{title ?? 'BarefootJS app'}</title>
       <link rel="stylesheet" href="/static/styles.css" />
-      <BfImportMap />
+      <BfImportMap base={COMPONENTS_BASE} />
     </head>
     <body>
       {children}
-      <BfScripts />
-      <BfDevReload />
+      <BfScripts base={COMPONENTS_BASE} manifest={manifest} />
+      <BfDevReload endpoint={DEV_RELOAD_ENDPOINT} />
     </body>
   </html>
 ))
 `
+
+// Empty manifest seed so the static \`import manifest from
+// './dist/components/manifest.json'\` in renderer.tsx resolves on the
+// very first server boot, before \`barefoot build\` has run.
+// \`barefoot build\` will overwrite this file with the real content.
+const COMPONENTS_MANIFEST_SEED = '{}\n'
 
 
 const HONO_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/hono/build'
@@ -366,6 +400,7 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
     port: 3000,
     files: {
       'server.tsx': HONO_SERVER_TSX,
+      'factory.ts': HONO_FACTORY_TS,
       'renderer.tsx': HONO_RENDERER_TSX,
       'barefoot.config.ts': HONO_BAREFOOT_CONFIG_TS,
       'tsconfig.json': HONO_TSCONFIG,
@@ -376,6 +411,9 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
       // Empty placeholder so /static/uno.css resolves before unocss --watch
       // has emitted its first output. Overwritten on the first scan.
       'public/uno.css': UNO_CSS_PLACEHOLDER,
+      // Empty manifest seed so renderer.tsx's static JSON import works
+      // before `barefoot build` runs once.
+      'dist/components/manifest.json': COMPONENTS_MANIFEST_SEED,
     },
     scripts: {
       // Build everything once, then run barefoot's watch-build, UnoCSS's
