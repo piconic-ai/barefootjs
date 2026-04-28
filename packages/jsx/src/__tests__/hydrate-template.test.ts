@@ -87,8 +87,10 @@ describe('hydrate() template generation for signal-bearing components', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    // Stateless Child gets a static template (always useful)
-    expect(content).toContain("hydrate('Child', { init: initChild, template:")
+    // Stateless Child gets a static template (always useful).
+    // Non-exported helpers are file-scoped (`Child__<hash>`) so they
+    // cannot collide with same-named components in other modules.
+    expect(content).toMatch(/hydrate\('Child(?:__[a-f0-9]+)?', \{ init: initChild, template:/)
 
     // Parent also gets CSR fallback template for cross-file conditional use
     expect(content).toMatch(/hydrate\('Parent',.*template:/)

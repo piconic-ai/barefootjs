@@ -9,6 +9,7 @@ import type { ClientJsContext } from './types'
 import { PROPS_PARAM, inferDefaultValue, exprReferencesIdent } from './utils'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template'
+import { nameForRegistryRef } from './component-scope'
 
 /**
  * Resolve chained references within a constants map.
@@ -250,5 +251,5 @@ export function emitRegistrationAndHydration(
     defParts.push('comment: true')
   }
 
-  return `hydrate('${name}', { ${defParts.join(', ')} })`
+  return `hydrate('${nameForRegistryRef(name)}', { ${defParts.join(', ')} })`
 }

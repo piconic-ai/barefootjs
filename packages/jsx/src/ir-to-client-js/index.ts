@@ -13,6 +13,7 @@ import { addConstantPropRefsToSet } from './init-declarations'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template'
 import { PROPS_PARAM } from './utils'
 import { buildInlinableConstants, buildSignalAndMemoMaps, buildCsrInlinableConstants } from './emit-registration'
+import { nameForRegistryRef } from './component-scope'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports } from './imports'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map'
 
@@ -21,9 +22,25 @@ export interface ClientJsResult {
   sourceMap?: SourceMapV3
 }
 
+/**
+ * Optional component-name scope info. When supplied, the generator
+ * disambiguates non-exported siblings by rewriting their registry key
+ * to `${name}__${fileScope}` so private helpers can't collide across
+ * files. See component-scope.ts for the full rationale.
+ */
+export interface ScopeInfo {
+  fileScope: string
+  nonExportedSiblings: Set<string>
+}
+
 /** Public entry point: IR → client JS string. Returns '' if no client JS is needed. */
-export function generateClientJs(ir: ComponentIR, siblingComponents?: string[], localImportPrefixes?: string[]): string {
-  return generateClientJsWithSourceMap(ir, siblingComponents, localImportPrefixes).code
+export function generateClientJs(
+  ir: ComponentIR,
+  siblingComponents?: string[],
+  localImportPrefixes?: string[],
+  scope?: ScopeInfo,
+): string {
+  return generateClientJsWithSourceMap(ir, siblingComponents, localImportPrefixes, undefined, scope).code
 }
 
 /**
@@ -35,8 +52,9 @@ export function generateClientJsWithSourceMap(
   siblingComponents?: string[],
   localImportPrefixes?: string[],
   options?: { sourceMaps?: boolean; generatedFileName?: string },
+  scope?: ScopeInfo,
 ): ClientJsResult {
-  const ctx = createContext(ir)
+  const ctx = createContext(ir, scope)
   const siblingOffsets = computeLoopSiblingOffsets(ir.root)
   collectElements(ir.root, ctx, siblingOffsets)
   ir.errors.push(...ctx.warnings)
@@ -64,7 +82,7 @@ export function generateClientJsWithSourceMap(
  * so the adapter can use the results to optimize bf-p serialization.
  */
 export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedProps: string[] } {
-  const ctx = createContext(ir)
+  const ctx = createContext(ir, undefined)
   const siblingOffsets = computeLoopSiblingOffsets(ir.root)
   collectElements(ir.root, ctx, siblingOffsets)
 
@@ -99,9 +117,11 @@ export function analyzeClientNeeds(ir: ComponentIR): { needsInit: boolean; usedP
 }
 
 /** Initialize an empty ClientJsContext from component IR metadata. */
-function createContext(ir: ComponentIR): ClientJsContext {
+function createContext(ir: ComponentIR, scope?: ScopeInfo): ClientJsContext {
   return {
     componentName: ir.metadata.componentName,
+    fileScope: scope?.fileScope ?? '',
+    nonExportedSiblings: scope?.nonExportedSiblings ?? new Set(),
     signals: ir.metadata.signals,
     memos: ir.metadata.memos,
     effects: ir.metadata.effects,
@@ -190,13 +210,14 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   }
 
   const name = ctx.componentName
+  const registryKey = nameForRegistryRef(name)
   const lines: string[] = []
 
   lines.push(IMPORT_PLACEHOLDER)
   lines.push('')
   lines.push(`function init${name}() {}`)
   lines.push('')
-  lines.push(`hydrate('${name}', { init: init${name}, template: (${PROPS_PARAM}) => \`${templateHtml}\` })`)
+  lines.push(`hydrate('${registryKey}', { init: init${name}, template: (${PROPS_PARAM}) => \`${templateHtml}\` })`)
 
   const generatedCode = lines.join('\n')
   const usedImports = detectUsedImports(generatedCode)

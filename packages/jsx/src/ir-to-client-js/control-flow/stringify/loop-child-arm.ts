@@ -15,6 +15,7 @@ import { varSlotId, DATA_BF_PH, keyAttrName } from '../../utils'
 import { emitComponentAndEventSetup } from '../shared'
 import { templateRootIsSvg } from './template-parse'
 import { emitListenerLine } from './event-listener'
+import { nameForRegistryRef } from '../../component-scope'
 import type {
   BranchChildComponentInitsPlan,
   BranchEventBindingsPlan,
@@ -64,7 +65,7 @@ export function stringifyBranchChildComponentInits(
   indent: string,
 ): void {
   for (const init of plan) {
-    lines.push(`${indent}{ let __c = qsa(__branchScope, '${init.selector}'); if (!__c) { const __ph = __branchScope.querySelector('[${DATA_BF_PH}="${init.placeholderId}"]'); if (__ph) { __c = createComponent('${init.name}', ${init.propsExpr}); __ph.replaceWith(__c) } } if (__c) initChild('${init.name}', __c, ${init.propsExpr}) }`)
+    lines.push(`${indent}{ let __c = qsa(__branchScope, '${init.selector}'); if (!__c) { const __ph = __branchScope.querySelector('[${DATA_BF_PH}="${init.placeholderId}"]'); if (__ph) { __c = createComponent('${nameForRegistryRef(init.name)}', ${init.propsExpr}); __ph.replaceWith(__c) } } if (__c) initChild('${nameForRegistryRef(init.name)}', __c, ${init.propsExpr}) }`)
   }
 }
 

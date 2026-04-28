@@ -33,6 +33,7 @@ import { emitAttrUpdate } from '../../emit-reactive'
 import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types'
 import { stringifyBranchLoops } from './branch-loop'
 import { emitListenerLine } from './event-listener'
+import { nameForRegistryRef } from '../../component-scope'
 
 export interface StringifyInsertOptions {
   /** Indent on the `insert(` line itself. */
@@ -114,7 +115,7 @@ function emitArmBody(
     const varName = `__c${i}`
     const selectorArg = comp.slotId || comp.name
     lines.push(`${indent}const [${varName}] = $c(__branchScope, '${selectorArg}')`)
-    lines.push(`${indent}if (${varName}) initChild('${comp.name}', ${varName}, ${comp.propsExpr})`)
+    lines.push(`${indent}if (${varName}) initChild('${nameForRegistryRef(comp.name)}', ${varName}, ${comp.propsExpr})`)
   }
 
   // 4. Disposable section: reactive attrs + text effects + branch loops + nested conditionals.

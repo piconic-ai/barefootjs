@@ -17,6 +17,7 @@ import type { TemplateAdapter } from './adapters/interface'
 import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer'
 import { jsxToIR } from './jsx-to-ir'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js'
+import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports'
 import { applyCssLayerPrefix } from './css-layer-prefixer'
 
@@ -186,24 +187,38 @@ export async function compileJSX(
   }
 
   const clientJsPath = entryPath.replace(/\.tsx?$/, '.client.js')
-  if (options.sourceMaps) {
-    const result = generateClientJsWithSourceMap(componentIR, undefined, options.localImportPrefixes, {
-      sourceMaps: true,
-      generatedFileName: clientJsPath.split('/').pop(),
-    })
-    errors.push(...componentIR.errors)
-    if (result.code) {
-      files.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
-      if (result.sourceMap) {
-        files.push({ path: clientJsPath + '.map', content: JSON.stringify(result.sourceMap), type: 'sourceMap' as FileOutput['type'] })
+  // Single-component file: only the component itself can collide. Scope it
+  // when it's non-exported so a private helper can't be overwritten by an
+  // identically-named exported component in another file.
+  const singleScope = {
+    fileScope: computeFileScope(entryPath),
+    nonExportedSiblings: componentIR.metadata.isExported
+      ? new Set<string>()
+      : new Set([componentIR.metadata.componentName]),
+  }
+  setActiveComponentScope(singleScope)
+  try {
+    if (options.sourceMaps) {
+      const result = generateClientJsWithSourceMap(componentIR, undefined, options.localImportPrefixes, {
+        sourceMaps: true,
+        generatedFileName: clientJsPath.split('/').pop(),
+      })
+      errors.push(...componentIR.errors)
+      if (result.code) {
+        files.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
+        if (result.sourceMap) {
+          files.push({ path: clientJsPath + '.map', content: JSON.stringify(result.sourceMap), type: 'sourceMap' as FileOutput['type'] })
+        }
+      }
+    } else {
+      const clientJs = generateClientJs(componentIR, undefined, options.localImportPrefixes)
+      errors.push(...componentIR.errors)
+      if (clientJs) {
+        files.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
       }
     }
-  } else {
-    const clientJs = generateClientJs(componentIR, undefined, options.localImportPrefixes)
-    errors.push(...componentIR.errors)
-    if (clientJs) {
-      files.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
-    }
+  } finally {
+    setActiveComponentScope(null)
   }
 
   return { files, errors }
@@ -281,6 +296,22 @@ function compileMultipleComponentsSync(
   const moduleConstantsSet = new Set<string>()
   const moduleConstantsOrdered: string[] = []
 
+  // Component-name scope: rewrite `hydrate` / `renderChild` / `initChild` /
+  // `createComponent` / `upsertChild` keys for non-exported helpers
+  // (`function SunIcon` inside theme-switcher.tsx) so they cannot collide
+  // with same-named components from another file in the global runtime
+  // registry. Exported components keep their original name — their cross-
+  // file consumers still resolve them as before.
+  const fileScope = computeFileScope(filePath)
+  const nonExportedSiblings = new Set<string>()
+  for (const { componentIR } of entries) {
+    if (!componentIR.metadata.isExported) {
+      nonExportedSiblings.add(componentIR.metadata.componentName)
+    }
+  }
+  setActiveComponentScope({ fileScope, nonExportedSiblings })
+  try {
+
   for (const { componentIR } of entries) {
     const scriptBaseName = !componentIR.metadata.hasDefaultExport && defaultExportName ? defaultExportName : undefined
     const adapterOutput = adapter.generate(componentIR, { scriptBaseName })
@@ -342,6 +373,9 @@ function compileMultipleComponentsSync(
       adapterTypes: adapterOutput.types || undefined,
     })
     errors.push(...componentIR.errors)
+  }
+  } finally {
+    setActiveComponentScope(null)
   }
 
   if (allOutputs.length === 0) {
@@ -660,24 +694,35 @@ export function compileJSXSync(
   }
 
   const clientJsPath = filePath.replace(/\.tsx?$/, '.client.js')
-  if (options.sourceMaps) {
-    const result = generateClientJsWithSourceMap(componentIR, undefined, options.localImportPrefixes, {
-      sourceMaps: true,
-      generatedFileName: clientJsPath.split('/').pop(),
-    })
-    errors.push(...componentIR.errors)
-    if (result.code) {
-      files.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
-      if (result.sourceMap) {
-        files.push({ path: clientJsPath + '.map', content: JSON.stringify(result.sourceMap), type: 'sourceMap' as FileOutput['type'] })
+  const syncSingleScope = {
+    fileScope: computeFileScope(filePath),
+    nonExportedSiblings: componentIR.metadata.isExported
+      ? new Set<string>()
+      : new Set([componentIR.metadata.componentName]),
+  }
+  setActiveComponentScope(syncSingleScope)
+  try {
+    if (options.sourceMaps) {
+      const result = generateClientJsWithSourceMap(componentIR, undefined, options.localImportPrefixes, {
+        sourceMaps: true,
+        generatedFileName: clientJsPath.split('/').pop(),
+      })
+      errors.push(...componentIR.errors)
+      if (result.code) {
+        files.push({ path: clientJsPath, content: result.code, type: 'clientJs' })
+        if (result.sourceMap) {
+          files.push({ path: clientJsPath + '.map', content: JSON.stringify(result.sourceMap), type: 'sourceMap' as FileOutput['type'] })
+        }
+      }
+    } else {
+      const clientJs = generateClientJs(componentIR, undefined, options.localImportPrefixes)
+      errors.push(...componentIR.errors)
+      if (clientJs) {
+        files.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
       }
     }
-  } else {
-    const clientJs = generateClientJs(componentIR, undefined, options.localImportPrefixes)
-    errors.push(...componentIR.errors)
-    if (clientJs) {
-      files.push({ path: clientJsPath, content: clientJs, type: 'clientJs' })
-    }
+  } finally {
+    setActiveComponentScope(null)
   }
 
   return { files, errors }

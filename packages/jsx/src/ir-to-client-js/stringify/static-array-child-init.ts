@@ -56,6 +56,7 @@ import type {
   StaticArrayChildInitPlan,
   StaticArrayChildInitsPlan,
 } from '../plan/static-array-child-init'
+import { nameForRegistryRef } from '../component-scope'
 
 export function stringifyStaticArrayChildInits(
   lines: string[],
@@ -93,7 +94,7 @@ function emitSingleComp(lines: string[], plan: SingleCompInitPlan): void {
   for (const stmt of outerPreludeStatements) {
     lines.push(`      ${stmt}`)
   }
-  lines.push(`      initChild('${componentName}', childScope, ${propsExpr})`)
+  lines.push(`      initChild('${nameForRegistryRef(componentName)}', childScope, ${propsExpr})`)
   lines.push(`    })`)
   lines.push(`  }`)
   lines.push('')
@@ -114,7 +115,7 @@ function emitOuterNested(lines: string[], plan: OuterNestedInitPlan): void {
     lines.push(`        ${stmt}`)
   }
   lines.push(`        const __compEl = __iterEl.querySelector('${selector}')`)
-  lines.push(`        if (__compEl) initChild('${componentName}', __compEl, ${propsExpr})`)
+  lines.push(`        if (__compEl) initChild('${nameForRegistryRef(componentName)}', __compEl, ${propsExpr})`)
   lines.push(`      }`)
   lines.push(`    })`)
   lines.push(`  }`)
@@ -162,7 +163,7 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
   }
   for (const comp of comps) {
     lines.push(`        const __compEl = __innerEl.querySelector('${comp.selector}')`)
-    lines.push(`        if (__compEl) initChild('${comp.componentName}', __compEl, ${comp.propsExpr})`)
+    lines.push(`        if (__compEl) initChild('${nameForRegistryRef(comp.componentName)}', __compEl, ${comp.propsExpr})`)
   }
   lines.push(`      })`)
   lines.push(`    })`)

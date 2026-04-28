@@ -6,6 +6,7 @@ import type { IRNode } from '../types'
 import { isBooleanAttr } from '../html-constants'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, BF_LOOP_START, BF_LOOP_END, exprReferencesIdent, wrapExprWithLoopParams } from './utils'
 import type { LoopParamSpec } from './utils'
+import { nameForRegistryRef } from './component-scope'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -163,7 +164,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       const keyArg = keyProp ? `, ${keyProp.value}` : ''
       // Pass slotId as suffix so $c() can find the child component by slot after branch swap
       const slotArg = node.slotId ? `, '${node.slotId}'` : ''
-      return `\${renderChild('${node.name}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
+      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
     }
 
     case 'loop': {
@@ -349,7 +350,7 @@ function irNodeToJsExprs(node: IRNode): string[] {
       }
 
       const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
-      return [`createComponent('${node.name}', ${propsExpr})`]
+      return [`createComponent('${nameForRegistryRef(node.name)}', ${propsExpr})`]
     }
 
     case 'expression':
@@ -544,7 +545,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${transformExpr(keyProp.value, keyProp.templateValue)}` : ''
-      return `\${renderChild('${node.name}', ${propsExpr}${keyArg})}`
+      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg})}`
     }
 
     case 'loop': {
@@ -830,7 +831,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${transformExpr(keyProp.value, keyProp.templateValue)}` : ''
       const slotArg = (!insideLoop && node.slotId) ? `, '${node.slotId}'` : ''
-      return `\${renderChild('${node.name}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
+      return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
     }
 
     case 'loop': {

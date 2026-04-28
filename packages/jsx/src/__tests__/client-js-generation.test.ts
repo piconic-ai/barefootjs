@@ -1890,7 +1890,8 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // Stateless component must register a template so renderChild() can find it
+      // Stateless component must register a template so renderChild() can find it.
+      // CheckIcon is exported here so the registry key stays unscoped.
       expect(content).toContain("hydrate('CheckIcon',")
       expect(content).toContain('template:')
 
@@ -2019,17 +2020,20 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // Both icon components must have templates registered
-      expect(content).toContain("hydrate('CopyIcon',")
-      expect(content).toContain("hydrate('CheckIcon',")
+      // Both icon components must have templates registered. They're
+      // non-exported helpers so they get a file-scoped registry key
+      // (`CopyIcon__<hash>`) — the parent's `renderChild` call uses
+      // the same key, so the lookup still resolves locally.
+      expect(content).toMatch(/hydrate\('CopyIcon(?:__[a-f0-9]+)?',/)
+      expect(content).toMatch(/hydrate\('CheckIcon(?:__[a-f0-9]+)?',/)
 
       // Both should have template functions
-      expect(content).toMatch(/hydrate\('CopyIcon',\s*\{[^}]*template:/)
-      expect(content).toMatch(/hydrate\('CheckIcon',\s*\{[^}]*template:/)
+      expect(content).toMatch(/hydrate\('CopyIcon(?:__[a-f0-9]+)?',\s*\{[^}]*template:/)
+      expect(content).toMatch(/hydrate\('CheckIcon(?:__[a-f0-9]+)?',\s*\{[^}]*template:/)
 
-      // Parent should use renderChild for the icons
-      expect(content).toContain("renderChild('CheckIcon'")
-      expect(content).toContain("renderChild('CopyIcon'")
+      // Parent should use renderChild for the icons (with the same scoped key).
+      expect(content).toMatch(/renderChild\('CheckIcon(?:__[a-f0-9]+)?'/)
+      expect(content).toMatch(/renderChild\('CopyIcon(?:__[a-f0-9]+)?'/)
     })
 
     test('regression: AST-based identifier extraction distinguishes property keys from ternary branches', () => {
@@ -2060,11 +2064,12 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // Both child components must have templates registered
-      expect(content).toContain("hydrate('StatusOn',")
-      expect(content).toContain("hydrate('StatusOff',")
-      expect(content).toContain("renderChild('StatusOn'")
-      expect(content).toContain("renderChild('StatusOff'")
+      // Both child components must have templates registered. Local
+      // helpers are file-scoped — see the previous test for context.
+      expect(content).toMatch(/hydrate\('StatusOn(?:__[a-f0-9]+)?',/)
+      expect(content).toMatch(/hydrate\('StatusOff(?:__[a-f0-9]+)?',/)
+      expect(content).toMatch(/renderChild\('StatusOn(?:__[a-f0-9]+)?'/)
+      expect(content).toMatch(/renderChild\('StatusOff(?:__[a-f0-9]+)?'/)
     })
 
     test('component event handler props are not bound as native DOM events (#551)', () => {

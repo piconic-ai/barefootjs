@@ -332,7 +332,7 @@ describe('plain nested loops without conditional wrapper', () => {
     // before `initChild('MyChild', ...)` runs. `it` is the raw item here
     // (forEach, not mapArray) so the preamble is emitted unwrapped.
     expect(js).toMatch(
-      /\.forEach\(\(it, __innerIdx\) => \{[\s\S]*?const\s+lbl\s*=\s*`item-\$\{it\.n\}`[\s\S]*?initChild\('MyChild'/
+      /\.forEach\(\(it, __innerIdx\) => \{[\s\S]*?const\s+lbl\s*=\s*`item-\$\{it\.n\}`[\s\S]*?initChild\('MyChild(?:__[a-f0-9]+)?'/
     )
     // No `ReferenceError` shape: the `initChild('MyChild', ...)` getter must
     // reach a declared `lbl` — the static body cannot rely on the outer
@@ -342,7 +342,7 @@ describe('plain nested loops without conditional wrapper', () => {
       js.indexOf('hydrate(\'StaticGrid\''),
     )
     expect(staticSection).toMatch(/const\s+lbl\s*=/)
-    expect(staticSection).toMatch(/initChild\('MyChild'/)
+    expect(staticSection).toMatch(/initChild\('MyChild(?:__[a-f0-9]+)?'/)
     expect(staticSection.indexOf('const lbl')).toBeLessThan(staticSection.indexOf('initChild'))
   })
 
@@ -386,7 +386,7 @@ describe('plain nested loops without conditional wrapper', () => {
       js.indexOf('__childScopes.forEach'),
       js.indexOf('hydrate(\'FlatList\''),
     )
-    expect(section).toMatch(/const\s+it\s*=\s*items\[__idx\][\s\S]*?const\s+lbl\s*=\s*`item-\$\{it\.n\}`[\s\S]*?initChild\('MyChild'/)
+    expect(section).toMatch(/const\s+it\s*=\s*items\[__idx\][\s\S]*?const\s+lbl\s*=\s*`item-\$\{it\.n\}`[\s\S]*?initChild\('MyChild(?:__[a-f0-9]+)?'/)
     expect(section.indexOf('const lbl')).toBeLessThan(section.indexOf('initChild'))
   })
 

@@ -96,6 +96,23 @@ test.describe('ThemeSwitcher', () => {
     expect(themeCookie?.value).toBe('dark')
   })
 
+  test('icon stays 20x20 after toggle', async ({ page }) => {
+    // Regression: site/ui re-exports a SunIcon / MoonIcon under
+    // ui/components/ui/icon (lucide-style, no width/height when used
+    // without a `size` prop). Without compiler-level scoping the local
+    // ThemeSwitcher helpers of the same name collided in the global
+    // component registry, and the swap rendered the lucide icon (no
+    // size attrs) instead — sized to fill the 36px button.
+    const themeSwitcher = page.locator('header button[aria-label*="mode"]')
+    const initial = await themeSwitcher.locator('svg').boundingBox()
+    expect(initial?.width).toBe(20)
+    expect(initial?.height).toBe(20)
+    await themeSwitcher.click()
+    const afterToggle = await themeSwitcher.locator('svg').boundingBox()
+    expect(afterToggle?.width).toBe(20)
+    expect(afterToggle?.height).toBe(20)
+  })
+
   test('header contains logo and UI link', async ({ page }) => {
     await expect(page.locator('header a:has(svg)').first()).toBeVisible()
     await expect(page.locator('header a:has-text("UI")')).toBeVisible()

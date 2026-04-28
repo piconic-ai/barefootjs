@@ -32,6 +32,7 @@
 
 import { stringifyReactiveEffects } from './reactive-effects'
 import type { ComponentLoopPlan, NestedComponentInit } from '../plan/types'
+import { nameForRegistryRef } from '../../component-scope'
 
 export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan): void {
   const {
@@ -51,16 +52,18 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   lines.push(`  mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
   if (paramUnwrap) lines.push(`    ${paramUnwrap}`)
 
+  const scopedComp = nameForRegistryRef(componentName)
+
   if (nestedComps.length === 0) {
-    lines.push(`    if (__existing) { initChild('${componentName}', __existing, ${componentPropsExpr}); return __existing }`)
-    lines.push(`    return createComponent('${componentName}', ${componentPropsExpr}, ${keyExpr})`)
+    lines.push(`    if (__existing) { initChild('${scopedComp}', __existing, ${componentPropsExpr}); return __existing }`)
+    lines.push(`    return createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
     lines.push(`  })`)
     return
   }
 
   // SSR side
   lines.push(`    if (__existing) {`)
-  lines.push(`      initChild('${componentName}', __existing, ${componentPropsExpr})`)
+  lines.push(`      initChild('${scopedComp}', __existing, ${componentPropsExpr})`)
   for (const nc of nestedComps) emitNestedInit(lines, '      ', '__existing', nc)
   if (childConditionalEffects) {
     stringifyReactiveEffects(lines, childConditionalEffects, { indent: '      ', elVar: '__existing' })
@@ -69,7 +72,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   lines.push(`    }`)
 
   // CSR side
-  lines.push(`    const __csrEl = createComponent('${componentName}', ${componentPropsExpr}, ${keyExpr})`)
+  lines.push(`    const __csrEl = createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
   for (const nc of nestedComps) emitNestedInit(lines, '    ', '__csrEl', nc)
   if (childConditionalEffects) {
     stringifyReactiveEffects(lines, childConditionalEffects, { indent: '    ', elVar: '__csrEl' })
@@ -79,9 +82,10 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
 }
 
 function emitNestedInit(lines: string[], indent: string, parentVar: string, nc: NestedComponentInit): void {
+  const scopedNc = nameForRegistryRef(nc.componentName)
   if (nc.childrenTextEffect) {
-    lines.push(`${indent}{ const __c = qsa(${parentVar}, '${nc.selector}'); if (__c) { initChild('${nc.componentName}', __c, ${nc.propsExpr}); createEffect(() => { const __v = ${nc.childrenTextEffect.wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+    lines.push(`${indent}{ const __c = qsa(${parentVar}, '${nc.selector}'); if (__c) { initChild('${scopedNc}', __c, ${nc.propsExpr}); createEffect(() => { const __v = ${nc.childrenTextEffect.wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
   } else {
-    lines.push(`${indent}{ const __c = qsa(${parentVar}, '${nc.selector}'); if (__c) initChild('${nc.componentName}', __c, ${nc.propsExpr}) }`)
+    lines.push(`${indent}{ const __c = qsa(${parentVar}, '${nc.selector}'); if (__c) initChild('${scopedNc}', __c, ${nc.propsExpr}) }`)
   }
 }

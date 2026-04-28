@@ -17,6 +17,7 @@ import type { IRLoopChildComponent, LoopParamBinding } from '../../types'
 import { quotePropName, wrapLoopParamAsAccessor, exprReferencesIdent } from '../utils'
 import { irChildrenToJsExpr } from '../html-template'
 import { emitListenerBlock } from './stringify/event-listener'
+import { nameForRegistryRef } from '../component-scope'
 
 /**
  * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
@@ -224,7 +225,7 @@ export function emitComponentAndEventSetup(
     const slotIdLit = comp.slotId ? `'${comp.slotId}'` : 'null'
     const keyProp = comp.props.find(p => p.name === 'key')
     const keyArg = keyProp ? `, ${wrap(keyProp.value)}` : ''
-    const upsertCall = `upsertChild(${elVar}, '${comp.name}', ${slotIdLit}, ${propsExpr}${keyArg})`
+    const upsertCall = `upsertChild(${elVar}, '${nameForRegistryRef(comp.name)}', ${slotIdLit}, ${propsExpr}${keyArg})`
 
     if (childrenRefsLoop) {
       const wrappedChildren = wrap(rawChildrenExpr!)

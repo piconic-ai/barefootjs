@@ -13,6 +13,7 @@
 
 import type { ClientJsContext } from '../types'
 import { varSlotId } from '../utils'
+import { nameForRegistryRef } from '../component-scope'
 
 export function emitProviderAndChildInits(lines: string[], ctx: ClientJsContext): void {
   if (ctx.providerSetups.length > 0) {
@@ -28,7 +29,7 @@ export function emitProviderAndChildInits(lines: string[], ctx: ClientJsContext)
     lines.push(`  // Initialize child components with props`)
     for (const child of ctx.childInits) {
       const scopeRef = child.slotId ? `_${varSlotId(child.slotId)}` : '__scope'
-      lines.push(`  initChild('${child.name}', ${scopeRef}, ${child.propsExpr})`)
+      lines.push(`  initChild('${nameForRegistryRef(child.name)}', ${scopeRef}, ${child.propsExpr})`)
     }
   }
 }

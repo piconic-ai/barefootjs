@@ -19,6 +19,22 @@ import type {
 
 export interface ClientJsContext {
   componentName: string
+  /**
+   * Stable 8-char hash for the source file (e.g., from `entryPath`).
+   * Combined with a component's name, it disambiguates same-name
+   * non-exported helpers across files in the global runtime registry.
+   * Empty string when no file scope was supplied (single-file unit
+   * tests, legacy callers).
+   */
+  fileScope: string
+  /**
+   * Names of components defined in the SAME source file that are NOT
+   * exported. Their `hydrate(...)` registration and every cross-call
+   * (`renderChild`, `initChild`, `createComponent`, …) inside this file
+   * is rewritten to `${name}__${fileScope}` so private helpers cannot
+   * collide with same-named exports from other modules.
+   */
+  nonExportedSiblings: Set<string>
   signals: SignalInfo[]
   memos: MemoInfo[]
   effects: EffectInfo[]
