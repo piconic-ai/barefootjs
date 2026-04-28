@@ -6,7 +6,7 @@ import { renderToTest } from '@barefootjs/test'
 // IR-level test for the JSX-native Background (#1081 step 3). Verifies the
 // SVG > defs > pattern > {circle | path} > rect tree shape and reactive
 // memos that drive the pattern attributes.
-const source = readFileSync(resolve(__dirname, '../background.tsx'), 'utf-8')
+const source = readFileSync(resolve(__dirname, '../components/background.tsx'), 'utf-8')
 
 describe('Background JSX shape (#1081 step 3)', () => {
   const result = renderToTest(source, 'background.tsx', 'Background')

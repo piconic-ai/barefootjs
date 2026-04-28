@@ -14,8 +14,8 @@
 // the consolidation step at the end of #1081.
 
 import { createMemo, useContext } from '@barefootjs/client'
-import { FlowContext } from './context'
-import type { FlowStore } from './types'
+import { FlowContext } from '../context'
+import type { FlowStore } from '../types'
 
 export type BackgroundVariant = 'dots' | 'lines' | 'cross'
 

@@ -7,7 +7,7 @@ import { renderToTest } from '@barefootjs/test'
 // shape of the JSX matches the imperative `mountSimpleEdge` it replaces:
 // two <path> elements (hit area + visible) with the right data attributes
 // and reactive bindings.
-const source = readFileSync(resolve(__dirname, '../simple-edge.tsx'), 'utf-8')
+const source = readFileSync(resolve(__dirname, '../components/simple-edge.tsx'), 'utf-8')
 
 describe('SimpleEdge JSX shape (#1081 step 2)', () => {
   const result = renderToTest(source, 'simple-edge.tsx', 'SimpleEdge')

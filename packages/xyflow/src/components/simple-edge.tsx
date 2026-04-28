@@ -24,9 +24,9 @@
 // renderer has its JSX-native counterpart (final step of #1081).
 
 import { createMemo, useContext } from '@barefootjs/client'
-import { FlowContext } from './context'
-import { computeEdgePosition, getEdgePath } from './edge-path'
-import type { FlowStore } from './types'
+import { FlowContext } from '../context'
+import { computeEdgePosition, getEdgePath } from '../edge-path'
+import type { FlowStore } from '../types'
 
 export interface SimpleEdgeProps {
   /** Stable id of the edge inside `store.edgeLookup()`. */
