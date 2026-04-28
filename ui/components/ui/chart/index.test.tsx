@@ -262,3 +262,49 @@ describe('Pie', () => {
     expect(result.root.tag).toBe('g')
   })
 })
+
+// JSX-native tooltips migrated in Phase 9 step 5 (#1080). Each returns a
+// <foreignObject> wrapping the floating <div className="chart-tooltip">,
+// so SVG context is preserved while the body uses HTML semantics.
+describe('ChartTooltip', () => {
+  const result = renderToTest(source, 'chart.tsx', 'ChartTooltip')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('isClient is true', () => {
+    expect(result.isClient).toBe(true)
+  })
+  test('renders <foreignObject> root', () => {
+    expect(result.root.tag).toBe('foreignObject')
+  })
+})
+
+describe('AreaChartTooltip', () => {
+  const result = renderToTest(source, 'chart.tsx', 'AreaChartTooltip')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <foreignObject> root', () => {
+    expect(result.root.tag).toBe('foreignObject')
+  })
+})
+
+describe('PieTooltip', () => {
+  const result = renderToTest(source, 'chart.tsx', 'PieTooltip')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <foreignObject> root', () => {
+    expect(result.root.tag).toBe('foreignObject')
+  })
+})
+
+describe('RadarTooltip', () => {
+  const result = renderToTest(source, 'chart.tsx', 'RadarTooltip')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <foreignObject> root', () => {
+    expect(result.root.tag).toBe('foreignObject')
+  })
+})

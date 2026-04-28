@@ -3,13 +3,11 @@
 /**
  * Chart JSX Components
  *
- * Containers (ChartContainer, BarChart, AreaChart, LineChart, RadialChart,
- * RadarChart, PieChart) are JSX-native: they own the `<svg viewBox>` and
- * inner `<g transform>` directly and provide the chart context via
- * `<XContext.Provider>` so child primitives can read it.
- *
- * Primitives (Bar, XAxis, YAxis, ...) still delegate to imperative
- * `init*` callbacks until Step 2 of the Phase 9 chart migration (#1080).
+ * Every chart component (containers, primitives, and tooltips) is JSX-native:
+ * containers own the `<svg viewBox>` and inner `<g transform>`, primitives
+ * return SVG fragments inside `<g>` wrappers, and tooltips render their
+ * floating HTML body via `<foreignObject>` so SVG context is preserved.
+ * The Phase 9 chart migration (#1080) is complete after step 5.
  */
 
 import { createSignal, createMemo, createEffect, onCleanup, useContext } from '@barefootjs/client'
@@ -40,16 +38,13 @@ import {
   CHART_CLASS_AREA_DOT,
   CHART_CLASS_RADAR,
   CHART_CLASS_PIE,
+  CHART_CLASS_TOOLTIP,
   buildLinePath,
   buildLinePoints,
   buildAreaPaths,
   buildAreaDots,
   buildRadarVertices,
   buildRadarPolygonPoints,
-  initChartTooltip as chartTooltipInit,
-  initRadarTooltip as radarTooltipInit,
-  initPieTooltip as pieTooltipInit,
-  initAreaChartTooltip as areaChartTooltipInit,
 } from '@barefootjs/chart'
 import type {
   BarRegistration,
@@ -607,16 +602,100 @@ function YAxis(props: YAxisProps) {
   )
 }
 
-function ChartTooltip(props: ChartTooltipProps) {
-  // The wrapper renders inside the parent chart's `<svg>`, so an HTML element
-  // (`<span>`) here would break SVG context — sibling JSX-native primitives
-  // would be parsed in HTML namespace and stop rendering. Use a `<g>` so the
-  // SVG content model is preserved.
-  const handleMount = (el: Element) => {
-    chartTooltipInit(el, props as unknown as Record<string, unknown>)
-  }
+// Shared tooltip CSS — kept in one constant so the four tooltip variants stay
+// visually consistent. The HTML body is rendered inside a `<foreignObject>`
+// so plain HTML semantics (auto-escaping, position: absolute) apply.
+const CHART_TOOLTIP_BODY_STYLE =
+  'position:absolute;pointer-events:none;transition:opacity 150ms;' +
+  'background-color:hsl(var(--popover));color:hsl(var(--popover-foreground));' +
+  'border:1px solid hsl(var(--border));border-radius:6px;padding:8px 12px;' +
+  'font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:50;white-space:nowrap'
 
-  return <g data-slot="chart-tooltip" style="display:none" ref={handleMount} />
+interface TooltipRow {
+  color: string
+  label: string
+  value: string
+}
+interface TooltipState {
+  visible: boolean
+  x: number
+  y: number
+  label: string
+  rows: TooltipRow[]
+}
+
+const TOOLTIP_INITIAL: TooltipState = { visible: false, x: 0, y: 0, label: '', rows: [] }
+
+function ChartTooltip(props: ChartTooltipProps) {
+  const ctx = useContext(BarChartContext)
+  const [hover, setHover] = createSignal<TooltipState>(TOOLTIP_INITIAL)
+
+  createEffect(() => {
+    const g = ctx.svgGroup()
+    if (!g) return
+
+    const handleMouseOver = (e: Event) => {
+      const target = e.target as SVGElement
+      if (!target.hasAttribute('data-x')) return
+      const xValue = target.getAttribute('data-x') ?? ''
+      const datum = ctx.data().find((d) => String(d[ctx.xDataKey()]) === xValue)
+      if (!datum) return
+      const labelFormatter = props.labelFormatter
+      const labelText = labelFormatter ? labelFormatter(xValue) : xValue
+      const config = ctx.config()
+      const rows: TooltipRow[] = ctx.bars().map((bar) => {
+        const configEntry = config[bar.dataKey]
+        return {
+          color: bar.fill ?? configEntry?.color ?? 'currentColor',
+          label: configEntry?.label ?? bar.dataKey,
+          value: String(datum[bar.dataKey] ?? ''),
+        }
+      })
+      setHover({ ...hover(), visible: true, label: labelText, rows })
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const ctm = g.getScreenCTM()
+      if (!ctm) return
+      setHover({ ...hover(), x: e.clientX - ctm.e + 12, y: e.clientY - ctm.f - 12 })
+    }
+
+    const handleMouseOut = (e: Event) => {
+      const target = e.target as SVGElement
+      if (target.hasAttribute('data-x')) {
+        setHover({ ...hover(), visible: false })
+      }
+    }
+
+    g.addEventListener('mouseover', handleMouseOver)
+    g.addEventListener('mousemove', handleMouseMove as EventListener)
+    g.addEventListener('mouseout', handleMouseOut)
+
+    onCleanup(() => {
+      g.removeEventListener('mouseover', handleMouseOver)
+      g.removeEventListener('mousemove', handleMouseMove as EventListener)
+      g.removeEventListener('mouseout', handleMouseOut)
+    })
+  })
+
+  return (
+    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none">
+      <div
+        data-slot="chart-tooltip"
+        className={CHART_CLASS_TOOLTIP}
+        style={`${CHART_TOOLTIP_BODY_STYLE};left:${hover().x}px;top:${hover().y}px;opacity:${hover().visible ? '1' : '0'}`}
+      >
+        <div style="font-weight:500;margin-bottom:4px">{hover().label}</div>
+        {hover().rows.map((row) => (
+          <div key={row.label} style="display:flex;align-items:center;gap:8px">
+            <span style={`width:8px;height:8px;border-radius:2px;background:${row.color};display:inline-block`} />
+            <span>{row.label}</span>
+            <span style="font-weight:500;margin-left:auto">{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </foreignObject>
+  )
 }
 
 function RadialChart(props: RadialChartProps) {
@@ -1064,12 +1143,75 @@ function PolarAngleAxis(props: PolarAngleAxisProps) {
 }
 
 function RadarTooltip(props: RadarTooltipProps) {
-  // SVG context preservation — see ChartTooltip note above.
-  const handleMount = (el: Element) => {
-    radarTooltipInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(RadarChartContext)
+  const [hover, setHover] = createSignal<TooltipState>(TOOLTIP_INITIAL)
 
-  return <g data-slot="radar-tooltip" style="display:none" ref={handleMount} />
+  createEffect(() => {
+    const g = ctx.svgGroup()
+    if (!g) return
+
+    const handleMouseOver = (e: Event) => {
+      const target = e.target as SVGElement
+      if (target.tagName !== 'circle' || !target.hasAttribute('data-axis')) return
+      const axisValue = target.getAttribute('data-axis') ?? ''
+      const datum = ctx.data().find((d) => String(d[ctx.dataKey()]) === axisValue)
+      if (!datum) return
+      const labelFormatter = props.labelFormatter
+      const labelText = labelFormatter ? labelFormatter(axisValue) : axisValue
+      const config = ctx.config()
+      const rows: TooltipRow[] = ctx.radars().map((radar) => {
+        const configEntry = config[radar.dataKey]
+        return {
+          color: radar.fill ?? configEntry?.color ?? 'currentColor',
+          label: configEntry?.label ?? radar.dataKey,
+          value: String(datum[radar.dataKey] ?? ''),
+        }
+      })
+      setHover({ ...hover(), visible: true, label: labelText, rows })
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const ctm = g.getScreenCTM()
+      if (!ctm) return
+      setHover({ ...hover(), x: e.clientX - ctm.e + 12, y: e.clientY - ctm.f - 12 })
+    }
+
+    const handleMouseOut = (e: Event) => {
+      const target = e.target as SVGElement
+      if (target.tagName === 'circle') {
+        setHover({ ...hover(), visible: false })
+      }
+    }
+
+    g.addEventListener('mouseover', handleMouseOver)
+    g.addEventListener('mousemove', handleMouseMove as EventListener)
+    g.addEventListener('mouseout', handleMouseOut)
+
+    onCleanup(() => {
+      g.removeEventListener('mouseover', handleMouseOver)
+      g.removeEventListener('mousemove', handleMouseMove as EventListener)
+      g.removeEventListener('mouseout', handleMouseOut)
+    })
+  })
+
+  return (
+    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none">
+      <div
+        data-slot="radar-tooltip"
+        className={CHART_CLASS_TOOLTIP}
+        style={`${CHART_TOOLTIP_BODY_STYLE};left:${hover().x}px;top:${hover().y}px;opacity:${hover().visible ? '1' : '0'}`}
+      >
+        <div style="font-weight:500;margin-bottom:4px">{hover().label}</div>
+        {hover().rows.map((row) => (
+          <div key={row.label} style="display:flex;align-items:center;gap:8px">
+            <span style={`width:8px;height:8px;border-radius:2px;background:${row.color};display:inline-block`} />
+            <span>{row.label}</span>
+            <span style="font-weight:500;margin-left:auto">{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </foreignObject>
+  )
 }
 
 function PieChart(props: PieChartProps) {
@@ -1179,12 +1321,73 @@ function Pie(props: PieProps) {
 }
 
 function PieTooltip(props: PieTooltipProps) {
-  // SVG context preservation — see ChartTooltip note above.
-  const handleMount = (el: Element) => {
-    pieTooltipInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(PieChartContext)
+  const [hover, setHover] = createSignal<TooltipState>(TOOLTIP_INITIAL)
 
-  return <g data-slot="pie-tooltip" style="display:none" ref={handleMount} />
+  createEffect(() => {
+    const g = ctx.svgGroup()
+    if (!g) return
+
+    const handleMouseOver = (e: Event) => {
+      const target = e.target as SVGElement
+      if (target.tagName !== 'path' || !target.hasAttribute('data-name')) return
+      const name = target.getAttribute('data-name') ?? ''
+      const value = target.getAttribute('data-value') ?? ''
+      const config = ctx.config()
+      const configEntry = config[name]
+      const color = target.getAttribute('fill') ?? configEntry?.color ?? 'currentColor'
+      const labelFormatter = props.labelFormatter
+      const entryLabel = configEntry?.label ?? name
+      const labelText = labelFormatter ? labelFormatter(name) : entryLabel
+      setHover({
+        ...hover(),
+        visible: true,
+        label: '',
+        rows: [{ color, label: labelText, value }],
+      })
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const ctm = g.getScreenCTM()
+      if (!ctm) return
+      setHover({ ...hover(), x: e.clientX - ctm.e + 12, y: e.clientY - ctm.f - 12 })
+    }
+
+    const handleMouseOut = (e: Event) => {
+      const target = e.target as SVGElement
+      if (target.tagName === 'path') {
+        setHover({ ...hover(), visible: false })
+      }
+    }
+
+    g.addEventListener('mouseover', handleMouseOver)
+    g.addEventListener('mousemove', handleMouseMove as EventListener)
+    g.addEventListener('mouseout', handleMouseOut)
+
+    onCleanup(() => {
+      g.removeEventListener('mouseover', handleMouseOver)
+      g.removeEventListener('mousemove', handleMouseMove as EventListener)
+      g.removeEventListener('mouseout', handleMouseOut)
+    })
+  })
+
+  return (
+    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none">
+      <div
+        data-slot="pie-tooltip"
+        className={CHART_CLASS_TOOLTIP}
+        style={`${CHART_TOOLTIP_BODY_STYLE};left:${hover().x}px;top:${hover().y}px;opacity:${hover().visible ? '1' : '0'}`}
+      >
+        {hover().rows.map((row) => (
+          <div key={row.label} style="display:flex;align-items:center;gap:8px">
+            <span style={`width:8px;height:8px;border-radius:2px;background:${row.color};display:inline-block`} />
+            <span>{row.label}</span>
+            <span style="font-weight:500;margin-left:auto">{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </foreignObject>
+  )
 }
 
 function AreaChart(props: AreaChartProps) {
@@ -1447,12 +1650,75 @@ function AreaYAxis(props: AreaYAxisProps) {
 }
 
 function AreaChartTooltip(props: AreaChartTooltipProps) {
-  // SVG context preservation — see ChartTooltip note above.
-  const handleMount = (el: Element) => {
-    areaChartTooltipInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(AreaChartContext)
+  const [hover, setHover] = createSignal<TooltipState>(TOOLTIP_INITIAL)
 
-  return <g data-slot="area-chart-tooltip" style="display:none" ref={handleMount} />
+  createEffect(() => {
+    const g = ctx.svgGroup()
+    if (!g) return
+
+    const handleMouseOver = (e: Event) => {
+      const target = e.target as SVGElement
+      if (!target.classList.contains(CHART_CLASS_AREA_DOT)) return
+      const xValue = target.getAttribute('data-x') ?? ''
+      const datum = ctx.data().find((d) => String(d[ctx.xDataKey()]) === xValue)
+      if (!datum) return
+      const labelFormatter = props.labelFormatter
+      const labelText = labelFormatter ? labelFormatter(xValue) : xValue
+      const config = ctx.config()
+      const rows: TooltipRow[] = ctx.areas().map((area) => {
+        const configEntry = config[area.dataKey]
+        return {
+          color: area.stroke ?? configEntry?.color ?? 'currentColor',
+          label: configEntry?.label ?? area.dataKey,
+          value: String(datum[area.dataKey] ?? ''),
+        }
+      })
+      setHover({ ...hover(), visible: true, label: labelText, rows })
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const ctm = g.getScreenCTM()
+      if (!ctm) return
+      setHover({ ...hover(), x: e.clientX - ctm.e + 12, y: e.clientY - ctm.f - 12 })
+    }
+
+    const handleMouseOut = (e: Event) => {
+      const target = e.target as SVGElement
+      if (target.classList.contains(CHART_CLASS_AREA_DOT)) {
+        setHover({ ...hover(), visible: false })
+      }
+    }
+
+    g.addEventListener('mouseover', handleMouseOver)
+    g.addEventListener('mousemove', handleMouseMove as EventListener)
+    g.addEventListener('mouseout', handleMouseOut)
+
+    onCleanup(() => {
+      g.removeEventListener('mouseover', handleMouseOver)
+      g.removeEventListener('mousemove', handleMouseMove as EventListener)
+      g.removeEventListener('mouseout', handleMouseOut)
+    })
+  })
+
+  return (
+    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none">
+      <div
+        data-slot="area-chart-tooltip"
+        className={CHART_CLASS_TOOLTIP}
+        style={`${CHART_TOOLTIP_BODY_STYLE};left:${hover().x}px;top:${hover().y}px;opacity:${hover().visible ? '1' : '0'}`}
+      >
+        <div style="font-weight:500;margin-bottom:4px">{hover().label}</div>
+        {hover().rows.map((row) => (
+          <div key={row.label} style="display:flex;align-items:center;gap:8px">
+            <span style={`width:8px;height:8px;border-radius:2px;background:${row.color};display:inline-block`} />
+            <span>{row.label}</span>
+            <span style="font-weight:500;margin-left:auto">{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </foreignObject>
+  )
 }
 
 function LineChart(props: LineChartProps) {

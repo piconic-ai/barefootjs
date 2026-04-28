@@ -1,5 +1,4 @@
-// Context types consumed by JSX-native chart containers and the imperative
-// primitive `init*` callbacks until step 2 of the chart migration (#1080).
+// Context types consumed by JSX-native chart containers and primitives.
 export { BarChartContext, RadialChartContext, RadarChartContext, PieChartContext, AreaChartContext, ChartConfigContext } from './context'
 
 // Scale utilities used by JSX-native chart containers.
@@ -36,21 +35,12 @@ export {
   CHART_CLASS_AREA_DOT,
   CHART_CLASS_RADAR,
   CHART_CLASS_PIE,
+  CHART_CLASS_TOOLTIP,
 } from './utils/classes'
 
 // Helper used by the JSX-native ChartContainer ref to project ChartConfig
 // entries onto CSS custom properties.
 export { applyChartCSSVariables } from './chart-container'
-
-// Imperative `init*` callbacks for the remaining chart primitives. Containers
-// (BarChart, AreaChart, ...) and the trivial / medium / d3-shape-driven
-// primitives migrated in steps 2, 3, and 4 of #1080 are now JSX-native and
-// live in `ui/components/ui/chart/index.tsx`. The tooltips below stay
-// imperative until step 5 migrates them.
-export { initChartTooltip } from './tooltip'
-export { initRadarTooltip } from './radar-tooltip'
-export { initPieTooltip } from './pie-tooltip'
-export { initAreaChartTooltip } from './area-tooltip'
 
 // Type exports
 export type {
