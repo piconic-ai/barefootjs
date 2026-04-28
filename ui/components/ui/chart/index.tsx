@@ -26,6 +26,7 @@ import {
   createPointScale,
   createRadarRadialScale,
   buildRadialBarArcs,
+  buildPieSlices,
   CHART_CLASS_GRID,
   CHART_CLASS_X_AXIS,
   CHART_CLASS_Y_AXIS,
@@ -38,6 +39,7 @@ import {
   CHART_CLASS_AREA,
   CHART_CLASS_AREA_DOT,
   CHART_CLASS_RADAR,
+  CHART_CLASS_PIE,
   buildLinePath,
   buildLinePoints,
   buildAreaPaths,
@@ -46,7 +48,6 @@ import {
   buildRadarPolygonPoints,
   initChartTooltip as chartTooltipInit,
   initRadarTooltip as radarTooltipInit,
-  initPie as pieInit,
   initPieTooltip as pieTooltipInit,
   initAreaChartTooltip as areaChartTooltipInit,
 } from '@barefootjs/chart'
@@ -1131,11 +1132,50 @@ function PieChart(props: PieChartProps) {
 }
 
 function Pie(props: PieProps) {
-  const handleMount = (el: HTMLElement) => {
-    pieInit(el, props as unknown as Record<string, unknown>)
-  }
+  const ctx = useContext(PieChartContext)
 
-  return <span data-slot="pie" style="display:none" ref={handleMount} />
+  let currentDataKey: string | null = null
+  createEffect(() => {
+    const dataKey = props.dataKey
+    const fill = props.fill ?? 'currentColor'
+    if (currentDataKey !== null) {
+      ctx.unregisterPie(currentDataKey)
+    }
+    ctx.registerPie({ dataKey, fill })
+    currentDataKey = dataKey
+  })
+  onCleanup(() => {
+    if (currentDataKey !== null) ctx.unregisterPie(currentDataKey)
+  })
+
+  const slices = createMemo(() =>
+    buildPieSlices(
+      ctx.data(),
+      props.dataKey,
+      props.nameKey,
+      ctx.config(),
+      ctx.width(),
+      ctx.height(),
+      props.innerRadius ?? 0,
+      props.outerRadius ?? 0.8,
+      props.paddingAngle ?? 0,
+    ),
+  )
+
+  return (
+    <g className={`${CHART_CLASS_PIE} ${CHART_CLASS_PIE}-${props.dataKey}`}>
+      {slices().map((s) => (
+        <path
+          key={s.name}
+          d={s.d}
+          fill={s.fill}
+          data-name={s.name}
+          data-value={String(s.value)}
+          data-key={props.dataKey}
+        />
+      ))}
+    </g>
+  )
 }
 
 function PieTooltip(props: PieTooltipProps) {

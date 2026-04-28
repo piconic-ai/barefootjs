@@ -251,3 +251,14 @@ describe('Radar', () => {
     expect(result.root.tag).toBe('g')
   })
 })
+
+// JSX-native primitive migrated in Phase 9 step 4 (#1080).
+describe('Pie', () => {
+  const result = renderToTest(source, 'chart.tsx', 'Pie')
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+  test('renders <g> root', () => {
+    expect(result.root.tag).toBe('g')
+  })
+})

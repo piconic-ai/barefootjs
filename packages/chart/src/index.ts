@@ -8,7 +8,7 @@ export { createBandScale, createLinearScale, createPointScale, createRadarRadial
 // Arc geometry helpers for JSX-native radial primitives. d3-shape stays
 // inside this package so consumer bundles avoid pulling in bare specifiers
 // the browser import map does not resolve.
-export { buildRadialBarArcs, type RadialBarArcSpec } from './utils/arcs'
+export { buildRadialBarArcs, buildPieSlices, type RadialBarArcSpec, type PieSliceSpec } from './utils/arcs'
 
 // Line geometry helpers for the JSX-native `Line` primitive (#1080 step 3).
 export { buildLinePath, buildLinePoints, type LinePoint } from './utils/lines'
@@ -35,6 +35,7 @@ export {
   CHART_CLASS_AREA,
   CHART_CLASS_AREA_DOT,
   CHART_CLASS_RADAR,
+  CHART_CLASS_PIE,
 } from './utils/classes'
 
 // Helper used by the JSX-native ChartContainer ref to project ChartConfig
@@ -42,13 +43,12 @@ export {
 export { applyChartCSSVariables } from './chart-container'
 
 // Imperative `init*` callbacks for the remaining chart primitives. Containers
-// (BarChart, AreaChart, ...) and the trivial primitives migrated in step 2
-// of #1080 are now JSX-native and live in `ui/components/ui/chart/index.tsx`.
-// The primitives below stay imperative until later steps migrate Bar / Area /
-// Line / Radar / Pie / tooltips.
+// (BarChart, AreaChart, ...) and the trivial / medium / d3-shape-driven
+// primitives migrated in steps 2, 3, and 4 of #1080 are now JSX-native and
+// live in `ui/components/ui/chart/index.tsx`. The tooltips below stay
+// imperative until step 5 migrates them.
 export { initChartTooltip } from './tooltip'
 export { initRadarTooltip } from './radar-tooltip'
-export { initPie } from './pie'
 export { initPieTooltip } from './pie-tooltip'
 export { initAreaChartTooltip } from './area-tooltip'
 
