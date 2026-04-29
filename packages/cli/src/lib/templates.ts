@@ -379,6 +379,13 @@ const COMPONENTS_MANIFEST_SEED = '{}\n'
 const HONO_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/hono/build'
 
 export default createConfig({
+  // Project layout — read by \`barefoot add\`, \`search\`, \`meta:extract\`, etc.
+  paths: {
+    components: 'components/ui',
+    tokens: 'tokens',
+    meta: 'meta',
+  },
+  // Build inputs and output
   components: ['components'],
   outDir: 'dist',
   scriptBasePath: '/static/components/',
