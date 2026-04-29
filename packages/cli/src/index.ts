@@ -18,6 +18,7 @@ Commands:
   build [--minify] [--force] [--watch]  Compile components using barefoot.config.ts
   init [--name <name>] [--adapter <name>]  Initialize a new BarefootJS project
   add <component...> [--force] [--registry <url>] Add components to your project
+  studio apply <url>          Apply Studio token overrides to this project's tokens
   search <query> [--dir <path>] [--registry <url>] Search components and documentation
   ui <component>              Show component documentation (props, examples, a11y)
   core [document]             Show core documentation (concepts, API, guides)
@@ -63,6 +64,12 @@ switch (command) {
 
   case 'add': {
     const { run } = await import('./commands/add')
+    await run(commandArgs, ctx)
+    break
+  }
+
+  case 'studio': {
+    const { run } = await import('./commands/studio')
     await run(commandArgs, ctx)
     break
   }
