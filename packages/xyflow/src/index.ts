@@ -73,6 +73,11 @@ export {
 } from './classes'
 
 
+// Pointer-paced subsystem attach helper used by the JSX `<Flow>` `ref`
+// callback. Replaces the imperative `initFlow` once cutover step C5
+// removes the renderer files.
+export { attachFlowSubsystems } from './flow-subsystems'
+
 // Types
 export type {
   FlowProps,
