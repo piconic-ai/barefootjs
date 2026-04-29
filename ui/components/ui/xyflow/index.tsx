@@ -39,6 +39,7 @@ import type { JSX } from '@barefootjs/jsx/jsx-runtime'
 // `@xyflow/system` install).
 import {
   attachConnectionHandler,
+  attachFlowSubsystems,
   BF_FLOW,
   BF_FLOW_CONTROLS,
   BF_FLOW_CONTROLS_BUTTON,
@@ -64,7 +65,14 @@ import {
   Position,
   XYFLOW_VIEWPORT,
 } from '@barefootjs/xyflow'
-import type { FlowStore, FlowProps, HandleType, NodeBase, EdgeBase } from '@barefootjs/xyflow'
+import type {
+  EdgeBase,
+  FlowProps,
+  FlowStore,
+  HandleType,
+  InternalFlowStore,
+  NodeBase,
+} from '@barefootjs/xyflow'
 
 type Child = JSX.Element | string | number | boolean | null | undefined | Child[]
 
@@ -780,13 +788,13 @@ export function Flow<
   const visibleEdges = createMemo(() => store.edges().filter((e: EdgeType) => !e.hidden))
   const visibleNodes = createMemo(() => store.nodes())
 
-  // Pointer-paced subsystem attach point (panZoom, ResizeObserver,
-  // keyboard handlers, selection rectangle, pane click detection). The
-  // cutover step that retires `flow.ts` will replace this no-op with a
-  // call into `attachFlowSubsystems(el, store, props)` from
-  // `@barefootjs/xyflow`.
+  // Pointer-paced subsystem attach. `attachFlowSubsystems` wires
+  // panZoom (XYPanZoom), ResizeObserver, keyboard handlers, selection
+  // rectangle, and pane click detection — all owned by
+  // `@barefootjs/xyflow` because pointer / resize / keyboard handling
+  // gains nothing from JSX bindings.
   function attachPane(el: HTMLElement) {
-    void el
+    attachFlowSubsystems(el, store as InternalFlowStore<NodeType, EdgeType>, props)
   }
 
   return (
