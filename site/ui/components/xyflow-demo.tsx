@@ -22,7 +22,9 @@ import {
   MiniMap,
   NodeWrapper,
 } from '@/components/ui/xyflow'
-import { Position } from '@xyflow/system'
+// `Position` is re-exported from `@barefootjs/xyflow` so consumers
+// don't need a separate `@xyflow/system` dependency.
+import { Position } from '@barefootjs/xyflow'
 
 const initialNodes = [
   { id: '1', position: { x: 100, y: 100 }, data: { label: 'Input' } },

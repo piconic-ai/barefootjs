@@ -34,16 +34,19 @@ import {
   useContext,
 } from '@barefootjs/client'
 import type { JSX } from '@barefootjs/jsx/jsx-runtime'
-import { Position } from '@xyflow/system'
-import type { HandleType, NodeBase, EdgeBase } from '@xyflow/system'
+// All upstream `@xyflow/system` symbols are re-exported through
+// `@barefootjs/xyflow`, so consumers who `barefoot add xyflow` only
+// need to depend on `@barefootjs/xyflow` (no separate
+// `@xyflow/system` install).
 import {
   attachConnectionHandler,
   computeEdgePosition,
   createFlowStore,
   FlowContext,
   getEdgePath,
+  Position,
 } from '@barefootjs/xyflow'
-import type { FlowStore, FlowProps } from '@barefootjs/xyflow'
+import type { FlowStore, FlowProps, HandleType, NodeBase, EdgeBase } from '@barefootjs/xyflow'
 
 type Child = JSX.Element | string | number | boolean | null | undefined | Child[]
 
