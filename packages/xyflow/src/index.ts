@@ -1,11 +1,36 @@
-// Core
-export { initFlow } from './flow'
+// Public API for `@barefootjs/xyflow`.
+//
+// JSX-native renderer components (`<Flow>` / `<Background>` /
+// `<Controls>` / `<MiniMap>` / `<Handle>` / `<NodeWrapper>` /
+// `<SimpleEdge>`) are distributed via the shadcn registry at
+// `ui/components/ui/xyflow/` — install with `barefoot add xyflow`.
+// This package ships the utility helpers, types, signal hooks, store,
+// and the imperative pointer-paced subsystems those components attach
+// via `ref` callbacks.
+
+// Store / context / signal hooks
 export { createFlowStore } from './store'
 export { FlowContext } from './context'
-export { createNodeWrapper, createNodeRenderer } from './node-wrapper'
-export { createEdgeRenderer, createEdgeLabelRenderer } from './edge-renderer'
-export { createHandle, initHandle } from './handle'
-export type { HandleType, HandleProps } from './handle'
+export {
+  useFlow,
+  useViewport,
+  useNodes,
+  useEdges,
+  useNodesInitialized,
+  useStore,
+  screenToFlowPosition,
+} from './hooks'
+
+// Geometry helpers consumed by the JSX `<SimpleEdge>` component
+export { computeEdgePosition, getEdgePath } from './edge-path'
+export type { EdgePathTuple } from './edge-path'
+
+// Pointer-paced subsystems attached via `<Flow>` / `<Handle>` `ref`
+// callbacks. JSX gives these no leverage — pan/zoom is owned by
+// `XYPanZoom` (D3-zoom-derived), the selection rectangle owns global
+// pointer capture, connection drag uses `elementFromPoint`, and the
+// node resizer needs raw dimension math.
+export { attachFlowSubsystems } from './flow-subsystems'
 export { attachConnectionHandler, attachReconnectionHandler } from './connection'
 export { initNodeResizer, ResizeControlVariant } from './node-resizer'
 export type {
@@ -18,23 +43,8 @@ export type {
   ShouldResize,
   ResizeControlDirection,
 } from './node-resizer'
-export { useFlow, useViewport, useNodes, useEdges, useNodesInitialized, useStore, screenToFlowPosition } from './hooks'
 export { setupKeyboardHandlers, setupNodeSelection, setupSelectionRectangle } from './selection'
 export type { SelectionRectOptions } from './selection'
-
-// Plugins
-export { initBackground } from './background'
-export type { BackgroundVariant, BackgroundProps } from './background'
-export { initControls } from './controls'
-export type { ControlsProps } from './controls'
-export { initMiniMap } from './minimap'
-export type { MiniMapProps } from './minimap'
-
-// Geometry helpers consumed by the JSX-native renderer in
-// `ui/components/ui/xyflow/`. Kept inside the package so the imperative
-// edge-renderer and the JSX `<SimpleEdge>` compute geometry the same way.
-export { computeEdgePosition, getEdgePath } from './edge-path'
-export type { EdgePathTuple } from './edge-path'
 
 // Stable CSS class names for the registry-side JSX components.
 // Imported (rather than declared as inline literals) so site/ui's
@@ -62,10 +72,6 @@ export {
   XYFLOW_VIEWPORT,
 } from './classes'
 
-// Pointer-paced subsystem attach helper used by the JSX `<Flow>` `ref`
-// callback. Replaces the imperative `initFlow` once cutover step C5
-// removes the renderer files.
-export { attachFlowSubsystems } from './flow-subsystems'
 
 // Types
 export type {
@@ -100,6 +106,10 @@ export type {
   OnReconnect,
   Connection,
 } from './types'
+// HandleType is consumed by the JSX `<Handle>` component (registry-side)
+// for its `type` prop typing. Re-exported here from `@xyflow/system` so
+// consumers don't need a separate import.
+export type { HandleType } from '@xyflow/system'
 
 // Compat layer (React Flow API shims for desk migration)
 export { useNodesState, useEdgesState, useReactFlow, addEdge, reconnectEdge } from './compat'

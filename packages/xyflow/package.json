@@ -24,7 +24,6 @@
     "build:browser": "bun build ./src/index.ts --outdir ./dist --entry-naming 'xyflow.browser.min.[ext]' --format esm --minify --sourcemap --external '@barefootjs/client' --external '@barefootjs/client/runtime' --external '@barefootjs/client/reactive'",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test src/ && bun run typecheck:tests",
-    "test:e2e": "bunx playwright test",
     "typecheck:tests": "tsgo --noEmit -p src/__tests__/tsconfig.json",
     "clean": "rm -rf dist"
   },
