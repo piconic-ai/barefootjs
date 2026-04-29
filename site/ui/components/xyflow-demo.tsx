@@ -20,7 +20,6 @@ import {
   Flow,
   Handle,
   MiniMap,
-  NodeWrapper,
 } from '@/components/ui/xyflow'
 // `Position` is re-exported from `@barefootjs/xyflow` so consumers
 // don't need a separate `@xyflow/system` dependency.
@@ -74,8 +73,10 @@ export function XyflowBackgroundVariantsDemo() {
   )
 }
 
-// Custom-node demo: build the node body manually with `<NodeWrapper>` +
-// `<Handle>`, mirroring the React-Flow custom-node pattern.
+// Custom-node demo: build the node body manually with `<Handle>` and a
+// styled inner `<div>`, plugged into Flow via the `renderNode` prop so
+// the default node loop hands each node off to this renderer instead
+// of doubling up.
 export function XyflowCustomNodeDemo() {
   const nodes = [
     { id: 'src', position: { x: 80, y: 100 }, data: { label: 'Source', kind: 'source' } },
@@ -89,18 +90,19 @@ export function XyflowCustomNodeDemo() {
 
   return (
     <div className="w-full h-[360px] rounded-lg border bg-background overflow-hidden">
-      <Flow nodes={nodes} edges={edges}>
+      <Flow
+        nodes={nodes}
+        edges={edges}
+        renderNode={(n) => (
+          <div className="rounded-md border bg-card px-3 py-2 text-sm shadow-sm">
+            {(n.data as { label?: string })?.label}
+            <Handle type="target" position={Position.Left} nodeId={n.id} />
+            <Handle type="source" position={Position.Right} nodeId={n.id} />
+          </div>
+        )}
+      >
         <Background variant="cross" gap={28} />
         <Controls showInteractive={false} />
-        {nodes.map((n) => (
-          <NodeWrapper key={n.id} nodeId={n.id}>
-            <div className="rounded-md border bg-card px-3 py-2 text-sm shadow-sm">
-              {n.data.label}
-              <Handle type="target" position={Position.Left} nodeId={n.id} />
-              <Handle type="source" position={Position.Right} nodeId={n.id} />
-            </div>
-          </NodeWrapper>
-        ))}
       </Flow>
     </div>
   )

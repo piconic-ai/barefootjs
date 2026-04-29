@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 // E2E coverage for the JSX-native xyflow components shipped via the
 // shadcn registry. Static-structure assertions only — pan / zoom / drag
@@ -6,6 +7,15 @@ import { test, expect } from '@playwright/test'
 // step C4 attaches the imperative pointer-paced subsystems via the
 // `<Flow>` `ref` callback. The corresponding `test.describe.skip`
 // blocks below are removed in C4.
+//
+// Note: the reference page mounts the same demo twice (once in the
+// "Preview" section, once in the "Usage" example), so every demo
+// scope is narrowed with `.first()` to avoid Playwright's strict-mode
+// "resolved to N elements" failure.
+
+function firstScope(page: import('@playwright/test').Page, selector: string): Locator {
+  return page.locator(selector).first()
+}
 
 test.describe('xyflow Reference Page', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,35 +27,33 @@ test.describe('xyflow Reference Page', () => {
     const scope = '[bf-s^="XyflowPreviewDemo_"]:not([data-slot])'
 
     test('renders the .bf-flow root', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow').first()).toBeVisible()
     })
 
     test('renders the viewport wrapper', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__viewport').first()).toBeAttached()
     })
 
     test('renders the edges <svg> layer', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('svg.bf-flow__edges').first()).toBeAttached()
     })
 
     test('renders four nodes from initialNodes', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__node')).toHaveCount(4)
     })
 
     test('renders four edges as <path data-id>', async ({ page }) => {
-      const container = page.locator(scope)
-      // Visible path + invisible hit-area path per edge → 8 total path
-      // elements with edge id markers.
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__edge[data-id]')).toHaveCount(4)
       await expect(container.locator('path[data-hit-id]')).toHaveCount(4)
     })
 
     test('node labels are present', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__node[data-id="1"]')).toBeAttached()
       await expect(container.locator('.bf-flow__node[data-id="4"]')).toBeAttached()
     })
@@ -56,12 +64,12 @@ test.describe('xyflow Reference Page', () => {
     const scope = '[bf-s^="XyflowPreviewDemo_"]:not([data-slot])'
 
     test('renders an SVG <pattern>', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('pattern').first()).toBeAttached()
     })
 
     test('pattern has explicit width / height attributes', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       const pattern = container.locator('pattern').first()
       const width = await pattern.getAttribute('width')
       const height = await pattern.getAttribute('height')
@@ -70,7 +78,7 @@ test.describe('xyflow Reference Page', () => {
     })
 
     test('full-size <rect> fills the background', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('svg rect[width="100%"]').first()).toBeAttached()
     })
   })
@@ -80,19 +88,19 @@ test.describe('xyflow Reference Page', () => {
     const scope = '[bf-s^="XyflowPreviewDemo_"]:not([data-slot])'
 
     test('renders four control buttons', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__controls-button')).toHaveCount(4)
     })
 
     test('buttons carry nodrag / nowheel classes', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       const btn = container.locator('.bf-flow__controls-button').first()
       await expect(btn).toHaveClass(/nodrag/)
       await expect(btn).toHaveClass(/nowheel/)
     })
 
     test('buttons expose the four control titles', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       const titles = await container
         .locator('.bf-flow__controls-button')
         .evaluateAll((els) => els.map((e) => (e as HTMLElement).title))
@@ -105,12 +113,12 @@ test.describe('xyflow Reference Page', () => {
     const scope = '[bf-s^="XyflowPreviewDemo_"]:not([data-slot])'
 
     test('renders the minimap container', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__minimap').first()).toBeVisible()
     })
 
     test('minimap carries nopan / nowheel / nodrag classes', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       const minimap = container.locator('.bf-flow__minimap').first()
       await expect(minimap).toHaveClass(/nopan/)
       await expect(minimap).toHaveClass(/nowheel/)
@@ -118,7 +126,7 @@ test.describe('xyflow Reference Page', () => {
     })
 
     test('renders the viewport mask path', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__minimap-mask').first()).toBeAttached()
     })
   })
@@ -128,12 +136,12 @@ test.describe('xyflow Reference Page', () => {
     const scope = '[bf-s^="XyflowBackgroundVariantsDemo_"]:not([data-slot])'
 
     test('renders three Flow containers', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow')).toHaveCount(3)
     })
 
     test('renders three <pattern> elements (one per variant)', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('pattern')).toHaveCount(3)
     })
   })
@@ -143,18 +151,18 @@ test.describe('xyflow Reference Page', () => {
     const scope = '[bf-s^="XyflowCustomNodeDemo_"]:not([data-slot])'
 
     test('renders three custom-bodied nodes', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__node')).toHaveCount(3)
     })
 
     test('each node has both target and source handles', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       await expect(container.locator('.bf-flow__handle--target')).toHaveCount(3)
       await expect(container.locator('.bf-flow__handle--source')).toHaveCount(3)
     })
 
     test('handles expose data-node-id and data-handle-type', async ({ page }) => {
-      const container = page.locator(scope)
+      const container = firstScope(page, scope)
       const handle = container.locator('.bf-flow__handle').first()
       await expect(handle).toHaveAttribute('data-node-id', /.+/)
       await expect(handle).toHaveAttribute('data-handle-type', /(source|target)/)

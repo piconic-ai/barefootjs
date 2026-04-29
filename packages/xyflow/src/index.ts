@@ -36,6 +36,32 @@ export type { MiniMapProps } from './minimap'
 export { computeEdgePosition, getEdgePath } from './edge-path'
 export type { EdgePathTuple } from './edge-path'
 
+// Stable CSS class names for the registry-side JSX components.
+// Imported (rather than declared as inline literals) so site/ui's
+// cssLayerPrefixer leaves the `bf-flow*` names un-prefixed, matching
+// the chart pattern (`CHART_CLASS_*` from `@barefootjs/chart`).
+export {
+  BF_FLOW,
+  BF_FLOW_VIEWPORT,
+  BF_FLOW_EDGES,
+  BF_FLOW_NODES,
+  BF_FLOW_NODE,
+  BF_FLOW_NODE_GROUP,
+  BF_FLOW_NODE_CHILD,
+  BF_FLOW_NODE_SELECTED,
+  BF_FLOW_EDGE,
+  BF_FLOW_EDGE_SELECTED,
+  BF_FLOW_EDGE_ANIMATED,
+  BF_FLOW_HANDLE,
+  BF_FLOW_HANDLE_TARGET,
+  BF_FLOW_HANDLE_SOURCE,
+  BF_FLOW_CONTROLS,
+  BF_FLOW_CONTROLS_BUTTON,
+  BF_FLOW_MINIMAP,
+  BF_FLOW_MINIMAP_MASK,
+  XYFLOW_VIEWPORT,
+} from './classes'
+
 // Types
 export type {
   FlowProps,
