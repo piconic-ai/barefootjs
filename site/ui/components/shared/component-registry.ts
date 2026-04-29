@@ -67,6 +67,7 @@ export const componentEntries: ComponentEntry[] = [
   { slug: 'skeleton', title: 'Skeleton', description: 'Placeholder loading indicator', category: 'display' },
   { slug: 'table', title: 'Table', description: 'Responsive data table', category: 'display' },
   { slug: 'typography', title: 'Typography', description: 'Styled text elements for prose', category: 'display' },
+  { slug: 'xyflow', title: 'xyflow', description: 'Signal-based graph editor (Flow / Background / Controls / MiniMap / Handle / NodeWrapper / SimpleEdge)', category: 'display' },
 
   // Feedback (7)
   { slug: 'alert', title: 'Alert', description: 'Callout for important content', category: 'feedback' },

@@ -103,6 +103,7 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/form' build
           bun run --filter '@barefootjs/chart' build
+          bun run --filter '@barefootjs/xyflow' build
           bun run --filter '@barefootjs/hono' build
 
       - name: Build site/ui

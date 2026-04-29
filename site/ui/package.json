@@ -18,6 +18,7 @@
     "@barefootjs/form": "workspace:*",
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/site-shared": "workspace:*",
+    "@barefootjs/xyflow": "workspace:*",
     "@shikijs/langs": "^3.21.0",
     "@shikijs/themes": "^3.21.0",
     "hono": "^4",
