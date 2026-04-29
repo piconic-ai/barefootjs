@@ -32,7 +32,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   if (!ctx.config || !ctx.projectDir) {
     console.error('Error: project config not found. Run `barefoot init` first.')
-    console.error('       (looked for barefoot.config.ts and barefoot.json walking up from the cwd)')
+    console.error('       (looked for barefoot.config.ts walking up from the cwd)')
     process.exit(1)
   }
 

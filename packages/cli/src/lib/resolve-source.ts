@@ -29,7 +29,7 @@ export function resolveComponentSource(nameOrPath: string, ctx: CliContext): Res
     return { filePath: monoPath }
   }
 
-  // 3. paths.components from barefoot.config.ts (or legacy barefoot.json)
+  // 3. paths.components from barefoot.config.ts
   if (ctx.config && ctx.projectDir) {
     const configPath = path.join(ctx.projectDir, ctx.config.paths.components, nameOrPath, 'index.tsx')
     if (existsSync(configPath)) {

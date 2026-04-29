@@ -23,8 +23,6 @@ Scaffolds a runnable BarefootJS app in <project-name> (or "my-barefoot-app").
 
 Options forwarded to \`barefoot init\`:
   --adapter <name>    Adapter to use (default: hono)
-  --registry-only     Scaffold a component-registry-only project
-  --from <url>        Initialize from a Studio URL (token overrides + components)
 
 After scaffolding:
   cd <project-name>

@@ -16,8 +16,7 @@ function printUsage() {
 
 Commands:
   build [--minify] [--force] [--watch]  Compile components using barefoot.config.ts
-  init [--name <name>] [--from <url>]  Initialize a new BarefootJS project
-  migrate [--dry-run]         Migrate legacy barefoot.json into barefoot.config.ts
+  init [--name <name>] [--adapter <name>]  Initialize a new BarefootJS project
   add <component...> [--force] [--registry <url>] Add components to your project
   search <query> [--dir <path>] [--registry <url>] Search components and documentation
   ui <component>              Show component documentation (props, examples, a11y)
@@ -58,12 +57,6 @@ switch (command) {
 
   case 'init': {
     const { run } = await import('./commands/init')
-    await run(commandArgs, ctx)
-    break
-  }
-
-  case 'migrate': {
-    const { run } = await import('./commands/migrate')
     await run(commandArgs, ctx)
     break
   }
