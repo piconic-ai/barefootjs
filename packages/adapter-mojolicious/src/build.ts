@@ -18,6 +18,7 @@ export interface MojoBuildOptions extends BuildOptions {
 export function createConfig(options: MojoBuildOptions = {}) {
   return {
     adapter: new MojoAdapter(options.adapterOptions),
+    paths: options.paths,
     components: options.components,
     outDir: options.outDir,
     minify: options.minify,

@@ -9,7 +9,7 @@ describe('barefoot core', () => {
     const logSpy = spyOn(console, 'log').mockImplementation(() => {})
     try {
       const { run } = await import('../commands/core')
-      const ctx = createContext(false)
+      const ctx = await createContext(false)
       run([], ctx)
 
       const output = logSpy.mock.calls.map(c => c[0]).join('\n')
@@ -25,7 +25,7 @@ describe('barefoot core', () => {
     const logSpy = spyOn(console, 'log').mockImplementation(() => {})
     try {
       const { run } = await import('../commands/core')
-      const ctx = createContext(false)
+      const ctx = await createContext(false)
       run(['reactivity/create-signal'], ctx)
 
       const output = logSpy.mock.calls.map(c => c[0]).join('\n')
@@ -39,7 +39,7 @@ describe('barefoot core', () => {
     const logSpy = spyOn(console, 'log').mockImplementation(() => {})
     try {
       const { run } = await import('../commands/core')
-      const ctx = createContext(false)
+      const ctx = await createContext(false)
       run(['create-signal'], ctx)
 
       const output = logSpy.mock.calls.map(c => c[0]).join('\n')
@@ -53,7 +53,7 @@ describe('barefoot core', () => {
     const logSpy = spyOn(console, 'log').mockImplementation(() => {})
     try {
       const { run } = await import('../commands/core')
-      const ctx = createContext(true)
+      const ctx = await createContext(true)
       run(['create-signal'], ctx)
 
       const output = logSpy.mock.calls.map(c => c[0]).join('\n')
@@ -71,7 +71,7 @@ describe('barefoot core', () => {
     const errorSpy = spyOn(console, 'error').mockImplementation(() => {})
     try {
       const { run } = await import('../commands/core')
-      const ctx = createContext(false)
+      const ctx = await createContext(false)
       expect(() => run(['nonexistent-doc'], ctx)).toThrow('exit')
       expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('not found'))
     } finally {

@@ -24,6 +24,7 @@ export function createConfig(options: HonoBuildOptions = {}) {
 
   return {
     adapter: new HonoAdapter(options.adapterOptions),
+    paths: options.paths,
     components: options.components,
     outDir: options.outDir,
     minify: options.minify,

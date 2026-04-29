@@ -126,7 +126,28 @@ export interface BundleEntry {
   externals?: string[]
 }
 
+/**
+ * Project layout paths used by registry tooling (`barefoot add`, `search`,
+ * `meta:extract`, `tokens`, `inspect`, etc.). These are consumed only by
+ * non-build tooling — the build pipeline ignores them — but they live in
+ * `barefoot.config.ts` so the project has a single source of truth.
+ */
+export interface BarefootPaths {
+  /** Component registry root (where `barefoot add` lands new components). */
+  components: string
+  /** Tokens directory (tokens.json, tokens.css). */
+  tokens: string
+  /** Meta directory (meta/index.json + per-component meta files). */
+  meta: string
+}
+
 export interface BuildOptions {
+  /**
+   * Project layout paths. Consumed by registry tooling, not the build pipeline.
+   * Defaults to `{ components: 'components/ui', tokens: 'tokens', meta: 'meta' }`
+   * when omitted.
+   */
+  paths?: BarefootPaths
   /** Source component directories relative to config file */
   components?: string[]
   /** Output directory relative to config file */

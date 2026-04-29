@@ -3,7 +3,7 @@
 // Resolution order:
 // 1. Direct file path (absolute or relative)
 // 2. ui/components/ui/<name>/index.tsx (monorepo layout)
-// 3. barefoot.json configured component directory
+// 3. project-config-derived component directory (paths.components from barefoot.config.ts)
 
 import { existsSync } from 'fs'
 import path from 'path'
@@ -29,7 +29,7 @@ export function resolveComponentSource(nameOrPath: string, ctx: CliContext): Res
     return { filePath: monoPath }
   }
 
-  // 3. barefoot.json configured directory
+  // 3. paths.components from barefoot.config.ts (or legacy barefoot.json)
   if (ctx.config && ctx.projectDir) {
     const configPath = path.join(ctx.projectDir, ctx.config.paths.components, nameOrPath, 'index.tsx')
     if (existsSync(configPath)) {

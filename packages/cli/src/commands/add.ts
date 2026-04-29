@@ -3,7 +3,7 @@
 import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, readdirSync } from 'fs'
 import path from 'path'
 import type { CliContext } from '../context'
-import { findBarefootJson, loadBarefootConfig, type BarefootConfig } from '../context'
+import type { BarefootConfig } from '../context'
 import { resolveDependencies } from '../lib/dependency-resolver'
 import type { MetaIndex, MetaIndexEntry, ComponentMeta, RegistryItem } from '../lib/types'
 
@@ -30,15 +30,14 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
-  // Load barefoot.json
-  const configPath = findBarefootJson(process.cwd())
-  if (!configPath) {
-    console.error('Error: barefoot.json not found. Run `barefoot init` first.')
+  if (!ctx.config || !ctx.projectDir) {
+    console.error('Error: project config not found. Run `barefoot init` first.')
+    console.error('       (looked for barefoot.config.ts and barefoot.json walking up from the cwd)')
     process.exit(1)
   }
 
-  const projectDir = path.dirname(configPath)
-  const config = loadBarefootConfig(configPath)
+  const projectDir = ctx.projectDir
+  const config = ctx.config
 
   if (registryUrl) {
     await addFromRegistry(componentNames, registryUrl, projectDir, config, force, false)

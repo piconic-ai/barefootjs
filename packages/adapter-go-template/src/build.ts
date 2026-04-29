@@ -236,6 +236,7 @@ export function createConfig(options: GoTemplateBuildOptions = {}) {
 
   return {
     adapter: new GoTemplateAdapter(options.adapterOptions),
+    paths: options.paths,
     components: options.components,
     outDir: options.outDir,
     minify: options.minify,

@@ -4,11 +4,16 @@
 //
 //   1. Default (app mode): scaffold a runnable starter app for an adapter
 //      (currently Hono). Counter component + server + npm scripts so the
-//      user can `npm install && npm run dev` and see a working page.
+//      user can `npm install && npm run dev` and see a working page. The
+//      app emits a single `barefoot.config.ts` with `paths` and build
+//      options as the only project config.
 //
 //   2. --registry-only: scaffold just the component-registry directory
 //      layout (barefoot.json + tokens/ + meta/ + components/ui/), without
 //      a server. Useful for projects that only consume `barefoot add`.
+//      Registry-only projects keep `barefoot.json` because they have no
+//      adapter (and `barefoot.config.ts` requires one). `barefoot migrate`
+//      handles the upgrade once an adapter is added.
 
 import { existsSync, mkdirSync, writeFileSync, copyFileSync, readFileSync } from 'fs'
 import path from 'path'
@@ -58,15 +63,22 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const projectDir = process.cwd()
   const flags = parseFlags(args)
 
-  // Check if already initialized
-  const configPath = path.join(projectDir, 'barefoot.json')
-  if (existsSync(configPath)) {
+  // Detect prior initialization. App mode emits barefoot.config.ts as the
+  // canonical config; registry-only emits barefoot.json. Either presence
+  // counts as "already initialized" so we don't clobber an existing project.
+  const tsConfigPath = path.join(projectDir, 'barefoot.config.ts')
+  const jsonConfigPath = path.join(projectDir, 'barefoot.json')
+  if (existsSync(tsConfigPath)) {
+    console.error('Error: barefoot.config.ts already exists. Project is already initialized.')
+    process.exit(1)
+  }
+  if (existsSync(jsonConfigPath)) {
     console.error('Error: barefoot.json already exists. Project is already initialized.')
     process.exit(1)
   }
 
   if (flags.registryOnly) {
-    await runRegistryOnly(projectDir, configPath, flags, ctx)
+    await runRegistryOnly(projectDir, jsonConfigPath, flags, ctx)
     return
   }
 
@@ -102,7 +114,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   console.log(`Initializing BarefootJS app with the ${adapter.label} adapter...\n`)
 
-  await scaffoldApp(projectDir, configPath, adapter, flags, ctx)
+  await scaffoldApp(projectDir, adapter, flags, ctx)
   printAppNextSteps(projectDir, adapter)
 }
 
@@ -261,18 +273,20 @@ async function runRegistryOnly(
 
 async function scaffoldApp(
   projectDir: string,
-  configPath: string,
   adapter: AdapterTemplate,
   flags: InitFlags,
   _ctx: CliContext,
 ): Promise<void> {
-  // 1. barefoot.json — components live next to server.tsx by default for
-  //    apps. The registry-only mode keeps the original `components/ui`
-  //    convention; here we use plain `components/` so user code and
-  //    `barefoot add` output coexist cleanly (barefoot add lands in
-  //    `components/ui/` per the path config).
+  // The single source of truth is `barefoot.config.ts` (written below via
+  // adapter.files). It carries both `paths` (consumed by registry tooling)
+  // and the build options. We mirror the same defaults here as a plain
+  // BarefootConfig so the rest of init can reason about layout without
+  // re-loading the TS file.
+  //
+  // App mode places user-authored code in `components/` (next to server.tsx)
+  // and lands `barefoot add` output in `components/ui/` so the two coexist
+  // cleanly.
   const config: BarefootConfig = {
-    $schema: DEFAULT_CONFIG.$schema,
     paths: {
       components: 'components/ui',
       tokens: 'tokens',
@@ -280,10 +294,8 @@ async function scaffoldApp(
     },
   }
   if (flags.name) config.name = flags.name
-  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n')
-  console.log('  Created barefoot.json')
 
-  // 2. Adapter-contributed files (server, components/Counter, etc.)
+  // 2. Adapter-contributed files (server, components/Counter, barefoot.config.ts, etc.)
   for (const [relPath, contents] of Object.entries(adapter.files)) {
     const target = path.join(projectDir, relPath)
     if (existsSync(target)) {
