@@ -30,6 +30,12 @@ export type { ControlsProps } from './controls'
 export { initMiniMap } from './minimap'
 export type { MiniMapProps } from './minimap'
 
+// Geometry helpers consumed by the JSX-native renderer in
+// `ui/components/ui/xyflow/`. Kept inside the package so the imperative
+// edge-renderer and the JSX `<SimpleEdge>` compute geometry the same way.
+export { computeEdgePosition, getEdgePath } from './edge-path'
+export type { EdgePathTuple } from './edge-path'
+
 // Types
 export type {
   FlowProps,
