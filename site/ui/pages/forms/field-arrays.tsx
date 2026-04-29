@@ -1,8 +1,8 @@
 /**
  * Field Arrays Documentation Page
  *
- * Dynamic list of inputs. createForm covers fixed-shape records — for arrays
- * we pair it with a touched-per-item signal and reuse the same Zod schema.
+ * Dynamic list of inputs. createForm targets fixed-shape records, so the
+ * array is a raw signal — but the per-item rule reuses the same Zod schema.
  */
 
 import { Input } from '@/components/ui/input'
@@ -27,82 +27,76 @@ const tocItems: TocItem[] = [
   { id: 'min-max', title: 'Min / Max', branch: 'end' },
 ]
 
-const basicFieldArrayCode = `import { createForm } from '@barefootjs/form'
-import { createSignal } from '@barefootjs/client'
+const basicFieldArrayCode = `import { createSignal } from '@barefootjs/client'
 import { z } from 'zod'
 
+// Same per-item schema you'd nest inside createForm
 const emailSchema = z
   .string()
   .min(1, 'Email is required')
   .regex(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/, 'Invalid email format')
 
-const validateEmail = (v: string) =>
-  emailSchema.safeParse(v).success
-    ? ''
-    : emailSchema.safeParse(v).error!.issues[0].message
-
-const form = createForm({
-  schema: z.object({ emails: z.array(emailSchema).min(1) }),
-  defaultValues: { emails: [''] },
-  onSubmit: async ({ emails }) => { /* ... */ },
-})
-
-const emails = form.field('emails')
-const [touched, setTouched] = createSignal<boolean[]>([false])
-const [submitAttempted, setSubmitAttempted] = createSignal(false)
-
-const itemError = (i: number) =>
-  touched()[i] || submitAttempted() ? validateEmail(emails.value()[i]) : ''
-
-const update = (i: number, v: string) =>
-  emails.setValue(emails.value().map((e, idx) => idx === i ? v : e))
-
-const add = () => {
-  emails.setValue([...emails.value(), ''])
-  setTouched([...touched(), false])
+const validateEmail = (v: string) => {
+  const r = emailSchema.safeParse(v)
+  return r.success ? '' : r.error.issues[0]?.message ?? ''
 }
+
+type Item = { value: string; touched: boolean }
+
+const [items, setItems] = createSignal<Item[]>([{ value: '', touched: false }])
+
+const itemError = (item: Item) =>
+  item.touched ? validateEmail(item.value) : ''
+
+const update = (i: number, value: string) =>
+  setItems(items().map((it, idx) => idx === i ? { ...it, value } : it))
+
+const blur = (i: number) =>
+  setItems(items().map((it, idx) => idx === i ? { ...it, touched: true } : it))
+
+const add = () =>
+  setItems([...items(), { value: '', touched: false }])
 
 const remove = (i: number) => {
-  if (emails.value().length > 1) {
-    emails.setValue(emails.value().filter((_, idx) => idx !== i))
-    setTouched(touched().filter((_, idx) => idx !== i))
-  }
+  if (items().length > 1) setItems(items().filter((_, idx) => idx !== i))
 }
 
-const handleSubmit = async (e: Event) => {
-  setSubmitAttempted(true)
-  await form.handleSubmit(e)
-}`
+{items().map((item, i) => (
+  <div key={i}>
+    <input
+      value={item.value}
+      onInput={(e) => update(i, e.target.value)}
+      onBlur={() => blur(i)}
+    />
+    <p>{itemError(item)}</p>
+    <button onClick={() => remove(i)}>X</button>
+  </div>
+))}
+<button onClick={add}>+ Add Email</button>`
 
-const duplicateValidationCode = `// Reuses the per-item schema, then layers a cross-item rule on top.
-const itemError = (i: number) => {
-  if (!touched()[i]) return ''
-  const value = emails.value()[i]
-  const basic = validateEmail(value)
+const duplicateValidationCode = `// Reuse the per-item schema, then layer a cross-item rule on top.
+const itemError = (item: Item, i: number) => {
+  if (!item.touched) return ''
+  const basic = validateEmail(item.value)
   if (basic) return basic
-  const lower = value.toLowerCase()
-  const isDup = emails.value().some((o, idx) => idx !== i && o.toLowerCase() === lower)
+  const lower = item.value.toLowerCase()
+  const isDup = items().some((o, idx) => idx !== i && o.value.toLowerCase() === lower)
   return isDup ? 'Duplicate email' : ''
 }
 
 const duplicateCount = createMemo(() => {
-  const values = emails.value().map(v => v.toLowerCase().trim()).filter(v => v !== '')
+  const values = items().map(it => it.value.toLowerCase().trim()).filter(v => v !== '')
   return values.length - new Set(values).size
 })`
 
-const minMaxFieldsCode = `const form = createForm({
-  schema: z.object({
-    emails: z.array(emailSchema).min(1).max(5),
-  }),
-  defaultValues: { emails: [''] },
-})
+const minMaxFieldsCode = `const MIN_FIELDS = 1
+const MAX_FIELDS = 5
 
-const emails = form.field('emails')
-const canAdd = createMemo(() => emails.value().length < 5)
-const canRemove = createMemo(() => emails.value().length > 1)
+const canAdd = createMemo(() => items().length < MAX_FIELDS)
+const canRemove = createMemo(() => items().length > MIN_FIELDS)
 
-<Button onClick={handleAdd} disabled={!canAdd()}>+ Add Email</Button>
-<p>{emails.value().length} / 5 emails</p>`
+<button onClick={add} disabled={!canAdd()}>+ Add Email</button>
+<p>{items().length} / {MAX_FIELDS} emails</p>`
 
 export function FieldArraysPage() {
   return (
@@ -110,7 +104,7 @@ export function FieldArraysPage() {
       <div className="flex-1 min-w-0 space-y-12">
         <PageHeader
           title="Field Arrays"
-          description="Dynamic list of inputs. createForm holds the array; per-item touched + the same Zod schema power live feedback."
+          description="Dynamic list of inputs. The array is a raw signal; the per-item rule is the same Zod schema you'd hand to createForm."
         />
 
         <Example title="" code={basicFieldArrayCode}>
@@ -129,11 +123,8 @@ export function FieldArraysPage() {
           <div className="prose prose-invert max-w-none">
             <p className="text-muted-foreground">
               <a href="/docs/forms/create-form" className="text-foreground underline underline-offset-4"><code>createForm</code></a>{' '}
-              targets fixed-shape records, so dynamic arrays are stored on a single field
-              (<code className="text-foreground">{`emails: z.array(emailSchema)`}</code>) and mutated through{' '}
-              <code className="text-foreground">field.setValue([...])</code>. createForm validates the whole array on submit;
-              for live per-item feedback, run the same item schema against each value and gate the message
-              on a parallel <code className="text-foreground">touched: boolean[]</code> signal.
+              targets fixed-shape records, so dynamic arrays don't fit through its field API. Instead, store the array in a{' '}
+              <code className="text-foreground">createSignal</code> of <code className="text-foreground">{`{ value, touched }`}</code> objects and reuse the same per-item Zod schema you'd otherwise nest in createForm.
             </p>
           </div>
         </Section>
