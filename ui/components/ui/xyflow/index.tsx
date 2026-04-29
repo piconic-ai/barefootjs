@@ -778,7 +778,15 @@ export function Flow<
           </svg>
           <div className="bf-flow__nodes" style="position: absolute; top: 0; left: 0;">
             {visibleNodes().map((node: NodeType) => (
-              <NodeWrapper key={node.id} nodeId={node.id} />
+              <NodeWrapper key={node.id} nodeId={node.id}>
+                {/* Default node body: render `data.label` (or the node id
+                    as a fallback) so a stock `<Flow nodes={...} />` shows
+                    something visible without forcing every consumer to
+                    build a custom node. Custom node bodies override this
+                    by passing `<NodeWrapper>...</NodeWrapper>` as a Flow
+                    child instead of relying on the default loop. */}
+                {String((node.data as { label?: unknown })?.label ?? node.id)}
+              </NodeWrapper>
             ))}
           </div>
         </div>
