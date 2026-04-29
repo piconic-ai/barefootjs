@@ -30,7 +30,6 @@
 import {
   createSignal,
   createMemo,
-  provideContext,
   useContext,
 } from '@barefootjs/client'
 import type { JSX } from '@barefootjs/jsx/jsx-runtime'
@@ -728,10 +727,14 @@ export function Flow<
   NodeType extends NodeBase = NodeBase,
   EdgeType extends EdgeBase = EdgeBase,
 >(props: FlowComponentProps<NodeType, EdgeType>) {
-  // Store creation happens once. `provideContext` makes it available to
-  // descendant `<NodeWrapper>` / `<SimpleEdge>` / `<Background>` / etc.
+  // Store creation happens once on first render. The store is shared
+  // with descendant `<NodeWrapper>` / `<SimpleEdge>` / `<Background>` /
+  // `<Controls>` / `<MiniMap>` instances via `<FlowContext.Provider>`.
+  // We use the JSX wrapper form (not the imperative `provideContext`
+  // call) so SSR — where children render top-down before any
+  // imperative effect runs — sees the provider in scope. Mirrors the
+  // chart pattern (`<BarChartContext.Provider value={...}>...`).
   const store = createFlowStore<NodeType, EdgeType>(props)
-  provideContext(FlowContext, store as never)
 
   // Pan/zoom transform memo. Re-runs only when viewport changes.
   const viewportTransform = createMemo(() => {
@@ -755,30 +758,32 @@ export function Flow<
   }
 
   return (
-    <div
-      ref={attachPane}
-      className="bf-flow"
-      style="position: relative; overflow: hidden; width: 100%; height: 100%;"
-    >
+    <FlowContext.Provider value={store as never}>
       <div
-        className="bf-flow__viewport xyflow__viewport"
-        style={`position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; transform: ${viewportTransform()};`}
+        ref={attachPane}
+        className="bf-flow"
+        style="position: relative; overflow: hidden; width: 100%; height: 100%;"
       >
-        <svg
-          className="bf-flow__edges"
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none;"
+        <div
+          className="bf-flow__viewport xyflow__viewport"
+          style={`position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; transform: ${viewportTransform()};`}
         >
-          {visibleEdges().map((edge: EdgeType) => (
-            <SimpleEdge key={edge.id} edgeId={edge.id} />
-          ))}
-        </svg>
-        <div className="bf-flow__nodes" style="position: absolute; top: 0; left: 0;">
-          {visibleNodes().map((node: NodeType) => (
-            <NodeWrapper key={node.id} nodeId={node.id} />
-          ))}
+          <svg
+            className="bf-flow__edges"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none;"
+          >
+            {visibleEdges().map((edge: EdgeType) => (
+              <SimpleEdge key={edge.id} edgeId={edge.id} />
+            ))}
+          </svg>
+          <div className="bf-flow__nodes" style="position: absolute; top: 0; left: 0;">
+            {visibleNodes().map((node: NodeType) => (
+              <NodeWrapper key={node.id} nodeId={node.id} />
+            ))}
+          </div>
         </div>
+        {props.children}
       </div>
-      {props.children}
-    </div>
+    </FlowContext.Provider>
   )
 }
