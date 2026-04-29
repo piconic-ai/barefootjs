@@ -1,0 +1,221 @@
+{
+  "name": "xyflow",
+  "title": "xyflow",
+  "category": "display",
+  "description": "xyflow JSX Components JSX-native renderer components for `@barefootjs/xyflow`. The package itself ships utility helpers (signal hooks, store, types, edge-path geometry, imperative pointer-paced subsystems for `ref` attach), and these components compose them into a `<Flow>` graph editor. Mirrors the chart pattern — utility helpers live in `@barefootjs/chart`, JSX components in `ui/components/ui/chart/`. See the package README at `packages/xyflow/README.md` for the full architecture rationale and the issue at piconic-ai/barefootjs#1081 for the migration history. Components exported: - `<Flow>` — top-level container, owns the store + viewport - `<Background>` — SVG pattern background that moves with viewport - `<Controls>` — zoom in / zoom out / fit view / lock buttons - `<MiniMap>` — overview map with viewport mask - `<Handle>` — per-node connection handle (source / target) - `<NodeWrapper>` — per-node `<div>` with reactive class / transform - `<SimpleEdge>` — per-edge `<path>` (hit area + visible) Pointer-paced subsystems (selection rectangle, connection drag, node-resize, pan-zoom, keyboard handlers) stay imperative inside `@barefootjs/xyflow` and attach via `ref` callbacks.",
+  "tags": [],
+  "stateful": false,
+  "props": [
+    {
+      "name": "edgeId",
+      "type": "string",
+      "required": true,
+      "description": "Stable id of the edge inside `store.edgeLookup()`."
+    }
+  ],
+  "subComponents": [
+    {
+      "name": "NodeWrapper",
+      "description": "",
+      "props": [
+        {
+          "name": "nodeId",
+          "type": "string",
+          "required": true,
+          "description": "Stable id of the node inside `store.nodeLookup()`."
+        },
+        {
+          "name": "children",
+          "type": "Child",
+          "required": false,
+          "description": "Slot for node content (default rendering or custom component output)."
+        },
+        {
+          "name": "ref",
+          "type": "(element: HTMLElement) => void",
+          "required": false,
+          "description": "Optional ref callback. The cutover step that retires `createNodeWrapper` passes the imperative drag/measure/handle-bounds machinery here."
+        }
+      ]
+    },
+    {
+      "name": "Handle",
+      "description": "",
+      "props": [
+        {
+          "name": "type",
+          "type": "HandleType",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "position",
+          "type": "Position",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "id",
+          "type": "string | null",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "isConnectable",
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "nodeId",
+          "type": "string",
+          "required": true,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "Background",
+      "description": "",
+      "props": [
+        {
+          "name": "variant",
+          "type": "BackgroundVariant",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "gap",
+          "type": "number",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "size",
+          "type": "number",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "color",
+          "type": "string",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "lineWidth",
+          "type": "number",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "offset",
+          "type": "number",
+          "required": false,
+          "description": "Shifts the pattern as a fraction of the gap. 0 (default): lines pass through tile centers (same as @xyflow/react). 0.5: shifts by half a gap so lines align to tile edges."
+        },
+        {
+          "name": "patternId",
+          "type": "string",
+          "required": false,
+          "description": "Stable id for the `<pattern>`. Falls back to a random id."
+        }
+      ]
+    },
+    {
+      "name": "Controls",
+      "description": "",
+      "props": [
+        {
+          "name": "position",
+          "type": "ControlsPosition",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "showZoom",
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "showFitView",
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        },
+        {
+          "name": "showInteractive",
+          "type": "boolean",
+          "required": false,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "MiniMap",
+      "description": "",
+      "props": []
+    },
+    {
+      "name": "Flow",
+      "description": "",
+      "props": []
+    }
+  ],
+  "variants": {
+    "BackgroundVariant": [
+      "dots",
+      "lines",
+      "cross"
+    ],
+    "ControlsPosition": [
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right"
+    ],
+    "MiniMapPosition": [
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right"
+    ]
+  },
+  "examples": [],
+  "accessibility": {
+    "ariaAttributes": [],
+    "dataAttributes": []
+  },
+  "dependencies": {
+    "internal": [],
+    "external": [
+      "@barefootjs/client",
+      "@xyflow/system",
+      "@barefootjs/xyflow"
+    ]
+  },
+  "related": [],
+  "source": "ui/components/ui/xyflow/index.tsx",
+  "memos": [
+    {
+      "name": "selected",
+      "deps": []
+    },
+    {
+      "name": "animated",
+      "deps": []
+    },
+    {
+      "name": "pathD",
+      "deps": []
+    },
+    {
+      "name": "visibleClass",
+      "deps": [
+        "selected",
+        "animated"
+      ]
+    }
+  ]
+}

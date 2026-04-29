@@ -78,6 +78,7 @@ import { KbdRefPage } from './pages/components/kbd'
 import { NativeSelectRefPage } from './pages/components/native-select'
 import { SpinnerRefPage } from './pages/components/spinner'
 import { TypographyRefPage } from './pages/components/typography'
+import { XyflowRefPage } from './pages/components/xyflow'
 import { ComponentCatalogPage } from './pages/components/catalog'
 
 // Chart pages
@@ -321,6 +322,11 @@ export function createApp() {
   // Typography reference page
   app.get('/components/typography', (c) => {
     return c.render(<TypographyRefPage />)
+  })
+
+  // xyflow reference page
+  app.get('/components/xyflow', (c) => {
+    return c.render(<XyflowRefPage />)
   })
 
   // Switch reference page

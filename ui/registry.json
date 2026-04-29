@@ -460,6 +460,13 @@
       "title": "Native Select",
       "description": "A styled native HTML select element",
       "tags": ["input"]
+    },
+    {
+      "name": "xyflow",
+      "type": "registry:ui",
+      "title": "xyflow",
+      "description": "Signal-based graph editor — Flow, Background, Controls, MiniMap, Handle, NodeWrapper, SimpleEdge",
+      "tags": ["display", "interactive"]
     }
   ]
 }
