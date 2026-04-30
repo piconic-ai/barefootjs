@@ -264,3 +264,81 @@ describe('#1128 — template body never reaches init-scope identifiers', () => {
     expect(clientJs).toMatch(/cacheKey\s*=\s*`desk-\$\{_p\.org\}-\$\{_p\.projectNumber\}`/)
   })
 })
+
+describe('#1137 — memo body that closes over init-scope identifiers must not leak into the template', () => {
+  test('memo whose body reads an init-scope const does NOT inline the const declaration into the template', () => {
+    const source = `
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      import { makeStore } from './store'
+
+      interface Props { x: number }
+
+      export function Foo(props: Props) {
+        const store = makeStore(props)
+        const transform = createMemo(() => \`T(\${store.read()})\`)
+        return <div data-x={transform()} />
+      }
+    `
+    const clientJs = compileClient(source, 'Foo.tsx')
+    const tpl = templateBody(clientJs)
+
+    // The init-scope const \`store\` must never reach the template — its
+    // initializer \`makeStore(props)\` would re-run on every render AND leak
+    // a bare \`props\` reference that ReferenceErrors at template-call time.
+    expect(tpl).not.toMatch(/\bmakeStore\s*\(/)
+    expect(tpl).not.toMatch(/\bstore\b/)
+    // Bare \`props\` must never be visible at module scope. The template lambda
+    // parameter is \`_p\` — any \`props\` token in the body is a leak.
+    expect(tpl).not.toMatch(/\bprops\b/)
+  })
+
+  test('memo whose body closes over an init-scope const renders an empty placeholder initially (init effect repaints)', () => {
+    const source = `
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      import { makeStore } from './store'
+
+      interface Props { x: number }
+
+      export function Foo(props: Props) {
+        const store = makeStore(props)
+        const transform = createMemo(() => \`T(\${store.read()})\`)
+        return <div data-x={transform()} />
+      }
+    `
+    const clientJs = compileClient(source, 'Foo.tsx')
+    const tpl = templateBody(clientJs)
+
+    // The dynamic-attribute envelope around an unsafe expression collapses to
+    // an empty attribute on the initial render — same pattern as plain
+    // init-scope refs (#1128). A reactive effect inside init repaints.
+    expect(tpl).toMatch(/\$\{\(undefined\)\s*!=\s*null\s*\?\s*'data-x="/)
+    // The init body still has the real memo binding so the effect can repaint.
+    expect(clientJs).toMatch(/transform\s*=\s*createMemo/)
+  })
+
+  test('memo whose body is purely signal-driven (no init-scope refs) keeps inlining the initial value', () => {
+    const source = `
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+
+      interface Props { initial: number }
+
+      export function Foo(props: Props) {
+        const [count] = createSignal(props.initial)
+        const doubled = createMemo(() => count() * 2)
+        return <div data-doubled={doubled()} />
+      }
+    `
+    const clientJs = compileClient(source, 'Foo.tsx')
+    const tpl = templateBody(clientJs)
+
+    // No init-scope closure → keep current behavior: inline the memo body
+    // with signal initial value substituted in. This preserves correct
+    // initial render for the common case.
+    expect(tpl).toMatch(/_p\.initial/)
+    expect(tpl).toMatch(/\*\s*2/)
+    expect(tpl).not.toMatch(/\$\{\(undefined\)\s*!=\s*null\s*\?\s*'data-doubled/)
+  })
+})
