@@ -37,6 +37,15 @@ const VOID_ELEMENTS = new Set([
 ])
 
 /**
+ * Sentinel returned by the CSR template's `transformExpr` when the expression
+ * references an init-body-only name (#1128). Equality with this sentinel is
+ * how downstream emit sites decide to drop a renderChild prop, swap a loop
+ * array for an empty array literal, or short-circuit a text expression to
+ * an empty string. Module-internal — never appears in test fixtures.
+ */
+const UNSAFE_TEMPLATE_EXPR = 'undefined'
+
+/**
  * Generate a template expression for a dynamic attribute.
  * Unifies boolean, presenceOrUndefined, and generic dynamic attribute handling.
  *
@@ -414,10 +423,12 @@ export interface TemplateOptions {
    * via `render()` / `renderChild()`, so any expression that reaches one
    * of these names would `ReferenceError` at template-call time (#1128).
    *
-   * Substitution policy: `transformExpr` returns the literal string
-   * `'undefined'` whenever the resulting expression still references one
-   * of these names. The init function's `createEffect` / `initChild`
-   * bindings populate the real value once init runs.
+   * Substitution policy: `transformExpr` returns `UNSAFE_TEMPLATE_EXPR`
+   * (the literal token `'undefined'`) whenever the resulting expression
+   * still references one of these names. The init function's
+   * `createEffect` / `initChild` bindings populate the real value once
+   * init runs. Per-context guards (loop array, text expression) translate
+   * the sentinel into something safe for that AST position.
    */
   unsafeLocalNames?: Set<string>
   // generateCsrTemplate-specific fields
@@ -767,10 +778,12 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
 
     // The CSR template runs at module scope (via render() / renderChild()),
     // so any reference to an init-body-only name would ReferenceError at
-    // template-call time (#1128). Substitute `undefined`; the init function's
-    // createEffect / initChild bindings repaint the real value once init runs.
+    // template-call time (#1128). Substitute the sentinel; per-AST-context
+    // call sites (loop array, text expression, child component prop) decide
+    // how to render that placeholder. The init function's createEffect /
+    // initChild bindings repaint the real value once init runs.
     if (unsafeLocalNames && unsafeLocalNames.size > 0 && expressionReferencesAny(finalResult, unsafeLocalNames)) {
-      return 'undefined'
+      return UNSAFE_TEMPLATE_EXPR
     }
 
     return finalResult
@@ -821,10 +834,17 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       if (node.clientOnly && node.slotId) {
         return `<!--bf-client:${node.slotId}--><!--/-->`
       }
-      if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${transformExpr(node.expr, node.templateExpr)}}<!--/-->`
+      {
+        const transformed = transformExpr(node.expr, node.templateExpr)
+        // Init-body-only refs would render the literal text "undefined"
+        // before init's createEffect overwrites the slot (#1128). Emit
+        // an empty placeholder instead.
+        const expr = transformed === UNSAFE_TEMPLATE_EXPR ? "''" : transformed
+        if (node.slotId) {
+          return `<!--bf:${node.slotId}-->\${${expr}}<!--/-->`
+        }
+        return `\${${expr}}`
       }
-      return `\${${transformExpr(node.expr, node.templateExpr)}}`
 
     case 'conditional': {
       const trueBranch = recurse(node.whenTrue)
@@ -854,10 +874,10 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           const valueStr = attrValueToString(p.value, { useTemplate: true })
           if (!valueStr) return `${quotePropName(p.name)}: ${JSON.stringify(p.value)}`
           const transformed = transformExpr(valueStr, p.templateValue)
-          // When transformExpr substitutes `undefined` for an init-scope-only
+          // When transformExpr emits the unsafe sentinel for an init-scope-only
           // reference (#1128), drop the prop from renderChild — initChild's
           // getter binding will populate it once init runs.
-          if (transformed === 'undefined') return null
+          if (transformed === UNSAFE_TEMPLATE_EXPR) return null
           return `${quotePropName(p.name)}: ${transformed}`
         })
         .filter((entry): entry is string => entry !== null)
@@ -871,12 +891,17 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     case 'loop': {
       const childTemplate = node.children.map(recurseInLoop).join('')
       const indexParam = node.index ? `, ${node.index}` : ''
+      // An init-scope-only array would `undefined.map(...)` ⇒ TypeError.
+      // Substitute an empty array; init's reconcile pass populates the loop
+      // once the real binding exists (#1128).
+      const arrayExpr = transformExpr(node.array, node.templateArray)
+      const safeArrayExpr = arrayExpr === UNSAFE_TEMPLATE_EXPR ? '[]' : arrayExpr
       let mapExpr: string
       if (node.mapPreamble) {
         const preamble = node.templateMapPreamble ?? node.mapPreamble
-        mapExpr = `\${${transformExpr(node.array, node.templateArray)}.map((${node.param}${indexParam}) => { ${preamble} return \`${childTemplate}\` }).join('')}`
+        mapExpr = `\${${safeArrayExpr}.map((${node.param}${indexParam}) => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
-        mapExpr = `\${${transformExpr(node.array, node.templateArray)}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
+        mapExpr = `\${${safeArrayExpr}.map((${node.param}${indexParam}) => \`${childTemplate}\`).join('')}`
       }
       return `<!--${loopStartMarker(node.markerId)}-->${mapExpr}<!--${loopEndMarker(node.markerId)}-->`
     }

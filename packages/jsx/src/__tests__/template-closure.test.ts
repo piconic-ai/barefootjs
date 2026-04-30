@@ -29,7 +29,12 @@ function templateBody(clientJs: string): string {
   // Match the template lambda body up to the next prop key inside hydrate().
   // Handles both `template: (_p) => \`...\`}` and `template: (_p) => \`...\`, comment: ...`.
   const m = clientJs.match(/template:\s*\(_p\)\s*=>\s*`([\s\S]*?)`(?=,\s*\w|\s*\})/)
-  return m ? m[1] : ''
+  // Asserting non-empty here defends against the regex silently drifting
+  // out of sync with future emit-format changes — without this, every
+  // `expect(tpl).toMatch(...)` below would pass spuriously on empty input.
+  const body = m ? m[1] : ''
+  expect(body.length).toBeGreaterThan(0)
+  return body
 }
 
 describe('#1128 — template body never reaches init-scope identifiers', () => {
@@ -128,6 +133,90 @@ describe('#1128 — template body never reaches init-scope identifiers', () => {
     expect(tpl).toMatch(/renderChild\('Greeter',\s*\{[^}]*name:\s*"world"/)
     expect(tpl).toMatch(/answer:\s*42/)
     expect(tpl).toMatch(/active:\s*true/)
+  })
+
+  test('init-scope spread object emits spreadAttrs(undefined) — runtime null-guards it to empty string', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { makeAttrs } from './helpers'
+
+      export function Foo() {
+        const cached = makeAttrs()
+        const [n] = createSignal(0)
+        return <div {...cached} data-n={n()}>hi</div>
+      }
+    `
+    const clientJs = compileClient(source, 'Foo.tsx')
+    const tpl = templateBody(clientJs)
+
+    expect(tpl).not.toMatch(/\bcached\b/)
+    // spreadAttrs() in @barefootjs/client null-guards undefined → ''.
+    expect(tpl).toMatch(/spreadAttrs\(undefined\)/)
+  })
+
+  test('init-scope conditional condition picks the false branch on initial render', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { readFlag } from './helpers'
+
+      export function Foo() {
+        const flag = readFlag()
+        const [n] = createSignal(0)
+        return <div>{flag ? <span>{n()}</span> : <em>off</em>}</div>
+      }
+    `
+    const clientJs = compileClient(source, 'Foo.tsx')
+    const tpl = templateBody(clientJs)
+
+    expect(tpl).not.toMatch(/\bflag\b/)
+    // The substituted `undefined ? ... : ...` ternary is well-defined JS —
+    // no ReferenceError, false branch wins; init's effect re-renders.
+    expect(tpl).toMatch(/\$\{undefined\s*\?/)
+  })
+
+  test('init-scope loop array becomes [] — avoids `undefined.map(...)` TypeError', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { readItems } from './helpers'
+
+      export function Foo() {
+        const items = readItems()
+        const [n] = createSignal(0)
+        return <ul>{items.map(it => <li key={it}>{it}: {n()}</li>)}</ul>
+      }
+    `
+    const clientJs = compileClient(source, 'Foo.tsx')
+    const tpl = templateBody(clientJs)
+
+    expect(tpl).not.toMatch(/\bitems\b/)
+    // Bare `undefined.map(...)` would throw; substitute `[]` so the
+    // template renders an empty list and reconcileList populates it.
+    expect(tpl).toMatch(/\$\{\[\]\.map\(/)
+  })
+
+  test('init-scope direct text expression emits an empty placeholder, not literal "undefined"', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { readLabel } from './helpers'
+
+      export function Foo() {
+        const label = readLabel()
+        const [n] = createSignal(0)
+        return <span>{label}-{n()}</span>
+      }
+    `
+    const clientJs = compileClient(source, 'Foo.tsx')
+    const tpl = templateBody(clientJs)
+
+    expect(tpl).not.toMatch(/\blabel\b/)
+    // Without the per-context guard, this would emit `${undefined}` and
+    // render the literal text "undefined" before init's createEffect ran.
+    expect(tpl).toMatch(/\$\{''\}/)
+    expect(tpl).not.toMatch(/\$\{undefined\}/)
   })
 
   test('regression — destructured prop refs (#1127) keep working', () => {
