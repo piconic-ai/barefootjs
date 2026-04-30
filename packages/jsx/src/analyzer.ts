@@ -1671,7 +1671,7 @@ function collectConstant(
 
   const isModule = _isModule
   const name = node.name.text
-  const value = node.initializer
+  let value = node.initializer
     ? ctx.getJS(node.initializer)
     : undefined
   const typedValue = node.initializer
@@ -1742,12 +1742,28 @@ function collectConstant(
   const containsArrow = node.initializer ? nodeContainsArrow(node.initializer) : false
   const systemConstructKind = node.initializer ? getSystemConstructKind(node.initializer) : undefined
 
-  // Pre-transform bare prop refs for template inlining (#807)
+  // Pre-transform bare prop refs for template inlining (#807). Apply
+  // for both destructured-arg components and `(props)`-arg components
+  // that destructure inside the body — the bare ref needs `_p.X` either
+  // way for the standalone client template's scope.
   let templateValue: string | undefined
-  if (value && !ctx.propsObjectName && ctx.propsParams.length > 0 && node.initializer) {
+  if (value && ctx.propsParams.length > 0 && node.initializer) {
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
-      templateValue = rewriteBarePropRefs(value, node.initializer, propNames)
+      const rewritten = rewriteBarePropRefs(value, node.initializer, propNames)
+      if (rewritten !== undefined) {
+        templateValue = rewritten
+        // For `(props)`-arg + body-destructure components, the same rewrite
+        // also has to happen in the init-body source (`c.value` is what
+        // the const-emit phase puts inline). Without this, a const like
+        // `const cacheKey = ` desk-${org}` ` keeps the bare `${org}` and
+        // throws ReferenceError when its declaration runs ahead of the
+        // expanded `const org = _p.org` line in the same `const a = ...,
+        // b = ..., c = ...` chain.
+        if (ctx.propsObjectName) {
+          value = rewritten
+        }
+      }
     }
   }
 
