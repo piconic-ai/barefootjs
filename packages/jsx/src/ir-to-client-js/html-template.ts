@@ -408,6 +408,18 @@ export interface TemplateOptions {
   inlinableConstants?: Map<string, string>
   restSpreadNames?: Set<string>
   propsObjectName?: string | null
+  /**
+   * Names that exist only in the init-body scope (or were demoted to unsafe
+   * during chained-ref resolution). The CSR template runs at module scope
+   * via `render()` / `renderChild()`, so any expression that reaches one
+   * of these names would `ReferenceError` at template-call time (#1128).
+   *
+   * Substitution policy: `transformExpr` returns the literal string
+   * `'undefined'` whenever the resulting expression still references one
+   * of these names. The init function's `createEffect` / `initChild`
+   * bindings populate the real value once init runs.
+   */
+  unsafeLocalNames?: Set<string>
   // generateCsrTemplate-specific fields
   signalMap?: Map<string, string>
   memoMap?: Map<string, string>
@@ -695,12 +707,13 @@ export function generateCsrTemplate(
   insideLoop?: boolean,
   restSpreadNames?: Set<string>,
   propsObjectName?: string | null,
+  unsafeLocalNames?: Set<string>,
 ): string {
-  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, loopDepth: -1 })
+  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, unsafeLocalNames, loopDepth: -1 })
 }
 
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, loopDepth = 0 } = opts
+  const { inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, unsafeLocalNames, loopDepth = 0 } = opts
   const transformExpr = (expr: string, templateExpr?: string): string => {
     const { protect, restore } = createStringProtector()
     let result = protect(templateExpr ?? expr)
@@ -750,7 +763,17 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       )
     }
 
-    return restore(result)
+    const finalResult = restore(result)
+
+    // The CSR template runs at module scope (via render() / renderChild()),
+    // so any reference to an init-body-only name would ReferenceError at
+    // template-call time (#1128). Substitute `undefined`; the init function's
+    // createEffect / initChild bindings repaint the real value once init runs.
+    if (unsafeLocalNames && unsafeLocalNames.size > 0 && expressionReferencesAny(finalResult, unsafeLocalNames)) {
+      return 'undefined'
+    }
+
+    return finalResult
   }
 
   const recurse = (n: IRNode): string => generateCsrTemplateWithOpts(n, opts)
@@ -829,8 +852,15 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           }
           if (p.isLiteral) return `${quotePropName(p.name)}: ${JSON.stringify(p.value)}`
           const valueStr = attrValueToString(p.value, { useTemplate: true })
-          return `${quotePropName(p.name)}: ${valueStr ? transformExpr(valueStr, p.templateValue) : JSON.stringify(p.value)}`
+          if (!valueStr) return `${quotePropName(p.name)}: ${JSON.stringify(p.value)}`
+          const transformed = transformExpr(valueStr, p.templateValue)
+          // When transformExpr substitutes `undefined` for an init-scope-only
+          // reference (#1128), drop the prop from renderChild — initChild's
+          // getter binding will populate it once init runs.
+          if (transformed === 'undefined') return null
+          return `${quotePropName(p.name)}: ${transformed}`
         })
+        .filter((entry): entry is string => entry !== null)
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${transformExpr(keyProp.value, keyProp.templateValue)}` : ''
