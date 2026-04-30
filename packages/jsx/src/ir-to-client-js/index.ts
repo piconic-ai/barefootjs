@@ -198,7 +198,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   // nested child components or loops), try generateCsrTemplate() (#536).
   if (!templateHtml) {
     const { signalMap, memoMap } = buildSignalAndMemoMaps(ctx)
-    const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap)
+    const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap, ctx.propsObjectName)
 
     templateHtml = generateCsrTemplate(
       ir.root, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName, unsafeLocalNames

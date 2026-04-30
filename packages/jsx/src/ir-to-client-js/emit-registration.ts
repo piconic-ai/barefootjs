@@ -173,6 +173,18 @@ export function buildSignalAndMemoMaps(ctx: ClientJsContext): {
  * Build an expanded inlinable constants map for CSR template generation.
  * Re-promotes constants that were demoted to unsafeLocalNames by resolving
  * signal/memo call expressions with their initial values.
+ *
+ * `propsObjectName`, when supplied, is the source-level name the user gave
+ * the props parameter (e.g. `props`). A re-promoted value that still
+ * contains a bare reference to it (`makeStore(props)`) is rejected: the
+ * template lambda's regex-based `propsObjectName.x → _p.x` rewrite only
+ * catches the dotted form, so a bare `props` token would survive into the
+ * module-scope template and ReferenceError at template-call time (#1137).
+ * The init-body path uses `rewritePropsObjectRef` (AST-based) which
+ * handles bare refs correctly, but that rewrite isn't applied to the
+ * template body — the constant must instead stay in `unsafeLocalNames`,
+ * letting `expressionReferencesAny` swap the getter call for the
+ * `UNSAFE_TEMPLATE_EXPR` sentinel and init's `createEffect` repaint.
  */
 export function buildCsrInlinableConstants(
   ctx: ClientJsContext,
@@ -180,8 +192,12 @@ export function buildCsrInlinableConstants(
   unsafeLocalNames: Set<string>,
   signalMap: Map<string, string>,
   memoMap: Map<string, string>,
+  propsObjectName?: string | null,
 ): Map<string, string> {
   const csrInlinableConstants = new Map(inlinableConstants)
+  // `props` not followed by `.` — the dotted form is caught by the
+  // template lambda's existing `propsObjectName.x → _p.x` rewrite.
+  const barePropsRe = propsObjectName ? new RegExp(`\\b${propsObjectName}\\b(?!\\.)`) : null
   for (const constant of ctx.localConstants) {
     if (unsafeLocalNames.has(constant.name) && constant.value && !constant.containsArrow) {
       let value = constant.value.trim()
@@ -193,7 +209,15 @@ export function buildCsrInlinableConstants(
       for (const [memoName, computation] of memoMap) {
         value = value.replace(new RegExp(`(?<![-.])\\b${memoName}\\(\\)`, 'g'), `(${computation})`)
       }
-      if (!/\b\w+\(\)/.test(value)) {
+      // The legacy `\b\w+\(\)` filter rejected zero-arg getter calls only.
+      // Calls with arguments (e.g. `makeStore(props)`) used to pass through
+      // and inline into the template, leaking a bare `props` reference at
+      // module scope (#1137). Reject when a bare prop reference would
+      // survive into the template — keep zero-arg `()` rejection too so the
+      // existing `useContext(SomeContext)` re-promotion (no bare props) is
+      // preserved (#1100).
+      const hasBareProps = barePropsRe ? barePropsRe.test(value) : false
+      if (!hasBareProps && !/\b\w+\(\)/.test(value)) {
         csrInlinableConstants.set(constant.name, value)
       }
     }
@@ -243,7 +267,7 @@ export function emitRegistrationAndHydration(
     // Components may be imported and used in conditional branches in other files,
     // where renderChild() needs a registered template to render HTML correctly.
     const { signalMap, memoMap } = buildSignalAndMemoMaps(ctx)
-    const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap)
+    const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap, ctx.propsObjectName)
 
     const templateHtml = generateCsrTemplate(
       _ir.root, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName, unsafeLocalNames
