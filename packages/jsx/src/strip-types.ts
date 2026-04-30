@@ -191,6 +191,27 @@ function collectTypeRanges(
     }
   }
 
+  // Inline `type X = ...` alias and `interface X { ... }` declarations.
+  // At the top level the analyzer collects these via dedicated handlers
+  // (collectTypeAliasDefinition / collectInterfaceDefinition) and they
+  // never appear in any getJS() output. But when these declarations are
+  // nested inside a function body (any depth), the body text is reproduced
+  // verbatim by ctx.getJS(node.body) — and the TS-only statement would
+  // survive into emitted client JS, producing a runtime SyntaxError (#1131).
+  //
+  // The whole declaration is type-only, so erase its full text span. We
+  // also swallow any leading horizontal whitespace and the trailing
+  // newline so the excised statement doesn't leave behind a blank,
+  // dangling-indented line. Doing this for both top-level and nested
+  // occurrences is safe — they're entirely type-only either way.
+  if (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) {
+    ranges.push({
+      start: expandToLineStart(node.getStart(sourceFile), fullText),
+      end: expandThroughLineEnd(node.getEnd(), fullText),
+    })
+    return
+  }
+
   // Type-only nodes that are handled by parent patterns — skip recursion
   if (ts.isTypeNode(node)) return
 
@@ -198,6 +219,35 @@ function collectTypeRanges(
   ts.forEachChild(node, (child) => {
     collectTypeRanges(child, sourceFile, fullText, ranges)
   })
+}
+
+/**
+ * Walk back from `pos` over horizontal whitespace until the start of the line
+ * (or the previous newline). Used to swallow indentation in front of a
+ * type-only statement so its excised line collapses cleanly.
+ */
+function expandToLineStart(pos: number, fullText: string): number {
+  let i = pos
+  while (i > 0) {
+    const ch = fullText[i - 1]
+    if (ch === ' ' || ch === '\t') {
+      i--
+    } else {
+      break
+    }
+  }
+  return i
+}
+
+/**
+ * Walk forward from `pos` over the trailing newline (CRLF or LF) so the
+ * excised statement doesn't leave a blank line behind.
+ */
+function expandThroughLineEnd(pos: number, fullText: string): number {
+  let i = pos
+  if (fullText[i] === '\r') i++
+  if (fullText[i] === '\n') i++
+  return i
 }
 
 /**
