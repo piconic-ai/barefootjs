@@ -1748,7 +1748,44 @@ function collectConstant(
   // way for the standalone client template's scope.
   let templateValue: string | undefined
   if (value && ctx.propsParams.length > 0 && node.initializer) {
-    const propNames = new Set(ctx.propsParams.map(p => p.name))
+    // Shadow guard: a SolidJS-style component (`(props)`-arg shape) can
+    // declare a signal / memo / earlier local with the SAME name as a
+    // prop. Bare references in this const's value target that local
+    // binding, NOT the prop — `rewriteBarePropRefs` must skip them so
+    // `count()` in `const doubled = count() * 2` (where `count` shadows
+    // `props.count`) stays bound to the signal getter rather than
+    // becoming `_p.count()`.
+    //
+    // collectConstant runs in source order during the body visit, so
+    // signals / memos / earlier locals declared above the current const
+    // are already in ctx by the time we get here. Forward references
+    // (using a binding before it's declared) are TDZ-invalid in JS, so
+    // we don't need to chase them.
+    const shadowed = new Set<string>()
+    if (ctx.propsObjectName) {
+      for (const s of ctx.signals) {
+        shadowed.add(s.getter)
+        if (s.setter) shadowed.add(s.setter)
+      }
+      for (const m of ctx.memos) shadowed.add(m.name)
+      for (const c of ctx.localConstants) {
+        // Locals expanded from a body destructure of `props` — e.g.
+        // `const { org } = props` → entry `{ name: 'org', value: 'props.org' }`.
+        // These are PURE aliases for `props.X` (no default, no other expr)
+        // and SHOULD be rewritten through to `_p.X` in dependant consts
+        // (the whole point of this PR), so don't add them to the shadow
+        // set. A user-written `const label = props.label ?? 'fallback'`
+        // does NOT qualify — it's a real local with a defined fallback,
+        // and bare `label` references should target it, not the prop.
+        const isPureAliasFromProps =
+          typeof c.value === 'string' &&
+          c.value === `${ctx.propsObjectName}.${c.name}`
+        if (!isPureAliasFromProps) shadowed.add(c.name)
+      }
+    }
+    const propNames = new Set(
+      ctx.propsParams.map(p => p.name).filter(n => !shadowed.has(n)),
+    )
     if (propNames.size > 0) {
       const rewritten = rewriteBarePropRefs(value, node.initializer, propNames)
       if (rewritten !== undefined) {
