@@ -1742,61 +1742,65 @@ function collectConstant(
   const containsArrow = node.initializer ? nodeContainsArrow(node.initializer) : false
   const systemConstructKind = node.initializer ? getSystemConstructKind(node.initializer) : undefined
 
-  // Pre-transform bare prop refs for template inlining (#807). Apply
-  // for both destructured-arg components and `(props)`-arg components
-  // that destructure inside the body — the bare ref needs `_p.X` either
-  // way for the standalone client template's scope.
+  // Pre-transform bare prop refs for template inlining (#807). Two
+  // distinct cases:
+  //
+  //  1) Destructured-arg components — `function Foo({ org }: Props)`.
+  //     There's no `props` object (`propsObjectName` is undefined); the
+  //     bare names came directly from the param destructure, so every
+  //     `propsParams` name is fair game for rewriting.
+  //
+  //  2) `(props)`-arg components that ALSO body-destructure props — i.e.
+  //     `function Foo(props: Props) { const { org } = props; ... }`. Here
+  //     bare `org` references in dependant consts (e.g.
+  //     `const cacheKey = ` desk-${org}` `) need to become `_p.X` for the
+  //     standalone template AND in the init body, otherwise the minifier
+  //     collapses const declarations and TDZ-throws on the bare ref.
+  //     CRITICAL: only the BODY-DESTRUCTURED prop names are eligible — a
+  //     plain `(props)`-arg component without body destructure (e.g.
+  //     `function Cmd(props) { const handleMount = (el) => { const value
+  //     = ...; el.setAttribute('data-value', value) } }`) must NOT have
+  //     its nested-scope local bindings rewritten just because the local
+  //     name happens to match a prop key. `rewriteBarePropRefs` is not
+  //     scope-aware, so we have to gate eligibility upstream.
   let templateValue: string | undefined
   if (value && ctx.propsParams.length > 0 && node.initializer) {
-    // Shadow guard: a SolidJS-style component (`(props)`-arg shape) can
-    // declare a signal / memo / earlier local with the SAME name as a
-    // prop. Bare references in this const's value target that local
-    // binding, NOT the prop — `rewriteBarePropRefs` must skip them so
-    // `count()` in `const doubled = count() * 2` (where `count` shadows
-    // `props.count`) stays bound to the signal getter rather than
-    // becoming `_p.count()`.
-    //
-    // collectConstant runs in source order during the body visit, so
-    // signals / memos / earlier locals declared above the current const
-    // are already in ctx by the time we get here. Forward references
-    // (using a binding before it's declared) are TDZ-invalid in JS, so
-    // we don't need to chase them.
-    const shadowed = new Set<string>()
-    if (ctx.propsObjectName) {
+    let propNames: Set<string>
+    if (!ctx.propsObjectName) {
+      // Case 1: destructured-arg — all propsParams are bare locals.
+      propNames = new Set(ctx.propsParams.map(p => p.name))
+    } else {
+      // Case 2: `(props)`-arg — restrict to body-destructured pure aliases
+      // of `props.X` (entries pushed by the body-destructure expansion at
+      // line 1646). Defaults/expressions disqualify (the local has its
+      // own value); a signal/memo/earlier non-alias local with the same
+      // name acts as a shadow and also disqualifies.
+      const shadowedByNonAlias = new Set<string>()
       for (const s of ctx.signals) {
-        shadowed.add(s.getter)
-        if (s.setter) shadowed.add(s.setter)
+        shadowedByNonAlias.add(s.getter)
+        if (s.setter) shadowedByNonAlias.add(s.setter)
       }
-      for (const m of ctx.memos) shadowed.add(m.name)
+      for (const m of ctx.memos) shadowedByNonAlias.add(m.name)
+      const aliases = new Set<string>()
       for (const c of ctx.localConstants) {
-        // Locals expanded from a body destructure of `props` — e.g.
-        // `const { org } = props` → entry `{ name: 'org', value: 'props.org' }`.
-        // These are PURE aliases for `props.X` (no default, no other expr)
-        // and SHOULD be rewritten through to `_p.X` in dependant consts
-        // (the whole point of this PR), so don't add them to the shadow
-        // set. A user-written `const label = props.label ?? 'fallback'`
-        // does NOT qualify — it's a real local with a defined fallback,
-        // and bare `label` references should target it, not the prop.
-        const isPureAliasFromProps =
+        const isPureAlias =
           typeof c.value === 'string' &&
           c.value === `${ctx.propsObjectName}.${c.name}`
-        if (!isPureAliasFromProps) shadowed.add(c.name)
+        if (isPureAlias) aliases.add(c.name)
+        else shadowedByNonAlias.add(c.name)
       }
+      propNames = new Set(
+        [...aliases].filter(n => !shadowedByNonAlias.has(n)),
+      )
     }
-    const propNames = new Set(
-      ctx.propsParams.map(p => p.name).filter(n => !shadowed.has(n)),
-    )
     if (propNames.size > 0) {
       const rewritten = rewriteBarePropRefs(value, node.initializer, propNames)
       if (rewritten !== undefined) {
         templateValue = rewritten
-        // For `(props)`-arg + body-destructure components, the same rewrite
-        // also has to happen in the init-body source (`c.value` is what
-        // the const-emit phase puts inline). Without this, a const like
-        // `const cacheKey = ` desk-${org}` ` keeps the bare `${org}` and
-        // throws ReferenceError when its declaration runs ahead of the
-        // expanded `const org = _p.org` line in the same `const a = ...,
-        // b = ..., c = ...` chain.
+        // For the body-destructure case, also rewrite the init-body
+        // source so the eventual `const cacheKey = ` desk-${_p.org}` ` form
+        // survives minifier const-chain collapse without TDZ-throwing on
+        // a bare `${org}`.
         if (ctx.propsObjectName) {
           value = rewritten
         }
