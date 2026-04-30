@@ -12,9 +12,12 @@
  *   - prop is optional with type info    → `?? <inferred default>`
  *   - otherwise                          → no default
  *
- * Skipped entirely when the component uses an opaque props object name
- * (`propsObjectName != null`) — in that case downstream code reads
- * `_p.X` directly via the late-stage rename.
+ * Emitted whenever `neededProps` is non-empty — i.e. the component body
+ * actually references one or more bare prop names (via destructured arg
+ * `({ org }: Props)` OR via destructuring inside the body
+ * `const { org } = props`). Pure SolidJS-style components that always
+ * read `props.X` don't add anything to `neededProps`, so the early-return
+ * takes care of that case naturally without a `propsObjectName` check.
  */
 
 import type { PropUsage } from '../../types'
@@ -28,7 +31,7 @@ export function emitPropsExtraction(
   neededProps: Set<string>,
   propUsage: Map<string, PropUsage>,
 ): void {
-  if (neededProps.size === 0 || ctx.propsObjectName) return
+  if (neededProps.size === 0) return
 
   // Props that guard a conditional branch must remain falsy when undefined,
   // so `{}` (truthy) is the wrong default for them — track and exclude.

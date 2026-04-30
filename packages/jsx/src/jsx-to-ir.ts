@@ -116,14 +116,19 @@ function exprHasFunctionCalls(expr: ts.Expression): boolean {
  * Returns undefined if no rewriting is needed (SolidJS-style or no props).
  */
 function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string | undefined {
-  // Build and cache destructured prop names
+  // Build and cache destructured prop names. Use propsParams names regardless
+  // of whether propsObjectName is set — a component may name its arg
+  // `(props)` AND destructure inside the body (`const { org } = props`).
+  // The bare `org` references inside JSX still need rewriting to `_p.org`
+  // for the generated client template's standalone scope.
+  //
+  // SolidJS-style usage (`props.org` everywhere, no destructured local
+  // named `org`) is unaffected: rewriteBarePropRefsCore skips identifiers
+  // appearing on the right side of property access, so `props.org` stays
+  // intact even when `org` is in propNames.
   if (ctx._destructuredPropNames === undefined) {
-    if (ctx.analyzer.propsObjectName) {
-      ctx._destructuredPropNames = null  // SolidJS-style, no rewriting needed
-    } else {
-      const names = ctx.analyzer.propsParams.map(p => p.name)
-      ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
-    }
+    const names = ctx.analyzer.propsParams.map(p => p.name)
+    ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
   }
   if (!ctx._destructuredPropNames) return undefined
   return rewriteBarePropRefsCore(text, expr, ctx._destructuredPropNames)
