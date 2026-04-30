@@ -570,8 +570,24 @@ export async function build(
     }
   }
 
-  // 6b. Resolve relative imports (idempotent — writeIfChanged keeps it quiet)
-  await resolveRelativeImports({ distDir: config.outDir, manifest })
+  // 6b. Resolve relative imports (idempotent — writeIfChanged keeps it quiet).
+  //     Each manifest entry's source-file directory is threaded through so
+  //     that a 'use client' component importing a sibling .ts helper (e.g.
+  //     `import { useYjs } from './useYjs'` from `src/components/canvas/`)
+  //     can locate the helper at its source path and inline it. Without
+  //     this the resolver would only search the dist file's directory,
+  //     find nothing, and silently strip the import line. See bf#1133.
+  const sourceDirsByManifestKey: Record<string, string[]> = {}
+  for (const [sourcePath, entry] of Object.entries(nextEntries)) {
+    if (entry.manifestKey && !sourcePath.startsWith('bundle:')) {
+      sourceDirsByManifestKey[entry.manifestKey] = [dirname(sourcePath)]
+    }
+  }
+  await resolveRelativeImports({
+    distDir: config.outDir,
+    manifest,
+    sourceDirsByManifestKey,
+  })
 
   // 6c. Rewrite bare @barefootjs/client imports to relative barefoot.js path,
   //     then dedupe if a file ends up with multiple imports from the same

@@ -15,6 +15,18 @@ export interface ResolveRelativeImportsOptions {
   manifest: Record<string, { clientJs?: string; markedTemplate: string }>
   /** Source directories to search for modules (checked after the client JS file's own directory) */
   sourceDirs?: string[]
+  /**
+   * Per-entry source directories, keyed by manifest key. Searched after the
+   * client JS file's own directory but before the global `sourceDirs`.
+   *
+   * The compiler emits relative imports against the source layout (e.g. a
+   * `'use client'` component at `src/components/canvas/DeskCanvas.tsx`
+   * importing `./useYjs` resolves to `src/components/canvas/useYjs.ts`).
+   * The dist file lives at a different path with no sibling helper, so
+   * without this map the resolver would silently strip the import. See
+   * piconic-ai/barefootjs#1133.
+   */
+  sourceDirsByManifestKey?: Record<string, string[]>
 }
 
 /**
@@ -131,9 +143,9 @@ async function inlineRelativeImports(
  * - Not found / already inlined: strip
  */
 export async function resolveRelativeImports(options: ResolveRelativeImportsOptions): Promise<void> {
-  const { distDir, manifest, sourceDirs = [] } = options
+  const { distDir, manifest, sourceDirs = [], sourceDirsByManifestKey = {} } = options
 
-  for (const [, entry] of Object.entries(manifest)) {
+  for (const [name, entry] of Object.entries(manifest)) {
     if (!entry.clientJs) continue
     const filePath = resolve(distDir, entry.clientJs)
     let content: string
@@ -143,10 +155,11 @@ export async function resolveRelativeImports(options: ResolveRelativeImportsOpti
       continue
     }
 
+    const perEntryDirs = sourceDirsByManifestKey[name] ?? []
     const inlinedPaths = new Set<string>()
     const next = await inlineRelativeImports(
       content,
-      [dirname(filePath), ...sourceDirs],
+      [dirname(filePath), ...perEntryDirs, ...sourceDirs],
       inlinedPaths,
       entry.clientJs,
     )

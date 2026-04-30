@@ -213,4 +213,54 @@ console.log(formatDate(new Date()))
     expect(result).toContain('function formatDate(d)')
     expect(result).not.toContain("from './helpers'")
   })
+
+  // Regression: bf#1133 — a 'use client' component importing a sibling .ts
+  // helper at its OWN source location (not under any global sourceDir) had
+  // its import line stripped because the resolver only searched the dist dir.
+  // The fix is to thread each manifest entry's source directory through
+  // sourceDirsByManifestKey so the helper can be located and inlined.
+  test('resolves sibling .ts via sourceDirsByManifestKey (bf#1133)', async () => {
+    // Source layout: src/components/canvas/{DeskCanvas.tsx,useYjs.ts}
+    const SRC_CANVAS = resolve(SOURCE_DIR, 'components', 'canvas')
+    mkdirSync(SRC_CANVAS, { recursive: true })
+    writeFileSync(resolve(SRC_CANVAS, 'useYjs.ts'), `
+export function useYjs(roomId: string, readOnly: boolean) {
+  return { roomId, readOnly }
+}
+`)
+
+    // Dist layout: dist/components/canvas/DeskCanvas-abc.js (no sibling useYjs there)
+    const DIST_CANVAS = resolve(COMPONENTS_DIR, 'canvas')
+    mkdirSync(DIST_CANVAS, { recursive: true })
+    const clientJs = `import { useYjs } from './useYjs'
+import { hydrate } from '@barefootjs/client/runtime'
+export function initDeskCanvas(__scope, _p = {}) {
+  const yjs = useYjs(_p.roomId, _p.readOnly)
+  return yjs
+}
+`
+    writeFileSync(resolve(DIST_CANVAS, 'DeskCanvas-abc.js'), clientJs)
+
+    const manifest = {
+      DeskCanvas: {
+        clientJs: 'components/canvas/DeskCanvas-abc.js',
+        markedTemplate: 'components/canvas/DeskCanvas.tsx',
+      },
+    }
+
+    await resolveRelativeImports({
+      distDir: DIST_DIR,
+      manifest,
+      sourceDirsByManifestKey: { DeskCanvas: [SRC_CANVAS] },
+    })
+
+    const result = await Bun.file(resolve(DIST_CANVAS, 'DeskCanvas-abc.js')).text()
+    // Helper inlined — both the function and its call site are present.
+    expect(result).toContain('function useYjs(roomId, readOnly)')
+    expect(result).toContain('useYjs(_p.roomId, _p.readOnly)')
+    // Original import line stripped (replaced by inlined declaration).
+    expect(result).not.toContain("from './useYjs'")
+    // Untouched module imports stay.
+    expect(result).toContain("from '@barefootjs/client/runtime'")
+  })
 })
