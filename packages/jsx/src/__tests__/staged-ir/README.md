@@ -32,29 +32,32 @@ This is the boundary that produced #1127 / #1128 / #1132 / #1137.
 Each file documents the stage transition it pins, so a future regression can be
 diagnosed as "transition X → Y broken" rather than "issue #NNNN regressed".
 
-## Current state (P0 baseline, before staged-IR refactor)
+## Current state (post P3 (3/N))
 
 ```
-27 pass / 4 todo   (run: bun test src/__tests__/staged-ir/)
+68 pass / 0 fail   (run: bun test src/__tests__/staged-ir/)
 ```
 
-The 4 `test.todo` cases pin the residual stage violations that
-P3 (5/N) of the refactor must fix. They will be flipped to `test(...)`
-in the same PR that lands the recursive-visibility check:
+The 4 stage violations pinned by P0 are all closed by routing the
+inline-classification decision through `relocate()`'s
+`isInlinableInTemplate`. The fix is one canonical predicate, not a
+per-pass discriminator stack — the failure mode #1138 was filed
+against (different rewrite passes carrying private models of "which
+scope does this name belong to") is gone.
 
-1. `05/relative import used in init body survives compile` — when an
-   init-local is inlined into template, the import the inlined call
-   needs is dropped because import-collection runs against the (now
-   empty) init body.
-2. `05/multiple imports from same source are bundled` — same shape.
-3. `06/init-locals do NOT leak into template body` — `useYjs(...)`
-   call is inlined into template body alongside the dropped import.
-4. `06/createMemo getter is referenced, body NOT inlined` — memo body
-   is recursively inlined; the closure deps it captured (`items()`)
-   end up as their initial values (`[]`) in template scope, losing
-   reactivity.
+Concretely:
 
-All four are the same root: rewrite passes and the import pass each
-hold a private model of "which scope does this name belong to". The
-staged-IR refactor unifies the model. When all four flip from `test.todo`
-to `test(...)` and pass, while all 27 stay green, P6 is complete.
+- `compute-inlinability.ts` now asks `isInlinableInTemplate(value,
+  env)` for every constant. The function combines (a) bridge
+  feasibility (relocate's `ok` flag) and (b) call-purity safety
+  (`hasCallWithBridgedArg` AST walk + zero-arg-call rejection).
+- `emit-registration.ts/buildCsrInlinableConstants` consults the
+  same predicate for its CSR re-promotion path. The legacy
+  hand-rolled regex gates (`\bprops\b(?!\.)`) are gone.
+- `index.ts/needsClientJs` consults the predicate too — a constant
+  that's not inlinable AT ALL needs init scope so the const
+  declaration survives and `collectExternalImports` picks up its
+  module dependencies (#1133).
+- `index.ts/generateTemplateOnlyMount` calls `collectExternalImports`
+  alongside the runtime helper detection. Independent bug fix
+  preserved from the surgical attempt; relocate doesn't apply here.

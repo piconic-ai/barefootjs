@@ -26,6 +26,8 @@
 import type { ConstantInfo, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
 import { graphFunctionReferences } from './build-references'
+import { isInlinableInTemplate, buildRelocateEnvFromIR } from '../relocate'
+import type { RelocateEnv } from '../relocate'
 
 /**
  * Why a local constant was or was not chosen for template inlining.
@@ -99,8 +101,21 @@ const JS_BUILTINS = new Set([
  * Classify each local constant and local function according to the
  * tagged-union statuses above. Pure function: no IR mutation.
  *
- * Evaluation order for constants mirrors the pre-Stage E.4 cascade so
- * the downstream inlinable / unsafe sets are byte-identical.
+ * Two-stage classification:
+ *
+ *  1. **Graph-level eligibility**: the legacy "all free refs are
+ *     either JS_BUILTINS or names declared in this component" check.
+ *     Constants that depend transitively on locals stay candidates;
+ *     downstream chain resolution substitutes them later.
+ *
+ *  2. **Stage-level safety** via `isInlinableInTemplate`: rejects
+ *     values that — even after lift to `_p.X` — would leak unsafe
+ *     evaluation semantics into template scope. Specifically catches
+ *     calls to module-imports whose arguments depend on props
+ *     (`useYjs(_p.X)`) — duplicating these into the template lambda
+ *     runs the helper with the wrong identity on every render and
+ *     drops the import entirely (#1138). `useContext(SomeContext)`
+ *     (no bridged args) stays safe and preserves #1100.
  */
 export function computeInlinability(
   ctx: ClientJsContext,
@@ -121,6 +136,31 @@ export function computeInlinability(
   const signalSetters = new Set(ctx.signals.filter(s => s.setter).map(s => s.setter!))
   const memoNames = new Set(ctx.memos.map(m => m.name))
 
+  // RelocateEnv is built once per component from the live ClientJsContext
+  // — same shape as IRMetadata, so the IR-keyed builder applies.
+  const env = buildRelocateEnvFromIR({
+    componentName: ctx.componentName,
+    hasDefaultExport: false,
+    isExported: false,
+    isClientComponent: true,
+    typeDefinitions: [],
+    propsType: null,
+    propsParams: ctx.propsParams,
+    propsObjectName: ctx.propsObjectName,
+    restPropsName: ctx.restPropsName,
+    restPropsExpandedKeys: [],
+    signals: ctx.signals,
+    memos: ctx.memos,
+    effects: ctx.effects,
+    onMounts: ctx.onMounts,
+    initStatements: ctx.initStatements,
+    imports: [],
+    templateImports: [],
+    namedExports: [],
+    localFunctions: ctx.localFunctions,
+    localConstants: ctx.localConstants,
+  })
+
   for (const c of ctx.localConstants) {
     constants.set(c.name, classifyConstantInitial(
       c,
@@ -128,6 +168,7 @@ export function computeInlinability(
       signalGetters,
       signalSetters,
       memoNames,
+      env,
     ))
   }
 
@@ -140,6 +181,7 @@ function classifyConstantInitial(
   signalGetters: Set<string>,
   signalSetters: Set<string>,
   memoNames: Set<string>,
+  env: RelocateEnv,
 ): ConstantInlinability {
   if (c.isJsx) return { kind: 'jsx-inline' }
   if (!c.value) return { kind: 'placeholder-let' }
@@ -153,11 +195,32 @@ function classifyConstantInitial(
         return { kind: 'reactive-read' }
       }
     }
+    // Stage-1 graph eligibility — legacy gate. Kept because chain
+    // resolution downstream may turn a transitively-local-dependent
+    // const into a fully resolved expression. Removing this gate
+    // would over-reject the chained-inlining test (#366).
     for (const id of freeIds) {
       if (JS_BUILTINS.has(id) || declaredNames.has(id)) continue
       return { kind: 'external-name' }
     }
   }
+
+  // Stage-2 stage-safety: even if the graph thinks it's eligible, the
+  // value may still be unsafe to duplicate into template scope when
+  // the form involves a call to a non-pure helper with prop-bridged
+  // args. relocate's `isInlinableInTemplate` is the canonical check;
+  // the legacy regex-based gates (`hasBareProps`, `\b\w+\(\)`)
+  // distributed across emit-registration are the failure mode #1138
+  // was filed against.
+  //
+  // The check uses relocate's `ok` flag only — the inline value
+  // emitted is the analyzer-supplied templateValue or raw value, so
+  // chain-resolution downstream can still substitute through the
+  // const dependency graph (#366). Using `rewrittenValue` here would
+  // freeze init-local refs into `undefined` fallbacks before the
+  // chain resolver gets a chance to replace them.
+  const { ok } = isInlinableInTemplate(c.value, env)
+  if (!ok) return { kind: 'external-name' }
 
   return {
     kind: 'inlinable',

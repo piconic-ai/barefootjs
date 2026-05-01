@@ -8,6 +8,7 @@ import type { ComponentIR, IRFragment, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
 import { PROPS_PARAM, inferDefaultValue, exprReferencesIdent } from './utils'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability'
+import { buildRelocateEnvFromIR, isInlinableInTemplate } from '../relocate'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template'
 import { nameForRegistryRef } from './component-scope'
 
@@ -192,12 +193,42 @@ export function buildCsrInlinableConstants(
   unsafeLocalNames: Set<string>,
   signalMap: Map<string, string>,
   memoMap: Map<string, string>,
-  propsObjectName?: string | null,
+  _propsObjectName?: string | null,
 ): Map<string, string> {
   const csrInlinableConstants = new Map(inlinableConstants)
-  // `props` not followed by `.` — the dotted form is caught by the
-  // template lambda's existing `propsObjectName.x → _p.x` rewrite.
-  const barePropsRe = propsObjectName ? new RegExp(`\\b${propsObjectName}\\b(?!\\.)`) : null
+  // Build relocate env once. The CSR re-promotion path tries to lift
+  // unsafe-but-non-arrow constants back into the inline map AFTER
+  // substituting signal / memo getter calls with their initial values
+  // (so `const x = computeCache(count())` becomes inlinable as
+  // `computeCache((0))` for SSR initial render). Whether the
+  // post-substitution form is inline-safe is the same canonical
+  // question that `compute-inlinability` asks for non-substituted
+  // values — delegate to `relocate.isInlinableInTemplate` instead of
+  // re-deriving discriminators here. This was the path that let
+  // `useYjs(props.x, props.y)` slip through (#1138, #1137 follow-up):
+  // the legacy regex caught only bare `props`, not `props.X`.
+  const env = buildRelocateEnvFromIR({
+    componentName: ctx.componentName,
+    hasDefaultExport: false,
+    isExported: false,
+    isClientComponent: true,
+    typeDefinitions: [],
+    propsType: null,
+    propsParams: ctx.propsParams,
+    propsObjectName: ctx.propsObjectName,
+    restPropsName: ctx.restPropsName,
+    restPropsExpandedKeys: [],
+    signals: ctx.signals,
+    memos: ctx.memos,
+    effects: ctx.effects,
+    onMounts: ctx.onMounts,
+    initStatements: ctx.initStatements,
+    imports: [],
+    templateImports: [],
+    namedExports: [],
+    localFunctions: ctx.localFunctions,
+    localConstants: ctx.localConstants,
+  })
   for (const constant of ctx.localConstants) {
     if (unsafeLocalNames.has(constant.name) && constant.value && !constant.containsArrow) {
       let value = constant.value.trim()
@@ -209,16 +240,9 @@ export function buildCsrInlinableConstants(
       for (const [memoName, computation] of memoMap) {
         value = value.replace(new RegExp(`(?<![-.])\\b${memoName}\\(\\)`, 'g'), `(${computation})`)
       }
-      // The legacy `\b\w+\(\)` filter rejected zero-arg getter calls only.
-      // Calls with arguments (e.g. `makeStore(props)`) used to pass through
-      // and inline into the template, leaking a bare `props` reference at
-      // module scope (#1137). Reject when a bare prop reference would
-      // survive into the template — keep zero-arg `()` rejection too so the
-      // existing `useContext(SomeContext)` re-promotion (no bare props) is
-      // preserved (#1100).
-      const hasBareProps = barePropsRe ? barePropsRe.test(value) : false
-      if (!hasBareProps && !/\b\w+\(\)/.test(value)) {
-        csrInlinableConstants.set(constant.name, value)
+      const { ok, rewrittenValue } = isInlinableInTemplate(value, env)
+      if (ok) {
+        csrInlinableConstants.set(constant.name, rewrittenValue)
       }
     }
   }

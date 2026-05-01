@@ -242,6 +242,181 @@ export function relocate(
   return { text, ok, usedExternals, decisions }
 }
 
+// =============================================================================
+// Inline-safety classification
+// =============================================================================
+
+/**
+ * Decide whether `value` (an `init`-scope expression) can be safely
+ * duplicated into `template` scope as a literal substitution.
+ *
+ * "Safe" requires two conditions:
+ *
+ *   1. `relocate(value, ..., 'init', 'template', env).ok` is true. This
+ *      catches references that can't be bridged at all (init-locals
+ *      with no inline form, signal/memo getters, etc.).
+ *
+ *   2. No call expression in the value has a lifted reference inside
+ *      its argument list. A call like `useYjs(_p.roomId, _p.readOnly)`
+ *      would otherwise inline into the template lambda body and run
+ *      on every template re-render — calling external helpers per
+ *      render breaks identity (each call is a fresh result) and, when
+ *      the helper has side effects, creates duplicate resources.
+ *      `useContext(BarChartContext)` — args are static (a module-local
+ *      `createContext()` value, no lift) — stays inline-safe and
+ *      preserves the #1100 protected behavior.
+ *
+ * Returns `{ ok, rewrittenValue }`. When `ok` is true, `rewrittenValue`
+ * is the value with all bridges applied (e.g. `props.X` → `_p.X`) and
+ * is what should land in the inline map.
+ */
+export function isInlinableInTemplate(
+  value: string,
+  env: RelocateEnv,
+): { ok: boolean; rewrittenValue: string } {
+  const valueNode = parseExpressionNode(value)
+  const r = relocate(value, valueNode, 'init', 'template', env)
+  if (!r.ok) return { ok: false, rewrittenValue: r.text }
+
+  if (valueNode) {
+    if (hasCallWithBridgedArg(valueNode, r.decisions)) {
+      return { ok: false, rewrittenValue: r.text }
+    }
+    if (hasZeroArgCall(valueNode)) {
+      // Zero-arg calls (`readItems()`, `count()`) read runtime state.
+      // Inlining them runs the call at template-eval time when the
+      // surrounding scope (init body) hasn't yet provided whatever the
+      // call expects. The pre-staged-IR pipeline rejected this via
+      // `/\b\w+\(\)/` regex; mirror it here as a structural check so
+      // the long-standing `${[].map(...)}` fallback for cases like
+      // `const items = readItems()` keeps producing a stable empty
+      // initial render and lets init's effect populate the real value.
+      return { ok: false, rewrittenValue: r.text }
+    }
+  }
+
+  return { ok: true, rewrittenValue: r.text }
+}
+
+/**
+ * Re-parse a value-position expression to a `ts.Node` so the inline-
+ * safety check can walk it AST-aware. Returns null when the input
+ * isn't a parseable expression — caller falls back to a string-only
+ * decision in that case.
+ */
+function parseExpressionNode(text: string): ts.Node | null {
+  try {
+    const sf = ts.createSourceFile(
+      '__inline_check__.ts',
+      `(${text});`,
+      ts.ScriptTarget.Latest,
+      false,
+      ts.ScriptKind.TS,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isExpressionStatement(stmt)) return null
+    const inner = stmt.expression
+    return ts.isParenthesizedExpression(inner) ? inner.expression : inner
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Walk `node` looking for a call expression whose argument list
+ * contains an identifier classified as `lift-to-prop` or `inline` by
+ * relocate. Such calls would re-execute on every template render with
+ * the bridged value (e.g. `_p.roomId`) substituted in — wrong identity,
+ * duplicated side effects, dropped imports.
+ */
+function hasCallWithBridgedArg(
+  node: ts.Node,
+  decisions: RelocateDecision[],
+): boolean {
+  const bridged = new Set<string>()
+  for (const d of decisions) {
+    if (d.action === 'lift-to-prop' || d.action === 'inline') bridged.add(d.name)
+  }
+  if (bridged.size === 0) return false
+
+  let found = false
+  function visit(n: ts.Node): void {
+    if (found) return
+    if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
+      const args = n.arguments
+      if (args) {
+        for (const arg of args) {
+          if (containsAnyIdentifier(arg, bridged)) {
+            found = true
+            return
+          }
+        }
+      }
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(node)
+  return found
+}
+
+/**
+ * True if `node` contains any zero-argument call expression (e.g.
+ * `foo()`, `bar.baz()`). Catches signal/memo getters and helpers that
+ * read runtime state — both are unsafe to duplicate into template
+ * scope. Mirrors the `/\b\w+\(\)/` regex the legacy CSR re-promotion
+ * path used.
+ */
+function hasZeroArgCall(node: ts.Node): boolean {
+  let found = false
+  function visit(n: ts.Node): void {
+    if (found) return
+    if (ts.isCallExpression(n) && n.arguments.length === 0) {
+      found = true
+      return
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(node)
+  return found
+}
+
+function containsAnyIdentifier(node: ts.Node, names: ReadonlySet<string>): boolean {
+  // Walk structurally: when entering nodes whose syntactic positions
+  // hold property *names* (not free references), descend only into the
+  // free-reference positions. This works without parent pointers,
+  // which `ts.createSourceFile` does not populate by default.
+  let found = false
+  function visit(n: ts.Node): void {
+    if (found) return
+    if (ts.isPropertyAccessExpression(n)) {
+      // foo.X — `foo` is a free ref, `X` is a property name.
+      visit(n.expression)
+      return
+    }
+    if (ts.isPropertyAssignment(n)) {
+      // { X: value } — `X` is a key, only `value` is a free ref.
+      visit(n.initializer)
+      return
+    }
+    if (ts.isShorthandPropertyAssignment(n)) {
+      // { X } — `X` is BOTH a key and a value reference. Treat it as
+      // a free ref (the shorthand reads the binding from the surrounding
+      // scope, same as a bare identifier).
+      if (ts.isIdentifier(n.name) && names.has(n.name.text)) {
+        found = true
+      }
+      return
+    }
+    if (ts.isIdentifier(n) && names.has(n.text)) {
+      found = true
+      return
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(node)
+  return found
+}
+
 /**
  * String-only fallback for ref collection. Walks `bindings` keys and
  * checks each as a word-boundary match in the source. Less precise
@@ -341,6 +516,14 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
   // Props: declared first in source as the function parameter.
   for (const p of src.propsParams) {
     bindings.set(p.name, 'prop')
+  }
+  // The props object name (`props` in `function Foo(props: Props)`) is
+  // also classified as `prop` so that expressions referencing it bare
+  // (e.g. `makeStore(props)`) trigger the bridge action — without this
+  // line, the relocate walk falls back to `'global'` and the call is
+  // misclassified as inline-safe.
+  if (src.propsObjectName) {
+    bindings.set(src.propsObjectName, 'prop')
   }
 
   // Init-body locals — those whose value is a pure alias to `props.X`
