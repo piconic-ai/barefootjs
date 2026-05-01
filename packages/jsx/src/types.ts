@@ -72,6 +72,162 @@ export interface ParamInfo {
 }
 
 // =============================================================================
+// Staged-IR primitives: Phase / Scope / Effect (#1138)
+// =============================================================================
+
+/**
+ * **Phase** — *when* a piece of code runs.
+ *
+ * BarefootJS compiles a single .tsx into code that executes across multiple
+ * temporal stages. Each IR node that carries an expression can be tagged
+ * with the phase its expression belongs to. The relocate pass (P3 of the
+ * staged-IR refactor) consults `phase` when deciding what rewrites are
+ * required to move an expression between stages.
+ *
+ * | Phase     | When                              | Visible bindings                        |
+ * |-----------|-----------------------------------|------------------------------------------|
+ * | `compile` | `bun build` time                  | `ts.Node`, IR, types                     |
+ * | `ssr`     | request time (server)             | props, server-side imports               |
+ * | `hydrate` | client first render (template)    | `_p`, module imports — NOT init-locals  |
+ * | `tick`    | signal change (effects)           | signal getters, `_p`, init-locals        |
+ * | `event`   | DOM event handler invoked         | event arg, signal setters, init-locals   |
+ *
+ * A `compile`-phase value is fully resolvable at build time (literal,
+ * static const). `hydrate`-phase values can read `_p` and module imports
+ * but cannot reach init-scope locals — that's the boundary that
+ * historically produced the #1127 / #1128 / #1132 / #1137 family of bugs.
+ */
+export type Phase = 'compile' | 'ssr' | 'hydrate' | 'tick' | 'event'
+
+/**
+ * **Scope** — *where* a piece of code lives in the emitted module.
+ *
+ * Distinct from Phase: two pieces of code can share a Phase but live in
+ * different Scopes (e.g., the init function body and an event handler
+ * both run at `tick`/`event` Phase but belong to different lexical
+ * scopes). `relocate(expr, fromScope, toScope, env)` is the single
+ * function that knows how to bridge the two.
+ *
+ * | Scope          | Lexical container                                |
+ * |----------------|---------------------------------------------------|
+ * | `module`       | top-level of the emitted .client.js              |
+ * | `init`         | inside `function init<Comp>(__scope, _p) { ... }`|
+ * | `template`     | inside `template: (_p) => \`...\``               |
+ * | `sub-init`     | nested arrow / function-expression in `init`     |
+ * | `render-item`  | mapArray callback                                 |
+ *
+ * Visibility rules are documented in spec/compiler.md (added in P7).
+ */
+export type Scope = 'module' | 'init' | 'template' | 'sub-init' | 'render-item'
+
+/**
+ * **Effect** — what the expression does to the surrounding world.
+ *
+ * Used by relocate() to decide inlining safety. A `pure` expression can
+ * be freely duplicated across phases. `signal-read` cannot be evaluated
+ * at `hydrate` Phase (signals don't have a value yet). `signal-write`
+ * and `dom` mutations cannot be moved or duplicated at all.
+ */
+export type Effect = 'pure' | 'signal-read' | 'signal-write' | 'dom' | 'io'
+
+/**
+ * **OriginInfo** — the staged-IR tuple attached to expression-bearing
+ * IR nodes. All fields are optional during the migration period so
+ * pre-staged-IR producers continue to work; the relocate() pass
+ * gracefully degrades to the legacy `templateValue` / `templateExpr`
+ * fallback when `origin` is absent.
+ *
+ * Once P2–P4 of the refactor land, every expression-bearing node will
+ * carry this and the legacy `template*` fields become emit-time
+ * derivations rather than analyzer outputs.
+ */
+export interface OriginInfo {
+  /** Phase this expression was authored in. */
+  phase: Phase
+  /** Scope this expression was authored in. */
+  scope: Scope
+  /** Effect class — drives inline / lift / reject decisions in relocate(). */
+  effect: Effect
+  /**
+   * Free identifiers used by this expression, classified by where they
+   * resolve. Populated by the analyzer; consumed by relocate() to
+   * decide rewrite shape per identifier without re-walking the AST.
+   */
+  freeRefs?: FreeReference[]
+}
+
+/**
+ * A single free identifier used by an expression, resolved against the
+ * authoring scope's binding environment.
+ */
+export interface FreeReference {
+  /** The identifier as written in source. */
+  name: string
+  /** Where the binding for this name lives. */
+  bindingScope: Scope
+  /**
+   * Kind of binding. Drives relocate() — e.g. `prop` lifts to `_p.X`,
+   * `signal-getter` cannot relocate to `template`, `module-import`
+   * needs the import preserved by emit.
+   */
+  kind: BindingKind
+}
+
+export type BindingKind =
+  | 'prop'           // destructured-from-props or props.X
+  | 'signal-getter'  // [count, setCount] = createSignal(...) → count
+  | 'signal-setter'  // → setCount
+  | 'memo-getter'    // createMemo(...)
+  | 'init-local'     // const x = ... in init body (not a memo/signal)
+  | 'sub-init-local' // declared inside a nested arrow / function
+  | 'render-item'    // .map() callback param
+  | 'module-import'  // from an import declaration
+  | 'module-local'   // module-level const/function (not imported)
+  | 'global'         // not declared anywhere we tracked → assume global
+
+/**
+ * Static visibility table — kinds NOT directly emittable as a bare
+ * identifier in a given Scope. "Bare" is the key word: a `prop` at
+ * `template` IS reachable, but only via `_p.X` — the bare identifier
+ * `X` resolves to nothing in template scope. relocate() consults this
+ * to decide whether a rewrite is required (out-of-table = bare-emittable).
+ */
+const SCOPE_FORBIDDEN: Record<Scope, ReadonlySet<BindingKind>> = {
+  module: new Set([
+    'prop',
+    'signal-getter',
+    'signal-setter',
+    'memo-getter',
+    'init-local',
+    'sub-init-local',
+    'render-item',
+  ]),
+  init: new Set([]),
+  template: new Set([
+    // `prop` is reachable but requires the `_p.X` rewrite — not bare-emittable.
+    'prop',
+    'signal-getter',
+    'signal-setter',
+    'memo-getter',
+    'init-local',
+    'sub-init-local',
+    'render-item',
+  ]),
+  'sub-init': new Set([]),
+  'render-item': new Set([]),
+}
+
+/**
+ * Returns true when a binding of the given kind can be emitted as a
+ * bare identifier inside `scope` (no rewrite required). When this
+ * returns false, relocate() rewrites the reference (lift to `_p.X`,
+ * inline, or fallback) according to the §2.2 decision matrix.
+ */
+export function isVisibleIn(scope: Scope, kind: BindingKind): boolean {
+  return !SCOPE_FORBIDDEN[scope].has(kind)
+}
+
+// =============================================================================
 // IR Node Types
 // =============================================================================
 
@@ -121,6 +277,13 @@ export interface IRExpression {
   callsReactiveGetters?: boolean
   /** When true, expression contains function call(s) — any `identifier()` pattern (computed from AST). */
   hasFunctionCalls?: boolean
+  /**
+   * Staged-IR origin info (#1138). When present, supersedes the implicit
+   * "always init scope at tick phase" assumption used by today's
+   * templateExpr precomputation. relocate() consults this when
+   * deriving the template-side form.
+   */
+  origin?: OriginInfo
 }
 
 export interface IRConditional {
@@ -525,6 +688,15 @@ export interface InitStatementInfo {
    * at runtime.
    */
   assignedIdentifiers?: Set<string>
+  /**
+   * When true, the emitted statement must be prefixed with `;` to defeat
+   * ASI fusion with the previous line. Tracked in IR rather than recovered
+   * by emit-time text inspection — losing this is the failure mode behind
+   * the leading-`;` ASI hazards documented in #1138.
+   */
+  needsLeadingSemi?: boolean
+  /** Staged-IR origin info (#1138). */
+  origin?: OriginInfo
 }
 
 export interface ImportInfo {
@@ -599,6 +771,16 @@ export interface FunctionInfo {
   isExported?: boolean
   /** When true, the source `function` declaration carries the `async` modifier (#1130). */
   isAsync?: boolean
+  /** When true, the source declaration is a generator (`function*`). */
+  isGenerator?: boolean
+  /**
+   * Original source declaration form. Lets emit decide whether to keep
+   * `function f() {}` or rewrite to `const f = () => {}` without losing
+   * modifiers in the process (#1130 was the symptom of recovering this
+   * from text after the rewrite). Optional during the staged-IR
+   * migration; legacy emit paths default to inferring from `body`.
+   */
+  declarationKind?: 'function' | 'arrow' | 'function-expression'
   /** When true, declared at module level (outside the component function). */
   isModule?: boolean
   /** When true, this function returns JSX and is inlined at call sites (#569). */
@@ -637,6 +819,13 @@ export interface ConstantInfo {
   systemConstructKind?: 'createContext' | 'weakMap'
   /** Value with destructured prop refs rewritten to _p.propName, for template inlining. */
   templateValue?: string
+  /**
+   * Staged-IR origin info (#1138). For locals declared in a component
+   * body, `origin.scope` is `init` (or `sub-init` for nested-arrow
+   * declarations). For module-level constants, `origin.scope` is
+   * `module`. Optional during the staged-IR migration.
+   */
+  origin?: OriginInfo
 }
 
 export interface TypeDefinition {

@@ -1202,6 +1202,10 @@ function collectInitStatement(node: ts.Statement, ctx: AnalyzerContext): void {
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     freeIdentifiers: extractFreeIdentifiersFromNode(node),
     assignedIdentifiers: extractAssignedIdentifiersFromNode(node),
+    // Init statements run inside the component's init function, so they
+    // belong to `init` scope. Phase is conservatively `hydrate` (run-once
+    // at hydration). relocate() can refine this when consuming the field.
+    origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
   })
 }
 
@@ -1514,6 +1518,10 @@ function collectFunction(
   }
 
   const isAsync = node.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword) ?? false
+  // Generator functions (`function*`) are tracked so a future `function → const`
+  // rewrite (the failure mode behind #1130) preserves the modifier from IR
+  // rather than reconstructing it from text.
+  const isGenerator = !!node.asteriskToken
 
   ctx.localFunctions.push({
     name,
@@ -1524,6 +1532,8 @@ function collectFunction(
     containsJsx,
     isExported,
     isAsync: isAsync || undefined,
+    isGenerator: isGenerator || undefined,
+    declarationKind: 'function',
     isModule: _isModule || undefined,
     isJsxFunction: isJsxFunction || undefined,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
@@ -1655,6 +1665,9 @@ function collectConstant(
         loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
         freeIdentifiers,
         containsArrow: containsArrow || undefined,
+        // Body-level destructure-from-props is collected only when
+        // _isModule === false; binding lives in init scope.
+        origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
       })
     }
     return
@@ -1827,6 +1840,11 @@ function collectConstant(
     containsArrow: containsArrow || undefined,
     systemConstructKind,
     templateValue,
+    origin: {
+      phase: isModule ? 'compile' : 'hydrate',
+      scope: isModule ? 'module' : 'init',
+      effect: 'pure',
+    },
   })
 }
 
