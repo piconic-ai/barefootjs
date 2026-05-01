@@ -186,9 +186,11 @@ export type BindingKind =
   | 'global'         // not declared anywhere we tracked → assume global
 
 /**
- * Static visibility table — what kinds of bindings are reachable from
- * a given Scope. Used by relocate() to detect cross-stage violations
- * before emit. Out-of-table = reachable.
+ * Static visibility table — kinds NOT directly emittable as a bare
+ * identifier in a given Scope. "Bare" is the key word: a `prop` at
+ * `template` IS reachable, but only via `_p.X` — the bare identifier
+ * `X` resolves to nothing in template scope. relocate() consults this
+ * to decide whether a rewrite is required (out-of-table = bare-emittable).
  */
 const SCOPE_FORBIDDEN: Record<Scope, ReadonlySet<BindingKind>> = {
   module: new Set([
@@ -202,6 +204,8 @@ const SCOPE_FORBIDDEN: Record<Scope, ReadonlySet<BindingKind>> = {
   ]),
   init: new Set([]),
   template: new Set([
+    // `prop` is reachable but requires the `_p.X` rewrite — not bare-emittable.
+    'prop',
     'signal-getter',
     'signal-setter',
     'memo-getter',
@@ -214,9 +218,10 @@ const SCOPE_FORBIDDEN: Record<Scope, ReadonlySet<BindingKind>> = {
 }
 
 /**
- * Returns true when a binding of the given kind is reachable as a bare
- * reference inside `scope`. relocate() rejects (or rewrites) references
- * for which this returns false.
+ * Returns true when a binding of the given kind can be emitted as a
+ * bare identifier inside `scope` (no rewrite required). When this
+ * returns false, relocate() rewrites the reference (lift to `_p.X`,
+ * inline, or fallback) according to the §2.2 decision matrix.
  */
 export function isVisibleIn(scope: Scope, kind: BindingKind): boolean {
   return !SCOPE_FORBIDDEN[scope].has(kind)

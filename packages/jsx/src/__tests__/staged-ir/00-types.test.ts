@@ -48,12 +48,14 @@ describe('Phase / Scope / Effect type primitives', () => {
 })
 
 describe('isVisibleIn — Scope visibility table', () => {
-  test('template scope: only props, module-import, module-local, global reachable', () => {
-    expect(isVisibleIn('template', 'prop')).toBe(true)
+  test('template scope: only module-import, module-local, global are bare-emittable', () => {
     expect(isVisibleIn('template', 'module-import')).toBe(true)
     expect(isVisibleIn('template', 'module-local')).toBe(true)
     expect(isVisibleIn('template', 'global')).toBe(true)
 
+    // `prop` is reachable at template scope but only via `_p.X` rewrite —
+    // bare `X` is NOT visible. Same for the reactive bindings and locals.
+    expect(isVisibleIn('template', 'prop')).toBe(false)
     expect(isVisibleIn('template', 'signal-getter')).toBe(false)
     expect(isVisibleIn('template', 'memo-getter')).toBe(false)
     expect(isVisibleIn('template', 'init-local')).toBe(false)
