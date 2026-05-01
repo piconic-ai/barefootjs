@@ -8,6 +8,157 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/**
+ * Parsed shape of the `import` statement that triggered an inline.
+ *
+ *   - `named`     — `import { a, b as c } from './x'` (record local→imported)
+ *   - `namespace` — `import * as ns from './x'`
+ *   - `default`   — `import D from './x'` or `import D, { ... } from './x'`
+ *   - `bare`      — `import './x'` (side-effect; no bound names)
+ */
+interface ImportShape {
+  /** Local names the parent uses, mapped to the imported names. */
+  named: Array<{ local: string; imported: string }>
+  /** Local namespace binding, if any (`* as ns`). */
+  namespace?: string
+  /** Local default binding, if any. */
+  default?: string
+}
+
+/**
+ * Parse an `import ... from '...'` statement (the full match returned by
+ * RELATIVE_IMPORT_RE) into its bound-name shape. Returns `null` if the
+ * statement is a side-effect-only import (`import './x'`).
+ */
+function parseImportShape(stmt: string): ImportShape | null {
+  // Strip leading `import` and trailing `from '...'`.
+  const m = stmt.match(/^import\s+(.+?)\s+from\s+['"][^'"]+['"]\s*;?$/)
+  if (!m) return null // side-effect import: `import './x'`
+  const clause = m[1].trim()
+  const shape: ImportShape = { named: [] }
+
+  // Split optional default + named/namespace: `Foo, { a, b }` or `Foo, * as ns`.
+  let rest = clause
+  const defaultMatch = rest.match(/^([A-Za-z_$][\w$]*)\s*(?:,\s*(.+))?$/)
+  if (defaultMatch && !rest.startsWith('{') && !rest.startsWith('*')) {
+    shape.default = defaultMatch[1]
+    rest = defaultMatch[2]?.trim() ?? ''
+  }
+
+  if (rest.startsWith('*')) {
+    const ns = rest.match(/^\*\s+as\s+([A-Za-z_$][\w$]*)\s*$/)
+    if (ns) shape.namespace = ns[1]
+  } else if (rest.startsWith('{')) {
+    const inner = rest.replace(/^\{|\}\s*$/g, '').trim()
+    if (inner) {
+      for (const part of inner.split(',')) {
+        const p = part.trim()
+        if (!p) continue
+        const aliased = p.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/)
+        if (aliased) {
+          shape.named.push({ imported: aliased[1], local: aliased[2] })
+        } else if (/^[A-Za-z_$][\w$]*$/.test(p)) {
+          shape.named.push({ imported: p, local: p })
+        }
+      }
+    }
+  }
+  return shape
+}
+
+/**
+ * Collect the set of top-level exported names from an inlined module's
+ * (already-recursed) JS body. Used to populate the IIFE return for
+ * namespace imports (`import * as ns from './x'`), where the parent may
+ * reference any exported name via `ns.foo`.
+ *
+ * Recognises:
+ *   - `export const|let|var name`
+ *   - `export function name`, `export async function name`
+ *   - `export class name`
+ *   - `export { a, b as c }` (uses the exported alias, i.e. `c`)
+ *
+ * Default exports are intentionally not collected — the parent reference
+ * shape (`ns.default`) is unusual enough to leave out of scope.
+ */
+function collectExportedNames(body: string): string[] {
+  const names = new Set<string>()
+  const declRe = /^export\s+(?:async\s+)?(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm
+  for (const m of body.matchAll(declRe)) names.add(m[1])
+  const blockRe = /^export\s*\{([^}]*)\}\s*;?\s*$/gm
+  for (const m of body.matchAll(blockRe)) {
+    for (const part of m[1].split(',')) {
+      const p = part.trim()
+      if (!p) continue
+      const aliased = p.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/)
+      names.add(aliased ? aliased[2] : p)
+    }
+  }
+  return [...names]
+}
+
+/**
+ * Wrap an inlined module's body in an IIFE that re-exports only the names
+ * the parent bundle actually references, then destructure those at the
+ * splice site. This isolates module-private decls (e.g. two siblings each
+ * with their own `const BAR_STYLE`) so they cannot collide in the parent's
+ * top-level scope.
+ *
+ *   const { foo, bar } = (() => {
+ *     /* inlined body, with `export` keywords stripped *\/
+ *     return { foo, bar }
+ *   })()
+ *
+ * For `import * as ns from './x'`, the IIFE returns every top-level
+ * exported name. For side-effect-only `import './x'`, the IIFE has no
+ * destructure on the outside and no return, but the body still runs.
+ *
+ * Default exports are out of scope: the body still has its `export
+ * default` stripped to a bare expression, which is fine inside the IIFE.
+ */
+function wrapInIIFE(body: string, shape: ImportShape | null): string {
+  // Scoping prelude: the body may still contain `export ...` keywords.
+  // Strip them to plain decls so the IIFE body is valid JS.
+  const stripped = body
+    .replace(/^import\s+.*$/gm, '')
+    .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm, '')
+    .replace(/^export\s+/gm, '')
+    .trim()
+
+  if (!shape) {
+    // Side-effect import: no bound names. Still scope-isolate.
+    return `;(() => {\n${stripped}\n})();`
+  }
+
+  const returnEntries: string[] = []
+  const destructureEntries: string[] = []
+
+  if (shape.namespace) {
+    // Build a single `const ns = (() => { ...; return { a, b, ... } })()`.
+    const exported = collectExportedNames(body)
+    const ret = exported.length ? `{ ${exported.join(', ')} }` : '{}'
+    return `const ${shape.namespace} = (() => {\n${stripped}\nreturn ${ret};\n})();`
+  }
+
+  for (const { local, imported } of shape.named) {
+    returnEntries.push(imported)
+    destructureEntries.push(local === imported ? local : `${imported}: ${local}`)
+  }
+  if (shape.default) {
+    // `import D from './x'` — surface the default binding via the IIFE.
+    // The body's `export default <expr>` is stripped to a bare expression
+    // by the regex above, which is then dead. Out of scope for this fix;
+    // covered by the issue's "leave defaults out of scope" note.
+  }
+
+  if (returnEntries.length === 0) {
+    // No bound names we know how to surface. Still IIFE-scope the body.
+    return `;(() => {\n${stripped}\n})();`
+  }
+
+  return `const { ${destructureEntries.join(', ')} } = (() => {\n${stripped}\nreturn { ${returnEntries.join(', ')} };\n})();`
+}
+
 export interface ResolveRelativeImportsOptions {
   /** Absolute path to the dist directory (base for manifest paths) */
   distDir: string
@@ -111,6 +262,12 @@ async function inlineRelativeImports(
     // stripping its import lines. Resolution is anchored to the source file's
     // own directory so transitive paths (e.g. './component-registry') resolve
     // correctly regardless of where the parent client JS lives.
+    //
+    // The inner inline replaces each transitive import with an IIFE-wrapped
+    // splice (see wrapInIIFE), so the inner module's private decls stay
+    // hidden from the outer module's scope. The outer wrapInIIFE call below
+    // then hides the OUTER module's privates from the parent. Composition:
+    // privates only ever leak one frame outward, never to top level.
     jsCode = await inlineRelativeImports(
       jsCode,
       [dirname(result.path), ...searchDirs.slice(1)],
@@ -118,16 +275,15 @@ async function inlineRelativeImports(
       loggingPath,
     )
 
-    // Convert exports/imports of the inlined module to plain declarations.
-    // Also drop bare `export { foo, bar };` blocks emitted by the transpiler —
-    // stripping just the `export` keyword leaves a stray block statement.
-    jsCode = jsCode
-      .replace(/^import\s+.*$/gm, '')
-      .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm, '')
-      .replace(/^export\s+/gm, '')
-      .trim()
+    // Wrap the inlined body in an IIFE that re-exports only the names the
+    // parent imported (see wrapInIIFE for shape rules). This scopes
+    // module-private decls so two siblings declaring the same identifier
+    // (e.g. `const BAR_STYLE`) don't collide in the parent's top-level
+    // scope. piconic-ai/barefootjs#1141.
+    const shape = parseImportShape(fullMatch)
+    const wrapped = wrapInIIFE(jsCode, shape)
 
-    content = content.replace(fullMatch, jsCode)
+    content = content.replace(fullMatch, wrapped)
     console.log(`Inlined: ${importPath} into ${loggingPath}`)
   }
 
