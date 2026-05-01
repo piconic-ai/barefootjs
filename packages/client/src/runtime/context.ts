@@ -38,7 +38,13 @@ export function setCurrentScope(scope: Element | null): Element | null {
  *
  * Walks up the DOM tree from the current scope element to find
  * the nearest ancestor that provided this context. Falls back to
- * the global store, then to the context's default value.
+ * the global store, then to the context's default value, then to
+ * `undefined`.
+ *
+ * Returning `undefined` (rather than throwing) when no provider is
+ * available lets templates evaluate safely before init has run
+ * `provideContext` — init's `createEffect` repaints once the
+ * provider is set up. See piconic-ai/barefootjs#1156.
  */
 export function useContext<T>(context: Context<T>): T {
   // Walk DOM ancestors from current scope to find nearest provider.
@@ -63,14 +69,10 @@ export function useContext<T>(context: Context<T>): T {
       el = el.parentElement
     }
   }
-  // Fallback to global store
   if (contextStore.has(context.id)) {
     return contextStore.get(context.id) as T
   }
-  if (context._hasDefault) {
-    return context.defaultValue as T
-  }
-  throw new Error('useContext: no provider found and no default value')
+  return context.defaultValue as T
 }
 
 /**
