@@ -6,7 +6,7 @@
  */
 
 import type { ClientJsContext } from '../types'
-import { varSlotId } from '../utils'
+import { emitRefCall, varSlotId } from '../utils'
 
 export function emitRefCallbacks(
   lines: string[],
@@ -16,6 +16,6 @@ export function emitRefCallbacks(
   for (const elem of ctx.refElements) {
     if (conditionalSlotIds.has(elem.slotId)) continue
     const v = varSlotId(elem.slotId)
-    lines.push(`  if (_${v}) (${elem.callback})(_${v})`)
+    lines.push(`  if (_${v}) ${emitRefCall(elem.callback, `_${v}`)}`)
   }
 }
