@@ -797,6 +797,15 @@ export function Flow<
     attachFlowSubsystems(el, store as InternalFlowStore<NodeType, EdgeType>, props)
   }
 
+  // Surface the store to consumers that need imperative access (e.g.
+  // calling `store.setNodes(...)` from outside the JSX subtree). Placed
+  // here (after all const decls and helper definitions) so the JSX
+  // compiler doesn't fold this expression statement into the const
+  // declaration chain above. Uses `if`-form rather than optional call —
+  // the compiler currently drops bare `props.X?.()` expression
+  // statements that have no JSX impact.
+  if (props.onInit) props.onInit(store as FlowStore<NodeType, EdgeType>)
+
   return (
     <FlowContext.Provider value={store as never}>
       <div

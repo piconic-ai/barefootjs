@@ -230,4 +230,13 @@ describe('Flow', () => {
     expect(result.find({ componentName: 'SimpleEdge' })).not.toBeNull()
     expect(result.find({ componentName: 'NodeWrapper' })).not.toBeNull()
   })
+
+  test('invokes props.onInit(store) so consumers can capture the store handle', () => {
+    // Asserts the Flow body contains a `props.onInit(...)` call site
+    // (gated by `if (props.onInit)` to satisfy the JSX-native compiler's
+    // expression-statement preservation rules). If a future refactor
+    // drops it, downstream consumers (e.g. piconic-ai/desk's DeskCanvas)
+    // silently lose imperative access to the store.
+    expect(source).toMatch(/props\.onInit\(store/)
+  })
 })
