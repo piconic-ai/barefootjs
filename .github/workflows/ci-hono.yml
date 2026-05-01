@@ -57,6 +57,14 @@ jobs:
         with:
           bun-version: latest
 
+      # Wrangler (invoked by Playwright's webServer below) shells out to
+      # Node and requires v22+. The runner's default Node 20 makes
+      # `bunx wrangler dev` exit immediately. Pin Node here.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Install dependencies
         run: bun install
 
