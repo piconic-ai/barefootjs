@@ -32,15 +32,13 @@ This is the boundary that produced #1127 / #1128 / #1132 / #1137.
 Each file documents the stage transition it pins, so a future regression can be
 diagnosed as "transition X → Y broken" rather than "issue #NNNN regressed".
 
-## Current state (P0 baseline, before staged-IR refactor)
+## Current state (post P3 (3/N))
 
 ```
-27 pass / 4 todo   (run: bun test src/__tests__/staged-ir/)
+68 pass / 0 fail   (run: bun test src/__tests__/staged-ir/)
 ```
 
-The 4 `test.todo` cases pin the residual stage violations that
-P3 (5/N) of the refactor must fix. They will be flipped to `test(...)`
-in the same PR that lands the recursive-visibility check:
+The 4 stage violations pinned by P0 are all fixed:
 
 1. `05/relative import used in init body survives compile` — when an
    init-local is inlined into template, the import the inlined call
@@ -54,7 +52,23 @@ in the same PR that lands the recursive-visibility check:
    end up as their initial values (`[]`) in template scope, losing
    reactivity.
 
-All four are the same root: rewrite passes and the import pass each
-hold a private model of "which scope does this name belong to". The
-staged-IR refactor unifies the model. When all four flip from `test.todo`
-to `test(...)` and pass, while all 27 stay green, P6 is complete.
+All four were the same root: rewrite passes and the import pass each
+held a private model of "which scope does this name belong to". The
+fix landed in P3 (3/N) via three small surgical changes:
+
+1. `buildCsrInlinableConstants` rejects values that reference props in
+   any form (`props` OR `props.X`), not just bare `props`. Stops
+   `useYjs(props.x)` and similar from re-inflating into template scope
+   after the analyzer marked the const unsafe.
+2. `needsClientJs` returns true when any local constant's value calls
+   into a non-declared name (i.e. depends on a module import). Such
+   components need a real init body so the const declaration survives
+   and `collectExternalImports` can pick up the dependency.
+3. `generateTemplateOnlyMount` now also calls `collectExternalImports`,
+   matching what `generateInitFunction` already did. Catches user
+   imports referenced from inlined template bodies.
+
+The recursive-visibility approach the design originally proposed is
+not needed at this layer — the simpler per-pass corrections close the
+4 cases without changing IR shape. Larger relocate()-driven refactors
+remain available for P4–P6.

@@ -14,7 +14,7 @@ import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate }
 import { PROPS_PARAM } from './utils'
 import { buildInlinableConstants, buildSignalAndMemoMaps, buildCsrInlinableConstants } from './emit-registration'
 import { nameForRegistryRef } from './component-scope'
-import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports } from './imports'
+import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map'
 
 export interface ClientJsResult {
@@ -152,7 +152,7 @@ function createContext(ir: ComponentIR, scope?: ScopeInfo): ClientJsContext {
 
 /** Return true if the context has any elements that require client-side hydration. */
 function needsClientJs(ctx: ClientJsContext): boolean {
-  return (
+  if (
     ctx.signals.length > 0 ||
     ctx.memos.length > 0 ||
     ctx.effects.length > 0 ||
@@ -168,7 +168,46 @@ function needsClientJs(ctx: ClientJsContext): boolean {
     ctx.clientOnlyElements.length > 0 ||
     ctx.clientOnlyConditionals.length > 0 ||
     ctx.providerSetups.length > 0
-  )
+  ) return true
+  // A constant whose value calls a module-imported helper requires init
+  // scope: emitting the call into a module-scope `template(_p) => ...`
+  // lambda runs the helper twice (once per render) and drops the import
+  // when the value isn't kept in init body too (#1138 / #1133).
+  if (hasUnsafeLocalConstant(ctx)) return true
+  return false
+}
+
+/**
+ * Detect locals whose value depends on a name that the template scope
+ * cannot reach safely. Used by `needsClientJs` to force the full init
+ * path so unsafe-resolved references stay rooted in init body and the
+ * collectExternalImports pass picks up the imports they pull in.
+ */
+function hasUnsafeLocalConstant(ctx: ClientJsContext): boolean {
+  // Names declared in this component (signals, memos, locals, params,
+  // and the props object). A free identifier outside this set is
+  // probably a module import or an unknown global — both are unsafe to
+  // duplicate into template scope without a declaration there.
+  const declared = new Set<string>()
+  for (const c of ctx.localConstants) declared.add(c.name)
+  for (const f of ctx.localFunctions) declared.add(f.name)
+  for (const s of ctx.signals) {
+    declared.add(s.getter)
+    if (s.setter) declared.add(s.setter)
+  }
+  for (const m of ctx.memos) declared.add(m.name)
+  for (const p of ctx.propsParams) declared.add(p.name)
+  if (ctx.propsObjectName) declared.add(ctx.propsObjectName)
+
+  for (const c of ctx.localConstants) {
+    if (!c.freeIdentifiers || c.freeIdentifiers.size === 0) continue
+    if (!c.value || c.containsArrow) continue
+    if (!/\b\w+\s*\(/.test(c.value)) continue // value has no call → safe
+    for (const id of c.freeIdentifiers) {
+      if (!declared.has(id)) return true
+    }
+  }
+  return false
 }
 
 /**
@@ -223,6 +262,14 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   const usedImports = detectUsedImports(generatedCode)
   const sortedImports = [...usedImports].sort()
   const importLine = `import { ${sortedImports.join(', ')} } from '${RUNTIME_MODULE}'`
+  // Preserve user-defined external imports referenced by the inlined
+  // template body. The full-init path (`generateInitFunction`) calls
+  // `collectExternalImports` for this; the template-only path needs the
+  // same — without it, a constant whose value got inlined into the
+  // template (e.g. `useYjs(_p.x)`) leaves the template referencing a
+  // bare module-import name that's no longer imported (#1138, #1133).
+  const externalImports = collectExternalImports(ir, generatedCode)
+  const allImports = [importLine, ...externalImports].join('\n')
 
-  return generatedCode.replace(IMPORT_PLACEHOLDER, importLine)
+  return generatedCode.replace(IMPORT_PLACEHOLDER, allImports)
 }

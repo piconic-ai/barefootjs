@@ -195,9 +195,13 @@ export function buildCsrInlinableConstants(
   propsObjectName?: string | null,
 ): Map<string, string> {
   const csrInlinableConstants = new Map(inlinableConstants)
-  // `props` not followed by `.` — the dotted form is caught by the
-  // template lambda's existing `propsObjectName.x → _p.x` rewrite.
-  const barePropsRe = propsObjectName ? new RegExp(`\\b${propsObjectName}\\b(?!\\.)`) : null
+  // Match any reference to the props object — bare `props` OR `props.X`.
+  // The previous lookahead form (`(?!\.)`) caught only the bare token,
+  // letting `useYjs(props.roomId, props.readOnly)` re-inline into the
+  // template — the call ran on every template re-render (wrong identity)
+  // AND the renderChild prop bag duplicated the bare reference into
+  // child scope (#1138 soak / #1137 follow-up).
+  const propsRe = propsObjectName ? new RegExp(`\\b${propsObjectName}\\b`) : null
   for (const constant of ctx.localConstants) {
     if (unsafeLocalNames.has(constant.name) && constant.value && !constant.containsArrow) {
       let value = constant.value.trim()
@@ -209,15 +213,13 @@ export function buildCsrInlinableConstants(
       for (const [memoName, computation] of memoMap) {
         value = value.replace(new RegExp(`(?<![-.])\\b${memoName}\\(\\)`, 'g'), `(${computation})`)
       }
-      // The legacy `\b\w+\(\)` filter rejected zero-arg getter calls only.
-      // Calls with arguments (e.g. `makeStore(props)`) used to pass through
-      // and inline into the template, leaking a bare `props` reference at
-      // module scope (#1137). Reject when a bare prop reference would
-      // survive into the template — keep zero-arg `()` rejection too so the
-      // existing `useContext(SomeContext)` re-promotion (no bare props) is
-      // preserved (#1100).
-      const hasBareProps = barePropsRe ? barePropsRe.test(value) : false
-      if (!hasBareProps && !/\b\w+\(\)/.test(value)) {
+      // Reject when the value depends on props in any form (bare `props`
+      // or `props.X` access) — those calls need init scope where _p is
+      // a parameter. Keep zero-arg `()` rejection too so
+      // `useContext(SomeContext)` (no props dep) is still re-promoted
+      // for #1100.
+      const hasPropsRef = propsRe ? propsRe.test(value) : false
+      if (!hasPropsRef && !/\b\w+\(\)/.test(value)) {
         csrInlinableConstants.set(constant.name, value)
       }
     }
