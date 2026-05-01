@@ -49,10 +49,11 @@ console.log(nodeTypes)
     await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'DeskCanvas-dir.js')).text()
-    // Imported name destructured from an IIFE at top level so the parent's
-    // bare `nodeTypes` reference resolves at hydration.
-    expect(result).toMatch(/const \{\s*nodeTypes\s*\}\s*=\s*\(\(\) =>/)
-    // Import line stripped (inlined into the IIFE).
+    // Imported name destructured from a top-level IIFE binding
+    // (`__bf_inline_N`), so the parent's bare `nodeTypes` reference resolves
+    // at hydration.
+    expect(result).toMatch(/const \{\s*nodeTypes\s*\}\s*=\s*__bf_inline_\d+/)
+    // Import line stripped (inlined into the top-level IIFE).
     expect(result).not.toContain("from './nodes'")
     // Body contents present (transpile may flip quote style).
     expect(result).toContain("nodeTypes")
@@ -85,7 +86,8 @@ console.log('hi')
     // Import line removed.
     expect(result).not.toContain("from './widget'")
     // No IIFE wrap (server-component path strips without inlining).
-    expect(result).not.toMatch(/const \{\s*Widget\s*\}\s*=\s*\(\(\) =>/)
+    expect(result).not.toMatch(/const \{\s*Widget\s*\}\s*=/)
+    expect(result).not.toMatch(/__bf_inline_/)
     // Body unchanged otherwise.
     expect(result).toContain("console.log('hi')")
   })
@@ -121,7 +123,7 @@ console.log(SOURCE)
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-flat-wins.js')).text()
     expect(result).toMatch(/['"]flat['"]/)
     expect(result).not.toMatch(/['"]directory['"]/)
-    expect(result).toMatch(/const \{\s*SOURCE\s*\}\s*=\s*\(\(\) =>/)
+    expect(result).toMatch(/const \{\s*SOURCE\s*\}\s*=\s*__bf_inline_\d+/)
   })
 
   test('./foo resolves to neither flat nor directory — strip + warn', async () => {
