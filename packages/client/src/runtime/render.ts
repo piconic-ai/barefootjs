@@ -10,6 +10,7 @@ import { BF_SCOPE } from '@barefootjs/shared'
 import { hydratedScopes } from './hydration-state'
 import { getComponentInit } from './registry'
 import { getTemplate, type TemplateFn } from './template'
+import { enterTemplateScope, exitTemplateScope } from './context'
 import type { ComponentDef, InitFn } from './types'
 
 /**
@@ -69,7 +70,17 @@ export function render(
     }
   }
 
-  const html = template(props).trim()
+  // Mark template scope so useContext gracefully handles missing providers
+  // (#1156). The parent's init has not run yet, so any `provideContext`
+  // calls there are not visible — init's createEffect repaints the
+  // dependent slots after init completes.
+  enterTemplateScope()
+  let html: string
+  try {
+    html = template(props).trim()
+  } finally {
+    exitTemplateScope()
+  }
 
   const tpl = document.createElement('template')
   tpl.innerHTML = html

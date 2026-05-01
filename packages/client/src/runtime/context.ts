@@ -34,6 +34,28 @@ export function setCurrentScope(scope: Element | null): Element | null {
 }
 
 /**
+ * Template-scope counter. Incremented on entry to any template evaluation
+ * (render, renderChild, insert branch templates), decremented on exit.
+ *
+ * Templates may run BEFORE the parent's init has called `provideContext`:
+ * the compiler inlines `useContext(Ctx)`-derived expressions into the
+ * template literal, but `provideContext(Ctx, ...)` lives in init which
+ * runs after the template returns its HTML. While `inTemplateScope > 0`,
+ * a `useContext` call with no provider and no default returns `undefined`
+ * silently instead of throwing — init's `createEffect` repaints with the
+ * correct value once the provider is set up. See piconic-ai/barefootjs#1156.
+ */
+let inTemplateScope = 0
+
+export function enterTemplateScope(): void {
+  inTemplateScope++
+}
+
+export function exitTemplateScope(): void {
+  if (inTemplateScope > 0) inTemplateScope--
+}
+
+/**
  * Read the current value of a context.
  *
  * Walks up the DOM tree from the current scope element to find
@@ -69,6 +91,11 @@ export function useContext<T>(context: Context<T>): T {
   }
   if (context._hasDefault) {
     return context.defaultValue as T
+  }
+  if (inTemplateScope > 0) {
+    // Template eval ran before init's provideContext call.
+    // Return undefined; init's createEffect repaints with the real value.
+    return undefined as T
   }
   throw new Error('useContext: no provider found and no default value')
 }

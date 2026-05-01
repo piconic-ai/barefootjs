@@ -9,7 +9,7 @@ import { getTemplate } from './template'
 import { getComponentInit } from './registry'
 import { hydratedScopes } from './hydration-state'
 import { untrack } from '@barefootjs/client/reactive'
-import { setCurrentScope } from './context'
+import { setCurrentScope, enterTemplateScope, exitTemplateScope } from './context'
 import { BF_SCOPE, BF_KEY } from '@barefootjs/shared'
 import type { ComponentDef } from './types'
 
@@ -110,7 +110,15 @@ export function createComponent(
   })
 
   // 4. Generate HTML from props
-  const html = templateFn(unwrappedProps)
+  // Mark template scope so useContext returns undefined gracefully when a
+  // provider has not been set up yet (#1156).
+  enterTemplateScope()
+  let html: string
+  try {
+    html = templateFn(unwrappedProps)
+  } finally {
+    exitTemplateScope()
+  }
 
   // 5. Create DOM element
   const element = parseHTML(html.trim()).firstChild as HTMLElement
@@ -235,7 +243,16 @@ export function renderChild(
     return `<div bf-s="~${scopePrefix}${suffix}"${keyAttr}></div>`
   }
 
-  const html = templateFn(props).trim()
+  // Template eval may run before the parent's init has called provideContext
+  // (#1156). Mark template scope so useContext returns undefined gracefully
+  // for missing providers; init's createEffect repaints once the provider is set.
+  enterTemplateScope()
+  let html: string
+  try {
+    html = templateFn(props).trim()
+  } finally {
+    exitTemplateScope()
+  }
   // Inject bf-s scope attribute with ~ child prefix into the first element tag.
   // The ~ prefix marks this as a child component so hydrate()'s requestAnimationFrame
   // re-check skips it (the parent initializes it via initChild instead).
@@ -402,9 +419,15 @@ function createComponentFromDef(
     throw new Error('[BarefootJS] createComponent with ComponentDef requires a template function')
   }
 
-  // Generate HTML from template
+  // Generate HTML from template (mark template scope, see #1156).
   const unwrappedProps = unwrapPropsForTemplate(props)
-  const html = def.template(unwrappedProps)
+  enterTemplateScope()
+  let html: string
+  try {
+    html = def.template(unwrappedProps)
+  } finally {
+    exitTemplateScope()
+  }
 
   // Create DOM element
   const element = parseHTML(html.trim()).firstChild as HTMLElement

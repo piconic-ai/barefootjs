@@ -9,6 +9,7 @@
 import { createEffect } from '@barefootjs/client/reactive'
 import { find } from './query'
 import { setParentScopeId, parseHTML } from './component'
+import { enterTemplateScope, exitTemplateScope } from './context'
 import { BF_COND, BF_SCOPE, BF_CHILD_PREFIX } from '@barefootjs/shared'
 
 /**
@@ -64,21 +65,27 @@ export function insert(
   // Both branches need to be checked because SSR may render either branch.
   // Use try/catch because template evaluation may access nullable expressions
   // (e.g., selectedMail().subject when the branch is for the non-null case).
+  // Mark template scope so useContext returns undefined gracefully when a
+  // provider is not yet set up (#1156).
   let isFragmentCond = false
+  enterTemplateScope()
   try {
-    const sampleTrue = whenTrue.template()
-    isFragmentCond = sampleTrue.includes(`<!--bf-cond-start:${id}-->`)
-  } catch (err) {
-    // Template may throw TypeError for nullable access (e.g., selectedMail().subject)
-    if (!(err instanceof TypeError)) throw err
-  }
-  if (!isFragmentCond) {
     try {
-      const sampleFalse = whenFalse.template()
-      isFragmentCond = sampleFalse.includes(`<!--bf-cond-start:${id}-->`)
+      const sampleTrue = whenTrue.template()
+      isFragmentCond = sampleTrue.includes(`<!--bf-cond-start:${id}-->`)
     } catch (err) {
       if (!(err instanceof TypeError)) throw err
     }
+    if (!isFragmentCond) {
+      try {
+        const sampleFalse = whenFalse.template()
+        isFragmentCond = sampleFalse.includes(`<!--bf-cond-start:${id}-->`)
+      } catch (err) {
+        if (!(err instanceof TypeError)) throw err
+      }
+    }
+  } finally {
+    exitTemplateScope()
   }
 
   let prevCond: boolean | undefined
@@ -110,8 +117,12 @@ export function insert(
       // If the existing element doesn't match the expected branch,
       // we need to swap the DOM first (e.g., SSR rendered whenFalse but now we need whenTrue)
       setParentScopeId(parentScopeId)
+      enterTemplateScope()
       let html: string
-      try { html = branch.template() } finally { setParentScopeId(null) }
+      try { html = branch.template() } finally {
+        exitTemplateScope()
+        setParentScopeId(null)
+      }
       const existingEl = find(scope, `[${BF_COND}="${id}"]`)
       if (existingEl) {
         // Compare full opening tag signatures to detect branch mismatch.
@@ -159,8 +170,12 @@ export function insert(
 
     // Branch changed: swap DOM and bind events
     setParentScopeId(parentScopeId)
+    enterTemplateScope()
     let html: string
-    try { html = branch.template() } finally { setParentScopeId(null) }
+    try { html = branch.template() } finally {
+      exitTemplateScope()
+      setParentScopeId(null)
+    }
     if (isFragmentCond) {
       updateFragmentConditional(scope, id, html)
     } else {
