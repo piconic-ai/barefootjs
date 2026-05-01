@@ -8,6 +8,11 @@
 // TypeScript-AST-based parsing handles (multi-line / trailing-comma /
 // commented imports & exports, type-only decls, string literals containing
 // `import` / `export`).
+//
+// Updated for #1153: each unique inlined `.ts` module now emits exactly
+// one IIFE wrap at the parent bundle's top level
+// (`const __bf_inline_N = (() => { … })()`); each consumer's import line
+// (parent's or transitive's) becomes `const { … } = __bf_inline_N`.
 
 import { describe, test, expect, beforeEach, afterAll } from 'bun:test'
 import { resolveRelativeImports } from '../lib/resolve-imports'
@@ -75,9 +80,13 @@ initZoomBar(document.body)
     // a Script (top-level `const BAR_STYLE` twice would be a SyntaxError).
     expect(() => new Function(result.replace(/document\./g, 'undefined?.'))).not.toThrow()
     // Imported names should be destructured at top level so the parent's
-    // bare references resolve.
-    expect(result).toMatch(/const \{\s*initCanvasActions\s*\}\s*=\s*\(\(\) =>/)
-    expect(result).toMatch(/const \{\s*initZoomBar\s*\}\s*=\s*\(\(\) =>/)
+    // bare references resolve. Each module emits its own top-level IIFE
+    // (`__bf_inline_N`); the parent's import becomes a destructure pulling
+    // from that identifier.
+    expect(result).toMatch(/const \{\s*initCanvasActions\s*\}\s*=\s*__bf_inline_\d+/)
+    expect(result).toMatch(/const \{\s*initZoomBar\s*\}\s*=\s*__bf_inline_\d+/)
+    // Each module's IIFE wrap is at top level.
+    expect(countMatches(result, /const __bf_inline_\d+\s*=\s*\(\(\) =>/g)).toBe(2)
     // Both imports stripped.
     expect(result).not.toContain("from './CanvasActions'")
     expect(result).not.toContain("from './ZoomBar'")
@@ -147,12 +156,14 @@ console.log(middleExport)
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-trans.js')).text()
     // Both INNER_PRIVATE decls exist inside their respective IIFE bodies.
     expect(countMatches(result, /\bconst INNER_PRIVATE\b/g)).toBe(2)
-    // Parent destructures only `middleExport`.
-    expect(result).toMatch(/const \{\s*middleExport\s*\}\s*=\s*\(\(\) =>/)
-    // Inner IIFE surfaces only `innerExport` to the middle module's scope.
+    // Parent destructures only `middleExport` from the top-level binding.
+    expect(result).toMatch(/const \{\s*middleExport\s*\}\s*=\s*__bf_inline_\d+/)
+    // Inner IIFE surfaces only `innerExport` to its top-level binding.
     expect(result).toMatch(/return \{\s*innerExport\s*\}/)
     // Outer IIFE surfaces only `middleExport`.
     expect(result).toMatch(/return \{\s*middleExport\s*\}/)
+    // Two top-level IIFEs total (one per unique module: inner + middle).
+    expect(countMatches(result, /const __bf_inline_\d+\s*=\s*\(\(\) =>/g)).toBe(2)
     // Bundle parses as a Script — would throw if both INNER_PRIVATE were
     // at top level (the regression we're guarding against).
     expect(() => new Function(result)).not.toThrow()
@@ -176,8 +187,9 @@ console.log(renamed())
     await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-a.js')).text()
-    // Destructure remaps origName -> renamed at the splice site.
-    expect(result).toMatch(/const \{\s*origName:\s*renamed\s*\}\s*=\s*\(\(\) =>/)
+    // Destructure remaps origName -> renamed at the splice site (pulls
+    // from the per-module top-level binding emitted at top of bundle).
+    expect(result).toMatch(/const \{\s*origName:\s*renamed\s*\}\s*=\s*__bf_inline_\d+/)
     expect(result).toMatch(/return \{\s*origName\s*\}/)
   })
 
@@ -202,8 +214,9 @@ console.log(ns.a, ns.b(), new ns.C())
     await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-ns.js')).text()
-    // ns binding is set up at the splice site.
-    expect(result).toMatch(/const ns\s*=\s*\(\(\) =>/)
+    // ns binding is set up at the splice site (aliased to the module's
+    // top-level IIFE result).
+    expect(result).toMatch(/const ns\s*=\s*__bf_inline_\d+/)
     // All top-level exported names appear in the return object.
     expect(result).toMatch(/return \{[^}]*\ba\b[^}]*\}/)
     expect(result).toMatch(/return \{[^}]*\bb\b[^}]*\}/)
@@ -377,7 +390,7 @@ console.log(valueA, valueB)
     await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-cx.js')).text()
-    expect(result).toMatch(/const \{\s*valueA,\s*valueB\s*\}\s*=\s*\(\(\) =>/)
+    expect(result).toMatch(/const \{\s*valueA,\s*valueB\s*\}\s*=\s*__bf_inline_\d+/)
     expect(result).not.toMatch(/^\s*export\s/m)
     expect(() => new Function(result)).not.toThrow()
   })
@@ -406,7 +419,7 @@ console.log(pickColor('red'))
     await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-to.js')).text()
-    expect(result).toMatch(/const \{\s*pickColor\s*\}\s*=\s*\(\(\) =>/)
+    expect(result).toMatch(/const \{\s*pickColor\s*\}\s*=\s*__bf_inline_\d+/)
     expect(result).not.toMatch(/^\s*import\s/m)
     expect(result).not.toMatch(/^\s*export\s/m)
     expect(() => new Function(result)).not.toThrow()
@@ -431,7 +444,7 @@ console.log(renamedA, bbb)
     await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-wd.js')).text()
-    expect(result).toMatch(/const \{\s*aaa:\s*renamedA,\s*bbb\s*\}\s*=\s*\(\(\) =>/)
+    expect(result).toMatch(/const \{\s*aaa:\s*renamedA,\s*bbb\s*\}\s*=\s*__bf_inline_\d+/)
     expect(result).toMatch(/return \{\s*aaa,\s*bbb\s*\}/)
     expect(() => new Function(result)).not.toThrow()
   })
@@ -601,8 +614,9 @@ console.log(mid)
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-bp5.js')).text()
     // No `import './…'` line should sneak back to the top.
     expect(result).not.toMatch(/^\s*import\s+.*\sfrom\s+['"]\.\.?\//m)
-    // The relative import was IIFE-replaced, so the binding is destructured.
-    expect(result).toMatch(/const \{\s*leaf\s*\}\s*=\s*\(\(\) =>/)
-    expect(result).toMatch(/const \{\s*mid\s*\}\s*=\s*\(\(\) =>/)
+    // The relative imports were replaced with destructures pulling from
+    // each module's top-level IIFE binding (`__bf_inline_N`).
+    expect(result).toMatch(/const \{\s*leaf\s*\}\s*=\s*__bf_inline_\d+/)
+    expect(result).toMatch(/const \{\s*mid\s*\}\s*=\s*__bf_inline_\d+/)
   })
 })

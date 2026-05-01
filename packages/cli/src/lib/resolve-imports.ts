@@ -249,66 +249,80 @@ function stripImportsAndExports(body: string): { body: string; hoistedImports: s
 }
 
 /**
- * Wrap an inlined module's body in an IIFE that re-exports only the names
- * the parent bundle actually references, then destructure those at the
- * splice site. This isolates module-private decls (e.g. two siblings each
- * with their own `const BAR_STYLE`) so they cannot collide in the parent's
- * top-level scope.
+ * Build the destructure clause that binds an `import` statement's locals
+ * to a per-module top-level binding (`__bf_inline_N`). Unlike the legacy
+ * inline-IIFE form, this assumes the IIFE itself is emitted ONCE at the
+ * parent bundle's top level (see #1153) and the consumer just pulls the
+ * names it needs out of the resulting object.
+ */
+function buildConsumerBinding(shape: ImportShape | null, topLevelId: string): string {
+  if (!shape) {
+    // Side-effect import: nothing to bind, but the IIFE body still ran at
+    // top level when `topLevelId` was declared.
+    return ''
+  }
+  if (shape.namespace) {
+    return `const ${shape.namespace} = ${topLevelId};`
+  }
+  if (shape.named.length === 0) {
+    return ''
+  }
+  const entries = shape.named.map(({ local, imported }) =>
+    local === imported ? local : `${imported}: ${local}`,
+  )
+  return `const { ${entries.join(', ')} } = ${topLevelId};`
+}
+
+/**
+ * Build the top-level IIFE wrap for an inlined module. The IIFE returns
+ * the union of every name any consumer (parent or transitive) needs from
+ * the module: explicit named imports plus, if any consumer used `* as ns`,
+ * every top-level value-exported name. Module-private decls stay scoped
+ * inside the IIFE arrow body — they cannot collide with parent or
+ * sibling-IIFE decls.
  *
- *   const { foo, bar } = (() => {
- *     /* inlined body, with `export` keywords stripped *\/
- *     return { foo, bar }
+ *   const __bf_inline_N = (() => {
+ *     /* body, with `export` modifiers stripped and relative imports replaced
+ *        by destructures pulling from other __bf_inline_M variables *\/
+ *     return { foo, bar, ...allExportsIfNamespace }
  *   })()
  *
- * For `import * as ns from './x'`, the IIFE returns every top-level
- * exported name. For side-effect-only `import './x'`, the IIFE has no
- * destructure on the outside and no return, but the body still runs.
- *
- * Default exports are out of scope: `stripImportsAndExports` reduces
- * `export default <expr>` to a bare expression, which is fine inside the
- * IIFE.
- *
- * `originalSource` is the pre-transpile TS source of the inlined module,
- * used by `collectExportedNames` so type-only exports are correctly
- * excluded from the namespace IIFE return.
+ * `originalSource` is the pre-transpile TS source, used by
+ * `collectExportedNames` to enumerate all value exports for the namespace
+ * case (so type-only exports stay excluded).
  */
-function wrapInIIFE(body: string, shape: ImportShape | null, originalSource: string): { wrapped: string; hoistedImports: string[] } {
+function buildTopLevelIIFE(
+  topLevelId: string,
+  body: string,
+  shapesNeeded: ImportShape[],
+  originalSource: string,
+): { wrapped: string; hoistedImports: string[] } {
   const { body: stripped, hoistedImports } = stripImportsAndExports(body)
 
-  if (!shape) {
-    // Side-effect import: no bound names. Still scope-isolate.
-    return { wrapped: `;(() => {\n${stripped}\n})();`, hoistedImports }
+  // Union of names any consumer needs from this module. If any consumer
+  // wants the namespace shape, we have to surface every value export.
+  const wantsNamespace = shapesNeeded.some(s => !!s.namespace)
+  const namesNeeded = new Set<string>()
+  if (wantsNamespace) {
+    for (const n of collectExportedNames(originalSource)) namesNeeded.add(n)
+  }
+  for (const shape of shapesNeeded) {
+    for (const { imported } of shape.named) namesNeeded.add(imported)
   }
 
-  const returnEntries: string[] = []
-  const destructureEntries: string[] = []
-
-  if (shape.namespace) {
-    // Build a single `const ns = (() => { ...; return { a, b, ... } })()`.
-    // Parse the original TS source so type-only exports are excluded.
-    const exported = collectExportedNames(originalSource)
-    const ret = exported.length ? `{ ${exported.join(', ')} }` : '{}'
-    return { wrapped: `const ${shape.namespace} = (() => {\n${stripped}\nreturn ${ret};\n})();`, hoistedImports }
+  if (namesNeeded.size === 0) {
+    // No bound names to surface (side-effect-only consumer). Run the body
+    // for its effects and bind the top-level id to an empty object so any
+    // dedup destructure later still parses.
+    return {
+      wrapped: `const ${topLevelId} = (() => {\n${stripped}\nreturn {};\n})();`,
+      hoistedImports,
+    }
   }
 
-  for (const { local, imported } of shape.named) {
-    returnEntries.push(imported)
-    destructureEntries.push(local === imported ? local : `${imported}: ${local}`)
-  }
-  if (shape.default) {
-    // `import D from './x'` — surface the default binding via the IIFE.
-    // `stripImportsAndExports` reduces `export default <expr>` to a bare
-    // expression statement, which is then dead. Out of scope for this fix;
-    // covered by the issue's "leave defaults out of scope" note.
-  }
-
-  if (returnEntries.length === 0) {
-    // No bound names we know how to surface. Still IIFE-scope the body.
-    return { wrapped: `;(() => {\n${stripped}\n})();`, hoistedImports }
-  }
-
+  const ret = `{ ${[...namesNeeded].join(', ')} }`
   return {
-    wrapped: `const { ${destructureEntries.join(', ')} } = (() => {\n${stripped}\nreturn { ${returnEntries.join(', ')} };\n})();`,
+    wrapped: `const ${topLevelId} = (() => {\n${stripped}\nreturn ${ret};\n})();`,
     hoistedImports,
   }
 }
@@ -378,22 +392,43 @@ async function resolveSourceFile(importPath: string, searchDirs: string[]): Prom
 }
 
 /**
- * Process a single file's relative imports, mutating `content` in place.
- * Recurses into transitively-imported `.ts` modules so that, e.g.,
- * `client.tsx → nav-data.ts → component-registry.ts` all end up inlined
- * in the right declaration order.
+ * One inlined module collected during the graph walk. Becomes one
+ * top-level IIFE in the emitted bundle.
+ */
+interface InlinedModule {
+  path: string                  // resolved absolute source path
+  topLevelId: string            // `__bf_inline_N` — stable per-module identifier
+  transpiledBody: string        // transpile output, before its own imports are processed
+  originalSource: string        // pre-transpile TS source (for namespace export collection)
+  searchDirs: string[]          // search dirs anchored at this module's directory
+  consumerShapes: ImportShape[] // every consumer's import shape (parent + transitive)
+  imports: Set<string>          // resolved paths of `.ts` modules this module imports
+}
+
+/**
+ * Walk relative imports in `content` and collect every transitively-reachable
+ * `.ts` module. Replaces each direct relative import line in `content` with
+ * a destructure pulling from a per-module top-level identifier — the IIFE
+ * itself is emitted ONCE at the parent bundle's top level after the walk
+ * finishes, regardless of how deep the original import was. piconic-ai/barefootjs#1153.
  *
- * `hoistedAcc` is a mutable accumulator shared with all recursive calls:
+ * Stripping vs. emitting the destructure: a side-effect-only import
+ * (`import './x'`) leaves the body in place via the top-level IIFE but emits
+ * no consumer-side binding. Named/namespace imports emit a destructure that
+ * resolves at the consumer's site (parent body or another module's IIFE
+ * arrow body) via closure to the top-level binding.
+ *
+ * `hoistedAcc` is a mutable accumulator shared with every recursive call:
  * bare-package imports stripped from any inlined module body bubble up
  * here so the outer entry point can prepend them, deduped, to the parent
  * bundle's top level. piconic-ai/barefootjs#1148.
  */
-async function inlineRelativeImports(
+async function walkAndCollect(
   content: string,
   searchDirs: string[],
-  inlinedPaths: Set<string>,
+  modules: Map<string, InlinedModule>,
+  visiting: Set<string>,
   loggingPath: string,
-  hoistedAcc: string[],
 ): Promise<string> {
   const re = new RegExp(RELATIVE_IMPORT_RE.source, RELATIVE_IMPORT_RE.flags)
   const matches = [...content.matchAll(re)]
@@ -416,53 +451,151 @@ async function inlineRelativeImports(
       continue
     }
 
-    if (inlinedPaths.has(result.path)) {
-      content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
-      continue
-    }
-
     if (result.path.endsWith('.tsx')) {
       content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
       console.log(`Stripped server component import: ${importPath} from ${loggingPath}`)
       continue
     }
 
-    inlinedPaths.add(result.path)
-    const sourceContent = await readText(result.path)
-    let jsCode = transpile(sourceContent, { loader: 'ts' })
-
-    // Recursively resolve relative imports inside the inlined module before
-    // stripping its import lines. Resolution is anchored to the source file's
-    // own directory so transitive paths (e.g. './component-registry') resolve
-    // correctly regardless of where the parent client JS lives.
-    //
-    // The inner inline replaces each transitive import with an IIFE-wrapped
-    // splice (see wrapInIIFE), so the inner module's private decls stay
-    // hidden from the outer module's scope. The outer wrapInIIFE call below
-    // then hides the OUTER module's privates from the parent. Composition:
-    // privates only ever leak one frame outward, never to top level.
-    jsCode = await inlineRelativeImports(
-      jsCode,
-      [dirname(result.path), ...searchDirs.slice(1)],
-      inlinedPaths,
-      loggingPath,
-      hoistedAcc,
-    )
-
-    // Wrap the inlined body in an IIFE that re-exports only the names the
-    // parent imported (see wrapInIIFE for shape rules). This scopes
-    // module-private decls so two siblings declaring the same identifier
-    // (e.g. `const BAR_STYLE`) don't collide in the parent's top-level
-    // scope. piconic-ai/barefootjs#1141.
     const shape = parseImportShape(fullMatch)
-    const { wrapped, hoistedImports } = wrapInIIFE(jsCode, shape, sourceContent)
-    for (const h of hoistedImports) hoistedAcc.push(h)
+    let mod = modules.get(result.path)
+    if (!mod) {
+      // Cycle guard: a `.ts` module that ends up in its own descendants
+      // already broke TS itself. We can't safely topo-sort circular IIFEs.
+      if (visiting.has(result.path)) {
+        console.warn(`Skipping circular relative import: ${importPath} from ${loggingPath}`)
+        content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
+        continue
+      }
+      visiting.add(result.path)
+      const sourceContent = await readText(result.path)
+      const jsCode = transpile(sourceContent, { loader: 'ts' })
+      mod = {
+        path: result.path,
+        topLevelId: `__bf_inline_${modules.size}`,
+        transpiledBody: jsCode,
+        originalSource: sourceContent,
+        searchDirs: [dirname(result.path), ...searchDirs.slice(1)],
+        consumerShapes: [],
+        imports: new Set(),
+      }
+      modules.set(result.path, mod)
+      // Recurse so transitive consumers are recorded against the inner
+      // modules' shapesNeeded BEFORE we build IIFE returns.
+      const replacedBody = await walkAndCollect(
+        mod.transpiledBody,
+        mod.searchDirs,
+        modules,
+        visiting,
+        loggingPath,
+      )
+      mod.transpiledBody = replacedBody
+      visiting.delete(result.path)
+      console.log(`Inlined: ${importPath} into ${loggingPath}`)
+    }
 
-    content = content.replace(fullMatch, wrapped)
-    console.log(`Inlined: ${importPath} into ${loggingPath}`)
+    if (shape) mod.consumerShapes.push(shape)
+    else mod.consumerShapes.push({ named: [] }) // side-effect import counts too
+
+    // Replace the consumer's import line with a destructure pulling from
+    // the per-module top-level identifier. Side-effect imports just drop
+    // the line — the IIFE has already executed at top level.
+    const binding = buildConsumerBinding(shape, mod.topLevelId)
+    if (binding) {
+      content = content.replace(fullMatch, binding)
+    } else {
+      content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
+    }
   }
 
   return content
+}
+
+/**
+ * Topological order over the collected import graph. A module that imports
+ * another must appear AFTER its dependency in the emitted top-level IIFE
+ * stream so the dependency's `__bf_inline_N` binding exists when the
+ * dependent's IIFE arrow body evaluates. Post-order DFS, deduped by path.
+ */
+function topoSort(modules: Map<string, InlinedModule>): InlinedModule[] {
+  const visited = new Set<string>()
+  const order: InlinedModule[] = []
+  function visit(path: string): void {
+    if (visited.has(path)) return
+    visited.add(path)
+    const mod = modules.get(path)
+    if (!mod) return
+    for (const dep of mod.imports) visit(dep)
+    order.push(mod)
+  }
+  for (const path of modules.keys()) visit(path)
+  return order
+}
+
+/**
+ * Process a single file's relative imports. Two-pass:
+ *   1. `walkAndCollect` walks the entire transitive graph, collecting one
+ *      `InlinedModule` per unique path and rewriting consumer-side import
+ *      lines (parent's AND transitive's) to destructures pulling from a
+ *      per-module top-level identifier.
+ *   2. After the walk, build each module's IIFE wrap (one per unique path,
+ *      in topological order) and prepend them to the parent content. Each
+ *      IIFE's return surfaces the union of every name any consumer needs.
+ *
+ * This guarantees every inlined `.ts` module appears as exactly one
+ * top-level IIFE in the parent bundle, regardless of which sibling first
+ * imported it. piconic-ai/barefootjs#1153.
+ */
+async function inlineRelativeImports(
+  content: string,
+  searchDirs: string[],
+  loggingPath: string,
+  hoistedAcc: string[],
+): Promise<string> {
+  const modules = new Map<string, InlinedModule>()
+  const visiting = new Set<string>()
+  let parentContent = await walkAndCollect(content, searchDirs, modules, visiting, loggingPath)
+
+  if (modules.size === 0) return parentContent
+
+  // Now resolve each module's transitive import edges — the body has
+  // already been rewritten with destructures, so the only paths left to
+  // sort by are the modules that the body's destructures reference. We
+  // walked recursively, so every `walkAndCollect` call inside a module's
+  // body has populated `modules` with that module's deps. We tag those
+  // edges by re-walking the body for `__bf_inline_N` references? No —
+  // simpler: a module's `imports` set is the set of paths it directly
+  // references. Track that during the walk via `consumerShapes` in
+  // reverse — every consumer that pushed a shape onto module M's list
+  // had its own path; we just didn't record the edge there. Instead,
+  // populate `imports` from the destructure references textually: each
+  // `__bf_inline_N` token in the body identifies a dependency.
+  for (const mod of modules.values()) {
+    const tokenRe = /__bf_inline_(\d+)\b/g
+    for (const m of mod.transpiledBody.matchAll(tokenRe)) {
+      const id = `__bf_inline_${m[1]}`
+      for (const other of modules.values()) {
+        if (other.topLevelId === id && other.path !== mod.path) {
+          mod.imports.add(other.path)
+        }
+      }
+    }
+  }
+
+  const ordered = topoSort(modules)
+  const iifes: string[] = []
+  for (const mod of ordered) {
+    const { wrapped, hoistedImports } = buildTopLevelIIFE(
+      mod.topLevelId,
+      mod.transpiledBody,
+      mod.consumerShapes,
+      mod.originalSource,
+    )
+    iifes.push(wrapped)
+    for (const h of hoistedImports) hoistedAcc.push(h)
+  }
+
+  return iifes.join('\n') + '\n' + parentContent
 }
 
 /**
@@ -487,12 +620,10 @@ export async function resolveRelativeImports(options: ResolveRelativeImportsOpti
     }
 
     const perEntryDirs = sourceDirsByManifestKey[name] ?? []
-    const inlinedPaths = new Set<string>()
     const hoistedAcc: string[] = []
     let next = await inlineRelativeImports(
       content,
       [dirname(filePath), ...perEntryDirs, ...sourceDirs],
-      inlinedPaths,
       entry.clientJs,
       hoistedAcc,
     )
