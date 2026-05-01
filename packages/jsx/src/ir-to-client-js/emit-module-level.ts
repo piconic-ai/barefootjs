@@ -53,7 +53,11 @@ export function emitModuleLevelDeclarations(
   for (const fn of moduleLevelFunctions) {
     const paramStr = fn.params.map(p => p.name).join(', ')
     const asyncKw = fn.isAsync ? 'async ' : ''
-    lines.push(`var ${fn.name} = ${fn.name} ?? ${asyncKw}function(${paramStr}) ${fn.body}`)
+    // Generator functions (`function*`) cannot be lowered to an arrow
+    // form (arrows can't yield) — preserve the `*` here so emit reads
+    // the modifier from IR rather than re-deriving from `fn.body` text.
+    const genStar = fn.isGenerator ? '*' : ''
+    lines.push(`var ${fn.name} = ${fn.name} ?? ${asyncKw}function${genStar}(${paramStr}) ${fn.body}`)
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''
 }

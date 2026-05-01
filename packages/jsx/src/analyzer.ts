@@ -1197,8 +1197,9 @@ function collectOnMount(node: ts.CallExpression, ctx: AnalyzerContext): void {
  * previously threw these statements away. See #930 (bug-2).
  */
 function collectInitStatement(node: ts.Statement, ctx: AnalyzerContext): void {
+  const body = ctx.getJS(node)
   ctx.initStatements.push({
-    body: ctx.getJS(node),
+    body,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     freeIdentifiers: extractFreeIdentifiersFromNode(node),
     assignedIdentifiers: extractAssignedIdentifiersFromNode(node),
@@ -1206,7 +1207,32 @@ function collectInitStatement(node: ts.Statement, ctx: AnalyzerContext): void {
     // belong to `init` scope. Phase is conservatively `hydrate` (run-once
     // at hydration). relocate() can refine this when consuming the field.
     origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
+    // ASI hazard: a statement starting with one of `(`, `[`, `\``, `+`,
+    // `-`, `/` can be fused with the previous expression by the parser.
+    // Tracking this in IR so emit can prepend `;` is the structural
+    // closure for the leading-`;` failure mode documented in #1138.
+    needsLeadingSemi: leadsWithAsiHazard(body),
   })
+}
+
+/**
+ * Detect characters that — at the start of a JS statement — invite
+ * automatic-semicolon-insertion fusion with the previous expression.
+ * The parser interprets:
+ *   - `(` / `[` as call / index continuation
+ *   - `` ` `` as a tagged template
+ *   - `+` / `-` as binary operator continuation
+ *   - `/` as division (or a regex follow-up)
+ * Whitespace at the start is ignored when scanning for the first
+ * non-space character.
+ */
+function leadsWithAsiHazard(body: string): boolean {
+  for (let i = 0; i < body.length; i++) {
+    const c = body[i]
+    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') continue
+    return c === '(' || c === '[' || c === '`' || c === '+' || c === '-' || c === '/'
+  }
+  return false
 }
 
 /**
