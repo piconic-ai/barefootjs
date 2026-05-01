@@ -1,6 +1,7 @@
 // Resolve and inline relative imports in compiled client JS files.
 
 import { dirname, resolve } from 'node:path'
+import ts from 'typescript'
 import { RELATIVE_IMPORT_RE } from './patterns'
 import { fileExists, readText, transpile, writeText } from './runtime'
 
@@ -26,75 +27,204 @@ interface ImportShape {
 }
 
 /**
- * Parse an `import ... from '...'` statement (the full match returned by
- * RELATIVE_IMPORT_RE) into its bound-name shape. Returns `null` if the
- * statement is a side-effect-only import (`import './x'`).
+ * Parse an `import ... from '...'` statement into its bound-name shape via
+ * the TypeScript compiler API. Returns `null` if the statement is a
+ * side-effect-only import (`import './x'`) or the input is not a single
+ * import declaration.
+ *
+ * Handles every shape the regex predecessor missed: multi-line clauses,
+ * trailing commas, comments inside the clause, and `import type`.
  */
 function parseImportShape(stmt: string): ImportShape | null {
-  // Strip leading `import` and trailing `from '...'`.
-  const m = stmt.match(/^import\s+(.+?)\s+from\s+['"][^'"]+['"]\s*;?$/)
-  if (!m) return null // side-effect import: `import './x'`
-  const clause = m[1].trim()
+  const sourceFile = ts.createSourceFile(
+    'import.ts',
+    stmt,
+    ts.ScriptTarget.Latest,
+    /*setParents*/ false,
+    ts.ScriptKind.TS,
+  )
+  const decl = sourceFile.statements.find(ts.isImportDeclaration)
+  if (!decl || !decl.importClause) return null // side-effect import: `import './x'`
+
+  const clause = decl.importClause
   const shape: ImportShape = { named: [] }
 
-  // Split optional default + named/namespace: `Foo, { a, b }` or `Foo, * as ns`.
-  let rest = clause
-  const defaultMatch = rest.match(/^([A-Za-z_$][\w$]*)\s*(?:,\s*(.+))?$/)
-  if (defaultMatch && !rest.startsWith('{') && !rest.startsWith('*')) {
-    shape.default = defaultMatch[1]
-    rest = defaultMatch[2]?.trim() ?? ''
+  if (clause.name) {
+    // `import D from '...'` or `import D, { ... } from '...'`
+    shape.default = clause.name.text
   }
 
-  if (rest.startsWith('*')) {
-    const ns = rest.match(/^\*\s+as\s+([A-Za-z_$][\w$]*)\s*$/)
-    if (ns) shape.namespace = ns[1]
-  } else if (rest.startsWith('{')) {
-    const inner = rest.replace(/^\{|\}\s*$/g, '').trim()
-    if (inner) {
-      for (const part of inner.split(',')) {
-        const p = part.trim()
-        if (!p) continue
-        const aliased = p.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/)
-        if (aliased) {
-          shape.named.push({ imported: aliased[1], local: aliased[2] })
-        } else if (/^[A-Za-z_$][\w$]*$/.test(p)) {
-          shape.named.push({ imported: p, local: p })
-        }
+  const bindings = clause.namedBindings
+  if (bindings) {
+    if (ts.isNamespaceImport(bindings)) {
+      // `import * as ns from '...'`
+      shape.namespace = bindings.name.text
+    } else {
+      // `import { a, b as c } from '...'`
+      for (const el of bindings.elements) {
+        const imported = (el.propertyName ?? el.name).text
+        const local = el.name.text
+        shape.named.push({ imported, local })
       }
     }
   }
+
   return shape
 }
 
 /**
- * Collect the set of top-level exported names from an inlined module's
- * (already-recursed) JS body. Used to populate the IIFE return for
+ * Collect the set of top-level value-exported names from an inlined
+ * module's original TS source. Used to populate the IIFE return for
  * namespace imports (`import * as ns from './x'`), where the parent may
  * reference any exported name via `ns.foo`.
  *
- * Recognises:
- *   - `export const|let|var name`
+ * Walks the AST so we naturally handle:
+ *   - `export const|let|var name` (including object/array destructuring)
  *   - `export function name`, `export async function name`
  *   - `export class name`
  *   - `export { a, b as c }` (uses the exported alias, i.e. `c`)
+ *   - multi-line `export { … }` blocks, trailing commas, comments
  *
- * Default exports are intentionally not collected — the parent reference
- * shape (`ns.default`) is unusual enough to leave out of scope.
+ * Skipped intentionally:
+ *   - `export type` / `export interface` / `export type { … }` — type-only,
+ *     erased at runtime, must not be in the IIFE return
+ *   - `export default` — out of scope per #1141
+ *   - re-exports (`export { x } from './y'`) — not emitted by transpile here
  */
-function collectExportedNames(body: string): string[] {
+function collectExportedNames(source: string): string[] {
   const names = new Set<string>()
-  const declRe = /^export\s+(?:async\s+)?(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm
-  for (const m of body.matchAll(declRe)) names.add(m[1])
-  const blockRe = /^export\s*\{([^}]*)\}\s*;?\s*$/gm
-  for (const m of body.matchAll(blockRe)) {
-    for (const part of m[1].split(',')) {
-      const p = part.trim()
-      if (!p) continue
-      const aliased = p.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/)
-      names.add(aliased ? aliased[2] : p)
+  const sourceFile = ts.createSourceFile(
+    'mod.ts',
+    source,
+    ts.ScriptTarget.Latest,
+    /*setParents*/ false,
+    ts.ScriptKind.TS,
+  )
+
+  function hasExport(node: ts.Node): boolean {
+    if (!ts.canHaveModifiers(node)) return false
+    const mods = ts.getModifiers(node)
+    return mods?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
+  }
+
+  function collectFromBindingName(name: ts.BindingName): void {
+    if (ts.isIdentifier(name)) {
+      names.add(name.text)
+      return
+    }
+    // ObjectBindingPattern / ArrayBindingPattern — recurse into elements.
+    for (const el of name.elements) {
+      if (ts.isBindingElement(el)) collectFromBindingName(el.name)
     }
   }
+
+  for (const stmt of sourceFile.statements) {
+    if (ts.isVariableStatement(stmt) && hasExport(stmt)) {
+      for (const d of stmt.declarationList.declarations) {
+        collectFromBindingName(d.name)
+      }
+    } else if (ts.isFunctionDeclaration(stmt) && hasExport(stmt) && stmt.name) {
+      names.add(stmt.name.text)
+    } else if (ts.isClassDeclaration(stmt) && hasExport(stmt) && stmt.name) {
+      names.add(stmt.name.text)
+    } else if (ts.isExportDeclaration(stmt) && !stmt.moduleSpecifier && stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
+      // `export { a, b as c }` — type-only specifiers (and the whole
+      // `export type { … }` form) are erased; skip them.
+      if (stmt.isTypeOnly) continue
+      for (const el of stmt.exportClause.elements) {
+        if (el.isTypeOnly) continue
+        names.add(el.name.text)
+      }
+    }
+    // TypeAliasDeclaration / InterfaceDeclaration: type-only, ignored.
+    // ExportAssignment (`export default`): out of scope per #1141.
+  }
+
   return [...names]
+}
+
+/**
+ * Strip top-level `import` declarations and `export` modifiers/keywords
+ * from a module body so it's valid as the inside of an IIFE.
+ *
+ * Implementation: parse the body with the TypeScript compiler API, collect
+ * the byte-spans to delete (whole `ImportDeclaration` / re-export
+ * `ExportDeclaration` nodes; the `export` modifier on value decls; the
+ * `export {…}` block), then splice them out of the original text in
+ * descending order. The body stays byte-identical outside the deleted
+ * spans — friendlier for sourcemaps and avoids reformat regressions a
+ * printer-based approach would introduce.
+ *
+ * Crucially, this leaves string-literal occurrences of `import` / `export`
+ * untouched (they're not statement keywords in the AST).
+ */
+function stripImportsAndExports(body: string): string {
+  const sourceFile = ts.createSourceFile(
+    'body.ts',
+    body,
+    ts.ScriptTarget.Latest,
+    /*setParents*/ false,
+    ts.ScriptKind.TS,
+  )
+
+  // Collect [start, end) spans to delete from the original text.
+  const spans: Array<[number, number]> = []
+
+  for (const stmt of sourceFile.statements) {
+    if (ts.isImportDeclaration(stmt)) {
+      // Drop the whole `import …` statement.
+      spans.push([stmt.getStart(sourceFile), stmt.getEnd()])
+      continue
+    }
+
+    if (ts.isExportDeclaration(stmt)) {
+      // Drop the whole `export { … }` (with or without `from '…'`).
+      // Re-exports won't appear here in practice (transpile flattens them),
+      // but if they do we still want them gone.
+      spans.push([stmt.getStart(sourceFile), stmt.getEnd()])
+      continue
+    }
+
+    if (ts.isExportAssignment(stmt)) {
+      // `export default <expr>` / `export = <expr>`. Per the IIFE strategy,
+      // the body's default export becomes a bare expression statement.
+      // Delete only the leading `export default` / `export =` keywords so
+      // the expression remains as a (dead) statement inside the IIFE.
+      const exportKw = stmt.getChildren(sourceFile).find(c => c.kind === ts.SyntaxKind.ExportKeyword)
+      const defaultKw = stmt.getChildren(sourceFile).find(c => c.kind === ts.SyntaxKind.DefaultKeyword)
+      const equalsKw = stmt.getChildren(sourceFile).find(c => c.kind === ts.SyntaxKind.EqualsToken)
+      const start = exportKw?.getStart(sourceFile) ?? stmt.getStart(sourceFile)
+      const end = (defaultKw ?? equalsKw)?.getEnd() ?? exportKw?.getEnd() ?? stmt.getStart(sourceFile)
+      if (end > start) spans.push([start, end])
+      continue
+    }
+
+    // Other top-level decls: strip just the `export` modifier if present.
+    if (ts.canHaveModifiers(stmt)) {
+      const mods = ts.getModifiers(stmt)
+      if (!mods) continue
+      for (const mod of mods) {
+        if (mod.kind === ts.SyntaxKind.ExportKeyword) {
+          // Delete `export` plus the trailing whitespace up to the next
+          // token, so `export const x` becomes `const x` (not ` const x`).
+          const start = mod.getStart(sourceFile)
+          let end = mod.getEnd()
+          while (end < body.length && /\s/.test(body[end])) end++
+          spans.push([start, end])
+        }
+      }
+    }
+  }
+
+  if (spans.length === 0) return body.trim()
+
+  // Apply spans in descending order so earlier offsets stay valid.
+  spans.sort((a, b) => b[0] - a[0])
+  let out = body
+  for (const [start, end] of spans) {
+    out = out.slice(0, start) + out.slice(end)
+  }
+  return out.trim()
 }
 
 /**
@@ -113,17 +243,16 @@ function collectExportedNames(body: string): string[] {
  * exported name. For side-effect-only `import './x'`, the IIFE has no
  * destructure on the outside and no return, but the body still runs.
  *
- * Default exports are out of scope: the body still has its `export
- * default` stripped to a bare expression, which is fine inside the IIFE.
+ * Default exports are out of scope: `stripImportsAndExports` reduces
+ * `export default <expr>` to a bare expression, which is fine inside the
+ * IIFE.
+ *
+ * `originalSource` is the pre-transpile TS source of the inlined module,
+ * used by `collectExportedNames` so type-only exports are correctly
+ * excluded from the namespace IIFE return.
  */
-function wrapInIIFE(body: string, shape: ImportShape | null): string {
-  // Scoping prelude: the body may still contain `export ...` keywords.
-  // Strip them to plain decls so the IIFE body is valid JS.
-  const stripped = body
-    .replace(/^import\s+.*$/gm, '')
-    .replace(/^export\s*\{[^}]*\}\s*;?\s*$/gm, '')
-    .replace(/^export\s+/gm, '')
-    .trim()
+function wrapInIIFE(body: string, shape: ImportShape | null, originalSource: string): string {
+  const stripped = stripImportsAndExports(body)
 
   if (!shape) {
     // Side-effect import: no bound names. Still scope-isolate.
@@ -135,7 +264,8 @@ function wrapInIIFE(body: string, shape: ImportShape | null): string {
 
   if (shape.namespace) {
     // Build a single `const ns = (() => { ...; return { a, b, ... } })()`.
-    const exported = collectExportedNames(body)
+    // Parse the original TS source so type-only exports are excluded.
+    const exported = collectExportedNames(originalSource)
     const ret = exported.length ? `{ ${exported.join(', ')} }` : '{}'
     return `const ${shape.namespace} = (() => {\n${stripped}\nreturn ${ret};\n})();`
   }
@@ -146,8 +276,8 @@ function wrapInIIFE(body: string, shape: ImportShape | null): string {
   }
   if (shape.default) {
     // `import D from './x'` — surface the default binding via the IIFE.
-    // The body's `export default <expr>` is stripped to a bare expression
-    // by the regex above, which is then dead. Out of scope for this fix;
+    // `stripImportsAndExports` reduces `export default <expr>` to a bare
+    // expression statement, which is then dead. Out of scope for this fix;
     // covered by the issue's "leave defaults out of scope" note.
   }
 
@@ -281,7 +411,7 @@ async function inlineRelativeImports(
     // (e.g. `const BAR_STYLE`) don't collide in the parent's top-level
     // scope. piconic-ai/barefootjs#1141.
     const shape = parseImportShape(fullMatch)
-    const wrapped = wrapInIIFE(jsCode, shape)
+    const wrapped = wrapInIIFE(jsCode, shape, sourceContent)
 
     content = content.replace(fullMatch, wrapped)
     console.log(`Inlined: ${importPath} into ${loggingPath}`)
