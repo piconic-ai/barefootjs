@@ -367,6 +367,12 @@ async function resolveSourceFile(importPath: string, searchDirs: string[]): Prom
     for (const ext of ['.ts', '.tsx', '.js']) {
       if (await fileExists(basePath + ext)) return { kind: 'inline', path: basePath + ext }
     }
+    // Directory-import fallback: standard Node resolution. `./foo` resolves to
+    // `./foo/index.{ts,tsx,js}` when no flat-extension match exists. #1151.
+    for (const ext of ['.ts', '.tsx', '.js']) {
+      const indexPath = resolve(basePath, 'index' + ext)
+      if (await fileExists(indexPath)) return { kind: 'inline', path: indexPath }
+    }
   }
   return { kind: 'missing' }
 }
@@ -403,7 +409,14 @@ async function inlineRelativeImports(
       continue
     }
 
-    if (result.kind === 'missing' || inlinedPaths.has(result.path)) {
+    if (result.kind === 'missing') {
+      // Surface unresolved imports — silent strips made #1151 hard to spot.
+      console.warn(`Stripped unresolved import: ${importPath} from ${loggingPath}`)
+      content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
+      continue
+    }
+
+    if (inlinedPaths.has(result.path)) {
       content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
       continue
     }
