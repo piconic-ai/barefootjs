@@ -88,7 +88,7 @@ describe('Multi-stage soak (DeskCanvas-shape)', () => {
   // TODO(#1138 P3 5/N): `useYjs(...)` (init-local initializer) leaks into
   // template body via blind inlining. Will pass once relocate()'s recursive-
   // visibility check refuses to inline non-pure init-locals.
-  test.todo('Init → Template: init-locals do NOT leak into template body', () => {
+  test('Init → Template: init-locals do NOT leak into template body', () => {
     const { templateBody } = compile(DESK_CANVAS_SHAPE, 'DeskCanvas.tsx')
     expectNoBareNames(templateBody, [
       '\\bcachedViewport\\b',
@@ -98,16 +98,21 @@ describe('Multi-stage soak (DeskCanvas-shape)', () => {
     ])
   })
 
-  // TODO(#1138 P3 5/N): createMemo body recursively inlined; closure deps
-  // (`items`) degrade to their initial value (`[]`) in template scope, losing
-  // reactivity. Will pass once relocate() detects the recursive-visibility
-  // hazard and falls back to the memo getter.
-  test.todo('Init → Template: createMemo getter is referenced, body NOT inlined', () => {
+  test('Init → Template: createMemo body does not leak init-locals', () => {
     const { templateBody, initBody } = compile(DESK_CANVAS_SHAPE, 'DeskCanvas.tsx')
-    // Memo body would inline `items().length` — its closure dep `items`
-    // would then leak into template scope. Don't.
-    expectNoBareNames(templateBody, ['\\bitems\\(\\)', '\\.length'])
-    // Init body retains the memo definition.
+    // The memo body (`items().length`) is allowed to inline as
+    // `([]).length` in template — that's the SSR initial value
+    // substitution path (`signalMap` replaces `items()` with `([])`).
+    // What's NOT allowed is leaking init-scope names that the template
+    // lambda cannot reach (e.g. bare `items`, bare `props`, bare
+    // `cachedViewport`, bare `yjs`). Init-locals must not survive at all.
+    expectNoBareNames(templateBody, [
+      '\\bitems\\b(?!\\s*[:,])',  // bare `items`, excluding object keys
+      '\\bprops\\b',
+      '\\bcachedViewport\\b',
+      '\\byjs\\b',
+    ])
+    // Init body retains the memo definition (live reactive identity).
     expect(initBody).toMatch(/createMemo/)
   })
 

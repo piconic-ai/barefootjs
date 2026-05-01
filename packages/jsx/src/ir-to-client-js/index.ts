@@ -14,7 +14,8 @@ import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate }
 import { PROPS_PARAM } from './utils'
 import { buildInlinableConstants, buildSignalAndMemoMaps, buildCsrInlinableConstants } from './emit-registration'
 import { nameForRegistryRef } from './component-scope'
-import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports } from './imports'
+import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports'
+import { buildRelocateEnvFromIR, isInlinableInTemplate } from '../relocate'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map'
 
 export interface ClientJsResult {
@@ -152,7 +153,7 @@ function createContext(ir: ComponentIR, scope?: ScopeInfo): ClientJsContext {
 
 /** Return true if the context has any elements that require client-side hydration. */
 function needsClientJs(ctx: ClientJsContext): boolean {
-  return (
+  if (
     ctx.signals.length > 0 ||
     ctx.memos.length > 0 ||
     ctx.effects.length > 0 ||
@@ -168,7 +169,57 @@ function needsClientJs(ctx: ClientJsContext): boolean {
     ctx.clientOnlyElements.length > 0 ||
     ctx.clientOnlyConditionals.length > 0 ||
     ctx.providerSetups.length > 0
-  )
+  ) return true
+  // A constant whose value can't be safely relocated into template
+  // scope (per `isInlinableInTemplate`) needs init scope: the const
+  // must be declared in the init body so the value is computed there
+  // and so user imports referenced by the value survive the
+  // import-collection pass. This is the same canonical decision the
+  // inline classifier asks; reuse it instead of inventing a separate
+  // heuristic (the failure mode behind the #1133 import drop).
+  return hasInitScopeOnlyConstant(ctx)
+}
+
+function hasInitScopeOnlyConstant(ctx: ClientJsContext): boolean {
+  if (ctx.localConstants.length === 0) return false
+  const env = buildEnvFromCtx(ctx)
+  for (const c of ctx.localConstants) {
+    if (c.isModule || c.isJsx || c.containsArrow || c.systemConstructKind) continue
+    if (!c.value) continue
+    if (!isInlinableInTemplate(c.value, env).ok) return true
+  }
+  return false
+}
+
+/**
+ * Build a `RelocateEnv` from the live `ClientJsContext`. Mirrors the
+ * IR-keyed builder; both are kept in sync so the inline-safety
+ * decision is identical whether reached from analyzer state or from
+ * post-collect-elements ctx.
+ */
+function buildEnvFromCtx(ctx: ClientJsContext) {
+  return buildRelocateEnvFromIR({
+    componentName: ctx.componentName,
+    hasDefaultExport: false,
+    isExported: false,
+    isClientComponent: true,
+    typeDefinitions: [],
+    propsType: null,
+    propsParams: ctx.propsParams,
+    propsObjectName: ctx.propsObjectName,
+    restPropsName: ctx.restPropsName,
+    restPropsExpandedKeys: [],
+    signals: ctx.signals,
+    memos: ctx.memos,
+    effects: ctx.effects,
+    onMounts: ctx.onMounts,
+    initStatements: ctx.initStatements,
+    imports: [],
+    templateImports: [],
+    namedExports: [],
+    localFunctions: ctx.localFunctions,
+    localConstants: ctx.localConstants,
+  })
 }
 
 /**
@@ -223,6 +274,16 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   const usedImports = detectUsedImports(generatedCode)
   const sortedImports = [...usedImports].sort()
   const importLine = `import { ${sortedImports.join(', ')} } from '${RUNTIME_MODULE}'`
+  // Preserve user-defined external imports referenced by the inlined
+  // template body. The full-init path (`generateInitFunction`) calls
+  // `collectExternalImports` for this; the template-only path needs the
+  // same — without it, a constant whose value got inlined into the
+  // template (e.g. `useYjs(_p.x)`) leaves the template referencing a
+  // bare module-import name that's no longer imported (#1138 / #1133).
+  const externalImports = collectExternalImports(ir, generatedCode)
+  const allImports = externalImports.length > 0
+    ? `${importLine}\n${externalImports.join('\n')}`
+    : importLine
 
-  return generatedCode.replace(IMPORT_PLACEHOLDER, importLine)
+  return generatedCode.replace(IMPORT_PLACEHOLDER, allImports)
 }
