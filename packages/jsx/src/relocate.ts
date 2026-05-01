@@ -11,7 +11,7 @@
  */
 
 import ts from 'typescript'
-import type { Scope, BindingKind } from './types'
+import type { Scope, BindingKind, IRMetadata } from './types'
 import { isVisibleIn } from './types'
 import type { AnalyzerContext } from './analyzer-context'
 import { PROPS_PARAM } from './ir-to-client-js/utils'
@@ -287,20 +287,51 @@ const RESERVED_WORDS = new Set([
  * declaration in source order wins.
  */
 export function buildRelocateEnv(ctx: AnalyzerContext): RelocateEnv {
+  return buildRelocateEnvFromFields({
+    imports: ctx.imports,
+    localFunctions: ctx.localFunctions,
+    localConstants: ctx.localConstants,
+    propsParams: ctx.propsParams,
+    propsObjectName: ctx.propsObjectName,
+    signals: ctx.signals,
+    memos: ctx.memos,
+  })
+}
+
+/**
+ * `IRMetadata`-based variant. Used at emit time when the analyzer
+ * context is no longer available — emit reconstructs the env from
+ * IR. Both builders produce identical results.
+ */
+export function buildRelocateEnvFromIR(metadata: IRMetadata): RelocateEnv {
+  return buildRelocateEnvFromFields(metadata)
+}
+
+interface EnvFields {
+  imports: AnalyzerContext['imports']
+  localFunctions: AnalyzerContext['localFunctions']
+  localConstants: AnalyzerContext['localConstants']
+  propsParams: AnalyzerContext['propsParams']
+  propsObjectName: string | null
+  signals: AnalyzerContext['signals']
+  memos: AnalyzerContext['memos']
+}
+
+function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
   const bindings = new Map<string, BindingKind>()
 
   // Module-level imports.
-  for (const imp of ctx.imports) {
+  for (const imp of src.imports) {
     for (const spec of imp.specifiers) {
       bindings.set(spec.alias ?? spec.name, 'module-import')
     }
   }
 
   // Module-level functions and constants.
-  for (const f of ctx.localFunctions) {
+  for (const f of src.localFunctions) {
     if (f.isModule) bindings.set(f.name, 'module-local')
   }
-  for (const c of ctx.localConstants) {
+  for (const c of src.localConstants) {
     if (c.isModule) bindings.set(c.name, 'module-local')
   }
 
@@ -308,15 +339,15 @@ export function buildRelocateEnv(ctx: AnalyzerContext): RelocateEnv {
   // because the analyzer collected in source order).
 
   // Props: declared first in source as the function parameter.
-  for (const p of ctx.propsParams) {
+  for (const p of src.propsParams) {
     bindings.set(p.name, 'prop')
   }
 
   // Init-body locals — those whose value is a pure alias to `props.X`
   // STAY classified as `prop` (the lift-to-_p.X path applies). Other
   // locals are `init-local`.
-  const propsObjectName = ctx.propsObjectName
-  for (const c of ctx.localConstants) {
+  const propsObjectName = src.propsObjectName
+  for (const c of src.localConstants) {
     if (c.isModule) continue
     const isPureAlias =
       typeof c.value === 'string' &&
@@ -327,18 +358,18 @@ export function buildRelocateEnv(ctx: AnalyzerContext): RelocateEnv {
   }
 
   // Init-body local functions.
-  for (const f of ctx.localFunctions) {
+  for (const f of src.localFunctions) {
     if (f.isModule) continue
     bindings.set(f.name, 'init-local')
   }
 
   // Signals / memos override anything declared with the same name
   // earlier (the SolidJS-style shadow case in #1132).
-  for (const s of ctx.signals) {
+  for (const s of src.signals) {
     bindings.set(s.getter, 'signal-getter')
     if (s.setter) bindings.set(s.setter, 'signal-setter')
   }
-  for (const m of ctx.memos) {
+  for (const m of src.memos) {
     bindings.set(m.name, 'memo-getter')
   }
 

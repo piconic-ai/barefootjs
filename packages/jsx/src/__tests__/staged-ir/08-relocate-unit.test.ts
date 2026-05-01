@@ -120,6 +120,97 @@ describe('relocate: shadow precedence (#1132)', () => {
   })
 })
 
+describe('buildRelocateEnv: builds env from analyzer/IR state', () => {
+  test('analyzer-based and IR-based builders produce identical envs', async () => {
+    const { analyzeComponent } = await import('../../analyzer')
+    const { jsxToIR } = await import('../../jsx-to-ir')
+    const { buildRelocateEnv, buildRelocateEnvFromIR } = await import('../../relocate')
+
+    const ctx = analyzeComponent(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { helper } from './helper'
+
+      interface Props { name: string }
+      export function Foo(props: Props) {
+        const [count, setCount] = createSignal(0)
+        const greeting = 'hi'
+        return <div>{count()}</div>
+      }
+    `, 'Foo.tsx')
+    jsxToIR(ctx)
+
+    const fromAnalyzer = buildRelocateEnv(ctx)
+    const fromIR = buildRelocateEnvFromIR({
+      componentName: ctx.componentName ?? 'Foo',
+      hasDefaultExport: ctx.hasDefaultExport,
+      isExported: ctx.isExported,
+      isClientComponent: true,
+      typeDefinitions: ctx.typeDefinitions,
+      propsType: ctx.propsType,
+      propsParams: ctx.propsParams,
+      propsObjectName: ctx.propsObjectName,
+      restPropsName: ctx.restPropsName,
+      restPropsExpandedKeys: ctx.restPropsExpandedKeys,
+      signals: ctx.signals,
+      memos: ctx.memos,
+      effects: ctx.effects,
+      onMounts: ctx.onMounts,
+      initStatements: ctx.initStatements,
+      imports: ctx.imports,
+      templateImports: ctx.imports,
+      namedExports: ctx.namedExports,
+      localFunctions: ctx.localFunctions,
+      localConstants: ctx.localConstants,
+    })
+
+    expect([...fromAnalyzer.bindings.entries()].sort()).toEqual(
+      [...fromIR.bindings.entries()].sort(),
+    )
+    expect([...fromAnalyzer.propsForLift].sort()).toEqual(
+      [...fromIR.propsForLift].sort(),
+    )
+    expect(fromAnalyzer.propsObjectName).toBe(fromIR.propsObjectName)
+  })
+
+  test('shadow precedence: signal getter wins over prop with same name', async () => {
+    const { analyzeComponent } = await import('../../analyzer')
+    const { buildRelocateEnv } = await import('../../relocate')
+
+    const ctx = analyzeComponent(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      interface Props { count?: number }
+      export function Foo(props: Props) {
+        const [count, setCount] = createSignal(0)
+        return <span>{count()}</span>
+      }
+    `, 'Foo.tsx')
+    const env = buildRelocateEnv(ctx)
+    // `count` is the signal getter, NOT the prop. Critical for #1132.
+    expect(env.bindings.get('count')).toBe('signal-getter')
+    expect(env.propsForLift.has('count')).toBe(false)
+  })
+
+  test('pure prop alias stays classified as prop (eligible for lift)', async () => {
+    const { analyzeComponent } = await import('../../analyzer')
+    const { buildRelocateEnv } = await import('../../relocate')
+
+    const ctx = analyzeComponent(`
+      'use client'
+      interface Props { name: string }
+      export function Foo(props: Props) {
+        const { name } = props
+        return <span>{name}</span>
+      }
+    `, 'Foo.tsx')
+    const env = buildRelocateEnv(ctx)
+    // `name` is a pure alias → eligible to lift to _p.name in template.
+    expect(env.bindings.get('name')).toBe('prop')
+    expect(env.propsForLift.has('name')).toBe(true)
+  })
+})
+
 describe('relocate: usedExternals tracking for import preservation (#1133)', () => {
   test('module-import refs are recorded in usedExternals', () => {
     const env = envWith([['useYjs', 'module-import']])
