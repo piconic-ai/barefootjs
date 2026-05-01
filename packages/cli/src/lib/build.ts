@@ -589,14 +589,11 @@ export async function build(
     sourceDirsByManifestKey,
   })
 
-  // 6c. Rewrite bare @barefootjs/client imports to relative barefoot.js path,
-  //     then dedupe if a file ends up with multiple imports from the same
-  //     source. Watch rebuilds can pull a freshly-compiled parent (still
-  //     using `@barefootjs/client/runtime`) together with a child that was
-  //     read back from disk in its previously-rewritten form (`./barefoot.js`).
-  //     Combine treats those as different sources and emits two import lines;
-  //     after the rewrite below they collapse to the same path, which is a
-  //     `SyntaxError: Identifier 'X' has already been declared` at runtime.
+  // 6c. Normalize @barefootjs/client* specifiers to the relative barefoot.js
+  //     path so the per-source dedup below can collapse multiple specifiers
+  //     pointing at the same runtime (watch-rebuild remnants, #1148-hoisted
+  //     bare imports). Without it, duplicate named bindings throw
+  //     `SyntaxError: Identifier 'X' has already been declared` at hydration.
   {
     const runtimeAbs = resolve(config.outDir, runtimeSubdir, 'barefoot.js')
     for (const [name, entry] of Object.entries(manifest)) {
@@ -613,7 +610,7 @@ export async function build(
         const before = content
         if (content.includes('@barefootjs/client')) {
           content = content.replace(
-            /from ['"]@barefootjs\/client\/runtime['"]/g,
+            /from ['"]@barefootjs\/client(?:\/[^'"]*)?['"]/g,
             `from '${rel}'`,
           )
         }
