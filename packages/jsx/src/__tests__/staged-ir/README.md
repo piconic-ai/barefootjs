@@ -35,11 +35,12 @@ diagnosed as "transition X → Y broken" rather than "issue #NNNN regressed".
 ## Current state (P0 baseline, before staged-IR refactor)
 
 ```
-27 pass / 4 fail   (run: bun test src/__tests__/staged-ir/)
+27 pass / 4 todo   (run: bun test src/__tests__/staged-ir/)
 ```
 
-The 4 currently-failing tests pin the residual stage violations that
-P1–P6 of the refactor must fix:
+The 4 `test.todo` cases pin the residual stage violations that
+P3 (5/N) of the refactor must fix. They will be flipped to `test(...)`
+in the same PR that lands the recursive-visibility check:
 
 1. `05/relative import used in init body survives compile` — when an
    init-local is inlined into template, the import the inlined call
@@ -55,5 +56,5 @@ P1–P6 of the refactor must fix:
 
 All four are the same root: rewrite passes and the import pass each
 hold a private model of "which scope does this name belong to". The
-staged-IR refactor unifies the model. When all four turn green and
-all 27 stay green, P6 is complete.
+staged-IR refactor unifies the model. When all four flip from `test.todo`
+to `test(...)` and pass, while all 27 stay green, P6 is complete.
