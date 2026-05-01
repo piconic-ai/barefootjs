@@ -60,6 +60,33 @@ describe('Modifier preservation: async / generator / etc. survive form rewrites'
     expectValidJs(clientJs)
   })
 
+  test('generator function (`function*`) keeps generator semantics', () => {
+    // The function → const arrow rewrite cannot preserve `function*`
+    // (arrow functions can't be generators). Emit must keep the
+    // `function*` declaration form when isGenerator is true on the IR.
+    const { clientJs, errors } = compile(`
+      'use client'
+
+      export function Foo() {
+        function* idGen() {
+          let i = 0
+          while (true) yield i++
+        }
+        idGen()
+        return <div>hi</div>
+      }
+    `)
+
+    expect(errors).toEqual([])
+    // Acceptable as long as it parses as a generator: `function* name`,
+    // `const name = function*`, or `var name = name ?? function*` (the
+    // module-level emission form). NOT acceptable: `const name = () =>`
+    // form, which would SyntaxError on `yield`.
+    expect(clientJs).toMatch(/function\s*\*/)
+    expect(clientJs).not.toMatch(/const\s+idGen\s*=\s*\(/)
+    expectValidJs(clientJs)
+  })
+
   test('await inside async function body is preserved', () => {
     const { clientJs, errors } = compile(`
       'use client'

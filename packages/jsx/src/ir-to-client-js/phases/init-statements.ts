@@ -22,7 +22,15 @@ export function emitInitStatements(lines: string[], ctx: ClientJsContext): void 
       .split('\n')
       .map((ln, i) => (i === 0 || ln === '' ? ln : '  ' + ln))
       .join('\n')
-    lines.push(`  ${indented}`)
+    // ASI hazard: when the body starts with `(`, `[`, `` ` ``, `+`, `-`,
+    // or `/`, the previous emitted line might fuse with this statement
+    // under automatic-semicolon-insertion (e.g. `provideContext(ctx)\n
+    // (globalThis)` parses as `provideContext(ctx)(globalThis)`).
+    // analyzer.collectInitStatement sets `needsLeadingSemi`; we honor
+    // it here so the hazard closes structurally rather than relying on
+    // minifier whitespace.
+    const prefix = stmt.needsLeadingSemi ? '  ;' : '  '
+    lines.push(`${prefix}${indented}`)
   }
   lines.push('')
 }

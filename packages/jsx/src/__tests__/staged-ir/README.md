@@ -28,6 +28,7 @@ This is the boundary that produced #1127 / #1128 / #1132 / #1137.
 - `04-type-stripping.test.ts` — TS-only constructs stripped at every nesting depth (#1131)
 - `05-import-preservation.test.ts` — Imports referenced by emitted code must be kept (#1133)
 - `06-multi-stage-soak.test.ts` — DeskCanvas-shape: every transition exercised in one component
+- `09-asi-hazard.test.ts` — leading-`;` preserved on statements that risk ASI fusion (#1138)
 
 Each file documents the stage transition it pins, so a future regression can be
 diagnosed as "transition X → Y broken" rather than "issue #NNNN regressed".
