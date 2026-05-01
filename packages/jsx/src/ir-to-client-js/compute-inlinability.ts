@@ -27,7 +27,8 @@ import type { ConstantInfo, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
 import { graphFunctionReferences } from './build-references'
 import { isInlinableInTemplate, buildRelocateEnvFromIR } from '../relocate'
-import type { RelocateEnv } from '../relocate'
+import type { RelocateEnv, RelocateDecision } from '../relocate'
+import { createWarning, ErrorCodes } from '../errors'
 
 /**
  * Why a local constant was or was not chosen for template inlining.
@@ -173,6 +174,45 @@ export function computeInlinability(
   }
 
   return { constants, functions }
+}
+
+/**
+ * Emit warnings for stage-violation decisions surfaced during inline
+ * classification. Exposed so opt-in callers (a future
+ * `strictStageBoundaries` compile mode, IDE tooling, etc.) can
+ * surface BF060/BF061 to users without breaking the default silent-
+ * fallback contract documented in #1128.
+ *
+ *  - BF060: signal/memo getter referenced from template scope. The
+ *    template lambda has no reactive context; the value falls back
+ *    to `undefined` and init's createEffect repaints.
+ *  - BF061: init-scope local referenced from template scope. Same
+ *    fallback shape, different binding kind.
+ *
+ * BF062 (cross-stage await) belongs at the Phase 1 dispatcher (await
+ * is a statement-level concern); not surfaced here.
+ */
+export function recordStageDiagnostics(
+  c: ConstantInfo,
+  decisions: RelocateDecision[],
+  warnings: ReturnType<typeof createWarning>[],
+): void {
+  // De-dup per-name so a value with multiple references to the same
+  // unsafe binding emits one warning, not many.
+  const seen = new Set<string>()
+  for (const d of decisions) {
+    if (seen.has(d.name)) continue
+    seen.add(d.name)
+    if (d.kind === 'signal-getter' || d.kind === 'signal-setter' || d.kind === 'memo-getter') {
+      warnings.push(createWarning(ErrorCodes.STAGE_REACTIVE_IN_TEMPLATE, c.loc, {
+        message: `Reactive binding '${d.name}' referenced from template scope (via const '${c.name}'). Falls back to undefined; init's createEffect repaints.`,
+      }))
+    } else if (d.kind === 'init-local' || d.kind === 'sub-init-local') {
+      warnings.push(createWarning(ErrorCodes.STAGE_INIT_LOCAL_IN_TEMPLATE, c.loc, {
+        message: `Init-scope local '${d.name}' referenced from template scope (via const '${c.name}'). Falls back to undefined; init's effect repaints.`,
+      }))
+    }
+  }
 }
 
 function classifyConstantInitial(

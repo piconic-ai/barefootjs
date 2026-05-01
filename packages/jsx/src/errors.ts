@@ -52,6 +52,17 @@ export const ErrorCodes = {
   // Init statement errors (BF052)
   UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
 
+  // Stage-violation errors (BF060-BF069) — cross-scope references that
+  // the staged-IR refactor (#1138) surfaces structurally rather than
+  // hiding behind silent `undefined` fallbacks. Emit policy: BF060/061
+  // are diagnostics today (warnings), reserved as hard errors for an
+  // opt-in strict-stage mode the compiler can flip later. BF062 is a
+  // hard error because its semantic divergence (await runs at hydrate
+  // time, not at SSR) cannot be silently fallback-ed.
+  STAGE_REACTIVE_IN_TEMPLATE: 'BF060',
+  STAGE_INIT_LOCAL_IN_TEMPLATE: 'BF061',
+  STAGE_AWAIT_IN_TEMPLATE: 'BF062',
+
   // Reactive factory errors (BF110-BF119)
   UNRECOGNIZED_REACTIVE_FACTORY: 'BF110',
 } as const
@@ -104,6 +115,15 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.UNDECLARED_INIT_STATEMENT_REFERENCE]:
     'Init statement references an undeclared identifier. Declare it at module scope, inside the component, or import it — otherwise ESM strict mode throws ReferenceError at runtime.',
+
+  [ErrorCodes.STAGE_REACTIVE_IN_TEMPLATE]:
+    'Reactive binding (signal getter or memo) referenced from template scope. The template lambda runs at hydrate-entry without the reactive context, so the value falls back to undefined; init\'s createEffect repaints once hydration runs. If a non-reactive initial value is wanted at SSR, capture it into a const before the template references the binding.',
+
+  [ErrorCodes.STAGE_INIT_LOCAL_IN_TEMPLATE]:
+    'Init-scope local referenced from template scope. The template lambda runs at module scope (via render() / renderChild()) and cannot reach init-body locals, so the value falls back to undefined; init\'s effect repaints. Lift the const to module scope, inline a literal, or accept the SSR fallback.',
+
+  [ErrorCodes.STAGE_AWAIT_IN_TEMPLATE]:
+    'AwaitExpression in template scope. The hydrate-time template lambda is synchronous; awaiting here would hang first render. Move the await into a server-side handler and pass the resolved value as a prop.',
 
   [ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY]:
     'Tuple destructuring of a non-reactive factory call. The compiler only recognizes createSignal / createMemo calls and same-file helpers that wrap them with a single `return [a, b]` exit.',
