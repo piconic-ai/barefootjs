@@ -46,6 +46,13 @@ jobs:
         with:
           bun-version: latest
 
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Install dependencies
         run: bun install
 
@@ -75,6 +82,13 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Install dependencies
         run: bun install
@@ -115,6 +129,13 @@ jobs:
         with:
           bun-version: latest
 
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Install dependencies
         run: bun install
 
@@ -145,6 +166,13 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Install dependencies
         run: bun install
@@ -179,6 +207,13 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Install dependencies
         run: bun install
