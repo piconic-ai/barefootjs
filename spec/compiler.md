@@ -447,6 +447,9 @@ For non-JS backends, ensure proper UTF-8 handling:
 | BF031 | Props type mismatch |
 | BF043 | Props destructuring breaks reactivity |
 | BF044 | Signal/memo getter passed without calling it |
+| BF060 | Reactive binding (signal/memo getter) referenced from template scope (staged-IR; opt-in diagnostic) |
+| BF061 | Init-scope local referenced from template scope (staged-IR; opt-in diagnostic) |
+| BF062 | AwaitExpression in template scope (staged-IR; reserved for Phase 1 dispatcher) |
 
 ### Error Format
 
@@ -691,6 +694,131 @@ createEffect(() => {
 const classes = `btn ${isActive() && 'on'}`  // Uses memo
 const isActive = createMemo(() => selected() === id)
 ```
+
+---
+
+## Staged IR (Phase / Scope / Effect)
+
+A `.tsx` source compiles to code that runs across multiple temporal stages (compile time, SSR, hydrate, signal tick, event handler). The staged IR names each stage explicitly so cross-stage rewrites are decided once — by `relocate()` in `packages/jsx/src/relocate.ts` — rather than re-derived in every emit pass.
+
+### Stages (Phase)
+
+| Phase | When | Visible bindings |
+|-------|------|------------------|
+| `compile` | `bun build` time | `ts.Node`, IR, types |
+| `ssr` | request time (server) | props, server-side imports |
+| `hydrate` | client first render (template lambda) | `_p`, module imports — NOT init-locals |
+| `tick` | signal change (effects) | signal getters, `_p`, init-locals |
+| `event` | DOM event handler invoked | event arg, signal getters / setters, init-locals |
+
+The `hydrate` ↔ `init` boundary is what produced #1138.
+
+### Scopes
+
+`Scope` names where a piece of code lives in the emitted module. Distinct from `Phase`: an init-body `createEffect` callback and a sub-init nested arrow both run at `tick` Phase but in different `Scope`s.
+
+| Scope | Lexical container |
+|-------|-------------------|
+| `module` | top-level of the emitted `.client.js` |
+| `init` | inside `function init<Comp>(__scope, _p) { ... }` |
+| `template` | inside `template: (_p) => \`...\`` |
+| `sub-init` | nested arrow / function-expression inside `init` |
+| `render-item` | `mapArray` callback inside `init` |
+
+### BindingKind and the visibility table
+
+Every free identifier in IR is classified by where its binding lives:
+
+| BindingKind | Source |
+|-------------|--------|
+| `prop` | destructured from props, OR `props.X` access target, OR a pure alias `const { X } = props` |
+| `signal-getter` | `[count, setCount] = createSignal(...)` → `count` |
+| `signal-setter` | → `setCount` |
+| `memo-getter` | `createMemo(...)` |
+| `init-local` | `const x = ...` in init body (not a memo/signal/pure-prop-alias) |
+| `sub-init-local` | declared inside a nested arrow / function inside init |
+| `render-item` | `.map()` callback parameter |
+| `module-import` | from an `import` declaration |
+| `module-local` | module-level `const`/`function` (not imported) |
+| `global` | not declared anywhere we tracked → assumed to be a JS global |
+
+`isVisibleIn(scope, kind)` is true iff a binding of `kind` can be emitted as a **bare identifier** at `scope` with no rewrite required. The static table:
+
+| Scope ↓ / Kind → | `prop` | `module-import` | `module-local` | `global` | `init-local` | `signal-*` | `memo-getter` | `render-item` | `sub-init-local` |
+|-|-|-|-|-|-|-|-|-|-|
+| `module` | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `init` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `template` | ✗ (lift to `_p.X`) | ✓ | ✓ | ✓ | ✗ (inline or fallback) | ✗ (fallback) | ✗ (fallback) | ✗ (fallback) | ✗ (inline or fallback) |
+| `sub-init` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `render-item` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+`prop` at `template` is **reachable** via `_p.X` but **not bare-emittable** — the rewrite is required.
+
+### `relocate()`
+
+```ts
+function relocate(
+  expr: string,
+  exprNode: ts.Node | null,
+  fromScope: Scope,
+  toScope: Scope,
+  env: RelocateEnv,
+): RelocateResult
+```
+
+Rewrites `expr` for emission at `toScope`. For each free reference in `expr`:
+
+| Decision | When | Rewrite |
+|----------|------|---------|
+| `pass-through` | `isVisibleIn(toScope, kind)` is true | unchanged |
+| `lift-to-prop` | `kind === 'prop'`, `toScope === 'template'` | `name` → `_p.name` |
+| `inline` | `kind ∈ {init-local, sub-init-local}`, `env.inlinable.has(name)` | substituted with the inlinable form |
+| `fallback` | init-local without inline form, OR reactive bindings, with `env.allowFallback === true` | `undefined` (runtime null-guarded by emit) |
+| `reject` | the `fallback` triggers with `allowFallback === false` | unchanged; `result.ok` set to `false` |
+
+`RelocateResult` carries `text`, `ok`, `usedExternals` (post-rewrite identifier set, used by import-preservation), and `decisions` (per-name action, used by stage-violation diagnostics).
+
+### `isInlinableInTemplate(value, env)`
+
+The canonical predicate for "can this `init`-scope expression be safely duplicated into `template` scope as a literal substitution?" Used by:
+
+- `compute-inlinability.ts` for the constant inline classification
+- `emit-registration.ts/buildCsrInlinableConstants` for CSR re-promotion
+- `index.ts/needsClientJs` to force the full-init path when an unsafe local would otherwise be lost
+
+A value is inline-safe iff:
+
+1. `relocate(value, _, 'init', 'template', env).ok` is true (every ref bridges cleanly), AND
+2. No call expression has an argument that resolves to a `lift-to-prop` or `inline` decision (catches `useYjs(_p.X)` — the helper would re-execute on every template render with bridged props), AND
+3. No zero-argument call is present (catches `readItems()` / `count()` — they read runtime state).
+
+### Stage-violation diagnostics (BF060 / BF061 / BF062)
+
+When `relocate` produces a `fallback` decision at `template` scope, the binding kind determines the corresponding diagnostic:
+
+| Code | Trigger | Default emit |
+|------|---------|--------------|
+| BF060 | `signal-getter` / `signal-setter` / `memo-getter` reference falls back at `template` scope | not emitted (silent fallback is the documented design) |
+| BF061 | `init-local` / `sub-init-local` reference falls back at `template` scope | not emitted |
+| BF062 | `AwaitExpression` at `template` scope | reserved for Phase 1 dispatcher (overlaps Appendix A.3.3 / BF050; cannot fall back, would hang first render) |
+
+`recordStageDiagnostics()` is exported from `compute-inlinability.ts` so opt-in callers (a future strict-stage compile mode, IDE tooling) can surface them as warnings or errors. Default emit is off because a documented pattern (`<div data-x={someInitLocal}>` falls back to `undefined` and init's `createEffect` repaints) would otherwise produce noise on every component.
+
+### IR fields populated for staged IR
+
+The contract: **analyzer is the single source of truth, emit reads from IR**.
+
+| Field | On | Set by | Read by |
+|-------|----|--------|---------|
+| `OriginInfo { phase, scope, effect }` | `IRExpression`, `ConstantInfo`, `InitStatementInfo` | analyzer collection sites | future passes (opt-in today) |
+| `FunctionInfo.isAsync` | `FunctionInfo` | analyzer | `emit-module-level.ts`, `stringify/declaration-emit.ts` |
+| `FunctionInfo.isGenerator` | `FunctionInfo` | analyzer | `emit-module-level.ts` (preserves `function*`) |
+| `FunctionInfo.declarationKind` | `FunctionInfo` | analyzer | `module-exports.ts`, `jsx-adapter.ts`, `plan/build-declaration-emit.ts` |
+| `InitStatementInfo.needsLeadingSemi` | `InitStatementInfo` | analyzer (detects ASI hazard prefix `(`/`[`/`` ` ``/`+`/`-`/`/`) | `phases/init-statements.ts` (prepends `;`) |
+
+### See also
+
+Motivation, design rationale, migration log: #1138. Implementation PRs: #1142 (foundation), #1144 (relocate-driven inline classification), #1145 (emit reads IR), #1147 (BF060-series codes).
 
 ---
 
