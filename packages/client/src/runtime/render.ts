@@ -7,6 +7,7 @@
  */
 
 import { BF_SCOPE } from '@barefootjs/shared'
+import { setParentScopeId } from './component'
 import { hydratedScopes } from './hydration-state'
 import { getComponentInit } from './registry'
 import { getTemplate, type TemplateFn } from './template'
@@ -69,7 +70,19 @@ export function render(
     }
   }
 
-  const html = template(props).trim()
+  // Generate the parent scope ID up front so renderChild calls inside
+  // template() can stamp `bf-s="~${parentScopeId}_sN"` on child scopes,
+  // matching what the compiler-emitted `$c(__scope, 'sN')` lookup later
+  // expects. Without this, renderChild falls back to `${childName}_${randomId}`
+  // and `$c` returns null, silently breaking child hydration. (#1160)
+  const scopeId = `${name}_${Math.random().toString(36).slice(2, 8)}`
+  setParentScopeId(scopeId)
+  let html: string
+  try {
+    html = template(props).trim()
+  } finally {
+    setParentScopeId(null)
+  }
 
   const tpl = document.createElement('template')
   tpl.innerHTML = html
@@ -80,8 +93,7 @@ export function render(
   }
 
   if (!element.getAttribute(BF_SCOPE)) {
-    const id = Math.random().toString(36).slice(2, 8)
-    element.setAttribute(BF_SCOPE, `${name}_${id}`)
+    element.setAttribute(BF_SCOPE, scopeId)
   }
 
   container.innerHTML = ''
