@@ -157,8 +157,16 @@ function collectExportedNames(source: string): string[] {
  *
  * Crucially, this leaves string-literal occurrences of `import` / `export`
  * untouched (they're not statement keywords in the AST).
+ *
+ * Bare-package imports (`import { marked } from 'marked'`) are still
+ * removed from the body — `import` statements are only legal at module
+ * top level, so they cannot survive inside the IIFE — but their original
+ * source text is also captured in `hoistedImports` so the caller can
+ * lift them to the parent bundle's top level. Relative imports (`./`,
+ * `../`) are dropped without hoisting because the recursive inliner has
+ * already replaced them with IIFE wraps upstream. piconic-ai/barefootjs#1148.
  */
-function stripImportsAndExports(body: string): string {
+function stripImportsAndExports(body: string): { body: string; hoistedImports: string[] } {
   const sourceFile = ts.createSourceFile(
     'body.ts',
     body,
@@ -169,11 +177,24 @@ function stripImportsAndExports(body: string): string {
 
   // Collect [start, end) spans to delete from the original text.
   const spans: Array<[number, number]> = []
+  const hoistedImports: string[] = []
 
   for (const stmt of sourceFile.statements) {
     if (ts.isImportDeclaration(stmt)) {
-      // Drop the whole `import …` statement.
-      spans.push([stmt.getStart(sourceFile), stmt.getEnd()])
+      // Drop the whole `import …` statement from the body. If it's a
+      // bare-package or absolute import, also capture its text so the
+      // caller can hoist it to the parent's top level.
+      const start = stmt.getStart(sourceFile)
+      const end = stmt.getEnd()
+      const specifier = stmt.moduleSpecifier
+      if (ts.isStringLiteral(specifier)) {
+        const path = specifier.text
+        const isRelative = path.startsWith('./') || path.startsWith('../')
+        if (!isRelative) {
+          hoistedImports.push(body.slice(start, end))
+        }
+      }
+      spans.push([start, end])
       continue
     }
 
@@ -216,7 +237,7 @@ function stripImportsAndExports(body: string): string {
     }
   }
 
-  if (spans.length === 0) return body.trim()
+  if (spans.length === 0) return { body: body.trim(), hoistedImports }
 
   // Apply spans in descending order so earlier offsets stay valid.
   spans.sort((a, b) => b[0] - a[0])
@@ -224,7 +245,7 @@ function stripImportsAndExports(body: string): string {
   for (const [start, end] of spans) {
     out = out.slice(0, start) + out.slice(end)
   }
-  return out.trim()
+  return { body: out.trim(), hoistedImports }
 }
 
 /**
@@ -251,12 +272,12 @@ function stripImportsAndExports(body: string): string {
  * used by `collectExportedNames` so type-only exports are correctly
  * excluded from the namespace IIFE return.
  */
-function wrapInIIFE(body: string, shape: ImportShape | null, originalSource: string): string {
-  const stripped = stripImportsAndExports(body)
+function wrapInIIFE(body: string, shape: ImportShape | null, originalSource: string): { wrapped: string; hoistedImports: string[] } {
+  const { body: stripped, hoistedImports } = stripImportsAndExports(body)
 
   if (!shape) {
     // Side-effect import: no bound names. Still scope-isolate.
-    return `;(() => {\n${stripped}\n})();`
+    return { wrapped: `;(() => {\n${stripped}\n})();`, hoistedImports }
   }
 
   const returnEntries: string[] = []
@@ -267,7 +288,7 @@ function wrapInIIFE(body: string, shape: ImportShape | null, originalSource: str
     // Parse the original TS source so type-only exports are excluded.
     const exported = collectExportedNames(originalSource)
     const ret = exported.length ? `{ ${exported.join(', ')} }` : '{}'
-    return `const ${shape.namespace} = (() => {\n${stripped}\nreturn ${ret};\n})();`
+    return { wrapped: `const ${shape.namespace} = (() => {\n${stripped}\nreturn ${ret};\n})();`, hoistedImports }
   }
 
   for (const { local, imported } of shape.named) {
@@ -283,10 +304,13 @@ function wrapInIIFE(body: string, shape: ImportShape | null, originalSource: str
 
   if (returnEntries.length === 0) {
     // No bound names we know how to surface. Still IIFE-scope the body.
-    return `;(() => {\n${stripped}\n})();`
+    return { wrapped: `;(() => {\n${stripped}\n})();`, hoistedImports }
   }
 
-  return `const { ${destructureEntries.join(', ')} } = (() => {\n${stripped}\nreturn { ${returnEntries.join(', ')} };\n})();`
+  return {
+    wrapped: `const { ${destructureEntries.join(', ')} } = (() => {\n${stripped}\nreturn { ${returnEntries.join(', ')} };\n})();`,
+    hoistedImports,
+  }
 }
 
 export interface ResolveRelativeImportsOptions {
@@ -352,12 +376,18 @@ async function resolveSourceFile(importPath: string, searchDirs: string[]): Prom
  * Recurses into transitively-imported `.ts` modules so that, e.g.,
  * `client.tsx → nav-data.ts → component-registry.ts` all end up inlined
  * in the right declaration order.
+ *
+ * `hoistedAcc` is a mutable accumulator shared with all recursive calls:
+ * bare-package imports stripped from any inlined module body bubble up
+ * here so the outer entry point can prepend them, deduped, to the parent
+ * bundle's top level. piconic-ai/barefootjs#1148.
  */
 async function inlineRelativeImports(
   content: string,
   searchDirs: string[],
   inlinedPaths: Set<string>,
-  loggingPath: string
+  loggingPath: string,
+  hoistedAcc: string[],
 ): Promise<string> {
   const re = new RegExp(RELATIVE_IMPORT_RE.source, RELATIVE_IMPORT_RE.flags)
   const matches = [...content.matchAll(re)]
@@ -403,6 +433,7 @@ async function inlineRelativeImports(
       [dirname(result.path), ...searchDirs.slice(1)],
       inlinedPaths,
       loggingPath,
+      hoistedAcc,
     )
 
     // Wrap the inlined body in an IIFE that re-exports only the names the
@@ -411,7 +442,8 @@ async function inlineRelativeImports(
     // (e.g. `const BAR_STYLE`) don't collide in the parent's top-level
     // scope. piconic-ai/barefootjs#1141.
     const shape = parseImportShape(fullMatch)
-    const wrapped = wrapInIIFE(jsCode, shape, sourceContent)
+    const { wrapped, hoistedImports } = wrapInIIFE(jsCode, shape, sourceContent)
+    for (const h of hoistedImports) hoistedAcc.push(h)
 
     content = content.replace(fullMatch, wrapped)
     console.log(`Inlined: ${importPath} into ${loggingPath}`)
@@ -443,12 +475,30 @@ export async function resolveRelativeImports(options: ResolveRelativeImportsOpti
 
     const perEntryDirs = sourceDirsByManifestKey[name] ?? []
     const inlinedPaths = new Set<string>()
-    const next = await inlineRelativeImports(
+    const hoistedAcc: string[] = []
+    let next = await inlineRelativeImports(
       content,
       [dirname(filePath), ...perEntryDirs, ...sourceDirs],
       inlinedPaths,
       entry.clientJs,
+      hoistedAcc,
     )
+
+    // Prepend bare-package imports that bubbled up from inlined modules,
+    // deduped by exact statement text after whitespace normalization.
+    // ES modules hoist all `import` statements anyway, so placement is
+    // observationally identical. piconic-ai/barefootjs#1148.
+    if (hoistedAcc.length > 0) {
+      const seen = new Set<string>()
+      const unique: string[] = []
+      for (const stmt of hoistedAcc) {
+        const key = stmt.replace(/\s+/g, ' ').trim()
+        if (seen.has(key)) continue
+        seen.add(key)
+        unique.push(stmt)
+      }
+      next = unique.join('\n') + '\n' + next
+    }
 
     if (next !== content) {
       await writeText(filePath, next)

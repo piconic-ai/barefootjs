@@ -435,4 +435,174 @@ console.log(renamedA, bbb)
     expect(result).toMatch(/return \{\s*aaa,\s*bbb\s*\}/)
     expect(() => new Function(result)).not.toThrow()
   })
+
+  // ── Bare-package import hoisting (bf#1148) ────────────────────────────────
+  // Bare-package imports inside an inlined `.ts` module's body must rise to
+  // the parent bundle's top level (an `import` keyword inside an arrow body
+  // is a SyntaxError). Relative imports stay deleted because the recursive
+  // inliner already replaced them with IIFE wraps.
+
+  test('bare-package import is hoisted to parent top level', async () => {
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'uses-marked.ts'),
+      `import { marked } from 'marked'
+export function renderMd(s: string) { return marked.parse(s) }
+`,
+    )
+    const clientJs = `import { renderMd } from './uses-marked'
+console.log(renderMd('# hi'))
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Comp-bp1.js'), clientJs)
+
+    const manifest = {
+      Comp: { clientJs: 'components/canvas/Comp-bp1.js', markedTemplate: 'components/canvas/Comp.tsx' },
+    }
+
+    await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-bp1.js')).text()
+    // Exactly one top-level `import { marked } from 'marked'` line.
+    expect(countMatches(result, /import\s*\{\s*marked\s*\}\s*from\s*['"]marked['"]/g)).toBe(1)
+    // No `import` keyword anywhere inside the IIFE body. The `import` line
+    // must precede the `(() =>` IIFE opener — never follow it on a later line.
+    const iifeOpenIdx = result.indexOf('(() =>')
+    expect(iifeOpenIdx).toBeGreaterThan(-1)
+    // No top-level statement starting with `import` after the first IIFE
+    // opens (a stray hoisted import inside a body would still parse, but
+    // it'd appear AFTER the IIFE, which is the failure mode we're guarding).
+    const afterIife = result.slice(iifeOpenIdx)
+    expect(afterIife).not.toMatch(/^\s*import\b/m)
+    // The orphan reference is satisfied: the inlined body still calls marked.parse.
+    expect(result).toMatch(/marked\.parse/)
+  })
+
+  test('same bare-package import in two siblings is deduped', async () => {
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'uses-yjs-a.ts'),
+      `import * as Y from 'yjs'
+export function makeDocA() { return new Y.Doc() }
+`,
+    )
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'uses-yjs-b.ts'),
+      `import * as Y from 'yjs'
+export function makeDocB() { return new Y.Doc() }
+`,
+    )
+    const clientJs = `import { makeDocA } from './uses-yjs-a'
+import { makeDocB } from './uses-yjs-b'
+console.log(makeDocA(), makeDocB())
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Comp-bp2.js'), clientJs)
+
+    const manifest = {
+      Comp: { clientJs: 'components/canvas/Comp-bp2.js', markedTemplate: 'components/canvas/Comp.tsx' },
+    }
+
+    await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-bp2.js')).text()
+    // Exactly one top-level `import * as Y from 'yjs'` line — deduped.
+    expect(countMatches(result, /import\s*\*\s*as\s*Y\s*from\s*['"]yjs['"]/g)).toBe(1)
+  })
+
+  test('different-shape imports from the same package are kept separate', async () => {
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'uses-pkg-foo.ts'),
+      `import { foo } from 'pkg'
+export function callFoo() { return foo() }
+`,
+    )
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'uses-pkg-bar.ts'),
+      `import { bar } from 'pkg'
+export function callBar() { return bar() }
+`,
+    )
+    const clientJs = `import { callFoo } from './uses-pkg-foo'
+import { callBar } from './uses-pkg-bar'
+console.log(callFoo(), callBar())
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Comp-bp3.js'), clientJs)
+
+    const manifest = {
+      Comp: { clientJs: 'components/canvas/Comp-bp3.js', markedTemplate: 'components/canvas/Comp.tsx' },
+    }
+
+    await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-bp3.js')).text()
+    // Two distinct top-level lines — we don't try to merge bindings.
+    expect(result).toMatch(/import\s*\{\s*foo\s*\}\s*from\s*['"]pkg['"]/)
+    expect(result).toMatch(/import\s*\{\s*bar\s*\}\s*from\s*['"]pkg['"]/)
+    expect(countMatches(result, /from\s*['"]pkg['"]/g)).toBe(2)
+  })
+
+  test('transitive bare-package import bubbles up two levels to parent top', async () => {
+    // D imports a bare package; C imports D (relative); parent imports C.
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'd-mod.ts'),
+      `import getStroke from 'perfect-freehand'
+export function makeStroke(pts: number[][]) { return getStroke(pts) }
+`,
+    )
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'c-mod.ts'),
+      `import { makeStroke } from './d-mod'
+export function strokeFor(pts: number[][]) { return makeStroke(pts) }
+`,
+    )
+    const clientJs = `import { strokeFor } from './c-mod'
+console.log(strokeFor([[0,0]]))
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Comp-bp4.js'), clientJs)
+
+    const manifest = {
+      Comp: { clientJs: 'components/canvas/Comp-bp4.js', markedTemplate: 'components/canvas/Comp.tsx' },
+    }
+
+    await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-bp4.js')).text()
+    // The bare-package import must appear at the parent bundle's top level —
+    // before any IIFE — even though it originated two `.ts` levels deep.
+    expect(result).toMatch(/import\s+getStroke\s+from\s*['"]perfect-freehand['"]/)
+    const importIdx = result.search(/import\s+getStroke\s+from/)
+    const iifeOpenIdx = result.indexOf('(() =>')
+    expect(importIdx).toBeGreaterThan(-1)
+    expect(iifeOpenIdx).toBeGreaterThan(-1)
+    expect(importIdx).toBeLessThan(iifeOpenIdx)
+  })
+
+  test('relative imports in an inlined module are not hoisted to top level', async () => {
+    // After IIFE wrap there should be no top-level `import './…'` line.
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'rel-leaf.ts'),
+      `export const leaf = 'leaf'
+`,
+    )
+    writeFileSync(
+      resolve(COMPONENTS_DIR, 'rel-mid.ts'),
+      `import { leaf } from './rel-leaf'
+export const mid = leaf + ':mid'
+`,
+    )
+    const clientJs = `import { mid } from './rel-mid'
+console.log(mid)
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Comp-bp5.js'), clientJs)
+
+    const manifest = {
+      Comp: { clientJs: 'components/canvas/Comp-bp5.js', markedTemplate: 'components/canvas/Comp.tsx' },
+    }
+
+    await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    const result = await Bun.file(resolve(COMPONENTS_DIR, 'Comp-bp5.js')).text()
+    // No `import './…'` line should sneak back to the top.
+    expect(result).not.toMatch(/^\s*import\s+.*\sfrom\s+['"]\.\.?\//m)
+    // The relative import was IIFE-replaced, so the binding is destructured.
+    expect(result).toMatch(/const \{\s*leaf\s*\}\s*=\s*\(\(\) =>/)
+    expect(result).toMatch(/const \{\s*mid\s*\}\s*=\s*\(\(\) =>/)
+  })
 })
