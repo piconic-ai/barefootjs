@@ -28,7 +28,7 @@
  * preserve it; a follow-up PR can fix it now that the indent is data-driven.
  */
 
-import { varSlotId } from '../../utils'
+import { emitRefCall, varSlotId } from '../../utils'
 import { emitAttrUpdate } from '../../emit-reactive'
 import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types'
 import { stringifyBranchLoops } from './branch-loop'
@@ -106,7 +106,7 @@ function emitArmBody(
 
   for (const ref of body.refs) {
     const v = varSlotId(ref.slotId)
-    lines.push(`${indent}if (_${v}) (${ref.callback})(_${v})`)
+    lines.push(`${indent}if (_${v}) ${emitRefCall(ref.callback, `_${v}`)}`)
   }
 
   // 3. Child component initializations from the branch swap.

@@ -200,6 +200,34 @@ export function wrapHandlerInBlock(handler: string): string {
   return trimmed
 }
 
+/**
+ * Emit a ref-binding call `(callback)(elementVar)`, optionally guarded so the
+ * call no-ops when the callback is undefined.
+ *
+ * Background: `<el ref={props.onMount} />` where `onMount?:` is optional in the
+ * prop type compiles to `(_p.onMount)(_s0)`. Consumers that omit the prop pass
+ * `undefined` and the call throws `TypeError: _p.onMount is not a function`
+ * (#1161). Local-bound callbacks like `<el ref={attachPane} />` are always
+ * defined — `attachPane` is a `const` in the component body — so they keep the
+ * unguarded call.
+ *
+ * Heuristic: a single bare identifier (e.g. `attachPane`) is a local binding;
+ * anything else (member access, call, arrow, …) is treated as a possibly-
+ * undefined source and emitted with optional-call (`?.()`).
+ */
+export function emitRefCall(callback: string, elementVar: string): string {
+  const trimmed = callback.trim()
+  const isBareIdent = /^[a-zA-Z_$][\w$]*$/.test(trimmed)
+  if (isBareIdent) {
+    return `(${callback})(${elementVar})`
+  }
+  // Wrap non-identifier expressions in parens so `?.()` binds to the whole
+  // expression (e.g. `(_p.onMount)?.(_s0)` not `_p.onMount?.(_s0)` — both
+  // parse the same here, but the parens preserve the legacy emit shape's
+  // intent and stay safe for arbitrary callback expressions).
+  return `(${callback})?.(${elementVar})`
+}
+
 /** Infer a sensible JS default value literal from a type descriptor. */
 export function inferDefaultValue(type: { kind: string; primitive?: string }): string {
   if (type.kind === 'primitive') {
