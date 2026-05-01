@@ -56,7 +56,7 @@ const value = useContext(MyContext)
 
 - If a `Provider` ancestor exists, returns the provided value
 - If no `Provider` exists and a default value was passed to `createContext`, returns the default
-- If no `Provider` exists and no default was set, throws an error
+- Otherwise returns `undefined` — guard with optional chaining (`store?.value`)
 
 
 ## Basic Example

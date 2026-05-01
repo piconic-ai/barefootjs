@@ -34,33 +34,17 @@ export function setCurrentScope(scope: Element | null): Element | null {
 }
 
 /**
- * Template-scope counter. Incremented on entry to any template evaluation
- * (render, renderChild, insert branch templates), decremented on exit.
- *
- * Templates may run BEFORE the parent's init has called `provideContext`:
- * the compiler inlines `useContext(Ctx)`-derived expressions into the
- * template literal, but `provideContext(Ctx, ...)` lives in init which
- * runs after the template returns its HTML. While `inTemplateScope > 0`,
- * a `useContext` call with no provider and no default returns `undefined`
- * silently instead of throwing — init's `createEffect` repaints with the
- * correct value once the provider is set up. See piconic-ai/barefootjs#1156.
- */
-let inTemplateScope = 0
-
-export function enterTemplateScope(): void {
-  inTemplateScope++
-}
-
-export function exitTemplateScope(): void {
-  if (inTemplateScope > 0) inTemplateScope--
-}
-
-/**
  * Read the current value of a context.
  *
  * Walks up the DOM tree from the current scope element to find
  * the nearest ancestor that provided this context. Falls back to
- * the global store, then to the context's default value.
+ * the global store, then to the context's default value, then to
+ * `undefined`.
+ *
+ * Returning `undefined` (rather than throwing) when no provider is
+ * available lets templates evaluate safely before init has run
+ * `provideContext` — init's `createEffect` repaints once the
+ * provider is set up. See piconic-ai/barefootjs#1156.
  */
 export function useContext<T>(context: Context<T>): T {
   // Walk DOM ancestors from current scope to find nearest provider.
@@ -85,19 +69,10 @@ export function useContext<T>(context: Context<T>): T {
       el = el.parentElement
     }
   }
-  // Fallback to global store
   if (contextStore.has(context.id)) {
     return contextStore.get(context.id) as T
   }
-  if (context._hasDefault) {
-    return context.defaultValue as T
-  }
-  if (inTemplateScope > 0) {
-    // Template eval ran before init's provideContext call.
-    // Return undefined; init's createEffect repaints with the real value.
-    return undefined as T
-  }
-  throw new Error('useContext: no provider found and no default value')
+  return context.defaultValue as T
 }
 
 /**

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createContext, useContext, provideContext } from '../../src/runtime/context'
-import { createSignal, createEffect } from '../../src/reactive'
+import { createSignal } from '../../src/reactive'
 
 describe('createContext', () => {
   test('creates context with unique id', () => {
@@ -20,11 +20,11 @@ describe('createContext', () => {
     expect(ctx.defaultValue).toBeUndefined()
   })
 
-  test('distinguishes explicit undefined from no default', () => {
+  test('default is undefined whether explicit or omitted', () => {
     const withExplicit = createContext<string | undefined>(undefined)
     const withoutDefault = createContext<string>()
-    expect(withExplicit._hasDefault).toBe(true)
-    expect(withoutDefault._hasDefault).toBe(false)
+    expect(withExplicit.defaultValue).toBeUndefined()
+    expect(withoutDefault.defaultValue).toBeUndefined()
   })
 })
 
@@ -34,9 +34,9 @@ describe('useContext', () => {
     expect(useContext(ctx)).toBe('fallback')
   })
 
-  test('throws when no provider and no default', () => {
+  test('returns undefined when no provider and no default', () => {
     const ctx = createContext<string>()
-    expect(() => useContext(ctx)).toThrow('useContext: no provider found and no default value')
+    expect(useContext(ctx)).toBeUndefined()
   })
 
   test('returns explicit undefined default without throwing', () => {

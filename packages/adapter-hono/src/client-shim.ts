@@ -65,15 +65,14 @@ export function getHonoContext<T>(bfCtx: Context<T>): HonoContext<T | undefined>
 
 /**
  * SSR `useContext`: read from Hono's per-render stack, falling back to the
- * BarefootJS Context's default value. Throws when no provider is in scope and
- * the context was created without a default — matching client semantics.
+ * BarefootJS Context's default value, then to `undefined`. Mirrors client
+ * semantics — no provider returns `undefined` rather than throwing.
  */
 export function useContext<T>(bfCtx: Context<T>): T {
   const hc = getHonoContext(bfCtx)
   const v = honoUseContext(hc) as T | undefined
   if (v !== undefined) return v
-  if (bfCtx._hasDefault) return bfCtx.defaultValue as T
-  throw new Error('useContext: no provider found and no default value (SSR)')
+  return bfCtx.defaultValue as T
 }
 
 /**
