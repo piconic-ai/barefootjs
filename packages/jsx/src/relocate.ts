@@ -273,14 +273,14 @@ export function relocate(
 export function isInlinableInTemplate(
   value: string,
   env: RelocateEnv,
-): { ok: boolean; rewrittenValue: string } {
+): { ok: boolean; rewrittenValue: string; decisions: RelocateDecision[] } {
   const valueNode = parseExpressionNode(value)
   const r = relocate(value, valueNode, 'init', 'template', env)
-  if (!r.ok) return { ok: false, rewrittenValue: r.text }
+  if (!r.ok) return { ok: false, rewrittenValue: r.text, decisions: r.decisions }
 
   if (valueNode) {
     if (hasCallWithBridgedArg(valueNode, r.decisions)) {
-      return { ok: false, rewrittenValue: r.text }
+      return { ok: false, rewrittenValue: r.text, decisions: r.decisions }
     }
     if (hasZeroArgCall(valueNode)) {
       // Zero-arg calls (`readItems()`, `count()`) read runtime state.
@@ -291,11 +291,11 @@ export function isInlinableInTemplate(
       // the long-standing `${[].map(...)}` fallback for cases like
       // `const items = readItems()` keeps producing a stable empty
       // initial render and lets init's effect populate the real value.
-      return { ok: false, rewrittenValue: r.text }
+      return { ok: false, rewrittenValue: r.text, decisions: r.decisions }
     }
   }
 
-  return { ok: true, rewrittenValue: r.text }
+  return { ok: true, rewrittenValue: r.text, decisions: r.decisions }
 }
 
 /**
