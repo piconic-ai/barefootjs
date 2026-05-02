@@ -5,6 +5,7 @@
  * Single entry point for compiler-generated code.
  */
 
+import { setCurrentScope } from './context'
 import { commentScopeRegistry } from './scope'
 import { hydratedScopes } from './hydration-state'
 import { registerComponent } from './registry'
@@ -127,7 +128,20 @@ function hydrateCommentScopes(
       }
       const props = (parsed[name] ?? {}) as Record<string, unknown>
 
-      init(proxyEl, props)
+      // Mirror `createComponent`: set `currentScope` so `useContext` /
+      // `provideContext` calls inside `init` resolve via DOM ancestor
+      // walk relative to *this* element. Without it, a top-level
+      // hydrate of a component nested inside a parent scope (e.g. a
+      // `<Flow renderNode={Fn}>` bridge whose returned JSX is hydrated
+      // by the DOM walker rather than by `initChild`) would call
+      // `useContext` against a stale `currentScope` and miss every
+      // ancestor-provided value.
+      const prevScope = setCurrentScope(proxyEl)
+      try {
+        init(proxyEl, props)
+      } finally {
+        setCurrentScope(prevScope)
+      }
     }
   }
 }
@@ -192,6 +206,19 @@ function hydrateComponent(name: string, def: ComponentDef): void {
       }
     }
 
-    def.init(scopeEl, props)
+    // Mirror `createComponent`: set `currentScope` so `useContext` /
+    // `provideContext` calls inside `init` resolve via DOM ancestor
+    // walk relative to *this* element. Without it, a top-level
+    // hydrate of a component nested inside a parent scope (e.g. a
+    // `<Flow renderNode={Fn}>` bridge whose returned JSX is hydrated
+    // by the DOM walker rather than by `initChild`) would call
+    // `useContext` against a stale `currentScope` and miss every
+    // ancestor-provided value.
+    const prevScope = setCurrentScope(scopeEl)
+    try {
+      def.init(scopeEl, props)
+    } finally {
+      setCurrentScope(prevScope)
+    }
   }
 }
