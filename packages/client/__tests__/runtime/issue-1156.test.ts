@@ -83,7 +83,7 @@ describe('issue #1156: useContext from inlined child template', () => {
     expect(() => render(container, 'Issue1156NoDefaultFlow', {})).not.toThrow()
   })
 
-  test('SSR hydrate flow: createEffect repaints child with parent-provided value', () => {
+  test('SSR hydrate flow: createEffect repaints child with parent-provided value', async () => {
     type Store = { value: number }
     const FlowContext = createContext<Store | undefined>(undefined)
 
@@ -112,6 +112,9 @@ describe('issue #1156: useContext from inlined child template', () => {
     })
 
     hydrate('Issue1156HydrFlow', def)
+    // Drain the initial scheduled walk before swapping the SSR markup in,
+    // so the doc-order pass we care about runs against that markup only.
+    await Promise.resolve()
 
     // Mimic SSR-rendered HTML with proper parent-child scope IDs.
     const parentId = 'Issue1156HydrFlow_ssr01'
@@ -123,6 +126,7 @@ describe('issue #1156: useContext from inlined child template', () => {
       `</div>`
 
     expect(() => hydrate('Issue1156HydrFlow', def)).not.toThrow()
+    await Promise.resolve()
     expect(document.body.textContent).toBe('42')
   })
 })

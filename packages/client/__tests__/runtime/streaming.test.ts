@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, beforeEach, mock } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { __bf_swap, setupStreaming } from '../../src/runtime/streaming'
 import { hydrate, rehydrateAll } from '../../src/runtime/hydrate'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -93,7 +93,7 @@ describe('rehydrateAll', () => {
     document.body.innerHTML = ''
   })
 
-  test('hydrates components added after initial hydration', () => {
+  test('hydrates components added after initial hydration', async () => {
     const initialized: string[] = []
 
     // Initial hydration
@@ -103,6 +103,8 @@ describe('rehydrateAll', () => {
     hydrate('Counter', {
       init: (scope) => { initialized.push(scope.getAttribute('bf-s')!) },
     })
+    // hydrate() schedules its walker on the next microtask.
+    await Promise.resolve()
 
     expect(initialized).toEqual(['Counter_1'])
 
@@ -119,7 +121,7 @@ describe('rehydrateAll', () => {
     expect(initialized).toEqual(['Counter_1', 'Counter_2'])
   })
 
-  test('does not re-hydrate already initialized elements', () => {
+  test('does not re-hydrate already initialized elements', async () => {
     let initCount = 0
 
     document.body.innerHTML = `
@@ -128,6 +130,7 @@ describe('rehydrateAll', () => {
     hydrate('Toggle', {
       init: () => { initCount++ },
     })
+    await Promise.resolve()
 
     expect(initCount).toBe(1)
 
