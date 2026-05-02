@@ -269,6 +269,11 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   lines.push(`function init${name}() {}`)
   lines.push('')
   lines.push(`hydrate('${registryKey}', { init: init${name}, template: (${PROPS_PARAM}) => \`${templateHtml}\` })`)
+  // See `emitRegistrationAndHydration` (./emit-registration.ts) for the
+  // rationale on why the component is also emitted as a callable
+  // shim. The same applies for template-only components since they
+  // can still be referenced as values (e.g. `<Parent slot={Comp}>`).
+  lines.push(`export function ${name}(${PROPS_PARAM}, __bfKey) { return createComponent('${registryKey}', ${PROPS_PARAM}, __bfKey) }`)
 
   const generatedCode = lines.join('\n')
   const usedImports = detectUsedImports(generatedCode)
