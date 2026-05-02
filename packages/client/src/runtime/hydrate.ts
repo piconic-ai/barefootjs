@@ -5,6 +5,7 @@
  * Single entry point for compiler-generated code.
  */
 
+import { setCurrentScope } from './context'
 import { commentScopeRegistry } from './scope'
 import { hydratedScopes } from './hydration-state'
 import { registerComponent } from './registry'
@@ -127,7 +128,11 @@ function hydrateCommentScopes(
       }
       const props = (parsed[name] ?? {}) as Record<string, unknown>
 
+      // Mirror createComponent (component.ts) so context hooks inside init
+      // resolve from this scope.
+      const prevScope = setCurrentScope(proxyEl)
       init(proxyEl, props)
+      setCurrentScope(prevScope)
     }
   }
 }
@@ -192,6 +197,10 @@ function hydrateComponent(name: string, def: ComponentDef): void {
       }
     }
 
+    // Mirror createComponent (component.ts) so context hooks inside init
+    // resolve from this scope.
+    const prevScope = setCurrentScope(scopeEl)
     def.init(scopeEl, props)
+    setCurrentScope(prevScope)
   }
 }
