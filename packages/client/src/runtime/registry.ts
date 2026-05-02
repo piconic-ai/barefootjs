@@ -32,19 +32,16 @@ const pendingChildInits = new Map<string, Array<{ scope: Element; props: Record<
 export function registerComponent(name: string, init: InitFn): void {
   componentRegistry.set(name, init)
 
-  // Process any pending child initializations for this component
+  // Drain any pending child initializations queued before this component
+  // registered. Re-enter through initChild so the same hydratedScopes
+  // bookkeeping + currentScope wrapping applies to deferred and immediate
+  // calls alike.
   const pending = pendingChildInits.get(name)
   if (pending) {
-    for (const { scope, props } of pending) {
-      // Skip if already initialized as a child component.
-      // When scope has no ~ prefix, it's a root component whose parent
-      // marked it during hydrate — still needs child init.
-      if (hydratedScopes.has(scope) && scope.getAttribute(BF_SCOPE)?.startsWith(BF_CHILD_PREFIX)) {
-        continue
-      }
-      init(scope, props)
-    }
     pendingChildInits.delete(name)
+    for (const { scope, props } of pending) {
+      initChild(name, scope, props)
+    }
   }
 }
 
@@ -89,15 +86,31 @@ export function initChild(
     return
   }
 
-  // Skip if already initialized as a child component.
-  // When scope has no ~ prefix, it's a root component whose parent
-  // marked it during hydrate — still needs child init.
-  if (hydratedScopes.has(childScope) && childScope.getAttribute(BF_SCOPE)?.startsWith(BF_CHILD_PREFIX)) {
+  // Child-prefixed scopes (`~Foo_xxx`) are owned by the parent's initChild
+  // entirely — once we've run their init, never re-enter. Top-level scopes
+  // (no `~`) reach this path through `upsertChild` during reconcile, where
+  // re-invoking init is the documented way to deliver fresh closure-captured
+  // callback props to the child. So only short-circuit the prefixed case.
+  if (
+    hydratedScopes.has(childScope) &&
+    childScope.getAttribute(BF_SCOPE)?.startsWith(BF_CHILD_PREFIX)
+  ) {
     return
   }
+
   const prevScope = setCurrentScope(childScope)
-  init(childScope, props)
-  setCurrentScope(prevScope)
+  try {
+    init(childScope, props)
+  } finally {
+    setCurrentScope(prevScope)
+  }
+
+  // Mark the scope as hydrated AFTER init runs so the doc-order walker in
+  // hydrate.ts knows to skip this element on its later pass — the parent
+  // has just claimed responsibility for it. This is what lets the walker
+  // get away with a single `hydratedScopes.has(el)` check instead of an
+  // ancestor-name guard.
+  hydratedScopes.add(childScope)
 }
 
 /**

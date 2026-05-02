@@ -37,11 +37,50 @@ describe('hydrate', () => {
     expect(initialized[0].scope.getAttribute('bf-s')).toBe('Counter_abc')
   })
 
-  test('skips nested component scopes with same component type', async () => {
+  test('parent that calls initChild claims its same-name nested scope', async () => {
+    const { initChild } = await import('../../src/runtime/registry')
     const initialized: Element[] = []
 
-    // Counter nested inside another Counter should be skipped
-    // (parent component is responsible for initializing its children)
+    // The walker visits both scopes in document order. When the outer
+    // Counter's init calls `initChild('Counter', innerEl)` for its
+    // nested same-name child, that initChild marks the inner scope as
+    // hydrated — so the walker's later visit short-circuits. The
+    // assertion below is on initialized order: outer first, then inner
+    // via initChild, then nothing more (walker skip).
+    document.body.innerHTML = `
+      <div bf-s="Counter_1">
+        <div bf-s="Counter_nested">nested</div>
+      </div>
+    `
+
+    hydrate('Counter', {
+      init: (scope) => {
+        initialized.push(scope)
+        // Outer claims its nested same-name child. Inner Counter has
+        // no children of its own to claim — its init is a no-op
+        // (no recursive initChild). Without this branching the test
+        // would loop forever via mutual hydration.
+        if (scope.getAttribute('bf-s') === 'Counter_1') {
+          const inner = scope.querySelector('[bf-s="Counter_nested"]')
+          if (inner) initChild('Counter', inner)
+        }
+      },
+    })
+    await flush()
+
+    expect(initialized.length).toBe(2)
+    expect(initialized[0].getAttribute('bf-s')).toBe('Counter_1')
+    expect(initialized[1].getAttribute('bf-s')).toBe('Counter_nested')
+  })
+
+  test('walker hydrates same-name nested scope when parent does NOT claim it', async () => {
+    const initialized: Element[] = []
+
+    // Same DOM as above, but this time the outer's init is a no-op:
+    // it does not call initChild for the inner. The walker, having no
+    // ancestor-name guard anymore, treats the inner as a top-level
+    // scope and hydrates it too. This is what makes nesting depth a
+    // non-concern (the previous walker silently dropped inner inits).
     document.body.innerHTML = `
       <div bf-s="Counter_1">
         <div bf-s="Counter_nested">nested</div>
@@ -51,9 +90,11 @@ describe('hydrate', () => {
     hydrate('Counter', { init: (scope) => initialized.push(scope) })
     await flush()
 
-    // Only the outer Counter_1 should be initialized, not the nested one
-    expect(initialized.length).toBe(1)
-    expect(initialized[0].getAttribute('bf-s')).toBe('Counter_1')
+    expect(initialized.length).toBe(2)
+    expect(initialized.map((el) => el.getAttribute('bf-s'))).toEqual([
+      'Counter_1',
+      'Counter_nested',
+    ])
   })
 
   test('initializes nested component with different parent type', async () => {

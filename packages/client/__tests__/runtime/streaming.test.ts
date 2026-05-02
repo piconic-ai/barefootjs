@@ -115,8 +115,11 @@ describe('rehydrateAll', () => {
     newEl.textContent = 'streamed'
     document.body.appendChild(newEl)
 
-    // Trigger re-hydration
+    // Trigger re-hydration. `rehydrateAll()` schedules a walk through
+    // the same microtask + rAF pipeline as `hydrate()`, so we await a
+    // microtask flush before asserting.
     rehydrateAll()
+    await Promise.resolve()
 
     expect(initialized).toEqual(['Counter_1', 'Counter_2'])
   })
@@ -136,6 +139,7 @@ describe('rehydrateAll', () => {
 
     // Re-hydrate should not re-initialize
     rehydrateAll()
+    await Promise.resolve()
     expect(initCount).toBe(1)
   })
 })

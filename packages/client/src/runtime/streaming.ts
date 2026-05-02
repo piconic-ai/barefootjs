@@ -38,8 +38,12 @@ export function __bf_swap(id: string): void {
   // Clean up the template element
   tmpl.remove()
 
-  // Trigger hydration for newly inserted content
-  requestAnimationFrame(rehydrateAll)
+  // Trigger hydration for newly inserted content. `rehydrateAll()`
+  // schedules its own microtask + rAF walk via `scheduleWalk()`, so the
+  // extra rAF wrapper that used to live here is redundant — calling
+  // through synchronously lets the microtask path catch the swap on
+  // the same tick.
+  rehydrateAll()
 }
 
 /**
