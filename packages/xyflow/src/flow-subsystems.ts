@@ -45,6 +45,14 @@ export function attachFlowSubsystems<
   el.style.overflow = 'hidden'
 
   store.setDomNode(el)
+  // Expose the store on the host `<div class="bf-flow">` element so
+  // descendants that miss `FlowContext` — e.g. children passed through
+  // `<Flow renderNode={Fn}>` whose returned JSX is hydrated as a
+  // top-level scope outside of Flow's `FlowContext.Provider` — can
+  // still locate the store via `el.closest('.bf-flow').__bfFlowStore`.
+  // Always-set, even on hot remount, so callers can rely on a single
+  // canonical reference.
+  ;(el as HTMLElement & { __bfFlowStore?: typeof store }).__bfFlowStore = store
   store.setWidth(el.offsetWidth)
   store.setHeight(el.offsetHeight)
 
