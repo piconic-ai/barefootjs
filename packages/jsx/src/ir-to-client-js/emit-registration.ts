@@ -305,5 +305,33 @@ export function emitRegistrationAndHydration(
     defParts.push('comment: true')
   }
 
-  return `hydrate('${nameForRegistryRef(name)}', { ${defParts.join(', ')} })`
+  const registryKey = nameForRegistryRef(name)
+  const hydrateLine = `hydrate('${registryKey}', { ${defParts.join(', ')} })`
+
+  // Emit a callable shim with the original component name so consumers
+  // can use the component as a *value* — e.g. `<Flow renderNode={Bridge}>`
+  // or any other higher-order pattern where a JSX-defined `'use client'`
+  // component is passed around and later invoked as a function.
+  //
+  // Without the shim, the CLI compiles `function Bridge(props) {...}` to
+  // `function initBridge(__scope, _p) {...}` + `hydrate('Bridge', ...)`,
+  // and the bare `Bridge` reference becomes a free variable (silent
+  // ReferenceError when the holding closure runs). Holders that read it
+  // synchronously (Flow's reactive children getter, called from
+  // `setNodes` updates) crash.
+  //
+  // The shim delegates to `createComponent`, which:
+  //   - looks up the registered template + init for `${registryKey}`
+  //   - generates a fresh DOM element
+  //   - sets `currentScope` so `provideContext` / `useContext` inside
+  //     the init resolve relative to *this* element (i.e. inside the
+  //     calling parent's reactive scope, not at the top level)
+  //   - wires the props through and calls init
+  //
+  // Net effect: `renderNode={Bridge}` works for both the static SSR
+  // path (parent renders the bridge as children of NodeWrapper) and the
+  // runtime reactive path (mapArray → renderNode getter → real call).
+  const shimLine = `export function ${name}(${PROPS_PARAM}, __bfKey) { return createComponent('${registryKey}', ${PROPS_PARAM}, __bfKey) }`
+
+  return `${hydrateLine}\n${shimLine}`
 }

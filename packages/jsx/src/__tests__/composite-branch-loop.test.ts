@@ -98,8 +98,15 @@ describe('composite loops inside conditional branches (#724)', () => {
     // Should use mapArray for per-item reactivity
     expect(js).toContain('mapArray(')
 
-    // Should NOT use createComponent (no child components)
-    expect(js).not.toContain('createComponent(')
+    // Should NOT use createComponent inside the init body (no child
+    // components in this fixture). The CLI also emits a callable shim
+    // `export function ${name}(props) { return createComponent(...) }`
+    // for *this* component so consumers can pass it as a value; the
+    // shim's createComponent is fine. Filter to occurrences before the
+    // shim's `export function` declaration.
+    const shimStart = js.indexOf('\nexport function ')
+    const initBody = shimStart >= 0 ? js.slice(0, shimStart) : js
+    expect(initBody).not.toContain('createComponent(')
   })
 
   test('simple loop with onClick inside conditional generates event delegation (#766)', () => {
@@ -147,8 +154,15 @@ describe('composite loops inside conditional branches (#724)', () => {
     expect(js).toContain('target.closest')
     expect(js).toContain('handleDelete(item.id)')
 
-    // Should NOT use createComponent (no child components)
-    expect(js).not.toContain('createComponent(')
+    // Should NOT use createComponent inside the init body (no child
+    // components in this fixture). The CLI also emits a callable shim
+    // `export function ${name}(props) { return createComponent(...) }`
+    // for *this* component so consumers can pass it as a value; the
+    // shim's createComponent is fine. Filter to occurrences before the
+    // shim's `export function` declaration.
+    const shimStart = js.indexOf('\nexport function ')
+    const initBody = shimStart >= 0 ? js.slice(0, shimStart) : js
+    expect(initBody).not.toContain('createComponent(')
   })
 
   test('SSR hydration: composite branch loop initializes child components via initChild', () => {
