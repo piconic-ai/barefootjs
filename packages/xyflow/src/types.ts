@@ -313,4 +313,19 @@ export type FlowProps<
   selectionOnDrag?: boolean
   /** Selection mode: 'partial' (default) or 'full' */
   selectionMode?: SelectionMode
+  /**
+   * When true, the per-node default chrome (white background, dark
+   * border, padding, "grab" cursor, centered text) is omitted from the
+   * injected stylesheet. Use this when every node renders its own
+   * visuals — e.g. a `renderNode` JSX bridge that mounts an imperative
+   * canvas-axis / box / svg renderer. The layout-critical rules (edge,
+   * handle, resize, selection rectangle, group/child) remain.
+   *
+   * Without this flag, consumers used to reach for the `--custom`
+   * class on `.bf-flow__node`, but a reactive className binding on
+   * `<NodeWrapper>` rebuilds the class string on every store update
+   * and wipes consumer-added classes; this flag avoids that fight by
+   * not needing the class in the first place.
+   */
+  disableDefaultNodeStyles?: boolean
 }

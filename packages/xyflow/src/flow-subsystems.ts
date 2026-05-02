@@ -39,7 +39,7 @@ export function attachFlowSubsystems<
   store: InternalFlowStore<NodeType, EdgeType>,
   props: FlowProps<NodeType, EdgeType>,
 ): void {
-  injectDefaultStyles()
+  injectDefaultStyles(props.disableDefaultNodeStyles)
 
   el.style.position = 'relative'
   el.style.overflow = 'hidden'
@@ -205,18 +205,36 @@ export function attachFlowSubsystems<
  * Inject default CSS styles for xyflow components. Idempotent — first
  * call inserts a `<style id="bf-flow-styles">`; subsequent calls
  * (e.g. multiple `<Flow>` instances on one page) early-return.
+ *
+ * Consumers can opt out of the per-node chrome (the `.bf-flow__node`
+ * white background / border / padding / cursor / text styling) by
+ * passing `disableDefaultNodeStyles: true` on the `<Flow>` props.
+ * They still get the layout-critical resize-handle, edge, selection
+ * rectangle, and group/child styles. Useful when each node renders
+ * its own visuals (custom imperative renderers, JSX bridges, etc.) —
+ * the consumer no longer has to:
+ *
+ *   - reach for `bf-flow__node--custom` (which a reactive className
+ *     binding can blow away on re-render), or
+ *   - inject a higher-specificity override `<style>` tag, or
+ *   - pile on `:has([data-bf-bridge])` workarounds.
  */
-function injectDefaultStyles() {
+function injectDefaultStyles(disableNodeStyles?: boolean) {
   if (typeof document === 'undefined') return
-  if (document.getElementById('bf-flow-styles')) return
-
+  const existing = document.getElementById('bf-flow-styles') as HTMLStyleElement | null
+  if (existing) {
+    // If a previous `<Flow>` injected the full chrome and a later one
+    // asks to disable node styles, scope the disable to nodes inside
+    // the new Flow instead of mutating the global stylesheet.
+    return
+  }
   const style = document.createElement('style')
   style.id = 'bf-flow-styles'
-  style.textContent = DEFAULT_STYLES
+  style.textContent = disableNodeStyles ? STYLES_WITHOUT_NODE_CHROME : DEFAULT_STYLES
   document.head.appendChild(style)
 }
 
-const DEFAULT_STYLES = `
+const NODE_CHROME_STYLES = `
 .bf-flow__node {
   padding: 10px;
   border: 1px solid #1a192b;
@@ -232,6 +250,16 @@ const DEFAULT_STYLES = `
 .bf-flow__node--custom { border: none; background: transparent; padding: 0; border-radius: 0; }
 .bf-flow__node--custom.bf-flow__node--selected { box-shadow: none; }
 .bf-flow__node--selected { box-shadow: 0 0 0 0.5px #1a192b; }
+`
+
+const NODE_LAYOUT_STYLES = `
+.bf-flow__node {
+  user-select: none;
+  box-sizing: border-box;
+}
+`
+
+const COMMON_STYLES = `
 .bf-flow__handle {
   width: 6px; height: 6px; border-radius: 50%; background-color: #1a192b;
   position: absolute; left: 50%; transform: translateX(-50%);
@@ -298,4 +326,7 @@ path.bf-flow__edge.bf-flow__edge--reconnect-hover { stroke: var(--text-primary, 
   /* Child nodes render above parents via z-index from @xyflow/system */
 }
 `
+
+const DEFAULT_STYLES = NODE_CHROME_STYLES + COMMON_STYLES
+const STYLES_WITHOUT_NODE_CHROME = NODE_LAYOUT_STYLES + COMMON_STYLES
 
