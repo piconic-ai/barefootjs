@@ -1100,6 +1100,12 @@ html.dark .shiki span {
   color: var(--muted-foreground);
 }
 
+@media (max-width: 768px) {
+  .ui-input {
+    font-size: 16px;
+  }
+}
+
 /* Preview Checkbox */
 .ui-checkbox-label {
   display: flex;
