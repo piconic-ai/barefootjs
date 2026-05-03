@@ -8,6 +8,7 @@ import {
   vendorChunkFilename,
   processExternals,
   processBundleEntries,
+  computeGlobalHash,
 } from '../lib/build'
 import { emptyCache, type BuildCache, type CacheEntry } from '../lib/build-cache'
 import { mkdirSync, writeFileSync, rmSync, existsSync, statSync, readFileSync, realpathSync } from 'fs'
@@ -588,6 +589,117 @@ export function __bf_init_Counter(el, props) {
     expect(result).toContain('counter')
     // Hydration hook identifier must survive minification
     expect(result).toContain('__bf_init_Counter')
+  })
+})
+
+// ── computeGlobalHash ─────────────────────────────────────────────────────
+
+describe('computeGlobalHash', () => {
+  const mockAdapter = { name: 'mock', extension: '.mock' } as any
+
+  function makeTmpDir(label = 'global-hash') {
+    const dir = resolve(tmpdir(), `bf-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+    mkdirSync(dir, { recursive: true })
+    return realpathSync(dir)
+  }
+
+  function makeConfig(projectDir: string, extra: Record<string, any> = {}) {
+    return {
+      projectDir,
+      adapter: mockAdapter,
+      componentDirs: [],
+      outDir: projectDir,
+      minify: false,
+      contentHash: false,
+      clientOnly: false,
+      ...extra,
+    } as any
+  }
+
+  test('is stable across calls when nothing changes', async () => {
+    const projectDir = makeTmpDir()
+    try {
+      writeFileSync(resolve(projectDir, 'bun.lock'), 'lockfile contents v1\n')
+      const config = makeConfig(projectDir)
+      const h1 = await computeGlobalHash(config)
+      const h2 = await computeGlobalHash(config)
+      expect(h1).toBe(h2)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
+  // Regression: piconic-ai/barefootjs#1179 — bumping a git-ref dependency via
+  // `bun install` rewrote bun.lock but did not invalidate the build cache,
+  // so stale `*.client.js` bundles missing new hydrations were served.
+  test('changes when lockfile content changes', async () => {
+    const projectDir = makeTmpDir()
+    try {
+      const lockPath = resolve(projectDir, 'bun.lock')
+      writeFileSync(lockPath, 'lockfile contents v1\n')
+      const config = makeConfig(projectDir)
+      const before = await computeGlobalHash(config)
+
+      writeFileSync(lockPath, 'lockfile contents v2\n')
+      const after = await computeGlobalHash(config)
+      expect(after).not.toBe(before)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
+  test('differs when lockfile filename differs but content is identical', async () => {
+    // bun.lock vs yarn.lock with the same bytes still represents a different
+    // package manager state, so the hash must distinguish them.
+    const dirA = makeTmpDir('lock-a')
+    const dirB = makeTmpDir('lock-b')
+    try {
+      writeFileSync(resolve(dirA, 'bun.lock'), 'identical-bytes\n')
+      writeFileSync(resolve(dirB, 'yarn.lock'), 'identical-bytes\n')
+      const hA = await computeGlobalHash(makeConfig(dirA))
+      const hB = await computeGlobalHash(makeConfig(dirB))
+      expect(hA).not.toBe(hB)
+    } finally {
+      rmSync(dirA, { recursive: true, force: true })
+      rmSync(dirB, { recursive: true, force: true })
+    }
+  })
+
+  test('finds lockfile in a parent directory (monorepo workspace)', async () => {
+    const root = makeTmpDir('monorepo')
+    try {
+      const lockPath = resolve(root, 'bun.lock')
+      writeFileSync(lockPath, 'workspace lock v1\n')
+      const pkgDir = resolve(root, 'packages/inner')
+      mkdirSync(pkgDir, { recursive: true })
+
+      const config = makeConfig(realpathSync(pkgDir))
+      const before = await computeGlobalHash(config)
+
+      // Mutating the workspace-root lockfile must still invalidate.
+      writeFileSync(lockPath, 'workspace lock v2\n')
+      const after = await computeGlobalHash(config)
+      expect(after).not.toBe(before)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  test('returns a well-formed, stable hash regardless of lockfile presence', async () => {
+    // We deliberately do not assert anything about *which* lockfile is mixed
+    // in here: the temp directory lives outside any project, but the walk-up
+    // search may still pick up a lockfile higher in the filesystem on some
+    // hosts. The contract this test pins down is that the result is a stable
+    // hex hash — the change-detection assertions above cover invalidation.
+    const projectDir = makeTmpDir('no-lock-asserted')
+    try {
+      const config = makeConfig(projectDir)
+      const h = await computeGlobalHash(config)
+      expect(h).toMatch(/^[0-9a-f]+$/)
+      expect(await computeGlobalHash(config)).toBe(h)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
   })
 })
 
