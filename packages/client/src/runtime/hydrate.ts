@@ -155,57 +155,37 @@ export function rehydrateAll(): void {
 /**
  * Run any pending hydration walk synchronously, right now.
  *
- * The default scheduler is microtask + rAF, which is the right
- * trade-off for production code (it lets the registry populate before
- * the walk and coalesces back-to-back `hydrate()` calls). But tests
- * and a handful of advanced consumers — for example imperative
- * mounting code that wants to read DOM state immediately after
- * `render(...)` — need a deterministic completion point.
- *
- * This helper flushes any pending phases (microtask / rAF) by running
- * the walk inline and clearing the scheduling flags. It's a no-op
- * when nothing is queued. The pending callbacks themselves still
- * fire later, but they observe their flags as false and skip — the
- * extra walk cost is bounded by the WeakSet membership check.
+ * The default scheduler is microtask + rAF — the right trade-off for
+ * production code (registry populates before the walk; back-to-back
+ * `hydrate()` calls coalesce). Tests and advanced consumers that need
+ * a deterministic completion point — e.g. imperative mounting code
+ * reading DOM state immediately after `render(...)` — call this
+ * helper instead of awaiting a microtask.
  *
  * @example
  *   hydrate('Counter', def)
  *   flushHydration()
- *   // now safe to read Counter's post-init DOM state
+ *   // safe to read Counter's post-init DOM state
  */
 export function flushHydration(): void {
-  // If neither phase is pending, no work has been scheduled since the
-  // last walk completed — bail without redoing the DOM scan.
   if (!microtaskScheduled && !rafScheduled) return
-
-  // Clear flags first so the queued microtask / rAF callbacks treat
-  // themselves as already-run (they check their own flag on entry).
   microtaskScheduled = false
   rafScheduled = false
   walkAllInDocumentOrder()
 }
 
 /**
- * Single document-order walk that visits both element scopes
- * (`[bf-s]`) and comment scopes (`<!--bf-scope:Name_xxx-->`)
- * interleaved by their actual DOM position. Parent inits — whichever
- * shape they take — always run before descendant inits, so a comment-
- * scope provider is visible to an element-scope descendant on the
- * first pass.
+ * Single document-order walk visiting element scopes (`[bf-s]`) and
+ * comment scopes (`<!--bf-scope:Name_xxx-->`) interleaved by their
+ * actual DOM position. The parent's init — whichever scope shape it
+ * takes — always runs before any descendant init, so a comment-scope
+ * provider is visible to an element-scope descendant on the first pass.
  *
- * Per node:
- *   - **Element scope**: skip if already hydrated or if `~`-prefixed
- *     (child component owned by parent's `initChild`). Otherwise mark
- *     as hydrated *before* running init — taking the slot prevents
- *     re-entrant `hydrate()` / `rehydrateAll()` calls from the init
- *     body (or from a synchronous effect they trigger) from racing
- *     into the same scope on the next scheduled walk.
- *   - **Comment scope**: skip if already initialised (per-comment
- *     `__bfInitialized` flag) or `~`-prefixed. Otherwise mark, set
- *     up the proxy element registry, then run init.
- *
- * If a scope's def hasn't registered yet the node is left untouched
- * for the next walk; nothing is mutated.
+ * Both paths skip `~`-prefixed scopes (owned by `initChild`) and mark
+ * the scope as hydrated *before* running init: re-entrant `hydrate()`
+ * / `rehydrateAll()` calls from the init body (or a synchronous effect
+ * they trigger) must see the slot already taken so the next scheduled
+ * walk doesn't re-enter the same scope.
  */
 function walkAllInDocumentOrder(): void {
   if (typeof document === 'undefined') return
@@ -225,50 +205,50 @@ function walkAllInDocumentOrder(): void {
   }
 }
 
+/** Component name segment of a scope ID (everything before the first `_`). */
+function scopeName(id: string): string | null {
+  const idx = id.indexOf('_')
+  return idx < 0 ? null : id.slice(0, idx)
+}
+
+function parseProps(json: string | null, where: string): Record<string, unknown> {
+  if (!json) return {}
+  try {
+    return JSON.parse(json) as Record<string, unknown>
+  } catch {
+    console.warn(`[BarefootJS] Invalid props JSON on ${where}:`, json)
+    return {}
+  }
+}
+
+function runInit(scope: Element, def: ComponentDef, props: Record<string, unknown>): void {
+  const prevScope = setCurrentScope(scope)
+  try {
+    def.init(scope, props)
+  } finally {
+    setCurrentScope(prevScope)
+  }
+}
+
 function hydrateElementScope(el: Element): void {
   if (hydratedScopes.has(el)) return
 
   const bfs = el.getAttribute(BF_SCOPE)
-  if (!bfs) return
-  if (bfs.startsWith(BF_CHILD_PREFIX)) return
+  if (!bfs || bfs.startsWith(BF_CHILD_PREFIX)) return
 
-  const underscoreIdx = bfs.indexOf('_')
-  if (underscoreIdx < 0) return
-  const name = bfs.slice(0, underscoreIdx)
+  const name = scopeName(bfs)
+  if (!name) return
 
   const def = registeredDefs.get(name)
   if (!def) return
-  // Comment-based components hydrate via the comment-scope path; their
-  // bf-s attribute (when present) sits on a proxy element that we'd
-  // otherwise double-init. Mark it hydrated so future walks skip the
-  // scope lookup entirely instead of re-resolving the same def.
-  if (def.comment) {
-    hydratedScopes.add(el)
-    return
-  }
 
-  // Mark BEFORE running init: if the init body synchronously triggers
-  // another scheduled walk (e.g. an effect calls `rehydrateAll()`),
-  // the WeakSet entry already exists when that walk arrives, so we
-  // never re-enter the same scope.
   hydratedScopes.add(el)
+  // Comment-based components hydrate via the comment-scope path; their
+  // bf-s attribute sits on a proxy element. Marking it above lets the
+  // next walk skip at the WeakSet check rather than re-resolving the def.
+  if (def.comment) return
 
-  const propsJson = el.getAttribute(BF_PROPS)
-  let props: Record<string, unknown> = {}
-  if (propsJson) {
-    try {
-      props = JSON.parse(propsJson)
-    } catch {
-      console.warn(`[BarefootJS] Invalid props JSON on ${bfs}:`, propsJson)
-    }
-  }
-
-  const prevScope = setCurrentScope(el)
-  try {
-    def.init(el, props)
-  } finally {
-    setCurrentScope(prevScope)
-  }
+  runInit(el, def, parseProps(el.getAttribute(BF_PROPS), bfs))
 }
 
 function hydrateCommentScope(comment: Comment): void {
@@ -278,59 +258,36 @@ function hydrateCommentScope(comment: Comment): void {
   const rest = value.slice(BF_SCOPE_COMMENT_PREFIX.length)
   if (rest.startsWith(BF_CHILD_PREFIX)) return
 
-  let scopeId = rest
-  let propsJson = ''
-  const pipeIdx = rest.indexOf('|')
-  if (pipeIdx >= 0) {
-    scopeId = rest.slice(0, pipeIdx)
-    propsJson = rest.slice(pipeIdx + 1)
-  }
-
-  const flagged = comment as unknown as Record<string, boolean>
+  const flagged = comment as unknown as { __bfInitialized?: boolean }
   if (flagged.__bfInitialized) return
 
-  const underscoreIdx = scopeId.indexOf('_')
-  if (underscoreIdx < 0) return
-  const name = scopeId.slice(0, underscoreIdx)
+  const pipeIdx = rest.indexOf('|')
+  const scopeId = pipeIdx >= 0 ? rest.slice(0, pipeIdx) : rest
+  const propsJson = pipeIdx >= 0 ? rest.slice(pipeIdx + 1) : ''
+
+  const name = scopeName(scopeId)
+  if (!name) return
 
   const def = registeredDefs.get(name)
   if (!def?.comment) return
 
-  // Mark before init for the same reentrancy reason as element scopes:
-  // see hydrateElementScope() above.
   flagged.__bfInitialized = true
 
-  let proxyEl: Element | null = null
-  let sibling: Node | null = comment.nextSibling
-  while (sibling) {
-    if (sibling.nodeType === Node.ELEMENT_NODE) {
-      proxyEl = sibling as Element
-      break
-    }
-    sibling = sibling.nextSibling
-  }
-  if (!proxyEl) proxyEl = comment.parentElement
+  const proxyEl = nextElementSibling(comment) ?? comment.parentElement
   if (!proxyEl) return
 
-  commentScopeRegistry.set(proxyEl, {
-    commentNode: comment,
-    scopeId,
-  })
+  commentScopeRegistry.set(proxyEl, { commentNode: comment, scopeId })
 
-  let parsed: Record<string, unknown> = {}
-  if (propsJson) {
-    try {
-      parsed = JSON.parse(propsJson)
-    } catch {
-      console.warn(`[BarefootJS] Invalid props JSON in comment scope ${scopeId}:`, propsJson)
-    }
-  }
+  const parsed = parseProps(propsJson || null, `comment scope ${scopeId}`)
   const props = (parsed[name] ?? {}) as Record<string, unknown>
+  runInit(proxyEl, def, props)
+}
 
-  const prevScope = setCurrentScope(proxyEl)
-  try {
-    def.init(proxyEl, props)
-  } finally {
-    setCurrentScope(prevScope)
+function nextElementSibling(node: Node): Element | null {
+  let sibling: Node | null = node.nextSibling
+  while (sibling) {
+    if (sibling.nodeType === Node.ELEMENT_NODE) return sibling as Element
+    sibling = sibling.nextSibling
   }
+  return null
 }
