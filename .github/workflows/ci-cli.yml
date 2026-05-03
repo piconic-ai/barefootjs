@@ -37,5 +37,8 @@ jobs:
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/jsx' build
 
+      - name: Embed adapter runtime sources
+        run: bun run --filter '@barefootjs/cli' embed-runtimes
+
       - name: Run unit tests
         run: cd packages/cli && bun test
