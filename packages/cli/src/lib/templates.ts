@@ -421,6 +421,23 @@ const HONO_TSCONFIG = `{
 }
 `
 
+// CSS library options offered by `barefoot init`. The library is
+// currently a presentational choice — the Hono adapter wires UnoCSS
+// directly, and additional libraries (Tailwind, etc.) will eventually
+// contribute their own files/scripts/deps once an adapter supports
+// more than one. The registry exists so `--css` and the interactive
+// selector have a real surface to pivot on.
+export interface CssLibraryTemplate {
+  /** Human-readable name shown in CLI output. */
+  label: string
+}
+
+export const CSS_LIBRARIES: Record<string, CssLibraryTemplate> = {
+  unocss: { label: 'UnoCSS' },
+}
+
+export const DEFAULT_CSS_LIBRARY = 'unocss'
+
 export const ADAPTERS: Record<string, AdapterTemplate> = {
   hono: {
     label: 'Hono (Node, JSX SSR + hydration)',
