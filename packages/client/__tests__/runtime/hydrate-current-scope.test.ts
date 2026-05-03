@@ -32,6 +32,7 @@ describe('hydrate sets currentScope before calling init', () => {
       },
       template: () => '<div></div>',
     })
+    await Promise.resolve()
 
     expect(observedTheme).toBe('dark')
   })
