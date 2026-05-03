@@ -845,11 +845,19 @@ export function FlowNodeTypeBridge(props: FlowNodeTypeBridgeProps) {
   // Real `data` changes — e.g. a consumer flipping `node.data.compact`
   // via setNodes — produce a new data object and DO trigger a re-run,
   // matching the behaviour the previous coarse subscription provided.
+  //
+  // The live-props fallback is folded INTO this memo so the effect
+  // below depends only on `dataMemo` — reading `props.forNode?.data`
+  // from the effect body would re-subscribe to forNode and undo the
+  // dedup whenever mapArray hands the bridge a fresh wrapper object on
+  // every setNodes call.
   const dataMemo = createMemo(() => {
-    if (!store) return undefined
     const id = idMemo()
-    if (!id) return undefined
-    return store.nodeLookup().get(id)?.data
+    if (store && id) {
+      const fromStore = store.nodeLookup().get(id)?.data
+      if (fromStore !== undefined) return fromStore
+    }
+    return props.forNode?.data ?? {}
   })
 
   createEffect(() => {
@@ -857,7 +865,7 @@ export function FlowNodeTypeBridge(props: FlowNodeTypeBridgeProps) {
     if (!el || !store) return
     const id = idMemo()
     if (!id) return
-    const data = dataMemo() ?? props.forNode?.data ?? {}
+    const data = dataMemo()
     // Type / initFn lookup is intentionally untracked — type rarely
     // changes for a given node, and bouncing the renderer on a type swap
     // isn't behaviour the bridge promises. Untracking keeps this
