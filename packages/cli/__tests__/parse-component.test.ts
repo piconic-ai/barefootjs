@@ -20,7 +20,7 @@ describe('parseComponent', () => {
 
     test('extracts top-level description', () => {
       expect(result.description).toContain('Button Component')
-      expect(result.description).toContain('variants and sizes')
+      expect(result.description).toContain('UnoCSS utility classes')
     })
 
     test('extracts examples', () => {

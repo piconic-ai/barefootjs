@@ -158,53 +158,6 @@ main {
   gap: 0.5rem;
   justify-content: center;
 }
-
-/* Registry <Button> — the JSX side ships with a static \`bf-button\`
-   class plus \`data-variant\` / \`data-size\` attributes, and the actual
-   styling lives here so the same component renders consistently
-   across adapters that don't run JS at SSR time. Override by adding
-   rules in your own stylesheet (any layer with higher priority, or
-   the default utility layer). */
-@layer components {
-  .bf-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1.25rem;
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-  }
-  .bf-button:disabled,
-  .bf-button[aria-disabled="true"] {
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  .bf-button[data-size="sm"]      { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
-  .bf-button[data-size="lg"]      { padding: 0.625rem 1.5rem; }
-  .bf-button[data-size="icon"]    { padding: 0; width: 2.25rem; height: 2.25rem; }
-  .bf-button[data-size="icon-sm"] { padding: 0; width: 2rem;    height: 2rem; }
-  .bf-button[data-size="icon-lg"] { padding: 0; width: 2.5rem;  height: 2.5rem; }
-
-  .bf-button[data-variant="default"]            { background: var(--primary); color: var(--primary-foreground); }
-  .bf-button[data-variant="default"]:hover      { background: color-mix(in oklch, var(--primary) 90%, transparent); }
-  .bf-button[data-variant="secondary"]          { background: var(--secondary); color: var(--secondary-foreground); }
-  .bf-button[data-variant="secondary"]:hover    { background: color-mix(in oklch, var(--secondary) 80%, transparent); }
-  .bf-button[data-variant="ghost"]              { background: transparent; color: var(--foreground); }
-  .bf-button[data-variant="ghost"]:hover        { background: var(--accent); color: var(--accent-foreground); }
-  .bf-button[data-variant="destructive"]        { background: var(--destructive); color: var(--destructive-foreground); }
-  .bf-button[data-variant="outline"]            { background: var(--background); color: var(--foreground); border-color: var(--border); }
-  .bf-button[data-variant="outline"]:hover      { background: var(--accent); color: var(--accent-foreground); }
-  .bf-button[data-variant="link"]               { background: transparent; color: var(--primary); text-decoration: underline; text-underline-offset: 4px; }
-}
 `
 
 // Empty placeholder so /static/uno.css resolves on the very first page
