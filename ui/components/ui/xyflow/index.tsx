@@ -72,6 +72,7 @@ import type {
   HandleType,
   InternalFlowStore,
   NodeBase,
+  NodeComponentProps,
 } from '@barefootjs/xyflow'
 
 type Child = JSX.Element | string | number | boolean | null | undefined | Child[]
@@ -746,21 +747,105 @@ export function MiniMap(props: MiniMapComponentProps) {
 // Flow — top-level container.
 // ============================================================================
 
+/**
+ * Imperative node init signature: `function MyNode(this: HTMLElement, props)`.
+ * Each entry in `nodeTypes` is one of these — Flow's default renderer mounts
+ * the matching one for each node based on `node.type`.
+ */
+type NodeInitFn<NodeType extends NodeBase = NodeBase> = (
+  this: HTMLElement,
+  props: NodeComponentProps<NodeType>,
+) => void
+
 export interface FlowComponentProps<
   NodeType extends NodeBase = NodeBase,
   EdgeType extends EdgeBase = EdgeBase,
-> extends FlowProps<NodeType, EdgeType> {
+> extends Omit<FlowProps<NodeType, EdgeType>, 'nodeTypes'> {
   /** Slot for `<Background>` / `<Controls>` / `<MiniMap>` overlays. */
   children?: Child
   /**
-   * Optional render function for the body of each node. Called inside
-   * the per-node `<NodeWrapper>` produced by the default node loop.
-   * Defaults to `String(node.data?.label ?? node.id)`.
+   * Per-node render function. Called inside the per-node
+   * `<NodeWrapper>` produced by the default node loop.
    *
    * Use this instead of mounting `<NodeWrapper>` instances yourself —
-   * doing both would double-mount each node.
+   * doing both would double-mount each node. Takes precedence over
+   * `nodeTypes` when both are provided.
    */
   renderNode?: (node: NodeType) => Child
+  /**
+   * Map of `node.type` → imperative init function (`NodeInitFn`). When
+   * `renderNode` is unset, Flow synthesises a per-node bridge that picks
+   * the right init from this map and mounts it into a host `<div>`.
+   *
+   * The runtime fills in the imperative `NodeComponentProps` shape from
+   * the live store entry — including the reactive `selected` getter —
+   * so individual nodes don't need to re-walk the store themselves.
+   */
+  nodeTypes?: Record<string, NodeInitFn<NodeType>>
+}
+
+/**
+ * Dev-only one-shot warning for the case where neither `renderNode` nor
+ * `nodeTypes` is provided. The default fallback (`String(label ?? id)`) is
+ * useful for trivial demos but silently swallows configuration mistakes
+ * on real graphs — emit once so the misconfiguration shows up in console.
+ */
+let __renderConfigWarned = false
+
+/**
+ * Per-node bridge for the `nodeTypes` map dispatch path.
+ *
+ * Hoisted to module scope (rather than nested inside `<Flow>`'s body)
+ * because the barefoot compiler extracts JSX components by name during
+ * SSR template generation and doesn't capture closures defined inside
+ * a parent JSX function body. So this is a regular `'use client'`
+ * sibling of `<Flow>`.
+ *
+ * Identity falls back to the wrapping `.bf-flow__node` dataset because
+ * Flow's compiled SSR template inlines its child renderers as function
+ * calls without serializing `node` into a `bf-p` attribute on the
+ * bridge — `node.id` / `node.data` may be empty on the initial hydrate
+ * pass even though the store has them. `store.nodeLookup()` is the
+ * authoritative source.
+ */
+interface FlowNodeTypeBridgeProps {
+  // biome-ignore lint/suspicious/noExplicitAny: nodes can be any narrowed shape
+  forNode: any
+  // biome-ignore lint/suspicious/noExplicitAny: per-type init signatures vary
+  nodeTypes: Record<string, (this: HTMLElement, props: any) => void>
+}
+
+// Prop names are deliberately not `node` (which would collide with the
+// `.map()` callback's local in Flow's JSX, triggering a barefoot
+// template-emitter shorthand bug that produces `{node(): node()}`).
+export function FlowNodeTypeBridge(props: FlowNodeTypeBridgeProps) {
+  const store = useContext(FlowContext) as FlowStore | undefined
+  return (
+    <div
+      data-bf-bridge=""
+      ref={(el: HTMLElement) => {
+        if (!store) return
+        const live = props.forNode
+        const id = live.id ?? (el.closest('.bf-flow__node') as HTMLElement | null)?.dataset.id
+        if (!id) return
+        const internal = store.nodeLookup().get(id)
+        const data = live.data ?? internal?.data ?? {}
+        const type = (live.type ?? internal?.type ?? 'default') as string
+        const initFn = props.nodeTypes[type] ?? props.nodeTypes.default
+        if (!initFn) return
+        initFn.call(el, {
+          id,
+          data,
+          type,
+          selected: () => !!store.nodeLookup().get(id)?.selected,
+          dragging: false,
+          positionAbsoluteX: 0,
+          positionAbsoluteY: 0,
+          isConnectable: true,
+        })
+      }}
+    />
+  )
 }
 
 export function Flow<
@@ -775,6 +860,18 @@ export function Flow<
   // imperative effect runs — sees the provider in scope. Mirrors the
   // chart pattern (`<BarChartContext.Provider value={...}>...`).
   const store = createFlowStore<NodeType, EdgeType>(props)
+
+  // The dispatch JSX has to live at the top-level of Flow's JSX return
+  // (the barefoot compiler doesn't transform JSX nested inside helper
+  // arrow functions), so we resolve to a flag here and key off it below.
+  // Bridge-vs-renderNode branching reads `props.renderNode` /
+  // `props.nodeTypes` per node, which is what we want.
+  if (!props.renderNode && !props.nodeTypes && !__renderConfigWarned) {
+    __renderConfigWarned = true
+    console.warn(
+      '[bf/xyflow] <Flow> received neither `renderNode` nor `nodeTypes`; nodes will fall back to `String(data.label ?? id)`. Pass one of the two to render real node bodies.',
+    )
+  }
 
   // Pan/zoom transform memo. Re-runs only when viewport changes.
   const viewportTransform = createMemo(() => {
@@ -819,18 +916,25 @@ export function Flow<
           <div className={BF_FLOW_NODES} style="position: absolute; top: 0; left: 0;">
             {visibleNodes().map((node: NodeType) => (
               <NodeWrapper key={node.id} nodeId={node.id}>
-                {/* Default node body: render `data.label` (or the node id
-                    as a fallback) so a stock `<Flow nodes={...} />` shows
-                    something visible without forcing every consumer to
-                    build a custom node. Pass `renderNode` to override. */}
-                {props.renderNode
-                  ? props.renderNode(node)
-                  : String((node.data as { label?: unknown })?.label ?? node.id)}
+                {props.renderNode ? (
+                  props.renderNode(node)
+                ) : props.nodeTypes ? (
+                  <FlowNodeTypeBridge
+                    forNode={node}
+                    nodeTypes={props.nodeTypes as Record<string, (this: HTMLElement, props: unknown) => void>}
+                  />
+                ) : (
+                  String((node.data as { label?: unknown })?.label ?? node.id)
+                )}
               </NodeWrapper>
             ))}
           </div>
         </div>
-        {props.children}
+        {/* Guard against `undefined`: barefootjs's SSR template emits
+            `${_p.children}` raw, which renders the literal text
+            "undefined" when no children are passed. Coerce to empty
+            string so the dropdown / overlay layer stays clean. */}
+        {props.children ?? ''}
       </div>
     </FlowContext.Provider>
   )

@@ -230,4 +230,24 @@ describe('Flow', () => {
     expect(result.find({ componentName: 'SimpleEdge' })).not.toBeNull()
     expect(result.find({ componentName: 'NodeWrapper' })).not.toBeNull()
   })
+
+  test('mounts FlowNodeTypeBridge for the nodeTypes dispatch branch', () => {
+    expect(result.find({ componentName: 'FlowNodeTypeBridge' })).not.toBeNull()
+  })
+})
+
+// ============================================================================
+describe('FlowNodeTypeBridge', () => {
+  const result = renderToTest(source, 'xyflow.tsx', 'FlowNodeTypeBridge')
+
+  test('compiles cleanly as a client component', () => {
+    expect(result.errors).toEqual([])
+    expect(result.isClient).toBe(true)
+  })
+
+  test('renders a single host div carrying `data-bf-bridge`', () => {
+    const div = result.find({ tag: 'div' })
+    expect(div).not.toBeNull()
+    expect(div?.props['data-bf-bridge']).toBeDefined()
+  })
 })
