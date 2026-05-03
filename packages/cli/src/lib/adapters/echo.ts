@@ -230,13 +230,15 @@ export const ECHO_ADAPTER: AdapterTemplate = {
     'public/uno.css': UNO_CSS_PLACEHOLDER,
   },
   scripts: {
-    // Build everything once (barefoot generates components.go +
+    // `go mod tidy` resolves Echo's deps into go.sum on first run —
+    // subsequent runs are a fast no-op against the module cache. After
+    // that, build everything once (barefoot generates components.go +
     // dist/templates/*.tmpl, unocss generates uno.css), then run the
     // watchers and the Go server side-by-side. `concurrently -k` makes
     // Ctrl-C kill all three. Go has no built-in hot reload — restart
     // manually after main.go edits, or swap in `air` later.
-    dev: 'barefoot build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "barefoot build --watch" "unocss --watch" "go run ."',
-    build: 'barefoot build && unocss',
+    dev: 'go mod tidy && barefoot build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "barefoot build --watch" "unocss --watch" "go run ."',
+    build: 'go mod tidy && barefoot build && unocss',
     start: 'go run .',
   },
   dependencies: {
