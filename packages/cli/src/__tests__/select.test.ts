@@ -27,17 +27,6 @@ const nonTtyInput = {
 } as unknown as NodeJS.ReadableStream & { isTTY?: boolean }
 
 describe('select short-circuit behavior', () => {
-  test('returns default when only one option is provided', async () => {
-    const result = await select({
-      message: 'pick',
-      options: [{ value: 'only', label: 'Only' }],
-      defaultValue: 'only',
-      input: ttyInput,
-      output: fakeOutput,
-    })
-    expect(result).toBe('only')
-  })
-
   test('returns default when stdin is not a TTY (e.g. piped input)', async () => {
     const result = await select({
       message: 'pick',
@@ -64,5 +53,16 @@ describe('select short-circuit behavior', () => {
       output: { isTTY: false, write: () => true } as unknown as NodeJS.WritableStream & { isTTY?: boolean },
     })
     expect(result).toBe('b')
+  })
+
+  test('returns default when no options are provided', async () => {
+    const result = await select({
+      message: 'pick',
+      options: [],
+      defaultValue: 'fallback',
+      input: ttyInput,
+      output: fakeOutput,
+    })
+    expect(result).toBe('fallback')
   })
 })

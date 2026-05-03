@@ -28,9 +28,13 @@ export async function select<T extends string = string>(args: SelectArgs<T>): Pr
   }
   const output = (args.output ?? process.stdout) as NodeJS.WritableStream & { isTTY?: boolean }
 
-  // Skip when there is nothing meaningful to choose: a single option, or
-  // a non-TTY environment where we cannot render arrow-key navigation.
-  if (args.options.length <= 1 || !input.isTTY || !output.isTTY) {
+  // No options: nothing to choose — fall through to the default.
+  if (args.options.length === 0) {
+    return args.defaultValue
+  }
+  // Non-TTY: arrow-key navigation can't render, fall through to the
+  // default so CI / piped-input callers don't hang.
+  if (!input.isTTY || !output.isTTY) {
     return args.defaultValue
   }
 
