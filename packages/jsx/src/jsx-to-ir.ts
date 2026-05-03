@@ -2474,15 +2474,30 @@ function getAttributeValue(
       }
     }
 
-    // Template literal with ternaries: `...${cond ? 'a' : 'b'}...`
+    // Template literal: `...${expr}...`. Returned as structured IR
+    // when at least one part is structurally meaningful (ternary, or
+    // a const reference that resolves to a string literal / Record
+    // lookup). Plain `${ident}` interpolations against unknown
+    // identifiers still fall through to the bare-expression path.
     if (ts.isTemplateExpression(expr)) {
       const parts = parseTemplateLiteral(expr, ctx)
-      if (parts.some(p => p.type === 'ternary')) {
+      if (parts.some(p => p.type === 'ternary' || p.type === 'lookup')) {
         return {
           value: { type: 'template-literal', parts },
           dynamic: true,
           isLiteral: false,
         }
+      }
+    }
+
+    // `className={classes}` where `classes` is a local const bound to
+    // a template literal — resolve the template literal here and let
+    // adapters render the structured form. This is the cva-style
+    // pattern (`const classes = `${baseClasses} ${variantClasses[v]}…``).
+    if (ts.isIdentifier(expr)) {
+      const resolved = tryResolveIdentifierAsTemplateLiteral(expr, ctx)
+      if (resolved) {
+        return { value: resolved, dynamic: true, isLiteral: false }
       }
     }
 
@@ -2560,10 +2575,19 @@ function parseTemplateLiteral(
         parts.push({ type: 'string', value: `\${${val}}`, templateValue: tVal ? `\${${tVal}}` : undefined })
       }
     } else {
-      // Non-ternary expression: keep as ${expr}
-      const val = ctx.getJS(span.expression)
-      const tVal = rewriteBarePropRefs(val, span.expression, ctx)
-      parts.push({ type: 'string', value: `\${${val}}`, templateValue: tVal ? `\${${tVal}}` : undefined })
+      // Try to resolve `${IDENT}` against local consts (string literal
+      // substitution) or `${IDENT[KEY]}` (Record<T, string> lookup) so
+      // adapters that don't run JS at SSR have enough structure to
+      // emit the right output.
+      const resolved = tryResolveTemplateSpanFromConst(span.expression, ctx)
+      if (resolved) {
+        parts.push(...resolved)
+      } else {
+        // Non-ternary expression: keep as ${expr}
+        const val = ctx.getJS(span.expression)
+        const tVal = rewriteBarePropRefs(val, span.expression, ctx)
+        parts.push({ type: 'string', value: `\${${val}}`, templateValue: tVal ? `\${${tVal}}` : undefined })
+      }
     }
 
     // Add the literal part after this span (text after ${} until next ${} or end)
@@ -2573,6 +2597,177 @@ function parseTemplateLiteral(
   }
 
   return parts
+}
+
+/**
+ * Attempt to convert a single template-literal span expression into
+ * one or more structured IR parts by resolving local-const references.
+ *
+ * - `${IDENT}` where IDENT resolves to a string-literal const returns
+ *   a `string` part with the substituted value.
+ * - `${IDENT[KEY]}` where IDENT resolves to a `Record<T, string>` literal
+ *   returns a `lookup` part carrying the resolved cases plus the
+ *   key expression.
+ *
+ * Returns null when the expression doesn't match either pattern (the
+ * caller falls back to the bare `${expr}` string part).
+ */
+function tryResolveTemplateSpanFromConst(
+  expr: ts.Expression,
+  ctx: TransformContext,
+): IRTemplatePart[] | null {
+  // ${IDENT}
+  if (ts.isIdentifier(expr)) {
+    const constInfo = findLocalConst(expr.text, ctx)
+    if (!constInfo) return null
+    const ast = parseConstInitializer(constInfo)
+    if (!ast) return null
+    if (ts.isStringLiteral(ast) || ts.isNoSubstitutionTemplateLiteral(ast)) {
+      return [{ type: 'string', value: ast.text }]
+    }
+    return null
+  }
+
+  // ${IDENT[KEY]}
+  if (ts.isElementAccessExpression(expr)) {
+    if (!ts.isIdentifier(expr.expression)) return null
+    const constInfo = findLocalConst(expr.expression.text, ctx)
+    if (!constInfo) return null
+    const ast = parseConstInitializer(constInfo)
+    if (!ast || !ts.isObjectLiteralExpression(ast)) return null
+    const cases: Record<string, string> = {}
+    for (const prop of ast.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      const keyName = prop.name && (ts.isStringLiteral(prop.name) || ts.isIdentifier(prop.name))
+        ? prop.name.text
+        : null
+      if (!keyName) return null
+      const value = prop.initializer
+      if (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)) {
+        cases[keyName] = value.text
+      } else {
+        return null
+      }
+    }
+    // The key expression's AST lives in the synthetic source created
+    // by `parseConstInitializer` (the const we just resolved was the
+    // *outer* template literal, and this elementAccess sits inside
+    // it). `ctx.getJS` would index into `ctx.sourceFile` and read
+    // the wrong bytes — go through the node's own source file
+    // instead. Type annotations don't appear in const initializers
+    // for our supported patterns, so plain text extraction is fine.
+    const key = astText(expr.argumentExpression)
+    // For client-side template rewriting, rewrite bare prop refs
+    // (e.g. `size` → `_p.size ?? 'sm'`) using the original AST node
+    // identity. `rewriteBarePropRefs` operates on the text plus the
+    // node — when the node is from a synthetic source the rewrite
+    // skips identifier lookups it can't tie back to props, which is
+    // safe (worst case, no rewrite happens and the original text is
+    // used).
+    const templateKey = rewriteBarePropRefs(key, expr.argumentExpression, ctx)
+    return [{ type: 'lookup', cases, key, templateKey: templateKey ?? undefined }]
+  }
+
+  return null
+}
+
+function findLocalConst(name: string, ctx: TransformContext) {
+  return ctx.analyzer.localConstants.find(c => c.name === name)
+}
+
+/**
+ * Resolve a `className={ident}` reference where `ident` is a local
+ * const bound to a template literal — typically the cva-style pattern
+ * `const classes = `${baseClasses} ${variantClasses[v]} ...``.
+ *
+ * Each `${...}` span resolves through `tryResolveTemplateSpanFromConst`,
+ * so the returned IRTemplateLiteral has structured `string` and
+ * `lookup` parts that adapters can render without re-parsing JS.
+ *
+ * Returns null when the const isn't a template literal or any span
+ * fails to resolve cleanly.
+ */
+function tryResolveIdentifierAsTemplateLiteral(
+  ident: ts.Identifier,
+  ctx: TransformContext,
+): IRTemplateLiteral | null {
+  const constInfo = findLocalConst(ident.text, ctx)
+  if (!constInfo) return null
+  const ast = parseConstInitializer(constInfo)
+  if (!ast) return null
+
+  if (ts.isNoSubstitutionTemplateLiteral(ast) || ts.isStringLiteral(ast)) {
+    return { type: 'template-literal', parts: [{ type: 'string', value: ast.text }] }
+  }
+
+  if (!ts.isTemplateExpression(ast)) return null
+
+  // We require at least one structurally-meaningful span (a string
+  // substitution or a Record lookup) to bother emitting structured
+  // IR — otherwise the existing identifier-text path is more
+  // efficient. Spans that don't resolve fall through to a bare
+  // `${expr}` string part (matching `parseTemplateLiteral`'s default).
+  let resolvedAny = false
+  const parts: IRTemplatePart[] = []
+  if (ast.head.text) parts.push({ type: 'string', value: ast.head.text })
+
+  for (const span of ast.templateSpans) {
+    const resolved = tryResolveTemplateSpanFromConst(span.expression, ctx)
+    if (resolved) {
+      resolvedAny = true
+      parts.push(...resolved)
+    } else {
+      // Unresolved span (e.g. a function param like `className`): keep
+      // as a bare ${expr} placeholder so adapters can substitute the
+      // matching prop/param at render time.
+      const text = astText(span.expression)
+      const templateText = rewriteBarePropRefs(text, span.expression, ctx)
+      parts.push({
+        type: 'string',
+        value: `\${${text}}`,
+        templateValue: templateText ? `\${${templateText}}` : undefined,
+      })
+    }
+    if (span.literal.text) parts.push({ type: 'string', value: span.literal.text })
+  }
+
+  return resolvedAny ? { type: 'template-literal', parts } : null
+}
+
+/**
+ * Re-parse a constant's source-text initializer into a TS AST so we
+ * can structurally inspect string literals, object literals, and
+ * template literals. Returns null when the initializer is missing or
+ * doesn't parse cleanly.
+ *
+ * The returned AST nodes belong to a synthetic SourceFile, NOT
+ * `ctx.sourceFile` — callers must use `astText()` (not `ctx.getJS`)
+ * for any text extraction from these nodes, since `getJS` resolves
+ * positions against the analyzer's source.
+ */
+function parseConstInitializer(c: { value?: string }): ts.Expression | null {
+  if (!c.value) return null
+  const wrapped = `const __bf_resolve__ = (${c.value})`
+  const sf = ts.createSourceFile(
+    '__bf_resolve.ts',
+    wrapped,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    ts.ScriptKind.TS,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  const decl = stmt.declarationList.declarations[0]
+  if (!decl?.initializer) return null
+  // Strip the wrapping parens we added.
+  return ts.isParenthesizedExpression(decl.initializer)
+    ? decl.initializer.expression
+    : decl.initializer
+}
+
+/** Get text for a node living in any source file (synthetic or otherwise). */
+function astText(node: ts.Node): string {
+  return node.getText(node.getSourceFile())
 }
 
 /**
@@ -2746,6 +2941,14 @@ function templateLiteralToString(value: string | IRTemplateLiteral | null): stri
       result += part.value
     } else if (part.type === 'ternary') {
       result += `\${${part.condition} ? '${part.whenTrue}' : '${part.whenFalse}'}`
+    } else if (part.type === 'lookup') {
+      // Rebuild the indexed lookup as runtime JS so the JSX runtime
+      // path (Hono component-prop forwarding, client-side template
+      // generation) keeps producing the same value.
+      const obj = '{' + Object.entries(part.cases).map(
+        ([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`
+      ).join(', ') + '}'
+      result += `\${(${obj})[${part.key}]}`
     }
   }
   result += '`'
@@ -2959,10 +3162,14 @@ function hasReactiveAttributes(attrs: IRAttribute[], ctx: TransformContext): boo
 function getAttributeValueAsString(value: string | IRTemplateLiteral | null): string | null {
   if (value === null) return null
   if (typeof value === 'string') return value
-  // For template literals, concatenate all parts for reactivity checking
+  // For template literals, concatenate all parts for reactivity checking.
+  // We reach into the part-specific reactive-relevant expression: the
+  // ternary `condition`, or the lookup `key`. The string part is a
+  // literal, no further inspection needed.
   return value.parts.map(p => {
     if (p.type === 'string') return p.value
-    return p.condition // Check the condition for signals/memos
+    if (p.type === 'ternary') return p.condition
+    return p.key
   }).join('')
 }
 

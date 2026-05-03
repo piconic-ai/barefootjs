@@ -55,6 +55,17 @@ export function attrValueToString(value: string | IRTemplateLiteral | null, opts
     } else if (part.type === 'ternary') {
       const cond = (opts?.useTemplate && part.templateCondition) ? part.templateCondition : part.condition
       result += `\${${cond} ? '${part.whenTrue}' : '${part.whenFalse}'}`
+    } else if (part.type === 'lookup') {
+      // `${MAP[KEY]}` was structurally captured at IR time so SSR
+      // adapters could emit a switch. For client-side JS we rebuild
+      // the equivalent runtime indexed lookup against the resolved
+      // cases — keeps the JSX runtime path semantically identical to
+      // the original `${variantClasses[variant]}` source.
+      const key = (opts?.useTemplate && part.templateKey) ? part.templateKey : part.key
+      const obj = '{' + Object.entries(part.cases).map(
+        ([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`
+      ).join(', ') + '}'
+      result += `\${(${obj})[${key}]}`
     }
   }
   result += '`'

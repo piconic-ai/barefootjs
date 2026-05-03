@@ -2643,14 +2643,78 @@ export class GoTemplateAdapter extends BaseAdapter {
     return parts.length > 0 ? ' ' + parts.join(' ') : ''
   }
 
+  /**
+   * Replace `${EXPR}` JS-template-literal interpolations in a static
+   * string part with Go template actions (`{{<expr-as-go>}}`), and
+   * HTML-escape the surrounding literal text so embedded characters
+   * don't break the attribute quoting we render into.
+   *
+   * UnoCSS arbitrary-value classes like `[class*="size-"]:size-4`
+   * legitimately contain `"`, which would otherwise terminate the
+   * `class="..."` attribute early and produce invalid HTML / a
+   * `html/template` error at execution time.
+   *
+   * Falls back to the original substring when the inner expression
+   * is empty.
+   */
+  private substituteJsInterpolations(s: string): string {
+    let out = ''
+    let i = 0
+    while (i < s.length) {
+      const open = s.indexOf('${', i)
+      if (open === -1) {
+        out += this.escapeAttrText(s.slice(i))
+        break
+      }
+      const close = s.indexOf('}', open + 2)
+      if (close === -1) {
+        out += this.escapeAttrText(s.slice(i))
+        break
+      }
+      out += this.escapeAttrText(s.slice(i, open))
+      const inner = s.slice(open + 2, close).trim()
+      if (inner) {
+        out += `{{${this.convertExpressionToGo(inner)}}}`
+      } else {
+        out += s.slice(open, close + 1)
+      }
+      i = close + 1
+    }
+    return out
+  }
+
+  private escapeAttrText(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+  }
+
   private renderTemplateLiteral(literal: IRTemplateLiteral): string {
     let output = ''
     for (const part of literal.parts) {
       if (part.type === 'string') {
-        output += part.value
+        // String parts can carry unresolved `${expr}` placeholders
+        // (e.g. for function params like `className` that the IR
+        // analyzer couldn't substitute structurally). Translate each
+        // span to a Go template action so the SSR output matches the
+        // JS-side runtime evaluation. Static text passes through as-is.
+        output += this.substituteJsInterpolations(part.value)
       } else if (part.type === 'ternary') {
         const { condition: goCond, preamble } = this.convertConditionToGo(part.condition)
         output += `${preamble}{{if ${goCond}}}${part.whenTrue}{{else}}${part.whenFalse}{{end}}`
+      } else if (part.type === 'lookup') {
+        // `${MAP[KEY]}` against a Record<T, string> literal — emit a
+        // chained `{{if eq .Key "<case>"}}<value>{{else if ...}}{{end}}`
+        // so the right case lights up at SSR time. Empty when no
+        // case matches; consumers shouldn't rely on a default fallback
+        // here (the JSX-side `variant = 'default'` default already
+        // shows up via the per-prop fallback in `NewXxxProps`).
+        const keyExpr = this.convertExpressionToGo(part.key)
+        const caseEntries = Object.entries(part.cases)
+        if (caseEntries.length === 0) continue
+        const branches = caseEntries.map(([k, v], i) => {
+          const head = i === 0 ? '{{if' : '{{else if'
+          return `${head} eq ${keyExpr} ${JSON.stringify(k)}}}${v}`
+        })
+        output += branches.join('') + '{{end}}'
       }
     }
     return output

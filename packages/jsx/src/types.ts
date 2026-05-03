@@ -561,6 +561,18 @@ export interface IRTemplateLiteral {
 export type IRTemplatePart =
   | { type: 'string'; value: string; templateValue?: string }
   | { type: 'ternary'; condition: string; templateCondition?: string; whenTrue: string; whenFalse: string }
+  /**
+   * `${MAP[KEY]}` indexed lookup against a `Record<T, string>` literal
+   * (e.g. `${variantClasses[variant]}` where `variantClasses` is a
+   * const Record). Resolved at IR construction time:
+   *   - `cases` carries the literal `{ default: '...', secondary: '...' }` body
+   *   - `key` is the JS expression used as the index (typically a prop / param name)
+   *   - `templateKey` is the prop-rewritten variant (e.g. `_p.variant`)
+   * Adapters that don't run JS at SSR time use `cases` + `key` to emit
+   * a switch/conditional. Adapters that do (Hono) can ignore the part
+   * structure and re-render the original JS.
+   */
+  | { type: 'lookup'; cases: Record<string, string>; key: string; templateKey?: string }
 
 /**
  * Attribute metadata shared across all attribute-like interfaces.

@@ -5,11 +5,19 @@
 // `go.mod` keeps imports stable). The runtime sources are inlined into
 // the CLI bundle by `scripts/embed-runtimes.mjs` so the scaffold is
 // self-contained — no network fetch, no monorepo path leaks.
+//
+// File layout, by ownership:
+//   - `main.go` — application: middleware, routes, server start. The
+//     user's day-to-day workspace.
+//   - `renderer.go` — user-customizable `defaultLayout` (the Go
+//     equivalent of Hono's `renderer.tsx`).
+//   - `bf_render.go` — generated boilerplate (template loader + echo
+//     renderer adapter). Marked DO NOT EDIT; init seeds it once.
 
 import { execSync } from 'node:child_process'
 import type { AdapterTemplate } from '../templates'
 import {
-  NATIVE_BUTTON_COUNTER_TSX,
+  SHARED_COUNTER_TSX,
   STYLES_CSS,
   TOKENS_CSS,
   UNOCSS_DEV_DEPENDENCIES,
@@ -51,66 +59,72 @@ export default createConfig({
 })
 `
 
-// Lean Go entry. We use an anonymous prop struct in the route handler
-// so main.go compiles even before the first \`barefoot build\` writes
-// \`components.go\` — which would supply the typed \`CounterProps\`.
+// Application entry: just middleware, routes, and the server. The
+// render plumbing (template loading, echo adapter, layout function)
+// lives in sibling files so users see only their own concerns here.
 const ECHO_MAIN_GO = `package main
 
 import (
 \t"fmt"
-\t"html/template"
-\t"io"
-\t"io/fs"
 \t"net/http"
 \t"os"
-\t"path/filepath"
 
 \tbf "github.com/barefootjs/runtime/bf"
 \t"github.com/labstack/echo/v4"
 \t"github.com/labstack/echo/v4/middleware"
 )
 
-// loadTemplates walks dist/templates/ recursively and parses every
-// \`.tmpl\` file. Plain \`ParseGlob("dist/templates/*.tmpl")\` only catches
-// the top-level directory, missing the per-component subdirectories
-// (e.g. dist/templates/ui/button/index.tmpl) that Counter.tmpl invokes
-// via \`{{template "Button" ...}}\`.
-//
-// We also stub a no-op "Tag" template. The compiled Slot template
-// references \`{{template "Tag" ...}}\` for the AsChild=true branch that
-// the go-template adapter doesn't currently emit. html/template's
-// escape pass validates references in unreachable branches too, so
-// without a stub the very first call to any template that transitively
-// includes Slot fails with "no such template Tag".
-func loadTemplates() (*template.Template, error) {
-\troot := template.New("").Funcs(bf.FuncMap())
-\tif _, err := root.New("Tag").Parse(""); err != nil {
-\t\treturn nil, err
-\t}
-\terr := filepath.WalkDir("dist/templates", func(path string, d fs.DirEntry, err error) error {
-\t\tif err != nil {
-\t\t\treturn err
-\t\t}
-\t\tif d.IsDir() || filepath.Ext(path) != ".tmpl" {
-\t\t\treturn nil
-\t\t}
-\t\t_, parseErr := root.ParseFiles(path)
-\t\treturn parseErr
+func main() {
+\te := echo.New()
+\te.Use(middleware.Logger())
+\te.Use(middleware.Recover())
+
+\t// Render plumbing lives in bf_render.go. Edit defaultLayout in
+\t// renderer.go to change the surrounding HTML.
+\te.Renderer = mustNewRenderer()
+
+\t// The go-template adapter emits client bundles under dist/client/
+\t// and templates reference them at /static/components/ (per the
+\t// barefoot.config.ts \`clientJsBasePath\`). Bridge URL → disk.
+\te.Static("/static/components", "dist/client")
+\te.Static("/static", "public")
+
+\te.GET("/", func(c echo.Context) error {
+\t\t// \`NewCounterProps\` / \`CounterInput\` are generated into
+\t\t// components.go by \`barefoot build\` — they wire up scope IDs,
+\t\t// child-slot props, and signal initial values. Use them
+\t\t// instead of constructing props by hand.
+\t\tprops := NewCounterProps(CounterInput{Initial: 0})
+\t\treturn c.Render(http.StatusOK, "Counter", bf.RenderOptions{
+\t\t\tTitle: "BarefootJS app",
+\t\t\tProps: &props,
+\t\t})
 \t})
-\treturn root, err
-}
 
-type echoRenderer struct {
-\tbf *bf.Renderer
+\tport := os.Getenv("PORT")
+\tif port == "" {
+\t\tport = "3001"
+\t}
+\tfmt.Printf("  ➜ http://localhost:%s\\n", port)
+\te.Logger.Fatal(e.Start(":" + port))
 }
+`
 
-func (r *echoRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-\topts := data.(bf.RenderOptions)
-\topts.ComponentName = name
-\t_, err := w.Write([]byte(r.bf.Render(opts)))
-\treturn err
-}
+// User-customizable layout: the Go equivalent of \`renderer.tsx\` for
+// Hono. Adjust the surrounding HTML, swap in additional <link> /
+// <script> tags, etc. The render context carries the
+// component-rendered HTML, the page title, the script collector
+// output, and any portals.
+const ECHO_RENDERER_GO = `package main
 
+import (
+\t"fmt"
+
+\tbf "github.com/barefootjs/runtime/bf"
+)
+
+// defaultLayout is the wrapping HTML the BarefootJS render pipeline
+// hands every component. Edit freely — this file is yours.
 func defaultLayout(ctx *bf.RenderContext) string {
 \treturn fmt.Sprintf(\`<!DOCTYPE html>
 <html lang="en">
@@ -132,44 +146,78 @@ func defaultLayout(ctx *bf.RenderContext) string {
 \t\tctx.Scripts,
 \t)
 }
+`
 
-func main() {
-\te := echo.New()
-\te.Use(middleware.Logger())
-\te.Use(middleware.Recover())
+// Auto-generated render glue. Tied closely to BarefootJS internals;
+// regenerated by \`barefoot init\` and refreshed if its boilerplate
+// drifts. Editing it is supported but not expected — most app
+// concerns belong in main.go (routes, middleware) or renderer.go
+// (layout HTML).
+const ECHO_BF_RENDER_GO = `package main
 
+// Code generated by BarefootJS for the Echo adapter. DO NOT EDIT.
+// (Re-run \`barefoot init\` to refresh if the boilerplate moves.)
+
+import (
+\t"html/template"
+\t"io"
+\t"io/fs"
+\t"path/filepath"
+
+\tbf "github.com/barefootjs/runtime/bf"
+\t"github.com/labstack/echo/v4"
+)
+
+// loadTemplates walks dist/templates/ recursively and parses every
+// .tmpl file. ParseGlob("dist/templates/*.tmpl") only catches the
+// top-level directory, missing per-component subdirectories like
+// dist/templates/ui/button/index.tmpl that Counter invokes via
+// {{template "Button" ...}}.
+//
+// Also stubs a no-op "Tag" template so html/template's escape pass
+// (which validates references in unreachable branches too) doesn't
+// crash the very first call to any template that transitively
+// includes Slot — the go-template adapter emits a {{template "Tag"
+// ...}} reference inside Slot that's only reachable when AsChild=true.
+func loadTemplates() (*template.Template, error) {
+\troot := template.New("").Funcs(bf.FuncMap())
+\tif _, err := root.New("Tag").Parse(""); err != nil {
+\t\treturn nil, err
+\t}
+\terr := filepath.WalkDir("dist/templates", func(path string, d fs.DirEntry, err error) error {
+\t\tif err != nil {
+\t\t\treturn err
+\t\t}
+\t\tif d.IsDir() || filepath.Ext(path) != ".tmpl" {
+\t\t\treturn nil
+\t\t}
+\t\t_, parseErr := root.ParseFiles(path)
+\t\treturn parseErr
+\t})
+\treturn root, err
+}
+
+// echoRenderer adapts bf.Renderer to echo.Renderer.
+type echoRenderer struct {
+\tbf *bf.Renderer
+}
+
+func (r *echoRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+\topts := data.(bf.RenderOptions)
+\topts.ComponentName = name
+\t_, err := w.Write([]byte(r.bf.Render(opts)))
+\treturn err
+}
+
+// mustNewRenderer wires up template loading + the layout function
+// that lives in renderer.go. Panics on template parse errors so
+// startup fails loudly rather than serving 500s.
+func mustNewRenderer() echo.Renderer {
 \ttmpl, err := loadTemplates()
 \tif err != nil {
-\t\te.Logger.Fatal(err)
+\t\tpanic(err)
 \t}
-\te.Renderer = &echoRenderer{bf: bf.NewRenderer(tmpl, defaultLayout)}
-
-\t// The go-template adapter emits client bundles under dist/client/ but
-\t// templates reference them at /static/components/ (matching
-\t// barefoot.config.ts \`clientJsBasePath\`). Bridge the URL → disk path.
-\te.Static("/static/components", "dist/client")
-\te.Static("/static", "public")
-
-\te.GET("/", func(c echo.Context) error {
-\t\t// \`NewCounterProps\` and \`CounterInput\` are auto-generated by
-\t\t// \`barefoot build\` into components.go. They handle ScopeID
-\t\t// allocation, child-component slot wiring (the buttons inside
-\t\t// Counter), and initial signal values — the template references
-\t\t// these fields by name, so a hand-rolled props struct would
-\t\t// render an empty page.
-\t\tprops := NewCounterProps(CounterInput{Initial: 0})
-\t\treturn c.Render(http.StatusOK, "Counter", bf.RenderOptions{
-\t\t\tTitle: "BarefootJS app",
-\t\t\tProps: &props,
-\t\t})
-\t})
-
-\tport := os.Getenv("PORT")
-\tif port == "" {
-\t\tport = "3001"
-\t}
-\tfmt.Printf("  ➜ http://localhost:%s\\n", port)
-\te.Logger.Fatal(e.Start(":" + port))
+\treturn &echoRenderer{bf: bf.NewRenderer(tmpl, defaultLayout)}
 }
 `
 
@@ -214,6 +262,8 @@ export const ECHO_ADAPTER: AdapterTemplate = {
   port: 3001,
   files: {
     'main.go': ECHO_MAIN_GO,
+    'renderer.go': ECHO_RENDERER_GO,
+    'bf_render.go': ECHO_BF_RENDER_GO,
     'go.mod': ECHO_GO_MOD,
     'bf-runtime/bf.go': bfGoSource,
     'bf-runtime/streaming.go': streamingGoSource,
@@ -224,7 +274,7 @@ export const ECHO_ADAPTER: AdapterTemplate = {
       'components/**/*.tsx',
       'dist/components/**/*.tsx',
     ]),
-    'components/Counter.tsx': NATIVE_BUTTON_COUNTER_TSX,
+    'components/Counter.tsx': SHARED_COUNTER_TSX,
     'public/styles.css': STYLES_CSS,
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
