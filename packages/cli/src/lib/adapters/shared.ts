@@ -2,7 +2,7 @@
 // the design-token CSS variables, the entry stylesheet, and the UnoCSS
 // config the registry components depend on.
 
-// Starter Counter: uses the registry-fetched <Button> from
+// Starter Counter (Hono / CSR): uses the registry-fetched <Button> from
 // `components/ui/button/`. `barefoot init` adds it via `addFromRegistry`
 // during scaffolding, so the file is on disk before the user runs npm
 // install — no manual `barefoot add button` step is required.
@@ -27,6 +27,39 @@ export function Counter(props: CounterProps) {
         <Button onClick={() => setCount(n => n + 1)}>+1</Button>
         <Button onClick={() => setCount(n => n - 1)} variant="secondary">-1</Button>
         <Button onClick={() => setCount(0)} variant="ghost">Reset</Button>
+      </div>
+    </div>
+  )
+}
+`
+
+// Starter Counter (Echo / Mojolicious): native <button> elements
+// instead of the registry <Button>. The Go and Perl template adapters
+// don't yet handle the registry Button's <Slot> + variant-class
+// pipeline cleanly — using native buttons keeps the starter scaffold
+// runnable end-to-end. Users can switch to <Button> once those adapters
+// catch up (the registry component is still installed under
+// `components/ui/button/`, just not referenced from Counter).
+export const NATIVE_BUTTON_COUNTER_TSX = `'use client'
+
+import { createSignal, createMemo } from '@barefootjs/client'
+
+interface CounterProps {
+  initial?: number
+}
+
+export function Counter(props: CounterProps) {
+  const [count, setCount] = createSignal(props.initial ?? 0)
+  const doubled = createMemo(() => count() * 2)
+
+  return (
+    <div className="counter">
+      <p className="counter-value">count: {count()}</p>
+      <p className="counter-doubled">doubled: {doubled()}</p>
+      <div className="counter-buttons">
+        <button type="button" onClick={() => setCount(n => n + 1)}>+1</button>
+        <button type="button" onClick={() => setCount(n => n - 1)}>-1</button>
+        <button type="button" onClick={() => setCount(0)}>Reset</button>
       </div>
     </div>
   )

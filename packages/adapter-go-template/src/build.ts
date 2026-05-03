@@ -213,12 +213,15 @@ export function createConfig(options: GoTemplateBuildOptions = {}) {
 
     if (content) {
       const { resolve } = await import('node:path')
+      const { readFile, writeFile } = await import('node:fs/promises')
       const outPath = resolve(ctx.projectDir, typesOutputFile)
       // Write only when content changed so cache-hit builds don't trip the
       // dev-reload sentinel (ctx.markChanged) and trigger a spurious reload.
-      const prev = await Bun.file(outPath).text().catch(() => null)
+      // Use node:fs/promises (not Bun.*) so this hook runs under either
+      // runtime — the published `barefoot` CLI bin starts via Node.
+      const prev = await readFile(outPath, 'utf-8').catch(() => null)
       if (prev !== content) {
-        await Bun.write(outPath, content)
+        await writeFile(outPath, content)
         ctx.markChanged?.()
         console.log(`Generated: ${typesOutputFile}`)
       }
