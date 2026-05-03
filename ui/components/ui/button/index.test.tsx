@@ -36,11 +36,24 @@ describe('Button', () => {
 
   test('button has resolved base classes from constants', () => {
     const button = result.find({ tag: 'button' })!
-    // Constants are resolved: baseClasses string is expanded,
-    // variantClasses[variant] and sizeClasses[size] are unresolvable (skipped)
+    // Constants are resolved structurally: baseClasses expands to
+    // its literal tokens, and variantClasses[variant] /
+    // sizeClasses[size] expand to every case's tokens (the test
+    // framework can't pick a specific variant at IR time, so it
+    // surfaces all branches so assertions on any one variant work).
     expect(button.classes).toContain('inline-flex')
     expect(button.classes).toContain('items-center')
     expect(button.classes).toContain('rounded-md')
+  })
+
+  test('button surfaces every variant and size case', () => {
+    const button = result.find({ tag: 'button' })!
+    // Default-variant tokens
+    expect(button.classes).toContain('bg-primary')
+    // Secondary-variant tokens (a different case in the same lookup)
+    expect(button.classes).toContain('bg-secondary')
+    // A size case
+    expect(button.classes).toContain('h-9')
   })
 
   test('contains a Slot component for asChild', () => {

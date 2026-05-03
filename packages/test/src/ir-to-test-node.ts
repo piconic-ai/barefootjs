@@ -405,9 +405,14 @@ function resolveTemplateLiteral(tl: IRTemplateLiteral): string {
     .map(part => {
       if (part.type === 'string') return part.value
       if (part.type === 'ternary') return `{${part.condition}}`
-      // `lookup` placeholder — keys-only since the test framework
-      // doesn't pick a concrete branch.
-      return `{${part.key}}`
+      // `lookup` (`Record<T, string>[key]`) — the test framework
+      // doesn't render against a specific key, so concatenate every
+      // case's value separated by whitespace. For className lookups
+      // this lets a test assert any variant's classes are present
+      // (e.g. `toContain('bg-primary')` for the default case,
+      // `toContain('bg-secondary')` for the secondary case) without
+      // the framework having to pick a concrete branch.
+      return Object.values(part.cases).join(' ')
     })
     .join('')
 }
