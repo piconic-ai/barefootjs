@@ -3,8 +3,13 @@
 /**
  * Button Component
  *
- * A versatile button component with multiple visual variants and sizes.
- * Inspired by shadcn/ui with CSS variable theming support.
+ * A button with variants and sizes. The visual styling lives in CSS
+ * `@layer components`, addressed via `data-variant` / `data-size`
+ * attribute selectors. Consumers override per-variant styling by
+ * declaring rules in a higher-priority layer — no JS-side class
+ * derivation required, and the same JSX renders correctly across
+ * adapters that don't run JS at SSR time (Go templates, Mojolicious
+ * EP, etc.).
  *
  * @example Basic usage
  * ```tsx
@@ -28,32 +33,10 @@ import type { ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { Slot } from '../slot'
 
-// Type definitions for button variants
+// Variant / size keep their public API — they just route through data
+// attributes instead of class lookup tables.
 type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon' | 'icon-sm' | 'icon-lg'
-
-// Base classes shared by all buttons
-const baseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation'
-
-// Variant-specific classes
-const variantClasses: Record<ButtonVariant, string> = {
-  default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-  destructive: 'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
-  outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
-  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
-  link: 'text-foreground underline-offset-4 hover:underline hover:text-primary',
-}
-
-// Size-specific classes
-const sizeClasses: Record<ButtonSize, string> = {
-  default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-  sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
-  lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
-  icon: 'size-9',
-  'icon-sm': 'size-8',
-  'icon-lg': 'size-10',
-}
 
 /**
  * Props for the Button component.
@@ -92,28 +75,25 @@ interface ButtonProps extends ButtonHTMLAttributes {
  *   - `'ghost'` - Minimal, visible only on hover
  *   - `'link'` - Text link appearance with underline on hover
  * @param props.size - Size of the button
- *   - `'default'` - Standard size (h-9)
- *   - `'sm'` - Small size (h-8)
- *   - `'lg'` - Large size (h-10)
- *   - `'icon'` - Square icon button (size-9)
- *   - `'icon-sm'` - Small icon button (size-8)
- *   - `'icon-lg'` - Large icon button (size-10)
+ *   - `'default'` - Standard size
+ *   - `'sm'` - Small size
+ *   - `'lg'` - Large size
+ *   - `'icon'` - Square icon button
+ *   - `'icon-sm'` - Small icon button
+ *   - `'icon-lg'` - Large icon button
  * @param props.asChild - Render child element instead of button
  */
 function Button({
-  className = '',
   variant = 'default',
   size = 'default',
   asChild = false,
   children,
   ...props
 }: ButtonProps) {
-  const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`
-
   if (asChild) {
-    return <Slot className={classes} {...props}>{children}</Slot>
+    return <Slot className="bf-button" data-variant={variant} data-size={size} {...props}>{children}</Slot>
   }
-  return <button className={classes} {...props}>{children}</button>
+  return <button className="bf-button" data-variant={variant} data-size={size} {...props}>{children}</button>
 }
 
 export { Button }

@@ -34,13 +34,12 @@ describe('Button', () => {
     expect(button).not.toBeNull()
   })
 
-  test('button has resolved base classes from constants', () => {
+  test('button carries the static bf-button class', () => {
     const button = result.find({ tag: 'button' })!
-    // Constants are resolved: baseClasses string is expanded,
-    // variantClasses[variant] and sizeClasses[size] are unresolvable (skipped)
-    expect(button.classes).toContain('inline-flex')
-    expect(button.classes).toContain('items-center')
-    expect(button.classes).toContain('rounded-md')
+    // Variant / size styling lives in CSS `@layer components`, addressed
+    // via data-variant / data-size attribute selectors — the JSX class
+    // is just the static base hook.
+    expect(button.classes).toEqual(['bf-button'])
   })
 
   test('contains a Slot component for asChild', () => {
