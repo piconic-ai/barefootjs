@@ -10,7 +10,7 @@ describe('adapter registry', () => {
     expect(DEFAULT_ADAPTER).toBe('hono')
   })
 
-  test.each(['hono', 'echo', 'mojo'])('%s adapter is registered', id => {
+  test.each(['hono', 'echo', 'mojo', 'csr'])('%s adapter is registered', id => {
     expect(ADAPTERS[id]).toBeDefined()
   })
 
@@ -44,6 +44,14 @@ describe('adapter registry', () => {
     expect(mojo.files['lib/BarefootJS.pm']).toMatch(/^package BarefootJS;/m)
     expect(mojo.files['lib/Mojolicious/Plugin/BarefootJS.pm']).toMatch(/^package Mojolicious::Plugin::BarefootJS;/m)
     expect(mojo.files['cpanfile']).toMatch(/^requires 'Mojolicious'/m)
+  })
+
+  test('csr scaffolds a static HTML page + Bun server', () => {
+    const csr = ADAPTERS.csr
+    expect(csr.files['server.ts']).toMatch(/Bun\.serve/)
+    expect(csr.files['pages/index.html']).toMatch(/<div id="app">/)
+    expect(csr.files['pages/index.html']).toMatch(/@barefootjs\/client\/runtime/)
+    expect(csr.files['barefoot.config.ts']).toMatch(/clientOnly: true/)
   })
 })
 

@@ -4,6 +4,7 @@
 // `./adapters/<name>.ts` so this file stays focused on registration
 // surface (types, the registry maps, and defaults).
 
+import { CSR_ADAPTER } from './adapters/csr'
 import { ECHO_ADAPTER } from './adapters/echo'
 import { HONO_ADAPTER } from './adapters/hono'
 import { MOJO_ADAPTER } from './adapters/mojo'
@@ -50,6 +51,7 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
   hono: HONO_ADAPTER,
   echo: ECHO_ADAPTER,
   mojo: MOJO_ADAPTER,
+  csr: CSR_ADAPTER,
 }
 
 export const DEFAULT_ADAPTER = 'hono'
