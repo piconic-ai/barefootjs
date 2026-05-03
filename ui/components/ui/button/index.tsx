@@ -3,16 +3,8 @@
 /**
  * Button Component
  *
- * Variant / size styling is expressed entirely through UnoCSS utility
- * classes — `data-[variant=...]:bg-primary`, `data-[size=lg]:h-10`,
- * etc. — so the visual switching happens at the browser level via
- * attribute selectors. The `className` value is a single static
- * string literal (no JS-side derivation) so:
- *
- *   - UnoCSS's static scanner picks up every utility token at build
- *     time.
- *   - SSR adapters that don't execute JS (Go templates, Mojolicious
- *     EP) emit it verbatim into the rendered HTML.
+ * A versatile button component with multiple visual variants and sizes.
+ * Inspired by shadcn/ui with CSS variable theming support.
  *
  * @example Basic usage
  * ```tsx
@@ -36,9 +28,36 @@ import type { ButtonHTMLAttributes } from '@barefootjs/jsx'
 import type { Child } from '../../../types'
 import { Slot } from '../slot'
 
+// Type definitions for button variants
 type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon' | 'icon-sm' | 'icon-lg'
 
+// Base classes shared by all buttons
+const baseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation'
+
+// Variant-specific classes
+const variantClasses: Record<ButtonVariant, string> = {
+  default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  destructive: 'bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+  outline: 'border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+  ghost: 'text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
+  link: 'text-foreground underline-offset-4 hover:underline hover:text-primary',
+}
+
+// Size-specific classes
+const sizeClasses: Record<ButtonSize, string> = {
+  default: 'h-9 px-4 py-2 has-[>svg]:px-3',
+  sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
+  lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
+  icon: 'size-9',
+  'icon-sm': 'size-8',
+  'icon-lg': 'size-10',
+}
+
+/**
+ * Props for the Button component.
+ */
 interface ButtonProps extends ButtonHTMLAttributes {
   /**
    * Visual style of the button.
@@ -62,35 +81,39 @@ interface ButtonProps extends ButtonHTMLAttributes {
   children?: Child
 }
 
+/**
+ * Button component with variants and sizes.
+ *
+ * @param props.variant - Visual style of the button
+ *   - `'default'` - Primary action, solid background
+ *   - `'destructive'` - Dangerous action (red)
+ *   - `'outline'` - Bordered with transparent background
+ *   - `'secondary'` - Muted styling for secondary actions
+ *   - `'ghost'` - Minimal, visible only on hover
+ *   - `'link'` - Text link appearance with underline on hover
+ * @param props.size - Size of the button
+ *   - `'default'` - Standard size (h-9)
+ *   - `'sm'` - Small size (h-8)
+ *   - `'lg'` - Large size (h-10)
+ *   - `'icon'` - Square icon button (size-9)
+ *   - `'icon-sm'` - Small icon button (size-8)
+ *   - `'icon-lg'` - Large icon button (size-10)
+ * @param props.asChild - Render child element instead of button
+ */
 function Button({
+  className = '',
   variant = 'default',
   size = 'default',
   asChild = false,
   children,
   ...props
 }: ButtonProps) {
+  const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`
+
   if (asChild) {
-    return (
-      <Slot
-        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 data-[size=default]:h-9 data-[size=default]:px-4 data-[size=default]:py-2 data-[size=sm]:h-8 data-[size=sm]:px-3 data-[size=sm]:text-xs data-[size=lg]:h-10 data-[size=lg]:px-6 data-[size=icon]:size-9 data-[size=icon-sm]:size-8 data-[size=icon-lg]:size-10 data-[variant=default]:bg-primary data-[variant=default]:text-primary-foreground data-[variant=default]:hover:bg-primary/90 data-[variant=secondary]:bg-secondary data-[variant=secondary]:text-secondary-foreground data-[variant=secondary]:hover:bg-secondary/80 data-[variant=destructive]:bg-destructive data-[variant=destructive]:text-destructive-foreground data-[variant=destructive]:hover:bg-destructive/90 data-[variant=outline]:border data-[variant=outline]:border-input data-[variant=outline]:bg-background data-[variant=outline]:text-foreground data-[variant=outline]:hover:bg-accent data-[variant=outline]:hover:text-accent-foreground data-[variant=ghost]:text-foreground data-[variant=ghost]:hover:bg-accent data-[variant=ghost]:hover:text-accent-foreground data-[variant=link]:text-primary data-[variant=link]:underline-offset-4 data-[variant=link]:hover:underline"
-        data-variant={variant}
-        data-size={size}
-        {...props}
-      >
-        {children}
-      </Slot>
-    )
+    return <Slot className={classes} {...props}>{children}</Slot>
   }
-  return (
-    <button
-      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 data-[size=default]:h-9 data-[size=default]:px-4 data-[size=default]:py-2 data-[size=sm]:h-8 data-[size=sm]:px-3 data-[size=sm]:text-xs data-[size=lg]:h-10 data-[size=lg]:px-6 data-[size=icon]:size-9 data-[size=icon-sm]:size-8 data-[size=icon-lg]:size-10 data-[variant=default]:bg-primary data-[variant=default]:text-primary-foreground data-[variant=default]:hover:bg-primary/90 data-[variant=secondary]:bg-secondary data-[variant=secondary]:text-secondary-foreground data-[variant=secondary]:hover:bg-secondary/80 data-[variant=destructive]:bg-destructive data-[variant=destructive]:text-destructive-foreground data-[variant=destructive]:hover:bg-destructive/90 data-[variant=outline]:border data-[variant=outline]:border-input data-[variant=outline]:bg-background data-[variant=outline]:text-foreground data-[variant=outline]:hover:bg-accent data-[variant=outline]:hover:text-accent-foreground data-[variant=ghost]:text-foreground data-[variant=ghost]:hover:bg-accent data-[variant=ghost]:hover:text-accent-foreground data-[variant=link]:text-primary data-[variant=link]:underline-offset-4 data-[variant=link]:hover:underline"
-      data-variant={variant}
-      data-size={size}
-      {...props}
-    >
-      {children}
-    </button>
-  )
+  return <button className={classes} {...props}>{children}</button>
 }
 
 export { Button }

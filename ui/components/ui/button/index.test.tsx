@@ -34,21 +34,13 @@ describe('Button', () => {
     expect(button).not.toBeNull()
   })
 
-  test('button has UnoCSS utility classes for base styling', () => {
+  test('button has resolved base classes from constants', () => {
     const button = result.find({ tag: 'button' })!
-    // The full className is a single static string — UnoCSS scans
-    // the file for utility tokens, including the
-    // `data-[variant=...]:bg-...` attribute-selector variants.
+    // Constants are resolved: baseClasses string is expanded,
+    // variantClasses[variant] and sizeClasses[size] are unresolvable (skipped)
     expect(button.classes).toContain('inline-flex')
     expect(button.classes).toContain('items-center')
     expect(button.classes).toContain('rounded-md')
-  })
-
-  test('button carries data-[variant=*] attribute-selector utilities', () => {
-    const button = result.find({ tag: 'button' })!
-    expect(button.classes).toContain('data-[variant=default]:bg-primary')
-    expect(button.classes).toContain('data-[variant=secondary]:bg-secondary')
-    expect(button.classes).toContain('data-[variant=destructive]:bg-destructive')
   })
 
   test('contains a Slot component for asChild', () => {

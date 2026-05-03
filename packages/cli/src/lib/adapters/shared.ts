@@ -2,7 +2,7 @@
 // the design-token CSS variables, the entry stylesheet, and the UnoCSS
 // config the registry components depend on.
 
-// Starter Counter: uses the registry-fetched <Button> from
+// Starter Counter (Hono / CSR): uses the registry-fetched <Button> from
 // `components/ui/button/`. `barefoot init` adds it via `addFromRegistry`
 // during scaffolding, so the file is on disk before the user runs
 // `bun install` — no manual `barefoot add button` step is required.
@@ -27,6 +27,52 @@ export function Counter(props: CounterProps) {
         <Button onClick={() => setCount(n => n + 1)}>+1</Button>
         <Button onClick={() => setCount(n => n - 1)} variant="secondary">-1</Button>
         <Button onClick={() => setCount(0)} variant="ghost">Reset</Button>
+      </div>
+    </div>
+  )
+}
+`
+
+// Starter Counter (Echo / Mojolicious — temporary): native <button>
+// elements with utility classes inline. The go-template / mojolicious
+// adapters can't yet render the registry <Button> end-to-end (the
+// component's cva-style class derivation requires JS-runtime
+// evaluation that those adapters don't have at SSR time). Once those
+// adapters catch up, every starter switches to SHARED_COUNTER_TSX
+// and this fork goes away. Until then, this keeps Echo/Mojo init
+// scaffolds visually styled and runnable.
+export const NATIVE_BUTTON_COUNTER_TSX = `'use client'
+
+import { createSignal, createMemo } from '@barefootjs/client'
+
+interface CounterProps {
+  initial?: number
+}
+
+export function Counter(props: CounterProps) {
+  const [count, setCount] = createSignal(props.initial ?? 0)
+  const doubled = createMemo(() => count() * 2)
+
+  return (
+    <div className="counter">
+      <p className="counter-value">count: {count()}</p>
+      <p className="counter-doubled">doubled: {doubled()}</p>
+      <div className="counter-buttons">
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={() => setCount(n => n + 1)}
+        >+1</button>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
+          onClick={() => setCount(n => n - 1)}
+        >-1</button>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors text-foreground hover:bg-accent hover:text-accent-foreground"
+          onClick={() => setCount(0)}
+        >Reset</button>
       </div>
     </div>
   )

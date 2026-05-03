@@ -20,7 +20,7 @@ describe('parseComponent', () => {
 
     test('extracts top-level description', () => {
       expect(result.description).toContain('Button Component')
-      expect(result.description).toContain('UnoCSS utility classes')
+      expect(result.description).toContain('versatile button')
     })
 
     test('extracts examples', () => {
