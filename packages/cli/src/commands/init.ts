@@ -95,7 +95,6 @@ async function resolveAdapter(flag: string | undefined): Promise<string> {
     if (!ADAPTERS[flag]) {
       const known = Object.keys(ADAPTERS).join(', ')
       console.error(`Error: unknown adapter "${flag}". Available: ${known}`)
-      console.error(`(Other backends — Echo, Mojolicious — are showcased in the docs but not yet wired into init.)`)
       process.exit(1)
     }
     return flag

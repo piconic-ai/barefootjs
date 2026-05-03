@@ -14,8 +14,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "node ./scripts/build.mjs",
-    "clean": "rm -rf dist",
+    "build": "node ./scripts/embed-runtimes.mjs && node ./scripts/build.mjs",
+    "embed-runtimes": "node ./scripts/embed-runtimes.mjs",
+    "clean": "rm -rf dist src/lib/adapters/runtimes.generated.ts",
     "test": "bun test"
   },
   "dependencies": {
