@@ -404,8 +404,10 @@ function resolveTemplateLiteral(tl: IRTemplateLiteral): string {
   return tl.parts
     .map(part => {
       if (part.type === 'string') return part.value
-      // Ternary: represent as placeholder
-      return `{${part.condition}}`
+      if (part.type === 'ternary') return `{${part.condition}}`
+      // `lookup` placeholder — keys-only since the test framework
+      // doesn't pick a concrete branch.
+      return `{${part.key}}`
     })
     .join('')
 }
