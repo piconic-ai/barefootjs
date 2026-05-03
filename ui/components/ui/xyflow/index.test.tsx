@@ -250,4 +250,13 @@ describe('FlowNodeTypeBridge', () => {
     expect(div).not.toBeNull()
     expect(div?.props['data-bf-bridge']).toBeDefined()
   })
+
+  test('memoises identity and data so selection-only setNodes does not re-init', () => {
+    // The bridge subscribes to `data` identity (via dataMemo) instead of
+    // the whole nodeLookup map — selection toggles preserve `n.data` so
+    // the consumer's `initFn` is not torn down on click. Regression
+    // guard for piconic-ai/barefootjs#bridge-stable-init.
+    expect(result.memos).toContain('idMemo')
+    expect(result.memos).toContain('dataMemo')
+  })
 })
