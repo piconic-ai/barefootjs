@@ -8,24 +8,32 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import path from 'path'
 import type { CliContext } from '../context'
 import { addFromRegistry } from './add'
-import { ADAPTERS, DEFAULT_ADAPTER, type AdapterTemplate } from '../lib/templates'
+import {
+  ADAPTERS,
+  CSS_LIBRARIES,
+  DEFAULT_ADAPTER,
+  DEFAULT_CSS_LIBRARY,
+  type AdapterTemplate,
+} from '../lib/templates'
 import { detectPackageManager, commandsFor, type PackageManager } from '../lib/pm'
+import { select } from '../lib/select'
 
 interface InitFlags {
   name?: string
-  adapter: string
+  adapter?: string
+  css?: string
 }
 
 function parseFlags(args: string[]): InitFlags {
-  const flags: InitFlags = {
-    adapter: DEFAULT_ADAPTER,
-  }
+  const flags: InitFlags = {}
   for (let i = 0; i < args.length; i++) {
     const a = args[i]
     if (a === '--name' && args[i + 1]) {
       flags.name = args[++i]
     } else if (a === '--adapter' && args[i + 1]) {
       flags.adapter = args[++i]
+    } else if (a === '--css' && args[i + 1]) {
+      flags.css = args[++i]
     }
   }
   return flags
@@ -41,13 +49,13 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
-  const adapter = ADAPTERS[flags.adapter]
-  if (!adapter) {
-    const known = Object.keys(ADAPTERS).join(', ')
-    console.error(`Error: unknown adapter "${flags.adapter}". Available: ${known}`)
-    console.error(`(Other backends — Echo, Mojolicious — are showcased in the docs but not yet wired into init.)`)
-    process.exit(1)
-  }
+  const adapterId = await resolveAdapter(flags.adapter)
+  const adapter = ADAPTERS[adapterId]
+  const cssId = await resolveCssLibrary(flags.css)
+  const cssLibrary = CSS_LIBRARIES[cssId]
+  console.log(`  Adapter:     ${adapter.label}`)
+  console.log(`  CSS library: ${cssLibrary.label}`)
+  console.log()
 
   // Pre-flight: confirm the UI registry is reachable BEFORE writing
   // anything to disk. The runnable starter requires the registry's
@@ -71,10 +79,50 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const warnings = adapter.prereqWarnings()
   for (const w of warnings) console.warn(`  ! ${w}`)
 
-  console.log(`Initializing BarefootJS app with the ${adapter.label} adapter...\n`)
+  console.log(`Initializing BarefootJS app...\n`)
 
   await scaffoldApp(projectDir, adapter, flags, ctx)
   printAppNextSteps(projectDir, adapter)
+}
+
+// Resolve the adapter by precedence: explicit `--adapter` flag (validated)
+// > interactive selector when stdin is a TTY and 2+ adapters are
+// registered > the registry default. The selector itself short-circuits
+// to the default in single-option / non-TTY scenarios (see select.ts),
+// so callers don't need to special-case those.
+async function resolveAdapter(flag: string | undefined): Promise<string> {
+  if (flag) {
+    if (!ADAPTERS[flag]) {
+      const known = Object.keys(ADAPTERS).join(', ')
+      console.error(`Error: unknown adapter "${flag}". Available: ${known}`)
+      console.error(`(Other backends — Echo, Mojolicious — are showcased in the docs but not yet wired into init.)`)
+      process.exit(1)
+    }
+    return flag
+  }
+  const options = Object.entries(ADAPTERS).map(([value, t]) => ({ value, label: t.label }))
+  try {
+    return await select({ message: 'Choose an adapter:', options, defaultValue: DEFAULT_ADAPTER })
+  } catch {
+    process.exit(1)
+  }
+}
+
+async function resolveCssLibrary(flag: string | undefined): Promise<string> {
+  if (flag) {
+    if (!CSS_LIBRARIES[flag]) {
+      const known = Object.keys(CSS_LIBRARIES).join(', ')
+      console.error(`Error: unknown CSS library "${flag}". Available: ${known}`)
+      process.exit(1)
+    }
+    return flag
+  }
+  const options = Object.entries(CSS_LIBRARIES).map(([value, t]) => ({ value, label: t.label }))
+  try {
+    return await select({ message: 'Choose a CSS library:', options, defaultValue: DEFAULT_CSS_LIBRARY })
+  } catch {
+    process.exit(1)
+  }
 }
 
 async function probeRegistry(url: string): Promise<void> {
