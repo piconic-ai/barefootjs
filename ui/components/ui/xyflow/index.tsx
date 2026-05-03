@@ -28,8 +28,10 @@
  */
 
 import {
-  createSignal,
+  createEffect,
   createMemo,
+  createSignal,
+  untrack,
   useContext,
 } from '@barefootjs/client'
 import type { JSX } from '@barefootjs/jsx/jsx-runtime'
@@ -820,32 +822,70 @@ interface FlowNodeTypeBridgeProps {
 // template-emitter shorthand bug that produces `{node(): node()}`).
 export function FlowNodeTypeBridge(props: FlowNodeTypeBridgeProps) {
   const store = useContext(FlowContext) as FlowStore | undefined
-  return (
-    <div
-      data-bf-bridge=""
-      ref={(el: HTMLElement) => {
-        if (!store) return
-        const live = props.forNode
-        const id = live.id ?? (el.closest('.bf-flow__node') as HTMLElement | null)?.dataset.id
-        if (!id) return
-        const internal = store.nodeLookup().get(id)
-        const data = live.data ?? internal?.data ?? {}
-        const type = (live.type ?? internal?.type ?? 'default') as string
-        const initFn = props.nodeTypes[type] ?? props.nodeTypes.default
-        if (!initFn) return
-        initFn.call(el, {
-          id,
-          data,
-          type,
-          selected: () => !!store.nodeLookup().get(id)?.selected,
-          dragging: false,
-          positionAbsoluteX: 0,
-          positionAbsoluteY: 0,
-          isConnectable: true,
-        })
-      }}
-    />
-  )
+  const [bridgeEl, setBridgeEl] = createSignal<HTMLElement | null>(null)
+
+  // Resolve identity once the element exists. `idMemo` only emits when
+  // the resolved id actually changes — re-runs of `props.forNode` that
+  // produce the same id are deduped by createMemo (Object.is on the
+  // string). The DOM fallback handles SSR hydration where `props.forNode`
+  // may be empty.
+  const idMemo = createMemo(() => {
+    const el = bridgeEl()
+    if (!el) return null
+    const live = props.forNode
+    return (live?.id ?? (el.closest('.bf-flow__node') as HTMLElement | null)?.dataset.id) ?? null
+  })
+
+  // Subscribe to the node's `data` *identity*, not to the whole
+  // `nodeLookup()` map. `setNodes(prev => prev.map(n => n.id === target ?
+  // {...n, selected: true} : n))` keeps `n.data` as the same object, so
+  // a data-identity memo deduplicates selection-only updates and stops
+  // them from tearing down whatever DOM the user's `initFn` mounted
+  // (focus, in-flight editors, native dblclick target identity, …).
+  // Real `data` changes — e.g. a consumer flipping `node.data.compact`
+  // via setNodes — produce a new data object and DO trigger a re-run,
+  // matching the behaviour the previous coarse subscription provided.
+  const dataMemo = createMemo(() => {
+    if (!store) return undefined
+    const id = idMemo()
+    if (!id) return undefined
+    return store.nodeLookup().get(id)?.data
+  })
+
+  createEffect(() => {
+    const el = bridgeEl()
+    if (!el || !store) return
+    const id = idMemo()
+    if (!id) return
+    const data = dataMemo() ?? props.forNode?.data ?? {}
+    // Type / initFn lookup is intentionally untracked — type rarely
+    // changes for a given node, and bouncing the renderer on a type swap
+    // isn't behaviour the bridge promises. Untracking keeps this
+    // effect's dependency set to `idMemo` and `dataMemo`.
+    const type = untrack(() => {
+      const live = props.forNode
+      return (live?.type ?? store.nodeLookup().get(id)?.type ?? 'default') as string
+    })
+    const initFn = untrack(() => props.nodeTypes[type] ?? props.nodeTypes.default)
+    if (!initFn) return
+    // Wipe whatever the previous run mounted (children + style). The
+    // previous run's `onCleanup` chain has already fired because
+    // `createEffect` runs cleanups before the next body invocation.
+    for (; el.firstChild;) el.removeChild(el.firstChild)
+    el.removeAttribute('style')
+    initFn.call(el, {
+      id,
+      data,
+      type,
+      selected: () => !!store.nodeLookup().get(id)?.selected,
+      dragging: false,
+      positionAbsoluteX: 0,
+      positionAbsoluteY: 0,
+      isConnectable: true,
+    })
+  })
+
+  return <div data-bf-bridge="" ref={setBridgeEl} />
 }
 
 export function Flow<
