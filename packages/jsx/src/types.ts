@@ -1060,6 +1060,17 @@ export interface CompileOptions {
   program?: import('typescript').Program
   /** Import prefixes resolved at build time, not in browser (e.g., ['@/', '@ui/']) */
   localImportPrefixes?: string[]
+  /**
+   * Override for the script base name baked into the adapter's
+   * `Scripts.Register` calls. Defaults to the component's identifier
+   * (e.g. `Button`). When the build pipeline emits client bundles
+   * under a path-based filename (e.g. `ui/button/index.client.js` for
+   * a nested source like `components/ui/button/index.tsx`), passing
+   * that path-without-extension here keeps the registered URL in sync
+   * with the actual on-disk file. Used by the go-template adapter and
+   * any other adapter that bakes the URL at codegen time.
+   */
+  scriptBaseName?: string
 }
 
 export interface FileOutput {
