@@ -76,7 +76,7 @@ export { styleToCss } from './style'
 
 // Runtime helpers
 export { findScope, find, $, $c, $t, qsa } from './query'
-export { hydrate, rehydrateAll } from './hydrate'
+export { hydrate, rehydrateAll, flushHydration } from './hydrate'
 export { registerComponent, getComponentInit, initChild, upsertChild } from './registry'
 export { insert, type BranchConfig } from './insert'
 export { updateClientMarker } from './client-marker'

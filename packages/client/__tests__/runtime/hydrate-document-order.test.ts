@@ -86,6 +86,59 @@ describe('hydrate walks elements in document order', () => {
     expect(observed).toEqual(['hi', 'hi'])
   })
 
+  test('flushHydration() drains pending walk synchronously', async () => {
+    const { hydrate, flushHydration } = await import('../../src/runtime/hydrate')
+
+    document.body.innerHTML = `<div bf-s="DocOrderFlush_1"></div>`
+
+    let initRan = false
+
+    hydrate('DocOrderFlush', {
+      init: () => {
+        initRan = true
+      },
+    })
+
+    // Without flushHydration this would still be false until microtask
+    // flush — that's the documented post-#1172 behaviour.
+    expect(initRan).toBe(false)
+
+    flushHydration()
+
+    expect(initRan).toBe(true)
+
+    // The queued microtask / rAF callbacks now treat themselves as
+    // already-run and skip; no double-init even after we await.
+    let rerunCount = 0
+    hydrate('DocOrderFlush', {
+      init: () => {
+        rerunCount += 1
+      },
+    })
+    flushHydration()
+    await Promise.resolve()
+    // Single hydrated element + WeakSet membership means re-running
+    // the walk is a no-op for that scope.
+    expect(rerunCount).toBe(0)
+  })
+
+  test('flushHydration() with nothing pending is a no-op', async () => {
+    const { hydrate, flushHydration } = await import('../../src/runtime/hydrate')
+
+    document.body.innerHTML = `<div bf-s="DocOrderFlushNoop_1"></div>`
+    let initCount = 0
+
+    hydrate('DocOrderFlushNoop', { init: () => initCount++ })
+    flushHydration()
+    expect(initCount).toBe(1)
+
+    // No further hydrate() / rehydrateAll() — flushHydration must not
+    // re-walk the DOM, which would be wasted work but also wouldn't
+    // re-init (already in WeakSet).
+    flushHydration()
+    expect(initCount).toBe(1)
+  })
+
   test('comment-scope parent inits before element-scope descendant in same doc', async () => {
     // Regression: an earlier draft of this PR ran the element-scope pass
     // first and the comment-scope pass second, which meant a comment-

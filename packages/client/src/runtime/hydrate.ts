@@ -72,12 +72,16 @@ const scheduleMicrotask: (cb: () => void) => void =
  * Schedule the document-order walk once per tick (microtask) and once
  * per frame (rAF). Both flags are cleared inside their respective
  * callbacks, so a flood of `hydrate()` / `rehydrateAll()` calls can
- * never queue more than two pending walks in total.
+ * never queue more than two pending walks in total. The callbacks
+ * also re-check their own flag on entry so that a synchronous
+ * `flushHydration()` between scheduling and firing turns the queued
+ * callback into a no-op.
  */
 function scheduleWalk(): void {
   if (!microtaskScheduled) {
     microtaskScheduled = true
     scheduleMicrotask(() => {
+      if (!microtaskScheduled) return
       microtaskScheduled = false
       walkAllInDocumentOrder()
     })
@@ -85,6 +89,7 @@ function scheduleWalk(): void {
   if (!rafScheduled && typeof requestAnimationFrame === 'function') {
     rafScheduled = true
     requestAnimationFrame(() => {
+      if (!rafScheduled) return
       rafScheduled = false
       walkAllInDocumentOrder()
     })
@@ -94,6 +99,23 @@ function scheduleWalk(): void {
 /**
  * Register a component and schedule a document-order hydration walk.
  * Combines registration + template setup + hydration in a single call.
+ *
+ * **Scheduling semantics** (changed in #1172): the walk runs on the
+ * next microtask, then again on the next animation frame. The init
+ * functions for registered components are *not* invoked synchronously
+ * inside `hydrate()`. Code that needs to observe init effects on the
+ * same tick — typically tests, but also advanced consumers wiring
+ * imperative bridges — should either:
+ *
+ *   - `await Promise.resolve()` after a batch of `hydrate()` calls, or
+ *   - call `flushHydration()` (see below) to drain any pending walks
+ *     synchronously.
+ *
+ * The deferral is what lets the doc-order walker see a fully populated
+ * registry: every `hydrate()` call from the bundled module body lands
+ * in the registry *before* the microtask flush kicks off the single
+ * walk, so parents always init before their descendants regardless of
+ * which file the parent's `hydrate()` was emitted into.
  *
  * @param name - Component name
  * @param def - Component definition (init function + optional template + comment flag)
@@ -122,10 +144,45 @@ export function hydrate(name: string, def: ComponentDef): void {
  * Called by the streaming resolver after swapping fallback content with
  * resolved content. Goes through the same scheduler as `hydrate()` so
  * back-to-back `__bf_swap` invocations or interleaved `hydrate()` calls
- * collapse to a single walk per tick + per frame.
+ * collapse to a single walk per tick + per frame. Like `hydrate()` this
+ * is asynchronous — see `flushHydration()` if you need a synchronous
+ * drain.
  */
 export function rehydrateAll(): void {
   scheduleWalk()
+}
+
+/**
+ * Run any pending hydration walk synchronously, right now.
+ *
+ * The default scheduler is microtask + rAF, which is the right
+ * trade-off for production code (it lets the registry populate before
+ * the walk and coalesces back-to-back `hydrate()` calls). But tests
+ * and a handful of advanced consumers — for example imperative
+ * mounting code that wants to read DOM state immediately after
+ * `render(...)` — need a deterministic completion point.
+ *
+ * This helper flushes any pending phases (microtask / rAF) by running
+ * the walk inline and clearing the scheduling flags. It's a no-op
+ * when nothing is queued. The pending callbacks themselves still
+ * fire later, but they observe their flags as false and skip — the
+ * extra walk cost is bounded by the WeakSet membership check.
+ *
+ * @example
+ *   hydrate('Counter', def)
+ *   flushHydration()
+ *   // now safe to read Counter's post-init DOM state
+ */
+export function flushHydration(): void {
+  // If neither phase is pending, no work has been scheduled since the
+  // last walk completed — bail without redoing the DOM scan.
+  if (!microtaskScheduled && !rafScheduled) return
+
+  // Clear flags first so the queued microtask / rAF callbacks treat
+  // themselves as already-run (they check their own flag on entry).
+  microtaskScheduled = false
+  rafScheduled = false
+  walkAllInDocumentOrder()
 }
 
 /**
