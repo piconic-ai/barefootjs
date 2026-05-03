@@ -17,7 +17,7 @@ import {
   type CacheEntry,
 } from './build-cache'
 import { writeIfChanged } from './fs-utils'
-import { fileExists, readBytes, readText, transpile } from './runtime'
+import { fileExists, hashBytes, readBytes, readText, transpile } from './runtime'
 import { build as esbuildBuild } from 'esbuild'
 
 export { resolveRelativeImports } from './resolve-imports'
@@ -208,6 +208,43 @@ async function findCliPackageJson(): Promise<string | null> {
 }
 
 /**
+ * Lockfile names checked, in order of preference. All matching files found while
+ * walking up from `projectDir` are mixed into the global hash, so any
+ * dependency upgrade — including ones that only touch transitive deps under
+ * `node_modules/@barefootjs/*` — invalidates stale per-entry caches. See
+ * piconic-ai/barefootjs#1179 for the original incident: bumping barefootjs to
+ * a new git ref via `bun install` did not invalidate cached `*.client.js`
+ * outputs that were missing freshly registered hydrations.
+ */
+const LOCKFILE_NAMES = [
+  'bun.lock',
+  'bun.lockb',
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml',
+] as const
+
+/**
+ * Walk up from `projectDir` to the filesystem root and return the absolute
+ * path of the nearest lockfile, or null if none is found. In a monorepo the
+ * lockfile typically lives at the workspace root rather than inside the
+ * package directory that hosts `barefoot.config.ts`.
+ */
+async function findNearestLockfile(projectDir: string): Promise<string | null> {
+  let dir = projectDir
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    for (const name of LOCKFILE_NAMES) {
+      const candidate = resolve(dir, name)
+      if (await fileExists(candidate)) return candidate
+    }
+    const parent = dirname(dir)
+    if (parent === dir) return null
+    dir = parent
+  }
+}
+
+/**
  * Compute the invalidation hash shared by every cache entry. Captures the
  * configuration surface that would change build output globally (so a shift
  * here invalidates the whole cache, not a single entry).
@@ -216,6 +253,12 @@ async function findCliPackageJson(): Promise<string | null> {
  * therefore any change to the cache schema that ships with it — implicitly
  * invalidates the on-disk cache without needing a hand-maintained version
  * counter.
+ *
+ * The nearest lockfile is also mixed in so any `bun install` (or equivalent)
+ * that changes installed dependencies — including bumping a git-ref pin of
+ * `barefootjs` itself — discards the cache. Per-entry `deps` only track
+ * consumer source files, so without this the cache has no signal that
+ * `node_modules` content has changed.
  */
 export async function computeGlobalHash(config: BuildConfig): Promise<string> {
   const parts: string[] = [
@@ -239,6 +282,11 @@ export async function computeGlobalHash(config: BuildConfig): Promise<string> {
       parts.push(await readText(cand))
       break
     }
+  }
+  const lockfile = await findNearestLockfile(config.projectDir)
+  if (lockfile) {
+    const bytes = await readBytes(lockfile)
+    parts.push(`lockfile:${basename(lockfile)}:${hashBytes(bytes)}`)
   }
   return hashContent(parts.join('\x00'))
 }

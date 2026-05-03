@@ -57,6 +57,14 @@ export function hashString(content: string): string {
   return createHash('sha256').update(content).digest('hex').slice(0, 16)
 }
 
+/**
+ * Byte-exact variant of `hashString` for files that may not be valid UTF-8
+ * (notably `bun.lockb`, which is binary).
+ */
+export function hashBytes(content: Uint8Array): string {
+  return createHash('sha256').update(content).digest('hex').slice(0, 16)
+}
+
 export interface TranspileOptions {
   /** Source loader. Defaults to 'js'. */
   loader?: 'ts' | 'tsx' | 'js' | 'jsx'
