@@ -382,7 +382,7 @@ function transformNode(node: ts.Node, ctx: TransformContext): IRNode | null {
 function transformJsxElement(
   node: ts.JsxElement,
   ctx: TransformContext
-): IRNode | null {
+): IRNode {
   const tagName = node.openingElement.tagName.getText(ctx.sourceFile)
 
   // Detect Context.Provider pattern: X.Provider
@@ -447,7 +447,7 @@ function transformHtmlElement(
 function transformSelfClosingElement(
   node: ts.JsxSelfClosingElement,
   ctx: TransformContext
-): IRNode | null {
+): IRNode {
   const tagName = node.tagName.getText(ctx.sourceFile)
 
   // Detect Context.Provider pattern: <X.Provider ... />
@@ -497,7 +497,7 @@ function reportMissingRequiredProp(
   node: ts.Node,
   tagName: string,
   propName: string,
-): null {
+): void {
   ctx.analyzer.errors.push(
     createError(
       ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
@@ -505,20 +505,36 @@ function reportMissingRequiredProp(
       { message: `<${tagName}> requires a '${propName}' prop` },
     ),
   )
-  return null
+}
+
+// Stub returned in place of an invalid built-in (Provider/Async) so the IR
+// stays well-formed for downstream walkers. The diagnostic in `analyzer.errors`
+// is the real signal — consumers fail the build on it.
+function stubFragment(
+  ctx: TransformContext,
+  node: ts.Node,
+  children: IRNode[],
+): IRFragment {
+  return {
+    type: 'fragment',
+    children,
+    transparent: true,
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+  }
 }
 
 function transformProviderElement(
   node: ts.JsxElement,
   ctx: TransformContext,
   tagName: string
-): IRProvider | null {
+): IRProvider | IRFragment {
   const contextName = tagName.slice(0, -'.Provider'.length)
   const props = processComponentProps(node.openingElement.attributes, ctx)
   const valueProp = props.find(p => p.name === 'value')
 
   if (!valueProp) {
-    return reportMissingRequiredProp(ctx, node.openingElement, tagName, 'value')
+    reportMissingRequiredProp(ctx, node.openingElement, tagName, 'value')
+    return stubFragment(ctx, node, transformChildren(node.children, ctx))
   }
 
   const children = transformChildren(node.children, ctx)
@@ -536,13 +552,14 @@ function transformSelfClosingProviderElement(
   node: ts.JsxSelfClosingElement,
   ctx: TransformContext,
   tagName: string
-): IRProvider | null {
+): IRProvider | IRFragment {
   const contextName = tagName.slice(0, -'.Provider'.length)
   const props = processComponentProps(node.attributes, ctx)
   const valueProp = props.find(p => p.name === 'value')
 
   if (!valueProp) {
-    return reportMissingRequiredProp(ctx, node, tagName, 'value')
+    reportMissingRequiredProp(ctx, node, tagName, 'value')
+    return stubFragment(ctx, node, [])
   }
 
   return {
@@ -561,12 +578,13 @@ function transformSelfClosingProviderElement(
 function transformAsyncElement(
   node: ts.JsxElement,
   ctx: TransformContext
-): IRNode | null {
+): IRNode {
   const props = processComponentProps(node.openingElement.attributes, ctx)
   const fallbackProp = props.find(p => p.name === 'fallback')
 
   if (!fallbackProp) {
-    return reportMissingRequiredProp(ctx, node.openingElement, 'Async', 'fallback')
+    reportMissingRequiredProp(ctx, node.openingElement, 'Async', 'fallback')
+    return stubFragment(ctx, node, transformChildren(node.children, ctx))
   }
 
   // Parse the fallback JSX expression into an IR node
@@ -620,12 +638,13 @@ function parseFallbackProp(
 function transformSelfClosingAsyncElement(
   node: ts.JsxSelfClosingElement,
   ctx: TransformContext
-): IRNode | null {
+): IRNode {
   const props = processComponentProps(node.attributes, ctx)
   const fallbackProp = props.find(p => p.name === 'fallback')
 
   if (!fallbackProp) {
-    return reportMissingRequiredProp(ctx, node, 'Async', 'fallback')
+    reportMissingRequiredProp(ctx, node, 'Async', 'fallback')
+    return stubFragment(ctx, node, [])
   }
 
   // Parse fallback from the self-closing element's attributes

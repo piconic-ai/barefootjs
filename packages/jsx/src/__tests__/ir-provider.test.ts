@@ -325,7 +325,7 @@ describe('Context.Provider JSX', () => {
     })
   })
 
-  test('reports BF046 when value prop is missing', () => {
+  test('reports BF046 and walks children when value prop is missing', () => {
     const source = `
       import { createContext } from '@barefootjs/client'
       const Ctx = createContext<unknown>()
@@ -341,11 +341,17 @@ describe('Context.Provider JSX', () => {
     const ctx = analyzeComponent(source, 'Page.tsx')
     const ir = jsxToIR(ctx)
 
-    expect(ir).toBeNull()
     const error = ctx.errors.find(e => e.code === 'BF046')
     expect(error).toBeDefined()
     expect(error?.severity).toBe('error')
     expect(error?.message).toContain('value')
+
+    // Stub fragment preserves the IR shape and the descendant walk.
+    expect(ir?.type).toBe('fragment')
+    if (ir?.type === 'fragment') {
+      expect(ir.transparent).toBe(true)
+      expect(ir.children.length).toBe(1)
+    }
   })
 
   test('reports BF046 when self-closing Provider lacks value prop', () => {
@@ -360,9 +366,9 @@ describe('Context.Provider JSX', () => {
     const ctx = analyzeComponent(source, 'Page.tsx')
     const ir = jsxToIR(ctx)
 
-    expect(ir).toBeNull()
     const error = ctx.errors.find(e => e.code === 'BF046')
     expect(error).toBeDefined()
     expect(error?.severity).toBe('error')
+    expect(ir?.type).toBe('fragment')
   })
 })

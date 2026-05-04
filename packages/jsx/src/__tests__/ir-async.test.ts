@@ -91,7 +91,7 @@ describe('<Async> streaming boundary', () => {
     expect(asyncNode.fallback.type).toBe('component')
   })
 
-  test('reports BF046 when fallback prop is missing', () => {
+  test('reports BF046 when fallback prop is missing and emits a transparent stub', () => {
     const source = `
       export function Page() {
         return (
@@ -105,10 +105,31 @@ describe('<Async> streaming boundary', () => {
     const ctx = analyzeComponent(source, 'Page.tsx')
     const ir = jsxToIR(ctx)
 
-    expect(ir).toBeNull()
     const error = ctx.errors.find(e => e.code === 'BF046')
     expect(error).toBeDefined()
     expect(error?.severity).toBe('error')
     expect(error?.message).toContain('fallback')
+
+    // The dispatcher stays non-null so downstream walkers (parseFallbackProp,
+    // transformJsxFunctionCall, etc.) don't silently coerce. Children are
+    // walked so any descendant diagnostics still accumulate.
+    expect(ir?.type).toBe('fragment')
+  })
+
+  test('reports BF046 when self-closing <Async /> is missing fallback', () => {
+    const source = `
+      export function Page() {
+        return <Async />
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Page.tsx')
+    const ir = jsxToIR(ctx)
+
+    const error = ctx.errors.find(e => e.code === 'BF046')
+    expect(error).toBeDefined()
+    expect(error?.severity).toBe('error')
+    expect(error?.message).toContain('fallback')
+    expect(ir?.type).toBe('fragment')
   })
 })
