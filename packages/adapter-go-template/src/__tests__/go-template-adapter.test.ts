@@ -484,4 +484,58 @@ export function Counter() {
       expect(result.template).not.toContain('/static/client/')
     })
   })
+
+  describe('cva-style class derivation (#1177)', () => {
+    // The registry <Button> uses
+    //   const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`
+    // Make sure jsx-to-ir's const resolution + the adapter's
+    // template-literal renderer agree on every piece of that.
+    const variantSource = `
+"use client"
+
+const baseClasses = 'inline-flex items-center'
+const variantClasses: Record<string, string> = {
+  default: 'bg-primary',
+  secondary: 'bg-secondary',
+}
+
+export function Tag(props: { variant?: 'default' | 'secondary'; className?: string }) {
+  const classes = \`\${baseClasses} \${variantClasses[props.variant ?? 'default']} \${props.className ?? ''}\`
+  return <span className={classes}>tag</span>
+}
+`
+
+    test('inlines string-literal const + emits switch for Record lookup', () => {
+      const result = compileAndGenerate(variantSource)
+      const tpl = result.template
+      // baseClasses substituted as static text:
+      expect(tpl).toContain('inline-flex items-center')
+      // variantClasses[...] became a Go switch with both cases:
+      expect(tpl).toMatch(/\{\{if eq [^}]+ "default"\}\}bg-primary/)
+      expect(tpl).toMatch(/\{\{else if eq [^}]+ "secondary"\}\}bg-secondary/)
+      expect(tpl).toContain('{{end}}')
+    })
+
+    test('html-escapes UnoCSS arbitrary-value classes inside attribute values', () => {
+      const escapingSource = `
+"use client"
+
+const baseClasses = '[class*="size-"]:size-4'
+
+export function Tagged(props: { className?: string }) {
+  const classes = \`\${baseClasses} \${props.className ?? ''}\`
+  return <span className={classes}>x</span>
+}
+`
+      const tpl = compileAndGenerate(escapingSource).template
+      // The literal `"` in `[class*="size-"]` would otherwise terminate
+      // the wrapping attribute. Must be entity-escaped.
+      expect(tpl).toContain('[class*=&quot;size-&quot;]:size-4')
+      // And no raw `"` should appear inside the class= value (any
+      // remaining `"` must be an attribute boundary, not literal).
+      const classAttrMatch = tpl.match(/class="([^"]*)/)
+      expect(classAttrMatch).not.toBeNull()
+      expect(classAttrMatch![1]).not.toContain('"')
+    })
+  })
 })

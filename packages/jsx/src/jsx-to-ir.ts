@@ -2637,12 +2637,20 @@ function tryResolveTemplateSpanFromConst(
     if (!ast || !ts.isObjectLiteralExpression(ast)) return null
     const cases: Record<string, string> = {}
     for (const prop of ast.properties) {
+      // Spreads, methods, getters, computed keys, etc. — these aren't
+      // statically lowerable, and partial cases would silently drop
+      // branches at SSR. Bail entirely so the caller falls back to the
+      // bare-expression path (where the JS runtime can still evaluate).
       if (!ts.isPropertyAssignment(prop)) return null
       const keyName = prop.name && (ts.isStringLiteral(prop.name) || ts.isIdentifier(prop.name))
         ? prop.name.text
         : null
       if (!keyName) return null
       const value = prop.initializer
+      // We only support pure string literal cases. Function calls,
+      // expressions, nested objects, etc. would need richer codegen
+      // than `{{if eq .Key "..."}}<value>{{end}}` — bail on the whole
+      // record rather than producing a half-resolved IR.
       if (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)) {
         cases[keyName] = value.text
       } else {
@@ -2671,8 +2679,23 @@ function tryResolveTemplateSpanFromConst(
   return null
 }
 
+/**
+ * Resolve a const name with shadowing-aware lookup. Function-scope
+ * declarations take precedence over module-level declarations of the
+ * same name (matching JS scoping); among multiple function-scope
+ * consts with the same name we pick the last analyzer entry, which
+ * corresponds to the latest binding in source order.
+ *
+ * Returns undefined when no const matches.
+ */
 function findLocalConst(name: string, ctx: TransformContext) {
-  return ctx.analyzer.localConstants.find(c => c.name === name)
+  const matches = ctx.analyzer.localConstants.filter(c => c.name === name)
+  if (matches.length === 0) return undefined
+  // Prefer the innermost (non-module) binding; fall back to whatever's
+  // there if every match is at module scope.
+  const fnScoped = matches.filter(c => !c.isModule)
+  const pool = fnScoped.length > 0 ? fnScoped : matches
+  return pool[pool.length - 1]
 }
 
 /**
@@ -2744,8 +2767,28 @@ function tryResolveIdentifierAsTemplateLiteral(
  * `ctx.sourceFile` — callers must use `astText()` (not `ctx.getJS`)
  * for any text extraction from these nodes, since `getJS` resolves
  * positions against the analyzer's source.
+ *
+ * Results are memoized per `ConstantInfo` (object identity). For a
+ * cva-style template like
+ * `\`${baseClasses} ${variantClasses[v]} ${sizeClasses[s]}\``, every
+ * span hits the same three consts, so caching dodges three redundant
+ * `ts.createSourceFile` calls per outer-template resolution. The
+ * cache uses the const object's identity (it never mutates after the
+ * analyzer hands it to us), and TypeScript reuses these objects
+ * across a single compile, so a `WeakMap` keeps the lifetime tied to
+ * the analysis without leaking.
  */
+const constInitializerCache = new WeakMap<object, ts.Expression | null>()
+
 function parseConstInitializer(c: { value?: string }): ts.Expression | null {
+  const cached = constInitializerCache.get(c as object)
+  if (cached !== undefined) return cached
+  const result = parseConstInitializerImpl(c)
+  constInitializerCache.set(c as object, result)
+  return result
+}
+
+function parseConstInitializerImpl(c: { value?: string }): ts.Expression | null {
   if (!c.value) return null
   const wrapped = `const __bf_resolve__ = (${c.value})`
   const sf = ts.createSourceFile(

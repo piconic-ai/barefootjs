@@ -1208,18 +1208,24 @@ export class GoTemplateAdapter extends BaseAdapter {
    * Wrap an `in.X` reference in a Go expression that substitutes
    * `fallback` when the input is the zero value for its type. We pick
    * the comparison based on the fallback literal's shape.
+   *
+   * Asymmetry on bool defaults is intentional and worth flagging:
+   *   - For a `true` default, the generated expression is
+   *     `(in.X || true)` — which is **always `true`**. Go has no
+   *     unset-vs-explicit-false distinction at the struct-field level,
+   *     so any caller wanting to thread `false` through has to set it
+   *     after `NewXxxProps` rather than via the input struct.
+   *   - For a `false` default, the Go zero value already matches, so
+   *     the helper is a no-op (returns `ref` unchanged).
+   * Numeric `0` defaults are similarly indistinguishable from "unset"
+   * and pass through as the zero value; non-zero numeric defaults
+   * substitute, matching the JSX behavior of `(initial = 5) => ...`.
    */
   private applyGoFallback(ref: string, fallback: string): string {
     if (fallback === 'true' || fallback === 'false') {
-      // Bool fallback: assume Go zero value `false` means unset → use fallback.
-      // No clean way to tell "false explicitly passed" from "default" in Go,
-      // so a `true` default bakes in; `false` default is a no-op anyway.
       return fallback === 'true' ? `(${ref} || true)` : ref
     }
     if (/^-?\d+(\.\d+)?$/.test(fallback)) {
-      // Numeric fallback: zero collides with a meaningful 0 input. We
-      // bias toward the JSX default so `<Counter />` (no initial=) still
-      // uses the declared default, matching JS behavior.
       if (fallback === '0') return ref
       return `func() int { if ${ref} == 0 { return ${fallback} }; return ${ref} }()`
     }
@@ -2654,8 +2660,11 @@ export class GoTemplateAdapter extends BaseAdapter {
    * `class="..."` attribute early and produce invalid HTML / a
    * `html/template` error at execution time.
    *
-   * Falls back to the original substring when the inner expression
-   * is empty.
+   * The interpolation parser is brace-depth aware: nested `{...}`
+   * inside an expression (object literals, nested template literals,
+   * etc.) are skipped past correctly so the closing brace of the
+   * outer `${...}` is found. An unterminated `${` falls back to
+   * literal text — better to output something than swallow it.
    */
   private substituteJsInterpolations(s: string): string {
     let out = ''
@@ -2666,12 +2675,14 @@ export class GoTemplateAdapter extends BaseAdapter {
         out += this.escapeAttrText(s.slice(i))
         break
       }
-      const close = s.indexOf('}', open + 2)
+      out += this.escapeAttrText(s.slice(i, open))
+      const close = this.findInterpolationEnd(s, open + 2)
       if (close === -1) {
-        out += this.escapeAttrText(s.slice(i))
+        // Unterminated `${` — emit the rest as escaped literal so we
+        // don't silently drop content.
+        out += this.escapeAttrText(s.slice(open))
         break
       }
-      out += this.escapeAttrText(s.slice(i, open))
       const inner = s.slice(open + 2, close).trim()
       if (inner) {
         out += `{{${this.convertExpressionToGo(inner)}}}`
@@ -2683,8 +2694,49 @@ export class GoTemplateAdapter extends BaseAdapter {
     return out
   }
 
+  /**
+   * Walk forward from inside `${`, returning the index of the
+   * matching closing `}`. Tracks brace depth across nested `{...}`
+   * and template literals so e.g. `${foo({a: 1})}` returns the
+   * outermost `}`. Returns -1 when no matching brace exists.
+   */
+  private findInterpolationEnd(s: string, start: number): number {
+    let depth = 1
+    let i = start
+    while (i < s.length) {
+      const c = s[i]
+      if (c === '\\' && i + 1 < s.length) {
+        // Skip escaped character to dodge things like `\}` inside strings.
+        i += 2
+        continue
+      }
+      if (c === '{') {
+        depth++
+      } else if (c === '}') {
+        depth--
+        if (depth === 0) return i
+      }
+      i++
+    }
+    return -1
+  }
+
+  /**
+   * HTML-attribute-safe escaping for double-quoted attribute values.
+   * `&`/`"`/`<` are non-negotiable — without them the surrounding
+   * `class="..."` quoting breaks (a real bug we hit with UnoCSS's
+   * `[class*="size-"]`). `>`/`'` are belt-and-suspenders: HTML5
+   * permits both inside double-quoted attrs, but Go's `html/template`
+   * lexer is contextual and we'd rather not bet on its edge cases
+   * matching ours forever.
+   */
   private escapeAttrText(s: string): string {
-    return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
   }
 
   private renderTemplateLiteral(literal: IRTemplateLiteral): string {
