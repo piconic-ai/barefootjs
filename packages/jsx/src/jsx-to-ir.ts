@@ -492,6 +492,22 @@ function transformSelfClosingElement(
 // Provider Transformation
 // =============================================================================
 
+function reportMissingRequiredProp(
+  ctx: TransformContext,
+  node: ts.Node,
+  tagName: string,
+  propName: string,
+): null {
+  ctx.analyzer.errors.push(
+    createError(
+      ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
+      getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+      { message: `<${tagName}> requires a '${propName}' prop` },
+    ),
+  )
+  return null
+}
+
 function transformProviderElement(
   node: ts.JsxElement,
   ctx: TransformContext,
@@ -502,14 +518,7 @@ function transformProviderElement(
   const valueProp = props.find(p => p.name === 'value')
 
   if (!valueProp) {
-    ctx.analyzer.errors.push(
-      createError(
-        ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
-        getSourceLocation(node.openingElement, ctx.sourceFile, ctx.filePath),
-        { message: `<${tagName}> requires a 'value' prop` },
-      ),
-    )
-    return null
+    return reportMissingRequiredProp(ctx, node.openingElement, tagName, 'value')
   }
 
   const children = transformChildren(node.children, ctx)
@@ -533,14 +542,7 @@ function transformSelfClosingProviderElement(
   const valueProp = props.find(p => p.name === 'value')
 
   if (!valueProp) {
-    ctx.analyzer.errors.push(
-      createError(
-        ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
-        getSourceLocation(node, ctx.sourceFile, ctx.filePath),
-        { message: `<${tagName}> requires a 'value' prop` },
-      ),
-    )
-    return null
+    return reportMissingRequiredProp(ctx, node, tagName, 'value')
   }
 
   return {
@@ -564,14 +566,7 @@ function transformAsyncElement(
   const fallbackProp = props.find(p => p.name === 'fallback')
 
   if (!fallbackProp) {
-    ctx.analyzer.errors.push(
-      createError(
-        ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
-        getSourceLocation(node.openingElement, ctx.sourceFile, ctx.filePath),
-        { message: "<Async> requires a 'fallback' prop" },
-      ),
-    )
-    return null
+    return reportMissingRequiredProp(ctx, node.openingElement, 'Async', 'fallback')
   }
 
   // Parse the fallback JSX expression into an IR node
@@ -630,14 +625,7 @@ function transformSelfClosingAsyncElement(
   const fallbackProp = props.find(p => p.name === 'fallback')
 
   if (!fallbackProp) {
-    ctx.analyzer.errors.push(
-      createError(
-        ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
-        getSourceLocation(node, ctx.sourceFile, ctx.filePath),
-        { message: "<Async> requires a 'fallback' prop" },
-      ),
-    )
-    return null
+    return reportMissingRequiredProp(ctx, node, 'Async', 'fallback')
   }
 
   // Parse fallback from the self-closing element's attributes
