@@ -324,4 +324,45 @@ describe('Context.Provider JSX', () => {
       children: [],
     })
   })
+
+  test('reports BF046 when value prop is missing', () => {
+    const source = `
+      import { createContext } from '@barefootjs/client'
+      const Ctx = createContext<unknown>()
+      export function Page() {
+        return (
+          <Ctx.Provider>
+            <span>x</span>
+          </Ctx.Provider>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Page.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).toBeNull()
+    const error = ctx.errors.find(e => e.code === 'BF046')
+    expect(error).toBeDefined()
+    expect(error?.severity).toBe('error')
+    expect(error?.message).toContain('value')
+  })
+
+  test('reports BF046 when self-closing Provider lacks value prop', () => {
+    const source = `
+      import { createContext } from '@barefootjs/client'
+      const Ctx = createContext<unknown>()
+      export function Page() {
+        return <Ctx.Provider />
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Page.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).toBeNull()
+    const error = ctx.errors.find(e => e.code === 'BF046')
+    expect(error).toBeDefined()
+    expect(error?.severity).toBe('error')
+  })
 })

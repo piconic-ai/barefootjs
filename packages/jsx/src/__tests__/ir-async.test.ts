@@ -91,7 +91,7 @@ describe('<Async> streaming boundary', () => {
     expect(asyncNode.fallback.type).toBe('component')
   })
 
-  test('throws when fallback prop is missing', () => {
+  test('reports BF046 when fallback prop is missing', () => {
     const source = `
       export function Page() {
         return (
@@ -103,6 +103,12 @@ describe('<Async> streaming boundary', () => {
     `
 
     const ctx = analyzeComponent(source, 'Page.tsx')
-    expect(() => jsxToIR(ctx)).toThrow('fallback')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).toBeNull()
+    const error = ctx.errors.find(e => e.code === 'BF046')
+    expect(error).toBeDefined()
+    expect(error?.severity).toBe('error')
+    expect(error?.message).toContain('fallback')
   })
 })

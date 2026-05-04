@@ -42,9 +42,8 @@ export const ErrorCodes = {
   INVALID_COMPONENT_NAME: 'BF042',
   PROPS_DESTRUCTURING: 'BF043',
   SIGNAL_GETTER_NOT_CALLED: 'BF044',
-
-  // Local function errors (BF045-BF049)
   JSX_IN_LOCAL_FUNCTION: 'BF045',
+  COMPONENT_REQUIRED_PROP_MISSING: 'BF046',
 
   // Import errors (BF050-BF059)
   WRONG_PACKAGE_IMPORT: 'BF051',
@@ -109,6 +108,9 @@ const errorMessages: Record<ErrorCode, string> = {
     'Signal/memo getter passed without calling it. Use getter() to read the value.',
   [ErrorCodes.JSX_IN_LOCAL_FUNCTION]:
     'Local function returns JSX but cannot be inlined. Extract it as a top-level PascalCase component or use a single return statement.',
+
+  [ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING]:
+    'Built-in component is missing a required prop.',
 
   [ErrorCodes.WRONG_PACKAGE_IMPORT]:
     'Import from wrong package.',

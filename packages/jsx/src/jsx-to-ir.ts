@@ -382,7 +382,7 @@ function transformNode(node: ts.Node, ctx: TransformContext): IRNode | null {
 function transformJsxElement(
   node: ts.JsxElement,
   ctx: TransformContext
-): IRNode {
+): IRNode | null {
   const tagName = node.openingElement.tagName.getText(ctx.sourceFile)
 
   // Detect Context.Provider pattern: X.Provider
@@ -447,7 +447,7 @@ function transformHtmlElement(
 function transformSelfClosingElement(
   node: ts.JsxSelfClosingElement,
   ctx: TransformContext
-): IRNode {
+): IRNode | null {
   const tagName = node.tagName.getText(ctx.sourceFile)
 
   // Detect Context.Provider pattern: <X.Provider ... />
@@ -496,13 +496,20 @@ function transformProviderElement(
   node: ts.JsxElement,
   ctx: TransformContext,
   tagName: string
-): IRProvider {
+): IRProvider | null {
   const contextName = tagName.slice(0, -'.Provider'.length)
   const props = processComponentProps(node.openingElement.attributes, ctx)
   const valueProp = props.find(p => p.name === 'value')
 
   if (!valueProp) {
-    throw new Error(`<${tagName}> requires a 'value' prop`)
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
+        getSourceLocation(node.openingElement, ctx.sourceFile, ctx.filePath),
+        { message: `<${tagName}> requires a 'value' prop` },
+      ),
+    )
+    return null
   }
 
   const children = transformChildren(node.children, ctx)
@@ -520,13 +527,20 @@ function transformSelfClosingProviderElement(
   node: ts.JsxSelfClosingElement,
   ctx: TransformContext,
   tagName: string
-): IRProvider {
+): IRProvider | null {
   const contextName = tagName.slice(0, -'.Provider'.length)
   const props = processComponentProps(node.attributes, ctx)
   const valueProp = props.find(p => p.name === 'value')
 
   if (!valueProp) {
-    throw new Error(`<${tagName}> requires a 'value' prop`)
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
+        getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+        { message: `<${tagName}> requires a 'value' prop` },
+      ),
+    )
+    return null
   }
 
   return {
@@ -545,12 +559,19 @@ function transformSelfClosingProviderElement(
 function transformAsyncElement(
   node: ts.JsxElement,
   ctx: TransformContext
-): IRNode {
+): IRNode | null {
   const props = processComponentProps(node.openingElement.attributes, ctx)
   const fallbackProp = props.find(p => p.name === 'fallback')
 
   if (!fallbackProp) {
-    throw new Error('<Async> requires a \'fallback\' prop')
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
+        getSourceLocation(node.openingElement, ctx.sourceFile, ctx.filePath),
+        { message: "<Async> requires a 'fallback' prop" },
+      ),
+    )
+    return null
   }
 
   // Parse the fallback JSX expression into an IR node
@@ -604,12 +625,19 @@ function parseFallbackProp(
 function transformSelfClosingAsyncElement(
   node: ts.JsxSelfClosingElement,
   ctx: TransformContext
-): IRNode {
+): IRNode | null {
   const props = processComponentProps(node.attributes, ctx)
   const fallbackProp = props.find(p => p.name === 'fallback')
 
   if (!fallbackProp) {
-    throw new Error('<Async /> requires a \'fallback\' prop')
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING,
+        getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+        { message: "<Async> requires a 'fallback' prop" },
+      ),
+    )
+    return null
   }
 
   // Parse fallback from the self-closing element's attributes
