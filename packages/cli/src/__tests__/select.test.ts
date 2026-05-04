@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { select } from '../lib/select'
+import { select, SelectCancelled } from '../lib/select'
 
 // The interactive arrow-key path is hard to drive in unit tests (it
 // expects a raw-mode TTY); these tests pin the deterministic
@@ -64,5 +64,22 @@ describe('select short-circuit behavior', () => {
       output: fakeOutput,
     })
     expect(result).toBe('fallback')
+  })
+})
+
+describe('SelectCancelled', () => {
+  test('is an Error subclass with a typed name', () => {
+    const cancelled = new SelectCancelled('sigint')
+    expect(cancelled).toBeInstanceOf(Error)
+    expect(cancelled.name).toBe('SelectCancelled')
+    // Reason ends up in the message so log output includes it.
+    expect(cancelled.message).toContain('sigint')
+  })
+
+  test('distinguishes a user cancel from other errors via instanceof', () => {
+    const generic: unknown = new Error('boom')
+    const cancelled: unknown = new SelectCancelled('escape')
+    expect(generic instanceof SelectCancelled).toBe(false)
+    expect(cancelled instanceof SelectCancelled).toBe(true)
   })
 })

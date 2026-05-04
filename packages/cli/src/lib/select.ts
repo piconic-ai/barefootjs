@@ -1,11 +1,28 @@
 // Tiny arrow-key selector for interactive CLI prompts.
 //
 // Renders a list, lets the user move with ↑/↓ (or k/j) and confirm with
-// Enter. Cancels with Ctrl-C / Esc. Falls back to returning the default
-// value when stdin is not a TTY (e.g. piped input or CI), so callers can
-// safely use this in non-interactive contexts.
+// Enter. Cancels with Ctrl-C / Esc, surfacing a `SelectCancelled`
+// rejection so callers can distinguish a user abort from a real error.
+//
+// Falls back to returning the default value when **either** stdin or
+// stdout is not a TTY (piped input, CI, redirected output) — arrow-key
+// navigation has no rendering surface in those contexts, and any
+// callers that want a deterministic value get one without hanging.
 
 import readline from 'node:readline'
+
+/**
+ * Thrown (well, rejected) by `select()` when the user dismisses the
+ * prompt with Ctrl-C or Esc. Callers catching `select()`'s Promise
+ * can `instanceof`-check this to tell a deliberate cancel from a
+ * real failure (lost stdin, render error, etc.).
+ */
+export class SelectCancelled extends Error {
+  constructor(reason: 'sigint' | 'escape') {
+    super(`select cancelled by user (${reason})`)
+    this.name = 'SelectCancelled'
+  }
+}
 
 export interface SelectOption<T extends string = string> {
   value: T
@@ -38,8 +55,11 @@ export async function select<T extends string = string>(args: SelectArgs<T>): Pr
     return args.defaultValue
   }
 
-  const startIdx = Math.max(0, args.options.findIndex(o => o.value === args.defaultValue))
-  let cursor = startIdx === -1 ? 0 : startIdx
+  // `findIndex` returns -1 when the default isn't in the list; fall
+  // back to the first option in that case so the cursor still has a
+  // legal starting position.
+  const defaultIdx = args.options.findIndex(o => o.value === args.defaultValue)
+  let cursor = defaultIdx === -1 ? 0 : defaultIdx
 
   const render = (firstPaint: boolean): void => {
     if (!firstPaint) {
@@ -63,6 +83,9 @@ export async function select<T extends string = string>(args: SelectArgs<T>): Pr
     input.setRawMode?.(true)
     input.resume()
 
+    // Invariant: every resolve / reject path in this Promise must
+    // call `cleanup()` first so we never leave the input in raw mode
+    // or leak the keypress listener.
     const cleanup = (): void => {
       input.setRawMode?.(false)
       input.pause()
@@ -75,13 +98,13 @@ export async function select<T extends string = string>(args: SelectArgs<T>): Pr
         cleanup()
         // Mimic shell SIGINT: blank line, then bail.
         output.write('\n')
-        reject(new Error('cancelled'))
+        reject(new SelectCancelled('sigint'))
         return
       }
       if (key.name === 'escape') {
         cleanup()
         output.write('\n')
-        reject(new Error('cancelled'))
+        reject(new SelectCancelled('escape'))
         return
       }
       if (key.name === 'up' || key.name === 'k') {

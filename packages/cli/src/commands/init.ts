@@ -16,7 +16,7 @@ import {
   type AdapterTemplate,
 } from '../lib/templates'
 import { detectPackageManager, commandsFor, type PackageManager } from '../lib/pm'
-import { select } from '../lib/select'
+import { select, SelectCancelled } from '../lib/select'
 
 interface InitFlags {
   name?: string
@@ -102,8 +102,8 @@ async function resolveAdapter(flag: string | undefined): Promise<string> {
   const options = Object.entries(ADAPTERS).map(([value, t]) => ({ value, label: t.label }))
   try {
     return await select({ message: 'Choose an adapter:', options, defaultValue: DEFAULT_ADAPTER })
-  } catch {
-    process.exit(1)
+  } catch (err) {
+    bailOnSelectError(err)
   }
 }
 
@@ -119,9 +119,29 @@ async function resolveCssLibrary(flag: string | undefined): Promise<string> {
   const options = Object.entries(CSS_LIBRARIES).map(([value, t]) => ({ value, label: t.label }))
   try {
     return await select({ message: 'Choose a CSS library:', options, defaultValue: DEFAULT_CSS_LIBRARY })
-  } catch {
-    process.exit(1)
+  } catch (err) {
+    bailOnSelectError(err)
   }
+}
+
+/**
+ * Centralised exit path for the interactive selector. A user-driven
+ * cancel (`SelectCancelled`) reads as a calm "nothing scaffolded"
+ * message, while anything else (lost stdin, render error, ...) gets
+ * surfaced with its underlying message so the failure mode is
+ * actually debuggable.
+ *
+ * Returns `never` so callers can use it as the catch-block tail
+ * without TypeScript complaining about a missing return.
+ */
+function bailOnSelectError(err: unknown): never {
+  if (err instanceof SelectCancelled) {
+    console.error('Cancelled — nothing scaffolded.')
+  } else {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(`Error during interactive selection: ${msg}`)
+  }
+  process.exit(1)
 }
 
 async function probeRegistry(url: string): Promise<void> {
