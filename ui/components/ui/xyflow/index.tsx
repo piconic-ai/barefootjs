@@ -860,27 +860,34 @@ export function FlowNodeTypeBridge(props: FlowNodeTypeBridgeProps) {
     return props.forNode?.data ?? {}
   })
 
+  // Subscribe to `type` identity (string, deduped by Object.is) so
+  // a `setNodes` call that swaps `node.type` re-runs the dispatcher
+  // and remounts the new renderer. Without this memo the dispatcher
+  // would only react to id/data changes and leave the previous
+  // renderer mounted with a stale `type`.
+  const typeMemo = createMemo<string>(() => {
+    const id = idMemo()
+    const live = props.forNode
+    return (live?.type ?? (id ? store?.nodeLookup().get(id)?.type : undefined) ?? 'default') as string
+  })
+
   createEffect(() => {
     const el = bridgeEl()
     if (!el || !store) return
     const id = idMemo()
     if (!id) return
     const data = dataMemo()
-    // Type / initFn lookup is intentionally untracked — type rarely
-    // changes for a given node, and bouncing the renderer on a type swap
-    // isn't behaviour the bridge promises. Untracking keeps this
-    // effect's dependency set to `idMemo` and `dataMemo`.
-    const type = untrack(() => {
-      const live = props.forNode
-      return (live?.type ?? store.nodeLookup().get(id)?.type ?? 'default') as string
-    })
+    const type = typeMemo()
     const initFn = untrack(() => props.nodeTypes[type] ?? props.nodeTypes.default)
-    if (!initFn) return
-    // Wipe whatever the previous run mounted (children + style). The
-    // previous run's `onCleanup` chain has already fired because
-    // `createEffect` runs cleanups before the next body invocation.
+    // Wipe whatever the previous run mounted BEFORE bailing out on a
+    // missing `initFn` so an unmapped `type` swap doesn't leave the
+    // previous renderer's DOM stranded with its onCleanup chain
+    // already fired. Cleanups run when `createEffect` invokes the
+    // next body; the wipe just makes the host element a clean slate
+    // either way.
     for (; el.firstChild;) el.removeChild(el.firstChild)
     el.removeAttribute('style')
+    if (!initFn) return
     // The user component is invoked under `untrack` so any signals it
     // reads at the top level (e.g. its own state in imperative render
     // helpers) do NOT subscribe THIS bridge effect. Without the wrap,
