@@ -349,7 +349,6 @@ describe('Context.Provider JSX', () => {
     // Stub fragment preserves the IR shape and the descendant walk.
     expect(ir?.type).toBe('fragment')
     if (ir?.type === 'fragment') {
-      expect(ir.transparent).toBe(true)
       expect(ir.children.length).toBe(1)
     }
   })
@@ -370,5 +369,31 @@ describe('Context.Provider JSX', () => {
     expect(error).toBeDefined()
     expect(error?.severity).toBe('error')
     expect(ir?.type).toBe('fragment')
+  })
+
+  test('compileJSX surfaces BF046 in errors without crashing on multi-child stub', () => {
+    // Multi-child + root pins the scope-metadata path: a transparent stub
+    // would suppress needsScopeComment and leak ctx.isRoot to only the first
+    // child. Whatever the adapter chooses to emit, compileJSX must not throw
+    // and the BF046 diagnostic must reach result.errors so consumers can
+    // fail the build.
+    const source = `
+      import { createContext } from '@barefootjs/client'
+      const Ctx = createContext<unknown>()
+      export function Page() {
+        return (
+          <Ctx.Provider>
+            <header>a</header>
+            <footer>b</footer>
+          </Ctx.Provider>
+        )
+      }
+    `
+
+    const result = compileJSX(source, 'Page.tsx', { adapter })
+
+    const error = result.errors.find(e => e.code === 'BF046')
+    expect(error).toBeDefined()
+    expect(error?.severity).toBe('error')
   })
 })

@@ -1,7 +1,11 @@
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
+import { compileJSX } from '../compiler'
+import { TestAdapter } from '../adapters/test-adapter'
 import type { IRAsync, IRElement } from '../types'
+
+const adapter = new TestAdapter()
 
 describe('<Async> streaming boundary', () => {
   test('transforms <Async> with fallback and children into IRAsync', () => {
@@ -131,5 +135,29 @@ describe('<Async> streaming boundary', () => {
     expect(error?.severity).toBe('error')
     expect(error?.message).toContain('fallback')
     expect(ir?.type).toBe('fragment')
+  })
+
+  test('compileJSX surfaces BF046 in errors without crashing on multi-child stub', () => {
+    // Multi-child + root pins the scope-metadata path: a transparent stub
+    // would suppress needsScopeComment and leak ctx.isRoot to only the first
+    // child. Whatever the adapter chooses to emit, compileJSX must not throw
+    // and the BF046 diagnostic must reach result.errors so consumers can
+    // fail the build.
+    const source = `
+      export function Page() {
+        return (
+          <Async>
+            <header>a</header>
+            <footer>b</footer>
+          </Async>
+        )
+      }
+    `
+
+    const result = compileJSX(source, 'Page.tsx', { adapter })
+
+    const error = result.errors.find(e => e.code === 'BF046')
+    expect(error).toBeDefined()
+    expect(error?.severity).toBe('error')
   })
 })

@@ -510,15 +510,23 @@ function reportMissingRequiredProp(
 // Stub returned in place of an invalid built-in (Provider/Async) so the IR
 // stays well-formed for downstream walkers. The diagnostic in `analyzer.errors`
 // is the real signal — consumers fail the build on it.
+//
+// Children are computed via callback so we can clear `ctx.isRoot` before the
+// walk: a transparent root fragment would suppress `needsScopeComment` and
+// leak `isRoot` into only the first child, leaving malformed scope metadata
+// for cases like `<Async><header/><footer/></Async>` at component root.
 function stubFragment(
   ctx: TransformContext,
   node: ts.Node,
-  children: IRNode[],
+  computeChildren: () => IRNode[],
 ): IRFragment {
+  const isFragmentRoot = ctx.isRoot
+  ctx.isRoot = false
+  const children = computeChildren()
   return {
     type: 'fragment',
     children,
-    transparent: true,
+    needsScopeComment: isFragmentRoot || undefined,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -534,7 +542,7 @@ function transformProviderElement(
 
   if (!valueProp) {
     reportMissingRequiredProp(ctx, node.openingElement, tagName, 'value')
-    return stubFragment(ctx, node, transformChildren(node.children, ctx))
+    return stubFragment(ctx, node, () => transformChildren(node.children, ctx))
   }
 
   const children = transformChildren(node.children, ctx)
@@ -559,7 +567,7 @@ function transformSelfClosingProviderElement(
 
   if (!valueProp) {
     reportMissingRequiredProp(ctx, node, tagName, 'value')
-    return stubFragment(ctx, node, [])
+    return stubFragment(ctx, node, () => [])
   }
 
   return {
@@ -584,7 +592,7 @@ function transformAsyncElement(
 
   if (!fallbackProp) {
     reportMissingRequiredProp(ctx, node.openingElement, 'Async', 'fallback')
-    return stubFragment(ctx, node, transformChildren(node.children, ctx))
+    return stubFragment(ctx, node, () => transformChildren(node.children, ctx))
   }
 
   // Parse the fallback JSX expression into an IR node
@@ -644,7 +652,7 @@ function transformSelfClosingAsyncElement(
 
   if (!fallbackProp) {
     reportMissingRequiredProp(ctx, node, 'Async', 'fallback')
-    return stubFragment(ctx, node, [])
+    return stubFragment(ctx, node, () => [])
   }
 
   // Parse fallback from the self-closing element's attributes
