@@ -8,24 +8,13 @@ This project primarily uses TypeScript with Go template adapters. Use `bun` inst
 
 ## Architecture
 
-2-phase compilation: JSX → IR → Marked Template + Client JS
-Adapters: HonoAdapter (`packages/adapter-hono/`), GoTemplateAdapter (`packages/adapter-go-template/`)
+2-phase compilation: JSX → IR → Marked Template + Client JS.
 
-## Code Map
+- `packages/jsx/src/` — Core compiler. Key files: `jsx-to-ir.ts` (Phase 1), `ir-to-client-js.ts` (Phase 2), `analyzer.ts` (reactivity analysis).
+- `packages/client/src/` — Client runtime (`createSignal`, `createEffect`, etc.) with DOM runtime under `./runtime`.
+- Adapters: `packages/adapter-hono/` (Hono/JSX), `packages/adapter-go-template/` (Go `html/template`).
 
-- `packages/jsx/src/` — Core compiler
-  - `jsx-to-ir.ts` — Phase 1: JSX to IR
-  - `ir-to-client-js.ts` — Phase 2: IR to client JS
-  - `analyzer.ts` — Reactivity analysis
-- `packages/client/src/` — Client runtime (createSignal, createEffect, etc.) and DOM runtime under `./runtime`
-- `packages/adapter-hono/` — Hono/JSX adapter
-- `packages/adapter-go-template/` — Go html/template adapter
-- `ui/` — UI component registry
-- `site/core/` — Main site: landing page + documentation (Hono + Cloudflare Workers)
-  - `site/core/landing/` — Landing page components and routes
-- `site/ui/` — UI component documentation site (Hono + Cloudflare Workers)
-- `site/shared/` — Shared design tokens and components across sites
-- `docs/core/` — Documentation content (Markdown source files)
+See `spec/compiler.md` for the full pipeline architecture, IR schema, transformation rules, adapter interface, and error codes.
 
 ## Testing
 
@@ -60,29 +49,22 @@ Workflow for editing a UI component:
 
 ## CLI
 
-Use the `barefoot` CLI (`bun run barefoot`) first to look up component APIs, framework docs, and inspect signal graphs. When the CLI output is insufficient for the task (e.g. you need to know the class-composition pattern, internal helper constants, or `...props` spread behavior before editing), reading the source file is acceptable — but the CLI must be your first reference, not the source.
+The `barefoot` CLI (`bun run barefoot`) MUST be your first reference for component APIs, framework docs, and signal graphs — before reading source files. Run `barefoot --help` for the full command list.
 
-- `barefoot search <query>` — Find components and docs by name/category/tags
-- `barefoot ui <component>` — Component reference (props, examples, a11y)
-- `barefoot core <topic>` — Core docs (signals, compiler constraints, error codes, etc.)
-- `barefoot inspect <component>` — Show signal dependency graph (signals, memos, DOM bindings). Bindings wrapped by the Solid-style fallback (#937) are prefixed with `~`.
-- `barefoot why-update <component> <signal>` — Trace update propagation path from a signal to DOM
-- `barefoot why-wrap <component>` — List fallback-wrapped expressions (#937). Each is a candidate for `createMemo` refactor — the runtime effect subscribes to whatever it reads at runtime, possibly nothing.
-- `barefoot test --debug <component>` — Show signal initialization trace and effect bindings
+Required usage:
+- Before editing a stateful component (`"use client"`): run `barefoot inspect <component>` to understand its reactive structure.
+- Reading the source is only acceptable when CLI output is insufficient (e.g. class-composition patterns, internal helpers, `...props` spread behavior).
 
-Before editing a stateful component (`"use client"`), run `barefoot inspect` first to understand its reactive structure. All inspection commands support `--json` for machine-readable output.
+## Git Commit
 
-## Implementation Guidelines
+Every commit MUST end with `Co-authored-by:` trailers for **all** participants other than the git author. Place them as the final lines of the message — no blank line or trailing content after them, otherwise GitHub will not recognize them.
 
-When implementing a feature, match the capability level of existing similar features. For example, if filter() supports arbitrary predicates, find() should too. Always check sibling implementations for parity.
+List one line per participant, in this order:
 
-## Specs
+1. **The implementer** — the AI that wrote the code (you). Use your model name from the system prompt.
+   Example: `Co-authored-by: Claude Opus 4.7 <noreply@anthropic.com>`
+2. **Other collaborators** — any other AI that directed, reviewed, or co-implemented the change in this session, and any human collaborator who is not the git author. One trailer per participant.
 
-- `spec/compiler.md` — Compiler spec: pipeline architecture, IR schema, transformation rules, adapter interface, error codes
-- `spec/testing.md` — Testing spec: layer responsibilities, decision guide, APIs, patterns, anti-patterns
+Never skip step 1, regardless of environment (local, Web, IDE). If you cannot identify your model name from the system prompt, ask the user before committing rather than omitting the trailer.
 
-## Git Commit (Claude Code Web)
-
-When `CLAUDE_CODE_ENTRYPOINT=remote`, append `Co-authored-by` as the **last line** of every commit message (GitHub requires it to be last to recognize it).
-
-Before the first commit, run `git log --format='%an <%ae>' | grep -v '^Claude ' | sort -u` and let the user pick via `AskUserQuestion`. Remember the choice for the session.
+When `CLAUDE_CODE_ENTRYPOINT=remote` (Claude Code Web), the git author is `Claude` by default. Before the first commit of the session, run `git log --format='%an <%ae>' | grep -v '^Claude ' | sort -u` and let the user pick the human identity via `AskUserQuestion`. Remember the choice for the session and add that human as a co-author on every commit.
