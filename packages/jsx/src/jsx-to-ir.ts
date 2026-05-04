@@ -2385,6 +2385,84 @@ interface ProcessedAttributes {
   ref: string | null
 }
 
+// Spread expansion: shared between HTML attrs and component props.
+//
+// When the spread target is the destructured rest-prop and the analyzer
+// closed its key set (e.g. `function X({ a, ...rest }: { a: A; b: B; c: C })`),
+// we unroll into one entry per known key. Adapters can then emit each as a
+// separate slot — this is what lets static keys stay static and dynamic
+// keys keep their per-key reactivity. The catch-all `...` entry forces the
+// runtime to spread at hydration time, which loses that per-key resolution
+// and is reserved for cases where the key set isn't statically known.
+//
+// The `spreadExpr === restName` check is what restricts unrolling to the
+// rest-prop itself: arbitrary `{...someObject}` spreads can't be unrolled
+// because we don't have a static key list for them.
+//
+// The shape returned satisfies both IRAttribute and IRProp (string value,
+// dynamic, isLiteral=false).
+function expandSpreadAttribute(
+  attr: ts.JsxSpreadAttribute,
+  ctx: TransformContext,
+): Array<{
+  name: string
+  value: string
+  templateValue?: string
+  dynamic: true
+  isLiteral: false
+  loc: SourceLocation
+}> {
+  const spreadExpr = ctx.getJS(attr.expression)
+  const expandedKeys = ctx.analyzer.restPropsExpandedKeys
+  const restName = ctx.analyzer.restPropsName
+  const loc = getSourceLocation(attr, ctx.sourceFile, ctx.filePath)
+
+  if (expandedKeys.length > 0 && restName && spreadExpr === restName) {
+    return expandedKeys.map(key => ({
+      name: key,
+      value: `${restName}.${key}`,
+      dynamic: true,
+      isLiteral: false,
+      loc,
+    }))
+  }
+
+  return [{
+    name: '...',
+    value: spreadExpr,
+    templateValue: ctx.getTemplateJS(attr.expression),
+    dynamic: true,
+    isLiteral: false,
+    loc,
+  }]
+}
+
+// AST-derived reactivity flags for the Solid-style wrap-by-default fallback
+// (#940 / #942). Computed from the source JSX expression rather than the
+// expanded value string because a regex over the expanded string would
+// false-match call-like substrings inside string literals — most notoriously
+// CSS like `style={{ color: 'hsl(221 83% 53%)' }}`. Boolean shorthand
+// (`<X disabled />`) and string literals have no expression to analyze, so
+// they get the empty-flags fallback below; collect-elements.ts then treats
+// them as static.
+function computeReactivityFlags(
+  attr: ts.JsxAttribute,
+  ctx: TransformContext,
+): { callsReactiveGetters?: boolean; hasFunctionCalls?: boolean } {
+  if (
+    !attr.initializer
+    || !ts.isJsxExpression(attr.initializer)
+    || !attr.initializer.expression
+  ) {
+    return {}
+  }
+  const expr = attr.initializer.expression
+  return {
+    callsReactiveGetters: exprCallsReactiveGetters(expr, ctx) || undefined,
+    hasFunctionCalls: exprHasFunctionCalls(expr) || undefined,
+  }
+}
+
 function processAttributes(
   attributes: ts.JsxAttributes,
   ctx: TransformContext
@@ -2394,34 +2472,8 @@ function processAttributes(
   let ref: string | null = null
 
   for (const attr of attributes.properties) {
-    // Spread attribute: {...props}
     if (ts.isJsxSpreadAttribute(attr)) {
-      const spreadExpr = ctx.getJS(attr.expression)
-      const expandedKeys = ctx.analyzer.restPropsExpandedKeys
-      const restName = ctx.analyzer.restPropsName
-
-      // Expand spread if keys are statically known (closed type)
-      if (expandedKeys.length > 0 && restName && spreadExpr === restName) {
-        const loc = getSourceLocation(attr, ctx.sourceFile, ctx.filePath)
-        for (const key of expandedKeys) {
-          attrs.push({
-            name: key,
-            value: `${restName}.${key}`,
-            dynamic: true,
-            isLiteral: false,
-            loc,
-          })
-        }
-      } else {
-        attrs.push({
-          name: '...',
-          value: spreadExpr,
-          templateValue: ctx.getTemplateJS(attr.expression),
-          dynamic: true,
-          isLiteral: false,
-          loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
-        })
-      }
+      attrs.push(...expandSpreadAttribute(attr, ctx))
       continue
     }
 
@@ -2429,7 +2481,10 @@ function processAttributes(
 
     const name = attr.name.getText(ctx.sourceFile)
 
-    // Ref attribute
+    // ref is captured separately (not pushed into `attrs`) because it never
+    // appears in the rendered HTML — it's a compile-time binding from the
+    // JSX call site to the runtime DOM element, surfaced via the IRElement
+    // `ref` field for the client-JS emitter.
     if (name === 'ref') {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         ref = ctx.getJS(attr.initializer.expression)
@@ -2437,7 +2492,10 @@ function processAttributes(
       continue
     }
 
-    // Event handler: onClick, onChange, etc.
+    // Event handlers are pulled out of `attrs` for the same reason as ref:
+    // they're wired up at hydration time (delegated event registration) and
+    // must not leak into rendered HTML. The DOM event name is lowercase
+    // (`click`, not `Click`), so strip the `on` prefix and downcase.
     if (/^on[A-Z]/.test(name)) {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         const eventName = name.slice(2).toLowerCase()
@@ -2451,28 +2509,11 @@ function processAttributes(
       continue
     }
 
-    // Regular attribute
     const attrResult = getAttributeValue(attr, ctx)
     const { value, dynamic, isLiteral } = attrResult
-    // Compute templateValue for dynamic string attributes
     let templateValue: string | undefined
     if (dynamic && typeof value === 'string' && attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
       templateValue = rewriteBarePropRefs(value, attr.initializer.expression, ctx)
-    }
-
-    // AST-derived reactivity flags for Solid-style wrap-by-default fallback
-    // (#940 DRY consolidation). Lets collect-elements.ts decide wrapping
-    // structurally instead of regex-scanning the expanded value string —
-    // a regex can false-match call-like substrings inside string literals
-    // (e.g. `style={{ color: 'hsl(221 83% 53%)' }}`) and is forced to
-    // re-strip quotes every time. Flags are computed on the source JSX
-    // expression before local-const expansion, matching the structural
-    // guarantee #942 / #952 established for `IRProp`.
-    let callsReactive = false
-    let hasCalls = false
-    if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-      callsReactive = exprCallsReactiveGetters(attr.initializer.expression, ctx)
-      hasCalls = exprHasFunctionCalls(attr.initializer.expression)
     }
 
     attrs.push({
@@ -2482,8 +2523,7 @@ function processAttributes(
       dynamic,
       isLiteral,
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
-      callsReactiveGetters: callsReactive || undefined,
-      hasFunctionCalls: hasCalls || undefined,
+      ...computeReactivityFlags(attr, ctx),
       ...pickAttrMeta(attrResult),
     })
   }
@@ -2913,34 +2953,8 @@ function processComponentProps(
   const props: IRProp[] = []
 
   for (const attr of attributes.properties) {
-    // Spread props: {...props}
     if (ts.isJsxSpreadAttribute(attr)) {
-      const spreadExpr = ctx.getJS(attr.expression)
-      const expandedKeys = ctx.analyzer.restPropsExpandedKeys
-      const restName = ctx.analyzer.restPropsName
-
-      // Expand spread if keys are statically known (closed type)
-      if (expandedKeys.length > 0 && restName && spreadExpr === restName) {
-        const loc = getSourceLocation(attr, ctx.sourceFile, ctx.filePath)
-        for (const key of expandedKeys) {
-          props.push({
-            name: key,
-            value: `${restName}.${key}`,
-            dynamic: true,
-            isLiteral: false,
-            loc,
-          })
-        }
-      } else {
-        props.push({
-          name: '...',
-          value: spreadExpr,
-          templateValue: ctx.getTemplateJS(attr.expression),
-          dynamic: true,
-          isLiteral: false,
-          loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
-        })
-      }
+      props.push(...expandSpreadAttribute(attr, ctx))
       continue
     }
 
@@ -2948,11 +2962,11 @@ function processComponentProps(
 
     const name = attr.name.getText(ctx.sourceFile)
 
-    // Detect JSX element/fragment as prop value: controls={<select ... />}
-    // Also handle parenthesized JSX: controls={(<div>...</div>)}
+    // JSX element/fragment as prop value: controls={<select />} or
+    // controls={(<div/>)}. Stored on `jsxChildren` so the adapter can render
+    // it inline rather than passing a string.
     if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
       let jsxExpr = attr.initializer.expression
-      // Unwrap parenthesized expression: controls={(<div>...</div>)}
       while (ts.isParenthesizedExpression(jsxExpr)) {
         jsxExpr = jsxExpr.expression
       }
@@ -2978,28 +2992,14 @@ function processComponentProps(
     const attrResult = getAttributeValue(attr, ctx)
     const { value, dynamic, isLiteral } = attrResult
 
-    // For component props, convert IRTemplateLiteral back to string expression
-    // since props are passed to components as-is
+    // Components receive props as runtime values, so collapse IRTemplateLiteral
+    // back to a JS expression and fall back to 'true' for boolean shorthand
+    // (`<X disabled />` → `disabled={true}`).
     const propValue = templateLiteralToString(value) ?? 'true'
 
-    // Compute templateValue for dynamic string props
     let propTemplateValue: string | undefined
     if (dynamic && typeof value === 'string' && attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
       propTemplateValue = rewriteBarePropRefs(propValue, attr.initializer.expression, ctx)
-    }
-
-    // AST-derived reactivity flags for Solid-style wrap-by-default fallback
-    // (#942 DRY consolidation). Lets collect-elements.ts decide wrapping
-    // structurally instead of regex-scanning the expanded string — a regex
-    // over expression text can false-match call-like substrings inside
-    // string literals (e.g. `'hsl(221 83% 53%)'`). JSX-as-prop is handled
-    // above via `jsxChildren` and string-literal attrs have no expression
-    // to analyze; only regular dynamic expression attrs carry flags.
-    let callsReactive = false
-    let hasCalls = false
-    if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-      callsReactive = exprCallsReactiveGetters(attr.initializer.expression, ctx)
-      hasCalls = exprHasFunctionCalls(attr.initializer.expression)
     }
 
     props.push({
@@ -3009,8 +3009,7 @@ function processComponentProps(
       dynamic,
       isLiteral,
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
-      callsReactiveGetters: callsReactive || undefined,
-      hasFunctionCalls: hasCalls || undefined,
+      ...computeReactivityFlags(attr, ctx),
       ...pickAttrMeta(attrResult),
     })
   }
