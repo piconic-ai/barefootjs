@@ -561,6 +561,18 @@ export interface IRTemplateLiteral {
 export type IRTemplatePart =
   | { type: 'string'; value: string; templateValue?: string }
   | { type: 'ternary'; condition: string; templateCondition?: string; whenTrue: string; whenFalse: string }
+  /**
+   * `${MAP[KEY]}` indexed lookup against a `Record<T, string>` literal
+   * (e.g. `${variantClasses[variant]}` where `variantClasses` is a
+   * const Record). Resolved at IR construction time:
+   *   - `cases` carries the literal `{ default: '...', secondary: '...' }` body
+   *   - `key` is the JS expression used as the index (typically a prop / param name)
+   *   - `templateKey` is the prop-rewritten variant (e.g. `_p.variant`)
+   * Adapters that don't run JS at SSR time use `cases` + `key` to emit
+   * a switch/conditional. Adapters that do (Hono) can ignore the part
+   * structure and re-render the original JS.
+   */
+  | { type: 'lookup'; cases: Record<string, string>; key: string; templateKey?: string }
 
 /**
  * Attribute metadata shared across all attribute-like interfaces.
@@ -1060,6 +1072,17 @@ export interface CompileOptions {
   program?: import('typescript').Program
   /** Import prefixes resolved at build time, not in browser (e.g., ['@/', '@ui/']) */
   localImportPrefixes?: string[]
+  /**
+   * Override for the script base name baked into the adapter's
+   * `Scripts.Register` calls. Defaults to the component's identifier
+   * (e.g. `Button`). When the build pipeline emits client bundles
+   * under a path-based filename (e.g. `ui/button/index.client.js` for
+   * a nested source like `components/ui/button/index.tsx`), passing
+   * that path-without-extension here keeps the registered URL in sync
+   * with the actual on-disk file. Used by the go-template adapter and
+   * any other adapter that bakes the URL at codegen time.
+   */
+  scriptBaseName?: string
 }
 
 export interface FileOutput {

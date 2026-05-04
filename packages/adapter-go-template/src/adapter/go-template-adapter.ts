@@ -578,12 +578,20 @@ export class GoTemplateAdapter extends BaseAdapter {
     // Collect nested component array field names
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
 
-    // Add props params, tracking field names to skip duplicate signal assignments
+    // Add props params, tracking field names to skip duplicate signal assignments.
+    // When the JSX function declared a default (e.g. `variant = 'default'`),
+    // bake that fallback into the generated assignment so a Go zero value
+    // doesn't silently shadow the JSX-side default.
     const propFieldNames = new Set<string>()
     for (const param of ir.metadata.propsParams) {
       const fieldName = this.capitalizeFieldName(param.name)
       if (nestedArrayFields.has(fieldName)) continue
-      lines.push(`\t\t${fieldName}: in.${fieldName},`)
+      const fallback = this.goPropDefault(param.defaultValue)
+      if (fallback !== null) {
+        lines.push(`\t\t${fieldName}: ${this.applyGoFallback(`in.${fieldName}`, fallback)},`)
+      } else {
+        lines.push(`\t\t${fieldName}: in.${fieldName},`)
+      }
       propFieldNames.add(fieldName)
     }
 
@@ -629,6 +637,16 @@ export class GoTemplateAdapter extends BaseAdapter {
             lines.push(`\t\t\t${this.capitalizeFieldName(prop.name)}: ${resolvedValue},`)
           }
         }
+      }
+      // Pass through plain-text JSX children as the slot's `Children`
+      // input so e.g. `<Button>+1</Button>` actually renders "+1" at
+      // SSR time. JSON.stringify produces a Go-compatible double-quoted
+      // string and avoids `goLiteral`'s number-detection branch (which
+      // would silently emit `-1` as an int for `<Button>-1</Button>`).
+      // Non-text children (nested elements, expressions) need a richer
+      // codegen path that isn't wired up yet.
+      if (child.childrenText !== null) {
+        lines.push(`\t\t\tChildren: ${JSON.stringify(child.childrenText)},`)
       }
       lines.push(`\t\t}),`)
     }
@@ -703,20 +721,41 @@ export class GoTemplateAdapter extends BaseAdapter {
     slotId: string
     props: IRProp[]
     fieldName: string
+    /** Concatenated text content from JSX children (e.g. `+1` for
+     *  `<Button>+1</Button>`). Null when children are non-text or
+     *  absent — those need a richer codegen path that isn't wired up
+     *  yet, and we just don't pass anything for `Children` in that
+     *  case. */
+    childrenText: string | null
   }> {
     const result: Array<{
       name: string
       slotId: string
       props: IRProp[]
       fieldName: string
+      childrenText: string | null
     }> = []
     this.collectStaticChildInstancesRecursive(node, result, false)
     return result
   }
 
+  /**
+   * Return the concatenated text content of a list of IR nodes when
+   * every node is plain text; otherwise null.
+   */
+  private extractTextChildren(children: IRNode[]): string | null {
+    if (children.length === 0) return null
+    let out = ''
+    for (const child of children) {
+      if (child.type !== 'text') return null
+      out += (child as { value: string }).value
+    }
+    return out
+  }
+
   private collectStaticChildInstancesRecursive(
     node: IRNode,
-    result: Array<{ name: string; slotId: string; props: IRProp[]; fieldName: string }>,
+    result: Array<{ name: string; slotId: string; props: IRProp[]; fieldName: string; childrenText: string | null }>,
     inLoop: boolean
   ): void {
     if (node.type === 'component') {
@@ -730,6 +769,7 @@ export class GoTemplateAdapter extends BaseAdapter {
           slotId: comp.slotId,
           props: comp.props,
           fieldName: `${comp.name}${suffix}`,
+          childrenText: this.extractTextChildren(comp.children),
         })
       }
       // Recurse into Portal's children to find nested components
@@ -1139,6 +1179,60 @@ export class GoTemplateAdapter extends BaseAdapter {
   /**
    * Convert a JavaScript literal value to Go literal syntax.
    */
+  /**
+   * Translate a JSX param default (e.g. `'default'`, `0`, `false`) into
+   * the corresponding Go literal. Returns null when the default is
+   * absent or non-trivial (objects, arrow functions, etc.) — those
+   * fall back to letting Go's zero value win.
+   */
+  private goPropDefault(defaultValue: string | undefined): string | null {
+    if (!defaultValue) return null
+    const trimmed = defaultValue.trim()
+    if (trimmed === '') return null
+    if (trimmed === 'true' || trimmed === 'false') return trimmed
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) return trimmed
+    // Single- and double-quoted strings.
+    if (
+      (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+      (trimmed.startsWith('"') && trimmed.endsWith('"'))
+    ) {
+      const body = trimmed.slice(1, -1)
+      return JSON.stringify(body)
+    }
+    // Bail on anything richer (objects, arrays, expressions). The
+    // generated Go would mis-execute a JS expression.
+    return null
+  }
+
+  /**
+   * Wrap an `in.X` reference in a Go expression that substitutes
+   * `fallback` when the input is the zero value for its type. We pick
+   * the comparison based on the fallback literal's shape.
+   *
+   * Asymmetry on bool defaults is intentional and worth flagging:
+   *   - For a `true` default, the generated expression is
+   *     `(in.X || true)` — which is **always `true`**. Go has no
+   *     unset-vs-explicit-false distinction at the struct-field level,
+   *     so any caller wanting to thread `false` through has to set it
+   *     after `NewXxxProps` rather than via the input struct.
+   *   - For a `false` default, the Go zero value already matches, so
+   *     the helper is a no-op (returns `ref` unchanged).
+   * Numeric `0` defaults are similarly indistinguishable from "unset"
+   * and pass through as the zero value; non-zero numeric defaults
+   * substitute, matching the JSX behavior of `(initial = 5) => ...`.
+   */
+  private applyGoFallback(ref: string, fallback: string): string {
+    if (fallback === 'true' || fallback === 'false') {
+      return fallback === 'true' ? `(${ref} || true)` : ref
+    }
+    if (/^-?\d+(\.\d+)?$/.test(fallback)) {
+      if (fallback === '0') return ref
+      return `func() int { if ${ref} == 0 { return ${fallback} }; return ${ref} }()`
+    }
+    // String fallback (quoted)
+    return `func() string { if ${ref} == "" { return ${fallback} }; return ${ref} }()`
+  }
+
   private goLiteral(value: string): string {
     // Boolean
     if (value === 'true' || value === 'false') return value
@@ -2555,14 +2649,124 @@ export class GoTemplateAdapter extends BaseAdapter {
     return parts.length > 0 ? ' ' + parts.join(' ') : ''
   }
 
+  /**
+   * Replace `${EXPR}` JS-template-literal interpolations in a static
+   * string part with Go template actions (`{{<expr-as-go>}}`), and
+   * HTML-escape the surrounding literal text so embedded characters
+   * don't break the attribute quoting we render into.
+   *
+   * UnoCSS arbitrary-value classes like `[class*="size-"]:size-4`
+   * legitimately contain `"`, which would otherwise terminate the
+   * `class="..."` attribute early and produce invalid HTML / a
+   * `html/template` error at execution time.
+   *
+   * The interpolation parser is brace-depth aware: nested `{...}`
+   * inside an expression (object literals, nested template literals,
+   * etc.) are skipped past correctly so the closing brace of the
+   * outer `${...}` is found. An unterminated `${` falls back to
+   * literal text — better to output something than swallow it.
+   */
+  private substituteJsInterpolations(s: string): string {
+    let out = ''
+    let i = 0
+    while (i < s.length) {
+      const open = s.indexOf('${', i)
+      if (open === -1) {
+        out += this.escapeAttrText(s.slice(i))
+        break
+      }
+      out += this.escapeAttrText(s.slice(i, open))
+      const close = this.findInterpolationEnd(s, open + 2)
+      if (close === -1) {
+        // Unterminated `${` — emit the rest as escaped literal so we
+        // don't silently drop content.
+        out += this.escapeAttrText(s.slice(open))
+        break
+      }
+      const inner = s.slice(open + 2, close).trim()
+      if (inner) {
+        out += `{{${this.convertExpressionToGo(inner)}}}`
+      } else {
+        out += s.slice(open, close + 1)
+      }
+      i = close + 1
+    }
+    return out
+  }
+
+  /**
+   * Walk forward from inside `${`, returning the index of the
+   * matching closing `}`. Tracks brace depth across nested `{...}`
+   * and template literals so e.g. `${foo({a: 1})}` returns the
+   * outermost `}`. Returns -1 when no matching brace exists.
+   */
+  private findInterpolationEnd(s: string, start: number): number {
+    let depth = 1
+    let i = start
+    while (i < s.length) {
+      const c = s[i]
+      if (c === '\\' && i + 1 < s.length) {
+        // Skip escaped character to dodge things like `\}` inside strings.
+        i += 2
+        continue
+      }
+      if (c === '{') {
+        depth++
+      } else if (c === '}') {
+        depth--
+        if (depth === 0) return i
+      }
+      i++
+    }
+    return -1
+  }
+
+  /**
+   * HTML-attribute-safe escaping for double-quoted attribute values.
+   * `&`/`"`/`<` are non-negotiable — without them the surrounding
+   * `class="..."` quoting breaks (a real bug we hit with UnoCSS's
+   * `[class*="size-"]`). `>`/`'` are belt-and-suspenders: HTML5
+   * permits both inside double-quoted attrs, but Go's `html/template`
+   * lexer is contextual and we'd rather not bet on its edge cases
+   * matching ours forever.
+   */
+  private escapeAttrText(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+  }
+
   private renderTemplateLiteral(literal: IRTemplateLiteral): string {
     let output = ''
     for (const part of literal.parts) {
       if (part.type === 'string') {
-        output += part.value
+        // String parts can carry unresolved `${expr}` placeholders
+        // (e.g. for function params like `className` that the IR
+        // analyzer couldn't substitute structurally). Translate each
+        // span to a Go template action so the SSR output matches the
+        // JS-side runtime evaluation. Static text passes through as-is.
+        output += this.substituteJsInterpolations(part.value)
       } else if (part.type === 'ternary') {
         const { condition: goCond, preamble } = this.convertConditionToGo(part.condition)
         output += `${preamble}{{if ${goCond}}}${part.whenTrue}{{else}}${part.whenFalse}{{end}}`
+      } else if (part.type === 'lookup') {
+        // `${MAP[KEY]}` against a Record<T, string> literal — emit a
+        // chained `{{if eq .Key "<case>"}}<value>{{else if ...}}{{end}}`
+        // so the right case lights up at SSR time. Empty when no
+        // case matches; consumers shouldn't rely on a default fallback
+        // here (the JSX-side `variant = 'default'` default already
+        // shows up via the per-prop fallback in `NewXxxProps`).
+        const keyExpr = this.convertExpressionToGo(part.key)
+        const caseEntries = Object.entries(part.cases)
+        if (caseEntries.length === 0) continue
+        const branches = caseEntries.map(([k, v], i) => {
+          const head = i === 0 ? '{{if' : '{{else if'
+          return `${head} eq ${keyExpr} ${JSON.stringify(k)}}}${v}`
+        })
+        output += branches.join('') + '{{end}}'
       }
     }
     return output
