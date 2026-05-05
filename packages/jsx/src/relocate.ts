@@ -15,6 +15,10 @@ import type { Scope, BindingKind, IRMetadata } from './types'
 import { isVisibleIn } from './types'
 import type { AnalyzerContext } from './analyzer-context'
 import { PROPS_PARAM } from './ir-to-client-js/utils'
+import type {
+  TemplatePrimitiveRegistry,
+  TemplateCallAcceptor,
+} from './adapters/interface'
 
 export interface RelocateEnv {
   /**
@@ -44,6 +48,23 @@ export interface RelocateEnv {
   propsObjectName: string | null
   /** When true, unreachable refs are replaced with `undefined` / `[]`. */
   allowFallback: boolean
+  /**
+   * Adapter-supplied list of pure JS callees that can be safely rendered in
+   * template scope. When a call's callee is in this map, the inline-safety
+   * checks below (`hasCallWithBridgedArg`, `hasZeroArgCall`) treat that call
+   * as accepted instead of rejecting it. The emit function itself isn't
+   * called from relocate — the substitution happens later in adapter render.
+   *
+   * Empty / undefined behaves identically to pre-#1187: every call is
+   * subject to the bridged-arg / zero-arg shape rejections.
+   */
+  templatePrimitives?: TemplatePrimitiveRegistry
+  /**
+   * Broad-acceptance predicate for adapters whose template runtime is a
+   * full JS engine (Hono SSR, future CSR). Consulted when a callee isn't
+   * in `templatePrimitives`. Returning true marks the call as accepted.
+   */
+  acceptsTemplateCall?: TemplateCallAcceptor
 }
 
 export interface RelocateResult {
@@ -279,10 +300,10 @@ export function isInlinableInTemplate(
   if (!r.ok) return { ok: false, rewrittenValue: r.text, decisions: r.decisions }
 
   if (valueNode) {
-    if (hasCallWithBridgedArg(valueNode, r.decisions)) {
+    if (hasCallWithBridgedArg(valueNode, r.decisions, env)) {
       return { ok: false, rewrittenValue: r.text, decisions: r.decisions }
     }
-    if (hasZeroArgCall(valueNode)) {
+    if (hasZeroArgCall(valueNode, env)) {
       // Zero-arg calls (`readItems()`, `count()`) read runtime state.
       // Inlining them runs the call at template-eval time when the
       // surrounding scope (init body) hasn't yet provided whatever the
@@ -291,11 +312,100 @@ export function isInlinableInTemplate(
       // the long-standing `${[].map(...)}` fallback for cases like
       // `const items = readItems()` keeps producing a stable empty
       // initial render and lets init's effect populate the real value.
+      //
+      // Calls whose callee is registered as a template primitive (#1187)
+      // bypass this rejection — the adapter has promised it can render
+      // the call at template scope safely.
       return { ok: false, rewrittenValue: r.text, decisions: r.decisions }
     }
   }
 
   return { ok: true, rewrittenValue: r.text, decisions: r.decisions }
+}
+
+/**
+ * Resolve the textual identifier path of a call's callee — `JSON.stringify`,
+ * `Math.floor`, `String`, `obj.method`. Returns null when the callee shape
+ * isn't a plain identifier or property-access chain (e.g. `(cond ? a : b)()`,
+ * computed access `obj['method']()`). Keeps the registry lookup deterministic.
+ *
+ * Note: this resolves the *textual* path only. It does not know whether
+ * `obj` is a value of a particular TypeScript type, so method calls on
+ * arbitrary receivers (`props.name.toUpperCase()`) cannot be matched
+ * against type-anchored registry keys like `String.prototype.toUpperCase`.
+ * This is the V1 limitation #1187 R1 records — users fall back to
+ * `/* @client *\/` for those cases.
+ */
+function getCalleeIdentifierPath(callee: ts.Expression): string | null {
+  if (ts.isIdentifier(callee)) return callee.text
+  if (ts.isPropertyAccessExpression(callee)) {
+    const left = getCalleeIdentifierPath(callee.expression)
+    if (left === null) return null
+    return `${left}.${callee.name.text}`
+  }
+  return null
+}
+
+/**
+ * Walk to the leftmost identifier of a callee path. For `JSON.stringify`
+ * returns `JSON`, for `obj.method.deeper` returns `obj`, for a bare
+ * `foo()` returns `foo`. Used by `isCallAcceptedByAdapter` to decide
+ * whether the callee is a *truly* global / imported name vs a local
+ * binding that happens to share its name with a registered primitive
+ * (the shadowing case — the registry must not fire then).
+ */
+function getCalleeLeftmostIdentifier(callee: ts.Expression): string | null {
+  if (ts.isIdentifier(callee)) return callee.text
+  if (ts.isPropertyAccessExpression(callee)) {
+    return getCalleeLeftmostIdentifier(callee.expression)
+  }
+  return null
+}
+
+/**
+ * Binding kinds whose names safely escape component-scope shadowing —
+ * the registry can apply when the callee's leftmost identifier resolves
+ * to one of these. Local-ish kinds (`prop`, `signal-*`, `init-local`,
+ * etc.) are explicitly excluded: a local const named `JSON` shadows the
+ * global, so `JSON.stringify` in that scope must not be accepted just
+ * because the registry has a `JSON.stringify` entry.
+ */
+const REGISTRY_SAFE_BINDING_KINDS: ReadonlySet<BindingKind> = new Set([
+  'global',
+  'module-import',
+  'module-local',
+])
+
+/**
+ * Whether `env`'s adapter promises it can render this call in template
+ * scope. Resolves the callee path and consults `templatePrimitives` first,
+ * then `acceptsTemplateCall`. Either match returns true.
+ *
+ * Shadow guard: rejects when the leftmost identifier of the callee
+ * resolves to a local-ish binding kind. This prevents a local variable
+ * named after a registered primitive (e.g. `const JSON = props.config`)
+ * from accidentally activating the registry.
+ */
+function isCallAcceptedByAdapter(
+  call: ts.CallExpression,
+  env: RelocateEnv,
+): boolean {
+  const name = getCalleeIdentifierPath(call.expression)
+  if (name === null) return false
+
+  // Shadow guard. `undefined` (not in bindings) means truly global —
+  // safe; we let it through. A tracked binding must be in the safe set.
+  const leftmost = getCalleeLeftmostIdentifier(call.expression)
+  if (leftmost !== null) {
+    const kind = env.bindings.get(leftmost)
+    if (kind !== undefined && !REGISTRY_SAFE_BINDING_KINDS.has(kind)) {
+      return false
+    }
+  }
+
+  if (env.templatePrimitives && env.templatePrimitives[name]) return true
+  if (env.acceptsTemplateCall && env.acceptsTemplateCall(name)) return true
+  return false
 }
 
 /**
@@ -332,6 +442,7 @@ function parseExpressionNode(text: string): ts.Node | null {
 function hasCallWithBridgedArg(
   node: ts.Node,
   decisions: RelocateDecision[],
+  env: RelocateEnv,
 ): boolean {
   const bridged = new Set<string>()
   for (const d of decisions) {
@@ -343,12 +454,18 @@ function hasCallWithBridgedArg(
   function visit(n: ts.Node): void {
     if (found) return
     if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
-      const args = n.arguments
-      if (args) {
-        for (const arg of args) {
-          if (containsAnyIdentifier(arg, bridged)) {
-            found = true
-            return
+      // If the adapter accepts this call as a template primitive, the
+      // bridged-arg risk doesn't apply to *this* call — but nested calls
+      // inside its arguments still need checking.
+      const accepted = ts.isCallExpression(n) && isCallAcceptedByAdapter(n, env)
+      if (!accepted) {
+        const args = n.arguments
+        if (args) {
+          for (const arg of args) {
+            if (containsAnyIdentifier(arg, bridged)) {
+              found = true
+              return
+            }
           }
         }
       }
@@ -366,13 +483,20 @@ function hasCallWithBridgedArg(
  * scope. Mirrors the `/\b\w+\(\)/` regex the legacy CSR re-promotion
  * path used.
  */
-function hasZeroArgCall(node: ts.Node): boolean {
+function hasZeroArgCall(node: ts.Node, env: RelocateEnv): boolean {
   let found = false
   function visit(n: ts.Node): void {
     if (found) return
     if (ts.isCallExpression(n) && n.arguments.length === 0) {
-      found = true
-      return
+      // Adapter-accepted callees (e.g. `Date.now`, `Math.random` if the
+      // adapter chose to promise SSR↔CSR equivalence) bypass the zero-arg
+      // rejection. Nested zero-arg calls inside the call's expression
+      // (none for a plain `foo()`, but possible for `(getFn())()`) are
+      // still walked.
+      if (!isCallAcceptedByAdapter(n, env)) {
+        found = true
+        return
+      }
     }
     ts.forEachChild(n, visit)
   }
@@ -477,9 +601,24 @@ export function buildRelocateEnv(ctx: AnalyzerContext): RelocateEnv {
  * `IRMetadata`-based variant. Used at emit time when the analyzer
  * context is no longer available — emit reconstructs the env from
  * IR. Both builders produce identical results.
+ *
+ * `options` carries adapter-supplied template-scope capabilities that
+ * aren't part of the IR (registry of pure callees, broad-acceptance
+ * predicate). They flow through to the inline-safety checks in
+ * `isInlinableInTemplate` so a registered call escapes the bridged-arg
+ * / zero-arg rejections.
  */
-export function buildRelocateEnvFromIR(metadata: IRMetadata): RelocateEnv {
-  return buildRelocateEnvFromFields(metadata)
+export function buildRelocateEnvFromIR(
+  metadata: IRMetadata,
+  options?: {
+    templatePrimitives?: TemplatePrimitiveRegistry
+    acceptsTemplateCall?: TemplateCallAcceptor
+  },
+): RelocateEnv {
+  const env = buildRelocateEnvFromFields(metadata)
+  if (options?.templatePrimitives) env.templatePrimitives = options.templatePrimitives
+  if (options?.acceptsTemplateCall) env.acceptsTemplateCall = options.acceptsTemplateCall
+  return env
 }
 
 interface EnvFields {
