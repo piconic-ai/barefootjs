@@ -1427,7 +1427,11 @@ describe('Client JS generation', () => {
       `
 
       const result = compileJSX(source, 'MyForm.tsx', { adapter })
-      expect(result.errors).toHaveLength(0)
+      // `form` contains an arrow literal so it can't inline into the
+      // template; `emailField.value` falls back to `undefined` and init
+      // repaints. That surfaces a BF061 warning now — the test cares
+      // about compile success and declaration ordering, not silence.
+      expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
 
       const clientJs = result.files.find(f => f.type === 'clientJs')!
       expect(clientJs).toBeDefined()

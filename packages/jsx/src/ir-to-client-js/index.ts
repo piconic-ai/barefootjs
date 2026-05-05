@@ -58,14 +58,20 @@ export function generateClientJsWithSourceMap(
   const ctx = createContext(ir, scope)
   const siblingOffsets = computeLoopSiblingOffsets(ir.root)
   collectElements(ir.root, ctx, siblingOffsets)
-  ir.errors.push(...ctx.warnings)
 
+  // Both `generateTemplateOnlyMount` and `generateInitFunction` run inline
+  // analysis passes (buildInlinableConstants → computeInlinability) that
+  // can add to `ctx.warnings` — most notably the BF060/BF061 stage-violation
+  // diagnostics. Flush warnings to `ir.errors` AFTER those passes so the
+  // diagnostics survive to the caller.
   if (!needsClientJs(ctx)) {
     const code = generateTemplateOnlyMount(ir, ctx)
+    ir.errors.push(...ctx.warnings)
     return { code }
   }
 
   const code = generateInitFunction(ir, ctx, siblingComponents, localImportPrefixes)
+  ir.errors.push(...ctx.warnings)
 
   if (options?.sourceMaps && code) {
     const fileName = options.generatedFileName ?? `${ir.metadata.componentName}.client.js`

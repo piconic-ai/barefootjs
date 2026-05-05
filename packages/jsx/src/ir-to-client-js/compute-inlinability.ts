@@ -76,6 +76,15 @@ export type FunctionInlinability =
 export interface InlinabilityAnalysis {
   constants: Map<string, ConstantInlinability>
   functions: Map<string, FunctionInlinability>
+  /**
+   * Per-const relocate decisions captured during initial classification.
+   * Used by `toLegacyInlinability` to emit BF060/BF061 only for constants
+   * that remain unsafe after chain resolution — emitting at classification
+   * time would produce false positives for chains that resolve cleanly
+   * (e.g. `classes = 'tag-' + color` where `color` itself resolves to a
+   * prop-based expression downstream).
+   */
+  decisionsByName: Map<string, RelocateDecision[]>
 }
 
 // JavaScript built-in identifiers that are always available at any scope.
@@ -162,18 +171,21 @@ export function computeInlinability(
     localConstants: ctx.localConstants,
   })
 
+  const decisionsByName = new Map<string, RelocateDecision[]>()
   for (const c of ctx.localConstants) {
-    constants.set(c.name, classifyConstantInitial(
+    const { status, decisions } = classifyConstantInitial(
       c,
       graph.declaredNames,
       signalGetters,
       signalSetters,
       memoNames,
       env,
-    ))
+    )
+    constants.set(c.name, status)
+    decisionsByName.set(c.name, decisions)
   }
 
-  return { constants, functions }
+  return { constants, functions, decisionsByName }
 }
 
 /**
@@ -222,17 +234,17 @@ function classifyConstantInitial(
   signalSetters: Set<string>,
   memoNames: Set<string>,
   env: RelocateEnv,
-): ConstantInlinability {
-  if (c.isJsx) return { kind: 'jsx-inline' }
-  if (!c.value) return { kind: 'placeholder-let' }
-  if (c.containsArrow) return { kind: 'arrow-literal' }
-  if (c.systemConstructKind) return { kind: 'system-construct' }
+): { status: ConstantInlinability; decisions: RelocateDecision[] } {
+  if (c.isJsx) return { status: { kind: 'jsx-inline' }, decisions: [] }
+  if (!c.value) return { status: { kind: 'placeholder-let' }, decisions: [] }
+  if (c.containsArrow) return { status: { kind: 'arrow-literal' }, decisions: [] }
+  if (c.systemConstructKind) return { status: { kind: 'system-construct' }, decisions: [] }
 
   const freeIds = c.freeIdentifiers
   if (freeIds) {
     for (const id of freeIds) {
       if (signalGetters.has(id) || signalSetters.has(id) || memoNames.has(id)) {
-        return { kind: 'reactive-read' }
+        return { status: { kind: 'reactive-read' }, decisions: [] }
       }
     }
     // Stage-1 graph eligibility — legacy gate. Kept because chain
@@ -241,7 +253,7 @@ function classifyConstantInitial(
     // would over-reject the chained-inlining test (#366).
     for (const id of freeIds) {
       if (JS_BUILTINS.has(id) || declaredNames.has(id)) continue
-      return { kind: 'external-name' }
+      return { status: { kind: 'external-name' }, decisions: [] }
     }
   }
 
@@ -259,12 +271,20 @@ function classifyConstantInitial(
   // const dependency graph (#366). Using `rewrittenValue` here would
   // freeze init-local refs into `undefined` fallbacks before the
   // chain resolver gets a chance to replace them.
-  const { ok } = isInlinableInTemplate(c.value, env)
-  if (!ok) return { kind: 'external-name' }
+  //
+  // `decisions` is returned alongside so the caller can surface the
+  // staged-IR diagnostics (BF060/BF061) the relocate pass observed —
+  // including the `ok: true` cases where a fallback rewrite happened
+  // but didn't disqualify inlining.
+  const { ok, decisions } = isInlinableInTemplate(c.value, env)
+  if (!ok) return { status: { kind: 'external-name' }, decisions }
 
   return {
-    kind: 'inlinable',
-    value: c.templateValue?.trim() ?? c.value.trim(),
+    status: {
+      kind: 'inlinable',
+      value: c.templateValue?.trim() ?? c.value.trim(),
+    },
+    decisions,
   }
 }
 
@@ -347,6 +367,21 @@ export function toLegacyInlinability(
   for (const name of toRemove) {
     inlinableConstants.delete(name)
     unsafeLocalNames.add(name)
+  }
+
+  // Surface BF060/BF061 for constants that ended up unsafe AFTER chain
+  // resolution — emitting earlier would false-positive on chains that
+  // resolve to safe prop-based expressions. `recordStageDiagnostics`
+  // filters decisions by kind, so it's a no-op for constants whose
+  // unsafety came from non-stage causes (arrow-literal, system-construct,
+  // function references etc.).
+  const constsByName = new Map(ctx.localConstants.map(c => [c.name, c]))
+  for (const name of unsafeLocalNames) {
+    const c = constsByName.get(name)
+    const decisions = analysis.decisionsByName.get(name)
+    if (c && decisions && decisions.length > 0) {
+      recordStageDiagnostics(c, decisions, ctx.warnings)
+    }
   }
 
   return { inlinableConstants, unsafeLocalNames }
