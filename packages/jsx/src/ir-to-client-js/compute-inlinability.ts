@@ -241,11 +241,11 @@ export function recordStageDiagnostics(
     seen.add(d.name)
     if (d.kind === 'signal-getter' || d.kind === 'signal-setter' || d.kind === 'memo-getter') {
       warnings.push(createWarning(ErrorCodes.STAGE_REACTIVE_IN_TEMPLATE, c.loc, {
-        message: `Reactive binding '${d.name}' referenced from template scope (via const '${c.name}'). Falls back to undefined; init's createEffect repaints.`,
+        message: `Reactive binding '${d.name}' referenced from template scope (via const '${c.name}'). The template lambda runs at module scope and cannot reach reactive bindings; the value falls back to undefined and init's createEffect repaints. Wrap the JSX expression in /* @client */ to defer evaluation, or restructure so the template uses a prop or static value.`,
       }))
     } else if (d.kind === 'init-local' || d.kind === 'sub-init-local') {
       warnings.push(createWarning(ErrorCodes.STAGE_INIT_LOCAL_IN_TEMPLATE, c.loc, {
-        message: `Init-scope local '${d.name}' referenced from template scope (via const '${c.name}'). Falls back to undefined; init's effect repaints.`,
+        message: `Init-scope local '${d.name}' referenced from template scope (via const '${c.name}'). The template lambda runs at module scope and cannot reach init-body locals; the value falls back to undefined and init's effect repaints. Wrap the JSX expression in /* @client */ to defer evaluation, or lift the value to a prop or module-scope const.`,
       }))
     }
   }

@@ -1,17 +1,17 @@
 /**
  * Pins the **stage-violation diagnostic infrastructure**: BF060/BF061/
  * BF062 codes are registered, `recordStageDiagnostics` produces well-
- * formed warnings, and the messages reference the offending binding
- * by name.
+ * formed warnings, and the messages reference the offending binding by
+ * name and recommend `/* @client *\/` as the workaround.
  *
- * Emission policy is now **default-on as warnings**: `compute-inlinability`
+ * Emission policy is **default-on as warnings**: `compute-inlinability`
  * calls `recordStageDiagnostics` for every const it classifies, so any
- * relocate fallback (init-local or signal/memo getter pulled into
- * template scope) surfaces in `result.errors` with `severity: 'warning'`.
- * The build still succeeds — there's no severity filter in compileJSX —
- * but consumers can now see the silent fallbacks instead of having to
- * reason about staged-IR internals to find them. A future
- * `strictStageBoundaries` mode would flip the warnings to hard errors.
+ * relocate fallback surfaces in `result.errors` with
+ * `severity: 'warning'`. Promoting to hard error needs usage-aware
+ * emission first — the diagnostic fires at const-declaration time and
+ * ignores whether all JSX usages are already deferred via
+ * `/* @client *\/`, so a strict flip would false-positive on code that
+ * has already migrated. Tracked as a follow-up.
  *
  * BF060: signal/memo getter referenced from template scope
  * BF061: init-scope local referenced from template scope
@@ -49,45 +49,50 @@ describe('Stage-violation diagnostic codes (BF060/BF061/BF062)', () => {
 
 describe('recordStageDiagnostics', () => {
   test('signal-getter decision → BF060 warning', () => {
-    const warnings: CompilerError[] = []
+    const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'count', kind: 'signal-getter', action: 'fallback', rewrittenAs: 'undefined' },
     ]
-    recordStageDiagnostics(constInfo('cls'), decisions, warnings)
-    expect(warnings).toHaveLength(1)
-    expect(warnings[0]?.code).toBe('BF060')
-    expect(warnings[0]?.severity).toBe('warning')
-    expect(warnings[0]?.message).toContain('count')
-    expect(warnings[0]?.message).toContain('cls')
+    recordStageDiagnostics(constInfo('cls'), decisions, out)
+    expect(out).toHaveLength(1)
+    expect(out[0]?.code).toBe('BF060')
+    expect(out[0]?.severity).toBe('warning')
+    expect(out[0]?.message).toContain('count')
+    expect(out[0]?.message).toContain('cls')
+    expect(out[0]?.message).toContain('/* @client */')
   })
 
   test('memo-getter decision → BF060 warning', () => {
-    const warnings: CompilerError[] = []
+    const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'doubled', kind: 'memo-getter', action: 'fallback', rewrittenAs: 'undefined' },
     ]
-    recordStageDiagnostics(constInfo('view'), decisions, warnings)
-    expect(warnings[0]?.code).toBe('BF060')
+    recordStageDiagnostics(constInfo('view'), decisions, out)
+    expect(out[0]?.code).toBe('BF060')
+    expect(out[0]?.severity).toBe('warning')
   })
 
   test('init-local decision → BF061 warning', () => {
-    const warnings: CompilerError[] = []
+    const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'cachedViewport', kind: 'init-local', action: 'fallback', rewrittenAs: 'undefined' },
     ]
-    recordStageDiagnostics(constInfo('view'), decisions, warnings)
-    expect(warnings).toHaveLength(1)
-    expect(warnings[0]?.code).toBe('BF061')
-    expect(warnings[0]?.message).toContain('cachedViewport')
+    recordStageDiagnostics(constInfo('view'), decisions, out)
+    expect(out).toHaveLength(1)
+    expect(out[0]?.code).toBe('BF061')
+    expect(out[0]?.severity).toBe('warning')
+    expect(out[0]?.message).toContain('cachedViewport')
+    expect(out[0]?.message).toContain('/* @client */')
   })
 
   test('sub-init-local decision → BF061 warning', () => {
-    const warnings: CompilerError[] = []
+    const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'tmp', kind: 'sub-init-local', action: 'fallback', rewrittenAs: 'undefined' },
     ]
-    recordStageDiagnostics(constInfo('val'), decisions, warnings)
-    expect(warnings[0]?.code).toBe('BF061')
+    recordStageDiagnostics(constInfo('val'), decisions, out)
+    expect(out[0]?.code).toBe('BF061')
+    expect(out[0]?.severity).toBe('warning')
   })
 
   test('pass-through and lift decisions emit nothing', () => {
@@ -100,25 +105,26 @@ describe('recordStageDiagnostics', () => {
     expect(warnings).toHaveLength(0)
   })
 
-  test('per-name de-dup: duplicate ref emits one warning, not many', () => {
-    const warnings: CompilerError[] = []
+  test('per-name de-dup: duplicate ref emits one error, not many', () => {
+    const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'flag', kind: 'init-local', action: 'fallback', rewrittenAs: 'undefined' },
       { name: 'flag', kind: 'init-local', action: 'fallback', rewrittenAs: 'undefined' },
     ]
-    recordStageDiagnostics(constInfo('cls'), decisions, warnings)
-    expect(warnings).toHaveLength(1)
+    recordStageDiagnostics(constInfo('cls'), decisions, out)
+    expect(out).toHaveLength(1)
   })
 })
 
-// End-to-end check that the production pipeline now wires the diagnostic
-// in. The wiring lives in `computeInlinability`, so the surfaced cases
-// are the chained-const ones: a localConstant whose value references an
+// End-to-end: the production pipeline surfaces stage-violation
+// diagnostics in `result.errors` (severity warning today, see header).
+// The wiring lives in `computeInlinability`, so the surfaced cases are
+// the chained-const ones: a localConstant whose value references an
 // init-scope-only binding through another local const. JSX expressions
 // that reference an init-local directly go through a separate template
-// emit path (`transformExpr` in html-template.ts) and aren't wired yet —
-// out of scope for this PR.
-describe('compileJSX surfaces stage-violation warnings by default', () => {
+// emit path (`transformExpr` in html-template.ts) and aren't wired
+// yet — separate follow-up.
+describe('compileJSX surfaces stage-violation diagnostics by default', () => {
   test('chained const referencing init-local → BF061', () => {
     const { errors } = compile(`
       'use client'

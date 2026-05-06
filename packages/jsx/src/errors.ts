@@ -51,13 +51,16 @@ export const ErrorCodes = {
   // Init statement errors (BF052)
   UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
 
-  // Stage-violation errors (BF060-BF069) — cross-scope references that
-  // the staged-IR refactor (#1138) surfaces structurally rather than
-  // hiding behind silent `undefined` fallbacks. Emit policy: BF060/061
-  // are diagnostics today (warnings), reserved as hard errors for an
-  // opt-in strict-stage mode the compiler can flip later. BF062 is a
-  // hard error because its semantic divergence (await runs at hydrate
-  // time, not at SSR) cannot be silently fallback-ed.
+  // Stage-violation errors (BF060-BF069) — cross-scope references the
+  // staged-IR refactor (#1138) surfaces structurally rather than
+  // hiding behind silent `undefined` fallbacks. BF060/061 currently
+  // ship as warnings; the runtime fallback (template renders
+  // `undefined`, init's effect repaints) is observable and the
+  // suggested workaround is `/* @client */`. Promoting them to hard
+  // errors needs usage-aware emission first — the diagnostic fires at
+  // const-declaration time and ignores whether all JSX usages are
+  // already deferred via `/* @client */`. BF062 is a hard error
+  // because cross-stage await can't be silently fallback-ed.
   STAGE_REACTIVE_IN_TEMPLATE: 'BF060',
   STAGE_INIT_LOCAL_IN_TEMPLATE: 'BF061',
   STAGE_AWAIT_IN_TEMPLATE: 'BF062',
@@ -119,10 +122,10 @@ const errorMessages: Record<ErrorCode, string> = {
     'Init statement references an undeclared identifier. Declare it at module scope, inside the component, or import it — otherwise ESM strict mode throws ReferenceError at runtime.',
 
   [ErrorCodes.STAGE_REACTIVE_IN_TEMPLATE]:
-    'Reactive binding (signal getter or memo) referenced from template scope. The template lambda runs at hydrate-entry without the reactive context, so the value falls back to undefined; init\'s createEffect repaints once hydration runs. If a non-reactive initial value is wanted at SSR, capture it into a const before the template references the binding.',
+    'Reactive binding (signal getter or memo) referenced from template scope. The template lambda runs at module scope without the reactive context, so the value cannot be evaluated at SSR. Wrap the JSX expression in /* @client */ to defer it to hydrate, or restructure so the template uses a prop or static value.',
 
   [ErrorCodes.STAGE_INIT_LOCAL_IN_TEMPLATE]:
-    'Init-scope local referenced from template scope. The template lambda runs at module scope (via render() / renderChild()) and cannot reach init-body locals, so the value falls back to undefined; init\'s effect repaints. Lift the const to module scope, inline a literal, or accept the SSR fallback.',
+    'Init-scope local referenced from template scope. The template lambda runs at module scope (via render() / renderChild()) and cannot reach init-body locals. Wrap the JSX expression in /* @client */, or lift the value to a prop or module-scope const.',
 
   [ErrorCodes.STAGE_AWAIT_IN_TEMPLATE]:
     'AwaitExpression in template scope. The hydrate-time template lambda is synchronous; awaiting here would hang first render. Move the await into a server-side handler and pass the resolved value as a prop.',
