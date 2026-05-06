@@ -23,7 +23,7 @@
  * Stage E.4 of issue #1021.
  */
 
-import type { ConstantInfo, IRNode, IRTemplateLiteral, ReferencesGraph } from '../types'
+import type { ConstantInfo, IRNode, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
 import { graphFunctionReferences } from './build-references'
 import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers'
@@ -270,17 +270,21 @@ export function computeInlinability(
 function collectTemplateRiskyNames(irRoot: IRNode): Set<string> {
   const risky = new Set<string>()
 
-  const addAttrIdents = (v: string | IRTemplateLiteral): void => {
-    // Backtick-quoted template literals (either passed through as raw
-    // expression text by jsx-to-ir for the simple-interpolation case,
-    // or round-tripped via `attrValueToString` for the structured
-    // `IRTemplateLiteral` case) carry CSS / class-name tokens in
-    // their static segments. The template-aware extractor restricts
-    // identifier collection to `${...}` substitutions so a class word
-    // like `text` in `\`text-sm \${variant}\`` doesn't false-positive
-    // against a same-named local const.
-    const text = typeof v === 'string' ? v : (attrValueToString(v) ?? '')
+  // Mirror the emitter's input source for each template position
+  // (`transformExpr` in html-template.ts uses `templateExpr ?? expr`).
+  // The `template*` rewrites — bare prop refs to `_p.X`, plus
+  // `IRTemplateLiteral` parts' `templateValue`/`templateCondition`/
+  // `templateKey` — are what `transformExpr` actually substitutes
+  // through, so the diagnostic gate needs to look at the same string.
+  // Reading the raw form would drift from emission and could miss /
+  // spuriously add identifiers (e.g. a name that's only present
+  // post-rewrite, or a destructured-prop name that's been rewritten
+  // away).
+  const addExprIdents = (text: string): void => {
     if (text.startsWith('`') && text.endsWith('`')) {
+      // Backtick-quoted template literal — only `${...}` substitutions
+      // are real identifier references. The static segments carry CSS
+      // / class words that would false-positive a same-named const.
       extractTemplateIdentifiers(text, risky)
     } else {
       extractIdentifiers(text, risky)
@@ -300,7 +304,11 @@ function collectTemplateRiskyNames(irRoot: IRNode): Set<string> {
       // hydrate adds the attribute, producing a flash, and any code
       // that reads the attribute pre-hydrate sees nothing. Real bug.
       for (const attr of el.attrs) {
-        if (attr.dynamic && attr.value) addAttrIdents(attr.value)
+        if (!attr.dynamic || !attr.value) continue
+        const text = typeof attr.value === 'string'
+          ? (attr.templateValue ?? attr.value)
+          : (attrValueToString(attr.value, { useTemplate: true }) ?? '')
+        if (text) addExprIdents(text)
       }
       // Event handlers run in init-body context, not template. Skip.
       descend()
@@ -323,24 +331,24 @@ function collectTemplateRiskyNames(irRoot: IRNode): Set<string> {
       // but there's no slot for hydrate to update either — the text
       // stays empty for the lifetime of the component. Permanent
       // visible defect.
-      extractIdentifiers(ex.expr, risky)
+      addExprIdents(ex.templateExpr ?? ex.expr)
     },
     conditional: ({ node: c, descend }) => {
       // `${cond} ? a : b` — UNSAFE evaluates as undefined (falsey),
       // so the wrong branch renders at SSR. Hydrate corrects, but
       // SSR HTML is silently wrong.
-      extractIdentifiers(c.condition, risky)
+      addExprIdents(c.templateCondition ?? c.condition)
       descend()
     },
     ifStatement: ({ node: i, descend }) => {
-      extractIdentifiers(i.condition, risky)
+      addExprIdents(i.templateCondition ?? i.condition)
       descend()
     },
     loop: ({ node: l, descend }) => {
       // `safeArrayExpr` substitutes `[]` on UNSAFE — SSR has zero
       // items, hydrate reconciles to N. Hydration mismatch in DOM
       // shape, worth surfacing.
-      extractIdentifiers(l.array, risky)
+      addExprIdents(l.templateArray ?? l.array)
       descend()
     },
     provider: ({ descend }) => {
