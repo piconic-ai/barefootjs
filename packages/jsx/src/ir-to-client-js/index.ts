@@ -17,9 +17,10 @@ import { addConstantPropRefsToSet } from './init-declarations'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template'
 import { PROPS_PARAM } from './utils'
 import { buildInlinableConstants, buildSignalAndMemoMaps, buildCsrInlinableConstants } from './emit-registration'
+import { buildEnvFromCtx } from './compute-inlinability'
 import { nameForRegistryRef } from './component-scope'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports'
-import { buildRelocateEnvFromIR, isInlinableInTemplate } from '../relocate'
+import { isInlinableInTemplate } from '../relocate'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map'
 
 export interface ClientJsResult {
@@ -226,43 +227,6 @@ function hasInitScopeOnlyConstant(ctx: ClientJsContext): boolean {
     if (!isInlinableInTemplate(c.value, env).ok) return true
   }
   return false
-}
-
-/**
- * Build a `RelocateEnv` from the live `ClientJsContext`. Mirrors the
- * IR-keyed builder; both are kept in sync so the inline-safety
- * decision is identical whether reached from analyzer state or from
- * post-collect-elements ctx.
- */
-function buildEnvFromCtx(ctx: ClientJsContext) {
-  return buildRelocateEnvFromIR(
-    {
-      componentName: ctx.componentName,
-      hasDefaultExport: false,
-      isExported: false,
-      isClientComponent: true,
-      typeDefinitions: [],
-      propsType: null,
-      propsParams: ctx.propsParams,
-      propsObjectName: ctx.propsObjectName,
-      restPropsName: ctx.restPropsName,
-      restPropsExpandedKeys: [],
-      signals: ctx.signals,
-      memos: ctx.memos,
-      effects: ctx.effects,
-      onMounts: ctx.onMounts,
-      initStatements: ctx.initStatements,
-      imports: [],
-      templateImports: [],
-      namedExports: [],
-      localFunctions: ctx.localFunctions,
-      localConstants: ctx.localConstants,
-    },
-    {
-      templatePrimitives: ctx.templatePrimitives,
-      acceptsTemplateCall: ctx.acceptsTemplateCall,
-    },
-  )
 }
 
 /**

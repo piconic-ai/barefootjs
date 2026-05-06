@@ -31,6 +31,49 @@ import type { RelocateEnv, RelocateDecision } from '../relocate'
 import { createWarning, ErrorCodes } from '../errors'
 
 /**
+ * Build a `RelocateEnv` from a live `ClientJsContext`. The IR-keyed env
+ * builder (`buildRelocateEnvFromIR`) takes the same shape as `IRMetadata`,
+ * so the post-collect-elements ctx can fill that shape with empty stubs
+ * for the metadata fields that don't influence relocate decisions.
+ *
+ * Adapter capabilities (`templatePrimitives` / `acceptsTemplateCall`) are
+ * threaded through so a registered call escapes the bridged-arg / zero-arg
+ * inline-safety rejections (#1187 phase 3). The three call sites in this
+ * package — `computeInlinability`, `buildCsrInlinableConstants`,
+ * `hasInitScopeOnlyConstant` — share this helper to stay byte-identical.
+ */
+export function buildEnvFromCtx(ctx: ClientJsContext): RelocateEnv {
+  return buildRelocateEnvFromIR(
+    {
+      componentName: ctx.componentName,
+      hasDefaultExport: false,
+      isExported: false,
+      isClientComponent: true,
+      typeDefinitions: [],
+      propsType: null,
+      propsParams: ctx.propsParams,
+      propsObjectName: ctx.propsObjectName,
+      restPropsName: ctx.restPropsName,
+      restPropsExpandedKeys: [],
+      signals: ctx.signals,
+      memos: ctx.memos,
+      effects: ctx.effects,
+      onMounts: ctx.onMounts,
+      initStatements: ctx.initStatements,
+      imports: [],
+      templateImports: [],
+      namedExports: [],
+      localFunctions: ctx.localFunctions,
+      localConstants: ctx.localConstants,
+    },
+    {
+      templatePrimitives: ctx.templatePrimitives,
+      acceptsTemplateCall: ctx.acceptsTemplateCall,
+    },
+  )
+}
+
+/**
  * Why a local constant was or was not chosen for template inlining.
  * Order of evaluation mirrors the pre-Stage E.4 cascade so the
  * decision set is byte-identical.
@@ -146,39 +189,11 @@ export function computeInlinability(
   const signalSetters = new Set(ctx.signals.filter(s => s.setter).map(s => s.setter!))
   const memoNames = new Set(ctx.memos.map(m => m.name))
 
-  // RelocateEnv is built once per component from the live ClientJsContext
-  // — same shape as IRMetadata, so the IR-keyed builder applies. The
-  // adapter capabilities (`templatePrimitives` / `acceptsTemplateCall`)
-  // are threaded in here so a registered call escapes the bridged-arg /
-  // zero-arg rejections during classification.
-  const env = buildRelocateEnvFromIR(
-    {
-      componentName: ctx.componentName,
-      hasDefaultExport: false,
-      isExported: false,
-      isClientComponent: true,
-      typeDefinitions: [],
-      propsType: null,
-      propsParams: ctx.propsParams,
-      propsObjectName: ctx.propsObjectName,
-      restPropsName: ctx.restPropsName,
-      restPropsExpandedKeys: [],
-      signals: ctx.signals,
-      memos: ctx.memos,
-      effects: ctx.effects,
-      onMounts: ctx.onMounts,
-      initStatements: ctx.initStatements,
-      imports: [],
-      templateImports: [],
-      namedExports: [],
-      localFunctions: ctx.localFunctions,
-      localConstants: ctx.localConstants,
-    },
-    {
-      templatePrimitives: ctx.templatePrimitives,
-      acceptsTemplateCall: ctx.acceptsTemplateCall,
-    },
-  )
+  // RelocateEnv is built once per component from the live ClientJsContext.
+  // The adapter capabilities (`templatePrimitives` / `acceptsTemplateCall`)
+  // flow through so a registered call escapes the bridged-arg / zero-arg
+  // rejections during classification.
+  const env = buildEnvFromCtx(ctx)
 
   const decisionsByName = new Map<string, RelocateDecision[]>()
   for (const c of ctx.localConstants) {

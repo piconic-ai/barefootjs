@@ -8,7 +8,8 @@ import type { ComponentIR, IRFragment, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
 import { PROPS_PARAM, inferDefaultValue, exprReferencesIdent } from './utils'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability'
-import { buildRelocateEnvFromIR, isInlinableInTemplate } from '../relocate'
+import { isInlinableInTemplate } from '../relocate'
+import { buildEnvFromCtx } from './compute-inlinability'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template'
 import { nameForRegistryRef } from './component-scope'
 
@@ -207,34 +208,7 @@ export function buildCsrInlinableConstants(
   // re-deriving discriminators here. This was the path that let
   // `useYjs(props.x, props.y)` slip through (#1138, #1137 follow-up):
   // the legacy regex caught only bare `props`, not `props.X`.
-  const env = buildRelocateEnvFromIR(
-    {
-      componentName: ctx.componentName,
-      hasDefaultExport: false,
-      isExported: false,
-      isClientComponent: true,
-      typeDefinitions: [],
-      propsType: null,
-      propsParams: ctx.propsParams,
-      propsObjectName: ctx.propsObjectName,
-      restPropsName: ctx.restPropsName,
-      restPropsExpandedKeys: [],
-      signals: ctx.signals,
-      memos: ctx.memos,
-      effects: ctx.effects,
-      onMounts: ctx.onMounts,
-      initStatements: ctx.initStatements,
-      imports: [],
-      templateImports: [],
-      namedExports: [],
-      localFunctions: ctx.localFunctions,
-      localConstants: ctx.localConstants,
-    },
-    {
-      templatePrimitives: ctx.templatePrimitives,
-      acceptsTemplateCall: ctx.acceptsTemplateCall,
-    },
-  )
+  const env = buildEnvFromCtx(ctx)
   for (const constant of ctx.localConstants) {
     if (unsafeLocalNames.has(constant.name) && constant.value && !constant.containsArrow) {
       let value = constant.value.trim()

@@ -36,9 +36,19 @@ import { GoTemplateAdapter } from '../../../adapter-go-template/src/adapter/go-t
 
 const FALLBACK_SENTINEL = '(undefined)'
 
+// Closed enumeration of conformance case ids so adapter `skip` sets can't
+// drift from the case list — a typo here is a TypeScript error rather
+// than a silently-skipped (or silently-not-skipped) test.
+const CaseId = {
+  JSON_STRINGIFY_VIA_CONST: 'json-stringify-via-const',
+  MATH_FLOOR_VIA_CONST: 'math-floor-via-const',
+  USER_IMPORT_VIA_CONST: 'user-import-via-const',
+  NO_DOUBLE_REWRITE_OF_PROPS_OBJECT: 'no-double-rewrite-of-props-object',
+} as const
+type CaseId = (typeof CaseId)[keyof typeof CaseId]
+
 interface ConformanceCase {
-  /** Stable id used as the skip-list key. */
-  id: string
+  id: CaseId
   description: string
   source: string
   /** Assertion run against the generated client JS string. */
@@ -47,7 +57,7 @@ interface ConformanceCase {
 
 const cases: ConformanceCase[] = [
   {
-    id: 'json-stringify-via-const',
+    id: CaseId.JSON_STRINGIFY_VIA_CONST,
     description: 'JSON.stringify(props.x) via const inlines into template',
     source: `
       'use client'
@@ -62,7 +72,7 @@ const cases: ConformanceCase[] = [
     },
   },
   {
-    id: 'math-floor-via-const',
+    id: CaseId.MATH_FLOOR_VIA_CONST,
     description: 'Math.floor(props.score) via const inlines into template',
     source: `
       'use client'
@@ -77,7 +87,7 @@ const cases: ConformanceCase[] = [
     },
   },
   {
-    id: 'user-import-via-const',
+    id: CaseId.USER_IMPORT_VIA_CONST,
     description: 'user-imported function via const inlines into template',
     source: `
       'use client'
@@ -93,7 +103,7 @@ const cases: ConformanceCase[] = [
     },
   },
   {
-    id: 'no-double-rewrite-of-props-object',
+    id: CaseId.NO_DOUBLE_REWRITE_OF_PROPS_OBJECT,
     description: 'props-object lift does not leak `_p._p.X` into the template',
     source: `
       'use client'
@@ -117,10 +127,10 @@ interface AdapterUnderTest {
   name: string
   factory: () => TemplateAdapter
   /**
-   * Cases this adapter doesn't yet support. Each entry should reference
-   * a case `id`. Empty when the adapter satisfies every case.
+   * Cases this adapter doesn't yet support. Empty when the adapter
+   * satisfies every case. The `CaseId` constant constrains entries.
    */
-  skip: Set<string>
+  skip: Set<CaseId>
 }
 
 const adapters: AdapterUnderTest[] = [
@@ -139,10 +149,10 @@ const adapters: AdapterUnderTest[] = [
     // function via `templatePrimitives`. None are mapped yet (#1188),
     // so every positive-inlining case stays skipped until that lands.
     skip: new Set([
-      'json-stringify-via-const',
-      'math-floor-via-const',
-      'user-import-via-const',
-      'no-double-rewrite-of-props-object',
+      CaseId.JSON_STRINGIFY_VIA_CONST,
+      CaseId.MATH_FLOOR_VIA_CONST,
+      CaseId.USER_IMPORT_VIA_CONST,
+      CaseId.NO_DOUBLE_REWRITE_OF_PROPS_OBJECT,
     ]),
   },
 ]
