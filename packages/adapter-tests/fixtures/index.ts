@@ -51,6 +51,7 @@ import { fixture as returnNullishCoalescing } from './return-nullish-coalescing'
 import { fixture as returnMap } from './return-map'
 // Priority 7: Multi-file composition
 import { fixture as childComponent } from './child-component'
+import { fixture as componentWithJsxChildren } from './component-with-jsx-children'
 import { fixture as multipleInstances } from './multiple-instances'
 import { fixture as staticArrayChildren } from './static-array-children'
 // Priority 8: CSR conformance
@@ -114,6 +115,7 @@ export const jsxFixtures: JSXFixture[] = [
   returnMap,
   // Priority 7: Multi-file composition
   childComponent,
+  componentWithJsxChildren,
   multipleInstances,
   staticArrayChildren,
   // Priority 8: CSR conformance
