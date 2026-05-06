@@ -184,4 +184,55 @@ describe('compileJSX surfaces stage-violation diagnostics by default', () => {
     expect(errors.find(e => e.startsWith('[BF060]'))).toBeUndefined()
     expect(errors.find(e => e.startsWith('[BF061]'))).toBeUndefined()
   })
+
+  test('chained const referenced only inside /* @client */ does NOT fire BF061', () => {
+    // The classification still flags `view` as unsafe because its value
+    // contains an init-local. But the only template-side reference is
+    // wrapped in `/* @client */`, which routes through
+    // `clientOnlyElements` and doesn't add a `template-closure` edge to
+    // the references graph. `compute-inlinability` reads that graph and
+    // suppresses the diagnostic — the silent-fallback failure mode the
+    // diagnostic warns about can't manifest when every usage is
+    // already deferred to hydrate.
+    const { errors } = compile(`
+      'use client'
+      import { useSettings } from './nodes'
+
+      interface Props { roomId: string }
+
+      export function Foo(props: Props) {
+        const setting = useSettings()
+        const view = JSON.stringify(setting)
+        return <div>{/* @client */ view}</div>
+      }
+    `)
+
+    expect(errors.find(e => e.startsWith('[BF061]'))).toBeUndefined()
+  })
+
+  test('chained const with mixed usage fires BF061 (one /* @client */ ref is not enough)', () => {
+    // If ANY usage is outside `/* @client */`, the silent-fallback
+    // failure mode applies for that usage, so the diagnostic still
+    // fires. The user's fix is to wrap the remaining usages too, or
+    // restructure the const itself.
+    const { errors } = compile(`
+      'use client'
+      import { useSettings } from './nodes'
+
+      interface Props { roomId: string }
+
+      export function Foo(props: Props) {
+        const setting = useSettings()
+        const view = JSON.stringify(setting)
+        return (
+          <div>
+            <span>{/* @client */ view}</span>
+            <span>{view}</span>
+          </div>
+        )
+      }
+    `)
+
+    expect(errors.find(e => e.startsWith('[BF061]'))).toBeDefined()
+  })
 })

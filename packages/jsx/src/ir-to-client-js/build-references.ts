@@ -273,6 +273,12 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
       descendJsxChildren()
     },
     expression: ({ node: ex }) => {
+      // `/* @client */` expressions route through `ctx.clientOnlyElements`
+      // (collect-elements.ts) and don't reach the regular template
+      // closure — adding a `template-closure` edge here would falsely
+      // mark the referenced names as template-reachable, defeating the
+      // usage-aware BF060/BF061 suppression in `compute-inlinability`.
+      if (ex.clientOnly) return
       addExprEdges(ROOT_SOURCE, ex.expr, 'template-closure')
     },
     conditional: ({ node: c, descend }) => {

@@ -128,6 +128,17 @@ export interface InlinabilityAnalysis {
    * prop-based expression downstream).
    */
   decisionsByName: Map<string, RelocateDecision[]>
+  /**
+   * Names referenced from regular template scope (a `template-closure`
+   * edge in the references graph). Used by `toLegacyInlinability` to
+   * skip BF060/BF061 emission for unsafe consts that have no such edge —
+   * either they're never referenced from template at all, or every
+   * reference is inside a `/* @client *\/` expression (which routes
+   * through `clientOnlyElements` and doesn't add a `template-closure`
+   * edge). Either way, the silent-fallback failure mode the diagnostic
+   * warns about can't manifest, so the warning is a false positive.
+   */
+  templateReferencedNames: Set<string>
 }
 
 // JavaScript built-in identifiers that are always available at any scope.
@@ -209,7 +220,22 @@ export function computeInlinability(
     decisionsByName.set(c.name, decisions)
   }
 
-  return { constants, functions, decisionsByName }
+  // Collect names that ROOT_SOURCE references from regular template
+  // scope — i.e. an edge whose context is `'template-closure'`. This
+  // intentionally excludes references that route through
+  // `clientOnlyElements` / `clientOnlyConditionals`, since those don't
+  // add `template-closure` edges. `toLegacyInlinability` uses the set
+  // to gate BF060/BF061 emission so a const whose only template-side
+  // usage is inside `/* @client */` doesn't produce a false-positive
+  // diagnostic.
+  const templateReferencedNames = new Set<string>()
+  for (const edge of graph.edges) {
+    if (edge.context === 'template-closure') {
+      templateReferencedNames.add(edge.to)
+    }
+  }
+
+  return { constants, functions, decisionsByName, templateReferencedNames }
 }
 
 /**
@@ -394,13 +420,21 @@ export function toLegacyInlinability(
   }
 
   // Surface BF060/BF061 for constants that ended up unsafe AFTER chain
-  // resolution — emitting earlier would false-positive on chains that
-  // resolve to safe prop-based expressions. `recordStageDiagnostics`
-  // filters decisions by kind, so it's a no-op for constants whose
-  // unsafety came from non-stage causes (arrow-literal, system-construct,
-  // function references etc.).
+  // resolution AND are actually referenced from a non-`@client` template
+  // position. The post-chain check avoids false-positives on chains
+  // that resolve to safe prop-based expressions; the template-reference
+  // check avoids false-positives on consts whose only template-side
+  // usage is inside `/* @client */` (those references go through
+  // `clientOnlyElements` and don't add a `template-closure` graph
+  // edge, so the silent-fallback failure mode the diagnostic warns
+  // about can't manifest).
+  //
+  // `recordStageDiagnostics` further filters decisions by kind, so it's
+  // a no-op for constants whose unsafety came from non-stage causes
+  // (arrow-literal, system-construct, function references etc.).
   const constsByName = new Map(ctx.localConstants.map(c => [c.name, c]))
   for (const name of unsafeLocalNames) {
+    if (!analysis.templateReferencedNames.has(name)) continue
     const c = constsByName.get(name)
     const decisions = analysis.decisionsByName.get(name)
     if (c && decisions && decisions.length > 0) {
