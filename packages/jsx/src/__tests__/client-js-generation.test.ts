@@ -1422,15 +1422,19 @@ describe('Client JS generation', () => {
           const form = createForm({ onSubmit: async (values) => { await fetch('/api', { body: JSON.stringify(values) }) } })
           const emailField = form.field('email')
           const [submitted, setSubmitted] = createSignal(false)
-          return <div><input value={emailField.value} onInput={(e) => emailField.onChange(e.target.value)} /><button onClick={() => setSubmitted(true)}>Submit</button></div>
+          return <div><Input value={emailField.value} onInput={(e) => emailField.onChange(e.target.value)} /><button onClick={() => setSubmitted(true)}>Submit</button></div>
         }
       `
 
       const result = compileJSX(source, 'MyForm.tsx', { adapter })
       // `form` contains an arrow literal so it can't inline into the
-      // template; `emailField.value` falls back to `undefined` and
-      // init repaints. That surfaces a BF061 warning — the test cares
-      // about compile success and declaration ordering, not silence.
+      // template; `emailField.value` is in component-prop position so
+      // the safe-fallback strip applies and BF061 doesn't fire. The
+      // test cares about compile success and declaration ordering,
+      // not the diagnostic surface itself. (Pre-#1187 phase 6 the
+      // element-attribute form `<input>` was used here; that now
+      // fires BF061 because the SSR HTML would contain literal
+      // "undefined" — see staged-ir/10-stage-diagnostics.test.ts.)
       expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
 
       const clientJs = result.files.find(f => f.type === 'clientJs')!

@@ -4,14 +4,15 @@
  * formed warnings, and the messages reference the offending binding by
  * name and recommend `/* @client *\/` as the workaround.
  *
- * Emission policy is **default-on as warnings**: `compute-inlinability`
- * calls `recordStageDiagnostics` for every const it classifies, so any
- * relocate fallback surfaces in `result.errors` with
- * `severity: 'warning'`. Promoting to hard error needs usage-aware
- * emission first — the diagnostic fires at const-declaration time and
- * ignores whether all JSX usages are already deferred via
- * `/* @client *\/`, so a strict flip would false-positive on code that
- * has already migrated. Tracked as a follow-up.
+ * Emission policy is **usage-aware**: `compute-inlinability` only
+ * surfaces a diagnostic when the unsafe const is actually referenced
+ * from a template position where the relocate fallback would produce
+ * a user-visible defect (element attribute, bare slotless JSX
+ * expression, conditional/if condition, loop array). Safe-fallback
+ * positions — component props (stripped on UNSAFE), slotted JSX
+ * expressions (empty placeholder filled at hydrate), and
+ * `/* @client *\/` wrappers — don't fire the diagnostic, since the
+ * pipeline already recovers without a visible artefact.
  *
  * BF060: signal/memo getter referenced from template scope
  * BF061: init-scope local referenced from template scope
@@ -48,7 +49,7 @@ describe('Stage-violation diagnostic codes (BF060/BF061/BF062)', () => {
 })
 
 describe('recordStageDiagnostics', () => {
-  test('signal-getter decision → BF060 warning', () => {
+  test('signal-getter decision → BF060 error', () => {
     const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'count', kind: 'signal-getter', action: 'fallback', rewrittenAs: 'undefined' },
@@ -56,23 +57,23 @@ describe('recordStageDiagnostics', () => {
     recordStageDiagnostics(constInfo('cls'), decisions, out)
     expect(out).toHaveLength(1)
     expect(out[0]?.code).toBe('BF060')
-    expect(out[0]?.severity).toBe('warning')
+    expect(out[0]?.severity).toBe('error')
     expect(out[0]?.message).toContain('count')
     expect(out[0]?.message).toContain('cls')
     expect(out[0]?.message).toContain('/* @client */')
   })
 
-  test('memo-getter decision → BF060 warning', () => {
+  test('memo-getter decision → BF060 error', () => {
     const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'doubled', kind: 'memo-getter', action: 'fallback', rewrittenAs: 'undefined' },
     ]
     recordStageDiagnostics(constInfo('view'), decisions, out)
     expect(out[0]?.code).toBe('BF060')
-    expect(out[0]?.severity).toBe('warning')
+    expect(out[0]?.severity).toBe('error')
   })
 
-  test('init-local decision → BF061 warning', () => {
+  test('init-local decision → BF061 error', () => {
     const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'cachedViewport', kind: 'init-local', action: 'fallback', rewrittenAs: 'undefined' },
@@ -80,19 +81,19 @@ describe('recordStageDiagnostics', () => {
     recordStageDiagnostics(constInfo('view'), decisions, out)
     expect(out).toHaveLength(1)
     expect(out[0]?.code).toBe('BF061')
-    expect(out[0]?.severity).toBe('warning')
+    expect(out[0]?.severity).toBe('error')
     expect(out[0]?.message).toContain('cachedViewport')
     expect(out[0]?.message).toContain('/* @client */')
   })
 
-  test('sub-init-local decision → BF061 warning', () => {
+  test('sub-init-local decision → BF061 error', () => {
     const out: CompilerError[] = []
     const decisions: RelocateDecision[] = [
       { name: 'tmp', kind: 'sub-init-local', action: 'fallback', rewrittenAs: 'undefined' },
     ]
     recordStageDiagnostics(constInfo('val'), decisions, out)
     expect(out[0]?.code).toBe('BF061')
-    expect(out[0]?.severity).toBe('warning')
+    expect(out[0]?.severity).toBe('error')
   })
 
   test('pass-through and lift decisions emit nothing', () => {
@@ -234,5 +235,84 @@ describe('compileJSX surfaces stage-violation diagnostics by default', () => {
     `)
 
     expect(errors.find(e => e.startsWith('[BF061]'))).toBeDefined()
+  })
+
+  test('chained const referenced only via component-prop / slotted expr does NOT fire (form-field shape)', () => {
+    // Form-library API: `const field = form.field(name)` is a chained
+    // init-local. Used as `<Input value={field.value()}>` (component
+    // prop — stripped on UNSAFE) and `<p>{field.error()}</p>` (slotted
+    // expression — empty placeholder filled at hydrate). Both are
+    // safe-fallback positions, so the diagnostic would be a false
+    // positive.
+    const { errors } = compile(`
+      'use client'
+      import { Input } from './input'
+      import { useForm } from './form'
+
+      interface Props {}
+
+      export function Foo(_props: Props) {
+        const form = useForm()
+        const field = form.field('name')
+        return (
+          <form>
+            <Input value={field.value()} onInput={field.handleInput} />
+            <p>{field.error()}</p>
+          </form>
+        )
+      }
+    `)
+
+    expect(errors.find(e => e.startsWith('[BF061]'))).toBeUndefined()
+  })
+
+  test('chained const used as plain HTML attribute DOES fire BF061', () => {
+    // `<div data-view={view}>` substitutes the expression directly into
+    // the SSR HTML — `data-view="undefined"` is the visible defect the
+    // diagnostic warns about. Element-attribute substitution has no
+    // slot reconciliation today, so this position can't be silently
+    // recovered by hydrate.
+    const { errors } = compile(`
+      'use client'
+      import { useSettings } from './nodes'
+
+      interface Props {}
+
+      export function Foo(_props: Props) {
+        const setting = useSettings()
+        const view = JSON.stringify(setting)
+        return <div data-view={view}>hi</div>
+      }
+    `)
+
+    expect(errors.find(e => e.startsWith('[BF061]'))).toBeDefined()
+  })
+
+  test('CSS-class tokens inside attribute template literal don\'t false-positive', () => {
+    // Regression for a Copilot review concern (#1198): the static
+    // segments of a backtick-quoted attribute value (`text-sm
+    // ${variant}`) carry tokens like `text` and `sm` that match
+    // `/\b[a-zA-Z_]\w*\b/g`. With a naive identifier extractor, a
+    // chained const happening to share a name with one of those
+    // tokens would surface a spurious BF061 — the const isn't
+    // actually referenced from the template at all.
+    const { errors } = compile(`
+      'use client'
+      import { useSettings } from './nodes'
+
+      interface Props {}
+
+      export function Foo(_props: Props) {
+        // 'text' is a chained init-local; its only reference would
+        // need to be a real \${text} substitution, NOT a CSS class
+        // word inside the static segment of the template literal.
+        const setting = useSettings()
+        const text = JSON.stringify(setting)
+        const variant = 'primary'
+        return <div className={\`text-sm \${variant}\`}>hi</div>
+      }
+    `)
+
+    expect(errors.find(e => e.startsWith('[BF061]'))).toBeUndefined()
   })
 })

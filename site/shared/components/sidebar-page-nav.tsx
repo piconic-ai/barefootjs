@@ -46,11 +46,11 @@ function SidebarItemLink({ title, href, isActive }: { title: string; href: strin
 }
 
 function SidebarGroupSection({ group, currentPath }: { group: SidebarGroup; currentPath: string }) {
-  const hasActiveItem = group.links.some(link => link.href === currentPath)
-  const shouldOpen = hasActiveItem || (group.defaultOpen ?? false)
-
   return (
-    <details className="mb-2 group" open={shouldOpen}>
+    <details
+      className="mb-2 group"
+      open={group.links.some(link => link.href === currentPath) || (group.defaultOpen ?? false)}
+    >
       <summary className="flex w-full items-center justify-between py-2 px-3 text-sm font-medium text-foreground hover:bg-accent/50 rounded-md transition-colors cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
         <span>{group.title}</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="transition-transform duration-200 group-open:rotate-90"><path d="m9 18 6-6-6-6" /></svg>

@@ -11,13 +11,12 @@ import { Calendar } from '@ui/components/ui/calendar'
 
 function CalendarUsageDemo(_props: {}) {
   const today = new Date()
-  const thirtyDaysLater = new Date(today.getTime() + 30 * 86400000)
 
   return (
     <div className="flex flex-wrap gap-8">
       <Calendar mode="single" />
       <Calendar mode="range" numberOfMonths={2} />
-      <Calendar mode="single" fromDate={today} toDate={thirtyDaysLater} />
+      <Calendar mode="single" fromDate={today} toDate={new Date(today.getTime() + 30 * 86400000)} />
     </div>
   )
 }

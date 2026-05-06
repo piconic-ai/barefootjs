@@ -53,14 +53,15 @@ export const ErrorCodes = {
 
   // Stage-violation errors (BF060-BF069) — cross-scope references the
   // staged-IR refactor (#1138) surfaces structurally rather than
-  // hiding behind silent `undefined` fallbacks. BF060/061 currently
-  // ship as warnings; the runtime fallback (template renders
-  // `undefined`, init's effect repaints) is observable and the
-  // suggested workaround is `/* @client */`. Promoting them to hard
-  // errors needs usage-aware emission first — the diagnostic fires at
-  // const-declaration time and ignores whether all JSX usages are
-  // already deferred via `/* @client */`. BF062 is a hard error
-  // because cross-stage await can't be silently fallback-ed.
+  // hiding behind silent fallbacks. All three are hard errors: at
+  // the offending template position the SSR HTML observably differs
+  // from the intended output (missing attribute, permanently-empty
+  // text, wrong conditional branch, or zero-item loop), and the
+  // pipeline has no slot for hydrate to recover from. The diagnostic
+  // is gated on `templateRiskyNames` in `compute-inlinability.ts` so
+  // safe-fallback positions (component props, slotted JSX
+  // expressions, `/* @client */` wrappers) don't trigger — those
+  // shapes recover at hydrate without a visible artefact.
   STAGE_REACTIVE_IN_TEMPLATE: 'BF060',
   STAGE_INIT_LOCAL_IN_TEMPLATE: 'BF061',
   STAGE_AWAIT_IN_TEMPLATE: 'BF062',

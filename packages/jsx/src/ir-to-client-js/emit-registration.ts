@@ -4,7 +4,7 @@
  * and the final hydrate() call emission.
  */
 
-import type { ComponentIR, IRFragment, ReferencesGraph } from '../types'
+import type { ComponentIR, IRFragment, IRNode, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
 import { PROPS_PARAM, inferDefaultValue, exprReferencesIdent } from './utils'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability'
@@ -71,11 +71,12 @@ export function resolveChainedRefs(constants: Map<string, string>, freeIdsMap?: 
 export function buildInlinableConstants(
   ctx: ClientJsContext,
   graph: ReferencesGraph,
+  irRoot: IRNode,
 ): {
   inlinableConstants: Map<string, string>
   unsafeLocalNames: Set<string>
 } {
-  const analysis = computeInlinability(ctx, graph)
+  const analysis = computeInlinability(ctx, graph, irRoot)
   return toLegacyInlinability(analysis, resolveChainedRefs, ctx, exprReferencesIdent)
 }
 
@@ -248,7 +249,7 @@ export function emitRegistrationAndHydration(
   lines.push('')
 
   const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
-  const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph)
+  const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph, _ir.root)
 
   // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
   const restSpreadNames = new Set<string>()

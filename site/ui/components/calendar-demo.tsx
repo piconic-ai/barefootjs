@@ -92,7 +92,6 @@ export function CalendarFormDemo() {
  */
 export function CalendarWithConstraintsDemo() {
   const today = new Date()
-  const maxDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30)
   const [date, setDate] = createSignal<Date | undefined>(undefined)
 
   // Disable weekends (Saturday=6, Sunday=0)
@@ -114,7 +113,7 @@ export function CalendarWithConstraintsDemo() {
         selected={date()}
         onSelect={setDate}
         fromDate={today}
-        toDate={maxDate}
+        toDate={new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30)}
         disabled={isWeekend}
       />
       <p className="text-sm text-muted-foreground">{formattedDate()}</p>

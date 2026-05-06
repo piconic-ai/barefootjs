@@ -239,7 +239,7 @@ function hasInitScopeOnlyConstant(ctx: ClientJsContext): boolean {
 function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): string {
   const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
   const graph = buildReferencesGraph(ctx, ir.root)
-  const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph)
+  const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph, ir.root)
 
   // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
   const restSpreadNames = new Set<string>()
