@@ -31,10 +31,6 @@ runAdapterConformanceTests({
   // `return-logical-or` / `return-nullish-coalescing` reference
   // `$label` / `$banner` directly; `return-map` iterates over `$items`
   // without a `my` declaration.
-  // `component-with-jsx-children` — the Mojo child template references
-  // `$children` without a `my $children = ...` declaration, so Perl
-  // rejects it ("Global symbol '$children' requires explicit package
-  // name"). Same Perl-scoping divergence as the entries above.
   skipJsx: [
     'static-array-children',
     'style-object-dynamic',
@@ -44,7 +40,6 @@ runAdapterConformanceTests({
     'return-logical-or',
     'return-nullish-coalescing',
     'return-map',
-    'component-with-jsx-children',
   ],
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
@@ -164,6 +159,34 @@ export function Static() {
 }
 `)
     expect(result.template).not.toContain("bf->register_script")
+  })
+
+  test('forwards JSX children via begin/end capture (#1202)', () => {
+    const result = compileAndGenerate(`
+'use client'
+export function Page() {
+  return <main><Card><span>hello</span><span>world</span></Card></main>
+}
+`)
+    // Capture lives in its own action so the inner `%>` can't close
+    // the outer render_child tag.
+    expect(result.template).toMatch(/<% my \$bf_children_\w+ = begin %>/)
+    expect(result.template).toContain('<span>hello</span><span>world</span>')
+    expect(result.template).toContain('<% end %>')
+    expect(result.template).toMatch(
+      /bf->render_child\('card'.*children => \$bf_children_\w+\)/,
+    )
+  })
+
+  test('omits children entry when component has no JSX children', () => {
+    const result = compileAndGenerate(`
+'use client'
+export function Page() {
+  return <main><Card label="x" /></main>
+}
+`)
+    expect(result.template).not.toContain('begin %>')
+    expect(result.template).not.toContain('children =>')
   })
 })
 
