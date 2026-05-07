@@ -1038,7 +1038,7 @@ export function Flow<
       >
         <div
           className={`${BF_FLOW_VIEWPORT} ${XYFLOW_VIEWPORT}`}
-          style={`position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; transform: ${viewportTransform()};`}
+          style={`position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; z-index: 1; transform: ${viewportTransform()};`}
         >
           <svg
             className={BF_FLOW_EDGES}
