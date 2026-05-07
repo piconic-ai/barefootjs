@@ -629,10 +629,20 @@ const TOOLTIP_INITIAL: TooltipState = { visible: false, x: 0, y: 0, label: '', r
 function ChartTooltip(props: ChartTooltipProps) {
   const ctx = useContext(BarChartContext)
   const [hover, setHover] = createSignal<TooltipState>(TOOLTIP_INITIAL)
+  let tooltipEl: SVGForeignObjectElement | null = null
+  const handleTooltipEl = (el: SVGForeignObjectElement) => {
+    tooltipEl = el
+  }
 
   createEffect(() => {
     const g = ctx.svgGroup()
     if (!g) return
+
+    // Reorder: keep the tooltip as the last child of the SVG group so it
+    // paints on top of bars/lines/areas regardless of JSX order.
+    if (tooltipEl && tooltipEl.parentNode === g && tooltipEl !== g.lastChild) {
+      g.appendChild(tooltipEl)
+    }
 
     const handleMouseOver = (e: Event) => {
       const target = e.target as SVGElement
@@ -679,7 +689,7 @@ function ChartTooltip(props: ChartTooltipProps) {
   })
 
   return (
-    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none">
+    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none" ref={handleTooltipEl}>
       <div
         data-slot="chart-tooltip"
         className={CHART_CLASS_TOOLTIP}
@@ -1145,10 +1155,18 @@ function PolarAngleAxis(props: PolarAngleAxisProps) {
 function RadarTooltip(props: RadarTooltipProps) {
   const ctx = useContext(RadarChartContext)
   const [hover, setHover] = createSignal<TooltipState>(TOOLTIP_INITIAL)
+  let tooltipEl: SVGForeignObjectElement | null = null
+  const handleTooltipEl = (el: SVGForeignObjectElement) => {
+    tooltipEl = el
+  }
 
   createEffect(() => {
     const g = ctx.svgGroup()
     if (!g) return
+
+    if (tooltipEl && tooltipEl.parentNode === g && tooltipEl !== g.lastChild) {
+      g.appendChild(tooltipEl)
+    }
 
     const handleMouseOver = (e: Event) => {
       const target = e.target as SVGElement
@@ -1195,7 +1213,7 @@ function RadarTooltip(props: RadarTooltipProps) {
   })
 
   return (
-    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none">
+    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none" ref={handleTooltipEl}>
       <div
         data-slot="radar-tooltip"
         className={CHART_CLASS_TOOLTIP}
@@ -1323,10 +1341,18 @@ function Pie(props: PieProps) {
 function PieTooltip(props: PieTooltipProps) {
   const ctx = useContext(PieChartContext)
   const [hover, setHover] = createSignal<TooltipState>(TOOLTIP_INITIAL)
+  let tooltipEl: SVGForeignObjectElement | null = null
+  const handleTooltipEl = (el: SVGForeignObjectElement) => {
+    tooltipEl = el
+  }
 
   createEffect(() => {
     const g = ctx.svgGroup()
     if (!g) return
+
+    if (tooltipEl && tooltipEl.parentNode === g && tooltipEl !== g.lastChild) {
+      g.appendChild(tooltipEl)
+    }
 
     const handleMouseOver = (e: Event) => {
       const target = e.target as SVGElement
@@ -1372,7 +1398,7 @@ function PieTooltip(props: PieTooltipProps) {
   })
 
   return (
-    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none">
+    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none" ref={handleTooltipEl}>
       <div
         data-slot="pie-tooltip"
         className={CHART_CLASS_TOOLTIP}
@@ -1652,10 +1678,18 @@ function AreaYAxis(props: AreaYAxisProps) {
 function AreaChartTooltip(props: AreaChartTooltipProps) {
   const ctx = useContext(AreaChartContext)
   const [hover, setHover] = createSignal<TooltipState>(TOOLTIP_INITIAL)
+  let tooltipEl: SVGForeignObjectElement | null = null
+  const handleTooltipEl = (el: SVGForeignObjectElement) => {
+    tooltipEl = el
+  }
 
   createEffect(() => {
     const g = ctx.svgGroup()
     if (!g) return
+
+    if (tooltipEl && tooltipEl.parentNode === g && tooltipEl !== g.lastChild) {
+      g.appendChild(tooltipEl)
+    }
 
     const handleMouseOver = (e: Event) => {
       const target = e.target as SVGElement
@@ -1702,7 +1736,7 @@ function AreaChartTooltip(props: AreaChartTooltipProps) {
   })
 
   return (
-    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none">
+    <foreignObject x="0" y="0" width="1" height="1" style="overflow:visible;pointer-events:none" ref={handleTooltipEl}>
       <div
         data-slot="area-chart-tooltip"
         className={CHART_CLASS_TOOLTIP}
