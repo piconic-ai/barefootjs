@@ -40,8 +40,7 @@ const componentItems = [
 ]
 
 const formItems = [
-  { id: 'controlled-input', title: 'Controlled Input', href: '/docs/forms/controlled-input', category: 'Forms' },
-  { id: 'create-form', title: 'createForm', href: '/docs/forms/create-form', category: 'Forms' },
+  { id: 'forms-introduction', title: 'Introduction', href: '/docs/forms/introduction', category: 'Forms' },
   { id: 'validation', title: 'Validation', href: '/docs/forms/validation', category: 'Forms' },
   { id: 'field-arrays', title: 'Field Arrays', href: '/docs/forms/field-arrays', category: 'Forms' },
 ]

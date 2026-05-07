@@ -116,10 +116,9 @@ import { SocialThreadPage } from './pages/gallery/social/thread'
 import { SocialMessagesPage } from './pages/gallery/social/messages'
 
 // Form pattern pages
-import { ControlledInputPage } from './pages/forms/controlled-input'
+import { FormsIntroductionPage } from './pages/forms/introduction'
 import { ValidationPage } from './pages/forms/validation'
 import { FieldArraysPage } from './pages/forms/field-arrays'
-import { CreateFormPage } from './pages/forms/create-form'
 
 import { HomeShowcase } from '@/components/home-showcase'
 
@@ -644,9 +643,9 @@ export function createApp() {
     return c.render(<LineChartRefPage />)
   })
 
-  // Controlled Input pattern documentation
-  app.get('/docs/forms/controlled-input', (c) => {
-    return c.render(<ControlledInputPage />)
+  // Forms — introduction (createSignal pattern + @barefootjs/form overview)
+  app.get('/docs/forms/introduction', (c) => {
+    return c.render(<FormsIntroductionPage />)
   })
 
   // Form Validation pattern documentation
@@ -657,11 +656,6 @@ export function createApp() {
   // Field Arrays pattern documentation
   app.get('/docs/forms/field-arrays', (c) => {
     return c.render(<FieldArraysPage />)
-  })
-
-  // createForm documentation
-  app.get('/docs/forms/create-form', (c) => {
-    return c.render(<CreateFormPage />)
   })
 
   return app

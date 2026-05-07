@@ -63,8 +63,7 @@ export const navSections: NavSection[] = [
         key: 'forms',
         title: 'Forms',
         links: [
-          { title: 'Controlled Input', href: '/docs/forms/controlled-input' },
-          { title: 'createForm', href: '/docs/forms/create-form' },
+          { title: 'Introduction', href: '/docs/forms/introduction' },
           { title: 'Validation', href: '/docs/forms/validation' },
           { title: 'Field Arrays', href: '/docs/forms/field-arrays' },
         ],

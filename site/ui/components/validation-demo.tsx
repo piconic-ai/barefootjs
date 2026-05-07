@@ -2,7 +2,7 @@
 /**
  * ValidationDemo Components
  *
- * Validation patterns built on createForm + Zod. See `/docs/forms/create-form`
+ * Validation patterns built on createForm + Zod. See `/docs/forms/introduction`
  * for the underlying API.
  */
 

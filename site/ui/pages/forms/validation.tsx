@@ -130,7 +130,7 @@ export function ValidationPage() {
           <div className="prose prose-invert max-w-none">
             <p className="text-muted-foreground">
               Validation lives in the schema you pass to{' '}
-              <a href="/docs/forms/create-form" className="text-foreground underline underline-offset-4"><code>createForm</code></a>.
+              <a href="/docs/forms/introduction" className="text-foreground underline underline-offset-4"><code>createForm</code></a>.
               Each field exposes <code className="text-foreground">value</code>,{' '}
               <code className="text-foreground">error</code>, <code className="text-foreground">touched</code>, and the
               <code className="text-foreground"> handleInput</code>/<code className="text-foreground">handleBlur</code> handlers — wire them to the input.
