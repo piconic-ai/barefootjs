@@ -257,6 +257,12 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
   const visitor: WalkerVisitor<null> = {
     element: ({ node: el, descend }) => {
       for (const attr of el.attrs) {
+        // `/* @client */` attrs route through `reactiveAttrs` (an
+        // init-body createEffect), not the template closure — the
+        // SSR template skips them entirely. Mirrors the JSX-child
+        // `clientOnly` carve-out below so usage-aware diagnostics
+        // (BF060/BF061) don't false-positive against them.
+        if (attr.clientOnly) continue
         if (attr.dynamic && attr.value) {
           const v = typeof attr.value === 'string' ? attr.value : attrValueToString(attr.value)
           if (v) addExprEdges(ROOT_SOURCE, v, 'template-closure')
@@ -267,12 +273,23 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     },
     component: ({ node: c, descend, descendJsxChildren }) => {
       for (const prop of c.props) {
+        // `/* @client */` props are stripped from `renderChild` and
+        // populated via `initChild`'s getter — the value lives in
+        // init scope, not template scope, so no template-closure
+        // edge.
+        if (prop.clientOnly) continue
         if (prop.dynamic) addExprEdges(ROOT_SOURCE, prop.value, 'template-closure')
       }
       descend()
       descendJsxChildren()
     },
     expression: ({ node: ex }) => {
+      // `/* @client */` expressions route through `ctx.clientOnlyElements`
+      // (collect-elements.ts) and don't reach the regular template
+      // closure — adding a `template-closure` edge here would falsely
+      // mark the referenced names as template-reachable, defeating the
+      // usage-aware BF060/BF061 suppression in `compute-inlinability`.
+      if (ex.clientOnly) return
       addExprEdges(ROOT_SOURCE, ex.expr, 'template-closure')
     },
     conditional: ({ node: c, descend }) => {

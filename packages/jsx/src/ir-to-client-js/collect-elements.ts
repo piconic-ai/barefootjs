@@ -646,7 +646,13 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
         // they can't false-match call-like substrings inside string
         // literals (e.g. `style={{ color: 'hsl(221 83% 53%)' }}`) and
         // don't depend on the expansion order of local constants.
-        if (decideWrapForAttr(expandedValueStr, ctx, attr).wrap) {
+        // `/* @client */` forces the attribute through the
+        // `reactiveAttrs` path regardless of the wrap heuristic —
+        // the SSR template won't emit the attribute (see
+        // html-template.ts), so init's `createEffect` is the only
+        // authority that ever sets it. Without this push the
+        // attribute would be silently dropped.
+        if (attr.clientOnly || decideWrapForAttr(expandedValueStr, ctx, attr).wrap) {
           // Slots inside a conditional branch are collected per-branch by
           // `collectBranchReactiveAttrs` and emitted inside `insert()`
           // bindEvents — keeping them out of init-level `ctx.reactiveAttrs`
@@ -688,7 +694,13 @@ function collectBranchReactiveAttrs(node: IRNode, ctx: ClientJsContext): Conditi
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
         const expanded = expandConstantForReactivity(valueStr, ctx)
-        if (!decideWrapForAttr(expanded, ctx, attr).wrap) continue
+        // Mirror the main-path gate (collectElements.element handler):
+        // `/* @client */` always defers via createEffect regardless of
+        // the wrap heuristic — without this carve-out, a clientOnly
+        // attr inside a conditional branch would be skipped at SSR
+        // (html-template strips it) AND never get a hydrate-time
+        // binding emitted, leaving the attribute permanently unset.
+        if (!attr.clientOnly && !decideWrapForAttr(expanded, ctx, attr).wrap) continue
         attrs.push({
           slotId: el.slotId,
           attrName: attr.name,

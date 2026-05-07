@@ -70,6 +70,41 @@ interface TransformContext {
 }
 
 /**
+ * Detect a leading `/* @client *​/` directive on the given expression
+ * node. Scans only the leading trivia (the slice between `pos` and
+ * `getStart`, which excludes the expression's own text) and requires
+ * the comment interior to match the directive shape exactly, so:
+ *
+ *   - `@client` as a substring inside a string literal in the
+ *     expression itself doesn't false-positive
+ *   - a trailing `/* @client *​/` after the expression doesn't trigger
+ *   - an unrelated block comment like `/* @client-flag *​/` doesn't
+ *     trigger
+ *
+ * Used at three sites for consistency across positions:
+ *
+ *   - JSX child: `<div>{/* @client *​/ x}</div>`
+ *   - Element attribute initializer: `<div data-x={/* @client *​/ x}>`
+ *   - Component prop initializer: `<MyComp prop={/* @client *​/ x}>`
+ *
+ * Note: `ts.getLeadingCommentRanges` doesn't return comments inside
+ * a JsxExpression's curly braces (TypeScript handles JSX trivia
+ * specially), so we read the trivia text directly and parse block
+ * comments out of it.
+ */
+const CLIENT_DIRECTIVE_INTERIOR_RE = /^\s*@client\s*$/
+const BLOCK_COMMENT_RE = /\/\*([\s\S]*?)\*\//g
+function hasLeadingClientDirective(expr: ts.Expression, sourceFile: ts.SourceFile): boolean {
+  const trivia = sourceFile.text.slice(expr.pos, expr.getStart(sourceFile))
+  BLOCK_COMMENT_RE.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = BLOCK_COMMENT_RE.exec(trivia)) !== null) {
+    if (CLIENT_DIRECTIVE_INTERIOR_RE.test(m[1])) return true
+  }
+  return false
+}
+
+/**
  * Walk an expression AST to check if it calls any known signal getter or memo.
  * Uses a pre-built Set for O(1) lookup per call expression.
  */
@@ -913,12 +948,12 @@ function transformExpression(
   // Check for bare signal/memo identifier (BF044)
   checkBareSignalOrMemoIdentifier(expr, ctx)
 
-  // Check for @client directive in prefix style: {/* @client */ expr}
-  // getFullText() includes leading trivia (comments, whitespace). This is a
-  // JsxExpression-level concern — the core dispatcher never sees the comment —
-  // so detection and post-processing stay in the wrapper.
-  const fullText = node.getFullText(ctx.sourceFile)
-  const isClientOnly = fullText.includes('@client')
+  // Check for @client directive in prefix style: {/* @client */ expr}.
+  // Detection is centralised in `hasLeadingClientDirective` so JSX-child,
+  // attribute, and component-prop positions agree — a substring match on
+  // `getFullText()` would false-positive on string literals or trailing
+  // comments containing "@client".
+  const isClientOnly = hasLeadingClientDirective(expr, ctx.sourceFile)
 
   // #547: Inline a JSX constant referenced by identifier. Unique to JSX-child
   // position — conditional branches and return position don't resolve
@@ -2512,8 +2547,20 @@ function processAttributes(
     const attrResult = getAttributeValue(attr, ctx)
     const { value, dynamic, isLiteral } = attrResult
     let templateValue: string | undefined
-    if (dynamic && typeof value === 'string' && attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-      templateValue = rewriteBarePropRefs(value, attr.initializer.expression, ctx)
+    let clientOnly: boolean | undefined
+    if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+      if (dynamic && typeof value === 'string') {
+        templateValue = rewriteBarePropRefs(value, attr.initializer.expression, ctx)
+      }
+      // `/* @client */` in attribute initializer position: defer the
+      // attribute to hydrate. Detection routed through the shared
+      // helper so it agrees with JSX-child / component-prop sites.
+      // Downstream routing: collect-elements wires this into
+      // `reactiveAttrs` for elements; html-template strips it from
+      // the SSR template (and from `renderChild` for components).
+      if (hasLeadingClientDirective(attr.initializer.expression, ctx.sourceFile)) {
+        clientOnly = true
+      }
     }
 
     attrs.push({
@@ -2522,6 +2569,7 @@ function processAttributes(
       templateValue,
       dynamic,
       isLiteral,
+      clientOnly,
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
       ...computeReactivityFlags(attr, ctx),
       ...pickAttrMeta(attrResult),
@@ -2998,8 +3046,20 @@ function processComponentProps(
     const propValue = templateLiteralToString(value) ?? 'true'
 
     let propTemplateValue: string | undefined
-    if (dynamic && typeof value === 'string' && attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-      propTemplateValue = rewriteBarePropRefs(propValue, attr.initializer.expression, ctx)
+    let clientOnly: boolean | undefined
+    if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+      if (dynamic && typeof value === 'string') {
+        propTemplateValue = rewriteBarePropRefs(propValue, attr.initializer.expression, ctx)
+      }
+      // `/* @client */` in component-prop initializer position: defer
+      // to hydrate. Detection routed through the shared helper so it
+      // agrees with JSX-child / element-attr sites. Downstream:
+      // html-template strips the prop from `renderChild`; `initChild`'s
+      // `propsExpr` already runs in init scope so the value reaches
+      // the child component once init runs.
+      if (hasLeadingClientDirective(attr.initializer.expression, ctx.sourceFile)) {
+        clientOnly = true
+      }
     }
 
     props.push({
@@ -3008,6 +3068,7 @@ function processComponentProps(
       templateValue: propTemplateValue,
       dynamic,
       isLiteral,
+      clientOnly,
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
       ...computeReactivityFlags(attr, ctx),
       ...pickAttrMeta(attrResult),
@@ -3228,6 +3289,10 @@ function hasReactiveAttributes(attrs: IRAttribute[], ctx: TransformContext): boo
   for (const attr of attrs) {
     // Skip key — it's used for loop reconciliation, not rendered to DOM
     if (attr.name === 'key') continue
+    // `/* @client */` always defers via the reactiveAttrs path, so the
+    // element MUST have a slotId for runtime lookup — even if the
+    // expression itself doesn't trip the signal/memo/prop heuristics.
+    if (attr.clientOnly) return true
     if (attr.dynamic && attr.value) {
       const valueToCheck = getAttributeValueAsString(attr.value)
       if (!valueToCheck) continue

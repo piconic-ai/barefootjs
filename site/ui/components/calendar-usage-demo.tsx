@@ -17,7 +17,7 @@ function CalendarUsageDemo(_props: {}) {
     <div className="flex flex-wrap gap-8">
       <Calendar mode="single" />
       <Calendar mode="range" numberOfMonths={2} />
-      <Calendar mode="single" fromDate={today} toDate={thirtyDaysLater} />
+      <Calendar mode="single" fromDate={today} toDate={/* @client */ thirtyDaysLater} />
     </div>
   )
 }

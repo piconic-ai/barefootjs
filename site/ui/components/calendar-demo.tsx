@@ -114,7 +114,7 @@ export function CalendarWithConstraintsDemo() {
         selected={date()}
         onSelect={setDate}
         fromDate={today}
-        toDate={maxDate}
+        toDate={/* @client */ maxDate}
         disabled={isWeekend}
       />
       <p className="text-sm text-muted-foreground">{formattedDate()}</p>

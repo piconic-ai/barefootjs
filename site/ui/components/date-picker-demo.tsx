@@ -10,6 +10,14 @@
 import { createSignal, createMemo } from '@barefootjs/client'
 import { DatePicker, DateRangePicker, type DateRange } from '@ui/components/ui/date-picker'
 
+// Module-scope helper so `presets` below stays template-safe (init-local
+// referencing only module-scope/global bindings → no BF061).
+const addDays = (days: number): Date => {
+  const result = new Date()
+  result.setDate(result.getDate() + days)
+  return result
+}
+
 /**
  * Preview demo - simple date selection
  */
@@ -138,12 +146,6 @@ export function DateRangePickerDemo() {
  */
 export function DatePickerPresetsDemo() {
   const [date, setDate] = createSignal<Date | undefined>(undefined)
-
-  const addDays = (days: number): Date => {
-    const result = new Date()
-    result.setDate(result.getDate() + days)
-    return result
-  }
 
   const presets = [
     { label: 'Today', value: new Date() },

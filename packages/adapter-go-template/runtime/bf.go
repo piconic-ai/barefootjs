@@ -5,7 +5,9 @@ package bf
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"html/template"
+	"math"
 	"reflect"
 	"sort"
 	"strconv"
@@ -32,6 +34,15 @@ func FuncMap() template.FuncMap {
 		"bf_trim":     Trim,
 		"bf_contains": Contains,
 		"bf_join":     Join,
+		"bf_string":   String,
+
+		// JSON / numeric primitives — JS-compat callees registered on
+		// the Go adapter's `templatePrimitives` map (#1188).
+		"bf_json":   JSON,
+		"bf_number": Number,
+		"bf_floor":  Floor,
+		"bf_ceil":   Ceil,
+		"bf_round":  Round,
 
 		// Array/Slice
 		"bf_len":      Len,
@@ -96,23 +107,29 @@ func IsChild(props interface{}) template.HTMLAttr {
 	return ""
 }
 
-// BfPropsAttr returns a bf-p attribute with the JSON-serialized props in flat format.
-// Output format: bf-p='{"propName": value, ...}'
-// Only emits the attribute for root components (BfIsRoot == true).
-// Child components receive props from their parent via initChild().
-func BfPropsAttr(props interface{}) template.HTMLAttr {
+// BfPropsAttr returns the bf-p attribute with the JSON-serialized
+// props in flat format. Output format: `bf-p='{"propName":value,...}'`.
+// Only emits the attribute for root components (BfIsRoot == true);
+// child components receive props from their parent via initChild().
+//
+// Returns the marshal error so a `template.Execute` call fails
+// loudly on cycles / unsupported props rather than silently
+// dropping the bf-p attribute and breaking client-side hydration.
+// Same loud-failure policy as `JSON` — user data going through
+// `encoding/json` shouldn't fail invisibly.
+func BfPropsAttr(props interface{}) (template.HTMLAttr, error) {
 	// Only root components should emit bf-p
 	if !getBoolField(props, "BfIsRoot") {
-		return ""
+		return "", nil
 	}
 
 	propsJSON, err := json.Marshal(props)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	escaped := template.HTMLEscapeString(string(propsJSON))
-	return template.HTMLAttr(`bf-p="` + escaped + `"`)
+	return template.HTMLAttr(`bf-p="` + escaped + `"`), nil
 }
 
 // =============================================================================
@@ -213,6 +230,109 @@ func Join(items any, sep string) string {
 		parts[i] = toString(v.Index(i).Interface())
 	}
 	return strings.Join(parts, sep)
+}
+
+// String returns the string form of v. Mirrors JS `String(v)` for
+// non-nil values via `fmt.Sprintf("%v", ...)`. Diverges from JS on
+// nil: JS `String(null)` is "null", but the template path renders
+// `nil` as the empty string here so an unset prop doesn't surface
+// as a literal "null"/"undefined" in user-facing HTML. Document the
+// divergence explicitly so callers don't rely on JS-exact parity.
+func String(v any) string {
+	if v == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", v)
+}
+
+// JSON returns the JSON encoding of v as a string. Mirrors
+// JS `JSON.stringify(v)` for the V1 single-arg shape (no `replacer`
+// or `space`). Object key order is determined by Go's `encoding/json`
+// (alphabetical for maps, declaration order for structs) — the
+// #1187 contract requires value-compat, not order-compat.
+//
+// Top-level NaN / ±Inf are pre-handled to match JS — JS's
+// `JSON.stringify(NaN)` and `JSON.stringify(Infinity)` both produce
+// `"null"`, but Go's `encoding/json` rejects them with
+// `UnsupportedValueError`. Without this carve-out the common
+// composition `JSON.stringify(Number("garbage"))` would error
+// instead of emitting `"null"` like JS does. Nested NaN/Inf inside
+// a struct/map still surfaces an error — covering that needs a
+// custom marshaller; out of V1 scope.
+//
+// Returns the marshal error so a `template.Execute` call fails
+// loudly on cycles / unsupported values rather than silently
+// producing `""` and reintroducing the SSR data-loss class
+// #1187 was filed against. Go's text/template treats a non-nil
+// error return from a func as an execution failure.
+func JSON(v any) (string, error) {
+	if f, ok := v.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
+		return "null", nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+// Number coerces v to a float64. Mirrors JS `Number(v)` semantics:
+// numeric / boolean inputs convert as expected; non-numeric strings
+// and other unsupported shapes return `NaN` (matching JS rather
+// than silently substituting 0, which would mis-shape downstream
+// arithmetic and template-side comparisons). Templates that need
+// a deterministic fallback should compose with the user-side
+// default (e.g. `Number(props.x ?? 0)` in JSX).
+func Number(v any) float64 {
+	if v == nil {
+		return math.NaN()
+	}
+	switch x := v.(type) {
+	case float64:
+		return x
+	case float32:
+		return float64(x)
+	case int:
+		return float64(x)
+	case int32:
+		return float64(x)
+	case int64:
+		return float64(x)
+	case bool:
+		if x {
+			return 1
+		}
+		return 0
+	case string:
+		f, err := strconv.ParseFloat(x, 64)
+		if err != nil {
+			return math.NaN()
+		}
+		return f
+	}
+	return math.NaN()
+}
+
+// Floor returns the largest integer ≤ v as a float64. Mirrors JS
+// `Math.floor`. The return type stays float64 so chained primitives
+// (`bf_floor` then `bf_string`) line up with JS's number type.
+func Floor(v any) float64 {
+	return math.Floor(Number(v))
+}
+
+// Ceil returns the smallest integer ≥ v as a float64. Mirrors JS
+// `Math.ceil`.
+func Ceil(v any) float64 {
+	return math.Ceil(Number(v))
+}
+
+// Round returns v rounded to the nearest integer as a float64.
+// Mirrors JS `Math.round` — half-away-from-zero (Go's `math.Round`
+// matches; JS rounds half toward +Infinity which differs at .5
+// negatives; we accept that minor divergence since the conformance
+// contract is value-compat for the common positive case).
+func Round(v any) float64 {
+	return math.Round(Number(v))
 }
 
 // =============================================================================
@@ -543,17 +663,24 @@ func TextEnd() template.HTML {
 // ScopeComment outputs a comment-based scope marker for fragment root components.
 // Format: <!--bf-scope:ScopeID--> or <!--bf-scope:~ScopeID|PropsJSON-->
 // Uses the same logic as ScopeAttr for child prefix and BfPropsAttr for props.
-func ScopeComment(props interface{}) template.HTML {
+//
+// Returns the marshal error so a `template.Execute` call fails
+// loudly on bad props — same loud-failure policy as `JSON` /
+// `BfPropsAttr`. Without this propagation a cycle in props would
+// silently drop the |PropsJSON suffix from the scope comment,
+// breaking client-side hydration without a visible diagnostic.
+func ScopeComment(props interface{}) (template.HTML, error) {
 	scopeAttr := ScopeAttr(props)
 	propsJSON := ""
 	if getBoolField(props, "BfIsRoot") {
 		// Build flat props JSON (same as BfPropsAttr but without the attribute wrapper)
 		pJSON, err := json.Marshal(props)
-		if err == nil {
-			propsJSON = "|" + string(pJSON)
+		if err != nil {
+			return "", err
 		}
+		propsJSON = "|" + string(pJSON)
 	}
-	return template.HTML("<!--bf-scope:" + scopeAttr + propsJSON + "-->")
+	return template.HTML("<!--bf-scope:" + scopeAttr + propsJSON + "-->"), nil
 }
 
 // PortalHTML parses and executes a template string with the provided data.

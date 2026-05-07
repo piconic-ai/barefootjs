@@ -46,13 +46,19 @@ runAdapterConformanceTests({
     'return-map',
     'component-with-jsx-children',
   ],
-  // Go's template runtime can render only callees the adapter
-  // explicitly maps to a Go template function via `templatePrimitives`.
-  // None mapped yet (#1188); every positive-inlining case stays
-  // skipped until that PR.
+  // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
+  // via `GoTemplateAdapter.templatePrimitives` (#1188). The two
+  // remaining cases stay skipped because the V1 registry is
+  // identifier-path-only and explicit:
+  //   - `USER_IMPORT_VIA_CONST` — a bespoke user import isn't in
+  //     the registry and can't be rendered server-side without
+  //     user-supplied template-fn mappings.
+  //   - `NO_DOUBLE_REWRITE_OF_PROPS_OBJECT` — uses `customSerialize`
+  //     too, same reason.
+  // Adding new entries to `templatePrimitives` should narrow this
+  // skip set; see `templatePrimitives` declaration in
+  // `go-template-adapter.ts` for the full V1 surface.
   skipTemplatePrimitives: new Set([
-    TemplatePrimitiveCaseId.JSON_STRINGIFY_VIA_CONST,
-    TemplatePrimitiveCaseId.MATH_FLOOR_VIA_CONST,
     TemplatePrimitiveCaseId.USER_IMPORT_VIA_CONST,
     TemplatePrimitiveCaseId.NO_DOUBLE_REWRITE_OF_PROPS_OBJECT,
   ]),
@@ -549,6 +555,206 @@ export function Tagged(props: { className?: string }) {
       const classAttrMatch = tpl.match(/class="([^"]*)/)
       expect(classAttrMatch).not.toBeNull()
       expect(classAttrMatch![1]).not.toContain('"')
+    })
+  })
+
+  describe('templatePrimitives — JS-compat callees (#1188)', () => {
+    // The registry fires when the call appears DIRECTLY in a JSX
+    // expression position (`<div data-x={JSON.stringify(...)}>`).
+    // Chained-const usage (`const j = JSON.stringify(...); <div
+    // data-x={j}>`) routes through the Go adapter's struct-field
+    // lift today and doesn't invoke the registry — that's a
+    // separate limitation not addressed here. The conformance
+    // test for the via-const shape inspects the CLIENT JS, where
+    // the call IS inlined (relocate accepts it via the registry's
+    // boolean-acceptance side).
+
+    test('JSON.stringify(props.x) emits bf_json in SSR template (inline)', () => {
+      const result = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { config: object }) {
+          return <div data-config={JSON.stringify(props.config)}>hi</div>
+        }
+      `)
+      expect(result.template).toContain('bf_json .Config')
+      // No raw JS leaked into the Go template.
+      expect(result.template).not.toContain('JSON.stringify')
+    })
+
+    test('Math.floor(props.score) emits bf_floor in SSR template (inline)', () => {
+      const result = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { score: number }) {
+          return <div data-rounded={Math.floor(props.score)}>hi</div>
+        }
+      `)
+      expect(result.template).toContain('bf_floor .Score')
+      expect(result.template).not.toContain('Math.floor')
+    })
+
+    test('Math.ceil / Math.round both map to their bf_* equivalents', () => {
+      const ceilResult = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { v: number }) {
+          return <div data-x={Math.ceil(props.v)}>hi</div>
+        }
+      `)
+      expect(ceilResult.template).toContain('bf_ceil .V')
+
+      const roundResult = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { v: number }) {
+          return <div data-x={Math.round(props.v)}>hi</div>
+        }
+      `)
+      expect(roundResult.template).toContain('bf_round .V')
+    })
+
+    test('String(props.x) and Number(props.x) emit bf_string / bf_number', () => {
+      const stringResult = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { v: number }) {
+          return <div data-x={String(props.v)}>hi</div>
+        }
+      `)
+      expect(stringResult.template).toContain('bf_string .V')
+
+      const numberResult = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { v: string }) {
+          return <div data-x={Number(props.v)}>hi</div>
+        }
+      `)
+      expect(numberResult.template).toContain('bf_number .V')
+    })
+
+    test('registry exposes the expected V1 callees', () => {
+      // Pin the V1 surface so a future refactor doesn't accidentally
+      // drop a primitive. New entries are additive — extend this
+      // list rather than replace.
+      const a = new GoTemplateAdapter()
+      const keys = Object.keys(a.templatePrimitives ?? {}).sort()
+      expect(keys).toEqual(['JSON.stringify', 'Math.ceil', 'Math.floor', 'Math.round', 'Number', 'String'])
+    })
+
+    test('unregistered identifier-path callee is NOT accepted by the registry', () => {
+      // The registry is identifier-path-only and explicit. A
+      // user-import like `customSerialize` is NOT registered, so
+      // the Go adapter can't render it server-side. Pin so a
+      // future refactor doesn't accidentally start accepting
+      // arbitrary identifier-paths via this map.
+      const a = new GoTemplateAdapter()
+      expect(a.templatePrimitives?.['customSerialize']).toBeUndefined()
+    })
+
+    test('wrong-arity primitive call falls back to BF101 instead of emitting invalid template', () => {
+      // V1 emit fns blindly read `args[0]`. The arity gate must
+      // reject 0-arg / 2-arg shapes so we don't ship invalid Go
+      // template syntax (`bf_json` with no operand) or silently
+      // drop extra args.
+      const result = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { config: object; replacer: any }) {
+          return <div data-x={JSON.stringify(props.config, props.replacer)}>hi</div>
+        }
+      `)
+      // The substituted form must NOT appear with a stray second
+      // arg; the call falls through and surfaces an error
+      // instead.
+      expect(result.template).not.toContain('bf_json')
+    })
+
+    test('computed-member callee does NOT match a string-keyed registry path', () => {
+      // `arr[0](x)` parses as a call whose callee is a
+      // computed-member. `identifierPath` must return null for
+      // computed members so a same-named primitive in the
+      // registry can't be triggered through array indexing.
+      // Pin: the substitution path doesn't fire here.
+      const result = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { fns: ((x: any) => string)[]; v: any }) {
+          return <div data-x={props.fns[0](props.v)}>hi</div>
+        }
+      `)
+      expect(result.template).not.toContain('bf_json')
+      expect(result.template).not.toContain('bf_string')
+    })
+
+    test('two-tier source-of-truth keeps emit + arity in sync', () => {
+      // Regression for the previous parallel-map shape (#1200
+      // review): ensure every `templatePrimitives` key has a
+      // matching arity entry, so a registry-only addition can't
+      // silently bypass the arity gate.
+      const a = new GoTemplateAdapter()
+      const arities = (a as unknown as { templatePrimitiveArities: Record<string, number> }).templatePrimitiveArities
+      for (const key of Object.keys(a.templatePrimitives ?? {})) {
+        expect(arities[key]).toBeGreaterThan(0)
+      }
+    })
+
+    test('Math.floor(Number(...)) end-to-end via go run produces the expected rendered HTML', async () => {
+      // The other tests assert template emission strings; this one
+      // closes the loop by actually running `go run` against the
+      // generated template + Go runtime helpers, so a regression in
+      // the Go-side `Floor`/`Number` funcs surfaces here. Also
+      // exercises chained-primitive composition (`bf_floor
+      // (bf_number .Score)`) which the inline-direct emit path
+      // produces for nested calls.
+      //
+      // The prop is typed `string` rather than `number` because
+      // generateTypes maps TS `number` to Go `int`, and an `int`
+      // field can't hold the fractional value we need to actually
+      // exercise floor's rounding behaviour. Coercing through
+      // `Number(props.score)` keeps the Go field as `string` and
+      // shifts the float arithmetic into the runtime helpers.
+      // Skipped on hosts without Go ≥ 1.25 (existing harness
+      // GoNotAvailableError path).
+      try {
+        const html = await renderGoTemplateComponent({
+          source: `
+'use client'
+export function Foo(props: { score: string }) {
+  return <div data-rounded={Math.floor(Number(props.score))}>hi</div>
+}
+          `,
+          adapter: new GoTemplateAdapter(),
+          props: { score: '3.7' },
+        })
+        // Math.floor(Number("3.7")) === 3. Go float64 with integer
+        // value formats as "3" via %v.
+        expect(html).toContain('data-rounded="3"')
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) {
+          console.log('Skipping Math.floor e2e: go command not found')
+          return
+        }
+        throw err
+      }
+    })
+
+    test('JSON.stringify end-to-end via go run produces the expected rendered HTML', async () => {
+      try {
+        const html = await renderGoTemplateComponent({
+          source: `
+'use client'
+export function Foo(props: { name: string }) {
+  return <div data-config={JSON.stringify(props.name)}>hi</div>
+}
+          `,
+          adapter: new GoTemplateAdapter(),
+          props: { name: 'alice' },
+        })
+        // `JSON.stringify("alice")` → `"alice"` (with quotes).
+        // The template interpolates into an attribute value, so the
+        // outer quotes get HTML-entity escaped.
+        expect(html).toContain('&#34;alice&#34;')
+      } catch (err) {
+        if (err instanceof GoNotAvailableError) {
+          console.log('Skipping JSON.stringify e2e: go command not found')
+          return
+        }
+        throw err
+      }
     })
   })
 })

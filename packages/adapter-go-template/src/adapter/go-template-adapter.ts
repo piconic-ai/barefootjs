@@ -26,6 +26,7 @@ import type {
   IRIfStatement,
   IRProvider,
   IRAsync,
+  TemplatePrimitiveRegistry,
 } from '@barefootjs/jsx'
 import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr, parseExpression, isSupported } from '@barefootjs/jsx'
 
@@ -35,6 +36,24 @@ import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBoolean
  */
 interface NestedComponentInfo extends IRLoopChildComponent {
   isDynamic: boolean
+}
+
+/**
+ * Extract the textual identifier path from a parsed expression's
+ * callee — `{kind:'identifier', name:'String'}` → `"String"`,
+ * `{kind:'member', object:{kind:'identifier', name:'JSON'},
+ * property:'stringify'}` → `"JSON.stringify"`. Returns `null` for
+ * any other callee shape (call result, computed member, etc.) — the
+ * `templatePrimitives` registry only matches identifier paths
+ * (#1187 R1).
+ */
+function identifierPath(callee: ParsedExpr): string | null {
+  if (callee.kind === 'identifier') return callee.name
+  if (callee.kind === 'member' && !callee.computed) {
+    const head = identifierPath(callee.object)
+    return head ? `${head}.${callee.property}` : null
+  }
+  return null
 }
 
 export interface GoTemplateAdapterOptions {
@@ -68,9 +87,76 @@ function slotIdToFieldSuffix(slotId: string): string {
   return cleanId.replace('slot_', 'Slot')
 }
 
+/**
+ * Single source of truth for the Go adapter's template-primitive
+ * surface (#1188). Each entry pairs the expected arity with the
+ * emit function so adding / removing a primitive is a one-line
+ * change and the two derived maps (`templatePrimitives` and
+ * `templatePrimitiveArities`) can't drift out of sync.
+ */
+interface PrimitiveSpec {
+  arity: number
+  emit: (args: string[]) => string
+}
+
+const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
+  'JSON.stringify': { arity: 1, emit: (args) => `bf_json ${args[0]}` },
+  'String':         { arity: 1, emit: (args) => `bf_string ${args[0]}` },
+  'Number':         { arity: 1, emit: (args) => `bf_number ${args[0]}` },
+  'Math.floor':     { arity: 1, emit: (args) => `bf_floor ${args[0]}` },
+  'Math.ceil':      { arity: 1, emit: (args) => `bf_ceil ${args[0]}` },
+  'Math.round':     { arity: 1, emit: (args) => `bf_round ${args[0]}` },
+}
+
 export class GoTemplateAdapter extends BaseAdapter {
   name = 'go-template'
   extension = '.tmpl'
+
+  /**
+   * Identifier-path callees the Go runtime can render in template
+   * scope (#1188). The relocate pass consults this map to mark
+   * matching calls as template-safe so the surrounding expression
+   * stays inlinable; the SSR template emitter (`renderParsedExpr`'s
+   * `call` branch) uses the same map to substitute the JS call with
+   * the registered Go template form.
+   *
+   * Keys are the textual callee path as written in the JSX
+   * expression. Values are emit functions that receive the already-
+   * Go-rendered argument expressions (e.g. `.Config`, `_p.Score`)
+   * and return the substituted Go template body — without the
+   * surrounding `{{ }}` action delimiters, so callers can wrap the
+   * result in `{{...}}` or compose into larger expressions like
+   * `{{if eq (bf_json .X) "..."}}`.
+   *
+   * V1 scope (#1187 R1): identifier-path callees only. Method calls
+   * on values (`(arr).join(",")`) require analyzer-resolved receiver
+   * type and are explicitly out of scope — users fall back to
+   * `/* @client *\/` for those.
+   *
+   * Public because the `TemplateAdapter` interface contract requires
+   * the relocate pass to read this for boolean acceptance. The arity
+   * map below is implementation detail (private) — the asymmetry is
+   * deliberate.
+   */
+  templatePrimitives: TemplatePrimitiveRegistry =
+    Object.fromEntries(
+      Object.entries(GO_TEMPLATE_PRIMITIVES).map(([k, v]) => [k, v.emit])
+    )
+
+  /**
+   * Expected arg count per primitive. Consulted before invoking the
+   * registered emit fn so a 0-arg `JSON.stringify()` or 2-arg
+   * `JSON.stringify(x, replacer)` doesn't silently produce invalid
+   * Go template syntax (the V1 emit fns blindly read `args[0]`).
+   *
+   * Derived from `GO_TEMPLATE_PRIMITIVES` so it can't drift from
+   * `templatePrimitives` — a wrong-arity call falls back to the
+   * standard BF101 unsupported-call diagnostic.
+   */
+  private readonly templatePrimitiveArities: Record<string, number> =
+    Object.fromEntries(
+      Object.entries(GO_TEMPLATE_PRIMITIVES).map(([k, v]) => [k, v.arity])
+    )
 
   private componentName: string = ''
   private options: Required<GoTemplateAdapterOptions>
@@ -1369,6 +1455,40 @@ export class GoTemplateAdapter extends BaseAdapter {
         // Handle signal calls: count() -> .Count
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
           return `.${this.capitalizeFieldName(expr.callee.name)}`
+        }
+        // Identifier-path primitive callee (#1188): if the JS call
+        // resolves to a path registered on `templatePrimitives`
+        // (e.g. `JSON.stringify`, `Math.floor`), substitute the Go
+        // template form. The emit fn receives args already rendered
+        // to Go template syntax. Wrap in parens to preserve operator
+        // precedence in the surrounding expression (e.g. `bf_floor x`
+        // composed inside `gt (bf_floor x) 3`).
+        //
+        // Arity is checked against `templatePrimitiveArities` so a
+        // wrong-arity call (`JSON.stringify()`, `JSON.stringify(x,
+        // replacer)`) falls through to the standard BF101 path
+        // instead of emitting invalid Go template syntax via
+        // `args[0]` on a missing or extra argument.
+        const path = identifierPath(expr.callee)
+        if (path && this.templatePrimitives[path]) {
+          const expected = this.templatePrimitiveArities[path]
+          if (expected === undefined || expr.args.length === expected) {
+            const renderedArgs = expr.args.map(a => this.renderParsedExpr(a))
+            return `(${this.templatePrimitives[path](renderedArgs)})`
+          }
+          // Arity mismatch — record a diagnostic and continue to the
+          // generic call rendering (which will surface a BF101 if
+          // `convertExpressionToGo`'s `isSupported` rejects the
+          // shape). We don't return here so the fallback path runs.
+          this.errors.push({
+            code: 'BF101',
+            severity: 'error',
+            message: `templatePrimitive '${path}' expects ${expected} arg(s), got ${expr.args.length}`,
+            loc: this.makeLoc(),
+            suggestion: {
+              message: `Call '${path}' with exactly ${expected} argument(s), or wrap the JSX expression in /* @client */ to defer evaluation.`,
+            },
+          })
         }
         // Handle method calls on objects: items().length is handled by member
         // For other calls, render callee and args

@@ -471,7 +471,14 @@ export function collectLoopChildReactiveAttrs(
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
         const expanded = expandConstantForReactivity(valueStr, ctx)
-        if (classifyReactivity(expanded, ctx, loopParam, loopParamBindings).kind === 'none') continue
+        // `/* @client */` always defers via per-item createEffect
+        // regardless of the reactivity classifier — matches the
+        // top-level `collectElements.element` and the conditional
+        // `collectBranchReactiveAttrs` carve-outs. Without this, the
+        // SSR template strips the attribute (html-template) and no
+        // hydrate-time binding is emitted, leaving the per-item
+        // attribute permanently unset.
+        if (!attr.clientOnly && classifyReactivity(expanded, ctx, loopParam, loopParamBindings).kind === 'none') continue
         attrs.push({
           childSlotId: el.slotId,
           attrName: attr.name,
