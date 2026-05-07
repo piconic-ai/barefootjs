@@ -118,6 +118,7 @@ export class MojoAdapter extends BaseAdapter {
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
     this.errors = []
+    this.childrenCaptureCounter = 0
 
     const templateBody = ir.root.type === 'if-statement'
       ? this.renderIfStatement(ir.root as IRIfStatement)
@@ -397,8 +398,24 @@ export class MojoAdapter extends BaseAdapter {
       propParts.push(`_bf_slot => '${comp.slotId}'`)
     }
     const propsStr = propParts.length > 0 ? ', ' + propParts.join(', ') : ''
-    return `<%== bf->render_child('${this.toTemplateName(comp.name)}'${propsStr}) %>`
+    const tplName = this.toTemplateName(comp.name)
+    if (comp.children.length > 0) {
+      // Forward JSX children via Mojo's `begin %>...<% end` capture so
+      // dynamic segments inside the children (signals, conditionals)
+      // get evaluated in the parent's template scope before reaching
+      // the child renderer. The capture has to live in a separate
+      // action — embedding it inside the `<%== ... %>` that wraps
+      // `render_child` would let the inner `%>` close the outer tag.
+      // `render_child` materializes the resulting CODE ref into the
+      // captured Mojo::ByteStream.
+      const childrenBody = this.renderChildren(comp.children)
+      const varName = `$bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
+      return `<% my ${varName} = begin %>${childrenBody}<% end %><%== bf->render_child('${tplName}'${propsStr}, children => ${varName}) %>`
+    }
+    return `<%== bf->render_child('${tplName}'${propsStr}) %>`
   }
+
+  private childrenCaptureCounter = 0
 
   private toTemplateName(componentName: string): string {
     // Convert PascalCase to snake_case for Mojo template naming

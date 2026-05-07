@@ -88,6 +88,11 @@ sub register_child_renderer ($self, $name, $renderer) {
 sub render_child ($self, $name, %props) {
     my $renderer = $self->_child_renderers->{$name};
     die "No renderer registered for child component '$name'" unless $renderer;
+    # JSX children come in via Mojo `begin %>...<% end` capture, which
+    # produces a CODE ref returning a Mojo::ByteStream. Materialize it
+    # before handing the props to the child renderer so the child
+    # template sees `$children` as already-rendered HTML.
+    $props{children} = $props{children}->() if ref($props{children}) eq 'CODE';
     return $renderer->(\%props);
 }
 
