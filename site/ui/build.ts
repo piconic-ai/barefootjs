@@ -176,6 +176,34 @@ if (chartBuildResult.outputs.length > 0) {
   console.log('Generated: dist/components/barefoot-chart.js')
 }
 
+// Build and copy barefoot-xyflow.js from @barefootjs/xyflow
+// External @barefootjs/client so it resolves via import map. Demos
+// (`XyflowPreviewDemo` etc.) and the `@/components/ui/xyflow` registry
+// import bare specifiers from `@barefootjs/xyflow`; without this bundle
+// hydration on /xyflow/introduction and /components/xyflow throws a
+// module-resolution error and blocks pointer handler attachment.
+const XYFLOW_PKG_DIR = resolve(ROOT_DIR, '../../packages/xyflow')
+const xyflowEntryFile = resolve(XYFLOW_PKG_DIR, 'src/index.ts')
+
+console.log('Building @barefootjs/xyflow for site...')
+const xyflowBuildResult = await Bun.build({
+  entrypoints: [xyflowEntryFile],
+  format: 'esm',
+  external: [
+    '@barefootjs/client',
+    '@barefootjs/client/runtime',
+    '@barefootjs/client/reactive',
+  ],
+})
+
+if (xyflowBuildResult.outputs.length > 0) {
+  await Bun.write(
+    resolve(DIST_COMPONENTS_DIR, 'barefoot-xyflow.js'),
+    xyflowBuildResult.outputs[0]
+  )
+  console.log('Generated: dist/components/barefoot-xyflow.js')
+}
+
 // Bundle zod for client-side use (needed by createForm demos)
 // Use a wrapper to ensure named exports (z) are preserved in the ESM bundle,
 // since the CJS entry only produces a default export when bundled directly.
