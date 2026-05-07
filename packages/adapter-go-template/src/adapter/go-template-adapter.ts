@@ -840,13 +840,22 @@ export class GoTemplateAdapter extends BaseAdapter {
 
   /**
    * Render JSX children to a Go-template-ready HTML fragment when
-   * children include any non-text node. Returns null when children
-   * are absent or are pure text (handled by the simpler text path).
+   * children are non-text but produce purely-static HTML (no Go
+   * template actions). Returns null when:
+   *   - children are absent or text-only (handled by extractTextChildren), or
+   *   - the rendered fragment contains any `{{...}}` action — passing
+   *     such a fragment through `template.HTML` and the parent's
+   *     `{{.Children}}` would output the actions verbatim instead of
+   *     evaluating them, which is worse than the existing
+   *     "drop children" fallback. Dynamic / component-bearing children
+   *     stay on the drop path until a re-evaluation hook lands.
    */
   private extractHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
     if (children.every(c => c.type === 'text')) return null
-    return this.renderChildren(children)
+    const html = this.renderChildren(children)
+    if (html.includes('{{')) return null
+    return html
   }
 
   private collectStaticChildInstancesRecursive(

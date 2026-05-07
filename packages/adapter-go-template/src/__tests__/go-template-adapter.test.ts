@@ -199,6 +199,45 @@ export function Page() {
       expect(types).not.toContain('Children:')
       expect(types).not.toContain('template.HTML')
     })
+
+    test('drops dynamic children that would emit Go template actions', () => {
+      // V1 limitation: a `template.HTML` value isn't re-parsed by the
+      // parent's `{{.Children}}` pipeline, so any `{{...}}` inside the
+      // rendered fragment would output literally. Dynamic-expression /
+      // nested-component / conditional children stay on the existing
+      // drop path (same as before this issue) until a re-evaluation
+      // hook lands.
+      const cases = [
+        // signal expression inside child
+        `'use client'
+import { createSignal } from "@barefootjs/client"
+export function Page() {
+  const [c] = createSignal(0)
+  return <main><Card><span>{c()}</span></Card></main>
+}`,
+        // nested component child
+        `'use client'
+import { createSignal } from "@barefootjs/client"
+export function Page() {
+  const [x] = createSignal(0)
+  return <main data-x={x()}><Card><Button/></Card></main>
+}`,
+        // conditional child
+        `'use client'
+import { createSignal } from "@barefootjs/client"
+export function Page() {
+  const [v] = createSignal(true)
+  return <main><Card>{v() ? <span>a</span> : <span>b</span>}</Card></main>
+}`,
+      ]
+      for (const src of cases) {
+        const adapter = new GoTemplateAdapter()
+        const ir = compileToIR(src, adapter)
+        const types = adapter.generateTypes(ir)!
+        expect(types).not.toContain('Children:')
+        expect(types).not.toContain('template.HTML')
+      }
+    })
   })
 
   describe('generateTypes', () => {
