@@ -1,9 +1,7 @@
-use strict;
-use warnings;
+use Test2::V0;
 use feature 'signatures';
 no warnings 'experimental::signatures';
 
-use Test::More;
 use Test::Mojo;
 use Mojolicious::Lite;
 use File::Temp qw(tempdir);

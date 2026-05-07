@@ -20,10 +20,60 @@ import type {
   IRAsync,
   IRTemplateLiteral,
   CompilerError,
+  TemplatePrimitiveRegistry,
 } from '@barefootjs/jsx'
-import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr, parseExpression } from '@barefootjs/jsx'
+import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr, parseExpression, identifierPath, stringifyParsedExpr } from '@barefootjs/jsx'
 import type { ParsedExpr, ParsedStatement } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND } from '@barefootjs/shared'
+
+interface PrimitiveSpec {
+  arity: number
+  emit: (args: string[]) => string
+}
+
+/**
+ * Single source of truth for the Mojolicious adapter's
+ * template-primitive surface. Each entry pairs the expected arity
+ * with the emit function. Adding / removing a primitive is a
+ * one-line change.
+ *
+ * The emit fn returns a Perl expression (no surrounding `<%= %>`)
+ * suitable for embedding inside the Mojo template action —
+ * `bf->json($val)`, `bf->floor($val)`, etc. Args arrive already
+ * Perl-rendered via `convertExpressionToPerl` recursion, so a
+ * caller passing `props.config` reaches the emit fn as `$config`.
+ */
+const MOJO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
+  'JSON.stringify': { arity: 1, emit: (args) => `bf->json(${args[0]})` },
+  'String':         { arity: 1, emit: (args) => `bf->string(${args[0]})` },
+  'Number':         { arity: 1, emit: (args) => `bf->number(${args[0]})` },
+  'Math.floor':     { arity: 1, emit: (args) => `bf->floor(${args[0]})` },
+  'Math.ceil':      { arity: 1, emit: (args) => `bf->ceil(${args[0]})` },
+  'Math.round':     { arity: 1, emit: (args) => `bf->round(${args[0]})` },
+}
+
+/**
+ * Cheap substring pre-check: skip the (expensive) `parseExpression`
+ * call when no primitive callee path appears in the source string.
+ * The common case is "no primitive present"; building the regex
+ * once from the registry keys keeps the gate in sync as new
+ * primitives land.
+ */
+const PRIMITIVE_SUBSTRING_RE = new RegExp(
+  Object.keys(MOJO_TEMPLATE_PRIMITIVES)
+    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|')
+)
+
+/**
+ * Module-scope `templatePrimitives` map derived once from the spec
+ * record. Per-instance derivation would re-build the same Map on
+ * every `new MojoAdapter()` call.
+ */
+const MOJO_PRIMITIVE_EMIT_MAP: Record<string, (args: string[]) => string> =
+  Object.fromEntries(
+    Object.entries(MOJO_TEMPLATE_PRIMITIVES).map(([k, v]) => [k, v.emit])
+  )
 
 export interface MojoAdapterOptions {
   /** Base path for client JS files (default: '/static/components/') */
@@ -37,6 +87,20 @@ export class MojoAdapter extends BaseAdapter {
   name = 'mojolicious'
   extension = '.html.ep'
   templatesPerComponent = true
+
+  /**
+   * Identifier-path callees the Mojo runtime can render in template
+   * scope. The relocate pass consults this map to mark matching
+   * calls as template-safe so the surrounding expression stays
+   * inlinable; the SSR template emitter substitutes the JS call
+   * with the registered Perl helper invocation.
+   *
+   * The per-callee arity is read directly off `MOJO_TEMPLATE_PRIMITIVES`
+   * at substitution time, so this exposed shape stays as the
+   * `TemplateAdapter` interface expects (`emit`-only) without
+   * carrying a parallel arity map.
+   */
+  templatePrimitives: TemplatePrimitiveRegistry = MOJO_PRIMITIVE_EMIT_MAP
 
   private componentName: string = ''
   private options: Required<MojoAdapterOptions>
@@ -661,6 +725,16 @@ export class MojoAdapter extends BaseAdapter {
       return this.convertHigherOrderExpr(expr)
     }
 
+    // templatePrimitives substitution (#1189): rewrite identifier-path
+    // calls like `JSON.stringify(props.config)` / `Math.floor(x)` to
+    // their Mojo helper-call form (`bf->json($config)` etc.) BEFORE
+    // the regex pipeline below runs. Using the AST avoids fighting
+    // the existing regex transforms — a registered call's args go
+    // back through `convertExpressionToPerl` recursively so prop
+    // refs / signal calls / member access in the args still get the
+    // standard transforms.
+    expr = this.rewriteTemplatePrimitives(expr)
+
     // Signal getter calls: count() → $count
     let result = expr.replace(/\b([a-z_]\w*)\(\)/g, (_, name) => `$${name}`)
 
@@ -714,6 +788,86 @@ export class MojoAdapter extends BaseAdapter {
 
     return result
   }
+  /**
+   * Walk the parsed AST of `expr` and substitute each registered
+   * primitive call (e.g. `JSON.stringify(props.config)`) with its
+   * Mojo helper-call equivalent (e.g. `bf->json($config)`). All
+   * other shapes round-trip back to source text via
+   * `stringifyParsedExpr`, so the result is still a JS-shaped
+   * string that the existing regex pipeline in
+   * `convertExpressionToPerl` can finish translating.
+   *
+   * Bails out (returns the input unchanged) when:
+   *   - the expression doesn't parse cleanly,
+   *   - no primitive call is found in the AST, or
+   *   - a primitive's arity doesn't match the registered shape
+   *     (BF101 is recorded so the user sees the diagnostic).
+   *
+   * Identifier-path-only matching (#1187 R1) — same constraint the
+   * Go adapter applies in #1188.
+   */
+  private rewriteTemplatePrimitives(expr: string): string {
+    // Common case: no registered primitive substring — skip the
+    // TS parser entirely. `parseExpression` invokes
+    // `ts.createSourceFile`, which is the dominant compile-hot-path
+    // cost added by this PR.
+    if (!PRIMITIVE_SUBSTRING_RE.test(expr)) return expr
+
+    const parsed = parseExpression(expr)
+    if (parsed.kind === 'unsupported') return expr
+
+    let mutated = false
+    const walk = (n: ParsedExpr): ParsedExpr => {
+      if (n.kind === 'call') {
+        const path = identifierPath(n.callee)
+        const spec = path ? MOJO_TEMPLATE_PRIMITIVES[path] : undefined
+        if (path && spec) {
+          if (n.args.length !== spec.arity) {
+            this.errors.push({
+              code: 'BF101',
+              severity: 'error',
+              message: `templatePrimitive '${path}' expects ${spec.arity} arg(s), got ${n.args.length}`,
+              loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+              suggestion: {
+                message: `Call '${path}' with exactly ${spec.arity} argument(s), or wrap the JSX expression in /* @client */ to defer evaluation.`,
+              },
+            })
+            return { kind: 'call', callee: walk(n.callee), args: n.args.map(walk) }
+          }
+          // Render each arg through the AST-aware sub-pipeline:
+          // walk for nested primitive substitution, then pass the
+          // resulting AST node directly to convertExpressionToPerl
+          // via stringification. The substring pre-check above
+          // guards against re-parsing strings that don't carry a
+          // primitive, so the recursive cost stays bounded.
+          const renderedArgs = n.args.map(a => this.convertExpressionToPerl(stringifyParsedExpr(walk(a))))
+          mutated = true
+          return { kind: 'identifier', name: spec.emit(renderedArgs) }
+        }
+      }
+      switch (n.kind) {
+        case 'call':
+          return { kind: 'call', callee: walk(n.callee), args: n.args.map(walk) }
+        case 'member':
+          return { kind: 'member', object: walk(n.object), property: n.property, computed: n.computed }
+        case 'binary':
+          return { kind: 'binary', op: n.op, left: walk(n.left), right: walk(n.right) }
+        case 'unary':
+          return { kind: 'unary', op: n.op, argument: walk(n.argument) }
+        case 'logical':
+          return { kind: 'logical', op: n.op, left: walk(n.left), right: walk(n.right) }
+        case 'conditional':
+          return { kind: 'conditional', test: walk(n.test), consequent: walk(n.consequent), alternate: walk(n.alternate) }
+        default:
+          return n
+      }
+    }
+
+    const transformed = walk(parsed)
+    if (!mutated) return expr
+    return stringifyParsedExpr(transformed)
+  }
+
   /**
    * Convert expressions containing higher-order array methods to Perl.
    * Parses the full expression as AST and renders recursively.

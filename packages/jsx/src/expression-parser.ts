@@ -679,3 +679,72 @@ export function exprToString(expr: ParsedExpr): string {
       return `[UNSUPPORTED: ${expr.raw}]`
   }
 }
+
+/**
+ * Round-trip a ParsedExpr back to JS source text. Unlike `exprToString`
+ * (which is a debug formatter), this aims for lossless re-parsing:
+ * string literals are JSON-escaped, computed-member keys preserve
+ * their quoted form, and unsupported nodes pass through their raw
+ * source. Used by adapter-side AST rewrites (templatePrimitives
+ * substitution, etc.) where the result must be re-fed into a
+ * downstream conversion pipeline.
+ */
+export function stringifyParsedExpr(expr: ParsedExpr): string {
+  switch (expr.kind) {
+    case 'identifier':
+      return expr.name
+    case 'literal':
+      if (expr.literalType === 'string') return JSON.stringify(expr.value)
+      if (expr.literalType === 'null') return 'null'
+      return String(expr.value)
+    case 'call':
+      return `${stringifyParsedExpr(expr.callee)}(${expr.args.map(stringifyParsedExpr).join(', ')})`
+    case 'member': {
+      const obj = stringifyParsedExpr(expr.object)
+      if (!expr.computed) return `${obj}.${expr.property}`
+      // Numeric indices round-trip verbatim (`arr[0]`); string keys
+      // need quoting so `obj['key']` doesn't degrade to `obj[key]`
+      // (a bare-identifier lookup with different semantics).
+      const key = /^-?\d+$/.test(expr.property)
+        ? expr.property
+        : JSON.stringify(expr.property)
+      return `${obj}[${key}]`
+    }
+    case 'binary':
+      return `${stringifyParsedExpr(expr.left)} ${expr.op} ${stringifyParsedExpr(expr.right)}`
+    case 'unary':
+      return `${expr.op}${stringifyParsedExpr(expr.argument)}`
+    case 'logical':
+      return `${stringifyParsedExpr(expr.left)} ${expr.op} ${stringifyParsedExpr(expr.right)}`
+    case 'conditional':
+      return `${stringifyParsedExpr(expr.test)} ? ${stringifyParsedExpr(expr.consequent)} : ${stringifyParsedExpr(expr.alternate)}`
+    case 'template-literal':
+      return '`' + expr.parts.map(p =>
+        p.type === 'string' ? p.value : `\${${stringifyParsedExpr(p.expr)}}`
+      ).join('') + '`'
+    case 'arrow-fn':
+      return `${expr.param} => ${stringifyParsedExpr(expr.body)}`
+    case 'higher-order':
+      return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.param} => ${stringifyParsedExpr(expr.predicate)})`
+    case 'unsupported':
+      return expr.raw
+  }
+}
+
+/**
+ * Extract the textual identifier path from a parsed expression's
+ * callee — `{kind:'identifier', name:'String'}` → `"String"`,
+ * `{kind:'member', object:{kind:'identifier', name:'JSON'},
+ * property:'stringify'}` → `"JSON.stringify"`. Returns `null` for
+ * any other callee shape (call result, computed member, etc.) so
+ * adapter `templatePrimitives` registries can match identifier
+ * paths exclusively (#1187 R1).
+ */
+export function identifierPath(callee: ParsedExpr): string | null {
+  if (callee.kind === 'identifier') return callee.name
+  if (callee.kind === 'member' && !callee.computed) {
+    const head = identifierPath(callee.object)
+    return head ? `${head}.${callee.property}` : null
+  }
+  return null
+}

@@ -28,7 +28,7 @@ import type {
   IRAsync,
   TemplatePrimitiveRegistry,
 } from '@barefootjs/jsx'
-import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr, parseExpression, isSupported } from '@barefootjs/jsx'
+import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBooleanAttr, parseExpression, isSupported, identifierPath } from '@barefootjs/jsx'
 
 /**
  * Extended nested component info that tracks whether the component
@@ -36,24 +36,6 @@ import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, isBoolean
  */
 interface NestedComponentInfo extends IRLoopChildComponent {
   isDynamic: boolean
-}
-
-/**
- * Extract the textual identifier path from a parsed expression's
- * callee — `{kind:'identifier', name:'String'}` → `"String"`,
- * `{kind:'member', object:{kind:'identifier', name:'JSON'},
- * property:'stringify'}` → `"JSON.stringify"`. Returns `null` for
- * any other callee shape (call result, computed member, etc.) — the
- * `templatePrimitives` registry only matches identifier paths
- * (#1187 R1).
- */
-function identifierPath(callee: ParsedExpr): string | null {
-  if (callee.kind === 'identifier') return callee.name
-  if (callee.kind === 'member' && !callee.computed) {
-    const head = identifierPath(callee.object)
-    return head ? `${head}.${callee.property}` : null
-  }
-  return null
 }
 
 export interface GoTemplateAdapterOptions {

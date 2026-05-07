@@ -41,13 +41,19 @@ runAdapterConformanceTests({
     'return-nullish-coalescing',
     'return-map',
   ],
-  // Mojo's template runtime is Perl's Mojolicious — the adapter has no
-  // `templatePrimitives` registered yet (#1189). Every positive-
-  // inlining case stays skipped until that PR. Once landed, entries
-  // come off this set and the conformance signal lights up.
+  // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
+  // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
+  // cases stay skipped because the V1 registry is identifier-path-
+  // only and explicit:
+  //   - `USER_IMPORT_VIA_CONST` — a bespoke user import isn't in
+  //     the registry and can't be rendered server-side without
+  //     user-supplied helper mappings.
+  //   - `NO_DOUBLE_REWRITE_OF_PROPS_OBJECT` — uses `customSerialize`
+  //     too, same reason.
+  // Adding new entries to `templatePrimitives` should narrow this
+  // skip set; see `MOJO_TEMPLATE_PRIMITIVES` in `mojo-adapter.ts`
+  // for the full V1 surface.
   skipTemplatePrimitives: new Set([
-    TemplatePrimitiveCaseId.JSON_STRINGIFY_VIA_CONST,
-    TemplatePrimitiveCaseId.MATH_FLOOR_VIA_CONST,
     TemplatePrimitiveCaseId.USER_IMPORT_VIA_CONST,
     TemplatePrimitiveCaseId.NO_DOUBLE_REWRITE_OF_PROPS_OBJECT,
   ]),
@@ -153,5 +159,110 @@ export function Static() {
 }
 `)
     expect(result.template).not.toContain("bf->register_script")
+  })
+})
+
+describe('MojoAdapter - templatePrimitives (#1189)', () => {
+  // The registry fires when the call appears DIRECTLY in a JSX
+  // expression position. Chained-const usage (`const j =
+  // JSON.stringify(...); <div data-x={j}>`) routes through the
+  // adapter's own const-resolution path; the conformance test for
+  // that shape inspects the CLIENT JS, where the call IS inlined
+  // (relocate accepts via the registry's boolean-acceptance side).
+
+  test('JSON.stringify(props.x) emits bf->json($x) in SSR template', () => {
+    const result = compileAndGenerate(`
+'use client'
+export function Foo(props: { config: object }) {
+  return <div data-config={JSON.stringify(props.config)}>hi</div>
+}
+`)
+    expect(result.template).toContain('bf->json($config)')
+    expect(result.template).not.toContain('JSON.stringify')
+  })
+
+  test('Math.floor(props.score) emits bf->floor($score) in SSR template', () => {
+    const result = compileAndGenerate(`
+'use client'
+export function Foo(props: { score: number }) {
+  return <div data-rounded={Math.floor(props.score)}>hi</div>
+}
+`)
+    expect(result.template).toContain('bf->floor($score)')
+    expect(result.template).not.toContain('Math.floor')
+  })
+
+  test('Math.ceil / Math.round map to bf->ceil / bf->round', () => {
+    const ceilResult = compileAndGenerate(`
+'use client'
+export function Foo(props: { v: number }) {
+  return <div data-x={Math.ceil(props.v)}>hi</div>
+}
+`)
+    expect(ceilResult.template).toContain('bf->ceil($v)')
+
+    const roundResult = compileAndGenerate(`
+'use client'
+export function Foo(props: { v: number }) {
+  return <div data-x={Math.round(props.v)}>hi</div>
+}
+`)
+    expect(roundResult.template).toContain('bf->round($v)')
+  })
+
+  test('String(props.x) and Number(props.x) emit bf->string / bf->number', () => {
+    const stringResult = compileAndGenerate(`
+'use client'
+export function Foo(props: { v: number }) {
+  return <div data-x={String(props.v)}>hi</div>
+}
+`)
+    expect(stringResult.template).toContain('bf->string($v)')
+
+    const numberResult = compileAndGenerate(`
+'use client'
+export function Foo(props: { v: string }) {
+  return <div data-x={Number(props.v)}>hi</div>
+}
+`)
+    expect(numberResult.template).toContain('bf->number($v)')
+  })
+
+  test('nested primitive call (Math.floor(Number(props.x))) chains correctly', () => {
+    const result = compileAndGenerate(`
+'use client'
+export function Foo(props: { v: string }) {
+  return <div data-x={Math.floor(Number(props.v))}>hi</div>
+}
+`)
+    expect(result.template).toContain('bf->floor(bf->number($v))')
+  })
+
+  test('registry exposes the V1 callee surface', () => {
+    // Pin the V1 surface so a future refactor doesn't accidentally
+    // drop a primitive. New entries are additive — extend this
+    // list rather than replace.
+    const a = new MojoAdapter()
+    const keys = Object.keys(a.templatePrimitives ?? {}).sort()
+    expect(keys).toEqual(['JSON.stringify', 'Math.ceil', 'Math.floor', 'Math.round', 'Number', 'String'])
+  })
+
+  test('unregistered identifier-path callee is NOT accepted', () => {
+    const a = new MojoAdapter()
+    expect(a.templatePrimitives?.['customSerialize']).toBeUndefined()
+  })
+
+  test('wrong-arity primitive call falls back instead of emitting invalid Perl', () => {
+    // V1 emit fns expect 1 arg. A 2-arg `JSON.stringify(x, replacer)`
+    // must not produce `bf->json($x, $replacer)` (which Perl would
+    // accept silently) — the arity gate records BF101 and leaves
+    // the call un-substituted.
+    const result = compileAndGenerate(`
+'use client'
+export function Foo(props: { config: object; replacer: any }) {
+  return <div data-x={JSON.stringify(props.config, props.replacer)}>hi</div>
+}
+`)
+    expect(result.template).not.toContain('bf->json')
   })
 })

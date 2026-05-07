@@ -48,5 +48,8 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/mojolicious' build
 
+      - name: Run Perl unit tests
+        run: cd packages/adapter-mojolicious && prove -lv t/
+
       - name: Run unit tests
         run: bun test packages/adapter-mojolicious
