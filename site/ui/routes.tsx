@@ -77,8 +77,10 @@ import { KbdRefPage } from './pages/components/kbd'
 import { NativeSelectRefPage } from './pages/components/native-select'
 import { SpinnerRefPage } from './pages/components/spinner'
 import { TypographyRefPage } from './pages/components/typography'
-import { XyflowRefPage } from './pages/components/xyflow'
 import { XyflowIntroductionPage } from './pages/xyflow/introduction'
+import { XyflowNodesPage } from './pages/xyflow/nodes'
+import { XyflowEdgesPage } from './pages/xyflow/edges'
+import { XyflowComponentsPage } from './pages/xyflow/components'
 import { ComponentCatalogPage } from './pages/components/catalog'
 
 // Chart pages
@@ -323,14 +325,20 @@ export function createApp() {
     return c.render(<TypographyRefPage />)
   })
 
-  // xyflow reference page
-  app.get('/components/xyflow', (c) => {
-    return c.render(<XyflowRefPage />)
-  })
-
-  // xyflow — introduction (createSignal+SVG pattern, then @barefootjs/xyflow)
+  // xyflow — Introduction, Nodes, Edges, Components. The previous
+  // /components/xyflow reference page is retired; its API tables now
+  // live at /xyflow/components.
   app.get('/xyflow/introduction', (c) => {
     return c.render(<XyflowIntroductionPage />)
+  })
+  app.get('/xyflow/nodes', (c) => {
+    return c.render(<XyflowNodesPage />)
+  })
+  app.get('/xyflow/edges', (c) => {
+    return c.render(<XyflowEdgesPage />)
+  })
+  app.get('/xyflow/components', (c) => {
+    return c.render(<XyflowComponentsPage />)
   })
 
   // Switch reference page

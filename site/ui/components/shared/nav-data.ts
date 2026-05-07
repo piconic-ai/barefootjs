@@ -88,9 +88,11 @@ export const navSections: NavSection[] = [
         title: 'xyflow',
         links: [
           { title: 'Introduction', href: '/xyflow/introduction' },
-          { title: 'Components', href: '/components/xyflow' },
+          { title: 'Nodes', href: '/xyflow/nodes' },
+          { title: 'Edges', href: '/xyflow/edges' },
+          { title: 'Components', href: '/xyflow/components' },
         ],
-        matchPath: (p) => p.startsWith('/xyflow/') || p === '/components/xyflow',
+        matchPath: (p) => p.startsWith('/xyflow/'),
       },
       {
         key: 'blocks',

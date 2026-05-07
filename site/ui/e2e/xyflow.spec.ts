@@ -19,7 +19,7 @@ function firstScope(page: import('@playwright/test').Page, selector: string): Lo
 
 test.describe('xyflow Reference Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/components/xyflow')
+    await page.goto('/xyflow/components')
   })
 
   // ------------------------------------------------------------
