@@ -16,10 +16,11 @@
 // `injectDefaultStyles` runs idempotently on first call, so multiple
 // `<Flow>` instances on the same page share one `<style id="bf-flow-styles">`.
 
-import { onCleanup, untrack } from '@barefootjs/client'
+import { createEffect, onCleanup, untrack } from '@barefootjs/client'
 import { PanOnScrollMode, XYPanZoom } from '@xyflow/system'
 import type { Transform, Viewport } from '@xyflow/system'
 import { INFINITE_EXTENT } from './constants'
+import { computeEdgePosition, getEdgePath } from './edge-path'
 import { setupKeyboardHandlers, setupSelectionRectangle } from './selection'
 import type { FlowProps, InternalFlowStore, NodeBase, EdgeBase } from './types'
 
@@ -291,6 +292,42 @@ export function attachFlowSubsystems<
     el.removeEventListener('pointermove', onNodePointerMove)
     el.removeEventListener('pointerup', onNodePointerUp)
     el.removeEventListener('pointercancel', onNodePointerUp)
+  })
+
+  // Edge path keep-in-sync. The SimpleEdge component owns a memo over
+  // `pathD()` that should re-run on `positionEpoch()` / `nodes()`
+  // changes, but barefoot's signal dedupe (Object.is on the cached
+  // string) plus the fact that node measurement and drag mutate
+  // `internal.measured` / `internal.positionAbsolute` *in place*
+  // (without producing a fresh wrapper object the lookup signal
+  // notices) means the edge's `d` attribute can stick at its first
+  // computed value. Walk the SVG edges from a top-level effect that
+  // tracks `positionEpoch` + `nodes` / `edges` and write `d`
+  // directly — this is the load-bearing path for both initial measure
+  // and drag.
+  createEffect(() => {
+    store.positionEpoch()
+    const currentEdges = store.edges()
+    store.nodes()
+    const lookup = store.nodeLookup()
+    const edgesSvg = el.querySelector('.bf-flow__edges')
+    if (!edgesSvg) return
+    for (const edge of currentEdges) {
+      const sourceNode = lookup.get(edge.source)
+      const targetNode = lookup.get(edge.target)
+      if (!sourceNode || !targetNode) continue
+      const pos = computeEdgePosition(edge, sourceNode, targetNode)
+      if (!pos) continue
+      const result = getEdgePath(edge, pos)
+      if (!result) continue
+      const d = result[0]
+      const paths = edgesSvg.querySelectorAll<SVGPathElement>(
+        `path[data-id="${edge.id}"], path[data-hit-id="${edge.id}"]`,
+      )
+      for (const p of paths) {
+        if (p.getAttribute('d') !== d) p.setAttribute('d', d)
+      }
+    }
   })
 
   // onInit lifecycle callback fires once the subsystems are wired and
