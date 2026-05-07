@@ -216,7 +216,7 @@ interface PieTooltipProps {
 function ChartContainer(props: ChartContainerProps) {
   const handleMount = (el: HTMLElement) => {
     applyChartCSSVariables(el, props.config ?? {})
-    el.style.color = 'hsl(var(--foreground))'
+    el.style.color = 'var(--foreground)'
   }
 
   return (
@@ -605,10 +605,14 @@ function YAxis(props: YAxisProps) {
 // Shared tooltip CSS — kept in one constant so the four tooltip variants stay
 // visually consistent. The HTML body is rendered inside a `<foreignObject>`
 // so plain HTML semantics (auto-escaping, position: absolute) apply.
+// Token values are OKLCH (e.g. `--popover: oklch(...)`), so reference the
+// variables directly. Wrapping them in `hsl(...)` produces invalid CSS and
+// silently strips the background — that's how the tooltip ended up rendering
+// transparent against bars/lines.
 const CHART_TOOLTIP_BODY_STYLE =
   'position:absolute;pointer-events:none;transition:opacity 150ms;' +
-  'background-color:hsl(var(--popover));color:hsl(var(--popover-foreground));' +
-  'border:1px solid hsl(var(--border));border-radius:6px;padding:8px 12px;' +
+  'background-color:var(--popover);color:var(--popover-foreground);' +
+  'border:1px solid var(--border);border-radius:6px;padding:8px 12px;' +
   'font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:50;white-space:nowrap'
 
 interface TooltipRow {
