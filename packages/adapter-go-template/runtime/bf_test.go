@@ -2,6 +2,7 @@ package bf
 
 import (
 	"html/template"
+	"math"
 	"testing"
 )
 
@@ -614,6 +615,159 @@ func TestSort_NonMutating(t *testing.T) {
 	// Original slice should be unchanged
 	if items[0].Name != "C" {
 		t.Errorf("Sort mutated original: first = %v, want C", items[0].Name)
+	}
+}
+
+// =============================================================================
+// JS-compat callees (#1188): bf_json / bf_string / bf_number /
+// bf_floor / bf_ceil / bf_round / bf_replace.
+// =============================================================================
+
+func TestJSON(t *testing.T) {
+	cases := []struct {
+		name string
+		in   any
+		want string
+	}{
+		{"map", map[string]any{"a": 1}, `{"a":1}`},
+		{"slice", []any{1, 2, 3}, `[1,2,3]`},
+		{"string", "hi", `"hi"`},
+		{"nil", nil, "null"},
+		// JS-parity carve-out: top-level NaN / ±Inf → "null".
+		{"NaN", math.NaN(), "null"},
+		{"+Inf", math.Inf(1), "null"},
+		{"-Inf", math.Inf(-1), "null"},
+	}
+	for _, c := range cases {
+		got, err := JSON(c.in)
+		if err != nil {
+			t.Errorf("JSON(%s) unexpected err: %v", c.name, err)
+		}
+		if got != c.want {
+			t.Errorf("JSON(%s) = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestJSONPropagatesError(t *testing.T) {
+	// Cyclic / unsupported values must surface as a real error so
+	// `template.Execute` aborts loudly. Channels aren't marshallable.
+	_, err := JSON(make(chan int))
+	if err == nil {
+		t.Errorf("JSON(chan) expected error, got nil")
+	}
+}
+
+// Same loud-failure policy as `JSON`: any helper that serialises
+// user-supplied data through `encoding/json` must propagate
+// marshal errors so `template.Execute` aborts loudly instead of
+// silently dropping content. Pre-fix, both helpers returned an
+// empty value on error (the same #1187 silent-data-loss class
+// `JSON` was changed to avoid).
+
+func TestBfPropsAttrPropagatesError(t *testing.T) {
+	// Use a struct whose root field is a chan to defeat marshalling
+	// while still satisfying `getBoolField(props, "BfIsRoot")`.
+	type bad struct {
+		BfIsRoot bool
+		Ch       chan int
+	}
+	_, err := BfPropsAttr(bad{BfIsRoot: true, Ch: make(chan int)})
+	if err == nil {
+		t.Errorf("BfPropsAttr(bad props) expected error, got nil")
+	}
+	// Non-root components must still succeed (bf-p is suppressed by design).
+	got, err := BfPropsAttr(bad{BfIsRoot: false})
+	if err != nil {
+		t.Errorf("BfPropsAttr(non-root) unexpected err: %v", err)
+	}
+	if got != "" {
+		t.Errorf("BfPropsAttr(non-root) = %q, want empty", got)
+	}
+}
+
+func TestScopeCommentPropagatesError(t *testing.T) {
+	type bad struct {
+		BfIsRoot bool
+		ScopeID  string
+		Ch       chan int
+	}
+	_, err := ScopeComment(bad{BfIsRoot: true, ScopeID: "x", Ch: make(chan int)})
+	if err == nil {
+		t.Errorf("ScopeComment(bad props) expected error, got nil")
+	}
+	// Non-root case: no JSON marshal happens, so no error.
+	if _, err := ScopeComment(bad{BfIsRoot: false, ScopeID: "x"}); err != nil {
+		t.Errorf("ScopeComment(non-root) unexpected err: %v", err)
+	}
+}
+
+func TestString(t *testing.T) {
+	if got := String(42); got != "42" {
+		t.Errorf("String(42) = %v, want 42", got)
+	}
+	if got := String("hi"); got != "hi" {
+		t.Errorf("String(hi) = %v, want hi", got)
+	}
+	if got := String(true); got != "true" {
+		t.Errorf("String(true) = %v, want true", got)
+	}
+	if got := String(nil); got != "" {
+		t.Errorf("String(nil) = %q, want empty", got)
+	}
+}
+
+func TestNumber(t *testing.T) {
+	if got := Number("3.14"); got != 3.14 {
+		t.Errorf("Number(3.14 string) = %v, want 3.14", got)
+	}
+	if got := Number(42); got != 42.0 {
+		t.Errorf("Number(int 42) = %v, want 42", got)
+	}
+	if got := Number(true); got != 1.0 {
+		t.Errorf("Number(true) = %v, want 1", got)
+	}
+	if got := Number(false); got != 0.0 {
+		t.Errorf("Number(false) = %v, want 0", got)
+	}
+	// JS `Number("garbage")` and `Number(null)` both return NaN —
+	// match that so chained primitives (e.g. `Math.floor`) stay
+	// JS-compat.
+	if got := Number("not a number"); !math.IsNaN(got) {
+		t.Errorf("Number(garbage) = %v, want NaN", got)
+	}
+	if got := Number(nil); !math.IsNaN(got) {
+		t.Errorf("Number(nil) = %v, want NaN", got)
+	}
+}
+
+func TestFloor(t *testing.T) {
+	if got := Floor(3.7); got != 3.0 {
+		t.Errorf("Floor(3.7) = %v, want 3", got)
+	}
+	if got := Floor(-3.2); got != -4.0 {
+		t.Errorf("Floor(-3.2) = %v, want -4", got)
+	}
+	if got := Floor("4.9"); got != 4.0 {
+		t.Errorf("Floor(\"4.9\") = %v, want 4", got)
+	}
+}
+
+func TestCeil(t *testing.T) {
+	if got := Ceil(3.1); got != 4.0 {
+		t.Errorf("Ceil(3.1) = %v, want 4", got)
+	}
+	if got := Ceil(-3.7); got != -3.0 {
+		t.Errorf("Ceil(-3.7) = %v, want -3", got)
+	}
+}
+
+func TestRound(t *testing.T) {
+	if got := Round(3.5); got != 4.0 {
+		t.Errorf("Round(3.5) = %v, want 4", got)
+	}
+	if got := Round(3.4); got != 3.0 {
+		t.Errorf("Round(3.4) = %v, want 3", got)
 	}
 }
 

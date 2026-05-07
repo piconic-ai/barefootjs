@@ -46,7 +46,15 @@ export { generateModuleExports, extractFunctionParams, formatParamWithType, find
 
 // Adapters
 export { BaseAdapter } from './adapters/interface'
-export type { TemplateAdapter, AdapterOutput, AdapterGenerateOptions, TemplateSections } from './adapters/interface'
+export type {
+  TemplateAdapter,
+  AdapterOutput,
+  AdapterGenerateOptions,
+  TemplateSections,
+  TemplatePrimitiveEmit,
+  TemplatePrimitiveRegistry,
+  TemplateCallAcceptor,
+} from './adapters/interface'
 export { JsxAdapter } from './adapters/jsx-adapter'
 export type { JsxAdapterConfig } from './adapters/jsx-adapter'
 
