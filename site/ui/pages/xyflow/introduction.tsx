@@ -85,16 +85,11 @@ import {
 } from "@/components/ui/xyflow"
 
 const nodes = [
-  { id: "1", position: { x: 250, y: 30 },  data: { label: "Input" } },
-  { id: "2", position: { x: 100, y: 180 }, data: { label: "Transform" } },
-  { id: "3", position: { x: 450, y: 180 }, data: { label: "Validate" } },
-  { id: "4", position: { x: 250, y: 330 }, data: { label: "Output" } },
+  { id: "a", position: { x: 80,  y: 30 },  data: { label: "Hello" } },
+  { id: "b", position: { x: 320, y: 180 }, data: { label: "World" } },
 ]
 const edges = [
-  { id: "e1-2", source: "1", target: "2" },
-  { id: "e1-3", source: "1", target: "3" },
-  { id: "e2-4", source: "2", target: "4" },
-  { id: "e3-4", source: "3", target: "4" },
+  { id: "a-b", source: "a", target: "b" },
 ]
 
 export function MyFlow() {
@@ -218,8 +213,8 @@ export function XyflowIntroductionPage() {
         <Section id="quick-start" title="Quick Start">
           <div className="prose prose-invert max-w-none">
             <p className="text-muted-foreground">
-              Here is what we are building — a flow with four nodes, four edges, a dotted background, and
-              the zoom controls. The rest of the page walks through it step by step.
+              Here is what we are building — two draggable nodes connected by an edge, on a dotted background
+              with zoom controls. The rest of the page walks through it step by step.
             </p>
           </div>
 

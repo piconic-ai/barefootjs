@@ -194,6 +194,105 @@ export function attachFlowSubsystems<
     el.removeEventListener('mousemove', onMouseMove)
   })
 
+  // Delegated single-node drag. The cutover-step C4 XYDrag integration
+  // will eventually replace this with multi-select / snap / extent
+  // support, but a Flow that does not let users move nodes is a poor
+  // default — wire a minimal pointer-paced handler so the JSX renderer
+  // is interactive out of the box.
+  let dragState: {
+    nodeId: string
+    pointerId: number
+    startClientX: number
+    startClientY: number
+    startNodeX: number
+    startNodeY: number
+    captureEl: HTMLElement
+  } | null = null
+
+  const onNodePointerDown = (event: PointerEvent) => {
+    if (event.button !== 0) return
+    if (!untrack(store.nodesDraggable)) return
+    const target = event.target as HTMLElement | null
+    if (!target) return
+    if (target.closest('.bf-flow__handle')) return
+    if (target.closest('.nodrag')) return
+    const nodeEl = target.closest<HTMLElement>('.bf-flow__node')
+    if (!nodeEl || !el.contains(nodeEl)) return
+    const nodeId = nodeEl.dataset.id
+    if (!nodeId) return
+    const internal = untrack(store.nodeLookup).get(nodeId)
+    if (!internal) return
+
+    event.stopPropagation()
+
+    dragState = {
+      nodeId,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startNodeX: internal.position.x,
+      startNodeY: internal.position.y,
+      captureEl: nodeEl,
+    }
+    nodeEl.setPointerCapture?.(event.pointerId)
+    store.setDragging(true)
+  }
+  // Push the new position straight onto the nodes signal so JSX
+  // consumers (NodeWrapper's `transform` memo, edge path memos) see a
+  // fresh node object each frame. `updateNodePositions` alone only
+  // mutates the `internals.positionAbsolute` reference and bumps
+  // `positionEpoch`, but barefoot signals dedupe on Object.is — the
+  // downstream `transform` memo therefore wouldn't re-render.
+  const writeDragPosition = (nodeId: string, x: number, y: number, isDragging: boolean) => {
+    const currentNodes = untrack(store.nodes)
+    let changed = false
+    const next = currentNodes.map((n) => {
+      if (n.id !== nodeId) return n
+      const prev = n.position
+      if (prev.x === x && prev.y === y) return n
+      changed = true
+      return { ...n, position: { x, y } }
+    })
+    if (changed) store.setNodes(next)
+    store.setDragging(isDragging)
+  }
+
+  const onNodePointerMove = (event: PointerEvent) => {
+    if (!dragState || event.pointerId !== dragState.pointerId) return
+    const zoom = untrack(store.viewport).zoom || 1
+    const dx = (event.clientX - dragState.startClientX) / zoom
+    const dy = (event.clientY - dragState.startClientY) / zoom
+    const nextX = dragState.startNodeX + dx
+    const nextY = dragState.startNodeY + dy
+    writeDragPosition(dragState.nodeId, nextX, nextY, true)
+  }
+  const onNodePointerUp = (event: PointerEvent) => {
+    if (!dragState || event.pointerId !== dragState.pointerId) return
+    const captureEl = dragState.captureEl
+    captureEl.releasePointerCapture?.(event.pointerId)
+    const finalNodeId = dragState.nodeId
+    dragState = null
+    // Final commit clears the dragging flag without changing the
+    // position; reuse writeDragPosition for the same code path.
+    const lookup = untrack(store.nodeLookup)
+    const internal = lookup.get(finalNodeId)
+    if (internal) {
+      writeDragPosition(finalNodeId, internal.position.x, internal.position.y, false)
+    } else {
+      store.setDragging(false)
+    }
+  }
+  el.addEventListener('pointerdown', onNodePointerDown)
+  el.addEventListener('pointermove', onNodePointerMove)
+  el.addEventListener('pointerup', onNodePointerUp)
+  el.addEventListener('pointercancel', onNodePointerUp)
+  onCleanup(() => {
+    el.removeEventListener('pointerdown', onNodePointerDown)
+    el.removeEventListener('pointermove', onNodePointerMove)
+    el.removeEventListener('pointerup', onNodePointerUp)
+    el.removeEventListener('pointercancel', onNodePointerUp)
+  })
+
   // onInit lifecycle callback fires once the subsystems are wired and
   // the store is ready. Mirrors initFlow's existing semantics.
   if (typeof props.onInit === 'function') {
@@ -250,10 +349,15 @@ const DEFAULT_STYLES = `
   pointer-events: all;
   z-index: 1;
 }
-.bf-flow__handle[data-handlepos="top"]    { top: 0;    left: 50%; transform: translate(-50%, -50%); }
-.bf-flow__handle[data-handlepos="bottom"] { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
-.bf-flow__handle[data-handlepos="left"]   { left: 0;   top: 50%;  transform: translate(-50%, -50%); }
-.bf-flow__handle[data-handlepos="right"]  { right: 0;  top: 50%;  transform: translate(50%, -50%); }
+/* Negative offset compensates for the node's 2px border:
+   .bf-flow__node uses border-box, but absolutely-positioned children
+   resolve against the padding box, so top/left:0 lands inside the
+   border. Pulling each side by -2px snaps the handle's transform-
+   centred dot to the visible outer edge of the node. */
+.bf-flow__handle[data-handlepos="top"]    { top: -2px;    left: 50%; transform: translate(-50%, -50%); }
+.bf-flow__handle[data-handlepos="bottom"] { bottom: -2px; left: 50%; transform: translate(-50%, 50%); }
+.bf-flow__handle[data-handlepos="left"]   { left: -2px;   top: 50%;  transform: translate(-50%, -50%); }
+.bf-flow__handle[data-handlepos="right"]  { right: -2px;  top: 50%;  transform: translate(50%, -50%); }
 .bf-flow__handle:hover { width: 10px; height: 10px; }
 .bf-flow__handle.valid   { background-color: #22c55e; }
 .bf-flow__handle.invalid { background-color: #ef4444; }
