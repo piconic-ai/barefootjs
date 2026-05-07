@@ -787,12 +787,34 @@ export interface FlowComponentProps<
 }
 
 /**
- * Dev-only one-shot warning for the case where neither `renderNode` nor
- * `nodeTypes` is provided. The default fallback (`String(label ?? id)`) is
- * useful for trivial demos but silently swallows configuration mistakes
- * on real graphs — emit once so the misconfiguration shows up in console.
+ * Default node body used when neither `renderNode` nor `nodeTypes` is
+ * provided. Mounts a styled card-like box with left/right connection
+ * handles so:
+ *   1. Nodes have a sensible visual without consumers wiring up CSS.
+ *   2. Edges resolve to the proper handle bounds (`@xyflow/system`'s
+ *      `getEdgePosition` strict path) instead of the centered
+ *      bottom→top fallback in `computeEdgePosition`, which produces
+ *      curling beziers on horizontal layouts.
+ *
+ * Consumers can still opt out with `renderNode` / `nodeTypes` for full
+ * customization.
  */
-let __renderConfigWarned = false
+const DEFAULT_NODE_BODY_STYLE =
+  'position: relative; min-width: 80px; padding: 6px 16px;' +
+  'border: 1px solid var(--border); border-radius: 6px;' +
+  'background: var(--card); color: var(--card-foreground);' +
+  'font-size: 14px; font-weight: 500; text-align: center;' +
+  'box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);'
+
+function DefaultNodeBody(props: { nodeId: string; label: string }) {
+  return (
+    <div style={DEFAULT_NODE_BODY_STYLE}>
+      <Handle type="target" position={Position.Left} nodeId={props.nodeId} />
+      {props.label}
+      <Handle type="source" position={Position.Right} nodeId={props.nodeId} />
+    </div>
+  )
+}
 
 /**
  * Per-node bridge for the `nodeTypes` map dispatch path.
@@ -948,15 +970,11 @@ export function Flow<
 
   // The dispatch JSX has to live at the top-level of Flow's JSX return
   // (the barefoot compiler doesn't transform JSX nested inside helper
-  // arrow functions), so we resolve to a flag here and key off it below.
-  // Bridge-vs-renderNode branching reads `props.renderNode` /
-  // `props.nodeTypes` per node, which is what we want.
-  if (!props.renderNode && !props.nodeTypes && !__renderConfigWarned) {
-    __renderConfigWarned = true
-    console.warn(
-      '[bf/xyflow] <Flow> received neither `renderNode` nor `nodeTypes`; nodes will fall back to `String(data.label ?? id)`. Pass one of the two to render real node bodies.',
-    )
-  }
+  // arrow functions). Bridge-vs-renderNode branching reads
+  // `props.renderNode` / `props.nodeTypes` per node, which is what we
+  // want. When neither is provided we mount `<DefaultNodeBody>`, which
+  // gives nodes a styled card with left/right handles so edges can
+  // resolve through `@xyflow/system`'s strict path.
 
   // Pan/zoom transform memo. Re-runs only when viewport changes.
   const viewportTransform = createMemo(() => {
@@ -1009,7 +1027,10 @@ export function Flow<
                     nodeTypes={props.nodeTypes as Record<string, (this: HTMLElement, props: unknown) => void>}
                   />
                 ) : (
-                  String((node.data as { label?: unknown })?.label ?? node.id)
+                  <DefaultNodeBody
+                    nodeId={node.id}
+                    label={String((node.data as { label?: unknown })?.label ?? node.id)}
+                  />
                 )}
               </NodeWrapper>
             ))}
