@@ -4,14 +4,13 @@
  * Renders the JSX-native `<Flow>` graph editor with the four overlays
  * (`<Background>` / `<Controls>` / `<MiniMap>`).
  *
- * Why no `renderNode` callbacks live in this file: the barefoot
- * compiler does not transform JSX nested inside arrow-function
- * callbacks, so `renderNode={(n) => <div>…</div>}` ends up as raw JSX
- * in the emitted client bundle and the whole module fails to parse in
- * the browser. To keep the bundle hydratable we lean on Flow's default
- * node body (target=Top / source=Bottom + `data.label`) for every demo
- * here. Custom-body / custom-handle examples on the docs pages stay
- * code-sample-only.
+ * The custom-body / custom-handle demos below still return HTML strings
+ * from `renderNode` rather than inline JSX. This file predates the
+ * compiler fix in #1211 (which now hoists inline `(n) => <div/>`
+ * arrows into synthesized client components); the string-returning
+ * helpers are kept as-is to preserve the existing visual snapshots
+ * until a follow-up rewrites them in inline JSX with end-to-end
+ * verification.
  */
 
 "use client"
@@ -50,17 +49,12 @@ function escapeHtml(s: string): string {
 
 // Custom-body / custom-handle previews.
 //
-// These demos return an HTML *string* from `renderNode`. The barefoot
-// compiler does not transform JSX nested inside arrow-function
-// callbacks, so the conventional `renderNode={(n) => <div/>}` shape
-// emits raw JSX into the client bundle and parsing fails, taking down
-// every other demo in the same bundle. A function-call shape
-// (`(n) => MyNode(n)`) compiles cleanly but the generated
-// `insert(...)` branch template embeds the result into a template
-// literal — a live HTMLElement stringifies to
-// `[object HTMLDivElement]` and breaks hydration. A string slots in
-// safely on both sides; the trade-off is that the node body loses
-// signal-driven reactivity, which is fine for static docs previews.
+// These demos return an HTML *string* from `renderNode` (the
+// `pillBodyHTML` / `fanBodyHTML` helpers below). The compiler fix in
+// #1211 makes the conventional `renderNode={(n) => <div/>}` shape
+// compile cleanly, but the string-return shape is kept here to preserve
+// the existing visual snapshots; a follow-up will migrate these demos
+// to inline JSX once the new path has bake-in time.
 const customBodyNodes = [
   { id: 'src', position: { x:  80, y: 100 }, data: { label: 'Source' } },
   { id: 'mid', position: { x: 320, y:  80 }, data: { label: 'Pipeline' } },

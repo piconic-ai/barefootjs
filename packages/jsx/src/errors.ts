@@ -66,6 +66,12 @@ export const ErrorCodes = {
   STAGE_INIT_LOCAL_IN_TEMPLATE: 'BF061',
   STAGE_AWAIT_IN_TEMPLATE: 'BF062',
 
+  // Inline JSX-callback synthesis errors (BF080-BF089) — raised by the
+  // preprocess-inline-jsx-callbacks pass (#1211) when an inline JSX-
+  // returning arrow cannot be safely hoisted into a synthesized
+  // module-scope component.
+  INLINE_JSX_CALLBACK_CAPTURE: 'BF080',
+
   // Reactive factory errors (BF110-BF119)
   UNRECOGNIZED_REACTIVE_FACTORY: 'BF110',
 } as const
@@ -130,6 +136,9 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.STAGE_AWAIT_IN_TEMPLATE]:
     'AwaitExpression in template scope. The hydrate-time template lambda is synchronous; awaiting here would hang first render. Move the await into a server-side handler and pass the resolved value as a prop.',
+
+  [ErrorCodes.INLINE_JSX_CALLBACK_CAPTURE]:
+    "Inline JSX-returning arrow function captures a non-module identifier. Extract the callback into a top-level 'use client' component (e.g. `function MyNode(n) { return <div/> }` then `renderNode={MyNode}`) or pass captured values via component props.",
 
   [ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY]:
     'Tuple destructuring of a non-reactive factory call. The compiler only recognizes createSignal / createMemo calls and same-file helpers that wrap them with a single `return [a, b]` exit.',

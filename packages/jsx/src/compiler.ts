@@ -20,6 +20,7 @@ import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } f
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports'
 import { applyCssLayerPrefix } from './css-layer-prefixer'
+import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks'
 
 /**
  * Extended compile options with required adapter
@@ -499,16 +500,28 @@ export function compileJSX(
   const files: FileOutput[] = []
   const errors: CompileResult['errors'] = []
 
+  // Inline JSX-callback preprocessing (#1211): hoist
+  // `renderNode={(n) => <div/>}` style arrows into synthesized
+  // `'use client'` components before downstream parsing. Without this
+  // the arrows survive as raw JSX in the emitted client bundle and
+  // crash the parser.
+  const preprocessed = preprocessInlineJsxCallbacks(source, filePath)
+  errors.push(...preprocessed.errors)
+  if (preprocessed.errors.length > 0) {
+    return { files, errors }
+  }
+  const compileSource = preprocessed.source
+
   // List all exported components
-  const componentNames = listComponentFunctions(source, filePath)
+  const componentNames = listComponentFunctions(compileSource, filePath)
 
   // If multiple components, compile each separately and combine
   if (componentNames.length > 1) {
-    return compileMultipleComponents(source, filePath, componentNames, options)
+    return compileMultipleComponents(compileSource, filePath, componentNames, options)
   }
 
   // Single component flow
-  const ctx = analyzeComponent(source, filePath, undefined, options.program)
+  const ctx = analyzeComponent(compileSource, filePath, undefined, options.program)
 
   if (!ctx.jsxReturn) {
     errors.push(...ctx.errors)  // Only analyzer errors

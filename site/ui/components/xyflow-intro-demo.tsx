@@ -2,10 +2,11 @@
 /**
  * xyflow Introduction Demos
  *
- * Standalone demos for the xyflow Introduction page. Kept in a dedicated
- * file so the Introduction's bundle stays isolated from xyflow-demo.tsx
- * (whose XyflowCustomNodeDemo carries `renderNode` callback JSX the
- * compiler does not transform).
+ * Standalone demos for the xyflow Introduction page. Originally kept in
+ * a dedicated file so the Introduction's bundle was isolated from the
+ * `renderNode` callback JSX in xyflow-demo.tsx that the compiler used
+ * to leave untransformed. The compiler fix in #1211 has eliminated that
+ * crash mode, but the file split is retained for clarity.
  *
  * The demos rely on Flow's default node renderer (DefaultNodeBody),
  * which mounts target=Top / source=Bottom handles so edges flow
