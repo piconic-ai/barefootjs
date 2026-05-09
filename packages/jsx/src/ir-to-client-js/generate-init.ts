@@ -37,6 +37,15 @@ export function generateInitFunction(
   lines.push(MODULE_CONSTANTS_PLACEHOLDER)
   lines.push(`export function init${name}(__scope, ${PROPS_PARAM} = {}) {`)
   lines.push(`  if (!__scope) return`)
+  // `__scopeId` is read once from the scope element so child-component
+  // SSR-finder selectors can anchor on the calling component's full scope
+  // path — see #1220 for the suffix-collision bug. The optional leading
+  // `~` (used when this component itself is rendered as a `__bfChild`)
+  // is stripped: a child's bf-s ends with `${parent.__scopeId}_${slotId}`
+  // in both the `~`-prefixed and unprefixed shapes hono-adapter emits, so
+  // anchoring on the bare scope id makes the precise suffix selector
+  // `[bf-s$="${__scopeId}_<slotId>"]` match either.
+  lines.push(`  const __scopeId = (__scope.getAttribute('bf-s') ?? '').replace(/^~/, '')`)
   lines.push('')
 
   // --- Analysis: one graph, many queries; scope routing as data ---
