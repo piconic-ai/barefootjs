@@ -30,7 +30,7 @@ export type { EdgePathTuple } from './edge-path'
 // `XYPanZoom` (D3-zoom-derived), the selection rectangle owns global
 // pointer capture, connection drag uses `elementFromPoint`, and the
 // node resizer needs raw dimension math.
-export { attachFlowSubsystems } from './flow-subsystems'
+export { attachFlowSubsystems, clampDragPositionToParent } from './flow-subsystems'
 export { attachConnectionHandler, attachReconnectionHandler } from './connection'
 export { initNodeResizer, ResizeControlVariant } from './node-resizer'
 export type {
