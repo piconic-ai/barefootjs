@@ -18,11 +18,53 @@
 
 import { createEffect, onCleanup, untrack } from '@barefootjs/client'
 import { PanOnScrollMode, XYPanZoom } from '@xyflow/system'
-import type { Transform, Viewport } from '@xyflow/system'
+import type { InternalNodeBase, NodeLookup, Transform, Viewport, XYPosition } from '@xyflow/system'
 import { INFINITE_EXTENT } from './constants'
 import { computeEdgePosition, getEdgePath } from './edge-path'
 import { setupKeyboardHandlers, setupSelectionRectangle } from './selection'
 import type { FlowProps, InternalFlowStore, NodeBase, EdgeBase } from './types'
+
+/**
+ * Clamp a child node's drag position so the node's rect stays inside
+ * its parent's rect — implements xyflow's `extent: 'parent'` contract
+ * for the pointer-paced single-node drag handler.
+ *
+ * Operates on the **relative** coordinate the parent-relative model
+ * stores in `userNode.position`: the constraint per axis is
+ * `0 ≤ pos ≤ parentSize − childSize`. Returns the input unchanged when
+ * the node has no `parentId`, isn't `extent: 'parent'`, the parent is
+ * missing, or either node is unmeasured.
+ *
+ * Exposed (non-default-export) so the same primitive can be reused if
+ * the C4 XYDrag integration replaces the inline drag handler — the
+ * extent contract remains the same.
+ */
+export function clampDragPositionToParent(
+  position: XYPosition,
+  nodeId: string,
+  lookup: NodeLookup<InternalNodeBase<NodeBase>>,
+): XYPosition {
+  const internal = lookup.get(nodeId)
+  if (!internal) return position
+  const userNode = internal.internals.userNode as NodeBase & {
+    parentId?: string
+    extent?: 'parent' | unknown
+  }
+  if (!userNode.parentId || userNode.extent !== 'parent') return position
+  const parent = lookup.get(userNode.parentId)
+  if (!parent) return position
+  const myW = internal.measured?.width
+  const myH = internal.measured?.height
+  const pw = parent.measured?.width
+  const ph = parent.measured?.height
+  if (myW == null || myH == null || pw == null || ph == null) return position
+  const maxX = Math.max(0, pw - myW)
+  const maxY = Math.max(0, ph - myH)
+  return {
+    x: Math.min(Math.max(position.x, 0), maxX),
+    y: Math.min(Math.max(position.y, 0), maxY),
+  }
+}
 
 /**
  * Attach all pointer-paced + ResizeObserver-based subsystems to the
@@ -263,9 +305,16 @@ export function attachFlowSubsystems<
     const zoom = untrack(store.viewport).zoom || 1
     const dx = (event.clientX - dragState.startClientX) / zoom
     const dy = (event.clientY - dragState.startClientY) / zoom
-    const nextX = dragState.startNodeX + dx
-    const nextY = dragState.startNodeY + dy
-    writeDragPosition(dragState.nodeId, nextX, nextY, true)
+    // Clamp child nodes that opt in via `extent: 'parent'`. Done in the
+    // relative coordinate the drag handler already manipulates, so the
+    // commit shape (`writeDragPosition` → `setNodes` → `adoptUserNodes`)
+    // stays unchanged.
+    const clamped = clampDragPositionToParent(
+      { x: dragState.startNodeX + dx, y: dragState.startNodeY + dy },
+      dragState.nodeId,
+      untrack(store.nodeLookup),
+    )
+    writeDragPosition(dragState.nodeId, clamped.x, clamped.y, true)
   }
   const onNodePointerUp = (event: PointerEvent) => {
     if (!dragState || event.pointerId !== dragState.pointerId) return
