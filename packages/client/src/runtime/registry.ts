@@ -118,8 +118,9 @@ export function initChild(
  * CSR shape at runtime in one place — so the compiler doesn't need a
  * `mode: 'csr' | 'ssr'` argument for child component emission.
  *
- *   1. SSR: a `[bf-s$="_<slotId>"]` (or `[bf-s^="<name>_"]` when slotId is
- *      null) element exists. Initialise it via initChild and return it.
+ *   1. SSR: a `[bf-s$="${parentScopeId}_<slotId>"]` (or `[bf-s^="<name>_"]`
+ *      when slotId is null) element exists. Initialise it via initChild
+ *      and return it.
  *   2. CSR: a `[data-bf-ph="<slotId|name>"]` placeholder exists. Replace it
  *      with `createComponent(name, props, key)` and return the new element.
  *   3. Neither matches (already initialised on a previous reconcile pass) —
@@ -127,6 +128,13 @@ export function initChild(
  *
  * The returned element is the live component scope element — callers can
  * use it for follow-up effects (e.g. a children-textContent createEffect).
+ *
+ * `parentScopeId` is the calling component's runtime `__scopeId`. When
+ * supplied alongside a `slotId` we anchor the SSR selector to it so a
+ * sibling component sharing the same `_sN` suffix can't be matched (see
+ * #1220 for the synthesized BFInlineJsxCallback collision). Falls back to
+ * the legacy loose suffix selector when omitted, preserving behaviour for
+ * older compiler output and external callers.
  */
 export function upsertChild(
   parent: Element,
@@ -134,10 +142,11 @@ export function upsertChild(
   slotId: string | null,
   props: Record<string, unknown>,
   key?: string | number,
+  parentScopeId?: string,
 ): HTMLElement | null {
   // SSR: scope element is already in the tree.
   const ssrSelector = slotId
-    ? `[bf-s$="_${slotId}"]`
+    ? (parentScopeId ? `[bf-s$="${parentScopeId}_${slotId}"]` : `[bf-s$="_${slotId}"]`)
     : `[bf-s^="~${name}_"], [bf-s^="${name}_"]`
   const ssr = parent.querySelector(ssrSelector) as HTMLElement | null
   if (ssr) {

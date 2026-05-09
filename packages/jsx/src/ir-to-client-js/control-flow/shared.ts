@@ -173,14 +173,30 @@ function emitEventSetup(
   emitListenerBlock(ls, indent, elVar, ev.childSlotId, '__e', ev.eventName, handler, 'dom', bodyIsMultiRoot)
 }
 
-/** Build the component-finder CSS selector for SSR hydration initChild. */
+/**
+ * Build the component-finder selector for SSR hydration initChild.
+ *
+ * Returns a JS source EXPRESSION (not a raw CSS string). Callers embed the
+ * result verbatim in generated code — e.g. `qsa(__el, ${buildCompSelector(c)})`
+ * — without an extra `'...'` wrapper.
+ *
+ * With `slotId`: returns a template-literal expression that interpolates
+ * `__scopeId` at runtime. The bf-s of an inlined child is
+ * `~${parentScopeId}_${slotId}` or `${parentScopeId}_${slotId}` (per
+ * `hono-adapter.ts`'s scope emission), so anchoring the suffix to
+ * `${__scopeId}_${slotId}` matches both shapes precisely. A bare
+ * `[bf-s$="_${slotId}"]` was loose enough that any nested element whose own
+ * scope happened to end in `_${slotId}` would cross-match — see #1220 for
+ * the synthesized BFInlineJsxCallback collision that motivated the change.
+ *
+ * Without `slotId`: returns a single-quoted string literal expression. The
+ * name-prefixed selector is already disambiguated by component name and
+ * never subject to the suffix collision, so no `__scopeId` anchor is needed.
+ */
 export function buildCompSelector(comp: { slotId?: string | null; name: string }): string {
-  // When slotId is available, use suffix-only selector. It is unique within
-  // the parent scope and avoids matching siblings of the same component type
-  // (e.g. two Buttons with different slotIds).
   return comp.slotId
-    ? `[bf-s$="_${comp.slotId}"]`
-    : `[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
+    ? `\`[bf-s$="\${__scopeId}_${comp.slotId}"]\``
+    : `'[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]'`
 }
 
 /**
@@ -237,8 +253,12 @@ export function emitComponentAndEventSetup(
 
     const slotIdLit = comp.slotId ? `'${comp.slotId}'` : 'null'
     const keyProp = comp.props.find(p => p.name === 'key')
-    const keyArg = keyProp ? `, ${wrap(keyProp.value)}` : ''
-    const upsertCall = `${upsertFn}(${elVar}, '${nameForRegistryRef(comp.name)}', ${slotIdLit}, ${propsExpr}${keyArg})`
+    const keyExpr = keyProp ? wrap(keyProp.value) : 'undefined'
+    // `__scopeId` is the calling component's runtime scope id — passed so
+    // upsertChild/upsertChildItem can build a parent-scope-anchored SSR
+    // selector and avoid #1220's cross-binding (a sibling component's
+    // shared `_sN` suffix accidentally matching an unrelated nested scope).
+    const upsertCall = `${upsertFn}(${elVar}, '${nameForRegistryRef(comp.name)}', ${slotIdLit}, ${propsExpr}, ${keyExpr}, __scopeId)`
 
     if (childrenRefsLoop) {
       const wrappedChildren = wrap(rawChildrenExpr!)

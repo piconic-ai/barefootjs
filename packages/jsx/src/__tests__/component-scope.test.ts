@@ -126,3 +126,80 @@ describe('component-scope: file-scoped registry keys for non-exported helpers', 
     expect(a).not.toBe(b)
   })
 })
+
+describe('component-scope: parent-scope-anchored child selectors (#1220)', () => {
+  // Regression: pre-#1220 the compiler emitted `[bf-s$="_sN"]` for child-
+  // component lookup. That suffix was loose enough that any nested element
+  // whose own scope ended in `_sN` (e.g. a synthesized BFInlineJsxCallback
+  // mounted as a sibling branch) would cross-match and `initChild` would
+  // run against the wrong element. The fix anchors the suffix to the
+  // calling component's runtime `__scopeId`, making the suffix a full
+  // scope path that can't collide with unrelated nested scopes.
+
+  test('reactive .map() with child component emits upsertChild threading __scopeId', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      function Bridge(props: { id: string }) {
+        return <div data-id={props.id} />
+      }
+
+      export function Parent() {
+        const [items, _setItems] = createSignal([{ id: 'a' }, { id: 'b' }])
+        return (
+          <div>
+            {items().map(item => (
+              <div key={item.id}><Bridge id={item.id} /></div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const js = clientJs(compileJSX(source, 'Parent.tsx', { adapter }))
+
+    // upsertChild must be emitted with __scopeId as the final argument so
+    // the runtime can build a parent-scope-anchored SSR selector.
+    // (Bridge is a non-exported helper, so its name is file-scoped to
+    // `Bridge__<hash>` — accept either form.)
+    expect(js).toMatch(/upsertChild\(__el,\s*'Bridge(__[a-f0-9]+)?',[^]*?,\s*__scopeId\)/)
+
+    // No plain `[bf-s$="_sN"]` literal — every child-finder selector must
+    // either anchor on `__scopeId` (template literal) or be a name-prefix
+    // match. The two patterns we DO accept:
+    //   `[bf-s$="${__scopeId}_sN"]`     (slotId-anchored, template form)
+    //   '[bf-s^="~Name_"]...'           (name-prefix, no slot)
+    // Anything matching `[bf-s$="_sN"]` as a bare CSS literal is the
+    // pre-#1220 loose form.
+    const looseSuffixSelectors = js.match(/'\[bf-s\$="_s\d+"\]'/g) ?? []
+    expect(looseSuffixSelectors).toEqual([])
+  })
+
+  test('static array .map() with nested child component emits parent-scope-anchored selector', () => {
+    const source = `
+      'use client'
+
+      function Item(props: { v: string }) {
+        return <li>{props.v}</li>
+      }
+
+      export function StaticList() {
+        const items = [{ v: 'a' }, { v: 'b' }]
+        return (
+          <ul>
+            {items.map((item, i) => (
+              <div key={i}><Item v={item.v} /></div>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const js = clientJs(compileJSX(source, 'StaticList.tsx', { adapter }))
+
+    // The static-array codegen emits a `querySelector(...)` that must use
+    // a `__scopeId`-anchored template literal, never a bare suffix string.
+    expect(js).toMatch(/querySelector\(`\[bf-s\$="\$\{__scopeId\}_s\d+"\]`\)/)
+    const looseSuffixSelectors = js.match(/'\[bf-s\$="_s\d+"\]'/g) ?? []
+    expect(looseSuffixSelectors).toEqual([])
+  })
+})

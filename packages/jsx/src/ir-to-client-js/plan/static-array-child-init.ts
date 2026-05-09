@@ -24,7 +24,11 @@ export type PropsExpr = string
 /** A single child-component initialiser inside an inner-loop body. */
 export interface InnerLoopComp {
   componentName: string
-  /** CSS selector for `__innerEl.querySelector(...)`. */
+  /**
+   * JS source expression embedded into `__innerEl.querySelector(<here>)`.
+   * Either a template literal (slotId-anchored, interpolating `__scopeId`)
+   * or a string literal — see `buildCompSelector`.
+   */
   selector: string
   /** Pre-built props object expression. */
   propsExpr: PropsExpr
@@ -36,7 +40,11 @@ export interface SingleCompInitPlan {
   /** Container variable name — e.g. `_s4` (already prefixed). */
   containerVar: string
   componentName: string
-  /** Combined selector: slotId-suffix match OR name-prefix match. */
+  /**
+   * JS source expression embedded into `containerVar.querySelectorAll(<here>)`.
+   * Combined slotId-anchored suffix match (`__scopeId` interpolated at
+   * runtime) OR name-prefix match.
+   */
   childSelector: string
   /** Array expression as written in user code. */
   arrayExpr: string
@@ -60,7 +68,10 @@ export interface OuterNestedInitPlan {
   kind: 'outer-nested'
   containerVar: string
   componentName: string
-  /** CSS selector for `__iterEl.querySelector(...)`. */
+  /**
+   * JS source expression embedded into `__iterEl.querySelector(<here>)`.
+   * See `buildCompSelector`.
+   */
   selector: string
   arrayExpr: string
   param: string

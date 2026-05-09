@@ -85,8 +85,8 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
 function emitNestedInit(lines: string[], indent: string, parentVar: string, nc: NestedComponentInit): void {
   const scopedNc = nameForRegistryRef(nc.componentName)
   if (nc.childrenTextEffect) {
-    lines.push(`${indent}{ const __c = qsa(${parentVar}, '${nc.selector}'); if (__c) { initChild('${scopedNc}', __c, ${nc.propsExpr}); createEffect(() => { const __v = ${nc.childrenTextEffect.wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
+    lines.push(`${indent}{ const __c = qsa(${parentVar}, ${nc.selector}); if (__c) { initChild('${scopedNc}', __c, ${nc.propsExpr}); createEffect(() => { const __v = ${nc.childrenTextEffect.wrappedChildren}; __c.textContent = Array.isArray(__v) ? __v.join('') : String(__v ?? '') }) } }`)
   } else {
-    lines.push(`${indent}{ const __c = qsa(${parentVar}, '${nc.selector}'); if (__c) initChild('${scopedNc}', __c, ${nc.propsExpr}) }`)
+    lines.push(`${indent}{ const __c = qsa(${parentVar}, ${nc.selector}); if (__c) initChild('${scopedNc}', __c, ${nc.propsExpr}) }`)
   }
 }

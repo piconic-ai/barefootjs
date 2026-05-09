@@ -43,7 +43,11 @@ export type BranchEventBindingsPlan = readonly BranchEventSlot[]
 export interface BranchChildComponentInit {
   /** Component tag name, e.g. `"Card"`. */
   name: string
-  /** CSS selector passed to qsa(): `[bf-s$="_<slotId>"]` or `[bf-s^="~<name>_"]`. */
+  /**
+   * JS source expression embedded into `qsa(__branchScope, <here>)`.
+   * Template literal `` `[bf-s$="${__scopeId}_<slotId>"]` `` for slotId-
+   * anchored lookup, or string literal `'[bf-s^="~<name>_"]'`.
+   */
   selector: string
   /** Identifier used by the data-bf-ph attribute on the CSR placeholder. */
   placeholderId: string

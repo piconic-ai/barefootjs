@@ -88,6 +88,10 @@ export function qsaItem(primaryEl: Element | null, selector: string): Element | 
  * Uses `qsaItem`-style search (root-or-descendant per element) so it
  * also matches when a sibling root *is* the component scope element
  * itself, not just a parent of it.
+ *
+ * `parentScopeId` mirrors `upsertChild` — anchors the SSR suffix selector
+ * to the calling component's scope id so sibling components sharing a
+ * `_sN` suffix can't cross-match (#1220).
  */
 export function upsertChildItem(
   primaryEl: Element,
@@ -95,10 +99,11 @@ export function upsertChildItem(
   slotId: string | null,
   props: Record<string, unknown>,
   key?: string | number,
+  parentScopeId?: string,
 ): HTMLElement | null {
   // SSR: scope element is already in the tree.
   const ssrSelector = slotId
-    ? `[bf-s$="_${slotId}"]`
+    ? (parentScopeId ? `[bf-s$="${parentScopeId}_${slotId}"]` : `[bf-s$="_${slotId}"]`)
     : `[bf-s^="~${name}_"], [bf-s^="${name}_"]`
   const ssr = qsaItem(primaryEl, ssrSelector) as HTMLElement | null
   if (ssr) {
