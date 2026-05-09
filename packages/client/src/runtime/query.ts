@@ -318,8 +318,79 @@ function findInPortals(scopeId: string, selector: string): Element | null {
  */
 export function qsa(el: Element | null, selector: string): Element | null {
   if (!el) return null
+  // #1220 cross-binding skip: when the selector is a bare slot-suffix
+  // lookup `[bf-s$="_<slotId>"]`, defer to `qsaChildScope` so candidates
+  // whose bf-s ends in a deeper `_sN_sN` path (a synthesized child's
+  // nested scope, e.g. `~BFInlineJsxCallback_<hash>_sM_<slotId>`) are
+  // skipped. For every other selector this is just match-self-or-descendant.
+  if (SLOT_SUFFIX_SELECTOR.test(selector)) {
+    return qsaChildScope(el, selector)
+  }
   if (el.matches(selector)) return el
   return el.querySelector(selector)
+}
+
+/**
+ * Selector form `[bf-s$="_sN"]` — emitted by the compiler for bare child-
+ * component scope lookups. Used to gate the #1220 nested-slot skip so the
+ * filter only fires for these compiled bf-s suffix lookups (not for
+ * unrelated selectors that happen to match).
+ */
+const SLOT_SUFFIX_SELECTOR = /^\[bf-s\$="_s\d+"\]$/
+
+/**
+ * Recognises bf-s values whose final segment is a nested-slot path
+ * (`…_sM_sN`). These show up when a synthesized component (e.g.
+ * `BFInlineJsxCallback`) renders descendants whose own internal scope
+ * happens to end in `_sN`, coincidentally matching a sibling slot's loose
+ * suffix selector. The slot-suffix lookup helpers skip these so the wrong
+ * `initChild` never fires (#1220).
+ *
+ * Why this is a safe filter: legitimate child shapes anchored on a
+ * stateful intermediate parent (e.g. `~Card_<rand>_<slot>`) have exactly
+ * one trailing `_sN`. The two-segment shape only arises when a
+ * stateless-only stack of intermediate components nests further, which
+ * never happens by design — `_parentScopeId` is set only by `insert()`
+ * (whose owning component carries client interactivity and therefore a
+ * fresh `${name}_<rand>` scope) and by `render()` (top-level entry).
+ */
+const NESTED_SLOT_SUFFIX = /_s\d+_s\d+$/
+
+/**
+ * `querySelector` variant that skips #1220 cross-binding candidates: any
+ * descendant whose bf-s already carries a deeper nested-slot path is
+ * ignored. Falls back to the standalone match-or-descendant semantics
+ * (mirrors `qsa`'s self-match) when no candidate qualifies.
+ *
+ * Compiler-generated static-array child-init code calls this in place of
+ * a bare `containerVar.querySelector(...)` so the filter runs even on
+ * paths that don't pass through `qsa` (#1220 review feedback).
+ */
+export function qsaChildScope(scope: Element, selector: string): Element | null {
+  if (scope.matches(selector)) {
+    const bfs = scope.getAttribute(BF_SCOPE) || ''
+    if (!NESTED_SLOT_SUFFIX.test(bfs)) return scope
+  }
+  for (const candidate of scope.querySelectorAll(selector)) {
+    const bfs = candidate.getAttribute(BF_SCOPE) || ''
+    if (!NESTED_SLOT_SUFFIX.test(bfs)) return candidate
+  }
+  return null
+}
+
+/**
+ * `querySelectorAll` variant with the same #1220 filter. Returns the
+ * matching descendants in document order, with nested-slot collisions
+ * dropped so the caller's `forEach((el, idx) => …)` pairs scope
+ * elements with array items by position correctly.
+ */
+export function qsaChildScopes(scope: Element, selector: string): Element[] {
+  const out: Element[] = []
+  for (const candidate of scope.querySelectorAll(selector)) {
+    const bfs = candidate.getAttribute(BF_SCOPE) || ''
+    if (!NESTED_SLOT_SUFFIX.test(bfs)) out.push(candidate)
+  }
+  return out
 }
 
 /**

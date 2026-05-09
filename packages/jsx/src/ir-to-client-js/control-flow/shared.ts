@@ -173,14 +173,25 @@ function emitEventSetup(
   emitListenerBlock(ls, indent, elVar, ev.childSlotId, '__e', ev.eventName, handler, 'dom', bodyIsMultiRoot)
 }
 
-/** Build the component-finder CSS selector for SSR hydration initChild. */
+/**
+ * Build the component-finder selector for SSR hydration initChild.
+ *
+ * Returns a JS source EXPRESSION (a single-quoted string literal) embedded
+ * verbatim into generated code, e.g. `qsa(__el, ${buildCompSelector(c)})`.
+ *
+ * With `slotId`: the suffix selector `[bf-s$="_${slotId}"]` matches both
+ * the parent-anchored shape (`~${parentScopeId}_${slotId}`) and the
+ * random-anchored shape (`~${name}_<rand>_${slotId}`). The #1220
+ * cross-binding (a synthesized child's deeper `_sN_sN` shape
+ * coincidentally matching this suffix) is filtered at runtime by `qsa` —
+ * see `packages/client/src/runtime/query.ts`.
+ *
+ * Without `slotId`: name-prefix selector — already unambiguous by name.
+ */
 export function buildCompSelector(comp: { slotId?: string | null; name: string }): string {
-  // When slotId is available, use suffix-only selector. It is unique within
-  // the parent scope and avoids matching siblings of the same component type
-  // (e.g. two Buttons with different slotIds).
   return comp.slotId
-    ? `[bf-s$="_${comp.slotId}"]`
-    : `[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]`
+    ? `'[bf-s$="_${comp.slotId}"]'`
+    : `'[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]'`
 }
 
 /**

@@ -69,13 +69,16 @@ function buildSingleCompPlan(
   childComponent: IRLoopChildComponent,
 ): SingleCompInitPlan {
   const { name, props, slotId } = childComponent
-  // Use both suffix match (for inlined stateless components whose bf-s uses
-  // parent scope + slotId, e.g. ~ParentName_hash_s3) and prefix match (for
-  // stateful components whose bf-s uses their own name, e.g. ToggleItem_hash).
+  // JS source expression embedded verbatim into the generated code.
+  // Combines slotId suffix match (for inlined stateless components whose
+  // bf-s is `~${parentScopeId}_${slotId}`) with name-prefix match (for
+  // stateful components whose bf-s is `${name}_${random}`). Cross-binding
+  // protection (#1220 — synthesized children with `_sN_sN` shape) is
+  // applied at runtime by `qsa` — see packages/client/src/runtime/query.ts.
   const namePrefixSelector = `[bf-s^="~${name}_"], [bf-s^="${name}_"]`
   const childSelector = slotId
-    ? `[bf-s$="_${slotId}"], ${namePrefixSelector}`
-    : namePrefixSelector
+    ? `'[bf-s$="_${slotId}"], ${namePrefixSelector}'`
+    : `'${namePrefixSelector}'`
 
   return {
     kind: 'single-comp',

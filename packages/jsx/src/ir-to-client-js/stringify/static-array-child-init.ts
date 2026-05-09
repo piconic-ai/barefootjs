@@ -7,7 +7,7 @@
  *   single-comp:
  *     <i>// Initialize static array children (hydrate skips nested instances)
  *     <i>if (<container>) {
- *     <i>  const __childScopes = <container>.querySelectorAll('<selector>')
+ *     <i>  const __childScopes = qsaChildScopes(<container>, <selector>)
  *     <i>  __childScopes.forEach((childScope, <idx>) => {
  *     <i>    const <param> = <array>[<idx>]
  *     <i>    <outerPreludeStatements*>   // raw outer preamble (#1064)
@@ -22,7 +22,7 @@
  *     <i>    const __iterEl = <container>.children[<offset>]
  *     <i>    if (__iterEl) {
  *     <i>      <outerPreludeStatements*>   // raw outer preamble (#1064)
- *     <i>      const __compEl = __iterEl.querySelector('<selector>')
+ *     <i>      const __compEl = qsaChildScope(__iterEl, <selector>)
  *     <i>      if (__compEl) initChild('<name>', __compEl, <props>)
  *     <i>    }
  *     <i>  })
@@ -85,7 +85,7 @@ function emitSingleComp(lines: string[], plan: SingleCompInitPlan): void {
   const { containerVar, componentName, childSelector, arrayExpr, param, indexParam, outerPreludeStatements, propsExpr } = plan
   lines.push(`  // Initialize static array children (hydrate skips nested instances)`)
   lines.push(`  if (${containerVar}) {`)
-  lines.push(`    const __childScopes = ${containerVar}.querySelectorAll('${childSelector}')`)
+  lines.push(`    const __childScopes = qsaChildScopes(${containerVar}, ${childSelector})`)
   lines.push(`    __childScopes.forEach((childScope, ${indexParam}) => {`)
   lines.push(`      const ${param} = ${arrayExpr}[${indexParam}]`)
   // Outer `.map()` callback preamble locals — emitted unwrapped after
@@ -114,7 +114,7 @@ function emitOuterNested(lines: string[], plan: OuterNestedInitPlan): void {
   for (const stmt of outerPreludeStatements) {
     lines.push(`        ${stmt}`)
   }
-  lines.push(`        const __compEl = __iterEl.querySelector('${selector}')`)
+  lines.push(`        const __compEl = qsaChildScope(__iterEl, ${selector})`)
   lines.push(`        if (__compEl) initChild('${nameForRegistryRef(componentName)}', __compEl, ${propsExpr})`)
   lines.push(`      }`)
   lines.push(`    })`)
@@ -162,7 +162,7 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
     lines.push(`        ${stmt}`)
   }
   for (const comp of comps) {
-    lines.push(`        const __compEl = __innerEl.querySelector('${comp.selector}')`)
+    lines.push(`        const __compEl = qsaChildScope(__innerEl, ${comp.selector})`)
     lines.push(`        if (__compEl) initChild('${nameForRegistryRef(comp.componentName)}', __compEl, ${comp.propsExpr})`)
   }
   lines.push(`      })`)

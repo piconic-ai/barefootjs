@@ -126,3 +126,4 @@ describe('component-scope: file-scoped registry keys for non-exported helpers', 
     expect(a).not.toBe(b)
   })
 })
+
