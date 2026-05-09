@@ -140,6 +140,19 @@ export function analyzeComponent(
   let sourceFile: ts.SourceFile | undefined
   let checker: ts.TypeChecker | null = null
 
+  // If the caller passed a shared program but `source` was rewritten
+  // upstream (e.g. by preprocessInlineJsxCallbacks in compiler.ts), the
+  // program's cached SourceFile still reflects the on-disk text and would
+  // mask the rewrite. Discard the program so the parse below uses the
+  // rewritten source. needsTypeBasedDetection() further down rebuilds a
+  // per-file program when type-based detection is required (#1217).
+  if (program) {
+    const cachedSourceFile = program.getSourceFile(filePath)
+    if (cachedSourceFile && cachedSourceFile.text !== source) {
+      program = undefined
+    }
+  }
+
   if (program) {
     // Use the pre-built program's source file and checker
     sourceFile = program.getSourceFile(filePath)

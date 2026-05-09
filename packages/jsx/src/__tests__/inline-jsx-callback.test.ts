@@ -8,14 +8,27 @@
  * regular pipeline compiles into init + hydrate + a callable shim.
  */
 
-import { describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { $ } from 'bun'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { TestAdapter } from '../adapters/test-adapter'
 import { compileJSX } from '../compiler'
+import { createProgramForCorpus } from '../shared-program'
+import type ts from 'typescript'
 
 const adapter = new TestAdapter()
 
 function clientJs(source: string, fileName = 'Demo.tsx'): string {
   const result = compileJSX(source, fileName, { adapter })
+  expect(result.errors).toEqual([])
+  const file = result.files.find(f => f.type === 'clientJs')
+  expect(file).toBeDefined()
+  return file!.content
+}
+
+function clientJsWithProgram(source: string, filePath: string, program: ts.Program): string {
+  const result = compileJSX(source, filePath, { adapter, program })
   expect(result.errors).toEqual([])
   const file = result.files.find(f => f.type === 'clientJs')
   expect(file).toBeDefined()
@@ -271,5 +284,86 @@ describe('inline JSX in arrow callback (#1211)', () => {
     // No BF080 — but no synthesis either; the file just doesn't ship a
     // client bundle and its arrow stays inert in the SSR template.
     expect(result.errors.filter(e => e.code === 'BF080')).toEqual([])
+  })
+})
+
+/**
+ * #1217 — inline-JSX-callback rewrite must survive the shared `ts.Program`
+ * path. The single-call `compileJSX` flow always re-parses `compileSource`,
+ * but production builds (`site/ui/build.ts`) pass an `options.program`
+ * built from the on-disk corpus. Without the analyzer's source-vs-program
+ * guard, the cached SourceFile masks the preprocess output and raw JSX
+ * leaks into the client bundle, crashing the parser at module load.
+ */
+describe('inline JSX in arrow callback with options.program (#1217)', () => {
+  let tmpDir: string
+
+  beforeAll(() => {
+    tmpDir = join(tmpdir(), `bfjs-1217-${crypto.randomUUID()}`)
+  })
+
+  afterAll(async () => {
+    await $`rm -rf ${tmpDir}`.quiet()
+  })
+
+  test('preserves the BFInlineJsxCallback rewrite when a shared program is supplied', async () => {
+    const source = `'use client'
+import { Flow } from '@/components/ui/xyflow'
+
+export function Demo() {
+  return (
+    <Flow
+      nodes={[]}
+      edges={[]}
+      renderNode={(n) => <div>{n.data.label}</div>}
+    />
+  )
+}
+`
+    const filePath = join(tmpDir, 'demo-single.tsx')
+    await Bun.write(filePath, source)
+    const program = createProgramForCorpus([filePath])
+    const js = clientJsWithProgram(source, filePath, program)
+
+    // Without the analyzer guard, the program's cached SourceFile would
+    // mask the preprocess output and the original arrow JSX would survive.
+    expect(js).not.toMatch(/=>\s*<div\b/)
+    expect(js).not.toMatch(/=>\s*\(\s*<div\b/)
+    expect(js).not.toMatch(/return\s*<div\b/)
+    expect(js).toMatch(/hydrate\(\s*['"]BFInlineJsxCallback1(?:__|['"])/)
+    expect(js).toContain('BFInlineJsxCallback1')
+  })
+
+  test('multi-component file rewrites the inline arrow with and without a shared program', async () => {
+    const source = `'use client'
+import { Flow } from '@/components/ui/xyflow'
+
+export function Sibling() {
+  return <p>sibling</p>
+}
+
+export function Demo() {
+  return (
+    <Flow
+      nodes={[]}
+      edges={[]}
+      renderNode={(n) => <span>{n.data.label}</span>}
+    />
+  )
+}
+`
+    const filePath = join(tmpDir, 'demo-multi.tsx')
+    await Bun.write(filePath, source)
+
+    // Path A — no shared program (compileMultipleComponents builds its own).
+    const noProgramJs = clientJs(source, filePath)
+    expect(noProgramJs).not.toMatch(/=>\s*<span\b/)
+    expect(noProgramJs).toMatch(/hydrate\(\s*['"]BFInlineJsxCallback1(?:__|['"])/)
+
+    // Path B — shared program (the production case that #1217 reports).
+    const program = createProgramForCorpus([filePath])
+    const sharedJs = clientJsWithProgram(source, filePath, program)
+    expect(sharedJs).not.toMatch(/=>\s*<span\b/)
+    expect(sharedJs).toMatch(/hydrate\(\s*['"]BFInlineJsxCallback1(?:__|['"])/)
   })
 })
