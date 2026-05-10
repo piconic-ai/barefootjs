@@ -20,7 +20,7 @@ export function Badge({ label }: { label: string }) {
   expectedHtml: `
     <div bf-s="test">
       <h2 bf="s1"><!--bf:s0-->Hello<!--/--></h2>
-      <span bf-s="test_s2" bf="s1"><!--bf:s0-->New<!--/--></span>
+      <span bf-s="test_s2" bf-parent="test" bf-mount="s2" bf="s1"><!--bf:s0-->New<!--/--></span>
     </div>
   `,
 })

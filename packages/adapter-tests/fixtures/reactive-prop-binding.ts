@@ -22,7 +22,7 @@ export function Status({ label, count }: { label: string; count: number }) {
   },
   expectedHtml: `
     <div bf-s="test">
-      <span bf-s="test_s0" bf="s2"><!--bf:s0-->idle<!--/-->: <!--bf:s1-->0<!--/--></span>
+      <span bf-s="test_s0" bf-parent="test" bf-mount="s0" bf="s2"><!--bf:s0-->idle<!--/-->: <!--bf:s1-->0<!--/--></span>
       <button bf="s1">+</button>
     </div>
   `,
