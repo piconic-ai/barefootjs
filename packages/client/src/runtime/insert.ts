@@ -41,7 +41,7 @@ export interface BranchConfig {
    * @returns Optional cleanup function, called when the branch is deactivated.
    *          Used to dispose reactive effects scoped to this branch.
    */
-  bindEvents: (scope: Element) => (() => void) | void
+  bindEvents: (scope: Element, opts?: { isFirstRun?: boolean }) => (() => void) | void
 }
 
 const EMPTY_SLOTS: Node[] = []
@@ -140,13 +140,17 @@ export function insert(
         const expectedSig = getTemplateRootSignature(result.html)
         const existingSig = existingEl.outerHTML.match(/^<[^>]+>/)?.[0] ?? null
 
-        if (isFragmentCond) {
+        if (isFragmentCond && (!expectedSig || existingSig !== expectedSig)) {
           // Fragment conditional template but element conditional in DOM:
           // CSR composite loops inline-evaluate conditionals into bf-c elements,
           // but insert() manages them as fragment conditionals (comment markers).
           // Replace the bf-c element with the fragment template content.
+          // Skip the swap when the SSR signature already matches the active
+          // branch — the SSR DOM is correct, and replacing it would re-render
+          // via the registered child template, which doesn't reproduce the
+          // bf-parent / bf-mount markers set by the parent's JSX scope chain.
           updateFragmentConditional(scope, id, result)
-        } else if (expectedSig && existingSig && expectedSig !== existingSig) {
+        } else if (!isFragmentCond && expectedSig && existingSig && expectedSig !== existingSig) {
           // DOM doesn't match expected branch - need to swap
           updateElementConditional(scope, id, result)
         } else if (result.slots.length > 0) {
@@ -162,8 +166,11 @@ export function insert(
         updateFragmentConditional(scope, id, result)
       }
 
-      // Bind events to the (possibly updated) SSR element
-      const cleanup = branch.bindEvents(scope)
+      // Bind events to the (possibly updated) SSR element. Pass isFirstRun
+      // so branch composite loops can skip the wipe-then-rebuild path that
+      // is only needed for subsequent branch swaps (the SSR-rendered DOM
+      // already matches the data and mapArray reconciles by key from it).
+      const cleanup = branch.bindEvents(scope, { isFirstRun: true })
       branchCleanup = typeof cleanup === 'function' ? cleanup : null
 
       // Auto-focus on first run too (for components created via createComponent with editing=true)
@@ -194,8 +201,8 @@ export function insert(
       updateElementConditional(scope, id, result)
     }
 
-    // Bind events to the newly inserted element
-    const cleanup = branch.bindEvents(scope)
+    // Bind events to the newly inserted element (branch swap: not first run).
+    const cleanup = branch.bindEvents(scope, { isFirstRun: false })
     branchCleanup = typeof cleanup === 'function' ? cleanup : null
 
     // Auto-focus elements with autofocus attribute (for dynamically created elements)

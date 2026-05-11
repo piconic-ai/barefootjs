@@ -115,6 +115,7 @@ export const blockEntries: BlockEntry[] = [
   { slug: 'theme-customizer', title: 'Theme Customizer', description: 'Three signal-driven context providers (palette, spacing, typography) wrapping a 12-level deep consumer tree. Tests Provider value propagation, multi-provider ordering, stale-read safety, and dynamic token add/remove' },
   { slug: 'infinite-scroll', title: 'Async Infinite Scroll', description: 'IntersectionObserver-triggered pagination with <Async> streaming boundary, mapArray append, per-item like/save actions, and effect cleanup on unmount. Tests the IRAsync + mapArray compiler path, reactive list growth, and error/empty-state branches' },
   { slug: 'toast-queue', title: 'Toast Queue', description: 'Signal-backed notification queue with N simultaneous portals, auto-dismiss timers, manual dismiss, stack ordering, and per-toast cleanup on dynamic unmount' },
+  { slug: 'recursive-comments', title: 'Recursive Comments', description: 'Unlimited-depth comment thread with self-referential <CommentNode> recursion, memo-lifted inner-loop reconciliation at every depth, cross-depth context propagation, and tree-wide derived stats' },
 ]
 
 // Helper: get components filtered by category

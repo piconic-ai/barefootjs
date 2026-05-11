@@ -61,7 +61,7 @@ describe('conditional reactive bindings re-attach on branch swap (#1071)', () =>
     const insertIdx = clientJs.indexOf('insert(')
     expect(insertIdx).toBeGreaterThanOrEqual(0)
     const insertBlock = clientJs.slice(insertIdx)
-    expect(insertBlock).toMatch(/bindEvents:\s*\(__branchScope\)\s*=>\s*\{[\s\S]*?setAttribute\(['"]d['"]/)
+    expect(insertBlock).toMatch(/bindEvents:\s*\(__branchScope[^)]*\)\s*=>\s*\{[\s\S]*?setAttribute\(['"]d['"]/)
 
     // The slot must be resolved relative to __branchScope so each fresh
     // DOM swap finds the live element, not a once-captured reference.

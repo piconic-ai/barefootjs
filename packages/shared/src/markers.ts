@@ -17,6 +17,12 @@ export const BF_SCOPE = 'bf-s'
 /** Slot ID (most common): `bf="s1"` */
 export const BF_SLOT = 'bf'
 
+/** Parent component bf-s value (without `~`): `bf-parent="CommentNode_abc"` */
+export const BF_PARENT = 'bf-parent'
+
+/** Slot ID where this component is mounted in its parent: `bf-mount="s35"` */
+export const BF_MOUNT = 'bf-mount'
+
 /** Serialized props JSON: `bf-p="..."` */
 export const BF_PROPS = 'bf-p'
 

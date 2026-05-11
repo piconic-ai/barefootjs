@@ -68,7 +68,9 @@ export function buildDeclarationEmitPlan(
       return {
         kind: 'function',
         name: fn.name,
-        paramList: fn.params.map(p => p.name).join(', '),
+        paramList: fn.params.map(p =>
+          p.defaultValue !== undefined ? `${p.name} = ${p.defaultValue}` : p.name,
+        ).join(', '),
         body: fn.body,
         isAsync: fn.isAsync ?? false,
       }

@@ -70,8 +70,22 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     // with properly initialized components via createComponent in renderItem.
     // Multi-root items also have per-item `<!--bf-loop-i-->` Comments to
     // remove, so use `getLoopNodes` (Elements + Comments) for that case.
+    //
+    // **DO NOT remove the `!__bfFirstRun` guard.** On the first hydration
+    // pass `bindEvents` is called against the SSR-rendered branch element,
+    // whose children already match the data and carry `bf-parent` /
+    // `bf-mount` markers wired to the active scope chain. Wiping there
+    // forces every loop item through the CSR `createComponent` path; for
+    // self-referential recursive components (e.g. <CommentNode> rendering
+    // <CommentNode>) every reactive update would then duplicate the
+    // subtree exponentially because each new component synthesises a fresh
+    // bf-s and the next reconcile fails to find it via the SSR scope
+    // markers. The wipe is still required on subsequent branch swaps,
+    // where the freshly-evaluated branch template eagerly inlines the
+    // loop body and would otherwise double-mount items when mapArray
+    // reconciles.
     const clearFn = bodyIsMultiRoot ? 'getLoopNodes' : 'getLoopChildren'
-    lines.push(`${topIndent}if (${containerVar}) ${clearFn}(${containerVar}, '${markerId}').forEach(__el => __el.remove())`)
+    lines.push(`${topIndent}if (${containerVar} && !__bfFirstRun) ${clearFn}(${containerVar}, '${markerId}').forEach(__el => __el.remove())`)
     // Wrap the mapArray call in createDisposableEffect so the inner
     // createEffects (mapArray's own + per-item child effects) are released
     // when the surrounding branch swaps away (observation O-2). The branch

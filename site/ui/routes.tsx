@@ -69,6 +69,7 @@ import { StateMachinePlaygroundRefPage } from './pages/components/state-machine-
 import { ThemeCustomizerRefPage } from './pages/components/theme-customizer'
 import { InfiniteScrollRefPage } from './pages/components/infinite-scroll'
 import { ToastQueueRefPage } from './pages/components/toast-queue'
+import { RecursiveCommentsRefPage } from './pages/components/recursive-comments'
 import { HoverCardRefPage } from './pages/components/hover-card'
 import { MenubarRefPage } from './pages/components/menubar'
 import { NavigationMenuRefPage } from './pages/components/navigation-menu'
@@ -527,6 +528,11 @@ export function createApp() {
   // Toast Queue block page
   app.get('/components/toast-queue', (c) => {
     return c.render(<ToastQueueRefPage />)
+  })
+
+  // Recursive Comments block page
+  app.get('/components/recursive-comments', (c) => {
+    return c.render(<RecursiveCommentsRefPage />)
   })
 
   // Gallery — Admin app (Phase 9 pilot)

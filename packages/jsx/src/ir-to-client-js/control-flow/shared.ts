@@ -248,8 +248,13 @@ export function emitComponentAndEventSetup(
 
     const slotIdLit = comp.slotId ? `'${comp.slotId}'` : 'null'
     const keyProp = comp.props.find(p => p.name === 'key')
-    const keyArg = keyProp ? `, ${wrap(keyProp.value)}` : ''
-    const upsertCall = `${upsertFn}(${elVar}, '${nameForRegistryRef(comp.name)}', ${slotIdLit}, ${propsExpr}${keyArg})`
+    const keyArg = keyProp ? `, ${wrap(keyProp.value)}` : ', undefined'
+    // Pass the surrounding component's __scope so upsertChild can derive
+    // bf-parent / bf-mount even when the loop-item element (`elVar`) is a
+    // freshly-created detached fragment. Without this anchor, the new
+    // CSR-mounted child wouldn't carry slot-relationship markers and any
+    // future upsertChild lookup against it would fail.
+    const upsertCall = `${upsertFn}(${elVar}, '${nameForRegistryRef(comp.name)}', ${slotIdLit}, ${propsExpr}${keyArg}, __scope)`
 
     if (childrenRefsLoop) {
       const wrappedChildren = wrap(rawChildrenExpr!)

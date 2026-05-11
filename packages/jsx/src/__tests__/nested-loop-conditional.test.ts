@@ -221,7 +221,7 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
 
     // The click handler must appear inside bindEvents, not as a top-level delegation
     // Pattern: addEventListener inside the bindEvents callback (after 'bindEvents: (__branchScope)')
-    const bindEventsMatch = content.match(/bindEvents:\s*\(__branchScope\)\s*=>\s*\{([\s\S]*?)\}/m)
+    const bindEventsMatch = content.match(/bindEvents:\s*\(__branchScope[^)]*\)\s*=>\s*\{([\s\S]*?)\}/m)
     expect(bindEventsMatch).not.toBeNull()
     expect(bindEventsMatch![1]).toContain("addEventListener('click'")
 
@@ -355,7 +355,7 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     // the conditional separately.
     const body = innerMapArray!
     const bindEventsRegions: string[] = []
-    const bindEventsRe = /bindEvents:\s*\(__branchScope\)\s*=>\s*\{/g
+    const bindEventsRe = /bindEvents:\s*\(__branchScope[^)]*\)\s*=>\s*\{/g
     let m: RegExpExecArray | null
     while ((m = bindEventsRe.exec(body)) !== null) {
       let depth = 1

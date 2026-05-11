@@ -88,11 +88,17 @@ export function collectInlineExportedNames(ir: ComponentIR): Set<string> {
 }
 
 /**
- * Format a ParamInfo for .tsx output, preserving type annotations when available.
+ * Format a ParamInfo for .tsx output, preserving type annotations, optional
+ * markers, and default initializers. Without the default, hoisted local
+ * helpers like `function f(x = 0)` lose their fallback when emitted into
+ * the SSR template, and any caller relying on the default produces
+ * NaN/undefined at render time.
  */
 export function formatParamWithType(p: ParamInfo): string {
+  const optional = p.optional ? '?' : ''
   const typeAnnotation = p.type?.raw && p.type.raw !== 'unknown' ? `: ${p.type.raw}` : ''
-  return `${p.name}${typeAnnotation}`
+  const defaultPart = p.defaultValue !== undefined ? ` = ${p.defaultValue}` : ''
+  return `${p.name}${optional}${typeAnnotation}${defaultPart}`
 }
 
 /**

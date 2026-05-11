@@ -27,12 +27,10 @@
  *      them into the DOM.
  */
 
-import { BF_LOOP_ITEM, BF_LOOP_START, BF_LOOP_END, BF_SCOPE } from '@barefootjs/shared'
+import { BF_LOOP_ITEM, BF_LOOP_START, BF_LOOP_END } from '@barefootjs/shared'
 import { initChild } from './registry'
 import { createComponent } from './component'
-
-/** See `registry.ts::NESTED_SLOT_SUFFIX` — same #1220 cross-binding skip. */
-const NESTED_SLOT_SUFFIX = /_s\d+_s\d+$/
+import { findSsrScopeBySlotIn, buildSlotInfo } from './slot-resolver'
 
 /** Iterate the elements that belong to an item — primary, in-tree siblings within bounds, then any pre-insertion extras stash. */
 function* itemRootElements(primaryEl: Element): Iterable<Element> {
@@ -102,23 +100,13 @@ export function upsertChildItem(
   slotId: string | null,
   props: Record<string, unknown>,
   key?: string | number,
+  anchorScope?: Element | null,
 ): HTMLElement | null {
   let ssr: HTMLElement | null = null
   if (slotId) {
     for (const root of itemRootElements(primaryEl)) {
-      const candidates = root.matches(`[bf-s$="_${slotId}"]`)
-        ? [root, ...Array.from(root.querySelectorAll(`[bf-s$="_${slotId}"]`))]
-        : Array.from(root.querySelectorAll(`[bf-s$="_${slotId}"]`))
-      for (const candidate of candidates) {
-        const bfs = candidate.getAttribute(BF_SCOPE) || ''
-        if (NESTED_SLOT_SUFFIX.test(bfs)) continue
-        ssr = candidate as HTMLElement
-        break
-      }
-      if (ssr) break
-    }
-    if (!ssr) {
-      ssr = qsaItem(primaryEl, `[bf-s^="~${name}_"], [bf-s^="${name}_"]`) as HTMLElement | null
+      const found = findSsrScopeBySlotIn(root, name, slotId, anchorScope, /* selfMatch */ true)
+      if (found) { ssr = found; break }
     }
   } else {
     ssr = qsaItem(primaryEl, `[bf-s^="~${name}_"], [bf-s^="${name}_"]`) as HTMLElement | null
@@ -131,7 +119,8 @@ export function upsertChildItem(
   const phId = slotId ?? name
   const ph = qsaItem(primaryEl, `[data-bf-ph="${phId}"]`) as HTMLElement | null
   if (ph) {
-    const comp = createComponent(name, props, key)
+    const slot = slotId ? buildSlotInfo(primaryEl, slotId, anchorScope) : undefined
+    const comp = createComponent(name, props, key, slot)
     ph.replaceWith(comp)
     return comp
   }

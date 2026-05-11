@@ -51,7 +51,9 @@ export function emitModuleLevelDeclarations(
   // entry points, not imported by other modules. Add export when a concrete
   // cross-module use case arises.
   for (const fn of moduleLevelFunctions) {
-    const paramStr = fn.params.map(p => p.name).join(', ')
+    const paramStr = fn.params.map(p =>
+      p.defaultValue !== undefined ? `${p.name} = ${p.defaultValue}` : p.name,
+    ).join(', ')
     const asyncKw = fn.isAsync ? 'async ' : ''
     // Generator functions (`function*`) cannot be lowered to an arrow
     // form (arrows can't yield) — preserve the `*` here so emit reads

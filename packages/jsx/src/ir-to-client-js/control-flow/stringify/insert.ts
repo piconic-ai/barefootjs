@@ -5,12 +5,12 @@
  *
  *     <leadingIndent>insert(<scopeVar>, '<slotId>', () => <cond>, {
  *     <leadingIndent>  template: () => `<true html>`,
- *     <leadingIndent>  bindEvents: (__branchScope) => {
+ *     <leadingIndent>  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
  *                <arm body lines, each prefixed with bodyIndent>
  *     <leadingIndent>  }
  *     <leadingIndent>}, {
  *     <leadingIndent>  template: () => `<false html>`,
- *     <leadingIndent>  bindEvents: (__branchScope) => {
+ *     <leadingIndent>  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
  *                <arm body lines>
  *     <leadingIndent>  }
  *     <leadingIndent>})
@@ -71,7 +71,7 @@ function emitArm(
   // The collector in `collect-elements.ts` injects `__bfSlot(EXPR, __slots)`
   // wrappers around Child-position interpolations under this var name.
   lines.push(`${armIndent}template: () => { const __slots = []; return { html: \`${arm.templateHtml}\`, slots: __slots } },`)
-  lines.push(`${armIndent}bindEvents: (__branchScope) => {`)
+  lines.push(`${armIndent}bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
   emitArmBody(lines, arm.body, mode, bodyIndent)
   lines.push(`${armIndent}}`)
 }

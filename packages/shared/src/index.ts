@@ -1,6 +1,8 @@
 export {
   BF_SCOPE,
   BF_SLOT,
+  BF_PARENT,
+  BF_MOUNT,
   BF_PROPS,
   BF_COND,
   BF_ITEM,

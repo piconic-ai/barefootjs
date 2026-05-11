@@ -57,6 +57,13 @@ export function normalizeHTML(html: string): string {
     .replace(/<!--bf-\/?loop(?::l\d+)?-->|<!--bf-loop-i-->/g, '')
     // Remove bf-p attribute (Hono uses JSON serialization, Go uses struct fields)
     .replace(/\s*bf-p="[^"]*"/g, '')
+    // Remove bf-parent / bf-mount slot-relationship markers. Hono emits them
+    // for upsertChild's bf-parent + bf-mount lookup against the @barefootjs
+    // client runtime. Other SSR adapters (Mojo, Go template) don't pair with
+    // that runtime and don't emit them, so excluding from cross-adapter
+    // conformance keeps the comparison apples-to-apples.
+    .replace(/\s*bf-parent="[^"]*"/g, '')
+    .replace(/\s*bf-mount="[^"]*"/g, '')
     // Normalize child scope ID prefix: bf-s="~parentId_sN" → bf-s="parentId_sN"
     .replace(/bf-s="~([^"]*)"/g, 'bf-s="$1"')
     // Normalize non-deterministic child scope IDs (hash derived from file path):

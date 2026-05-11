@@ -9,22 +9,13 @@ import { BF_SCOPE, BF_CHILD_PREFIX } from '@barefootjs/shared'
 import { hydratedScopes } from './hydration-state'
 import { setCurrentScope } from './context'
 import { createComponent } from './component'
+import { findSsrScopeBySlotIn, buildSlotInfo } from './slot-resolver'
 import type { InitFn } from './types'
 
 /**
  * Component registry for parent-child communication.
  */
 const componentRegistry = new Map<string, InitFn>()
-
-/**
- * Recognises bf-s values whose final segment is a nested-slot path
- * (`…_sM_sN`). These show up when a synthesized component (e.g.
- * `BFInlineJsxCallback`) renders descendants whose own internal scope
- * happens to end in `_sN`, coincidentally matching a sibling slot's
- * loose suffix selector. The slotId-suffix lookup in `upsertChild`
- * skips them so the wrong `initChild` never fires (#1220).
- */
-const NESTED_SLOT_SUFFIX = /_s\d+_s\d+$/
 
 /**
  * Queue of pending child initializations waiting for components to register.
@@ -128,11 +119,8 @@ export function initChild(
  * CSR shape at runtime in one place — so the compiler doesn't need a
  * `mode: 'csr' | 'ssr'` argument for child component emission.
  *
- *   1. SSR: a `[bf-s$="_<slotId>"]` (or `[bf-s^="<name>_"]` when slotId is
- *      null) element exists. Initialise it via initChild and return it.
- *      The slotId-suffix path is filtered (#1220) to skip elements whose
- *      bf-s has a deeper `_sN_sN` shape — those belong to a synthesized
- *      child's nested scope and only collide by coincidence.
+ *   1. SSR: a `[bf-parent][bf-mount]` element exists for this (parent,
+ *      slot). Initialise it via initChild and return it.
  *   2. CSR: a `[data-bf-ph="<slotId|name>"]` placeholder exists. Replace it
  *      with `createComponent(name, props, key)` and return the new element.
  *   3. Neither matches (already initialised on a previous reconcile pass) —
@@ -147,24 +135,14 @@ export function upsertChild(
   slotId: string | null,
   props: Record<string, unknown>,
   key?: string | number,
+  anchorScope?: Element | null,
 ): HTMLElement | null {
   // SSR: scope element is already in the tree.
   let ssr: HTMLElement | null = null
   if (slotId) {
-    const candidates = parent.querySelectorAll(`[bf-s$="_${slotId}"]`)
-    for (const candidate of candidates) {
-      const bfs = candidate.getAttribute(BF_SCOPE) || ''
-      // #1220: skip cross-binding to a synthesized child's nested scope
-      // path (e.g. `~BFInlineJsxCallback_<hash>_sM_${slotId}`).
-      if (NESTED_SLOT_SUFFIX.test(bfs)) continue
-      ssr = candidate as HTMLElement
-      break
-    }
-    if (!ssr) {
-      ssr = parent.querySelector(`[bf-s^="~${name}_"], [bf-s^="${name}_"]`) as HTMLElement | null
-    }
+    ssr = findSsrScopeBySlotIn(parent, name, slotId, anchorScope, /* selfMatch */ false)
   } else {
-    ssr = parent.querySelector(`[bf-s^="~${name}_"], [bf-s^="${name}_"]`) as HTMLElement | null
+    ssr = parent.querySelector(`[${BF_SCOPE}^="~${name}_"], [${BF_SCOPE}^="${name}_"]`) as HTMLElement | null
   }
   if (ssr) {
     initChild(name, ssr, props)
@@ -174,7 +152,8 @@ export function upsertChild(
   const phId = slotId ?? name
   const ph = parent.querySelector(`[data-bf-ph="${phId}"]`) as HTMLElement | null
   if (ph) {
-    const comp = createComponent(name, props, key)
+    const slot = slotId ? buildSlotInfo(parent, slotId, anchorScope) : undefined
+    const comp = createComponent(name, props, key, slot)
     ph.replaceWith(comp)
     return comp
   }
