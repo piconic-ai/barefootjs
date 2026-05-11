@@ -164,8 +164,6 @@ export interface BuildOptions {
   minify?: boolean
   /** Add content hash to client JS filenames */
   contentHash?: boolean
-  /** Output only client JS, skip marked templates and manifest */
-  clientOnly?: boolean
   /** Custom output directory layout */
   outputLayout?: OutputLayout
   /** Post-build hook called after minification, before manifest write */

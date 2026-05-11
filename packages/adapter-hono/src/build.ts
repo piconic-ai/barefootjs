@@ -29,7 +29,6 @@ export function createConfig(options: HonoBuildOptions = {}) {
     outDir: options.outDir,
     minify: options.minify,
     contentHash: options.contentHash,
-    clientOnly: options.clientOnly,
     externals: options.externals,
     externalsBasePath: options.externalsBasePath,
     bundleEntries: options.bundleEntries,

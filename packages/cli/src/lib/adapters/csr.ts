@@ -2,8 +2,9 @@
 //
 // Ships a static HTML page with an empty mount point and a tiny Bun
 // server that serves the page + the compiled client bundles produced
-// by `barefoot build` (with `clientOnly: true`). No SSR — everything
-// renders in the browser via @barefootjs/client/runtime.
+// by `barefoot build`. The `createConfig` from `@barefootjs/client/build`
+// switches the compiler into CSR mode — no SSR — everything renders in
+// the browser via @barefootjs/client/runtime.
 
 import { execSync } from 'node:child_process'
 import type { AdapterTemplate } from '../templates'
@@ -16,7 +17,7 @@ import {
   unoConfigTs,
 } from './shared'
 
-const CSR_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/hono/build'
+const CSR_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/client/build'
 
 export default createConfig({
   paths: {
@@ -26,12 +27,6 @@ export default createConfig({
   },
   components: ['components'],
   outDir: 'dist',
-  // CSR mode: skip the server-render path and only emit client bundles.
-  // \`scriptCollection: false\` disables the collector (no SSR layout to
-  // splice scripts into).
-  clientOnly: true,
-  scriptCollection: false,
-  scriptBasePath: '/static/components/',
   adapterOptions: {
     clientJsBasePath: '/static/components/',
     barefootJsPath: '/static/components/barefoot.js',

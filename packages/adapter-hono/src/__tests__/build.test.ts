@@ -127,13 +127,11 @@ export function Counter() {
       outDir: 'build',
       minify: true,
       contentHash: true,
-      clientOnly: true,
     })
     expect(config.components).toEqual(['src'])
     expect(config.outDir).toBe('build')
     expect(config.minify).toBe(true)
     expect(config.contentHash).toBe(true)
-    expect(config.clientOnly).toBe(true)
   })
 
   test('passes through externals and externalsBasePath', () => {

@@ -51,7 +51,7 @@ describe('adapter registry', () => {
     expect(csr.files['server.ts']).toMatch(/Bun\.serve/)
     expect(csr.files['pages/index.html']).toMatch(/<div id="app">/)
     expect(csr.files['pages/index.html']).toMatch(/@barefootjs\/client\/runtime/)
-    expect(csr.files['barefoot.config.ts']).toMatch(/clientOnly: true/)
+    expect(csr.files['barefoot.config.ts']).toMatch(/@barefootjs\/client\/build/)
   })
 })
 

@@ -21,6 +21,10 @@
     "./runtime/standalone": {
       "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/standalone.js"
+    },
+    "./build": {
+      "types": "./dist/build.d.ts",
+      "import": "./dist/build.js"
     }
   },
   "files": [
@@ -29,7 +33,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/reactive.ts --outdir ./dist --format esm && bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client/reactive' && bun build ./src/runtime/index.ts --outdir ./dist/runtime --format esm --external '@barefootjs/client/reactive' && bun build ./src/runtime/index.ts --outfile ./dist/runtime/standalone.js --format esm",
+    "build:js": "bun build ./src/reactive.ts --outdir ./dist --format esm && bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client/reactive' && bun build ./src/runtime/index.ts --outdir ./dist/runtime --format esm --external '@barefootjs/client/reactive' && bun build ./src/runtime/index.ts --outfile ./dist/runtime/standalone.js --format esm && bun build ./src/build.ts --outdir ./dist --format esm --external '@barefootjs/jsx' --external '@barefootjs/hono/adapter'",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist"
@@ -51,7 +55,21 @@
   "dependencies": {
     "@barefootjs/shared": "workspace:*"
   },
+  "peerDependencies": {
+    "@barefootjs/hono": "workspace:*",
+    "@barefootjs/jsx": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@barefootjs/hono": {
+      "optional": true
+    },
+    "@barefootjs/jsx": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@barefootjs/hono": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
     "@happy-dom/global-registrator": "^20.0.11",
     "typescript": "^5.0.0"
   }
