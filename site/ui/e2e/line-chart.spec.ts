@@ -153,4 +153,61 @@ test.describe('Line Chart Reference Page', () => {
       await expect(tooltip).toHaveCSS('opacity', '1')
     })
   })
+
+  test.describe('Zoom', () => {
+    const scope = '[bf-s^="LineChartZoomDemo_"]:not([data-slot])'
+
+    test('renders the full 12-month window on first paint', async ({ page }) => {
+      const container = page.locator(scope)
+      await expect(container.locator('[data-zoom-count]')).toHaveText(
+        '(12 of 12 months)',
+      )
+      await expect(container.locator('[data-zoom-window]')).toContainText('Jan')
+      await expect(container.locator('[data-zoom-window]')).toContainText('Dec')
+    })
+
+    test('"From" slider shrinks the window and the line path reflows', async ({ page }) => {
+      const container = page.locator(scope)
+      const fromInput = container.locator('[data-zoom-from]')
+      const path = container.locator('path[data-key="desktop"]').first()
+
+      const originalD = await path.getAttribute('d')
+      expect(originalD).not.toBeNull()
+
+      // Move the "From" slider 5 ticks to the right.
+      await fromInput.evaluate((el) => {
+        const input = el as HTMLInputElement
+        input.value = '5'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+
+      await expect(container.locator('[data-zoom-count]')).toHaveText(
+        '(7 of 12 months)',
+      )
+      await expect(container.locator('[data-zoom-window]')).toContainText('Jun')
+
+      // The line path `d` string is recomputed from the sliced dataset,
+      // so the SVG attribute MUST change.
+      await expect
+        .poll(async () => await path.getAttribute('d'), { timeout: 2000 })
+        .not.toBe(originalD)
+    })
+
+    test('"To" slider also drives the memo chain', async ({ page }) => {
+      const container = page.locator(scope)
+      const toInput = container.locator('[data-zoom-to]')
+
+      await toInput.evaluate((el) => {
+        const input = el as HTMLInputElement
+        input.value = '2'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+
+      await expect(container.locator('[data-zoom-count]')).toHaveText(
+        '(3 of 12 months)',
+      )
+      await expect(container.locator('[data-zoom-window]')).toContainText('Jan')
+      await expect(container.locator('[data-zoom-window]')).toContainText('Mar')
+    })
+  })
 })
