@@ -1,16 +1,5 @@
 'use client'
 
-/**
- * Form Component (Shared)
- *
- * A practical form demonstrating checkbox + button interaction.
- * When the checkbox is checked, the submit button becomes enabled.
- * This component tests:
- * - Checkbox state toggle
- * - Conditional button disabled attribute
- * - Null branch rendering (SVG checkmark appears/disappears)
- */
-
 import { createSignal } from '@barefootjs/client'
 
 export function Form() {
@@ -66,5 +55,3 @@ export function Form() {
     </div>
   )
 }
-
-export default Form
