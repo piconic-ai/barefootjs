@@ -443,8 +443,12 @@ const HONO_JSX_RUNTIME_SHIM = `declare module 'hono/jsx/jsx-runtime' {
 `
 
 const typeBundle: Record<string, string> = {
+  // Source of truth for @barefootjs/hono JSX types is `index.ts` (ambient
+  // declarations via `export declare namespace`); a sibling `.d.ts` no
+  // longer exists. Monaco parses the file based on the virtual `.d.ts`
+  // key, and the source's syntax is valid as a `.d.ts` body.
   'file:///node_modules/@barefootjs/hono/jsx/jsx-runtime/index.d.ts':
-    await Bun.file(resolve(PKG_DIR, 'adapter-hono/src/jsx/jsx-runtime/index.d.ts')).text(),
+    await Bun.file(resolve(PKG_DIR, 'adapter-hono/src/jsx/jsx-runtime/index.ts')).text(),
   'file:///node_modules/@barefootjs/jsx/jsx-runtime/index.d.ts':
     await Bun.file(resolve(PKG_DIR, 'jsx/src/jsx-runtime/index.d.ts')).text(),
   'file:///node_modules/@barefootjs/jsx/html-types.d.ts':
