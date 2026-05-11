@@ -1289,6 +1289,24 @@ function extractAssignedIdentifiersFromNode(node: ts.Node): Set<string> {
   }
 
   function visit(n: ts.Node): void {
+    // Stop at the init / sub-init boundary (#1228): assignments inside
+    // nested function literals (event-listener callbacks, setTimeout
+    // arrows, returned closures, ...) do not execute at init time, so
+    // they are not init-statement assignments and BF052 must not flag
+    // them. The entry node passed in is always a ts.Statement from
+    // collectInitStatement, never a function literal, so this guard
+    // only trips on descent.
+    if (
+      ts.isArrowFunction(n) ||
+      ts.isFunctionExpression(n) ||
+      ts.isFunctionDeclaration(n) ||
+      ts.isMethodDeclaration(n) ||
+      ts.isGetAccessorDeclaration(n) ||
+      ts.isSetAccessorDeclaration(n) ||
+      ts.isConstructorDeclaration(n)
+    ) {
+      return
+    }
     if (ts.isBinaryExpression(n)) {
       const op = n.operatorToken.kind
       if (

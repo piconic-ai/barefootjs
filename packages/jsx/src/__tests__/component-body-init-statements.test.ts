@@ -243,3 +243,113 @@ describe('Init statements referencing module-scope declarations (#933)', () => {
     expect(bf052!.message.toLowerCase()).toContain('unknownglobal')
   })
 })
+
+describe('Init statements crossing the init/sub-init boundary (#1228)', () => {
+  // Regression: the BF052 walker recursed into nested function literals
+  // (event-listener callbacks, setTimeout arrows, returned closures) and
+  // flagged inner assignments as if they were init-time writes — even when
+  // the LHS was a `let` declared inside the same nested arrow. Per
+  // spec/compiler.md, nested function bodies are sub-init scope and do
+  // not run at init time, so BF052 must stop at the boundary.
+
+  test('let inside an addEventListener callback does not emit BF052', () => {
+    const source = `
+      'use client'
+
+      export function MyComponent(this: HTMLElement, props: { id: string }) {
+        const wrapper = document.createElement('div')
+
+        wrapper.addEventListener('mousedown', (e) => {
+          const startX = e.clientX
+          let moved = false
+          const onMove = (ev: MouseEvent) => {
+            if (moved) return
+            if (Math.hypot(ev.clientX - startX, 0) > 3) {
+              moved = true
+            }
+          }
+          window.addEventListener('mousemove', onMove)
+        })
+
+        this.appendChild(wrapper)
+      }
+    `
+
+    const result = compileJSX(source, 'MyComponent.tsx', { adapter })
+    const bf052 = result.errors.find(e => e.code === 'BF052')
+    expect(bf052).toBeUndefined()
+  })
+
+  test('let inside a setTimeout callback with inner arrow assignment does not emit BF052', () => {
+    const source = `
+      'use client'
+
+      export function Retrying(this: HTMLElement) {
+        setTimeout(() => {
+          let attempts = 0
+          const retry = () => {
+            attempts = attempts + 1
+            if (attempts < 3) retry()
+          }
+          retry()
+        }, 0)
+      }
+    `
+
+    const result = compileJSX(source, 'Retrying.tsx', { adapter })
+    const bf052 = result.errors.find(e => e.code === 'BF052')
+    expect(bf052).toBeUndefined()
+  })
+
+  test('multiple nested function literals in one init statement do not emit BF052', () => {
+    // Mirrors the desk IssueCardNode shape: several let/assign pairs
+    // scattered across event-listener callbacks and inner closures.
+    const source = `
+      'use client'
+
+      export function Card(this: HTMLElement) {
+        this.addEventListener('mousedown', (e) => {
+          let moved = false
+          let cancelled = false
+          const onMove = () => {
+            moved = true
+          }
+          const onUp = () => {
+            cancelled = true
+            moved = false
+          }
+          window.addEventListener('mousemove', onMove)
+          window.addEventListener('mouseup', onUp)
+        })
+      }
+    `
+
+    const result = compileJSX(source, 'Card.tsx', { adapter })
+    const bf052 = result.errors.find(e => e.code === 'BF052')
+    expect(bf052).toBeUndefined()
+  })
+
+  test('top-level assignment to undeclared name still emits BF052 (boundary preserved)', () => {
+    // Counter-test: the #1228 fix must not over-suppress. A bare
+    // assignment at the top level of the component body — outside any
+    // function literal — still runs at init time and must be flagged.
+    const source = `
+      'use client'
+
+      export function Stray(props: { v?: string }) {
+        strayGlobal = props.v
+        this.addEventListener('click', () => {
+          let local = 0
+          local = local + 1
+        })
+      }
+    `
+
+    const result = compileJSX(source, 'Stray.tsx', { adapter })
+    const bf052Errors = result.errors.filter(e => e.code === 'BF052')
+    expect(bf052Errors).toHaveLength(1)
+    expect(bf052Errors[0].message.toLowerCase()).toContain('strayglobal')
+    // And critically NOT 'local' from inside the click callback.
+    expect(bf052Errors[0].message.toLowerCase()).not.toContain('local')
+  })
+})
