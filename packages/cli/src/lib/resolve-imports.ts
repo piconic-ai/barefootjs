@@ -2,6 +2,7 @@
 
 import { dirname, resolve } from 'node:path'
 import ts from 'typescript'
+import { createError, ErrorCodes, type CompilerError } from '@barefootjs/jsx'
 import { RELATIVE_IMPORT_RE } from './patterns'
 import { fileExists, readText, transpile, writeText } from './runtime'
 
@@ -358,8 +359,11 @@ export interface ResolveRelativeImportsOptions {
  *     would duplicate code; stripping the import would break runtime
  *     references. Leave the line alone.
  *   - `inline`   — `.ts` source found; transpile and splice in.
- *     `.tsx` is treated as a server component (already rendered at
- *     SSR time) and the import line is stripped instead.
+ *     `.tsx` is treated as a separately-compiled `'use client'`
+ *     component (it has its own `.client.js`) and the import line is
+ *     stripped instead — the binding can't be a plain function call in
+ *     the consumer bundle. Any residual reference is caught by
+ *     `detectStrippedReferences` after IIFE assembly.
  *   - `missing`  — nothing matched. Strip the import line.
  */
 type ResolveResult =
@@ -406,6 +410,226 @@ interface InlinedModule {
 }
 
 /**
+ * Why an import line was dropped during the graph walk. Drives the
+ * diagnostic wording when a dangling reference is later discovered —
+ * each reason has a different remediation, so a single generic message
+ * would mislead the developer.
+ */
+type StripKind =
+  | 'tsx'      // sibling .tsx, separately-compiled 'use client' component
+  | 'missing'  // import path could not be resolved on disk
+  | 'circular' // circular relative dependency; the IIFE topo-sort can't safely emit it
+
+/**
+ * One stripped import recorded during the graph walk. Surfaces in the final
+ * post-assembly bundle scan: if any of the local binding names below still
+ * appears as a value reference, that is a build-time error (BF053). See
+ * `detectStrippedReferences` and piconic-ai/barefootjs#1227.
+ */
+interface StrippedImport {
+  /** Reason the import was dropped — controls the diagnostic message. */
+  kind: StripKind
+  /** The original import specifier, e.g. `./DraftTitleEditor`. */
+  importPath: string
+  /** Every local name the parent bound (named, namespace, default). */
+  bindings: string[]
+  /** The bundle path passed in for logging — used for the error location. */
+  loggingPath: string
+}
+
+/**
+ * Record an `import` statement that was just stripped (because the target
+ * was a sibling `.tsx`, an unresolved path, or a circular relative dep) so
+ * a later pass can verify none of its locals are still referenced.
+ */
+function recordStrippedImport(
+  fullMatch: string,
+  importPath: string,
+  loggingPath: string,
+  kind: StripKind,
+  stripped: StrippedImport[],
+): void {
+  const shape = parseImportShape(fullMatch)
+  if (!shape) return // side-effect import (`import './x'`) — no bound names.
+  const bindings: string[] = []
+  for (const { local } of shape.named) bindings.push(local)
+  if (shape.namespace) bindings.push(shape.namespace)
+  if (shape.default) bindings.push(shape.default)
+  if (bindings.length === 0) return
+  stripped.push({ kind, importPath, bindings, loggingPath })
+}
+
+/**
+ * Build the per-kind diagnostic body for a dangling stripped reference.
+ * Each strip reason has its own remediation; a one-size message would
+ * mislead developers (a missing-path strip is NOT a 'use client'
+ * boundary problem).
+ */
+function buildDanglingReferenceMessage(
+  binding: string,
+  s: StrippedImport,
+): { message: string; suggestion: string } {
+  const head =
+    `Import \`${binding}\` from '${s.importPath}' was stripped from the client bundle ` +
+    `\`${s.loggingPath}\`, but \`${binding}\` is still referenced in the assembled JS.`
+  const shadowNote =
+    `(If \`${binding}\` is a local shadow rather than the stripped import, please file an issue.)`
+  switch (s.kind) {
+    case 'tsx':
+      return {
+        message:
+          `${head} Client components ('use client' .tsx) are not callable as plain functions ` +
+          `from imperative .ts modules — render them as JSX from a 'use client' parent ` +
+          `instead. ${shadowNote}`,
+        suggestion:
+          `Move the call site into a 'use client' .tsx parent and render \`${binding}\` ` +
+          `as JSX, or restructure so the imperative .ts module no longer needs to call ` +
+          `\`${binding}\` directly.`,
+      }
+    case 'missing':
+      return {
+        message:
+          `${head} The import path could not be resolved on disk. ${shadowNote}`,
+        suggestion:
+          `Check the path '${s.importPath}' — either fix the typo, restore the deleted ` +
+          `file, or remove the dead import.`,
+      }
+    case 'circular':
+      return {
+        message:
+          `${head} The import was dropped because the IIFE topological sort cannot safely ` +
+          `emit a circular relative dependency. ${shadowNote}`,
+        suggestion:
+          `Break the cycle: extract the shared bindings into a third module that both ` +
+          `sides can depend on without re-entry.`,
+      }
+  }
+}
+
+/**
+ * Identifier-position classifier: returns `true` when `id` is being USED
+ * as a value (and could therefore be the dangling reference to a stripped
+ * import), `false` when it's a declaration name, property key, member-
+ * access name, or other non-reference slot.
+ *
+ * Caveat: this is a syntactic test, not a scope analysis. If a local
+ * function parameter happens to share a name with a stripped import,
+ * references inside that function's body will count as references to
+ * the stripped import (false positive). Acceptable per #1227: a loud
+ * build error is a strict improvement over a silent runtime
+ * ReferenceError, and shadowing genuine import binding names is rare in
+ * practice.
+ */
+function isValueReference(id: ts.Identifier): boolean {
+  const parent = id.parent
+  if (!parent) return false
+  if (ts.isPropertyAccessExpression(parent) && parent.name === id) return false
+  if (ts.isPropertyAssignment(parent) && parent.name === id) return false
+  if (
+    (ts.isMethodDeclaration(parent) ||
+      ts.isGetAccessorDeclaration(parent) ||
+      ts.isSetAccessorDeclaration(parent)) &&
+    parent.name === id
+  ) {
+    return false
+  }
+  if (ts.isVariableDeclaration(parent) && parent.name === id) return false
+  if (ts.isFunctionDeclaration(parent) && parent.name === id) return false
+  if (ts.isFunctionExpression(parent) && parent.name === id) return false
+  if (ts.isClassDeclaration(parent) && parent.name === id) return false
+  if (ts.isClassExpression(parent) && parent.name === id) return false
+  if (ts.isParameter(parent) && parent.name === id) return false
+  if (ts.isBindingElement(parent) && (parent.name === id || parent.propertyName === id)) return false
+  if (ts.isLabeledStatement(parent) && parent.label === id) return false
+  if (ts.isBreakOrContinueStatement(parent) && parent.label === id) return false
+  // ImportSpecifier (`{ X }` or `{ X as Y }`) and ExportSpecifier have
+  // only `name`/`propertyName` as Identifier children — written as an
+  // explicit slot check for stylistic consistency with the other
+  // branches above.
+  if (ts.isImportSpecifier(parent) && (parent.name === id || parent.propertyName === id)) return false
+  if (ts.isExportSpecifier(parent) && (parent.name === id || parent.propertyName === id)) return false
+  if (ts.isImportClause(parent) && parent.name === id) return false
+  if (ts.isNamespaceImport(parent) && parent.name === id) return false
+  if (ts.isQualifiedName(parent) && parent.right === id) return false
+  return true
+}
+
+/**
+ * Scan the assembled bundle source for value references to any binding
+ * name we removed during the walk. Returns one CompilerError per
+ * (stripped import × dangling binding) pair. Uses the TypeScript parser
+ * so member-access property names, declaration names, etc. are
+ * correctly excluded.
+ *
+ * Closes piconic-ai/barefootjs#1227: the previous strip flow logged at
+ * info level and continued, so a `.ts` helper inlined into a client
+ * bundle that called into a sibling `'use client'` component left a
+ * dangling identifier and a `ReferenceError` only visible at runtime.
+ */
+function detectStrippedReferences(
+  bundleSource: string,
+  stripped: StrippedImport[],
+): CompilerError[] {
+  if (stripped.length === 0) return []
+  // The bundle is already transpiled JS at this point — parse as JS so
+  // residual TS-only syntax isn't mistakenly required.
+  let sf: ts.SourceFile
+  try {
+    sf = ts.createSourceFile(
+      'bundle.js',
+      bundleSource,
+      ts.ScriptTarget.Latest,
+      /*setParents*/ true,
+      ts.ScriptKind.JS,
+    )
+  } catch {
+    // If the bundle can't be parsed for any reason, fall back silently:
+    // the strip itself is the bug we care about; a parse failure here is
+    // a separate problem that will surface elsewhere.
+    return []
+  }
+  // For each value-referenced identifier name, capture the FIRST node we
+  // see — that's the call/use site we'll point the developer at. Walking
+  // top-down gives source-order positions naturally.
+  const firstReference = new Map<string, ts.Identifier>()
+  function visit(node: ts.Node): void {
+    if (ts.isIdentifier(node) && isValueReference(node)) {
+      if (!firstReference.has(node.text)) firstReference.set(node.text, node)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+
+  const errors: CompilerError[] = []
+  for (const s of stripped) {
+    for (const b of s.bindings) {
+      const refNode = firstReference.get(b)
+      if (!refNode) continue
+      // 1-indexed line, 0-indexed column — matches `SourceLocation` per
+      // packages/jsx/src/types.ts.
+      const start = sf.getLineAndCharacterOfPosition(refNode.getStart(sf))
+      const end = sf.getLineAndCharacterOfPosition(refNode.getEnd())
+      const { message, suggestion } = buildDanglingReferenceMessage(b, s)
+      errors.push(
+        createError(
+          ErrorCodes.STRIPPED_CLIENT_IMPORT_REFERENCED,
+          {
+            file: s.loggingPath,
+            start: { line: start.line + 1, column: start.character },
+            end: { line: end.line + 1, column: end.character },
+          },
+          {
+            message,
+            suggestion: { message: suggestion },
+          },
+        ),
+      )
+    }
+  }
+  return errors
+}
+
+/**
  * Walk relative imports in `content` and collect every transitively-reachable
  * `.ts` module. Replaces each direct relative import line in `content` with
  * a destructure pulling from a per-module top-level identifier — the IIFE
@@ -422,6 +646,12 @@ interface InlinedModule {
  * bare-package imports stripped from any inlined module body bubble up
  * here so the outer entry point can prepend them, deduped, to the parent
  * bundle's top level. piconic-ai/barefootjs#1148.
+ *
+ * `stripped` is the other mutable accumulator: any import line dropped
+ * because the target is a sibling `.tsx`, missing, or a circular `.ts`
+ * dep is recorded here so `inlineRelativeImports` can verify, after IIFE
+ * assembly, that none of the dropped bindings are still referenced in
+ * the final bundle. piconic-ai/barefootjs#1227.
  */
 async function walkAndCollect(
   content: string,
@@ -429,6 +659,7 @@ async function walkAndCollect(
   modules: Map<string, InlinedModule>,
   visiting: Set<string>,
   loggingPath: string,
+  stripped: StrippedImport[],
 ): Promise<string> {
   const re = new RegExp(RELATIVE_IMPORT_RE.source, RELATIVE_IMPORT_RE.flags)
   const matches = [...content.matchAll(re)]
@@ -448,12 +679,19 @@ async function walkAndCollect(
       // Surface unresolved imports — silent strips made #1151 hard to spot.
       console.warn(`Stripped unresolved import: ${importPath} from ${loggingPath}`)
       content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
+      recordStrippedImport(fullMatch, importPath, loggingPath, 'missing', stripped)
       continue
     }
 
     if (result.path.endsWith('.tsx')) {
+      // A sibling `.tsx` reaching this path is, in practice, a `'use client'`
+      // component: it has its own compiled `.client.js` and is not callable
+      // as a plain function from a client bundle. Drop the import line and
+      // record the bindings so a later post-assembly scan can flag any
+      // call sites that survived the strip. piconic-ai/barefootjs#1227.
       content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
-      console.log(`Stripped server component import: ${importPath} from ${loggingPath}`)
+      console.log(`Stripped client component import: ${importPath} from ${loggingPath}`)
+      recordStrippedImport(fullMatch, importPath, loggingPath, 'tsx', stripped)
       continue
     }
 
@@ -465,6 +703,7 @@ async function walkAndCollect(
       if (visiting.has(result.path)) {
         console.warn(`Skipping circular relative import: ${importPath} from ${loggingPath}`)
         content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
+        recordStrippedImport(fullMatch, importPath, loggingPath, 'circular', stripped)
         continue
       }
       visiting.add(result.path)
@@ -488,6 +727,7 @@ async function walkAndCollect(
         modules,
         visiting,
         loggingPath,
+        stripped,
       )
       mod.transpiledBody = replacedBody
       visiting.delete(result.path)
@@ -551,12 +791,19 @@ async function inlineRelativeImports(
   searchDirs: string[],
   loggingPath: string,
   hoistedAcc: string[],
+  errorAcc: CompilerError[],
 ): Promise<string> {
   const modules = new Map<string, InlinedModule>()
   const visiting = new Set<string>()
-  let parentContent = await walkAndCollect(content, searchDirs, modules, visiting, loggingPath)
+  const stripped: StrippedImport[] = []
+  let parentContent = await walkAndCollect(content, searchDirs, modules, visiting, loggingPath, stripped)
 
-  if (modules.size === 0) return parentContent
+  if (modules.size === 0) {
+    // No IIFEs to prepend — the parent content already reflects every
+    // strip. Run the dangling-reference scan on it directly.
+    for (const err of detectStrippedReferences(parentContent, stripped)) errorAcc.push(err)
+    return parentContent
+  }
 
   // Now resolve each module's transitive import edges — the body has
   // already been rewritten with destructures, so the only paths left to
@@ -595,7 +842,13 @@ async function inlineRelativeImports(
     for (const h of hoistedImports) hoistedAcc.push(h)
   }
 
-  return iifes.join('\n') + '\n' + parentContent
+  const finalContent = iifes.join('\n') + '\n' + parentContent
+  // Run the dangling-reference scan AFTER IIFE assembly so any binding
+  // that escaped a strip (whether at the parent level or inside an
+  // inlined module's body) gets caught — that body now lives inside an
+  // IIFE arrow in `finalContent`.
+  for (const err of detectStrippedReferences(finalContent, stripped)) errorAcc.push(err)
+  return finalContent
 }
 
 /**
@@ -603,11 +856,19 @@ async function inlineRelativeImports(
  *
  * For each client JS file in the manifest:
  * - `.ts` imports: transpile and inline the code (recursively for transitive `.ts` deps)
- * - `.tsx` imports: strip (server component, already rendered at SSR time)
- * - Not found / already inlined: strip
+ * - `.tsx` imports: strip (separately-compiled `'use client'` component)
+ * - Not found / circular: strip
+ *
+ * Returns the set of diagnostics emitted during resolution. The only
+ * error currently produced here is `BF053` — a stripped import whose
+ * binding is still referenced in the assembled bundle. See
+ * `detectStrippedReferences` and piconic-ai/barefootjs#1227.
  */
-export async function resolveRelativeImports(options: ResolveRelativeImportsOptions): Promise<void> {
+export async function resolveRelativeImports(
+  options: ResolveRelativeImportsOptions,
+): Promise<{ errors: CompilerError[] }> {
   const { distDir, manifest, sourceDirs = [], sourceDirsByManifestKey = {} } = options
+  const errors: CompilerError[] = []
 
   for (const [name, entry] of Object.entries(manifest)) {
     if (!entry.clientJs) continue
@@ -626,8 +887,16 @@ export async function resolveRelativeImports(options: ResolveRelativeImportsOpti
       [dirname(filePath), ...perEntryDirs, ...sourceDirs],
       entry.clientJs,
       hoistedAcc,
+      errors,
     )
 
+    // Note: `inlineRelativeImports` runs `detectStrippedReferences` BEFORE
+    // the hoisted bare-package imports below are prepended. A stripped
+    // relative-import binding name colliding with a hoisted bare-package
+    // binding name is not possible inside a single source file (TS
+    // forbids same-name imports), so detection sees the complete set of
+    // identifiers it needs to classify references against. See #1227.
+    //
     // Prepend bare-package imports that bubbled up from inlined modules,
     // deduped by exact statement text after whitespace normalization.
     // ES modules hoist all `import` statements anyway, so placement is
@@ -648,4 +917,6 @@ export async function resolveRelativeImports(options: ResolveRelativeImportsOpti
       await writeText(filePath, next)
     }
   }
+
+  return { errors }
 }

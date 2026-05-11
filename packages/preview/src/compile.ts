@@ -5,7 +5,7 @@
  * Follows site/ui/build.ts patterns but minimal — only what previews need.
  */
 
-import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
+import { compileJSX, combineParentChildClientJs, formatError } from '@barefootjs/jsx'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { addScriptCollection } from '@barefootjs/hono/build'
 import { mkdir, readdir, symlink, lstat } from 'node:fs/promises'
@@ -182,8 +182,12 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
     console.log(`Combined: ${entry.clientJs}`)
   }
 
-  // 5b. Resolve relative imports
-  await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+  // 5b. Resolve relative imports. Surface BF053 diagnostics — preview
+  // generation hits the same strip path as the main build, so a
+  // dangling stripped binding would crash the previewed component at
+  // hydrate time with no clue at compile time. See #1227.
+  const { errors: resolveErrors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+  for (const err of resolveErrors) console.error(formatError(err))
 
   // 6. Rewrite imports and add JSX pragma in compiled .tsx files
   const HONO_UTILS_PATH = resolve(ROOT_DIR, 'packages/adapter-hono/src/utils')

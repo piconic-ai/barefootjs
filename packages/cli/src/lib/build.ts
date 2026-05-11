@@ -1,6 +1,6 @@
 // Core build module: shared pipeline for `barefoot build`.
 
-import { compileJSX, combineParentChildClientJs, createProgramForCorpus } from '@barefootjs/jsx'
+import { compileJSX, combineParentChildClientJs, createProgramForCorpus, formatError } from '@barefootjs/jsx'
 import type { TemplateAdapter, OutputLayout, PostBuildContext, ExternalSpec, BundleEntry } from '@barefootjs/jsx'
 import type ts from 'typescript'
 import { mkdir, readdir, stat, unlink } from 'node:fs/promises'
@@ -631,11 +631,18 @@ export async function build(
       sourceDirsByManifestKey[entry.manifestKey] = [dirname(sourcePath)]
     }
   }
-  await resolveRelativeImports({
+  const { errors: resolveErrors } = await resolveRelativeImports({
     distDir: config.outDir,
     manifest,
     sourceDirsByManifestKey,
   })
+  // Surface stripped-import diagnostics (BF053) as build errors so they
+  // turn into a non-zero exit at `commands/build.ts` instead of silently
+  // shipping a bundle that will `ReferenceError` at runtime. See #1227.
+  for (const err of resolveErrors) {
+    console.error(formatError(err))
+    errorCount++
+  }
 
   // 6c. Normalize @barefootjs/client* specifiers to the relative barefoot.js
   //     path so the per-source dedup below can collapse multiple specifiers

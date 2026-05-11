@@ -51,6 +51,14 @@ export const ErrorCodes = {
   // Init statement errors (BF052)
   UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
 
+  // Stripped-import diagnostics (BF053) — a relative import was removed
+  // from a compiled client bundle (e.g. a sibling '.tsx' deferred to its
+  // own client JS, an unresolved path, or a circular relative dep) but
+  // the binding name still appears as a value reference in the bundle.
+  // Silent strips here surface as runtime `ReferenceError`; making the
+  // strip a build-time error closes the gap. See piconic-ai/barefootjs#1227.
+  STRIPPED_CLIENT_IMPORT_REFERENCED: 'BF053',
+
   // Stage-violation errors (BF060-BF069) — cross-scope references the
   // staged-IR refactor (#1138) surfaces structurally rather than
   // hiding behind silent fallbacks. All three are hard errors: at
@@ -127,6 +135,9 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.UNDECLARED_INIT_STATEMENT_REFERENCE]:
     'Init statement references an undeclared identifier. Declare it at module scope, inside the component, or import it — otherwise ESM strict mode throws ReferenceError at runtime.',
+
+  [ErrorCodes.STRIPPED_CLIENT_IMPORT_REFERENCED]:
+    "Import was stripped from the client bundle but its binding is still referenced. Client components ('use client' .tsx) are not callable as plain functions from imperative .ts modules — render them as JSX from a 'use client' parent instead. If the flagged name is a local shadow rather than the stripped import, please file an issue.",
 
   [ErrorCodes.STAGE_REACTIVE_IN_TEMPLATE]:
     'Reactive binding (signal getter or memo) referenced from template scope. The template lambda runs at module scope without the reactive context, so the value cannot be evaluated at SSR. Wrap the JSX expression in /* @client */ to defer it to hydrate, or restructure so the template uses a prop or static value.',

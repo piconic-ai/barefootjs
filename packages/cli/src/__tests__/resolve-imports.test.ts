@@ -49,13 +49,13 @@ console.log(highlight('hello'))
     expect(result).toContain("from '@barefootjs/client'")
   })
 
-  test('strips .tsx server component import', async () => {
-    writeFileSync(resolve(COMPONENTS_DIR, 'ServerComp.tsx'), `
-export function ServerComp() {
-  return <div>server only</div>
+  test('strips .tsx client component import when binding is unused', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'ClientComp.tsx'), `'use client'
+export function ClientComp() {
+  return <div>client only</div>
 }
 `)
-    const clientJs = `import { ServerComp } from './ServerComp'
+    const clientJs = `import { ClientComp } from './ClientComp'
 import { createSignal } from '@barefootjs/client'
 console.log('client code')
 `
@@ -65,12 +65,75 @@ console.log('client code')
       Parent: { clientJs: 'components/Parent-abc123.js', markedTemplate: 'components/Parent.tsx' },
     }
 
-    await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Parent-abc123.js')).text()
-    expect(result).not.toContain('ServerComp')
+    expect(result).not.toContain('ClientComp')
     expect(result).toContain("from '@barefootjs/client'")
     expect(result).toContain("console.log('client code')")
+    // No dangling reference → no diagnostic.
+    expect(errors).toHaveLength(0)
+  })
+
+  // Regression: bf#1227 — a `.ts` helper (no `'use client'`) inlined into a
+  // client bundle imports a sibling `'use client'` `.tsx` AND calls it. The
+  // strip used to be silent (`console.log` only, build exit 0), so the
+  // bundle shipped with a dangling identifier and crashed at runtime with
+  // `ReferenceError: DraftTitleEditor is not defined`. After the fix the
+  // strip is detected via a post-assembly identifier scan and surfaced as
+  // BF053, so the build exits non-zero.
+  test('errors when stripped .tsx binding is still referenced (bf#1227)', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'DraftTitleEditor.tsx'), `'use client'
+export function DraftTitleEditor() { return <textarea /> }
+`)
+    writeFileSync(resolve(COMPONENTS_DIR, 'IssueCardNode.ts'), `
+import { DraftTitleEditor } from './DraftTitleEditor'
+export function IssueCardNode() {
+  return DraftTitleEditor({ initialTitle: '' })
+}
+`)
+    const clientJs = `import { IssueCardNode } from './IssueCardNode'
+IssueCardNode()
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'DeskCanvas-aaa.js'), clientJs)
+    const manifest = {
+      DeskCanvas: {
+        clientJs: 'components/DeskCanvas-aaa.js',
+        markedTemplate: 'components/DeskCanvas.tsx',
+      },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF053')
+    expect(errors[0].severity).toBe('error')
+    // The error must name the binding so the developer can find the call.
+    expect(errors[0].message).toContain('DraftTitleEditor')
+    // And the import path so they can find the source file.
+    expect(errors[0].message).toContain('./DraftTitleEditor')
+    // And the bundle so they know which entry to investigate.
+    expect(errors[0].loc.file).toBe('components/DeskCanvas-aaa.js')
+  })
+
+  // Sanity: stripping is fine when the import was for types-only or
+  // side-effects and no value reference survives. Locks the fix to the
+  // dangling-reference case so we don't over-trigger BF053.
+  test('does not error when stripped .tsx binding is unused at the call site', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'TypesOnly.tsx'), `'use client'
+export function TypesOnly() { return <div /> }
+`)
+    const clientJs = `import { TypesOnly } from './TypesOnly'
+console.log('client code')
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Quiet-bbb.js'), clientJs)
+    const manifest = {
+      Quiet: { clientJs: 'components/Quiet-bbb.js', markedTemplate: 'components/Quiet.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect(errors).toHaveLength(0)
   })
 
   test('deduplicates same module imported by two client JS files', async () => {
@@ -147,11 +210,90 @@ console.log('still works')
       Broken: { clientJs: 'components/Broken-111.js', markedTemplate: 'components/Broken.tsx' },
     }
 
-    await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Broken-111.js')).text()
     expect(result).not.toContain('nonexistent')
     expect(result).toContain("console.log('still works')")
+    // Dropped binding is unused — no BF053 expected.
+    expect(errors).toHaveLength(0)
+  })
+
+  // Coverage: namespace import (`import * as ns from '.tsx'`) gets stripped,
+  // and `ns.foo()` survives → BF053 must fire on the namespace binding.
+  // The reference is placed deliberately on line 3 of the input so we can
+  // assert that `loc` reports a non-placeholder position in the
+  // post-strip bundle (line 2 after the single import line is removed).
+  test('errors when stripped namespace binding is referenced', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'NsClient.tsx'), `'use client'
+export function Foo() { return <div /> }
+`)
+    const clientJs = `import * as ns from './NsClient'
+const greeting = 'hi'
+ns.Foo()
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'NsParent-aaa.js'), clientJs)
+    const manifest = {
+      NsParent: { clientJs: 'components/NsParent-aaa.js', markedTemplate: 'components/NsParent.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF053')
+    expect(errors[0].message).toContain('ns')
+    expect(errors[0].message).toContain('./NsClient')
+    // Position points at the post-strip bundle: the import line is gone,
+    // `const greeting = 'hi'` is now line 1, and `ns.Foo()` lands on
+    // line 2. That's the dev-facing location the error should navigate to.
+    expect(errors[0].loc.start.line).toBe(2)
+    expect(errors[0].loc.start.column).toBe(0)
+  })
+
+  // Coverage: default import (`import D from '.tsx'`) gets stripped,
+  // and `D()` survives → BF053 must fire on the default binding.
+  test('errors when stripped default binding is referenced', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'DefClient.tsx'), `'use client'
+export default function DefClient() { return <div /> }
+`)
+    const clientJs = `import DefClient from './DefClient'
+DefClient()
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'DefParent-aaa.js'), clientJs)
+    const manifest = {
+      DefParent: { clientJs: 'components/DefParent-aaa.js', markedTemplate: 'components/DefParent.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF053')
+    expect(errors[0].message).toContain('DefClient')
+  })
+
+  // Coverage: a `missing`-strip whose binding survives reference. Distinct
+  // message from the `.tsx` case — the remediation is "fix the path", not
+  // "render as JSX from 'use client' parent". Locks the per-kind wording
+  // added for #1227 review feedback #1.
+  test('errors with missing-path-specific wording when unresolved binding is referenced', async () => {
+    const clientJs = `import { stillUsed } from './nonexistent'
+stillUsed()
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Dangling-aaa.js'), clientJs)
+    const manifest = {
+      Dangling: { clientJs: 'components/Dangling-aaa.js', markedTemplate: 'components/Dangling.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF053')
+    expect(errors[0].message).toContain('stillUsed')
+    expect(errors[0].message).toContain('./nonexistent')
+    // Per-kind diagnostic — missing strip is about path resolution,
+    // not 'use client' boundary.
+    expect(errors[0].message).toContain('could not be resolved')
+    expect(errors[0].message).not.toContain('use client')
   })
 
   test('recursively inlines transitive .ts imports', async () => {
