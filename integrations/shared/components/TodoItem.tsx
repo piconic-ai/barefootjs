@@ -1,9 +1,6 @@
-"use client"
-/**
- * TodoItem Component
- * Displays and edits individual todo items
- * Follows TodoMVC HTML structure and styling conventions
- */
+'use client'
+
+// Single row of the TodoMVC list — view / edit / toggle / destroy.
 
 type Todo = {
   id: number

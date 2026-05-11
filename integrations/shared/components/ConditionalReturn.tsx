@@ -1,12 +1,7 @@
 'use client'
 
-/**
- * ConditionalReturn Component (Shared)
- *
- * Exercises if/else conditional JSX returns (IRIfStatement).
- * Renders a <button> by default or an <a> when variant="link".
- * Both branches have reactive state to verify client-side hydration.
- */
+// Test fixture: exercises if/else conditional JSX returns (IRIfStatement).
+// Renders a <button> by default or an <a> when variant="link".
 
 import { createSignal } from '@barefootjs/client'
 
@@ -23,7 +18,7 @@ function ConditionalReturn(props: ConditionalReturnProps) {
         href="#"
         className="conditional-link"
         data-active={count() > 0}
-        onClick={(e: Event) => {
+        onClick={(e) => {
           e.preventDefault()
           setCount(n => n + 1)
         }}

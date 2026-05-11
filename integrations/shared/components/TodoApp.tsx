@@ -1,11 +1,7 @@
-"use client"
+'use client'
 
-/**
- * BarefootJS TodoApp with SSR
- *
- * Main component - renders initial todos from server, then uses API for updates
- * Follows TodoMVC HTML structure and styling conventions
- */
+// SSR variant. Initial todos come from the server, updates go through /api/todos.
+// Follows TodoMVC HTML structure and styling conventions.
 
 import { createSignal, onMount } from '@barefootjs/client'
 import TodoItem from './TodoItem'
@@ -166,7 +162,7 @@ function TodoApp(props: Props) {
           className="new-todo"
           placeholder="What needs to be done?"
           value={newText()}
-          onInput={(e) => setNewText((e.target as HTMLInputElement).value)}
+          onInput={e => setNewText(e.target.value)}
           onKeyDown={handleKeyDown}
           autofocus
         />

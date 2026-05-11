@@ -1,12 +1,5 @@
 'use client'
 
-/**
- * Counter Component (Shared)
- *
- * This component is shared across all adapter integrations.
- * Used to verify consistent behavior across different backends.
- */
-
 import { createSignal, createMemo } from '@barefootjs/client'
 
 interface CounterProps {
@@ -29,5 +22,3 @@ export function Counter(props: CounterProps) {
     </div>
   )
 }
-
-export default Counter

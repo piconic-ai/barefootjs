@@ -1,11 +1,6 @@
-"use client"
+'use client'
 
-/**
- * AI Chat Interactive Component
- *
- * Client-side chat with SSE streaming responses.
- * Each user message triggers a streaming AI response via /api/ai-chat.
- */
+// Client-side chat with SSE streaming responses via /api/ai-chat.
 
 import { createSignal, createEffect } from '@barefootjs/client'
 
@@ -29,7 +24,7 @@ export function AIChatInteractive() {
     const trimmed = text.trim()
     if (!trimmed || isStreaming()) return
 
-    setMessages((prev: Message[]) => [...prev, { id: Date.now(), role: 'user', content: trimmed }])
+    setMessages(prev => [...prev, { id: Date.now(), role: 'user', content: trimmed }])
     setInput('')
     setIsStreaming(true)
     setStreamingText('')
@@ -39,13 +34,13 @@ export function AIChatInteractive() {
     es.onmessage = (e) => {
       if (e.data === '[DONE]') {
         const final = streamingText()
-        setMessages((prev: Message[]) => [...prev, { id: Date.now(), role: 'assistant', content: final }])
+        setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: final }])
         setStreamingText('')
         setIsStreaming(false)
         es.close()
       } else {
         const token = JSON.parse(e.data) as string
-        setStreamingText((prev: string) => prev + token)
+        setStreamingText(prev => prev + token)
       }
     }
 
@@ -62,7 +57,7 @@ export function AIChatInteractive() {
   return (
     <div className="chat-container">
       <div className="chat-messages" id="chat-messages">
-        {messages().map((msg: Message) => (
+        {messages().map(msg => (
           <div key={msg.id} className={`chat-msg chat-${msg.role}`}>
             <div className="chat-bubble">
               <p>{msg.content}</p>
@@ -84,7 +79,7 @@ export function AIChatInteractive() {
           className="chat-input"
           placeholder="Type a message..."
           value={input()}
-          onInput={(e) => setInput((e.target as HTMLInputElement).value)}
+          onInput={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isStreaming()}
         />

@@ -1,13 +1,8 @@
 'use client'
-/**
- * PortalExample - Simple Portal Component
- *
- * Demonstrates Portal usage for SSR.
- * Uses the same pattern as DialogOverlay/DialogContent:
- * - Elements are always rendered (not conditionally)
- * - On mount (via ref callback), elements are moved to document.body
- * - Visibility is controlled via inline style (hidden attribute)
- */
+
+// Portal test fixture. Uses the same pattern as DialogOverlay/DialogContent:
+// elements are always rendered (not conditionally) and moved to document.body
+// on mount via ref callback, with visibility controlled by `hidden`.
 
 import { createSignal, createPortal, isSSRPortal } from '@barefootjs/client'
 
@@ -17,8 +12,6 @@ export function PortalExample() {
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
 
-  // Move element to document.body on mount (portal behavior)
-  // Skip if element is already in an SSR portal (content already at body)
   const moveToBody = (el: HTMLElement) => {
     if (el && el.parentNode !== document.body && !isSSRPortal(el)) {
       const ownerScope = el.closest('[bf-s]') ?? undefined
@@ -68,5 +61,3 @@ export function PortalExample() {
     </div>
   )
 }
-
-export default PortalExample

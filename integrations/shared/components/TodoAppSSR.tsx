@@ -1,11 +1,7 @@
-"use client"
+'use client'
 
-/**
- * BarefootJS TodoApp without @client markers
- *
- * This version tests rendering without @client comment markers.
- * Used to verify higher-order function handling.
- */
+// Twin of TodoApp.tsx but without `/* @client */` markers.
+// Exists to verify the compiler handles higher-order functions without them.
 
 import { createSignal, onMount } from '@barefootjs/client'
 import TodoItem from './TodoItem'
@@ -166,7 +162,7 @@ function TodoAppSSR(props: Props) {
           className="new-todo"
           placeholder="What needs to be done?"
           value={newText()}
-          onInput={(e) => setNewText((e.target as HTMLInputElement).value)}
+          onInput={e => setNewText(e.target.value)}
           onKeyDown={handleKeyDown}
           autofocus
         />

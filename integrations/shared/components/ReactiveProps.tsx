@@ -1,18 +1,12 @@
 'use client'
 
-/**
- * ReactiveProps Component
- *
- * Tests reactivity model documented in spec/compiler.md:
- * 1. Signal access via getter calls: count()
- * 2. Parent-to-child reactive props propagation
- * 3. Callback props from child to parent
- */
+// Test fixture for the reactivity model in spec/compiler.md:
+// - signal getter calls (count())
+// - parent-to-child reactive prop propagation
+// - callback props from child to parent
 
 import { createSignal, createMemo } from '@barefootjs/client'
 
-// Child component that receives reactive props
-// Uses SolidJS-style props (props.xxx) to maintain reactivity
 type ChildProps = {
   value: number
   label: string
@@ -31,14 +25,12 @@ function ReactiveChild(props: ChildProps) {
   )
 }
 
-// Parent component with signal
 export function ReactiveProps() {
   const [count, setCount] = createSignal(0)
   const doubled = createMemo(() => count() * 2)
 
   return (
     <div className="reactive-props-container">
-      {/* Signal basic: count() getter call */}
       <div className="parent-section">
         <p className="parent-count">Parent count: {count()}</p>
         <p className="parent-doubled">Doubled: {doubled()}</p>
@@ -47,14 +39,12 @@ export function ReactiveProps() {
         </button>
       </div>
 
-      {/* Parent-to-child reactive props */}
       <ReactiveChild
         value={count()}
         label="Child A"
         onIncrement={() => setCount(n => n + 1)}
       />
 
-      {/* Multiple children with same reactive prop */}
       <ReactiveChild
         value={doubled()}
         label="Child B (doubled)"
@@ -64,22 +54,14 @@ export function ReactiveProps() {
   )
 }
 
-// =============================================================================
-// Props Reactivity Comparison Tests
-// =============================================================================
-
-/**
- * SolidJS-style: function Component(props: Props)
- * Props accessed via props.xxx maintain reactivity
- */
+// Demonstrates that `props.xxx` access preserves reactivity while
+// destructured props capture the initial value. See spec/compiler.md.
 type PropsStyleChildProps = {
   value: number
   label: string
 }
 
 function PropsStyleChild(props: PropsStyleChildProps) {
-  // This createMemo will react to props.value changes
-  // because we access props.value directly
   const displayValue = createMemo(() => props.value * 10)
 
   return (
@@ -91,14 +73,8 @@ function PropsStyleChild(props: PropsStyleChildProps) {
   )
 }
 
-/**
- * Destructured style: function Component({ value, label }: Props)
- * Destructured props lose reactivity - value is captured at initial render
- */
 // @bf-ignore props-destructuring
 function DestructuredStyleChild({ value, label }: PropsStyleChildProps) {
-  // This createMemo captures the initial value of 'value'
-  // and will NOT react to changes from the parent
   const displayValue = createMemo(() => value * 10)
 
   return (
@@ -110,13 +86,6 @@ function DestructuredStyleChild({ value, label }: PropsStyleChildProps) {
   )
 }
 
-/**
- * PropsReactivityComparison Component
- *
- * Demonstrates the difference between:
- * 1. SolidJS-style props (props.xxx) - maintains reactivity
- * 2. Destructured props - loses reactivity
- */
 export function PropsReactivityComparison() {
   const [count, setCount] = createSignal(1)
 
@@ -139,5 +108,3 @@ export function PropsReactivityComparison() {
     </div>
   )
 }
-
-export default ReactiveProps
