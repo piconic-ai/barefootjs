@@ -31,6 +31,35 @@ export interface BranchConfig {
    * HTML template function for this branch. Returns either a plain HTML
    * string (legacy) or a `{ html, slots }` pair for templates that
    * captured live `Node` values via `__bfSlot` (#1213).
+   *
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   *  INVARIANT — TEMPLATES RUN WITH REACTIVITY UNTRACKED.
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   *
+   * Every call site goes through `evalBranchTemplate()` in this file,
+   * which wraps the invocation in `untrack()`. Signal reads inside
+   * the template are therefore NOT registered as effect dependencies.
+   *
+   * Consequences for authors of new branch shapes:
+   *
+   *  - `template()` must produce a function of state-at-call-time only.
+   *    Any reactive portion of the rendered fragment is wired up
+   *    afterwards by `bindEvents()` (events + per-binding effects) and
+   *    `__bfSlot` (live-Node splicing for slot-captured signals).
+   *
+   *  - A template such as `() => signalA() ? '<a>' : '<b>'` is a BUG:
+   *    later changes to `signalA` will not re-evaluate the template,
+   *    because the read was performed without tracking. Branch
+   *    selection belongs in the `conditionFn` argument of `insert()`,
+   *    not inside the template body.
+   *
+   *  - This is not a per-site choice. Bypassing `evalBranchTemplate`
+   *    re-introduces the failure mode it was added to prevent: signal
+   *    reads inside the template leak into whatever effect is the
+   *    active Listener when `insert()` runs, which (when the compiler
+   *    nests `insert()` calls through `createDisposableEffect`) spawns
+   *    duplicate inner constructs on every signal change — observed
+   *    as item duplication in `mapArray` (#1224 follow-up).
    */
   template: () => string | BranchTemplateResult
 
@@ -48,6 +77,44 @@ const EMPTY_SLOTS: Node[] = []
 
 function normalizeTemplate(value: string | BranchTemplateResult): BranchTemplateResult {
   return typeof value === 'string' ? { html: value, slots: EMPTY_SLOTS } : value
+}
+
+/**
+ * Evaluate a branch template with reactivity tracking SUPPRESSED.
+ *
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *  PURITY CONTRACT — the single chokepoint for every `branch.template()`
+ *  invocation in this module. All four template-evaluation sites inside
+ *  `insert()` (isFragmentCond detection × 2, then first-run and
+ *  branch-swap inside the internal `createEffect`) flow through here so
+ *  the contract cannot be locally bypassed.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *
+ * Compiler-emitted branch templates routinely read reactive signals
+ * while building their HTML string — e.g. a list branch expanding
+ * `${_p.item.replies.map(...)}`. Those reads must NOT register as
+ * dependencies of whatever effect happens to be the active Listener
+ * when `insert()` is invoked.
+ *
+ * The compiler often nests `insert()` calls inside a
+ * `createDisposableEffect` set up by a parent branch's `bindEvents`.
+ * Without `untrack`, signal reads inside the template would be
+ * attributed to that outer effect — so any later mutation of those
+ * signals would re-run the outer effect, re-invoke `insert()`, and
+ * set up duplicate inner constructs. The observable symptom is a
+ * fresh `mapArray` instance per re-run, which then double-creates
+ * every newly-added item (#1224 follow-up).
+ *
+ * Reactivity inside branches still flows correctly because it does
+ * NOT depend on template-time tracking. It is wired up afterwards by
+ * `bindEvents()` (which sets up per-binding effects) and the
+ * `__bfSlot` slot-splice pipeline (which preserves live `Node`s).
+ *
+ * If you introduce a new `template()` call site, route it through
+ * this helper. Do not call `branch.template()` directly.
+ */
+function evalBranchTemplate(branch: BranchConfig): BranchTemplateResult {
+  return untrack(() => normalizeTemplate(branch.template()))
 }
 
 
@@ -85,18 +152,10 @@ export function insert(
   // Both branches need to be checked because SSR may render either branch.
   // Use try/catch because template evaluation may access nullable expressions
   // (e.g., selectedMail().subject when the branch is for the non-null case).
-  //
-  // The template() calls are wrapped in untrack() because a branch template
-  // may read signals (e.g. `_p.item.replies` when expanding a list) while
-  // `insert()` itself may be invoked from inside a surrounding effect
-  // (e.g. a `createDisposableEffect` set up by a parent branch's
-  // bindEvents). Without untrack, those reads would be attributed to the
-  // outer effect, causing it to re-run on every list update and spawn
-  // duplicate `mapArray` instances inside this conditional — the recursive
-  // CommentNode duplication observed in #1224 follow-up.
+  // See `evalBranchTemplate` for the reactivity-untracked contract.
   let isFragmentCond = false
   try {
-    const sampleTrue = untrack(() => normalizeTemplate(whenTrue.template()))
+    const sampleTrue = evalBranchTemplate(whenTrue)
     isFragmentCond = sampleTrue.html.includes(`<!--bf-cond-start:${id}-->`)
   } catch (err) {
     // Template may throw TypeError for nullable access (e.g., selectedMail().subject)
@@ -104,7 +163,7 @@ export function insert(
   }
   if (!isFragmentCond) {
     try {
-      const sampleFalse = untrack(() => normalizeTemplate(whenFalse.template()))
+      const sampleFalse = evalBranchTemplate(whenFalse)
       isFragmentCond = sampleFalse.html.includes(`<!--bf-cond-start:${id}-->`)
     } catch (err) {
       if (!(err instanceof TypeError)) throw err
@@ -139,12 +198,11 @@ export function insert(
       // Hydration mode: check if existing DOM matches expected branch
       // If the existing element doesn't match the expected branch,
       // we need to swap the DOM first (e.g., SSR rendered whenFalse but now we need whenTrue)
-      // untrack the template() call: signal reads inside the template should
-      // not leak into this createEffect's dependency set — only conditionFn()
-      // governs when we re-run.
+      // The template runs untracked via evalBranchTemplate so that only
+      // conditionFn() drives this createEffect's re-runs.
       setParentScopeId(parentScopeId)
       let result: BranchTemplateResult
-      try { result = untrack(() => normalizeTemplate(branch.template())) } finally { setParentScopeId(null) }
+      try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
       const existingEl = find(scope, `[${BF_COND}="${id}"]`)
       if (existingEl) {
         // Compare full opening tag signatures to detect branch mismatch.
@@ -204,10 +262,10 @@ export function insert(
     }
 
     // Branch changed: swap DOM and bind events.
-    // untrack the template() call (see isFirstRun branch above for rationale).
+    // Template runs untracked via evalBranchTemplate (see helper).
     setParentScopeId(parentScopeId)
     let result: BranchTemplateResult
-    try { result = untrack(() => normalizeTemplate(branch.template())) } finally { setParentScopeId(null) }
+    try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
     if (isFragmentCond) {
       updateFragmentConditional(scope, id, result)
     } else {
