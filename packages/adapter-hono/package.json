@@ -51,11 +51,11 @@
       "import": "./src/dev-worker.ts"
     },
     "./jsx/jsx-runtime": {
-      "types": "./src/jsx/jsx-runtime/index.d.ts",
+      "types": "./dist/jsx/jsx-runtime/index.d.ts",
       "import": "./src/jsx/jsx-runtime/index.ts"
     },
     "./jsx/jsx-dev-runtime": {
-      "types": "./src/jsx/jsx-dev-runtime/index.d.ts",
+      "types": "./dist/jsx/jsx-dev-runtime/index.d.ts",
       "import": "./src/jsx/jsx-dev-runtime/index.ts"
     },
     "./async": {

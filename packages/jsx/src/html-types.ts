@@ -100,18 +100,19 @@ export interface HTMLBaseAttributes extends BaseEventAttributes {
   role?: string
   [key: `aria-${string}`]: string | number | boolean | undefined
 
-  // Interactive event handlers
-  onClick?: (event: MouseEvent) => void
-  onMouseEnter?: (event: MouseEvent) => void
-  onMouseLeave?: (event: MouseEvent) => void
-  onMouseDown?: (event: MouseEvent) => void
-  onMouseUp?: (event: MouseEvent) => void
-  onMouseMove?: (event: MouseEvent) => void
-  onKeyDown?: (event: KeyboardEvent) => void
-  onKeyUp?: (event: KeyboardEvent) => void
-  onKeyPress?: (event: KeyboardEvent) => void
-  onFocus?: (event: FocusEvent) => void
-  onBlur?: (event: FocusEvent) => void
+  // Interactive event handlers — all use targeted variants so `event.target`
+  // narrows to the element type instead of the generic `EventTarget`.
+  onClick?: MouseEventHandler<HTMLElement>
+  onMouseEnter?: MouseEventHandler<HTMLElement>
+  onMouseLeave?: MouseEventHandler<HTMLElement>
+  onMouseDown?: MouseEventHandler<HTMLElement>
+  onMouseUp?: MouseEventHandler<HTMLElement>
+  onMouseMove?: MouseEventHandler<HTMLElement>
+  onKeyDown?: KeyboardEventHandler<HTMLElement>
+  onKeyUp?: KeyboardEventHandler<HTMLElement>
+  onKeyPress?: KeyboardEventHandler<HTMLElement>
+  onFocus?: FocusEventHandler<HTMLElement>
+  onBlur?: FocusEventHandler<HTMLElement>
   onInput?: InputEventHandler<HTMLElement>
   onChange?: ChangeEventHandler<HTMLElement>
   onTouchStart?: (event: TouchEvent) => void
@@ -123,8 +124,8 @@ export interface HTMLBaseAttributes extends BaseEventAttributes {
   onPointerMove?: (event: PointerEvent) => void
   onPointerEnter?: (event: PointerEvent) => void
   onPointerLeave?: (event: PointerEvent) => void
-  onContextMenu?: (event: MouseEvent) => void
-  onDoubleClick?: (event: MouseEvent) => void
+  onContextMenu?: MouseEventHandler<HTMLElement>
+  onDoubleClick?: MouseEventHandler<HTMLElement>
 
   // Ref callback
   ref?: (element: HTMLElement) => void
@@ -282,7 +283,9 @@ export type HTMLAttributeAnchorTarget =
 // Button Element Attributes
 // ============================================================================
 
-export interface ButtonHTMLAttributes extends Omit<HTMLBaseAttributes, 'ref'> {
+export interface ButtonHTMLAttributes extends Omit<HTMLBaseAttributes,
+  'ref' | 'onClick' | 'onBlur' | 'onFocus' | 'onKeyDown' | 'onKeyUp'
+> {
   ref?: (element: HTMLButtonElement) => void
 
   autofocus?: boolean | null
@@ -297,23 +300,20 @@ export interface ButtonHTMLAttributes extends Omit<HTMLBaseAttributes, 'ref'> {
   type?: 'submit' | 'reset' | 'button'
   value?: string
 
-  // Event handlers - using native DOM event types for Hono JSX compatibility
-  // Users can still use typed handlers like MouseEventHandler<HTMLButtonElement>
-  // since they're subtypes of these
-  onClick?: (event: MouseEvent) => void
-  onBlur?: (event: FocusEvent) => void
-  onFocus?: (event: FocusEvent) => void
-  onKeyDown?: (event: KeyboardEvent) => void
-  onKeyUp?: (event: KeyboardEvent) => void
-  // Note: onSubmit inherits SubmitEvent from BaseEventAttributes
-  // When spreading props to Hono JSX, use type assertion: {...(props as any)}
+  onClick?: MouseEventHandler<HTMLButtonElement>
+  onBlur?: FocusEventHandler<HTMLButtonElement>
+  onFocus?: FocusEventHandler<HTMLButtonElement>
+  onKeyDown?: KeyboardEventHandler<HTMLButtonElement>
+  onKeyUp?: KeyboardEventHandler<HTMLButtonElement>
 }
 
 // ============================================================================
 // Input Element Attributes
 // ============================================================================
 
-export interface InputHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInput' | 'onChange' | 'ref'> {
+export interface InputHTMLAttributes extends Omit<HTMLBaseAttributes,
+  'ref' | 'onInput' | 'onChange' | 'onBlur' | 'onFocus' | 'onKeyDown' | 'onKeyUp' | 'onKeyPress'
+> {
   ref?: (element: HTMLInputElement) => void
 
   accept?: string
@@ -348,21 +348,22 @@ export interface InputHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInput' 
   value?: string | ReadonlyArray<string> | number
   width?: number | string
 
-  // Event handlers
   onInput?: InputEventHandler<HTMLInputElement>
   onChange?: ChangeEventHandler<HTMLInputElement>
-  onBlur?: (event: FocusEvent) => void
-  onFocus?: (event: FocusEvent) => void
-  onKeyDown?: (event: KeyboardEvent) => void
-  onKeyUp?: (event: KeyboardEvent) => void
-  onKeyPress?: (event: KeyboardEvent) => void
+  onBlur?: FocusEventHandler<HTMLInputElement>
+  onFocus?: FocusEventHandler<HTMLInputElement>
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>
+  onKeyUp?: KeyboardEventHandler<HTMLInputElement>
+  onKeyPress?: KeyboardEventHandler<HTMLInputElement>
 }
 
 // ============================================================================
 // Textarea Element Attributes
 // ============================================================================
 
-export interface TextareaHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInput' | 'onChange' | 'ref'> {
+export interface TextareaHTMLAttributes extends Omit<HTMLBaseAttributes,
+  'ref' | 'onInput' | 'onChange' | 'onBlur' | 'onFocus' | 'onKeyDown' | 'onKeyUp' | 'onKeyPress'
+> {
   ref?: (element: HTMLTextAreaElement) => void
 
   autocomplete?: string
@@ -380,21 +381,22 @@ export interface TextareaHTMLAttributes extends Omit<HTMLBaseAttributes, 'onInpu
   value?: string
   wrap?: 'hard' | 'soft' | 'off'
 
-  // Event handlers
   onInput?: InputEventHandler<HTMLTextAreaElement>
   onChange?: ChangeEventHandler<HTMLTextAreaElement>
-  onBlur?: (event: FocusEvent) => void
-  onFocus?: (event: FocusEvent) => void
-  onKeyDown?: (event: KeyboardEvent) => void
-  onKeyUp?: (event: KeyboardEvent) => void
-  onKeyPress?: (event: KeyboardEvent) => void
+  onBlur?: FocusEventHandler<HTMLTextAreaElement>
+  onFocus?: FocusEventHandler<HTMLTextAreaElement>
+  onKeyDown?: KeyboardEventHandler<HTMLTextAreaElement>
+  onKeyUp?: KeyboardEventHandler<HTMLTextAreaElement>
+  onKeyPress?: KeyboardEventHandler<HTMLTextAreaElement>
 }
 
 // ============================================================================
 // Select Element Attributes
 // ============================================================================
 
-export interface SelectHTMLAttributes extends Omit<HTMLBaseAttributes, 'onChange' | 'ref'> {
+export interface SelectHTMLAttributes extends Omit<HTMLBaseAttributes,
+  'ref' | 'onChange' | 'onBlur' | 'onFocus'
+> {
   ref?: (element: HTMLSelectElement) => void
 
   autocomplete?: string
@@ -407,10 +409,9 @@ export interface SelectHTMLAttributes extends Omit<HTMLBaseAttributes, 'onChange
   size?: number
   value?: string | ReadonlyArray<string>
 
-  // Event handlers
   onChange?: ChangeEventHandler<HTMLSelectElement>
-  onBlur?: (event: FocusEvent) => void
-  onFocus?: (event: FocusEvent) => void
+  onBlur?: FocusEventHandler<HTMLSelectElement>
+  onFocus?: FocusEventHandler<HTMLSelectElement>
 }
 
 // ============================================================================
