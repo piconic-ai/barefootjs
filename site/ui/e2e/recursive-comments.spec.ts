@@ -133,36 +133,31 @@ test.describe('Recursive Comments Block', () => {
     })
 
     test('replying twice to a CSR-created top-level comment does not duplicate the second reply', async ({ page }) => {
-      // Regression for the post-#1224 follow-up bug: posting test1 (CSR
-      // root), replying test2, then replying test3 produced two test3
-      // nodes because `insert()` was leaking branch-template signal reads
-      // into the surrounding createDisposableEffect, spawning a duplicate
-      // inner mapArray instance on every parent-signal change.
+      // Regression: replying twice to a freshly-posted root comment used
+      // to duplicate the second reply because branch-template signal
+      // reads in insert() leaked into the surrounding effect, spawning
+      // a duplicate inner mapArray instance per signal change.
       const s = section(page)
 
-      // Post test1 as a new root comment, then anchor it by the auto-
-      // assigned data-comment-id so subsequent locators don't depend on
-      // DOM ordering as the tree grows.
       await s.locator('.recursive-comments-input').fill('test1')
       await s.locator('.recursive-comments-post').click()
+      // Anchor test1 by its auto-assigned id; locator must not depend
+      // on DOM ordering once the tree grows.
       const firstRoot = s.locator('.recursive-comments-roots > li').first()
       const test1Id = await firstRoot.locator('[data-comment-id]').first().getAttribute('data-comment-id')
       expect(test1Id).toBeTruthy()
       const test1 = s.locator(`[data-comment-id="${test1Id}"]`)
       await expect(test1).toHaveCount(1)
 
-      // Within a CommentNode subtree, the node's own controls render in
-      // document order BEFORE its `.comment-children` block (where any
-      // descendant CommentNode lives with its own controls). `.first()`
-      // therefore consistently picks the *self* control of `subject`.
+      // `.first()` inside `subject`: a CommentNode's own controls render
+      // before its `.comment-children` block, so document order picks
+      // the self control even after descendants exist.
       const replyTo = async (subject: ReturnType<typeof s.locator>, text: string) => {
         await subject.locator('.comment-toggle-form').first().click()
         const ta = subject.locator('.comment-reply-textarea').first()
         await expect(ta).toBeVisible()
         await ta.fill(text)
         await subject.locator('.comment-post-reply-btn').first().click()
-        // Verify the new comment landed exactly once before the next step,
-        // so we never measure the increment against partial DOM state.
         await expect(
           s.locator('.comment-text').filter({ hasText: new RegExp(`^${text}$`) }),
         ).toHaveCount(1)
@@ -171,14 +166,11 @@ test.describe('Recursive Comments Block', () => {
       await replyTo(test1, 'test2')
       await replyTo(test1, 'test3')
 
-      // Final assertions are scoped to the entire section and use exact
-      // text matches on individual `.comment-text` elements — so a
-      // duplicate-node regression cannot hide behind ancestor `hasText`
-      // (which matches any subtree containing the string).
+      // Exact-match on individual `.comment-text` so a duplicate cannot
+      // hide behind ancestor `hasText` (which matches any subtree).
       await expect(s.locator('.comment-text').filter({ hasText: /^test3$/ })).toHaveCount(1)
       await expect(s.locator('.comment-text').filter({ hasText: /^test2$/ })).toHaveCount(1)
       await expect(s.locator('.comment-text').filter({ hasText: /^test1$/ })).toHaveCount(1)
-      // Stat strip should reflect 8 seeded + 3 new comments.
       await expect(s.locator('.recursive-comments-total')).toHaveText('11')
     })
   })

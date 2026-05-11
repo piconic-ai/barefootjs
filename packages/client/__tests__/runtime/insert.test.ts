@@ -376,18 +376,8 @@ describe('insert', () => {
     })
   })
 
-  describe('template purity contract (#1224 follow-up)', () => {
-    // The contract: signal reads inside a branch template MUST NOT be
-    // attributed to whatever effect is the active Listener when
-    // `insert()` runs. Otherwise a `createDisposableEffect` that wraps
-    // an `insert()` call would re-run on every signal change inside the
-    // template, re-invoke `insert()`, and spawn duplicate inner
-    // constructs (e.g. duplicate mapArray instances).
-    //
-    // These tests verify the contract directly — they exercise the
-    // private `evalBranchTemplate` chokepoint through `insert()`'s
-    // public API.
-
+  // Contract documented on `BranchConfig.template` in insert.ts.
+  describe('template purity contract', () => {
     test('isFragmentCond probe does not leak signal reads to a surrounding effect', () => {
       document.body.innerHTML = `
         <div bf-s="Test_1">
@@ -405,23 +395,16 @@ describe('insert', () => {
           scope,
           'c1',
           show,
-          {
-            // Template intentionally reads `count` — this models the
-            // compiler-emitted `_p.item.replies.map(...)` pattern.
-            // The probe walks both branches on insert() entry, so the
-            // read happens regardless of `show`.
-            template: () => `<span bf-c="c1">${count()}</span>`,
-            bindEvents: () => {},
-          },
-          { template: () => '<span bf-c="c1">Hidden</span>', bindEvents: () => {} }
+          // The probe walks BOTH branches on insert() entry, so a read in
+          // either template would leak — putting it in the inactive
+          // branch isolates the probe path from the first-run path below.
+          { template: () => '<span bf-c="c1">Visible</span>', bindEvents: () => {} },
+          { template: () => `<span bf-c="c1">${count()}</span>`, bindEvents: () => {} }
         )
       })
 
       expect(outerRuns).toBe(1)
-      // Mutate the signal the template reads. If insert() were leaking
-      // the read into the surrounding createEffect, outerRuns would tick.
       setCount(5)
-      expect(outerRuns).toBe(1)
       setCount(6)
       expect(outerRuns).toBe(1)
     })
@@ -443,9 +426,6 @@ describe('insert', () => {
           scope,
           'c1',
           show,
-          // Only the active branch reads the signal — exercises the
-          // first-run template-evaluation path inside insert's internal
-          // createEffect (distinct from the entry-time probe above).
           { template: () => `<span bf-c="c1">${count()}</span>`, bindEvents: () => {} },
           { template: () => '<span bf-c="c1">Hidden</span>', bindEvents: () => {} }
         )
@@ -479,13 +459,7 @@ describe('insert', () => {
       })
 
       expect(outerRuns).toBe(1)
-      // Trigger a branch swap — this calls the branch.template() path
-      // inside insert's internal createEffect at the swap site.
       setShow(true)
-      // The branch-swap path itself does not re-run the outer effect.
-      expect(outerRuns).toBe(1)
-      // And subsequent signal mutations whose reads happened inside the
-      // template still do not leak.
       setCount(99)
       expect(outerRuns).toBe(1)
     })

@@ -30,7 +30,7 @@ export interface BranchConfig {
   /**
    * HTML template function for this branch. Returns either a plain HTML
    * string (legacy) or a `{ html, slots }` pair for templates that
-   * captured live `Node` values via `__bfSlot` (#1213).
+   * captured live `Node` values via `__bfSlot`.
    *
    * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    *  INVARIANT — TEMPLATES RUN WITH REACTIVITY UNTRACKED.
@@ -52,14 +52,6 @@ export interface BranchConfig {
    *    because the read was performed without tracking. Branch
    *    selection belongs in the `conditionFn` argument of `insert()`,
    *    not inside the template body.
-   *
-   *  - This is not a per-site choice. Bypassing `evalBranchTemplate`
-   *    re-introduces the failure mode it was added to prevent: signal
-   *    reads inside the template leak into whatever effect is the
-   *    active Listener when `insert()` runs, which (when the compiler
-   *    nests `insert()` calls through `createDisposableEffect`) spawns
-   *    duplicate inner constructs on every signal change — observed
-   *    as item duplication in `mapArray` (#1224 follow-up).
    */
   template: () => string | BranchTemplateResult
 
@@ -80,38 +72,16 @@ function normalizeTemplate(value: string | BranchTemplateResult): BranchTemplate
 }
 
 /**
- * Evaluate a branch template with reactivity tracking SUPPRESSED.
+ * Single chokepoint for every `branch.template()` call in this module —
+ * routes the invocation through `untrack()` so the contract on
+ * `BranchConfig.template` cannot be locally bypassed.
  *
- * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- *  PURITY CONTRACT — the single chokepoint for every `branch.template()`
- *  invocation in this module. All four template-evaluation sites inside
- *  `insert()` (isFragmentCond detection × 2, then first-run and
- *  branch-swap inside the internal `createEffect`) flow through here so
- *  the contract cannot be locally bypassed.
- * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * Reads inside the template would otherwise be attributed to whatever
+ * effect is the active Listener when `insert()` runs, causing duplicate
+ * inner constructs (notably duplicate `mapArray` instances) when an
+ * outer effect re-runs and re-invokes `insert()`.
  *
- * Compiler-emitted branch templates routinely read reactive signals
- * while building their HTML string — e.g. a list branch expanding
- * `${_p.item.replies.map(...)}`. Those reads must NOT register as
- * dependencies of whatever effect happens to be the active Listener
- * when `insert()` is invoked.
- *
- * The compiler often nests `insert()` calls inside a
- * `createDisposableEffect` set up by a parent branch's `bindEvents`.
- * Without `untrack`, signal reads inside the template would be
- * attributed to that outer effect — so any later mutation of those
- * signals would re-run the outer effect, re-invoke `insert()`, and
- * set up duplicate inner constructs. The observable symptom is a
- * fresh `mapArray` instance per re-run, which then double-creates
- * every newly-added item (#1224 follow-up).
- *
- * Reactivity inside branches still flows correctly because it does
- * NOT depend on template-time tracking. It is wired up afterwards by
- * `bindEvents()` (which sets up per-binding effects) and the
- * `__bfSlot` slot-splice pipeline (which preserves live `Node`s).
- *
- * If you introduce a new `template()` call site, route it through
- * this helper. Do not call `branch.template()` directly.
+ * New `template()` call sites: route through here, never call directly.
  */
 function evalBranchTemplate(branch: BranchConfig): BranchTemplateResult {
   return untrack(() => normalizeTemplate(branch.template()))
@@ -150,9 +120,8 @@ export function insert(
 
   // Check if either branch uses fragment conditional (comment markers).
   // Both branches need to be checked because SSR may render either branch.
-  // Use try/catch because template evaluation may access nullable expressions
-  // (e.g., selectedMail().subject when the branch is for the non-null case).
-  // See `evalBranchTemplate` for the reactivity-untracked contract.
+  // try/catch absorbs TypeError from nullable access during the probe
+  // (e.g. `selectedMail().subject` when the branch is for the non-null case).
   let isFragmentCond = false
   try {
     const sampleTrue = evalBranchTemplate(whenTrue)
@@ -195,11 +164,8 @@ export function insert(
     const branch = currCond ? whenTrue : whenFalse
 
     if (isFirstRun) {
-      // Hydration mode: check if existing DOM matches expected branch
-      // If the existing element doesn't match the expected branch,
-      // we need to swap the DOM first (e.g., SSR rendered whenFalse but now we need whenTrue)
-      // The template runs untracked via evalBranchTemplate so that only
-      // conditionFn() drives this createEffect's re-runs.
+      // Hydration mode: check if existing DOM matches expected branch.
+      // If not, swap first (e.g., SSR rendered whenFalse but now we need whenTrue).
       setParentScopeId(parentScopeId)
       let result: BranchTemplateResult
       try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
@@ -262,7 +228,6 @@ export function insert(
     }
 
     // Branch changed: swap DOM and bind events.
-    // Template runs untracked via evalBranchTemplate (see helper).
     setParentScopeId(parentScopeId)
     let result: BranchTemplateResult
     try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
