@@ -49,7 +49,7 @@ console.log(highlight('hello'))
     expect(result).toContain("from '@barefootjs/client'")
   })
 
-  test('strips .tsx client component import when binding is unused', async () => {
+  test('replaces a named .tsx client-component import with a runtime-resolving stub (#1240)', async () => {
     writeFileSync(resolve(COMPONENTS_DIR, 'ClientComp.tsx'), `'use client'
 export function ClientComp() {
   return <div>client only</div>
@@ -68,21 +68,33 @@ console.log('client code')
     const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
     const result = await Bun.file(resolve(COMPONENTS_DIR, 'Parent-abc123.js')).text()
-    expect(result).not.toContain('ClientComp')
+    // The original `import` statement is gone — replaced with a stub that
+    // delegates to `createComponent` so the local binding works in any
+    // call shape (JSX, Record literal, .call(el, props), …).
+    expect(result).not.toContain("from './ClientComp'")
+    // The stub must keep the original local binding name.
+    expect(result).toContain('const ClientComp =')
+    expect(result).toContain("createComponent(\"ClientComp\", props, key)")
+    // The stub relies on the host bundle already importing `createComponent`
+    // from the umbrella `barefoot.js` runtime (every JSX-emitted client
+    // bundle does, since `<X />` compiles to `createComponent(...)`). We
+    // deliberately do NOT hoist a `from '@barefootjs/client/runtime'` line
+    // — that bare specifier isn't on the page's importmap and would 404 in
+    // the browser. See the comment on the stub branch in resolve-imports.ts.
+    // Pre-existing imports + body lines stay intact.
     expect(result).toContain("from '@barefootjs/client'")
     expect(result).toContain("console.log('client code')")
-    // No dangling reference → no diagnostic.
+    // The binding has a working definition → no dangling reference, no diagnostic.
     expect(errors).toHaveLength(0)
   })
 
-  // Regression: bf#1227 — a `.ts` helper (no `'use client'`) inlined into a
-  // client bundle imports a sibling `'use client'` `.tsx` AND calls it. The
-  // strip used to be silent (`console.log` only, build exit 0), so the
-  // bundle shipped with a dangling identifier and crashed at runtime with
-  // `ReferenceError: DraftTitleEditor is not defined`. After the fix the
-  // strip is detected via a post-assembly identifier scan and surfaced as
-  // BF053, so the build exits non-zero.
-  test('errors when stripped .tsx binding is still referenced (bf#1227)', async () => {
+  // Regression: bf#1227 used to surface BF053 when a stripped `'use client'`
+  // import left a dangling reference. bf#1240 turns the strip into a
+  // runtime-resolving stub instead, so the same call site that previously
+  // crashed at runtime (the original `884173f` ReferenceError) now works.
+  // BF053 still fires for non-stubbable shapes — see the default + namespace
+  // tests below.
+  test('replaces .tsx binding called from an inlined .ts helper with a runtime stub instead of stripping (#1240, supersedes #1227 dangling case)', async () => {
     writeFileSync(resolve(COMPONENTS_DIR, 'DraftTitleEditor.tsx'), `'use client'
 export function DraftTitleEditor() { return <textarea /> }
 `)
@@ -105,15 +117,60 @@ IssueCardNode()
 
     const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
 
+    // No diagnostic — the binding now has a definition (the stub).
+    expect(errors).toHaveLength(0)
+
+    const result = await Bun.file(resolve(COMPONENTS_DIR, 'DeskCanvas-aaa.js')).text()
+    // The `.ts` helper got inlined; the stripped `.tsx` import inside it
+    // becomes the runtime stub, so calling `DraftTitleEditor({…})` from
+    // the helper resolves to `createComponent('DraftTitleEditor', …)` at
+    // runtime instead of the previous ReferenceError.
+    expect(result).toContain('const DraftTitleEditor =')
+    expect(result).toContain("createComponent(\"DraftTitleEditor\", props, key)")
+  })
+
+  // BF053 still fires for the shapes the stub can't faithfully recreate —
+  // namespace and default imports of a `'use client'` `.tsx` don't have a
+  // single registry name to delegate to (default exports compile without a
+  // stable JSX-registration name; namespace imports would need every export
+  // enumerated against the registry). Per #1240 those fall back to the
+  // pre-#1240 strip + BF053 path.
+  test('still fires BF053 for namespace .tsx imports (no single registry name to stub)', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'NsClient.tsx'), `'use client'
+export function NsClient() { return <div /> }
+`)
+    const clientJs = `import * as Ns from './NsClient'
+console.log(Ns.NsClient)
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'NsParent-aaa.js'), clientJs)
+    const manifest = {
+      NsParent: { clientJs: 'components/NsParent-aaa.js', markedTemplate: 'components/NsParent.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
     expect(errors).toHaveLength(1)
     expect(errors[0].code).toBe('BF053')
-    expect(errors[0].severity).toBe('error')
-    // The error must name the binding so the developer can find the call.
-    expect(errors[0].message).toContain('DraftTitleEditor')
-    // And the import path so they can find the source file.
-    expect(errors[0].message).toContain('./DraftTitleEditor')
-    // And the bundle so they know which entry to investigate.
-    expect(errors[0].loc.file).toBe('components/DeskCanvas-aaa.js')
+    expect(errors[0].message).toContain('Ns')
+  })
+
+  test('still fires BF053 for default .tsx imports (no single registry name to stub)', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'DefClient.tsx'), `'use client'
+export default function DefClient() { return <div /> }
+`)
+    const clientJs = `import Def from './DefClient'
+Def()
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'DefParent-aaa.js'), clientJs)
+    const manifest = {
+      DefParent: { clientJs: 'components/DefParent-aaa.js', markedTemplate: 'components/DefParent.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF053')
+    expect(errors[0].message).toContain('Def')
   })
 
   // Sanity: stripping is fine when the import was for types-only or

@@ -685,10 +685,65 @@ async function walkAndCollect(
 
     if (result.path.endsWith('.tsx')) {
       // A sibling `.tsx` reaching this path is, in practice, a `'use client'`
-      // component: it has its own compiled `.client.js` and is not callable
-      // as a plain function from a client bundle. Drop the import line and
-      // record the bindings so a later post-assembly scan can flag any
-      // call sites that survived the strip. piconic-ai/barefootjs#1227.
+      // component. Its own compiled `.client.js` exports a JSX-shim function
+      // (`function X(props, key) { return createComponent('X', props, key) }`)
+      // that delegates to the runtime registry. The shim isn't reachable
+      // from another bundle as a plain import, so we replace the parent's
+      // import with local stubs that perform the same `createComponent`
+      // delegation in scope. That keeps every reference shape working — JSX
+      // (`<X />`, where the JSX compiler also rewrites to `createComponent`
+      // and never reads the local binding), passing the value through a
+      // Record (`<Flow nodeTypes={{ kind: X }}>`), or any of the other
+      // non-JSX usages piconic-ai/barefootjs#1238 made supported at the
+      // runtime side. Closes piconic-ai/barefootjs#1240.
+      //
+      // Default and namespace imports of a `'use client'` `.tsx` are NOT
+      // stubbed — the registered runtime name for those isn't trivially
+      // recoverable from the import statement alone (default exports
+      // compile without a stable JSX-registration name; namespace imports
+      // would need every export of the target file enumerated against the
+      // registry). They fall back to the pre-existing strip + BF053 path so
+      // any actual usage still surfaces a build error rather than a silent
+      // ReferenceError. The named-import path covers the practical case
+      // (`nodeTypes={{ kind: Component }}`) that drove both #1236 and #1240.
+      const shape = parseImportShape(fullMatch)
+      const namedBindings = shape?.named ?? []
+      const fallbackBindings: string[] = []
+      if (shape?.namespace) fallbackBindings.push(shape.namespace)
+      if (shape?.default) fallbackBindings.push(shape.default)
+
+      if (namedBindings.length > 0) {
+        const stubBody = namedBindings
+          .map(({ local, imported }) => `const ${local} = (props, key) => createComponent(${JSON.stringify(imported)}, props, key);`)
+          .join('\n')
+        content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), `${stubBody}\n`)
+        // The stub references the runtime `createComponent` symbol. Every
+        // JSX-emitted client bundle already imports it as part of the
+        // umbrella `barefoot.js` runtime (any `<X />` use compiles to a
+        // `createComponent(...)` call), so the binding is in scope at the
+        // top of the parent file. We deliberately do NOT hoist a separate
+        // `import { createComponent } from '@barefootjs/client/runtime'`
+        // here: the page's importmap only exposes the umbrella `barefoot.js`
+        // module, so the bare runtime path would 404 in the browser.
+        // Bundles that genuinely don't have `createComponent` in scope are
+        // not realistic for this strip path (you only reach it from a
+        // `'use client'` parent, which always emits JSX → always imports
+        // `createComponent`), and a "createComponent is not defined" error
+        // there would point at the stub line anyway.
+        if (fallbackBindings.length === 0) {
+          // Every binding is now a working stub — nothing to strip, no
+          // dangling references possible.
+          continue
+        }
+        // Default + namespace siblings still need to be stripped; keep them
+        // recorded so BF053 fires only for those specific names.
+        stripped.push({ kind: 'tsx', importPath, bindings: fallbackBindings, loggingPath })
+        continue
+      }
+
+      // No named bindings (only default / namespace, or unparseable / side-
+      // effect-only). Preserve the pre-#1240 behaviour: drop the import and
+      // let BF053 fire on dangling references.
       content = content.replace(new RegExp(escapeRegExp(fullMatch) + '\\n?'), '')
       console.log(`Stripped client component import: ${importPath} from ${loggingPath}`)
       recordStrippedImport(fullMatch, importPath, loggingPath, 'tsx', stripped)
