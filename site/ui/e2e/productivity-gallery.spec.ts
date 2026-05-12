@@ -103,29 +103,84 @@ test.describe('Gallery: Productivity app', () => {
       await expect(page.locator('[data-productivity-sidebar] .productivity-unread-count')).toHaveText(String(initialUnread))
     })
 
-    test('board drag-preview CSS var flips on pointerdown of a nested task card', async ({ page }) => {
-      // Locks down the per-item reactive `style={{'--drag-opacity':
-      // draggingTaskId() === task.id ? '0.4' : '1'}}` binding on the
-      // root element of a NESTED `tasks.map()` body. Before #135 the
-      // inner-loop renderItem never emitted a `createEffect` for the
-      // root's `style` attribute, so the variable stayed at the SSR
-      // value and the card never faded.
+    test('board drag-preview CSS vars flip on pointerdown of a nested task card', async ({ page }) => {
+      // Locks down the per-item reactive `style={{'--drag-opacity': …,
+      // '--drag-scale': …, '--drag-shadow': …, '--drag-ring': …}}`
+      // binding on the root element of a NESTED `tasks.map()` body.
+      // Before #135 the inner-loop renderItem never emitted a
+      // `createEffect` for the root's `style` attribute, so the
+      // variables stayed at the SSR value and the card never reacted.
+      //
+      // The visual story (opacity fade + lift via scale/shadow +
+      // primary-coloured outline) is encoded across multiple CSS
+      // variables on the same `style` literal — exercising a richer
+      // object-style binding than the original single-var shape.
       await page.goto('/gallery/productivity/board')
 
       const card = page.locator('[data-task-id="1"]')
       await expect(card).toBeVisible()
       await expect(card).toHaveAttribute('data-task-dragging', 'false')
       await expect(card).toHaveAttribute('style', /--drag-opacity\s*:\s*1/)
+      await expect(card).toHaveAttribute('style', /--drag-scale\s*:\s*1/)
+      // Idle outline is transparent — no visible ring.
+      await expect(card).toHaveAttribute('style', /--drag-ring\s*:\s*2px\s+solid\s+transparent/)
 
-      // pointerdown — same card flips to dragging state.
+      // pointerdown — same card flips to dragging state on every
+      // tracked variable.
       await card.dispatchEvent('pointerdown')
       await expect(card).toHaveAttribute('data-task-dragging', 'true')
-      await expect(card).toHaveAttribute('style', /--drag-opacity\s*:\s*0\.4/)
+      await expect(card).toHaveAttribute('style', /--drag-opacity\s*:\s*0\.55/)
+      await expect(card).toHaveAttribute('style', /--drag-scale\s*:\s*1\.03/)
+      await expect(card).toHaveAttribute('style', /--drag-shadow\s*:\s*0\s+12px\s+24px/)
+      await expect(card).toHaveAttribute('style', /--drag-ring\s*:\s*2px\s+solid\s+var\(--color-primary/)
 
       // Releasing the pointer brings the card back to the idle state.
       await card.dispatchEvent('pointerup')
       await expect(card).toHaveAttribute('data-task-dragging', 'false')
       await expect(card).toHaveAttribute('style', /--drag-opacity\s*:\s*1/)
+      await expect(card).toHaveAttribute('style', /--drag-scale\s*:\s*1/)
+      await expect(card).toHaveAttribute('style', /--drag-ring\s*:\s*2px\s+solid\s+transparent/)
+    })
+
+    test('board: arrow buttons survive moving a task between columns', async ({ page }) => {
+      // Regression for the slot-resolver name-prefix over-match (#135):
+      // a freshly-inserted inner-loop item carries three same-name
+      // <Button> children (delete-task + move-left + move-right). After
+      // the first `upsertChild` mounted the delete button, the second
+      // and third found that already-mounted Button via the legacy
+      // name-prefix selector and `initChild`-ed it again — leaving the
+      // arrow placeholders orphaned. The visible symptom: clicking ←
+      // or → moved the task into a different column but the arrow
+      // buttons disappeared from the moved card, breaking subsequent
+      // moves.
+      await page.goto('/gallery/productivity/board')
+
+      // Task 1 starts in "To Do" with three buttons on the card
+      // (delete + left + right). The To Do column has no neighbour to
+      // the left, so move-left is a no-op there — we move right.
+      const card = page.locator('[data-task-id="1"]')
+      await expect(card).toBeVisible()
+      await expect(card.locator('.delete-task')).toHaveCount(1)
+      await expect(card.locator('.move-left')).toHaveCount(1)
+      await expect(card.locator('.move-right')).toHaveCount(1)
+
+      // Move task 1 from To Do → In Progress.
+      await card.locator('.move-right').click()
+
+      const movedCard = page.locator('[data-task-id="1"]')
+      // The data-task-id locator now resolves to the SAME id, but in
+      // the new column. The three buttons must still exist on the
+      // freshly-inserted card.
+      await expect(movedCard.locator('.delete-task')).toHaveCount(1)
+      await expect(movedCard.locator('.move-left')).toHaveCount(1)
+      await expect(movedCard.locator('.move-right')).toHaveCount(1)
+
+      // And the buttons must be wired — moving once more lands the
+      // task in "Done".
+      await movedCard.locator('.move-right').click()
+      const doneCard = page.locator('[data-task-id="1"]')
+      await expect(doneCard.locator('.move-left')).toHaveCount(1)
+      await expect(doneCard.locator('.move-right')).toHaveCount(1)
     })
 
     test('reading a mail reduces the unread badge count', async ({ page }) => {

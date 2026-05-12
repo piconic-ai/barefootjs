@@ -171,10 +171,29 @@ export function ProductivityBoardDemo() {
               {col.tasks.map(task => (
                 <div
                   key={task.id}
-                  className="task-card rounded-xl border bg-card p-3 space-y-2 shadow-sm transition-opacity"
+                  className="task-card rounded-xl border bg-card p-3 space-y-2 shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing"
                   style={{
-                    '--drag-opacity': draggingTaskId() === task.id ? '0.4' : '1',
+                    // Drag-preview visual: card fades, lifts (scale + shadow),
+                    // and gains a primary-coloured outline so the user can
+                    // tell at a glance which card they're "holding". Each
+                    // visual fact is published as a CSS variable so the
+                    // single `style` attribute on the inner-loop root carries
+                    // them all — exercising the nested-loop reactive style
+                    // path on a richer object literal (multiple custom-prop
+                    // members + a non-custom property).
+                    '--drag-opacity': draggingTaskId() === task.id ? '0.55' : '1',
+                    '--drag-scale': draggingTaskId() === task.id ? '1.03' : '1',
+                    '--drag-shadow': draggingTaskId() === task.id
+                      ? '0 12px 24px -8px rgba(0,0,0,0.25)'
+                      : '0 1px 2px 0 rgba(0,0,0,0.05)',
+                    '--drag-ring': draggingTaskId() === task.id
+                      ? '2px solid var(--color-primary, oklch(0.205 0 0))'
+                      : '2px solid transparent',
                     opacity: 'var(--drag-opacity)',
+                    transform: 'scale(var(--drag-scale))',
+                    boxShadow: 'var(--drag-shadow)',
+                    outline: 'var(--drag-ring)',
+                    outlineOffset: '2px',
                   }}
                   data-task-id={String(task.id)}
                   data-task-dragging={draggingTaskId() === task.id ? 'true' : 'false'}
