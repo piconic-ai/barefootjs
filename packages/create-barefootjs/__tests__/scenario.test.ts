@@ -165,29 +165,11 @@ describe.skipIf(!INTEGRATION)(
         expect(result.stdout).toContain('npm run dev')
       })
 
-      test('"More" lists the editor hint', () => {
-        // EDITOR was stripped by the test harness, so the editor hint
-        // falls back to a literal "$EDITOR". `npm run dev` already
-        // reloads on change (via `wrangler dev --live-reload`), so no
-        // separate watch hint is offered.
-        expect(result.stdout).toContain('More:')
-        expect(result.stdout).toContain('$EDITOR components/Counter.tsx')
-      })
-
       test('"Deploy" surfaces the Cloudflare Workers target for the Hono adapter', () => {
         // Same shape as "More" — command on the left, `# comment` on
         // the right. The deploy target is the comment.
         expect(result.stdout).toContain('Deploy:')
         expect(result.stdout).toMatch(/npm run deploy\s+# deploy to Cloudflare Workers/)
-      })
-
-      test('expands $EDITOR into the user\'s editor when EDITOR is set', () => {
-        const cwd = mktmp()
-        const r = runCreate(['demo-app'], { cwd, env: { EDITOR: 'nvim' } })
-        expect(r.exitCode).toBe(0)
-        expect(r.stdout).toContain('nvim components/Counter.tsx')
-        // The literal "$EDITOR" must not leak through when expansion succeeded.
-        expect(r.stdout).not.toMatch(/\$EDITOR components/)
       })
 
       test('exits 0', () => {

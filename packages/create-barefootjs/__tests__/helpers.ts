@@ -46,12 +46,11 @@ export function runCreate(
   opts: { cwd: string; env?: Record<string, string | undefined> },
 ): RunResult {
   ensureBuilt()
-  // Strip the parent test runner's environment signals that the CLI
-  // inspects: `npm_config_user_agent` (PM detection) and `EDITOR`
-  // (next-steps quoting). Callers can opt back in via `opts.env`.
+  // Strip the parent test runner's `npm_config_user_agent` so the
+  // child CLI's PM detection is deterministic. Callers can opt back
+  // in via `opts.env`.
   const baseEnv: NodeJS.ProcessEnv = { ...process.env, CI: '1' }
   delete baseEnv.npm_config_user_agent
-  delete baseEnv.EDITOR
   const env = { ...baseEnv, ...(opts.env ?? {}) } as NodeJS.ProcessEnv
   const res = spawnSync('node', [CLI_PATH, ...args], {
     cwd: opts.cwd,

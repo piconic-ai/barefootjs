@@ -269,10 +269,6 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   // The detected PM is reflected in the commands quoted below, so we
   // don't announce it separately — the user just sees `bun install`
   // or `pnpm install` and knows what's happening.
-  // Use the user's actual editor when EDITOR is set so the line is a
-  // copy-pasteable command; fall back to a literal $EDITOR for shells
-  // that have it defined but aren't passing it through to us.
-  const editor = process.env.EDITOR || '$EDITOR'
   // `barefoot init` runs inside the freshly created project dir but
   // the user's shell is still in the parent. Lead with `cd` so the
   // remaining commands work when copy-pasted in order.
@@ -288,24 +284,12 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   console.log(`  ${cmd.install}`)
   console.log(`  ${cmd.run('dev')}`)
 
-  // Width-pad commands so the trailing `# comment` columns line up
-  // across the Deploy + More sections, which share the same shape.
-  const padTo = (s: string, width: number): string => s + ' '.repeat(Math.max(0, width - s.length))
-  const editorCmd = `${editor} components/Counter.tsx`
-  const deployCmd = adapter.deploy ? cmd.run(adapter.deploy.script) : ''
-  const commentColumn = Math.max(deployCmd.length, editorCmd.length) + 4
-
   if (adapter.deploy) {
+    const deployCmd = cmd.run(adapter.deploy.script)
     console.log('')
     console.log(`${heading('Deploy:')}`)
-    console.log(
-      `  ${padTo(deployCmd, commentColumn)}${dim(`# deploy to ${adapter.deploy.target}`)}`,
-    )
+    console.log(`  ${deployCmd}${dim(`   # deploy to ${adapter.deploy.target}`)}`)
   }
-
-  console.log('')
-  console.log(`${heading('More:')}`)
-  console.log(`  ${padTo(editorCmd, commentColumn)}${dim('# edit the starter component')}`)
 }
 
 // ANSI helpers for the next-steps block. All three apply only in a
