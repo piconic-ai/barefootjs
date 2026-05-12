@@ -259,8 +259,12 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   console.log(`  2. Start the dev server`)
   console.log(`       ${cmd.run('dev')}`)
   console.log(`       → http://localhost:${adapter.port}`)
+  // Use the user's actual editor when EDITOR is set so the line is a
+  // copy-pasteable command; fall back to a literal $EDITOR for shells
+  // that have it defined but aren't passing it through to us.
+  const editor = process.env.EDITOR || '$EDITOR'
   console.log(`  3. Edit components`)
-  console.log(`       $EDITOR components/Counter.tsx`)
+  console.log(`       ${editor} components/Counter.tsx`)
   console.log(`  4. Build components and watch`)
   console.log(`       ${cmd.run('watch')}`)
 }

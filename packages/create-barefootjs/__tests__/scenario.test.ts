@@ -54,12 +54,10 @@ describe.skipIf(!INTEGRATION)(
         expect(existsSync(projectDir)).toBe(true)
       })
 
-      test('confirms the chosen directory with "Using target directory"', () => {
-        expect(result.stdout).toContain('Using target directory … demo-app')
-      })
-
-      test('announces the destination before doing any work', () => {
-        expect(result.stdout).toMatch(/Scaffolding BarefootJS app in .*demo-app/)
+      test('confirms the chosen directory with "✔ Target directory <name>"', () => {
+        // In non-TTY contexts the value is unhighlighted; the
+        // confirmation line is otherwise identical to the TTY one.
+        expect(result.stdout).toContain('✔ Target directory demo-app')
       })
     })
 
@@ -134,12 +132,23 @@ describe.skipIf(!INTEGRATION)(
       test('shows all four numbered steps in order', () => {
         // The detected PM is reflected in the commands quoted below,
         // not announced separately. The happy-path run had no PM
-        // signal injected, so we expect the npm command forms.
+        // signal injected, so we expect the npm command forms. EDITOR
+        // was stripped by the test harness, so step 3 falls back to a
+        // literal "$EDITOR".
         expect(result.stdout).toContain('Next steps:')
         expect(result.stdout).toMatch(/1\. Install dependencies\n\s+npm install/)
         expect(result.stdout).toMatch(/2\. Start the dev server\n\s+npm run dev\n\s+→ http:\/\/localhost:\d+/)
         expect(result.stdout).toMatch(/3\. Edit components\n\s+\$EDITOR components\/Counter\.tsx/)
         expect(result.stdout).toMatch(/4\. Build components and watch\n\s+npm run watch/)
+      })
+
+      test('expands $EDITOR into the user\'s editor when EDITOR is set', () => {
+        const cwd = mktmp()
+        const r = runCreate(['demo-app'], { cwd, env: { EDITOR: 'nvim' } })
+        expect(r.exitCode).toBe(0)
+        expect(r.stdout).toMatch(/3\. Edit components\n\s+nvim components\/Counter\.tsx/)
+        // The literal "$EDITOR" must not leak through when expansion succeeded.
+        expect(r.stdout).not.toMatch(/\$EDITOR components/)
       })
 
       test('exits 0', () => {
@@ -230,11 +239,10 @@ describe('Scenario: how the target directory is chosen (no network)', () => {
   //                                  (TTY-gated; non-TTY falls back to default)
 
   describe('(a) When a positional argument is provided', () => {
-    test('uses it verbatim and confirms with "Using target directory …"', () => {
+    test('uses it verbatim and confirms with "✔ Target directory <name>"', () => {
       const cwd = mktmp()
       const r = runCreate(['demo-app'], { cwd })
-      expect(r.stdout).toContain('Using target directory … demo-app')
-      expect(r.stdout).toMatch(/Scaffolding BarefootJS app in .*demo-app/)
+      expect(r.stdout).toContain('✔ Target directory demo-app')
     })
   })
 
@@ -242,14 +250,13 @@ describe('Scenario: how the target directory is chosen (no network)', () => {
     test('skips the prompt and silently accepts "my-app"', () => {
       const cwd = mktmp()
       const r = runCreate(['--yes'], { cwd })
-      expect(r.stdout).toContain('Using target directory … my-app')
-      expect(r.stdout).toMatch(/Scaffolding BarefootJS app in .*my-app/)
+      expect(r.stdout).toContain('✔ Target directory my-app')
     })
 
     test('-y is accepted as an alias', () => {
       const cwd = mktmp()
       const r = runCreate(['-y'], { cwd })
-      expect(r.stdout).toContain('Using target directory … my-app')
+      expect(r.stdout).toContain('✔ Target directory my-app')
     })
   })
 
@@ -257,10 +264,12 @@ describe('Scenario: how the target directory is chosen (no network)', () => {
     test('falls back to "my-app" in non-TTY contexts (no hang)', () => {
       // The spawned child inherits a piped stdin (not a TTY), so the
       // text() helper short-circuits to the default instead of trying
-      // to render a prompt.
+      // to render a prompt. The default surfaces via the Next-steps
+      // output and the directory created on disk.
       const cwd = mktmp()
       const r = runCreate([], { cwd })
-      expect(r.stdout).toMatch(/Scaffolding BarefootJS app in .*my-app/)
+      expect(r.exitCode).toBe(0)
+      expect(existsSync(path.join(cwd, 'my-app', 'package.json'))).toBe(true)
     })
   })
 
@@ -284,7 +293,7 @@ describe('Scenario: how the target directory is chosen (no network)', () => {
 
       const r = runCreate(['demo-app'], { cwd })
       expect(r.stderr).not.toContain('exists and is not empty')
-      expect(r.stdout).toContain('Scaffolding BarefootJS app in')
+      expect(r.stdout).toContain('✔ Target directory demo-app')
     })
   })
 })

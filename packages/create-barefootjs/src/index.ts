@@ -24,6 +24,14 @@ const DEFAULT_PROJECT_NAME = 'my-app'
 const DEFAULT_ADAPTER = 'hono'
 const DEFAULT_CSS = 'unocss'
 
+// Highlight a user-supplied value (project name, picked option label,
+// ...) in bold green when stdout is a TTY. In non-TTY contexts (CI,
+// piped output) we keep the value plain so log files don't carry ANSI
+// noise that's hard to read after the fact.
+function highlight(value: string): string {
+  return process.stdout.isTTY ? `\x1b[1;32m${value}\x1b[0m` : value
+}
+
 function usage(): never {
   console.log(`Usage: npm create barefootjs@latest [<project-name>] [-- --adapter <name>]
 
@@ -62,19 +70,23 @@ async function main(): Promise<void> {
     (a) => a !== positional && a !== '--yes' && a !== '-y',
   )
 
-  // Resolve the project name. Three branches the user can land in:
-  //   - explicit positional arg → use it, with a "✔ Using ..." confirmation
+  // Resolve the project name. Three branches the user can land in,
+  // all producing the same "✔ Target directory <bold-green>NAME</>"
+  // confirmation line so the transcript reads consistently regardless
+  // of how the value was supplied:
+  //   - explicit positional arg → use it
   //   - --yes (no positional)  → silently accept the default
-  //   - interactive            → prompt for one (TTY-gated; the text()
-  //                              helper falls back to the default in
-  //                              CI / piped contexts to avoid hangs)
+  //   - interactive            → prompt for one (TTY-gated; text()
+  //                              falls back to the default in CI /
+  //                              piped contexts to avoid hangs and
+  //                              skips the confirmation line)
   let projectName: string
   if (positional) {
     projectName = positional
-    console.log(`\n✔ Using target directory … ${projectName}`)
+    console.log(`\n✔ Target directory ${highlight(projectName)}`)
   } else if (skipPrompts) {
     projectName = DEFAULT_PROJECT_NAME
-    console.log(`\n✔ Using target directory … ${projectName}`)
+    console.log(`\n✔ Target directory ${highlight(projectName)}`)
   } else {
     projectName = await text({
       message: 'Target directory',
@@ -106,8 +118,6 @@ async function main(): Promise<void> {
         'Reinstall create-barefootjs or report this if it persists.',
     )
   }
-
-  console.log(`\nScaffolding BarefootJS app in ${targetDir}`)
 
   const initArgs = ['--name', projectName]
   // `--yes` short-circuits init's adapter / css selectors too by

@@ -48,11 +48,11 @@ export async function text(args: TextArgs): Promise<string> {
       rl.close()
       const trimmed = answer.trim()
       const value = trimmed.length > 0 ? trimmed : args.defaultValue
-      // Replace the prompt line with a compact confirmation so the
-      // transcript reads as "✔ Target directory *my-app*" rather than
-      // leaving the raw "Target directory: (my-app) <input>" line.
+      // Replace the prompt line with a compact confirmation. The
+      // chosen value is rendered bold green so it pops out of the
+      // transcript: "✔ Target directory my-app".
       output.write('\x1b[1A\x1b[2K')
-      output.write(`✔ ${args.message} *${value}*\n`)
+      output.write(`✔ ${args.message} \x1b[1;32m${value}\x1b[0m\n`)
       resolve(value)
     })
   })

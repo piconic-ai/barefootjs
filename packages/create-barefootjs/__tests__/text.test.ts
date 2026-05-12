@@ -41,7 +41,7 @@ describe('text()', () => {
     expect(out).toContain('Target directory: (my-app)')
     // After confirmation, the prompt line is replaced by a compact
     // "✔ <message> *<answer>*" summary.
-    expect(out).toContain('✔ Target directory *my-app*\n')
+    expect(out).toContain('✔ Target directory \x1b[1;32mmy-app\x1b[0m\n')
   })
 
   test('resolves to the trimmed input when the user types a name', async () => {
@@ -54,7 +54,7 @@ describe('text()', () => {
     })
     input.write('  acme-app  \n')
     expect(await promise).toBe('acme-app')
-    expect(rendered()).toContain('✔ Target directory *acme-app*\n')
+    expect(rendered()).toContain('✔ Target directory \x1b[1;32macme-app\x1b[0m\n')
   })
 
   test('short-circuits to the default when stdin is not a TTY', async () => {

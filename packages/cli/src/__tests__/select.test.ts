@@ -81,8 +81,8 @@ describe('select — confirmation line', () => {
     const promise = select({
       message: 'Choose an adapter',
       options: [
-        { value: 'hono', label: 'Hono' },
-        { value: 'csr', label: 'CSR' },
+        { value: 'hono', label: 'Hono (Node, JSX SSR + hydration)' },
+        { value: 'csr', label: 'CSR (Bun, client-side rendering only)' },
       ],
       defaultValue: 'hono',
       input,
@@ -98,7 +98,13 @@ describe('select — confirmation line', () => {
     const result = await promise
 
     expect(result).toBe('hono')
-    expect(chunks.join('')).toContain('✔ Choose an adapter *Hono*\n')
+    const joined = chunks.join('')
+    // The confirmation strips the parenthetical description and
+    // highlights the picked option in bold green.
+    expect(joined).toContain('✔ Choose an adapter \x1b[1;32mHono\x1b[0m\n')
+    // The full label (with parens) appears only in the menu render,
+    // never in the confirmation line itself.
+    expect(joined.split('\x1b[1;32m')[1]).not.toContain('(Node')
   })
 })
 
