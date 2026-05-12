@@ -109,7 +109,10 @@ async function resolveAdapter(flag: string | undefined): Promise<string> {
   }
   const options = Object.entries(ADAPTERS).map(([value, t]) => ({ value, label: t.label }))
   try {
-    return await select({ message: 'Choose an adapter:', options, defaultValue: DEFAULT_ADAPTER })
+    // The internal term is "adapter" (matches `--adapter` and the
+    // architecture docs), but new users don't have that vocabulary
+    // yet — the prompt phrases the choice in user-facing terms.
+    return await select({ message: 'Choose a framework or runtime', options, defaultValue: DEFAULT_ADAPTER })
   } catch (err) {
     bailOnSelectError(err)
   }
@@ -126,7 +129,7 @@ async function resolveCssLibrary(flag: string | undefined): Promise<string> {
   }
   const options = Object.entries(CSS_LIBRARIES).map(([value, t]) => ({ value, label: t.label }))
   try {
-    return await select({ message: 'Choose a CSS library:', options, defaultValue: DEFAULT_CSS_LIBRARY })
+    return await select({ message: 'Choose a CSS library', options, defaultValue: DEFAULT_CSS_LIBRARY })
   } catch (err) {
     bailOnSelectError(err)
   }

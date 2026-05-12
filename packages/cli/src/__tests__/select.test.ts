@@ -79,7 +79,7 @@ describe('select — confirmation line', () => {
     output.on('data', (c) => chunks.push(c.toString()))
 
     const promise = select({
-      message: 'Choose an adapter',
+      message: 'Choose a framework or runtime',
       options: [
         { value: 'hono', label: 'Hono (Node, JSX SSR + hydration)' },
         { value: 'csr', label: 'CSR (Bun, client-side rendering only)' },
@@ -102,10 +102,10 @@ describe('select — confirmation line', () => {
     // The menu header is rendered inquirer-style with a yellow "?"
     // marker and a bold message.
     const ansiStripped = joined.replace(/\x1b\[[0-9;]*m/g, '')
-    expect(ansiStripped).toContain('? Choose an adapter')
+    expect(ansiStripped).toContain('? Choose a framework or runtime')
     // The confirmation strips the parenthetical description and
     // highlights the picked option in bold green.
-    expect(joined).toContain('✔ Choose an adapter \x1b[1;32mHono\x1b[0m\n')
+    expect(joined).toContain('✔ Choose a framework or runtime \x1b[1;32mHono\x1b[0m\n')
     // The full label (with parens) appears only in the menu render,
     // never in the confirmation line itself.
     expect(joined.split('\x1b[1;32m')[1]).not.toContain('(Node')
