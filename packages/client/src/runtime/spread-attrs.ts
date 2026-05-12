@@ -6,10 +6,14 @@
  * a static string for server/template rendering of computed local spreads.
  */
 
+import { styleToCss } from './style'
+
 /**
  * Convert an object to an HTML attribute string.
  * Aligned with applyRestAttrs conventions: skips null/undefined/false,
- * event handlers, maps className→class and htmlFor→for.
+ * event handlers, maps className→class and htmlFor→for. The `style`
+ * prop is routed through `styleToCss` so object literals serialize to
+ * a real CSS string (matching the reactive `applyRestAttrs` path).
  */
 export function spreadAttrs(obj: Record<string, unknown>): string {
   if (!obj || typeof obj !== 'object') return ''
@@ -20,6 +24,11 @@ export function spreadAttrs(obj: Record<string, unknown>): string {
     if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) continue
     // Skip children prop
     if (key === 'children') continue
+    if (key === 'style') {
+      const css = styleToCss(value)
+      if (css != null) parts.push(`style="${css}"`)
+      continue
+    }
     // Map JSX prop names to HTML attribute names
     const attr = key === 'className' ? 'class' : key === 'htmlFor' ? 'for'
       : key.replace(/([A-Z])/g, '-$1').toLowerCase()

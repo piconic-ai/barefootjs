@@ -83,6 +83,53 @@ describe('SVG attribute kebab-case emission (#135)', () => {
     expect(content).not.toContain('className=')
   })
 
+  test('reactive SVG attributes inside .map() use kebab-case for setAttribute', () => {
+    // Regression: Pie chart "Animated" demo (#135 Concrete Additions). The
+    // path lives inside a `.map()` body, and the reactive update on
+    // `stroke-dashoffset` is driven by a high-frequency `progress()` signal
+    // fed by `requestAnimationFrame`. If the per-item reactive
+    // `setAttribute` did not match the SSR kebab spelling, both attributes
+    // would coexist on the DOM and the rAF tick would write the wrong one.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      type Slice = { name: string; d: string; fill: string }
+
+      export function Wheel() {
+        const [progress] = createSignal(1)
+        const slices: Slice[] = []
+        return (
+          <svg viewBox="0 0 100 100">
+            <g>
+              {slices.map((s) => (
+                <path
+                  key={s.name}
+                  d={s.d}
+                  fill={s.fill}
+                  strokeDasharray={String(800)}
+                  strokeDashoffset={String(800 * (1 - progress()))}
+                />
+              ))}
+            </g>
+          </svg>
+        )
+      }
+    `
+    const result = compileJSX(source, 'Wheel.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    const content = clientJs!.content
+
+    // Reactive update goes through setAttribute with the kebab spelling.
+    expect(content).toContain("'stroke-dashoffset'")
+    expect(content).not.toContain("'strokeDashoffset'")
+    // SSR template literal uses the kebab spelling as well.
+    expect(content).toContain('stroke-dashoffset=')
+    expect(content).not.toContain('strokeDashoffset=')
+  })
+
   test('non-SVG camelCase attributes are NOT converted', () => {
     // tabIndex, autoFocus, etc. are HTML attributes that stay camelCase
     // in the JSX → DOM property pipeline (or get specific handling

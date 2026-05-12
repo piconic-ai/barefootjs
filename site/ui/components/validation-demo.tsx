@@ -7,9 +7,10 @@
  */
 
 import { createForm } from '@barefootjs/form'
-import { createSignal } from '@barefootjs/client'
+import { createSignal, createMemo, onCleanup } from '@barefootjs/client'
 import { Input } from '@ui/components/ui/input'
 import { Button } from '@ui/components/ui/button'
+import { Spinner } from '@ui/components/ui/spinner'
 import { z } from 'zod'
 
 /**
@@ -136,6 +137,125 @@ export function PasswordConfirmationDemo() {
       {matched() ? (
         <p className="match-indicator text-sm text-success">Passwords match!</p>
       ) : null}
+    </form>
+  )
+}
+
+/**
+ * Async availability validation — three UI surfaces flip together while
+ * the in-flight async check is pending:
+ *
+ *   1. `<Spinner>` mounts conditionally inside the input row.
+ *   2. The submit `<Button>` is `disabled`.
+ *   3. The `<Input>` carries `aria-busy="true"` so assistive tech reports
+ *      the field as busy.
+ *
+ * All three are driven by the same `validating()` signal — the compiler
+ * has to emit three independent reactive bindings that fire on a single
+ * setter call without one masking the others.
+ *
+ * In addition, the error/status text uses `style={{'--err': errorHue()}}`
+ * — a CSS custom property whose value comes from a signal — so the color
+ * computed via `hsl(var(--err) …)` in `globals.css` tracks the validation
+ * outcome (red error, amber warning, green success) without re-mounting
+ * the paragraph.
+ */
+const TAKEN_USERNAMES = new Set(['admin', 'root', 'test', 'guest'])
+
+export function AsyncFieldValidationDemo() {
+  const [username, setUsername] = createSignal('')
+  const [validating, setValidating] = createSignal(false)
+  // 0 = neutral/empty, 1 = success (green), 2 = warning (amber), 3 = error (red)
+  const [errorLevel, setErrorLevel] = createSignal(0)
+  const [errorMessage, setErrorMessage] = createSignal('')
+
+  // `createMemo` (not a plain arrow `const`) so the compiler can inline the
+  // derived hue into the SSR template's initial `style` attribute — the
+  // memo-substitution path in `buildSignalAndMemoMaps()` wraps a block-body
+  // memo in an IIFE and resolves `errorLevel()` to its initial value at
+  // hydrate time, keeping SSR and hydration in agreement.
+  const errorHue = createMemo(() => {
+    const lvl = errorLevel()
+    if (lvl === 1) return '140' // green
+    if (lvl === 2) return '40' // amber
+    if (lvl === 3) return '0' // red
+    return '210' // neutral slate
+  })
+
+  let timer: ReturnType<typeof setTimeout> | null = null
+  const handleInput = (e: Event) => {
+    const value = (e.target as HTMLInputElement).value
+    setUsername(value)
+    if (timer) clearTimeout(timer)
+
+    if (value.length === 0) {
+      setValidating(false)
+      setErrorLevel(0)
+      setErrorMessage('')
+      return
+    }
+
+    setValidating(true)
+    setErrorMessage('Checking availability…')
+    setErrorLevel(0)
+
+    timer = setTimeout(() => {
+      setTimeout(() => {
+        const trimmed = value.trim().toLowerCase()
+        if (trimmed.length < 3) {
+          setErrorLevel(3)
+          setErrorMessage('Username must be at least 3 characters')
+        } else if (TAKEN_USERNAMES.has(trimmed)) {
+          setErrorLevel(3)
+          setErrorMessage(`"${value}" is already taken`)
+        } else if (/[^a-z0-9_-]/i.test(trimmed)) {
+          setErrorLevel(2)
+          setErrorMessage('Only letters, digits, _ and - are allowed')
+        } else {
+          setErrorLevel(1)
+          setErrorMessage(`"${value}" is available`)
+        }
+        setValidating(false)
+      }, 400)
+    }, 200)
+  }
+
+  onCleanup(() => {
+    if (timer) clearTimeout(timer)
+  })
+
+  return (
+    <form className="space-y-3" data-async-validation>
+      <div className="space-y-2">
+        <label className="text-sm text-muted-foreground">Username *</label>
+        <div className="flex items-center gap-2">
+          <Input
+            value={username()}
+            onInput={handleInput}
+            aria-busy={validating() ? 'true' : 'false'}
+            placeholder="Pick a username (e.g. admin is taken)"
+            data-async-input
+          />
+          {validating() ? (
+            <Spinner className="size-4 text-muted-foreground" data-async-spinner />
+          ) : null}
+        </div>
+        <p
+          className="async-validation-msg text-sm min-h-5"
+          style={{ '--err': errorHue() }}
+          data-async-msg
+          data-async-level={String(errorLevel())}
+        >
+          {errorMessage()}
+        </p>
+      </div>
+      <Button
+        type="submit"
+        disabled={validating() || errorLevel() === 3}
+        data-async-submit
+      >
+        Create account
+      </Button>
     </form>
   )
 }

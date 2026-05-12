@@ -227,6 +227,31 @@ export function AdminAnalyticsDemo() {
     return [...bySource.values()]
   })
 
+  // Per-source performance aggregate that feeds the Source Stat cards
+  // below. Each entry's `accent` is consumed as a CSS custom property
+  // (`--stat-c`) on the card so the visual variant is driven by data,
+  // not by a swap of static utility classes (`bg-blue-500` vs
+  // `bg-green-500`). Tests the CSS-var × .map() × per-item reactive
+  // path — the only attribute that changes when `sourceFilter` flips
+  // the visible rows is the inline `style`.
+  const sourceStatsByKey = createMemo(() => {
+    const sources: TrafficSource[] = ['organic', 'direct', 'referral', 'social', 'paid']
+    return sources.map((s) => {
+      const rows = filteredData().filter((r) => r.source === s)
+      const visitors = rows.reduce((acc, r) => acc + r.visitors, 0)
+      const revenue = rows.reduce((acc, r) => acc + r.revenue, 0)
+      const totalVisitors = aggregateStats().totalVisitors
+      const share = totalVisitors > 0 ? Math.round((visitors / totalVisitors) * 100) : 0
+      return {
+        source: s,
+        accent: sourceColors[s],
+        visitors,
+        revenue,
+        share,
+      }
+    })
+  })
+
   const handleSort = (key: 'page' | 'views' | 'visitors' | 'bounceRate' | 'revenue') => {
     if (sortKey() === key) {
       setSortDir(sortDir() === 'asc' ? 'desc' : 'asc')
@@ -341,6 +366,31 @@ export function AdminAnalyticsDemo() {
             <p className="text-sm text-muted-foreground">across {filteredData().length} pages</p>
           </CardContent>
         </Card>
+      </div>
+
+      <div
+        className="source-stat-grid grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+        data-source-stat-grid
+      >
+        {sourceStatsByKey().map((s) => (
+          <Card
+            key={s.source}
+            className="source-stat-card"
+            style={{ '--stat-c': s.accent }}
+            data-source-stat={s.source}
+          >
+            <CardHeader className="pb-2">
+              <CardDescription className="capitalize">{s.source}</CardDescription>
+              <CardTitle className="text-xl">{s.visitors.toLocaleString()}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                <span data-source-share>{s.share}</span>% of visitors
+              </p>
+              <p className="text-xs text-muted-foreground">{formatCurrency(s.revenue)}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">

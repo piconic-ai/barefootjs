@@ -149,4 +149,38 @@ test.describe('Area Chart Reference Page', () => {
       await expect(tooltip).toHaveCSS('opacity', '1')
     })
   })
+
+  test.describe('Palette', () => {
+    const scope = '[data-area-palette-demo]'
+
+    test('inline `--area-fill` CSS variable is emitted on the wrapper', async ({ page }) => {
+      const demo = page.locator(scope)
+      await expect(demo).toBeVisible()
+      await expect(demo).toHaveAttribute('data-palette', 'ocean')
+      await expect(demo).toHaveAttribute('style', /--area-fill\s*:\s*hsl\(199/)
+    })
+
+    test('switching palette flips the CSS variable; the Area inherits it', async ({ page }) => {
+      const demo = page.locator(scope)
+      const areaPath = demo.locator('path[data-key="desktop"]').first()
+
+      // Initial fill is the CSS variable reference; resolves via cascade.
+      await expect(areaPath).toHaveAttribute('fill', 'var(--area-fill)')
+      const oceanFill = await areaPath.evaluate(
+        (el) => getComputedStyle(el).fill,
+      )
+
+      // Switch to "sunset".
+      await demo.locator('[data-palette-option="sunset"]').click()
+      await expect(demo).toHaveAttribute('data-palette', 'sunset')
+      await expect(demo).toHaveAttribute('style', /--area-fill\s*:\s*hsl\(20/)
+
+      // Resolved fill changes — the cascaded `--area-fill` flipped, the
+      // chart subtree was not re-rendered.
+      const sunsetFill = await areaPath.evaluate(
+        (el) => getComputedStyle(el).fill,
+      )
+      expect(sunsetFill).not.toBe(oceanFill)
+    })
+  })
 })

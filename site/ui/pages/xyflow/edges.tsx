@@ -6,7 +6,11 @@
  */
 
 import { XyflowEdgesDemo } from '@/components/xyflow-intro-demo'
-import { XyflowEdgeVariantsDemo, XyflowAnimatedEdgesDemo } from '@/components/xyflow-demo'
+import {
+  XyflowEdgeVariantsDemo,
+  XyflowAnimatedEdgesDemo,
+  XyflowFlowAnimateDemo,
+} from '@/components/xyflow-demo'
 import {
   PageHeader,
   Section,
@@ -22,6 +26,7 @@ const tocItems: TocItem[] = [
   { id: 'default-routing', title: 'Default Routing' },
   { id: 'variants', title: 'Edge Variants' },
   { id: 'animated', title: 'Animated Edges' },
+  { id: 'flow-animate', title: 'rAF Flow Animation' },
 ]
 
 const edgeShapeCode = `// An edge is a plain object connecting two node ids.
@@ -72,6 +77,47 @@ const edges = [
 <Flow nodes={nodes} edges={edges}>
   <Background variant="dots" gap={30} />
 </Flow>`
+
+const flowAnimateCode = `"use client"
+
+import { createSignal, createEffect, onCleanup } from "@barefootjs/client"
+
+export function XyflowFlowAnimateDemo() {
+  const [animating, setAnimating] = createSignal(false)
+  const [offset, setOffset]       = createSignal(0)
+
+  createEffect(() => {
+    if (!animating()) return
+    let frame = 0
+    let last  = performance.now()
+    const tick = (now) => {
+      const dt = now - last
+      last = now
+      setOffset((prev) => (prev - dt * 0.04) % 16)
+      frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    onCleanup(() => cancelAnimationFrame(frame))
+  })
+
+  return (
+    <div>
+      <button onClick={() => setAnimating(!animating())}>
+        {animating() ? "Stop" : "Animate flow"}
+      </button>
+      <svg viewBox="0 0 520 180">
+        <path
+          d="M 40 60 C 140 60 160 120 280 120 S 380 60 480 60"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-dasharray="8 8"
+          stroke-dashoffset={String(offset())}
+        />
+      </svg>
+    </div>
+  )
+}`
 
 export function XyflowEdgesPage() {
   return (
@@ -140,6 +186,24 @@ export function XyflowEdgesPage() {
 
           <Example title="Animated stroke" code={animatedEdgesCode}>
             <XyflowAnimatedEdgesDemo />
+          </Example>
+        </Section>
+
+        <Section id="flow-animate" title="rAF Flow Animation">
+          <div className="prose prose-invert max-w-none">
+            <p className="text-muted-foreground">
+              The CSS keyframe animation above happens entirely inside the browser. When you need the
+              path direction or speed to be reactive — to track a signal — drive the
+              {' '}<code className="text-foreground">stroke-dashoffset</code> attribute from a
+              {' '}<code className="text-foreground">requestAnimationFrame</code> loop owned by a
+              {' '}<code className="text-foreground">createEffect</code>. Toggling the effect off
+              calls <code className="text-foreground">cancelAnimationFrame</code> in{' '}
+              <code className="text-foreground">onCleanup</code>, so the loop never leaks past unmount.
+            </p>
+          </div>
+
+          <Example title="rAF-driven dashoffset" code={flowAnimateCode}>
+            <XyflowFlowAnimateDemo />
           </Example>
         </Section>
       </div>

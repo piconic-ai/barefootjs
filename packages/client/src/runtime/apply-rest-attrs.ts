@@ -6,6 +6,7 @@
  */
 
 import { createEffect } from '@barefootjs/client/reactive'
+import { styleToCss } from './style'
 
 /** Map of JSX prop names to HTML attribute names */
 function toAttrName(key: string): string {
@@ -64,6 +65,13 @@ export function applyRestAttrs(
 
       // Event handlers and ref are wired up above, not as attributes
       if (key === 'ref') continue
+      // `children` is a JSX construct rendered inside the element, never
+      // a DOM attribute. Without this exclusion, parent components that
+      // pass `children` through `{...props}` end up with
+      // `children="<p ...>...</p>"` written as a literal attribute on
+      // the wrapper div. The matching `spreadAttrs` (SSR-string) path
+      // already skips `children` for the same reason.
+      if (key === 'children') continue
       if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) continue
 
       const value = source[key]
@@ -76,6 +84,16 @@ export function applyRestAttrs(
           if ((el as HTMLInputElement).value !== strVal) (el as HTMLInputElement).value = strVal
         } else if (attr === 'checked' && 'checked' in el) {
           (el as HTMLInputElement).checked = !!value
+        } else if (attr === 'style') {
+          // Route the `style` prop through `styleToCss` so object literals
+          // (`{'--err': errorHue()}`) and inline strings (`'color:red'`)
+          // both reach the DOM as a real CSS string instead of
+          // `[object Object]`. Mirrors the compiler's
+          // `setAttribute('style', styleToCss(...))` path used when the
+          // attribute is bound directly on a JSX element.
+          const css = styleToCss(value)
+          if (css == null) el.removeAttribute('style')
+          else el.setAttribute('style', css)
         } else {
           el.setAttribute(attr, String(value))
         }

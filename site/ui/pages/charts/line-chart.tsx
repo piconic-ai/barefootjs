@@ -7,6 +7,7 @@ import {
   LineChartBasicDemo,
   LineChartMultipleDemo,
   LineChartInteractiveDemo,
+  LineChartZoomDemo,
 } from '@/components/line-chart-demo'
 import { LineChartPlayground } from '@/components/line-chart-playground'
 import {
@@ -28,7 +29,8 @@ const tocItems: TocItem[] = [
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'multiple', title: 'Multiple', branch: 'child' },
-  { id: 'interactive', title: 'Interactive', branch: 'end' },
+  { id: 'interactive', title: 'Interactive', branch: 'child' },
+  { id: 'zoom', title: 'Zoom', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -193,6 +195,53 @@ export function LineChartInteractiveDemo() {
   )
 }`
 
+const zoomCode = `"use client"
+
+import { createSignal, createMemo } from "@barefootjs/client"
+
+const yearlyData = [/* 12 months */]
+
+export function LineChartZoomDemo() {
+  const [start, setStart] = createSignal(0)
+  const [end,   setEnd  ] = createSignal(yearlyData.length - 1)
+
+  // Memo cascade: slider → window indices → sliced data → chart
+  // viewBox, axis ticks, line path \`d\` strings.
+  const visibleData = createMemo(() => {
+    const a = Math.min(start(), end())
+    const b = Math.max(start(), end())
+    return yearlyData.slice(a, b + 1)
+  })
+
+  return (
+    <div>
+      <input
+        type="range"
+        min="0"
+        max={String(yearlyData.length - 1)}
+        value={String(start())}
+        onInput={(e) => setStart(Number(e.target.value))}
+      />
+      <input
+        type="range"
+        min="0"
+        max={String(yearlyData.length - 1)}
+        value={String(end())}
+        onInput={(e) => setEnd(Number(e.target.value))}
+      />
+      <ChartContainer config={chartConfig} className="w-full">
+        <LineChart data={visibleData()}>
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="month" tickFormatter={(v) => v.slice(0, 3)} />
+          <YAxis />
+          <Line dataKey="desktop" stroke="var(--color-desktop)" type="monotone" />
+          <Line dataKey="mobile"  stroke="var(--color-mobile)"  type="monotone" />
+        </LineChart>
+      </ChartContainer>
+    </div>
+  )
+}`
+
 const lineChartProps: PropDefinition[] = [
   {
     name: 'data',
@@ -337,6 +386,10 @@ export function LineChartRefPage() {
 
             <Example title="Interactive" code={interactiveCode}>
               <LineChartInteractiveDemo />
+            </Example>
+
+            <Example title="Zoom" code={zoomCode}>
+              <LineChartZoomDemo />
             </Example>
           </div>
         </Section>

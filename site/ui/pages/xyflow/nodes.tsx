@@ -6,7 +6,11 @@
  */
 
 import { XyflowNodesDemo } from '@/components/xyflow-intro-demo'
-import { XyflowCustomBodyDemo, XyflowCustomHandlesDemo } from '@/components/xyflow-demo'
+import {
+  XyflowCustomBodyDemo,
+  XyflowCustomHandlesDemo,
+  XyflowHighlightDepthDemo,
+} from '@/components/xyflow-demo'
 import {
   PageHeader,
   Section,
@@ -22,6 +26,7 @@ const tocItems: TocItem[] = [
   { id: 'default-body', title: 'Default Body' },
   { id: 'custom-bodies', title: 'Custom Bodies' },
   { id: 'custom-handles', title: 'Custom Handles' },
+  { id: 'highlight-depth', title: 'Highlight Depth' },
 ]
 
 const nodeShapeCode = `// A node is a plain object: id, position, data.
@@ -129,6 +134,50 @@ const edges = [
   <Background variant="dots" gap={30} />
 </Flow>`
 
+const highlightDepthCode = `"use client"
+
+import { createSignal } from "@barefootjs/client"
+import { Flow, Handle, Background } from "@/components/ui/xyflow"
+import { Position } from "@barefootjs/xyflow"
+
+const [depth, setDepth] = createSignal(2)
+
+const nodes = [
+  { id: "root", position: { x:  80, y: 130 }, data: { label: "Root",   depth: 0 } },
+  { id: "l1",   position: { x: 280, y:  60 }, data: { label: "Tier 1", depth: 1 } },
+  // ...
+]
+
+function HighlightDepthNode({ id }) {
+  const node = nodes.find((n) => n.id === id)
+  const nodeDepth = node.data.depth
+  const intensity = () =>
+    depth() >= nodeDepth
+      ? Math.max(0, 1 - (depth() - nodeDepth) * 0.25).toFixed(2)
+      : "0"
+  return (
+    <div
+      style={{
+        "--node-glow": intensity(),
+        opacity: "calc(0.3 + 0.7 * var(--node-glow))",
+        boxShadow: "0 0 calc(12px * var(--node-glow)) currentColor",
+      }}
+    >
+      <Handle type="target" position={Position.Left}  nodeId={id} />
+      {node.data.label}
+      <Handle type="source" position={Position.Right} nodeId={id} />
+    </div>
+  )
+}
+
+<input type="range" min="0" max="4"
+       value={String(depth())}
+       onInput={(e) => setDepth(Number(e.target.value))} />
+<Flow nodes={nodes} edges={edges}
+      renderNode={(n) => <HighlightDepthNode id={n.id} />}>
+  <Background variant="dots" gap={30} />
+</Flow>`
+
 export function XyflowNodesPage() {
   return (
     <div className="flex gap-10">
@@ -202,6 +251,21 @@ export function XyflowNodesPage() {
 
           <Example title="Three-way fan-out" code={customHandlesCode}>
             <XyflowCustomHandlesDemo />
+          </Example>
+        </Section>
+
+        <Section id="highlight-depth" title="Highlight Depth">
+          <div className="prose prose-invert max-w-none">
+            <p className="text-muted-foreground">
+              A slider drives a <code className="text-foreground">depth()</code> signal that's read by
+              every node inside <code className="text-foreground">renderNode</code>. Each rendered node
+              writes its own inline <code className="text-foreground">style={'{{'}'--node-glow': intensity{'}}'}</code>
+              CSS variable so the glow can fade per-node without a chart-level re-render.
+            </p>
+          </div>
+
+          <Example title="Per-node CSS variable" code={highlightDepthCode}>
+            <XyflowHighlightDepthDemo />
           </Example>
         </Section>
       </div>

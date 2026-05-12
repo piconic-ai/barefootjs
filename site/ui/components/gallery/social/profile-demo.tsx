@@ -197,6 +197,16 @@ export function SocialProfileDemo() {
     setEditingField(null)
   }
 
+  // Activity-feed scroll progress — drives an inline CSS variable on the
+  // progress bar above the activity list. Tests high-frequency scroll
+  // event → CSS-var update without re-rendering the surrounding tree.
+  const [scrollPct, setScrollPct] = createSignal(0)
+  const handleActivityScroll = (e: Event) => {
+    const el = e.currentTarget as HTMLDivElement
+    const max = el.scrollHeight - el.clientHeight
+    setScrollPct(max > 0 ? Math.round((el.scrollTop / max) * 100) : 0)
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
 
@@ -429,7 +439,22 @@ export function SocialProfileDemo() {
         </TabsContent>
 
         <TabsContent value="activity" selected={isActivityTab()}>
-          <div className="space-y-1">
+          <div
+            className="activity-progress h-1 w-full bg-muted rounded-full overflow-hidden mb-3"
+            data-activity-progress
+            aria-label="Activity feed scroll progress"
+          >
+            <div
+              className="h-full bg-primary transition-[width] duration-75"
+              style={{ '--p': scrollPct() + '%', width: 'var(--p)' }}
+              data-activity-progress-bar
+            />
+          </div>
+          <div
+            className="space-y-1 max-h-72 overflow-y-auto pr-2"
+            onScroll={handleActivityScroll}
+            data-activity-scroll
+          >
             {profile().activities.map(activity => (
               <div key={activity.id} className="activity-item flex items-start gap-3 py-3">
                 <Badge variant={activityBadgeVariant[activity.type]} className="activity-badge shrink-0 mt-0.5">

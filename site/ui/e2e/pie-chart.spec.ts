@@ -91,6 +91,85 @@ test.describe('Pie Chart Reference Page', () => {
     })
   })
 
+  test.describe('Animated', () => {
+    const scope = '[bf-s^="PieChartAnimatedDemo_"]:not([data-slot])'
+
+    test('renders 4 slices with reactive stroke + fill-opacity attributes', async ({ page }) => {
+      const container = page.locator(scope)
+      const paths = container.locator('path[data-anim-path]')
+      await expect(paths).toHaveCount(4)
+      // Initial progress is 1, so dashoffset starts at 0 (fully drawn) and
+      // fill-opacity starts at 1 (fully visible). Math is normalised against
+      // pathLength="1" so dasharray is "1", independent of geometric length.
+      await expect(paths.first()).toHaveAttribute('stroke-dashoffset', '0')
+      await expect(paths.first()).toHaveAttribute('stroke-dasharray', '1')
+      await expect(paths.first()).toHaveAttribute('pathLength', '1')
+      await expect(paths.first()).toHaveAttribute('fill-opacity', '1')
+    })
+
+    test('rAF loop drives stroke-dashoffset 1 → 0 on toggle', async ({ page }) => {
+      const container = page.locator(scope)
+      const toggle = container.locator('[data-anim-toggle]')
+      const firstPath = container.locator('path[data-anim-path]').first()
+
+      // Sanity: starts fully drawn.
+      await expect(firstPath).toHaveAttribute('stroke-dashoffset', '0')
+
+      await toggle.click()
+
+      // The rAF tick should have pushed dashoffset away from 0 by the time
+      // the next frame paints. Poll briefly to catch the mid-animation value.
+      await expect
+        .poll(
+          async () => Number(await firstPath.getAttribute('stroke-dashoffset')),
+          { timeout: 1000 },
+        )
+        .toBeGreaterThan(0)
+
+      // After the animation duration completes, it returns to 0 and the
+      // toggle becomes available again (effect cleanup released the frame).
+      await expect
+        .poll(
+          async () => Number(await firstPath.getAttribute('stroke-dashoffset')),
+          { timeout: 3000 },
+        )
+        .toBe(0)
+      await expect(toggle).toBeEnabled()
+    })
+
+    test('rAF loop fades fill-opacity 0 → 1 so the slices visibly draw in', async ({ page }) => {
+      // Regression guard for the original report ("animation not working
+      // visually"): the previous implementation only animated the thin white
+      // stroke separator between slices, which was imperceptible against the
+      // solid fill. We now also animate `fill-opacity`, so the slices fade in
+      // — that fade is what makes the animation visible.
+      const container = page.locator(scope)
+      const toggle = container.locator('[data-anim-toggle]')
+      const firstPath = container.locator('path[data-anim-path]').first()
+
+      await expect(firstPath).toHaveAttribute('fill-opacity', '1')
+
+      await toggle.click()
+
+      // Mid-animation, fill-opacity must drop strictly below 1 (slice is
+      // partially transparent) and reach > 0 (animation has started).
+      await expect
+        .poll(
+          async () => Number(await firstPath.getAttribute('fill-opacity')),
+          { timeout: 1000 },
+        )
+        .toBeLessThan(1)
+
+      // After the animation duration completes, fill-opacity is back to 1.
+      await expect
+        .poll(
+          async () => Number(await firstPath.getAttribute('fill-opacity')),
+          { timeout: 3000 },
+        )
+        .toBe(1)
+    })
+  })
+
   test.describe('Tooltip', () => {
     test('tooltip appears on slice hover', async ({ page }) => {
       const container = page.locator('[bf-s^="PieChartPreviewDemo_"]:not([data-slot])')

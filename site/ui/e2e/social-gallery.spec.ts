@@ -133,6 +133,36 @@ test.describe('Gallery: Social app', () => {
       await page.locator('[role="tab"]', { hasText: 'Activity' }).click()
       await expect(page.locator('.activity-item').first()).toBeVisible()
     })
+
+    test('activity scroll updates the `--p` CSS variable on the progress bar', async ({ page }) => {
+      // High-frequency scroll event → signal → inline CSS variable
+      // → resolved width. Locks down the CSS-var × scroll path.
+      await page.goto('/gallery/social/profile')
+      await page.locator('[role="tab"]', { hasText: 'Activity' }).click()
+
+      const bar = page.locator('[data-activity-progress-bar]')
+      const scroller = page.locator('[data-activity-scroll]')
+
+      // Initial — bar sits at 0%.
+      await expect(bar).toHaveAttribute('style', /--p\s*:\s*0%/)
+
+      // Scroll the activity feed half-way and verify --p moves off 0.
+      await scroller.evaluate((el) => {
+        const div = el as HTMLDivElement
+        div.scrollTop = div.scrollHeight
+        div.dispatchEvent(new Event('scroll', { bubbles: true }))
+      })
+
+      await expect
+        .poll(
+          async () =>
+            Number(
+              (await bar.getAttribute('style'))?.match(/--p\s*:\s*(\d+)%/)?.[1] ?? '0',
+            ),
+          { timeout: 1500 },
+        )
+        .toBeGreaterThan(0)
+    })
   })
 
   test.describe('Messages page', () => {

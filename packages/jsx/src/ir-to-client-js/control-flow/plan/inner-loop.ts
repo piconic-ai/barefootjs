@@ -42,6 +42,37 @@ export interface InnerLoopText {
 }
 
 /**
+ * A reactive attribute effect inside a reactive inner loop's renderItem
+ * body. Mirrors `InnerLoopText` for `style`, `data-*`, `className`,
+ * etc. — every element in the loop body whose attribute reads a signal
+ * (or the loop param) gets its own per-item `createEffect`.
+ *
+ * `attrName` is already in DOM-spelling (kebab for SVG presentation
+ * attrs, `class` for `className`) so the stringifier can emit
+ * `setAttribute(attrName, ...)` directly.
+ */
+export interface InnerLoopReactiveAttr {
+  slotId: string
+  /** DOM attribute name (already mapped via `toHtmlAttrName`). */
+  attrName: string
+  /** Already wrapped via inner+outer loop param accessor. */
+  wrappedExpression: string
+  /** True for `style={{...}}` object literals — routed through `styleToCss`. */
+  isStyleObject: boolean
+  /** True for boolean DOM attributes (`disabled`, `checked`, ...). */
+  isBoolean: boolean
+  /**
+   * True for `attr={expr || undefined}` patterns where the compiler
+   * stripped the `|| undefined` and now stores the bare expression.
+   * The emitter must use a truthy check (not `!= null`) — otherwise a
+   * concrete `false` value writes `data-attr="false"` instead of
+   * removing the attribute. Surfaced by the calendar demo's
+   * `data-outside={day.isOutside || undefined}` on a nested map root.
+   */
+  presenceOrUndefined: boolean
+}
+
+/**
  * One inner loop level inside a composite renderItem.
  *
  * The `mode` discriminator selects the emission shape:
@@ -118,6 +149,8 @@ export interface InnerLoopReactiveEmit {
   events: readonly LoopChildEvent[]
   /** Pre-wrapped reactive text effects for the inner-item body. */
   reactiveTexts: readonly InnerLoopText[]
+  /** Pre-wrapped reactive attribute effects for the inner-item body. */
+  reactiveAttrs: readonly InnerLoopReactiveAttr[]
 }
 
 export interface InnerLoopStaticEmit {

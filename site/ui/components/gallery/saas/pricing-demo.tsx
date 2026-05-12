@@ -146,6 +146,21 @@ export function SaasPricingDemo() {
             <Badge variant="default" className="savings-badge">Save {savingsPercent()}%</Badge>
           ) : null}
         </div>
+
+        {/* Savings progress bar — width is a CSS custom property derived
+            from the savingsPercent() memo. Replaces what would otherwise
+            be a class-swap variant ('w-0' vs 'w-1/5'). */}
+        <div
+          className="saas-savings-progress mx-auto h-1.5 w-48 rounded-full bg-muted overflow-hidden"
+          data-savings-progress
+          aria-label="Annual savings progress"
+        >
+          <div
+            className="saas-savings-progress-bar h-full bg-primary transition-[width] duration-300"
+            style={{ '--w': savingsPercent() + '%', width: 'var(--w)' }}
+            data-savings-bar
+          />
+        </div>
       </div>
 
       {/* Plan cards */}

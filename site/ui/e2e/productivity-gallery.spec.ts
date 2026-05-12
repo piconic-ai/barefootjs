@@ -103,6 +103,180 @@ test.describe('Gallery: Productivity app', () => {
       await expect(page.locator('[data-productivity-sidebar] .productivity-unread-count')).toHaveText(String(initialUnread))
     })
 
+    test('board drag-preview CSS vars flip on pointerdown of a nested task card', async ({ page }) => {
+      // Locks down the per-item reactive `style={{'--drag-opacity': …,
+      // '--drag-scale': …, '--drag-shadow': …, '--drag-ring': …}}`
+      // binding on the root element of a NESTED `tasks.map()` body.
+      // Before #135 the inner-loop renderItem never emitted a
+      // `createEffect` for the root's `style` attribute, so the
+      // variables stayed at the SSR value and the card never reacted.
+      //
+      // The visual story (opacity fade + lift via scale/shadow +
+      // primary-coloured outline) is encoded across multiple CSS
+      // variables on the same `style` literal — exercising a richer
+      // object-style binding than the original single-var shape.
+      await page.goto('/gallery/productivity/board')
+
+      const card = page.locator('[data-task-id="1"]')
+      await expect(card).toBeVisible()
+      await expect(card).toHaveAttribute('data-task-dragging', 'false')
+      await expect(card).toHaveAttribute('style', /--drag-opacity\s*:\s*1/)
+      await expect(card).toHaveAttribute('style', /--drag-scale\s*:\s*1/)
+      // Idle outline is transparent — no visible ring.
+      await expect(card).toHaveAttribute('style', /--drag-ring\s*:\s*2px\s+solid\s+transparent/)
+
+      // pointerdown — same card flips to dragging state on every
+      // tracked variable.
+      await card.dispatchEvent('pointerdown')
+      await expect(card).toHaveAttribute('data-task-dragging', 'true')
+      await expect(card).toHaveAttribute('style', /--drag-opacity\s*:\s*0\.55/)
+      await expect(card).toHaveAttribute('style', /--drag-scale\s*:\s*1\.03/)
+      await expect(card).toHaveAttribute('style', /--drag-shadow\s*:\s*0\s+12px\s+24px/)
+      await expect(card).toHaveAttribute('style', /--drag-ring\s*:\s*2px\s+solid\s+var\(--color-primary/)
+
+      // Releasing the pointer brings the card back to the idle state.
+      await card.dispatchEvent('pointerup')
+      await expect(card).toHaveAttribute('data-task-dragging', 'false')
+      await expect(card).toHaveAttribute('style', /--drag-opacity\s*:\s*1/)
+      await expect(card).toHaveAttribute('style', /--drag-scale\s*:\s*1/)
+      await expect(card).toHaveAttribute('style', /--drag-ring\s*:\s*2px\s+solid\s+transparent/)
+    })
+
+    test('board: drag-and-drop moves a task between columns and highlights the drop target', async ({ page }) => {
+      // Trello/Notion-style cross-column drag. The card publishes
+      // {taskId, fromColId} on `dragstart`, the column reads it on
+      // `drop` and calls `moveTaskTo`. While the dragged card is
+      // over a column, the column root's `--drop-active` CSS var
+      // (bound on the OUTER `.map()` body root) flips to '1' and a
+      // dashed outline appears — exercising a reactive-style binding
+      // at the outer loop nesting level (one above the existing
+      // inner-loop task-card `--drag-*` test).
+      await page.goto('/gallery/productivity/board')
+
+      const card = page.locator('[data-task-id="1"]')
+      await expect(card).toBeVisible()
+
+      const todoCol = page.locator('[data-col-id="todo"]')
+      const doneCol = page.locator('[data-col-id="done"]')
+
+      // Task 1 starts in To Do — sanity check.
+      await expect(todoCol.locator('[data-task-id="1"]')).toHaveCount(1)
+      await expect(doneCol.locator('[data-task-id="1"]')).toHaveCount(0)
+
+      // Idle: outline is transparent (no drop-active highlight).
+      await expect(doneCol).toHaveAttribute('data-col-drop-active', 'false')
+      await expect(doneCol).toHaveAttribute('style', /--drop-active\s*:\s*0/)
+
+      // Drive dragstart + dragover from inside the page so the same
+      // DataTransfer instance is shared across events (Playwright's
+      // dispatchEvent serializes its eventInit, which would lose the
+      // DataTransfer payload otherwise).
+      await page.evaluate(() => {
+        const dt = new DataTransfer()
+        const src = document.querySelector('[data-task-id="1"]') as HTMLElement
+        const dst = document.querySelector('[data-col-id="done"]') as HTMLElement
+        src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }))
+        dst.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }))
+      })
+
+      // Drop target column is now highlighted.
+      await expect(doneCol).toHaveAttribute('data-col-drop-active', 'true')
+      await expect(doneCol).toHaveAttribute('style', /--drop-active\s*:\s*1/)
+      await expect(doneCol).toHaveAttribute('style', /outline\s*:\s*2px\s+dashed\s+var\(--color-primary/)
+
+      // Complete the gesture: drop on Done, dragend on the source.
+      await page.evaluate(() => {
+        const dt = new DataTransfer()
+        dt.setData('application/task', JSON.stringify({ taskId: 1, fromColId: 'todo' }))
+        const dst = document.querySelector('[data-col-id="done"]') as HTMLElement
+        const src = document.querySelector('[data-task-id="1"]') as HTMLElement
+        dst.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }))
+        src.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }))
+      })
+
+      // Task 1 has moved out of To Do and into Done.
+      await expect(todoCol.locator('[data-task-id="1"]')).toHaveCount(0)
+      await expect(doneCol.locator('[data-task-id="1"]')).toHaveCount(1)
+
+      // And the drop-active highlight has cleared.
+      await expect(doneCol).toHaveAttribute('data-col-drop-active', 'false')
+      await expect(doneCol).toHaveAttribute('style', /--drop-active\s*:\s*0/)
+
+      // Arrow buttons on the moved card still work — the moved card
+      // can travel back via ← (Done → In Progress).
+      const movedCard = page.locator('[data-task-id="1"]')
+      await expect(movedCard.locator('.move-left')).toHaveCount(1)
+      await movedCard.locator('.move-left').click()
+      await expect(page.locator('[data-col-id="progress"] [data-task-id="1"]')).toHaveCount(1)
+    })
+
+    test('board: dropping a task onto its own column is a no-op', async ({ page }) => {
+      // Same-column drop must not duplicate / lose the task, and the
+      // drop-target highlight must clear afterwards.
+      await page.goto('/gallery/productivity/board')
+
+      const todoCol = page.locator('[data-col-id="todo"]')
+      const initialCount = await todoCol.locator('[data-task-id]').count()
+
+      await page.evaluate(() => {
+        const dt = new DataTransfer()
+        const src = document.querySelector('[data-task-id="1"]') as HTMLElement
+        const dst = document.querySelector('[data-col-id="todo"]') as HTMLElement
+        src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }))
+        dst.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }))
+        // Payload is already on `dt` (set by dragstart), so drop reads
+        // the SAME values back out — exactly the production path.
+        dst.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }))
+        src.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }))
+      })
+
+      // Same number of cards, same column.
+      await expect(todoCol.locator('[data-task-id]')).toHaveCount(initialCount)
+      await expect(todoCol.locator('[data-task-id="1"]')).toHaveCount(1)
+      await expect(todoCol).toHaveAttribute('data-col-drop-active', 'false')
+    })
+
+    test('board: arrow buttons survive moving a task between columns', async ({ page }) => {
+      // Regression for the slot-resolver name-prefix over-match (#135):
+      // a freshly-inserted inner-loop item carries three same-name
+      // <Button> children (delete-task + move-left + move-right). After
+      // the first `upsertChild` mounted the delete button, the second
+      // and third found that already-mounted Button via the legacy
+      // name-prefix selector and `initChild`-ed it again — leaving the
+      // arrow placeholders orphaned. The visible symptom: clicking ←
+      // or → moved the task into a different column but the arrow
+      // buttons disappeared from the moved card, breaking subsequent
+      // moves.
+      await page.goto('/gallery/productivity/board')
+
+      // Task 1 starts in "To Do" with three buttons on the card
+      // (delete + left + right). The To Do column has no neighbour to
+      // the left, so move-left is a no-op there — we move right.
+      const card = page.locator('[data-task-id="1"]')
+      await expect(card).toBeVisible()
+      await expect(card.locator('.delete-task')).toHaveCount(1)
+      await expect(card.locator('.move-left')).toHaveCount(1)
+      await expect(card.locator('.move-right')).toHaveCount(1)
+
+      // Move task 1 from To Do → In Progress.
+      await card.locator('.move-right').click()
+
+      const movedCard = page.locator('[data-task-id="1"]')
+      // The data-task-id locator now resolves to the SAME id, but in
+      // the new column. The three buttons must still exist on the
+      // freshly-inserted card.
+      await expect(movedCard.locator('.delete-task')).toHaveCount(1)
+      await expect(movedCard.locator('.move-left')).toHaveCount(1)
+      await expect(movedCard.locator('.move-right')).toHaveCount(1)
+
+      // And the buttons must be wired — moving once more lands the
+      // task in "Done".
+      await movedCard.locator('.move-right').click()
+      const doneCard = page.locator('[data-task-id="1"]')
+      await expect(doneCard.locator('.move-left')).toHaveCount(1)
+      await expect(doneCard.locator('.move-right')).toHaveCount(1)
+    })
+
     test('reading a mail reduces the unread badge count', async ({ page }) => {
       await page.goto('/gallery/productivity/mail')
 

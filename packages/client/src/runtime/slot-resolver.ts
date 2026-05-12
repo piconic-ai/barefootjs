@@ -21,6 +21,22 @@ import { BF_SCOPE, BF_CHILD_PREFIX, BF_PARENT, BF_MOUNT } from '@barefootjs/shar
  *  wrong `initChild` never fires (#1220). */
 const NESTED_SLOT_SUFFIX = /_s\d+_s\d+$/
 
+/** A candidate element is "claimed for a different slot" when it already
+ *  carries a `bf-mount` attribute that doesn't match the slot we're
+ *  looking for. That can only happen when a previous `upsertChild` in
+ *  the SAME parent has CSR-replaced a sibling placeholder and stamped
+ *  the new component's metadata onto it. Without this filter the
+ *  legacy fallbacks (suffix + name-prefix) happily return the
+ *  already-mounted sibling and `initChild` fires on the wrong element,
+ *  leaving the actual `data-bf-ph` placeholder for `slotId` orphaned.
+ *  Surfaces when a `.map()` inserts a fresh item whose body holds
+ *  multiple child components of the same name (#135 board demo:
+ *  delete-task + move-left + move-right Buttons inside one task card). */
+function isClaimedForOtherSlot(candidate: Element, slotId: string): boolean {
+  const mount = candidate.getAttribute(BF_MOUNT)
+  return mount !== null && mount !== slotId
+}
+
 /** Resolve the parent component scope id (without the `~` child prefix)
  *  for a slot lookup. Prefers the explicit `anchorScope` because the
  *  immediate `parent` element may be a freshly-created detached fragment
@@ -96,13 +112,19 @@ export function findSsrScopeBySlotIn(
   for (const candidate of candidates) {
     const bfs = candidate.getAttribute(BF_SCOPE) || ''
     if (NESTED_SLOT_SUFFIX.test(bfs)) continue
+    if (isClaimedForOtherSlot(candidate, slotId)) continue
     return candidate as HTMLElement
   }
 
   // Last-resort fallback: component-name prefix search.
   const namePrefixSelector = `[${BF_SCOPE}^="~${name}_"], [${BF_SCOPE}^="${name}_"]`
-  if (selfMatch && parent.matches(namePrefixSelector)) {
+  if (selfMatch && parent.matches(namePrefixSelector) && !isClaimedForOtherSlot(parent, slotId)) {
     return parent as HTMLElement
   }
-  return parent.querySelector(namePrefixSelector) as HTMLElement | null
+  const prefixMatches = Array.from(parent.querySelectorAll(namePrefixSelector))
+  for (const candidate of prefixMatches) {
+    if (isClaimedForOtherSlot(candidate, slotId)) continue
+    return candidate as HTMLElement
+  }
+  return null
 }

@@ -99,6 +99,37 @@ test.describe('Gallery: SaaS Marketing app', () => {
       await expect(page.locator('.saas-original-price')).toHaveCount(2) // pro + enterprise
     })
 
+    test('savings progress CSS variable tracks the billing toggle', async ({ page }) => {
+      // CSS custom property derived from `savingsPercent()` memo.
+      // Width is driven by the inline `--w` variable, NOT by a class
+      // swap — locks down the derived-memo → CSS-var → width path.
+      await page.goto('/gallery/saas/pricing')
+
+      const bar = page.locator('[data-savings-bar]')
+      // At 0% width the element is not technically "visible" — assert
+      // presence via count + the inline style instead.
+      await expect(bar).toHaveCount(1)
+      // Monthly: --w resolves to 0%
+      await expect(bar).toHaveAttribute('style', /--w\s*:\s*0%/)
+
+      // Toggle annual
+      await page.locator('.saas-billing-toggle [role="switch"]').click()
+      // Annual: --w resolves to 20%
+      await expect(bar).toHaveAttribute('style', /--w\s*:\s*20%/)
+
+      // The computed `width` resolves through `var(--w)`, so the bar
+      // actually grows beyond zero once the CSS variable updates. Poll
+      // for the layout-resolved width to settle past 0 since the
+      // transition is async.
+      await expect
+        .poll(
+          async () =>
+            bar.evaluate((el) => el.getBoundingClientRect().width),
+          { timeout: 1500 },
+        )
+        .toBeGreaterThan(0)
+    })
+
     test('selecting a plan navigates to login', async ({ page }) => {
       await page.goto('/gallery/saas/pricing')
 

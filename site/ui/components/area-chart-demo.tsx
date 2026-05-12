@@ -146,3 +146,73 @@ export function AreaChartInteractiveDemo() {
     </div>
   )
 }
+
+/**
+ * Palette demo — CSS custom property reactive on a chart wrapper.
+ *
+ * A `palette()` signal picks a named colour. Instead of binding the
+ * SVG `fill` / `stroke` attributes directly to the colour value, the
+ * demo writes `style={{'--area-fill': palette()}}` on the wrapper div,
+ * and the `<Area>` reads it back via `fill="var(--area-fill)"`. This
+ * exercises the path where:
+ *
+ *   - A reactive `style` object literal is bound on an HTML element
+ *     (not a passed-through `...props` spread).
+ *   - CSS cascade carries the value into an SVG presentation attribute
+ *     in a descendant rendered by another component.
+ *
+ * The CSS variable is the only thing that flips on palette change —
+ * the chart subtree is otherwise structurally identical.
+ */
+const PALETTES = {
+  ocean: 'hsl(199 89% 48%)',
+  sunset: 'hsl(20 90% 55%)',
+  forest: 'hsl(142 71% 35%)',
+} as const
+type PaletteName = keyof typeof PALETTES
+
+export function AreaChartPaletteDemo() {
+  const [palette, setPalette] = createSignal<PaletteName>('ocean')
+
+  return (
+    <div
+      className="w-full space-y-4"
+      style={{ '--area-fill': PALETTES[palette()] }}
+      data-area-palette-demo
+      data-palette={palette()}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Palette:</span>
+        {(Object.keys(PALETTES) as PaletteName[]).map((p) => (
+          <button
+            key={p}
+            type="button"
+            data-palette-option={p}
+            className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-8 px-3 capitalize ${
+              palette() === p
+                ? 'bg-primary text-primary-foreground'
+                : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
+            }`}
+            onClick={() => setPalette(p)}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+      <ChartContainer config={chartConfig} className="w-full">
+        <AreaChart data={chartData}>
+          <AreaCartesianGrid vertical={false} />
+          <AreaXAxis dataKey="month" tickFormatter={(v: string) => v.slice(0, 3)} />
+          <AreaYAxis />
+          <AreaChartTooltip />
+          <Area
+            dataKey="desktop"
+            fill="var(--area-fill)"
+            stroke="var(--area-fill)"
+            fillOpacity={0.35}
+          />
+        </AreaChart>
+      </ChartContainer>
+    </div>
+  )
+}

@@ -202,6 +202,85 @@ test.describe('xyflow Reference Page', () => {
     })
   })
 
+  test.describe('Highlight Depth (#135 stretch)', () => {
+    test('slider moves through depth values; each node carries its own `--node-glow`', async ({ page }) => {
+      // CSS-var × .map() × per-node binding inside a `renderNode`
+      // callback that's invoked once per node. Each rendered node
+      // publishes its own `--node-glow` inline style and the slider
+      // signal flows through a Context so the callback doesn't
+      // capture an init-scope local (which the JSX compiler forbids).
+      await page.goto('/xyflow/nodes')
+
+      const demo = page.locator('[data-highlight-depth-demo]')
+      const slider = demo.locator('[data-highlight-depth-slider]')
+      const root = demo.locator('[data-depth-node="root"]')
+      const l2 = demo.locator('[data-depth-node="l2"]')
+
+      await expect(demo).toBeVisible()
+      // Initial slider = 2. Intensity = max(0, 1 - (slider - nodeDepth) * 0.25).
+      // root (nodeDepth=0) → 1 - 2*0.25 = 0.50.
+      // l2   (nodeDepth=2) → 1 - 0*0.25 = 1.00.
+      await expect(root).toHaveAttribute('style', /--node-glow\s*:\s*0\.50/)
+      await expect(l2).toHaveAttribute('style', /--node-glow\s*:\s*1\.00/)
+
+      // Slide to 0 — root climbs to full glow, tier-2 fades to 0.
+      await slider.evaluate((el) => {
+        const input = el as HTMLInputElement
+        input.value = '0'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await expect(root).toHaveAttribute('style', /--node-glow\s*:\s*1\.00/)
+      await expect(l2).toHaveAttribute('style', /--node-glow\s*:\s*0(?:\.00)?(?:[;\s]|$)/)
+
+      // Slide to 4 — every node is past its depth, intensity decays.
+      await slider.evaluate((el) => {
+        const input = el as HTMLInputElement
+        input.value = '4'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      // root: 1 - 4*0.25 = 0
+      // l2:   1 - 2*0.25 = 0.50
+      await expect(root).toHaveAttribute('style', /--node-glow\s*:\s*0(?:\.00)?(?:[;\s]|$)/)
+      await expect(l2).toHaveAttribute('style', /--node-glow\s*:\s*0\.50/)
+    })
+  })
+
+  test.describe('rAF Flow Animation (#135)', () => {
+    test('toggling on advances `stroke-dashoffset` via requestAnimationFrame', async ({ page }) => {
+      // The pair: animate toggle + reactive `stroke-dashoffset`. Until
+      // the user clicks, the path is static; clicking starts a
+      // `createEffect`-owned rAF loop that re-evaluates the offset every
+      // frame. Toggling off must drop it back to a stable value (the
+      // cleanup callback releases the frame handle).
+      await page.goto('/xyflow/edges')
+      const demo = page.locator('[data-flow-animate]')
+      const path = demo.locator('[data-flow-path]')
+      const toggle = demo.locator('[data-flow-animate-toggle]')
+
+      await expect(path).toHaveAttribute('stroke-dashoffset', '0')
+
+      await toggle.click()
+
+      // The rAF loop should produce a stream of distinct dashoffset
+      // values. Polling for "moved off zero" is enough to prove the
+      // effect is firing.
+      await expect
+        .poll(
+          async () => Number(await path.getAttribute('stroke-dashoffset')),
+          { timeout: 1500 },
+        )
+        .not.toBe(0)
+
+      // Stop the animation — the offset should freeze (cleanup
+      // released the frame handle, so no more rAF tick fires).
+      await toggle.click()
+      const stopped = await path.getAttribute('stroke-dashoffset')
+      await page.waitForTimeout(120)
+      const after = await path.getAttribute('stroke-dashoffset')
+      expect(after).toBe(stopped)
+    })
+  })
+
   test.describe.skip('Edge Reconnection (re-enable in cutover step C4)', () => {
     test('reconnect handles update edge endpoints', async () => {
       // Filled in once the reconnect overlay wiring ships from

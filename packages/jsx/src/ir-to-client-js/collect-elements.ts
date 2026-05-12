@@ -163,6 +163,21 @@ export function collectInnerLoops(
           }
         }
 
+        // Collect reactive attribute bindings inside inner loop items.
+        // Mirrors the text collector above so signal-driven attributes on
+        // the inner-loop body root (and any descendant) wire up a
+        // per-item createEffect that updates the DOM when the dependent
+        // signal changes. Without this, the SSR template renders the
+        // initial value and the attribute stays frozen forever — see
+        // the board demo's drag-preview `--drag-opacity` regression
+        // (#135 Concrete Additions).
+        const innerReactiveAttrs: import('./types').LoopChildReactiveAttr[] = []
+        if (ctx) {
+          for (const child of n.children) {
+            innerReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings))
+          }
+        }
+
         // Per-item bindings for branch-mode callers (child components,
         // events, nested conditionals) — matches the pre-Phase 2
         // `collectBranchInnerLoops` behaviour.
@@ -225,6 +240,7 @@ export function collectInnerLoops(
           mapPreamble: n.mapPreamble,
           refsOuterParam: refsOuter,
           childReactiveTexts: innerReactiveTexts.length > 0 ? innerReactiveTexts : undefined,
+          childReactiveAttrs: innerReactiveAttrs.length > 0 ? innerReactiveAttrs : undefined,
           childComponents,
           childEvents,
           childConditionals,

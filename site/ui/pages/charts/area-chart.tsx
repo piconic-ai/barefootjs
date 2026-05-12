@@ -7,6 +7,7 @@ import {
   AreaChartBasicDemo,
   AreaChartMultipleDemo,
   AreaChartInteractiveDemo,
+  AreaChartPaletteDemo,
 } from '@/components/area-chart-demo'
 import { AreaChartPlayground } from '@/components/area-chart-playground'
 import {
@@ -28,7 +29,8 @@ const tocItems: TocItem[] = [
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'multiple', title: 'Multiple', branch: 'child' },
-  { id: 'interactive', title: 'Interactive', branch: 'end' },
+  { id: 'interactive', title: 'Interactive', branch: 'child' },
+  { id: 'palette', title: 'Palette', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -193,6 +195,44 @@ export function AreaChartInteractiveDemo() {
   )
 }`
 
+const paletteCode = `"use client"
+
+import { createSignal } from "@barefootjs/client"
+
+const PALETTES = {
+  ocean: "hsl(199 89% 48%)",
+  sunset: "hsl(20 90% 55%)",
+  forest: "hsl(142 71% 35%)",
+}
+
+export function AreaChartPaletteDemo() {
+  const [palette, setPalette] = createSignal("ocean")
+
+  return (
+    // CSS variable on the wrapper cascades into the SVG attribute below.
+    <div style={{ "--area-fill": PALETTES[palette()] }}>
+      <div className="flex gap-2">
+        {Object.keys(PALETTES).map((p) => (
+          <button onClick={() => setPalette(p)}>{p}</button>
+        ))}
+      </div>
+      <ChartContainer config={chartConfig} className="w-full">
+        <AreaChart data={chartData}>
+          <AreaCartesianGrid vertical={false} />
+          <AreaXAxis dataKey="month" tickFormatter={(v) => v.slice(0, 3)} />
+          <AreaYAxis />
+          <Area
+            dataKey="desktop"
+            fill="var(--area-fill)"
+            stroke="var(--area-fill)"
+            fillOpacity={0.35}
+          />
+        </AreaChart>
+      </ChartContainer>
+    </div>
+  )
+}`
+
 const areaChartProps: PropDefinition[] = [
   {
     name: 'data',
@@ -331,6 +371,10 @@ export function AreaChartRefPage() {
 
             <Example title="Interactive" code={interactiveCode}>
               <AreaChartInteractiveDemo />
+            </Example>
+
+            <Example title="Palette" code={paletteCode}>
+              <AreaChartPaletteDemo />
             </Example>
           </div>
         </Section>

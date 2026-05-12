@@ -869,6 +869,17 @@ export class HonoAdapter extends JsxAdapter {
         keyValue = prop.value
       } else if (prop.dynamic) {
         parts.push(`${prop.name}={${prop.value}}`)
+      } else if (prop.isLiteral) {
+        // `isLiteral` is the IR's authoritative signal that this value
+        // came from a JSX string-attribute (`fill="var(--c)"`). Emit it
+        // verbatim as a string attribute — falling back to
+        // `isJsExpression()` here misidentifies legitimate CSS values
+        // like `var(--area-fill)` (parses as a JS function call) and
+        // strips the quotes, producing `fill={var(--area-fill)}`. The
+        // regex stays below as a defensive net for non-literal
+        // string-shaped props that the IR couldn't tag, but the literal
+        // case must short-circuit first.
+        parts.push(`${prop.name}="${prop.value}"`)
       } else if (prop.value === 'true') {
         // Boolean true: <Component disabled />
         parts.push(prop.name)
@@ -881,7 +892,7 @@ export class HonoAdapter extends JsxAdapter {
         // JavaScript expressions (arrow functions, etc.)
         parts.push(`${prop.name}={${prop.value}}`)
       } else {
-        // String literals
+        // String literals (without isLiteral flag — pre-IR fixture path)
         parts.push(`${prop.name}="${prop.value}"`)
       }
     }

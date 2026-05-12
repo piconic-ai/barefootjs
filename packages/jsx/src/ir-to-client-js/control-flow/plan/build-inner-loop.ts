@@ -33,11 +33,14 @@ import {
 } from '../shared'
 import type {
   InnerLoopPlan,
+  InnerLoopReactiveAttr,
   InnerLoopReactiveEmit,
   InnerLoopStaticEmit,
   InnerLoopText,
   InnerLoopsPlan,
 } from './inner-loop'
+import { toHtmlAttrName } from '../../utils'
+import { isBooleanAttr } from '../../../html-constants'
 
 export interface BuildInnerLoopsArgs {
   levels: readonly DepthLevel[]
@@ -167,6 +170,19 @@ function buildReactiveEmit(
     insideConditional: !!text.insideConditional,
   }))
 
+  const reactiveAttrs: InnerLoopReactiveAttr[] = (inner.childReactiveAttrs ?? []).map(attr => {
+    const wrapped = wrapLoopParamAsAccessor(wrapOuter(attr.expression), inner.param, inner.paramBindings)
+    const isStyleObject = attr.attrName === 'style' && /^\s*\{/.test(attr.expression)
+    return {
+      slotId: attr.childSlotId,
+      attrName: toHtmlAttrName(attr.attrName),
+      wrappedExpression: wrapped,
+      isStyleObject,
+      isBoolean: isBooleanAttr(attr.attrName),
+      presenceOrUndefined: !!attr.presenceOrUndefined,
+    }
+  })
+
   // The inner `.map()` callback's block-body locals (e.g.
   // `const derivedClass = cell.flag ? 'on' : 'off'`) are baked into
   // `inner.template` at the outer-loop SSR level, but the `mapArray`
@@ -192,6 +208,7 @@ function buildReactiveEmit(
     components,
     events,
     reactiveTexts,
+    reactiveAttrs,
   }
 }
 

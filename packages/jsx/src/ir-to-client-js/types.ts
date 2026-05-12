@@ -260,6 +260,18 @@ export interface NestedLoop extends LoopCore {
   refsOuterParam?: boolean
   /** Reactive text expressions inside inner loop items (slotId → expression) */
   childReactiveTexts?: LoopChildReactiveText[]
+  /**
+   * Reactive attribute bindings inside inner loop items. Mirrors
+   * `childReactiveTexts` for attributes like `style`, `data-*`,
+   * `className`, etc., on the loop body's root or any descendant. Without
+   * this field, inner-loop bodies that bind a signal-driven attribute on
+   * the root element get no per-item `createEffect` and the attribute
+   * stays frozen at the SSR value. Surfaced by the board demo's drag
+   * preview (#135 Concrete Additions) where the `style={{'--drag-opacity':
+   * draggingTaskId() === task.id ? '0.4' : '1'}}` binding on a nested
+   * `tasks.map()` root never updated.
+   */
+  childReactiveAttrs?: LoopChildReactiveAttr[]
   /** Child components inside inner loop items (for initChild/createComponent) */
   childComponents?: import('../types').IRLoopChildComponent[]
   /** Event handlers inside inner loop items */

@@ -9,6 +9,7 @@ import {
   RequiredFieldDemo,
   EmailValidationDemo,
   PasswordConfirmationDemo,
+  AsyncFieldValidationDemo,
   MultiFieldFormDemo,
 } from '@/components/validation-demo'
 import {
@@ -25,6 +26,7 @@ const tocItems: TocItem[] = [
   { id: 'required-field', title: 'Required Field', branch: 'start' },
   { id: 'email-format', title: 'Email Format', branch: 'child' },
   { id: 'cross-field', title: 'Cross-Field', branch: 'child' },
+  { id: 'async-availability', title: 'Async Availability', branch: 'child' },
   { id: 'multi-field', title: 'Multi-Field', branch: 'end' },
 ]
 
@@ -80,6 +82,64 @@ const form = createForm({
   validateOn: 'blur',
   revalidateOn: 'input',
 })`
+
+const asyncValidationCode = `import { createSignal, onCleanup } from '@barefootjs/client'
+import { Spinner } from '@/components/ui/spinner'
+
+const TAKEN = new Set(['admin', 'root', 'test', 'guest'])
+
+export function AsyncFieldValidationDemo() {
+  const [username, setUsername] = createSignal('')
+  const [validating, setValidating] = createSignal(false)
+  // 0 neutral · 1 success · 2 warning · 3 error
+  const [errorLevel, setErrorLevel] = createSignal(0)
+  const [message, setMessage] = createSignal('')
+
+  // Hue drives \`color: hsl(var(--err) 70% 45%)\` defined in globals.css.
+  const errorHue = () =>
+    errorLevel() === 1 ? '140' :
+    errorLevel() === 2 ? '40' :
+    errorLevel() === 3 ? '0' : '210'
+
+  let timer = null
+  const onInput = (e) => {
+    const value = e.target.value
+    setUsername(value)
+    if (timer) clearTimeout(timer)
+    if (!value) { setValidating(false); setErrorLevel(0); setMessage(''); return }
+
+    setValidating(true)
+    setMessage('Checking availability…')
+    timer = setTimeout(() => {
+      const lower = value.toLowerCase()
+      if (TAKEN.has(lower)) { setErrorLevel(3); setMessage(\`"\${value}" is taken\`) }
+      else                  { setErrorLevel(1); setMessage(\`"\${value}" is available\`) }
+      setValidating(false)
+    }, 600)
+  }
+  onCleanup(() => timer && clearTimeout(timer))
+
+  return (
+    <form className="space-y-3">
+      <label>Username</label>
+      <div className="flex items-center gap-2">
+        <Input
+          value={username()}
+          onInput={onInput}
+          aria-busy={validating() ? 'true' : 'false'}
+        />
+        {validating() ? <Spinner className="size-4" /> : null}
+      </div>
+      <p
+        className="async-validation-msg text-sm"
+        style={{ '--err': errorHue() }}
+      >{message()}</p>
+      <Button type="submit" disabled={validating() || errorLevel() === 3}>
+        Create account
+      </Button>
+    </form>
+  )
+}`
 
 const multiFieldFormCode = `const form = createForm({
   schema: z
@@ -162,6 +222,17 @@ export function ValidationPage() {
               <Example title="Cross-Field (Password Confirmation)" code={passwordConfirmCode}>
                 <div className="max-w-sm">
                   <PasswordConfirmationDemo />
+                </div>
+              </Example>
+            </div>
+
+            <div id="async-availability">
+              <Example
+                title="Async Availability (Spinner + disabled + aria-busy synced)"
+                code={asyncValidationCode}
+              >
+                <div className="max-w-sm">
+                  <AsyncFieldValidationDemo />
                 </div>
               </Example>
             </div>

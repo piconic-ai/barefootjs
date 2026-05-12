@@ -121,6 +121,57 @@ test.describe('Gallery: Admin app', () => {
       expect(insideShell).toBe(0)
     })
 
+    test('source-stat cards carry inline `--stat-c` CSS variable per item', async ({ page }) => {
+      // CSS-var × .map() × per-item reactive coverage. Each source's
+      // accent comes from the per-item `s.accent` value, not a class
+      // swap, so the only attribute that varies across cards is the
+      // inline `style="--stat-c: ..."`.
+      await page.goto('/gallery/admin/analytics')
+
+      const grid = page.locator('[data-source-stat-grid]')
+      await expect(grid).toBeVisible()
+      await expect(grid.locator('[data-source-stat]')).toHaveCount(5)
+
+      const organic = grid.locator('[data-source-stat="organic"]')
+      const direct = grid.locator('[data-source-stat="direct"]')
+      const paid = grid.locator('[data-source-stat="paid"]')
+
+      // Inline style carries the per-source colour as a CSS custom property.
+      await expect(organic).toHaveAttribute('style', /--stat-c\s*:\s*hsl\(142/)
+      await expect(direct).toHaveAttribute('style', /--stat-c\s*:\s*hsl\(221/)
+      await expect(paid).toHaveAttribute('style', /--stat-c\s*:\s*hsl\(38/)
+
+      // Resolved `color` on the share badge picks up the same variable.
+      const share = organic.locator('[data-source-share]')
+      await expect(share).toBeVisible()
+      const color = await share.evaluate((el) => getComputedStyle(el).color)
+      // hsl(142 71% 45%) → close to rgb(33, 197, 94). Just assert green-ish.
+      expect(color).toMatch(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+    })
+
+    test('each .map() item carries its own `--stat-c` value (no shared style)', async ({ page }) => {
+      // Locks the per-item CSS variable contract: five sibling cards
+      // produced by a single `.map()` must end up with five DIFFERENT
+      // inline `--stat-c` values, proving that the compiler emits a
+      // per-item style binding rather than collapsing the spread into a
+      // module-level constant.
+      await page.goto('/gallery/admin/analytics')
+
+      const cards = page.locator('[data-source-stat-grid] [data-source-stat]')
+      await expect(cards).toHaveCount(5)
+
+      const styles = await cards.evaluateAll((nodes) =>
+        nodes.map((el) => el.getAttribute('style') ?? ''),
+      )
+      // All five inline styles must be unique — no two cards share an accent.
+      expect(new Set(styles).size).toBe(5)
+      // Each style is a real CSS string, not the legacy `[object Object]`
+      // fallback from applyRestAttrs' pre-#135 path.
+      for (const s of styles) {
+        expect(s).toMatch(/^--stat-c\s*:\s*hsl\(/)
+      }
+    })
+
     test('unread notification count reflects on other pages after navigation', async ({ page }) => {
       await page.goto('/gallery/admin/notifications')
 

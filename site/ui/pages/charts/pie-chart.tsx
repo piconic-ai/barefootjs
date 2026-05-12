@@ -7,6 +7,7 @@ import {
   PieChartBasicDemo,
   PieChartDonutDemo,
   PieChartInteractiveDemo,
+  PieChartAnimatedDemo,
 } from '@/components/pie-chart-demo'
 import { PieChartPlayground } from '@/components/pie-chart-playground'
 import {
@@ -28,7 +29,8 @@ const tocItems: TocItem[] = [
   { id: 'examples', title: 'Examples' },
   { id: 'basic', title: 'Basic', branch: 'start' },
   { id: 'donut', title: 'Donut', branch: 'child' },
-  { id: 'interactive', title: 'Interactive', branch: 'end' },
+  { id: 'interactive', title: 'Interactive', branch: 'child' },
+  { id: 'animated', title: 'Animated', branch: 'end' },
   { id: 'api-reference', title: 'API Reference' },
 ]
 
@@ -166,6 +168,63 @@ export function PieChartInteractiveDemo() {
   )
 }`
 
+const animatedCode = `"use client"
+
+import { createSignal, createEffect, onCleanup } from "@barefootjs/client"
+import { buildPieSlices } from "@barefootjs/chart"
+
+const DURATION = 1200
+const DASH = 800
+
+export function PieChartAnimatedDemo() {
+  const [animating, setAnimating] = createSignal(false)
+  const [progress, setProgress] = createSignal(1)
+
+  const slices = buildPieSlices(
+    chartData, "tasks", "status", chartConfig,
+    400, 400, 0.3, 0.85, 2,
+  )
+
+  createEffect(() => {
+    if (!animating()) return
+    setProgress(0)
+    const start = performance.now()
+    let frame = 0
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / DURATION)
+      setProgress(t)
+      if (t < 1) frame = requestAnimationFrame(tick)
+      else setAnimating(false)
+    }
+    frame = requestAnimationFrame(tick)
+    onCleanup(() => cancelAnimationFrame(frame))
+  })
+
+  return (
+    <div>
+      <button
+        onClick={() => setAnimating(true)}
+        disabled={animating()}
+      >
+        {animating() ? "Animating…" : "Animate"}
+      </button>
+      <svg viewBox="0 0 400 400">
+        <g transform="translate(200,200)">
+          {slices.map((s) => (
+            <path
+              key={s.name}
+              d={s.d}
+              fill={s.fill}
+              stroke-dasharray={String(DASH)}
+              stroke-dashoffset={String(DASH * (1 - progress()))}
+            />
+          ))}
+        </g>
+      </svg>
+    </div>
+  )
+}`
+
 const pieChartProps: PropDefinition[] = [
   {
     name: 'data',
@@ -262,6 +321,10 @@ export function PieChartRefPage() {
 
             <Example title="Interactive" code={interactiveCode}>
               <PieChartInteractiveDemo />
+            </Example>
+
+            <Example title="Animated" code={animatedCode}>
+              <PieChartAnimatedDemo />
             </Example>
           </div>
         </Section>

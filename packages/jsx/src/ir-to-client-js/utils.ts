@@ -325,7 +325,17 @@ export function substituteLoopBindings(
 // offsets have heterogeneous types; narrow them at the callback instead.
 type Replacement = string | ((substring: string, ...args: any[]) => string)
 
-/** Replace `re` with `replacement` only in expression contexts (not in string literals). */
+/** Replace `re` with `replacement` only in expression contexts (not in
+ *  string literals or JS comments).
+ *
+ *  Comment-skipping is required for prop values that survive into the
+ *  emitted client JS verbatim (e.g. object-literal `style={{…}}` props
+ *  with a `// ...` inline note). Apostrophes in such a comment (e.g.
+ *  `// they're "holding"`) would otherwise be mistaken for a string
+ *  start, swallowing the rest of the expression up to the next single
+ *  quote and skipping every loop-param reference in between — the
+ *  symptom of #135 board demo's silent failure to wrap `task.id` to
+ *  `task().id` inside the inner-loop reactive style effect. */
 function _replaceInExprContexts(code: string, re: RegExp, replacement: Replacement): string {
   let result = ''
   let i = 0
@@ -355,12 +365,37 @@ function _replaceInExprContexts(code: string, re: RegExp, replacement: Replaceme
       result += tplResult
       i = nextI
       exprStart = i
+    } else if (ch === '/' && code[i + 1] === '/') {
+      flushExpr(i)
+      i = _skipLineComment(code, i)
+      result += code.slice(exprStart, i)
+      exprStart = i
+    } else if (ch === '/' && code[i + 1] === '*') {
+      flushExpr(i)
+      i = _skipBlockComment(code, i)
+      result += code.slice(exprStart, i)
+      exprStart = i
     } else {
       i++
     }
   }
   flushExpr(i)
   return result
+}
+
+function _skipLineComment(code: string, start: number): number {
+  let i = start + 2
+  while (i < code.length && code[i] !== '\n') i++
+  return i
+}
+
+function _skipBlockComment(code: string, start: number): number {
+  let i = start + 2
+  while (i < code.length - 1) {
+    if (code[i] === '*' && code[i + 1] === '/') return i + 2
+    i++
+  }
+  return code.length
 }
 
 function _skipQuotedString(code: string, start: number): number {
@@ -431,6 +466,16 @@ function _processInterpolation(code: string, start: number, re: RegExp, replacem
       const [tplResult, nextI] = _processTemplateLiteral(code, i, re, replacement)
       result += tplResult
       i = nextI
+      exprStart = i
+    } else if (ch === '/' && code[i + 1] === '/') {
+      flushExpr(i)
+      i = _skipLineComment(code, i)
+      result += code.slice(exprStart, i)
+      exprStart = i
+    } else if (ch === '/' && code[i + 1] === '*') {
+      flushExpr(i)
+      i = _skipBlockComment(code, i)
+      result += code.slice(exprStart, i)
       exprStart = i
     } else if (ch === '{') {
       depth++

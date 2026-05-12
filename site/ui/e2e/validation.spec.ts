@@ -206,4 +206,59 @@ test.describe('Form Validation Documentation Page', () => {
       await expect(emailError).toHaveText('')
     })
   })
+
+  test.describe('Async Availability Demo', () => {
+    const scope = '[bf-s^="AsyncFieldValidationDemo_"]:not([data-slot])'
+
+    test('renders inline `--err` CSS variable on initial paint', async ({ page }) => {
+      const demo = page.locator(scope)
+      const msg = demo.locator('[data-async-msg]')
+      // SSR should emit the neutral hue (210) so the post-hydration paint
+      // matches the server-rendered colour. This locks the
+      // `createMemo`-driven SSR substitution path so the inline style
+      // attribute is never empty.
+      await expect(msg).toHaveAttribute('style', /--err\s*:\s*210/)
+    })
+
+    test('Spinner, aria-busy and disabled flip together on async check', async ({ page }) => {
+      const demo = page.locator(scope)
+      const input = demo.locator('[data-async-input]')
+      const spinner = demo.locator('[data-async-spinner]')
+      const submit = demo.locator('[data-async-submit]')
+
+      // Pre-validation: no spinner, no busy state, submit enabled.
+      await expect(spinner).toHaveCount(0)
+      await expect(input).toHaveAttribute('aria-busy', 'false')
+      await expect(submit).toBeEnabled()
+
+      await input.fill('newuser')
+
+      // During the in-flight check all three signals fire together.
+      await expect(spinner).toBeVisible()
+      await expect(input).toHaveAttribute('aria-busy', 'true')
+      await expect(submit).toBeDisabled()
+
+      // After it resolves: success state, all three return to idle.
+      await expect(spinner).toHaveCount(0, { timeout: 2000 })
+      await expect(input).toHaveAttribute('aria-busy', 'false')
+      await expect(submit).toBeEnabled()
+    })
+
+    test('CSS `--err` hue tracks the validation outcome', async ({ page }) => {
+      const demo = page.locator(scope)
+      const input = demo.locator('[data-async-input]')
+      const msg = demo.locator('[data-async-msg]')
+
+      // Available username → success hue (140 → green)
+      await input.fill('newuser')
+      await expect(msg).toHaveAttribute('data-async-level', '1', { timeout: 2000 })
+      await expect(msg).toHaveAttribute('style', /--err\s*:\s*140/)
+
+      // Reserved username → error hue (0 → red) and submit stays disabled
+      await input.fill('admin')
+      await expect(msg).toHaveAttribute('data-async-level', '3', { timeout: 2000 })
+      await expect(msg).toHaveAttribute('style', /--err\s*:\s*0(?:[^\d]|$)/)
+      await expect(demo.locator('[data-async-submit]')).toBeDisabled()
+    })
+  })
 })
