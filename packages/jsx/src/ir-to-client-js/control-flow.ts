@@ -55,14 +55,50 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
 }
 
 /** Emit loop updates: dispatches to static or dynamic handlers per element. */
-export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
+export function emitLoopUpdates(
+  lines: string[],
+  ctx: ClientJsContext,
+  unsafeLocalNames: Set<string>,
+): void {
   for (const elem of ctx.loopElements) {
-    if (elem.isStaticArray) {
+    if (elem.isStaticArray && !arrayReferencesUnsafeName(elem.array, unsafeLocalNames)) {
       emitStaticArrayUpdates(lines, elem)
     } else {
       emitDynamicLoopUpdates(lines, elem)
     }
   }
+}
+
+/**
+ * Static-array dispatch (`emitStaticArrayUpdates`) emits a `forEach` that
+ * binds reactive effects on `containerVar.children[idx]` — which assumes
+ * the SSR template has already rendered one DOM child per array entry. But
+ * when the array expression is an init-body-only local (a `const` whose
+ * value can't be relocated to template scope; see #1128 + the
+ * `UNSAFE_TEMPLATE_EXPR` substitution at html-template.ts), the template
+ * emits `${[].map(…)}` and SSR produces zero children. The static loop
+ * then iterates a non-empty array but finds `__iterEl === undefined` for
+ * every index, leaving the DOM permanently empty.
+ *
+ * Re-route those loops through the dynamic emitter (`stringifyPlainLoop`
+ * + `mapArray`), which materialises children at init time from the loop
+ * body's per-iteration template. The `TopLevelLoop` element already
+ * carries the same `template` clone source the dynamic path needs, so
+ * no IR-level rewrite is required.
+ */
+function arrayReferencesUnsafeName(arrayExpr: string, unsafeLocalNames: Set<string>): boolean {
+  if (unsafeLocalNames.size === 0) return false
+  // Conservative-but-cheap check: the array expression on a TopLevelLoop is
+  // typically a bare identifier (`{items.map(...)}` → `items`) or a short
+  // member chain (`{state.items.map(...)}` → `state.items`). A whole-word
+  // scan over the identifier set covers both without paying for an AST
+  // parse on every loop. Names come from a Set of valid JS identifiers, so
+  // no regex escaping is needed.
+  for (const name of unsafeLocalNames) {
+    const re = new RegExp(`(^|[^\\w$])${name}([^\\w$]|$)`)
+    if (re.test(arrayExpr)) return true
+  }
+  return false
 }
 
 /**

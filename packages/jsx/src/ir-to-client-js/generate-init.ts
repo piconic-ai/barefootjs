@@ -14,7 +14,7 @@ import { PROPS_PARAM } from './utils'
 import { buildReferencesGraph } from './build-references'
 import { computePropUsage } from './compute-prop-usage'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER } from './imports'
-import { emitRegistrationAndHydration } from './emit-registration'
+import { buildInlinableConstants, emitRegistrationAndHydration } from './emit-registration'
 import { emitChildComponentImports } from './child-components'
 import { classifyLocalDeclarations } from './init-declarations'
 import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-level'
@@ -43,6 +43,14 @@ export function generateInitFunction(
   const graph = buildReferencesGraph(ctx, ir.root)
   const classification = classifyLocalDeclarations(ctx, graph)
   const propUsage = computePropUsage(ctx, classification.neededConstants)
+  // Pre-compute `unsafeLocalNames` once. The result is consumed by
+  // `loop-updates` (to re-route static-array loops with unsafe arrays
+  // into the dynamic `mapArray` path; see `emitLoopUpdates`) and again
+  // by `emitRegistrationAndHydration` (to drive template substitution).
+  // Sharing avoids double work and guarantees both stages agree on the
+  // unsafe set — a divergence here would mean the loop dispatch and the
+  // template emitter could disagree about whether a name is safe.
+  const { unsafeLocalNames } = buildInlinableConstants(ctx, graph, ir.root)
 
   // --- Emission: declarative phase pipeline. Each entry in `PHASES`
   //     declares its inputs (dependsOn) and emission action (run); the
@@ -54,6 +62,7 @@ export function generateInitFunction(
     graph,
     classification,
     propUsage,
+    unsafeLocalNames,
   })
   runPhases(lines, phaseCtx, PHASES)
 

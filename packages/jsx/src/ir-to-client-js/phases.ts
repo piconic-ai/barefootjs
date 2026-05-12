@@ -51,6 +51,15 @@ export interface PhaseCtx {
   /** Slots that live inside a conditional branch (handled via `insert()`).
    *  Cached so `event-handlers` and `ref-callbacks` don't recompute. */
   conditionalSlotIds: Set<string>
+  /**
+   * Constants that can't be relocated to template scope (init-body-only).
+   * Threaded into `loop-updates` so static-array loops whose array refs
+   * an unsafe name fall back to the dynamic `mapArray` path — the static
+   * path assumes SSR-rendered children but the template emits `${[].map(…)}`
+   * for unsafe arrays, leaving zero children to bind. See `emitLoopUpdates`
+   * for the dispatch override.
+   */
+  unsafeLocalNames: Set<string>
 }
 
 /** Build the read-only carrier that every phase consumes. */
@@ -250,7 +259,7 @@ export const PHASES: readonly EmitPhase[] = [
     // contract is enforceable at registry-validation time.
     id: 'loop-updates',
     dependsOn: ['provider-and-child-inits'],
-    run: (lines, p) => emitLoopUpdates(lines, p.ctx),
+    run: (lines, p) => emitLoopUpdates(lines, p.ctx, p.unsafeLocalNames),
   },
   {
     id: 'static-array-child-inits',
