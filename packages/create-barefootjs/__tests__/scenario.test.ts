@@ -128,25 +128,26 @@ describe.skipIf(!INTEGRATION)(
       })
     })
 
-    describe('Step 6 — Print the 4-step next-step guide', () => {
-      test('shows all four numbered steps in order', () => {
+    describe('Step 6 — Print the 5-step next-step guide', () => {
+      test('shows all five numbered steps in order', () => {
         // The detected PM is reflected in the commands quoted below,
         // not announced separately. The happy-path run had no PM
         // signal injected, so we expect the npm command forms. EDITOR
-        // was stripped by the test harness, so step 3 falls back to a
+        // was stripped by the test harness, so step 4 falls back to a
         // literal "$EDITOR".
         expect(result.stdout).toContain('Next steps:')
-        expect(result.stdout).toMatch(/1\. Install dependencies\n\s+npm install/)
-        expect(result.stdout).toMatch(/2\. Start the dev server\n\s+npm run dev\n\s+→ http:\/\/localhost:\d+/)
-        expect(result.stdout).toMatch(/3\. Edit components\n\s+\$EDITOR components\/Counter\.tsx/)
-        expect(result.stdout).toMatch(/4\. Build components and watch\n\s+npm run watch/)
+        expect(result.stdout).toMatch(/1\. Move into the project\n\s+cd demo-app/)
+        expect(result.stdout).toMatch(/2\. Install dependencies\n\s+npm install/)
+        expect(result.stdout).toMatch(/3\. Start the dev server\n\s+npm run dev\n\s+→ http:\/\/localhost:\d+/)
+        expect(result.stdout).toMatch(/4\. Edit components\n\s+\$EDITOR components\/Counter\.tsx/)
+        expect(result.stdout).toMatch(/5\. Build components and watch\n\s+npm run watch/)
       })
 
       test('expands $EDITOR into the user\'s editor when EDITOR is set', () => {
         const cwd = mktmp()
         const r = runCreate(['demo-app'], { cwd, env: { EDITOR: 'nvim' } })
         expect(r.exitCode).toBe(0)
-        expect(r.stdout).toMatch(/3\. Edit components\n\s+nvim components\/Counter\.tsx/)
+        expect(r.stdout).toMatch(/4\. Edit components\n\s+nvim components\/Counter\.tsx/)
         // The literal "$EDITOR" must not leak through when expansion succeeded.
         expect(r.stdout).not.toMatch(/\$EDITOR components/)
       })

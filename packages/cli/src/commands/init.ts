@@ -253,18 +253,24 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   // The detected PM is reflected in the commands quoted below, so we
   // don't announce it separately — the user just sees `bun install`
   // or `pnpm install` and knows what's happening.
-  console.log(`\nNext steps:`)
-  console.log(`  1. Install dependencies`)
-  console.log(`       ${cmd.install}`)
-  console.log(`  2. Start the dev server`)
-  console.log(`       ${cmd.run('dev')}`)
-  console.log(`       → http://localhost:${adapter.port}`)
   // Use the user's actual editor when EDITOR is set so the line is a
   // copy-pasteable command; fall back to a literal $EDITOR for shells
   // that have it defined but aren't passing it through to us.
   const editor = process.env.EDITOR || '$EDITOR'
-  console.log(`  3. Edit components`)
+  // `barefoot init` runs inside the freshly created project dir but
+  // the user's shell is still in the parent. Lead with `cd` so the
+  // remaining commands work when copy-pasted in order.
+  const projectName = path.basename(projectDir)
+  console.log(`\nNext steps:`)
+  console.log(`  1. Move into the project`)
+  console.log(`       cd ${projectName}`)
+  console.log(`  2. Install dependencies`)
+  console.log(`       ${cmd.install}`)
+  console.log(`  3. Start the dev server`)
+  console.log(`       ${cmd.run('dev')}`)
+  console.log(`       → http://localhost:${adapter.port}`)
+  console.log(`  4. Edit components`)
   console.log(`       ${editor} components/Counter.tsx`)
-  console.log(`  4. Build components and watch`)
+  console.log(`  5. Build components and watch`)
   console.log(`       ${cmd.run('watch')}`)
 }
