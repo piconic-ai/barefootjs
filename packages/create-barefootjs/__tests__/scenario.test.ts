@@ -81,22 +81,19 @@ describe.skipIf(!INTEGRATION)(
       })
     })
 
-    describe('Step 4 — Probe the BarefootJS UI registry (with spinner)', () => {
-      test('shows the registry-check spinner and resolves it as reachable', () => {
-        // In non-TTY contexts the spinner degrades to a plain start
-        // line; on success it prints a `✔ ...reachable` finish line.
-        expect(result.stdout).toContain('Checking the BarefootJS UI registry')
-        expect(result.stdout).toContain('✔ BarefootJS UI registry reachable')
+    describe('Step 4 — Probe the BarefootJS UI registry (silent on success)', () => {
+      test('does not surface a registry error', () => {
+        // The spinner is TTY-only and silent on success — the absence
+        // of an error and the project files appearing in Step 5 are
+        // the only contracts we assert here.
         expect(result.stderr).not.toContain('Cannot reach the BarefootJS UI registry')
       })
     })
 
-    describe('Step 5 — Write the runnable starter file set (with spinner)', () => {
-      test('shows the project-creation spinner and reports a created-file count', () => {
-        expect(result.stdout).toMatch(/Creating .* project\.\.\./)
-        expect(result.stdout).toMatch(/✔ Created \d+ project files/)
-      })
-
+    describe('Step 5 — Write the runnable starter file set (silent on success)', () => {
+      // The creation spinner is TTY-only and silent on success — we
+      // verify the contract by checking that the files actually landed
+      // on disk and that package.json is well-formed.
       test.each([
         'server.tsx',
         'factory.ts',
@@ -122,28 +119,27 @@ describe.skipIf(!INTEGRATION)(
         expect(pkg.name).toBe('demo-app')
       })
 
-      test('package.json exposes dev / build / start scripts', () => {
+      test('package.json exposes dev / build / start / watch scripts', () => {
         expect(pkg.scripts.dev).toBeString()
         expect(pkg.scripts.build).toBeString()
         expect(pkg.scripts.start).toBeString()
+        // `watch` is the server-less rebuild loop quoted in Step 4 of
+        // the next-step instructions.
+        expect(pkg.scripts.watch).toContain('barefoot build --watch')
+        expect(pkg.scripts.watch).toContain('unocss --watch')
       })
     })
 
-    describe('Step 6 — Detect the package manager and print next steps', () => {
-      test('confirms the project was initialised', () => {
-        expect(result.stdout).toContain('Project initialized!')
-      })
-
-      test('prints the install / dev next-step guide with PM-specific commands', () => {
-        // The detected PM isn't announced separately — it's reflected
-        // in the install / run commands quoted below. The happy-path
-        // run had no PM signal injected, so we expect the npm forms.
+    describe('Step 6 — Print the 4-step next-step guide', () => {
+      test('shows all four numbered steps in order', () => {
+        // The detected PM is reflected in the commands quoted below,
+        // not announced separately. The happy-path run had no PM
+        // signal injected, so we expect the npm command forms.
         expect(result.stdout).toContain('Next steps:')
-        expect(result.stdout).toMatch(/Install dependencies/)
-        expect(result.stdout).toMatch(/Start the dev server/)
-        expect(result.stdout).toContain('npm install')
-        expect(result.stdout).toContain('npm run dev')
-        expect(result.stdout).toMatch(/http:\/\/localhost:\d+/)
+        expect(result.stdout).toMatch(/1\. Install dependencies\n\s+npm install/)
+        expect(result.stdout).toMatch(/2\. Start the dev server\n\s+npm run dev\n\s+→ http:\/\/localhost:\d+/)
+        expect(result.stdout).toMatch(/3\. Edit components\n\s+\$EDITOR components\/Counter\.tsx/)
+        expect(result.stdout).toMatch(/4\. Build components and watch\n\s+npm run watch/)
       })
 
       test('exits 0', () => {
@@ -202,15 +198,20 @@ describe.skipIf(!INTEGRATION)(
 
     test.each(cases)(
       'when invoked via $pm, the post-scaffold guide uses $pm commands',
-      ({ env, install, run }) => {
+      ({ env, install, run, pm }) => {
         const cwd = mktmp()
         const r = runCreate(['demo-app'], { cwd, env })
 
         expect(r.exitCode).toBe(0)
         // The detected PM isn't announced separately — we rely on the
-        // install / run commands themselves to confirm detection picked it up.
+        // commands themselves to confirm detection picked it up. Step 1
+        // (install) and Step 4 (watch) both quote PM-aware commands.
         expect(r.stdout).toContain(install)
         expect(r.stdout).toContain(run)
+        // Step 4 quotes the same PM's `run` form (e.g. "pnpm watch" vs.
+        // "npm run watch") for the server-less rebuild loop.
+        const watchCmd = pm === 'pnpm' || pm === 'yarn' ? `${pm} watch` : `${pm} run watch`
+        expect(r.stdout).toContain(watchCmd)
       },
     )
   },

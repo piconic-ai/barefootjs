@@ -47,7 +47,13 @@ export async function text(args: TextArgs): Promise<string> {
     rl.question(prompt, (answer) => {
       rl.close()
       const trimmed = answer.trim()
-      resolve(trimmed.length > 0 ? trimmed : args.defaultValue)
+      const value = trimmed.length > 0 ? trimmed : args.defaultValue
+      // Replace the prompt line with a compact confirmation so the
+      // transcript reads as "✔ Target directory *my-app*" rather than
+      // leaving the raw "Target directory: (my-app) <input>" line.
+      output.write('\x1b[1A\x1b[2K')
+      output.write(`✔ ${args.message} *${value}*\n`)
+      resolve(value)
     })
   })
 }

@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'bun:test'
+import { PassThrough } from 'node:stream'
 import { select, SelectCancelled } from '../lib/select'
 
 // The interactive arrow-key path is hard to drive in unit tests (it
@@ -64,6 +65,40 @@ describe('select short-circuit behavior', () => {
       output: fakeOutput,
     })
     expect(result).toBe('fallback')
+  })
+})
+
+describe('select — confirmation line', () => {
+  test('on Enter, wipes the menu and writes `✔ <message> *<label>*`', async () => {
+    const input = Object.assign(new PassThrough(), {
+      isTTY: true,
+      setRawMode: () => {},
+    })
+    const output = Object.assign(new PassThrough(), { isTTY: true })
+    const chunks: string[] = []
+    output.on('data', (c) => chunks.push(c.toString()))
+
+    const promise = select({
+      message: 'Choose an adapter',
+      options: [
+        { value: 'hono', label: 'Hono' },
+        { value: 'csr', label: 'CSR' },
+      ],
+      defaultValue: 'hono',
+      input,
+      output,
+    })
+
+    // Let `select()` finish wiring up its keypress listener before we
+    // feed it the Enter byte. `readline.emitKeypressEvents` translates
+    // a CR (\r) on stdin into a `{ name: 'return' }` keypress event.
+    await new Promise((r) => setImmediate(r))
+    input.write('\r')
+
+    const result = await promise
+
+    expect(result).toBe('hono')
+    expect(chunks.join('')).toContain('✔ Choose an adapter *Hono*\n')
   })
 })
 

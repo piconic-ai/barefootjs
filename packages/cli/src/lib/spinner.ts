@@ -2,23 +2,25 @@
 //
 //   const spin = startSpinner({ text: 'Creating starter files...' })
 //   await doWork()
-//   spin.succeed('Starter files created')
+//   spin.stop()   // silent on success — the result speaks for itself
 //
 // Mirrors the design of `select.ts` / `text.ts`: zero third-party deps,
 // non-TTY-safe. When stdout isn't a TTY (CI, piped output) the spinner
-// degrades to plain one-line messages so logs stay readable instead of
-// being filled with carriage returns.
+// stays completely silent so logs aren't polluted with progress noise
+// the user can't see anyway.
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
 export interface Spinner {
   /** Replace the running spinner's label. */
   update(text: string): void
-  /** Stop the spinner and print a check-mark line. */
-  succeed(text?: string): void
   /** Stop the spinner and print a failure-mark line. */
   fail(text?: string): void
-  /** Stop the spinner without printing a finalised state. */
+  /**
+   * Stop the spinner silently — the success state isn't announced
+   * because the work that follows is its own confirmation. (E.g. the
+   * next-step instructions printed after a successful scaffold.)
+   */
   stop(): void
 }
 
@@ -49,10 +51,10 @@ export function startSpinner(args: SpinnerArgs): Spinner {
   if (tty) {
     renderFrame()
     timer = setInterval(renderFrame, args.interval ?? 80)
-  } else {
-    // Non-TTY: a single line is enough to mark that the step started.
-    output.write(`${text}\n`)
   }
+  // Non-TTY: stay completely silent. The spinner can't usefully animate
+  // when there is no live terminal to redraw, and logging "Creating..."
+  // / "Done" to a piped run just adds noise.
 
   const stopTicker = (): void => {
     if (timer) {
@@ -64,12 +66,6 @@ export function startSpinner(args: SpinnerArgs): Spinner {
   return {
     update(next) {
       text = next
-    },
-    succeed(next) {
-      stopTicker()
-      const final = next ?? text
-      if (tty) clearLine()
-      output.write(`✔ ${final}\n`)
     },
     fail(next) {
       stopTicker()

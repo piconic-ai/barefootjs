@@ -107,7 +107,7 @@ async function main(): Promise<void> {
     )
   }
 
-  console.log(`\nScaffolding BarefootJS app in ${targetDir}\n`)
+  console.log(`\nScaffolding BarefootJS app in ${targetDir}`)
 
   const initArgs = ['--name', projectName]
   // `--yes` short-circuits init's adapter / css selectors too by

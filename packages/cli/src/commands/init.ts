@@ -64,7 +64,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const probeSpinner = startSpinner({ text: 'Checking the BarefootJS UI registry...' })
   try {
     await probeRegistry(DEFAULT_REGISTRY_URL)
-    probeSpinner.succeed('BarefootJS UI registry reachable')
+    probeSpinner.stop()
   } catch (err) {
     probeSpinner.fail(`Cannot reach the BarefootJS UI registry at ${DEFAULT_REGISTRY_URL}`)
     const msg = err instanceof Error ? err.message : String(err)
@@ -82,14 +82,13 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const buildSpinner = startSpinner({
     text: `Creating ${adapter.label.split(' ')[0]} + ${cssLibrary.label} project...`,
   })
-  let filesCreated: number
   try {
-    filesCreated = await scaffoldApp(projectDir, adapter, flags, ctx)
+    await scaffoldApp(projectDir, adapter, flags, ctx)
   } catch (err) {
     buildSpinner.fail('Failed to create project files')
     throw err
   }
-  buildSpinner.succeed(`Created ${filesCreated} project files`)
+  buildSpinner.stop()
 
   printAppNextSteps(projectDir, adapter)
 }
@@ -210,6 +209,13 @@ async function scaffoldApp(
     type: 'module',
     scripts: {
       ...adapter.scripts,
+      // `watch` is the server-less twin of `dev`: rebuild components +
+      // UnoCSS on change, but don't spin up a server. Useful when the
+      // user is running their server through another tool (e.g. an
+      // existing `morbo`, `go run`, or an external dev container) and
+      // only needs the BarefootJS asset pipeline to keep pace.
+      watch:
+        'concurrently -k -n build,uno -c blue,magenta "barefoot build --watch" "unocss --watch"',
       test: 'echo "no tests yet"',
     },
     dependencies: { ...adapter.dependencies },
@@ -247,14 +253,14 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   // The detected PM is reflected in the commands quoted below, so we
   // don't announce it separately — the user just sees `bun install`
   // or `pnpm install` and knows what's happening.
-  console.log(`\nProject initialized!`)
   console.log(`\nNext steps:`)
   console.log(`  1. Install dependencies`)
   console.log(`       ${cmd.install}`)
   console.log(`  2. Start the dev server`)
   console.log(`       ${cmd.run('dev')}`)
   console.log(`       → http://localhost:${adapter.port}`)
-  console.log(``)
-  console.log(`Then try:`)
-  console.log(`  • Edit components/Counter.tsx — the page rebuilds and reloads automatically.`)
+  console.log(`  3. Edit components`)
+  console.log(`       $EDITOR components/Counter.tsx`)
+  console.log(`  4. Build components and watch`)
+  console.log(`       ${cmd.run('watch')}`)
 }

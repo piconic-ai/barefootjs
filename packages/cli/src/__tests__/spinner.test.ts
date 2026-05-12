@@ -1,71 +1,60 @@
-// Contract test for the spinner helper. The real CLI runs the
-// interactive (TTY) path, but most callers we care about (CI, scenario
-// tests) hit the non-TTY degrade path, so we cover both.
+// Contract test for the spinner helper.
+//
+// The spinner is *silent* on success: it animates while work is in
+// progress (TTY only) and either clears its line on `stop()` or paints
+// a ✖ row on `fail()`. There is no success-announcement variant — the
+// next thing the CLI prints is its own confirmation.
 
 import { describe, test, expect } from 'bun:test'
 import { PassThrough } from 'node:stream'
 import { startSpinner } from '../lib/spinner'
 
-function collect(): {
+function collect(isTTY: boolean): {
   output: PassThrough & { isTTY: boolean }
   text: () => string
-  stripAnsi: () => string
 } {
-  const out = Object.assign(new PassThrough(), { isTTY: false })
+  const out = Object.assign(new PassThrough(), { isTTY })
   const chunks: string[] = []
   out.on('data', (c) => chunks.push(c.toString()))
-  return {
-    output: out,
-    text: () => chunks.join(''),
-    // Strip CR (\r) and CSI sequences so non-spinner assertions don't
-    // have to know about cursor-movement codes.
-    stripAnsi: () => chunks.join('').replace(/\r/g, '').replace(/\x1b\[[0-9;]*[A-Za-z]/g, ''),
-  }
+  return { output: out, text: () => chunks.join('') }
 }
 
 describe('startSpinner — non-TTY', () => {
-  test('writes the start text on a single line, succeed adds ✔', () => {
-    const { output, text } = collect()
-    const s = startSpinner({ text: 'Creating files...', output })
-    s.succeed()
-    expect(text()).toBe('Creating files...\n✔ Creating files...\n')
+  test('writes nothing on start, stop, or success', () => {
+    const { output, text } = collect(false)
+    const s = startSpinner({ text: 'Working...', output })
+    s.stop()
+    expect(text()).toBe('')
   })
 
-  test('succeed(message) overrides the final line text', () => {
-    const { output, text } = collect()
-    const s = startSpinner({ text: 'Creating files...', output })
-    s.succeed('Created 13 files')
-    expect(text()).toBe('Creating files...\n✔ Created 13 files\n')
-  })
-
-  test('fail prints ✖ with the current text', () => {
-    const { output, text } = collect()
+  test('fail prints ✖ even in non-TTY (errors must be visible)', () => {
+    const { output, text } = collect(false)
     const s = startSpinner({ text: 'Checking registry...', output })
     s.fail('Registry unreachable')
-    expect(text()).toBe('Checking registry...\n✖ Registry unreachable\n')
-  })
-
-  test('stop ends silently', () => {
-    const { output, text } = collect()
-    const s = startSpinner({ text: 'Idle...', output })
-    s.stop()
-    expect(text()).toBe('Idle...\n')
+    expect(text()).toBe('✖ Registry unreachable\n')
   })
 })
 
 describe('startSpinner — TTY', () => {
-  test('cycles braille frames between calls and clears the line on succeed', async () => {
-    const out = Object.assign(new PassThrough(), { isTTY: true })
-    const chunks: string[] = []
-    out.on('data', (c) => chunks.push(c.toString()))
-    const s = startSpinner({ text: 'Working...', output: out, interval: 10 })
-    // Let the interval tick a couple of times.
+  test('animates while running and clears the line on stop', async () => {
+    const { output, text } = collect(true)
+    const s = startSpinner({ text: 'Working...', output, interval: 10 })
     await new Promise((r) => setTimeout(r, 35))
-    s.succeed('Done')
-    const joined = chunks.join('')
-    // At least one braille frame rendered…
+    s.stop()
+    const joined = text()
+    // At least one braille frame rendered while the spinner was alive.
     expect(joined).toMatch(/[⠇⠏⠙⠹⠸⠼⠴⠦⠧⠋]/)
-    // …and the final state ends with the ✔ line.
-    expect(joined).toMatch(/✔ Done\n$/)
+    // …and the spinner ends with a clear-line escape — no success
+    // banner remains on screen.
+    expect(joined.endsWith('\r\x1b[2K')).toBe(true)
+    expect(joined).not.toMatch(/✔/)
+  })
+
+  test('fail stops the animation and prints ✖ with the override text', async () => {
+    const { output, text } = collect(true)
+    const s = startSpinner({ text: 'Checking registry...', output, interval: 10 })
+    await new Promise((r) => setTimeout(r, 25))
+    s.fail('Registry unreachable')
+    expect(text()).toMatch(/✖ Registry unreachable\n$/)
   })
 })

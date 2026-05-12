@@ -119,6 +119,17 @@ export async function select<T extends string = string>(args: SelectArgs<T>): Pr
       }
       if (key.name === 'return') {
         cleanup()
+        // Wipe the rendered menu (message line + N option rows) and
+        // replace it with a one-line confirmation so the transcript
+        // reads as "✔ Choose an adapter: *Hono*" instead of leaving
+        // the raw arrow-key menu on screen.
+        const totalLines = args.options.length + 1
+        output.write(`\x1b[${totalLines}A`)
+        for (let i = 0; i < totalLines; i++) {
+          output.write('\x1b[2K\n')
+        }
+        output.write(`\x1b[${totalLines}A`)
+        output.write(`✔ ${args.message} *${args.options[cursor].label}*\n`)
         resolve(args.options[cursor].value)
         return
       }
