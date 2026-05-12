@@ -54,6 +54,10 @@ describe.skipIf(!INTEGRATION)(
         expect(existsSync(projectDir)).toBe(true)
       })
 
+      test('confirms the chosen directory with "Using target directory"', () => {
+        expect(result.stdout).toContain('Using target directory … demo-app')
+      })
+
       test('announces the destination before doing any work', () => {
         expect(result.stdout).toMatch(/Scaffolding BarefootJS app in .*demo-app/)
       })
@@ -221,33 +225,70 @@ describe.skipIf(!INTEGRATION)(
 // These run offline (no registry probe is reached).
 // ---------------------------------------------------------------------------
 
-describe('Scenario: target-directory guards (no network)', () => {
-  test('refuses to scaffold into an existing non-empty directory', () => {
-    const cwd = mktmp()
-    const projectDir = path.join(cwd, 'demo-app')
-    mkdirSync(projectDir)
-    writeFileSync(path.join(projectDir, 'README.md'), '# pre-existing')
+describe('Scenario: how the target directory is chosen (no network)', () => {
+  // Three branches the user can land in when invoking the CLI:
+  //   (a) explicit positional arg → "Using target directory" confirmation
+  //   (b) --yes / -y               → silent default acceptance
+  //   (c) interactive prompt       → "Target directory: (my-barefoot-app)"
+  //                                  (TTY-gated; non-TTY falls back to default)
 
-    const r = runCreate(['demo-app'], { cwd })
-    expect(r.exitCode).not.toBe(0)
-    expect(r.stderr).toContain('exists and is not empty')
+  describe('(a) When a positional argument is provided', () => {
+    test('uses it verbatim and confirms with "Using target directory …"', () => {
+      const cwd = mktmp()
+      const r = runCreate(['demo-app'], { cwd })
+      expect(r.stdout).toContain('Using target directory … demo-app')
+      expect(r.stdout).toMatch(/Scaffolding BarefootJS app in .*demo-app/)
+    })
   })
 
-  test('treats a dotfile-only directory (e.g. fresh `git init`) as empty', () => {
-    const cwd = mktmp()
-    const projectDir = path.join(cwd, 'demo-app')
-    mkdirSync(projectDir)
-    writeFileSync(path.join(projectDir, '.gitkeep'), '')
+  describe('(b) When --yes / -y is passed without a positional argument', () => {
+    test('skips the prompt and silently accepts "my-barefoot-app"', () => {
+      const cwd = mktmp()
+      const r = runCreate(['--yes'], { cwd })
+      expect(r.stdout).toContain('Using target directory … my-barefoot-app')
+      expect(r.stdout).toMatch(/Scaffolding BarefootJS app in .*my-barefoot-app/)
+    })
 
-    const r = runCreate(['demo-app'], { cwd })
-    expect(r.stderr).not.toContain('exists and is not empty')
-    expect(r.stdout).toContain('Scaffolding BarefootJS app in')
+    test('-y is accepted as an alias', () => {
+      const cwd = mktmp()
+      const r = runCreate(['-y'], { cwd })
+      expect(r.stdout).toContain('Using target directory … my-barefoot-app')
+    })
   })
 
-  test('defaults the project folder name to "my-barefoot-app" when omitted', () => {
-    const cwd = mktmp()
-    const r = runCreate([], { cwd })
-    expect(r.stdout).toMatch(/Scaffolding BarefootJS app in .*my-barefoot-app/)
+  describe('(c) When neither a positional argument nor --yes is given', () => {
+    test('falls back to "my-barefoot-app" in non-TTY contexts (no hang)', () => {
+      // The spawned child inherits a piped stdin (not a TTY), so the
+      // text() helper short-circuits to the default instead of trying
+      // to render a prompt.
+      const cwd = mktmp()
+      const r = runCreate([], { cwd })
+      expect(r.stdout).toMatch(/Scaffolding BarefootJS app in .*my-barefoot-app/)
+    })
+  })
+
+  describe('Guards applied to the resolved directory', () => {
+    test('refuses to scaffold into an existing non-empty directory', () => {
+      const cwd = mktmp()
+      const projectDir = path.join(cwd, 'demo-app')
+      mkdirSync(projectDir)
+      writeFileSync(path.join(projectDir, 'README.md'), '# pre-existing')
+
+      const r = runCreate(['demo-app'], { cwd })
+      expect(r.exitCode).not.toBe(0)
+      expect(r.stderr).toContain('exists and is not empty')
+    })
+
+    test('treats a dotfile-only directory (e.g. fresh `git init`) as empty', () => {
+      const cwd = mktmp()
+      const projectDir = path.join(cwd, 'demo-app')
+      mkdirSync(projectDir)
+      writeFileSync(path.join(projectDir, '.gitkeep'), '')
+
+      const r = runCreate(['demo-app'], { cwd })
+      expect(r.stderr).not.toContain('exists and is not empty')
+      expect(r.stdout).toContain('Scaffolding BarefootJS app in')
+    })
   })
 })
 
@@ -259,6 +300,8 @@ describe('Scenario: bun create barefootjs@latest --help', () => {
     expect(r.stdout).toContain('Usage:')
     expect(r.stdout).toContain('Scaffolds a runnable BarefootJS app')
     expect(r.stdout).toContain('--adapter')
+    // Both top-level flags are documented.
+    expect(r.stdout).toMatch(/-y, --yes/)
     expect(readdirSync(cwd)).toHaveLength(0)
   })
 
