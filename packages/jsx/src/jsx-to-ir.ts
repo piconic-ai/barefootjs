@@ -27,6 +27,7 @@ import {
   type TypeInfo,
   pickAttrMeta,
 } from './types'
+import { extractFreeIdentifiersFromNode } from './analyzer'
 import { type AnalyzerContext, getSourceLocation } from './analyzer-context'
 import { parseExpression, isSupported, parseBlockBody, type ParsedExpr, type ParsedStatement } from './expression-parser'
 import { createError, ErrorCodes } from './errors'
@@ -2353,6 +2354,7 @@ function transformMapCall(
     isStaticArray,
     callsReactiveGetters: callsReactive || undefined,
     hasFunctionCalls: hasCalls || undefined,
+    arrayFreeIdentifiers: extractFreeIdentifiersFromNode(arrayExpr),
     bodyIsMultiRoot: bodyIsMultiRoot || undefined,
     childComponent,
     nestedComponents,

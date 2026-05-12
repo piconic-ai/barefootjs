@@ -1701,8 +1701,12 @@ function extractValueBranches(node: ts.Expression, ctx: AnalyzerContext): string
 /**
  * Extract free identifier references from an AST node by walking the tree.
  * Skips property keys, member access properties, and bound parameter names.
+ *
+ * Exported so other compiler stages (e.g. `jsx-to-ir.ts` for loop arrays)
+ * can record the same canonical free-identifier set on their IR nodes
+ * instead of re-deriving it from the printed expression string.
  */
-function extractFreeIdentifiersFromNode(node: ts.Node): Set<string> {
+export function extractFreeIdentifiersFromNode(node: ts.Node): Set<string> {
   const ids = new Set<string>()
   const boundNames = new Set<string>()
 

@@ -372,6 +372,22 @@ export interface IRLoop {
   hasFunctionCalls?: boolean
 
   /**
+   * Free identifiers referenced by the array expression, computed via
+   * `extractFreeIdentifiersFromNode` against the source AST. Used by the
+   * client-JS dispatch in `control-flow.ts` to detect loops whose array
+   * resolves to an init-body-only local — those loops are forced through
+   * the dynamic `mapArray` path because the static path's child-binding
+   * forEach assumes SSR rendered children, but the template substitutes
+   * `${[].map(…)}` for unsafe identifiers.
+   *
+   * Property access RHS, property keys, and arrow-function-bound params
+   * are excluded by the walker — so for `state.items` the set contains
+   * `state`, not `items`. That mirrors how `unsafeLocalNames` indexes
+   * roots (chained access through an unsafe root is itself unsafe).
+   */
+  arrayFreeIdentifiers?: Set<string>
+
+  /**
    * When the loop body is a single component, store its info here
    * for createComponent-based rendering instead of template strings.
    * This enables proper parent-to-child prop passing (including event handlers).

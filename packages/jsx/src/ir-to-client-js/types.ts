@@ -358,6 +358,16 @@ export interface TopLevelLoop extends LoopCore {
   childComponent?: IRLoopChildComponent // For createComponent-based rendering
   nestedComponents?: IRLoopChildComponent[] // For nested components in loop bodies
   isStaticArray: boolean // True if array is a static prop (not a signal)
+  /**
+   * Free identifiers referenced by `array`, copied from `IRLoop.arrayFreeIdentifiers`.
+   * `emitLoopUpdates` intersects this with the component's `unsafeLocalNames` set
+   * to detect arrays that resolve to init-body-only locals. Such loops can't
+   * use the static `forEach` + `children[idx]` path (the SSR template emits
+   * `${[].map(…)}` for unsafe identifiers — zero children to bind), so they
+   * must be re-routed through the dynamic `mapArray` emitter, which
+   * materialises children at init time.
+   */
+  arrayFreeIdentifiers?: Set<string>
   useElementReconciliation?: boolean // True: reconcileElements + composite rendering (native root with child components)
   /** Inner loop metadata for composite element reconciliation (array, param, key, container) */
   innerLoops?: NestedLoop[]

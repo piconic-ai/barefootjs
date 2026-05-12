@@ -526,6 +526,7 @@ export function collectElements(
         childComponent: l.childComponent,
         nestedComponents: l.nestedComponents,
         isStaticArray: l.isStaticArray,
+        arrayFreeIdentifiers: l.arrayFreeIdentifiers,
         useElementReconciliation,
         innerLoops: (useElementReconciliation || (l.isStaticArray && innerLoops?.length)) ? innerLoops : undefined,
         siblingOffset: siblingOffsets.get(l) || undefined,
