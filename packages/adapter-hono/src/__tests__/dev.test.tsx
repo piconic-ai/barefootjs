@@ -11,41 +11,33 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { renderToString } from 'hono/jsx/dom/server'
-import { BfDevReload, createDevReloader } from '../dev'
+// `BfDevReload` lives in `app.ts` (runtime-agnostic, html-tagged-template
+// based); `createDevReloader` lives in `dev.tsx` (Node fs-watch based).
+import { BfDevReload } from '../app'
+import { createDevReloader } from '../dev'
 
 describe('BfDevReload', () => {
-  const originalEnv = process.env.NODE_ENV
+  // The runtime gate lives in `barefootDevReload` (middleware). When
+  // it's mounted with `enabled: false` it never publishes the endpoint
+  // to the request context, so <BfDevReload /> falls back to `null`.
+  // Tests below exercise the component directly, which means the
+  // "endpoint provided" branch is the snippet branch and the
+  // "no endpoint, no context" branch is the null branch.
 
-  afterEach(() => {
-    process.env.NODE_ENV = originalEnv
-  })
-
-  it('renders the EventSource snippet when enabled', () => {
-    const html = renderToString(<BfDevReload enabled={true} endpoint="/_bf/reload" />)
+  it('renders the EventSource snippet when an endpoint is provided', () => {
+    const html = renderToString(<BfDevReload endpoint="/_bf/reload" />)
     expect(html).toContain('<script>')
     expect(html).toContain('new EventSource(\"/_bf/reload\")')
     expect(html).toContain("addEventListener('reload'")
   })
 
-  it('renders nothing when explicitly disabled', () => {
-    const html = renderToString(<BfDevReload enabled={false} />)
-    expect(html).toBe('')
-  })
-
-  it('renders nothing when NODE_ENV=production', () => {
-    process.env.NODE_ENV = 'production'
+  it('renders nothing when no endpoint is available (no context, no prop)', () => {
     const html = renderToString(<BfDevReload />)
     expect(html).toBe('')
   })
 
-  it('renders in non-production by default', () => {
-    process.env.NODE_ENV = 'development'
-    const html = renderToString(<BfDevReload />)
-    expect(html).toContain('EventSource')
-  })
-
-  it('respects custom endpoint', () => {
-    const html = renderToString(<BfDevReload enabled={true} endpoint="/__reload" />)
+  it('respects a custom endpoint passed as a prop', () => {
+    const html = renderToString(<BfDevReload endpoint="/__reload" />)
     expect(html).toContain('new EventSource(\"/__reload\")')
   })
 })

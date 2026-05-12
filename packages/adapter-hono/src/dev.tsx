@@ -1,38 +1,30 @@
 /**
- * BarefootJS Dev Reloader (Hono)
+ * BarefootJS Dev Reloader (Hono, Node-side)
  *
- * Dev-only helpers that turn `barefoot build --watch`'s sentinel file
- * (`<distDir>/.dev/build-id`) into a browser auto-reload.
+ * `createDevReloader` turns `barefoot build --watch`'s sentinel file
+ * (`<distDir>/.dev/build-id`) into an SSE stream:
  *
- * Pipeline:
  *   [barefoot build --watch] → writes `<distDir>/.dev/build-id` after each successful build
  *   [createDevReloader]      → watches that file, streams SSE `event: reload`
- *   [BfDevReload snippet]    → EventSource subscriber → `location.reload()`
  *
- * Usage:
- * ```tsx
- * // server.tsx
+ * Mount it on a Hono route in the generated app; the matching browser-
+ * side subscriber (`<DevReload />`) lives in the project itself (see
+ * the hono-node scaffold's `dev-reload.tsx`) so its endpoint URL and
+ * reconnect behavior are an in-tree edit.
+ *
+ * ```ts
+ * // factory.ts
  * import { createDevReloader } from '@barefootjs/hono/dev'
  * app.get('/_bf/reload', createDevReloader({ distDir: './dist' }))
- *
- * // renderer.tsx
- * import { BfDevReload } from '@barefootjs/hono/dev'
- * <body>{children}<BfScripts /><BfDevReload /></body>
  * ```
  *
- * Both pieces are no-ops in production (`NODE_ENV === 'production'`) unless
- * explicitly enabled.
+ * Disabled (404) when `NODE_ENV === 'production'` unless `enabled: true`
+ * is passed explicitly.
  */
 
 import type { Context } from 'hono'
 import { mkdir, readFile, watch } from 'node:fs/promises'
 import { resolve } from 'node:path'
-
-// Re-export BfDevReload from its dependency-free home so `import { BfDevReload }
-// from '@barefootjs/hono/dev'` keeps working for existing callers. Runtimes that
-// can't load node:fs (Workers, edge) should import it directly from
-// '@barefootjs/hono/dev-reload' to avoid pulling this file's fs imports.
-export { BfDevReload, type BfDevReloadProps } from './dev-reload'
 
 export interface CreateDevReloaderOptions {
   /** Directory that `barefoot build` writes output into (contains `.dev/build-id`). */
