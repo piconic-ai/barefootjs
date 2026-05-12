@@ -78,7 +78,14 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2)
   if (args.includes('--help') || args.includes('-h')) usage()
 
+  // Banner + a blank padding line. The padding stays in place across
+  // the prompt → confirmation transition: the interactive prompt fills
+  // the row beneath the empty line, then `text()` wipes it on submit
+  // and the caller's confirmation is written into the same row. With
+  // no padding the prompt and the confirmation would land on
+  // different rows relative to the banner.
   console.log(dim(`create-barefootjs version ${CREATE_BAREFOOTJS_VERSION}`))
+  console.log()
 
   const skipPrompts = args.includes('--yes') || args.includes('-y')
   const positional = args.find((a) => !a.startsWith('-'))
@@ -105,7 +112,10 @@ async function main(): Promise<void> {
       defaultValue: DEFAULT_PROJECT_NAME,
     })
   }
-  console.log(`\n✔ Target directory ${highlight(projectName)}`)
+  // No leading \n here: the banner already emitted a padding line, and
+  // for the prompt branch `text()` has just wiped its row — we write
+  // the confirmation directly into that same row.
+  console.log(`✔ Target directory ${highlight(projectName)}`)
 
   const targetDir = resolve(process.cwd(), projectName)
   if (existsSync(targetDir)) {
