@@ -259,9 +259,43 @@ export function inferDefaultValue(type: { kind: string; primitive?: string }): s
 /**
  * Check if a JS expression string references a given identifier.
  * Uses word-boundary matching with proper regex escaping.
+ *
+ * **Known limitation (#1267)**: regex `\b...\b` over-matches —
+ *   - string literals (`'foo-className'` falsely matches `className`)
+ *   - member-access property names (`a.className` falsely matches `className`)
+ *   - comment contents
+ *
+ * All 12 callers in this directory want "is `ident` referenced as an
+ * identifier?" (strict). The over-match is tolerated, not intended.
+ * Single-shot AST replacement would re-parse per call and break the
+ * project-wide "AST is parsed once" invariant — see #1267 for the
+ * proper fix (extend `freeIdentifiers` to every expression-carrying
+ * IR node so each caller looks up `node.freeIdentifiers.has(name)`
+ * instead of running this regex).
  */
 export function exprReferencesIdent(expr: string, ident: string): boolean {
   return new RegExp(`\\b${escapeRegExp(ident)}\\b`).test(expr)
+}
+
+/**
+ * Check if `expr` references any identifier in `names`. Short-circuits on
+ * the first hit.
+ *
+ * Canonical helper for the "does this expression depend on any of the
+ * <unsafe / signal / prop / loop-param> names we're tracking" question.
+ * Multiple callers used to inline this loop or define a private clone
+ * (`expressionReferencesAny` in html-template.ts, `arrayReferencesAny`
+ * in control-flow/plan/build-loop.ts) — having a single shared helper
+ * keeps the semantic identical across the codebase.
+ *
+ * Inherits `exprReferencesIdent`'s regex over-match limitation; the
+ * AST-driven follow-up is tracked in #1267.
+ */
+export function exprReferencesAny(expr: string, names: Iterable<string>): boolean {
+  for (const name of names) {
+    if (exprReferencesIdent(expr, name)) return true
+  }
+  return false
 }
 
 function escapeRegExp(s: string): string {

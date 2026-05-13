@@ -20,6 +20,7 @@ import { classifyLocalDeclarations } from './init-declarations'
 import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-level'
 import { buildPhaseCtx, PHASES, runPhases } from './phases'
 import { rewritePropsObjectRef } from './rewrite-props-object'
+import { buildInlinableConstants } from './emit-registration'
 
 export function generateInitFunction(
   ir: ComponentIR,
@@ -43,6 +44,11 @@ export function generateInitFunction(
   const graph = buildReferencesGraph(ctx, ir.root)
   const classification = classifyLocalDeclarations(ctx, graph)
   const propUsage = computePropUsage(ctx, classification.neededConstants)
+  // Compute once and thread through PhaseCtx + emitRegistrationAndHydration —
+  // `buildInlinableConstants` walks the graph and pushes BF060/BF061
+  // diagnostics into `ctx.warnings`, so calling it twice would surface
+  // duplicate warnings (#1247).
+  const inlinability = buildInlinableConstants(ctx, graph, ir.root)
 
   // --- Emission: declarative phase pipeline. Each entry in `PHASES`
   //     declares its inputs (dependsOn) and emission action (run); the
@@ -54,10 +60,11 @@ export function generateInitFunction(
     graph,
     classification,
     propUsage,
+    unsafeLocalNames: inlinability.unsafeLocalNames,
   })
   runPhases(lines, phaseCtx, PHASES)
 
-  const hydrateLine = emitRegistrationAndHydration(lines, ctx, ir, graph)
+  const hydrateLine = emitRegistrationAndHydration(lines, ctx, ir, graph, inlinability)
 
   // --- Finalisation: props rename → hydrate line → import / module-level
   //     placeholder replacement.

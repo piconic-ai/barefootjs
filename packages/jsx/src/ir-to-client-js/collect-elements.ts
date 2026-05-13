@@ -494,6 +494,7 @@ export function collectElements(
       const { useElementReconciliation, innerLoops } = decideLoopRendering(l, siblingOffsets, ctx)
 
       let template = ''
+      let staticItemTemplate: string | undefined
       if (l.childComponent) {
         template = '' // childComponent path uses createComponent directly
       } else if (l.children[0]) {
@@ -505,6 +506,16 @@ export function collectElements(
         template = useElementReconciliation
           ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0, loopParamSpec)
           : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, loopParamSpec)
+        // Static-array loops emit a `forEach((param, idx) => ...)` whose body
+        // references the destructured param directly — `__bfItem()` is not in
+        // scope there. Build a second template that skips the loop-param
+        // accessor wrap so the CSR materialize fallback (#1247) can clone
+        // items inside the forEach body without rewriting the template.
+        if (l.isStaticArray) {
+          staticItemTemplate = useElementReconciliation
+            ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0)
+            : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0)
+        }
       }
 
       ctx.loopElements.push({
@@ -518,6 +529,7 @@ export function collectElements(
         markerId: l.markerId,
         bodyIsMultiRoot: l.bodyIsMultiRoot,
         template,
+        staticItemTemplate,
         childEventHandlers: childHandlers,
         childEvents,
         childReactiveAttrs,

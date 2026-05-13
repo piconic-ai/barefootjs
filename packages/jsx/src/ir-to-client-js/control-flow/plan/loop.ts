@@ -205,4 +205,39 @@ export interface StaticLoopPlan {
   attrsBySlot: ReadonlyArray<readonly [string, readonly LoopChildReactiveAttr[]]>
   /** Reactive texts in declaration order. */
   texts: readonly LoopChildReactiveText[]
+  /**
+   * CSR self-heal payload (#1247). Set when the loop's array expression
+   * references an init-scope local that the CSR template substitutes with
+   * `[]` — without these, the container is empty on a CSR-only mount
+   * (`createComponent`) because SSR never ran. When non-null, the
+   * stringifier emits a clone-and-insert branch inside the per-item forEach
+   * that materialises missing children before binding reactive effects.
+   *
+   * `null` for the SSR-then-hydrate-only common case: the forEach finds
+   * each `__iterEl` already present and never enters the materialize
+   * branch, so the cost is purely the additional `if (!__iterEl)` check.
+   */
+  csrMaterialize: StaticLoopMaterializePlan | null
+}
+
+/**
+ * Inputs the stringifier needs to clone one per-iteration element on the
+ * CSR fallback path. Stored as a sub-plan so the SSR-then-hydrate static
+ * loop emission doesn't pay the bytes for it.
+ */
+export interface StaticLoopMaterializePlan {
+  /** Per-iteration HTML template with raw param references (no `__bfItem()` wrap). */
+  itemTemplate: string
+  /**
+   * Pre-template statements that must run inside the forEach body (e.g. the
+   * `const reacted = ...` preamble from a `.map(item => { ... return <jsx/> })`
+   * block form). Empty when the loop callback was an expression-bodied arrow.
+   */
+  mapPreamble: string
+  /**
+   * True when the loop body is a multi-root JSX Fragment; the stringifier
+   * uses `emitMultiRootTemplateCloneLines` so every per-iteration sibling
+   * lands in the right place.
+   */
+  bodyIsMultiRoot: boolean
 }

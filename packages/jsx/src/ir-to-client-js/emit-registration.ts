@@ -242,6 +242,14 @@ export function emitRegistrationAndHydration(
   ctx: ClientJsContext,
   _ir: ComponentIR,
   graph: ReferencesGraph,
+  /**
+   * Precomputed inlinability. `buildInlinableConstants` is side-effectful
+   * (pushes BF060/BF061 diagnostics into `ctx.warnings`); the caller in
+   * `generate-init.ts` runs it once and forwards it here so phases that
+   * also need `unsafeLocalNames` can share the result without surfacing
+   * duplicate warnings (#1247).
+   */
+  inlinability?: { inlinableConstants: Map<string, string>; unsafeLocalNames: Set<string> },
 ): string {
   const name = ctx.componentName
 
@@ -249,7 +257,7 @@ export function emitRegistrationAndHydration(
   lines.push('')
 
   const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
-  const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph, _ir.root)
+  const { inlinableConstants, unsafeLocalNames } = inlinability ?? buildInlinableConstants(ctx, graph, _ir.root)
 
   // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
   const restSpreadNames = new Set<string>()

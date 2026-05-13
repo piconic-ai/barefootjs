@@ -51,6 +51,12 @@ export interface PhaseCtx {
   /** Slots that live inside a conditional branch (handled via `insert()`).
    *  Cached so `event-handlers` and `ref-callbacks` don't recompute. */
   conditionalSlotIds: Set<string>
+  /** Local names that resolve to component-scope expressions and therefore
+   *  become `[]` / `undefined` when referenced from the CSR template (the
+   *  same set the registration emitter feeds `generateCsrTemplate`).
+   *  Phases consult this to decide whether a static-array loop's CSR
+   *  template substitution leaves the container empty (#1247). */
+  unsafeLocalNames: Set<string>
 }
 
 /** Build the read-only carrier that every phase consumes. */
@@ -250,7 +256,7 @@ export const PHASES: readonly EmitPhase[] = [
     // contract is enforceable at registry-validation time.
     id: 'loop-updates',
     dependsOn: ['provider-and-child-inits'],
-    run: (lines, p) => emitLoopUpdates(lines, p.ctx),
+    run: (lines, p) => emitLoopUpdates(lines, p.ctx, p.unsafeLocalNames),
   },
   {
     id: 'static-array-child-inits',

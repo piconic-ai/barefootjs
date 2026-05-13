@@ -40,6 +40,11 @@ runAdapterConformanceTests({
     'return-logical-or',
     'return-nullish-coalescing',
     'return-map',
+    // Same JS-only `Object.entries(...).filter(...)` shape the Go
+    // adapter skips. The CSR self-heal (#1247) covers the bug on the
+    // JS side; the Perl SSR side would need bespoke helpers to
+    // materialise the loop at request time.
+    'static-array-from-props',
   ],
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining

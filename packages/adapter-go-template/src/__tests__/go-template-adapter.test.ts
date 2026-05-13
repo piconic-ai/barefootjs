@@ -38,6 +38,12 @@ runAdapterConformanceTests({
     'nullish-coalescing-jsx',
     'return-nullish-coalescing',
     'return-map',
+    // `Object.entries(props.x).filter(...)` is JS-only — the Go
+    // renderer would need a dedicated `bf_entries` primitive plus
+    // multi-binding range support to materialise the loop at SSR
+    // time. The CSR self-heal (#1247) is unrelated to the Go path,
+    // so the JS-only fixture stays Hono/CSR-only for now.
+    'static-array-from-props',
   ],
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `GoTemplateAdapter.templatePrimitives` (#1188). The two

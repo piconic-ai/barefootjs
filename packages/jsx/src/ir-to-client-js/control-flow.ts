@@ -55,10 +55,10 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
 }
 
 /** Emit loop updates: dispatches to static or dynamic handlers per element. */
-export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
+export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLocalNames: Set<string>): void {
   for (const elem of ctx.loopElements) {
     if (elem.isStaticArray) {
-      emitStaticArrayUpdates(lines, elem)
+      emitStaticArrayUpdates(lines, elem, unsafeLocalNames)
     } else {
       emitDynamicLoopUpdates(lines, elem)
     }
@@ -71,8 +71,8 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext): void {
  * and event handlers need client-side setup. (initChild calls are deferred to
  * the `static-array-child-inits` phase so parent context providers run first.)
  */
-function emitStaticArrayUpdates(lines: string[], elem: TopLevelLoop): void {
-  stringifyStaticLoop(lines, buildStaticLoopPlan(elem))
+function emitStaticArrayUpdates(lines: string[], elem: TopLevelLoop, unsafeLocalNames: Set<string>): void {
+  stringifyStaticLoop(lines, buildStaticLoopPlan(elem, unsafeLocalNames))
 
   // Event delegation for plain elements in static arrays (#537).
   // Static arrays have no data-key/bf-i markers, so walk up from target to

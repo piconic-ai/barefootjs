@@ -41,6 +41,7 @@ export type {
   ComponentLoopPlan,
   CompositeLoopPlan,
   StaticLoopPlan,
+  StaticLoopMaterializePlan,
   NestedComponentInit,
 } from './loop'
 export type {

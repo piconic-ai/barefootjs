@@ -4,7 +4,7 @@
 
 import type { IRNode } from '../types'
 import { isBooleanAttr } from '../html-constants'
-import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, exprReferencesIdent, wrapExprWithLoopParams } from './utils'
+import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, exprReferencesAny, wrapExprWithLoopParams } from './utils'
 import type { LoopParamSpec } from './utils'
 import { nameForRegistryRef } from './component-scope'
 
@@ -614,19 +614,6 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
 }
 
 /**
- * Check if an expression references any identifier from the given set.
- * Used to detect unsafe local variable references in template expressions (#343).
- */
-function expressionReferencesAny(expr: string, names: Set<string>): boolean {
-  for (const name of names) {
-    if (exprReferencesIdent(expr, name)) {
-      return true
-    }
-  }
-  return false
-}
-
-/**
  * Check if a component can have a simple static template generated.
  * Returns false if the component has:
  * - Loops (which use dynamic signal arrays)
@@ -649,7 +636,7 @@ export function canGenerateStaticTemplate(
   unsafeLocalNames?: Set<string>
 ): boolean {
   const hasUnsafeRef = (expr: string): boolean => {
-    return !!(unsafeLocalNames && unsafeLocalNames.size > 0 && expressionReferencesAny(expr, unsafeLocalNames))
+    return !!(unsafeLocalNames && unsafeLocalNames.size > 0 && exprReferencesAny(expr, unsafeLocalNames))
   }
 
   switch (node.type) {
@@ -806,7 +793,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     // call sites (loop array, text expression, child component prop) decide
     // how to render that placeholder. The init function's createEffect /
     // initChild bindings repaint the real value once init runs.
-    if (unsafeLocalNames && unsafeLocalNames.size > 0 && expressionReferencesAny(finalResult, unsafeLocalNames)) {
+    if (unsafeLocalNames && unsafeLocalNames.size > 0 && exprReferencesAny(finalResult, unsafeLocalNames)) {
       return UNSAFE_TEMPLATE_EXPR
     }
 

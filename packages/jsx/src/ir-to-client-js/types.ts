@@ -350,6 +350,16 @@ export interface TopLevelLoop extends LoopCore {
   slotId: string
   index: string | null
   template: string
+  /**
+   * Per-iteration HTML template for static-array loops that need to
+   * self-heal on CSR mount (#1247). Unlike `template`, this variant skips
+   * the `__bfItem()` / `param()` loop-param accessor wrapping so the
+   * destructured `forEach((param, idx) => ...)` body can clone items
+   * directly. Populated only when `isStaticArray` is true and the array
+   * expression references an init-scope local (i.e. `Object.entries(props.x).filter(...)`)
+   * that becomes `[]` in the CSR template substitution.
+   */
+  staticItemTemplate?: string
   childEventHandlers: string[] // Event handlers from child elements (for identifier extraction)
   childEvents: LoopChildEvent[] // Detailed event info for delegation
   childReactiveAttrs: LoopChildReactiveAttr[] // Reactive attributes in loop children

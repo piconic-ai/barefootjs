@@ -14,6 +14,7 @@ import type {
 } from '../../types'
 import {
   buildChainedArrayExpr,
+  exprReferencesAny,
   varSlotId,
   wrapLoopParamAsAccessor,
 } from '../../utils'
@@ -22,7 +23,7 @@ import {
   destructureLoopParam,
 } from '../shared'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects'
-import type { PlainLoopPlan, StaticLoopPlan } from './types'
+import type { PlainLoopPlan, StaticLoopMaterializePlan, StaticLoopPlan } from './types'
 
 export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
   const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
@@ -47,7 +48,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
   }
 }
 
-export function buildStaticLoopPlan(elem: TopLevelLoop): StaticLoopPlan {
+export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<string>): StaticLoopPlan {
   // Group reactive attrs by their child slot id, preserving the legacy
   // declaration-order Map-iteration semantics.
   const attrsBySlotMap = new Map<string, LoopChildReactiveAttr[]>()
@@ -74,5 +75,37 @@ export function buildStaticLoopPlan(elem: TopLevelLoop): StaticLoopPlan {
     childIndexExpr,
     attrsBySlot: [...attrsBySlotMap].map(([slotId, attrs]) => [slotId, attrs] as const),
     texts: elem.childReactiveTexts,
+    csrMaterialize: buildStaticLoopMaterialize(elem, unsafeLocalNames),
+  }
+}
+
+/**
+ * Decide whether the CSR template will substitute the loop's array with `[]`
+ * (the unsafe-name fallback in `html-template.ts`) and, if so, package the
+ * inputs the stringifier needs to clone per-iteration children into the
+ * container at hydrate time (#1247).
+ *
+ * Skipped when:
+ *   - the array is safe in template scope (the CSR template already emits
+ *     items via `.map(...)`, no fallback needed),
+ *   - the loop body is a child component or composite/element-reconciled
+ *     shape (the SSR-then-CSR mismatch in that case is handled by the
+ *     dynamic-loop path; the static branch here only materialises plain
+ *     element bodies), or
+ *   - the loop's per-iteration template wasn't built (childComponent path).
+ */
+function buildStaticLoopMaterialize(
+  elem: TopLevelLoop,
+  unsafeLocalNames: Set<string>,
+): StaticLoopMaterializePlan | null {
+  if (unsafeLocalNames.size === 0) return null
+  if (!elem.staticItemTemplate) return null
+  if (elem.childComponent) return null
+  if (elem.useElementReconciliation) return null
+  if (!exprReferencesAny(elem.array, unsafeLocalNames)) return null
+  return {
+    itemTemplate: elem.staticItemTemplate,
+    mapPreamble: elem.mapPreamble ?? '',
+    bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,
   }
 }

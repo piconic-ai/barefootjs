@@ -86,10 +86,10 @@ export function stringifyPlainLoop(
 }
 
 export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void {
-  const { containerVar, arrayExpr, param, indexParam, childIndexExpr, attrsBySlot, texts } = plan
+  const { containerVar, arrayExpr, param, indexParam, childIndexExpr, attrsBySlot, texts, csrMaterialize } = plan
   const hasAttrs = attrsBySlot.length > 0
   const hasTexts = texts.length > 0
-  if (!hasAttrs && !hasTexts) return
+  if (!hasAttrs && !hasTexts && !csrMaterialize) return
 
   // Single forEach pass that handles both reactive attrs and reactive texts.
   // Pre-O-4 the legacy emitter wrote two parallel forEach blocks (one per
@@ -98,15 +98,64 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
   // contract identical (`createEffect`s subscribe to the same signals;
   // attrs run before texts within each iteration) while halving the
   // setup cost.
-  const heading = hasAttrs && hasTexts
-    ? '// Reactive attributes and texts in static array children'
-    : hasAttrs
-      ? '// Reactive attributes in static array children'
-      : '// Reactive texts in static array children'
-  lines.push(`  ${heading}`)
+  //
+  // When `csrMaterialize` is set, the same forEach also self-heals an
+  // empty container by cloning the per-iteration template — the CSR path
+  // for a static loop whose array references an init-scope local (#1247).
+  const parts: string[] = []
+  if (hasAttrs) parts.push('Reactive attributes')
+  if (hasTexts) parts.push('reactive texts')
+  if (csrMaterialize) parts.push('CSR materialize')
+  // Capitalise the first segment regardless of position so the comment reads
+  // naturally when only `csrMaterialize` is set.
+  if (parts.length > 0) parts[0] = parts[0][0].toUpperCase() + parts[0].slice(1)
+  lines.push(`  // ${parts.join(' / ')} in static array children`)
   lines.push(`  if (${containerVar}) {`)
   lines.push(`    ${arrayExpr}.forEach((${param}, ${indexParam}) => {`)
-  lines.push(`      const __iterEl = ${containerVar}.children[${childIndexExpr}]`)
+  // `mapPreamble` (the user's pre-return statements inside the .map callback's
+  // block body, e.g. `const reacted = ...`) is emitted at the forEach body's
+  // top so its bindings are visible BOTH to the materialize-clone branch (which
+  // may interpolate them into the per-item template) AND to the reactive
+  // bind branch below. Pinning it inside `if (!__iterEl)` only would leave
+  // any preamble-declared local invisible to reactive-text / reactive-attr
+  // expressions — a silent hidden dependency on `expandConstantForReactivity`
+  // rescuing every such reference (#1247 follow-up).
+  if (csrMaterialize?.mapPreamble) {
+    lines.push(`      ${csrMaterialize.mapPreamble}`)
+  }
+  // `let` (not `const`) so the materialize branch can reassign after cloning.
+  lines.push(`      let __iterEl = ${containerVar}.children[${childIndexExpr}]`)
+  if (csrMaterialize) {
+    lines.push(`      if (!__iterEl) {`)
+    if (csrMaterialize.bodyIsMultiRoot) {
+      // Multi-root: clone every top-level sibling of the per-item template and
+      // insert them in order. `__iterEl` is the first root (the one reactive
+      // bindings attach to); the rest land alongside it via insertBefore.
+      lines.push(`        const __mtpl = document.createElement('template')`)
+      lines.push(`        __mtpl.innerHTML = \`${csrMaterialize.itemTemplate}\``)
+      lines.push(`        const __anchor = ${containerVar}.children[${childIndexExpr}] ?? null`)
+      lines.push(`        let __first = null`)
+      lines.push(`        let __sib = __mtpl.content.firstElementChild`)
+      lines.push(`        while (__sib) {`)
+      lines.push(`          const __next = __sib.nextElementSibling`)
+      lines.push(`          const __cloned = __sib.cloneNode(true)`)
+      lines.push(`          ${containerVar}.insertBefore(__cloned, __anchor)`)
+      lines.push(`          if (!__first) __first = __cloned`)
+      lines.push(`          __sib = __next`)
+      lines.push(`        }`)
+      lines.push(`        __iterEl = __first`)
+    } else {
+      lines.push(`        const __tpl = document.createElement('template')`)
+      lines.push(`        __tpl.innerHTML = \`${csrMaterialize.itemTemplate}\``)
+      lines.push(`        const __cloned = __tpl.content.firstElementChild`)
+      lines.push(`        if (__cloned) {`)
+      lines.push(`          const __anchor = ${containerVar}.children[${childIndexExpr}] ?? null`)
+      lines.push(`          ${containerVar}.insertBefore(__cloned, __anchor)`)
+      lines.push(`          __iterEl = __cloned`)
+      lines.push(`        }`)
+    }
+    lines.push(`      }`)
+  }
   lines.push(`      if (__iterEl) {`)
   for (const [slotId, attrs] of attrsBySlot) {
     const varName = `__t_${varSlotId(slotId)}`

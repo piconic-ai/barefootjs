@@ -26,6 +26,12 @@ describe('CSR Conformance Tests', () => {
     // Local array variable (items) is not available at CSR template module scope.
     // CSR templates only have access to props and signals, not file-scope constants.
     'static-array-children',
+    // #1247: prop-derived static-array loops materialize their children at init
+    // time (via the clone-and-insert fallback in the static-loop emitter), not
+    // at template-eval time. This test harness runs only the `template:`
+    // lambda, so the post-init DOM shape is verified by the runtime regression
+    // in `packages/client/__tests__/runtime/static-loop-csr-materialize.test.ts`.
+    'static-array-from-props',
     // Static style object is converted at compile time — no runtime needed.
     // Attribute ordering differs between SSR (style first) and CSR injection (bf-s first).
     'style-object-static',
