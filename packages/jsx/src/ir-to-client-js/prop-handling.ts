@@ -28,12 +28,28 @@ export function expandDynamicPropValue(value: string, ctx: ClientJsContext): str
  * Stateful components use props.xxx directly, so expansion is unnecessary.
  *
  * e.g., `classes` → `` `${baseClasses} ${variantClasses[variant]} ${className}` ``
+ *
+ * Returns both the expanded expression and the free identifiers it
+ * references (#1267). When expansion occurred, `freeIds` is the substituted
+ * constant's own `freeIdentifiers` (already AST-computed in the analyzer).
+ * Otherwise it is `originalFreeIds` passed by the caller (typically derived
+ * from the IR node's `origin.freeRefs`) — `undefined` when the caller has
+ * no precomputed set.
  */
-export function expandConstantForReactivity(expr: string, ctx: ClientJsContext): string {
+export function expandConstantForReactivity(
+  expr: string,
+  ctx: ClientJsContext,
+  originalFreeIds?: ReadonlySet<string>,
+): { expr: string; freeIds: ReadonlySet<string> | undefined } {
   // Stateful components use props.xxx directly — reactivity is already detected.
-  if (ctx.propsObjectName) return expr
+  if (ctx.propsObjectName) return { expr, freeIds: originalFreeIds }
 
-  return expandDynamicPropValue(expr, ctx)
+  const trimmedValue = expr.trim()
+  const constant = ctx.localConstants.find((c) => c.name === trimmedValue)
+  if (constant && constant.value) {
+    return { expr: constant.value, freeIds: constant.freeIdentifiers }
+  }
+  return { expr, freeIds: originalFreeIds }
 }
 
 /**

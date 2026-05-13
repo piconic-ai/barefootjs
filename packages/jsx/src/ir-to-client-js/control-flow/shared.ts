@@ -14,7 +14,7 @@
 
 import type { LoopChildEvent, TopLevelLoop, NestedLoop, CollectedLoop } from '../types'
 import type { IRLoopChildComponent, LoopParamBinding } from '../../types'
-import { quotePropName, wrapLoopParamAsAccessor, exprReferencesIdent } from '../utils'
+import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds } from '../utils'
 import { irChildrenToJsExpr } from '../html-template'
 import { emitListenerBlock } from './stringify/event-listener'
 import { nameForRegistryRef } from '../component-scope'
@@ -34,20 +34,23 @@ export function loopKeyFn(loop: CollectedLoop): string {
 }
 
 /**
- * Return true when `expr` references the loop's param — either the simple
- * identifier itself, or any of its destructured binding names (#951). The
- * pattern text (e.g. `[, cfg]`) never word-matches on a bare name, so the
- * simple `exprReferencesIdent(expr, elem.param)` check misses destructured
- * callbacks without this widening.
+ * Return true when an expression's free identifiers contain the loop's
+ * param — either the simple identifier itself, or any of its destructured
+ * binding names (#951). The pattern text (e.g. `[, cfg]`) never word-
+ * matches on a bare name, so we widen the check across `paramBindings`.
+ *
+ * Consumes a pre-computed `Set<string>` of free identifiers (#1267)
+ * rather than running word-boundary regex on the expression text — this
+ * avoids over-match against string literals and member-access tails.
  */
-function exprRefsLoopBinding(expr: string, loop: { param: string; paramBindings?: readonly LoopParamBinding[] }): boolean {
+function exprRefsLoopBinding(freeIds: ReadonlySet<string>, loop: { param: string; paramBindings?: readonly LoopParamBinding[] }): boolean {
   if (loop.paramBindings && loop.paramBindings.length > 0) {
     for (const b of loop.paramBindings) {
-      if (exprReferencesIdent(expr, b.name)) return true
+      if (freeIds.has(b.name)) return true
     }
     return false
   }
-  return exprReferencesIdent(expr, loop.param)
+  return freeIds.has(loop.param)
 }
 
 /**
@@ -243,8 +246,9 @@ export function emitComponentAndEventSetup(
       ? comp.children.every(c => c.type === 'expression' || c.type === 'text' || isTextOnlyConditional(c))
       : false
     const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
-    const childrenRefsLoop = loopParam != null && rawChildrenExpr != null
-      && exprRefsLoopBinding(rawChildrenExpr, { param: loopParam, paramBindings: loopParamBindings })
+    const childrenFreeIds = isTextOnly && comp.children ? irChildrenFreeIds(comp.children) : undefined
+    const childrenRefsLoop = loopParam != null && rawChildrenExpr != null && childrenFreeIds != null
+      && exprRefsLoopBinding(childrenFreeIds, { param: loopParam, paramBindings: loopParamBindings })
 
     const slotIdLit = comp.slotId ? `'${comp.slotId}'` : 'null'
     const keyProp = comp.props.find(p => p.name === 'key')

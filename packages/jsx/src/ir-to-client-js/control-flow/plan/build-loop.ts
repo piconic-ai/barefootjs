@@ -25,7 +25,7 @@ import type {
 } from '../../types'
 import {
   buildChainedArrayExpr,
-  exprReferencesAny,
+  setIntersects,
   varSlotId,
   wrapLoopParamAsAccessor,
 } from '../../utils'
@@ -154,7 +154,7 @@ function buildStaticLoopMaterialize(
 ): StaticLoopMaterializePlan | null {
   if (unsafeLocalNames.size === 0) return null
   if (!elem.staticItemTemplate) return null
-  if (!exprReferencesAny(elem.array, unsafeLocalNames)) return null
+  if (!setIntersects(elem.arrayFreeIdentifiers, unsafeLocalNames)) return null
   return {
     itemTemplate: elem.staticItemTemplate,
     mapPreamble: elem.mapPreamble ?? '',

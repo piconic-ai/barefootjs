@@ -29,7 +29,6 @@ import type {
 import { computeDeclarationScopes } from './compute-scope'
 import { graphUsedIdentifiers } from './build-references'
 import { getControlledPropName } from './prop-handling'
-import { exprReferencesIdent } from './utils'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
 import { buildDeclarationEmitLookups, buildDeclarationEmitPlan } from './plan/build-declaration-emit'
 import { stringifyDeclarationEmit } from './stringify/declaration-emit'
@@ -205,15 +204,15 @@ export function addConstantPropRefsToSet(
   // `out` matches the pre-Stage E.3 behaviour — which downstream
   // `emitPropsExtraction` relies on for prop destructure line order.
   //
-  // Uses `exprReferencesIdent` (regex word-boundary) rather than
-  // `freeIdentifiers` because `freeIdentifiers` excludes member-access
-  // property names: when the source writes `props.className`,
-  // `freeIdentifiers` contains only `props`, not `className`. Falling
-  // back to regex keeps semantics identical to the old
-  // `valueReferencesReactiveData` check.
-  for (const prop of ctx.propsParams) {
-    if (exprReferencesIdent(constant.value, prop.name)) {
-      out.add(prop.name)
+  // Strict identifier check via the AST-derived `freeIdentifiers` set
+  // (#1267). Member-access tail names (e.g. the `className` in
+  // `props.className`) are not free identifiers and are picked up
+  // separately by the `propsObjectName.<tail>` regex below.
+  if (constant.freeIdentifiers) {
+    for (const prop of ctx.propsParams) {
+      if (constant.freeIdentifiers.has(prop.name)) {
+        out.add(prop.name)
+      }
     }
   }
   if (ctx.propsObjectName) {

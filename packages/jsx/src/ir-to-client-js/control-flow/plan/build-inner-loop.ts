@@ -23,7 +23,6 @@ import type {
   LoopParamBinding,
 } from '../../../types'
 import {
-  exprReferencesIdent,
   wrapLoopParamAsAccessor,
 } from '../../utils'
 import type { DepthLevel } from '../shared'
@@ -84,7 +83,7 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
     // O-8 narrowing: at depth 2+, `inner.array` may reference the *immediate*
     // parent loop's param. Check against whatever outerLoopParam our caller
     // narrowed to — the recursion passes `inner.param` for child levels.
-    const refsParent = !!outerLoopParam && exprReferencesIdent(inner.array, outerLoopParam)
+    const refsParent = !!outerLoopParam && (inner.arrayFreeIdentifiers?.has(outerLoopParam) ?? false)
     const useReactive = refsParent && !!inner.template
 
     const emit: InnerLoopReactiveEmit | InnerLoopStaticEmit = useReactive

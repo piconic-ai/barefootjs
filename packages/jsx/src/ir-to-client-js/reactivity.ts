@@ -12,7 +12,7 @@ import type {
   LoopChildReactiveText,
   NestedLoop,
 } from './types'
-import { attrValueToString, exprReferencesIdent } from './utils'
+import { attrValueToString, freeIdsFromRefs, tokenContainsIdent } from './utils'
 import { expandConstantForReactivity } from './prop-handling'
 import { walkIR, stopAt } from './walker'
 
@@ -123,7 +123,25 @@ export function decideWrapForChildProp(
   return decideWrapForAttr(expandedValue, ctx, prop)
 }
 
-export function needsEffectWrapper(expr: string, ctx: ClientJsContext): boolean {
+/**
+ * Decide whether an expression should be re-evaluated inside `createEffect`.
+ *
+ * Optional `freeIdentifiers` (#1267) is the pre-computed `Set<string>` of
+ * identifiers referenced by `expr`. When supplied, prop-name detection uses
+ * `freeIdentifiers.has(name)` — an O(1) lookup that respects string-literal
+ * / member-access tail / comment boundaries. When absent (callers that
+ * synthesise the expression and have no AST source), the check falls back
+ * to the lexer-aware `tokenContainsIdent`.
+ *
+ * The signal-getter and memo regexes (`\b<name>\s*\(`) still run against
+ * the raw string — those are call-shape patterns, not bare-identifier
+ * checks, and are outside the scope of #1267.
+ */
+export function needsEffectWrapper(
+  expr: string,
+  ctx: ClientJsContext,
+  freeIdentifiers?: ReadonlySet<string>,
+): boolean {
   for (const signal of ctx.signals) {
     if (new RegExp(`\\b${signal.getter}\\s*\\(`).test(expr)) {
       return true
@@ -140,7 +158,7 @@ export function needsEffectWrapper(expr: string, ctx: ClientJsContext): boolean 
   // and should not trigger effect wrapping on the client)
   for (const prop of ctx.propsParams) {
     if (prop.name === 'children') continue
-    if (exprReferencesIdent(expr, prop.name)) {
+    if (freeIdentifiers ? freeIdentifiers.has(prop.name) : tokenContainsIdent(expr, prop.name)) {
       return true
     }
   }
@@ -168,10 +186,9 @@ export function needsEffectWrapper(expr: string, ctx: ClientJsContext): boolean 
  *
  * `none` means neither applies and the collector can skip the expression.
  *
- * Consolidates the duplicated
- * `needsEffectWrapper(expanded, ctx) || exprReferencesIdent(expanded, loopParam)`
- * check shared by `collectLoopChildReactiveTexts`,
- * `collectLoopChildReactiveAttrs`, and `collectLoopChildConditionals`.
+ * Consolidates the duplicated reactive-classification check shared by
+ * `collectLoopChildReactiveTexts`, `collectLoopChildReactiveAttrs`, and
+ * `collectLoopChildConditionals`.
  */
 export type ReactivitySource =
   | { kind: 'none' }
@@ -196,17 +213,20 @@ export function classifyReactivity(
   ctx: ClientJsContext,
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
+  freeIdentifiers?: ReadonlySet<string>,
 ): ReactivitySource {
+  const has = (name: string): boolean =>
+    freeIdentifiers ? freeIdentifiers.has(name) : tokenContainsIdent(expr, name)
   if (loopParamBindings && loopParamBindings.length > 0) {
     for (const b of loopParamBindings) {
-      if (exprReferencesIdent(expr, b.name)) {
+      if (has(b.name)) {
         return { kind: 'loop-param', param: loopParam ?? b.name }
       }
     }
-  } else if (loopParam && exprReferencesIdent(expr, loopParam)) {
+  } else if (loopParam && has(loopParam)) {
     return { kind: 'loop-param', param: loopParam }
   }
-  if (needsEffectWrapper(expr, ctx)) {
+  if (needsEffectWrapper(expr, ctx, freeIdentifiers)) {
     return { kind: 'signal-or-memo-or-prop' }
   }
   return { kind: 'none' }
@@ -454,11 +474,17 @@ export function collectLoopChildReactiveTexts(
     ...stopAt<boolean>('loop', 'async', 'ifStatement'),
     expression: ({ node: n, scope: insideConditional }) => {
       if (!n.slotId) return
-      const expanded = expandConstantForReactivity(n.expr, ctx)
+      const originFreeIds = freeIdsFromRefs(n.origin?.freeRefs)
+      const expanded = expandConstantForReactivity(n.expr, ctx, originFreeIds)
       // Include if expression reads signals OR references the loop parameter
       // (loop param becomes a signal accessor via per-item signals).
-      if (classifyReactivity(expanded, ctx, loopParam, loopParamBindings).kind === 'none') return
-      texts.push({ slotId: n.slotId, expression: expanded, insideConditional: insideConditional || undefined })
+      if (classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') return
+      texts.push({
+        slotId: n.slotId,
+        expression: expanded.expr,
+        insideConditional: insideConditional || undefined,
+        ...(expanded.freeIds !== undefined && { freeIdentifiers: expanded.freeIds }),
+      })
     },
     conditional: ({ descend }) => {
       descend(true)
@@ -491,7 +517,7 @@ export function collectLoopChildReactiveAttrs(
         if (attr.name === 'key') continue
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
-        const expanded = expandConstantForReactivity(valueStr, ctx)
+        const expanded = expandConstantForReactivity(valueStr, ctx, attr.freeIdentifiers)
         // `/* @client */` always defers via per-item createEffect
         // regardless of the reactivity classifier — matches the
         // top-level `collectElements.element` and the conditional
@@ -499,12 +525,13 @@ export function collectLoopChildReactiveAttrs(
         // SSR template strips the attribute (html-template) and no
         // hydrate-time binding is emitted, leaving the per-item
         // attribute permanently unset.
-        if (!attr.clientOnly && classifyReactivity(expanded, ctx, loopParam, loopParamBindings).kind === 'none') continue
+        if (!attr.clientOnly && classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') continue
         attrs.push({
           childSlotId: el.slotId,
           attrName: attr.name,
-          expression: expanded,
+          expression: expanded.expr,
           ...pickAttrMeta(attr),
+          ...(expanded.freeIds !== undefined && { freeIdentifiers: expanded.freeIds }),
         })
       }
     }

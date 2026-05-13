@@ -35,6 +35,7 @@ import { createError, ErrorCodes } from './errors'
 import { containsReactiveExpression } from './reactivity-checker'
 import { rewriteBarePropRefs as rewriteBarePropRefsCore } from './prop-rewrite'
 import { resolveFreeRefs, type BindingEnvironment } from './free-refs'
+import { extractFreeIdentifiersFromNode } from './analyzer'
 
 // =============================================================================
 // Transform Context
@@ -2472,6 +2473,7 @@ function transformMapCall(
     indexType,
     typedMapPreamble,
     paramBindings,
+    arrayFreeIdentifiers: extractFreeIdentifiersFromNode(arrayExpr),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -2573,19 +2575,26 @@ function expandSpreadAttribute(
   dynamic: true
   isLiteral: false
   loc: SourceLocation
+  freeIdentifiers?: ReadonlySet<string>
 }> {
   const spreadExpr = ctx.getJS(attr.expression)
   const expandedKeys = ctx.analyzer.restPropsExpandedKeys
   const restName = ctx.analyzer.restPropsName
   const loc = getSourceLocation(attr, ctx.sourceFile, ctx.filePath)
+  const spreadFreeIdentifiers = extractFreeIdentifiersFromNode(attr.expression)
 
   if (expandedKeys.length > 0 && restName && spreadExpr === restName) {
+    // Expanded per-key attrs reference `${restName}.${key}` — `restName` is
+    // the only free identifier (the `.${key}` tail is a member-access name,
+    // not an identifier reference).
+    const perKeyFreeIds: ReadonlySet<string> = new Set([restName])
     return expandedKeys.map(key => ({
       name: key,
       value: `${restName}.${key}`,
       dynamic: true,
       isLiteral: false,
       loc,
+      freeIdentifiers: perKeyFreeIds,
     }))
   }
 
@@ -2596,7 +2605,24 @@ function expandSpreadAttribute(
     dynamic: true,
     isLiteral: false,
     loc,
+    freeIdentifiers: spreadFreeIdentifiers,
   }]
+}
+
+// Extract free identifiers from an attribute's initializer expression
+// (#1267). Returns undefined for boolean shorthand / string-literal attrs
+// that have no expression. Downstream callers can ask
+// `attr.freeIdentifiers?.has(name)` instead of running word-boundary regex
+// against the value string.
+function attrFreeIdentifiers(attr: ts.JsxAttribute): ReadonlySet<string> | undefined {
+  if (
+    !attr.initializer
+    || !ts.isJsxExpression(attr.initializer)
+    || !attr.initializer.expression
+  ) {
+    return undefined
+  }
+  return extractFreeIdentifiersFromNode(attr.initializer.expression)
 }
 
 // AST-derived reactivity flags for the Solid-style wrap-by-default fallback
@@ -2690,6 +2716,7 @@ function processAttributes(
       }
     }
 
+    const freeIdentifiers = attrFreeIdentifiers(attr)
     attrs.push({
       name,
       value,
@@ -2700,6 +2727,7 @@ function processAttributes(
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
       ...computeReactivityFlags(attr, ctx),
       ...pickAttrMeta(attrResult),
+      ...(freeIdentifiers !== undefined && { freeIdentifiers }),
     })
   }
 
@@ -3189,6 +3217,7 @@ function processComponentProps(
       }
     }
 
+    const freeIdentifiers = attrFreeIdentifiers(attr)
     props.push({
       name,
       value: propValue,
@@ -3199,6 +3228,7 @@ function processComponentProps(
       loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
       ...computeReactivityFlags(attr, ctx),
       ...pickAttrMeta(attrResult),
+      ...(freeIdentifiers !== undefined && { freeIdentifiers }),
     })
   }
 

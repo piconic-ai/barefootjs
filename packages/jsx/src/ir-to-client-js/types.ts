@@ -184,6 +184,13 @@ export interface LoopCore {
    * key tracks all of its DOM nodes (#1212).
    */
   bodyIsMultiRoot?: boolean
+  /**
+   * Pre-computed free identifiers referenced by the `array` expression
+   * (#1267). Populated during IR build from the originating AST node so
+   * downstream callers can ask `arrayFreeIdentifiers.has(name)` instead of
+   * running word-boundary regex against `array`.
+   */
+  arrayFreeIdentifiers?: ReadonlySet<string>
 }
 
 /** Loop info extracted from a conditional branch for reactive reconciliation. */
@@ -304,6 +311,13 @@ export interface LoopChildReactiveText {
   slotId: string // bf comment marker slot ID (e.g., 's7' → <!--bf:s7-->)
   expression: string // Expression that reads signals
   insideConditional?: boolean // true if text node is inside a conditional branch (insert() may replace it)
+  /**
+   * Pre-computed free identifiers referenced by `expression` (#1267).
+   * For expressions produced via `expandConstantForReactivity`, this is the
+   * union of the original AST node's free identifiers and the substituted
+   * constants' own `freeIdentifiers`.
+   */
+  freeIdentifiers?: ReadonlySet<string>
 }
 
 /**
@@ -343,6 +357,13 @@ export interface LoopChildConditional {
   whenFalseHtml: string // HTML template for false branch (usually comment markers)
   whenTrue: LoopChildBranchSummary
   whenFalse: LoopChildBranchSummary
+  /**
+   * Pre-computed free identifiers referenced by `condition` (#1267).
+   * For conditions produced via `expandConstantForReactivity`, this is the
+   * union of the original AST node's free identifiers and the substituted
+   * constants' own `freeIdentifiers`.
+   */
+  conditionFreeIdentifiers?: ReadonlySet<string>
 }
 
 export interface TopLevelLoop extends LoopCore {

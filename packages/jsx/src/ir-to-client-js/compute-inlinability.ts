@@ -502,7 +502,6 @@ export function toLegacyInlinability(
   analysis: InlinabilityAnalysis,
   resolveChained: (constants: Map<string, string>, freeIdsMap: Map<string, Set<string>>) => void,
   ctx: ClientJsContext,
-  exprReferencesIdent: (expr: string, ident: string) => boolean,
 ): {
   inlinableConstants: Map<string, string>
   unsafeLocalNames: Set<string>
@@ -523,29 +522,26 @@ export function toLegacyInlinability(
     if (status.kind === 'references-component-scope') unsafeLocalNames.add(name)
   }
 
+  // Defensive copies — `resolveChained` mutates these to maintain a
+  // transitively-closed view (#1267). The original `ConstantInfo.freeIdentifiers`
+  // must stay intact for other consumers.
   const freeIdsMap = new Map<string, Set<string>>()
   for (const c of ctx.localConstants) {
-    if (c.freeIdentifiers) freeIdsMap.set(c.name, c.freeIdentifiers)
+    if (c.freeIdentifiers) freeIdsMap.set(c.name, new Set(c.freeIdentifiers))
   }
   resolveChained(inlinableConstants, freeIdsMap)
 
   // Demote constants whose value still references an unsafe name.
+  // After `resolveChained`, `freeIdsMap.get(name)` is transitively closed,
+  // so a single `has(unsafeName)` check is exact — no need to scan the
+  // resolved string for identifiers that were inlined from other constants.
   const toRemove: string[] = []
-  for (const [constName, constValue] of inlinableConstants) {
+  for (const constName of inlinableConstants.keys()) {
     const constFreeIds = freeIdsMap.get(constName)
     let isUnsafe = false
     if (constFreeIds) {
       for (const unsafeName of unsafeLocalNames) {
         if (constFreeIds.has(unsafeName)) { isUnsafe = true; break }
-      }
-    }
-    if (!isUnsafe) {
-      // Post-chain: check the resolved string for any unsafe name.
-      for (const unsafeName of unsafeLocalNames) {
-        if (exprReferencesIdent(constValue, unsafeName)) {
-          isUnsafe = true
-          break
-        }
       }
     }
     if (isUnsafe) {

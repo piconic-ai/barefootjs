@@ -4,7 +4,7 @@
 
 import type { IRNode } from '../types'
 import { isBooleanAttr } from '../html-constants'
-import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, exprReferencesAny, wrapExprWithLoopParams } from './utils'
+import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, freeIdsFromRefs, setIntersects, tokenContainsAny, wrapExprWithLoopParams } from './utils'
 import type { LoopParamSpec } from './utils'
 import { nameForRegistryRef } from './component-scope'
 
@@ -650,8 +650,8 @@ export function canGenerateStaticTemplate(
   inlinableConstants?: Map<string, string>,
   unsafeLocalNames?: Set<string>
 ): boolean {
-  const hasUnsafeRef = (expr: string): boolean => {
-    return !!(unsafeLocalNames && unsafeLocalNames.size > 0 && exprReferencesAny(expr, unsafeLocalNames))
+  const hasUnsafeRef = (freeIds: ReadonlySet<string> | undefined): boolean => {
+    return !!(unsafeLocalNames && unsafeLocalNames.size > 0 && setIntersects(freeIds, unsafeLocalNames))
   }
 
   switch (node.type) {
@@ -662,7 +662,7 @@ export function canGenerateStaticTemplate(
       return false
 
     case 'expression':
-      if (hasUnsafeRef(node.expr)) return false
+      if (hasUnsafeRef(freeIdsFromRefs(node.origin?.freeRefs))) return false
       // Use AST-derived flag when available, fall back to string check for older IR
       if ((node.hasFunctionCalls ?? node.expr.includes('()')) && !isSimplePropExpression(node.expr, propNames)) {
         return false
@@ -675,14 +675,14 @@ export function canGenerateStaticTemplate(
           // Computed local spreads are now handled by spreadAttrs() at runtime.
           // Only check for unsafe references that would fail at module scope.
           const valueStr = attrValueToString(attr.value)
-          if (valueStr && hasUnsafeRef(valueStr)) return false
+          if (valueStr && hasUnsafeRef(attr.freeIdentifiers)) return false
           if (valueStr && valueStr.includes('()') && !isSimplePropExpression(valueStr, propNames)) return false
           continue
         }
         if (attr.dynamic && attr.value) {
           const valueStr = attrValueToString(attr.value)
           if (valueStr) {
-            if (hasUnsafeRef(valueStr)) return false
+            if (hasUnsafeRef(attr.freeIdentifiers)) return false
             if (valueStr.includes('()') && !isSimplePropExpression(valueStr, propNames)) {
               return false
             }
@@ -692,7 +692,7 @@ export function canGenerateStaticTemplate(
       return node.children.every((c) => canGenerateStaticTemplate(c, propNames, inlinableConstants, unsafeLocalNames))
 
     case 'conditional':
-      if (hasUnsafeRef(node.condition)) return false
+      if (hasUnsafeRef(freeIdsFromRefs(node.origin?.freeRefs))) return false
       if (node.condition.includes('()') && !isSimplePropExpression(node.condition, propNames)) {
         return false
       }
@@ -808,10 +808,16 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     // call sites (loop array, text expression, child component prop) decide
     // how to render that placeholder. The init function's createEffect /
     // initChild bindings repaint the real value once init runs.
-    if (unsafeLocalNames && unsafeLocalNames.size > 0 && exprReferencesAny(finalResult, unsafeLocalNames)) {
+    //
+    // Lexer-based post-substitution check (#1267): pure IR-based checking
+    // would require tracking transitive free-id closure through the
+    // `csrInlinableConstants` re-promotion path (which substitutes
+    // signal/memo getters before re-classifying constants). That bookkeeping
+    // is non-trivial and bears no semantic benefit over the lexer, which
+    // already respects string-literal / member-access boundaries.
+    if (unsafeLocalNames && unsafeLocalNames.size > 0 && tokenContainsAny(finalResult, unsafeLocalNames)) {
       return UNSAFE_TEMPLATE_EXPR
     }
-
     return finalResult
   }
 

@@ -523,6 +523,13 @@ export interface IRLoop {
    * those cases raise `BF025` at Phase 1.
    */
   paramBindings?: LoopParamBinding[]
+  /**
+   * Pre-computed free identifiers referenced by the `array` expression
+   * (#1267). Populated during `transformMapCall` from the originating AST
+   * node so downstream callers can ask `arrayFreeIdentifiers.has(name)`
+   * instead of running word-boundary regex against `array`.
+   */
+  arrayFreeIdentifiers?: ReadonlySet<string>
 }
 
 /**
@@ -645,6 +652,12 @@ export type IRTemplatePart =
  */
 export interface AttrMeta {
   presenceOrUndefined?: boolean // true when `expr || undefined` pattern is detected
+  /**
+   * Pre-computed free identifiers referenced by the attribute's expression
+   * (#1267). Populated during IR build by walking the originating AST node.
+   * Optional so downstream IR consumers (adapters) remain compatible.
+   */
+  freeIdentifiers?: ReadonlySet<string>
 }
 
 /**
@@ -654,6 +667,7 @@ export interface AttrMeta {
 export function pickAttrMeta(src: AttrMeta): AttrMeta {
   return {
     ...(src.presenceOrUndefined !== undefined && { presenceOrUndefined: src.presenceOrUndefined }),
+    ...(src.freeIdentifiers !== undefined && { freeIdentifiers: src.freeIdentifiers }),
   }
 }
 

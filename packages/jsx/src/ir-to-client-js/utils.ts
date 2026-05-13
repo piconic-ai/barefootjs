@@ -3,7 +3,7 @@
  * No dependencies on ClientJsContext or other internal modules.
  */
 
-import type { IRTemplateLiteral, LoopParamBinding } from '../types'
+import type { IRTemplateLiteral, LoopParamBinding, FreeReference, IRNode } from '../types'
 import type { TopLevelLoop } from './types'
 import {
   BF_KEY as DATA_KEY,
@@ -256,50 +256,272 @@ export function inferDefaultValue(type: { kind: string; primitive?: string }): s
   return 'undefined'
 }
 
-/**
- * Check if a JS expression string references a given identifier.
- * Uses word-boundary matching with proper regex escaping.
- *
- * **Known limitation (#1267)**: regex `\b...\b` over-matches —
- *   - string literals (`'foo-className'` falsely matches `className`)
- *   - member-access property names (`a.className` falsely matches `className`)
- *   - comment contents
- *
- * All 12 callers in this directory want "is `ident` referenced as an
- * identifier?" (strict). The over-match is tolerated, not intended.
- * Single-shot AST replacement would re-parse per call and break the
- * project-wide "AST is parsed once" invariant — see #1267 for the
- * proper fix (extend `freeIdentifiers` to every expression-carrying
- * IR node so each caller looks up `node.freeIdentifiers.has(name)`
- * instead of running this regex).
- */
-export function exprReferencesIdent(expr: string, ident: string): boolean {
-  return new RegExp(`\\b${escapeRegExp(ident)}\\b`).test(expr)
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /**
- * Check if `expr` references any identifier in `names`. Short-circuits on
- * the first hit.
- *
- * Canonical helper for the "does this expression depend on any of the
- * <unsafe / signal / prop / loop-param> names we're tracking" question.
- * Multiple callers used to inline this loop or define a private clone
- * (`expressionReferencesAny` in html-template.ts, `arrayReferencesAny`
- * in control-flow/plan/build-loop.ts) — having a single shared helper
- * keeps the semantic identical across the codebase.
- *
- * Inherits `exprReferencesIdent`'s regex over-match limitation; the
- * AST-driven follow-up is tracked in #1267.
+ * Flatten an `OriginInfo.freeRefs` list to a plain `Set<string>` of free
+ * identifier names (#1267). Skips `kind: 'reactive-brand'` entries whose
+ * `name` is a full property-access path (e.g. `props.form.isSubmitting`) —
+ * the root identifier of such paths is already reported separately under
+ * its own kind, so consumers checking `has(<bareIdent>)` get a clean view.
  */
-export function exprReferencesAny(expr: string, names: Iterable<string>): boolean {
-  for (const name of names) {
-    if (exprReferencesIdent(expr, name)) return true
+export function freeIdsFromRefs(refs: readonly FreeReference[] | undefined): Set<string> {
+  const out = new Set<string>()
+  if (!refs) return out
+  for (const ref of refs) {
+    if (ref.kind === 'reactive-brand') continue
+    out.add(ref.name)
+  }
+  return out
+}
+
+/**
+ * Walk an IR child subtree and return the union of free identifiers
+ * referenced by every expression-bearing node within it (#1267). Used by
+ * the synthesised-children check in component-loop / event-setup builders
+ * where the children string is reconstituted from IR via
+ * `irChildrenToJsExpr` and has no single AST node.
+ *
+ * Visits: IRExpression / IRConditional / IRElement (attrs only —
+ * children recurse) / IRComponent (attrs + children) / IRFragment /
+ * IRIfStatement / IRProvider / IRSlot. Skips IRText (no expr) and
+ * IRLoop (its body has its own param scope).
+ */
+export function irChildrenFreeIds(children: readonly IRNode[]): Set<string> {
+  const out = new Set<string>()
+  for (const child of children) {
+    collectIrFreeIds(child, out)
+  }
+  return out
+}
+
+function collectIrFreeIds(node: IRNode, out: Set<string>): void {
+  switch (node.type) {
+    case 'text':
+      return
+    case 'expression': {
+      addRefsToSet(node.origin?.freeRefs, out)
+      return
+    }
+    case 'conditional': {
+      addRefsToSet(node.origin?.freeRefs, out)
+      collectIrFreeIds(node.whenTrue, out)
+      collectIrFreeIds(node.whenFalse, out)
+      return
+    }
+    case 'element': {
+      for (const attr of node.attrs) {
+        if (attr.freeIdentifiers) {
+          for (const name of attr.freeIdentifiers) out.add(name)
+        }
+      }
+      for (const child of node.children) collectIrFreeIds(child, out)
+      return
+    }
+    case 'fragment':
+    case 'provider':
+    case 'async':
+    case 'if-statement': {
+      const anyNode = node as { children?: IRNode[] }
+      if (anyNode.children) {
+        for (const child of anyNode.children) collectIrFreeIds(child, out)
+      }
+      return
+    }
+    case 'component': {
+      for (const prop of node.props) {
+        // IRProp shares AttrMeta — pick up freeIdentifiers when present.
+        const p = prop as { freeIdentifiers?: ReadonlySet<string> }
+        if (p.freeIdentifiers) {
+          for (const name of p.freeIdentifiers) out.add(name)
+        }
+      }
+      for (const child of node.children) collectIrFreeIds(child, out)
+      return
+    }
+    case 'loop':
+    case 'slot':
+      // Loops introduce their own param scope; the parent-context's free
+      // identifiers don't propagate through. Slots resolve at the host.
+      return
+  }
+}
+
+function addRefsToSet(refs: readonly FreeReference[] | undefined, out: Set<string>): void {
+  if (!refs) return
+  for (const ref of refs) {
+    if (ref.kind === 'reactive-brand') continue
+    out.add(ref.name)
+  }
+}
+
+/**
+ * Set-intersection check that short-circuits on the first overlap.
+ * Iterates the smaller side for efficiency.
+ */
+export function setIntersects(a: ReadonlySet<string> | undefined, b: ReadonlySet<string> | undefined): boolean {
+  if (!a || !b || a.size === 0 || b.size === 0) return false
+  const [small, large] = a.size <= b.size ? [a, b] : [b, a]
+  for (const name of small) {
+    if (large.has(name)) return true
   }
   return false
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+/**
+ * Lexer-aware fallback for "does this expression reference an identifier?"
+ *
+ * Reserved for the call sites that operate on **synthesised** expression
+ * strings with no originating AST node (post-constant-chain resolution,
+ * post-substitution CSR templates). All other callers should read
+ * `node.freeIdentifiers` populated during IR build — see #1267.
+ *
+ * Skips matches that occur inside:
+ * - string literals (`'...'`, `"..."`)
+ * - template literal text parts (between `` ` `` and `${`)
+ * - line comments (`// ...`)
+ * - block comments (`/* ... *\/`)
+ * - member-access tail names (identifier preceded by `.`)
+ *
+ * Matches inside template-literal `${ ... }` expression substitutions are
+ * still considered identifier references.
+ */
+export function tokenContainsIdent(expr: string, ident: string): boolean {
+  return scanForIdentifiers(expr, (token) => token === ident)
+}
+
+/**
+ * Lexer-aware variant of {@link tokenContainsIdent} that returns true on the
+ * first occurrence of *any* name in `names`. Short-circuits.
+ */
+export function tokenContainsAny(expr: string, names: Iterable<string>): boolean {
+  const set = names instanceof Set ? (names as Set<string>) : new Set(names)
+  if (set.size === 0) return false
+  return scanForIdentifiers(expr, (token) => set.has(token))
+}
+
+const IDENT_START_RE = /[A-Za-z_$]/
+const IDENT_PART_RE = /[A-Za-z0-9_$]/
+
+/**
+ * Single-pass scanner over a JS-like expression string. Walks character by
+ * character through a small state machine and invokes `predicate` on every
+ * identifier-like token it finds in a position where bare identifiers are
+ * semantically possible (i.e. not inside a string/comment, not the property
+ * name in a member-access expression). Returns true on the first hit.
+ */
+function scanForIdentifiers(expr: string, predicate: (token: string) => boolean): boolean {
+  const n = expr.length
+  let i = 0
+  // 0 = code, 1 = single-quote string, 2 = double-quote string,
+  // 3 = template literal text, 4 = template literal expression,
+  // 5 = line comment, 6 = block comment.
+  type State = 0 | 1 | 2 | 3 | 4 | 5 | 6
+  let state: State = 0
+  // For nested template expressions: stack of brace depths at each `${` push.
+  const tmplExprStack: number[] = []
+  // Brace depth tracked only inside template-expression state to detect when
+  // we close back to the surrounding template-literal text.
+  let braceDepth = 0
+
+  while (i < n) {
+    const ch = expr[i]
+
+    switch (state) {
+      case 0: // code
+      case 4: { // template expression — same lexing rules as code
+        // String / template literal openers
+        if (ch === "'") { state = 1; i++; continue }
+        if (ch === '"') { state = 2; i++; continue }
+        if (ch === '`') { state = 3; i++; continue }
+        // Comment openers
+        if (ch === '/' && i + 1 < n) {
+          const next = expr[i + 1]
+          if (next === '/') { state = 5; i += 2; continue }
+          if (next === '*') { state = 6; i += 2; continue }
+        }
+        // Track braces only inside template-expression state, so we know when
+        // we leave `${ ... }` back to the surrounding template text.
+        if (state === 4) {
+          if (ch === '{') { braceDepth++; i++; continue }
+          if (ch === '}') {
+            if (braceDepth === 0) {
+              // Closing `}` of `${ ... }` — pop back to enclosing tmpl state.
+              const restored = tmplExprStack.pop()
+              braceDepth = restored ?? 0
+              state = 3
+              i++
+              continue
+            }
+            braceDepth--
+            i++
+            continue
+          }
+        }
+        // Identifier start
+        if (IDENT_START_RE.test(ch)) {
+          let j = i + 1
+          while (j < n && IDENT_PART_RE.test(expr[j])) j++
+          const token = expr.slice(i, j)
+          // Skip member-access tail: identifier preceded by `.` (ignoring
+          // whitespace).
+          let prev = i - 1
+          while (prev >= 0 && (expr[prev] === ' ' || expr[prev] === '\t' || expr[prev] === '\n' || expr[prev] === '\r')) prev--
+          const isMemberTail = prev >= 0 && expr[prev] === '.' && (prev === 0 || expr[prev - 1] !== '.') // not `..` (spread)
+          if (!isMemberTail && predicate(token)) return true
+          i = j
+          continue
+        }
+        i++
+        continue
+      }
+      case 1: { // single-quote string
+        if (ch === '\\' && i + 1 < n) { i += 2; continue }
+        if (ch === "'") { state = 0; i++; continue }
+        i++
+        continue
+      }
+      case 2: { // double-quote string
+        if (ch === '\\' && i + 1 < n) { i += 2; continue }
+        if (ch === '"') { state = 0; i++; continue }
+        i++
+        continue
+      }
+      case 3: { // template literal text
+        if (ch === '\\' && i + 1 < n) { i += 2; continue }
+        if (ch === '`') {
+          // Closing the template literal; return to whatever code state we
+          // came from (either top-level code or an outer template expression).
+          state = tmplExprStack.length > 0 ? 4 : 0
+          i++
+          continue
+        }
+        if (ch === '$' && i + 1 < n && expr[i + 1] === '{') {
+          // Entering `${ ... }`: save current outer brace depth, reset for new.
+          tmplExprStack.push(braceDepth)
+          braceDepth = 0
+          state = 4
+          i += 2
+          continue
+        }
+        i++
+        continue
+      }
+      case 5: { // line comment
+        if (ch === '\n' || ch === '\r') { state = 0; i++; continue }
+        i++
+        continue
+      }
+      case 6: { // block comment
+        if (ch === '*' && i + 1 < n && expr[i + 1] === '/') { state = 0; i += 2; continue }
+        i++
+        continue
+      }
+    }
+  }
+  return false
 }
 
 /**

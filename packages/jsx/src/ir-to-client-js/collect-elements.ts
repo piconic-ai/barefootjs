@@ -4,7 +4,7 @@
 
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMeta } from '../types'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBranchSummary, LoopChildConditional, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
-import { attrValueToString, exprReferencesIdent, quotePropName, PROPS_PARAM } from './utils'
+import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
@@ -230,6 +230,7 @@ export function collectInnerLoops(
           kind: 'nested',
           depth: emitDepth,
           array: n.array,
+          arrayFreeIdentifiers: n.arrayFreeIdentifiers,
           param: n.param,
           paramBindings: n.paramBindings,
           key: n.key,
@@ -546,6 +547,7 @@ export function collectElements(
         kind: 'top-level',
         slotId: l.slotId,
         array: l.array,
+        arrayFreeIdentifiers: l.arrayFreeIdentifiers,
         param: l.param,
         paramBindings: l.paramBindings,
         index: l.index,
@@ -680,7 +682,8 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
 
         // Expand local constant references to detect transitive prop dependencies.
         // e.g., `classes` → `` `${baseClasses} ${variantClasses[variant]} ${className}` ``
-        const expandedValueStr = expandConstantForReactivity(valueStr, ctx)
+        const expandedResult = expandConstantForReactivity(valueStr, ctx, attr.freeIdentifiers)
+        const expandedValueStr = expandedResult.expr
 
         // Solid-style wrap-by-default fallback (#940, DRY-consolidated
         // with #939/#941/#942/#943 via IRAttribute AST flags). Wrap
@@ -717,6 +720,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
             attrName: attr.name,
             expression: expandedValueStr,
             ...pickAttrMeta(attr),
+            ...(expandedResult.freeIds !== undefined && { freeIdentifiers: expandedResult.freeIds }),
           })
         }
       }
@@ -747,19 +751,20 @@ function collectBranchReactiveAttrs(node: IRNode, ctx: ClientJsContext): Conditi
         if (attr.name === '...' || !attr.dynamic || !attr.value) continue
         const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
-        const expanded = expandConstantForReactivity(valueStr, ctx)
+        const expanded = expandConstantForReactivity(valueStr, ctx, attr.freeIdentifiers)
         // Mirror the main-path gate (collectElements.element handler):
         // `/* @client */` always defers via createEffect regardless of
         // the wrap heuristic — without this carve-out, a clientOnly
         // attr inside a conditional branch would be skipped at SSR
         // (html-template strips it) AND never get a hydrate-time
         // binding emitted, leaving the attribute permanently unset.
-        if (!attr.clientOnly && !decideWrapForAttr(expanded, ctx, attr).wrap) continue
+        if (!attr.clientOnly && !decideWrapForAttr(expanded.expr, ctx, attr).wrap) continue
         attrs.push({
           slotId: el.slotId,
           attrName: attr.name,
-          expression: expanded,
+          expression: expanded.expr,
           ...pickAttrMeta(attr),
+          ...(expanded.freeIds !== undefined && { freeIdentifiers: expanded.freeIds }),
         })
       }
       descend()
@@ -865,6 +870,7 @@ function collectBranchLoops(
       loops.push({
         kind: 'branch',
         array: n.array,
+        arrayFreeIdentifiers: n.arrayFreeIdentifiers,
         param: n.param,
         paramBindings: n.paramBindings,
         index: n.index,
@@ -986,15 +992,17 @@ export function collectLoopChildConditionals(
 
   // Widen the source-level "references loop param" check so destructured
   // callbacks fire too — the pattern text `[, cfg]` never word-matches on
-  // bare `cfg` but individual binding names do (#951).
-  const refsAnyBinding = (expr: string): boolean => {
+  // bare `cfg` but individual binding names do (#951). Consumes a
+  // pre-computed `Set<string>` of free identifiers (#1267) rather than
+  // running word-boundary regex on the expression text.
+  const refsAnyBindingViaFreeIds = (freeIds: ReadonlySet<string>): boolean => {
     if (loopParamBindings && loopParamBindings.length > 0) {
       for (const b of loopParamBindings) {
-        if (exprReferencesIdent(expr, b.name)) return true
+        if (freeIds.has(b.name)) return true
       }
       return false
     }
-    return loopParam ? exprReferencesIdent(expr, loopParam) : false
+    return loopParam ? freeIds.has(loopParam) : false
   }
 
   walkIR(node, null, {
@@ -1007,14 +1015,15 @@ export function collectLoopChildConditionals(
       // inside branches will be handled by insert()'s own bindEvents.
       // Non-reactive, non-loop-param conditionals are ignored entirely.
       if (!n.slotId) return
-      const refsLoopParamInSource = refsAnyBinding(n.condition)
+      const sourceFreeIds = freeIdsFromRefs(n.origin?.freeRefs)
+      const refsLoopParamInSource = refsAnyBindingViaFreeIds(sourceFreeIds)
       // Pre-gate using AST `reactive` flag on the source condition before
       // paying for constant expansion — matches the legacy short-circuit.
       if (!n.reactive && !refsLoopParamInSource) return
-      const expanded = expandConstantForReactivity(n.condition, ctx)
+      const expanded = expandConstantForReactivity(n.condition, ctx, sourceFreeIds)
       // Loop-param conditionals are reactive via per-item signal accessors;
       // classifyReactivity sees both paths (signal/memo/prop + loop-param).
-      if (classifyReactivity(expanded, ctx, loopParam, loopParamBindings).kind === 'none') return
+      if (classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') return
 
       const loopParamsForCond = loopParam
         ? [{ param: loopParam, bindings: loopParamBindings }]
@@ -1027,11 +1036,12 @@ export function collectLoopChildConditionals(
       const whenFalseHtml = irToHtmlTemplate(n.whenFalse, undefined, 0, loopParamsForCond, '__slots')
       conditionals.push({
         slotId: n.slotId,
-        condition: expanded,
+        condition: expanded.expr,
         whenTrueHtml,
         whenFalseHtml,
         whenTrue: summarizeLoopChildBranch(n.whenTrue, ctx, siblingOffsets, loopParam, loopParamBindings),
         whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam, loopParamBindings),
+        ...(expanded.freeIds !== undefined && { conditionFreeIdentifiers: expanded.freeIds }),
       })
     },
   })

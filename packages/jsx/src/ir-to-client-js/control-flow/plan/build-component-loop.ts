@@ -16,7 +16,7 @@ import {
   buildChainedArrayExpr,
   varSlotId,
   wrapLoopParamAsAccessor,
-  exprReferencesIdent,
+  irChildrenFreeIds,
 } from '../../utils'
 import {
   loopKeyFn,
@@ -43,7 +43,8 @@ export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {
       ? comp.children.every(c => c.type === 'expression' || c.type === 'text' || isTextOnlyConditional(c))
       : false
     const rawChildrenExpr = isTextOnly ? irChildrenToJsExpr(comp.children!) : null
-    const childrenRefsLoop = rawChildrenExpr != null && exprReferencesIdent(rawChildrenExpr, elem.param)
+    const childrenFreeIds = isTextOnly && comp.children ? irChildrenFreeIds(comp.children) : undefined
+    const childrenRefsLoop = rawChildrenExpr != null && childrenFreeIds != null && childrenFreeIds.has(elem.param)
     return {
       componentName: comp.name,
       selector: buildCompSelector(comp),

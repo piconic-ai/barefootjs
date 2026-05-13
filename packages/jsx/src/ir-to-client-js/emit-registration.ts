@@ -6,7 +6,7 @@
 
 import type { ComponentIR, IRFragment, IRNode, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
-import { PROPS_PARAM, inferDefaultValue, exprReferencesIdent } from './utils'
+import { PROPS_PARAM, inferDefaultValue } from './utils'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability'
 import { isInlinableInTemplate } from '../relocate'
 import { buildEnvFromCtx } from './compute-inlinability'
@@ -17,6 +17,13 @@ import { nameForRegistryRef } from './component-scope'
  * Resolve chained references within a constants map.
  * If constant A references constant B, replace B's name in A's value with B's resolved value.
  * Uses pre-computed freeIdentifiers to skip unnecessary regex replacements.
+ *
+ * When `freeIdsMap` is supplied, it is updated in place: each substitution
+ * removes the substituted name from the resolving constant's free-id set
+ * and unions in the substituted constant's own free ids. The result is a
+ * transitively-closed free-id map that downstream callers
+ * (`toLegacyInlinability` unsafe-ref check, #1267) can read without
+ * re-scanning the resolved string.
  */
 export function resolveChainedRefs(constants: Map<string, string>, freeIdsMap?: Map<string, Set<string>>): void {
   let changed = true
@@ -51,6 +58,16 @@ export function resolveChainedRefs(constants: Map<string, string>, freeIdsMap?: 
         if (replaced !== newValue) {
           newValue = replaced
           changed = true
+          // Maintain a transitively-closed free-id set on the resolving
+          // constant: drop the substituted name, union in the substituted
+          // constant's own free ids.
+          if (freeIds) {
+            freeIds.delete(otherName)
+            const otherFreeIds = freeIdsMap?.get(otherName)
+            if (otherFreeIds) {
+              for (const id of otherFreeIds) freeIds.add(id)
+            }
+          }
         }
       }
       newValue = restore(newValue)
@@ -77,7 +94,7 @@ export function buildInlinableConstants(
   unsafeLocalNames: Set<string>
 } {
   const analysis = computeInlinability(ctx, graph, irRoot)
-  return toLegacyInlinability(analysis, resolveChainedRefs, ctx, exprReferencesIdent)
+  return toLegacyInlinability(analysis, resolveChainedRefs, ctx)
 }
 
 /**
