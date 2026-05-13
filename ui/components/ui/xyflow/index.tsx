@@ -101,15 +101,14 @@ export function SimpleEdge(props: SimpleEdgeProps) {
   const selected = createMemo(() => !!store?.edgeLookup().get(props.edgeId)?.selected)
   const animated = createMemo(() => !!store?.edgeLookup().get(props.edgeId)?.animated)
 
-  // Path memo. BOTH `positionEpoch` and `nodes()` reads are required —
-  // positionEpoch covers in-flight drag updates, nodes() covers the
-  // post-drag commit where setNodes mutates nodeLookup in place.
+  // Path memo. `positionEpoch` covers in-flight drag updates;
+  // `nodeLookup()` now emits a fresh Map reference on setNodes (#1270)
+  // so the previous `store.nodes()` wake-up is no longer needed.
   const pathD = createMemo(() => {
     if (!store) return ''
     const edge = store.edgeLookup().get(props.edgeId)
     if (!edge) return ''
     store.positionEpoch()
-    store.nodes()
     const nodeLookup = store.nodeLookup()
     const sourceNode = nodeLookup.get(edge.source)
     const targetNode = nodeLookup.get(edge.target)
@@ -195,11 +194,10 @@ export function NodeWrapper(props: NodeWrapperProps) {
 
   const node = createMemo(() => {
     if (!store) return null
-    // Reading `nodes()` AND `nodeLookup()` mirrors the imperative wrapper
-    // effect — `positionEpoch` covers in-flight drag updates, `nodes()`
-    // covers structural commits.
+    // `positionEpoch` covers in-flight drag updates; `nodeLookup()`
+    // now emits a fresh Map reference on setNodes (#1270) so the
+    // previous `store.nodes()` wake-up is no longer needed.
     store.positionEpoch()
-    store.nodes()
     return store.nodeLookup().get(props.nodeId) ?? null
   })
 
@@ -730,7 +728,8 @@ export function MiniMap(props: MiniMapComponentProps) {
 
   const nodeRects = createMemo<NodeRect[]>(() => {
     if (!store) return []
-    store.nodes()
+    // `nodeLookup()` now emits on setNodes (#1270); `positionEpoch`
+    // still covers drag updates that mutate internals in place.
     store.positionEpoch()
     const nodeLookup = store.nodeLookup()
     const colorProp = nodeColor()
@@ -984,21 +983,10 @@ export function FlowNodeTypeBridge(props: FlowNodeTypeBridgeProps) {
       dispatchNodeType(el, initFn, {
         id,
         data,
-        // The `selected` getter has to subscribe consumers (the user
-        // component's effects that read it) to the `nodes()` signal,
-        // not just `nodeLookup()`. `nodesInitialized` mutates the
-        // lookup map in place and re-fires `setNodeLookup(() => lookup)`
-        // with the same reference, which createSignal dedupes — so
-        // `nodeLookup()` reads alone never wake up downstream effects
-        // on selection changes. Reading `nodes()` first guarantees
-        // the consumer's effect re-runs on every setNodes; the
-        // `nodeLookup().get(id)?.selected` read after still returns
-        // the latest selected state because the lookup is mutated in
-        // place. (Mirrors `NodeWrapper`'s `node` memo.)
-        selected: () => {
-          store.nodes()
-          return !!store.nodeLookup().get(id)?.selected
-        },
+        // Fine-grained per-node subscription. `nodeSignal(id)` only
+        // wakes consumers when this specific node's entry changes;
+        // sibling-node updates stay silent (#1270).
+        selected: () => !!store.nodeSignal(id)?.selected,
         dragging: false,
         positionAbsoluteX: 0,
         positionAbsoluteY: 0,

@@ -63,7 +63,18 @@ export function createFlowStore<
   const [panZoom, setPanZoom] = createSignal<PanZoomInstance | null>(null)
   const [domNode, setDomNode] = createSignal<HTMLElement | null>(null)
 
-  // --- Lookups (mutable maps, tracked via signals for change notification) ---
+  // --- Lookups ---
+  //
+  // The outer signals hold the lookup `Map` for iteration-style
+  // consumers (edge-path effect, adapters that walk every node). They
+  // emit a fresh `Map` reference on each change so barefoot's
+  // identity-based dedupe does not suppress notification.
+  //
+  // The internal map of per-node signals (`nodeSignals`) is what
+  // delivers the fine-grained channel: per-node consumers subscribe
+  // through `nodeSignal(id)` and only wake up when *that* node's entry
+  // changes. This removes the recurring "read `nodes()` first to wake
+  // up the lookup" workaround at its source (#1270).
   const [nodeLookup, setNodeLookup] = createSignal<NodeLookup<InternalNodeBase<NodeType>>>(
     new Map()
   )
@@ -72,6 +83,35 @@ export function createFlowStore<
   )
   const [edgeLookup, setEdgeLookup] = createSignal<EdgeLookup<EdgeType>>(new Map())
   const [connectionLookup, setConnectionLookup] = createSignal<ConnectionLookup>(new Map())
+
+  type NodeSignalSlot = {
+    get: () => InternalNodeBase<NodeType> | undefined
+    set: (
+      value:
+        | InternalNodeBase<NodeType>
+        | undefined
+        | ((prev: InternalNodeBase<NodeType> | undefined) => InternalNodeBase<NodeType> | undefined),
+    ) => void
+  }
+  const nodeSignals = new Map<string, NodeSignalSlot>()
+
+  // Slots are retained across remove → re-add so a consumer that
+  // called `nodeSignal(id)` before the node was added (or after it was
+  // removed) keeps subscribing to the same slot and is notified when
+  // the node appears.
+  function getOrCreateNodeSlot(id: string): NodeSignalSlot {
+    let slot = nodeSignals.get(id)
+    if (!slot) {
+      const [get, set] = createSignal<InternalNodeBase<NodeType> | undefined>(undefined)
+      slot = { get, set: set as NodeSignalSlot['set'] }
+      nodeSignals.set(id, slot)
+    }
+    return slot
+  }
+
+  function nodeSignal(id: string): InternalNodeBase<NodeType> | undefined {
+    return getOrCreateNodeSlot(id).get()
+  }
 
   // Lightweight counter for notifying position-dependent subscribers (edges,
   // per-node position effects) without triggering the full adoptUserNodes
@@ -87,8 +127,8 @@ export function createFlowStore<
    */
   const nodesInitialized = createMemo(() => {
     const currentNodes = nodes()
-    const lookup = nodeLookup()
-    const parents = parentLookup()
+    const lookup = untrack(nodeLookup)
+    const parents = untrack(parentLookup)
 
     // Preserve measured dimensions from existing internal nodes.
     // adoptUserNodes reads userNode.measured but setNodes callers
@@ -115,9 +155,34 @@ export function createFlowStore<
       nodeExtent,
     })
 
-    // Trigger signal update so dependents know lookups changed
-    setNodeLookup(() => lookup)
-    setParentLookup(() => parents)
+    // Reconcile the per-node signal cache with the freshly-rebuilt
+    // lookup. `adoptUserNodes(..., checkEquality: false)` constructs
+    // a new InternalNode wrapper for every entry on every call, so
+    // entry identity is **not** a reliable change signal. The
+    // underlying `internals.userNode` reference, however, only flips
+    // when `setNodes` actually produced a new node identity (callers
+    // use `prev.map(n => n.id === target ? { ...n, ... } : n)`), so
+    // we gate on that — sibling ids whose user node is unchanged stay
+    // silent. Removed ids see `undefined`.
+    for (const [id, entry] of lookup) {
+      const slot = getOrCreateNodeSlot(id)
+      const current = untrack(slot.get)
+      if (current?.internals.userNode !== entry.internals.userNode) {
+        slot.set(entry)
+      }
+    }
+    for (const [id, slot] of nodeSignals) {
+      if (!lookup.has(id) && untrack(slot.get) !== undefined) {
+        slot.set(undefined)
+      }
+    }
+
+    // Emit fresh outer Map references so coarse consumers (iterators
+    // that walk every node) re-run. `adoptUserNodes` mutates the
+    // existing `Map` in place, so re-emitting the same reference
+    // would be a no-op under barefoot's Object.is dedupe (#1270).
+    setNodeLookup(() => new Map(lookup))
+    setParentLookup(() => new Map(parents))
 
     return result.nodesInitialized
   })
@@ -133,7 +198,9 @@ export function createFlowStore<
 
     const connLookup = untrack(connectionLookup)
     updateConnectionLookup(connLookup, eLookup, currentEdges)
-    setConnectionLookup(() => connLookup)
+    // `updateConnectionLookup` mutates `connLookup` in place; emit a
+    // fresh `Map` reference so subscribers actually see the change.
+    setConnectionLookup(() => new Map(connLookup))
   })
 
   // --- Selection state ---
@@ -211,6 +278,7 @@ export function createFlowStore<
     isDragging = true,
   ) {
     const lookup = untrack(nodeLookup)
+    let mutated = false
 
     for (const [id, item] of dragItems) {
       const internalNode = lookup.get(id)
@@ -222,9 +290,27 @@ export function createFlowStore<
 
       internalNode.internals.userNode.position = item.position
       internalNode.internals.userNode.dragging = isDragging
+
+      // Per-node fine-grained emit: shallow-clone so the entry identity
+      // flips (barefoot's Object.is dedupe would otherwise swallow the
+      // notification — the mutations above don't change the entry
+      // reference). The inner `internals` object stays shared, so
+      // consumers reading `.internals.positionAbsolute` still see the
+      // updated position.
+      const fresh = { ...internalNode } as InternalNodeBase<NodeType>
+      lookup.set(id, fresh)
+      getOrCreateNodeSlot(id).set(fresh)
+      mutated = true
     }
 
-    // Notify position-dependent subscribers via lightweight epoch bump
+    if (mutated) {
+      // Coarse emit so iteration-style consumers re-run too. Per-node
+      // bridges that switched to `nodeSignal(id)` only wake up for
+      // their own id and skip this channel.
+      setNodeLookup(() => new Map(lookup))
+    }
+    // Keep positionEpoch as the dedicated drag-rate channel for
+    // existing subscribers (edge-path effect).
     triggerPositionUpdate()
   }
 
@@ -349,6 +435,7 @@ export function createFlowStore<
     parentLookup,
     edgeLookup,
     connectionLookup,
+    nodeSignal,
 
     // Internal refs
     panZoom,

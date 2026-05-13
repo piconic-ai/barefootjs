@@ -357,7 +357,9 @@ export function attachFlowSubsystems<
   createEffect(() => {
     store.positionEpoch()
     const currentEdges = store.edges()
-    store.nodes()
+    // `nodeLookup()` now emits a fresh `Map` reference on every
+    // setNodes-driven change (see #1270), so the previous
+    // `store.nodes()` wake-up call is no longer needed here.
     const lookup = store.nodeLookup()
     const edgesSvg = el.querySelector('.bf-flow__edges')
     if (!edgesSvg) return

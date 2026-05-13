@@ -141,6 +141,19 @@ export type FlowStore<
   edgeLookup: Signal<EdgeLookup<EdgeType>>[0]
   connectionLookup: Signal<ConnectionLookup>[0]
 
+  /**
+   * Fine-grained per-node subscription. Returns the current internal
+   * entry for the given id, and tracks it for reactivity — the
+   * surrounding effect / memo will re-run only when **this** node's
+   * entry changes (data, selected, position via setNodes, or in-place
+   * drag updates), not on changes to sibling nodes.
+   *
+   * Use this in per-node consumers (data / selected / position
+   * observers). For iteration-style consumers that walk all nodes,
+   * keep using `nodeLookup()`.
+   */
+  nodeSignal: (id: string) => InternalNodeBase<NodeType> | undefined
+
   // Lightweight position change counter — subscribers re-run without
   // triggering the full adoptUserNodes pipeline.
   positionEpoch: Signal<number>[0]
