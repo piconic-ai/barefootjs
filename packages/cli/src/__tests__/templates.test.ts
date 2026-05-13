@@ -29,18 +29,32 @@ describe('adapter registry', () => {
     expect(ADAPTERS['hono-node'].deploy).toBeUndefined()
   })
 
-  test('hono-node ships an editable dev-reload component', () => {
-    // The dev-reload subscriber lives in the generated project (not
-    // imported from @barefootjs/hono) so users can re-route the SSE
-    // endpoint with a single in-project edit.
+  test('hono-node wires dev-reload through the @barefootjs/hono library', () => {
+    // factory.ts owns the SSE endpoint as a single constant and mounts
+    // the middleware; renderer.tsx places <BfDevReload /> which reads
+    // the endpoint off the request context. No project-side snippet
+    // file: the library's boot-id based middleware handles
+    // reconnection cleanly across `tsx watch` server restarts (the
+    // old fs-watch reloader fired its reload event before the new
+    // server was ready, which left the browser one edit behind).
     const honoNode = ADAPTERS['hono-node']
-    expect(honoNode.files['dev-reload.tsx']).toBeTruthy()
-    expect(honoNode.files['dev-reload.tsx']).toContain('EventSource')
-    expect(honoNode.files['dev-reload.tsx']).toContain('/_bf/reload')
-    expect(honoNode.files['dev-reload.tsx']).toContain('export function DevReload')
-    // renderer.tsx wires it up, not BfDevReload from the library.
-    expect(honoNode.files['renderer.tsx']).toContain("from './dev-reload'")
-    expect(honoNode.files['renderer.tsx']).not.toContain('BfDevReload')
+    expect(honoNode.files['dev-reload.tsx']).toBeUndefined()
+    expect(honoNode.files['factory.ts']).toContain('barefootDevReload')
+    expect(honoNode.files['factory.ts']).toContain("DEV_RELOAD_ENDPOINT = '/_bf/reload'")
+    expect(honoNode.files['renderer.tsx']).toContain('BfDevReload')
+    expect(honoNode.files['renderer.tsx']).not.toContain("from './dev-reload'")
+  })
+
+  test('hono-node centralises NODE_ENV checks in env.ts', () => {
+    // Generated files import `isDev` / `isProd` from env.ts instead of
+    // sprinkling `process.env.NODE_ENV` calls across the project.
+    const honoNode = ADAPTERS['hono-node']
+    expect(honoNode.files['env.ts']).toContain('export const isProd')
+    expect(honoNode.files['env.ts']).toContain('export const isDev')
+    expect(honoNode.files['factory.ts']).toContain("from './env'")
+    expect(honoNode.files['renderer.tsx']).toContain("from './env'")
+    // @types/node provides the `process` type the env file relies on.
+    expect(honoNode.devDependencies['@types/node']).toBeTruthy()
   })
 
   test('every adapter has a label, port, and barefoot.config.ts file', () => {

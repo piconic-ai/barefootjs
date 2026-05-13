@@ -1,9 +1,12 @@
 // Hono adapter starter (Node, JSX SSR + hydration).
 //
-// The Node target runs the same Hono app via `@hono/node-server`'s
-// `serve()`. Auto-reload uses the SSE-based `createDevReloader` from
-// `@barefootjs/hono/dev` (filesystem-watch on the build sentinel),
-// which is the historical Node-friendly setup.
+// The Node target runs the Hono app via `@hono/node-server`'s
+// `serve()`. Auto-reload is wired through `barefootDevReload`
+// middleware from `@barefootjs/hono/app`, which mounts the SSE
+// endpoint and publishes its URL on the request context so
+// `<BfDevReload />` in renderer.tsx renders the matching browser-
+// side subscriber. The two pieces share a single endpoint string
+// owned by factory.ts, so re-routing is a 1-line edit.
 
 import type { AdapterTemplate } from '../templates'
 import {
@@ -40,12 +43,17 @@ export default app
 
 const HONO_NODE_FACTORY_TS = `import { Hono } from 'hono'
 import { serveStatic } from '@hono/node-server/serve-static'
-import { createDevReloader } from '@barefootjs/hono/dev'
+import { barefootDevReload } from '@barefootjs/hono/app'
 import { createRenderer } from './renderer'
+import { isProd } from './env'
+
+// Single source of truth for the SSE endpoint. \`barefootDevReload\`
+// mounts the route here and publishes the URL on the request context;
+// \`<BfDevReload />\` in renderer.tsx reads it back. Change the path
+// in one place and both pieces stay in sync.
+const DEV_RELOAD_ENDPOINT = '/_bf/reload'
 
 export function createApp(): Hono {
-  const isProd = process.env.NODE_ENV === 'production'
-
   // Compiled component bundles: served from \`componentsBase\` URL,
   // sourced from \`componentsDistDir\` on disk.
   const componentsBase = '/static/components'
@@ -78,24 +86,23 @@ export function createApp(): Hono {
     }),
   )
 
-  // SSE endpoint that <BfDevReload /> in renderer.tsx subscribes to.
-  // \`createDevReloader\` watches \`dist/.dev/build-id\` (written by
-  // \`barefoot build --watch\` after each successful build) and streams
-  // \`event: reload\` so the browser refreshes automatically.
-  if (!isProd) {
-    app.get('/_bf/reload', createDevReloader({ distDir: './dist' }))
-  }
+  // Dev-reload SSE + browser snippet. The middleware uses a
+  // per-process boot id and the standard SSE \`Last-Event-ID\`
+  // reconnection protocol, so the browser only fires a refresh
+  // once the new server process is actually accepting connections
+  // — no \"reload into the dying old server\" race.
+  app.use('*', barefootDevReload({ endpoint: DEV_RELOAD_ENDPOINT, enabled: !isProd }))
 
   return app
 }
 `
 
 const HONO_NODE_RENDERER_TSX = `import { jsxRenderer } from 'hono/jsx-renderer'
-import { BfImportMap, BfScripts } from '@barefootjs/hono/app'
-import { DevReload } from './dev-reload'
+import { BfImportMap, BfScripts, BfDevReload } from '@barefootjs/hono/app'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import staticManifest from './dist/components/manifest.json'
+import { isDev } from './env'
 
 declare module 'hono' {
   interface ContextRenderer {
@@ -107,7 +114,6 @@ export interface CreateRendererOptions {
   componentsBase: string
 }
 
-const isDev = process.env.NODE_ENV !== 'production'
 const manifestPath = resolve('./dist/components/manifest.json')
 
 // In production we trust the static import — manifest.json was final
@@ -140,7 +146,7 @@ export function createRenderer({ componentsBase }: CreateRendererOptions) {
         <body>
           {children}
           <BfScripts base={componentsBase} manifest={manifest} />
-          <DevReload />
+          <BfDevReload />
         </body>
       </html>
     )
@@ -148,27 +154,13 @@ export function createRenderer({ componentsBase }: CreateRendererOptions) {
 }
 `
 
-// Dev-only browser snippet that subscribes to the SSE endpoint
-// published by Hono's createDevReloader (see factory.ts) and reloads
-// the page when \`barefoot build --watch\` finishes a build. Lives in
-// the project — not in a library — so the SSE endpoint URL is a
-// 1-line edit away if you re-route it in factory.ts.
-const HONO_NODE_DEV_RELOAD_TSX = `// Browser-side dev-reload subscriber.
-//
-// Mirrors the SSE endpoint registered by \`createDevReloader\` in
-// factory.ts and refreshes the page on each successful rebuild,
-// preserving the scroll position across the reload. Renders nothing
-// in production.
-//
-// If you re-route the SSE endpoint in factory.ts, update the URL in
-// the IIFE below to match.
-
-const snippet = "(()=>{if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem('__bf_devreload_scroll');if(s){sessionStorage.removeItem('__bf_devreload_scroll');var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource('/_bf/reload');es.addEventListener('reload',function(){try{sessionStorage.setItem('__bf_devreload_scroll',String(window.scrollY))}catch(e){}es.close();location.reload()});es.addEventListener('error',function(){})})();"
-
-export function DevReload() {
-  if (process.env.NODE_ENV === 'production') return null
-  return <script dangerouslySetInnerHTML={{ __html: snippet }} />
-}
+// Centralised dev/prod flag. Read once at module load — changing
+// NODE_ENV mid-process is unusual and would require an explicit
+// restart anyway. Keeping these in one file means future "dev gate"
+// logic (debug headers, verbose error pages, etc.) doesn't grow a
+// second `process.env.NODE_ENV` reference somewhere else.
+const HONO_NODE_ENV_TS = `export const isProd = process.env.NODE_ENV === 'production'
+export const isDev = !isProd
 `
 
 const HONO_NODE_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/hono/build'
@@ -198,6 +190,7 @@ const HONO_NODE_TSCONFIG = `{
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "jsxImportSource": "@barefootjs/hono/jsx",
+    "types": ["node"],
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -224,7 +217,7 @@ export const HONO_NODE_ADAPTER: AdapterTemplate = {
     'server.tsx': HONO_NODE_SERVER_TSX,
     'factory.ts': HONO_NODE_FACTORY_TS,
     'renderer.tsx': HONO_NODE_RENDERER_TSX,
-    'dev-reload.tsx': HONO_NODE_DEV_RELOAD_TSX,
+    'env.ts': HONO_NODE_ENV_TS,
     'barefoot.config.ts': HONO_NODE_BAREFOOT_CONFIG_TS,
     'tsconfig.json': HONO_NODE_TSCONFIG,
     'uno.config.ts': unoConfigTs([
@@ -260,6 +253,7 @@ export const HONO_NODE_ADAPTER: AdapterTemplate = {
   },
   devDependencies: {
     ...UNOCSS_DEV_DEPENDENCIES,
+    '@types/node': '^22.0.0',
     concurrently: '^9.0.0',
     tsx: '^4.19.0',
     typescript: '^5.6.0',
