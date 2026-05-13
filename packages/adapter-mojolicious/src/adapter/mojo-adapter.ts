@@ -730,6 +730,19 @@ export class MojoAdapter extends BaseAdapter {
       } else if (part.type === 'ternary') {
         const cond = this.convertExpressionToPerl(part.condition)
         parts.push(`(${cond} ? '${part.whenTrue}' : '${part.whenFalse}')`)
+      } else if (part.type === 'lookup') {
+        // `${MAP[KEY]}` against a Record<T, string> literal — emit a
+        // Perl anonymous hash with an immediate `->{ $key } // ''`
+        // lookup. The `//''` guard turns a miss into an empty string,
+        // matching the go-template adapter's "empty when no case
+        // matches" semantics. Pass `key` through `convertExpressionToPerl`
+        // so its top-level-identifier tail (`variant` → `$variant`) and
+        // existing `props.x` rule apply uniformly.
+        const keyExpr = this.convertExpressionToPerl(part.key)
+        const entries = Object.entries(part.cases)
+          .map(([k, v]) => `'${k}' => '${v}'`)
+          .join(', ')
+        parts.push(`({ ${entries} }->{${keyExpr}} // '')`)
       }
     }
     // Join with Perl string concatenation

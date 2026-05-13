@@ -904,6 +904,17 @@ export class HonoAdapter extends JsxAdapter {
         output += part.value
       } else if (part.type === 'ternary') {
         output += `\${${part.condition} ? '${part.whenTrue}' : '${part.whenFalse}'}`
+      } else if (part.type === 'lookup') {
+        // Hono runs JS at SSR time, so a `${MAP[KEY]}` lookup can be
+        // re-materialised as a runtime indexed access against the
+        // resolved cases — byte-identical to the client emit path in
+        // `ir-to-client-js/utils.ts`. Use `part.key` (raw JS source)
+        // because this output runs inside the destructured-prop scope
+        // of the component, mirroring the `'ternary'` branch above.
+        const obj = '{' + Object.entries(part.cases).map(
+          ([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`
+        ).join(', ') + '}'
+        output += `\${(${obj})[${part.key}]}`
       }
     }
     output += '`'

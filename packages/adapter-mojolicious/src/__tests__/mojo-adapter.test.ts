@@ -46,14 +46,6 @@ runAdapterConformanceTests({
     // to materialise the loop at request time.
     'static-array-from-props',
     'static-array-from-props-with-component',
-    // `Record<K, V>` + `obj[key]` index lookup (Button's variantClasses
-    // pattern) — tracked in #1272 (sub-issue of #1244). Mojo's
-    // regex-based `convertExpressionToPerl` doesn't materialise the
-    // object literal as a Perl hash, and the SSR template ends up
-    // with verbatim JS `({...})[key]` syntax that Perl rejects.
-    // Pin the failing fixture as a skip so a future fix removes the
-    // entry rather than landing the regression silently.
-    'record-index-lookup',
   ],
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining

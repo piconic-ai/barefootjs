@@ -22,13 +22,7 @@ const FIXTURES_DIR = resolve(import.meta.dir, '../fixtures')
 // fixture exists specifically to pin that gap). Auto-update would
 // overwrite the intentional value with the bug's output, so we skip
 // regeneration here.
-const SKIP_AUTO_UPDATE = new Set<string>([
-  // HonoAdapter currently emits an empty substitution for the
-  // `classes[variant]` lookup — pinning Hono's broken output as the
-  // expected value would mask the bug from the go-template adapter
-  // (which renders this case correctly).
-  'record-index-lookup',
-])
+const SKIP_AUTO_UPDATE = new Set<string>([])
 
 async function main() {
   let updated = 0
