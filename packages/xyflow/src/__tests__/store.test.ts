@@ -167,6 +167,108 @@ describe('createFlowStore', () => {
     })
   })
 
+  test('nodeLookup emits a fresh Map on setNodes-driven update (#1270)', () => {
+    // Regression for #1270: `adoptUserNodes` mutates the underlying
+    // Map in place, and the old code re-emitted the same reference.
+    // barefoot's Object.is dedupe swallowed the notification so per-
+    // node consumers stayed stuck on the initial value.
+    createRoot(() => {
+      const store = createFlowStore({
+        nodes: [
+          { id: '1', position: { x: 0, y: 0 }, data: { count: 0 } },
+          { id: '2', position: { x: 10, y: 0 }, data: {} },
+        ],
+      })
+      // Touch `nodesInitialized` so the memo evaluates and the lookup
+      // is populated before the assertions below.
+      store.nodesInitialized()
+
+      let fires = 0
+      let lastSeen: unknown
+      createEffect(() => {
+        const lookup = store.nodeLookup()
+        const entry = lookup.get('1')
+        lastSeen = (entry?.internals.userNode.data as { count?: number } | undefined)?.count
+        fires++
+      })
+      expect(fires).toBe(1)
+      expect(lastSeen).toBe(0)
+
+      store.setNodes((nds) =>
+        nds.map((n) => (n.id === '1' ? { ...n, data: { count: 1 } } : n)) as typeof nds,
+      )
+
+      expect(fires).toBe(2)
+      expect(lastSeen).toBe(1)
+    })
+  })
+
+  test('nodeSignal(id) fires only for the changed id (#1270 acceptance)', () => {
+    // Acceptance criterion from #1270: a single-node setNodes update
+    // must NOT wake up every per-node consumer. `nodeSignal(id)`
+    // delivers the fine-grained subscription that satisfies this.
+    createRoot(() => {
+      const store = createFlowStore({
+        nodes: [
+          { id: '1', position: { x: 0, y: 0 }, data: { count: 0 } },
+          { id: '2', position: { x: 10, y: 0 }, data: { count: 0 } },
+        ],
+      })
+      store.nodesInitialized()
+
+      let firesForOne = 0
+      let firesForTwo = 0
+      createEffect(() => {
+        store.nodeSignal('1')
+        firesForOne++
+      })
+      createEffect(() => {
+        store.nodeSignal('2')
+        firesForTwo++
+      })
+      expect([firesForOne, firesForTwo]).toEqual([1, 1])
+
+      // Mutate only node '1' — node '2's subscriber must NOT wake up.
+      store.setNodes((nds) =>
+        nds.map((n) => (n.id === '1' ? { ...n, data: { count: 1 } } : n)) as typeof nds,
+      )
+      expect([firesForOne, firesForTwo]).toEqual([2, 1])
+
+      // Mutate only node '2' via `selected` — node '1's subscriber stays asleep.
+      store.setNodes((nds) =>
+        nds.map((n) => (n.id === '2' ? { ...n, selected: true } : n)) as typeof nds,
+      )
+      expect([firesForOne, firesForTwo]).toEqual([2, 2])
+    })
+  })
+
+  test('nodeSignal(id) survives remove and re-add of the same id (#1270)', () => {
+    // Slots are retained across structural changes so a consumer that
+    // subscribed before the node was removed (or before it existed)
+    // resumes receiving updates when the node reappears.
+    createRoot(() => {
+      const store = createFlowStore({
+        nodes: [
+          { id: '1', position: { x: 0, y: 0 }, data: { count: 7 } },
+        ],
+      })
+      store.nodesInitialized()
+
+      const seen: Array<number | undefined> = []
+      createEffect(() => {
+        const entry = store.nodeSignal('1')
+        seen.push((entry?.internals.userNode.data as { count?: number } | undefined)?.count)
+      })
+      expect(seen).toEqual([7])
+
+      store.setNodes([])
+      expect(seen).toEqual([7, undefined])
+
+      store.setNodes([{ id: '1', position: { x: 0, y: 0 }, data: { count: 99 } }])
+      expect(seen).toEqual([7, undefined, 99])
+    })
+  })
+
   test('edgeLookup is derived from edges', () => {
     createRoot(() => {
       const edges = [
