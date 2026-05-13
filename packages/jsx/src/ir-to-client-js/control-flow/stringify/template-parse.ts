@@ -264,6 +264,65 @@ export function emitTemplateCloneLines(template: string, indent: string): string
 }
 
 /**
+ * Emit the renderItem-body element-setup block for one dynamic loop item
+ * (#1253). Shared by `stringifyPlainLoop`, `stringifyCompositeLoop`, and
+ * `stringifyBranchLoop`'s plain arm — every byte of the multi-root path is
+ * identical across them and the single-root path varies only on layout.
+ *
+ * Output:
+ *
+ *   bodyIsMultiRoot = true
+ *     <indent>let __el, __extras
+ *     <indent>if (__existing) {
+ *     <indent+2>__el = __existing
+ *     <indent>} else {
+ *     <emitMultiRootTemplateCloneLines (indent+2)>
+ *     <indent+2>__el.__bfExtras = __extras
+ *     <indent>}
+ *
+ *   bodyIsMultiRoot = false, singleRootLayout = 'inline'  (plain / branch-plain)
+ *     <indent>const __el = __existing ?? (() => { <emitTemplateCloneInline> })()
+ *
+ *   bodyIsMultiRoot = false, singleRootLayout = 'multiline'  (composite)
+ *     <indent>const __el = __existing ?? (() => {
+ *     <emitTemplateCloneLines (indent+2)>
+ *     <indent>})()
+ */
+export function emitLoopItemElementSetup(
+  lines: string[],
+  opts: {
+    template: string
+    bodyIsMultiRoot: boolean
+    indent: string
+    /** Single-root layout: 'inline' (plain / branch-plain) or 'multiline' (composite). */
+    singleRootLayout: 'inline' | 'multiline'
+  },
+): void {
+  const { template, bodyIsMultiRoot, indent, singleRootLayout } = opts
+  const innerIndent = indent + '  '
+  if (bodyIsMultiRoot) {
+    lines.push(`${indent}let __el, __extras`)
+    lines.push(`${indent}if (__existing) {`)
+    lines.push(`${innerIndent}__el = __existing`)
+    lines.push(`${indent}} else {`)
+    for (const ln of emitMultiRootTemplateCloneLines(template, innerIndent, '__el', '__extras')) {
+      lines.push(ln)
+    }
+    lines.push(`${innerIndent}__el.__bfExtras = __extras`)
+    lines.push(`${indent}}`)
+    return
+  }
+  if (singleRootLayout === 'inline') {
+    const cloneExpr = emitTemplateCloneInline(template)
+    lines.push(`${indent}const __el = __existing ?? (() => { ${cloneExpr} })()`)
+    return
+  }
+  lines.push(`${indent}const __el = __existing ?? (() => {`)
+  for (const ln of emitTemplateCloneLines(template, innerIndent)) lines.push(ln)
+  lines.push(`${indent}})()`)
+}
+
+/**
  * Multi-root template clone for loop bodies that emit a JSX Fragment with
  * two or more sibling elements (#1212). Initialises both `varEl` (the
  * primary, first root) and `varExtras` (an array of cloned sibling roots).

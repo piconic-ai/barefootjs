@@ -13,7 +13,7 @@
 import { stringifyCompositeLoop } from './composite-loop'
 import { stringifyEventDelegation } from './event-delegation'
 import { stringifyReactiveEffects } from './reactive-effects'
-import { emitTemplateCloneInline, emitMultiRootTemplateCloneLines } from './template-parse'
+import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse'
 import type {
   BranchLoopPlan,
   BranchPlainLoopPlan,
@@ -82,18 +82,12 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     if (mapPreambleWrapped) {
       lines.push(`          ${mapPreambleWrapped}`)
     }
-    if (bodyIsMultiRoot) {
-      lines.push(`          let __el, __extras`)
-      lines.push(`          if (__existing) {`)
-      lines.push(`            __el = __existing`)
-      lines.push(`          } else {`)
-      for (const ln of emitMultiRootTemplateCloneLines(template, '            ', '__el', '__extras')) lines.push(ln)
-      lines.push(`            __el.__bfExtras = __extras`)
-      lines.push(`          }`)
-    } else {
-      const cloneExpr = emitTemplateCloneInline(template)
-      lines.push(`          const __el = __existing ?? (() => { ${cloneExpr} })()`)
-    }
+    emitLoopItemElementSetup(lines, {
+      template,
+      bodyIsMultiRoot,
+      indent: '          ',
+      singleRootLayout: 'inline',
+    })
     if (reactiveEffects !== null) {
       stringifyReactiveEffects(lines, reactiveEffects, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
     }

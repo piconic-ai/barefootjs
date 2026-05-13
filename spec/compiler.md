@@ -282,16 +282,23 @@ Adapters should render the filter as a conditional wrapper inside the loop (e.g.
 
 ### Loop emission shapes (client JS)
 
-The client JS emitter classifies each `IRLoop` into one of four shapes for code generation. The category is captured by the corresponding `*LoopPlan` type in `packages/jsx/src/ir-to-client-js/control-flow/plan/types.ts`:
+The client JS emitter classifies each `IRLoop` into one of four shapes for code generation. All four are variants of a single `LoopPlan` discriminated union (`packages/jsx/src/ir-to-client-js/control-flow/plan/loop.ts`), keyed by `kind`. The unified `buildLoopPlan(ir, opts)` entry in `control-flow/plan/build-loop.ts` is the only public builder — per-variant builders are `@internal` (#1253).
 
-| Shape | Body | Plan type | Client emission |
+| Shape | Body | `kind` | Client emission |
 |---|---|---|---|
-| **Static** | array is a constant literal (no signal) | `StaticLoopPlan` | `arr.forEach(...)` for reactive attrs / texts only |
-| **Plain** | dynamic array, body is a plain element with no child components and no inner loops | `PlainLoopPlan` | `mapArray(() => arr, container, keyFn, renderItem)` returning a clone of the template |
-| **Component** | dynamic array, body is a single child component (with optional nested child components) | `ComponentLoopPlan` | `mapArray(...)` whose `renderItem` calls `initChild` (SSR) or `createComponent` (CSR) |
-| **Composite** | dynamic array, body is a plain element that **contains** at least one child component or inner loop | `CompositeLoopPlan` | `mapArray(...)` whose `renderItem` rebuilds the body element and dispatches both component init and inner-loop setup |
+| **Static** | array is a constant literal (no signal) | `'static'` | `arr.forEach(...)` for reactive attrs / texts only |
+| **Plain** | dynamic array, body is a plain element with no child components and no inner loops | `'plain'` | `mapArray(() => arr, container, keyFn, renderItem)` returning a clone of the template |
+| **Component** | dynamic array, body is a single child component (with optional nested child components) | `'component'` | `mapArray(...)` whose `renderItem` calls `initChild` (SSR) or `createComponent` (CSR) |
+| **Composite** | dynamic array, body is a plain element that **contains** at least one child component or inner loop | `'composite'` | `mapArray(...)` whose `renderItem` rebuilds the body element and dispatches both component init and inner-loop setup |
 
 "Composite" specifically denotes the *plain-element-with-children* case. A loop whose body is a bare component is **Component**, not Composite — keeping the two separate avoids the historical "composite means two different things" confusion.
+
+Classification predicates are evaluated in this order (mirrors the decision tree in `buildLoopPlan`, validated by `__tests__/loop-plan-classification.test.ts`):
+
+1. `isStaticArray` → `'static'` (wins over every dynamic predicate)
+2. `useElementReconciliation` AND (`nestedComponents` OR `innerLoops`) → `'composite'`
+3. `childComponent` → `'component'`
+4. fallthrough → `'plain'`
 
 ### Loop param evaluation contexts
 

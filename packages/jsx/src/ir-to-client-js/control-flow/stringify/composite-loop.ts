@@ -33,7 +33,7 @@
 import { emitComponentAndEventSetup } from '../shared'
 import { stringifyInnerLoops } from './inner-loop'
 import { stringifyReactiveEffects } from './reactive-effects'
-import { emitTemplateCloneLines, emitMultiRootTemplateCloneLines } from './template-parse'
+import { emitLoopItemElementSetup } from './template-parse'
 import type { CompositeLoopPlan } from '../plan/types'
 
 export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan): void {
@@ -102,30 +102,20 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   // emitted after the if/else block.
   if (mapPreambleWrapped) lines.push(`${bodyIndent}${mapPreambleWrapped}`)
 
-  const innerIndent = bodyIndent + '  '
   const compsArr = [...outerComps]
   const eventsArr = [...outerEvents]
 
   // __el is either the existing SSR-rendered element or a fresh clone of
   // the template — both shapes accept the same mode-independent setup
   // (upsertChild resolves SSR vs CSR per-component at runtime, inner-loop
-  // mapArrays are mode-independent by definition).
-  if (bodyIsMultiRoot) {
-    // Multi-root Fragment item: clone the primary root + collect each
-    // sibling root into `__extras`, then stash on `__el.__bfExtras` so
-    // mapArray pairs all of them with the item's key (#1212).
-    lines.push(`${bodyIndent}let __el, __extras`)
-    lines.push(`${bodyIndent}if (__existing) {`)
-    lines.push(`${innerIndent}__el = __existing`)
-    lines.push(`${bodyIndent}} else {`)
-    for (const ln of emitMultiRootTemplateCloneLines(template, innerIndent, '__el', '__extras')) lines.push(ln)
-    lines.push(`${innerIndent}__el.__bfExtras = __extras`)
-    lines.push(`${bodyIndent}}`)
-  } else {
-    lines.push(`${bodyIndent}const __el = __existing ?? (() => {`)
-    for (const ln of emitTemplateCloneLines(template, innerIndent)) lines.push(ln)
-    lines.push(`${bodyIndent}})()`)
-  }
+  // mapArrays are mode-independent by definition). Multi-root Fragment
+  // items also stash their sibling roots on `__el.__bfExtras` (#1212).
+  emitLoopItemElementSetup(lines, {
+    template,
+    bodyIsMultiRoot,
+    indent: bodyIndent,
+    singleRootLayout: 'multiline',
+  })
   emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings, bodyIsMultiRoot)
   if (innerLoops.length > 0) {
     stringifyInnerLoops(lines, innerLoops, bodyIndent)

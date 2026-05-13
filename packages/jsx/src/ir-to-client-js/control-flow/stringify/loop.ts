@@ -27,8 +27,41 @@
 import { varSlotId } from '../../utils'
 import { emitAttrUpdate } from '../../emit-reactive'
 import { stringifyReactiveEffects } from './reactive-effects'
-import { emitTemplateCloneInline, emitMultiRootTemplateCloneLines } from './template-parse'
-import type { PlainLoopPlan, StaticLoopPlan } from '../plan/types'
+import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse'
+import { stringifyComponentLoop } from './component-loop'
+import { stringifyCompositeLoop } from './composite-loop'
+import type { LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types'
+
+/**
+ * Single dispatch over `LoopPlan` (#1253). Narrows on `plan.kind` and
+ * delegates to the per-variant stringifier. Callers should consume this
+ * rather than the per-variant functions so future shared-helper extraction
+ * happens in one place.
+ *
+ * Trailing-newline policy: every variant ends its emission with a single
+ * blank line so downstream code blocks (event delegation, child-init) are
+ * separated from the loop body. `stringifyStaticLoop` already pushes its
+ * trailing `''` internally; the dynamic variants push one here.
+ */
+export function stringifyLoop(lines: string[], plan: LoopPlan): void {
+  switch (plan.kind) {
+    case 'static':
+      stringifyStaticLoop(lines, plan)
+      return
+    case 'composite':
+      stringifyCompositeLoop(lines, plan)
+      lines.push('')
+      return
+    case 'component':
+      stringifyComponentLoop(lines, plan)
+      lines.push('')
+      return
+    case 'plain':
+      stringifyPlainLoop(lines, plan)
+      lines.push('')
+      return
+  }
+}
 
 export function stringifyPlainLoop(
   lines: string[],
@@ -65,19 +98,12 @@ export function stringifyPlainLoop(
   const bodyIndent = topIndent + '  '
   if (paramUnwrap) lines.push(`${bodyIndent}${paramUnwrap}`)
   if (mapPreambleWrapped) lines.push(`${bodyIndent}${mapPreambleWrapped}`)
-  if (bodyIsMultiRoot) {
-    const innerIndent = bodyIndent + '  '
-    lines.push(`${bodyIndent}let __el, __extras`)
-    lines.push(`${bodyIndent}if (__existing) {`)
-    lines.push(`${innerIndent}__el = __existing`)
-    lines.push(`${bodyIndent}} else {`)
-    for (const ln of emitMultiRootTemplateCloneLines(template, innerIndent, '__el', '__extras')) lines.push(ln)
-    lines.push(`${innerIndent}__el.__bfExtras = __extras`)
-    lines.push(`${bodyIndent}}`)
-  } else {
-    const cloneExpr = emitTemplateCloneInline(template)
-    lines.push(`${bodyIndent}const __el = __existing ?? (() => { ${cloneExpr} })()`)
-  }
+  emitLoopItemElementSetup(lines, {
+    template,
+    bodyIsMultiRoot,
+    indent: bodyIndent,
+    singleRootLayout: 'inline',
+  })
   if (reactiveEffects !== null) {
     stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
   }

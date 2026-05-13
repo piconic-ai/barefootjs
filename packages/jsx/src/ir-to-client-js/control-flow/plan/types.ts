@@ -9,8 +9,9 @@
  *                          `ReactiveAttrEffect`, `ReactiveTextEffect`,
  *                          `NestedConditionalPlan`
  *   insert.ts            — `InsertPlan` family (arms, bindings)
- *   loop.ts              — `PlainLoopPlan`, `ComponentLoopPlan`,
- *                          `CompositeLoopPlan`, `StaticLoopPlan`,
+ *   loop.ts              — `LoopPlan` (discriminated union), variant
+ *                          aliases (`PlainLoopPlan`, `ComponentLoopPlan`,
+ *                          `CompositeLoopPlan`, `StaticLoopPlan`),
  *                          `NestedComponentInit`
  *   event-delegation.ts  — `EventDelegationPlan`, `ItemLookup` family
  *
@@ -37,6 +38,7 @@ export type {
   ArmTextEffect,
 } from './insert'
 export type {
+  LoopPlan,
   PlainLoopPlan,
   ComponentLoopPlan,
   CompositeLoopPlan,

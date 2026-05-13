@@ -29,6 +29,7 @@ import { irChildrenToJsExpr } from '../../html-template'
 import { buildReactiveEffectsPlan } from './build-reactive-effects'
 import type { ComponentLoopPlan, NestedComponentInit } from './types'
 
+/** @internal — prefer `buildLoopPlan`. */
 export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {
   const { name } = elem.childComponent!
   const propsExpr = buildComponentPropsExpr(elem.childComponent!, elem.param)
@@ -56,7 +57,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {
   const hasChildConds = (elem.childConditionals?.length ?? 0) > 0
 
   return {
-    kind: 'component-loop',
+    kind: 'component',
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
     arrayExpr: buildChainedArrayExpr(elem),

@@ -1,12 +1,19 @@
 /**
- * Plan types for the four loop emission shapes.
+ * The unified Plan type for every loop emission shape (#1253).
  *
- * - `PlainLoopPlan`     — body is a plain element (no comp, no inner loop)
- * - `ComponentLoopPlan` — body is a single child component (with optional nested comps)
- * - `CompositeLoopPlan` — body is a plain element containing comps and/or inner loops
- * - `StaticLoopPlan`    — array is a constant literal; only reactive attrs/texts need setup
+ * `LoopPlan` is a single discriminated union keyed by `kind`. The four
+ * legacy interfaces (`PlainLoopPlan`, `ComponentLoopPlan`,
+ * `CompositeLoopPlan`, `StaticLoopPlan`) have been collapsed into the
+ * `'plain'` / `'component'` / `'composite'` / `'static'` variants below.
  *
- * The classification is documented in spec/compiler.md "Loop emission shapes".
+ * Per-item reactive concepts (attrs, texts, conditionals, multi-root
+ * cloning, `qsa` vs `qsaItem` slot lookup) live in shared fields on the
+ * dynamic-loop base. Variant-specific fields stay under the discriminator
+ * so dispatch in stringifiers narrows correctly.
+ *
+ * Classification semantics are documented in spec/compiler.md
+ * "Loop emission shapes" and validated by the decision-tree fixtures in
+ * `__tests__/loop-plan-classification.test.ts`.
  */
 
 import type {
@@ -19,40 +26,40 @@ import type { IRLoopChildComponent } from '../../../types'
 import type { ReactiveEffectsPlan } from './reactive-effects'
 import type { InnerLoopsPlan } from './inner-loop'
 
-/**
- * Plan for a top-level dynamic loop with a plain element body (no child
- * components, no inner loops). Covers `emitPlainElementLoopReconciliation`.
- *
- * The "single-line vs multi-line renderItem" split in the legacy emitter is
- * a stringifier concern, not a Plan concern — the Plan just records
- * whether reactive effects exist and the stringifier picks the layout.
- */
-export interface PlainLoopPlan {
-  kind: 'plain-loop'
-  /** The container element variable, e.g. `_s1`. */
+/** Fields shared by every `LoopPlan` variant. */
+interface LoopPlanCommon {
+  /** Container element variable (e.g. `_s1` for top-level, `__loop_<cv>` for branch). */
   containerVar: string
+  /** Array expression to drive iteration. Pre-chained (filter/sort) for top-level dynamic loops. */
+  arrayExpr: string
+  /** Index parameter identifier, e.g. `__idx` or user-supplied. */
+  indexParam: string
+}
+
+/** Fields shared by every dynamic (`mapArray`-driven) loop variant. */
+interface DynamicLoopCommon extends LoopPlanCommon {
   /** Loop marker id — passed to mapArray so sibling loops disambiguate (#1087). */
   markerId: string
-  /** Array expression to drive `mapArray(() => ARR, ...)`. Already chained (filter/sort). */
-  arrayExpr: string
   /** Key function source — `null` when the loop has no explicit key. */
   keyFn: string
   /** renderItem param identifier (after destructure unwrap rename). */
   paramHead: string
-  /** Index parameter identifier, e.g. `__idx` or user-supplied. */
-  indexParam: string
   /** Statement to unwrap a destructured param at body entry. Empty when not needed. */
   paramUnwrap: string
+}
+
+/**
+ * Plain element body, no child components, no inner loops. Covers the
+ * single-line and multi-line renderItem shapes — the stringifier picks
+ * the layout based on `reactiveEffects` and `bodyIsMultiRoot`.
+ */
+interface PlainLoopVariant extends DynamicLoopCommon {
+  kind: 'plain'
   /** Pre-render preamble line (already wrapped with loop param accessor). Empty when none. */
   mapPreambleWrapped: string
   /** HTML template string for one item. */
   template: string
-  /**
-   * Fully-resolved reactive-effects plan (attrs / texts / conditionals). When
-   * `null`, the stringifier emits the single-line renderItem. The Plan is
-   * built by `buildReactiveEffectsPlan` — every wrap and partition decision
-   * is already made.
-   */
+  /** Resolved reactive-effects plan — null forces the single-line renderItem shape. */
   reactiveEffects: ReactiveEffectsPlan | null
   /**
    * True when the loop body is a multi-root JSX Fragment. Forces the
@@ -63,29 +70,19 @@ export interface PlainLoopPlan {
 }
 
 /**
- * Plan for a top-level dynamic loop whose body is a single child component
- * (with or without nested child components inside it). Covers
- * `emitComponentLoopReconciliation`.
+ * Loop body is a single child component (with or without nested child
+ * components inside it).
  *
- * `nestedComps.length === 0`  → emit the simple two-line renderItem
- *                               (initChild on existing, createComponent on new).
- * `nestedComps.length > 0`    → emit the SSR/CSR split that initialises both
- *                               the outer component and each nested child.
+ * `nestedComps.length === 0`  → simple two-line renderItem.
+ * `nestedComps.length > 0`    → SSR/CSR split that initialises both the
+ *                               outer component and each nested child.
  *
- * Reactive-effects construction inside `childConditionals` is now a fully
- * resolved `ReactiveEffectsPlan` — same shape as `PlainLoopPlan.reactiveEffects`.
+ * `childConditionalEffects` is non-null when the body contains reactive
+ * conditionals; same plan shape as plain/composite `reactiveEffects`.
  */
-export interface ComponentLoopPlan {
-  kind: 'component-loop'
-  containerVar: string
-  /** Loop marker id — passed to mapArray so sibling loops disambiguate (#1087). */
-  markerId: string
-  arrayExpr: string
-  keyFn: string
-  paramHead: string
-  paramUnwrap: string
-  indexParam: string
-  /** The outer (loop body) component's name, e.g. `'Card'`. */
+interface ComponentLoopVariant extends DynamicLoopCommon {
+  kind: 'component'
+  /** The outer (loop body) component's name. */
   componentName: string
   /** Pre-built props object expression for the outer component. */
   componentPropsExpr: string
@@ -93,59 +90,19 @@ export interface ComponentLoopPlan {
   keyExpr: string
   /** Nested child component initialisers; empty for the simple case. */
   nestedComps: NestedComponentInit[]
-  /**
-   * Reactive-effects plan for `childConditionals` inside the loop body. Only
-   * populated when conditionals exist (attrs / texts in this shape go through
-   * the per-component nested-init effect, not this plan).
-   */
+  /** Reactive-effects plan for `childConditionals` inside the loop body. */
   childConditionalEffects: ReactiveEffectsPlan | null
 }
 
 /**
- * One nested child component to initialise inside a renderItem body.
- * `childrenTextEffect` is non-null when the component's children are
- * text-equivalent AND reference the outer loop param — in that case the
- * stringifier emits a `createEffect` that updates the child's `textContent`.
+ * Composite — body is a plain element that contains nested child components
+ * (`outerComps`) and/or inner loops (`innerLoops`). Used for both top-level
+ * emission and branch-scoped emission. The two contexts differ only in
+ * container variable name, array expression chaining, indentation, and
+ * whether `branchClearChildren` is set.
  */
-export interface NestedComponentInit {
-  componentName: string
-  /** CSS selector used by `qsa(...)` to find the SSR-rendered placeholder. */
-  selector: string
-  /** Pre-built props object expression for the nested component. */
-  propsExpr: string
-  /** When non-null, emit a reactive textContent effect alongside `initChild`. */
-  childrenTextEffect: { wrappedChildren: string } | null
-}
-
-/**
- * Plan for a composite loop — body is a plain element that contains either
- * nested child components (`outerComps`) and/or inner loops
- * (`depthLevels`). Used for both top-level emission
- * (`emitCompositeElementReconciliation`) and branch-scoped emission
- * (`emitCompositeBranchLoop`).
- *
- * The two contexts differ only in:
- *   - container variable name (`_sN` vs `__loop_cv`)
- *   - `arrayExpr` (top: chained filter/sort/map; branch: raw `loop.array`)
- *   - leading/body indent
- *   - `branchClearChildren`: when true, prepends a `getLoopChildren(...)
- *     .forEach(__el => __el.remove())` line so the branch swap starts from
- *     a clean slate (legacy parity).
- *
- * Inner-loop emission and component-and-event setup remain on the legacy
- * `emitInnerLoopSetup` / `emitComponentAndEventSetup` helpers, invoked from
- * the stringifier as a passthrough.
- */
-export interface CompositeLoopPlan {
-  kind: 'composite-loop'
-  containerVar: string
-  /** Loop marker id — passed to mapArray so sibling loops disambiguate (#1087). */
-  markerId: string
-  arrayExpr: string
-  keyFn: string
-  paramHead: string
-  paramUnwrap: string
-  indexParam: string
+interface CompositeLoopVariant extends DynamicLoopCommon {
+  kind: 'composite'
   /** Wrapped mapPreamble line, hoisted before the SSR/CSR split. Empty when none. */
   mapPreambleWrapped: string
   /** Inner template HTML for the loop body (single item). */
@@ -173,51 +130,70 @@ export interface CompositeLoopPlan {
   /** Indent of the lines inside the renderItem body. */
   bodyIndent: string
   /**
-   * True when the loop body is a multi-root JSX Fragment. Forces the
-   * multi-root template clone path and per-item `<!--bf-loop-i-->` marker
-   * emission, and switches reactive-attr / event / insert lookups from
-   * `qsa(__el, ...)` to `qsaItem(__el, ...)` so they walk past `__el`'s
-   * siblings within the same item (#1212).
+   * True when the loop body is a multi-root JSX Fragment — drives the
+   * multi-root template clone, per-item marker emission, and
+   * `qsa(__el, ...)` → `qsaItem(__el, ...)` for reactive lookups (#1212).
    */
   bodyIsMultiRoot: boolean
 }
 
 /**
- * Plan for a top-level static array loop. A single `forEach` pass handles
- * both reactive attrs and reactive texts — mirrors the legacy
- * `emitStaticArrayUpdates` shape after the O-4 merge.
+ * Top-level static array. A single `forEach` pass handles both reactive
+ * attrs and reactive texts — mirrors the legacy `emitStaticArrayUpdates`
+ * shape after the O-4 merge.
  */
-export interface StaticLoopPlan {
-  kind: 'static-loop'
-  containerVar: string
-  /** Source array expression as written in user code (no signal accessor wrap). */
-  arrayExpr: string
-  /** Loop param name. */
+interface StaticLoopVariant extends LoopPlanCommon {
+  kind: 'static'
+  /** Loop param name (the forEach callback's first arg). */
   param: string
-  /** Index parameter identifier. */
-  indexParam: string
   /** Children-index offset expression — index when no offset, `${idx} + N` otherwise. */
   childIndexExpr: string
-  /**
-   * Reactive attrs grouped by child slot id (preserves emission order).
-   * Empty list means no attrs to emit.
-   */
+  /** Reactive attrs grouped by child slot id (preserves emission order). */
   attrsBySlot: ReadonlyArray<readonly [string, readonly LoopChildReactiveAttr[]]>
   /** Reactive texts in declaration order. */
   texts: readonly LoopChildReactiveText[]
   /**
    * CSR self-heal payload (#1247). Set when the loop's array expression
    * references an init-scope local that the CSR template substitutes with
-   * `[]` — without these, the container is empty on a CSR-only mount
-   * (`createComponent`) because SSR never ran. When non-null, the
-   * stringifier emits a clone-and-insert branch inside the per-item forEach
-   * that materialises missing children before binding reactive effects.
-   *
-   * `null` for the SSR-then-hydrate-only common case: the forEach finds
-   * each `__iterEl` already present and never enters the materialize
-   * branch, so the cost is purely the additional `if (!__iterEl)` check.
+   * `[]` — without these, the container is empty on a CSR-only mount.
+   * Null for the SSR-then-hydrate-only common case.
    */
   csrMaterialize: StaticLoopMaterializePlan | null
+}
+
+/**
+ * The unified Plan for every loop emission shape. Stringifiers narrow on
+ * `kind`; builders return this type from a single entry point.
+ */
+export type LoopPlan =
+  | PlainLoopVariant
+  | ComponentLoopVariant
+  | CompositeLoopVariant
+  | StaticLoopVariant
+
+/**
+ * Helpers for callers that need a specific variant. Prefer these over
+ * hand-rolled `Extract<LoopPlan, ...>` so the kind keys stay in one place.
+ */
+export type PlainLoopPlan = Extract<LoopPlan, { kind: 'plain' }>
+export type ComponentLoopPlan = Extract<LoopPlan, { kind: 'component' }>
+export type CompositeLoopPlan = Extract<LoopPlan, { kind: 'composite' }>
+export type StaticLoopPlan = Extract<LoopPlan, { kind: 'static' }>
+
+/**
+ * One nested child component to initialise inside a renderItem body.
+ * `childrenTextEffect` is non-null when the component's children are
+ * text-equivalent AND reference the outer loop param — in that case the
+ * stringifier emits a `createEffect` that updates the child's `textContent`.
+ */
+export interface NestedComponentInit {
+  componentName: string
+  /** CSS selector used by `qsa(...)` to find the SSR-rendered placeholder. */
+  selector: string
+  /** Pre-built props object expression for the nested component. */
+  propsExpr: string
+  /** When non-null, emit a reactive textContent effect alongside `initChild`. */
+  childrenTextEffect: { wrappedChildren: string } | null
 }
 
 /**

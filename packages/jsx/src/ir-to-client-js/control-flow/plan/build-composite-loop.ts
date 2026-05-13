@@ -24,6 +24,7 @@ import { buildReactiveEffectsPlan } from './build-reactive-effects'
 import { buildInnerLoopsPlan } from './build-inner-loop'
 import type { CompositeLoopPlan } from './types'
 
+/** @internal — prefer `buildLoopPlan`. */
 export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPlan {
   const nestedComps = elem.nestedComponents!
   const depthLevels = buildDepthLevels(elem.innerLoops ?? [], nestedComps, elem.childEvents)
@@ -33,7 +34,7 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPla
   const outerCompsByDepth = nestedComps.filter(c => !c.loopDepth || c.loopDepth === 0)
 
   return {
-    kind: 'composite-loop',
+    kind: 'composite',
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
     arrayExpr: buildChainedArrayExpr(elem),
@@ -80,7 +81,7 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string): Composit
   const outerCompsByDepth = nestedComps.filter(c => !c.loopDepth || c.loopDepth === 0)
 
   return {
-    kind: 'composite-loop',
+    kind: 'composite',
     containerVar: `__loop_${cv}`,
     markerId: loop.markerId,
     // Branch-scoped loops use the raw array expression (no filter/sort chaining

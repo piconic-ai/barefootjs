@@ -1,11 +1,22 @@
 /**
- * Build LoopPlan variants from a `TopLevelLoop` IR node.
+ * Build `LoopPlan` from a `TopLevelLoop` IR node (#1253).
  *
- * Coverage (PR 2-a):
- *   - PlainLoopPlan  ← plain element body, no child components, no inner loops
- *   - StaticLoopPlan ← static array (literal) with reactive attrs / texts
+ * `buildLoopPlan` is the single entry point. It dispatches to a private
+ * per-variant builder via the decision tree documented inline. Per-variant
+ * builders are exported with `@internal` JSDoc — only the unified entry
+ * should be consumed by emit code.
  *
- * PR 2-b will add `SingleComponentLoopPlan`; PR 2-c adds `CompositeLoopPlan`.
+ * Classification predicates (in evaluation order):
+ *
+ *   1. `isStaticArray` → `'static'`
+ *   2. dynamic + (`nestedComponents` or `innerLoops`) under
+ *      `useElementReconciliation` → `'composite'`
+ *   3. dynamic + `childComponent` → `'component'`
+ *   4. fallthrough → `'plain'`
+ *
+ * The branch composite plan (built by `buildBranchCompositePlan`) intentionally
+ * lives in `build-composite-loop.ts` — it takes `BranchLoop`, not
+ * `TopLevelLoop`, and is reused by the branch-loop wrapper plan.
  */
 
 import type {
@@ -23,8 +34,41 @@ import {
   destructureLoopParam,
 } from '../shared'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects'
-import type { PlainLoopPlan, StaticLoopMaterializePlan, StaticLoopPlan } from './types'
+import { buildComponentLoopPlan } from './build-component-loop'
+import { buildTopLevelCompositePlan } from './build-composite-loop'
+import type {
+  LoopPlan,
+  PlainLoopPlan,
+  StaticLoopMaterializePlan,
+  StaticLoopPlan,
+} from './types'
 
+/** Inputs only the static-array variant consumes. */
+export interface BuildLoopPlanOptions {
+  /** Local names whose CSR-time substitution forces the static-array self-heal path (#1247). */
+  unsafeLocalNames: Set<string>
+}
+
+/**
+ * The single public builder. Selects the variant via the decision tree
+ * described above and returns the discriminated `LoopPlan`.
+ */
+export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): LoopPlan {
+  if (elem.isStaticArray) {
+    return buildStaticLoopPlan(elem, opts.unsafeLocalNames)
+  }
+  const hasInnerStructure = (elem.nestedComponents?.length ?? 0) > 0
+    || (elem.innerLoops?.length ?? 0) > 0
+  if (elem.useElementReconciliation && hasInnerStructure) {
+    return buildTopLevelCompositePlan(elem)
+  }
+  if (elem.childComponent) {
+    return buildComponentLoopPlan(elem)
+  }
+  return buildPlainLoopPlan(elem)
+}
+
+/** @internal — prefer `buildLoopPlan`. Exported for the branch-loop wrapper only. */
 export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
   const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
@@ -33,7 +77,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
     || (elem.childConditionals?.length ?? 0) > 0
 
   return {
-    kind: 'plain-loop',
+    kind: 'plain',
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
     arrayExpr: buildChainedArrayExpr(elem),
@@ -48,6 +92,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
   }
 }
 
+/** @internal — prefer `buildLoopPlan`. */
 export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<string>): StaticLoopPlan {
   // Group reactive attrs by their child slot id, preserving the legacy
   // declaration-order Map-iteration semantics.
@@ -67,7 +112,7 @@ export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<st
   const childIndexExpr = elem.siblingOffset ? `${indexParam} + ${elem.siblingOffset}` : indexParam
 
   return {
-    kind: 'static-loop',
+    kind: 'static',
     containerVar: `_${varSlotId(elem.slotId)}`,
     arrayExpr: elem.array,
     param: elem.param,

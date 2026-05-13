@@ -23,12 +23,8 @@
 import type { ClientJsContext, TopLevelLoop } from './types'
 import { buildInsertPlan } from './control-flow/plan/build-insert'
 import { stringifyInsert } from './control-flow/stringify/insert'
-import { buildPlainLoopPlan, buildStaticLoopPlan } from './control-flow/plan/build-loop'
-import { stringifyPlainLoop, stringifyStaticLoop } from './control-flow/stringify/loop'
-import { buildComponentLoopPlan } from './control-flow/plan/build-component-loop'
-import { stringifyComponentLoop } from './control-flow/stringify/component-loop'
-import { buildTopLevelCompositePlan } from './control-flow/plan/build-composite-loop'
-import { stringifyCompositeLoop } from './control-flow/stringify/composite-loop'
+import { buildLoopPlan } from './control-flow/plan/build-loop'
+import { stringifyLoop } from './control-flow/stringify/loop'
 import {
   buildDynamicLoopDelegationPlan,
   buildStaticArrayDelegationPlan,
@@ -54,53 +50,42 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
   }
 }
 
-/** Emit loop updates: dispatches to static or dynamic handlers per element. */
+/**
+ * Emit loop updates: builds a unified `LoopPlan` via the single
+ * `buildLoopPlan` entry, stringifies via `stringifyLoop`, and attaches
+ * event delegation per-variant.
+ *
+ * Event-delegation predicates (kept here because they consult the IR's
+ * `childEvents` and `childComponent`, not the Plan):
+ *   - `'static'`  → plain-element static array with events
+ *   - `'plain'`   → dynamic plain-element body with events
+ *   - `'component' / 'composite'` → events ride on the component's own
+ *     event surface, no delegation pass needed
+ */
 export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLocalNames: Set<string>): void {
   for (const elem of ctx.loopElements) {
-    if (elem.isStaticArray) {
-      emitStaticArrayUpdates(lines, elem, unsafeLocalNames)
-    } else {
-      emitDynamicLoopUpdates(lines, elem)
+    const plan = buildLoopPlan(elem, { unsafeLocalNames })
+    stringifyLoop(lines, plan)
+    emitLoopEventDelegation(lines, elem, plan.kind)
+  }
+}
+
+function emitLoopEventDelegation(
+  lines: string[],
+  elem: TopLevelLoop,
+  kind: 'plain' | 'component' | 'composite' | 'static',
+): void {
+  if (kind === 'static') {
+    // Event delegation for plain elements in static arrays (#537). Static
+    // arrays have no data-key/bf-i markers, so walk up from target to the
+    // container's direct child and use indexOf for index lookup.
+    if (!elem.childComponent && elem.childEvents.length > 0) {
+      stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem))
     }
+    return
   }
-}
-
-/**
- * Emit reactive attribute effects and event delegation for static arrays.
- * Static arrays are server-rendered once; only signal-dependent attributes
- * and event handlers need client-side setup. (initChild calls are deferred to
- * the `static-array-child-inits` phase so parent context providers run first.)
- */
-function emitStaticArrayUpdates(lines: string[], elem: TopLevelLoop, unsafeLocalNames: Set<string>): void {
-  stringifyStaticLoop(lines, buildStaticLoopPlan(elem, unsafeLocalNames))
-
-  // Event delegation for plain elements in static arrays (#537).
-  // Static arrays have no data-key/bf-i markers, so walk up from target to
-  // the container's direct child and use indexOf for index lookup.
-  if (!elem.childComponent && elem.childEvents.length > 0) {
-    stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem))
-  }
-}
-
-/**
- * Emit reconcileElements for a dynamic loop element. Three sub-cases:
- *   - Composite (native element body containing nested comps or inner loops)
- *   - Single-component body
- *   - Plain element body
- * Plus event delegation for plain element loops (component loops handle
- * events differently — through the component's own event surface).
- */
-function emitDynamicLoopUpdates(lines: string[], elem: TopLevelLoop): void {
-  if (elem.useElementReconciliation && (elem.nestedComponents?.length || elem.innerLoops?.length)) {
-    stringifyCompositeLoop(lines, buildTopLevelCompositePlan(elem))
-  } else if (elem.childComponent) {
-    stringifyComponentLoop(lines, buildComponentLoopPlan(elem))
-  } else {
-    stringifyPlainLoop(lines, buildPlainLoopPlan(elem))
-  }
-  lines.push('')
-
-  if (!elem.childComponent && !elem.useElementReconciliation && elem.childEvents.length > 0) {
+  // Dynamic plain-element body: keyed delegation by data-key/bf-i marker.
+  if (kind === 'plain' && elem.childEvents.length > 0) {
     stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem))
   }
 }
