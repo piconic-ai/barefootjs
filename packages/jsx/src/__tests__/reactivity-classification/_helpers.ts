@@ -21,10 +21,11 @@ import type {
 } from '../../types'
 
 /**
- * Alias kept for readability; once the `BindingKind` widening lands the
- * cast at hasFreeRefKind call sites becomes a no-op.
+ * Convenience alias so the `kinds` rest parameter type in
+ * `hasFreeRefKind` reads at call sites as a domain-level "binding kind"
+ * rather than indexing through `FreeReference['kind']`.
  */
-export type FutureBindingKind = FreeReference['kind']
+type FreeRefKind = FreeReference['kind']
 
 /**
  * Build a ts.Program from in-memory sources. Use this when the test exercises
@@ -150,7 +151,7 @@ export function collectConditionals(root: IRNode | null): IRConditional[] {
  */
 export function hasFreeRefKind(
   freeRefs: FreeReference[] | undefined,
-  ...kinds: FutureBindingKind[]
+  ...kinds: FreeRefKind[]
 ): boolean {
   if (!freeRefs) return false
   const set = new Set<string>(kinds)

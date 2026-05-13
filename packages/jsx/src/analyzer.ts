@@ -49,6 +49,34 @@ export function needsTypeBasedDetection(source: string): boolean {
 }
 
 /**
+ * Locate the first `import ... from '<brand-package>'` statement in
+ * `sourceFile`. Used by BF050 so the diagnostic points at the offending
+ * import line rather than a synthetic (1, 0) position.
+ *
+ * The scan is structural (`ts.ImportDeclaration` + `StringLiteral`
+ * specifier) rather than substring-based so it doesn't false-match on
+ * the package name appearing inside a string literal or comment.
+ */
+function findBrandPackageImportLoc(
+  sourceFile: ts.SourceFile,
+  filePath: string,
+): { file: string; start: { line: number; column: number }; end: { line: number; column: number } } | null {
+  for (const stmt of sourceFile.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    if (!REACTIVE_BRAND_PACKAGES.includes(stmt.moduleSpecifier.text)) continue
+    const start = sourceFile.getLineAndCharacterOfPosition(stmt.getStart(sourceFile))
+    const end = sourceFile.getLineAndCharacterOfPosition(stmt.getEnd())
+    return {
+      file: filePath,
+      start: { line: start.line + 1, column: start.character },
+      end: { line: end.line + 1, column: end.character },
+    }
+  }
+  return null
+}
+
+/**
  * Create a TypeScript program for a single file to enable type-based reactivity detection.
  * Uses a virtual CompilerHost that injects the source string as a virtual file
  * and delegates to the real file system for node_modules resolution.
@@ -201,15 +229,11 @@ export function analyzeComponent(
   // broader `needsTypeBasedDetection` predicate also fires for `.map()`
   // (BF023/BF024 nullable-key check), which is unrelated to reactivity
   // and must NOT trigger BF050.
-  const usesReactiveBrandPackage = REACTIVE_BRAND_PACKAGES.some(pkg => source.includes(pkg))
-  if (!hadSharedProgram && usesReactiveBrandPackage) {
+  const brandImportLoc = findBrandPackageImportLoc(sourceFile, filePath)
+  if (!hadSharedProgram && brandImportLoc !== null) {
     ctx.errors.push(createError(
       ErrorCodes.SHARED_PROGRAM_REQUIRED,
-      {
-        file: filePath,
-        start: { line: 1, column: 0 },
-        end: { line: 1, column: 0 },
-      },
+      brandImportLoc,
     ))
   }
 

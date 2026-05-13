@@ -21,6 +21,15 @@ export interface CompilerCounters {
   reactivityChecks: number
   /** Number of analyzeComponent() invocations (one per file per target). */
   filesAnalyzed: number
+  /**
+   * Number of TypeChecker lookups that threw or otherwise failed inside
+   * free-refs resolution. Always silently swallowed at the site (the
+   * resolver falls back to whatever the binding map produced), but a
+   * climb here in the bench harness flags a real bug — most often
+   * passing AST nodes from a synthetic SourceFile to a checker rooted
+   * in a different Program.
+   */
+  freeRefsTypeLookupFailures: number
 }
 
 let _enabled = false
@@ -32,6 +41,7 @@ function freshCounters(): CompilerCounters {
     typeCheckerQueries: 0,
     reactivityChecks: 0,
     filesAnalyzed: 0,
+    freeRefsTypeLookupFailures: 0,
   }
 }
 

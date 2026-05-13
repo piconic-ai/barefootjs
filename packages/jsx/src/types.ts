@@ -161,7 +161,17 @@ export interface OriginInfo {
  * authoring scope's binding environment.
  */
 export interface FreeReference {
-  /** The identifier as written in source. */
+  /**
+   * Identifier text. For every kind except `'reactive-brand'` this is a
+   * bare identifier (`count`, `props`, …) and downstream rewriters can
+   * treat it as a word-boundary token. For `'reactive-brand'` it is the
+   * full property-access expression text (e.g. `props.form.isSubmitting`)
+   * because the brand lives on the access expression as a whole — the
+   * root identifier of that access is reported separately under its own
+   * kind. `relocate()` rewrites identifier refs by name, so consumers
+   * that touch `reactive-brand` entries must consult `kind` before
+   * matching.
+   */
   name: string
   /** Where the binding for this name lives. */
   bindingScope: Scope

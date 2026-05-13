@@ -70,6 +70,14 @@ interface TransformContext {
   asyncIdCounter: number
   /** Counter for loop marker IDs (l0, l1, ...) — separate from slot IDs so element bf="sN" numbering stays stable across versions (#1087). */
   loopMarkerCounter: number
+  /**
+   * Memoized free-refs binding environment. Built lazily by
+   * `makeBindingEnv` and reused across every `resolveFreeRefs` call as
+   * long as `loopParams` content is unchanged. Invalidated by serializing
+   * `loopParams` into `_bindingEnvLoopKey` and comparing on read.
+   */
+  _bindingEnv?: BindingEnvironment
+  _bindingEnvLoopKey?: string
 }
 
 /**
@@ -253,10 +261,23 @@ function generateSlotId(ctx: TransformContext, forComponent: boolean = false): s
  * props, locals, imports) plus the active loop params form the resolution
  * frame; the TypeChecker, when available, is forwarded so library getters
  * carrying the Reactive<T> brand are recognised.
+ *
+ * Memoized on `ctx`: the returned env is identity-stable as long as
+ * `loopParams` content is unchanged, which keeps the `WeakMap`-keyed
+ * binding-table cache in `free-refs.ts` warm across every expression in
+ * the same loop scope. `loopParams` is `.add`/`.delete`-mutated as the
+ * visitor enters / leaves `.map()` callbacks, so we serialize its
+ * contents into a key rather than relying on Set identity.
  */
 function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
+  const loopKey = ctx.loopParams.size === 0
+    ? ''
+    : Array.from(ctx.loopParams).sort().join('\0')
+  if (ctx._bindingEnv && ctx._bindingEnvLoopKey === loopKey) {
+    return ctx._bindingEnv
+  }
   const a = ctx.analyzer
-  return {
+  const env: BindingEnvironment = {
     signals: a.signals,
     memos: a.memos,
     propsParams: a.propsParams,
@@ -266,9 +287,14 @@ function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
     localFunctions: a.localFunctions,
     imports: a.imports,
     ambientGlobals: a.ambientGlobals,
-    loopParams: ctx.loopParams,
+    // Snapshot — the env must observe a stable view even if `ctx.loopParams`
+    // is later mutated by an enclosing visitor frame.
+    loopParams: new Set(ctx.loopParams),
     checker: a.checker,
   }
+  ctx._bindingEnv = env
+  ctx._bindingEnvLoopKey = loopKey
+  return env
 }
 
 // =============================================================================

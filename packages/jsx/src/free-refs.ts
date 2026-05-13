@@ -24,6 +24,7 @@ import type {
   FunctionInfo,
 } from './types'
 import { isReactiveType } from './reactivity-checker'
+import { incrementCounter } from './instrumentation'
 
 /**
  * Subset of `AnalyzerContext` / `TransformContext` that this resolver reads.
@@ -42,10 +43,18 @@ export interface BindingEnvironment {
   ambientGlobals: ReadonlySet<string>
   /** Active `.map()` callback parameter names — present inside loop bodies. */
   loopParams?: ReadonlySet<string>
-  /** Names declared inside nested arrow / function bodies — passed by caller. */
-  subInitLocals?: ReadonlySet<string>
   checker: ts.TypeChecker | null
 }
+
+/**
+ * Per-environment cache for the binding map. `BindingEnvironment` identity
+ * is stable per (analyzer, loopParams snapshot) — `jsx-to-ir.ts` memoizes
+ * `makeBindingEnv` so the same object is reused across every
+ * `resolveFreeRefs` call within a loop scope. With N expressions per
+ * component and M bindings per env, this drops binding-table construction
+ * from O(N*M) to O(N + M).
+ */
+const _bindingMapCache: WeakMap<BindingEnvironment, Map<string, BindingKind>> = new WeakMap()
 
 /**
  * Build a name → BindingKind table from the binding environment.
@@ -56,8 +65,13 @@ export interface BindingEnvironment {
  * identifier site, which is fine for the analyzer's current usage but
  * misses true shadowing inside nested arrows. That is the next refinement
  * (issue #1251 shadowing tests).
+ *
+ * Memoized via `_bindingMapCache` so repeated `resolveFreeRefs` calls
+ * against the same env reuse one table.
  */
 function buildBindingMap(env: BindingEnvironment): Map<string, BindingKind> {
+  const cached = _bindingMapCache.get(env)
+  if (cached) return cached
   const map = new Map<string, BindingKind>()
 
   // Lowest precedence first — later writes override.
@@ -100,13 +114,11 @@ function buildBindingMap(env: BindingEnvironment): Map<string, BindingKind> {
     map.set(m.name, 'memo-getter')
   }
   // Highest precedence — innermost scope.
-  if (env.subInitLocals) {
-    for (const name of env.subInitLocals) map.set(name, 'sub-init-local')
-  }
   if (env.loopParams) {
     for (const name of env.loopParams) map.set(name, 'render-item')
   }
 
+  _bindingMapCache.set(env, map)
   return map
 }
 
@@ -157,10 +169,15 @@ function collectIdentifiers(node: ts.Node): ts.Identifier[] {
       if (parent && ts.isPropertyAssignment(parent) && parent.name === n) return
       // { X } — shorthand key (the value side IS a ref, but in TS AST the
       // single identifier node serves both roles; treat it as a ref)
-      // JSX <Tag .../> — Tag identifier
-      if (parent && (ts.isJsxOpeningElement(parent) || ts.isJsxClosingElement(parent) || ts.isJsxSelfClosingElement(parent)) && (parent as any).tagName === n) {
-        // JSX intrinsic tags (lowercase) are not free refs; component refs are.
-        // We still skip — the tagName is handled separately by the IR builder.
+      // JSX <Tag .../> — Tag identifier. Intrinsic tags (lowercase) are
+      // never free refs; component refs are, but the IR builder collects
+      // them separately so we skip to avoid double counting. All three
+      // JSX element kinds expose a `tagName` field with the same shape.
+      if (
+        parent &&
+        (ts.isJsxOpeningElement(parent) || ts.isJsxClosingElement(parent) || ts.isJsxSelfClosingElement(parent)) &&
+        parent.tagName === n
+      ) {
         return
       }
       // JSX attribute name — not a free ref
@@ -210,7 +227,12 @@ function collectReactiveBrandRefs(
           }
         }
       } catch {
-        // Type resolution can fail for some nodes; ignore.
+        // Type resolution can fail when the AST node was parsed in a
+        // synthetic SourceFile (transitive-taint recursion path) but the
+        // checker is rooted in a different Program. Surface the count via
+        // instrumentation so the bench harness can flag the divergence
+        // instead of letting it accumulate as silent misclassification.
+        incrementCounter('freeRefsTypeLookupFailures')
       }
     }
     ts.forEachChild(n, visit)
@@ -315,7 +337,10 @@ function resolveFreeRefsInternal(
           }
         }
       } catch {
-        // Ignore.
+        // See the equivalent catch in `collectReactiveBrandRefs`: ignored
+        // here so the resolver still produces a useful (if conservative)
+        // result, surfaced via instrumentation for the bench harness.
+        incrementCounter('freeRefsTypeLookupFailures')
       }
     }
 

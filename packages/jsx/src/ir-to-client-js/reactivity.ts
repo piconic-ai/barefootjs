@@ -57,9 +57,18 @@ export type WrapReason =
  * IRConditional nodes. Consults `origin.freeRefs` (the unified Phase 1
  * classification) first when available — this collapses the historic
  * `reactive || callsReactiveGetters || hasFunctionCalls` fan-out onto a
- * single source of truth. Legacy flags remain as fallbacks during the
- * migration: nodes whose origin has not been populated yet (e.g. attr
- * values, future IR kinds) still wrap correctly under the old gates.
+ * single source of truth.
+ *
+ * `node.reactive` is checked separately even though `jsx-to-ir.ts` already
+ * OR-combines it with `isReactiveOrigin(origin)` at every populate site:
+ * the legacy flag still covers shapes the origin-side classifier hasn't
+ * been wired through (e.g. IRConditional nodes synthesized by deeper
+ * dispatchers that haven't been migrated), and the duplication is cheap.
+ * `callsReactiveGetters` / `hasFunctionCalls` remain as Solid-style
+ * wrap-by-default fallbacks (#937, #941); they are NOT redundant with
+ * origin because they capture call-shape information that `freeRefs`
+ * doesn't carry.
+ *
  * Pure literals and bare identifiers (no calls) stay un-wrapped because
  * their SSR value is already in the DOM.
  */
@@ -83,6 +92,10 @@ export function decideWrapFromAstFlags(node: {
  * string-level `needsEffectWrapper` check (recognises signal getters / memos /
  * prop names inside expanded local-const references) with the AST flags from
  * the source attribute expression.
+ *
+ * TODO(#1255): once `IRAttribute` carries `origin.freeRefs`, switch this to
+ * `isReactiveOrigin(attr.origin)` so the attr path joins the unified
+ * classification — `needsEffectWrapper` should then be deletable.
  */
 export function decideWrapForAttr(
   expandedValue: string,
