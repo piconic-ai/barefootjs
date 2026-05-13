@@ -60,7 +60,19 @@ export function stringifyLoop(lines: string[], plan: LoopPlan): void {
       stringifyPlainLoop(lines, plan)
       lines.push('')
       return
+    default:
+      return assertNever(plan)
   }
+}
+
+/**
+ * Exhaustiveness guard. Adding a new `LoopPlan` variant without a matching
+ * `case` in `stringifyLoop` becomes a compile-time error (the parameter
+ * stops narrowing to `never`) instead of a silent no-op at runtime.
+ */
+function assertNever(plan: never): never {
+  const kind = (plan as { kind?: string } | null)?.kind
+  throw new Error(`stringifyLoop: unhandled LoopPlan kind ${JSON.stringify(kind)}`)
 }
 
 export function stringifyPlainLoop(

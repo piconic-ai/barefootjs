@@ -85,7 +85,20 @@ function emitLoopEventDelegation(
     return
   }
   // Dynamic plain-element body: keyed delegation by data-key/bf-i marker.
-  if (kind === 'plain' && elem.childEvents.length > 0) {
+  //
+  // `!elem.useElementReconciliation` is preserved here even though the
+  // decision tree only routes to `'plain'` when `useElementReconciliation`
+  // is false OR `hasInnerStructure` is false. The hand-constructed boundary
+  // shape (`useElementReconciliation=true` AND empty nestedComponents /
+  // innerLoops) is unreachable from real IR — the collector sets
+  // `useElementReconciliation` only when it has at least one of those —
+  // but the explicit guard keeps the legacy behaviour byte-equal even if a
+  // future collector change makes that combination valid.
+  if (
+    kind === 'plain'
+    && !elem.useElementReconciliation
+    && elem.childEvents.length > 0
+  ) {
     stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem))
   }
 }
