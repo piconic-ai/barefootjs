@@ -3161,10 +3161,16 @@ function processComponentProps(
 
     let value = getAttributeValue(attr, ctx)
     // Components receive props as runtime values, so collapse a structured
-    // template literal back into a JS expression, and promote `boolean-attr`
-    // to `boolean-shorthand` (`<X disabled />` → `disabled={true}`).
+    // template literal back into a JS expression — but keep the parsed
+    // parts in `parts` so template-based SSR adapters (Mojo, Go) can still
+    // emit structured lookups / ternaries instead of round-tripping a raw
+    // JS source through their expression pipelines. JS-runtime adapters
+    // (Hono) keep using `expr`. Boolean-attr is also promoted to
+    // shorthand (`<X disabled />` → `disabled={true}`).
     if (value.kind === 'template') {
-      value = AttrValueOf.expression(templatePartsToJsString(value.parts))
+      value = AttrValueOf.expression(templatePartsToJsString(value.parts), {
+        parts: value.parts,
+      })
     } else if (value.kind === 'boolean-attr') {
       value = AttrValueOf.booleanShorthand()
     }

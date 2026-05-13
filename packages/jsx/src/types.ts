@@ -687,6 +687,18 @@ export interface ExpressionAttr {
   /** Set when the producer peeled an `expr || undefined` boolean-presence
    *  pattern; adapters fold this back into `(expr) || undefined` at emit. */
   presenceOrUndefined?: boolean
+  /**
+   * Carries the parsed parts when the producer collapses a structured
+   * template literal back into a JS expression (component-prop path —
+   * `jsx-to-ir.ts` collapses `template` → `expression` because component
+   * props are runtime values). Template-based SSR adapters (Mojo, Go)
+   * read this to recover the structured form and emit a per-part
+   * lookup / ternary; JS-runtime adapters (Hono) ignore it and keep
+   * using `expr`. This is a transitional shape until #1264-style lift
+   * surfaces template parts as a first-class IR variant on component
+   * props.
+   */
+  parts?: IRTemplatePart[]
 }
 
 export interface BooleanAttr {
@@ -723,12 +735,16 @@ export const AttrValueOf = {
   literal(value: string): LiteralAttr {
     return { kind: 'literal', value }
   },
-  expression(expr: string, opts?: { templateExpr?: string; presenceOrUndefined?: boolean }): ExpressionAttr {
+  expression(
+    expr: string,
+    opts?: { templateExpr?: string; presenceOrUndefined?: boolean; parts?: IRTemplatePart[] },
+  ): ExpressionAttr {
     return {
       kind: 'expression',
       expr,
       ...(opts?.templateExpr !== undefined && { templateExpr: opts.templateExpr }),
       ...(opts?.presenceOrUndefined !== undefined && { presenceOrUndefined: opts.presenceOrUndefined }),
+      ...(opts?.parts !== undefined && { parts: opts.parts }),
     }
   },
   booleanAttr(): BooleanAttr {

@@ -856,4 +856,51 @@ export function Foo(props: { name: string }) {
       }
     })
   })
+
+  describe('NewXxxProps template-parts dispatch (#1275)', () => {
+    // Companion to the Mojo / Hono unit tests for the
+    // `record-index-lookup-via-child-prop` conformance fixture. The IR
+    // producer collapses `template` → `expression` for component props
+    // but preserves the parts on `ExpressionAttr.parts`; the Go adapter
+    // must read those parts and emit an IIFE (`switch`-based) in the
+    // generated `NewXxxProps` so the variant class is materialised at
+    // SSR time. The previous behaviour silently dropped the prop —
+    // visible end-to-end as `class=""` on the scaffold's Button.
+    test('record-index-lookup via child prop emits a Go switch IIFE, not a dropped field', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+import { Slot } from './slot'
+export function V({ variant }: { variant: 'a' | 'b' }) {
+  const classes: Record<'a' | 'b', string> = { a: 'class-a', b: 'class-b' }
+  return <Slot className={\`base \${classes[variant]}\`}>hi</Slot>
+}
+`, adapter)
+      const out = adapter.generate(ir)
+      const goCode = out.types ?? ''
+      // The ClassName field MUST be set on the SlotInput literal.
+      expect(goCode).toContain('ClassName:')
+      // The IIFE shape: a self-invoking func that switches on the
+      // variant key and returns the matching case.
+      expect(goCode).toContain('func() string {')
+      expect(goCode).toContain('in.Variant.(string)')
+      expect(goCode).toContain('case "a": return "class-a"')
+      expect(goCode).toContain('case "b": return "class-b"')
+    })
+
+    test('intermediate-const composition (Button shape) carries through', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+import { Slot } from './slot'
+export function V({ variant }: { variant: 'a' | 'b' }) {
+  const classes: Record<'a' | 'b', string> = { a: 'class-a', b: 'class-b' }
+  const composed = \`base \${classes[variant]}\`
+  return <Slot className={composed}>hi</Slot>
+}
+`, adapter)
+      const out = adapter.generate(ir)
+      const goCode = out.types ?? ''
+      expect(goCode).toContain('ClassName:')
+      expect(goCode).toContain('case "a": return "class-a"')
+    })
+  })
 })

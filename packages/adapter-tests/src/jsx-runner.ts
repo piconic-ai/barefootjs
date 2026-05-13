@@ -64,6 +64,11 @@ export function normalizeHTML(html: string): string {
     // conformance keeps the comparison apples-to-apples.
     .replace(/\s*bf-parent="[^"]*"/g, '')
     .replace(/\s*bf-mount="[^"]*"/g, '')
+    // Strip Hono's scope-init comments (`<!--bf-scope:...-->`). Same
+    // motivation as the bf-parent / bf-mount strips above: only Hono's
+    // JS-runtime hydration path uses them, so removing them keeps
+    // cross-adapter conformance comparisons apples-to-apples.
+    .replace(/<!--bf-scope:[^>]*-->/g, '')
     // Normalize child scope ID prefix: bf-s="~parentId_sN" → bf-s="parentId_sN"
     .replace(/bf-s="~([^"]*)"/g, 'bf-s="$1"')
     // Normalize non-deterministic child scope IDs (hash derived from file path):

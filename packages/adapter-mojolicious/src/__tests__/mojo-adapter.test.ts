@@ -300,3 +300,46 @@ export function Foo(props: { config: object; replacer: any }) {
     expect(result.template).not.toContain('bf->json')
   })
 })
+
+describe('MojoAdapter - render_child template-parts dispatch (#1275)', () => {
+  // The IR producer collapses a structured `template` AttrValue into
+  // `expression` for component props (so the value can flow through
+  // runtime hydration), but it keeps the parsed parts on
+  // `ExpressionAttr.parts`. The Mojo adapter must dispatch to
+  // `convertTemplateLiteralPartsToPerl` when those parts are present
+  // — otherwise the bare JS source leaks into the Perl template (the
+  // original #1275 failure: a `({...})[key]` Perl parse error and the
+  // scaffold's Button rendering with no `class` attribute end-to-end).
+  test('record-index-lookup via child prop emits Perl hash lookup, not raw JS', () => {
+    const result = compileAndGenerate(`
+import { Slot } from './slot'
+export function V({ variant }: { variant: 'a' | 'b' }) {
+  const classes: Record<'a' | 'b', string> = { a: 'class-a', b: 'class-b' }
+  return <Slot className={\`base \${classes[variant]}\`}>hi</Slot>
+}
+`)
+    // The Perl hash form means the parts dispatch fired.
+    expect(result.template).toContain("'a' => 'class-a'")
+    expect(result.template).toContain("'b' => 'class-b'")
+    expect(result.template).toContain("->{$variant}")
+    // Negative pin: the raw JS object-literal shape must NOT survive
+    // into the Mojo template. The original bug emitted
+    // `({"a": "class-a", "b": "class-b"})[variant]` directly into the
+    // `render_child` argument string.
+    expect(result.template).not.toContain('{"a":')
+    expect(result.template).not.toContain('"a": "class-a"')
+  })
+
+  test('intermediate-const composition (Button shape) carries through', () => {
+    const result = compileAndGenerate(`
+import { Slot } from './slot'
+export function V({ variant }: { variant: 'a' | 'b' }) {
+  const classes: Record<'a' | 'b', string> = { a: 'class-a', b: 'class-b' }
+  const composed = \`base \${classes[variant]}\`
+  return <Slot className={composed}>hi</Slot>
+}
+`)
+    expect(result.template).toContain("'a' => 'class-a'")
+    expect(result.template).toContain("->{$variant}")
+  })
+})

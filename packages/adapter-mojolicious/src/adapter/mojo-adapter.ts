@@ -393,9 +393,30 @@ export class MojoAdapter extends BaseAdapter {
           propParts.push(`${p.name} => '${v.value}'`)
           break
         case 'expression':
-        case 'spread':
-          propParts.push(`${p.name} => ${this.convertExpressionToPerl(v.expr)}`)
+          // The IR producer collapses component-prop `template` kinds
+          // into `expression` for client-runtime reasons but preserves
+          // the parsed parts on `v.parts`. Prefer the structured form
+          // when available — the bare-expression path can't handle
+          // `${MAP[KEY]}` shapes (the JS object literal leaks into the
+          // Perl template).
+          if (v.parts) {
+            propParts.push(`${p.name} => ${this.convertTemplateLiteralPartsToPerl(v.parts)}`)
+          } else {
+            propParts.push(`${p.name} => ${this.convertExpressionToPerl(v.expr)}`)
+          }
           break
+        case 'spread': {
+          // Perl has no JS-style spread operator — emit the source as
+          // a hash dereference so its entries flatten into the named-arg
+          // list `render_child` accepts. The placeholder `p.name` is
+          // typically `'...'` for spreads and must NOT appear as a key.
+          const perlExpr = this.convertExpressionToPerl(v.expr)
+          // `$props` already comes in as a hashref in `render_child`'s
+          // calling convention; deref with `%{}`. If `convertExpressionToPerl`
+          // produced a hash variable (`%foo`) we leave it as-is.
+          propParts.push(perlExpr.startsWith('%') ? perlExpr : `%{${perlExpr}}`)
+          break
+        }
         case 'template':
           propParts.push(`${p.name} => ${this.convertTemplateLiteralPartsToPerl(v.parts)}`)
           break
@@ -751,7 +772,15 @@ export class MojoAdapter extends BaseAdapter {
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        parts.push(`'${part.value}'`)
+        // The IR producer may leave `${ident}` / `${_p.ident}`
+        // interpolations in `string` parts when it can't statically
+        // inline them (typically a destructured prop the caller will
+        // supply at hydrate time, e.g. `${className}` in shadcn-style
+        // composition). Substitute those to their Perl variable form
+        // before quoting, otherwise the single-quoted literal here
+        // passes the JS-shape interpolation through verbatim into the
+        // rendered HTML.
+        parts.push(this.substituteJsInterpolationsToPerl(part.value))
       } else if (part.type === 'ternary') {
         const cond = this.convertExpressionToPerl(part.condition)
         parts.push(`(${cond} ? '${part.whenTrue}' : '${part.whenFalse}')`)
@@ -772,6 +801,33 @@ export class MojoAdapter extends BaseAdapter {
     }
     // Join with Perl string concatenation
     return parts.length === 1 ? parts[0] : parts.join(' . ')
+  }
+
+  /**
+   * Translate `${EXPR}` interpolations in a static template-part string
+   * into Perl variable references and concatenate them with the
+   * surrounding literal text. Used by `convertTemplateLiteralPartsToPerl`
+   * when a `string` part still carries unresolved interpolations (e.g.
+   * `${className}` from a destructured prop the IR analyzer couldn't
+   * inline statically).
+   */
+  private substituteJsInterpolationsToPerl(s: string): string {
+    const segments: string[] = []
+    const re = /\$\{([^}]+)\}/g
+    let lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = re.exec(s)) !== null) {
+      if (m.index > lastIndex) {
+        segments.push(`'${s.slice(lastIndex, m.index)}'`)
+      }
+      segments.push(this.convertExpressionToPerl(m[1].trim()))
+      lastIndex = re.lastIndex
+    }
+    if (lastIndex < s.length) {
+      segments.push(`'${s.slice(lastIndex)}'`)
+    }
+    if (segments.length === 0) return `''`
+    return segments.length === 1 ? segments[0] : `(${segments.join(' . ')})`
   }
 
   private convertExpressionToPerl(expr: string): string {

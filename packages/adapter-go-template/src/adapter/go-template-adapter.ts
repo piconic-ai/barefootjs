@@ -735,6 +735,26 @@ export class GoTemplateAdapter extends BaseAdapter {
           case 'expression':
           case 'spread':
           case 'template': {
+            // Prefer the parsed template parts when present — `expression`
+            // carries them in `parts` after the IR producer's
+            // `template → expression` collapse for component props, and
+            // `template` exposes them directly. This handles the
+            // shadcn-style variant lookup (`record-index-lookup-via-child-prop`)
+            // which `resolveDynamicPropValue` can't represent.
+            const parts =
+              prop.value.kind === 'template'
+                ? prop.value.parts
+                : prop.value.kind === 'expression'
+                  ? prop.value.parts
+                  : undefined
+            if (parts) {
+              const goExpr = this.templatePartsToGoCode(parts, ir.metadata.propsParams)
+              if (goExpr !== null) {
+                lines.push(`\t\t\t${this.capitalizeFieldName(prop.name)}: ${goExpr},`)
+                break
+              }
+            }
+
             const exprText = prop.value.kind === 'template'
               ? '' // template literals collapse to runtime expressions; resolveDynamicPropValue does not handle them yet
               : prop.value.expr
@@ -1084,6 +1104,69 @@ export class GoTemplateAdapter extends BaseAdapter {
    * Resolve dynamic prop value (e.g., signal/memo getter calls) to Go initial value.
    * Handles expressions like `count()` → signal's initial value
    */
+  /**
+   * Convert a template literal's parsed parts into a Go expression of
+   * type `string`, evaluated in `NewXxxProps` scope (where destructured
+   * prop refs resolve via `in.FieldName`). Returns null when any part
+   * is not representable in static Go code so the caller can fall back
+   * to `resolveDynamicPropValue` (which handles the simpler shapes).
+   *
+   * Supported parts:
+   *   - `string`: emit as a Go string literal.
+   *   - `lookup`: `${MAP[KEY]}` against a `Record<T, string>` literal —
+   *     emit an IIFE that switches on the key prop and returns the
+   *     matching case (empty when no case matches). The key must be a
+   *     bare prop identifier today; other key shapes opt out.
+   *
+   * `ternary` is intentionally left unsupported — the existing
+   * element-attribute path handles it via Go template `{{if}}` syntax,
+   * and component-prop-via-ternary cases are rarer and can be added
+   * incrementally.
+   */
+  private templatePartsToGoCode(
+    parts: IRTemplatePart[],
+    propsParams: { name: string }[]
+  ): string | null {
+    const segments: string[] = []
+    for (const part of parts) {
+      if (part.type === 'string') {
+        // The IR analyzer already inlined identifier references; raw
+        // `${ident}` slips remain only when resolution failed. Emit
+        // the text verbatim — adapters can refine substitution later.
+        segments.push(JSON.stringify(part.value))
+        continue
+      }
+      if (part.type === 'lookup') {
+        const keyExpr = part.key.trim()
+        const param = propsParams.find(p => p.name === keyExpr)
+        if (!param) return null
+        const fieldName = this.capitalizeFieldName(keyExpr)
+        const caseEntries = Object.entries(part.cases)
+        if (caseEntries.length === 0) {
+          segments.push('""')
+          continue
+        }
+        const lines: string[] = []
+        lines.push('func() string {')
+        lines.push(`\t\t\tk, _ := in.${fieldName}.(string)`)
+        lines.push('\t\t\tswitch k {')
+        for (const [k, v] of caseEntries) {
+          lines.push(`\t\t\tcase ${JSON.stringify(k)}: return ${JSON.stringify(v)}`)
+        }
+        lines.push('\t\t\t}')
+        lines.push('\t\t\treturn ""')
+        lines.push('\t\t}()')
+        segments.push(lines.join('\n'))
+        continue
+      }
+      // ternary or future part kinds — opt out and let the caller
+      // fall back to the bare-expression path.
+      return null
+    }
+    if (segments.length === 0) return '""'
+    return segments.join(' + ')
+  }
+
   private resolveDynamicPropValue(
     expr: string,
     signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo }[],
