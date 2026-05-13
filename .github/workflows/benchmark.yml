@@ -8,6 +8,7 @@ on:
       - 'benchmarks/**'
 
 permissions:
+  contents: read
   pull-requests: write
 
 jobs:
@@ -15,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
 
@@ -38,7 +39,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Find existing benchmark comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@3eae4d37986fb5a8592848f6a574fdf654e61f9e # v3
         id: find-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -46,7 +47,7 @@ jobs:
           body-includes: '## Benchmark Results'
 
       - name: Post benchmark results
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043 # v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-id: ${{ steps.find-comment.outputs.comment-id }}

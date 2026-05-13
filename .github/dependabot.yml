@@ -1,0 +1,14 @@
+# Dependabot keeps SHA-pinned GitHub Actions up to date.
+# Actions are pinned to commit SHAs (see .github/workflows/*) for supply-chain
+# safety; Dependabot opens PRs that bump the SHA while preserving the `# vN`
+# trailing comment so the major version remains visible at a glance.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - '*'
