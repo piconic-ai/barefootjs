@@ -46,6 +46,16 @@ runAdapterConformanceTests({
     // to materialise the loop at request time.
     'static-array-from-props',
     'static-array-from-props-with-component',
+    // `Record<K, V>` + `obj[key]` index lookup (Button's variantClasses
+    // pattern). MojoAdapter currently strips the lookup expression from
+    // SSR output entirely — the bare `classes` identifier isn't
+    // declared in template scope, and the regex-based convertExpression
+    // doesn't know to materialise the object literal as a Perl hash
+    // (`({a => 'class-a'})->{$variant}`). Pinning the failing fixture
+    // as a skip rather than dropping it so the next attempt to ship
+    // mojo with Button surfaces this in CI rather than at runtime.
+    // Tracked: needs IR-level analysis or adapter-side hash rewrite.
+    'record-index-lookup',
   ],
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
