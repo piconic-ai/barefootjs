@@ -46,6 +46,7 @@ export const ErrorCodes = {
   COMPONENT_REQUIRED_PROP_MISSING: 'BF046',
 
   // Import errors (BF050-BF059)
+  SHARED_PROGRAM_REQUIRED: 'BF050',
   WRONG_PACKAGE_IMPORT: 'BF051',
 
   // Init statement errors (BF052)
@@ -129,6 +130,9 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING]:
     'Built-in component is missing a required prop.',
+
+  [ErrorCodes.SHARED_PROGRAM_REQUIRED]:
+    'Shared ts.Program required for type-based reactivity classification. This source imports a Reactive<T>-branded library (e.g. @barefootjs/form) whose getters cannot be classified by regex alone. Pass `options.program` (built via `createProgramForCorpus`) so the analyzer can resolve the brand through the TypeChecker.',
 
   [ErrorCodes.WRONG_PACKAGE_IMPORT]:
     'Import from wrong package.',

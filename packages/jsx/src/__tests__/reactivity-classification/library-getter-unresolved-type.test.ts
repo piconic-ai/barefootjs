@@ -72,11 +72,14 @@ describe('library getter — Reactive<T> brand', () => {
   })
 
   test('without shared Program: compile fails with BFxxx (no silent regex fallback)', () => {
-    // Post-refactor behavior: analyzer must refuse to classify reactivity
-    // by regex alone when a library getter is in play. Today this falls
-    // through silently — that is the bug.
+    // Post-refactor behavior: when the source imports from a known brand
+    // package (`@barefootjs/form`) we cannot classify reactivity from
+    // regex alone — the analyzer must refuse to proceed without a shared
+    // ts.Program. Today this falls through silently via the per-file
+    // program fallback, which is the bug.
     const source = `
-      export const Indicator = (props: { form: any }) => {
+      import type { FormReturn } from '@barefootjs/form'
+      export const Indicator = (props: { form: FormReturn }) => {
         return <div>{props.form.isSubmitting()}</div>
       }
     `
