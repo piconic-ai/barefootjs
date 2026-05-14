@@ -20,7 +20,8 @@
 //   BAREFOOT_CREATE_INTEGRATION=1 bun test src/__tests__/scaffold.test.ts
 
 import { expect } from 'bun:test'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, statSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { assertDevReloadContract, type DevReloadFacts } from './dev-reload.contract'
 
@@ -83,4 +84,30 @@ export function assertScaffoldContract(facts: ScaffoldFacts): void {
 
   // Step 6: dev-reload contract
   assertDevReloadContract(facts.devReload)
+}
+
+/**
+ * Ensure the `create-barefootjs` CLI is built before scaffold integration
+ * tests run. Mirrors the `ensureBuilt()` helper in `create-barefootjs`'s
+ * own test suite so adapter packages don't need to depend on that package's
+ * internal test helpers.
+ *
+ * @param createPkgDir  Absolute path to the `create-barefootjs` package root
+ *                      (the directory that contains `package.json` and `src/`).
+ */
+export function ensureCreateCli(createPkgDir: string): void {
+  const cliPath = path.join(createPkgDir, 'dist', 'index.js')
+  const srcPath = path.join(createPkgDir, 'src', 'index.ts')
+  const srcMtime = statSync(srcPath).mtimeMs
+  const distFresh = existsSync(cliPath) && statSync(cliPath).mtimeMs >= srcMtime
+  if (!distFresh) {
+    const res = spawnSync('bun', ['run', 'build'], {
+      cwd: createPkgDir,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    if (res.status !== 0) {
+      throw new Error(`create-barefootjs build failed:\n${res.stdout}\n${res.stderr}`)
+    }
+  }
 }

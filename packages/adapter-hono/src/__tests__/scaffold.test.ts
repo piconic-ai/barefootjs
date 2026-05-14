@@ -20,6 +20,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import {
   assertScaffoldContract,
+  ensureCreateCli,
   type ScaffoldFacts,
 } from '@barefootjs/adapter-tests'
 
@@ -27,10 +28,11 @@ import {
 // Helpers (thin wrappers around the compiled create-barefootjs CLI)
 // ---------------------------------------------------------------------------
 
-const CREATE_CLI = path.join(
+const CREATE_PKG_DIR = path.join(
   fileURLToPath(new URL('.', import.meta.url)),
-  '../../../create-barefootjs/dist/index.js',
+  '../../../create-barefootjs',
 )
+const CREATE_CLI = path.join(CREATE_PKG_DIR, 'dist', 'index.js')
 
 function mktmp(): string {
   return mkdtempSync(path.join(tmpdir(), 'bf-hono-scaffold-test-'))
@@ -46,6 +48,7 @@ function runCreate(
   args: string[],
   opts: { cwd: string; env?: Record<string, string> },
 ): RunResult {
+  ensureCreateCli(CREATE_PKG_DIR)
   const result = spawnSync('node', [CREATE_CLI, ...args], {
     cwd: opts.cwd,
     env: {
