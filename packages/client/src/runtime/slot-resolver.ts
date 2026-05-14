@@ -98,9 +98,10 @@ export function findSsrScopeBySlotIn(
 
   // Name-prefix scan: for adapters that emit random-anchored child
   // scopes (`~Name_<rand>` without slot suffix — go-template /
-  // mojolicious). Each loop iteration calls this with its own primary
-  // root, so name-prefix is uniquely matching within scope.
-  const nameSelector = `[${BF_SCOPE}^="~${name}_"]`
+  // mojolicious). `:not([bf-h])` excludes scopes that already have a
+  // host marker — those are claim-able only through their own primary
+  // (bf-h, bf-m) query, never via name-prefix fallback.
+  const nameSelector = `[${BF_SCOPE}^="~${name}_"]:not([${BF_HOST}])`
   if (selfMatch && parent.matches(nameSelector)) return parent as HTMLElement
   return parent.querySelector(nameSelector) as HTMLElement | null
 }

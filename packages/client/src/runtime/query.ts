@@ -323,6 +323,23 @@ function findInPortals(scopeId: string, selector: string): Element | null {
  */
 export function qsa(el: Element | null, selector: string): Element | null {
   if (!el) return null
+
+  // Comma-separated selectors are tried in priority order (left-to-right)
+  // rather than relying on `querySelector`'s document-order semantics. This
+  // makes the compiler-emitted slot-child selector
+  //   `[bf-h="X"][bf-m="sN"], [bf-s$="_sN"], [bf-s^="~Name_"]`
+  // resolve to the most specific match (#1249). The selectors used by qsa
+  // never legitimately need DOM-order across alternatives.
+  if (selector.includes(',')) {
+    for (const clause of splitTopLevelCommas(selector)) {
+      const c = clause.trim()
+      if (!c) continue
+      const hit = qsa(el, c)
+      if (hit) return hit
+    }
+    return null
+  }
+
   // #1220 cross-binding skip: when the selector is a bare slot-suffix
   // lookup `[bf-s$="_<slotId>"]`, defer to `qsaChildScope` so candidates
   // whose bf-s ends in a deeper `_sN_sN` path (a synthesized child's
@@ -333,6 +350,25 @@ export function qsa(el: Element | null, selector: string): Element | null {
   }
   if (el.matches(selector)) return el
   return el.querySelector(selector)
+}
+
+/** Split a CSS selector list on top-level commas, ignoring commas inside
+ *  `[…]` attribute selectors or `(…)` pseudo-class arguments. */
+function splitTopLevelCommas(selector: string): string[] {
+  const out: string[] = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < selector.length; i++) {
+    const ch = selector.charCodeAt(i)
+    if (ch === 0x5b /* [ */ || ch === 0x28 /* ( */) depth++
+    else if (ch === 0x5d /* ] */ || ch === 0x29 /* ) */) depth--
+    else if (ch === 0x2c /* , */ && depth === 0) {
+      out.push(selector.slice(start, i))
+      start = i + 1
+    }
+  }
+  out.push(selector.slice(start))
+  return out
 }
 
 /**

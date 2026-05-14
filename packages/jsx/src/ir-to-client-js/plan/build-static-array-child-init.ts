@@ -76,7 +76,7 @@ function buildSingleCompPlan(
   // that don't carry host metadata (mapArray's renderItem callback runs
   // outside any `setParentScopeId` context — follow-up to propagate it).
   const childSelector = slotId
-    ? `\`[bf-h="\${__scopeId}"][bf-m="${slotId}"], [bf-s$="_${slotId}"], [bf-s^="~${name}_"]\``
+    ? `\`[bf-h="\${__scopeId}"][bf-m="${slotId}"], [bf-s$="_${slotId}"], [bf-s^="~${name}_"]:not([bf-h])\``
     : `'[bf-s^="~${name}_"], [bf-s^="${name}_"]'`
 
   return {
