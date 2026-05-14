@@ -193,22 +193,22 @@ function emitEventSetup(
 /**
  * Build the component-finder selector for SSR hydration initChild.
  *
- * Returns a JS source EXPRESSION (a single-quoted string literal) embedded
- * verbatim into generated code, e.g. `qsa(__el, ${buildCompSelector(c)})`.
+ * Returns a JS source EXPRESSION embedded verbatim into generated code,
+ * e.g. `qsa(__el, ${buildCompSelector(c)})`.
  *
- * With `slotId`: the suffix selector `[bf-s$="_${slotId}"]` matches both
- * the parent-anchored shape (`~${parentScopeId}_${slotId}`) and the
- * random-anchored shape (`~${name}_<rand>_${slotId}`). The #1220
- * cross-binding (a synthesized child's deeper `_sN_sN` shape
- * coincidentally matching this suffix) is filtered at runtime by `qsa` —
- * see `packages/client/src/runtime/query.ts`.
+ * With `slotId`: primary `(bf-h, bf-m)` selector evaluated at runtime
+ * against the enclosing parent's `__scopeId`. Unique by construction —
+ * no fallback ladder, no #1220 cross-binding risk (per #1249).
  *
- * Without `slotId`: name-prefix selector — already unambiguous by name.
+ * Without `slotId`: bf-s name-prefix selector — used for top-level
+ * component lookup where there is no slot anchor. Per #1249, bf-s values
+ * no longer carry the `~` child prefix, so the dual selector is collapsed
+ * to a single name-prefix.
  */
 export function buildCompSelector(comp: { slotId?: string | null; name: string }): string {
   return comp.slotId
-    ? `'[bf-s$="_${comp.slotId}"]'`
-    : `'[bf-s^="~${comp.name}_"], [bf-s^="${comp.name}_"]'`
+    ? `\`[bf-h="\${__scopeId}"][bf-m="${comp.slotId}"]\``
+    : `'[bf-s^="${comp.name}_"]'`
 }
 
 /**

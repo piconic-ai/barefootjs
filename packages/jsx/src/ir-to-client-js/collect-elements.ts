@@ -552,14 +552,13 @@ export function collectElements(
         // items inside the forEach body without rewriting the template.
         if (l.isStaticArray) {
           // Plain-element body: leave `insideLoop=false` so any nested
-          // component nodes keep their parent-slot suffix in the per-iteration
-          // renderChild call. The `outer-nested` static-array-child-init plan
-          // uses a strict `'[bf-s$="_${slotId}"]'` selector with no `~Name_`
-          // fallback, so the materialized children must end in `_${slotId}`
-          // for `initChild` to find them. SSR's parent-anchored shape
-          // (`test_${slotId}`) and CSR's random-anchored shape
-          // (`~${name}_<rand>_${slotId}`) both end in `_${slotId}` — keeping
-          // them aligned is what makes the dual SSR/CSR lookup work.
+          // component nodes keep their parent-slot context in the
+          // per-iteration renderChild call. Per #1249, the
+          // `outer-nested` static-array-child-init plan addresses
+          // children by the (bf-h, bf-m) pair against the enclosing
+          // parent's __scopeId — both SSR and CSR mounts stamp these
+          // markers, so SSR's parent-anchored shape and CSR's random-id
+          // shape both resolve through the same lookup.
           staticItemTemplate = useElementReconciliation
             ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0)
             : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0)

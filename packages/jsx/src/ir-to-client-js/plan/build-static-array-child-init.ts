@@ -71,15 +71,12 @@ function buildSingleCompPlan(
 ): SingleCompInitPlan {
   const { name, props, slotId } = childComponent
   // JS source expression embedded verbatim into the generated code.
-  // Combines slotId suffix match (for inlined stateless components whose
-  // bf-s is `~${parentScopeId}_${slotId}`) with name-prefix match (for
-  // stateful components whose bf-s is `${name}_${random}`). Cross-binding
-  // protection (#1220 — synthesized children with `_sN_sN` shape) is
-  // applied at runtime by `qsa` — see packages/client/src/runtime/query.ts.
-  const namePrefixSelector = `[bf-s^="~${name}_"], [bf-s^="${name}_"]`
+  // Per #1249, slot-attached children are addressed by the (bf-h, bf-m)
+  // pair, evaluated at runtime against the enclosing parent's __scopeId.
+  // Top-level cases (no slotId) fall back to a bf-s name-prefix scan.
   const childSelector = slotId
-    ? `'[bf-s$="_${slotId}"], ${namePrefixSelector}'`
-    : `'${namePrefixSelector}'`
+    ? `\`[bf-h="\${__scopeId}"][bf-m="${slotId}"]\``
+    : `'[bf-s^="${name}_"]'`
 
   return {
     kind: 'single-comp',

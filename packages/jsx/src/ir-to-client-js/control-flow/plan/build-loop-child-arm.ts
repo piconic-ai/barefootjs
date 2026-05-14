@@ -135,14 +135,13 @@ export function buildBranchChildComponentInitsPlan(
   const { components, wrap } = args
   const inits: BranchChildComponentInit[] = []
   for (const comp of components) {
-    // Use slotId suffix match when available so two siblings of the same
-    // component type with different slotIds don't collide. The #1220
-    // cross-binding (a sibling's `_sN_sN` nested scope coincidentally
-    // matching this suffix) is filtered at runtime by `qsa` — see
-    // packages/client/src/runtime/query.ts.
+    // Per #1249, slot-attached children are addressed by the (bf-h, bf-m)
+    // pair against the enclosing parent's __scopeId. Same-name siblings at
+    // different slots can no longer collide. Top-level (no slotId) falls
+    // back to a bf-s name-prefix scan.
     const selector = comp.slotId
-      ? `'[bf-s$="_${comp.slotId}"]'`
-      : `'[bf-s^="~${comp.name}_"]'`
+      ? `\`[bf-h="\${__scopeId}"][bf-m="${comp.slotId}"]\``
+      : `'[bf-s^="${comp.name}_"]'`
 
     const propsEntries = comp.props
       .filter(p => p.name !== 'key')
@@ -227,8 +226,12 @@ export function buildBranchInnerLoopsPlan(
     const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings)
 
     const csl = inner.containerSlotId
+    // The inner loop's container element is marked with `bf="<containerSlotId>"`
+    // on the host side. The fallback to a scope-id match handles the case
+    // where the container IS a child component scope at that slot, addressed
+    // by (bf-h, bf-m) per #1249.
     const containerExpr = csl
-      ? `(${scopeVar}.querySelector('[bf="${csl}"]') ?? ${scopeVar}.querySelector('[bf-s$="_${csl}"]') ?? ${scopeVar})`
+      ? `(${scopeVar}.querySelector('[bf="${csl}"]') ?? ${scopeVar}.querySelector(\`[bf-h="\${__scopeId}"][bf-m="${csl}"]\`) ?? ${scopeVar})`
       : scopeVar
 
     const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)

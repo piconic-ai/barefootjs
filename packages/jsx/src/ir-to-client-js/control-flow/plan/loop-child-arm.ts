@@ -44,9 +44,9 @@ export interface BranchChildComponentInit {
   /** Component tag name, e.g. `"Card"`. */
   name: string
   /**
-   * JS source expression (single-quoted string literal) embedded into
-   * `qsa(__branchScope, <here>)`. Either `'[bf-s$="_<slotId>"]'` or
-   * `'[bf-s^="~<name>_"]'`.
+   * JS source expression embedded into `qsa(__branchScope, <here>)`.
+   * For slot-attached children: `\`[bf-h="${__scopeId}"][bf-m="<slotId>"]\``.
+   * For top-level (no slotId): `'[bf-s^="<name>_"]'`.
    */
   selector: string
   /** Identifier used by the data-bf-ph attribute on the CSR placeholder. */
