@@ -257,11 +257,14 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${attrValueToString(keyProp.value) ?? 'undefined'}` : ''
-      // Pass slotId as suffix so $c() can find the child component by slot after branch swap.
-      // Inside a loop body each iteration owns a separate scope (identified by
-      // `data-key`), so the parent-slot suffix is dropped — matching the
-      // SSR template's loop component emit in `generateCsrTemplate` (#1268).
-      const slotArg = (!insideLoop && node.slotId) ? `, '${node.slotId}'` : ''
+      // Pass slotId as suffix so $c() can find the child component by slot
+      // after branch swap. Per #1249, even inside a loop body the slot
+      // suffix is preserved — child scopes must carry bf-h / bf-m at
+      // construction time so `upsertChild`'s primary `(bf-h, bf-m)` lookup
+      // succeeds. Each iteration's per-instance disambiguation comes from
+      // searching within the iteration's loop-item element, not from the
+      // slot value itself.
+      const slotArg = node.slotId ? `, '${node.slotId}'` : ''
       return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
     }
 

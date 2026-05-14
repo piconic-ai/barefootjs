@@ -297,23 +297,24 @@ export function renderChild(
     : ''
 
   if (!templateFn) {
-    // Fallback: empty placeholder (for components without registered templates)
-    // Use ~ prefix to mark as child component (prevents hydrate() re-initialization)
-    return `<div bf-s="~${scopePrefix}${suffix}"${slotAttrs}${keyAttr}></div>`
+    // Fallback: empty placeholder (for components without registered templates).
+    // Per #1249, child-scope status is signalled by bf-h presence (set in
+    // slotAttrs when this is a slot-attached mount), not by a `~` prefix.
+    return `<div bf-s="${scopePrefix}${suffix}"${slotAttrs}${keyAttr}></div>`
   }
 
   const html = templateFn(props).trim()
-  // Inject bf-s scope attribute with ~ child prefix into the first element tag.
-  // The ~ prefix marks this as a child component so hydrate()'s requestAnimationFrame
-  // re-check skips it (the parent initializes it via initChild instead).
-  // The optional slot suffix (e.g., "_s5") enables $c() slot-based lookup from the parent.
-  // Templates may start with comment markers (e.g., <!--bf-cond-start:...-->),
-  // so we find the first element tag rather than assuming it's at position 0.
+  // Inject bf-s scope attribute into the first element tag. The slot
+  // markers (bf-h / bf-m, in slotAttrs) signal child-scope status to
+  // `hydrate.ts::hydrateElementScope`, which skips elements carrying
+  // bf-h so the parent's initChild owns lifecycle. Templates may start
+  // with comment markers (e.g. <!--bf-cond-start:...-->), so we find
+  // the first element tag rather than assuming it's at position 0.
   const firstElMatch = html.match(/<(\w+)/)
   if (!firstElMatch) return html
   const insertPos = html.indexOf(firstElMatch[0])
   return html.slice(0, insertPos) +
-    html.slice(insertPos).replace(/^(<\w+)/, `$1 bf-s="~${scopePrefix}${suffix}"${slotAttrs}${keyAttr}`)
+    html.slice(insertPos).replace(/^(<\w+)/, `$1 bf-s="${scopePrefix}${suffix}"${slotAttrs}${keyAttr}`)
 }
 
 /**

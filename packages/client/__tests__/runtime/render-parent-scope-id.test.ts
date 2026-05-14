@@ -49,9 +49,10 @@ describe('render() threads parent scope ID into renderChild (#1160)', () => {
 
     const childEl = parentEl.firstElementChild as HTMLElement
     const childScope = childEl.getAttribute('bf-s') ?? ''
-    // Pre-fix shape was `~Issue1160Child_${random}_s0`; post-fix is `~${parentScope}_s0`.
-    expect(childScope).toBe(`~${parentScope}_s0`)
-    expect(childScope.startsWith('~Issue1160Child_')).toBe(false)
+    // Per #1249 the `~` child prefix was dropped — child bf-s is the
+    // parent's scope id + slot suffix.
+    expect(childScope).toBe(`${parentScope}_s0`)
+    expect(childScope.startsWith('Issue1160Child_')).toBe(false)
   })
 
   test('$c(parentScope, "sN") resolves the child element after render()', () => {
@@ -102,8 +103,8 @@ describe('render() threads parent scope ID into renderChild (#1160)', () => {
 
     // If render() leaked _parentScopeId, parentB's renderChild would still see
     // parentA's ID and stamp `~${parentAScope}_s7` on B's child.
-    expect(childA.getAttribute('bf-s')).toBe(`~${parentAScope}_s0`)
-    expect(childB.getAttribute('bf-s')).toBe(`~${parentBScope}_s7`)
+    expect(childA.getAttribute('bf-s')).toBe(`${parentAScope}_s0`)
+    expect(childB.getAttribute('bf-s')).toBe(`${parentBScope}_s7`)
   })
 
   test('a throwing template still restores _parentScopeId via try/finally', () => {
@@ -133,8 +134,8 @@ describe('render() threads parent scope ID into renderChild (#1160)', () => {
     const parentEl = containerB.firstElementChild as HTMLElement
     const parentScope = parentEl.getAttribute('bf-s') ?? ''
     const childScope = parentEl.firstElementChild?.getAttribute('bf-s') ?? ''
-    expect(childScope).toBe(`~${parentScope}_s0`)
-    expect(childScope.startsWith('~Issue1160Thrower_')).toBe(false)
+    expect(childScope).toBe(`${parentScope}_s0`)
+    expect(childScope.startsWith('Issue1160Thrower_')).toBe(false)
   })
 
   test("existing bf-s on the rendered element is respected (not overwritten)", () => {

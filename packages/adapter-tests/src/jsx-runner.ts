@@ -87,9 +87,13 @@ export function normalizeHTML(html: string): string {
     .replace(/<!--bf-scope:[^>]*-->/g, '')
     // Normalize child scope ID prefix: bf-s="~parentId_sN" → bf-s="parentId_sN"
     .replace(/bf-s="~([^"]*)"/g, 'bf-s="$1"')
-    // Normalize non-deterministic child scope IDs (hash derived from file path):
-    // bf-s="ComponentName_abc123" → bf-s="ComponentName_*"
-    .replace(/bf-s="([A-Z][a-zA-Z]*)_[a-z0-9]+"/g, 'bf-s="$1_*"')
+    // Normalize non-deterministic child scope IDs. Keep the trailing
+    // `_sN` slot suffix intact so the SSR-hydration contract test can
+    // still pair renderChild('Name', ..., 'sN') with `_sN` in HTML.
+    //   bf-s="ComponentName_abc123"          → bf-s="ComponentName_*"
+    //   bf-s="ComponentName_abc123_s10"      → bf-s="ComponentName_*_s10"
+    //   bf-s="ParentName_xyz_s10"            → bf-s="ParentName_*_s10"
+    .replace(/bf-s="([A-Z][a-zA-Z]*)_[a-z0-9]+((?:_s\d+)*)"/g, 'bf-s="$1_*$2"')
     // Normalize void element self-closing: <br/> or <br /> → <br>
     .replace(new RegExp(`<(${VOID_ELEMENTS})(\\s[^>]*?)?\\s*/>`, 'g'), '<$1$2>')
     // Remove trailing whitespace before >

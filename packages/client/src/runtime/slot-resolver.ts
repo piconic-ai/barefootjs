@@ -73,12 +73,27 @@ export function findSsrScopeBySlotIn(
   selfMatch: boolean,
 ): HTMLElement | null {
   const parentBfs = parentScopeOf(parent, anchorScope)
-  if (!parentBfs) return null
 
-  const escaped = (CSS as { escape?: (s: string) => string }).escape
-    ? CSS.escape(parentBfs)
-    : parentBfs.replace(/"/g, '\\"')
-  const selector = `[${BF_HOST}="${escaped}"][${BF_AT}="${slotId}"]`
-  if (selfMatch && parent.matches(selector)) return parent as HTMLElement
-  return parent.querySelector(selector) as HTMLElement | null
+  // Primary lookup via slot-relationship markers (#1249).
+  if (parentBfs) {
+    const escaped = (CSS as { escape?: (s: string) => string }).escape
+      ? CSS.escape(parentBfs)
+      : parentBfs.replace(/"/g, '\\"')
+    const selector = `[${BF_HOST}="${escaped}"][${BF_AT}="${slotId}"]`
+    if (selfMatch && parent.matches(selector)) return parent as HTMLElement
+    const direct = parent.querySelector(selector) as HTMLElement | null
+    if (direct) return direct
+  }
+
+  // Loop-body fallback: inside a mapArray reconcile, `renderChild` runs
+  // outside any `setParentScopeId` context (mapArray doesn't propagate
+  // host through its renderItem callback yet — follow-up). Those elements
+  // therefore lack bf-h / bf-m even though their bf-s value still ends
+  // in `_<slotId>`. We accept the suffix lookup as a fallback ONLY for
+  // elements that have NO bf-h, so it can't reclaim a sibling slot's
+  // already-bound child. The legacy bf-s name-prefix scan is intentionally
+  // gone — that was the source of #1249's cross-scope collision.
+  const suffixSelector = `[${BF_SCOPE}$="_${slotId}"]:not([${BF_HOST}])`
+  if (selfMatch && parent.matches(suffixSelector)) return parent as HTMLElement
+  return parent.querySelector(suffixSelector) as HTMLElement | null
 }
