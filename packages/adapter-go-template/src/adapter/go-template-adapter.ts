@@ -356,14 +356,17 @@ export class GoTemplateAdapter extends BaseAdapter {
    * keep working without noise.
    */
   private checkImportedLoopChildComponents(ir: ComponentIR): void {
+    // Collect every name imported from a relative-path module (no
+    // case filter — `IRComponent` nodes only exist for PascalCase JSX
+    // usages, so a lowercase utility import in the set can't match
+    // anyway, and any heuristic on the import name itself would be
+    // strictly less robust than the structural IR check below).
     const relativeImports = new Set<string>()
     for (const imp of ir.metadata.templateImports ?? ir.metadata.imports ?? []) {
       if (!imp.source.startsWith('./') && !imp.source.startsWith('../')) continue
       if (imp.isTypeOnly) continue
       for (const spec of imp.specifiers) {
-        const name = spec.alias ?? spec.name
-        // Only PascalCase identifiers are component candidates.
-        if (/^[A-Z]/.test(name)) relativeImports.add(name)
+        relativeImports.add(spec.alias ?? spec.name)
       }
     }
     if (relativeImports.size === 0) return
@@ -2815,14 +2818,21 @@ export class GoTemplateAdapter extends BaseAdapter {
       return `{{bfComment "loop:${loop.markerId}"}}{{bfComment "/loop:${loop.markerId}"}}`
     }
 
-    // An array-destructure loop param (`([emoji, users]) => ...`) requires
-    // multi-variable `{{range $k, $v := ...}}` semantics that Go templates
-    // don't provide for arbitrary tuples — the adapter would otherwise emit
+    // An array/object-destructure loop param (`([emoji, users]) => ...`
+    // or `({ name, age }) => ...`) requires multi-variable
+    // `{{range $k, $v := ...}}` semantics that Go templates don't
+    // provide for arbitrary tuples — the adapter would otherwise emit
     // `{{range $_, $[emoji, users] := .Entries}}`, which is invalid Go
     // template syntax. Surface this at build time (#1266) instead of
     // shipping the broken `{{range}}` line for the user to discover at
     // request time.
-    if (/^[\[{]/.test(loop.param.trim())) {
+    //
+    // Check the IR's structured `paramBindings` field rather than
+    // string-matching `loop.param`: Phase 1 populates `paramBindings`
+    // iff the param is a destructure pattern (array or object); a
+    // simple identifier leaves it `undefined`. The structured check is
+    // robust to whitespace / formatting variants in the source.
+    if (loop.paramBindings && loop.paramBindings.length > 0) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',

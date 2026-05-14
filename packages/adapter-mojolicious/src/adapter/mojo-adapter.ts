@@ -340,13 +340,17 @@ export class MojoAdapter extends BaseAdapter {
    * cross-template-registration constraint at request time.
    */
   private checkImportedLoopChildComponents(ir: ComponentIR): void {
+    // Collect every name imported from a relative-path module (no
+    // case filter — `IRComponent` nodes only exist for PascalCase JSX
+    // usages, so a lowercase utility import in the set can't match
+    // anyway, and any heuristic on the import name itself would be
+    // strictly less robust than the structural IR check below).
     const relativeImports = new Set<string>()
     for (const imp of ir.metadata.templateImports ?? ir.metadata.imports ?? []) {
       if (!imp.source.startsWith('./') && !imp.source.startsWith('../')) continue
       if (imp.isTypeOnly) continue
       for (const spec of imp.specifiers) {
-        const name = spec.alias ?? spec.name
-        if (/^[A-Z]/.test(name)) relativeImports.add(name)
+        relativeImports.add(spec.alias ?? spec.name)
       }
     }
     if (relativeImports.size === 0) return
@@ -423,12 +427,19 @@ export class MojoAdapter extends BaseAdapter {
     // Client-only loops: skip SSR rendering entirely
     if (loop.clientOnly) return ''
 
-    // An array-destructure loop param (`([emoji, users]) => ...`) lowers
-    // to invalid Perl — the adapter would otherwise emit
-    // `% my $[emoji, users] = $entries->[$_i];`, which is a parse error.
-    // Surface this at build time (#1266) instead of shipping the broken
-    // template line for the user to discover at request time.
-    if (/^[\[{]/.test(loop.param.trim())) {
+    // An array/object-destructure loop param (`([emoji, users]) => ...`
+    // or `({ name, age }) => ...`) lowers to invalid Perl — the adapter
+    // would otherwise emit `% my $[emoji, users] = $entries->[$_i];`,
+    // which is a parse error. Surface this at build time (#1266)
+    // instead of shipping the broken template line for the user to
+    // discover at request time.
+    //
+    // Check the IR's structured `paramBindings` field rather than
+    // string-matching `loop.param`: Phase 1 populates `paramBindings`
+    // iff the param is a destructure pattern (array or object); a
+    // simple identifier leaves it `undefined`. The structured check is
+    // robust to whitespace / formatting variants in the source.
+    if (loop.paramBindings && loop.paramBindings.length > 0) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
