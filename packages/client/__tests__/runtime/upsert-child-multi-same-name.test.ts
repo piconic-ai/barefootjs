@@ -108,13 +108,11 @@ describe('upsertChild — multiple same-name children at distinct slots', () => 
     expect(buttons[2].textContent).toBe('R')
   })
 
-  test('legacy SSR with two same-name children (bf-s suffixes only) — each slot resolves correctly', () => {
-    // Predates the bf-h/bf-m markers — only bf-s suffix info
-    // survives. Two same-name children at distinct slot ids must each
-    // resolve to their OWN suffix-matched SSR scope. The suffix selector
-    // (`[bf-s$="_<slotId>"]`) is unique enough to disambiguate; the fix
-    // adds belt-and-braces filtering via `bf-m` which is irrelevant
-    // here (no bf-m in legacy markup), so resolution still works.
+  test('SSR with two same-name children at distinct slots — (bf-h, bf-m) resolves each correctly', () => {
+    // Post-#1249: identity is the (bf-h, bf-m) pair. Two same-name
+    // children of the same host with distinct slot ids each carry their
+    // own bf-m, so the resolver's primary lookup discriminates without
+    // any fallback ladder. The legacy bf-s suffix lookup is gone.
     hydrate('Item', {
       init: () => {},
       template: () => '<i bf="s0"></i>',
@@ -126,10 +124,10 @@ describe('upsertChild — multiple same-name children at distinct slots', () => 
     document.body.appendChild(anchor)
 
     const host = document.createElement('div')
-    // Two SSR scopes already in tree (legacy shape, no bf-m).
+    // Two SSR scopes already in tree with bf-h/bf-m markers.
     host.innerHTML =
-      '<i class="a" bf-s="~Item_legacy_s10"></i>' +
-      '<i class="b" bf-s="~Item_legacy_s11"></i>'
+      '<i class="a" bf-s="Item_a" bf-h="Parent_test" bf-m="s10"></i>' +
+      '<i class="b" bf-s="Item_b" bf-h="Parent_test" bf-m="s11"></i>'
     anchor.appendChild(host)
 
     const a = upsertChild(host, 'Item', 's10', {}, undefined, anchor)

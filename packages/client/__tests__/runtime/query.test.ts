@@ -496,13 +496,13 @@ describe('$c', () => {
   test('strips ^ prefix defensively for component name IDs', () => {
     document.body.innerHTML = `
       <div bf-s="App_root">
-        <div bf-s="~Counter_abc123">counter</div>
+        <div bf-s="Counter_abc123">counter</div>
       </div>
     `
     const scope = document.querySelector('[bf-s="App_root"]')!
     const [result] = $c(scope, '^Counter')
     expect(result).not.toBeNull()
-    expect(result?.getAttribute('bf-s')).toBe('~Counter_abc123')
+    expect(result?.getAttribute('bf-s')).toBe('Counter_abc123')
   })
 
   test('finds multiple child scopes', () => {
@@ -522,7 +522,7 @@ describe('$c', () => {
     document.body.innerHTML = `
       <div bf-s="App_abc">
         <div bf-s="App_abc_s0">slot</div>
-        <div bf-s="~Counter_xyz">counter</div>
+        <div bf-s="Counter_xyz">counter</div>
       </div>
     `
     const scope = document.querySelector('[bf-s="App_abc"]')!
@@ -579,17 +579,20 @@ describe('$c', () => {
     })
   })
 
-  describe('child component prefix (~) matching', () => {
-    test('finds child-prefixed scope by component name', () => {
+  describe('component name matching (post-#1249 single shape)', () => {
+    test('finds child scope by component name', () => {
+      // Per #1249, bf-s values are uniform — no `~` child prefix. Both
+      // root and child scopes share the same `Name_<id>` shape, and the
+      // resolver uses a single bf-s name-prefix selector.
       document.body.innerHTML = `
         <div bf-s="App_root">
-          <div bf-s="~Dialog_abc">dialog</div>
+          <div bf-s="Dialog_abc">dialog</div>
         </div>
       `
       const scope = document.querySelector('[bf-s="App_root"]')!
       const [result] = $c(scope, 'Dialog')
       expect(result).not.toBeNull()
-      expect(result?.getAttribute('bf-s')).toBe('~Dialog_abc')
+      expect(result?.getAttribute('bf-s')).toBe('Dialog_abc')
     })
 
     test('finds non-prefixed scope by component name', () => {
