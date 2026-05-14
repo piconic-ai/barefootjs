@@ -9,7 +9,11 @@ test.describe('Dashboard Builder Block', () => {
   })
 
   const section = (page: any) =>
-    page.locator('[bf-s^="DashboardBuilderDemo_"]:not([data-slot])').first()
+    // Root scope only: per #1249, child scopes carry `bf-h`, so a
+    // `:not([bf-h])` filter excludes them. Without it the locator now
+    // over-matches because child bf-s values lead with the parent's
+    // name (no `~` prefix any more).
+    page.locator('[bf-s^="DashboardBuilderDemo_"]:not([bf-h]):not([data-slot])').first()
 
   // --- Initial Render ---
 
