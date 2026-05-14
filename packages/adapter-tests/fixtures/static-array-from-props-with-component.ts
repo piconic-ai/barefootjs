@@ -20,6 +20,13 @@ import { createFixture } from '../src/types'
  * covered by the runtime regression test in
  * `packages/client/__tests__/runtime/static-loop-csr-materialize.test.ts`
  * since the harness here only evaluates the `template:` lambda.
+ *
+ * The Go template adapter additionally surfaces `BF103` (Tag is
+ * imported from a sibling .tsx, and the adapter can't register the
+ * child template alongside the parent) plus `BF104` (the loop param
+ * is an array destructure) at build time (#1266). The Mojo adapter
+ * surfaces `BF104` for the same destructure shape. The
+ * `expectedDiagnostics` entries pin those contracts.
  */
 export const fixture = createFixture({
   id: 'static-array-from-props-with-component',
@@ -60,4 +67,14 @@ export function Tag(props: { id: string; variant: 'on' | 'off' }) {
       <span class="tag-on" bf-s="Tag_*" data-key="c" bf="s1"><!--bf:s0-->c<!--/--></span>
     </ul>
   `,
+  expectedDiagnostics: {
+    'go-template': [
+      { code: 'BF103', severity: 'error' },
+      { code: 'BF104', severity: 'error' },
+    ],
+    mojo: [
+      { code: 'BF103', severity: 'error' },
+      { code: 'BF104', severity: 'error' },
+    ],
+  },
 })

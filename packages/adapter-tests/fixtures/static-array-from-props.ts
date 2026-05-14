@@ -10,6 +10,14 @@ import { createFixture } from '../src/types'
  *
  * The fix routes the static-loop emitter through a clone-and-append fallback
  * when the per-iteration child element is missing from the container.
+ *
+ * The SSR text-template adapters (Go, Mojo) also can't lower the array-
+ * destructure loop param (`([emoji, users]) => ...`) into their native
+ * range/for syntax — they previously emitted invalid template lines
+ * (`{{range $_, $[emoji, users] := .Entries}}` / `% my $[emoji, users] =
+ * $entries->[$_i];`) and the breakage only surfaced at request time. The
+ * adapters now emit `BF104` for the destructure pattern at build time
+ * (#1266); the `expectedDiagnostics` entries pin that contract.
  */
 export const fixture = createFixture({
   id: 'static-array-from-props',
@@ -41,4 +49,8 @@ export function ReactionBar(props: Props) {
   expectedHtml: `
     <div data-reaction-bar="true" bf-s="test" bf="s2"><button type="button" data-key="👍"><span><!--bf:s0-->👍<!--/--></span><span><!--bf:s1-->2<!--/--></span></button></div>
   `,
+  expectedDiagnostics: {
+    'go-template': [{ code: 'BF104', severity: 'error' }],
+    mojo: [{ code: 'BF104', severity: 'error' }],
+  },
 })
