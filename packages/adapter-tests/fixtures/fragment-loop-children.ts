@@ -37,6 +37,6 @@ export function Edges() {
 }
 `,
   expectedHtml: `
-    <svg bf-s="test" bf-r="" bf="s2"></svg>
+    <svg bf-s="test" bf="s2"></svg>
   `,
 })

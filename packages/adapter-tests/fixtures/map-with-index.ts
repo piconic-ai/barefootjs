@@ -13,6 +13,6 @@ export function MapWithIndex() {
 }
 `,
   expectedHtml: `
-    <ul bf-s="test" bf-r="" bf="s2"></ul>
+    <ul bf-s="test" bf="s2"></ul>
   `,
 })

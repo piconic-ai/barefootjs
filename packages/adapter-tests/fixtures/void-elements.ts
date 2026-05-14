@@ -16,7 +16,7 @@ export function VoidElements() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf-r="">
+    <div bf-s="test">
       <br>
       <hr>
       <img src="test.png" alt="test">

@@ -22,6 +22,6 @@ export function BranchMap() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf-r="" bf="s2"><span bf-c="s0">Empty</span></div>
+    <div bf-s="test" bf="s2"><span bf-c="s0">Empty</span></div>
   `,
 })

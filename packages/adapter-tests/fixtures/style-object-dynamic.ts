@@ -19,6 +19,6 @@ export function StyleObjectDynamic({ color }: { color: string }) {
 `,
   props: { color: 'red' },
   expectedHtml: `
-    <div style="background-color:red;padding:8px" bf-s="test" bf-r="" bf="s0">Hello</div>
+    <div style="background-color:red;padding:8px" bf-s="test" bf="s0">Hello</div>
   `,
 })

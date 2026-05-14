@@ -13,7 +13,7 @@ export function NullishCoalescingText(props: { label?: string; size?: number }) 
 `,
   props: { label: 'Custom', size: 5 },
   expectedHtml: `
-    <div bf-s="test" bf-r="">
+    <div bf-s="test">
       <span bf="s1"><!--bf:s0-->Custom<!--/--></span>
       <span bf="s3"><!--bf:s2-->5<!--/--></span>
     </div>

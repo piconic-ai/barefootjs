@@ -12,6 +12,6 @@ export function ConditionalClass() {
 }
 `,
   expectedHtml: `
-    <div class="off" bf-s="test" bf-r="" bf="s0">Toggle</div>
+    <div class="off" bf-s="test" bf="s0">Toggle</div>
   `,
 })

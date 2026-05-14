@@ -12,6 +12,6 @@ export function NestedTernaryDemo() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf-r="" bf="s2"><!--bf-cond-start:s0--><span bf-c="s1">Idle</span><!--bf-cond-end:s0--></div>
+    <div bf-s="test" bf="s2"><!--bf-cond-start:s0--><span bf-c="s1">Idle</span><!--bf-cond-end:s0--></div>
   `,
 })

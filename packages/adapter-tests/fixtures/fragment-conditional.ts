@@ -30,7 +30,7 @@ export function FragmentConditional() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf-r="" bf="s1">
+    <div bf-s="test" bf="s1">
       <!--bf-cond-start:s0-->
       <span>View</span>
       <button>Edit</button>

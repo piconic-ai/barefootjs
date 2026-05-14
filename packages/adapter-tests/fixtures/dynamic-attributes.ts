@@ -13,6 +13,6 @@ export function DynamicAttributes() {
 }
 `,
   expectedHtml: `
-    <div data-state="closed" data-count="0" bf-s="test" bf-r="" bf="s0">Content</div>
+    <div data-state="closed" data-count="0" bf-s="test" bf="s0">Content</div>
   `,
 })

@@ -12,6 +12,6 @@ export function Counter() {
 }
 `,
   expectedHtml: `
-    <button bf-s="test" bf-r="" bf="s1">Count: <!--bf:s0-->0<!--/--></button>
+    <button bf-s="test" bf="s1">Count: <!--bf:s0-->0<!--/--></button>
   `,
 })

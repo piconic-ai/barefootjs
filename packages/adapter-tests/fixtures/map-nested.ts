@@ -30,6 +30,6 @@ export function MapNested() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf-r="" bf="s3"></div>
+    <div bf-s="test" bf="s3"></div>
   `,
 })

@@ -23,6 +23,6 @@ export function MapDynamicClass() {
 }
 `,
   expectedHtml: `
-    <ul bf-s="test" bf-r="" bf="s2"></ul>
+    <ul bf-s="test" bf="s2"></ul>
   `,
 })

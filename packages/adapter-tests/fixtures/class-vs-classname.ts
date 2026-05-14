@@ -9,6 +9,6 @@ export function ClassVsClassname() {
 }
 `,
   expectedHtml: `
-    <div class="container" bf-s="test" bf-r=""><span class="label">Text</span></div>
+    <div class="container" bf-s="test"><span class="label">Text</span></div>
   `,
 })

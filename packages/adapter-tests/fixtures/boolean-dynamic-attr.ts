@@ -12,6 +12,6 @@ export function BooleanDynamic() {
 }
 `,
   expectedHtml: `
-    <button bf-s="test" bf-r="" bf="s0">Click</button>
+    <button bf-s="test" bf="s0">Click</button>
   `,
 })

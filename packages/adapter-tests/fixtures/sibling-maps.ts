@@ -32,6 +32,6 @@ export function SiblingMaps() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf-r="" bf="s2"></div>
+    <div bf-s="test" bf="s2"></div>
   `,
 })

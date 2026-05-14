@@ -19,6 +19,6 @@ export function ClientOnly() {
 }
 `,
   expectedHtml: `
-    <ul bf-s="test" bf-r="" bf="s1"></ul>
+    <ul bf-s="test" bf="s1"></ul>
   `,
 })

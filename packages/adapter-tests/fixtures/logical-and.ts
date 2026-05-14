@@ -12,6 +12,6 @@ export function LogicalAndDemo() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf-r="" bf="s1"><!--bf-cond-start:s0--><!--bf-cond-end:s0--></div>
+    <div bf-s="test" bf="s1"><!--bf-cond-start:s0--><!--bf-cond-end:s0--></div>
   `,
 })

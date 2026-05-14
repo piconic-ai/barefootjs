@@ -22,6 +22,6 @@ export function NullishCoalescingJsx(props: { banner?: any }) {
 `,
   props: {},
   expectedHtml: `
-    <div bf-s="test" bf-r="" bf="s1"><span bf-c="s0">Default</span></div>
+    <div bf-s="test" bf="s1"><span bf-c="s0">Default</span></div>
   `,
 })

@@ -12,6 +12,6 @@ export function TernaryDemo() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf-r="" bf="s1"><span bf-c="s0">Hidden</span></div>
+    <div bf-s="test" bf="s1"><span bf-c="s0">Hidden</span></div>
   `,
 })
