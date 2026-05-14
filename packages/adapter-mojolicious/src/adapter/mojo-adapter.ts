@@ -121,6 +121,16 @@ export class MojoAdapter extends BaseAdapter {
     this.errors = []
     this.childrenCaptureCounter = 0
 
+    // Mirror of the Go adapter's BF103 check (#1266): when a child
+    // component referenced inside a loop body is imported from a
+    // sibling .tsx, the Mojo adapter emits a `<%== bf->render(...)
+    // %>`-style cross-template call that resolves only if the user
+    // has compiled the sibling file and registered the resulting
+    // template alongside the parent. When that doesn't happen the
+    // failure is silent at build time and surfaces at request time —
+    // surface it loudly here so the user can act on it.
+    this.checkImportedLoopChildComponents(ir)
+
     const templateBody = ir.root.type === 'if-statement'
       ? this.renderIfStatement(ir.root as IRIfStatement)
       : this.renderNode(ir.root)
@@ -320,12 +330,113 @@ export class MojoAdapter extends BaseAdapter {
   }
 
   // ===========================================================================
+  // Imported-component-in-loop check (BF103, #1266)
+  // ===========================================================================
+
+  /**
+   * Push a `BF103` diagnostic for every component reference inside a
+   * loop body whose name is imported from a relative-path module.
+   * Mirror of the Go adapter's check — the Mojo adapter has the same
+   * cross-template-registration constraint at request time.
+   */
+  private checkImportedLoopChildComponents(ir: ComponentIR): void {
+    const relativeImports = new Set<string>()
+    for (const imp of ir.metadata.templateImports ?? ir.metadata.imports ?? []) {
+      if (!imp.source.startsWith('./') && !imp.source.startsWith('../')) continue
+      if (imp.isTypeOnly) continue
+      for (const spec of imp.specifiers) {
+        const name = spec.alias ?? spec.name
+        if (/^[A-Z]/.test(name)) relativeImports.add(name)
+      }
+    }
+    if (relativeImports.size === 0) return
+
+    const loc = { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
+    const visit = (node: IRNode, inLoop: boolean): void => {
+      switch (node.type) {
+        case 'component': {
+          const comp = node as IRComponent
+          if (inLoop && relativeImports.has(comp.name)) {
+            this.errors.push({
+              code: 'BF103',
+              severity: 'error',
+              message: `Component <${comp.name}> is imported from a sibling module and used inside a loop, but the Mojo adapter cannot register the child template alongside the parent.`,
+              loc: comp.loc ?? loc,
+              suggestion: {
+                message:
+                  `Options:\n` +
+                  `  1. Compile '${comp.name}' (its source file) with the same adapter and register the resulting Mojo template alongside the parent at render time.\n` +
+                  `  2. Inline <${comp.name}> directly inside the loop body so no cross-file template lookup is needed.\n` +
+                  `  3. Mark the loop position as @client-only so the template is materialised on the client instead of at SSR time.`,
+              },
+            })
+          }
+          for (const child of comp.children) visit(child, inLoop)
+          break
+        }
+        case 'element':
+          for (const child of (node as IRElement).children) visit(child, inLoop)
+          break
+        case 'fragment':
+          for (const child of (node as IRFragment).children) visit(child, inLoop)
+          break
+        case 'conditional': {
+          const cond = node as IRConditional
+          visit(cond.whenTrue, inLoop)
+          if (cond.whenFalse) visit(cond.whenFalse, inLoop)
+          break
+        }
+        case 'loop':
+          for (const child of (node as IRLoop).children) visit(child, true)
+          break
+        case 'if-statement': {
+          const stmt = node as IRIfStatement
+          visit(stmt.consequent, inLoop)
+          if (stmt.alternate) visit(stmt.alternate, inLoop)
+          break
+        }
+        case 'provider':
+          for (const child of (node as IRProvider).children) visit(child, inLoop)
+          break
+        case 'async': {
+          const a = node as IRAsync
+          visit(a.fallback, inLoop)
+          for (const child of a.children) visit(child, inLoop)
+          break
+        }
+      }
+    }
+    visit(ir.root, false)
+  }
+
+  // ===========================================================================
   // Loop Rendering
   // ===========================================================================
 
   renderLoop(loop: IRLoop): string {
     // Client-only loops: skip SSR rendering entirely
     if (loop.clientOnly) return ''
+
+    // An array-destructure loop param (`([emoji, users]) => ...`) lowers
+    // to invalid Perl — the adapter would otherwise emit
+    // `% my $[emoji, users] = $entries->[$_i];`, which is a parse error.
+    // Surface this at build time (#1266) instead of shipping the broken
+    // template line for the user to discover at request time.
+    if (/^[\[{]/.test(loop.param.trim())) {
+      this.errors.push({
+        code: 'BF104',
+        severity: 'error',
+        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the Mojo adapter cannot lower — Perl scalar bindings can't unpack a tuple in a single \`my\` declaration.`,
+        loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message:
+            `Options:\n` +
+            `  1. Rename the parameter to a single name and access tuple elements with index syntax in the body (e.g. \`entry => entry->[0]\` instead of \`([k, v]) => ...\`).\n` +
+            `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+            `  3. Move the loop into a primitive that the adapter registers explicitly.`,
+        },
+      })
+    }
 
     const array = this.convertExpressionToPerl(loop.array)
     const param = loop.param
