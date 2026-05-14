@@ -85,8 +85,10 @@ func FuncMap() template.FuncMap {
 }
 
 // ScopeAttr returns the scope attribute value for bf-s.
-// Returns "~scopeID" for child components (prefixed with ~) and "scopeID" for root components.
-// Checks the BfIsChild field set by Render(), with fallback to scopeID "_sN" pattern.
+// The Hono adapter has migrated to bf-h/bf-m for slot identity (#1249);
+// go-template still emits the `~` value prefix on child scopes until
+// it gains its own bf-h/bf-m / bf-r emission — until then, runtime
+// detection via `startsWith('~')` is what keeps go-template SSR working.
 func ScopeAttr(props interface{}) string {
 	scopeID := getStringField(props, "ScopeID")
 	if getBoolField(props, "BfIsChild") {

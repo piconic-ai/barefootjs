@@ -28,6 +28,10 @@ sub new ($class, $c, $config = {}) {
 # ---------------------------------------------------------------------------
 
 sub scope_attr ($self) {
+    # Hono adapter has migrated to bf-h/bf-m for slot identity (#1249);
+    # mojolicious still emits the legacy `~` value prefix on child scopes
+    # until it gains its own bf-h/bf-m / bf-r emission. The runtime's
+    # `startsWith('~')` detection keeps mojolicious SSR working.
     my $scope_id = $self->_scope_id // '';
     return $self->_is_child ? "~$scope_id" : $scope_id;
 }
