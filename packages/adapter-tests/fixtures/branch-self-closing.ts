@@ -22,6 +22,6 @@ export function BranchSelfClosing() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test" bf="s1"><br bf-c="s0"></div>
+    <div bf-s="test" bf="s1"><br></div>
   `,
 })

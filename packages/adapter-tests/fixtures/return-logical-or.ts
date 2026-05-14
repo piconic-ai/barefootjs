@@ -22,6 +22,6 @@ export function ReturnLogicalOr(props: { label?: string }) {
 `,
   props: {},
   expectedHtml: `
-    <div style="display:contents" bf-s="test"><span bf-c="s0">Fallback</span></div>
+    <div style="display:contents" bf-s="test"><span>Fallback</span></div>
   `,
 })

@@ -20,6 +20,6 @@ export function ReturnNullishCoalescing(props: { banner?: any }) {
 `,
   props: {},
   expectedHtml: `
-    <div style="display:contents" bf-s="test"><span bf-c="s0">Default</span></div>
+    <div style="display:contents" bf-s="test"><span>Default</span></div>
   `,
 })

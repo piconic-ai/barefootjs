@@ -22,6 +22,6 @@ export function TopTernaryDemo() {
 }
 `,
   expectedHtml: `
-    <div style="display:contents" bf-s="test"><!--bf-cond-start:s0--><!--bf-cond-end:s0--></div>
+    <div style="display:contents" bf-s="test"></div>
   `,
 })
