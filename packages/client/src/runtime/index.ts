@@ -76,7 +76,7 @@ export { spreadAttrs } from './spread-attrs'
 export { styleToCss } from './style'
 
 // Runtime helpers
-export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, qsaSlotChild } from './query'
+export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, cssEscape } from './query'
 export { hydrate, rehydrateAll, flushHydration, getRegisteredDef } from './hydrate'
 export { registerComponent, getComponentInit, initChild, upsertChild } from './registry'
 export { insert, type BranchConfig, type BranchTemplateResult } from './insert'

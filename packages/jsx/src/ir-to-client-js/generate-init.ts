@@ -21,6 +21,7 @@ import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-
 import { buildPhaseCtx, PHASES, runPhases } from './phases'
 import { rewritePropsObjectRef } from './rewrite-props-object'
 import { buildInlinableConstants } from './emit-registration'
+import { BF_SCOPE } from '@barefootjs/shared'
 
 export function generateInitFunction(
   ir: ComponentIR,
@@ -41,7 +42,7 @@ export function generateInitFunction(
   // Host scope id for (bf-h, bf-m) child lookups inside this init body
   // (#1249). Compile-time selectors emit
   // `[bf-h="${__scopeId}"][bf-m="<slotId>"]` against this value.
-  lines.push(`  const __scopeId = __scope.getAttribute('bf-s')`)
+  lines.push(`  const __scopeId = __scope.getAttribute('${BF_SCOPE}')`)
   lines.push('')
 
   // --- Analysis: one graph, many queries; scope routing as data ---

@@ -18,6 +18,7 @@ import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToS
 import { irChildrenToJsExpr } from '../html-template'
 import { emitListenerBlock } from './stringify/event-listener'
 import { nameForRegistryRef } from '../component-scope'
+import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
 
 /**
  * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
@@ -191,24 +192,19 @@ function emitEventSetup(
 }
 
 /**
- * Build the component-finder selector for SSR hydration initChild.
- *
- * Returns a JS source EXPRESSION embedded verbatim into generated code,
+ * Build the slot-child selector embedded verbatim into generated code,
  * e.g. `qsa(__el, ${buildCompSelector(c)})`.
  *
- * With `slotId`: primary `(bf-h, bf-m)` selector evaluated at runtime
- * against the enclosing parent's `__scopeId`. Unique by construction —
- * no fallback ladder, no #1220 cross-binding risk (per #1249).
- *
- * Without `slotId`: bf-s name-prefix selector — used for top-level
- * component lookup where there is no slot anchor. Per #1249, bf-s values
- * no longer carry the `~` child prefix, so the dual selector is collapsed
- * to a single name-prefix.
+ * - With `slotId`: primary `(bf-h, bf-m)` against the enclosing scope's
+ *   `__scopeId`, with a `[bf-s$="_<slot>"]` fallback for `renderChild`
+ *   paths that stamp only the parent-anchored bf-s. See `spec/compiler.md`
+ *   "Slot identity".
+ * - Without `slotId`: `bf-s^="<Name>_"` name-prefix for top-level lookup.
  */
 export function buildCompSelector(comp: { slotId?: string | null; name: string }): string {
   return comp.slotId
-    ? `\`[bf-h="\${__scopeId}"][bf-m="${comp.slotId}"], [bf-s$="_${comp.slotId}"]\``
-    : `'[bf-s^="${comp.name}_"]'`
+    ? `\`[${BF_HOST}="\${__scopeId}"][${BF_AT}="${comp.slotId}"], [${BF_SCOPE}$="_${comp.slotId}"]\``
+    : `'[${BF_SCOPE}^="${comp.name}_"]'`
 }
 
 /**

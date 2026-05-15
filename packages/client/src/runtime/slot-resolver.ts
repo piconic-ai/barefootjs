@@ -1,17 +1,17 @@
 /**
- * Shared slot-relationship resolver — identifies the SSR scope of a child
- * component mounted at slot `<sN>` inside its parent component, using the
- * `bf-h` / `bf-m` markers as the sole lookup. Per #1249, both the legacy
- * bf-s suffix scan and the bf-s name-prefix scan are removed: identity is
- * `(bf-h, bf-m)`, unique by construction.
+ * Shared slot-relationship resolver: identifies the SSR scope of a child
+ * component mounted at slot `<sN>` inside its parent.
  *
  * Both single-root (`registry.ts::upsertChild`) and multi-root loop-body
  * (`qsa-item.ts::upsertChildItem`) paths consume this. They differ only
  * in whether they search a single `parent` element or walk a sequence of
- * loop-item root elements; the actual lookup logic is identical.
+ * loop-item root elements; the lookup logic is identical.
+ *
+ * See `spec/compiler.md` "Slot identity" for the marker contract.
  */
 
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
+import { cssEscape } from './query'
 
 /** Resolve the host scope id for a slot lookup. Prefers the explicit
  *  `anchorScope` because the immediate `parent` element may be a freshly-
@@ -22,16 +22,11 @@ export function parentScopeOf(parent: Element, anchorScope?: Element | null): st
   return ancestor.getAttribute(BF_SCOPE) ?? ''
 }
 
-/** Build the bf-h / bf-m metadata for a fresh component about to be
+/** Build the (host, slot) metadata for a fresh component about to be
  *  mounted at `slotId`. `createComponent` stamps these onto the new
- *  element so subsequent `upsertChild` lookups can find it via the
- *  slot-relationship markers.
- *
- *  Per #1249 AC: bf-m must be set on every CSR child mount so the
- *  `isClaimedForOtherSlot` filter cannot be a no-op. `parent` defaults
- *  to the empty string when no surrounding scope is resolvable
- *  (top-level CSR mount) — `createComponent` then stamps bf-m but
- *  omits bf-h, which is still enough for the filter to function. */
+ *  element so subsequent `upsertChild` lookups can find it. `parent`
+ *  defaults to the empty string when no surrounding scope is resolvable
+ *  (top-level CSR mount). */
 export function buildSlotInfo(
   parent: Element,
   slotId: string,
@@ -42,51 +37,29 @@ export function buildSlotInfo(
 
 /**
  * Find the SSR scope element for a child component at `slotId` inside
- * `parent`. The lookup is a single primary query on `(bf-h, bf-m)` — the
- * authoritative identity of a slot-attached child scope.
+ * `parent`. Primary lookup is `(BF_HOST, BF_AT)`; the suffix fallback
+ * covers `renderChild` paths that emit a parent-anchored `bf-s` without
+ * stamping host metadata.
  *
- *   1. Resolve the host bf-s value via `parentScopeOf` (or use
- *      `anchorScope` directly).
- *   2. Search `parent` for an element whose `bf-h` and `bf-m` both match.
- *      There can be at most one such direct child for a given (host, slot)
- *      pair (unique by construction), so we return immediately.
- *
- * No suffix or name-prefix fallback. SSR templates and CSR mounts both
- * stamp the (bf-h, bf-m) pair (#1249); anything missing them isn't a
- * slot-attached child and shouldn't be matched here.
- *
- * The `selfMatch` option lets the multi-root loop-body caller include
- * the root element itself in the search (the loop-item primary may be
- * the scope element, not just a parent of it).
- *
- * `_name` is unused in the new lookup but kept on the signature so call
- * sites needn't change in lockstep with this internal simplification.
+ * `selfMatch` lets the multi-root loop-body caller include the root
+ * element itself in the search (the loop-item primary may be the scope
+ * element, not just a parent of it).
  */
 export function findSsrScopeBySlotIn(
   parent: Element,
-  name: string,
   slotId: string,
   anchorScope: Element | null | undefined,
   selfMatch: boolean,
 ): HTMLElement | null {
   const parentBfs = parentScopeOf(parent, anchorScope)
 
-  // Primary lookup via slot-relationship markers (#1249).
   if (parentBfs) {
-    const escaped = (CSS as { escape?: (s: string) => string }).escape
-      ? CSS.escape(parentBfs)
-      : parentBfs.replace(/"/g, '\\"')
-    const selector = `[${BF_HOST}="${escaped}"][${BF_AT}="${slotId}"]`
+    const selector = `[${BF_HOST}="${cssEscape(parentBfs)}"][${BF_AT}="${slotId}"]`
     if (selfMatch && parent.matches(selector)) return parent as HTMLElement
     const direct = parent.querySelector(selector) as HTMLElement | null
     if (direct) return direct
   }
 
-  // Suffix lookup: matches the parent-anchored bf-s shape used by
-  // `renderChild` when invoked with a `_parentScopeId` context, where
-  // bf-h might not be stamped. Cross-scope collision protection comes
-  // from search-root scoping — slot suffix is unique within `parent`.
-  void name
   const suffixSelector = `[${BF_SCOPE}$="_${slotId}"]`
   if (selfMatch && parent.matches(suffixSelector)) return parent as HTMLElement
   return parent.querySelector(suffixSelector) as HTMLElement | null

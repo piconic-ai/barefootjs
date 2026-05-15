@@ -30,20 +30,13 @@ sub new ($class, $c, $config = {}) {
 # ---------------------------------------------------------------------------
 
 sub scope_attr ($self) {
-    # Per #1249, bf-s is the addressable scope id only. Identity / root
-    # distinction lives on (bf-h, bf-m, bf-r) — see hydration_attrs.
+    # bf-s is the addressable scope id only (#1249).
     return $self->_scope_id // '';
 }
 
+# Emits `bf-h="<host>" bf-m="<slot>" bf-r=""` conditionally.
+# See spec/compiler.md "Slot identity".
 sub hydration_attrs ($self) {
-    # Emits the slot-identity + root marker attribute string:
-    #   bf-h="<host>" bf-m="<slot>" bf-r=""
-    # Each part is conditional:
-    #   - bf-h / bf-m emitted when this scope is a slot-attached child
-    #     (_bf_parent / _bf_mount present)
-    #   - bf-r emitted when this scope is NOT a delegated child
-    #     (the SSR entry root of a client component, regardless of
-    #     whether it sits at a slot of an outer page).
     my @parts;
     my $host  = $self->_bf_parent;
     my $mount = $self->_bf_mount;
@@ -85,12 +78,8 @@ sub text_end ($self) {
     return "<!--/-->";
 }
 
+# See spec/compiler.md "Slot identity" for the comment-scope wire format.
 sub scope_comment ($self) {
-    # Per #1249, the comment-scope value mirrors the element-scope shape:
-    #   Root:  <!--bf-scope:ScopeID|PropsJSON-->
-    #   Child: <!--bf-scope:ScopeID|h=Host|m=Slot|PropsJSON-->
-    # The leading scope id is bare (no `~` prefix); child status is
-    # detected by the `|h=` segment.
     my $scope_id = $self->_scope_id // '';
     my $host_segment = '';
     my $host  = $self->_bf_parent;

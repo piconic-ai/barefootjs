@@ -12,7 +12,7 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss',
-  'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'qsaSlotChild', 'upsertChildItem', '__slot', '__bfSlot',
+  'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot',
 ] as const
 
 /** @deprecated Use RUNTIME_IMPORT_CANDIDATES */

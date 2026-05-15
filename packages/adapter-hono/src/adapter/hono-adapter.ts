@@ -26,6 +26,7 @@ import {
   JsxAdapter,
   isBooleanAttr,
 } from '@barefootjs/jsx'
+import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS } from '@barefootjs/shared'
 
 export interface HonoAdapterOptions {
   /**
@@ -342,18 +343,7 @@ export class HonoAdapter extends JsxAdapter {
     // Unlike element roots (which get bf-s directly), the root component is
     // a plain function whose output has no hydration markers.
     if (!isIfStatement && hasClientInteractivity && isRootComponent) {
-      // Comment-scope marker for fragment-rooted components.
-      // Format:
-      //   root:  bf-scope:<scopeId>|<propsJson>
-      //   child: bf-scope:<scopeId>|h=<hostScope>|m=<slot>|<propsJson>
-      // The leading <scopeId> stays at the front so parseCommentScopeId is
-      // shape-agnostic; child status is detected by the `|h=` segment
-      // (`hydrate.ts::hydrateCommentScope` skips child comment scopes).
-      const hostExpr = '${__bfParent ? `|h=${__bfParent}|m=${__bfMount}` : ""}'
-      const propsExpr = this.currentComponentHasProps
-        ? '${__bfPropsJson ? `|${__bfPropsJson}` : ""}'
-        : ''
-      jsxBody = `<>{bfComment(\`scope:\${__scopeId}${hostExpr}${propsExpr}\`)}${jsxBody}</>`
+      jsxBody = this.wrapWithScopeComment(jsxBody)
     }
 
     // For if-statement roots, render branches early so they're included in reference analysis
@@ -534,29 +524,17 @@ export class HonoAdapter extends JsxAdapter {
     // Add hydration markers
     let hydrationAttrs = ''
     if (element.needsScope) {
-      // bf-s is the addressable scope id; identity of a slot-attached child
-      // is the (bf-h, bf-m) pair, not the value of bf-s (#1249). Root vs
-      // child distinction for test locators uses bf-r (set below).
-      hydrationAttrs += ' bf-s={__scopeId}'
-      // Slot-relationship markers (set when the parent passed __bfParent /
-      // __bfMount). The (bf-h, bf-m) pair is the authoritative identity of a
-      // slot-attached child scope; upsertChild's primary lookup queries on
-      // this pair without any fallback selector.
-      hydrationAttrs += ' {...(__bfParent ? { "bf-h": __bfParent } : {})}'
-      hydrationAttrs += ' {...(__bfMount ? { "bf-m": __bfMount } : {})}'
-      // Root-of-client-component marker (#1249 follow-up): present on
-      // every scope element that owns its own hydration entry (i.e. is
-      // NOT a slot-attached child of an outer component). Lets test
-      // locators distinguish demo roots from internal child scopes
-      // that share the same bf-s name prefix, even when a demo root is
-      // itself slot-attached to an outer page (`__bfChild` is still
-      // false in that case — the demo is the *target* of init, not a
-      // delegated child).
-      hydrationAttrs += ' {...(!__bfChild ? { "bf-r": "" } : {})}'
+      // Hydration markers (see spec/compiler.md "Slot identity"):
+      //   bf-s = addressable scope id
+      //   bf-h / bf-m = slot identity of a child scope
+      //   bf-r = root-of-client-component marker
+      //   bf-p = serialized props (root only; children receive props via initChild)
+      hydrationAttrs += ` ${BF_SCOPE}={__scopeId}`
+      hydrationAttrs += ` {...(__bfParent ? { "${BF_HOST}": __bfParent } : {})}`
+      hydrationAttrs += ` {...(__bfMount ? { "${BF_AT}": __bfMount } : {})}`
+      hydrationAttrs += ` {...(!__bfChild ? { "${BF_ROOT}": "" } : {})}`
       if (this.currentComponentHasProps) {
-        // Only emit bf-p on root components (not children).
-        // Child components receive props from parent via initChild().
-        hydrationAttrs += ' {...(!__bfChild && __bfPropsJson ? { "bf-p": __bfPropsJson } : {})}'
+        hydrationAttrs += ` {...(!__bfChild && __bfPropsJson ? { "${BF_PROPS}": __bfPropsJson } : {})}`
       }
       // Add data-key for list reconciliation (only on root elements with scope)
       hydrationAttrs += ' {...(__dataKey !== undefined ? { "data-key": __dataKey } : {})}'
@@ -773,13 +751,8 @@ export class HonoAdapter extends JsxAdapter {
     // Mark child components with slotId for parent-first hydration
     // Add __bfChild when parent has client interactivity (will call initChild)
     const bfChildAttr = (comp.slotId && this.hasClientInteractivity) ? ' __bfChild={true}' : ''
-    // Pass __bfParent (parent's bf-s without ~) and __bfMount (slot id) so
-    // upsertChild can locate the SSR scope via [bf-h][bf-m] without
-    // relying on bf-s suffix matching. This is the post-#1220 replacement
-    // for the chained `_<slotId>` suffix lookup, which broke for self-
-    // referential recursive components (every depth got the same chain
-    // suffix and `NESTED_SLOT_SUFFIX` couldn't tell direct children apart
-    // from descendants).
+    // Pass parent scope + slot id to the child so it can stamp bf-h / bf-m
+    // for upsertChild's (bf-h, bf-m) primary lookup (#1249).
     const bfMountAttr = comp.slotId ? ` __bfParent={__scopeId} __bfMount={'${comp.slotId}'}` : ''
     if (ctx?.isRootOfClientComponent) {
       // Root component: if it has a slotId, include it so client JS can find it
@@ -792,10 +765,9 @@ export class HonoAdapter extends JsxAdapter {
       } else {
         scopeAttr = ` __instanceId={__scopeId}${propsPassAttr}`
       }
-      // Also pass bf-s for asChild/Slot patterns where the component forwards
-      // props to a DOM element via {...props}. Same shape as the JSX-emit
-      // path above — addressable scope id only; bf-r marks the root.
-      scopeAttr += ' bf-s={__scopeId}'
+      // Also pass bf-s for asChild/Slot patterns where the component
+      // forwards props to a DOM element via {...props}.
+      scopeAttr += ` ${BF_SCOPE}={__scopeId}`
     } else if (ctx?.isInsideLoop) {
       // Components inside loops should generate their own unique scope IDs
       // Pass __bfScope so they use it as fallback but generate unique IDs
@@ -824,17 +796,24 @@ export class HonoAdapter extends JsxAdapter {
   private renderFragment(fragment: IRFragment): string {
     const children = this.renderChildren(fragment.children)
     if (fragment.needsScopeComment) {
-      // Emit comment-based scope marker for fragment roots. Same shape as
-      // the early-binding path above: scopeId stays at the front, host
-      // metadata follows as `|h=...|m=...` segments when this is a child
-      // fragment scope.
-      const hostExpr = '${__bfParent ? `|h=${__bfParent}|m=${__bfMount}` : ""}'
-      const propsExpr = this.currentComponentHasProps
-        ? '${__bfPropsJson ? `|${__bfPropsJson}` : ""}'
-        : ''
-      return `<>{bfComment(\`scope:\${__scopeId}${hostExpr}${propsExpr}\`)}${children}</>`
+      return this.wrapWithScopeComment(children)
     }
     return `<>${children}</>`
+  }
+
+  /**
+   * Wrap `body` in a fragment-rooted scope comment.
+   * Shape (matches `hydrate.ts::hydrateCommentScope`):
+   *   root:  <!--bf-scope:<scopeId>|<propsJson>-->
+   *   child: <!--bf-scope:<scopeId>|h=<host>|m=<slot>|<propsJson>-->
+   * `<scopeId>` stays at the front so child detection can anchor on `|h=`.
+   */
+  private wrapWithScopeComment(body: string): string {
+    const hostExpr = '${__bfParent ? `|h=${__bfParent}|m=${__bfMount}` : ""}'
+    const propsExpr = this.currentComponentHasProps
+      ? '${__bfPropsJson ? `|${__bfPropsJson}` : ""}'
+      : ''
+    return `<>{bfComment(\`scope:\${__scopeId}${hostExpr}${propsExpr}\`)}${body}</>`
   }
 
   // ===========================================================================

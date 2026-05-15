@@ -87,22 +87,13 @@ func FuncMap() template.FuncMap {
 	}
 }
 
-// ScopeAttr returns the scope attribute value for bf-s.
-// Per #1249, bf-s is the addressable scope id only — slot identity moves
-// to the (bf-h, bf-m) pair via HydrationAttrs, and root-vs-child
-// distinction for e2e locators uses bf-r. The legacy `~` value prefix
-// on child scopes is no longer emitted.
+// ScopeAttr returns the bare bf-s scope id (#1249).
 func ScopeAttr(props interface{}) string {
 	return getStringField(props, "ScopeID")
 }
 
-// HydrationAttrs returns the slot-identity / root marker attribute
-// string `bf-h="<host>" bf-m="<slot>" bf-r=""` for the given props.
-// Each part is conditional:
-//   - bf-h / bf-m emitted when BfParent / BfMount are non-empty
-//     (slot-attached child scope, #1249)
-//   - bf-r emitted when BfIsChild is false (this scope is the SSR
-//     entry root of a client component — for e2e locator distinction)
+// HydrationAttrs emits `bf-h="<host>" bf-m="<slot>" bf-r=""` conditionally.
+// See spec/compiler.md "Slot identity".
 func HydrationAttrs(props interface{}) template.HTMLAttr {
 	parts := []string{}
 	if host := getStringField(props, "BfParent"); host != "" {
@@ -120,8 +111,8 @@ func HydrationAttrs(props interface{}) template.HTMLAttr {
 	return template.HTMLAttr(strings.Join(parts, " "))
 }
 
-// IsChild returns empty string. Child status is now merged into bf-s attribute value via ~ prefix.
-// Deprecated: Use ScopeAttr instead, which merges child status into the bf-s attribute value.
+// IsChild is a deprecated no-op stub. Child status is signalled by bf-h
+// presence (#1249); use HydrationAttrs instead.
 func IsChild(props interface{}) template.HTMLAttr {
 	return ""
 }
@@ -679,17 +670,9 @@ func TextEnd() template.HTML {
 	return "<!--/-->"
 }
 
-// ScopeComment outputs a comment-based scope marker for fragment root components.
-// Format (#1249, matches Hono's shape):
-//   Root:  <!--bf-scope:ScopeID|PropsJSON-->
-//   Child: <!--bf-scope:ScopeID|h=Host|m=Slot|PropsJSON-->
-//
-// The leading `<ScopeID>` is always bare (no `~` prefix); child status
-// is detected by the runtime via the `|h=` segment
-// (`hydrate.ts::hydrateCommentScope`).
-//
-// Returns the marshal error so a `template.Execute` call fails loudly
-// on bad props — same policy as `JSON` / `BfPropsAttr`.
+// ScopeComment emits a fragment-rooted scope marker. See spec/compiler.md
+// "Slot identity" for the wire format. Loud-fails on marshal errors
+// (same policy as JSON / BfPropsAttr).
 func ScopeComment(props interface{}) (template.HTML, error) {
 	scopeID := getStringField(props, "ScopeID")
 	hostSegment := ""

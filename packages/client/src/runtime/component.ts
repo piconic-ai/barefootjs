@@ -60,26 +60,15 @@ const propsMap = new WeakMap<HTMLElement, Record<string, unknown>>()
  * or from a ComponentDef (CSR mode, no registry needed).
  */
 /**
- * Slot-relationship metadata stamped onto a freshly-created component.
- *
- * Passing `slot` carries two coupled meanings; the API treats them as one
- * because they are always correlated in practice:
- *   1. The new component is mounted as a CHILD inside another component's
- *      scope (so its bf-s gets the `~` child prefix and `initChild`'s
- *      re-entry guard kicks in on subsequent reconciles).
- *   2. The new component records `bf-h` / `bf-m` so future
- *      `upsertChild` lookups can locate it via the slot-relationship
- *      markers.
- *
- * Top-level CSR mounts (e.g. user-code calling `createComponent` outside
- * any parent component) intentionally pass no `slot` — they own their
- * own hydration lifecycle and `initChild` should be free to re-bind
- * fresh callback closures on every reconcile call.
+ * Slot-relationship metadata stamped onto a freshly-created component as
+ * `bf-h` / `bf-m`. Top-level CSR mounts pass no `slot` — they own their
+ * own hydration lifecycle and `initChild` re-binds callbacks freely on
+ * each reconcile.
  */
 export interface CreateComponentSlotInfo {
-  /** Parent component scope id (without the `~` child prefix) */
+  /** Host scope id (this child's `bf-h` value). */
   parent: string
-  /** Slot id where this component is mounted in its parent */
+  /** Slot id in the host (this child's `bf-m` value). */
   mount: string
 }
 
@@ -149,32 +138,14 @@ export function createComponent(
   // 6. Set scope ID and key attributes.
   //
   // `comment: true` components (synthesized inline-JSX-callback wrappers
-  // from #1211, etc.) render as transparent shells: the template body
-  // is `${renderChild('Inner', ...)}` with no enclosing element of
-  // their own, so the parsed `firstChild` is actually the Inner
-  // component's root with its `~Inner_..._s0` scope marker. Overwriting
-  // that `bf-s` here strands `$c(__scope, 's0')` lookups in the
-  // wrapper's init — `_s0` resolves to null, the Inner's `initChild`
-  // call bails, and the Inner's body never runs.
-  //
-  // For comment-mode components we leave the original child-prefixed
-  // `bf-s` in place; `$cSingle`'s self-match fallback
-  // (`scope.matches('[bf-s$="_s0"]')`) then returns the scope element
-  // itself, so the wrapper's `initChild('Inner', _s0, ...)` mounts the
-  // Inner correctly. The `key` attribute still goes on for list
-  // reconciliation.
+  // from #1211) render as transparent shells — the parsed `firstChild` is
+  // already the inner component's root with its own bf-s. Don't overwrite
+  // it, or `$c(__scope, 's0')` from the wrapper's init resolves to null.
   const def = getRegisteredDef(name)
   const isCommentWrapper = def?.comment === true
   if (!isCommentWrapper) {
-    // bf-s is the addressable scope id only (#1249). Identity / root-vs-
-    // child distinction lives on separate attributes (bf-h, bf-m, bf-r).
     element.setAttribute(BF_SCOPE, `${name}_${generateId()}`)
   }
-  // Stamp slot-relationship markers for any CSR child mount. `bf-m` is
-  // always set when a slot is provided so the resolver's
-  // `isClaimedForOtherSlot` filter can never be a no-op (#1249 AC). `bf-h`
-  // is set only when the host scope is resolvable — top-level CSR mounts
-  // outside any surrounding scope legitimately lack a host.
   if (slot) {
     if (slot.parent) element.setAttribute(BF_HOST, slot.parent)
     element.setAttribute(BF_AT, slot.mount)
@@ -284,32 +255,25 @@ export function renderChild(
     ? _parentScopeId
     : `${name}_${generateId()}`
   const keyAttr = key !== undefined ? ` ${BF_KEY}="${key}"` : ''
-  // Slot-relationship markers: bf-h (parent's scope id, no `~`) and
-  // bf-m (slot id within parent). upsertChild uses these to find the
-  // SSR scope without relying on bf-s suffix matching, which can't tell
-  // direct children apart from descendants for self-referential recursive
-  // components. Only emit when both pieces are known — top-level renders
-  // without parent context skip them.
+  // Slot-relationship markers — only emitted when both host and slot are
+  // known; top-level renders without parent context omit them.
   const slotAttrs = (_parentScopeId && slotSuffix)
     ? ` ${BF_HOST}="${_parentScopeId}" ${BF_AT}="${slotSuffix}"`
     : ''
-
-  // renderChild emits a child scope. bf-s is the addressable id only
-  // (#1249); slot relationship lives on bf-h / bf-m (in slotAttrs).
+  const bfsAttr = `${BF_SCOPE}="${scopePrefix}${suffix}"`
 
   if (!templateFn) {
-    return `<div bf-s="${scopePrefix}${suffix}"${slotAttrs}${keyAttr}></div>`
+    return `<div ${bfsAttr}${slotAttrs}${keyAttr}></div>`
   }
 
   const html = templateFn(props).trim()
-  // Inject bf-s scope attribute into the first element tag. Templates may
-  // start with comment markers (e.g. <!--bf-cond-start:...-->), so we find
-  // the first element tag rather than assuming it's at position 0.
+  // Templates may start with comment markers (e.g. <!--bf-cond-start:...-->)
+  // so we find the first element tag rather than assuming index 0.
   const firstElMatch = html.match(/<(\w+)/)
   if (!firstElMatch) return html
   const insertPos = html.indexOf(firstElMatch[0])
   return html.slice(0, insertPos) +
-    html.slice(insertPos).replace(/^(<\w+)/, `$1 bf-s="${scopePrefix}${suffix}"${slotAttrs}${keyAttr}`)
+    html.slice(insertPos).replace(/^(<\w+)/, `$1 ${bfsAttr}${slotAttrs}${keyAttr}`)
 }
 
 /**

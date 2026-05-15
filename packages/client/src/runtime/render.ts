@@ -71,7 +71,7 @@ export function render(
   }
 
   // Generate the parent scope ID up front so renderChild calls inside
-  // template() can stamp `bf-s="~${parentScopeId}_sN"` on child scopes,
+  // template() can stamp `bf-s="${parentScopeId}_sN"` on child scopes,
   // matching what the compiler-emitted `$c(__scope, 'sN')` lookup later
   // expects. Without this, renderChild falls back to `${childName}_${randomId}`
   // and `$c` returns null, silently breaking child hydration. (#1160)

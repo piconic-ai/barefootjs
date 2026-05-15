@@ -60,9 +60,7 @@ export function useContext<T>(context: Context<T>): T {
       // Follow portal owner chain: if this element has bf-po, jump to the owner scope
       const portalOwnerId: string | null = el.getAttribute(BF_PORTAL_OWNER)
       if (portalOwnerId) {
-        const ownerEl: Element | null = document.querySelector(
-          `[${BF_SCOPE}="~${portalOwnerId}"], [${BF_SCOPE}="${portalOwnerId}"]`,
-        )
+        const ownerEl: Element | null = document.querySelector(`[${BF_SCOPE}="${portalOwnerId}"]`)
         if (ownerEl && ownerEl !== el) {
           el = ownerEl
           continue

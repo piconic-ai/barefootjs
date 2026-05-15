@@ -139,7 +139,7 @@ export function upsertChild(
   // Without slotId: name-prefix bf-s scan for top-level component lookup.
   let ssr: HTMLElement | null = null
   if (slotId) {
-    ssr = findSsrScopeBySlotIn(parent, name, slotId, anchorScope, /* selfMatch */ false)
+    ssr = findSsrScopeBySlotIn(parent, slotId, anchorScope, /* selfMatch */ false)
   } else {
     ssr = parent.querySelector(`[${BF_SCOPE}^="${name}_"]`) as HTMLElement | null
   }

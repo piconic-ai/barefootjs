@@ -101,6 +101,7 @@
   "peerDependencies": {
     "@barefootjs/client": "workspace:*",
     "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/shared": "workspace:*",
     "hono": "^4.0.0"
   },
   "devDependencies": {

@@ -57,7 +57,8 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
       return AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined)
   }
 }
-import { destructureLoopParam, loopKeyFn } from '../shared'
+import { destructureLoopParam, loopKeyFn, buildCompSelector } from '../shared'
+import { BF_HOST, BF_AT } from '@barefootjs/shared'
 import type {
   BranchChildComponentInit,
   BranchChildComponentInitsPlan,
@@ -135,16 +136,7 @@ export function buildBranchChildComponentInitsPlan(
   const { components, wrap } = args
   const inits: BranchChildComponentInit[] = []
   for (const comp of components) {
-    // Per #1249, slot-attached children are addressed by the (bf-h, bf-m)
-    // pair against the enclosing parent's __scopeId. The second clause is
-    // a loop-body fallback: child mounts that came through `renderChild`
-    // inside a mapArray callback lack bf-h (the renderItem path doesn't
-    // propagate host context yet), so we accept bf-s suffix on elements
-    // without bf-h. `:not([bf-h])` ensures the fallback can't reclaim a
-    // sibling slot's already-bound child.
-    const selector = comp.slotId
-      ? `\`[bf-h="\${__scopeId}"][bf-m="${comp.slotId}"], [bf-s$="_${comp.slotId}"]\``
-      : `'[bf-s^="${comp.name}_"]'`
+    const selector = buildCompSelector(comp)
 
     const propsEntries = comp.props
       .filter(p => p.name !== 'key')
@@ -229,12 +221,10 @@ export function buildBranchInnerLoopsPlan(
     const wrapBoth = (expr: string) => wrapLoopParamAsAccessor(wrapOuter(expr), inner.param, inner.paramBindings)
 
     const csl = inner.containerSlotId
-    // The inner loop's container element is marked with `bf="<containerSlotId>"`
-    // on the host side. The fallback to a scope-id match handles the case
-    // where the container IS a child component scope at that slot, addressed
-    // by (bf-h, bf-m) per #1249.
+    // Inner loop's container: host-side `bf="<slot>"` slot marker first,
+    // then (bf-h, bf-m) when the container is itself a child scope.
     const containerExpr = csl
-      ? `(${scopeVar}.querySelector('[bf="${csl}"]') ?? ${scopeVar}.querySelector(\`[bf-h="\${__scopeId}"][bf-m="${csl}"]\`) ?? ${scopeVar})`
+      ? `(${scopeVar}.querySelector('[bf="${csl}"]') ?? ${scopeVar}.querySelector(\`[${BF_HOST}="\${__scopeId}"][${BF_AT}="${csl}"]\`) ?? ${scopeVar})`
       : scopeVar
 
     const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
