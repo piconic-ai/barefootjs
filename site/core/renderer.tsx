@@ -124,7 +124,7 @@ export const renderer = jsxRenderer(
 
     const baseUrl = hostname === 'localhost' ? 'http://localhost:3000' : 'https://barefootjs.dev'
     const ogTitle = title ?? 'BarefootJS'
-    const ogDescription = description ?? 'Signal-based reactivity for any backend.'
+    const ogDescription = description ?? 'TSX in. Your stack out.'
     const ogImageUrl = `${baseUrl}/og?title=${encodeURIComponent(ogTitle)}`
 
     return (
