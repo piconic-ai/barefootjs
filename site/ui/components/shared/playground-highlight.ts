@@ -157,3 +157,31 @@ export function plainJsxTree(node: JsxTreeNode, indent = 0): string {
   const childLines = node.children.map(c => plainJsxTree(c, indent + 1))
   return [`${pad}<${node.tag}${renderedProps}>`, ...childLines, `${pad}</${node.tag}>`].join('\n')
 }
+
+/**
+ * Generate syntax-highlighted JSX for the Command component tree.
+ * Exported here so it's properly bundled in the client JS IIFE scope.
+ */
+export function highlightCommandJsx(placeholder: string, showShortcuts: boolean): string {
+  return [
+    `${hlPlain('&lt;')}${hlTag('Command')}${hlPlain('&gt;')}`,
+    `  ${hlPlain('&lt;')}${hlTag('CommandInput')} ${hlAttr('placeholder')}${hlPlain('=')}${hlStr(`&quot;${escapeHtml(placeholder)}&quot;`)} ${hlPlain('/&gt;')}`,
+    `  ${hlPlain('&lt;')}${hlTag('CommandList')}${hlPlain('&gt;')}`,
+    `    ${hlPlain('&lt;')}${hlTag('CommandEmpty')}${hlPlain('&gt;')}No results found.${hlPlain('&lt;/')}${hlTag('CommandEmpty')}${hlPlain('&gt;')}`,
+    `    ${hlPlain('&lt;')}${hlTag('CommandGroup')} ${hlAttr('heading')}${hlPlain('=')}${hlStr('&quot;Suggestions&quot;')}${hlPlain('&gt;')}`,
+    `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Calendar${hlPlain('&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`,
+    `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Search Emoji${hlPlain('&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`,
+    `    ${hlPlain('&lt;/')}${hlTag('CommandGroup')}${hlPlain('&gt;')}`,
+    `    ${hlPlain('&lt;')}${hlTag('CommandSeparator')} ${hlPlain('/&gt;')}`,
+    `    ${hlPlain('&lt;')}${hlTag('CommandGroup')} ${hlAttr('heading')}${hlPlain('=')}${hlStr('&quot;Settings&quot;')}${hlPlain('&gt;')}`,
+    showShortcuts
+      ? `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Profile${hlPlain('&lt;')}${hlTag('CommandShortcut')}${hlPlain('&gt;')}⌘P${hlPlain('&lt;/')}${hlTag('CommandShortcut')}${hlPlain('&gt;&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`
+      : `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Profile${hlPlain('&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`,
+    showShortcuts
+      ? `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Settings${hlPlain('&lt;')}${hlTag('CommandShortcut')}${hlPlain('&gt;')}⌘S${hlPlain('&lt;/')}${hlTag('CommandShortcut')}${hlPlain('&gt;&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`
+      : `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Settings${hlPlain('&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`,
+    `    ${hlPlain('&lt;/')}${hlTag('CommandGroup')}${hlPlain('&gt;')}`,
+    `  ${hlPlain('&lt;/')}${hlTag('CommandList')}${hlPlain('&gt;')}`,
+    `${hlPlain('&lt;/')}${hlTag('Command')}${hlPlain('&gt;')}`,
+  ].join('\n')
+}

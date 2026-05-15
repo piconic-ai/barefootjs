@@ -6,7 +6,7 @@
  * Allows toggling portal visibility and switching between default and custom container.
  */
 
-import { createSignal, createEffect, createPortal, type Portal } from '@barefootjs/client'
+import { createSignal, createEffect, createPortal } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
 import { highlightJsxTree, plainJsxTree, type JsxTreeNode } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
@@ -18,7 +18,7 @@ type ContainerTarget = 'body' | 'custom'
 function PortalPlayground(_props: {}) {
   const [visible, setVisible] = createSignal(false)
   const [target, setTarget] = createSignal<ContainerTarget>('body')
-  const state: { portal: Portal | null; container: HTMLElement | null } = { portal: null, container: null }
+  const state: { portal: { unmount: () => void } | null; container: HTMLElement | null } = { portal: null, container: null }
 
   const setContainerRef = (el: HTMLElement) => {
     state.container = el

@@ -8,7 +8,7 @@
 
 import { createSignal, createEffect } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr, hlStr } from './shared/playground-highlight'
+import { highlightJsxTree, plainJsxTree, type JsxTreeNode } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import {
   ContextMenu,
@@ -20,37 +20,29 @@ import {
 } from '@ui/components/ui/context-menu'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 
-function highlightContextMenuJsx(variant: string): string {
-  const variantAttr = variant !== 'default'
-    ? ` ${hlAttr('variant')}${hlPlain('=')}${hlStr(`&quot;${variant}&quot;`)}`
-    : ''
-
-  const lines = [
-    `${hlPlain('&lt;')}${hlTag('ContextMenu')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('ContextMenuTrigger')}${hlPlain('&gt;')}...${hlPlain('&lt;/')}${hlTag('ContextMenuTrigger')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('ContextMenuContent')}${hlPlain('&gt;')}`,
-    `    ${hlPlain('&lt;')}${hlTag('ContextMenuItem')}${variantAttr}${hlPlain('&gt;')}Back${hlPlain('&lt;/')}${hlTag('ContextMenuItem')}${hlPlain('&gt;')}`,
-    `    ${hlPlain('&lt;')}${hlTag('ContextMenuItem')}${variantAttr}${hlPlain('&gt;')}Forward${hlPlain('&lt;/')}${hlTag('ContextMenuItem')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;/')}${hlTag('ContextMenuContent')}${hlPlain('&gt;')}`,
-    `${hlPlain('&lt;/')}${hlTag('ContextMenu')}${hlPlain('&gt;')}`,
-  ]
-  return lines.join('\n')
-}
-
 function ContextMenuPlayground(_props: {}) {
   const [open, setOpen] = createSignal(false)
   const [variant, setVariant] = createSignal('default')
 
-  const codeText = () => {
-    const v = variant()
-    const variantProp = v !== 'default' ? ` variant="${v}"` : ''
-    return `<ContextMenu>\n  <ContextMenuTrigger>...</ContextMenuTrigger>\n  <ContextMenuContent>\n    <ContextMenuItem${variantProp}>Back</ContextMenuItem>\n    <ContextMenuItem${variantProp}>Forward</ContextMenuItem>\n  </ContextMenuContent>\n</ContextMenu>`
-  }
+  const tree = (): JsxTreeNode => ({
+    tag: 'ContextMenu',
+    children: [
+      { tag: 'ContextMenuTrigger', children: '...' },
+      {
+        tag: 'ContextMenuContent',
+        children: [
+          { tag: 'ContextMenuItem', props: [{ name: 'variant', value: variant(), defaultValue: 'default' }], children: 'Back' },
+          { tag: 'ContextMenuItem', props: [{ name: 'variant', value: variant(), defaultValue: 'default' }], children: 'Forward' },
+        ],
+      },
+    ],
+  })
+
+  const codeText = () => plainJsxTree(tree())
 
   createEffect(() => {
-    const v = variant()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) codeEl.innerHTML = highlightContextMenuJsx(v)
+    if (codeEl) codeEl.innerHTML = highlightJsxTree(tree())
   })
 
   // Update variant classes on live items

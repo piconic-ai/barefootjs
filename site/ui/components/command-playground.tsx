@@ -8,7 +8,7 @@
 
 import { createSignal, createEffect } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr, hlStr } from './shared/playground-highlight'
+import { highlightCommandJsx } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Checkbox } from '@ui/components/ui/checkbox'
 import {
@@ -21,30 +21,6 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@ui/components/ui/command'
-
-function highlightCommandJsx(placeholder: string, showShortcuts: boolean): string {
-  return [
-    `${hlPlain('&lt;')}${hlTag('Command')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('CommandInput')} ${hlAttr('placeholder')}${hlPlain('=')}${hlStr(`&quot;${placeholder}&quot;`)} ${hlPlain('/&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('CommandList')}${hlPlain('&gt;')}`,
-    `    ${hlPlain('&lt;')}${hlTag('CommandEmpty')}${hlPlain('&gt;')}No results found.${hlPlain('&lt;/')}${hlTag('CommandEmpty')}${hlPlain('&gt;')}`,
-    `    ${hlPlain('&lt;')}${hlTag('CommandGroup')} ${hlAttr('heading')}${hlPlain('=')}${hlStr('&quot;Suggestions&quot;')}${hlPlain('&gt;')}`,
-    `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Calendar${hlPlain('&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`,
-    `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Search Emoji${hlPlain('&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`,
-    `    ${hlPlain('&lt;/')}${hlTag('CommandGroup')}${hlPlain('&gt;')}`,
-    `    ${hlPlain('&lt;')}${hlTag('CommandSeparator')} ${hlPlain('/&gt;')}`,
-    `    ${hlPlain('&lt;')}${hlTag('CommandGroup')} ${hlAttr('heading')}${hlPlain('=')}${hlStr('&quot;Settings&quot;')}${hlPlain('&gt;')}`,
-    showShortcuts
-      ? `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Profile${hlPlain('&lt;')}${hlTag('CommandShortcut')}${hlPlain('&gt;')}\u2318P${hlPlain('&lt;/')}${hlTag('CommandShortcut')}${hlPlain('&gt;&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`
-      : `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Profile${hlPlain('&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`,
-    showShortcuts
-      ? `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Settings${hlPlain('&lt;')}${hlTag('CommandShortcut')}${hlPlain('&gt;')}\u2318S${hlPlain('&lt;/')}${hlTag('CommandShortcut')}${hlPlain('&gt;&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`
-      : `      ${hlPlain('&lt;')}${hlTag('CommandItem')}${hlPlain('&gt;')}Settings${hlPlain('&lt;/')}${hlTag('CommandItem')}${hlPlain('&gt;')}`,
-    `    ${hlPlain('&lt;/')}${hlTag('CommandGroup')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;/')}${hlTag('CommandList')}${hlPlain('&gt;')}`,
-    `${hlPlain('&lt;/')}${hlTag('Command')}${hlPlain('&gt;')}`,
-  ].join('\n')
-}
 
 function CommandPlayground(_props: {}) {
   const [showShortcuts, setShowShortcuts] = createSignal(true)

@@ -8,25 +8,11 @@
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr } from './shared/playground-highlight'
+import { highlightJsxTree, plainJsxTree, type JsxTreeNode } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Checkbox } from '@ui/components/ui/checkbox'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@ui/components/ui/input-otp'
-
-function highlightInputOTPJsx(maxLength: number, disabled: boolean): string {
-  const disabledProp = disabled ? ` ${hlAttr('disabled')}` : ''
-  const lines = [
-    `${hlPlain('&lt;')}${hlTag('InputOTP')} ${hlAttr('maxLength')}${hlPlain('={')}${maxLength}${hlPlain('}')}${disabledProp}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('InputOTPGroup')}${hlPlain('&gt;')}`,
-  ]
-  for (let i = 0; i < maxLength; i++) {
-    lines.push(`    ${hlPlain('&lt;')}${hlTag('InputOTPSlot')} ${hlAttr('index')}${hlPlain('={')}${i}${hlPlain('}')} ${hlPlain('/&gt;')}`)
-  }
-  lines.push(`  ${hlPlain('&lt;/')}${hlTag('InputOTPGroup')}${hlPlain('&gt;')}`)
-  lines.push(`${hlPlain('&lt;/')}${hlTag('InputOTP')}${hlPlain('&gt;')}`)
-  return lines.join('\n')
-}
 
 function InputOTPPlayground(_props: {}) {
   const [maxLength, setMaxLength] = createSignal('6')
@@ -34,21 +20,26 @@ function InputOTPPlayground(_props: {}) {
 
   const maxLengthNum = createMemo(() => parseInt(maxLength(), 10))
 
-  const codeText = createMemo(() => {
-    const ml = maxLengthNum()
-    const parts: string[] = [`maxLength={${ml}}`]
-    if (disabled()) parts.push('disabled')
-    const slots = Array.from({ length: ml }, (_, i) => `    <InputOTPSlot index={${i}} />`).join('\n')
-    return `<InputOTP ${parts.join(' ')}>\n  <InputOTPGroup>\n${slots}\n  </InputOTPGroup>\n</InputOTP>`
+  const tree = (): JsxTreeNode => ({
+    tag: 'InputOTP',
+    props: [
+      { name: 'maxLength', value: String(maxLengthNum()), defaultValue: '', kind: 'expression' as const },
+      { name: 'disabled', value: String(disabled()), defaultValue: 'false', kind: 'boolean' as const },
+    ],
+    children: [{
+      tag: 'InputOTPGroup',
+      children: Array.from({ length: maxLengthNum() }, (_, i) => ({
+        tag: 'InputOTPSlot',
+        props: [{ name: 'index', value: String(i), defaultValue: '', kind: 'expression' as const }],
+      })),
+    }],
   })
 
+  const codeText = createMemo(() => plainJsxTree(tree()))
+
   createEffect(() => {
-    const ml = maxLengthNum()
-    const d = disabled()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightInputOTPJsx(ml, d)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxTree(tree())
   })
 
   // Toggle visibility of pre-rendered variants based on maxLength

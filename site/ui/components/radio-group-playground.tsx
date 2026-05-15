@@ -8,36 +8,31 @@
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr, hlStr } from './shared/playground-highlight'
+import { highlightJsxTree, plainJsxTree, type JsxTreeNode } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Checkbox } from '@ui/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@ui/components/ui/radio-group'
 
-function highlightRadioGroupJsx(disabled: boolean): string {
-  const disabledProp = disabled ? ` ${hlAttr('disabled')}` : ''
-  return [
-    `${hlPlain('&lt;')}${hlTag('RadioGroup')} ${hlAttr('defaultValue')}${hlPlain('=')}${hlStr('&quot;option-1&quot;')}${disabledProp}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('RadioGroupItem')} ${hlAttr('value')}${hlPlain('=')}${hlStr('&quot;option-1&quot;')} ${hlPlain('/&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('RadioGroupItem')} ${hlAttr('value')}${hlPlain('=')}${hlStr('&quot;option-2&quot;')} ${hlPlain('/&gt;')}`,
-    `${hlPlain('&lt;/')}${hlTag('RadioGroup')}${hlPlain('&gt;')}`,
-  ].join('\n')
-}
-
 function RadioGroupPlayground(_props: {}) {
   const [disabled, setDisabled] = createSignal(false)
 
-  const codeText = createMemo(() => {
-    const parts: string[] = ['defaultValue="option-1"']
-    if (disabled()) parts.push('disabled')
-    return `<RadioGroup ${parts.join(' ')}>\n  <RadioGroupItem value="option-1" />\n  <RadioGroupItem value="option-2" />\n</RadioGroup>`
+  const tree = (): JsxTreeNode => ({
+    tag: 'RadioGroup',
+    props: [
+      { name: 'defaultValue', value: 'option-1', defaultValue: '' },
+      { name: 'disabled', value: String(disabled()), defaultValue: 'false', kind: 'boolean' as const },
+    ],
+    children: [
+      { tag: 'RadioGroupItem', props: [{ name: 'value', value: 'option-1', defaultValue: '' }] },
+      { tag: 'RadioGroupItem', props: [{ name: 'value', value: 'option-2', defaultValue: '' }] },
+    ],
   })
 
+  const codeText = createMemo(() => plainJsxTree(tree()))
+
   createEffect(() => {
-    const d = disabled()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightRadioGroupJsx(d)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxTree(tree())
   })
 
   return (

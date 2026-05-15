@@ -8,7 +8,7 @@
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr, hlStr } from './shared/playground-highlight'
+import { highlightJsxTree, plainJsxTree, type JsxTreeNode } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
 import { Button } from '@ui/components/ui/button'
@@ -16,35 +16,24 @@ import { ButtonGroup } from '@ui/components/ui/button-group'
 
 type Orientation = 'horizontal' | 'vertical'
 
-function highlightButtonGroupJsx(orientation: string): string {
-  const props: string[] = []
-  if (orientation !== 'horizontal') props.push(` ${hlAttr('orientation')}${hlPlain('=')}${hlStr(`&quot;${orientation}&quot;`)}`)
-
-  return [
-    `${hlPlain('&lt;')}${hlTag('ButtonGroup')}${props.join('')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('Button')} ${hlAttr('variant')}${hlPlain('=')}${hlStr('&quot;outline&quot;')}${hlPlain('&gt;')}First${hlPlain('&lt;/')}${hlTag('Button')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('Button')} ${hlAttr('variant')}${hlPlain('=')}${hlStr('&quot;outline&quot;')}${hlPlain('&gt;')}Second${hlPlain('&lt;/')}${hlTag('Button')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('Button')} ${hlAttr('variant')}${hlPlain('=')}${hlStr('&quot;outline&quot;')}${hlPlain('&gt;')}Third${hlPlain('&lt;/')}${hlTag('Button')}${hlPlain('&gt;')}`,
-    `${hlPlain('&lt;/')}${hlTag('ButtonGroup')}${hlPlain('&gt;')}`,
-  ].join('\n')
-}
-
 function ButtonGroupPlayground(_props: {}) {
   const [orientation, setOrientation] = createSignal<Orientation>('horizontal')
 
-  const codeText = createMemo(() => {
-    const parts: string[] = []
-    if (orientation() !== 'horizontal') parts.push(`orientation="${orientation()}"`)
-    const propsStr = parts.length > 0 ? ` ${parts.join(' ')}` : ''
-    return `<ButtonGroup${propsStr}>\n  <Button variant="outline">First</Button>\n  <Button variant="outline">Second</Button>\n  <Button variant="outline">Third</Button>\n</ButtonGroup>`
+  const tree = (): JsxTreeNode => ({
+    tag: 'ButtonGroup',
+    props: [{ name: 'orientation', value: orientation(), defaultValue: 'horizontal' }],
+    children: [
+      { tag: 'Button', props: [{ name: 'variant', value: 'outline', defaultValue: '' }], children: 'First' },
+      { tag: 'Button', props: [{ name: 'variant', value: 'outline', defaultValue: '' }], children: 'Second' },
+      { tag: 'Button', props: [{ name: 'variant', value: 'outline', defaultValue: '' }], children: 'Third' },
+    ],
   })
 
+  const codeText = createMemo(() => plainJsxTree(tree()))
+
   createEffect(() => {
-    const o = orientation()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightButtonGroupJsx(o)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxTree(tree())
   })
 
   return (

@@ -8,7 +8,7 @@
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr, hlStr } from './shared/playground-highlight'
+import { highlightJsxTree, plainJsxTree, type JsxTreeNode } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Checkbox } from '@ui/components/ui/checkbox'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ui/components/ui/select'
@@ -18,45 +18,32 @@ type GroupType = 'single' | 'multiple'
 type GroupVariant = 'default' | 'outline'
 type GroupSize = 'default' | 'sm' | 'lg'
 
-function highlightToggleGroupJsx(type: string, variant: string, size: string, disabled: boolean): string {
-  const props: string[] = []
-  props.push(` ${hlAttr('type')}${hlPlain('=')}${hlStr(`&quot;${type}&quot;`)}`)
-  if (variant !== 'default') props.push(` ${hlAttr('variant')}${hlPlain('=')}${hlStr(`&quot;${variant}&quot;`)}`)
-  if (size !== 'default') props.push(` ${hlAttr('size')}${hlPlain('=')}${hlStr(`&quot;${size}&quot;`)}`)
-  if (disabled) props.push(` ${hlAttr('disabled')}`)
-
-  return [
-    `${hlPlain('&lt;')}${hlTag('ToggleGroup')}${props.join('')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('ToggleGroupItem')} ${hlAttr('value')}${hlPlain('=')}${hlStr('&quot;a&quot;')}${hlPlain('&gt;')}A${hlPlain('&lt;/')}${hlTag('ToggleGroupItem')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('ToggleGroupItem')} ${hlAttr('value')}${hlPlain('=')}${hlStr('&quot;b&quot;')}${hlPlain('&gt;')}B${hlPlain('&lt;/')}${hlTag('ToggleGroupItem')}${hlPlain('&gt;')}`,
-    `  ${hlPlain('&lt;')}${hlTag('ToggleGroupItem')} ${hlAttr('value')}${hlPlain('=')}${hlStr('&quot;c&quot;')}${hlPlain('&gt;')}C${hlPlain('&lt;/')}${hlTag('ToggleGroupItem')}${hlPlain('&gt;')}`,
-    `${hlPlain('&lt;/')}${hlTag('ToggleGroup')}${hlPlain('&gt;')}`,
-  ].join('\n')
-}
-
 function ToggleGroupPlayground(_props: {}) {
   const [type, setType] = createSignal<GroupType>('single')
   const [variant, setVariant] = createSignal<GroupVariant>('outline')
   const [size, setSize] = createSignal<GroupSize>('default')
   const [disabled, setDisabled] = createSignal(false)
 
-  const codeText = createMemo(() => {
-    const parts: string[] = [`type="${type()}"`]
-    if (variant() !== 'default') parts.push(`variant="${variant()}"`)
-    if (size() !== 'default') parts.push(`size="${size()}"`)
-    if (disabled()) parts.push('disabled')
-    return `<ToggleGroup ${parts.join(' ')}>\n  <ToggleGroupItem value="a">A</ToggleGroupItem>\n  <ToggleGroupItem value="b">B</ToggleGroupItem>\n  <ToggleGroupItem value="c">C</ToggleGroupItem>\n</ToggleGroup>`
+  const tree = (): JsxTreeNode => ({
+    tag: 'ToggleGroup',
+    props: [
+      { name: 'type', value: type(), defaultValue: '' },
+      { name: 'variant', value: variant(), defaultValue: 'default' },
+      { name: 'size', value: size(), defaultValue: 'default' },
+      { name: 'disabled', value: String(disabled()), defaultValue: 'false', kind: 'boolean' as const },
+    ],
+    children: [
+      { tag: 'ToggleGroupItem', props: [{ name: 'value', value: 'a', defaultValue: '' }], children: 'A' },
+      { tag: 'ToggleGroupItem', props: [{ name: 'value', value: 'b', defaultValue: '' }], children: 'B' },
+      { tag: 'ToggleGroupItem', props: [{ name: 'value', value: 'c', defaultValue: '' }], children: 'C' },
+    ],
   })
 
+  const codeText = createMemo(() => plainJsxTree(tree()))
+
   createEffect(() => {
-    const t = type()
-    const v = variant()
-    const s = size()
-    const d = disabled()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightToggleGroupJsx(t, v, s, d)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxTree(tree())
   })
 
   return (

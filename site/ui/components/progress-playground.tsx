@@ -8,17 +8,10 @@
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr } from './shared/playground-highlight'
+import { highlightJsxSelfClosing, plainJsxSelfClosing, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Slider } from '@ui/components/ui/slider'
 import { Progress } from '@ui/components/ui/progress'
-
-function highlightProgressJsx(value: number, max: number): string {
-  const props: string[] = []
-  props.push(` ${hlAttr('value')}${hlPlain('={')}${value}${hlPlain('}')}`)
-  if (max !== 100) props.push(` ${hlAttr('max')}${hlPlain('={')}${max}${hlPlain('}')}`)
-  return `${hlPlain('&lt;')}${hlTag('Progress')}${props.join('')} ${hlPlain('/&gt;')}`
-}
 
 function ProgressPlayground(_props: {}) {
   const [value, setValue] = createSignal(50)
@@ -28,19 +21,16 @@ function ProgressPlayground(_props: {}) {
     Math.round((value() / max()) * 100)
   )
 
-  const codeText = createMemo(() => {
-    const parts: string[] = [`value={${value()}}`]
-    if (max() !== 100) parts.push(`max={${max()}}`)
-    return `<Progress ${parts.join(' ')} />`
-  })
+  const progressProps = (): HighlightProp[] => [
+    { name: 'value', value: String(value()), defaultValue: '', kind: 'expression' as const },
+    { name: 'max', value: String(max()), defaultValue: '100', kind: 'expression' as const },
+  ]
+
+  const codeText = createMemo(() => plainJsxSelfClosing('Progress', progressProps()))
 
   createEffect(() => {
-    const v = value()
-    const m = max()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightProgressJsx(v, m)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxSelfClosing('Progress', progressProps())
   })
 
   return (

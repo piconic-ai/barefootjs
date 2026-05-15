@@ -8,37 +8,25 @@
 
 import { createSignal, createMemo, createEffect } from '@barefootjs/client'
 import { CopyButton } from './copy-button'
-import { hlPlain, hlTag, hlAttr } from './shared/playground-highlight'
+import { highlightJsxSelfClosing, plainJsxSelfClosing, type HighlightProp } from './shared/playground-highlight'
 import { PlaygroundLayout, PlaygroundControl } from './shared/PlaygroundLayout'
 import { Checkbox } from '@ui/components/ui/checkbox'
 import { Slider } from '@ui/components/ui/slider'
-
-function highlightSliderJsx(value: number, disabled: boolean): string {
-  const props: string[] = []
-  if (value !== 50) props.push(` ${hlAttr('defaultValue')}${hlPlain('={')}${value}${hlPlain('}')}`)
-  if (disabled) props.push(` ${hlAttr('disabled')}`)
-  return `${hlPlain('&lt;')}${hlTag('Slider')}${props.join('')} ${hlPlain('/&gt;')}`
-}
 
 function SliderPlayground(_props: {}) {
   const [value, setValue] = createSignal(50)
   const [disabled, setDisabled] = createSignal(false)
 
-  const codeText = createMemo(() => {
-    const parts: string[] = []
-    if (value() !== 50) parts.push(`defaultValue={${value()}}`)
-    if (disabled()) parts.push('disabled')
-    const propsStr = parts.length > 0 ? ` ${parts.join(' ')}` : ''
-    return `<Slider${propsStr} />`
-  })
+  const sliderProps = (): HighlightProp[] => [
+    { name: 'defaultValue', value: String(value()), defaultValue: '50', kind: 'expression' as const },
+    { name: 'disabled', value: String(disabled()), defaultValue: 'false', kind: 'boolean' as const },
+  ]
+
+  const codeText = createMemo(() => plainJsxSelfClosing('Slider', sliderProps()))
 
   createEffect(() => {
-    const v = value()
-    const d = disabled()
     const codeEl = document.querySelector('[data-playground-code]') as HTMLElement
-    if (codeEl) {
-      codeEl.innerHTML = highlightSliderJsx(v, d)
-    }
+    if (codeEl) codeEl.innerHTML = highlightJsxSelfClosing('Slider', sliderProps())
   })
 
   return (
