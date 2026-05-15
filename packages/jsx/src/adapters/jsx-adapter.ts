@@ -61,10 +61,17 @@ export abstract class JsxAdapter extends BaseAdapter {
   // ===========================================================================
 
   /**
-   * Generate SSR no-op initializers for signals, memos, constants, and functions.
-   * Performs transitive dependency analysis to skip unreachable declarations.
+   * Generate SSR no-op initializers for signals, memos, constants, and
+   * functions. Performs transitive dependency analysis to skip
+   * unreachable declarations.
+   *
+   * Public (and contracted at the `TemplateAdapter` level as an
+   * optional method) since #1290 step 3: the divergence between
+   * JS-runtime adapters (which implement this) and DSL adapters
+   * (which leave it `undefined`) is now type-visible instead of
+   * hidden inside the `JsxAdapter` inheritance branch.
    */
-  protected generateSignalInitializers(ir: ComponentIR, jsxBody: string): string {
+  generateSignalInitializers(ir: ComponentIR, jsxBody: string): string {
     const lines: string[] = []
     const { preserveTypes } = this.jsxConfig
 

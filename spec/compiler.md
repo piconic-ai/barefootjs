@@ -451,6 +451,68 @@ IR (ComponentIR)
 
 The **hydration contract** between template and client JS is maintained through shared marker constants (`bf-s`, `bf`, `bf-c`). The marker conformance suite (`packages/adapter-tests/src/marker-conformance.ts`, wired up by `runAdapterConformanceTests`) compiles every shared JSX fixture through the adapter under test and asserts the slot / conditional / loop ids the template emits match the set the IR computed. Each adapter package runs the suite against its own adapter; the shared layer never imports concrete adapters, so adding a new one is a one-package edit.
 
+#### Per-kind Emitter pattern (drift defence)
+
+Each adapter used to write its own `switch (kind)` over `ParsedExpr`,
+`IRNode`, and `AttrValue`, with its own `default` arm. A new kind
+landing in core silently fell through in any adapter that hadn't been
+updated. The fix is a **single shared dispatcher per kind-space, with
+an `assertNever` default**, paired with a per-adapter visitor
+interface:
+
+| Kind-space | Dispatcher | Visitor interface |
+|---|---|---|
+| `ParsedExpr.kind` | `emitParsedExpr` | `ParsedExprEmitter` |
+| `IRNode.type` | `emitIRNode<Ctx>` | `IRNodeEmitter<Ctx>` |
+| `AttrValue.kind` | `emitAttrValue` | `AttrValueEmitter` |
+
+Adding a new kind in any of those unions is now a TS compile error in
+every adapter that hasn't extended its emitter. Per-kind method names
+carry an `emit` prefix (`emitElement`, `emitLiteral`, …) so a single
+adapter class can implement multiple visitor interfaces without name
+collisions.
+
+`IRNodeEmitter` is generic over `Ctx` because IRNode rendering is
+render-context-sensitive in ways the IR itself doesn't record
+(root-of-client-component, inside-loop, etc.); each adapter declares
+its own `Ctx` shape. `AttrValueEmitter` separates element-attribute
+emission from component-prop emission via two emitter instances per
+adapter — same context separation that used to be a `switch` on the
+caller side.
+
+#### Capability flags
+
+A few adapter capabilities differ by target runtime and are surfaced
+on the `TemplateAdapter` interface as **optional** members rather than
+hidden in an inheritance branch — so an adapter's lack of a capability
+is type-visible:
+
+- `clientShimSource?: string` — module specifier for the SSR shim of
+  `@barefootjs/client`. Set on adapters whose template runtime can
+  execute JS (Hono); left `undefined` on DSL adapters that strip
+  client-package imports outright.
+- `acceptsTemplateCall?: (calleeName) => boolean` — broad-acceptance
+  predicate for adapters whose template runtime is a full JS engine
+  (Hono). DSL adapters leave this `undefined` and rely on the explicit
+  `templatePrimitives` map.
+- `templatePrimitives?: TemplatePrimitiveRegistry` — identifier-path
+  callees the adapter promises to render in template scope
+  (`JSON.stringify`, `Math.floor`, …).
+- `generateSignalInitializers?(ir, body): string` — SSR declaration
+  block for the user's reactive bindings (signals, memos,
+  locally-declared functions/constants). Implemented by JS-runtime
+  adapters via the `JsxAdapter` base class; **deliberately left
+  undefined** on DSL adapters (Go, Mojo) because their target
+  languages never declare reactive bindings inside the template body —
+  values reach the template via target-language-native mechanisms
+  (Go struct fields, Mojo stash).
+
+`JsxAdapter` is an internal helper base class that JS-runtime adapters
+(Hono, TestAdapter) extend for shared TS-output utilities (signal-init
+generation, import-specifier formatting). DSL adapters extend
+`BaseAdapter` directly. The contract is at the `TemplateAdapter`
+interface level; `JsxAdapter` is purely code reuse.
+
 ### Available Adapters
 
 - **HonoAdapter** (`@barefootjs/hono`) - Generates hono/jsx compatible TSX

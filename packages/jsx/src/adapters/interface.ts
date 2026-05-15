@@ -165,6 +165,28 @@ export interface TemplateAdapter {
 
   // Type generation (for typed languages)
   generateTypes?(ir: ComponentIR): string | null
+
+  /**
+   * Generate the SSR declaration block for the user's reactive bindings
+   * (signals, memos, locally-declared functions/constants) at the top
+   * of the rendered component body.
+   *
+   * Only adapters whose target is a JS runtime — Hono and the test
+   * adapter — implement this. The shared `JsxAdapter` base class owns
+   * the implementation; adapters that extend `JsxAdapter` pick it up
+   * transparently.
+   *
+   * DSL adapters (Go template, Mojolicious) leave this `undefined` by
+   * design: their target languages never declare the user's reactive
+   * bindings inside the template body. Instead, signal/memo values
+   * reach the template via target-language-native mechanisms (Go
+   * struct fields built by `collectStaticChildInstances`, Mojo stash
+   * variables threaded from the controller). Surfacing this divergence
+   * as an optional interface method makes "DSL adapters do not declare
+   * signal inits" type-visible — previously it was hidden inside the
+   * `JsxAdapter` inheritance branch.
+   */
+  generateSignalInitializers?(ir: ComponentIR, body: string): string
 }
 
 // Base class with common functionality
