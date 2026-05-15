@@ -23,8 +23,21 @@ import type {
   CompilerError,
   TemplatePrimitiveRegistry,
 } from '@barefootjs/jsx'
-import { BaseAdapter, type AdapterOutput, type AdapterGenerateOptions, type TemplateSections, isBooleanAttr, parseExpression, identifierPath, stringifyParsedExpr } from '@barefootjs/jsx'
-import type { ParsedExpr, ParsedStatement } from '@barefootjs/jsx'
+import {
+  BaseAdapter,
+  type AdapterOutput,
+  type AdapterGenerateOptions,
+  type TemplateSections,
+  type ParsedExprEmitter,
+  type HigherOrderMethod,
+  type LiteralType,
+  isBooleanAttr,
+  parseExpression,
+  identifierPath,
+  stringifyParsedExpr,
+  emitParsedExpr,
+} from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement, TemplatePart } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND } from '@barefootjs/shared'
 
 interface PrimitiveSpec {
@@ -720,96 +733,17 @@ export class MojoAdapter extends BaseAdapter {
   // ===========================================================================
 
   /**
-   * Convert a ParsedExpr AST to Perl expression string.
-   * Used for filter predicates in loops and standalone higher-order expressions.
+   * Convert a ParsedExpr AST to Perl expression string for filter
+   * predicates. Wraps the shared ParsedExpr dispatcher with a
+   * `MojoFilterEmitter` carrying the predicate's loop param and
+   * any block-body local var aliases (#1250 phase 1B).
    */
   private renderPerlFilterExpr(
     expr: ParsedExpr,
     param: string,
-    localVarMap: Map<string, string> = new Map()
+    localVarMap: Map<string, string> = new Map(),
   ): string {
-    switch (expr.kind) {
-      case 'identifier': {
-        if (expr.name === param) return `$${param}`
-        const signal = localVarMap.get(expr.name)
-        if (signal) return `$${signal}`
-        return `$${expr.name}`
-      }
-
-      case 'literal':
-        if (expr.literalType === 'string') return `'${expr.value}'`
-        if (expr.literalType === 'boolean') return expr.value ? '1' : '0'
-        if (expr.literalType === 'null') return 'undef'
-        return String(expr.value)
-
-      case 'member': {
-        const obj = this.renderPerlFilterExpr(expr.object, param, localVarMap)
-        return `${obj}->{${expr.property}}`
-      }
-
-      case 'call': {
-        // Signal getter calls: filter() → $filter
-        if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
-          return `$${expr.callee.name}`
-        }
-        return this.renderPerlFilterExpr(expr.callee, param, localVarMap)
-      }
-
-      case 'unary': {
-        const arg = this.renderPerlFilterExpr(expr.argument, param, localVarMap)
-        if (expr.op === '!') {
-          // Wrap in parens for binary/logical to avoid Perl precedence issues
-          const needsParens = expr.argument.kind === 'binary' || expr.argument.kind === 'logical'
-          return needsParens ? `!(${arg})` : `!${arg}`
-        }
-        if (expr.op === '-') return `-${arg}`
-        return arg
-      }
-
-      case 'binary': {
-        const left = this.renderPerlFilterExpr(expr.left, param, localVarMap)
-        const right = this.renderPerlFilterExpr(expr.right, param, localVarMap)
-        // String comparison
-        if ((expr.op === '===' || expr.op === '==') && (expr.right.kind === 'literal' && expr.right.literalType === 'string')) {
-          return `${left} eq ${right}`
-        }
-        if ((expr.op === '!==' || expr.op === '!=') && (expr.right.kind === 'literal' && expr.right.literalType === 'string')) {
-          return `${left} ne ${right}`
-        }
-        const opMap: Record<string, string> = { '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=', '+': '+', '-': '-', '*': '*', '/': '/' }
-        const perlOp = opMap[expr.op] ?? expr.op
-        return `${left} ${perlOp} ${right}`
-      }
-
-      case 'logical': {
-        const left = this.renderPerlFilterExpr(expr.left, param, localVarMap)
-        const right = this.renderPerlFilterExpr(expr.right, param, localVarMap)
-        if (expr.op === '&&') return `(${left} && ${right})`
-        if (expr.op === '||') return `(${left} || ${right})`
-        return `(${left} // ${right})`  // ?? → //
-      }
-
-      case 'higher-order': {
-        // filter/every/some on arrays → Perl grep
-        const arrayExpr = this.renderPerlFilterExpr(expr.object, param, localVarMap)
-        const predBody = this.renderPerlFilterExpr(expr.predicate, expr.param, localVarMap)
-        // In grep block, use $_ for the loop variable
-        const grepBody = predBody.replace(new RegExp(`\\$${expr.param}\\b`, 'g'), '$_')
-        if (expr.method === 'filter') {
-          return `[grep { ${grepBody} } @{${arrayExpr}}]`
-        }
-        if (expr.method === 'every') {
-          return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
-        }
-        if (expr.method === 'some') {
-          return `!!(grep { ${grepBody} } @{${arrayExpr}})`
-        }
-        return `${arrayExpr}`
-      }
-
-      default:
-        return '1'
-    }
+    return emitParsedExpr(expr, new MojoFilterEmitter(param, localVarMap))
   }
 
   /**
@@ -1135,93 +1069,256 @@ export class MojoAdapter extends BaseAdapter {
   }
 
   /**
-   * Render a full ParsedExpr tree to Perl (for standalone expressions, not filter predicates).
-   * Unlike renderPerlFilterExpr which uses a filter param context, this handles
-   * top-level expressions where identifiers are signals/stash vars.
+   * Render a full ParsedExpr tree to Perl for top-level (non-filter)
+   * expressions where identifiers are signals / stash vars. Delegates
+   * to the shared ParsedExpr dispatcher with `MojoTopLevelEmitter`
+   * (#1250 phase 1B).
    */
   private renderParsedExprToPerl(expr: ParsedExpr): string {
-    switch (expr.kind) {
-      case 'identifier':
-        return `$${expr.name}`
+    return emitParsedExpr(expr, new MojoTopLevelEmitter(this))
+  }
 
-      case 'literal':
-        if (expr.literalType === 'string') return `'${expr.value}'`
-        if (expr.literalType === 'boolean') return expr.value ? '1' : '0'
-        if (expr.literalType === 'null') return 'undef'
-        return String(expr.value)
+  /** Internal hook exposed to the top-level emitter for unsupported nodes. */
+  _convertExpressionToPerlPublic(raw: string): string {
+    return this.convertExpressionToPerl(raw)
+  }
 
-      case 'member': {
-        const obj = this.renderParsedExprToPerl(expr.object)
-        if (expr.property === 'length') {
-          // Array length: expr.length → scalar(@{expr})
-          return `scalar(@{${obj}})`
-        }
-        return `${obj}->{${expr.property}}`
-      }
+  /** Internal hook for higher-order: predicate body re-uses the filter emitter. */
+  _renderPerlFilterExprPublic(expr: ParsedExpr, param: string): string {
+    return this.renderPerlFilterExpr(expr, param)
+  }
+}
 
-      case 'call': {
-        // Signal getter: count() → $count
-        if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
-          return `$${expr.callee.name}`
-        }
-        return this.renderParsedExprToPerl(expr.callee)
-      }
+// ===========================================================================
+// ParsedExpr emitters (#1250 phase 1B)
+// ===========================================================================
 
-      case 'unary': {
-        const arg = this.renderParsedExprToPerl(expr.argument)
-        if (expr.op === '!') return `!${arg}`
-        if (expr.op === '-') return `-${arg}`
-        return arg
-      }
+/**
+ * Lowering for the predicate body of a filter / every / some / find,
+ * plus the same shape used by `renderBlockBodyCondition` for complex
+ * block-body filters. Identifiers resolve against:
+ *   - the predicate's loop param (`$param`),
+ *   - `localVarMap` aliases declared inside the block body, then
+ *   - a bare `$name` fallback for signals captured by the closure.
+ *
+ * Methods that have no filter-context meaning (template-literal,
+ * arrow-fn, conditional, unsupported) fall back to the `'1'` literal
+ * the original switch's `default` arm returned — those shapes never
+ * arose inside the predicates the adapter actually accepts.
+ */
+class MojoFilterEmitter implements ParsedExprEmitter {
+  constructor(
+    private readonly param: string,
+    private readonly localVarMap: Map<string, string>,
+  ) {}
 
-      case 'binary': {
-        const left = this.renderParsedExprToPerl(expr.left)
-        const right = this.renderParsedExprToPerl(expr.right)
-        if ((expr.op === '===' || expr.op === '==') && expr.right.kind === 'literal' && expr.right.literalType === 'string') {
-          return `${left} eq ${right}`
-        }
-        if ((expr.op === '!==' || expr.op === '!=') && expr.right.kind === 'literal' && expr.right.literalType === 'string') {
-          return `${left} ne ${right}`
-        }
-        const opMap: Record<string, string> = { '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=', '+': '+', '-': '-', '*': '*' }
-        return `${left} ${opMap[expr.op] ?? expr.op} ${right}`
-      }
+  identifier(name: string): string {
+    if (name === this.param) return `$${this.param}`
+    const signal = this.localVarMap.get(name)
+    if (signal) return `$${signal}`
+    return `$${name}`
+  }
 
-      case 'logical': {
-        const left = this.renderParsedExprToPerl(expr.left)
-        const right = this.renderParsedExprToPerl(expr.right)
-        if (expr.op === '&&') return `(${left} && ${right})`
-        if (expr.op === '||') return `(${left} || ${right})`
-        return `(${left} // ${right})`
-      }
+  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+    if (literalType === 'string') return `'${value}'`
+    if (literalType === 'boolean') return value ? '1' : '0'
+    if (literalType === 'null') return 'undef'
+    return String(value)
+  }
 
-      case 'higher-order': {
-        const arrayExpr = this.renderParsedExprToPerl(expr.object)
-        const predBody = this.renderPerlFilterExpr(expr.predicate, expr.param)
-        const grepBody = predBody.replace(new RegExp(`\\$${expr.param}\\b`, 'g'), '$_')
-        if (expr.method === 'filter') {
-          return `[grep { ${grepBody} } @{${arrayExpr}}]`
-        }
-        if (expr.method === 'every') {
-          return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
-        }
-        if (expr.method === 'some') {
-          return `!!(grep { ${grepBody} } @{${arrayExpr}})`
-        }
-        return arrayExpr
-      }
+  member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+    return `${emit(object)}->{${property}}`
+  }
 
-      case 'conditional': {
-        const test = this.renderParsedExprToPerl(expr.test)
-        const consequent = this.renderParsedExprToPerl(expr.consequent)
-        const alternate = this.renderParsedExprToPerl(expr.alternate)
-        return `(${test} ? ${consequent} : ${alternate})`
-      }
-
-      default:
-        // Fallback: use regex-based conversion
-        return this.convertExpressionToPerl(('raw' in expr) ? (expr as { raw: string }).raw : '')
+  call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
+    // Signal getter calls: filter() → $filter
+    if (callee.kind === 'identifier' && args.length === 0) {
+      return `$${callee.name}`
     }
+    return emit(callee)
+  }
+
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const arg = emit(argument)
+    if (op === '!') {
+      // Wrap binary/logical operands in parens to dodge Perl precedence surprises.
+      const needsParens = argument.kind === 'binary' || argument.kind === 'logical'
+      return needsParens ? `!(${arg})` : `!${arg}`
+    }
+    if (op === '-') return `-${arg}`
+    return arg
+  }
+
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const l = emit(left)
+    const r = emit(right)
+    if ((op === '===' || op === '==') && right.kind === 'literal' && right.literalType === 'string') {
+      return `${l} eq ${r}`
+    }
+    if ((op === '!==' || op === '!=') && right.kind === 'literal' && right.literalType === 'string') {
+      return `${l} ne ${r}`
+    }
+    const opMap: Record<string, string> = {
+      '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
+      '+': '+', '-': '-', '*': '*', '/': '/',
+    }
+    return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const l = emit(left)
+    const r = emit(right)
+    if (op === '&&') return `(${l} && ${r})`
+    if (op === '||') return `(${l} || ${r})`
+    return `(${l} // ${r})`
+  }
+
+  higherOrder(
+    method: HigherOrderMethod,
+    object: ParsedExpr,
+    param: string,
+    predicate: ParsedExpr,
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    // The predicate body is also a filter context, but with this
+    // higher-order's own `param` (potentially shadowing the outer one),
+    // so we spin up a nested emitter with the inner param.
+    const arrayExpr = emit(object)
+    const predBody = emitParsedExpr(predicate, new MojoFilterEmitter(param, this.localVarMap))
+    const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
+    if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
+    if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
+    if (method === 'some') return `!!(grep { ${grepBody} } @{${arrayExpr}})`
+    return arrayExpr
+  }
+
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
+    return '1'
+  }
+
+  templateLiteral(_parts: TemplatePart[]): string {
+    return '1'
+  }
+
+  arrowFn(_param: string, _body: ParsedExpr): string {
+    return '1'
+  }
+
+  unsupported(_raw: string, _reason: string): string {
+    return '1'
+  }
+}
+
+/**
+ * Lowering for top-level expressions whose identifiers resolve against
+ * the Mojo template's stash (signals, props, locals introduced by
+ * `% my $x = ...;` lines). Differs from the filter emitter mainly in
+ *   - `.length` → `scalar(@{...})` (filter contexts never see arrays
+ *     in lvalue position),
+ *   - `conditional` is supported (filter predicates can't return
+ *     ternaries),
+ *   - the `unsupported` fallback drops to the regex pipeline so legacy
+ *     shapes the AST can't classify still emit something coherent.
+ */
+class MojoTopLevelEmitter implements ParsedExprEmitter {
+  constructor(private readonly adapter: MojoAdapter) {}
+
+  identifier(name: string): string {
+    return `$${name}`
+  }
+
+  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+    if (literalType === 'string') return `'${value}'`
+    if (literalType === 'boolean') return value ? '1' : '0'
+    if (literalType === 'null') return 'undef'
+    return String(value)
+  }
+
+  member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+    const obj = emit(object)
+    if (property === 'length') return `scalar(@{${obj}})`
+    return `${obj}->{${property}}`
+  }
+
+  call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
+    // Signal getter: count() → $count
+    if (callee.kind === 'identifier' && args.length === 0) {
+      return `$${callee.name}`
+    }
+    return emit(callee)
+  }
+
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const arg = emit(argument)
+    if (op === '!') return `!${arg}`
+    if (op === '-') return `-${arg}`
+    return arg
+  }
+
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const l = emit(left)
+    const r = emit(right)
+    if ((op === '===' || op === '==') && right.kind === 'literal' && right.literalType === 'string') {
+      return `${l} eq ${r}`
+    }
+    if ((op === '!==' || op === '!=') && right.kind === 'literal' && right.literalType === 'string') {
+      return `${l} ne ${r}`
+    }
+    const opMap: Record<string, string> = {
+      '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
+      '+': '+', '-': '-', '*': '*',
+    }
+    return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const l = emit(left)
+    const r = emit(right)
+    if (op === '&&') return `(${l} && ${r})`
+    if (op === '||') return `(${l} || ${r})`
+    return `(${l} // ${r})`
+  }
+
+  higherOrder(
+    method: HigherOrderMethod,
+    object: ParsedExpr,
+    param: string,
+    predicate: ParsedExpr,
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    const arrayExpr = emit(object)
+    const predBody = this.adapter._renderPerlFilterExprPublic(predicate, param)
+    const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
+    if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
+    if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
+    if (method === 'some') return `!!(grep { ${grepBody} } @{${arrayExpr}})`
+    return arrayExpr
+  }
+
+  conditional(
+    test: ParsedExpr,
+    consequent: ParsedExpr,
+    alternate: ParsedExpr,
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    return `(${emit(test)} ? ${emit(consequent)} : ${emit(alternate)})`
+  }
+
+  templateLiteral(_parts: TemplatePart[]): string {
+    // Template literals don't appear at top level inside Mojo expressions
+    // — they're handled by `convertTemplateLiteralPartsToPerl` at the
+    // attribute / interpolation layer, not the expression dispatcher.
+    return ''
+  }
+
+  arrowFn(_param: string, _body: ParsedExpr): string {
+    return ''
+  }
+
+  unsupported(raw: string, _reason: string): string {
+    // Legacy fallback: the regex pipeline handles shapes the AST can't
+    // classify (mostly hand-written JS that pre-dates the parser).
+    return this.adapter._convertExpressionToPerlPublic(raw)
   }
 }
 
