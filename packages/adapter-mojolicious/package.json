@@ -10,6 +10,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./adapter": {
+      "types": "./src/adapter/index.ts",
+      "import": "./src/adapter/index.ts"
+    },
     "./test-render": {
       "bun": "./src/test-render.ts"
     },

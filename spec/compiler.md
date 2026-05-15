@@ -422,25 +422,34 @@ interface TemplateAdapter {
 
 ### Adapter Responsibility Boundary
 
-Adapters are **template-language specialists**. Their sole responsibility is converting IR into HTML templates with hydration markers (`bf-s`, `bf`, `bf-c`, etc.).
+Adapters are **template-language specialists**: they lower IR into a target-language template carrying hydration markers (`bf-s`, `bf`, `bf-c`, etc.). They also own the module-structure decisions specific to their target language, returned as `AdapterOutput.sections`:
 
-Adapters **must not** handle:
-- **Module structure** — `export` keywords, default exports
-- **Client-package import filtering** — Stripping `@barefootjs/client`, `@barefootjs/client` imports
-- **Client JS generation** — Handled independently by `ir-to-client-js` (adapter-agnostic)
+```typescript
+interface TemplateSections {
+  imports: string         // import / use / require statements
+  types: string           // type definitions (TS-only adapters)
+  component: string       // component definition incl. `export` keyword
+  defaultExport: string   // module-level default-export statement, if any
+  moduleConstants?: string // module-scope constants (e.g. SSR context bindings)
+}
+```
 
-These concerns belong in the **compiler layer**, which orchestrates adapter output and client JS into the final module.
+The compiler concatenates the sections — it does **not** parse the assembled template or post-process it (no regex passes over emitted output). Adapters that re-emit user imports into the template (Hono) call the shared `rewriteImportsForTemplate(imports, this.clientShimSource)` helper themselves to rewrite `@barefootjs/client` to the adapter's SSR shim; adapters whose templates never carry imports (Go, Mojo) consult `metadata.imports` only for diagnostics like BF103.
 
-**Rationale:** If adapters take on module-structure concerns, every new adapter must re-implement them. The adapter conformance tests (HTML comparison) cannot catch gaps in these non-template concerns, leading to silent drift between adapters.
+What stays in the compiler:
+- **Multi-component assembly** — merging imports and module-constants across siblings in one source file.
+- **Client JS generation** — handled by `ir-to-client-js`, adapter-independent.
+
+**Rationale:** Module structure is target-language-specific (`export function` for TS, `{{define "X"}}` for Go templates, none for Mojo `.html.ep`). Centralising it in the compiler forced regex-based postprocess that drifted with adapter output; pushing it into the adapter via typed `sections` makes the contract type-checked instead of convention-enforced.
 
 ```
 IR (ComponentIR)
- ├─→ Adapter: HTML template + markers only
- ├─→ Compiler: Module structure (imports, exports, assembly)
+ ├─→ Adapter: target template + structured sections (imports, types, component, default-export, module-constants)
+ ├─→ Compiler: multi-component assembly across sections
  └─→ ir-to-client-js: Client JS (adapter-independent)
 ```
 
-The **hydration contract** between template and client JS is maintained through shared marker constants (`bf-s`, `bf`, `bf-c`). As long as an adapter's rendered HTML contains correct markers, client JS will hydrate it correctly regardless of the template language.
+The **hydration contract** between template and client JS is maintained through shared marker constants (`bf-s`, `bf`, `bf-c`). The cross-adapter conformance suite (`packages/adapter-tests/src/__tests__/cross-adapter-conformance.test.ts`) compiles every JSX fixture through every shipped adapter and asserts that slot-id, conditional-id, and loop-id sets are byte-identical across them. New adapters must pass this suite before merge.
 
 ### Available Adapters
 

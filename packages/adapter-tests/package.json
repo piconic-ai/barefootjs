@@ -11,6 +11,7 @@
   "devDependencies": {
     "@barefootjs/go-template": "workspace:*",
     "@barefootjs/hono": "workspace:*",
+    "@barefootjs/mojolicious": "workspace:*",
     "typescript": "^5.0.0"
   }
 }
