@@ -10,5 +10,5 @@
     "types": ["bun-types"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "fonts/build-fonts.ts"]
 }

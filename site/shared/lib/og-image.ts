@@ -30,8 +30,8 @@ export function buildOgSvg(title: string): string {
   <text
     x="80"
     y="220"
-    font-family="system-ui, sans-serif"
-    font-size="64"
+    font-family="Inter"
+    font-size="56"
     font-weight="bold"
     fill="#ffffff"
   >${safeTitle}</text>
