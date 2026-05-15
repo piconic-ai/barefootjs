@@ -37,12 +37,25 @@ import {
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type LiteralType,
+  type IRNodeEmitter,
+  type EmitIRNode,
   isBooleanAttr,
   parseExpression,
   isSupported,
   identifierPath,
   emitParsedExpr,
+  emitIRNode,
 } from '@barefootjs/jsx'
+
+/**
+ * Go-template adapter's IRNode render context. Only `isRootOfClientComponent`
+ * is consumed today (forwarded into `renderComponent` / `renderIfStatement`);
+ * the type stays open so future render-position flags can be added without
+ * widening the `IRNodeEmitter` contract.
+ */
+type GoRenderCtx = {
+  isRootOfClientComponent?: boolean
+}
 
 /**
  * Extended nested component info that tracks whether the component
@@ -126,7 +139,7 @@ const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'Math.round':     { arity: 1, emit: (args) => `bf_round ${args[0]}` },
 }
 
-export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter {
+export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx> {
   name = 'go-template'
   extension = '.tmpl'
 
@@ -1632,33 +1645,61 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter 
     return `"${value}"`
   }
 
-  renderNode(node: IRNode, ctx?: { isRootOfClientComponent?: boolean }): string {
-    switch (node.type) {
-      case 'element':
-        return this.renderElement(node)
-      case 'text':
-        return (node as IRText).value
-      case 'expression':
-        return this.renderExpression(node)
-      case 'conditional':
-        return this.renderConditional(node)
-      case 'loop':
-        return this.renderLoop(node)
-      case 'component':
-        return this.renderComponent(node, ctx)
-      case 'fragment':
-        return this.renderFragment(node as IRFragment)
-      case 'slot':
-        return this.renderSlot(node as IRSlot)
-      case 'if-statement':
-        return this.renderIfStatement(node as IRIfStatement, ctx)
-      case 'provider':
-        return this.renderChildren((node as IRProvider).children)
-      case 'async':
-        return this.renderAsync(node as IRAsync)
-      default:
-        return ''
-    }
+  /**
+   * Public entry point for node rendering. Delegates to the shared
+   * `IRNodeEmitter` dispatcher (#1290 step 1); per-kind logic lives in
+   * the `IRNodeEmitter` methods below.
+   */
+  renderNode(node: IRNode, ctx?: GoRenderCtx): string {
+    return emitIRNode<GoRenderCtx>(node, this, ctx ?? {})
+  }
+
+  // ===========================================================================
+  // IRNodeEmitter implementation (Go templates)
+  // ===========================================================================
+
+  emitElement(node: IRElement, _ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
+    return this.renderElement(node)
+  }
+
+  emitText(node: IRText): string {
+    return node.value
+  }
+
+  emitExpression(node: IRExpression): string {
+    return this.renderExpression(node)
+  }
+
+  emitConditional(node: IRConditional, _ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
+    return this.renderConditional(node)
+  }
+
+  emitLoop(node: IRLoop, _ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
+    return this.renderLoop(node)
+  }
+
+  emitComponent(node: IRComponent, ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
+    return this.renderComponent(node, ctx)
+  }
+
+  emitFragment(node: IRFragment, _ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
+    return this.renderFragment(node)
+  }
+
+  emitSlot(node: IRSlot): string {
+    return this.renderSlot(node)
+  }
+
+  emitIfStatement(node: IRIfStatement, ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
+    return this.renderIfStatement(node, ctx)
+  }
+
+  emitProvider(node: IRProvider, _ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
+    return this.renderChildren(node.children)
+  }
+
+  emitAsync(node: IRAsync, _ctx: GoRenderCtx, _emit: EmitIRNode<GoRenderCtx>): string {
+    return this.renderAsync(node)
   }
 
   renderElement(element: IRElement): string {

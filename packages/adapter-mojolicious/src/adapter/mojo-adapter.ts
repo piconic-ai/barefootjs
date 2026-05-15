@@ -31,12 +31,24 @@ import {
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type LiteralType,
+  type IRNodeEmitter,
+  type EmitIRNode,
   isBooleanAttr,
   parseExpression,
   identifierPath,
   stringifyParsedExpr,
   emitParsedExpr,
+  emitIRNode,
 } from '@barefootjs/jsx'
+
+/**
+ * Mojo adapter's IRNode render context. Mojo's lowering currently
+ * doesn't consume any render-position flags (`isRootOfClientComponent`
+ * is handled differently here than in Hono/Go), so the Ctx is empty.
+ * Kept as a named alias so future flags can extend it without changing
+ * the `IRNodeEmitter` interface.
+ */
+type MojoRenderCtx = Record<string, never>
 import type { ParsedExpr, ParsedStatement, TemplatePart } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND } from '@barefootjs/shared'
 
@@ -97,7 +109,7 @@ export interface MojoAdapterOptions {
   barefootJsPath?: string
 }
 
-export class MojoAdapter extends BaseAdapter {
+export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx> {
   name = 'mojolicious'
   extension = '.html.ep'
   templatesPerComponent = true
@@ -215,33 +227,61 @@ export class MojoAdapter extends BaseAdapter {
   // Node Rendering
   // ===========================================================================
 
+  /**
+   * Public entry point for node rendering. Delegates to the shared
+   * `IRNodeEmitter` dispatcher (#1290 step 1); per-kind logic lives in
+   * the `IRNodeEmitter` methods below.
+   */
   renderNode(node: IRNode): string {
-    switch (node.type) {
-      case 'element':
-        return this.renderElement(node)
-      case 'text':
-        return (node as IRText).value
-      case 'expression':
-        return this.renderExpression(node)
-      case 'conditional':
-        return this.renderConditional(node)
-      case 'loop':
-        return this.renderLoop(node)
-      case 'component':
-        return this.renderComponent(node)
-      case 'fragment':
-        return this.renderFragment(node as IRFragment)
-      case 'slot':
-        return this.renderSlot(node as IRSlot)
-      case 'if-statement':
-        return this.renderIfStatement(node as IRIfStatement)
-      case 'provider':
-        return this.renderChildren((node as IRProvider).children)
-      case 'async':
-        return this.renderAsync(node as IRAsync)
-      default:
-        return ''
-    }
+    return emitIRNode<MojoRenderCtx>(node, this, {} as MojoRenderCtx)
+  }
+
+  // ===========================================================================
+  // IRNodeEmitter implementation (Mojo / Perl)
+  // ===========================================================================
+
+  emitElement(node: IRElement, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
+    return this.renderElement(node)
+  }
+
+  emitText(node: IRText): string {
+    return node.value
+  }
+
+  emitExpression(node: IRExpression): string {
+    return this.renderExpression(node)
+  }
+
+  emitConditional(node: IRConditional, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
+    return this.renderConditional(node)
+  }
+
+  emitLoop(node: IRLoop, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
+    return this.renderLoop(node)
+  }
+
+  emitComponent(node: IRComponent, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
+    return this.renderComponent(node)
+  }
+
+  emitFragment(node: IRFragment, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
+    return this.renderFragment(node)
+  }
+
+  emitSlot(node: IRSlot): string {
+    return this.renderSlot(node)
+  }
+
+  emitIfStatement(node: IRIfStatement, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
+    return this.renderIfStatement(node)
+  }
+
+  emitProvider(node: IRProvider, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
+    return this.renderChildren(node.children)
+  }
+
+  emitAsync(node: IRAsync, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
+    return this.renderAsync(node)
   }
 
   // ===========================================================================

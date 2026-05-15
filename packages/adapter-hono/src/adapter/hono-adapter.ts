@@ -17,16 +17,32 @@ import {
   type IRIfStatement,
   type IRProvider,
   type IRAsync,
+  type IRSlot,
   type AttrValue,
   type IRTemplatePart,
   type ParamInfo,
   type AdapterOutput,
   type TemplateSections,
   type JsxAdapterConfig,
+  type IRNodeEmitter,
+  type EmitIRNode,
   JsxAdapter,
   isBooleanAttr,
   rewriteImportsForTemplate,
+  emitIRNode,
 } from '@barefootjs/jsx'
+
+/**
+ * Hono adapter's IRNode render context: which surrounding render
+ * state matters when lowering a node. The `IRNodeEmitter` dispatcher
+ * threads this `Ctx` unchanged into per-kind methods; per-method
+ * documentation below records which flags each kind consults.
+ */
+type HonoRenderCtx = {
+  isRootOfClientComponent?: boolean
+  isInsideLoop?: boolean
+  isLoopItemRoot?: boolean
+}
 import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS } from '@barefootjs/shared'
 
 export interface HonoAdapterOptions {
@@ -49,7 +65,7 @@ export interface HonoAdapterOptions {
   clientJsFilename?: string
 }
 
-export class HonoAdapter extends JsxAdapter {
+export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderCtx> {
   name = 'hono'
   extension = '.tsx'
   clientShimSource = '@barefootjs/hono/client-shim'
@@ -469,59 +485,86 @@ export class HonoAdapter extends JsxAdapter {
   // Node Rendering
   // ===========================================================================
 
-  renderNode(node: IRNode, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean; isLoopItemRoot?: boolean }): string {
-    switch (node.type) {
-      case 'element':
-        return this.renderElement(node, ctx)
-      case 'text':
-        return this.renderText(node)
-      case 'expression':
-        return this.renderExpression(node)
-      case 'conditional':
-        return this.renderConditional(node)
-      case 'loop':
-        return this.renderLoop(node)
-      case 'component':
-        return this.renderComponent(node, ctx)
-      case 'fragment':
-        return this.renderFragment(node)
-      case 'slot':
-        return '{children}'
-      case 'if-statement':
-        // If-statements are rendered at the component level, not inline
-        // This case shouldn't normally be hit, but return empty for safety
-        return ''
-      case 'provider': {
-        const provider = node as IRProvider
-        const children = this.renderChildren(provider.children)
-        // Quote literal values; expression / template / spread variants emit
-        // their JS source verbatim into the Hono JSX output.
-        const valueExpr = (() => {
-          const v = provider.valueProp.value
-          switch (v.kind) {
-            case 'literal': return JSON.stringify(v.value)
-            case 'expression':
-            case 'spread': return v.expr
-            case 'template': return this.renderTemplateLiteralParts(v.parts)
-            case 'boolean-attr':
-            case 'boolean-shorthand': return 'true'
-            case 'jsx-children': return 'undefined'
-          }
-        })()
-        // Bridge BarefootJS Context to Hono's per-render context stack so
-        // descendants that call useContext() at SSR see the provided value.
-        // `provideContextSSR` is a helper exported from the client shim
-        // (`@barefootjs/hono/client-shim`); generateImports auto-injects the
-        // import when this expression is present in the rendered output.
-        // The outer fragment makes the form valid JSX whether the provider
-        // appears as the component root or nested inside JSX siblings.
-        return `<>{provideContextSSR(${provider.contextName}, ${valueExpr}, <>${children}</>)}</>`
+  /**
+   * Public entry point for node rendering. Delegates to the shared
+   * `IRNodeEmitter` dispatcher (#1290 step 1); per-kind logic lives in
+   * the `IRNodeEmitter` methods below.
+   */
+  renderNode(node: IRNode, ctx?: HonoRenderCtx): string {
+    return emitIRNode<HonoRenderCtx>(node, this, ctx ?? {})
+  }
+
+  // ===========================================================================
+  // IRNodeEmitter implementation (Hono JSX)
+  // ===========================================================================
+
+  emitElement(node: IRElement, ctx: HonoRenderCtx, _emit: EmitIRNode<HonoRenderCtx>): string {
+    return this.renderElement(node, ctx)
+  }
+
+  emitText(node: IRText): string {
+    return this.renderText(node)
+  }
+
+  emitExpression(node: IRExpression): string {
+    return this.renderExpression(node)
+  }
+
+  emitConditional(node: IRConditional, _ctx: HonoRenderCtx, _emit: EmitIRNode<HonoRenderCtx>): string {
+    return this.renderConditional(node)
+  }
+
+  emitLoop(node: IRLoop, _ctx: HonoRenderCtx, _emit: EmitIRNode<HonoRenderCtx>): string {
+    return this.renderLoop(node)
+  }
+
+  emitComponent(node: IRComponent, ctx: HonoRenderCtx, _emit: EmitIRNode<HonoRenderCtx>): string {
+    return this.renderComponent(node, ctx)
+  }
+
+  emitFragment(node: IRFragment, _ctx: HonoRenderCtx, _emit: EmitIRNode<HonoRenderCtx>): string {
+    return this.renderFragment(node)
+  }
+
+  emitSlot(_node: IRSlot): string {
+    return '{children}'
+  }
+
+  emitIfStatement(_node: IRIfStatement, _ctx: HonoRenderCtx, _emit: EmitIRNode<HonoRenderCtx>): string {
+    // If-statements are rendered at the component level (early-return pattern),
+    // never inline. This arm is unreachable in practice but is required by
+    // the IRNodeEmitter exhaustiveness contract.
+    return ''
+  }
+
+  emitProvider(node: IRProvider, _ctx: HonoRenderCtx, _emit: EmitIRNode<HonoRenderCtx>): string {
+    const children = this.renderChildren(node.children)
+    // Quote literal values; expression / template / spread variants emit
+    // their JS source verbatim into the Hono JSX output.
+    const valueExpr = (() => {
+      const v = node.valueProp.value
+      switch (v.kind) {
+        case 'literal': return JSON.stringify(v.value)
+        case 'expression':
+        case 'spread': return v.expr
+        case 'template': return this.renderTemplateLiteralParts(v.parts)
+        case 'boolean-attr':
+        case 'boolean-shorthand': return 'true'
+        case 'jsx-children': return 'undefined'
       }
-      case 'async':
-        return this.renderAsync(node as IRAsync)
-      default:
-        return ''
-    }
+    })()
+    // Bridge BarefootJS Context to Hono's per-render context stack so
+    // descendants that call useContext() at SSR see the provided value.
+    // `provideContextSSR` is a helper exported from the client shim
+    // (`@barefootjs/hono/client-shim`); generateImports auto-injects the
+    // import when this expression is present in the rendered output.
+    // The outer fragment makes the form valid JSX whether the provider
+    // appears as the component root or nested inside JSX siblings.
+    return `<>{provideContextSSR(${node.contextName}, ${valueExpr}, <>${children}</>)}</>`
+  }
+
+  emitAsync(node: IRAsync, _ctx: HonoRenderCtx, _emit: EmitIRNode<HonoRenderCtx>): string {
+    return this.renderAsync(node)
   }
 
   renderElement(element: IRElement, ctx?: { isLoopItemRoot?: boolean }): string {
