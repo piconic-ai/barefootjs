@@ -316,21 +316,23 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
     console.log(`  ${deployCmd}${dim(`   # deploy to ${adapter.deploy.target}`)}`)
   }
 
-  // A playful aside — give first-time users a concrete sense of what
-  // "AI + barefoot CLI" looks like in practice. The CLI surfaces
-  // (`barefoot ui`, `barefoot inspect`, registry add) are what make
-  // these prompts work without the AI having to read source, so the
-  // footnote names them explicitly. Visible in TTY contexts only:
-  // CI / piped output skips the section to keep logs grep-friendly.
+  // A playful aside — hand the first-time user one concrete prompt
+  // that exercises the full barefoot workflow: discover a registry
+  // component, add it, integrate it into the starter Counter, then
+  // assert the result with an IR test. The prompt assumes the AI
+  // editor already has the `barefootjs` skill loaded (Claude Code's
+  // bundled skill wraps `barefoot ui` / `barefoot inspect` /
+  // `barefoot add`), so we don't spell out the CLI invocations.
+  // Visible in TTY contexts only: CI / piped output skips the
+  // section to keep logs grep-friendly.
   if (process.stdout.isTTY) {
     console.log('')
     console.log(`${heading('Try it with AI:')}`)
-    console.log(`  ${dim('Drop any of these into Claude Code / Cursor / your AI editor —')}`)
-    console.log(`  ${dim('it uses the barefoot CLI to learn your components without reading source.')}`)
+    console.log(`  ${dim('Drop this into Claude Code (with the `barefootjs` skill loaded):')}`)
     console.log('')
-    console.log(`    "Make the Reset button look dangerous (destructive variant)"`)
-    console.log(`    "Pull a Card from the registry and wrap the Counter inside it"`)
-    console.log(`    "Add a step input so I can change the increment amount"`)
+    console.log(`    "Add a Milestone Badge to the Counter — show it when count hits`)
+    console.log(`     a non-zero multiple of 5. Use signal-driven conditional rendering,`)
+    console.log(`     plus an IR test asserting the Badge appears as a conditional child."`)
   }
 }
 
