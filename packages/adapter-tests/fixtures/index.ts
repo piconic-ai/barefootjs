@@ -63,6 +63,9 @@ import { fixture as childComponentInit } from './child-component-init'
 import { fixture as reactivePropBinding } from './reactive-prop-binding'
 import { fixture as recordIndexLookup } from './record-index-lookup'
 import { fixture as recordIndexLookupViaChildProp } from './record-index-lookup-via-child-prop'
+// Priority 9: Provider / Async (IR-kind coverage, #1252 Phase 0)
+import { fixture as contextProvider } from './context-provider'
+import { fixture as asyncBoundary } from './async-boundary'
 
 import type { JSXFixture } from '../src/types'
 
@@ -132,4 +135,7 @@ export const jsxFixtures: JSXFixture[] = [
   reactivePropBinding,
   recordIndexLookup,
   recordIndexLookupViaChildProp,
+  // Priority 9: Provider / Async (IR-kind coverage, #1252 Phase 0)
+  contextProvider,
+  asyncBoundary,
 ]

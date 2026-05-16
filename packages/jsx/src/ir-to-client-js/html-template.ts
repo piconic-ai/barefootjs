@@ -7,6 +7,7 @@ import { isBooleanAttr } from '../html-constants'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, freeIdsFromRefs, setIntersects, tokenContainsAny, wrapExprWithLoopParams } from './utils'
 import type { LoopParamSpec } from './utils'
 import { nameForRegistryRef } from './component-scope'
+import { assertNever } from './walker'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -298,8 +299,14 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
     case 'async':
       return node.children.map(recurse).join('')
 
-    default:
+    case 'slot':
+      // Slots resolve at the host (parent component / template caller); they
+      // never appear in the embedded HTML template. Preserves the pre-#1252
+      // fall-through behaviour now that the switch is exhaustiveness-checked.
       return ''
+
+    default:
+      return assertNever(node)
   }
 }
 
@@ -391,8 +398,11 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
     case 'async':
       return node.children.map(recurse).join('')
 
-    default:
+    case 'slot':
       return ''
+
+    default:
+      return assertNever(node)
   }
 }
 
@@ -466,8 +476,25 @@ function irNodeToJsExprs(node: IRNode): string[] {
     case 'conditional':
       return [`${node.condition} ? ${irChildrenToJsExpr([node.whenTrue])} : ${irChildrenToJsExpr([node.whenFalse])}`]
 
-    default:
+    // The kinds below previously fell through to `default: return []` and so
+    // were silently dropped when used as a component child. The explicit
+    // cases preserve that behaviour but make the exhaustiveness check
+    // visible: any new IRNode kind added to the union will now be a
+    // compile error here rather than disappearing at runtime (#1252).
+    //
+    // The historical drop is *not* obviously correct for `provider`,
+    // `async`, `if-statement`, or `loop` appearing as a component child;
+    // tracking those is a follow-up — this PR only locks in the schema
+    // exhaustiveness, not behaviour fixes.
+    case 'loop':
+    case 'slot':
+    case 'if-statement':
+    case 'provider':
+    case 'async':
       return []
+
+    default:
+      return assertNever(node)
   }
 }
 
@@ -711,8 +738,11 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
     case 'async':
       return node.children.map(recurse).join('')
 
-    default:
+    case 'slot':
       return ''
+
+    default:
+      return assertNever(node)
   }
 }
 
@@ -807,8 +837,13 @@ export function canGenerateStaticTemplate(
     case 'text':
       return true
 
-    default:
+    case 'slot':
+      // Slots resolve at the host — they don't disqualify static generation
+      // on their own. Preserves the pre-#1252 `default: true` behaviour.
       return true
+
+    default:
+      return assertNever(node)
   }
 }
 
@@ -1075,8 +1110,11 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     case 'async':
       return node.children.map(recurse).join('')
 
-    default:
+    case 'slot':
       return ''
+
+    default:
+      return assertNever(node)
   }
 }
 

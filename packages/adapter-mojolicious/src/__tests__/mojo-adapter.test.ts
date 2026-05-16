@@ -52,6 +52,19 @@ runAdapterConformanceTests({
     'return-logical-or',
     'return-nullish-coalescing',
     'return-map',
+    // #1298: the Mojo adapter emits `$bf->async_boundary('a0', begin
+    // %><p>Loading...</p><% end)` which is invalid Mojo template
+    // syntax — the `begin/end` block is being closed early by the
+    // surrounding parentheses. The fix is in the adapter's renderer;
+    // adapter conformance coverage for the IR `async` kind waits on
+    // it.
+    'async-boundary',
+    // #1297-equivalent for Mojo: `compileJSX` with `outputIR: true`
+    // does not emit an `ir` file for `'use client'` sources, so the
+    // Mojo harness can't render the Provider fixture. Same harness-
+    // level gap class as the go-template adapter; coverage tracked
+    // there.
+    'context-provider',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file

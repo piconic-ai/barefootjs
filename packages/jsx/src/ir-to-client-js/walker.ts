@@ -290,8 +290,8 @@ export function walkIR<Scope>(
   walk(root, initialScope)
 }
 
-function assertNever(x: never): never {
-  throw new Error(`IRWalker: unhandled IRNode kind: ${JSON.stringify(x)}`)
+export function assertNever(x: never): never {
+  throw new Error(`unhandled IRNode kind: ${JSON.stringify(x)}`)
 }
 
 /**

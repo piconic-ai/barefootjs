@@ -59,6 +59,12 @@ describe('CSR Conformance Tests', () => {
     // template-based adapters; the duplicate-`bf-s` issue is its own
     // follow-up.
     'record-index-lookup-via-child-prop',
+    // #1295: the CSR mock runtime in `csr-render.ts` does not stub
+    // `createContext`, so any fixture that declares `const Ctx =
+    // createContext(...)` at module scope ReferenceErrors when the
+    // template lambda runs. SSR conformance covers Provider correctly
+    // via the real Hono runtime — see #1295 for the harness fix.
+    'context-provider',
   ])
 
   for (const fixture of jsxFixtures) {
