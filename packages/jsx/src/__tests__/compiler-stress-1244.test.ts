@@ -439,13 +439,7 @@ describe('4+ same-name child components as siblings in one loop body', () => {
 })
 
 describe('destructured loop param with rest spread back onto the root', () => {
-  // SURFACED LIMITATION (#1244 sub-issue): BF025 currently rejects rest
-  // elements in a `.map()` callback destructure
-  // (`({ id, title, ...rest }) => …`). The intended behaviour is to
-  // lift `rest` into a per-item accessor that remaining-key reflection
-  // can spread back onto the root. The body asserts a clean compile.
-  // Drop `.todo` once fixed.
-  test.todo('{ id, title, ...rest } and {...rest} on the root element', () => {
+  test('{ id, title, ...rest } and {...rest} on the root element', () => {
     const src = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -466,11 +460,7 @@ describe('destructured loop param with rest spread back onto the root', () => {
 })
 
 describe('nested destructuring in loop param', () => {
-  // SURFACED LIMITATION (#1244 sub-issue): BF025 fires on the nested
-  // `[first, ...rest]` array-pattern with rest. Intended behaviour is
-  // per-position rewrite for the array members; the outer object
-  // destructure already works. Drop `.todo` once fixed.
-  test.todo('{ rows: [first, ...rest] } at the loop param', () => {
+  test('{ rows: [first, ...rest] } at the loop param', () => {
     const src = `
       'use client'
       import { createSignal } from '@barefootjs/client'

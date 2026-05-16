@@ -572,6 +572,45 @@ function scanForIdentifiers(expr: string, predicate: (token: string) => boolean)
 }
 
 /**
+ * Render a single destructured `.map()` binding as the JS expression that
+ * yields its value, given the accessor for the loop item.
+ *
+ * - Fixed bindings → `${base}${path}` (e.g. `__bfItem().foo`).
+ * - Object rest → an IIFE that destructures the parent and returns the
+ *   residual, so `({ id, title, ...rest })` lowers each reference to `rest`
+ *   into `(({ id: __bfR0, title: __bfR1, ...__bfRest }) => __bfRest)(__bfItem())`.
+ *   The synthesized `__bfR${i}` / `__bfRest` locals live in the
+ *   barefoot-reserved `__bf*` namespace so they cannot collide with user
+ *   bindings. Identifier-vs-string-literal classification of each excluded
+ *   key is precomputed at IR-build time (`RestExcludeKey.isIdent`), so this
+ *   emitter is pure formatting — no identifier regex runs here.
+ * - Array rest → `${base}${path}.slice(${from})`, falling through to the
+ *   native array method (no runtime helper required).
+ */
+function renderLoopBindingAccess(b: LoopParamBinding, base: string): string {
+  const parent = `${base}${b.path}`
+  if (b.rest?.kind === 'object') {
+    if (b.rest.exclude.length === 0) {
+      // No sibling keys to omit. A fresh shallow clone — not a direct alias
+      // to `parent` — is what the user-visible `rest` semantics require:
+      // mutations against the residual (e.g. `delete rest.foo`) must not
+      // leak back into the underlying item accessor's value.
+      return `({...${parent}})`
+    }
+    const parts = b.rest.exclude.map((e, i) => {
+      return e.isIdent
+        ? `${e.key}: __bfR${i}`
+        : `${JSON.stringify(e.key)}: __bfR${i}`
+    }).join(', ')
+    return `(({ ${parts}, ...__bfRest }) => __bfRest)(${parent})`
+  }
+  if (b.rest?.kind === 'array') {
+    return `${parent}.slice(${b.rest.from})`
+  }
+  return parent
+}
+
+/**
  * Transform loop param references to signal accessor calls in an expression.
  * e.g., "item.text" → "item().text", "item" → "item()"
  * Does not double-wrap: "item().text" stays "item().text"
@@ -591,11 +630,11 @@ export function wrapLoopParamAsAccessor(expr: string, paramName: string, binding
     // Iterating per-binding risks re-matching the replacement text (e.g. a
     // binding named `a` with path `.a` would cascade into `__bfItem().a`
     // then back into `__bfItem().__bfItem().a`).
-    const byName = new Map<string, string>()
-    for (const b of bindings) byName.set(b.name, b.path)
+    const byName = new Map<string, LoopParamBinding>()
+    for (const b of bindings) byName.set(b.name, b)
     const alt = bindings.map(b => escapeRegExp(b.name)).join('|')
     const re = new RegExp(`\\b(${alt})\\b`, 'g')
-    return replaceInExprContexts(expr, re, (_m: string, name: string) => `__bfItem()${byName.get(name)!}`)
+    return replaceInExprContexts(expr, re, (_m: string, name: string) => renderLoopBindingAccess(byName.get(name)!, '__bfItem()'))
   }
   const re = new RegExp(`\\b${escapeRegExp(paramName)}\\b(?!\\s*\\()(?!-)`, 'g')
   return replaceInExprContexts(expr, re, `${paramName}()`)
@@ -616,11 +655,11 @@ export function substituteLoopBindings(
   accessor: string,
 ): string {
   if (!bindings || bindings.length === 0) return expr
-  const byName = new Map<string, string>()
-  for (const b of bindings) byName.set(b.name, b.path)
+  const byName = new Map<string, LoopParamBinding>()
+  for (const b of bindings) byName.set(b.name, b)
   const alt = bindings.map(b => escapeRegExp(b.name)).join('|')
   const re = new RegExp(`\\b(${alt})\\b`, 'g')
-  return replaceInExprContexts(expr, re, (_m: string, name: string) => `${accessor}${byName.get(name)!}`)
+  return replaceInExprContexts(expr, re, (_m: string, name: string) => renderLoopBindingAccess(byName.get(name)!, accessor))
 }
 
 /**

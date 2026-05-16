@@ -531,13 +531,46 @@ export interface IRLoop {
 }
 
 /**
+ * A property key destructured at a `.map()` callback's item parameter, with
+ * its `IdentifierName` classification pre-computed at IR-build time. The
+ * emitter uses `isIdent` to decide between unquoted (`foo: ...`) and quoted
+ * (`"data-foo": ...`) destructure-pattern forms without re-running an
+ * identifier regex of its own — single source of truth for the
+ * classification (#1244 pattern F).
+ */
+export interface RestExcludeKey {
+  /** Raw key text, as it appeared in the source destructure pattern. */
+  key: string
+  /** True when `key` parses as a JS `IdentifierName` (`ts.isIdentifierText`). */
+  isIdent: boolean
+}
+
+/**
  * Destructured binding extracted from a `.map()` callback's item parameter.
- * The `path` is a JS accessor suffix (starts with `.` or `[`) appended to
- * the synthetic `__bfItem()` call in the emitted client JS.
+ *
+ * For *fixed* bindings (plain identifier, alias, nested access), `path` is a
+ * JS accessor suffix (starts with `.` or `[`) appended to the synthetic
+ * `__bfItem()` call. References to the binding compile to
+ * `__bfItem()${path}`.
+ *
+ * When `rest` is set, the binding is a rest element. `path` is the parent
+ * accessor (`''` at the loop root, `.rows` etc. when nested):
+ *
+ * - `kind: 'object'`: references compile to an IIFE that destructures the
+ *   parent and returns the residual object — `__bfItem()${path}` minus the
+ *   sibling keys listed in `exclude`. Each entry is already classified as
+ *   identifier-or-not by the IR builder.
+ * - `kind: 'array'`: references compile to `__bfItem()${path}.slice(from)`.
+ *
+ * Computed property keys can't be expressed in any of these forms and still
+ * raise `BF025` at Phase 1.
  */
 export interface LoopParamBinding {
   name: string
   path: string
+  rest?:
+    | { kind: 'object'; exclude: readonly RestExcludeKey[] }
+    | { kind: 'array'; from: number }
 }
 
 export interface IRComponent {
