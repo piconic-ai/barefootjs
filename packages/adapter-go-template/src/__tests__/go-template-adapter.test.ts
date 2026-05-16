@@ -114,6 +114,17 @@ runAdapterConformanceTests({
     // (`cn\`base \${tone()}\``) likewise can't lower into Go template
     // syntax — same BF101 refusal.
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
+    // #1310: rest destructure in .map() callback. Hono / CSR lower
+    // these via the inline residual-object accessor (#1309), but the
+    // Go template adapter has no analogous lowering — `paramBindings`
+    // is non-empty so the generic destructure-refusal at
+    // `go-template-adapter.ts` fires BF104 regardless of whether the
+    // binding is rest or plain. Pinning the contract here makes the
+    // limitation declarative: when the Go adapter grows a native
+    // rest-lowering, dropping these entries flips the contract on.
+    'rest-destructure-object-in-map': [{ code: 'BF104', severity: 'error' }],
+    'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
+    'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `GoTemplateAdapter.templatePrimitives` (#1188). The two
