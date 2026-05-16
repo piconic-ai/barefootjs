@@ -66,6 +66,13 @@ import { fixture as recordIndexLookupViaChildProp } from './record-index-lookup-
 // Priority 9: Provider / Async (IR-kind coverage, #1252 Phase 0)
 import { fixture as contextProvider } from './context-provider'
 import { fixture as asyncBoundary } from './async-boundary'
+// Priority 10: Compiler stress catalog (#1244)
+import { fixture as style3Signals } from './style-3-signals'
+import { fixture as jsxSpreadReactive } from './jsx-spread-reactive'
+import { fixture as taggedTemplateClassname } from './tagged-template-classname'
+import { fixture as memberExpressionTag } from './member-expression-tag'
+import { fixture as arrowComponent } from './arrow-component'
+import { fixture as childrenJsxExpression } from './children-jsx-expression'
 
 import type { JSXFixture } from '../src/types'
 
@@ -138,4 +145,11 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 9: Provider / Async (IR-kind coverage, #1252 Phase 0)
   contextProvider,
   asyncBoundary,
+  // Priority 10: Compiler stress catalog (#1244)
+  style3Signals,
+  jsxSpreadReactive,
+  taggedTemplateClassname,
+  memberExpressionTag,
+  arrowComponent,
+  childrenJsxExpression,
 ]

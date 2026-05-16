@@ -59,6 +59,20 @@ describe('CSR Conformance Tests', () => {
     // template-based adapters; the duplicate-`bf-s` issue is its own
     // follow-up.
     'record-index-lookup-via-child-prop',
+    // #1244 stress catalog: surfaced CSR-only divergences. The fixture
+    // docstrings record the symptom in detail; tracked as sub-issues
+    // of #1244 for individual fix-up.
+    //
+    // - jsx-spread-reactive: CSR template calls `spreadAttrs(...)`
+    //   without importing it → ReferenceError at hydration.
+    // - member-expression-tag: CSR renders `<Pkg.Comp />` as literal
+    //   text `[Pkg.Comp]` instead of resolving the component.
+    // - children-jsx-expression: CSR emits duplicate `bf-s` attrs and
+    //   drops the inner scope marker (same family as the
+    //   `record-index-lookup-via-child-prop` entry above).
+    'jsx-spread-reactive',
+    'member-expression-tag',
+    'children-jsx-expression',
   ])
 
   for (const fixture of jsxFixtures) {

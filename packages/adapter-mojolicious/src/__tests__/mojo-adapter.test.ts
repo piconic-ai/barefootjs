@@ -60,6 +60,30 @@ runAdapterConformanceTests({
     // never receives a `theme` key. Provider SSR coverage on Mojo
     // waits on that adapter feature; see #1297 follow-up.
     'context-provider',
+    // #1244 stress catalog: same shapes the Mojo adapter silently
+    // emits as invalid Perl that the Go adapter rejects at compile
+    // time with BF101. Stays on skipJsx (not expectedDiagnostics)
+    // until the Mojo expression gate lifts the same failures into
+    // CompilerError, matching the existing `style-object-dynamic`
+    // precedent above.
+    'style-3-signals',
+    'tagged-template-classname',
+    // #1244 stress catalog: JSX spread of a reactive object — the
+    // Mojo adapter silently drops the spread at emit time, same
+    // shape as the Go adapter (the resulting `<div>` is missing the
+    // spread's keys). Sub-issue of #1244.
+    'jsx-spread-reactive',
+    // #1244 stress catalog: member-expression JSX tag (`<Pkg.Comp />`).
+    // Mojo emits the inner `Comp` template definition but the outer
+    // wrapper doesn't reference it correctly, so render output
+    // diverges from the Hono / CSR reference. Sub-issue of #1244.
+    'member-expression-tag',
+    // #1244 stress catalog: `children={<span/>}` — the Hono reference
+    // tracks the span as a hoisted child of Demo and emits `bf-s` on
+    // it. Mojo doesn't carry that scope through `<%= $children %>`
+    // interpolation, so the rendered HTML omits the inner `bf-s`
+    // and diverges from expectedHtml. Sub-issue of #1244.
+    'children-jsx-expression',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file

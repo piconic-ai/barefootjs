@@ -56,6 +56,27 @@ runAdapterConformanceTests({
     // `Theme` field. Provider SSR coverage on go-template waits on
     // that adapter feature; see #1297 follow-up.
     'context-provider',
+    // #1244 stress catalog: JSX spread of a reactive object
+    // (`<div {...attrs()} />`). The Go template adapter silently
+    // drops the spread at emit time — the resulting `<div bf-s=...>`
+    // has none of the spread's keys, diverging from the Hono / CSR
+    // reference (`<div id="a" class="on" ...>`). Tracked as a sub-
+    // issue of #1244; lift into `expectedDiagnostics` once the
+    // adapter raises a CompilerError for the unsupported shape.
+    'jsx-spread-reactive',
+    // #1244 stress catalog: member-expression JSX tag (`<Pkg.Comp />`).
+    // The adapter lowers the tag to `{{template "Pkg.Comp" .Pkg.CompSlot0}}`
+    // — a Go template name containing a `.` and a struct path that
+    // doesn't exist. Same sub-issue follow-up as above.
+    'member-expression-tag',
+    // #1244 stress catalog: `children={<span/>}` — the Hono reference
+    // emits `bf-s` on the inner `<span>` (it tracks the span as a
+    // hoisted child of Demo). The Go adapter doesn't carry that
+    // scope through `.Children` interpolation, so the rendered HTML
+    // omits the inner `bf-s` and diverges from expectedHtml. Same
+    // class as the existing `record-index-lookup-via-child-prop`
+    // CSR divergence; sub-issue of #1244.
+    'children-jsx-expression',
   ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
@@ -84,6 +105,15 @@ runAdapterConformanceTests({
       { code: 'BF103', severity: 'error' },
       { code: 'BF104', severity: 'error' },
     ],
+    // #1244 stress catalog: same `convertExpressionToGo` refusal shape
+    // as `style-object-dynamic` above — a JS object literal in
+    // attribute position can't lower into Go template syntax, so the
+    // adapter surfaces BF101 instead of emitting invalid template.
+    'style-3-signals': [{ code: 'BF101', severity: 'error' }],
+    // #1244 stress catalog: tagged-template-literal callees
+    // (`cn\`base \${tone()}\``) likewise can't lower into Go template
+    // syntax — same BF101 refusal.
+    'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `GoTemplateAdapter.templatePrimitives` (#1188). The two
