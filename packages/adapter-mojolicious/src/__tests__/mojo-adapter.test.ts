@@ -60,14 +60,6 @@ runAdapterConformanceTests({
     // never receives a `theme` key. Provider SSR coverage on Mojo
     // waits on that adapter feature; see #1297 follow-up.
     'context-provider',
-    // #1244 stress catalog: same shapes the Mojo adapter silently
-    // emits as invalid Perl that the Go adapter rejects at compile
-    // time with BF101. Stays on skipJsx (not expectedDiagnostics)
-    // until the Mojo expression gate lifts the same failures into
-    // CompilerError, matching the existing `style-object-dynamic`
-    // precedent above.
-    'style-3-signals',
-    'tagged-template-classname',
     // #1244 stress catalog: JSX spread of a reactive object — the
     // Mojo adapter silently drops the spread at emit time, same
     // shape as the Go adapter (the resulting `<div>` is missing the
@@ -111,6 +103,16 @@ runAdapterConformanceTests({
     'rest-destructure-object-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
+    // #1244 stress catalog #11 (#1322): JS object literal in an
+    // attribute value (`style={{ background: bg(), color: fg() }}`) has
+    // no idiomatic Mojo template form. `refuseUnsupportedAttrExpression`
+    // surfaces BF101 with a wrap-in-`/* @client */` suggestion, matching
+    // the Go adapter's behaviour.
+    'style-3-signals': [{ code: 'BF101', severity: 'error' }],
+    // #1244 stress catalog #12 (#1323): tagged-template-literal call
+    // (`cn\`base \${tone()}\``) — same family as #1322 above and refused
+    // via the same gate.
+    'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
