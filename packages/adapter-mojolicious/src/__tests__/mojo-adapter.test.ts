@@ -60,11 +60,6 @@ runAdapterConformanceTests({
     // never receives a `theme` key. Provider SSR coverage on Mojo
     // waits on that adapter feature; see #1297 follow-up.
     'context-provider',
-    // #1244 stress catalog: member-expression JSX tag (`<Pkg.Comp />`).
-    // Mojo emits the inner `Comp` template definition but the outer
-    // wrapper doesn't reference it correctly, so render output
-    // diverges from the Hono / CSR reference. Sub-issue of #1244.
-    'member-expression-tag',
     // #1244 stress catalog: `children={<span/>}` — the Hono reference
     // tracks the span as a hoisted child of Demo and emits `bf-s` on
     // it. Mojo doesn't carry that scope through `<%= $children %>`

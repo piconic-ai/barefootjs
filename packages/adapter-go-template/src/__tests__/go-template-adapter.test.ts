@@ -56,11 +56,6 @@ runAdapterConformanceTests({
     // `Theme` field. Provider SSR coverage on go-template waits on
     // that adapter feature; see #1297 follow-up.
     'context-provider',
-    // #1244 stress catalog: member-expression JSX tag (`<Pkg.Comp />`).
-    // The adapter lowers the tag to `{{template "Pkg.Comp" .Pkg.CompSlot0}}`
-    // — a Go template name containing a `.` and a struct path that
-    // doesn't exist. Same sub-issue follow-up as above.
-    'member-expression-tag',
     // #1244 stress catalog: `children={<span/>}` — the Hono reference
     // emits `bf-s` on the inner `<span>` (it tracks the span as a
     // hoisted child of Demo). The Go adapter doesn't carry that
