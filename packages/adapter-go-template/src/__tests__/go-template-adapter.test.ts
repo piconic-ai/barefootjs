@@ -46,11 +46,6 @@ runAdapterConformanceTests({
     'nullish-coalescing-jsx',
     'return-nullish-coalescing',
     'return-map',
-    // #1296: test harness only loads `bf.FuncMap()`, which omits
-    // `bfAsyncBoundary` (lives in `StreamingFuncMap()`). The adapter
-    // correctly emits the call; the harness needs to merge the
-    // streaming map before the fixture can pass.
-    'async-boundary',
     // #1297: `compileJSX` with `outputIR: true` does not emit an `ir`
     // file for `'use client'` sources when the go-template adapter
     // is selected, even though the Hono path does. The harness then

@@ -167,6 +167,18 @@ import (
 // Silence unused import for bf if only FuncMap is used
 var _ = bf.FuncMap
 
+// Merge StreamingFuncMap into the base FuncMap so fixtures using
+// <Async> (which compiles to a bfAsyncBoundary call) can be parsed
+// by the test harness. See packages/adapter-go-template/runtime/streaming.go
+// for the recommended merge recipe.
+func bfTestFuncMap() template.FuncMap {
+	funcMap := bf.FuncMap()
+	for k, v := range bf.StreamingFuncMap() {
+		funcMap[k] = v
+	}
+	return funcMap
+}
+
 const tmplContent = \`${escapedTemplate}\`
 
 // randomID generates a random alphanumeric string of given length.
@@ -181,7 +193,7 @@ func randomID(n int) string {
 }
 
 func main() {
-	tmpl := template.Must(template.New("").Funcs(bf.FuncMap()).Parse(tmplContent))
+	tmpl := template.Must(template.New("").Funcs(bfTestFuncMap()).Parse(tmplContent))
 	props := New${componentName}Props(${componentName}Input{
 		ScopeID: "test",
 ${propsInit}
