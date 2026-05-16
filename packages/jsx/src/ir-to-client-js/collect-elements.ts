@@ -644,9 +644,21 @@ export function collectElements(
       descendJsxChildren()
     },
     provider: ({ node: p, descend }) => {
+      // Literal `<Ctx.Provider value="dark">` must emit `"dark"` (a
+      // quoted JS string) at the `provideContext(...)` call site, not
+      // the bare identifier `dark` that `attrValueToString` returns for
+      // the literal kind. The other AttrValue kinds already serialise to
+      // valid JS expressions (`expr` for expression / spread, the
+      // template parts for `template`), so they pass through unchanged.
+      // Mirrors the Hono adapter's `emitProvider` (`hono-adapter.ts`)
+      // which JSON-stringifies the literal value for the same reason.
+      const v = p.valueProp.value
+      const valueExpr = v.kind === 'literal'
+        ? JSON.stringify(v.value)
+        : (attrValueToString(v) ?? '')
       ctx.providerSetups.push({
         contextName: p.contextName,
-        valueExpr: attrValueToString(p.valueProp.value) ?? '',
+        valueExpr,
       })
       descend()
     },
