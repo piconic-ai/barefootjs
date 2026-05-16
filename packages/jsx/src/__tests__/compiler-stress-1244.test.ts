@@ -997,6 +997,42 @@ describe('member-expression component tag', () => {
     `
     expectNoFatalErrors(compile(src))
   })
+
+  // #1319: an object-literal namespace (`const Pkg = { Comp }`) at
+  // module scope lets the IR collector resolve the member expression
+  // to the underlying component identifier. Without resolution, the
+  // CSR `renderChild('Pkg.Comp', ...)` call fails the registry lookup
+  // (only `Comp` / `Comp__<scope>` is ever registered) and the inner
+  // component renders as the literal placeholder `[Pkg.Comp]`.
+  test('<Pkg.Comp /> resolves through shorthand object-literal namespace (#1319)', () => {
+    const src = `
+      function Comp() { return <span>x</span> }
+      const Pkg = { Comp }
+      export function Demo() {
+        return <div><Pkg.Comp /></div>
+      }
+    `
+    const result = compile(src)
+    expectNoFatalErrors(result)
+    const clientJs = result.clientJs
+    expect(clientJs).not.toMatch(/renderChild\('Pkg\.Comp'/)
+    expect(clientJs).toMatch(/renderChild\('Comp(__[a-f0-9]+)?'/)
+  })
+
+  test('<Pkg.Comp /> resolves through explicit-identifier object-literal namespace (#1319)', () => {
+    const src = `
+      function Trigger() { return <button>x</button> }
+      const Dialog = { Trigger: Trigger }
+      export function Demo() {
+        return <div><Dialog.Trigger /></div>
+      }
+    `
+    const result = compile(src)
+    expectNoFatalErrors(result)
+    const clientJs = result.clientJs
+    expect(clientJs).not.toMatch(/renderChild\('Dialog\.Trigger'/)
+    expect(clientJs).toMatch(/renderChild\('Trigger(__[a-f0-9]+)?'/)
+  })
 })
 
 describe('for...of generating JSX in component body', () => {

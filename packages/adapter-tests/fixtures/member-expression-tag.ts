@@ -2,10 +2,11 @@ import { createFixture } from '../src/types'
 
 /**
  * Compiler stress (#1244): `<Pkg.Comp />` — member-expression JSX tag.
- * Compound-component pattern (Dialog.Trigger, Tabs.Panel). SSR resolves
- * the member expression correctly; CSR currently renders the tag as
- * literal text `[Pkg.Comp]` instead of invoking the component. Surfaced
- * limitation, skipped in CSR conformance. Sub-issue of #1244.
+ * Compound-component pattern (Dialog.Trigger, Tabs.Panel). The IR
+ * collector resolves `Pkg.Comp` to its underlying component
+ * identifier via the source-level object-literal initializer of `Pkg`
+ * (#1319), so both SSR and CSR render the inner component instead of
+ * the literal tag text.
  */
 export const fixture = createFixture({
   id: 'member-expression-tag',

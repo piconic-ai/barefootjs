@@ -63,12 +63,9 @@ describe('CSR Conformance Tests', () => {
     // docstrings record the symptom in detail; tracked as sub-issues
     // of #1244 for individual fix-up.
     //
-    // - member-expression-tag: CSR renders `<Pkg.Comp />` as literal
-    //   text `[Pkg.Comp]` instead of resolving the component.
     // - children-jsx-expression: CSR emits duplicate `bf-s` attrs and
     //   drops the inner scope marker (same family as the
     //   `record-index-lookup-via-child-prop` entry above).
-    'member-expression-tag',
     'children-jsx-expression',
   ])
 

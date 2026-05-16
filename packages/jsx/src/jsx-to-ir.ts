@@ -81,6 +81,14 @@ interface TransformContext {
    */
   _bindingEnv?: BindingEnvironment
   _bindingEnvLoopKey?: string
+  /**
+   * Lazily computed map of `Pkg.Comp` → `Comp` resolutions for
+   * member-expression JSX tags (#1319). A `const Pkg = { Comp }` (or
+   * `{ Comp: ComponentName }`) in module scope lets the CSR template
+   * emit `renderChild('Comp', ...)` instead of the literal
+   * `renderChild('Pkg.Comp', ...)` which fails the registry lookup.
+   */
+  _componentNamespaces?: Map<string, Map<string, string>>
 }
 
 /**
@@ -247,6 +255,84 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
       return rewriteBarePropRefs(text, node, this) ?? text
     },
   }
+}
+
+/**
+ * Build the `Pkg.Comp` → `Comp` resolution map by scanning the source
+ * for `const Pkg = { ... }` declarations whose initializer is an
+ * object literal mapping member names to component identifiers.
+ *
+ * Shorthand (`{ Comp }`) and explicit-identifier
+ * (`{ Trigger: Button }`) properties both resolve. Spreads, getters,
+ * methods, and non-identifier values are skipped — they don't have a
+ * unique component name to resolve to.
+ */
+function buildComponentNamespaces(ctx: TransformContext): Map<string, Map<string, string>> {
+  const result = new Map<string, Map<string, string>>()
+
+  // Scan only module-level VariableStatements. A namespace shadowed
+  // inside a function body would still be visible to a nested JSX
+  // tag via the binding lookup, but distinguishing the two scopes
+  // here would require the analyzer's binding environment; the
+  // shadowing case is rare enough in practice that limiting the
+  // scan to module scope is a safer default than overwriting a
+  // module-scope mapping with a function-local one keyed by the
+  // same identifier.
+  for (const stmt of ctx.sourceFile.statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      if (!decl.initializer || !ts.isIdentifier(decl.name)) continue
+      let init: ts.Expression = decl.initializer
+      while (ts.isParenthesizedExpression(init)) init = init.expression
+      if (!ts.isObjectLiteralExpression(init)) continue
+
+      const members = new Map<string, string>()
+      for (const prop of init.properties) {
+        if (ts.isShorthandPropertyAssignment(prop)) {
+          // `{ Comp }` — shorthand resolves to the identifier
+          // bearing its own name.
+          members.set(prop.name.text, prop.name.text)
+        } else if (
+          ts.isPropertyAssignment(prop) &&
+          (ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name)) &&
+          ts.isIdentifier(prop.initializer)
+        ) {
+          // `{ Trigger: ButtonImpl }` — explicit identifier value.
+          members.set(prop.name.text, prop.initializer.text)
+        }
+      }
+      if (members.size > 0) {
+        result.set(decl.name.text, members)
+      }
+    }
+  }
+
+  return result
+}
+
+/**
+ * Resolve a member-expression JSX tag (`<Pkg.Comp />`) to the
+ * underlying component identifier. Returns `null` for non-member
+ * tags or tags that don't resolve via `buildComponentNamespaces`.
+ *
+ * The unresolved form (`'Pkg.Comp'`) survives the CSR template emit
+ * but breaks the runtime registry lookup: only `Comp` (or its hashed
+ * file-scoped key) is ever registered. Resolving at IR time means the
+ * emitted client JS calls `renderChild('Comp', ...)` and the lookup
+ * succeeds. SSR is unaffected — the same `Comp` identifier is in
+ * scope wherever `Pkg` is.
+ */
+function resolveMemberExpressionTag(
+  tagNode: ts.JsxTagNameExpression,
+  ctx: TransformContext,
+): string | null {
+  if (!ts.isPropertyAccessExpression(tagNode)) return null
+  if (!ts.isIdentifier(tagNode.expression)) return null
+  if (!ts.isIdentifier(tagNode.name)) return null
+  if (!ctx._componentNamespaces) {
+    ctx._componentNamespaces = buildComponentNamespaces(ctx)
+  }
+  return ctx._componentNamespaces.get(tagNode.expression.text)?.get(tagNode.name.text) ?? null
 }
 
 function generateSlotId(ctx: TransformContext, forComponent: boolean = false): string {
@@ -487,7 +573,8 @@ function transformJsxElement(
   const isComponent = /^[A-Z]/.test(tagName)
 
   if (isComponent) {
-    return transformComponentElement(node, ctx, tagName)
+    const resolved = resolveMemberExpressionTag(node.openingElement.tagName, ctx)
+    return transformComponentElement(node, ctx, resolved ?? tagName)
   }
 
   return transformHtmlElement(node, ctx, tagName)
@@ -552,7 +639,8 @@ function transformSelfClosingElement(
   const isComponent = /^[A-Z]/.test(tagName)
 
   if (isComponent) {
-    return transformSelfClosingComponent(node, ctx, tagName)
+    const resolved = resolveMemberExpressionTag(node.tagName, ctx)
+    return transformSelfClosingComponent(node, ctx, resolved ?? tagName)
   }
 
   const { attrs, events, ref } = processAttributes(node.attributes, ctx)
