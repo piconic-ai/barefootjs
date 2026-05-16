@@ -46,18 +46,55 @@ function expectNoFatalErrors(c: Compiled): void {
   }
 }
 
+/**
+ * Return the body (between the outer `{` and `}`) of the Nth
+ * `createEffect(() => { ... })` call in `source`. Uses brace counting
+ * so a body that itself contains `{}` is captured correctly. Returns
+ * `null` if the Nth occurrence does not exist.
+ *
+ * Prefer this over `source.match(/createEffect/g)` length: regex token
+ * counts also catch the import statement and any structurally-unrelated
+ * tokens, which is how the original `style-3-signals` assertion
+ * silently over-counted.
+ */
+function getCreateEffectBody(source: string, index = 0): string | null {
+  const marker = 'createEffect(() => {'
+  let pos = -1
+  for (let i = 0; i <= index; i++) {
+    pos = source.indexOf(marker, pos + 1)
+    if (pos === -1) return null
+  }
+  let depth = 1
+  let cursor = pos + marker.length
+  while (depth > 0 && cursor < source.length) {
+    const c = source[cursor]
+    if (c === '{') depth++
+    else if (c === '}') depth--
+    cursor++
+  }
+  return depth === 0 ? source.slice(pos + marker.length, cursor - 1) : null
+}
+
 // ---------------------------------------------------------------------------
 // Reactive primitive × binding site
 // ---------------------------------------------------------------------------
 
 describe('style={{}} object — multiple signal members', () => {
-  // SURFACED LIMITATION (#1244 sub-issue): a `style={{ a: s1(), b: s2(), c: s3() }}`
-  // object with three independent signals currently emits only two
-  // reactive update paths instead of one per signal-bearing member —
-  // either two members share an effect or one is dropped. The body
-  // below asserts the intended behaviour (>= 3 reactive paths). Drop
-  // `.todo` once fixed.
-  test.todo('3 members each read a different signal — one reactive update per member', () => {
+  // Contract: a `style={{ a: s1(), b: s2(), c: s3() }}` object compiles
+  // to one reactive binding per attribute (not per member). The single
+  // `createEffect` block's body invokes every signal getter, so the
+  // runtime tracker subscribes to each — updating any one of the three
+  // signals re-runs the effect and re-applies the full `style` string.
+  //
+  // The original PR #1306 entry asserted `match(/createEffect|effect\(/g).length >= 3`,
+  // expecting one effect per signal-bearing member. That regex also
+  // matched the `createEffect` token inside the import statement, and
+  // the assertion was based on a per-member-effect model that the
+  // compiler does not (and need not) implement: per-attribute effects
+  // are equivalently correct because the runtime tracks every signal
+  // read during the effect's body. Per-member splitting would be an
+  // optimisation, not a correctness fix.
+  test('all 3 signals participate in one reactive style update path', () => {
     const src = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -70,8 +107,16 @@ describe('style={{}} object — multiple signal members', () => {
     `
     const c = compile(src)
     expectNoFatalErrors(c)
-    const effectCount = (c.clientJs.match(/createEffect|effect\(/g) || []).length
-    expect(effectCount).toBeGreaterThanOrEqual(3)
+
+    const effectBody = getCreateEffectBody(c.clientJs)
+    expect(effectBody).not.toBeNull()
+    expect(effectBody!).toContain("setAttribute('style'")
+    expect(effectBody!).toContain('bg()')
+    expect(effectBody!).toContain('fg()')
+    expect(effectBody!).toContain('pad()')
+
+    // No second `createEffect` block: one binding per attribute.
+    expect(getCreateEffectBody(c.clientJs, 1)).toBeNull()
   })
 })
 
