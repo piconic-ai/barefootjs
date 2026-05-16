@@ -173,29 +173,43 @@ describe('destructured .map() param rewriting (#951)', () => {
     expect(js).toContain('__bfItem().label')
   })
 
-  test('rest element in destructure raises BF025', () => {
+  test('object rest in destructure lowers to a residual-object accessor', () => {
+    // Pre-#1244 fix this combination raised BF025 and bailed out of
+    // destructure rewriting; rest props are now lifted into a per-item
+    // accessor that subtracts the explicitly destructured sibling keys
+    // (`a` here), so a spread back onto the root forwards everything else.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
 
       export function RestUser() {
-        const [items, setItems] = createSignal<{ a: number; b: number }[]>([])
+        const [items, setItems] = createSignal<{ a: number; b: number; c: number }[]>([])
         return (
           <ul onClick={() => setItems(i => i)}>
             {items().map(({ a, ...rest }) => (
-              <li key={a}>{a}</li>
+              <li key={a} {...rest}>{a}</li>
             ))}
           </ul>
         )
       }
     `
     const result = compile(source, 'RestUser.tsx')
-    const errs = result.errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST)
-    expect(errs.length).toBe(1)
-    expect(errs[0].severity).toBe('error')
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const js = result.files.find(f => f.type === 'clientJs')?.content ?? ''
+
+    // `a` keeps the existing fixed-binding rewrite, and `rest` is rebuilt
+    // at each read site from `__bfItem()` minus the destructured keys.
+    expect(js).toContain('__bfItem().a')
+    expect(js).toContain('(({ a: __r0, ...__rest }) => __rest)(__bfItem())')
+    // The body-entry `const { a, ...rest } = __bfItem();` unwrap from the
+    // legacy #950 path is intentionally absent — accessors are inlined.
+    expect(js).not.toContain('const { a, ...rest } = __bfItem();')
   })
 
-  test('array rest element in destructure also raises BF025', () => {
+  test('array rest in destructure lowers to `.slice(n)`', () => {
+    // Array rest in a tuple destructure used to also raise BF025. It now
+    // lowers each `tail` reference into `__bfItem().slice(n)` using the
+    // native array method, no runtime helper required.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -205,15 +219,72 @@ describe('destructured .map() param rewriting (#951)', () => {
         return (
           <ul onClick={() => setItems(i => i)}>
             {items().map(([first, ...tail]) => (
-              <li key={first}>{first}</li>
+              <li key={first}>{first} (+{tail.length})</li>
             ))}
           </ul>
         )
       }
     `
     const result = compile(source, 'RestTuple.tsx')
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const js = result.files.find(f => f.type === 'clientJs')?.content ?? ''
+
+    expect(js).toContain('__bfItem()[0]')
+    expect(js).toContain('__bfItem().slice(1)')
+    expect(js).not.toContain('const [first, ...tail] = __bfItem();')
+  })
+
+  test('nested array-rest inside an object destructure also lowers', () => {
+    // `{ rows: [first, ...tail] }` is the surfaced shape from PR #1306. The
+    // outer object destructure walks into `.rows`; the inner array
+    // destructure rewrites `first` to `__bfItem().rows[0]` and `tail` to
+    // `__bfItem().rows.slice(1)`.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      type Group = { id: string; rows: { id: string; label: string }[] }
+      export function Demo() {
+        const [groups, setGroups] = createSignal<Group[]>([])
+        return (
+          <ul onClick={() => setGroups(g => g)}>
+            {groups().map(({ id, rows: [first, ...rest] }) => (
+              <li key={id}>{first ? first.label : ''} (+{rest.length})</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const result = compile(source, 'Demo.tsx')
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const js = result.files.find(f => f.type === 'clientJs')?.content ?? ''
+
+    expect(js).toContain('__bfItem().rows[0]')
+    expect(js).toContain('__bfItem().rows[0].label')
+    expect(js).toContain('__bfItem().rows.slice(1)')
+  })
+
+  test('computed property key in destructure still raises BF025', () => {
+    // Computed keys have no static path to lower to, so the BF025 escape
+    // hatch is preserved.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      const KEY = 'a' as const
+      export function Computed() {
+        const [items, setItems] = createSignal<Record<string, number>[]>([])
+        return (
+          <ul onClick={() => setItems(i => i)}>
+            {items().map(({ [KEY]: v }) => <li key={v}>{v}</li>)}
+          </ul>
+        )
+      }
+    `
+    const result = compile(source, 'Computed.tsx')
     const errs = result.errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST)
     expect(errs.length).toBe(1)
+    expect(errs[0].severity).toBe('error')
   })
 
   test('event delegation lands on a plain local before destructuring (TDZ-safe)', () => {

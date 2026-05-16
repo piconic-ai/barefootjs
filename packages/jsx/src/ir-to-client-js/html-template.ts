@@ -140,7 +140,12 @@ function renderTemplateAttrPart(
     }
     case 'spread': {
       if (restSpreadNames?.has(v.expr)) return ''
-      return `\${spreadAttrs(${v.expr})}`
+      // `wrap` lowers loop-param references — including destructured rest
+      // bindings (`...rest` lifted via `paramBindings`) — into their item
+      // accessor. Skipping it here meant `{...rest}` inside a `.map()`
+      // emitted `spreadAttrs(rest)` with `rest` undefined at the render-item
+      // scope (#1244).
+      return `\${spreadAttrs(${wrap(v.expr)})}`
     }
     case 'boolean-shorthand':
     case 'jsx-children':

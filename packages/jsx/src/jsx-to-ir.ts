@@ -1753,16 +1753,17 @@ function extractFilterPredicate(
  *
  * Returns:
  * - `null` when the parameter is a plain identifier (no destructuring).
- * - `{ unsupported: true }` when the pattern contains a rest element or a
- *   non-literal computed property key — shapes that can't be expressed as a
- *   single fixed accessor path. Callers surface these as `BF025`.
- * - An array of `{ name, path }` otherwise. Each `path` is a JS accessor
- *   suffix starting with `.` or `[` and is appended to the synthetic
- *   `__bfItem()` call in the emitted client JS.
+ * - `{ unsupported: true }` when the pattern contains a non-literal computed
+ *   property key — that shape can't be expressed as a fixed accessor path
+ *   and is surfaced as `BF025`.
+ * - An array of `LoopParamBinding` otherwise.
+ *
+ * Fixed bindings carry a JS accessor suffix in `path`; rest bindings carry
+ * the parent prefix plus a `rest` descriptor that the emitter expands to a
+ * runtime residual expression. See the `LoopParamBinding` jsdoc.
  */
 function extractLoopParamBindings(
   pattern: ts.BindingName,
-  ctx: TransformContext,
 ): LoopParamBinding[] | { unsupported: true } | null {
   if (ts.isIdentifier(pattern)) return null
 
@@ -1781,23 +1782,58 @@ function extractLoopParamBindings(
   const walk = (p: ts.ArrayBindingPattern | ts.ObjectBindingPattern, prefix: string): void => {
     if (unsupported) return
     if (ts.isArrayBindingPattern(p)) {
-      p.elements.forEach((el, index) => {
+      const elements = p.elements
+      for (let index = 0; index < elements.length; index++) {
         if (unsupported) return
-        if (ts.isOmittedExpression(el)) return
-        if (el.dotDotDotToken) { unsupported = true; return }
+        const el = elements[index]
+        if (ts.isOmittedExpression(el)) continue
+        if (el.dotDotDotToken) {
+          // In JS, the rest element in destructuring must be the final element;
+          // the rest target must be a simple identifier (cannot itself be a
+          // nested binding pattern). TS will syntax-error otherwise, but we
+          // guard defensively so a malformed AST falls back to BF025 instead
+          // of emitting invalid JS.
+          if (index !== elements.length - 1 || !ts.isIdentifier(el.name)) {
+            unsupported = true
+            return
+          }
+          bindings.push({
+            name: el.name.text,
+            path: prefix,
+            rest: { kind: 'array', from: index },
+          })
+          return
+        }
         const path = `${prefix}[${index}]`
         if (ts.isIdentifier(el.name)) {
           bindings.push({ name: el.name.text, path })
         } else {
           walk(el.name, path)
         }
-      })
+      }
       return
     }
     // ObjectBindingPattern
-    for (const el of p.elements) {
+    const collectedKeys: string[] = []
+    const elements = p.elements
+    for (let i = 0; i < elements.length; i++) {
       if (unsupported) return
-      if (el.dotDotDotToken) { unsupported = true; return }
+      const el = elements[i]
+      if (el.dotDotDotToken) {
+        // Same shape constraint as array rest: must be last, must be a plain
+        // identifier. `exclude` is the list of sibling keys destructured at
+        // this level so the emitter can subtract them at runtime.
+        if (i !== elements.length - 1 || !ts.isIdentifier(el.name)) {
+          unsupported = true
+          return
+        }
+        bindings.push({
+          name: el.name.text,
+          path: prefix,
+          rest: { kind: 'object', exclude: collectedKeys },
+        })
+        return
+      }
       let keyText: string | null = null
       if (el.propertyName) {
         const pn = el.propertyName
@@ -1811,6 +1847,7 @@ function extractLoopParamBindings(
         unsupported = true
         return
       }
+      collectedKeys.push(keyText)
       const path = appendDotAccess(prefix, keyText)
       if (ts.isIdentifier(el.name)) {
         bindings.push({ name: el.name.text, path })
@@ -2239,11 +2276,12 @@ function transformMapCall(
       }
       // Destructured param (`([, cfg]) => ...`, `({ x, y }) => ...`): walk
       // the binding pattern into per-binding accessor paths so the client
-      // JS emitter can rewrite references to `__bfItem().path` (#951). Rest
-      // elements and computed keys can't be expressed as a fixed path — we
-      // raise `BF025` and leave `paramBindings` undefined so the emitter
-      // falls back to the #950 unwrap behaviour.
-      const bindingResult = extractLoopParamBindings(firstParam.name, ctx)
+      // JS emitter can rewrite references to `__bfItem().path` (#951).
+      // Rest elements (`{ a, ...rest }`, `[first, ...tail]`) lower into a
+      // residual-object / `.slice(n)` accessor at each reference. Only
+      // computed property keys remain unsupported — those raise `BF025`
+      // and the emitter falls back to the #950 body-entry unwrap.
+      const bindingResult = extractLoopParamBindings(firstParam.name)
       if (bindingResult && !Array.isArray(bindingResult)) {
         ctx.analyzer.errors.push(
           createError(ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST,
