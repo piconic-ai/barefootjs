@@ -46,11 +46,15 @@ runAdapterConformanceTests({
     'nullish-coalescing-jsx',
     'return-nullish-coalescing',
     'return-map',
-    // #1297: `compileJSX` with `outputIR: true` does not emit an `ir`
-    // file for `'use client'` sources when the go-template adapter
-    // is selected, even though the Hono path does. The harness then
-    // throws "No IR output (set outputIR: true)" before any rendering
-    // happens. Provider IR coverage on go-template waits on the fix.
+    // #1297 fixed the harness-side IR emission gate (multi-component
+    // sources now emit one `ir` file per component, and the harness
+    // picks the entry-point IR). The remaining gap is adapter-side:
+    // the go-template adapter has no SSR context-propagation
+    // mechanism, so `<Ctx.Provider value="dark">` doesn't make
+    // `useContext(Ctx)` resolve to `"dark"` at template-eval time —
+    // the template emits `.Theme` against a struct that has no
+    // `Theme` field. Provider SSR coverage on go-template waits on
+    // that adapter feature; see #1297 follow-up.
     'context-provider',
   ],
   // Per-fixture build-time contracts for shapes the Go template

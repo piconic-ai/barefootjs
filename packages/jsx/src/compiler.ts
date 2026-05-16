@@ -76,6 +76,24 @@ function compileMultipleComponents(
     entries.push({ componentIR, ctx })
   }
 
+  // Emit IR files per component when requested. The contract is "if the
+  // user asks for IR, they get IR" regardless of `isClientComponent` or
+  // adapter (#1297). Single-component files emit `<base>.ir.json`; multi-
+  // component files emit one file per component as
+  // `<base>.<ComponentName>.ir.json` to keep paths unique. Test harnesses
+  // (go-template, Mojo) pick the IR for the primary component by matching
+  // `metadata.hasDefaultExport` / `metadata.isExported`.
+  if (options.outputIR) {
+    for (const { componentIR } of entries) {
+      const componentName = componentIR.metadata.componentName
+      files.push({
+        path: filePath.replace(/\.tsx?$/, `.${componentName}.ir.json`),
+        content: JSON.stringify(componentIR, null, 2),
+        type: 'ir',
+      })
+    }
+  }
+
   // --- Pass 2: adapter.generate + generateClientJs ---
   const allOutputs: { componentName: string; rawTemplate: string; imports: string; types: string; moduleExports: string; component: string; clientJs?: string; adapterTypes?: string }[] = []
 

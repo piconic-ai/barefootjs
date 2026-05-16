@@ -1130,6 +1130,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (cond.whenFalse) {
         this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop)
       }
+    } else if (node.type === 'provider') {
+      // Provider is a transparent wrapper at the SSR layer — context
+      // propagation is purely a client-runtime concern. Recurse into
+      // its children so any static <Child/> nested under <Ctx.Provider>
+      // still gets a slot field generated on the parent's props type.
+      const p = node as IRProvider
+      for (const child of p.children) {
+        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+      }
+    } else if (node.type === 'async') {
+      // Async fallback + children render server-side via the OOS
+      // protocol; static child components inside them still need slot
+      // fields on the parent struct.
+      const a = node as IRAsync
+      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop)
+      for (const child of a.children) {
+        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+      }
     }
   }
 

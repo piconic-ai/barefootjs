@@ -52,11 +52,13 @@ runAdapterConformanceTests({
     'return-logical-or',
     'return-nullish-coalescing',
     'return-map',
-    // #1297-equivalent for Mojo: `compileJSX` with `outputIR: true`
-    // does not emit an `ir` file for `'use client'` sources, so the
-    // Mojo harness can't render the Provider fixture. Same harness-
-    // level gap class as the go-template adapter; coverage tracked
-    // there.
+    // #1297 fixed the harness-side IR emission gate. The remaining
+    // gap is adapter-side: the Mojo adapter has no SSR context-
+    // propagation mechanism, so `<Ctx.Provider value="dark">` doesn't
+    // make `useContext(Ctx)` resolve to `"dark"` at template-eval
+    // time — the template emits `<%= $theme %>` against a hash that
+    // never receives a `theme` key. Provider SSR coverage on Mojo
+    // waits on that adapter feature; see #1297 follow-up.
     'context-provider',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter

@@ -20,6 +20,29 @@ export class PerlNotAvailableError extends Error {
   }
 }
 
+/**
+ * Recover the bare component name from a compiler-emitted template
+ * file path. `templatesPerComponent` adapters write each component to
+ * `<dir>/<ComponentName><adapter.extension>` (Mojo: `.html.ep`), and
+ * downstream pairing logic needs the raw component name back so it can
+ * look up the matching IR in `irsByName`.
+ *
+ * Stripping the *full* adapter extension matters because Mojo's
+ * extension is multi-segment (`.html.ep`). A naive `\.[^.]+$/` strips
+ * only the last segment, leaves `<ComponentName>.html`, misses the
+ * IR map, and silently pairs every sibling template to the
+ * entry-point IR — exactly the silent-gap class issue #1297 was
+ * filed to surface.
+ *
+ * Exported for testing.
+ */
+export function templateBaseName(path: string, extension: string): string {
+  const filename = path.substring(path.lastIndexOf('/') + 1)
+  return filename.endsWith(extension)
+    ? filename.slice(0, -extension.length)
+    : filename
+}
+
 let _perlAvailable: boolean | null = null
 async function isPerlAvailable(): Promise<boolean> {
   if (_perlAvailable !== null) return _perlAvailable
@@ -59,12 +82,29 @@ export async function renderMojoComponent(options: RenderOptions): Promise<strin
       if (childErrors.length > 0) {
         throw new Error(`Compilation errors in ${filename}:\n${childErrors.map(e => e.message).join('\n')}`)
       }
-      const childTemplate = childResult.files.find(f => f.type === 'markedTemplate')
-      if (!childTemplate) throw new Error(`No marked template for ${filename}`)
-      const childIrFile = childResult.files.find(f => f.type === 'ir')
-      if (!childIrFile) throw new Error(`No IR output for ${filename}`)
-      const childIR = JSON.parse(childIrFile.content) as ComponentIR
-      childTemplates.set(childIR.metadata.componentName, { template: childTemplate.content, ir: childIR })
+      const childTemplateFiles = childResult.files.filter(f => f.type === 'markedTemplate')
+      if (childTemplateFiles.length === 0) throw new Error(`No marked template for ${filename}`)
+      const childIrFiles = childResult.files.filter(f => f.type === 'ir')
+      if (childIrFiles.length === 0) throw new Error(`No IR output for ${filename}`)
+      const childIrs = childIrFiles.map(f => JSON.parse(f.content) as ComponentIR)
+      if (childTemplateFiles.length === 1) {
+        // Single-component child source: only one template + one IR.
+        childTemplates.set(childIrs[0].metadata.componentName, { template: childTemplateFiles[0].content, ir: childIrs[0] })
+      } else {
+        // Multi-component child source: pair template ↔ IR by basename.
+        // The Mojo adapter's `templatesPerComponent` emits files named
+        // `<ComponentName><adapter.extension>` (e.g. `Counter.html.ep`),
+        // so we strip the *full* `.html.ep` — not just the last dot
+        // segment — to recover the componentName. A naive `\.[^.]+$/`
+        // would leave `Counter.html`, miss the IR map, and silently
+        // pair every sibling to the entry-point IR.
+        const childIrsByName = new Map(childIrs.map(i => [i.metadata.componentName, i]))
+        for (const tf of childTemplateFiles) {
+          const baseName = templateBaseName(tf.path, adapter.extension)
+          const matchedIR = childIrsByName.get(baseName) ?? childIrs[0]
+          childTemplates.set(matchedIR.metadata.componentName, { template: tf.content, ir: matchedIR })
+        }
+      }
     }
   }
 
@@ -76,12 +116,50 @@ export async function renderMojoComponent(options: RenderOptions): Promise<strin
     throw new Error(`Compilation errors:\n${errors.map(e => e.message).join('\n')}`)
   }
 
-  const templateFile = result.files.find(f => f.type === 'markedTemplate')
-  if (!templateFile) throw new Error('No marked template in compile output')
+  // Collect every IR + template emitted from the parent source. Single-
+  // component files yield one `markedTemplate` named after the source
+  // file (e.g. `component.html.ep`); multi-component files with
+  // `templatesPerComponent` yield one named after each component (e.g.
+  // `Counter.html.ep`). Multi-component sources also emit one IR per
+  // component (#1297) — pick the entry-point IR (default export wins;
+  // else first inline-exported; else first) and route sibling
+  // components through `childTemplates` so cross-component references
+  // resolve at render time.
+  const templateFiles = result.files.filter(f => f.type === 'markedTemplate')
+  if (templateFiles.length === 0) throw new Error('No marked template in compile output')
 
-  const irFile = result.files.find(f => f.type === 'ir')
-  if (!irFile) throw new Error('No IR output (set outputIR: true)')
-  const ir = JSON.parse(irFile.content) as ComponentIR
+  const irFiles = result.files.filter(f => f.type === 'ir')
+  if (irFiles.length === 0) throw new Error('No IR output (set outputIR: true)')
+  const irs = irFiles.map(f => JSON.parse(f.content) as ComponentIR)
+  const ir =
+    irs.find(i => i.metadata.hasDefaultExport) ??
+    irs.find(i => i.metadata.isExported) ??
+    irs[0]
+
+  let templateFile: { content: string } | undefined
+  if (templateFiles.length === 1) {
+    // Single-component source: the one template file is the entry-point
+    // template regardless of its basename (which comes from the source
+    // filename, not the component name).
+    templateFile = templateFiles[0]
+  } else {
+    // Multi-component source: templates are named by component
+    // (templatesPerComponent). Match each template file to its IR by
+    // basename so we can split the entry-point from siblings. See
+    // `templateBaseName` for why the full `adapter.extension` is
+    // stripped rather than the last dot segment alone.
+    const irsByName = new Map(irs.map(i => [i.metadata.componentName, i]))
+    for (const tf of templateFiles) {
+      const baseName = templateBaseName(tf.path, adapter.extension)
+      const matchedIR = irsByName.get(baseName)
+      if (matchedIR === ir) {
+        templateFile = tf
+      } else if (matchedIR) {
+        childTemplates.set(matchedIR.metadata.componentName, { template: tf.content, ir: matchedIR })
+      }
+    }
+  }
+  if (!templateFile) throw new Error('No marked template in compile output')
 
   const componentName = ir.metadata.componentName
 

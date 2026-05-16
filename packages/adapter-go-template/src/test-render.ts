@@ -76,8 +76,8 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
       if (!childTemplate) throw new Error(`No marked template for ${filename}`)
       childTemplates.push(childTemplate.content)
 
-      const childIrFile = childResult.files.find(f => f.type === 'ir')
-      if (childIrFile) {
+      const childIrFiles = childResult.files.filter(f => f.type === 'ir')
+      for (const childIrFile of childIrFiles) {
         const childIR = JSON.parse(childIrFile.content) as ComponentIR
         let childTypes = adapter.generateTypes!(childIR)
         if (childTypes) {
@@ -102,10 +102,22 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   const templateFile = result.files.find(f => f.type === 'markedTemplate')
   if (!templateFile) throw new Error('No marked template in compile output')
 
-  const irFile = result.files.find(f => f.type === 'ir')
-  if (!irFile) throw new Error('No IR output (set outputIR: true)')
-  const ir = JSON.parse(irFile.content) as ComponentIR
+  // Collect every IR emitted from the parent source. Single-component
+  // files yield one file; multi-component files yield one per component
+  // (#1297). Pick the entry-point IR — default export wins, else the
+  // first inline-exported component, else the first IR.
+  const irFiles = result.files.filter(f => f.type === 'ir')
+  if (irFiles.length === 0) throw new Error('No IR output (set outputIR: true)')
+  const irs = irFiles.map(f => JSON.parse(f.content) as ComponentIR)
+  const ir =
+    irs.find(i => i.metadata.hasDefaultExport) ??
+    irs.find(i => i.metadata.isExported) ??
+    irs[0]
 
+  // Generate types for the entry-point component first, then append
+  // types for every sibling component in the same source file so the
+  // generated `types.go` is self-contained (multi-component test
+  // fixtures otherwise lose helper-component struct definitions).
   let goTypes = adapter.generateTypes(ir)
   if (!goTypes) throw new Error('generateTypes() returned null')
 
@@ -114,6 +126,17 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
 
   // Remove "math/rand" import from types (randomID is defined in main.go)
   goTypes = goTypes.replace(/\t"math\/rand"\n/, '')
+
+  // Append sibling-component type definitions (multi-component source).
+  for (const siblingIR of irs) {
+    if (siblingIR === ir) continue
+    let siblingTypes = adapter.generateTypes(siblingIR)
+    if (!siblingTypes) continue
+    siblingTypes = siblingTypes.replace(/^package \w+\n*/, '')
+    siblingTypes = siblingTypes.replace(/import\s*\([^)]*\)\n*/g, '')
+    siblingTypes = siblingTypes.replace(/\t"math\/rand"\n/g, '')
+    goTypes += '\n\n' + siblingTypes.trim()
+  }
 
   // Append child type definitions
   if (childTypeBlocks.length > 0) {
