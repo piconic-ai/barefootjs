@@ -36,6 +36,7 @@ import { containsReactiveExpression } from './reactivity-checker'
 import { rewriteBarePropRefs as rewriteBarePropRefsCore } from './prop-rewrite'
 import { resolveFreeRefs, type BindingEnvironment } from './free-refs'
 import { extractFreeIdentifiersFromNode } from './analyzer'
+import { iterateJsTokens } from './scanner/js-scanner'
 
 // =============================================================================
 // Transform Context
@@ -1898,36 +1899,26 @@ function keyAttrValueToExpr(v: AttrValue): string | null {
 /**
  * Collapse insignificant whitespace so equivalent expressions written
  * with different formatting (`it.key` vs `it .key`) compare equal.
- * Whitespace inside string literals is preserved.
+ * Whitespace inside string literals, regex literals, comments, and the
+ * literal-string portions of template literals is preserved.
+ *
+ * Drives the per-branch key comparison in `extractLoopKey` — two
+ * keys count as equal when their normalized forms match, so the
+ * collapse just has to be *consistent* across branches, not faithful
+ * to the original spelling.
  */
 function normalizeKeyExpr(expr: string): string {
   let out = ''
-  let i = 0
-  while (i < expr.length) {
-    const ch = expr[i]
-    if (ch === "'" || ch === '"' || ch === '`') {
-      const quote = ch
-      out += ch
-      i++
-      while (i < expr.length) {
-        const c = expr[i]
-        if (c === '\\' && i + 1 < expr.length) {
-          out += c + expr[i + 1]
-          i += 2
-          continue
-        }
-        out += c
-        i++
-        if (c === quote) break
-      }
+  for (const tok of iterateJsTokens(expr)) {
+    // Whitespace and newlines in expression context are insignificant.
+    // Comments, strings, regex, and template-literal bodies are emitted
+    // as their own single tokens by `iterateJsTokens`, so this skip
+    // does not touch the whitespace inside them.
+    if (tok.kind === ts.SyntaxKind.WhitespaceTrivia
+        || tok.kind === ts.SyntaxKind.NewLineTrivia) {
       continue
     }
-    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
-      i++
-      continue
-    }
-    out += ch
-    i++
+    out += expr.slice(tok.pos, tok.end)
   }
   return out
 }

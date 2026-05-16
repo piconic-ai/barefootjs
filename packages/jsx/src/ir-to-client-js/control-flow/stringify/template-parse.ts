@@ -20,6 +20,8 @@
  * extra level to get the real root.
  */
 
+import { findInterpolationEnd, findTopLevelTemplateLiterals } from '../../../scanner/js-scanner'
+
 const SVG_ROOT_TAGS = new Set([
   'svg',
   'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse',
@@ -123,111 +125,10 @@ function extractConditionalBranchTemplates(template: string): string[] | null {
   return findTopLevelTemplateLiterals(expr)
 }
 
-/**
- * Find the index of the `}` that closes a `${` opened immediately before
- * `start` in `template`. Tracks nested braces, strings, and template
- * literals so attribute-value interpolations don't trip the matcher.
- * Returns -1 on unbalanced input.
- */
-function findInterpolationEnd(template: string, start: number): number {
-  let depth = 1
-  let i = start
-  while (i < template.length) {
-    const ch = template[i]
-    if (ch === '\\') { i += 2; continue }
-    if (ch === "'" || ch === '"') {
-      i = skipString(template, i + 1, ch)
-      if (i < 0) return -1
-      continue
-    }
-    if (ch === '`') {
-      i = skipTemplateLiteral(template, i + 1)
-      if (i < 0) return -1
-      continue
-    }
-    if (ch === '{') depth++
-    else if (ch === '}') {
-      depth--
-      if (depth === 0) return i
-    }
-    i++
-  }
-  return -1
-}
-
-function skipString(template: string, start: number, quote: string): number {
-  let i = start
-  while (i < template.length) {
-    const ch = template[i]
-    if (ch === '\\') { i += 2; continue }
-    if (ch === quote) return i + 1
-    i++
-  }
-  return -1
-}
-
-function skipTemplateLiteral(template: string, start: number): number {
-  let i = start
-  while (i < template.length) {
-    const ch = template[i]
-    if (ch === '\\') { i += 2; continue }
-    if (ch === '`') return i + 1
-    if (ch === '$' && template[i + 1] === '{') {
-      const end = findInterpolationEnd(template, i + 2)
-      if (end < 0) return -1
-      i = end + 1
-      continue
-    }
-    i++
-  }
-  return -1
-}
-
-/**
- * Walk a JS expression string and return the contents of every backtick
- * template literal that appears at the top level — i.e., not nested
- * inside another template literal. Parentheses are transparent so
- * `cond ? (`<a/>`) : (`<b/>`)` still surfaces both branches.
- *
- * Returns `null` if the parser sees an unbalanced delimiter; callers
- * treat that as "shape doesn't qualify for the wrap".
- */
-function findTopLevelTemplateLiterals(expr: string): string[] | null {
-  const out: string[] = []
-  let i = 0
-  while (i < expr.length) {
-    const ch = expr[i]
-    if (ch === '\\') { i += 2; continue }
-    if (ch === '/' && expr[i + 1] === '/') {
-      const nl = expr.indexOf('\n', i + 2)
-      i = nl < 0 ? expr.length : nl + 1
-      continue
-    }
-    if (ch === '/' && expr[i + 1] === '*') {
-      const end = expr.indexOf('*/', i + 2)
-      if (end < 0) return null
-      i = end + 2
-      continue
-    }
-    if (ch === "'" || ch === '"') {
-      const next = skipString(expr, i + 1, ch)
-      if (next < 0) return null
-      i = next
-      continue
-    }
-    if (ch === '`') {
-      const literalStart = i + 1
-      const literalEnd = skipTemplateLiteral(expr, literalStart)
-      if (literalEnd < 0) return null
-      // literalEnd is the index just past the closing backtick.
-      out.push(expr.slice(literalStart, literalEnd - 1))
-      i = literalEnd
-      continue
-    }
-    i++
-  }
-  return out
-}
+// Interpolation-boundary and top-level template-literal extraction now
+// flow through the shared ts.createScanner-based helpers (#1254). The
+// shared scanner adds correct regex-literal handling that the previous
+// hand-rolled walkers lacked.
 
 /**
  * Build the inline template-clone expression as one line.

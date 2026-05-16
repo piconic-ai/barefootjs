@@ -5,6 +5,7 @@
 
 import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode } from '../types'
 import type { TopLevelLoop } from './types'
+import { replaceInExprContexts } from '../scanner/js-scanner'
 import {
   BF_KEY as DATA_KEY,
   BF_KEY_PREFIX as DATA_KEY_PREFIX,
@@ -594,10 +595,10 @@ export function wrapLoopParamAsAccessor(expr: string, paramName: string, binding
     for (const b of bindings) byName.set(b.name, b.path)
     const alt = bindings.map(b => escapeRegExp(b.name)).join('|')
     const re = new RegExp(`\\b(${alt})\\b`, 'g')
-    return _replaceInExprContexts(expr, re, (_m: string, name: string) => `__bfItem()${byName.get(name)!}`)
+    return replaceInExprContexts(expr, re, (_m: string, name: string) => `__bfItem()${byName.get(name)!}`)
   }
   const re = new RegExp(`\\b${escapeRegExp(paramName)}\\b(?!\\s*\\()(?!-)`, 'g')
-  return _replaceInExprContexts(expr, re, `${paramName}()`)
+  return replaceInExprContexts(expr, re, `${paramName}()`)
 }
 
 /**
@@ -619,183 +620,7 @@ export function substituteLoopBindings(
   for (const b of bindings) byName.set(b.name, b.path)
   const alt = bindings.map(b => escapeRegExp(b.name)).join('|')
   const re = new RegExp(`\\b(${alt})\\b`, 'g')
-  return _replaceInExprContexts(expr, re, (_m: string, name: string) => `${accessor}${byName.get(name)!}`)
-}
-
-// Matches the JS `String.prototype.replace` replacer signature. The lib's
-// own type uses `any[]` for the rest args because regex capture groups and
-// offsets have heterogeneous types; narrow them at the callback instead.
-type Replacement = string | ((substring: string, ...args: any[]) => string)
-
-/** Replace `re` with `replacement` only in expression contexts (not in
- *  string literals or JS comments).
- *
- *  Comment-skipping is required for prop values that survive into the
- *  emitted client JS verbatim (e.g. object-literal `style={{…}}` props
- *  with a `// ...` inline note). Apostrophes in such a comment (e.g.
- *  `// they're "holding"`) would otherwise be mistaken for a string
- *  start, swallowing the rest of the expression up to the next single
- *  quote and skipping every loop-param reference in between — the
- *  symptom of #135 board demo's silent failure to wrap `task.id` to
- *  `task().id` inside the inner-loop reactive style effect. */
-function _replaceInExprContexts(code: string, re: RegExp, replacement: Replacement): string {
-  let result = ''
-  let i = 0
-  let exprStart = 0
-
-  const flushExpr = (end: number) => {
-    if (end > exprStart) {
-      re.lastIndex = 0
-      const slice = code.slice(exprStart, end)
-      result += typeof replacement === 'string'
-        ? slice.replace(re, replacement)
-        : slice.replace(re, replacement as (substring: string, ...args: any[]) => string)
-    }
-    exprStart = end
-  }
-
-  while (i < code.length) {
-    const ch = code[i]
-    if (ch === "'" || ch === '"') {
-      flushExpr(i)
-      i = _skipQuotedString(code, i)
-      result += code.slice(exprStart, i)
-      exprStart = i
-    } else if (ch === '`') {
-      flushExpr(i)
-      const [tplResult, nextI] = _processTemplateLiteral(code, i, re, replacement)
-      result += tplResult
-      i = nextI
-      exprStart = i
-    } else if (ch === '/' && code[i + 1] === '/') {
-      flushExpr(i)
-      i = _skipLineComment(code, i)
-      result += code.slice(exprStart, i)
-      exprStart = i
-    } else if (ch === '/' && code[i + 1] === '*') {
-      flushExpr(i)
-      i = _skipBlockComment(code, i)
-      result += code.slice(exprStart, i)
-      exprStart = i
-    } else {
-      i++
-    }
-  }
-  flushExpr(i)
-  return result
-}
-
-function _skipLineComment(code: string, start: number): number {
-  let i = start + 2
-  while (i < code.length && code[i] !== '\n') i++
-  return i
-}
-
-function _skipBlockComment(code: string, start: number): number {
-  let i = start + 2
-  while (i < code.length - 1) {
-    if (code[i] === '*' && code[i + 1] === '/') return i + 2
-    i++
-  }
-  return code.length
-}
-
-function _skipQuotedString(code: string, start: number): number {
-  const quote = code[start]
-  let i = start + 1
-  while (i < code.length) {
-    if (code[i] === '\\') { i += 2; continue }
-    if (code[i] === quote) return i + 1
-    i++
-  }
-  return i
-}
-
-/** Process a template literal from the opening backtick. Returns [result, nextIndex]. */
-function _processTemplateLiteral(code: string, start: number, re: RegExp, replacement: Replacement): [string, number] {
-  let result = '`'
-  let i = start + 1
-  while (i < code.length) {
-    if (code[i] === '\\') {
-      result += code[i] + (code[i + 1] ?? '')
-      i += 2
-    } else if (code[i] === '`') {
-      result += '`'
-      i++
-      return [result, i]
-    } else if (code[i] === '$' && code[i + 1] === '{') {
-      result += '${'
-      i += 2
-      const [innerResult, nextI] = _processInterpolation(code, i, re, replacement)
-      result += innerResult + '}'
-      i = nextI
-    } else {
-      // String part of template literal: copy verbatim, no replacement
-      result += code[i]
-      i++
-    }
-  }
-  return [result, i]
-}
-
-/** Process inside ${...}. Returns [content without closing }, nextIndex after }]. */
-function _processInterpolation(code: string, start: number, re: RegExp, replacement: Replacement): [string, number] {
-  let i = start
-  let depth = 1
-  let exprStart = i
-  let result = ''
-
-  const flushExpr = (end: number) => {
-    if (end > exprStart) {
-      re.lastIndex = 0
-      const slice = code.slice(exprStart, end)
-      result += typeof replacement === 'string'
-        ? slice.replace(re, replacement)
-        : slice.replace(re, replacement as (substring: string, ...args: any[]) => string)
-    }
-    exprStart = end
-  }
-
-  while (i < code.length) {
-    const ch = code[i]
-    if (ch === "'" || ch === '"') {
-      flushExpr(i)
-      i = _skipQuotedString(code, i)
-      result += code.slice(exprStart, i)
-      exprStart = i
-    } else if (ch === '`') {
-      flushExpr(i)
-      const [tplResult, nextI] = _processTemplateLiteral(code, i, re, replacement)
-      result += tplResult
-      i = nextI
-      exprStart = i
-    } else if (ch === '/' && code[i + 1] === '/') {
-      flushExpr(i)
-      i = _skipLineComment(code, i)
-      result += code.slice(exprStart, i)
-      exprStart = i
-    } else if (ch === '/' && code[i + 1] === '*') {
-      flushExpr(i)
-      i = _skipBlockComment(code, i)
-      result += code.slice(exprStart, i)
-      exprStart = i
-    } else if (ch === '{') {
-      depth++
-      i++
-    } else if (ch === '}') {
-      depth--
-      if (depth === 0) {
-        flushExpr(i)
-        i++
-        return [result, i]
-      }
-      i++
-    } else {
-      i++
-    }
-  }
-  flushExpr(i)
-  return [result, i]
+  return replaceInExprContexts(expr, re, (_m: string, name: string) => `${accessor}${byName.get(name)!}`)
 }
 
 /**

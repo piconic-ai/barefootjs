@@ -110,6 +110,35 @@ describe('mapArray key extraction across conditional branches (#1098)', () => {
     expect(calls[0]).not.toMatch(/_s\d+, null,/)
   })
 
+  test('whitespace inside `${...}` of a template-literal key still unifies (#1254)', () => {
+    // After the #1254 scanner consolidation, normalizeKeyExpr collapses
+    // whitespace inside template-literal interpolations as well. Two
+    // branches whose keys differ only in `${...}` spacing should still
+    // unify to one keyFn. This is a contrived shape (template-literal
+    // keys are unusual), but it pins the behavior change so a future
+    // regression would surface here.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      type Item = { id: string; kind: 'a' | 'b' }
+      export function TplKeyMap() {
+        const [items] = createSignal<Item[]>([])
+        return (
+          <div>
+            {items().map((it) =>
+              it.kind === 'a'
+                ? <span key={\`prefix-\${ it.id }\`} />
+                : <span key={\`prefix-\${it.id}\`} />
+            )}
+          </div>
+        )
+      }
+    `
+    const calls = mapArrayCalls(clientJs(source))
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).not.toMatch(/_s\d+, null,/)
+  })
+
   test('mismatched key expressions fall back to null reconciliation', () => {
     const source = `
       'use client'

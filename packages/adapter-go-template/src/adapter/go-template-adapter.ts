@@ -48,6 +48,7 @@ import {
   emitIRNode,
   emitAttrValue,
 } from '@barefootjs/jsx'
+import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 
 /**
  * Go-template adapter's IRNode render context. Only `isRootOfClientComponent`
@@ -3170,7 +3171,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         break
       }
       out += this.escapeAttrText(s.slice(i, open))
-      const close = this.findInterpolationEnd(s, open + 2)
+      const close = findInterpolationEnd(s, open + 2)
       if (close === -1) {
         // Unterminated `${` — emit the rest as escaped literal so we
         // don't silently drop content.
@@ -3186,33 +3187,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       i = close + 1
     }
     return out
-  }
-
-  /**
-   * Walk forward from inside `${`, returning the index of the
-   * matching closing `}`. Tracks brace depth across nested `{...}`
-   * and template literals so e.g. `${foo({a: 1})}` returns the
-   * outermost `}`. Returns -1 when no matching brace exists.
-   */
-  private findInterpolationEnd(s: string, start: number): number {
-    let depth = 1
-    let i = start
-    while (i < s.length) {
-      const c = s[i]
-      if (c === '\\' && i + 1 < s.length) {
-        // Skip escaped character to dodge things like `\}` inside strings.
-        i += 2
-        continue
-      }
-      if (c === '{') {
-        depth++
-      } else if (c === '}') {
-        depth--
-        if (depth === 0) return i
-      }
-      i++
-    }
-    return -1
   }
 
   /**
