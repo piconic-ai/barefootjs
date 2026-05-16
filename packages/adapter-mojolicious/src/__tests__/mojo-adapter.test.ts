@@ -103,6 +103,14 @@ runAdapterConformanceTests({
       { code: 'BF103', severity: 'error' },
       { code: 'BF104', severity: 'error' },
     ],
+    // #1310: rest destructure in .map() callback. Hono / CSR lower
+    // these via the inline residual-object accessor (#1309); the Mojo
+    // adapter's loop emitter raises the generic BF104 destructure
+    // refusal regardless of whether the binding is rest or plain.
+    // Pinning the contract here makes the limitation declarative.
+    'rest-destructure-object-in-map': [{ code: 'BF104', severity: 'error' }],
+    'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
+    'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
