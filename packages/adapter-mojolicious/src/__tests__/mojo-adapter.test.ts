@@ -262,6 +262,31 @@ export function Page() {
     expect(result.template).not.toContain('begin %>')
     expect(result.template).not.toContain('children =>')
   })
+
+  test('does not leak module-level export statements into the .html.ep template', () => {
+    // Regression: trailing `export { Name }` / `export type { ... }` lines
+    // were concatenated into the single-component template content, so
+    // Mojolicious rendered them as visible HTML text (the create-barefootjs
+    // scaffold's registry Button has this shape).
+    const result = compileJSX(
+      `
+type ButtonVariant = 'default' | 'secondary'
+
+function Button(props: { variant?: ButtonVariant, children?: unknown }) {
+  return <button className={props.variant ?? 'default'}>{props.children}</button>
+}
+
+export { Button }
+export type { ButtonVariant }
+`.trimStart(),
+      'button.tsx',
+      { adapter: new MojoAdapter() },
+    )
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    expect(template!.content).not.toContain('export {')
+    expect(template!.content).not.toContain('export type')
+  })
 })
 
 describe('MojoAdapter - templatePrimitives (#1189)', () => {

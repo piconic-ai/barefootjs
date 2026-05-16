@@ -485,11 +485,21 @@ export function compileJSX(
     scriptBaseName: options.scriptBaseName,
     siblingTemplatesRegistered: options.siblingTemplatesRegistered,
   })
-  const moduleExports = generateModuleExports(componentIR)
 
+  // `templatesPerComponent` adapters (Mojolicious) emit non-JS template files
+  // (`.html.ep`), so imports / types / module exports / default-export
+  // sections don't belong in the output — the template engine renders them
+  // as plain text. Mirror `compileMultipleComponents`'s `templatesPerComponent`
+  // branch and use the raw template directly.
   const s = adapterOutput.sections
-  const content = [s.imports, s.moduleConstants ?? '', s.types, moduleExports, s.component]
-    .filter(Boolean).join('\n\n') + (s.defaultExport || '')
+  let content: string
+  if (adapter.templatesPerComponent) {
+    content = adapterOutput.template
+  } else {
+    const moduleExports = generateModuleExports(componentIR)
+    content = [s.imports, s.moduleConstants ?? '', s.types, moduleExports, s.component]
+      .filter(Boolean).join('\n\n') + (s.defaultExport || '')
+  }
 
   files.push({
     path: filePath.replace(/\.tsx?$/, adapter.extension),
