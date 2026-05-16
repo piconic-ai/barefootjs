@@ -26,4 +26,31 @@ describe('normalizeHTML — async placeholder strip', () => {
     const html = '<div bf-async="a0">Wait<br/>just a moment</div><span>Done</span>'
     expect(normalizeHTML(html)).toBe('<span>Done</span>')
   })
+
+  test('attribute order — `bf-async` not first does not silently no-op the strip', () => {
+    const html = '<div class="root"><div data-foo="x" bf-async="a0"><p>Loading...</p></div><span>Resolved</span></div>'
+    expect(normalizeHTML(html)).toBe('<div class="root"><span>Resolved</span></div>')
+  })
+
+  test('tag-name word boundary — `<divider>` / `<div-foo>` are not counted as `<div>` openers', () => {
+    const html = '<section><divider>x</divider><div-foo>y</div-foo><div bf-async="a0"><p>L</p></div><span>R</span></section>'
+    // The unrelated <divider> / <div-foo> tags must survive intact, and
+    // the placeholder strip must terminate at its own `</div>` — not get
+    // confused by the `</divider>` close.
+    expect(normalizeHTML(html)).toBe('<section><divider>x</divider><div-foo>y</div-foo><span>R</span></section>')
+  })
+
+  test('self-closing `<div ... />` in fallback contributes zero net depth', () => {
+    // Without self-closing handling, `<div class="skeleton"/>` would
+    // increment depth without a matching `</div>`, so the strip would
+    // consume past the intended placeholder close and swallow the
+    // sibling `<span>`.
+    const html = '<div bf-async="a0"><div class="skeleton"/></div><span>Resolved</span>'
+    expect(normalizeHTML(html)).toBe('<span>Resolved</span>')
+  })
+
+  test('self-closing div with trailing space still resolves correctly', () => {
+    const html = '<div bf-async="a0"><div class="skeleton" /></div><span>R</span>'
+    expect(normalizeHTML(html)).toBe('<span>R</span>')
+  })
 })
