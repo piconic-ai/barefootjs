@@ -708,7 +708,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // bf->async_boundary() wraps the fallback in a <div bf-async="aX"> placeholder.
     // The resolved content is rendered below for non-streaming fallback;
     // in streaming mode, Mojo's write_chunk delivers it as a resolve chunk.
-    return `<%== bf->async_boundary('${node.id}', begin %>${fallback}<% end) %>\n${children}`
+    //
+    // The fallback is captured into a CODE ref via `begin %>…<% end` in
+    // its own action — embedding the `begin/end` inside the `<%== ... %>`
+    // that wraps `async_boundary` would let the inner `%>` close the
+    // outer tag, leaving the trailing `)` in plain template text and
+    // breaking Mojo's lexer (#1298). Same shape as `renderComponent`'s
+    // children capture.
+    const fallbackVar = `$bf_async_fallback_${node.id}`
+    return `<% my ${fallbackVar} = begin %>${fallback}<% end %><%== bf->async_boundary('${node.id}', ${fallbackVar}) %>\n${children}`
   }
 
   // ===========================================================================

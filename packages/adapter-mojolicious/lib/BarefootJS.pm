@@ -222,6 +222,11 @@ sub streaming_bootstrap ($self) {
 }
 
 sub async_boundary ($self, $id, $fallback_html) {
+    # The fallback comes in via Mojo `begin %>...<% end` capture (see
+    # MojoAdapter::renderAsync), which produces a CODE ref returning a
+    # Mojo::ByteStream. Materialize it so the rendered HTML embeds in
+    # the placeholder rather than the CODE ref's stringification.
+    $fallback_html = $fallback_html->() if ref($fallback_html) eq 'CODE';
     return qq{<div bf-async="$id">$fallback_html</div>};
 }
 

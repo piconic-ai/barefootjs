@@ -89,6 +89,15 @@ export function normalizeHTML(html: string): string {
     // JS-runtime hydration path uses them, so removing them keeps
     // cross-adapter conformance comparisons apples-to-apples.
     .replace(/<!--bf-scope:[^>]*-->/g, '')
+    // Strip the streaming-SSR async-boundary placeholder. Mojo and Go
+    // template emit a `<div bf-async="aN">…fallback…</div>` placeholder
+    // alongside the resolved children (the placeholder is swapped by a
+    // streaming-runtime script when the boundary resolves). Hono uses
+    // `<Suspense>` which collapses synchronously for non-Promise
+    // children, so it emits only the resolved content. Strip the
+    // placeholder for cross-adapter conformance — the resolved
+    // children remain on both sides. (#1298)
+    .replace(/<div bf-async="[^"]*">[\s\S]*?<\/div>/g, '')
     // Normalize child scope ID prefix: bf-s="~parentId_sN" → bf-s="parentId_sN"
     .replace(/bf-s="~([^"]*)"/g, 'bf-s="$1"')
     // Normalize non-deterministic child scope IDs. Keep the trailing
