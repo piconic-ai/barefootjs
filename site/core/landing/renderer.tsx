@@ -7,7 +7,9 @@
 
 import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
 import { Header } from '../../shared/components/header'
-import { SearchPlaceholder } from '../../shared/components/search-placeholder'
+import { SearchButton } from '@/components/search-button'
+import { CommandPalette } from '@/components/command-palette'
+import { commandGroups } from '../lib/command-items'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { BfScripts } from '../../../packages/adapter-hono/src/scripts'
 import { themeInitScript } from '@barefootjs/site-shared/lib/theme-init'
@@ -73,7 +75,8 @@ export const landingRenderer = jsxRenderer(
             <link rel="stylesheet" href="/static/uno.css" />
           </head>
           <body>
-            <Header logoHref="/" coreHref="/docs/introduction" uiHref={uiHref} playgroundHref="/playground" integrationsHref="/integrations" searchSlot={<SearchPlaceholder />} themeSwitcher={<ThemeSwitcher />} />
+            <Header logoHref="/" coreHref="/docs/introduction" uiHref={uiHref} playgroundHref="/playground" integrationsHref="/integrations" searchSlot={<SearchButton />} themeSwitcher={<ThemeSwitcher />} />
+            <CommandPalette groups={commandGroups} />
             <main>
               {children}
             </main>

@@ -108,7 +108,9 @@ function MdToggleButton({ slug }: { slug: string }) {
 
 // Import shared components
 import { Header } from '../shared/components/header'
-import { SearchPlaceholder } from '../shared/components/search-placeholder'
+import { SearchButton } from '@/components/search-button'
+import { CommandPalette } from '@/components/command-palette'
+import { commandGroups } from './lib/command-items'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { MobileMenu } from '@/components/mobile-menu'
 import { MobilePageNav } from '../shared/components/mobile-page-nav'
@@ -167,10 +169,11 @@ export const renderer = jsxRenderer(
               uiHref={uiHref}
               playgroundHref="/playground"
               integrationsHref="/integrations"
-              searchSlot={<SearchPlaceholder />}
+              searchSlot={<SearchButton />}
               themeSwitcher={<ThemeSwitcher />}
             />
 
+            <CommandPalette groups={commandGroups} />
             <MobileMenu />
             <MobilePageNav prev={prev} next={next} />
             <Sidebar currentSlug={currentSlug} />
