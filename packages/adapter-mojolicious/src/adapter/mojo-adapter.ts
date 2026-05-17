@@ -36,6 +36,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  isSupported,
   identifierPath,
   stringifyParsedExpr,
   emitParsedExpr,
@@ -730,6 +731,18 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${value.value}"`,
     emitExpression: (value, name) => {
+      // Refuse shapes that the regex pipeline silently mangles into
+      // invalid Perl (#1322). Object literals (`style={{...}}`) and
+      // tagged-template-literal call expressions (`cn\`base \${tone()}\``)
+      // have no idiomatic Mojo template form; the Go adapter raises
+      // BF101 here via `convertExpressionToGo` + `isSupported`. Lift the
+      // same gate so the user gets a clear diagnostic instead of broken
+      // output. The check runs before `convertExpressionToPerl` so the
+      // regex pipeline never produces template-text fragments for a
+      // shape we've already rejected.
+      if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
+        return ''
+      }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
         // Boolean attributes: render conditionally (present or absent).
         return `<%= ${this.convertExpressionToPerl(value.expr)} ? '${name}' : '' %>`
@@ -951,6 +964,53 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
     if (segments.length === 0) return `''`
     return segments.length === 1 ? segments[0] : `(${segments.join(' . ')})`
+  }
+
+  /**
+   * Refuse JS expression shapes that have no idiomatic Mojo template
+   * representation (#1322). Currently catches:
+   *
+   *   - Object literals (`style={{ background: bg(), color: fg() }}`):
+   *     the regex pipeline strips signal calls but leaves the
+   *     surrounding `{ k: v, ... }` syntax intact, producing invalid
+   *     Perl inside `<%= ... %>`.
+   *   - Tagged-template-literal call expressions
+   *     (`className={cn\`base \${tone()}\`}`): regex translation
+   *     produces malformed Perl with no callable target.
+   *
+   * Records `BF101` with the same shape the Go adapter emits via
+   * `convertExpressionToGo`, so cross-adapter diagnostics stay
+   * consistent. Returns `true` when the shape was rejected (caller
+   * should drop the attribute / skip the emit).
+   */
+  private refuseUnsupportedAttrExpression(expr: string, attrName: string): boolean {
+    // Strip leading parens / whitespace so wrapped forms reach the
+    // shape pre-check — `style={({ a: b() })}` and
+    // `className={(cn`base ${tone()}`)}` are the same logical shape
+    // as their unwrapped variants and should hit the same gate.
+    let probe = expr.trim()
+    while (probe.startsWith('(')) probe = probe.slice(1).trimStart()
+    const startsAsObjectLiteral = probe.startsWith('{')
+    const hasTaggedTemplate = /[A-Za-z_$][\w$]*\s*`/.test(probe)
+    if (!startsAsObjectLiteral && !hasTaggedTemplate) return false
+    const parsed = parseExpression(expr.trim())
+    const support = isSupported(parsed)
+    if (parsed.kind !== 'unsupported' && support.supported) return false
+    // Surface the `isSupported` reason so the diagnostic is as
+    // actionable as the Go adapter's BF101 — keeps cross-adapter
+    // diagnostics aligned on the same expression-shape gate.
+    const reason = support.reason ?? (parsed.kind === 'unsupported' ? parsed.reason : undefined)
+    const reasonLine = reason ? `\n${reason}` : ''
+    this.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Expression not supported on attribute '${attrName}': ${expr.trim()}${reasonLine}`,
+      loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+      suggestion: {
+        message: 'The Mojo adapter cannot lower JS object literals or tagged-template-literal expressions into Embedded Perl. Move the expression into a `\'use client\'` component (so hydration computes it), or expand it into discrete attributes whose values are values the adapter can lower.',
+      },
+    })
+    return true
   }
 
   private convertExpressionToPerl(expr: string): string {
