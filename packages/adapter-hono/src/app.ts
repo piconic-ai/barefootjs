@@ -41,10 +41,17 @@ const DEV_RELOAD_ENDPOINT_KEY = 'bfDevReloadEndpoint'
  * component is keyed by its manifest name; `__barefoot__` is the
  * runtime entry. `clientJs` is a path under `dist/`, e.g.
  * `"components/Counter.client.js"`.
+ *
+ * `stubDeps` lists the registry names of every `'use client'` sibling
+ * this bundle reaches via a stub rewrite (i.e. via an imperative
+ * `createComponent(name, ...)` call rather than a JSX render). The
+ * per-page script collector follows these edges so pages that only
+ * touch a child through a stub still ship its `.client.js`. See
+ * issue #1243.
  */
 export interface BarefootBuildManifest {
   __barefoot__?: { clientJs?: string }
-  [componentName: string]: { clientJs?: string } | undefined
+  [componentName: string]: { clientJs?: string; stubDeps?: string[] } | undefined
 }
 
 /**
