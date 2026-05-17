@@ -11,7 +11,7 @@ import { getRegisteredDef } from './hydrate'
 import { hydratedScopes } from './hydration-state'
 import { untrack } from '@barefootjs/client/reactive'
 import { setCurrentScope } from './context'
-import { BF_SCOPE, BF_KEY, BF_HOST, BF_AT } from '@barefootjs/shared'
+import { BF_SCOPE, BF_KEY, BF_HOST, BF_AT, BF_PARENT_SCOPE_PLACEHOLDER } from '@barefootjs/shared'
 import type { ComponentDef } from './types'
 
 // Parent scope ID context for renderChild() inside insert() branch templates.
@@ -294,12 +294,11 @@ export function renderChild(
   // anchored to the exact `bf-s="..."` attribute shape so user text
   // (or unrelated attribute values) that happens to contain the
   // sentinel survives unchanged.
-  const placeholderAttrPattern = new RegExp(`(\\s+)?bf-s="${BF_PARENT_SCOPE}"`, 'g')
-  if (placeholderAttrPattern.test(html)) {
-    placeholderAttrPattern.lastIndex = 0
+  if (PLACEHOLDER_ATTR_PATTERN.test(html)) {
+    PLACEHOLDER_ATTR_PATTERN.lastIndex = 0
     html = _parentScopeId
-      ? html.replace(placeholderAttrPattern, (_m, lead) => `${lead ?? ' '}bf-s="${_parentScopeId}"`)
-      : html.replace(placeholderAttrPattern, '')
+      ? html.replace(PLACEHOLDER_ATTR_PATTERN, (_m, lead) => `${lead ?? ' '}bf-s="${_parentScopeId}"`)
+      : html.replace(PLACEHOLDER_ATTR_PATTERN, '')
   }
   // Templates may start with comment markers (e.g. <!--bf-cond-start:...-->)
   // so we find the first element tag rather than assuming index 0.
@@ -325,7 +324,15 @@ export function renderChild(
     afterInsert.replace(/^(<\w+)/, `$1 ${bfsAttr}${extraAttrs}`)
 }
 
-const BF_PARENT_SCOPE = '__BF_PARENT_SCOPE__'
+/**
+ * Module-scope regex hoisted so each `renderChild` call reuses the
+ * compiled pattern instead of allocating a fresh one. Matches the
+ * exact `bf-s="<placeholder>"` attribute shape (with optional
+ * preceding whitespace captured so dedupe-on-empty doesn't leave a
+ * dangling space). Sourced from `@barefootjs/shared` to keep emit
+ * and consume sides in lockstep (#1320).
+ */
+const PLACEHOLDER_ATTR_PATTERN = new RegExp(`(\\s+)?bf-s="${BF_PARENT_SCOPE_PLACEHOLDER}"`, 'g')
 
 /**
  * Generate a random ID for scope identification

@@ -154,3 +154,25 @@ export const BF_ASYNC = 'bf-async'
 
 /** Async resolve template: `<template bf-async-resolve="a0">` */
 export const BF_ASYNC_RESOLVE = 'bf-async-resolve'
+
+// ---------------------------------------------------------------------------
+// Hoisted-children scope placeholder (#1320)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sentinel value embedded by the compiler on hoisted JSX children that
+ * need a `bf-s` scope marker. The runtime `renderChild` substitutes the
+ * value with the current `_parentScopeId` — i.e. the scope of the
+ * call site that wrote `<Box children={<jsx/>} />` — at render time.
+ *
+ * The placeholder is the literal `bf-s` attribute value (not just a
+ * textual marker), so substitution regexes anchor to
+ * `bf-s="<this>"` to avoid rewriting user content that happens to
+ * contain the sentinel as text.
+ *
+ * Single source of truth shared between:
+ *   - emit (`@barefootjs/jsx/ir-to-client-js/html-template.ts`)
+ *   - production runtime (`@barefootjs/client/runtime/component.ts`)
+ *   - CSR conformance harness (`@barefootjs/adapter-tests/src/csr-render.ts`)
+ */
+export const BF_PARENT_SCOPE_PLACEHOLDER = '__BF_PARENT_SCOPE__'

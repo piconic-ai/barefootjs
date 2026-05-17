@@ -8,6 +8,9 @@ import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_
 import type { LoopParamSpec } from './utils'
 import { nameForRegistryRef } from './component-scope'
 import { assertNever } from './walker'
+import { BF_PARENT_SCOPE_PLACEHOLDER } from '@barefootjs/shared'
+
+export { BF_PARENT_SCOPE_PLACEHOLDER }
 
 /**
  * Protect string literals from regex-based replacements.
@@ -45,17 +48,11 @@ function childrenPropEntry(
   return `children: \`${children.map(recurse).join('')}\``
 }
 
-/**
- * Placeholder substituted by `renderChild` with the current parent scope
- * ID at render time. Embedded on hoisted JSX children whose IR carries
- * `needsScope: true` — the hoisted element is owned by the outer
- * component (the one that wrote the `<Box children={<span/>} />`
- * expression), so its `bf-s` must match the outer's scope, not the
- * inner template's. The substitution happens inside `renderChild`
- * (production runtime + CSR harness) because that is the layer at
- * which `_parentScopeId` is the outer scope. (#1320)
- */
-export const BF_PARENT_SCOPE_PLACEHOLDER = '__BF_PARENT_SCOPE__'
+// `BF_PARENT_SCOPE_PLACEHOLDER` is the single source of truth shared by
+// emit (this file) and the runtime consumers (renderChild + CSR harness).
+// See `@barefootjs/shared/src/markers.ts` for its docstring and contract;
+// re-exported above so existing import paths into this file continue to
+// resolve.
 
 /**
  * Sentinel returned by the CSR template's `transformExpr` when the expression
@@ -207,12 +204,14 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       // have `needsScope: false` and inherit the parent template's
       // scope chain. (#1320)
       //
-      // Known limitation: `children={<><span/></>}` (fragment-wrapped
-      // jsx-children) lands in the IR as a fragment with
-      // `needsScopeComment: true` whose direct child has
-      // `needsScope: false`, so no element-level placeholder is emitted
-      // here. The fragment-marker path is a separate scope mechanism
-      // that the current placeholder design doesn't extend to.
+      // Known limitation tracked in #1335: `children={<><span/></>}`
+      // (fragment-wrapped jsx-children) lands in the IR as a fragment
+      // with `needsScopeComment: true` whose direct child has
+      // `needsScope: false`, so no element-level placeholder is
+      // emitted here. The fragment-marker path is a separate scope
+      // mechanism that the current placeholder design doesn't extend
+      // to — needs either an IR-level `needsScope` promotion or a
+      // comment-marker placeholder mirroring this attribute one.
       if (inHoistedChildren && node.needsScope) {
         attrParts.push(`bf-s="${BF_PARENT_SCOPE_PLACEHOLDER}"`)
       }
