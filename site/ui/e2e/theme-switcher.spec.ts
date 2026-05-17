@@ -114,7 +114,12 @@ test.describe('ThemeSwitcher', () => {
   })
 
   test('header contains logo and UI link', async ({ page }) => {
-    await expect(page.locator('header a:has(svg)').first()).toBeVisible()
+    // The mobile/desktop header split (#1343) renders two logo `<a>`s in
+    // the DOM and toggles them with `sm:hidden` / `hidden sm:inline-flex`.
+    // `.first()` would pick the DOM-first (mobile) one, which is hidden
+    // on the default desktop viewport. Filter by visibility so the
+    // assertion targets whichever logo the current viewport reveals.
+    await expect(page.locator('header a:has(svg)').filter({ visible: true }).first()).toBeVisible()
     await expect(page.locator('header a:has-text("UI")')).toBeVisible()
     await expect(page.locator('header a:has-text("UI")')).toHaveAttribute('href', '/')
   })
