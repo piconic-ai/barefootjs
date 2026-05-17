@@ -20,6 +20,7 @@ import type {
   ParamInfo,
   CompilerError,
 } from '../types'
+import type { CsrInlinabilityMap } from './csr-substitute'
 
 export interface ClientJsContext {
   componentName: string
@@ -81,6 +82,21 @@ export interface ClientJsContext {
    * JS runtimes). Consulted when a callee isn't in `templatePrimitives`.
    */
   acceptsTemplateCall?: TemplateCallAcceptor
+  /**
+   * CSR-only: per-constant inlinability resolved by `populateCsrInlinable`
+   * during Stage 2 of `compute-inlinability`. The map is keyed by the
+   * constant's name; the value is `null` when the const can't be safely
+   * inlined into CSR template scope (placeholder-let, arrow-literal,
+   * system-construct, jsx-inline, or a substituted form that fails
+   * `isInlinableInTemplate`), otherwise the `{ rewrittenValue,
+   * freeIdentifiers }` pair the emitter splices in.
+   *
+   * Lives on the context — not on `ConstantInfo` — so the CSR-specific
+   * substitution result doesn't leak into the cross-adapter IR (#1277).
+   * SSR adapters (Hono, Go, Mojo) don't substitute signals at template
+   * time, so they have no use for this data.
+   */
+  csrInlinable: CsrInlinabilityMap
 }
 
 export interface InteractiveElement {

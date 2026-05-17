@@ -4,10 +4,12 @@
 
 import type { AttrValue, IRAttribute, IRNode } from '../types'
 import { isBooleanAttr } from '../html-constants'
-import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, freeIdsFromRefs, setIntersects, tokenContainsAny, wrapExprWithLoopParams } from './utils'
+import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils'
 import type { LoopParamSpec } from './utils'
 import { nameForRegistryRef } from './component-scope'
 import { assertNever } from './walker'
+import { buildSignalMemoEnv, csrSubstitute, applyPropsRewrite, type CsrEnv } from './csr-substitute'
+import type { ClientJsContext } from './types'
 import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE } from '@barefootjs/shared'
 
 /**
@@ -571,9 +573,15 @@ export interface TemplateOptions {
    * the sentinel into something safe for that AST position.
    */
   unsafeLocalNames?: Set<string>
-  // generateCsrTemplate-specific fields
-  signalMap?: Map<string, string>
-  memoMap?: Map<string, string>
+  /**
+   * Signal+memo substitution env for the CSR template path. Built once
+   * per component from `ClientJsContext` (signal initial values + memo
+   * bodies, with the `propsObjectName.X → _p.X` props normalization
+   * baked in). Constants flow through `inlinableConstants` separately
+   * since their `ctx.csrInlinable` entry is already chain-closed by
+   * `compute-inlinability` (#1277).
+   */
+  csrEnv?: CsrEnv
   insideLoop?: boolean
   loopDepth?: number
   /** Emit `bf-s` placeholder on scoped elements inside a jsx-children prop (#1320). */
@@ -891,94 +899,78 @@ export function canGenerateStaticTemplate(
  * - Loops generate .map().join('') for inline rendering
  * - Child components use renderChild() for runtime template lookup
  *
+ * The substitution data — signal initial values, memo bodies, and the
+ * chain-closed inlinable-const values — comes from
+ * `SignalInfo.initialFreeIdentifiers` / `MemoInfo.computationFreeIdentifiers`
+ * (core IR) and `ctx.csrInlinable` (CSR-internal side map populated by
+ * `compute-inlinability`, #1277). `csrSubstitute` walks the AST so
+ * member-access shadowing (`ctx.bars()`) is preserved structurally
+ * instead of via the legacy `(?<![-.])` lookbehind.
+ *
  * @param node - IR node to render
- * @param inlinableConstants - Map of constant names to their resolved values
- * @param signalMap - Map of signal getter names to their initial value expressions
- * @param memoMap - Map of memo names to their computation expressions (with signals already replaced)
+ * @param inlinableConstants - Map of constant names to their resolved CSR values
+ * @param ctx - ClientJsContext supplying signals/memos for `csrSubstitute`
  */
 export function generateCsrTemplate(
   node: IRNode,
-  inlinableConstants?: Map<string, string>,
-  signalMap?: Map<string, string>,
-  memoMap?: Map<string, string>,
+  inlinableConstants: Map<string, string> | undefined,
+  ctx: ClientJsContext,
   insideLoop?: boolean,
   restSpreadNames?: Set<string>,
   propsObjectName?: string | null,
   unsafeLocalNames?: Set<string>,
 ): string {
-  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, unsafeLocalNames, loopDepth: -1 })
+  // Build the substitution env once per component. Signals + memos come
+  // from `buildSignalMemoEnv`; inlinable constants layer in here so
+  // each call to `transformExpr` is a pure AST projection over the
+  // shared env (no per-call Map cloning).
+  const base = buildSignalMemoEnv(ctx.signals, ctx.memos, propsObjectName ?? null)
+  const csrEnv: CsrEnv = { substitutions: new Map(base.substitutions), propsObjectName: base.propsObjectName }
+  if (inlinableConstants) {
+    for (const [name, value] of inlinableConstants) {
+      if (!csrEnv.substitutions.has(name)) {
+        csrEnv.substitutions.set(name, { kind: 'identifier', replacement: value, freeIdentifiers: new Set() })
+      }
+    }
+  }
+  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, insideLoop, unsafeLocalNames, loopDepth: -1 })
 }
 
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { inlinableConstants, restSpreadNames, propsObjectName, signalMap, memoMap, insideLoop, unsafeLocalNames, loopDepth = 0 } = opts
+  const { restSpreadNames, propsObjectName, csrEnv, insideLoop, unsafeLocalNames, loopDepth = 0 } = opts
+  const env: CsrEnv = csrEnv ?? { substitutions: new Map(), propsObjectName: propsObjectName ?? null }
   const transformExpr = (expr: string, templateExpr?: string): string => {
-    const { protect, restore } = createStringProtector()
-    let result = protect(templateExpr ?? expr)
+    // Single AST substitution pass: replaces signal getter calls
+    // (`count()` → `(initialValue)`), memo calls (`bars()` → `(body)`),
+    // and inlinable-const refs (`label` → `(rewrittenValue)`) in one
+    // walk. The walker uses structural position checks instead of
+    // regex lookbehind, so `ctx.bars()` survives intact when a local
+    // memo `bars` exists (#1100). All substitution values come from
+    // the IR — emit does no string transformation of its own (#1277).
+    const source = templateExpr ?? expr
+    if (!source) return source
+    const { rewritten, freeIdentifiers } = csrSubstitute(source, env)
 
-    // Replace signal getter calls with initial values: count() → (props.initial ?? 0).
-    // The negative lookbehind `(?<![-.])` skips member accesses such as
-    // `ctx.count()` so a local signal whose name happens to match a
-    // context method does not corrupt the embedded template (#1100).
-    if (signalMap && signalMap.size > 0) {
-      for (const [getter, initialValue] of signalMap) {
-        result = result.replace(new RegExp(`(?<![-.])\\b${getter}\\(\\)`, 'g'), `(${protect(initialValue)})`)
-      }
-    }
-
-    // Replace memo getter calls with computation expressions.
-    // Same lookbehind as above — see signalMap comment.
-    if (memoMap && memoMap.size > 0) {
-      for (const [name, computation] of memoMap) {
-        result = result.replace(new RegExp(`(?<![-.])\\b${name}\\(\\)`, 'g'), `(${protect(computation)})`)
-      }
-    }
-
-    // Inline constant references with their resolved values.
-    if (inlinableConstants && inlinableConstants.size > 0) {
-      for (const [constName, constValue] of inlinableConstants) {
-        result = result.replace(new RegExp(`(?<![-.])\\b${constName}\\b`, 'g'), `(${protect(constValue)})`)
-      }
-    }
-
-    // Re-run signal/memo replacement after constant inlining.
-    if (signalMap && signalMap.size > 0) {
-      for (const [getter, initialValue] of signalMap) {
-        result = result.replace(new RegExp(`(?<![-.])\\b${getter}\\(\\)`, 'g'), `(${protect(initialValue)})`)
-      }
-    }
-    if (memoMap && memoMap.size > 0) {
-      for (const [name, computation] of memoMap) {
-        result = result.replace(new RegExp(`(?<![-.])\\b${name}\\(\\)`, 'g'), `(${protect(computation)})`)
-      }
-    }
-
-    // Normalize source-level props object access (e.g., props.xxx → _p.xxx)
-    if (propsObjectName && propsObjectName !== PROPS_PARAM) {
-      result = result.replace(
-        new RegExp(`\\b${propsObjectName}\\.`, 'g'),
-        `${PROPS_PARAM}.`,
-      )
-    }
-
-    const finalResult = restore(result)
-
-    // The CSR template runs at module scope (via render() / renderChild()),
-    // so any reference to an init-body-only name would ReferenceError at
-    // template-call time (#1128). Substitute the sentinel; per-AST-context
-    // call sites (loop array, text expression, child component prop) decide
-    // how to render that placeholder. The init function's createEffect /
-    // initChild bindings repaint the real value once init runs.
+    // The CSR template runs at module scope, so any post-substitution
+    // free identifier that lands in `unsafeLocalNames` (init-body-only
+    // bindings, demoted const refs) is unreachable. Surface the UNSAFE
+    // sentinel; per-AST-context call sites translate it (loop array →
+    // `[]`, text expression → `''`, child component prop → drop) and
+    // init's createEffect / initChild bindings repaint the real value
+    // once init runs (#1128).
     //
-    // Lexer-based post-substitution check (#1267): pure IR-based checking
-    // would require tracking transitive free-id closure through the
-    // `csrInlinableConstants` re-promotion path (which substitutes
-    // signal/memo getters before re-classifying constants). That bookkeeping
-    // is non-trivial and bears no semantic benefit over the lexer, which
-    // already respects string-literal / member-access boundaries.
-    if (unsafeLocalNames && unsafeLocalNames.size > 0 && tokenContainsAny(finalResult, unsafeLocalNames)) {
+    // The check is now a pure set intersection of IR-tracked
+    // identifiers; the legacy `tokenContainsAny` lexer scan
+    // (and its `'foo-className'` / `a.className` false-match risk)
+    // is gone (#1267 / #1277).
+    if (unsafeLocalNames && unsafeLocalNames.size > 0 && setIntersects(freeIdentifiers, unsafeLocalNames)) {
       return UNSAFE_TEMPLATE_EXPR
     }
-    return finalResult
+    // Final emit-form: rewrite `propsName.X → _p.X`. Deferred until
+    // after the unsafe-name check because the check used raw form
+    // (consistent with `populateCsrInlinable`'s `isInlinableInTemplate`
+    // gate — #1138).
+    return applyPropsRewrite(rewritten, propsObjectName ?? null)
   }
 
   // `recurse` preserves `inHoistedChildren` for structural pass-through

@@ -49,6 +49,7 @@ export interface PendingSignalTuple {
   loc: SourceLocation
   getter: string | null
   setter: string | null
+  initialFreeIdentifiers: ReadonlySet<string>
 }
 
 /**

@@ -913,6 +913,15 @@ export interface SignalInfo {
   typedInitialValue?: string
   type: TypeInfo
   loc: SourceLocation
+  /**
+   * Free identifiers in `initialValue`, computed at analysis time. Drives
+   * the CSR-substitution propagation in `ir-to-client-js` (#1277): when an
+   * expression references `getter()` and the substitution expands it to
+   * `(initialValue)`, the post-substitution free-id set must add these
+   * names so the unsafe-name check stays exact instead of regex-scanning
+   * the final string.
+   */
+  initialFreeIdentifiers?: ReadonlySet<string>
 }
 
 export interface MemoInfo {
@@ -923,6 +932,12 @@ export interface MemoInfo {
   type: TypeInfo
   deps: string[]
   loc: SourceLocation
+  /**
+   * Free identifiers in `computation`, computed at analysis time. Same role
+   * as `SignalInfo.initialFreeIdentifiers` — feeds the CSR-substitution
+   * propagation in `ir-to-client-js` (#1277).
+   */
+  computationFreeIdentifiers?: ReadonlySet<string>
 }
 
 export interface EffectInfo {
