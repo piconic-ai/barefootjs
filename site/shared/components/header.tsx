@@ -7,7 +7,7 @@
  * Server component (NOT "use client") — interactive parts are passed via slots.
  */
 
-import { Logo } from './logo'
+import { Logo, LogoIcon } from './logo'
 
 export interface HeaderProps {
   activePage?: 'core' | 'ui' | 'playground' | 'integrations'
@@ -48,6 +48,19 @@ export function Header({
   const playgroundClass = activePage === 'playground' ? navLinkActive : navLinkInactive
   const integrationsClass = activePage === 'integrations' ? navLinkActive : navLinkInactive
 
+  // Mobile shortcut: when the visitor is on a known section, show the section
+  // label next to the icon so it stays both a brand mark and a "back to section
+  // home" link.
+  const mobileShortcut = activePage === 'core'
+    ? { label: 'Core', href: coreHref }
+    : activePage === 'ui'
+    ? { label: 'UI', href: uiHref }
+    : activePage === 'playground'
+    ? { label: 'Playground', href: playgroundHref }
+    : activePage === 'integrations'
+    ? { label: 'Integrations', href: integrationsHref }
+    : null
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-[var(--header-height)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="px-4 sm:px-6 h-[var(--header-height)] flex items-center justify-between gap-4">
@@ -55,10 +68,35 @@ export function Header({
         <div className="flex items-center gap-3 sm:gap-6">
           {leftSlot}
 
-          {/* Logo */}
+          {/* Logo: mobile = icon + section shortcut, desktop = full wordmark */}
+          {mobileShortcut ? (
+            <div className="flex sm:hidden items-center gap-2">
+              <a
+                href={logoHref}
+                className="inline-flex items-center text-foreground transition-colors no-underline"
+                aria-label="Barefoot.js"
+              >
+                <LogoIcon />
+              </a>
+              <a
+                href={mobileShortcut.href}
+                className="text-sm font-medium text-foreground no-underline px-1"
+              >
+                {mobileShortcut.label}
+              </a>
+            </div>
+          ) : (
+            <a
+              href={logoHref}
+              className="sm:hidden text-foreground transition-colors no-underline"
+              aria-label="Barefoot.js"
+            >
+              <LogoIcon />
+            </a>
+          )}
           <a
             href={logoHref}
-            className="text-foreground transition-colors no-underline"
+            className="hidden sm:inline-flex text-foreground transition-colors no-underline"
           >
             <Logo />
           </a>
