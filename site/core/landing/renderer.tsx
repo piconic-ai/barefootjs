@@ -45,7 +45,7 @@ export const landingRenderer = jsxRenderer(
     const uiHref = hostname === 'localhost' ? 'http://localhost:3002/' : 'https://ui.barefootjs.dev'
 
     const pageTitle = title || 'Barefoot.js'
-    const pageDescription = description || 'Reactive JSX for any backend'
+    const pageDescription = description || 'TSX in. Your stack out.'
     return (
       <WithPredictableIds>
         <html lang="en">
