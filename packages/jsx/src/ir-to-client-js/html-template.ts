@@ -46,11 +46,12 @@ function childrenPropEntry(
   return `children: \`${children.map(recurse).join('')}\``
 }
 
-// #1320: emit a `bf-s` placeholder on the top-level hoisted element so
-// the runtime can substitute the outer component's scope. Limitation
-// for fragment-wrapped jsx-children tracked in #1335 — those land
-// with `needsScope: false` and a `needsScopeComment` fragment parent,
-// which this attribute-form gate doesn't reach.
+// #1320 / #1335: emit a `bf-s` placeholder on the top-level hoisted
+// element so the runtime can substitute the outer component's scope.
+// The bare-element form (`children={<span/>}`) sets `needsScope: true`
+// directly; the fragment-wrapped form (`children={<><span/></>}`) is
+// unwrapped at IR-collection time (`unwrapHoistedFragment` in
+// `jsx-to-ir.ts`) into the same shape, so both forms reach this gate.
 function maybeHoistedScopeAttr(
   inHoistedChildren: boolean,
   node: { needsScope?: boolean },

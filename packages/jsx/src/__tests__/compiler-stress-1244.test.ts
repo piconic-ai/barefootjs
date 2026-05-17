@@ -1148,6 +1148,22 @@ describe('children passed as a JSX expression value (not nested)', () => {
     expectNoFatalErrors(result)
     expect(result.clientJs).toContain('<span bf-s="__BF_PARENT_SCOPE__">x</span>')
   })
+
+  // #1335: the fragment-wrapped variant must produce the same CSR
+  // emit as the bare-element form above. IR collection unwraps the
+  // single-element fragment so the inner element inherits
+  // `needsScope: true` and reaches the same #1320 placeholder gate.
+  test('children={<><span/></>}: CSR emits the parent-scope placeholder on the unwrapped element (#1335)', () => {
+    const src = `
+      function Box({ children }: { children: any }) { return <div>{children}</div> }
+      export function Demo() {
+        return <Box children={<><span>x</span></>} />
+      }
+    `
+    const result = compile(src)
+    expectNoFatalErrors(result)
+    expect(result.clientJs).toContain('<span bf-s="__BF_PARENT_SCOPE__">x</span>')
+  })
 })
 
 describe('Fragment with siblings as a top-level return', () => {

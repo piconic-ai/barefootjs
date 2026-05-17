@@ -73,6 +73,7 @@ import { fixture as taggedTemplateClassname } from './tagged-template-classname'
 import { fixture as memberExpressionTag } from './member-expression-tag'
 import { fixture as arrowComponent } from './arrow-component'
 import { fixture as childrenJsxExpression } from './children-jsx-expression'
+import { fixture as fragmentWrappedChildrenJsxExpression } from './fragment-wrapped-children-jsx-expression'
 import { fixture as restDestructureObjectInMap } from './rest-destructure-object-in-map'
 import { fixture as restDestructureArrayInMap } from './rest-destructure-array-in-map'
 import { fixture as restDestructureNestedInMap } from './rest-destructure-nested-in-map'
@@ -155,6 +156,7 @@ export const jsxFixtures: JSXFixture[] = [
   memberExpressionTag,
   arrowComponent,
   childrenJsxExpression,
+  fragmentWrappedChildrenJsxExpression,
   // #1310: rest destructure in .map() — Hono/CSR lowers via #1309,
   // Go/Mojo refuse the loop destructure shape with BF104.
   restDestructureObjectInMap,

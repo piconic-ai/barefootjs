@@ -977,6 +977,29 @@ function isTransparentFragment(
   return false
 }
 
+// #1335: a fragment-wrapped jsx-children prop value lands as
+// `IRFragment{ needsScopeComment: true, children: [IRElement{ needsScope: false }] }`
+// because `transformFragment` runs while `ctx.isRoot` is still true at the
+// processComponentProps call site. The comment-based scope marker is
+// meaningful only at the component-render root; for a hoisted-children
+// prop the inner element must instead participate in #1320's
+// `bf-s="__BF_PARENT_SCOPE__"` placeholder path. Unwrap the single-element
+// case here so the IR shape mirrors the bare-element form. Multi-element
+// fragments stay unchanged (out of scope per #1335) — the comment-marker
+// approach in direction 2 is the follow-up.
+function unwrapHoistedFragment(node: IRNode): IRNode {
+  if (
+    node.type !== 'fragment' ||
+    !node.needsScopeComment ||
+    node.children.length !== 1
+  ) {
+    return node
+  }
+  const only = node.children[0]
+  if (only.type !== 'element') return node
+  return { ...only, needsScope: true }
+}
+
 function transformFragment(
   node: ts.JsxFragment,
   ctx: TransformContext
@@ -3297,7 +3320,7 @@ function processComponentProps(
         if (irNode) {
           props.push({
             name,
-            value: AttrValueOf.jsxChildren([irNode]),
+            value: AttrValueOf.jsxChildren([unwrapHoistedFragment(irNode)]),
             loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
           })
           continue

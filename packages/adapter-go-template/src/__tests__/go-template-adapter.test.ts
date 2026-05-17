@@ -71,6 +71,11 @@ runAdapterConformanceTests({
     // case is handled by routing the hoisted JSX through the same
     // `begin %>…<% end` capture as nested children (see #1326 fix).
     'children-jsx-expression',
+    // #1335: fragment-wrapped form of the same shape. Now that the IR
+    // unwraps `<><span/></>` into the bare-element form, the Go adapter
+    // hits the identical `template.HTML` interpolation gap as
+    // `children-jsx-expression` above.
+    'fragment-wrapped-children-jsx-expression',
   ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
