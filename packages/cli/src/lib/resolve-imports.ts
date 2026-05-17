@@ -728,6 +728,16 @@ function detectStrippedReferences(
  * dep is recorded here so `inlineRelativeImports` can verify, after IIFE
  * assembly, that none of the dropped bindings are still referenced in
  * the final bundle. piconic-ai/barefootjs#1227.
+ *
+ * `stubDeps` is a mutable accumulator for the absolute paths of every
+ * `'use client'` sibling that this bundle reaches via a stub rewrite
+ * (the `createComponent(name, ...)` shim emitted in place of the
+ * stripped import). The build pipeline maps these paths to manifest
+ * keys and surfaces them on the manifest entry so the page-level
+ * script loader can follow stub references when deciding which
+ * `.client.js` files to ship — without this the runtime fails with
+ * "Template not found" on pages that only reach a child component
+ * through an imperative stub call. See #1243.
  */
 async function walkAndCollect(
   content: string,
@@ -736,6 +746,7 @@ async function walkAndCollect(
   visiting: Set<string>,
   loggingPath: string,
   stripped: StrippedImport[],
+  stubDeps: Set<string>,
 ): Promise<string> {
   // Parse the body with the TypeScript compiler API and walk every
   // top-level `ImportDeclaration`. Working off the AST — rather than
@@ -887,6 +898,28 @@ async function walkAndCollect(
           .join('\n')
         const replacement = stubBody.length > 0 ? `${stubBody}\n` : ''
         replacements.push({ start: site.start, end: site.endWithNewline, text: replacement })
+        // Record the stub target's absolute path so the page-level script
+        // loader can include the target component's `.client.js` on any
+        // page whose bundle reaches it through this stub call (issue
+        // #1243). Only record when something was actually stubbed —
+        // when every named binding is already in `existingTopLevel`
+        // (esbuild inlined the whole target into this bundle), no stub
+        // is emitted and the page already has the inlined registration,
+        // so the target's standalone `.client.js` is unnecessary.
+        //
+        // Partial-inline edge case: if esbuild inlined SOME bindings
+        // (e.g. `Foo`) but NOT others (`Bar`), `Bar` still triggers a
+        // stub and we ship the target's `.client.js`. Loading it
+        // re-registers `Foo` alongside the parent's already-inlined
+        // `Foo` — `hydrate()` is a plain `Map.set` in all three
+        // runtime registries (`hydrate.ts`, `registry.ts`,
+        // `template.ts`), so the second call silently overwrites
+        // with the same def. Same code in both copies, so the
+        // overwrite is observationally a no-op.
+        //
+        // The path → manifest-key conversion happens in `build.ts`
+        // where the manifest layout is known.
+        if (stubsToEmit.length > 0) stubDeps.add(result.path)
         // The stub references the runtime `createComponent` symbol. Every
         // JSX-emitted client bundle already imports it as part of the
         // umbrella `barefoot.js` runtime (any `<X />` use compiles to a
@@ -952,6 +985,7 @@ async function walkAndCollect(
         visiting,
         loggingPath,
         stripped,
+        stubDeps,
       )
       mod.transpiledBody = replacedBody
       visiting.delete(result.path)
@@ -1027,11 +1061,12 @@ async function inlineRelativeImports(
   loggingPath: string,
   hoistedAcc: string[],
   errorAcc: CompilerError[],
+  stubDeps: Set<string>,
 ): Promise<string> {
   const modules = new Map<string, InlinedModule>()
   const visiting = new Set<string>()
   const stripped: StrippedImport[] = []
-  let parentContent = await walkAndCollect(content, searchDirs, modules, visiting, loggingPath, stripped)
+  let parentContent = await walkAndCollect(content, searchDirs, modules, visiting, loggingPath, stripped, stubDeps)
 
   if (modules.size === 0) {
     // No IIFEs to prepend — the parent content already reflects every
@@ -1101,9 +1136,10 @@ async function inlineRelativeImports(
  */
 export async function resolveRelativeImports(
   options: ResolveRelativeImportsOptions,
-): Promise<{ errors: CompilerError[] }> {
+): Promise<{ errors: CompilerError[]; stubDepsByManifestKey: Record<string, string[]> }> {
   const { distDir, manifest, sourceDirs = [], sourceDirsByManifestKey = {} } = options
   const errors: CompilerError[] = []
+  const stubDepsByManifestKey: Record<string, string[]> = {}
 
   for (const [name, entry] of Object.entries(manifest)) {
     if (!entry.clientJs) continue
@@ -1117,13 +1153,18 @@ export async function resolveRelativeImports(
 
     const perEntryDirs = sourceDirsByManifestKey[name] ?? []
     const hoistedAcc: string[] = []
+    const stubDeps = new Set<string>()
     let next = await inlineRelativeImports(
       content,
       [dirname(filePath), ...perEntryDirs, ...sourceDirs],
       entry.clientJs,
       hoistedAcc,
       errors,
+      stubDeps,
     )
+    if (stubDeps.size > 0) {
+      stubDepsByManifestKey[name] = Array.from(stubDeps).sort()
+    }
 
     // Note: `inlineRelativeImports` runs `detectStrippedReferences` BEFORE
     // the hoisted bare-package imports below are prepended. A stripped
@@ -1153,5 +1194,5 @@ export async function resolveRelativeImports(
     }
   }
 
-  return { errors }
+  return { errors, stubDepsByManifestKey }
 }

@@ -16,7 +16,7 @@ export interface CacheEntry {
   /** Manifest key this entry contributes to (null when the entry produced no manifest row) */
   manifestKey: string | null
   /** Stored manifest row, so cache-hit entries can restore it without recompiling */
-  manifestEntry?: { markedTemplate: string; clientJs?: string }
+  manifestEntry?: { markedTemplate: string; clientJs?: string; stubDeps?: string[] }
   /** Key used to register this entry's types with the postBuild hook */
   typesKey?: string
   /** Adapter-generated types (e.g. Go structs). Restored on cache hit so the

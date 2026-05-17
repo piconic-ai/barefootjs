@@ -88,6 +88,114 @@ console.log('client code')
     expect(errors).toHaveLength(0)
   })
 
+  // Issue #1243: when a bundle's only reference to a sibling 'use client'
+  // component is the stub rewrite (no JSX), the page-level script loader
+  // needs to know it so the target component's .client.js still ships.
+  // resolveRelativeImports surfaces the per-entry stub targets as
+  // absolute source paths; build.ts converts those to manifest keys.
+  test('reports stub-rewritten use-client targets via stubDepsByManifestKey (#1243)', async () => {
+    const targetPath = resolve(COMPONENTS_DIR, 'DraftTitleEditor.tsx')
+    writeFileSync(targetPath, `'use client'
+export function DraftTitleEditor() {
+  return <div>editor</div>
+}
+`)
+    const clientJs = `import { DraftTitleEditor } from './DraftTitleEditor'
+import { createSignal } from '@barefootjs/client'
+DraftTitleEditor({ initialTitle: '' })
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'IssueCardNode-abc123.js'), clientJs)
+
+    const manifest = {
+      IssueCardNode: { clientJs: 'components/IssueCardNode-abc123.js', markedTemplate: 'components/IssueCardNode.tsx' },
+    }
+
+    const { stubDepsByManifestKey } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    // Parent bundle reaches DraftTitleEditor through the stub rewrite, so
+    // its absolute source path is recorded under the parent's manifest key.
+    expect(stubDepsByManifestKey).toEqual({
+      IssueCardNode: [targetPath],
+    })
+  })
+
+  // Issue #1243: when the same parent imports two stubs from the same
+  // target file (e.g. `import { A, B } from './foo'`), the target should
+  // appear once in stubDeps. The dedup happens at the Set level inside
+  // walkAndCollect — a Set<absPath> can't double-count one resolved path.
+  test('dedupes stubDeps when the parent stubs multiple names from one target (#1243)', async () => {
+    const targetPath = resolve(COMPONENTS_DIR, 'multi.tsx')
+    writeFileSync(targetPath, `'use client'
+export function A() { return <div /> }
+export function B() { return <div /> }
+`)
+    const clientJs = `import { A, B } from './multi'
+A({})
+B({})
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Parent-abc.js'), clientJs)
+
+    const manifest = {
+      Parent: { clientJs: 'components/Parent-abc.js', markedTemplate: 'components/Parent.tsx' },
+    }
+
+    const { stubDepsByManifestKey } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect(stubDepsByManifestKey.Parent).toEqual([targetPath])
+  })
+
+  // Issue #1243 × #1258: when every named binding from a 'use client'
+  // sibling is already declared at top level (esbuild inlined the
+  // target whole), no stub is emitted AND the target's own
+  // `.client.js` is unnecessary for delegation — its registration
+  // rides along in the parent's inlined copy. Lock in: this case
+  // produces NO stubDeps entry, so the page-level loader doesn't
+  // ship a redundant bundle that would only re-do the registration.
+  test('omits manifest key from stubDepsByManifestKey when every binding is already top-level (#1243, #1258)', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'AllInlined.tsx'), `'use client'
+export function AllInlined() {
+  return <div>inlined</div>
+}
+`)
+    // Mirrors the #1258 fixture above: parent bundle has the named
+    // import (which we strip) AND a top-level `function AllInlined`
+    // (esbuild's inlined copy).
+    const clientJs = `import { AllInlined } from './AllInlined'
+import { createComponent, hydrate } from '@barefootjs/client/runtime'
+export function initAllInlined(__scope, _p = {}) { /* ... */ }
+hydrate('AllInlined', { init: initAllInlined, template: (_p) => '<div>inlined</div>' })
+export function AllInlined(_p, __bfKey) { return createComponent('AllInlined', _p, __bfKey) }
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'Host-abc.js'), clientJs)
+
+    const manifest = {
+      Host: { clientJs: 'components/Host-abc.js', markedTemplate: 'components/Host.tsx' },
+    }
+
+    const { stubDepsByManifestKey } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect('Host' in stubDepsByManifestKey).toBe(false)
+  })
+
+  // Issue #1243: a bundle that doesn't reach any 'use client' sibling
+  // produces no stubDeps entry. The downstream wiring uses presence in
+  // the map to decide whether to clear the manifest field, so the empty
+  // case must be EXPLICITLY absent, not present-with-empty-array.
+  test('omits manifest key from stubDepsByManifestKey when no stubs are emitted (#1243)', async () => {
+    const clientJs = `import { createSignal } from '@barefootjs/client'
+console.log('no stubs here')
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'NoStub-abc.js'), clientJs)
+
+    const manifest = {
+      NoStub: { clientJs: 'components/NoStub-abc.js', markedTemplate: 'components/NoStub.tsx' },
+    }
+
+    const { stubDepsByManifestKey } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect('NoStub' in stubDepsByManifestKey).toBe(false)
+  })
+
   // Regression: bf#1258 — a sibling `.tsx` without the `'use client'`
   // directive is a plain server-side module (e.g. data + utility helpers
   // that happen to live in a `.tsx` file because they shape SSR JSX). The

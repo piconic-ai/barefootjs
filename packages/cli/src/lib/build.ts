@@ -69,7 +69,7 @@ export interface BuildResult {
   /** Number of compilation errors */
   errorCount: number
   /** Manifest entries */
-  manifest: Record<string, { clientJs?: string; markedTemplate: string }>
+  manifest: Record<string, { clientJs?: string; markedTemplate: string; stubDeps?: string[] }>
   /** True when any output file on disk was changed (write or delete) */
   changed: boolean
   /**
@@ -394,7 +394,7 @@ export async function build(
   const allFilesSet = new Set(allFiles)
 
   // 3. Manifest baseline (runtime sentinel always present)
-  const manifest: Record<string, { clientJs?: string; markedTemplate: string }> = {
+  const manifest: Record<string, { clientJs?: string; markedTemplate: string; stubDeps?: string[] }> = {
     '__barefoot__': { markedTemplate: '', clientJs: `${runtimeSubdir}/barefoot.js` },
   }
 
@@ -638,7 +638,7 @@ export async function build(
       sourceDirsByManifestKey[entry.manifestKey] = [dirname(sourcePath)]
     }
   }
-  const { errors: resolveErrors } = await resolveRelativeImports({
+  const { errors: resolveErrors, stubDepsByManifestKey } = await resolveRelativeImports({
     distDir: config.outDir,
     manifest,
     sourceDirsByManifestKey,
@@ -649,6 +649,51 @@ export async function build(
   for (const err of resolveErrors) {
     console.error(formatError(err))
     errorCount++
+  }
+
+  // Attach stub-rewrite dependencies to manifest entries (and the cache
+  // copy that survives across builds) so the per-page script loader can
+  // follow them when deciding which `.client.js` files to ship — see
+  // issue #1243. `resolveRelativeImports` returns each bundle's stub
+  // targets as absolute source paths; convert them to manifest keys
+  // here, where the path → key mapping is known via `nextEntries`.
+  const entriesByManifestKey = new Map<string, CacheEntry>()
+  const manifestKeyByEntryPath = new Map<string, string>()
+  for (const [sourcePath, cacheEntry] of Object.entries(nextEntries)) {
+    if (cacheEntry.manifestKey) {
+      entriesByManifestKey.set(cacheEntry.manifestKey, cacheEntry)
+      // `bundle:` entries are synthetic keys for `bundleEntries`
+      // (separately-built JS, not project-discovered `.tsx`). A stub
+      // target is always a `'use client'` `.tsx` file, so a bundle
+      // entry can never be a stub destination — keep it out of the
+      // path lookup so we don't accidentally map an unrelated
+      // `bundle:foo` key onto a real source path.
+      if (!sourcePath.startsWith('bundle:')) {
+        manifestKeyByEntryPath.set(sourcePath, cacheEntry.manifestKey)
+      }
+    }
+  }
+  for (const [name, depPaths] of Object.entries(stubDepsByManifestKey)) {
+    const depKeys: string[] = []
+    for (const depPath of depPaths) {
+      const depKey = manifestKeyByEntryPath.get(depPath)
+      if (depKey) depKeys.push(depKey)
+    }
+    if (depKeys.length === 0) continue
+    depKeys.sort()
+    const entry = manifest[name]
+    if (entry) entry.stubDeps = depKeys
+    const cacheEntry = entriesByManifestKey.get(name)
+    if (cacheEntry?.manifestEntry) cacheEntry.manifestEntry.stubDeps = depKeys
+  }
+  // Drop stale stubDeps from any manifest entry whose current bundle no
+  // longer reaches a stub (e.g. the user deleted the imperative call).
+  for (const [name, entry] of Object.entries(manifest)) {
+    if (entry && !(name in stubDepsByManifestKey) && entry.stubDeps) {
+      delete entry.stubDeps
+      const cacheEntry = entriesByManifestKey.get(name)
+      if (cacheEntry?.manifestEntry) delete cacheEntry.manifestEntry.stubDeps
+    }
   }
 
   // 6c. Normalize @barefootjs/client* specifiers to the relative barefoot.js
@@ -1199,7 +1244,7 @@ type CompileEntryOutcome =
       deps: Record<string, string>
       outputs: string[]
       manifestKey: string | null
-      manifestEntry?: { markedTemplate: string; clientJs?: string }
+      manifestEntry?: { markedTemplate: string; clientJs?: string; stubDeps?: string[] }
       wroteAny: boolean
       types?: string
       typesKey?: string
