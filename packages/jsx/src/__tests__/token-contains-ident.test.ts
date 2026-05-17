@@ -1,5 +1,5 @@
 /**
- * Unit tests for `tokenContainsIdent` / `tokenContainsAny` — the lexer-aware
+ * Unit tests for `tokenContainsIdent` — the lexer-aware
  * fallback for the call sites that operate on **synthesised** expression
  * strings with no originating AST node (post-substitution CSR templates,
  * post-chain-resolve constant values).
@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { tokenContainsIdent, tokenContainsAny } from '../ir-to-client-js/utils'
+import { tokenContainsIdent } from '../ir-to-client-js/utils'
 
 describe('tokenContainsIdent', () => {
   describe('positive controls', () => {
@@ -144,34 +144,3 @@ describe('tokenContainsIdent', () => {
   })
 })
 
-describe('tokenContainsAny', () => {
-  test('returns true if any name matches', () => {
-    expect(tokenContainsAny('foo + bar', ['baz', 'bar'])).toBe(true)
-  })
-
-  test('returns false if no name matches', () => {
-    expect(tokenContainsAny('foo + bar', ['baz', 'qux'])).toBe(false)
-  })
-
-  test('respects string literal boundaries for all candidates', () => {
-    expect(tokenContainsAny("'foo bar'", ['foo', 'bar'])).toBe(false)
-  })
-
-  test('respects member-access tail for all candidates', () => {
-    expect(tokenContainsAny('a.foo + b.bar', ['foo', 'bar'])).toBe(false)
-  })
-
-  test('accepts a Set<string>', () => {
-    expect(tokenContainsAny('foo + bar', new Set(['bar']))).toBe(true)
-  })
-
-  test('empty name set returns false', () => {
-    expect(tokenContainsAny('foo', [])).toBe(false)
-  })
-
-  test('short-circuits at first hit', () => {
-    // Cannot directly observe short-circuit without instrumentation; the
-    // semantic check is sufficient and consistent with the API contract.
-    expect(tokenContainsAny('x', ['x', 'y'])).toBe(true)
-  })
-})

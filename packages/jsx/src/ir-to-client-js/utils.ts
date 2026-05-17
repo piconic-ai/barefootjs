@@ -439,16 +439,6 @@ export function tokenContainsIdent(expr: string, ident: string): boolean {
   return scanForIdentifiers(expr, (token) => token === ident)
 }
 
-/**
- * Lexer-aware variant of {@link tokenContainsIdent} that returns true on the
- * first occurrence of *any* name in `names`. Short-circuits.
- */
-export function tokenContainsAny(expr: string, names: Iterable<string>): boolean {
-  const set = names instanceof Set ? (names as Set<string>) : new Set(names)
-  if (set.size === 0) return false
-  return scanForIdentifiers(expr, (token) => set.has(token))
-}
-
 const IDENT_START_RE = /[A-Za-z_$]/
 const IDENT_PART_RE = /[A-Za-z0-9_$]/
 

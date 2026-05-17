@@ -16,7 +16,7 @@ import { buildReferencesGraph, graphUsedIdentifiers } from './build-references'
 import { addConstantPropRefsToSet } from './init-declarations'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template'
 import { PROPS_PARAM } from './utils'
-import { buildInlinableConstants, buildSignalAndMemoMaps, buildCsrInlinableConstants } from './emit-registration'
+import { buildInlinableConstants, csrInlinableConstantsFromIR } from './emit-registration'
 import { buildEnvFromCtx } from './compute-inlinability'
 import { nameForRegistryRef } from './component-scope'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports'
@@ -255,11 +255,9 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   // CSR fallback: when static template generation fails (e.g., components with
   // nested child components or loops), try generateCsrTemplate() (#536).
   if (!templateHtml) {
-    const { signalMap, memoMap } = buildSignalAndMemoMaps(ctx)
-    const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap, ctx.propsObjectName)
-
+    const csrInlinableConstants = csrInlinableConstantsFromIR(ctx)
     templateHtml = generateCsrTemplate(
-      ir.root, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName, unsafeLocalNames
+      ir.root, csrInlinableConstants, ctx, undefined, restSpreadNames, ctx.propsObjectName, unsafeLocalNames
     )
   }
 

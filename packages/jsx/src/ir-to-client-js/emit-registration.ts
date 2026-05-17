@@ -6,10 +6,8 @@
 
 import type { ComponentIR, IRFragment, IRNode, ReferencesGraph } from '../types'
 import type { ClientJsContext } from './types'
-import { PROPS_PARAM, inferDefaultValue } from './utils'
+import { PROPS_PARAM } from './utils'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability'
-import { isInlinableInTemplate } from '../relocate'
-import { buildEnvFromCtx } from './compute-inlinability'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template'
 import { nameForRegistryRef } from './component-scope'
 
@@ -98,154 +96,22 @@ export function buildInlinableConstants(
 }
 
 /**
- * Build signal and memo maps for CSR template generation.
- * Signal map: getter name → initial value expression
- * Memo map: memo name → computation expression with signal calls replaced by initial values
- */
-export function buildSignalAndMemoMaps(ctx: ClientJsContext): {
-  signalMap: Map<string, string>
-  memoMap: Map<string, string>
-} {
-  const propsName = ctx.propsObjectName ?? 'props'
-  const propsPrefix = `${propsName}.`
-
-  const signalMap = new Map<string, string>()
-  for (const signal of ctx.signals) {
-    let initialValue = signal.initialValue
-    // Normalize custom props object name to PROPS_PARAM and add default fallback
-    // to match emitSignalsAndMemos() behavior (prevents undefined rendering in CSR)
-    if (ctx.propsObjectName && initialValue.startsWith(propsPrefix)) {
-      const propRef = `${PROPS_PARAM}.` + initialValue.slice(propsPrefix.length)
-      if (!initialValue.includes('??')) {
-        initialValue = `${propRef} ?? ${inferDefaultValue(signal.type)}`
-      } else {
-        initialValue = propRef
-      }
-    } else if (initialValue.startsWith('props.') && !initialValue.includes('??')) {
-      initialValue = `${PROPS_PARAM}.${initialValue.slice('props.'.length)} ?? ${inferDefaultValue(signal.type)}`
-    }
-    signalMap.set(signal.getter, initialValue)
-  }
-
-  const memoMap = new Map<string, string>()
-  for (const memo of ctx.memos) {
-    let expr = memo.computation
-    // Extract the function body from arrow function: () => count() * 2 → count() * 2
-    // Supports both expression arrows `() => expr` and block arrows `() => { return expr }`
-    const arrowMatch = expr.match(/^\(\)\s*=>\s*(.+)$/s)
-    if (arrowMatch) {
-      const body = arrowMatch[1].trim()
-      if (body.startsWith('{')) {
-        // Block body: detect the trivial `{ return <expr>; }` shape. A bare
-        // return expression can be inlined directly. Any other body (local
-        // `const`/`let` declarations, guard clauses, multiple statements)
-        // must be wrapped in an IIFE so that intermediate bindings remain in
-        // scope when the expression is inlined into the SSR template.
-        const simpleReturn = body.match(/^\{\s*return\s+([\s\S]+?)\s*;?\s*\}$/)
-        if (simpleReturn) {
-          expr = simpleReturn[1]
-        } else {
-          expr = `(() => ${body})()`
-        }
-      } else {
-        expr = body
-      }
-    }
-    // Replace signal getter calls with initial values.
-    // `(?<![-.])` skips member accesses (e.g. `ctx.count()`) so a local
-    // signal whose name matches a context method is preserved (#1100).
-    for (const [getter, initial] of signalMap) {
-      expr = expr.replace(new RegExp(`(?<![-.])\\b${getter}\\(\\)`, 'g'), `(${initial})`)
-    }
-    memoMap.set(memo.name, expr)
-  }
-
-  // Resolve chained memo references: if memo A references memo B(),
-  // replace B() with B's resolved computation expression.
-  let changed = true
-  const maxIter = memoMap.size + 1
-  let iter = 0
-  while (changed && iter < maxIter) {
-    changed = false
-    iter++
-    for (const [memoName, memoExpr] of memoMap) {
-      let newExpr = memoExpr
-      for (const [otherName, otherExpr] of memoMap) {
-        if (otherName === memoName) continue
-        // `(?<![-.])` keeps the substitution off member accesses such as
-        // `ctx.bars()` when a local memo `bars` exists (#1100).
-        const replaced = newExpr.replace(new RegExp(`(?<![-.])\\b${otherName}\\(\\)`, 'g'), `(${otherExpr})`)
-        if (replaced !== newExpr) {
-          newExpr = replaced
-          changed = true
-        }
-      }
-      if (newExpr !== memoExpr) {
-        memoMap.set(memoName, newExpr)
-      }
-    }
-  }
-
-  return { signalMap, memoMap }
-}
-
-/**
- * Build an expanded inlinable constants map for CSR template generation.
- * Re-promotes constants that were demoted to unsafeLocalNames by resolving
- * signal/memo call expressions with their initial values.
+ * Materialise the CSR-inlining map from each constant's `csrInlinable`
+ * IR entry (#1277). Replaces `buildCsrInlinableConstants` (the AST
+ * substitution + chain resolution now lives in `compute-inlinability`).
  *
- * `propsObjectName`, when supplied, is the source-level name the user gave
- * the props parameter (e.g. `props`). A re-promoted value that still
- * contains a bare reference to it (`makeStore(props)`) is rejected: the
- * template lambda's regex-based `propsObjectName.x → _p.x` rewrite only
- * catches the dotted form, so a bare `props` token would survive into the
- * module-scope template and ReferenceError at template-call time (#1137).
- * The init-body path uses `rewritePropsObjectRef` (AST-based) which
- * handles bare refs correctly, but that rewrite isn't applied to the
- * template body — the constant must instead stay in `unsafeLocalNames`,
- * letting `expressionReferencesAny` swap the getter call for the
- * `UNSAFE_TEMPLATE_EXPR` sentinel and init's `createEffect` repaint.
+ * Excludes constants whose `csrInlinable` is null — those stay in
+ * `unsafeLocalNames` and the CSR template's expression substitution
+ * surfaces the UNSAFE sentinel for any reference to them.
  */
-export function buildCsrInlinableConstants(
-  ctx: ClientJsContext,
-  inlinableConstants: Map<string, string>,
-  unsafeLocalNames: Set<string>,
-  signalMap: Map<string, string>,
-  memoMap: Map<string, string>,
-  _propsObjectName?: string | null,
-): Map<string, string> {
-  const csrInlinableConstants = new Map(inlinableConstants)
-  // Build relocate env once. The CSR re-promotion path tries to lift
-  // unsafe-but-non-arrow constants back into the inline map AFTER
-  // substituting signal / memo getter calls with their initial values
-  // (so `const x = computeCache(count())` becomes inlinable as
-  // `computeCache((0))` for SSR initial render). Whether the
-  // post-substitution form is inline-safe is the same canonical
-  // question that `compute-inlinability` asks for non-substituted
-  // values — delegate to `relocate.isInlinableInTemplate` instead of
-  // re-deriving discriminators here. This was the path that let
-  // `useYjs(props.x, props.y)` slip through (#1138, #1137 follow-up):
-  // the legacy regex caught only bare `props`, not `props.X`.
-  const env = buildEnvFromCtx(ctx)
-  for (const constant of ctx.localConstants) {
-    if (unsafeLocalNames.has(constant.name) && constant.value && !constant.containsArrow) {
-      let value = constant.value.trim()
-      // `(?<![-.])` skips member accesses (e.g. `ctx.count()`) so a local
-      // signal/memo whose name matches a context method is preserved (#1100).
-      for (const [getter, initial] of signalMap) {
-        value = value.replace(new RegExp(`(?<![-.])\\b${getter}\\(\\)`, 'g'), `(${initial})`)
-      }
-      for (const [memoName, computation] of memoMap) {
-        value = value.replace(new RegExp(`(?<![-.])\\b${memoName}\\(\\)`, 'g'), `(${computation})`)
-      }
-      const { ok, rewrittenValue } = isInlinableInTemplate(value, env)
-      if (ok) {
-        csrInlinableConstants.set(constant.name, rewrittenValue)
-      }
+export function csrInlinableConstantsFromIR(ctx: ClientJsContext): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const c of ctx.localConstants) {
+    if (c.csrInlinable) {
+      out.set(c.name, c.csrInlinable.rewrittenValue)
     }
   }
-  resolveChainedRefs(csrInlinableConstants)
-  return csrInlinableConstants
+  return out
 }
 
 /** Emit hydrate() call that registers component, template, and hydrates. */
@@ -296,11 +162,13 @@ export function emitRegistrationAndHydration(
     // CSR fallback: emit for all components that can't generate static templates.
     // Components may be imported and used in conditional branches in other files,
     // where renderChild() needs a registered template to render HTML correctly.
-    const { signalMap, memoMap } = buildSignalAndMemoMaps(ctx)
-    const csrInlinableConstants = buildCsrInlinableConstants(ctx, inlinableConstants, unsafeLocalNames, signalMap, memoMap, ctx.propsObjectName)
-
+    // Substitution data (signal initial values, memo bodies, chain-resolved
+    // const inlines) is read directly from `ConstantInfo.csrInlinable` /
+    // `SignalInfo.initialFreeIdentifiers` / `MemoInfo.computationFreeIdentifiers`
+    // — no post-hoc string transformation runs at this layer (#1277).
+    const csrInlinableConstants = csrInlinableConstantsFromIR(ctx)
     const templateHtml = generateCsrTemplate(
-      _ir.root, csrInlinableConstants, signalMap, memoMap, undefined, restSpreadNames, ctx.propsObjectName, unsafeLocalNames
+      _ir.root, csrInlinableConstants, ctx, undefined, restSpreadNames, ctx.propsObjectName, unsafeLocalNames
     )
     if (templateHtml) {
       defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)

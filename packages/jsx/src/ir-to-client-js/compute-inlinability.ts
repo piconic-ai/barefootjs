@@ -32,6 +32,7 @@ import type { RelocateEnv, RelocateDecision } from '../relocate'
 import { createError, ErrorCodes } from '../errors'
 import { attrValueToString } from './utils'
 import { walkIR, type IRVisitor } from './walker'
+import { buildSignalMemoEnv, csrSubstitute, type CsrEnv, type CsrSubstitution } from './csr-substitute'
 
 /**
  * Build a `RelocateEnv` from a live `ClientJsContext`. The IR-keyed env
@@ -41,9 +42,9 @@ import { walkIR, type IRVisitor } from './walker'
  *
  * Adapter capabilities (`templatePrimitives` / `acceptsTemplateCall`) are
  * threaded through so a registered call escapes the bridged-arg / zero-arg
- * inline-safety rejections (#1187 phase 3). The three call sites in this
- * package — `computeInlinability`, `buildCsrInlinableConstants`,
- * `hasInitScopeOnlyConstant` — share this helper to stay byte-identical.
+ * inline-safety rejections (#1187 phase 3). The two call sites in this
+ * package — `computeInlinability` (Stage 1 + Stage 2 `populateCsrInlinable`)
+ * and `hasInitScopeOnlyConstant` — share this helper to stay byte-identical.
  */
 export function buildEnvFromCtx(ctx: ClientJsContext): RelocateEnv {
   return buildRelocateEnvFromIR(
@@ -254,7 +255,144 @@ export function computeInlinability(
 
   const templateRiskyNames = collectTemplateRiskyNames(irRoot)
 
+  // Populate `ConstantInfo.csrInlinable` on each constant via AST
+  // substitution (#1277). This bakes the CSR-form (with signals, memos,
+  // and chained const refs expanded) into the IR so the template emitter
+  // can read it directly with no further string transformation.
+  populateCsrInlinable(ctx, env)
+
   return { constants, functions, decisionsByName, templateRiskyNames }
+}
+
+/**
+ * Compute `csrInlinable` for every `ctx.localConstants` entry via AST
+ * substitution. Constants form a DAG by name reference; we iterate
+ * to a fixed point so chained inlines (`const A = B; const B = ...`)
+ * close transitively. Each round substitutes only the consts whose
+ * `csrInlinable` has been resolved in a previous round — earliest-ready
+ * first, no name-position ambiguity (the AST walker keys on identifier
+ * names, which are unique per scope).
+ *
+ * A const ends with `csrInlinable: null` when:
+ *   - it has no `value` (placeholder-let)
+ *   - the value contains an arrow / function expression (identity per render)
+ *   - it's a system construct (`createContext`, `new WeakMap`)
+ *   - it's a JSX literal (handled by jsx-inline routing)
+ *   - the substituted form fails `isInlinableInTemplate` (would re-execute
+ *     a non-pure call at template-eval time — #1138)
+ *
+ * Order of operations matters: signals/memos substitute first via the
+ * base env, then const-on-const substitutions layer in as the chain
+ * resolves. The IIFE form for non-trivial memo bodies preserves
+ * intermediate local bindings (matches the legacy
+ * `buildSignalAndMemoMaps` extraction in `emit-registration.ts`).
+ */
+function populateCsrInlinable(ctx: ClientJsContext, relocateEnv: RelocateEnv): void {
+  if (ctx.localConstants.length === 0) return
+
+  // Base env: signal getters + memo calls in raw (props.X) form. We
+  // keep the substitution map raw so the post-substitution
+  // `isInlinableInTemplate` check sees bridged prop references (the
+  // form `useYjs(props.X)`) and rejects them via
+  // `hasCallWithBridgedArg` (#1138). The final `_p.X` rewrite happens
+  // when the template emitter calls `csrSubstitute` on the IR text —
+  // by then it's safe because we already know the form is inline-safe.
+  const baseEnv = buildSignalMemoEnv(ctx.signals, ctx.memos, ctx.propsObjectName)
+  const constSubs = new Map<string, CsrSubstitution>()
+  const finalised = new Set<string>()
+
+  const buildEnvWithConsts = (): CsrEnv => ({
+    substitutions: new Map([...baseEnv.substitutions, ...constSubs]),
+    propsObjectName: baseEnv.propsObjectName,
+  })
+
+  // Pre-mark consts that are structurally ineligible — their
+  // `csrInlinable` stays null. The check mirrors `classifyConstantInitial`
+  // for the kinds that have no value to substitute.
+  for (const c of ctx.localConstants) {
+    if (c.isJsx || !c.value || c.containsArrow || c.systemConstructKind) {
+      c.csrInlinable = null
+      finalised.add(c.name)
+    }
+  }
+
+  // Fixed-point loop: each iteration resolves any const whose
+  // substitution succeeds. Bounded by `localConstants.length + 1` —
+  // longest possible chain.
+  const maxIter = ctx.localConstants.length + 1
+  for (let iter = 0; iter < maxIter; iter++) {
+    let progressed = false
+    const env = buildEnvWithConsts()
+    for (const c of ctx.localConstants) {
+      if (finalised.has(c.name)) continue
+      // Use raw `value` (not `templateValue`) so the relocate gate
+      // sees `props.X` and can detect bridged-arg calls. The final
+      // emit-time substitution applies the bare-prop rewrite.
+      const source = c.value!.trim()
+      const { rewritten, freeIdentifiers } = csrSubstitute(source, env)
+
+      // If the rewrite still references any unresolved local constant
+      // by name, defer to a later iteration — its substitution may
+      // become available then.
+      let pendingDependency = false
+      for (const id of freeIdentifiers) {
+        if (id === c.name) continue // self-reference: not deferrable
+        const dep = ctx.localConstants.find(o => o.name === id)
+        if (dep && !finalised.has(dep.name)) {
+          pendingDependency = true
+          break
+        }
+      }
+      if (pendingDependency) continue
+
+      // Final stage-safety check on the substituted form. The relocate
+      // gate catches the case where the post-substitution value still
+      // calls a non-pure helper with bridged args (#1138) — those must
+      // stay out of the template lambda. The relocate output
+      // (`rewrittenValue`) is the bridged form (bare destructured prop
+      // refs lifted to `_p.X`); we store that so the emit-time
+      // `applyPropsRewrite` doesn't need to redo the AST work. The
+      // free identifiers are re-extracted from the bridged form so
+      // the post-substitution unsafe-name check stays exact.
+      const inlineResult = isInlinableInTemplate(rewritten, relocateEnv)
+      if (!inlineResult.ok) {
+        c.csrInlinable = null
+      } else {
+        const bridgedRewritten = inlineResult.rewrittenValue
+        const bridgedFreeIdentifiers = recomputeFreeIdentifiers(bridgedRewritten, freeIdentifiers)
+        c.csrInlinable = { rewrittenValue: bridgedRewritten, freeIdentifiers: bridgedFreeIdentifiers }
+        constSubs.set(c.name, {
+          kind: 'identifier',
+          replacement: bridgedRewritten,
+          freeIdentifiers: bridgedFreeIdentifiers,
+        })
+      }
+      finalised.add(c.name)
+      progressed = true
+    }
+    if (!progressed) break
+  }
+
+  // Any consts left unfinalised are part of an unresolvable cycle — mark
+  // them null so the IR shape is total. In practice this is unreachable
+  // (a cycle in const-on-const refs would be a TDZ violation in source).
+  for (const c of ctx.localConstants) {
+    if (!finalised.has(c.name)) c.csrInlinable = null
+  }
+}
+
+/**
+ * Recompute free identifiers after `relocate` has rewritten bare prop
+ * refs to `_p.X`. The pre-rewrite free-id set may still mention the
+ * destructured prop names (which are now property tails under `_p`)
+ * or the source-level props object name; both stop being free
+ * identifiers in the bridged form. We re-parse the bridged text via
+ * `csrSubstitute` with an empty env to recover the post-rewrite set.
+ */
+function recomputeFreeIdentifiers(bridged: string, fallback: ReadonlySet<string>): ReadonlySet<string> {
+  const probe = csrSubstitute(bridged, { substitutions: new Map(), propsObjectName: null })
+  if (probe.rewritten === bridged) return probe.freeIdentifiers
+  return fallback
 }
 
 /**

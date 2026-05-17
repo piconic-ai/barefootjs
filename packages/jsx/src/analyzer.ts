@@ -985,6 +985,9 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
     type,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+    initialFreeIdentifiers: callExpr.arguments[0]
+      ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
+      : new Set(),
   })
 }
 
@@ -1077,6 +1080,9 @@ function collectSignalTupleRef(
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     getter: null,
     setter: null,
+    initialFreeIdentifiers: callExpr.arguments[0]
+      ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
+      : new Set(),
   })
 }
 
@@ -1104,6 +1110,9 @@ function collectSignalFromIndexAccess(
     }
 
     const loc = getSourceLocation(node, ctx.sourceFile, ctx.filePath)
+    const initialFreeIdentifiers = callExpr.arguments[0]
+      ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
+      : new Set<string>()
     if (match.index === 0) {
       ctx.signals.push({
         getter: varName,
@@ -1112,6 +1121,7 @@ function collectSignalFromIndexAccess(
         typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
         type,
         loc,
+        initialFreeIdentifiers,
       })
     } else {
       // Setter-only access: emission requires a getter name. Synthesize one
@@ -1124,6 +1134,7 @@ function collectSignalFromIndexAccess(
         typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
         type,
         loc,
+        initialFreeIdentifiers,
       })
     }
     return
@@ -1158,6 +1169,7 @@ function flushPendingSignalTuples(ctx: AnalyzerContext): void {
       typedInitialValue: pending.typedInitialValue,
       type: pending.type,
       loc: pending.loc,
+      initialFreeIdentifiers: pending.initialFreeIdentifiers,
     })
   }
   ctx.signalTupleRefs.clear()
@@ -1195,6 +1207,9 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     type,
     deps,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+    computationFreeIdentifiers: callExpr.arguments[0]
+      ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
+      : new Set(),
   })
 }
 
