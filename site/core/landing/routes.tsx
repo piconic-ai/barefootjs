@@ -33,8 +33,7 @@ export async function createLandingApp() {
       </>,
       {
         title: 'Barefoot.js - Reactive TSX for any backend',
-        description:
-          'Type-safe TSX with signals and selective hydration for server-first applications.',
+        description: 'TSX in. Your stack out.',
       }
     )
   })
