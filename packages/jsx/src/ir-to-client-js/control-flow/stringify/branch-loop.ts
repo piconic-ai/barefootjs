@@ -14,6 +14,7 @@ import { stringifyCompositeLoop } from './composite-loop'
 import { stringifyEventDelegation } from './event-delegation'
 import { stringifyReactiveEffects } from './reactive-effects'
 import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse'
+import { emitLoopChildRefs } from './loop'
 import type {
   BranchLoopPlan,
   BranchPlainLoopPlan,
@@ -54,6 +55,7 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     template,
     reactiveEffects,
     eventDelegation,
+    childRefs,
     bodyIsMultiRoot,
   } = plan
 
@@ -65,7 +67,9 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
   // both the effect and its dependency subscriptions (observation O-2).
   lines.push(`      __disposers.push(createDisposableEffect(() => {`)
 
-  if (reactiveEffects === null && !bodyIsMultiRoot) {
+  // Non-empty `childRefs` need `__el` as a handle inside the factory body,
+  // so force the multi-line layout (#1244).
+  if (reactiveEffects === null && !bodyIsMultiRoot && childRefs.length === 0) {
     // Simple case: single-line renderItem (single root, no reactive effects).
     const cloneExpr = emitTemplateCloneInline(template)
     if (mapPreambleWrapped) {
@@ -74,7 +78,7 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
       lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${cloneExpr} }, '${markerId}')`)
     }
   } else {
-    // Multi-line renderItem (reactive effects and/or multi-root).
+    // Multi-line renderItem (reactive effects and/or multi-root and/or refs).
     lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
     if (paramUnwrap) {
       lines.push(`          ${paramUnwrap}`)
@@ -91,6 +95,7 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     if (reactiveEffects !== null) {
       stringifyReactiveEffects(lines, reactiveEffects, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
     }
+    emitLoopChildRefs(lines, childRefs, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
     lines.push(`          return __el`)
     lines.push(`        }, '${markerId}')`)
   }

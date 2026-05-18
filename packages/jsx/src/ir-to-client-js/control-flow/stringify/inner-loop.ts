@@ -33,6 +33,7 @@
 import { keyAttrName } from '../../utils'
 import { emitComponentAndEventSetup } from '../shared'
 import { emitMultiRootTemplateCloneLines } from './template-parse'
+import { emitLoopChildRefs } from './loop'
 import type {
   InnerLoopPlan,
   InnerLoopsPlan,
@@ -132,6 +133,14 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string): vo
       lines.push(`${indent}  if (${targetVar}) createEffect(() => { const __v = ${attr.wrappedExpression}; if (__v != null) ${targetVar}.setAttribute('${attr.attrName}', String(__v)); else ${targetVar}.removeAttribute('${attr.attrName}') }) }`)
     }
   }
+  // Imperative ref callbacks fire on every renderItem invocation, which
+  // means every mount: SSR hydration, initial CSR creation, and same-key
+  // remount after unmount (#1244).
+  emitLoopChildRefs(lines, emit.childRefs, {
+    indent: `${indent}  `,
+    elVar: `__innerEl${uid}`,
+    bodyIsMultiRoot: emit.bodyIsMultiRoot,
+  })
   lines.push(`${indent}  return __innerEl${uid}`)
   lines.push(`${indent}}, '${inner.markerId}') }`)
 }
@@ -168,5 +177,13 @@ function emitStatic(lines: string[], inner: InnerLoopPlan, indent: string): void
   if (inner.childLevels.length > 0) {
     stringifyInnerLoops(lines, inner.childLevels, `${indent}  `)
   }
+  // Imperative ref callbacks for static inner loops — fire once per
+  // forEach iteration (#1244). Static arrays don't reactively re-iterate,
+  // so this is effectively a one-shot per item.
+  emitLoopChildRefs(lines, emit.childRefs, {
+    indent: `${indent}  `,
+    elVar: `__innerEl${uid}`,
+    bodyIsMultiRoot: false,
+  })
   lines.push(`${indent}}) }`)
 }

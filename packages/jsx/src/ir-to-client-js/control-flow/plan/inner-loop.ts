@@ -15,6 +15,7 @@ import type {
   IRLoopChildComponent,
   LoopParamBinding,
 } from '../../../types'
+import type { LoopChildRefBinding } from './loop'
 
 /**
  * Body-entry statements emitted in order at the top of a `mapArray`
@@ -151,6 +152,8 @@ export interface InnerLoopReactiveEmit {
   reactiveTexts: readonly InnerLoopText[]
   /** Pre-wrapped reactive attribute effects for the inner-item body. */
   reactiveAttrs: readonly InnerLoopReactiveAttr[]
+  /** Pre-wrapped imperative ref callbacks for the inner-item body (#1244). */
+  childRefs: readonly LoopChildRefBinding[]
 }
 
 export interface InnerLoopStaticEmit {
@@ -169,6 +172,8 @@ export interface InnerLoopStaticEmit {
   components: readonly IRLoopChildComponent[]
   /** Raw events (no inner-wrap). */
   events: readonly LoopChildEvent[]
+  /** Imperative ref callbacks (unwrapped — static body has no signal accessor). */
+  childRefs: readonly LoopChildRefBinding[]
 }
 
 export type InnerLoopsPlan = readonly InnerLoopPlan[]

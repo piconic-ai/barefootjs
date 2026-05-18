@@ -24,13 +24,40 @@
  * passed in via `topIndent`.
  */
 
-import { varSlotId } from '../../utils'
+import { emitRefCall, varSlotId } from '../../utils'
 import { emitAttrUpdate } from '../../emit-reactive'
 import { stringifyReactiveEffects } from './reactive-effects'
 import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse'
 import { stringifyComponentLoop } from './component-loop'
 import { stringifyCompositeLoop } from './composite-loop'
-import type { LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types'
+import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types'
+
+/**
+ * Emit `(callback)(__rf)` for each ref on a per-item slot, looking up the
+ * target element via `qsa(__el, '[bf="<slot>"]')` (or `qsaItem` for
+ * multi-root bodies). A ref on the body root and a ref on any descendant
+ * share the same emit shape — `qsa` matches root-or-descendant.
+ *
+ * Fires unconditionally on every renderItem invocation, which corresponds
+ * to every actual mount: SSR hydration, initial CSR creation, and same-key
+ * remount after unmount. mapArray does not call renderItem for same-key
+ * reactive updates (those flow through per-item signal `setItem(...)`),
+ * so the callback does not over-fire on plain prop changes (#1244).
+ */
+export function emitLoopChildRefs(
+  lines: string[],
+  refs: readonly LoopChildRefBinding[],
+  opts: { indent: string; elVar: string; bodyIsMultiRoot: boolean },
+): void {
+  if (refs.length === 0) return
+  const { indent, elVar, bodyIsMultiRoot } = opts
+  const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
+  for (const ref of refs) {
+    const varName = `__rf_${varSlotId(ref.childSlotId)}`
+    lines.push(`${indent}{ const ${varName} = ${lookup}(${elVar}, '[bf="${ref.childSlotId}"]')`)
+    lines.push(`${indent}if (${varName}) ${emitRefCall(ref.wrappedCallback, varName)} }`)
+  }
+}
 
 /**
  * Single dispatch over `LoopPlan` (#1253). Narrows on `plan.kind` and
@@ -91,11 +118,15 @@ export function stringifyPlainLoop(
     mapPreambleWrapped,
     template,
     reactiveEffects,
+    childRefs,
     bodyIsMultiRoot,
   } = plan
 
-  if (reactiveEffects === null && !bodyIsMultiRoot) {
-    // Single-line renderItem (no reactive effects, single root).
+  // `childRefs` need `__el` as a handle to invoke the user's callback inside
+  // the factory, so non-empty refs force the multi-line layout the same way
+  // reactive effects do (#1244).
+  if (reactiveEffects === null && !bodyIsMultiRoot && childRefs.length === 0) {
+    // Single-line renderItem (no reactive effects, single root, no refs).
     const unwrapInline = paramUnwrap ? `${paramUnwrap} ` : ''
     const preamble = mapPreambleWrapped ? `${mapPreambleWrapped}; ` : ''
     const cloneExpr = emitTemplateCloneInline(template)
@@ -105,7 +136,7 @@ export function stringifyPlainLoop(
     return
   }
 
-  // Multi-line renderItem (reactive effects present and/or multi-root).
+  // Multi-line renderItem (reactive effects present and/or multi-root and/or refs).
   lines.push(`${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
   const bodyIndent = topIndent + '  '
   if (paramUnwrap) lines.push(`${bodyIndent}${paramUnwrap}`)
@@ -119,23 +150,25 @@ export function stringifyPlainLoop(
   if (reactiveEffects !== null) {
     stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
   }
+  emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
   lines.push(`${bodyIndent}return __el`)
   lines.push(`${topIndent}}, '${markerId}')`)
 }
 
 export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void {
-  const { containerVar, arrayExpr, param, indexParam, childIndexExpr, attrsBySlot, texts, csrMaterialize } = plan
+  const { containerVar, arrayExpr, param, indexParam, childIndexExpr, attrsBySlot, texts, childRefs, csrMaterialize } = plan
   const hasAttrs = attrsBySlot.length > 0
   const hasTexts = texts.length > 0
-  if (!hasAttrs && !hasTexts && !csrMaterialize) return
+  const hasRefs = childRefs.length > 0
+  if (!hasAttrs && !hasTexts && !hasRefs && !csrMaterialize) return
 
-  // Single forEach pass that handles both reactive attrs and reactive texts.
-  // Pre-O-4 the legacy emitter wrote two parallel forEach blocks (one per
-  // concern) over the same array — a wasted second iteration plus a second
-  // `__iterEl = container.children[…]` lookup. Merging them keeps the loop
-  // contract identical (`createEffect`s subscribe to the same signals;
-  // attrs run before texts within each iteration) while halving the
-  // setup cost.
+  // Single forEach pass that handles reactive attrs, reactive texts, and
+  // imperative ref callbacks. Pre-O-4 the legacy emitter wrote two parallel
+  // forEach blocks (one per concern) over the same array — a wasted second
+  // iteration plus a second `__iterEl = container.children[…]` lookup.
+  // Merging them keeps the loop contract identical (`createEffect`s
+  // subscribe to the same signals; attrs run before texts run before refs
+  // within each iteration) while halving the setup cost.
   //
   // When `csrMaterialize` is set, the same forEach also self-heals an
   // empty container by cloning the per-iteration template — the CSR path
@@ -143,6 +176,7 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
   const parts: string[] = []
   if (hasAttrs) parts.push('Reactive attributes')
   if (hasTexts) parts.push('reactive texts')
+  if (hasRefs) parts.push('ref callbacks')
   if (csrMaterialize) parts.push('CSR materialize')
   // Capitalise the first segment regardless of position so the comment reads
   // naturally when only `csrMaterialize` is set.
@@ -213,6 +247,10 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
     lines.push(`        { const [${vn}] = $t(__iterEl, '${text.slotId}')`)
     lines.push(`        if (${vn}) createEffect(() => { ${vn}.textContent = String(${text.expression}) }) }`)
   }
+  // Ref callbacks fire on every forEach iteration — initial mount and any
+  // future array-change-driven re-iteration (#1244). For static arrays the
+  // array is non-reactive, so refs effectively fire once per item.
+  emitLoopChildRefs(lines, childRefs, { indent: '        ', elVar: '__iterEl', bodyIsMultiRoot: false })
   lines.push(`      }`)
   lines.push(`    })`)
   lines.push(`  }`)

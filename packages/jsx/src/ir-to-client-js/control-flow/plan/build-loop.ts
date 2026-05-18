@@ -32,6 +32,7 @@ import {
 import {
   loopKeyFn,
   destructureLoopParam,
+  buildChildRefBindings,
 } from '../shared'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects'
 import { buildComponentLoopPlan } from './build-component-loop'
@@ -88,6 +89,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
     mapPreambleWrapped: elem.mapPreamble ? wrap(elem.mapPreamble) : '',
     template: elem.template,
     reactiveEffects: hasReactive ? buildLoopReactiveEffectsPlan(elem) : null,
+    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,
   }
 }
@@ -120,6 +122,7 @@ export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<st
     childIndexExpr,
     attrsBySlot: [...attrsBySlotMap].map(([slotId, attrs]) => [slotId, attrs] as const),
     texts: elem.bindings.reactiveTexts,
+    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
     csrMaterialize: buildStaticLoopMaterialize(elem, unsafeLocalNames),
   }
 }

@@ -28,6 +28,7 @@ import {
   wrapLoopParamAsAccessor,
   attrValueToString,
 } from '../../utils'
+import { buildChildRefBindings } from '../shared'
 
 /**
  * Mirror of the helper in `build-loop-child-arm.ts` — kept local to avoid
@@ -224,6 +225,8 @@ function buildReactiveEmit(
   if (paramUnwrap) preludeStatements.push(paramUnwrap)
   if (inner.mapPreamble) preludeStatements.push(wrapInner(wrapOuter(inner.mapPreamble)))
 
+  const childRefs = buildChildRefBindings(inner.bindings.refs, inner.param, inner.paramBindings)
+
   return {
     mode: 'reactive',
     keyFn: loopKeyFn(inner),
@@ -236,6 +239,7 @@ function buildReactiveEmit(
     events,
     reactiveTexts,
     reactiveAttrs,
+    childRefs,
   }
 }
 
@@ -251,5 +255,6 @@ function buildStaticEmit(inner: NestedLoop, level: DepthLevel): InnerLoopStaticE
     preludeStatements,
     components: level.comps,
     events: level.events,
+    childRefs: buildChildRefBindings(inner.bindings.refs, inner.param, inner.paramBindings),
   }
 }

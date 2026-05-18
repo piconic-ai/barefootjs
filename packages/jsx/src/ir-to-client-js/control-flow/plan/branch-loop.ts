@@ -15,7 +15,7 @@
  * pair.
  */
 
-import type { CompositeLoopPlan } from './loop'
+import type { CompositeLoopPlan, LoopChildRefBinding } from './loop'
 import type { EventDelegationPlan } from './event-delegation'
 import type { ReactiveEffectsPlan } from './reactive-effects'
 
@@ -59,6 +59,12 @@ export interface BranchPlainLoopPlan {
   reactiveEffects: ReactiveEffectsPlan | null
   /** Event-delegation plan for branch-scoped event listeners. */
   eventDelegation: EventDelegationPlan
+  /**
+   * Imperative ref callbacks on elements inside the loop body (#1244).
+   * Non-empty forces the multi-line renderItem layout so each callback can
+   * fire inside the `mapArray` per-item factory.
+   */
+  childRefs: readonly LoopChildRefBinding[]
   /**
    * True when the loop body is a multi-root JSX Fragment — forces the
    * multi-line renderItem with multi-root template clone (#1212).

@@ -45,6 +45,7 @@ export type {
   StaticLoopPlan,
   StaticLoopMaterializePlan,
   NestedComponentInit,
+  LoopChildRefBinding,
 } from './loop'
 export type {
   EventDelegationPlan,

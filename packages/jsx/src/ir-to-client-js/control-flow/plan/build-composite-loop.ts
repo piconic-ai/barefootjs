@@ -19,6 +19,7 @@ import {
   loopKeyFn,
   destructureLoopParam,
   buildDepthLevels,
+  buildChildRefBindings,
 } from '../shared'
 import { buildReactiveEffectsPlan } from './build-reactive-effects'
 import { buildInnerLoopsPlan } from './build-inner-loop'
@@ -46,6 +47,7 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPla
     template: elem.template,
     outerComps: filterCondCompsOut(outerCompsByDepth, elem.bindings.conditionals),
     outerEvents: elem.bindings.events.filter(ev => ev.nestedLoops.length === 0),
+    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
     innerLoops: buildInnerLoopsPlan({
       levels: depthLevels,
       parentElVar: '__el',
@@ -95,6 +97,7 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string): Composit
     template: loop.template,
     outerComps: filterCondCompsOut(outerCompsByDepth, loop.bindings.conditionals),
     outerEvents: childEvents.filter(ev => ev.nestedLoops.length === 0),
+    childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings),
     innerLoops: buildInnerLoopsPlan({
       levels: depthLevels,
       parentElVar: '__el',

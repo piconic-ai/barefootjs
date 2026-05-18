@@ -34,6 +34,16 @@ interface LoopPlanCommon {
   arrayExpr: string
   /** Index parameter identifier, e.g. `__idx` or user-supplied. */
   indexParam: string
+  /**
+   * Imperative ref callbacks on elements inside the loop body (#1244).
+   * Required on every variant so refs cannot be silently dropped when a
+   * new loop shape lands. Each `wrappedCallback` is already wrapped with
+   * the loop-param accessor; the stringifier looks up the target via
+   * `qsa(__el, '[bf="<slot>"]')` (or `qsaItem` for multi-root bodies)
+   * and invokes the callback on every renderItem / forEach invocation
+   * — initial mount, SSR hydration, and same-key remount after unmount.
+   */
+  childRefs: readonly LoopChildRefBinding[]
 }
 
 /** Fields shared by every dynamic (`mapArray`-driven) loop variant. */
@@ -46,6 +56,14 @@ interface DynamicLoopCommon extends LoopPlanCommon {
   paramHead: string
   /** Statement to unwrap a destructured param at body entry. Empty when not needed. */
   paramUnwrap: string
+}
+
+/** Per-item ref callback resolved against a child slot for emission (#1244). */
+export interface LoopChildRefBinding {
+  /** bf slot ID of the target element (root or descendant of the body). */
+  childSlotId: string
+  /** Callback expression, already wrapped via `wrapLoopParamAsAccessor`. */
+  wrappedCallback: string
 }
 
 /**

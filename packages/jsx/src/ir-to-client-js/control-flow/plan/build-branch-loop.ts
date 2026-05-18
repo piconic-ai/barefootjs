@@ -15,7 +15,7 @@ import { varSlotId, wrapLoopParamAsAccessor } from '../../utils'
 import { buildBranchCompositePlan } from './build-composite-loop'
 import { buildBranchLoopDelegationPlan } from './build-event-delegation'
 import { buildReactiveEffectsPlan } from './build-reactive-effects'
-import { destructureLoopParam, loopKeyFn } from '../shared'
+import { destructureLoopParam, loopKeyFn, buildChildRefBindings } from '../shared'
 import type {
   BranchCompositeLoopPlan,
   BranchLoopPlan,
@@ -68,6 +68,7 @@ export function buildBranchLoopPlan(loop: BranchLoop): BranchLoopPlan {
         })
       : null,
     eventDelegation: buildBranchLoopDelegationPlan(loop, cv),
+    childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings),
     bodyIsMultiRoot: loop.bodyIsMultiRoot ?? false,
   }
   return plan

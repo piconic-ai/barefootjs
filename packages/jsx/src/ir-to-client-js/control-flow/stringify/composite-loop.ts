@@ -34,6 +34,7 @@ import { emitComponentAndEventSetup } from '../shared'
 import { stringifyInnerLoops } from './inner-loop'
 import { stringifyReactiveEffects } from './reactive-effects'
 import { emitLoopItemElementSetup } from './template-parse'
+import { emitLoopChildRefs } from './loop'
 import type { CompositeLoopPlan } from '../plan/types'
 
 export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan): void {
@@ -53,6 +54,7 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     loopParam,
     loopParamBindings,
     reactiveEffects,
+    childRefs,
     branchClearChildren,
     topIndent,
     bodyIndent: rawBodyIndent,
@@ -124,6 +126,8 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   if (reactiveEffects) {
     stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
   }
+
+  emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
 
   lines.push(`${bodyIndent}return __el`)
   if (branchClearChildren) {
