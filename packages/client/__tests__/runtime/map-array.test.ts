@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach, spyOn } from 'bun:test'
 import { createSignal, createEffect, createRoot } from '../../src/reactive'
 import { mapArray } from '../../src/runtime/map-array'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -512,5 +512,85 @@ describe('mapArray', () => {
     setB([{ id: 'b-1', text: 'B1' }])
     expect(container.querySelectorAll('span[data-set="a"]').length).toBe(3)
     expect(container.querySelectorAll('span[data-set="b"]').length).toBe(1)
+  })
+})
+
+describe('mapArray duplicate-key warning (#1244)', () => {
+  let container: HTMLElement
+  let warnSpy: ReturnType<typeof spyOn>
+
+  // `spyOn` returns the same proxy on subsequent calls for the same target
+  // property, so `mock.calls` accumulates across tests in the describe.
+  // Each test resets via `warnSpy.mockClear()` in `beforeEach`.
+  const filterDupWarns = () =>
+    warnSpy.mock.calls.filter(
+      (args) => typeof args[0] === 'string' && args[0].includes('duplicate key'),
+    )
+
+  const trivialRender = (item: () => { text: string }) => {
+    const li = document.createElement('li')
+    li.textContent = item().text
+    return li
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    container = document.createElement('ul')
+    document.body.appendChild(container)
+    warnSpy = spyOn(console, 'warn')
+    warnSpy.mockClear()
+  })
+
+  test('warns when keyFn returns the same key for two items', () => {
+    const [items] = createSignal([
+      { id: '1', text: 'A' },
+      { id: '1', text: 'B' },
+    ])
+    mapArray(items, container, (item) => item.id, trivialRender)
+
+    const dupWarns = filterDupWarns()
+    expect(dupWarns.length).toBe(1)
+    expect(dupWarns[0][0]).toContain('[BarefootJS]')
+    expect(dupWarns[0][0]).toContain('"1"')
+  })
+
+  test('warns once per unique duplicate key, not once per duplicate item', () => {
+    // 3 items sharing one key would naively emit 2 warnings (positions 1
+    // and 2 collide with position 0). Dedupe via `warnedKeys` keeps it
+    // at one warning per unique key — a 1000-item list with all-same
+    // keys emits ONE warning, not 999.
+    const [items] = createSignal([
+      { id: 'x', text: 'A' },
+      { id: 'x', text: 'B' },
+      { id: 'x', text: 'C' },
+    ])
+    mapArray(items, container, (item) => item.id, trivialRender)
+
+    expect(filterDupWarns().length).toBe(1)
+  })
+
+  test('does not warn when all keys are unique', () => {
+    const [items] = createSignal([
+      { id: '1', text: 'A' },
+      { id: '2', text: 'B' },
+      { id: '3', text: 'C' },
+    ])
+    mapArray(items, container, (item) => item.id, trivialRender)
+
+    expect(filterDupWarns().length).toBe(0)
+  })
+
+  test('warns on literal-null key collapse (the catalog motivation case)', () => {
+    // Shape PR #1358 relaxed at compile time: every item gets the same
+    // `"null"` string after `String(null)` coercion.
+    const [items] = createSignal([
+      { id: '1', text: 'A' },
+      { id: '2', text: 'B' },
+    ])
+    mapArray(items, container, () => String(null), trivialRender)
+
+    const dupWarns = filterDupWarns()
+    expect(dupWarns.length).toBe(1)
+    expect(dupWarns[0][0]).toContain('"null"')
   })
 })
