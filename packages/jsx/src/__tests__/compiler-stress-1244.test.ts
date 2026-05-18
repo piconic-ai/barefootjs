@@ -878,6 +878,297 @@ describe('two refs on the same element via a composeRefs helper', () => {
 })
 
 // ---------------------------------------------------------------------------
+// #1244 catalog: "ref callback re-invocation when the element re-mounts
+// under the same key". Layer 1 — emit-shape contract: every loop variant
+// must invoke the user-supplied ref callback inside its per-item factory
+// so each renderItem / forEach invocation re-runs the callback (initial
+// mount, SSR hydration, same-key remount after unmount). mapArray does
+// not call renderItem for same-key reactive updates, so the callback
+// does not over-fire on plain prop changes.
+//
+// The assertion shape `\\battach\\b\\s*(?:\\)\\s*)?\\(` accepts both the
+// bare `attach(...)` call form and `(attach)(...)` (the wrapper
+// `emitRefCall` applies to bare identifiers for symmetry with the
+// optional-call `(_p.cb)?.(...)` form used for prop-access callbacks).
+// Whether the call lands inside the right factory (so remount re-fires
+// it) is the Layer 6 E2E's job (`ref-remount` fixme in
+// `site/ui/e2e/stress-1244.spec.ts`); Layer 1 verifies the callback
+// isn't silently dropped on any variant — the failure shape that
+// motivated #1244 §B unification.
+// ---------------------------------------------------------------------------
+
+describe('ref callback re-invocation on remount under the same key (#1244)', () => {
+  const CALL_PATTERN = /\battach\b\s*(?:\)\s*)?\(/
+
+  test('plain top-level .map() — ref on body root invoked', () => {
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      type T = { id: string; label: string }
+      export function Demo() {
+        const [items, setItems] = createSignal<T[]>([])
+        const attach = (el: HTMLElement | null) => { void el }
+        return (
+          <ul onClick={() => setItems(i => i)}>
+            {items().map(it => <li key={it.id} ref={attach}>{it.label}</li>)}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(CALL_PATTERN)
+  })
+
+  test('ref on descendant (not body root) — qsa resolves via slot id', () => {
+    // `qsa(__el, '[bf="<slot>"]')` matches root-or-descendant, so the ref
+    // can attach to any element under the loop body without a special
+    // emit shape. The contract: emit still contains the call.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      type T = { id: string; label: string }
+      export function Demo() {
+        const [items, setItems] = createSignal<T[]>([])
+        const attach = (el: HTMLElement | null) => { void el }
+        return (
+          <ul onClick={() => setItems(i => i)}>
+            {items().map(it => (
+              <li key={it.id}>
+                <span ref={attach}>{it.label}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(CALL_PATTERN)
+  })
+
+  test('composite loop (body contains nested component) emits ref', () => {
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function Badge({ tone }: { tone: string }) { return <span>{tone}</span> }
+      type T = { id: string; tag: string }
+      export function Demo() {
+        const [items, setItems] = createSignal<T[]>([])
+        const attach = (el: HTMLElement | null) => { void el }
+        return (
+          <ul onClick={() => setItems(i => i)}>
+            {items().map(it => (
+              <li key={it.id} ref={attach}>
+                <Badge tone={it.tag} />
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(CALL_PATTERN)
+  })
+
+  test('static-array .map() — ref fires from forEach body', () => {
+    // Static arrays use a `forEach((param, idx) => {...})` shape rather
+    // than `mapArray`; refs must still be wired there.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Demo(props: { items: { id: string; label: string }[] }) {
+        const [n, setN] = createSignal(0)
+        const attach = (el: HTMLElement | null) => { void el }
+        return (
+          <ul onClick={() => setN(n() + 1)}>
+            {props.items.map(it => <li key={it.id} ref={attach}>{it.label}</li>)}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(CALL_PATTERN)
+  })
+
+  test('plain .map() inside conditional branch (BranchLoop kind=plain)', () => {
+    // Branch swap creates a new DOM subtree; mapArray's renderItem then
+    // re-fires inside `bindEvents`. The ref callback must be emitted
+    // inside the disposable-effect-wrapped renderItem body.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      type T = { id: string; label: string }
+      export function Demo() {
+        const [show, setShow] = createSignal(true)
+        const [items, setItems] = createSignal<T[]>([])
+        const attach = (el: HTMLElement | null) => { void el }
+        return (
+          <div onClick={() => setShow(v => !v)}>
+            {show() && (
+              <ul>
+                {items().map(it => <li key={it.id} ref={attach}>{it.label}</li>)}
+              </ul>
+            )}
+          </div>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(CALL_PATTERN)
+  })
+
+  test('composite .map() inside conditional branch (BranchLoop kind=composite)', () => {
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function Badge({ tone }: { tone: string }) { return <span>{tone}</span> }
+      type T = { id: string; tag: string }
+      export function Demo() {
+        const [show, setShow] = createSignal(true)
+        const [items, setItems] = createSignal<T[]>([])
+        const attach = (el: HTMLElement | null) => { void el }
+        return (
+          <div onClick={() => setShow(v => !v)}>
+            {show() && (
+              <ul>
+                {items().map(it => (
+                  <li key={it.id} ref={attach}>
+                    <Badge tone={it.tag} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(CALL_PATTERN)
+  })
+
+  test('nested .map().map() — ref on inner item emits inside inner factory', () => {
+    // The inner loop has its own renderItem; refs there need their own
+    // wiring via the inner-loop stringifier path.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function Badge({ tone }: { tone: string }) { return <span>{tone}</span> }
+      type Cell = { id: string; v: number }
+      type Row = { id: string; cells: Cell[] }
+      export function Demo() {
+        const [rows, setRows] = createSignal<Row[]>([])
+        const attach = (el: HTMLElement | null) => { void el }
+        return (
+          <ul onClick={() => setRows(r => r)}>
+            {rows().map(row => (
+              <li key={row.id}>
+                <Badge tone={row.id} />
+                {row.cells.map(c => <span key={c.id} ref={attach}>{c.v}</span>)}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(CALL_PATTERN)
+  })
+
+  test('multiple refs on one loop body — both callbacks emitted', () => {
+    // One ref on the body root, another on a descendant. Each gets its
+    // own slot-scoped emit so both must appear in the output.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      type T = { id: string; label: string }
+      export function Demo() {
+        const [items, setItems] = createSignal<T[]>([])
+        const attachOuter = (el: HTMLElement | null) => { void el }
+        const attachInner = (el: HTMLElement | null) => { void el }
+        return (
+          <ul onClick={() => setItems(i => i)}>
+            {items().map(it => (
+              <li key={it.id} ref={attachOuter}>
+                <span ref={attachInner}>{it.label}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(/\battachOuter\b\s*(?:\)\s*)?\(/)
+    expect(c.clientJs).toMatch(/\battachInner\b\s*(?:\)\s*)?\(/)
+  })
+
+  test('ref callback inline arrow closing over loop param', () => {
+    // Inline arrow body references `it.id` — wrapLoopParamAsAccessor
+    // rewrites that to `it().id` inside the per-item factory. The
+    // contract here is just "the callback survives to the emit" — the
+    // closure rewrite is exercised indirectly because dropping the ref
+    // would also drop the surrounding `refMap.set(...)` call.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      type T = { id: string; label: string }
+      const refMap = new Map<string, HTMLElement>()
+      export function Demo() {
+        const [items, setItems] = createSignal<T[]>([])
+        return (
+          <ul onClick={() => setItems(i => i)}>
+            {items().map(it => (
+              <li key={it.id} ref={(el: HTMLElement | null) => { if (el) refMap.set(it.id, el) }}>
+                {it.label}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toContain('refMap.set')
+  })
+
+  test('ref present forces multi-line plain-loop layout', () => {
+    // Plain loops emit a single-line renderItem when the body has no
+    // reactive effects and is single-root. A `ref` carries no reactive
+    // effect of its own but still needs `__el` as a stable handle, so
+    // it must force the multi-line layout — otherwise there's no place
+    // to insert the callback invocation.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      type T = { id: string; label: string }
+      export function Demo() {
+        const [items, setItems] = createSignal<T[]>([])
+        const attach = (el: HTMLElement | null) => { void el }
+        return (
+          <ul onClick={() => setItems(i => i)}>
+            {items().map(it => <li key={it.id} ref={attach}>{it.label}</li>)}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    // The multi-line layout uses an explicit `const __el = __existing ?? ...`
+    // statement; the single-line layout uses `if (__existing) return __existing`
+    // followed by the inline clone. If the ref didn't force multi-line, the
+    // emit would short-circuit before any factory body where the callback
+    // could fire.
+    expect(c.clientJs).toContain('const __el = __existing ??')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Spread / value shape (TODO grid: value-shape edges)
 // ---------------------------------------------------------------------------
 
