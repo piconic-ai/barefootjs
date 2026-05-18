@@ -1,6 +1,7 @@
 {
   "name": "@barefootjs/adapter-tests",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "exports": {
     ".": { "bun": "./src/index.ts" }
