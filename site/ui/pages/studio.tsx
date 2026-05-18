@@ -775,7 +775,7 @@ function ExportBar() {
   return (
     <div className="flex items-center justify-center gap-3 px-4 py-2 bg-card border-t">
       <code className="rounded-md bg-muted border px-3 py-1.5 font-mono text-[11px] text-foreground max-w-xl truncate" data-studio-export-code>
-        barefoot init --from "https://ui.barefootjs.dev/studio?c=..."
+        barefoot studio apply "https://ui.barefootjs.dev/studio?c=..."
       </code>
       <button className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium whitespace-nowrap shrink-0" data-studio-copy>
         <IconCopy />
@@ -1660,9 +1660,9 @@ const studioScript = `
     var baseUrl = location.origin + '/studio';
     if (Object.keys(config).length > 0) {
       var encoded = encodeConfig(config);
-      codeEl.textContent = 'barefoot init --from "' + baseUrl + '?c=' + encoded + '"';
+      codeEl.textContent = 'barefoot studio apply "' + baseUrl + '?c=' + encoded + '"';
     } else {
-      codeEl.textContent = 'barefoot init --from "' + baseUrl + '"';
+      codeEl.textContent = 'barefoot studio apply "' + baseUrl + '"';
     }
   }
 
