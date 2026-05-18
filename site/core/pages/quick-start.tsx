@@ -24,7 +24,7 @@ const TITLE = 'Quick Start'
 const DESCRIPTION =
   'Scaffold a BarefootJS app in under five minutes — Counter component, dev server, deploy.'
 
-const CREATE_COMMAND = 'barefootjs@latest my-app'
+const CREATE_COMMAND = 'barefootjs@latest'
 
 const PRELUDE_MD = `Scaffold a BarefootJS app, run it locally, and tour the generated project. About five minutes.
 
