@@ -155,6 +155,11 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     for (const attr of elem.childReactiveAttrs) {
       addExprEdges(ROOT_SOURCE, attr.expression, 'template-closure')
     }
+    if (elem.childRefs) {
+      for (const ref of elem.childRefs) {
+        addExprEdges(ROOT_SOURCE, ref.callback, 'init-body')
+      }
+    }
   }
 
   // identifiers.ts L137-139

@@ -9,6 +9,7 @@ import type {
   ConditionalBranchRef,
   LoopChildEvent,
   LoopChildReactiveAttr,
+  LoopChildRef,
   LoopChildReactiveText,
   NestedLoop,
 } from './types'
@@ -312,6 +313,29 @@ export function collectConditionalBranchRefs(node: IRNode): ConditionalBranchRef
     if (el.slotId && el.ref) {
       refs.push({
         slotId: el.slotId,
+        callback: el.ref,
+      })
+    }
+  })
+  return refs
+}
+
+/**
+ * Collect imperative ref callbacks from a loop body for use inside the
+ * `mapArray` per-item factory (#1244). Mirrors `collectConditionalBranchRefs`
+ * but produces `LoopChildRef` keyed on the bf slot id, matching the rest of
+ * the loop's per-item collectors.
+ *
+ * `traverseElements` already stops at nested loops, so refs on elements
+ * inside a `.map().map()` are picked up by that nested loop's own
+ * collection pass, not by the outer one.
+ */
+export function collectLoopChildRefs(node: IRNode): LoopChildRef[] {
+  const refs: LoopChildRef[] = []
+  traverseElements(node, (el) => {
+    if (el.slotId && el.ref) {
+      refs.push({
+        childSlotId: el.slotId,
         callback: el.ref,
       })
     }

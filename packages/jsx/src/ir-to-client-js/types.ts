@@ -323,6 +323,24 @@ export interface LoopChildReactiveAttr extends AttrMeta {
   expression: string // Expression that reads signals
 }
 
+/**
+ * Imperative ref callback on an element inside a loop body (#1244 catalog
+ * "ref callback re-invocation on remount under the same key"). Emitted
+ * inside the `mapArray` per-item factory so every `renderItem` invocation
+ * — initial mount, SSR hydration, and same-key remount after unmount —
+ * re-runs the callback with the just-built (or just-hydrated) DOM element.
+ *
+ * Mirrors `ConditionalBranchRef` but keyed on `childSlotId` to stay
+ * consistent with the loop's other per-item collectors (`LoopChildEvent`,
+ * `LoopChildReactiveAttr`, `LoopChildReactiveText`).
+ */
+export interface LoopChildRef {
+  /** bf slot ID of the element bearing the ref. */
+  childSlotId: string
+  /** Ref callback expression. May reference the loop param. */
+  callback: string
+}
+
 export interface LoopChildReactiveText {
   slotId: string // bf comment marker slot ID (e.g., 's7' → <!--bf:s7-->)
   expression: string // Expression that reads signals
@@ -401,6 +419,7 @@ export interface TopLevelLoop extends LoopCore {
   childEvents: LoopChildEvent[] // Detailed event info for delegation
   childReactiveAttrs: LoopChildReactiveAttr[] // Reactive attributes in loop children
   childReactiveTexts: LoopChildReactiveText[] // Reactive text interpolations in loop children
+  childRefs?: LoopChildRef[] // Imperative ref callbacks on loop children (#1244)
   childConditionals?: LoopChildConditional[] // Reactive conditionals in loop children
   childComponent?: IRLoopChildComponent // For createComponent-based rendering
   nestedComponents?: IRLoopChildComponent[] // For nested components in loop bodies

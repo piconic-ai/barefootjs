@@ -5,7 +5,7 @@
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBranchSummary, LoopChildConditional, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils'
-import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts } from './reactivity'
+import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 import { walkIR, stopAt } from './walker'
@@ -494,12 +494,14 @@ export function collectElements(
       const childEvents: LoopChildEvent[] = []
       const childReactiveAttrs: LoopChildReactiveAttr[] = []
       const childReactiveTexts: import('./types').LoopChildReactiveText[] = []
+      const childRefs: import('./types').LoopChildRef[] = []
       const childConditionals: import('./types').LoopChildConditional[] = []
       for (const child of l.children) {
         childHandlers.push(...collectEventHandlersFromIR(child))
         childEvents.push(...collectLoopChildEventsWithNesting(child))
         childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, l.param, l.paramBindings))
         childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, l.param, l.paramBindings))
+        childRefs.push(...collectLoopChildRefs(child))
         childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, l.param, l.paramBindings))
       }
 
@@ -582,6 +584,7 @@ export function collectElements(
         childEvents,
         childReactiveAttrs,
         childReactiveTexts,
+        childRefs: childRefs.length > 0 ? childRefs : undefined,
         childConditionals,
         childComponent: l.childComponent,
         nestedComponents: l.nestedComponents,
