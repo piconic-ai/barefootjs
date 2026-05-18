@@ -269,6 +269,12 @@ if (await Bun.file(icon64).exists()) {
   await Bun.write(resolve(DIST_STATIC_DIR, 'icon-64.png'), Bun.file(icon64))
   console.log('Copied: dist/icon-64.png, dist/static/icon-64.png')
 }
+const faviconSvg = resolve(IMAGES_DIR, 'favicon.svg')
+if (await Bun.file(faviconSvg).exists()) {
+  await Bun.write(resolve(DIST_DIR, 'favicon.svg'), Bun.file(faviconSvg))
+  await Bun.write(resolve(DIST_STATIC_DIR, 'favicon.svg'), Bun.file(faviconSvg))
+  console.log('Copied: dist/favicon.svg, dist/static/favicon.svg')
+}
 
 for (const name of ['logo.svg', 'logo-for-dark.svg', 'logo-for-light.svg', 'text.svg', 'icon.svg']) {
   // text.svg / icon.svg are referenced from the landing hero diagram.

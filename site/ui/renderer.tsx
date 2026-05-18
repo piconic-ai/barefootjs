@@ -108,6 +108,7 @@ export const renderer = jsxRenderer(
             />
             <meta charset="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
             <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png" />
             <link rel="icon" type="image/png" sizes="64x64" href="/static/icon-64.png" />
             <title>{pageTitle}</title>
