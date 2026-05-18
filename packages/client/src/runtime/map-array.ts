@@ -309,6 +309,19 @@ export function mapArray<T>(
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const key = getKey ? getKey(item, i) : String(i)
+      // Duplicate-key surface (#1244 follow-up). The reconciler maps each
+      // unique key to a single scope, so a second item with the same key
+      // overwrites the first scope's data via `setItem` and effectively
+      // collapses every duplicate into one rendered DOM node. Surface
+      // the collision so the user sees the "list silently renders fewer
+      // items than the array" failure mode that #1046 used to be caught
+      // at compile time before #1358 narrowed BF023.
+      if (newKeys.has(key)) {
+        console.warn(
+          `[BarefootJS] mapArray: duplicate key "${key}" — items with this key collapse to a single DOM scope, ` +
+            `so only the last one renders. Use a per-item identifier (e.g. \`key={item.id}\`) for correct reconciliation.`,
+        )
+      }
       newKeys.add(key)
 
       const existing = scopes.get(key)

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach, spyOn } from 'bun:test'
 import { createSignal, createEffect, createRoot } from '../../src/reactive'
 import { mapArray } from '../../src/runtime/map-array'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -512,5 +512,143 @@ describe('mapArray', () => {
     setB([{ id: 'b-1', text: 'B1' }])
     expect(container.querySelectorAll('span[data-set="a"]').length).toBe(3)
     expect(container.querySelectorAll('span[data-set="b"]').length).toBe(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Duplicate-key detection (#1244 follow-up)
+//
+// PR #1358 relaxed the compile-time BF023 check so explicit `key={null}` /
+// `key={undefined}` literals (and ternary chains reaching them) compile
+// cleanly. The runtime side previously had no detection either — issue #1046
+// considered a runtime `Set`-based check and rejected it on the assumption
+// BF023 always caught the bug at compile time. With #1358 walking back that
+// assumption, the always-broken "constant key in a multi-item map" shape now
+// passes through both safety nets and fails silently at render time — every
+// item with the same key collapses to a single scope.
+//
+// `mapArray` already maintains a `newKeys` Set per reconcile for the
+// "removed keys" diff. Piggyback a `has()` check before `add()` so a
+// duplicate emits `console.warn` once per reconcile. Cost: one extra
+// `Set.has()` per item — negligible against the work the diff loop is
+// already doing.
+// ---------------------------------------------------------------------------
+
+describe('mapArray duplicate-key warning', () => {
+  let container: HTMLElement
+  let warnSpy: ReturnType<typeof spyOn>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    container = document.createElement('ul')
+    document.body.appendChild(container)
+    // `spyOn` returns the same proxy on subsequent calls for the same
+    // target property, so `mock.calls` accumulates across tests in the
+    // describe. Reset it here so each test sees only its own warnings.
+    warnSpy = spyOn(console, 'warn')
+    warnSpy.mockClear()
+  })
+
+  test('warns when keyFn returns the same key for two items', () => {
+    const [items] = createSignal([
+      { id: '1', text: 'A' },
+      { id: '1', text: 'B' },  // duplicate
+    ])
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item) => {
+        const li = document.createElement('li')
+        li.textContent = item().text
+        return li
+      },
+    )
+
+    const dupWarns = warnSpy.mock.calls.filter(
+      (args) => typeof args[0] === 'string' && args[0].includes('[BarefootJS]') && args[0].includes('duplicate key'),
+    )
+    expect(dupWarns.length).toBeGreaterThanOrEqual(1)
+    expect(dupWarns[0][0]).toContain('"1"')
+  })
+
+  test('warns once per duplicate key per reconcile, not per pair', () => {
+    // 3 items all sharing the same key. The collapsed reconcile sees the
+    // duplicate twice (positions 1 and 2 collide with position 0). The
+    // warning should fire on each duplicate occurrence so the user sees
+    // the actual count of collapsed items, not just "there's at least
+    // one duplicate".
+    const [items] = createSignal([
+      { id: 'x', text: 'A' },
+      { id: 'x', text: 'B' },
+      { id: 'x', text: 'C' },
+    ])
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item) => {
+        const li = document.createElement('li')
+        li.textContent = item().text
+        return li
+      },
+    )
+
+    const dupWarns = warnSpy.mock.calls.filter(
+      (args) => typeof args[0] === 'string' && args[0].includes('duplicate key'),
+    )
+    expect(dupWarns.length).toBe(2)
+  })
+
+  test('does not warn when all keys are unique', () => {
+    const [items] = createSignal([
+      { id: '1', text: 'A' },
+      { id: '2', text: 'B' },
+      { id: '3', text: 'C' },
+    ])
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item) => {
+        const li = document.createElement('li')
+        li.textContent = item().text
+        return li
+      },
+    )
+
+    const dupWarns = warnSpy.mock.calls.filter(
+      (args) => typeof args[0] === 'string' && args[0].includes('duplicate key'),
+    )
+    expect(dupWarns.length).toBe(0)
+  })
+
+  test('warns on literal-null key collapse (the catalog motivation case)', () => {
+    // The shape PR #1358 relaxed at compile time: every item gets the
+    // same `"null"` string after `String(null)` coercion.
+    const [items] = createSignal([
+      { id: '1', text: 'A' },
+      { id: '2', text: 'B' },
+    ])
+
+    mapArray(
+      items,
+      container,
+      () => String(null),
+      (item) => {
+        const li = document.createElement('li')
+        li.textContent = item().text
+        return li
+      },
+    )
+
+    const dupWarns = warnSpy.mock.calls.filter(
+      (args) => typeof args[0] === 'string' && args[0].includes('duplicate key'),
+    )
+    expect(dupWarns.length).toBeGreaterThanOrEqual(1)
+    expect(dupWarns[0][0]).toContain('"null"')
   })
 })
