@@ -15,24 +15,24 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
     await expect(tablist.getByRole('tab', { name: 'yarn' })).toBeVisible()
   })
 
-  test('bun tab is selected by default', async ({ page }) => {
-    const tablist = page.locator('[role="tablist"]').first()
-    const bunTab = tablist.getByRole('tab', { name: 'bun' })
-    await expect(bunTab).toHaveAttribute('aria-selected', 'true')
-  })
-
-  test('shows bun command by default', async ({ page }) => {
-    await expect(page.locator('text=bunx --bun bf add checkbox')).toBeVisible()
-  })
-
-  test('clicking npm tab switches content', async ({ page }) => {
+  test('npm tab is selected by default', async ({ page }) => {
     const tablist = page.locator('[role="tablist"]').first()
     const npmTab = tablist.getByRole('tab', { name: 'npm', exact: true })
-
-    await npmTab.click()
-
     await expect(npmTab).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('shows npm command by default', async ({ page }) => {
     await expect(page.locator('text=npx bf add checkbox')).toBeVisible()
+  })
+
+  test('clicking bun tab switches content', async ({ page }) => {
+    const tablist = page.locator('[role="tablist"]').first()
+    const bunTab = tablist.getByRole('tab', { name: 'bun' })
+
+    await bunTab.click()
+
+    await expect(bunTab).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('text=bunx --bun bf add checkbox')).toBeVisible()
   })
 
   test('clicking pnpm tab switches content', async ({ page }) => {
@@ -57,27 +57,27 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
 
   test('switching tabs updates aria-selected correctly', async ({ page }) => {
     const tablist = page.locator('[role="tablist"]').first()
-    const bunTab = tablist.getByRole('tab', { name: 'bun' })
     const npmTab = tablist.getByRole('tab', { name: 'npm', exact: true })
+    const bunTab = tablist.getByRole('tab', { name: 'bun' })
     const pnpmTab = tablist.getByRole('tab', { name: 'pnpm' })
 
     // Initial state
-    await expect(bunTab).toHaveAttribute('aria-selected', 'true')
-    await expect(npmTab).toHaveAttribute('aria-selected', 'false')
-
-    // Switch to npm
-    await npmTab.click()
-    await expect(bunTab).toHaveAttribute('aria-selected', 'false')
     await expect(npmTab).toHaveAttribute('aria-selected', 'true')
+    await expect(bunTab).toHaveAttribute('aria-selected', 'false')
+
+    // Switch to bun
+    await bunTab.click()
+    await expect(npmTab).toHaveAttribute('aria-selected', 'false')
+    await expect(bunTab).toHaveAttribute('aria-selected', 'true')
 
     // Switch to pnpm
     await pnpmTab.click()
-    await expect(npmTab).toHaveAttribute('aria-selected', 'false')
+    await expect(bunTab).toHaveAttribute('aria-selected', 'false')
     await expect(pnpmTab).toHaveAttribute('aria-selected', 'true')
 
-    // Switch back to bun
-    await bunTab.click()
+    // Switch back to npm
+    await npmTab.click()
     await expect(pnpmTab).toHaveAttribute('aria-selected', 'false')
-    await expect(bunTab).toHaveAttribute('aria-selected', 'true')
+    await expect(npmTab).toHaveAttribute('aria-selected', 'true')
   })
 })
