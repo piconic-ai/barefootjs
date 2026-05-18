@@ -4,6 +4,9 @@
  * Registers routes for each markdown page:
  *   GET /{slug}     → Rendered HTML
  *   GET /{slug}.md  → Raw Markdown
+ *
+ * Quick Start lives in `./pages/quick-start.tsx` because its content
+ * is JSX, not markdown — the page embeds `<PackageManagerTabs>`.
  */
 
 import { Hono } from 'hono'
@@ -11,6 +14,7 @@ import { renderer } from './renderer'
 import { initHighlighter, renderMarkdown } from './lib/markdown'
 import { getDocsNavLinks } from './lib/navigation'
 import type { Page, ContentMap } from './lib/content'
+import { registerQuickStartRoutes } from './pages/quick-start'
 
 /**
  * Create the Hono app with routes for all documentation pages.
@@ -23,6 +27,8 @@ export async function createDocsApp(content: ContentMap, pages: Page[]): Promise
 
   const app = new Hono()
   app.use(renderer)
+
+  registerQuickStartRoutes(app)
 
   // All pages: HTML version + raw Markdown version
   for (const page of pages.filter((p) => p.slug !== '')) {

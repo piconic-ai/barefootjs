@@ -45,6 +45,7 @@ export function getDocsNavLinks(slug: string): {
 
 export const navigation: NavItem[] = [
   { title: 'Introduction', slug: 'introduction' },
+  { title: 'Quick Start', slug: 'quick-start' },
   {
     title: 'Core Concepts',
     slug: 'core-concepts',

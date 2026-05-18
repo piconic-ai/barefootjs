@@ -214,6 +214,7 @@ export function MobileMenu() {
                 </summary>
                 <div className="pl-2 py-1 space-y-0.5">
                   <a href="/docs/introduction" className={menuLinkClass}>Introduction</a>
+                  <a href="/docs/quick-start" className={menuLinkClass}>Quick Start</a>
                   <a href="/docs/core-concepts" className={menuLinkClass}>Core Concepts</a>
                 </div>
               </details>

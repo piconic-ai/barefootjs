@@ -8,11 +8,11 @@
 - Why BarefootJS?
 - Design Philosophy
 
-### 2. Getting Started
+### 2. [Quick Start](https://barefootjs.dev/docs/quick-start)
 
-- Installation
-- Quick Start (5-minute tutorial)
-- Project Structure
+- Scaffold an app with `npm create barefootjs@latest`
+- Run the dev server and edit the starter Counter
+- Tour of the generated project structure
 
 ### 3. [Core Concepts](./core-concepts.md)
 
