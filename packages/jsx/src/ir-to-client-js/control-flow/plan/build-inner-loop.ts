@@ -191,13 +191,13 @@ function buildReactiveEmit(
     handler: wrapInner(ev.handler),
   }))
 
-  const reactiveTexts: InnerLoopText[] = (inner.childReactiveTexts ?? []).map(text => ({
+  const reactiveTexts: InnerLoopText[] = inner.bindings.reactiveTexts.map(text => ({
     slotId: text.slotId,
     wrappedExpression: wrapLoopParamAsAccessor(wrapOuter(text.expression), inner.param, inner.paramBindings),
     insideConditional: !!text.insideConditional,
   }))
 
-  const reactiveAttrs: InnerLoopReactiveAttr[] = (inner.childReactiveAttrs ?? []).map(attr => {
+  const reactiveAttrs: InnerLoopReactiveAttr[] = inner.bindings.reactiveAttrs.map(attr => {
     const wrapped = wrapLoopParamAsAccessor(wrapOuter(attr.expression), inner.param, inner.paramBindings)
     const isStyleObject = attr.attrName === 'style' && /^\s*\{/.test(attr.expression)
     return {

@@ -3,9 +3,9 @@
  */
 
 import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types'
-import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBranchSummary, LoopChildConditional, LoopChildEvent, LoopChildReactiveAttr, NestedLoop } from './types'
+import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, NestedLoop } from './types'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils'
-import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts } from './reactivity'
+import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings } from './reactivity'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 import { walkIR, stopAt } from './walker'
@@ -155,26 +155,28 @@ export function collectInnerLoops(
         const refsOuter = outerLoopParam
           ? new RegExp(`\\b${outerLoopParam}\\b`).test(n.array)
           : false
-        // Collect reactive text expressions inside inner loop items.
-        const innerReactiveTexts: Array<{ slotId: string; expression: string }> = []
+        // Per-item bindings for inner loop body. Mirror the gating the
+        // pre-#1244 separate-field shape used:
+        //   - reactiveTexts: only when array references outer loop param
+        //     (otherwise non-outer-param reads stay statically templated).
+        //   - reactiveAttrs / refs: always when ctx is available; the
+        //     attribute SSR template renders the initial value and a
+        //     missing per-item createEffect would freeze it; refs need to
+        //     fire on every renderItem invocation (#1244).
+        //   - events / conditionals: only in `collectBindings` (branch)
+        //     mode; the legacy non-branch path didn't wire them on
+        //     `NestedLoop` because event delegation handles them through
+        //     the parent's bindings instead.
+        const bindings: LoopChildBindings = emptyLoopChildBindings()
         if (refsOuter && ctx) {
           for (const child of n.children) {
-            innerReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
+            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
           }
         }
-
-        // Collect reactive attribute bindings inside inner loop items.
-        // Mirrors the text collector above so signal-driven attributes on
-        // the inner-loop body root (and any descendant) wire up a
-        // per-item createEffect that updates the DOM when the dependent
-        // signal changes. Without this, the SSR template renders the
-        // initial value and the attribute stays frozen forever — see
-        // the board demo's drag-preview `--drag-opacity` regression
-        // (#135 Concrete Additions).
-        const innerReactiveAttrs: import('./types').LoopChildReactiveAttr[] = []
         if (ctx) {
           for (const child of n.children) {
-            innerReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings))
+            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings))
+            bindings.refs.push(...collectLoopChildRefs(child))
           }
         }
 
@@ -182,8 +184,6 @@ export function collectInnerLoops(
         // events, nested conditionals) — matches the pre-Phase 2
         // `collectBranchInnerLoops` behaviour.
         let childComponents: import('../types').IRLoopChildComponent[] | undefined
-        let childEvents: LoopChildEvent[] | undefined
-        let childConditionals: import('./types').LoopChildConditional[] | undefined
         if (collectBindings) {
           // skipConditionals=true: components inside conditional branches
           // are collected separately via `childConditionals[i].whenTrue.childComponents`
@@ -206,21 +206,18 @@ export function collectInnerLoops(
             }))
           }
 
-          const evs: LoopChildEvent[] = []
           for (const child of n.children) {
-            evs.push(...collectLoopChildEventsWithNesting(child))
+            bindings.events.push(...collectLoopChildEventsWithNesting(child))
           }
-          if (evs.length > 0) childEvents = evs
 
           if (ctx) {
-            const conds = collectLoopChildConditionals(
+            bindings.conditionals.push(...collectLoopChildConditionals(
               { type: 'fragment', children: n.children, loc: n.loc } as unknown as IRNode,
               ctx,
               siblingOffsets,
               n.param,
               n.paramBindings,
-            )
-            if (conds.length > 0) childConditionals = conds
+            ))
           }
         }
 
@@ -238,13 +235,10 @@ export function collectInnerLoops(
           template,
           mapPreamble: n.mapPreamble,
           refsOuterParam: refsOuter,
-          childReactiveTexts: innerReactiveTexts.length > 0 ? innerReactiveTexts : undefined,
-          childReactiveAttrs: innerReactiveAttrs.length > 0 ? innerReactiveAttrs : undefined,
           childComponents,
-          childEvents,
-          childConditionals,
           insideConditional: !flat && scope.insideCond ? true : undefined,
           siblingOffset: flat ? undefined : (siblingOffsets.get(n) || undefined),
+          bindings,
         })
         // Branch-mode callers handle deeper nesting via their own collection paths.
         if (!flat) {
@@ -491,16 +485,9 @@ export function collectElements(
       if (!l.slotId || inCond) return
 
       const childHandlers: string[] = []
-      const childEvents: LoopChildEvent[] = []
-      const childReactiveAttrs: LoopChildReactiveAttr[] = []
-      const childReactiveTexts: import('./types').LoopChildReactiveText[] = []
-      const childConditionals: import('./types').LoopChildConditional[] = []
+      const bindings = collectLoopChildBindings(l.children, ctx, siblingOffsets, l.param, l.paramBindings)
       for (const child of l.children) {
         childHandlers.push(...collectEventHandlersFromIR(child))
-        childEvents.push(...collectLoopChildEventsWithNesting(child))
-        childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, l.param, l.paramBindings))
-        childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, l.param, l.paramBindings))
-        childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, l.param, l.paramBindings))
       }
 
       if (l.childComponent) {
@@ -579,10 +566,7 @@ export function collectElements(
         template,
         staticItemTemplate,
         childEventHandlers: childHandlers,
-        childEvents,
-        childReactiveAttrs,
-        childReactiveTexts,
-        childConditionals,
+        bindings,
         childComponent: l.childComponent,
         nestedComponents: l.nestedComponents,
         isStaticArray: l.isStaticArray,
@@ -892,23 +876,15 @@ function collectBranchLoops(
         childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0, branchLoopParamSpec)).join('')
       }
 
-      // Collect child events, reactive texts/attrs, and conditionals for ALL
-      // branch loops — simple loops also need reactive wiring when their
-      // item body reads non-item signals (e.g., memos). Previously these
-      // were only collected for composite loops, which caused reactive
-      // reads inside simple loop bodies to silently no-op for existing items.
-      const childEvents: LoopChildEvent[] = []
-      const childReactiveTexts: import('./types').LoopChildReactiveText[] = []
-      const childReactiveAttrs: import('./types').LoopChildReactiveAttr[] = []
-      const childConditionals: import('./types').LoopChildConditional[] = []
-      if (ctx) {
-        for (const child of n.children) {
-          childEvents.push(...collectLoopChildEventsWithNesting(child))
-          childReactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
-          childReactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings))
-          childConditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, n.param, n.paramBindings))
-        }
-      }
+      // Collect per-item bindings (events, reactive attrs/texts, refs,
+      // conditionals) for ALL branch loops — simple loops also need
+      // reactive wiring when their item body reads non-item signals (e.g.,
+      // memos). Previously these were only collected for composite loops,
+      // which caused reactive reads inside simple loop bodies to silently
+      // no-op for existing items.
+      const branchBindings = ctx
+        ? collectLoopChildBindings(n.children, ctx, siblingOffsets, n.param, n.paramBindings)
+        : emptyLoopChildBindings()
 
       loops.push({
         kind: 'branch',
@@ -924,10 +900,7 @@ function collectBranchLoops(
         containerSlotId: containerSlot,
         mapPreamble: n.mapPreamble ?? null,
         nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
-        childEvents,
-        childReactiveTexts: childReactiveTexts.length > 0 ? childReactiveTexts : undefined,
-        childReactiveAttrs: childReactiveAttrs.length > 0 ? childReactiveAttrs : undefined,
-        childConditionals: childConditionals.length > 0 ? childConditionals : undefined,
+        bindings: branchBindings,
         innerLoops: useElementReconciliation ? innerLoopsCollected : undefined,
         useElementReconciliation: useElementReconciliation || undefined,
       })
@@ -1024,6 +997,40 @@ function collectBranchConditionals(
  * Placement here eliminates the former lazy-`require()` cycle between
  * reactivity.ts and collect-elements.ts.
  */
+
+/**
+ * Unified per-item bindings collector for a loop body (#1244 §B).
+ *
+ * Replaces the four pre-#1244 site-local collectors
+ * (`collectLoopChildEventsWithNesting` + `collectLoopChildReactiveAttrs`
+ * + `collectLoopChildReactiveTexts` + `collectLoopChildConditionals`)
+ * with one function that returns the full `LoopChildBindings` struct
+ * including refs. Every loop variant (`TopLevelLoop`, `BranchLoop`,
+ * `NestedLoop`) goes through this entry point so a new per-item concept
+ * is added in one place instead of replicated across three.
+ *
+ * Sibling offsets are required for `collectLoopChildConditionals` to
+ * resolve child slot ids inside nested loops; the rest of the per-item
+ * collectors don't read them but pass them through for symmetry.
+ */
+export function collectLoopChildBindings(
+  children: readonly IRNode[],
+  ctx: ClientJsContext,
+  siblingOffsets: Map<IRLoop, number>,
+  loopParam: string,
+  loopParamBindings: readonly import('../types').LoopParamBinding[] | undefined,
+): LoopChildBindings {
+  const bindings = emptyLoopChildBindings()
+  for (const child of children) {
+    bindings.events.push(...collectLoopChildEventsWithNesting(child))
+    bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, loopParam, loopParamBindings))
+    bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, loopParam, loopParamBindings))
+    bindings.refs.push(...collectLoopChildRefs(child))
+    bindings.conditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, loopParam, loopParamBindings))
+  }
+  return bindings
+}
+
 export function collectLoopChildConditionals(
   node: IRNode,
   ctx: ClientJsContext,

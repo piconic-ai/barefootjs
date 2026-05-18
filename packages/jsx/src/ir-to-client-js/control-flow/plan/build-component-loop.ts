@@ -55,7 +55,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {
     }
   })
 
-  const hasChildConds = (elem.childConditionals?.length ?? 0) > 0
+  const hasChildConds = elem.bindings.conditionals.length > 0
 
   return {
     kind: 'component',
@@ -74,7 +74,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {
       ? buildReactiveEffectsPlan({
           attrs: [],
           texts: [],
-          conditionals: elem.childConditionals,
+          conditionals: elem.bindings.conditionals,
           loopParam: elem.param,
           loopParamBindings: elem.paramBindings,
         })

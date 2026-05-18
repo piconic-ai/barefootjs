@@ -207,6 +207,60 @@ export interface LoopCore {
    * running word-boundary regex against `array`.
    */
   arrayFreeIdentifiers?: ReadonlySet<string>
+  /**
+   * Per-item bindings collected from the loop body — the union of every
+   * reactive / imperative concept that must re-attach on each renderItem
+   * invocation (#1244 §B). Required (defaults to empty arrays) so adding
+   * a new per-item concept becomes a compile-time fan-out: every
+   * `LoopCore`-extending type and every consumer is forced through one
+   * code path.
+   *
+   * Replaces the pre-#1244 parallel fields `childEvents` /
+   * `childReactiveAttrs` / `childReactiveTexts` / `childConditionals`
+   * that lived on TopLevelLoop, BranchLoop and NestedLoop with diverging
+   * required-vs-optional shapes — the exact pattern that issue #1244 §B
+   * names as a recurring source of "forgotten variant" defects.
+   */
+  bindings: LoopChildBindings
+}
+
+/**
+ * Per-item bindings collected from a loop body (#1244). Every loop variant
+ * (top-level / branch / nested) carries one of these on `LoopCore.bindings`.
+ *
+ * Adding a new per-item concept means extending this struct and updating one
+ * collector (`collectLoopChildBindings`) — forgetting a variant becomes a
+ * compile error because the field is required.
+ */
+export interface LoopChildBindings {
+  /** Event handlers on elements inside the loop body. */
+  events: LoopChildEvent[]
+  /** Reactive attribute bindings on elements inside the loop body. */
+  reactiveAttrs: LoopChildReactiveAttr[]
+  /** Reactive text interpolations inside the loop body. */
+  reactiveTexts: LoopChildReactiveText[]
+  /** Imperative ref callbacks on elements inside the loop body. */
+  refs: LoopChildRef[]
+  /** Reactive conditionals inside the loop body. */
+  conditionals: LoopChildConditional[]
+}
+
+/**
+ * Imperative ref callback on an element inside a loop body (#1244 catalog:
+ * "ref callback re-invocation on remount under the same key"). Emitted
+ * inside the per-item factory so every renderItem invocation — initial
+ * mount, SSR hydration, and same-key remount after unmount — re-runs the
+ * callback with the just-built (or just-hydrated) DOM element.
+ *
+ * Mirrors `ConditionalBranchRef` but keyed on `childSlotId` so it matches
+ * the rest of the per-item collectors (`LoopChildEvent`,
+ * `LoopChildReactiveAttr`, `LoopChildReactiveText`).
+ */
+export interface LoopChildRef {
+  /** bf slot ID of the element bearing the ref. */
+  childSlotId: string
+  /** Ref callback expression. May reference the loop param. */
+  callback: string
 }
 
 /** Loop info extracted from a conditional branch for reactive reconciliation. */
@@ -216,14 +270,12 @@ export interface BranchLoop extends LoopCore {
   template: string     // HTML template for each item
   containerSlotId: string // bf slot ID of the container element (e.g., 's1' for <ul bf="s1">)
   mapPreamble: string | null
-  childEvents: LoopChildEvent[]
   // Composite loop fields (loops whose body contains child components)
   nestedComponents?: IRLoopChildComponent[]
-  childReactiveTexts?: LoopChildReactiveText[]
-  childReactiveAttrs?: LoopChildReactiveAttr[]
-  childConditionals?: LoopChildConditional[]
   innerLoops?: NestedLoop[]
   useElementReconciliation?: boolean
+  // Per-item bindings (events / reactiveAttrs / reactiveTexts / refs / conditionals)
+  // now live on `LoopCore.bindings` — see issue #1244 §B.
 }
 
 /**
@@ -281,30 +333,14 @@ export interface NestedLoop extends LoopCore {
   mapPreamble?: string
   /** Whether the inner array references the outer loop param (needs reactive mapArray) */
   refsOuterParam?: boolean
-  /** Reactive text expressions inside inner loop items (slotId → expression) */
-  childReactiveTexts?: LoopChildReactiveText[]
-  /**
-   * Reactive attribute bindings inside inner loop items. Mirrors
-   * `childReactiveTexts` for attributes like `style`, `data-*`,
-   * `className`, etc., on the loop body's root or any descendant. Without
-   * this field, inner-loop bodies that bind a signal-driven attribute on
-   * the root element get no per-item `createEffect` and the attribute
-   * stays frozen at the SSR value. Surfaced by the board demo's drag
-   * preview (#135 Concrete Additions) where the `style={{'--drag-opacity':
-   * draggingTaskId() === task.id ? '0.4' : '1'}}` binding on a nested
-   * `tasks.map()` root never updated.
-   */
-  childReactiveAttrs?: LoopChildReactiveAttr[]
   /** Child components inside inner loop items (for initChild/createComponent) */
   childComponents?: import('../types').IRLoopChildComponent[]
-  /** Event handlers inside inner loop items */
-  childEvents?: LoopChildEvent[]
-  /** Reactive conditionals inside inner loop items (Path B, #830) */
-  childConditionals?: LoopChildConditional[]
   /** True when this loop is inside a conditional branch (handled by insert() bindEvents instead) */
   insideConditional?: boolean
   /** Number of non-loop DOM siblings before this loop in its container element */
   siblingOffset?: number
+  // Per-item bindings (events / reactiveAttrs / reactiveTexts / refs / conditionals)
+  // now live on `LoopCore.bindings` — see issue #1244 §B.
 }
 
 export interface LoopChildEvent {
@@ -397,13 +433,11 @@ export interface TopLevelLoop extends LoopCore {
    * that becomes `[]` in the CSR template substitution.
    */
   staticItemTemplate?: string
-  childEventHandlers: string[] // Event handlers from child elements (for identifier extraction)
-  childEvents: LoopChildEvent[] // Detailed event info for delegation
-  childReactiveAttrs: LoopChildReactiveAttr[] // Reactive attributes in loop children
-  childReactiveTexts: LoopChildReactiveText[] // Reactive text interpolations in loop children
-  childConditionals?: LoopChildConditional[] // Reactive conditionals in loop children
+  childEventHandlers: string[] // Bare-identifier event handler names (for the reachability graph)
   childComponent?: IRLoopChildComponent // For createComponent-based rendering
   nestedComponents?: IRLoopChildComponent[] // For nested components in loop bodies
+  // Per-item bindings (events / reactiveAttrs / reactiveTexts / refs / conditionals)
+  // now live on `LoopCore.bindings` — see issue #1244 §B.
   isStaticArray: boolean // True if array is a static prop (not a signal)
   useElementReconciliation?: boolean // True: reconcileElements + composite rendering (native root with child components)
   /** Inner loop metadata for composite element reconciliation (array, param, key, container) */

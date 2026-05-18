@@ -259,12 +259,12 @@ export function buildBranchInnerLoopsPlan(
       props: comp.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapInner) })),
       children: comp.children?.map(wrapIRNode),
     }))
-    const legacyEvents: LoopChildEvent[] = (inner.childEvents ?? []).map(ev => ({
+    const legacyEvents: LoopChildEvent[] = inner.bindings.events.map(ev => ({
       ...ev,
       handler: wrapInner(ev.handler),
     }))
 
-    const reactiveTexts: BranchInnerLoopText[] = (inner.childReactiveTexts ?? []).map(text => ({
+    const reactiveTexts: BranchInnerLoopText[] = inner.bindings.reactiveTexts.map(text => ({
       slotId: text.slotId,
       wrappedExpression: wrapBoth(text.expression),
       insideConditional: !!text.insideConditional,
@@ -285,7 +285,7 @@ export function buildBranchInnerLoopsPlan(
       legacyEvents,
       reactiveTexts,
       nestedConditionals: buildLoopChildConditionalsPlan({
-        conditionals: inner.childConditionals,
+        conditionals: inner.bindings.conditionals,
         scopeVar: `__belbr_${i}`,
         wrap: wrapBoth,
         loopParam: inner.param,

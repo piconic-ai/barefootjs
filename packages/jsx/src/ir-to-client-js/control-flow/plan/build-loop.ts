@@ -72,9 +72,9 @@ export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): L
 export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
   const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
-  const hasReactive = elem.childReactiveAttrs.length > 0
-    || elem.childReactiveTexts.length > 0
-    || (elem.childConditionals?.length ?? 0) > 0
+  const hasReactive = elem.bindings.reactiveAttrs.length > 0
+    || elem.bindings.reactiveTexts.length > 0
+    || elem.bindings.conditionals.length > 0
 
   return {
     kind: 'plain',
@@ -98,7 +98,7 @@ export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<st
   // declaration-order Map-iteration semantics.
   const attrsBySlotMap = new Map<string, LoopChildReactiveAttr[]>()
   if (!elem.childComponent) {
-    for (const attr of elem.childReactiveAttrs) {
+    for (const attr of elem.bindings.reactiveAttrs) {
       let bucket = attrsBySlotMap.get(attr.childSlotId)
       if (!bucket) {
         bucket = []
@@ -119,7 +119,7 @@ export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<st
     indexParam,
     childIndexExpr,
     attrsBySlot: [...attrsBySlotMap].map(([slotId, attrs]) => [slotId, attrs] as const),
-    texts: elem.childReactiveTexts,
+    texts: elem.bindings.reactiveTexts,
     csrMaterialize: buildStaticLoopMaterialize(elem, unsafeLocalNames),
   }
 }

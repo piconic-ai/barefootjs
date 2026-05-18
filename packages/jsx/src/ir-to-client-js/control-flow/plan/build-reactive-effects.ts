@@ -184,9 +184,9 @@ function buildOuterArm(
  */
 export function buildLoopReactiveEffectsPlan(elem: TopLevelLoop): ReactiveEffectsPlan {
   return buildReactiveEffectsPlan({
-    attrs: elem.childReactiveAttrs ?? [],
-    texts: elem.childReactiveTexts ?? [],
-    conditionals: elem.childConditionals,
+    attrs: elem.bindings.reactiveAttrs,
+    texts: elem.bindings.reactiveTexts,
+    conditionals: elem.bindings.conditionals,
     loopParam: elem.param,
     loopParamBindings: elem.paramBindings,
   })

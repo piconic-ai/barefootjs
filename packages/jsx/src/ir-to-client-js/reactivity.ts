@@ -7,8 +7,10 @@ import type {
   ClientJsContext,
   ConditionalBranchEvent,
   ConditionalBranchRef,
+  LoopChildBindings,
   LoopChildEvent,
   LoopChildReactiveAttr,
+  LoopChildRef,
   LoopChildReactiveText,
   NestedLoop,
 } from './types'
@@ -320,6 +322,45 @@ export function collectConditionalBranchRefs(node: IRNode): ConditionalBranchRef
 }
 
 /**
+ * Collect imperative ref callbacks from a loop body for use inside the
+ * `mapArray` per-item factory (#1244). Mirrors `collectConditionalBranchRefs`
+ * but keys the entry on `childSlotId` to match the other per-item collectors
+ * (`LoopChildEvent`, `LoopChildReactiveAttr`, `LoopChildReactiveText`).
+ *
+ * `traverseElements` already stops at nested loops, so refs on elements
+ * inside a `.map().map()` are picked up by that nested loop's own collector
+ * pass, not by the outer one.
+ */
+export function collectLoopChildRefs(node: IRNode): LoopChildRef[] {
+  const refs: LoopChildRef[] = []
+  traverseElements(node, (el) => {
+    if (el.slotId && el.ref) {
+      refs.push({
+        childSlotId: el.slotId,
+        callback: el.ref,
+      })
+    }
+  })
+  return refs
+}
+
+/**
+ * Construct an empty `LoopChildBindings` value (#1244). Used wherever a
+ * `LoopCore`-extending record is built without per-item bindings (e.g.
+ * synthesized event-delegation `NestedLoop` chain entries) so the required
+ * field is initialized.
+ */
+export function emptyLoopChildBindings(): LoopChildBindings {
+  return {
+    events: [],
+    reactiveAttrs: [],
+    reactiveTexts: [],
+    refs: [],
+    conditionals: [],
+  }
+}
+
+/**
  * Collect detailed event info from loop children for event delegation.
  */
 export function collectLoopChildEvents(node: IRNode): LoopChildEvent[] {
@@ -381,6 +422,9 @@ export function collectLoopChildEventsWithNesting(
     },
     loop: ({ node: l, scope, descend }) => {
       // Enter nested loop — push nesting info with container element's slotId.
+      // `bindings` is required on every loop variant; populate as empty here
+      // because this NestedLoop sub-record is only used as event-delegation
+      // metadata (nestedLoops chain), not as a structurally-complete loop.
       descend({
         ...scope,
         nestingStack: [
@@ -393,6 +437,7 @@ export function collectLoopChildEventsWithNesting(
             key: l.key,
             markerId: l.markerId,
             containerSlotId: scope.lastElementSlotId,
+            bindings: emptyLoopChildBindings(),
           },
         ],
       })

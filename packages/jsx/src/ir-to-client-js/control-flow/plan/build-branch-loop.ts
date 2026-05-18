@@ -38,9 +38,9 @@ export function buildBranchLoopPlan(loop: BranchLoop): BranchLoopPlan {
   }
 
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
-  const hasReactiveEffects = (loop.childReactiveAttrs?.length ?? 0) > 0
-    || (loop.childReactiveTexts?.length ?? 0) > 0
-    || (loop.childConditionals?.length ?? 0) > 0
+  const hasReactiveEffects = loop.bindings.reactiveAttrs.length > 0
+    || loop.bindings.reactiveTexts.length > 0
+    || loop.bindings.conditionals.length > 0
 
   const plan: BranchPlainLoopPlan = {
     kind: 'plain',
@@ -60,9 +60,9 @@ export function buildBranchLoopPlan(loop: BranchLoop): BranchLoopPlan {
     template: loop.template,
     reactiveEffects: hasReactiveEffects
       ? buildReactiveEffectsPlan({
-          attrs: loop.childReactiveAttrs ?? [],
-          texts: loop.childReactiveTexts ?? [],
-          conditionals: loop.childConditionals,
+          attrs: loop.bindings.reactiveAttrs,
+          texts: loop.bindings.reactiveTexts,
+          conditionals: loop.bindings.conditionals,
           loopParam: loop.param,
           loopParamBindings: loop.paramBindings,
         })

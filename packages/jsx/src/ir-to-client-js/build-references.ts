@@ -152,8 +152,13 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     if (elem.filterPredicate) addExprEdges(ROOT_SOURCE, elem.filterPredicate.raw, 'template-closure')
     if (elem.sortComparator) addExprEdges(ROOT_SOURCE, elem.sortComparator.raw, 'template-closure')
     if (elem.mapPreamble) addExprEdges(ROOT_SOURCE, elem.mapPreamble, 'template-closure')
-    for (const attr of elem.childReactiveAttrs) {
+    for (const attr of elem.bindings.reactiveAttrs) {
       addExprEdges(ROOT_SOURCE, attr.expression, 'template-closure')
+    }
+    // Ref callbacks must reach the reachability graph or the user's
+    // `const fn = ...` declaration gets stripped as dead code (#1244).
+    for (const ref of elem.bindings.refs) {
+      addExprEdges(ROOT_SOURCE, ref.callback, 'init-body')
     }
   }
 

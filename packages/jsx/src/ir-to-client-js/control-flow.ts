@@ -79,7 +79,7 @@ function emitLoopEventDelegation(
     // Event delegation for plain elements in static arrays (#537). Static
     // arrays have no data-key/bf-i markers, so walk up from target to the
     // container's direct child and use indexOf for index lookup.
-    if (!elem.childComponent && elem.childEvents.length > 0) {
+    if (!elem.childComponent && elem.bindings.events.length > 0) {
       stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem))
     }
     return
@@ -97,7 +97,7 @@ function emitLoopEventDelegation(
   if (
     kind === 'plain'
     && !elem.useElementReconciliation
-    && elem.childEvents.length > 0
+    && elem.bindings.events.length > 0
   ) {
     stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem))
   }

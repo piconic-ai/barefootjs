@@ -27,7 +27,7 @@ import type { CompositeLoopPlan } from './types'
 /** @internal — prefer `buildLoopPlan`. */
 export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPlan {
   const nestedComps = elem.nestedComponents!
-  const depthLevels = buildDepthLevels(elem.innerLoops ?? [], nestedComps, elem.childEvents)
+  const depthLevels = buildDepthLevels(elem.innerLoops ?? [], nestedComps, elem.bindings.events)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
   const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
 
@@ -44,8 +44,8 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPla
     indexParam: elem.index || '__idx',
     mapPreambleWrapped: elem.mapPreamble ? wrap(elem.mapPreamble) : '',
     template: elem.template,
-    outerComps: filterCondCompsOut(outerCompsByDepth, elem.childConditionals),
-    outerEvents: elem.childEvents.filter(ev => ev.nestedLoops.length === 0),
+    outerComps: filterCondCompsOut(outerCompsByDepth, elem.bindings.conditionals),
+    outerEvents: elem.bindings.events.filter(ev => ev.nestedLoops.length === 0),
     innerLoops: buildInnerLoopsPlan({
       levels: depthLevels,
       parentElVar: '__el',
@@ -56,9 +56,9 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPla
     loopParamBindings: elem.paramBindings,
     reactiveEffects: hasReactive(elem)
       ? buildReactiveEffectsPlan({
-          attrs: elem.childReactiveAttrs ?? [],
-          texts: elem.childReactiveTexts ?? [],
-          conditionals: elem.childConditionals,
+          attrs: elem.bindings.reactiveAttrs,
+          texts: elem.bindings.reactiveTexts,
+          conditionals: elem.bindings.conditionals,
           loopParam: elem.param,
           loopParamBindings: elem.paramBindings,
         })
@@ -73,7 +73,7 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPla
 export function buildBranchCompositePlan(loop: BranchLoop, cv: string): CompositeLoopPlan {
   const nestedComps = loop.nestedComponents!
   const innerLoops = loop.innerLoops ?? []
-  const childEvents = loop.childEvents
+  const childEvents = loop.bindings.events
   const depthLevels = buildDepthLevels(innerLoops, nestedComps, childEvents)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(loop.param, loop.paramBindings)
   const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, loop.param, loop.paramBindings)
@@ -93,7 +93,7 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string): Composit
     indexParam: loop.index || '__idx',
     mapPreambleWrapped: loop.mapPreamble ? wrap(loop.mapPreamble) : '',
     template: loop.template,
-    outerComps: filterCondCompsOut(outerCompsByDepth, loop.childConditionals),
+    outerComps: filterCondCompsOut(outerCompsByDepth, loop.bindings.conditionals),
     outerEvents: childEvents.filter(ev => ev.nestedLoops.length === 0),
     innerLoops: buildInnerLoopsPlan({
       levels: depthLevels,
@@ -105,9 +105,9 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string): Composit
     loopParamBindings: loop.paramBindings,
     reactiveEffects: hasReactiveBranch(loop)
       ? buildReactiveEffectsPlan({
-          attrs: loop.childReactiveAttrs ?? [],
-          texts: loop.childReactiveTexts ?? [],
-          conditionals: loop.childConditionals,
+          attrs: loop.bindings.reactiveAttrs,
+          texts: loop.bindings.reactiveTexts,
+          conditionals: loop.bindings.conditionals,
           loopParam: loop.param,
           loopParamBindings: loop.paramBindings,
         })
@@ -141,13 +141,13 @@ function filterCondCompsOut(
 }
 
 function hasReactive(elem: TopLevelLoop): boolean {
-  return (elem.childReactiveAttrs?.length ?? 0) > 0
-    || (elem.childReactiveTexts?.length ?? 0) > 0
-    || (elem.childConditionals?.length ?? 0) > 0
+  return elem.bindings.reactiveAttrs.length > 0
+    || elem.bindings.reactiveTexts.length > 0
+    || elem.bindings.conditionals.length > 0
 }
 
 function hasReactiveBranch(loop: BranchLoop): boolean {
-  return (loop.childReactiveAttrs?.length ?? 0) > 0
-    || (loop.childReactiveTexts?.length ?? 0) > 0
-    || (loop.childConditionals?.length ?? 0) > 0
+  return loop.bindings.reactiveAttrs.length > 0
+    || loop.bindings.reactiveTexts.length > 0
+    || loop.bindings.conditionals.length > 0
 }

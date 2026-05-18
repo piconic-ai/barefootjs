@@ -20,7 +20,7 @@ export function buildDynamicLoopDelegationPlan(elem: TopLevelLoop): EventDelegat
   return {
     kind: 'event-delegation',
     containerVar: `_${varSlotId(elem.slotId)}`,
-    events: elem.childEvents,
+    events: elem.bindings.events,
     itemLookup: buildKeyedOrIndexLookup({
       array: elem.array,
       param: elem.param,
@@ -35,7 +35,7 @@ export function buildBranchLoopDelegationPlan(loop: BranchLoop, cv: string): Eve
   return {
     kind: 'event-delegation',
     containerVar: `__loop_${cv}`,
-    events: loop.childEvents,
+    events: loop.bindings.events,
     itemLookup: buildKeyedOrIndexLookup({
       array: loop.array,
       param: loop.param,
@@ -55,7 +55,7 @@ export function buildStaticArrayDelegationPlan(elem: TopLevelLoop): EventDelegat
   return {
     kind: 'event-delegation',
     containerVar: `_${varSlotId(elem.slotId)}`,
-    events: elem.childEvents,
+    events: elem.bindings.events,
     itemLookup: {
       kind: 'static-index',
       arrayExpr: elem.array,
