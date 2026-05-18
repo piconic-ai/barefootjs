@@ -167,8 +167,14 @@ function disposeEffect(effect: EffectContext): void {
   if (effect.disposed) return
   effect.disposed = true
 
-  // Dispose children first (depth-first)
-  for (const child of effect.children) {
+  // Snapshot children before recursing. Each recursive disposeEffect
+  // splices the child out of its parent's `children` array (see the
+  // `effect.owner.children.splice(...)` block below), so iterating
+  // `effect.children` directly drops every other entry — late-fired
+  // rAF / async cleanups in the skipped scopes were the root cause
+  // of #1366.
+  const children = effect.children.slice()
+  for (const child of children) {
     disposeEffect(child)
   }
   effect.children.length = 0

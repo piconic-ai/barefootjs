@@ -124,6 +124,7 @@ import { SocialMessagesPage } from './pages/gallery/social/messages'
 import { FormsIntroductionPage } from './pages/forms/introduction'
 import { ValidationPage } from './pages/forms/validation'
 import { FieldArraysPage } from './pages/forms/field-arrays'
+import { RafUnmountStressPage } from './pages/stress/raf-unmount'
 
 import { HomeShowcase } from '@/components/home-showcase'
 
@@ -698,6 +699,12 @@ export function createApp() {
   // Field Arrays pattern documentation
   app.get('/docs/forms/field-arrays', (c) => {
     return c.render(<FieldArraysPage />)
+  })
+
+  // Compiler stress catalog (#1244) regression demos. Pages here back
+  // the Layer 6 specs in `site/ui/e2e/stress-1244.spec.ts`.
+  app.get('/stress/1244/raf-unmount', (c) => {
+    return c.render(<RafUnmountStressPage />, { title: 'Stress #1366 — rAF unmount' })
   })
 
   return app

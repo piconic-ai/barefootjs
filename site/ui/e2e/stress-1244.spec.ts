@@ -12,7 +12,7 @@
  * pattern up there keeps the cross-reference traceable.
  */
 
-import { test } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 const STRESS_BASE = '/stress/1244'
 
@@ -74,14 +74,53 @@ test.describe('Compiler stress (#1244) — E2E surfaces awaiting demo pages', ()
     },
   )
 
-  test.fixme(
+  test(
     'Unmount during in-flight requestAnimationFrame — frame released',
     async ({ page }) => {
-      // Visit `${STRESS_BASE}/raf-unmount`. Schedule a RAF callback in
-      // a component, immediately unmount the component, advance frames
-      // (via `page.waitForFunction` against a counter). Assert the RAF
-      // callback did not fire after unmount.
+      // Backed by `/stress/1244/raf-unmount`. The demo's createEffect
+      // schedules an rAF when `show()` is true and cancels it from
+      // onCleanup. Regression for #1366.
+      const pageErrors: string[] = []
+      page.on('pageerror', (err) => pageErrors.push(err.message))
+
       await page.goto(`${STRESS_BASE}/raf-unmount`)
+
+      // Drive one Mount/Unmount cycle through Playwright's locator so
+      // we know the demo is fully hydrated (click handlers attached,
+      // signal subscriptions live) before timing the race.
+      await page.locator('[data-testid="mount"]').click()
+      await expect(page.locator('[data-testid="pulse-time"]')).toHaveCount(1)
+      await page.locator('[data-testid="unmount"]').click()
+      await expect(page.locator('[data-testid="pulse-time"]')).toHaveCount(0)
+
+      // In a single in-page task: reset the counter, click Mount,
+      // click Unmount synchronously, then wait two animation frames.
+      // If onCleanup runs cancelAnimationFrame between the two clicks
+      // (synchronous setShow → effect re-run → cleanup), the queued
+      // rAF callback never fires and the counter stays at 0.
+      const trace = await page.evaluate(async () => {
+        const w = window as Window & { __rafFiredCount?: number }
+        w.__rafFiredCount = 0
+        ;(document.querySelector('[data-testid="mount"]') as HTMLButtonElement).click()
+        const pulseVisibleAfterMount =
+          document.querySelector('[data-testid="pulse-time"]') !== null
+        ;(document.querySelector('[data-testid="unmount"]') as HTMLButtonElement).click()
+        const pulseVisibleAfterUnmount =
+          document.querySelector('[data-testid="pulse-time"]') !== null
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        )
+        return {
+          pulseVisibleAfterMount,
+          pulseVisibleAfterUnmount,
+          final: w.__rafFiredCount ?? -1,
+        }
+      })
+
+      expect(trace.pulseVisibleAfterMount).toBe(true)
+      expect(trace.pulseVisibleAfterUnmount).toBe(false)
+      expect(trace.final).toBe(0)
+      expect(pageErrors).toEqual([])
     },
   )
 
