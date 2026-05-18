@@ -172,7 +172,7 @@ bf preview
 Open one with: bf preview <component>
 ```
 
-> **Note:** `bf preview` requires the BarefootJS monorepo source tree. A standalone build is tracked in [#885](https://github.com/piconic-ai/barefootjs/issues/885); in the meantime, clone the monorepo locally for visual checks.
+> **Note:** Standalone `bf preview` for npm-installed projects is tracked in [#885](https://github.com/piconic-ai/barefootjs/issues/885). Until then, browse the live previews at [ui.barefootjs.dev/components](https://ui.barefootjs.dev) — every registry component has a hosted preview page at `/components/<name>`.
 
 ## 7. Debug reactivity — `bf debug`
 
