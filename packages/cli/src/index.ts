@@ -14,9 +14,10 @@ const ctx = await createContext(jsonFlag)
 function printUsage() {
   console.log(`Usage: barefoot <command> [options]
 
+Scaffold a new project with \`npm create barefootjs@latest\`, then:
+
 Commands:
   build [--minify] [--force] [--watch]  Compile components using barefoot.config.ts
-  init [--name <name>] [--adapter <name>]  Initialize a new BarefootJS project
   add <component...> [--force] [--registry <url>] Add components to your project
   studio apply <url>          Apply Studio token overrides to this project's tokens
   search <query> [--dir <path>] [--registry <url>] Search components and documentation
@@ -38,7 +39,7 @@ Options:
   --debug                     (test) Output signal change trace log
 
 Workflow:
-  1. barefoot init                         — Initialize project
+  1. npm create barefootjs@latest          — Scaffold a new project
   2. barefoot search <query>               — Find components and docs
   3. barefoot add <component...>           — Add to your project
   4. barefoot ui <component>               — Learn props and usage
