@@ -2103,6 +2103,30 @@ function normalizeKeyExpr(expr: string): string {
 type KeyProblem = 'missing' | 'nullable-type'
 
 /**
+ * True when at least one branch of `cond` (or its nested conditionals)
+ * is an explicit `null` / `undefined` literal — the shape the catalog
+ * "key={0}, key={false}, key={null}" item carves out as user-opted-in.
+ *
+ * Used by `classifyKeyProblem` to gate the conditional bypass of the
+ * type-based nullable check. Without this narrowing, a ternary like
+ * `key={cond ? item.id : item.fallback}` (where `fallback?: string`)
+ * would also skip the check and silently drop a legitimate
+ * inferred-nullability diagnostic.
+ */
+function conditionalHasExplicitNullishBranch(cond: ts.ConditionalExpression): boolean {
+  return branchHasExplicitNullish(cond.whenTrue) || branchHasExplicitNullish(cond.whenFalse)
+}
+
+function branchHasExplicitNullish(branch: ts.Expression): boolean {
+  let b: ts.Expression = branch
+  while (ts.isParenthesizedExpression(b)) b = b.expression
+  if (b.kind === ts.SyntaxKind.NullKeyword) return true
+  if (ts.isIdentifier(b) && b.text === 'undefined') return true
+  if (ts.isConditionalExpression(b)) return conditionalHasExplicitNullishBranch(b)
+  return false
+}
+
+/**
  * Classify a key expression as problematic or fine.
  * Returns a KeyProblem string when the key is missing or has a
  * type-system-derived nullable type, or null when the key looks valid.
@@ -2150,11 +2174,16 @@ function classifyKeyProblem(
   if (expr.kind === ts.SyntaxKind.NullKeyword) return null
   if (ts.isIdentifier(expr) && expr.text === 'undefined') return null
 
-  // Conditional expressions: the type-based nullable check below would
-  // see the branch union (often `T | null`) and false-positive on
-  // legitimate per-item differentiated keys
-  // (`key={i === 0 ? 0 : i === 1 ? false : null}`). Defer to runtime.
-  if (ts.isConditionalExpression(expr)) return null
+  // Conditional expressions that include an explicit `null` / `undefined`
+  // literal in any branch (possibly nested) are the user opting into a
+  // per-item differentiated key with a falsy branch
+  // (`key={i === 0 ? 0 : i === 1 ? false : null}`). The type-based
+  // check below would see the branch union (`T | null`) and
+  // false-positive — bypass for the deliberate-opt-in case only. A
+  // ternary with NO explicit literal branch (`key={cond ? item.id :
+  // item.fallback}` where `fallback?: string`) still runs the type
+  // check, so inferred nullability is still surfaced.
+  if (ts.isConditionalExpression(expr) && conditionalHasExplicitNullishBranch(expr)) return null
 
   // Type-based nullable check for INFERRED nullability (e.g. `item.id`
   // where `id?: string`). The user didn't explicitly opt into a null

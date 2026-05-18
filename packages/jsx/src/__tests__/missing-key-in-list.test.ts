@@ -93,6 +93,25 @@ describe('BF023 — MISSING_KEY_IN_LIST', () => {
     expect(errs).toHaveLength(0)
   })
 
+  test('a-3: key with inferred-nullable type inside a ternary still raises BF023', () => {
+    // Regression guard for #1244: the original "accept literal null/undefined"
+    // PR (#1358) skipped the type-based nullable check for ALL ConditionalExpression
+    // keys, which silently dropped legitimate inferred-nullable diagnostics
+    // on ternary branches. The bypass must trigger ONLY when at least one
+    // branch is an explicit `null` / `undefined` literal — i.e. the user
+    // deliberately opted into a null key. Otherwise the type-driven check
+    // still applies.
+    const source = `
+      interface Item { id: string; fallback?: string; cond: boolean }
+      export function List({ items }: { items: Item[] }) {
+        return <ul>{items.map(item => <li key={item.cond ? item.id : item.fallback}>{item.id}</li>)}</ul>
+      }
+    `
+    const errs = errorsFor(ErrorCodes.MISSING_KEY_IN_LIST, source)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].suggestion?.message).toContain('non-null assertion')
+  })
+
   test('a-3: key type includes undefined raises BF023', () => {
     // Use a plain prop-typed component so @barefootjs/client is not needed.
     // The checker resolves item.id as `string | undefined` from the interface.
