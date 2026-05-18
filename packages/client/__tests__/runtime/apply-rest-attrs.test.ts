@@ -118,21 +118,34 @@ describe('spreadAttrs', () => {
   // `viewBox` to `view-box` makes the browser treat it as an unknown
   // attribute, so the SVG no longer scales / hit-tests — surfaced as
   // the Form Builder e2e regression when the merge-emit path started
-  // routing `viewBox` through `spreadAttrs`. `stroke-width` and
-  // friends are CSS-style presentation attrs and stay kebab-case.
-  test('SVG case-sensitive attrs preserve camelCase; CSS-style presentation attrs kebab-case', () => {
+  // routing `viewBox` through `spreadAttrs`.
+  //
+  // CSS-style SVG presentation attrs (`strokeWidth`, `clipPath`, …) are
+  // NOT case-sensitive — they lower to kebab-case to match how the
+  // compile-time `SVG_CAMEL_TO_KEBAB` table writes them on the explicit-
+  // attr path. Mixing the two would diverge: `<svg clipPath={...} />`
+  // emits `clip-path="..."` while `<svg {...{ clipPath: ... }} />` would
+  // emit `clipPath="..."`. The allowlist therefore covers only XML attr
+  // names that have no kebab-case mirror (`viewBox`, `clipPathUnits`).
+  test('SVG XML camelCase preserved; CSS-style presentation attrs kebab-case', () => {
     const out = spreadAttrs({
       viewBox: '0 0 24 24',
       preserveAspectRatio: 'xMidYMid meet',
+      clipPathUnits: 'objectBoundingBox',
       clipPath: 'url(#c)',
       strokeWidth: 2,
       strokeLinecap: 'round',
     })
     expect(out).toContain('viewBox="0 0 24 24"')
     expect(out).toContain('preserveAspectRatio="xMidYMid meet"')
-    expect(out).toContain('clipPath="url(#c)"')
+    expect(out).toContain('clipPathUnits="objectBoundingBox"')
+    // Presentation attrs share the kebab-case spelling of the compile-
+    // time `SVG_CAMEL_TO_KEBAB` table so spread vs explicit-attr paths
+    // produce the same DOM attribute.
+    expect(out).toContain('clip-path="url(#c)"')
     expect(out).toContain('stroke-width="2"')
     expect(out).toContain('stroke-linecap="round"')
     expect(out).not.toContain('view-box')
+    expect(out).not.toContain('clip-path-units')
   })
 })

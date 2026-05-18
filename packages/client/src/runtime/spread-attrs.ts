@@ -20,6 +20,14 @@ import { styleToCss } from './style'
  * (pointer events stop hitting the inner geometry — surfaced as the
  * Form Builder e2e regression in #1244's merge-emit follow-up).
  *
+ * Coordinates with the compile-time `SVG_CAMEL_TO_KEBAB` table in
+ * `packages/jsx/src/ir-to-client-js/utils.ts`: presentation attrs
+ * (`clipPath`, `strokeWidth`, …) live there and must NOT appear here,
+ * or the same JSX prop would lower to `clip-path` via the explicit-
+ * attr path and stay `clipPath` via the spread path — a silent
+ * divergence. The list below is XML attribute names that have no
+ * kebab-case mirror (`viewBox`, `clipPathUnits`, …).
+ *
  * The list mirrors React DOM's `DOMProperty` case-preserving entries
  * (only the attributes that appear on actual SVG elements; ARIA and
  * XLink namespaces are unrelated and handled by their `aria-*` /
@@ -27,7 +35,7 @@ import { styleToCss } from './style'
  */
 const SVG_CAMEL_CASE_ATTRS: ReadonlySet<string> = new Set([
   'allowReorder', 'attributeName', 'attributeType', 'autoReverse',
-  'baseFrequency', 'baseProfile', 'calcMode', 'clipPath', 'clipPathUnits',
+  'baseFrequency', 'baseProfile', 'calcMode', 'clipPathUnits',
   'contentScriptType', 'contentStyleType', 'diffuseConstant', 'edgeMode',
   'externalResourcesRequired', 'filterRes', 'filterUnits', 'glyphRef',
   'gradientTransform', 'gradientUnits', 'kernelMatrix', 'kernelUnitLength',
