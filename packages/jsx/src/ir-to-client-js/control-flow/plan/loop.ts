@@ -62,8 +62,18 @@ interface DynamicLoopCommon extends LoopPlanCommon {
 export interface LoopChildRefBinding {
   /** bf slot ID of the target element (root or descendant of the body). */
   childSlotId: string
-  /** Callback expression, already wrapped via `wrapLoopParamAsAccessor`. */
-  wrappedCallback: string
+  /**
+   * Callback expression as emitted into the renderItem / forEach body.
+   *
+   * For dynamic loops (`mapArray`-driven) the callback is wrapped via
+   * `wrapLoopParamAsAccessor` so bare loop-param references resolve
+   * through the per-item signal accessor. For static loops (forEach over
+   * a raw array) the callback is passed through unwrapped — the forEach
+   * binds the param as the raw value, so wrapping would rewrite `item.x`
+   * to `item().x` and throw at runtime. Mirrors how `reactiveTexts` /
+   * `reactiveAttrs` are already handled on the static path.
+   */
+  callback: string
 }
 
 /**

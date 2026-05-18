@@ -1166,6 +1166,70 @@ describe('ref callback re-invocation on remount under the same key (#1244)', () 
     // could fire.
     expect(c.clientJs).toContain('const __el = __existing ??')
   })
+
+  test('static-array .map(): ref callback closing over loop param stays raw (no signal-accessor wrap)', () => {
+    // Static-array loops emit `forEach((param, idx) => ...)` where `param`
+    // is the raw item value, not a signal accessor. A ref callback that
+    // closes over `param` (e.g. `ref={(el) => map.set(it.id, el)}`) must
+    // therefore NOT be wrapped via `wrapLoopParamAsAccessor` — that would
+    // rewrite `it.id` to `it().id`, throwing TypeError at runtime ("it is
+    // not a function"). Mirrors how `reactiveTexts` / `reactiveAttrs` are
+    // already passed through unwrapped on the static path.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      const refMap = new Map<string, HTMLElement>()
+      export function Demo(props: { items: { id: string; label: string }[] }) {
+        const [n, setN] = createSignal(0)
+        return (
+          <ul onClick={() => setN(n() + 1)}>
+            {props.items.map(it => (
+              <li key={it.id} ref={(el: HTMLElement | null) => { if (el) refMap.set(it.id, el) }}>
+                {it.label}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toContain('refMap.set(it.id')
+    expect(c.clientJs).not.toMatch(/refMap\.set\(it\(\)\.id/)
+  })
+
+  test('static inner .map() under reactive outer: ref callback closing over inner param stays raw', () => {
+    // Outer is signal-backed (composite). Inner is a literal static array
+    // — buildStaticEmit handles its per-iteration setup via `forEach`.
+    // The inner param `s` is the raw value in `forEach`, so a ref callback
+    // closing over `s` must NOT be signal-accessor-wrapped (would emit
+    // `s()` and throw at runtime).
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function Badge({ tone }: { tone: string }) { return <span>{tone}</span> }
+      const refMap = new Map<string, HTMLElement>()
+      export function Demo() {
+        const [rows, setRows] = createSignal<{ id: string; tag: string }[]>([])
+        return (
+          <ul onClick={() => setRows(r => r)}>
+            {rows().map(row => (
+              <li key={row.id}>
+                <Badge tone={row.tag} />
+                {['a', 'b', 'c'].map((s, i) => (
+                  <em key={i} ref={(el: HTMLElement | null) => { if (el) refMap.set(s, el) }}>{s}</em>
+                ))}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    expect(c.clientJs).toMatch(/refMap\.set\(\s*s\s*,/)
+    expect(c.clientJs).not.toMatch(/refMap\.set\(\s*s\(\)/)
+  })
 })
 
 // ---------------------------------------------------------------------------

@@ -28,7 +28,7 @@ import {
   wrapLoopParamAsAccessor,
   attrValueToString,
 } from '../../utils'
-import { buildChildRefBindings } from '../shared'
+import { buildChildRefBindings, buildStaticChildRefBindings } from '../shared'
 
 /**
  * Mirror of the helper in `build-loop-child-arm.ts` — kept local to avoid
@@ -247,7 +247,10 @@ function buildStaticEmit(inner: NestedLoop, level: DepthLevel): InnerLoopStaticE
   // Static `forEach` iterates with the literal item as its first param, so
   // no signal-accessor rewrite is needed — emit the preamble verbatim
   // before the component/event setup so prop getters and event handlers
-  // can resolve the locals (#1064).
+  // can resolve the locals (#1064). Refs follow the same contract:
+  // wrapping the callback would rewrite `s.x` to `s().x` and throw at
+  // runtime when the callback closes over the static inner param (#1244,
+  // PR #1352 Copilot review).
   const preludeStatements: string[] = inner.mapPreamble ? [inner.mapPreamble] : []
   return {
     mode: 'static',
@@ -255,6 +258,6 @@ function buildStaticEmit(inner: NestedLoop, level: DepthLevel): InnerLoopStaticE
     preludeStatements,
     components: level.comps,
     events: level.events,
-    childRefs: buildChildRefBindings(inner.bindings.refs, inner.param, inner.paramBindings),
+    childRefs: buildStaticChildRefBindings(inner.bindings.refs),
   }
 }

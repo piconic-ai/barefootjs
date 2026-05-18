@@ -33,6 +33,7 @@ import {
   loopKeyFn,
   destructureLoopParam,
   buildChildRefBindings,
+  buildStaticChildRefBindings,
 } from '../shared'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects'
 import { buildComponentLoopPlan } from './build-component-loop'
@@ -122,7 +123,10 @@ export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<st
     childIndexExpr,
     attrsBySlot: [...attrsBySlotMap].map(([slotId, attrs]) => [slotId, attrs] as const),
     texts: elem.bindings.reactiveTexts,
-    childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
+    // Static path: forEach binds `param` as the raw value. Passing through
+    // the signal-accessor wrap would rewrite e.g. `it.id` → `it().id` and
+    // throw at runtime. Mirrors how `texts` are already handled above.
+    childRefs: buildStaticChildRefBindings(elem.bindings.refs),
     csrMaterialize: buildStaticLoopMaterialize(elem, unsafeLocalNames),
   }
 }

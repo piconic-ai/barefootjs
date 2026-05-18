@@ -55,7 +55,7 @@ export function emitLoopChildRefs(
   for (const ref of refs) {
     const varName = `__rf_${varSlotId(ref.childSlotId)}`
     lines.push(`${indent}{ const ${varName} = ${lookup}(${elVar}, '[bf="${ref.childSlotId}"]')`)
-    lines.push(`${indent}if (${varName}) ${emitRefCall(ref.wrappedCallback, varName)} }`)
+    lines.push(`${indent}if (${varName}) ${emitRefCall(ref.callback, varName)} }`)
   }
 }
 
