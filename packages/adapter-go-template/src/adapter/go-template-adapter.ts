@@ -99,11 +99,23 @@ interface StaticChildInstance {
  * struct and initialise it in `NewXxxProps` from the source JS
  * expression. Loop-internal spreads don't appear here — they emit
  * the bag inline via the loop's iteration variable instead.
+ *
+ * `bagSource` records how the bag is supplied so the Input struct
+ * and `NewXxxProps` can be wired correctly (#1407 follow-up):
+ *
+ * - `'inline'`: bag is constructed inside `NewXxxProps` from
+ *   compile-time-known data (signal initial values, prop refs,
+ *   propsObject enumeration). No Input field needed.
+ * - `'input-bag'`: bag is provided by the caller as a
+ *   `Spread_<slotId> map[string]any` field on the Input struct
+ *   (used for `restPropsName` spreads where the rest's keys are
+ *   open-ended and Go's static typing can't enumerate them).
  */
 interface SpreadSlotInfo {
   slotId: string
   expr: string
   templateExpr: string | undefined
+  bagSource: 'inline' | 'input-bag'
 }
 
 export interface GoTemplateAdapterOptions {
@@ -570,14 +582,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Build prop type overrides from signal types
     const propTypeOverrides = this.buildPropTypeOverrides(ir)
 
-    // Generate Input struct for main component
-    this.generateInputStruct(lines, ir, componentName, nestedComponents, propTypeOverrides)
-
-    // Compute spread slot info once and thread it through both
+    // Compute spread slot info once and thread it through all three
     // generators — `collectSpreadSlots` walks the IR tree, so caching
-    // here saves a second full walk when the component has nested
-    // structure (#1411 review).
-    const spreadSlots = this.collectSpreadSlots(ir.root)
+    // here saves repeated walks (#1411 review). `spreadSlots` also
+    // controls whether `generateInputStruct` adds a
+    // `Spread_<N> map[string]any` field for `input-bag` slots so the
+    // caller can populate the open-ended restPropsName spread bag
+    // (#1407 follow-up).
+    const spreadSlots = this.collectSpreadSlots(ir.root, ir)
+
+    // Generate Input struct for main component
+    this.generateInputStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
 
     // Generate Props struct for main component
     this.generatePropsStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
@@ -697,7 +712,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
     componentName: string,
     nestedComponents: NestedComponentInfo[],
-    propTypeOverrides: Map<string, string>
+    propTypeOverrides: Map<string, string>,
+    spreadSlots: SpreadSlotInfo[]
   ): void {
     const inputTypeName = `${componentName}Input`
     lines.push(`// ${inputTypeName} is the user-facing input type.`)
@@ -725,6 +741,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Add nested component input arrays (static only)
     for (const nested of staticNested) {
       lines.push(`\t${nested.name}s []${nested.name}Input`)
+    }
+
+    // (#1407 follow-up) Input-side bag field for restPropsName spreads.
+    // The destructured-rest pattern
+    // (`function({a, ...rest}: P) { <el {...rest}/> }`) surfaces
+    // as a `bagSource: 'input-bag'` slot — Go's static typing
+    // can't enumerate the open-ended key set, so the caller passes
+    // the bag as a `map[string]any` field. The field is named
+    // after the JS-side rest binding (`rest` → `Rest`) so
+    // callers — `parent.NewXxxProps(XxxInput{Rest: ...})`
+    // construction sites, including the bun-test harness — can
+    // address it by the same identifier they used in source. The
+    // JSON tag uses the rest binding name too so JSON round-trips
+    // line up.
+    const restPropsName = ir.metadata.restPropsName
+    if (restPropsName) {
+      const seen = new Set<string>()
+      for (const slot of spreadSlots) {
+        if (slot.bagSource !== 'input-bag') continue
+        const fieldName = this.capitalizeFieldName(restPropsName)
+        if (seen.has(fieldName)) continue
+        seen.add(fieldName)
+        const jsonTag = this.toJsonTag(restPropsName)
+        lines.push(`\t${fieldName} map[string]any \`json:"${jsonTag}"\``)
+      }
     }
 
     lines.push('}')
@@ -1029,7 +1070,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         this.errors.push({
           code: 'BF101',
           severity: 'error',
-          message: `JSX spread '{...${slot.expr}}' on an intrinsic element has no Go template lowering — only signal getters of plain object literals and rest-prop identifiers are supported in V1`,
+          message: `JSX spread '{...${slot.expr}}' on an intrinsic element has no Go template lowering. Supported shapes: signal-getter calls (attrs()), destructured-prop identifiers ({ extras }: P with {...extras}), SolidJS-style props identifier ((props: P) with {...props}), rest-prop identifiers ({...rest}: P with {...rest})`,
           loc: this.makeLoc(),
           suggestion: {
             message: 'Pre-compute the spread bag as a discrete prop, or expand the spread into per-attribute props at the call site.',
@@ -1224,13 +1265,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * loop bodies. Each `IRElement.attrs[i].value` of kind `'spread'`
    * that has a `slotId` becomes one `SpreadSlotInfo` entry.
    */
-  private collectSpreadSlots(node: IRNode): SpreadSlotInfo[] {
+  private collectSpreadSlots(node: IRNode, ir: ComponentIR): SpreadSlotInfo[] {
     const result: SpreadSlotInfo[] = []
-    this.collectSpreadSlotsRecursive(node, result)
+    this.collectSpreadSlotsRecursive(node, result, ir)
     return result
   }
 
-  private collectSpreadSlotsRecursive(node: IRNode, result: SpreadSlotInfo[]): void {
+  /**
+   * Decide how a spread bag should be plumbed onto the Input/Props
+   * structs (#1407 follow-up). A bare-identifier spread that
+   * matches the component's `restPropsName` is open-ended (Go's
+   * static typing can't enumerate the keys), so the caller must
+   * supply the bag via an Input-side `map[string]any` field. Every
+   * other shape — signal getter, `propsObjectName`, plain
+   * propsParam, object literal — can be constructed inline in
+   * `NewXxxProps` from compile-time-known data.
+   */
+  private classifySpreadBagSource(spreadExpr: string, ir: ComponentIR): 'input-bag' | 'inline' {
+    const trimmed = spreadExpr.trim()
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)
+      && ir.metadata.restPropsName === trimmed) {
+      return 'input-bag'
+    }
+    return 'inline'
+  }
+
+  private collectSpreadSlotsRecursive(node: IRNode, result: SpreadSlotInfo[], ir: ComponentIR): void {
     if (node.type === 'element') {
       const element = node as IRElement
       for (const attr of element.attrs) {
@@ -1240,30 +1300,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           slotId: attr.value.slotId,
           expr: attr.value.expr,
           templateExpr: attr.value.templateExpr,
+          bagSource: this.classifySpreadBagSource(attr.value.expr, ir),
         })
       }
       for (const child of element.children) {
-        this.collectSpreadSlotsRecursive(child, result)
+        this.collectSpreadSlotsRecursive(child, result, ir)
       }
       return
     }
     if (node.type === 'fragment') {
       const fragment = node as IRFragment
       for (const child of fragment.children) {
-        this.collectSpreadSlotsRecursive(child, result)
+        this.collectSpreadSlotsRecursive(child, result, ir)
       }
       return
     }
     if (node.type === 'conditional') {
       const cond = node as IRConditional
-      this.collectSpreadSlotsRecursive(cond.whenTrue, result)
-      if (cond.whenFalse) this.collectSpreadSlotsRecursive(cond.whenFalse, result)
+      this.collectSpreadSlotsRecursive(cond.whenTrue, result, ir)
+      if (cond.whenFalse) this.collectSpreadSlotsRecursive(cond.whenFalse, result, ir)
       return
     }
     if (node.type === 'if-statement') {
       const stmt = node as IRIfStatement
-      this.collectSpreadSlotsRecursive(stmt.consequent, result)
-      if (stmt.alternate) this.collectSpreadSlotsRecursive(stmt.alternate, result)
+      this.collectSpreadSlotsRecursive(stmt.consequent, result, ir)
+      if (stmt.alternate) this.collectSpreadSlotsRecursive(stmt.alternate, result, ir)
       return
     }
     if (node.type === 'component') {
@@ -1279,22 +1340,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // and the per-component `spreadIdCounter` can't collide across
       // unrelated components (#1411 review).
       for (const child of comp.children) {
-        this.collectSpreadSlotsRecursive(child, result)
+        this.collectSpreadSlotsRecursive(child, result, ir)
       }
       return
     }
     if (node.type === 'provider') {
       const p = node as IRProvider
       for (const child of p.children) {
-        this.collectSpreadSlotsRecursive(child, result)
+        this.collectSpreadSlotsRecursive(child, result, ir)
       }
       return
     }
     if (node.type === 'async') {
       const a = node as IRAsync
-      this.collectSpreadSlotsRecursive(a.fallback, result)
+      this.collectSpreadSlotsRecursive(a.fallback, result, ir)
       for (const child of a.children) {
-        this.collectSpreadSlotsRecursive(child, result)
+        this.collectSpreadSlotsRecursive(child, result, ir)
       }
       return
     }
@@ -1369,13 +1430,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Build a Go expression for a JSX spread bag's initial value, to
    * be placed inside `NewXxxProps`'s return literal (#1407).
    *
-   * Supported shapes (V1):
+   * Supported shapes:
    *   - Signal-getter call (e.g. `attrs()`): look up the signal,
    *     parse its `initialValue` as a JS object literal, and emit a
    *     Go `map[string]any{...}` literal.
-   *   - Bare identifier matching a `propsParam`: emit
-   *     `in.<FieldName>` — works when the prop's Go type is already
-   *     a map type (`Record<string, ...>` lowered to `map[string]T`).
+   *   - Bare identifier matching a destructured `propsParam` (e.g.
+   *     `function({ extras }: P) { <el {...extras}/> }`): emit
+   *     `in.<FieldName>` — works when the prop's Go type is a map
+   *     type the bag is assignable to.
+   *   - Bare identifier matching `propsObjectName` (SolidJS-style
+   *     `function(props: P) { <el {...props}/> }`): enumerate the
+   *     analyzer-extracted `propsParams` into an inline
+   *     `map[string]any{...}` literal so each typed Input field
+   *     surfaces as a bag key (#1407 follow-up).
+   *   - Bare identifier matching `restPropsName` (the destructured-
+   *     rest pattern `function({a, ...rest}: P) { <el {...rest}/> }`):
+   *     emit `in.<slotId>` against the `map[string]any` Input field
+   *     that `generateInputStruct` adds for `input-bag` slots. The
+   *     caller (parent component or test harness) populates the
+   *     bag with the open-ended rest values (#1407 follow-up).
    *
    * Returns null for unsupported shapes so the caller can raise a
    * narrowed BF101 with the offending expression.
@@ -1397,13 +1470,41 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       return null
     }
-    // Bare identifier: rest-prop or destructured-from-props parameter
-    // name. The corresponding Input field is already populated by the
-    // caller of NewXxxProps.
+    // Bare-identifier paths.
     if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
+      // 1. Destructured-from-props parameter: `function({ extras }: P)`
+      //    → spread `{...extras}` resolves to `in.Extras`.
       const param = ir.metadata.propsParams.find(p => p.name === trimmed)
       if (param) {
         return `in.${this.capitalizeFieldName(param.name)}`
+      }
+      // 2. SolidJS-style props object: `function(props: P)` → spread
+      //    `{...props}` enumerates all analyzer-extracted propsParams
+      //    into a `map[string]any` literal. Every Input field becomes
+      //    a bag key. When `propsParams` is empty (analyzer couldn't
+      //    enumerate the type — e.g. an unresolved interface
+      //    `extends` chain), the literal is `map[string]any{}`. SSR
+      //    then renders no spread attrs; the CSR `applyRestAttrs`
+      //    hydrate path still applies them. Strictly worse than a
+      //    full enumeration, but strictly better than BF101 blocking
+      //    the build.
+      if (ir.metadata.propsObjectName === trimmed) {
+        const entries = ir.metadata.propsParams.map(p =>
+          `${JSON.stringify(p.name)}: in.${this.capitalizeFieldName(p.name)}`,
+        )
+        return `map[string]any{${entries.join(', ')}}`
+      }
+      // 3. Destructured-rest identifier:
+      //    `function({a, ...rest}: P) { <el {...rest}/> }`. The
+      //    rest's key set is open-ended (Go can't enumerate it
+      //    statically when the analyzer's `restPropsExpandedKeys`
+      //    isn't populated), so `generateInputStruct` added an
+      //    Input field named after the rest binding itself
+      //    (`rest` → `Rest`) so callers can write
+      //    `XxxInput{Rest: ...}` using the same identifier they
+      //    saw in source. Forward it through.
+      if (ir.metadata.restPropsName === trimmed) {
+        return `in.${this.capitalizeFieldName(trimmed)}`
       }
     }
     return null

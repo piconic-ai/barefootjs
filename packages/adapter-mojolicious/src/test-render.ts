@@ -369,15 +369,36 @@ function buildPerlProps(
     }
   }
 
+  // (#1407 follow-up) Default the rest-binding identifier to an
+  // empty hashref so `bf->spread_attrs($extras)` in the generated
+  // Mojo template doesn't trip Perl's strict-mode "Global symbol
+  // requires explicit package name" check when the caller doesn't
+  // supply a bag value (the destructured-rest fixture exercises
+  // the COMPILE path on Go, where the bag plumbing matters; the
+  // runtime is a no-op when the caller leaves the bag unset, which
+  // mirrors the empty-spread case on every adapter).
+  if (ir.metadata.restPropsName && !(props && ir.metadata.restPropsName in props)) {
+    entries.push(`${ir.metadata.restPropsName} => {}`)
+  }
+
   // Add user props
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (typeof value === 'string') {
-        entries.push(`${key} => '${value}'`)
+        entries.push(`${key} => '${value.replace(/'/g, "\\'")}'`)
       } else if (typeof value === 'number') {
         entries.push(`${key} => ${value}`)
       } else if (typeof value === 'boolean') {
-        entries.push(`${key} => ${value ? 1 : 0}`)
+        // Mojo::JSON sentinels so BarefootJS helpers can detect
+        // booleans via ref() (see toPerlLiteral / spread_attrs).
+        entries.push(`${key} => ${value ? 'Mojo::JSON::true' : 'Mojo::JSON::false'}`)
+      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Plain object → Perl hashref literal (#1407 follow-up).
+        // Used by the destructured-rest / propsObject fixtures
+        // (`jsx-spread-rest-prop`, `jsx-spread-props-object`) so
+        // the test harness can pass through bag-shaped props that
+        // weren't enumerated by the analyzer.
+        entries.push(`${key} => ${toPerlLiteral(value)}`)
       }
     }
   }

@@ -288,7 +288,29 @@ function buildGoPropsInit(
       lines.push(`\t\t${goField}: ${value},`)
     } else if (typeof value === 'boolean') {
       lines.push(`\t\t${goField}: ${value},`)
+    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Plain object → Go `map[string]any` literal (#1407 follow-up).
+      // Used by `jsx-spread-rest-prop` to populate the input-bag
+      // Spread_<N> field that carries the destructured-rest payload.
+      // The same harness change is needed when any future fixture
+      // passes a `Record<string, unknown>`-shaped prop through.
+      lines.push(`\t\t${goField}: ${goMapLiteralFromObject(value as Record<string, unknown>)},`)
     }
   }
   return lines.join('\n')
+}
+
+function goMapLiteralFromObject(obj: Record<string, unknown>): string {
+  const entries: string[] = []
+  for (const [k, v] of Object.entries(obj)) {
+    const key = JSON.stringify(k)
+    if (typeof v === 'string') entries.push(`${key}: "${v.replace(/"/g, '\\"')}"`)
+    else if (typeof v === 'number') entries.push(`${key}: ${v}`)
+    else if (typeof v === 'boolean') entries.push(`${key}: ${v}`)
+    else if (v === null) entries.push(`${key}: nil`)
+    else if (v && typeof v === 'object' && !Array.isArray(v)) {
+      entries.push(`${key}: ${goMapLiteralFromObject(v as Record<string, unknown>)}`)
+    }
+  }
+  return `map[string]any{${entries.join(', ')}}`
 }
