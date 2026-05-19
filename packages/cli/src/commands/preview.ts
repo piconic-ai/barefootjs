@@ -12,9 +12,15 @@
 import { existsSync, readdirSync } from 'fs'
 import path from 'path'
 import type { CliContext } from '../context'
+import { resolveScaffoldLayout } from '../lib/scaffold-layout'
 
 function listPreviewableComponents(ctx: CliContext): string[] {
-  const componentsDir = path.join(ctx.root, 'ui/components/ui')
+  // Mirror `bf gen preview`'s write location so the lister and the
+  // generator agree on where previews live. Pre-fix this hardcoded
+  // `ui/components/ui` against `ctx.root` and silently returned [] in
+  // every scaffolded app.
+  const { writeRoot, componentsBasePath } = resolveScaffoldLayout(ctx)
+  const componentsDir = path.join(writeRoot, componentsBasePath)
   if (!existsSync(componentsDir)) return []
   const names: string[] = []
   for (const name of readdirSync(componentsDir)) {

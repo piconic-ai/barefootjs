@@ -70,8 +70,17 @@ function isSimpleJsx(code: string): boolean {
 
 /**
  * Generate preview code from component metadata.
+ * @param meta - Component metadata loaded from `meta/<name>.json`.
+ * @param componentsBasePath - Directory the preview file is placed under,
+ *   relative to the project root. Monorepo default mirrors the registry
+ *   layout (`ui/components/ui`); scaffolded apps pass
+ *   `barefoot.config.ts`'s `paths.components` (typically `components/ui`)
+ *   so the preview lands next to the component, not in `node_modules`.
  */
-export function generatePreview(meta: ComponentMeta): PreviewGenerateResult {
+export function generatePreview(
+  meta: ComponentMeta,
+  componentsBasePath: string = 'ui/components/ui',
+): PreviewGenerateResult {
   const pascalName = toPascalCase(meta.name)
   const hasVariants = meta.variants != null && Object.keys(meta.variants).length > 0
   const hasSubComponents = meta.subComponents != null && meta.subComponents.length > 0
@@ -143,7 +152,7 @@ export function generatePreview(meta: ComponentMeta): PreviewGenerateResult {
   return {
     code: lines.join('\n'),
     previewNames,
-    filePath: `ui/components/ui/${meta.name}/index.preview.tsx`,
+    filePath: `${componentsBasePath}/${meta.name}/index.preview.tsx`,
   }
 }
 

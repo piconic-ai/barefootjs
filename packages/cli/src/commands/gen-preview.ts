@@ -5,6 +5,7 @@ import path from 'path'
 import type { CliContext } from '../context'
 import { loadComponent } from '../lib/meta-loader'
 import { generatePreview } from '../lib/preview-generate'
+import { resolveScaffoldLayout } from '../lib/scaffold-layout'
 
 export async function run(args: string[], ctx: CliContext): Promise<void> {
   const force = args.includes('--force')
@@ -16,8 +17,9 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   }
 
   const meta = loadComponent(ctx.metaDir, name)
-  const result = generatePreview(meta)
-  const absPath = path.join(ctx.root, result.filePath)
+  const { writeRoot, componentsBasePath } = resolveScaffoldLayout(ctx)
+  const result = generatePreview(meta, componentsBasePath)
+  const absPath = path.join(writeRoot, result.filePath)
 
   if (existsSync(absPath) && !force) {
     console.error(`Error: ${result.filePath} already exists. Use --force to overwrite.`)

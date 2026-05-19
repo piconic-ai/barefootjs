@@ -4,6 +4,7 @@ import { writeFileSync, mkdirSync, existsSync } from 'fs'
 import path from 'path'
 import type { CliContext } from '../context'
 import { scaffold } from '../lib/scaffold'
+import { resolveScaffoldLayout } from '../lib/scaffold-layout'
 
 export function run(args: string[], ctx: CliContext): void {
   if (args.length < 2) {
@@ -13,17 +14,18 @@ export function run(args: string[], ctx: CliContext): void {
   }
 
   const [componentName, ...useComponents] = args
-  const result = scaffold(componentName, useComponents, ctx.metaDir)
+  const { writeRoot, componentsBasePath } = resolveScaffoldLayout(ctx)
+  const result = scaffold(componentName, useComponents, ctx.metaDir, componentsBasePath)
 
   // Write component file
-  const componentAbsPath = path.join(ctx.root, result.componentPath)
+  const componentAbsPath = path.join(writeRoot, result.componentPath)
   if (existsSync(componentAbsPath)) {
     console.error(`Error: ${result.componentPath} already exists. Delete it first or choose a different name.`)
     process.exit(1)
   }
 
   // Write test file
-  const testAbsPath = path.join(ctx.root, result.testPath)
+  const testAbsPath = path.join(writeRoot, result.testPath)
   const testDir = path.dirname(testAbsPath)
   if (!existsSync(testDir)) {
     mkdirSync(testDir, { recursive: true })

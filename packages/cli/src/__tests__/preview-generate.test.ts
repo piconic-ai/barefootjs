@@ -25,6 +25,22 @@ describe('generatePreview', () => {
     }
   })
 
+  describe('componentsBasePath', () => {
+    test('default keeps the monorepo registry layout (backwards compat)', () => {
+      const meta = loadComponent(metaDir, 'button')
+      const result = generatePreview(meta)
+      expect(result.filePath).toBe('ui/components/ui/button/index.preview.tsx')
+    })
+
+    test('scaffolded apps land previews under paths.components, not ui/components/ui', () => {
+      // Mirrors what `resolveScaffoldLayout` returns for a project with
+      // the default scaffold config (`paths.components = 'components/ui'`).
+      const meta = loadComponent(metaDir, 'button')
+      const result = generatePreview(meta, 'components/ui')
+      expect(result.filePath).toBe('components/ui/button/index.preview.tsx')
+    })
+  })
+
   describe('determinism', () => {
     test('same meta produces identical output', () => {
       const meta = loadComponent(metaDir, 'button')

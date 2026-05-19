@@ -30,8 +30,19 @@ export interface ScaffoldResult {
  * Generate a component skeleton and basic IR test.
  * @param componentName - Name for the new component (kebab-case, e.g. "settings-form")
  * @param useComponents - Names of existing components to compose (e.g. ["input", "switch", "button"])
+ * @param metaDir - Where to find existing component meta JSON (drives the
+ *   `"use client"` decision + sub-component import list).
+ * @param componentsBasePath - Directory the new component is written under,
+ *   relative to the project root. Monorepo: `ui/components/ui` (default).
+ *   Scaffolded app: pass `barefoot.config.ts`'s `paths.components`
+ *   (typically `components/ui`) so files don't land in `node_modules/ui/...`.
  */
-export function scaffold(componentName: string, useComponents: string[], metaDir: string): ScaffoldResult {
+export function scaffold(
+  componentName: string,
+  useComponents: string[],
+  metaDir: string,
+  componentsBasePath: string = 'ui/components/ui',
+): ScaffoldResult {
   const metas = useComponents.map(name => ({ name, meta: loadMeta(metaDir, name) }))
   const found = metas.filter(m => m.meta !== null) as { name: string; meta: ComponentMeta }[]
   const notFound = metas.filter(m => m.meta === null).map(m => m.name)
@@ -48,7 +59,7 @@ export function scaffold(componentName: string, useComponents: string[], metaDir
   // Generate test code
   const testCode = generateTestCode(componentName, needsClient)
 
-  const basePath = `ui/components/ui/${componentName}`
+  const basePath = `${componentsBasePath}/${componentName}`
 
   return {
     componentCode,
