@@ -374,10 +374,20 @@ sub _to_attr_name ($key) {
 }
 
 sub _html_escape ($value) {
-    # Match the JS `String(v)` → setAttribute path, which escapes
-    # ", &, <, >. Go's `template.HTMLEscapeString` produces the
-    # same shape (using &#34; for the double-quote rather than the
-    # named entity); align here so the byte-equal contract holds.
+    # HTML attribute-value escape for SSR string emission. The
+    # spread bag's values reach the browser as part of a generated
+    # `key="..."` substring inside the rendered HTML, so the
+    # escape set has to cover everything that could break either
+    # the surrounding double-quoted attribute or the enclosing
+    # tag: `&`, `<`, `>`, `"`, and `'`. Matches Go's
+    # `template.HTMLEscapeString` semantics byte-for-byte (using
+    # `&#34;` / `&#39;` for quotes rather than the named entities)
+    # so the SSR output is identical across the Go and Mojo
+    # adapters (#1407, #1413 review). The CSR-side
+    # `applyRestAttrs` calls `el.setAttribute(name, String(value))`
+    # — which does its own DOM-level escaping in the browser —
+    # so JS doesn't need an explicit escape pass; Perl/Go emit a
+    # string, so we do.
     my $s = defined $value ? "$value" : '';
     $s =~ s/&/&amp;/g;
     $s =~ s/</&lt;/g;

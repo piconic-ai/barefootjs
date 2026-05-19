@@ -441,11 +441,17 @@ function parseLiteral(expr: string): unknown {
   if (/^['"](.*)['"]$/.test(expr)) return expr.slice(1, -1)
   // JS object literal (#1407 follow-up): `{ id: 'a', class: 'on' }`.
   // Used for spread-bag signal initial values in the `jsx-spread-*`
-  // fixture family. Supports nested objects and arrays via
-  // recursive `parseLiteral`. Trailing commas (`{ id: 'a', }`) are
-  // accepted by skipping empty segments. Anything the recursive
-  // call can't handle (identifiers, function calls, member access)
-  // surfaces as null from the inner call and bubbles up.
+  // fixture family. Keys may be bare identifiers or string
+  // literals; values are scalars (string / number / boolean /
+  // null) or nested object literals via recursive `parseLiteral`.
+  // Non-empty array values (`[1, 2]`) are NOT supported — only
+  // the `[]` empty-array literal recognised by the early-return
+  // above lowers. Trailing commas (`{ id: 'a', }`) are accepted
+  // by skipping empty segments (#1413 review). Anything the
+  // recursive call can't handle (identifiers, function calls,
+  // member access, non-empty arrays) surfaces as null and bubbles
+  // up so the harness falls back to its existing `undef`
+  // behaviour.
   const trimmed = expr.trim()
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
     const inner = trimmed.slice(1, -1).trim()
