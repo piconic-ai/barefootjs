@@ -169,6 +169,10 @@ async function main(): Promise<void> {
       // line so a "foo/bar/bazz" positional shows as `cd foo/bar/bazz`
       // instead of just `cd bazz`.
       BAREFOOT_INIT_PROJECT_PATH: projectName,
+      // Sentinel — the only way `bf init` runs. Direct invocations
+      // (without this var) are bounced with a redirect to
+      // `npm create barefootjs@latest`. See packages/cli/src/commands/init.ts.
+      BAREFOOT_INIT_VIA_CREATE: '1',
     },
   })
 

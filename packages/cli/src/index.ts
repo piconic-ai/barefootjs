@@ -63,7 +63,10 @@ switch (command) {
   }
 
   case 'init': {
-    // Internal: invoked by create-barefootjs. Not shown in --help.
+    // Internal: gated by BAREFOOT_INIT_VIA_CREATE=1, which only
+    // create-barefootjs sets. Direct `bf init` invocations are
+    // refused inside ./commands/init with a redirect to
+    // `npm create barefootjs@latest`. Not shown in --help.
     const { run } = await import('./commands/init')
     await run(filteredArgs.slice(1), ctx)
     break

@@ -1,8 +1,16 @@
-// `barefoot init` — Scaffold a runnable starter app for an adapter
-// (currently Hono). Counter component + server + npm scripts so the user
-// can `npm install && npm run dev` and see a working page. The single
-// project config is `barefoot.config.ts`, carrying both `paths` (consumed
-// by registry tooling) and the build options.
+// `barefoot init` — Internal scaffolding helper, invoked exclusively
+// by `create-barefootjs`. The user-facing entry point is
+// `npm create barefootjs@latest`, which sets BAREFOOT_INIT_VIA_CREATE=1
+// before spawning this command. Direct `bf init` invocations are
+// refused with a redirect message so users land on the documented flow
+// (which also handles "is the target directory empty?" pre-flight,
+// which init itself does not).
+//
+// Scaffold output: barefoot.config.ts + server + components/Counter +
+// npm scripts so the user can `npm install && npm run dev` and see a
+// working page. The single project config is `barefoot.config.ts`,
+// carrying both `paths` (consumed by registry tooling) and the build
+// options.
 
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import path from 'path'
@@ -40,7 +48,24 @@ function parseFlags(args: string[]): InitFlags {
   return flags
 }
 
+// Sentinel set by create-barefootjs when it spawns the CLI. Anything
+// else (a curious user running `bf init` directly, a stale shell
+// history line) is bounced with a redirect — keeping `bf init` strictly
+// internal means the empty-directory pre-flight in create-barefootjs is
+// guaranteed to run, so we can't half-scaffold over a populated tree.
+const INIT_GATE_ENV = 'BAREFOOT_INIT_VIA_CREATE'
+
 export async function run(args: string[], ctx: CliContext): Promise<void> {
+  if (process.env[INIT_GATE_ENV] !== '1') {
+    console.error('`bf init` is internal — invoke it via `npm create barefootjs@latest`.')
+    console.error('')
+    console.error('Quick start:')
+    console.error('  npm create barefootjs@latest my-app')
+    console.error('  # or: bun create barefootjs my-app')
+    console.error('  # or: pnpm create barefootjs my-app')
+    process.exit(1)
+  }
+
   const projectDir = process.cwd()
   const flags = parseFlags(args)
 
