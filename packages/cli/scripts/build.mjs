@@ -9,7 +9,7 @@
 //   is bundled inline so the published CLI is self-contained.
 
 import { build } from 'esbuild'
-import { chmodSync } from 'node:fs'
+import { chmodSync, cpSync, existsSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
@@ -17,6 +17,12 @@ const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(here, '..')
 const entry = resolve(pkgDir, 'src/index.ts')
 const outfile = resolve(pkgDir, 'dist/index.js')
+// Monorepo `docs/core/` lives three levels up from `packages/cli/`.
+// We copy it into `dist/docs/core/` so `bf guide` can read framework
+// docs from the installed npm package, not just from a monorepo
+// checkout. Only `dist` is in `files`, so this path is what ships.
+const docsSrc = resolve(pkgDir, '../../docs/core')
+const docsDst = resolve(pkgDir, 'dist/docs/core')
 
 await build({
   entryPoints: [entry],
@@ -34,5 +40,20 @@ await build({
 
 // Make the bundle executable so `bin` symlinks work.
 chmodSync(outfile, 0o755)
+
+// Ship framework docs alongside the bundle so `bf guide` works in
+// scaffolded apps. We don't gate on file extension — `scanCoreDocs`
+// already filters to .md.
+if (existsSync(docsSrc)) {
+  if (existsSync(docsDst)) rmSync(docsDst, { recursive: true, force: true })
+  cpSync(docsSrc, docsDst, { recursive: true })
+  console.log(`Copied: ${docsSrc} -> ${docsDst}`)
+} else {
+  // pkg-pr-new / published-tarball flows always have docs/core in the
+  // source tree. A missing source dir means the build is happening
+  // somewhere unexpected; warn but don't fail — `bf guide` will surface
+  // its own error if the dir is missing at runtime.
+  console.warn(`Warning: ${docsSrc} not found; bf guide will fail in the built CLI.`)
+}
 
 console.log(`Built: ${outfile}`)

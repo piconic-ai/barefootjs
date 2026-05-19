@@ -1,5 +1,9 @@
 import { describe, test, expect, spyOn } from 'bun:test'
+import { mkdtempSync, rmSync } from 'fs'
+import { tmpdir } from 'os'
+import path from 'path'
 import { createContext } from '../context'
+import type { CliContext } from '../context'
 
 // We test the guide command's behavior indirectly through docs-loader
 // and directly test the command's run function for edge cases.
@@ -63,6 +67,39 @@ describe('bf guide', () => {
       expect(parsed.content).toBeDefined()
     } finally {
       logSpy.mockRestore()
+    }
+  })
+
+  test('errors with both candidate paths when docs/core is missing everywhere', async () => {
+    // Simulates a scaffolded app installed from a hypothetically-broken
+    // CLI tarball (no bundled docs) — `ctx.root` is a fresh tmp dir
+    // with no `docs/core`, and the source-mode bundled path doesn't
+    // exist either when bun runs TS directly. The error must surface
+    // both candidate paths so the user can see what's missing.
+    const fakeRoot = mkdtempSync(path.join(tmpdir(), 'bf-guide-noroot-'))
+    const ctx: CliContext = {
+      root: fakeRoot,
+      metaDir: path.join(fakeRoot, 'meta'),
+      jsonFlag: false,
+      config: null,
+      projectDir: null,
+    }
+    const exitSpy = spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('exit')
+    }) as never)
+    const errorSpy = spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const { run } = await import('../commands/guide')
+      expect(() => run([], ctx)).toThrow('exit')
+      const errors = errorSpy.mock.calls.map(c => c.join(' ')).join('\n')
+      expect(errors).toContain('Core documentation not found.')
+      expect(errors).toContain(path.join(fakeRoot, 'docs/core'))
+      expect(errors).toContain('(monorepo)')
+      expect(errors).toContain('(bundled CLI)')
+    } finally {
+      exitSpy.mockRestore()
+      errorSpy.mockRestore()
+      rmSync(fakeRoot, { recursive: true, force: true })
     }
   })
 
