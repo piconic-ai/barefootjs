@@ -540,11 +540,7 @@ function analyzeComponentBody(
     // inner `<div/>` (equivalent to the pre-refactor `return (<div/>)`
     // unwrap at the block level).
     if (!ctx.componentBodyBlock) {
-      let shorthand = body as ts.Expression
-      while (ts.isParenthesizedExpression(shorthand)) {
-        shorthand = shorthand.expression
-      }
-      ctx.jsxReturn = shorthand
+      ctx.jsxReturn = unwrapJsxTransparent(body as ts.Expression)
     }
 
     visitComponentBody(body, ctx)
@@ -714,11 +710,7 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
   // longer touches `jsxReturn`; it retains its other job (walking through
   // statements to collect signals / memos / effects / functions).
   if (ts.isReturnStatement(node) && node.expression) {
-    let retExpr = node.expression
-    while (ts.isParenthesizedExpression(retExpr)) {
-      retExpr = retExpr.expression
-    }
-    ctx.jsxReturn = retExpr
+    ctx.jsxReturn = unwrapJsxTransparent(node.expression)
   }
 
   // Skip recursion into function bodies (arrow functions, function expressions, function declarations)
@@ -759,16 +751,42 @@ function findJsxReturnInBlock(
 }
 
 /**
- * Extract JSX element from an expression, handling parenthesized expressions.
+ * Strip JSX-transparent wrappers from an expression. Matches the
+ * "transparent: unwrap and recurse" set in `transformJsxExpression`
+ * (`jsx-to-ir.ts`): parentheses + TS type-only wrappers (`as`,
+ * `satisfies`, `!`, `<T>`, partially-emitted). Returning-position JSX
+ * may carry any of these without changing semantics; the analyzer must
+ * see through them so `if (cond) return <jsx/> as X` registers as a
+ * conditional return (#1405). Without this, the wrapped early-return
+ * was treated as a verbatim init-body statement and its JSX leaked
+ * unprocessed into the emitted client JS.
+ */
+export function unwrapJsxTransparent(expr: ts.Expression): ts.Expression {
+  let current = expr
+  while (
+    ts.isParenthesizedExpression(current) ||
+    ts.isAsExpression(current) ||
+    ts.isSatisfiesExpression(current) ||
+    ts.isNonNullExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    current.kind === ts.SyntaxKind.PartiallyEmittedExpression
+  ) {
+    current = (current as ts.AsExpression | ts.ParenthesizedExpression | ts.SatisfiesExpression | ts.NonNullExpression | ts.TypeAssertion).expression
+  }
+  return current
+}
+
+/**
+ * Extract JSX element from an expression, handling parenthesized
+ * expressions and TS type-only wrappers (`as`, `satisfies`, `!`,
+ * `<T>`).
  */
 function extractJsxFromExpression(
   expr: ts.Expression
 ): ts.JsxElement | ts.JsxFragment | ts.JsxSelfClosingElement | null {
-  if (ts.isJsxElement(expr) || ts.isJsxFragment(expr) || ts.isJsxSelfClosingElement(expr)) {
-    return expr
-  }
-  if (ts.isParenthesizedExpression(expr)) {
-    return extractJsxFromExpression(expr.expression)
+  const inner = unwrapJsxTransparent(expr)
+  if (ts.isJsxElement(inner) || ts.isJsxFragment(inner) || ts.isJsxSelfClosingElement(inner)) {
+    return inner
   }
   return null
 }
@@ -1607,8 +1625,7 @@ function extractSingleJsxReturn(
     if (ts.isReturnStatement(node)) {
       returnCount++
       if (node.expression) {
-        let expr: ts.Expression = node.expression
-        while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+        const expr = unwrapJsxTransparent(node.expression)
         if (ts.isJsxElement(expr) || ts.isJsxSelfClosingElement(expr) || ts.isJsxFragment(expr)) {
           jsxReturn = expr
         }
@@ -1647,8 +1664,7 @@ export function isMultiReturnJsxFunctionBody(body: ts.Block): boolean {
         allReturnsAreJsxOrNull = false
         return
       }
-      let expr: ts.Expression = node.expression
-      while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+      const expr = unwrapJsxTransparent(node.expression)
       const isJsx =
         ts.isJsxElement(expr) ||
         ts.isJsxSelfClosingElement(expr) ||
