@@ -21,6 +21,26 @@
       "types": "./src/jsx-dev-runtime/index.d.ts"
     }
   },
+  "//publishConfig": "When npm/pkg-pr-new packs this package, swap `types` to the built dist/*.d.ts files so downstream `tsc --noEmit` doesn't walk into our TS source (where Node imports like `fs` / `process` would force every consumer to install @types/node). Runtime `import` stays at src — current monorepo + esbuild consumers transpile on the fly, and a future publish-ready dist would point this at dist/index.js once subpath bundles exist (none yet for ./scanner).",
+  "publishConfig": {
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./src/index.ts"
+      },
+      "./scanner": {
+        "types": "./dist/scanner/js-scanner.d.ts",
+        "import": "./src/scanner/js-scanner.ts"
+      },
+      "./jsx-runtime": {
+        "types": "./src/jsx-runtime/index.d.ts"
+      },
+      "./jsx-dev-runtime": {
+        "types": "./src/jsx-dev-runtime/index.d.ts"
+      }
+    }
+  },
   "files": [
     "dist",
     "src"
@@ -31,7 +51,9 @@
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test && bun run typecheck:tests",
     "typecheck:tests": "tsgo --noEmit -p __tests__/tsconfig.json",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
   },
   "keywords": [
     "jsx",

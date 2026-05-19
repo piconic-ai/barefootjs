@@ -74,6 +74,79 @@
       "import": "./src/app.ts"
     }
   },
+  "//publishConfig": "When npm/pkg-pr-new packs this package, swap each subpath's `types` to the dist/*.d.ts produced by `tsgo --emitDeclarationOnly`. Downstream consumers' `tsc --noEmit` then walks pure-declaration files instead of our TS source — which transitively pulled `process` / `fs` references and forced every scaffold to install @types/node. Runtime `import` still points at TS source so existing bun + esbuild paths keep working; a future change can repoint these to dist/*.js once subpath bundles exist.",
+  "publishConfig": {
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./src/index.ts"
+      },
+      "./adapter": {
+        "types": "./dist/adapter/index.d.ts",
+        "import": "./src/adapter/index.ts"
+      },
+      "./scripts": {
+        "types": "./dist/scripts.d.ts",
+        "import": "./src/scripts.tsx"
+      },
+      "./portals": {
+        "types": "./dist/portals.d.ts",
+        "import": "./src/portals.tsx"
+      },
+      "./portal": {
+        "types": "./dist/portal-ssr.d.ts",
+        "import": "./src/portal-ssr.tsx"
+      },
+      "./dialog-context": {
+        "types": "./dist/dialog-context.d.ts",
+        "import": "./src/dialog-context.tsx"
+      },
+      "./client-shim": {
+        "types": "./dist/client-shim.d.ts",
+        "import": "./src/client-shim.ts"
+      },
+      "./preload": {
+        "types": "./dist/preload.d.ts",
+        "import": "./src/preload.tsx"
+      },
+      "./dev": {
+        "types": "./dist/dev.d.ts",
+        "import": "./src/dev.tsx"
+      },
+      "./dev-worker": {
+        "types": "./dist/dev-worker.d.ts",
+        "import": "./src/dev-worker.ts"
+      },
+      "./jsx/jsx-runtime": {
+        "types": "./dist/jsx/jsx-runtime/index.d.ts",
+        "import": "./src/jsx/jsx-runtime/index.ts"
+      },
+      "./jsx/jsx-dev-runtime": {
+        "types": "./dist/jsx/jsx-dev-runtime/index.d.ts",
+        "import": "./src/jsx/jsx-dev-runtime/index.ts"
+      },
+      "./async": {
+        "types": "./dist/async.d.ts",
+        "import": "./src/async.tsx"
+      },
+      "./utils": {
+        "types": "./dist/utils.d.ts",
+        "import": "./src/utils.ts"
+      },
+      "./test-render": {
+        "bun": "./src/test-render.ts"
+      },
+      "./build": {
+        "types": "./dist/build.d.ts",
+        "import": "./src/build.ts"
+      },
+      "./app": {
+        "types": "./dist/app.d.ts",
+        "import": "./src/app.ts"
+      }
+    }
+  },
   "files": [
     "dist",
     "src"
@@ -83,7 +156,9 @@
     "build:js": "bun build ./src/index.ts --outdir ./dist --format esm",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
   },
   "keywords": [
     "hono",
