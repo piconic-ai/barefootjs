@@ -89,6 +89,19 @@ interface TransformContext {
    * `renderChild('Pkg.Comp', ...)` which fails the registry lookup.
    */
   _componentNamespaces?: Map<string, Map<string, string>>
+  /**
+   * Per-branch overlay of `const X = expr` declared inside an early-
+   * return `if`-block, populated by `buildIfStatementChain` before
+   * transforming the consequent JSX (#1409). When a JSX expression
+   * references one of these names, `transformExpression` inlines the
+   * initializer at the use site — the same way module-scope JSX
+   * constants are inlined via `analyzer.jsxConstants` (#547) — instead
+   * of leaving the identifier to leak into the emitted client JS at
+   * outer init scope where the binding doesn't exist. Saved/restored
+   * around each `transformNode(condReturn.jsxReturn, ctx)` call so
+   * sibling branches do not see each other's locals.
+   */
+  _branchScopeVars?: Map<string, ts.Expression>
 }
 
 /**
@@ -1095,15 +1108,33 @@ function transformExpression(
 
   const expr = node.expression
 
-  // Check for bare signal/memo identifier (BF044)
-  checkBareSignalOrMemoIdentifier(expr, ctx)
-
   // Check for @client directive in prefix style: {/* @client */ expr}.
   // Detection is centralised in `hasLeadingClientDirective` so JSX-child,
   // attribute, and component-prop positions agree — a substring match on
   // `getFullText()` would false-positive on string literals or trailing
   // comments containing "@client".
   const isClientOnly = hasLeadingClientDirective(expr, ctx.sourceFile)
+
+  return transformExpressionInner(expr, ctx, node, isClientOnly)
+}
+
+/**
+ * Inner dispatch for JSX-child expressions. Separated so a substituted
+ * expression (e.g. inlining a branch scope variable's initializer at
+ * the use site, #1409) can re-enter the dispatch chain with a
+ * different `expr` than the original `node.expression`. The `node`
+ * argument is preserved as the original JsxExpression so source
+ * locations on the produced IR still point at the use site, not at
+ * the substitution target.
+ */
+function transformExpressionInner(
+  expr: ts.Expression,
+  ctx: TransformContext,
+  node: ts.JsxExpression,
+  isClientOnly: boolean,
+): IRNode | null {
+  // Check for bare signal/memo identifier (BF044)
+  checkBareSignalOrMemoIdentifier(expr, ctx)
 
   // #547: Inline a JSX constant referenced by identifier. Unique to JSX-child
   // position — conditional branches and return position don't resolve
@@ -1113,6 +1144,19 @@ function transformExpression(
     const jsxNode = ctx.analyzer.jsxConstants.get(expr.text)
     if (jsxNode) {
       return transformNode(jsxNode, ctx)
+    }
+
+    // #1409: Same inlining for `const X = …` declared inside an
+    // early-return `if`-block. The scope variable's initializer takes
+    // the identifier's place — handles `<jsx/>` (JsxElement), dynamic
+    // shapes (`cond ? <jsx/> : null`, `&&`, `??`), and scalar leaves
+    // alike. Without this, a reference like `{/* @client */ aLocal}`
+    // leaves the identifier in the emitted client JS at outer init
+    // scope where `aLocal` doesn't exist — runtime
+    // `ReferenceError: aLocal is not defined`.
+    const branchInit = ctx._branchScopeVars?.get(expr.text)
+    if (branchInit) {
+      return transformExpressionInner(branchInit, ctx, node, isClientOnly)
     }
   }
 
@@ -3761,10 +3805,31 @@ function buildIfStatementChain(
     const condition = ctx.getJS(condReturn.condition)
     const templateCondition = rewriteBarePropRefs(condition, condReturn.condition, ctx)
 
+    // #1409: overlay each branch's `const X = …` declarations onto
+    // `ctx._branchScopeVars` so a JSX expression that references one
+    // of them inlines the initializer at the use site instead of
+    // leaving the bare identifier in the emitted client JS at outer
+    // init scope. Saved/restored around `transformNode` so sibling
+    // branches and outer scope don't see each other's locals.
+    const prevBranchScopeVars = ctx._branchScopeVars
+    const branchScopeVars = new Map<string, ts.Expression>()
+    if (prevBranchScopeVars) {
+      for (const [k, v] of prevBranchScopeVars) branchScopeVars.set(k, v)
+    }
+    for (const decl of condReturn.scopeVariables) {
+      if (ts.isIdentifier(decl.name) && decl.initializer) {
+        branchScopeVars.set(decl.name.text, decl.initializer)
+      }
+    }
+    ctx._branchScopeVars = branchScopeVars
+
     // Transform the JSX return in the then branch
     // Reset isRoot so each branch gets needsScope=true
     ctx.isRoot = true
     const consequent = transformNode(condReturn.jsxReturn, ctx)
+
+    ctx._branchScopeVars = prevBranchScopeVars
+
     if (!consequent) {
       continue
     }
