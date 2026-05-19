@@ -2027,16 +2027,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (!param) continue
       // A destructure default already wins via applyGoFallback below.
       if (this.goPropDefault(param.defaultValue) !== null) continue
-      // Zero-equivalent fallback is a no-op against the Go zero value.
-      if (match.goFallback === '0' || match.goFallback === 'false') continue
       const fieldName = this.capitalizeFieldName(match.propName)
       // Pick the zero literal based on the fallback's literal shape.
+      // Bool fallbacks (`?? true`) hoist against the `false` zero —
+      // matches the same Go-zero conflation the int / string cases
+      // accept: caller can't distinguish "explicit false" from
+      // "unset", but for SSR-time defaults that's the documented
+      // trade-off (#1423 Option B).
       let zeroLiteral: string
-      if (match.goFallback === 'true') {
-        // `(in.X || true)` is always-true — caller can't thread `false`
-        // through. Leave the bool-true asymmetry to the existing
-        // applyGoFallback path (no hoisted var benefit anyway).
-        continue
+      if (match.goFallback === 'true' || match.goFallback === 'false') {
+        zeroLiteral = 'false'
       } else if (/^-?\d+(\.\d+)?$/.test(match.goFallback)) {
         zeroLiteral = '0'
       } else if (match.goFallback.startsWith('"')) {
@@ -2044,6 +2044,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       } else {
         continue
       }
+      // Zero-equivalent fallback is a no-op against the Go zero value
+      // (`?? 0`, `?? ''`, `?? false`, `?? 0.0`). Compare against the
+      // computed zeroLiteral so spelling variants like `0.0` collapse
+      // to the same skip as `0`.
+      if (match.goFallback === zeroLiteral) continue
+      if (zeroLiteral === '0' && Number(match.goFallback) === 0) continue
       // The JSX-side identifier is the natural local name.
       // Suffix with `_` if it collides with a Go keyword or a local we
       // already emit.

@@ -305,6 +305,63 @@ export function Label(props: { label?: string }) {
       // hoisted var.
       expect(types).toContain('Text: label,')
     })
+
+    test('hoists `props.X ?? true` against the bool zero (#1423 review)', () => {
+      // Bool-true falls through the same hoist path as int / string —
+      // the asymmetry is documented (caller can't thread "explicit
+      // false" through because Go's bool zero IS false), but emitting
+      // a hoisted local matches the int case's shape so a derived
+      // memo can inherit it.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Check(props: { checked?: boolean }) {
+  const [c, setC] = createSignal(props.checked ?? true)
+  return <div>{c() ? 'on' : 'off'}</div>
+}
+`)
+      const result = adapter.generate(ir)
+      const types = result.types!
+      expect(types).toContain('checked := in.Checked')
+      expect(types).toMatch(/if checked == false\s*\{\s*checked = true\s*\}/)
+      expect(types).toContain('Checked: checked,')
+      expect(types).toContain('C: checked,')
+    })
+
+    test('skips hoist for zero-equivalent string and float fallbacks (#1423 review)', () => {
+      // The skip predicate compares the Go fallback against the
+      // type's zero literal — covers `?? ''` (string) and `?? 0.0`
+      // (numeric spelling that parses to zero), not just the bare
+      // `?? 0` / `?? false` literals.
+      const adapter = new GoTemplateAdapter()
+      const emptyStringIr = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Label(props: { label?: string }) {
+  const [text, setText] = createSignal(props.label ?? '')
+  return <div>{text()}</div>
+}
+`)
+      const emptyStringTypes = adapter.generate(emptyStringIr).types!
+      expect(emptyStringTypes).not.toContain('label := in.Label')
+      expect(emptyStringTypes).toContain('Label: in.Label,')
+
+      const floatIr = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Score(props: { value?: number }) {
+  const [v, setV] = createSignal(props.value ?? 0.0)
+  return <div>{v()}</div>
+}
+`)
+      const floatTypes = adapter.generate(floatIr).types!
+      expect(floatTypes).not.toContain('value := in.Value')
+      expect(floatTypes).toContain('Value: in.Value,')
+    })
   })
 
   describe('JSX children forwarding (#1203)', () => {
