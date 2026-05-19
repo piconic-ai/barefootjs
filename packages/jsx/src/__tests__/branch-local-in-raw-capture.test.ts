@@ -156,37 +156,6 @@ describe('branch-local references inside raw-captured JS (#1414 follow-ups)', ()
     expect(content).toContain('count() + (7)')
   })
 
-  test('cell 5 (JSX in ref callback) is a known limitation — substitution skipped to avoid emitting JSX into raw JS', () => {
-    // Substituting a JSX initializer into raw text would emit
-    // `<span>x</span>` inside `(el) => { el.appendChild(<span>x</span>) }`
-    // — TypeScript JSX in a JS string. The substitution skips JSX-
-    // shaped initializers; the resulting `local` identifier still
-    // leaks. Document this with a snapshot so the limitation is
-    // visible in tests and so a future runtime helper for
-    // imperatively mounting branch-local JSX has a regression target.
-    const source = `
-      'use client'
-      import { createSignal } from '@barefootjs/client'
-
-      export function JsxInRef(props: { kind: 'a' | 'b' }) {
-        const [count] = createSignal(0)
-        if (props.kind === 'a') {
-          const local = <span>x</span>
-          return <div ref={(el) => { el.appendChild(local) }}>A: {count()}</div>
-        }
-        return <div>B: {count()}</div>
-      }
-    `
-    const result = compileJSX(source, 'JsxInRef.tsx', { adapter })
-    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
-    // The skipped substitution leaves `local` in the init body.
-    // No diagnostic is emitted — this is a documented limitation,
-    // not a silent regression. Filing as a separate workstream
-    // when a runtime helper for imperatively mounting branch-local
-    // JSX lands.
-    expect(clientJsContent(result)).toContain('local')
-  })
-
   test('sibling branches: substitution overlay does not leak to other branches', () => {
     // Each branch installs its own `getJS` override, restored
     // before the next branch starts.

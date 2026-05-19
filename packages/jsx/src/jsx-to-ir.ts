@@ -111,6 +111,15 @@ interface TransformContext {
    * sibling branches do not see each other's locals.
    */
   _branchScopeVars?: Map<string, ts.Expression>
+  /**
+   * Subset of `_branchScopeVars` names whose initializer carries JSX
+   * (so text substitution into raw-captured callback bodies is unsafe
+   * — TS JSX in JS syntax is invalid). `processAttributes` consults
+   * this set when extracting ref / event-handler bodies and emits
+   * BF047 if any of these names appears as a free identifier in the
+   * callback body. See #1414 cell 5.
+   */
+  _jsxBranchLocalNames?: Set<string>
 }
 
 /**
@@ -2936,6 +2945,32 @@ function computeReactivityFlags(
   }
 }
 
+/**
+ * Emit BF047 if a ref / event-handler callback body references a
+ * JSX-typed branch-local — the multi-return pipeline has no way to
+ * keep the JSX live as a runtime value here (substituting the JSX
+ * literal into the emitted callback body would produce TS JSX
+ * inside a JS string, and leaving the bare identifier produces a
+ * runtime ReferenceError at hydrate). See #1414 cell 5.
+ */
+function reportJsxBranchLocalInCallback(expr: ts.Expression, ctx: TransformContext): void {
+  const jsxNames = ctx._jsxBranchLocalNames
+  if (!jsxNames || jsxNames.size === 0) return
+  const refs = extractFreeIdentifiersFromNode(expr)
+  for (const name of refs) {
+    if (jsxNames.has(name)) {
+      ctx.analyzer.errors.push(
+        createError(
+          ErrorCodes.JSX_BRANCH_LOCAL_IN_CALLBACK,
+          getSourceLocation(expr, ctx.sourceFile, ctx.filePath),
+          { message: `JSX-typed branch local '${name}' referenced inside a callback body (ref / event handler). Render it as a child instead: \`<div ref={...}>{${name}}</div>\`.` },
+        ),
+      )
+      return
+    }
+  }
+}
+
 function processAttributes(
   attributes: ts.JsxAttributes,
   ctx: TransformContext
@@ -2960,6 +2995,7 @@ function processAttributes(
     // `ref` field for the client-JS emitter.
     if (name === 'ref') {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+        reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         ref = ctx.getJS(attr.initializer.expression)
       }
       continue
@@ -2972,6 +3008,7 @@ function processAttributes(
     if (/^on[A-Z]/.test(name)) {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         const eventName = name.slice(2).toLowerCase()
+        reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         events.push({
           name: eventName,
           originalAttr: name,
@@ -3868,16 +3905,29 @@ function buildIfStatementChain(
     // init scope. Saved/restored around `transformNode` so sibling
     // branches and outer scope don't see each other's locals.
     const prevBranchScopeVars = ctx._branchScopeVars
+    const prevJsxBranchLocalNames = ctx._jsxBranchLocalNames
     const branchScopeVars = new Map<string, ts.Expression>()
+    const jsxBranchLocalNames = new Set<string>()
     if (prevBranchScopeVars) {
       for (const [k, v] of prevBranchScopeVars) branchScopeVars.set(k, v)
+    }
+    if (prevJsxBranchLocalNames) {
+      for (const n of prevJsxBranchLocalNames) jsxBranchLocalNames.add(n)
     }
     for (const decl of condReturn.scopeVariables) {
       if (ts.isIdentifier(decl.name) && decl.initializer) {
         branchScopeVars.set(decl.name.text, decl.initializer)
+        if (initializerShapeContainsJsx(decl.initializer)) {
+          jsxBranchLocalNames.add(decl.name.text)
+        } else {
+          // A shadowing non-JSX declaration in a nested branch lifts
+          // the parent's JSX flag for this name.
+          jsxBranchLocalNames.delete(decl.name.text)
+        }
       }
     }
     ctx._branchScopeVars = branchScopeVars
+    ctx._jsxBranchLocalNames = jsxBranchLocalNames
 
     // #1414 cells 5 & 7: branch-local references that don't reach the
     // bare-identifier substitution sites (`transformExpressionInner`
@@ -3941,6 +3991,7 @@ function buildIfStatementChain(
     }
 
     ctx._branchScopeVars = prevBranchScopeVars
+    ctx._jsxBranchLocalNames = prevJsxBranchLocalNames
 
     if (!consequent) {
       continue
