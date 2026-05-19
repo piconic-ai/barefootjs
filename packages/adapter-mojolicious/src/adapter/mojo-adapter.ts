@@ -1280,7 +1280,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
           message: "The Mojo adapter cannot lower this `.filter()` / `.every()` / `.some()` chain — typically because the array source is a JS array literal or a non-signal expression the AST classifier doesn't recognise. Move the expression into a `'use client'` component (so hydration computes it client-side), or rewrite it to operate on a signal getter or a prop directly.",
         },
       })
-      return ''
+      // Return a Perl empty-string literal — safe in every context the
+      // result might land in (`<%= '' %>`, `% if ('') {`, attribute
+      // interpolation, template-literal substitution). Returning a raw
+      // empty string here would produce `<%= %>`, which Embedded Perl
+      // rejects as a syntax error and would mask the BF101 diagnostic
+      // behind an opaque template-compilation failure.
+      return "''"
     }
     this.higherOrderInFlight.add(expr)
     try {
