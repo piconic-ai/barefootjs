@@ -16,8 +16,12 @@ export function generateTestTemplate(componentPath: string): string {
   const fileName = path.basename(componentPath)
   const baseName = fileName.replace(/\.tsx$/, '')
 
-  // Determine the relative path from __tests__/ to the component
-  const relativePath = `../${fileName}`
+  // Match the layout `bf gen component` writes — test sits next to the
+  // source (`components/ui/foo/index.tsx` + `…/index.test.tsx`) — so the
+  // generated `readFileSync` reaches its source via a bare filename
+  // rather than a `../` hop into a `__tests__/` subdir we don't actually
+  // create anywhere in the scaffold (#1403 papercut).
+  const relativePath = fileName
 
   const varName = toCamelCase(baseName) + 'Source'
   const exportedNames = parsed.exportedNames

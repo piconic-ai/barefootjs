@@ -314,13 +314,57 @@ function extractDependencies(source: string): DependencyMeta {
 
 /**
  * Extract exported names (non-type exports).
+ *
+ * Accepts every TS export form a BarefootJS component might use:
+ *   - `export { Foo, Bar }`            — `bf gen component` output (registry style)
+ *   - `export function Foo() {}`       — top-level page components (scaffold's Counter)
+ *   - `export const Foo = …`           — arrow-function components
+ *   - `export default function Foo()`  — same as above, default form
+ *   - `export default Foo`             — re-export of a previously-declared name
+ *
+ * The result feeds `bf gen test`'s describe-block generator, so any
+ * unrecognised form silently produces a stub-only test file — the
+ * onboarding papercut tracked in #1403.
  */
 function extractExportedNames(source: string): string[] {
-  const match = source.match(/export\s+\{([^}]+)\}/)
-  if (!match) return []
+  const names: string[] = []
+  const seen = new Set<string>()
+  const add = (n: string | undefined | null) => {
+    if (!n) return
+    const trimmed = n.trim()
+    if (!trimmed || seen.has(trimmed)) return
+    if (trimmed.startsWith('type ')) return
+    seen.add(trimmed)
+    names.push(trimmed)
+  }
 
-  return match[1]
-    .split(',')
-    .map(e => e.trim())
-    .filter(e => !e.startsWith('type ') && e.length > 0)
+  // `export { Foo, Bar as Baz, type Qux }`
+  const braceRegex = /export\s+\{([^}]+)\}/g
+  let bm: RegExpExecArray | null
+  while ((bm = braceRegex.exec(source)) !== null) {
+    for (const part of bm[1].split(',')) {
+      const trimmed = part.trim()
+      if (!trimmed || trimmed.startsWith('type ')) continue
+      const asMatch = trimmed.match(/\s+as\s+(\w+)$/)
+      add(asMatch ? asMatch[1] : trimmed)
+    }
+  }
+
+  // `export function Foo`, `export async function Foo`, `export default function Foo`
+  const fnRegex = /export\s+(?:default\s+)?(?:async\s+)?function\s+(\w+)/g
+  let fm: RegExpExecArray | null
+  while ((fm = fnRegex.exec(source)) !== null) add(fm[1])
+
+  // `export const Foo = …` / `let` / `var`
+  const varRegex = /export\s+(?:const|let|var)\s+(\w+)\s*[=:]/g
+  let vm: RegExpExecArray | null
+  while ((vm = varRegex.exec(source)) !== null) add(vm[1])
+
+  // `export default Foo;` — bare identifier; only useful when not
+  // already added via a sibling `function`/`const` form earlier.
+  const defaultRegex = /export\s+default\s+(\w+)\s*;?\s*$/m
+  const dm = defaultRegex.exec(source)
+  if (dm) add(dm[1])
+
+  return names
 }
