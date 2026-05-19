@@ -24,7 +24,13 @@ let _goAvailable: boolean | null = null
 async function isGoAvailable(): Promise<boolean> {
   if (_goAvailable !== null) return _goAvailable
   try {
-    const proc = Bun.spawn(['go', 'version'], { stdout: 'pipe', stderr: 'pipe' })
+    // If the caller pinned GOTOOLCHAIN to a specific version, run
+    // `go version` under it — `go` itself respects GOTOOLCHAIN and
+    // will auto-fetch the requested toolchain. This means the
+    // availability probe reports the *effective* version, not the
+    // system Go.
+    const env = { ...process.env, GOTOOLCHAIN: process.env.GOTOOLCHAIN ?? 'local' }
+    const proc = Bun.spawn(['go', 'version'], { stdout: 'pipe', stderr: 'pipe', env })
     const stdout = await new Response(proc.stdout).text()
     await proc.exited
     if (proc.exitCode !== 0) { _goAvailable = false; return false }
@@ -237,11 +243,14 @@ ${propsInit}
     // Run `go run .`
     // GOTOOLCHAIN=local prevents Go from downloading a newer toolchain
     // when go.mod specifies a patch version newer than the installed one.
+    // Honour a caller-supplied GOTOOLCHAIN env var so CI / dev environments
+    // with an older system Go can opt into Go's auto-download behaviour
+    // (e.g. `GOTOOLCHAIN=go1.25.6 bun test`).
     const proc = Bun.spawn(['go', 'run', '.'], {
       cwd: tempDir,
       stdout: 'pipe',
       stderr: 'pipe',
-      env: { ...process.env, GOTOOLCHAIN: 'local' },
+      env: { ...process.env, GOTOOLCHAIN: process.env.GOTOOLCHAIN ?? 'local' },
     })
 
     const [stdout, stderr] = await Promise.all([

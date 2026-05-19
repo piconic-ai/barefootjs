@@ -753,6 +753,15 @@ export interface SpreadAttr {
   kind: 'spread'
   expr: string
   templateExpr?: string
+  /**
+   * Component-scoped, stable slot ID assigned at IR-build time for
+   * adapters that need to plumb the spread bag through a structured
+   * data path (Go template's `.Spread_N`, future Mojo `$bf_spread_n`).
+   * Hono ignores it. Only populated when the spread reaches the
+   * bag-emitting branch — closed-type rest spreads short-circuit to
+   * per-key expansion earlier and leave this unset (#1407).
+   */
+  slotId?: string
 }
 
 export interface JsxChildrenAttr {
@@ -791,11 +800,12 @@ export const AttrValueOf = {
   template(parts: IRTemplatePart[]): TemplateAttr {
     return { kind: 'template', parts }
   },
-  spread(expr: string, templateExpr?: string): SpreadAttr {
+  spread(expr: string, templateExpr?: string, slotId?: string): SpreadAttr {
     return {
       kind: 'spread',
       expr,
       ...(templateExpr !== undefined && { templateExpr }),
+      ...(slotId !== undefined && { slotId }),
     }
   },
   jsxChildren(children: IRNode[]): JsxChildrenAttr {

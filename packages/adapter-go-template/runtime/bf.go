@@ -84,6 +84,9 @@ func FuncMap() template.FuncMap {
 
 		// Scope comment for fragment roots
 		"bfScopeComment": ScopeComment,
+
+		// JSX intrinsic-element spread lowering (#1407)
+		"bf_spread_attrs": SpreadAttrs,
 	}
 }
 
@@ -115,6 +118,225 @@ func HydrationAttrs(props interface{}) template.HTMLAttr {
 // presence (#1249); use HydrationAttrs instead.
 func IsChild(props interface{}) template.HTMLAttr {
 	return ""
+}
+
+// svgCamelCaseAttrs mirrors SVG_CAMEL_CASE_ATTRS from
+// packages/client/src/runtime/spread-attrs.ts. SVG XML attribute
+// names are case-sensitive; the default camelCase → kebab-case
+// rewrite must NOT apply to these or the SVG stops rendering
+// (#1407). Coordinates with the compile-time SVG_CAMEL_TO_KEBAB
+// table in packages/jsx/src/ir-to-client-js/utils.ts: presentation
+// attrs (clipPath, strokeWidth, …) live there and must NOT appear
+// here, or the same JSX prop would lower to clip-path via the
+// explicit-attr path and stay clipPath via the spread path.
+var svgCamelCaseAttrs = map[string]struct{}{
+	"allowReorder": {}, "attributeName": {}, "attributeType": {}, "autoReverse": {},
+	"baseFrequency": {}, "baseProfile": {}, "calcMode": {}, "clipPathUnits": {},
+	"contentScriptType": {}, "contentStyleType": {}, "diffuseConstant": {}, "edgeMode": {},
+	"externalResourcesRequired": {}, "filterRes": {}, "filterUnits": {}, "glyphRef": {},
+	"gradientTransform": {}, "gradientUnits": {}, "kernelMatrix": {}, "kernelUnitLength": {},
+	"keyPoints": {}, "keySplines": {}, "keyTimes": {}, "lengthAdjust": {}, "limitingConeAngle": {},
+	"markerHeight": {}, "markerUnits": {}, "markerWidth": {}, "maskContentUnits": {},
+	"maskUnits": {}, "numOctaves": {}, "pathLength": {}, "patternContentUnits": {},
+	"patternTransform": {}, "patternUnits": {}, "pointsAtX": {}, "pointsAtY": {}, "pointsAtZ": {},
+	"preserveAlpha": {}, "preserveAspectRatio": {}, "primitiveUnits": {}, "refX": {}, "refY": {},
+	"repeatCount": {}, "repeatDur": {}, "requiredExtensions": {}, "requiredFeatures": {},
+	"specularConstant": {}, "specularExponent": {}, "spreadMethod": {}, "startOffset": {},
+	"stdDeviation": {}, "stitchTiles": {}, "surfaceScale": {}, "systemLanguage": {},
+	"tableValues": {}, "targetX": {}, "targetY": {}, "textLength": {}, "viewBox": {}, "viewTarget": {},
+	"xChannelSelector": {}, "yChannelSelector": {}, "zoomAndPan": {},
+}
+
+// toAttrName mirrors the JSX→HTML attribute-name rewrite from
+// packages/client/src/runtime/spread-attrs.ts. className → class,
+// htmlFor → for, SVG camelCase attrs preserved, other camelCase
+// keys lowered to kebab-case.
+func toAttrName(key string) string {
+	if key == "className" {
+		return "class"
+	}
+	if key == "htmlFor" {
+		return "for"
+	}
+	if _, ok := svgCamelCaseAttrs[key]; ok {
+		return key
+	}
+	// camelCase → kebab-case: insert '-' before each uppercase ASCII
+	// letter, then lowercase. Same shape as the JS regex
+	// /([A-Z])/g → '-$1' → toLowerCase().
+	var b strings.Builder
+	for i, r := range key {
+		if r >= 'A' && r <= 'Z' {
+			if i > 0 {
+				b.WriteByte('-')
+			}
+			b.WriteRune(r + 32)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// StyleToCss mirrors styleToCss from
+// packages/client/src/runtime/style.ts. Accepts a string passthrough,
+// or a map (JSON-deserialized object) whose camelCase keys are
+// lowered to kebab-case and joined with `;`. Returns ("", false) for
+// nullish/empty input so callers can omit the attribute entirely.
+func StyleToCss(v any) (string, bool) {
+	if v == nil {
+		return "", false
+	}
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Interface || rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return "", false
+		}
+		rv = rv.Elem()
+	}
+	if rv.Kind() != reflect.Map {
+		// Non-object: stringify and return as-is, matching the JS
+		// `typeof value !== 'object'` branch.
+		s := fmt.Sprint(v)
+		if s == "" {
+			return "", false
+		}
+		return s, true
+	}
+	keys := rv.MapKeys()
+	sorted := make([]string, 0, len(keys))
+	for _, k := range keys {
+		if k.Kind() == reflect.String {
+			sorted = append(sorted, k.String())
+		}
+	}
+	sort.Strings(sorted)
+	parts := make([]string, 0, len(sorted))
+	for _, k := range sorted {
+		val := rv.MapIndex(reflect.ValueOf(k))
+		// Skip nil entries (matches the JS `if (v == null) continue`).
+		if !val.IsValid() {
+			continue
+		}
+		if val.Kind() == reflect.Interface || val.Kind() == reflect.Pointer {
+			if val.IsNil() {
+				continue
+			}
+			val = val.Elem()
+		}
+		prop := toAttrName(k)
+		parts = append(parts, fmt.Sprintf("%s:%v", prop, val.Interface()))
+	}
+	if len(parts) == 0 {
+		return "", false
+	}
+	return strings.Join(parts, ";"), true
+}
+
+// SpreadAttrs lowers a JSX intrinsic-element spread bag (#1407) to
+// an HTML attribute string. Mirrors spreadAttrs from
+// packages/client/src/runtime/spread-attrs.ts so SSR output matches
+// what CSR's `applyRestAttrs` writes at hydration.
+//
+// Skip rules: nil/false values, event handlers (`on[A-Z]*`),
+// `children`, `ref`.
+//
+// Key remap: className → class, htmlFor → for, SVG camelCase
+// preserved, other camelCase → kebab-case.
+//
+// `style` is routed through StyleToCss so object literals serialize
+// to a real CSS string instead of Go's default `map[k:v]` form.
+//
+// Booleans: true → bare attribute name, false → omitted.
+// Other scalar values are HTML-escaped via template.HTMLEscapeString.
+// Returns a `template.HTMLAttr` so html/template emits the result
+// verbatim (the function does its own escaping).
+//
+// Keys are sorted alphabetically before emission for deterministic
+// output. SSR/CSR attribute-order divergence is acceptable per the
+// rest-destructure-object-spread-in-map fixture's documented policy
+// — browsers honor the LAST value when a key is duplicated, so
+// pairing with static attrs (`<div class="x" {...rest}>`) is
+// last-wins regardless of order.
+func SpreadAttrs(bag any) template.HTMLAttr {
+	if bag == nil {
+		return ""
+	}
+	rv := reflect.ValueOf(bag)
+	for rv.Kind() == reflect.Interface || rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return ""
+		}
+		rv = rv.Elem()
+	}
+	if rv.Kind() != reflect.Map {
+		return ""
+	}
+	keys := rv.MapKeys()
+	sortedKeys := make([]string, 0, len(keys))
+	for _, k := range keys {
+		if k.Kind() == reflect.String {
+			sortedKeys = append(sortedKeys, k.String())
+		}
+	}
+	sort.Strings(sortedKeys)
+	parts := make([]string, 0, len(sortedKeys))
+	for _, key := range sortedKeys {
+		// Event handlers (on[A-Z]…) are runtime-only — skip at SSR
+		// the same way packages/client/src/runtime/spread-attrs.ts
+		// does at hydration.
+		if len(key) > 2 && key[0] == 'o' && key[1] == 'n' && key[2] >= 'A' && key[2] <= 'Z' {
+			continue
+		}
+		if key == "children" || key == "ref" {
+			continue
+		}
+		val := rv.MapIndex(reflect.ValueOf(key))
+		if !val.IsValid() {
+			continue
+		}
+		// Unwrap interface wrappers (json.Unmarshal produces
+		// interface{}-wrapped values for map[string]any).
+		v := val
+		for v.Kind() == reflect.Interface || v.Kind() == reflect.Pointer {
+			if v.IsNil() {
+				// Skip null entries.
+				v = reflect.Value{}
+				break
+			}
+			v = v.Elem()
+		}
+		if !v.IsValid() {
+			continue
+		}
+		// Boolean values: true → bare attribute, false → omitted.
+		if v.Kind() == reflect.Bool {
+			if !v.Bool() {
+				continue
+			}
+			parts = append(parts, toAttrName(key))
+			continue
+		}
+		// `style` routes through StyleToCss so object literals get a
+		// real CSS string. The JS side does the same.
+		if key == "style" {
+			css, ok := StyleToCss(v.Interface())
+			if !ok {
+				continue
+			}
+			parts = append(parts, fmt.Sprintf(`style="%s"`, template.HTMLEscapeString(css)))
+			continue
+		}
+		// Stringify and escape. fmt.Sprint handles numbers, bools-as-
+		// strings, and arbitrary stringer types the same way the JS
+		// `String(value)` coercion does for the analogous cases.
+		s := fmt.Sprint(v.Interface())
+		parts = append(parts, fmt.Sprintf(`%s="%s"`, toAttrName(key), template.HTMLEscapeString(s)))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return template.HTMLAttr(strings.Join(parts, " "))
 }
 
 // BfPropsAttr returns the bf-p attribute with the JSON-serialized

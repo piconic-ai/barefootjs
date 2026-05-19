@@ -176,7 +176,57 @@ export function normalizeHTML(html: string): string {
     .replace(/>\s+</g, '><')
     // Collapse whitespace
     .replace(/\s+/g, ' ')
+    // Normalize attribute order within tags (#1407). Attribute order is
+    // HTML-semantically irrelevant — `<div id="a" class="b">` and
+    // `<div class="b" id="a">` produce identical DOM — but adapters
+    // diverge: Hono / hono/jsx iterate JS object keys in insertion
+    // order, Go's `bf_spread_attrs` sorts keys for deterministic
+    // output (map[string]any has no insertion order). Sorting
+    // attributes alphabetically inside each tag here lets the SSR
+    // conformance comparison stay byte-equal across adapters.
+    .replace(/<([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^>]+?)?)\s*>/g, (_match, tag, attrs) => {
+      const trimmedAttrs = (attrs as string).trim()
+      if (!trimmedAttrs) return `<${tag}>`
+      const parts = sortHtmlAttributes(trimmedAttrs)
+      return parts.length > 0 ? `<${tag} ${parts.join(' ')}>` : `<${tag}>`
+    })
     .trim()
+}
+
+/**
+ * Tokenise a tag's attribute substring and return the attributes
+ * sorted alphabetically by name. Handles double-quoted, single-
+ * quoted, and bare attribute values, plus boolean (valueless) attrs.
+ */
+function sortHtmlAttributes(attrText: string): string[] {
+  const attrs: string[] = []
+  let i = 0
+  while (i < attrText.length) {
+    while (i < attrText.length && /\s/.test(attrText[i])) i++
+    if (i >= attrText.length) break
+    const nameStart = i
+    while (i < attrText.length && !/[\s=]/.test(attrText[i])) i++
+    const name = attrText.slice(nameStart, i)
+    if (i < attrText.length && attrText[i] === '=') {
+      i++
+      const quote = attrText[i]
+      if (quote === '"' || quote === "'") {
+        i++
+        const valStart = i
+        while (i < attrText.length && attrText[i] !== quote) i++
+        const value = attrText.slice(valStart, i)
+        i++ // skip closing quote
+        attrs.push(`${name}=${quote}${value}${quote}`)
+      } else {
+        const valStart = i
+        while (i < attrText.length && !/\s/.test(attrText[i])) i++
+        attrs.push(`${name}=${attrText.slice(valStart, i)}`)
+      }
+    } else {
+      attrs.push(name)
+    }
+  }
+  return attrs.sort()
 }
 
 /**
