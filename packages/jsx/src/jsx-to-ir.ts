@@ -3879,10 +3879,66 @@ function buildIfStatementChain(
     }
     ctx._branchScopeVars = branchScopeVars
 
+    // #1414 cells 5 & 7: branch-local references that don't reach the
+    // bare-identifier substitution sites (`transformExpressionInner`
+    // for child position, `getAttributeValue` for attribute position)
+    // still leak as undeclared names at outer init scope. The shapes
+    // that miss the existing routes are:
+    //   - `{local()}` — the JSX expression's root is a CallExpression
+    //     (not an Identifier), so `transformExpressionInner`'s
+    //     identifier check doesn't fire.
+    //   - `ref={(el) => use(local)}` — the ref callback's body is
+    //     captured verbatim via `ctx.getJS`, so the local appears
+    //     unchanged in the emitted init function.
+    // Override `ctx.getJS` for the duration of this branch's
+    // `transformNode` so every raw-text capture (call args, ref
+    // callbacks, event handlers, etc.) substitutes branch locals at
+    // the source level. Same trade-off as the JSX-function-inlining
+    // path (#569) and `inlineableJsxConsts` (#1412): substituting
+    // is text-level, so a local read with side effects gets evaluated
+    // at every use site rather than once at declaration. Users who
+    // need single-evaluation semantics should still hoist the local
+    // to outer init scope themselves.
+    const branchNames: string[] = []
+    const branchSubs = new Map<string, string>()
+    const baseGetJS = ctx.analyzer.getJS.bind(ctx.analyzer)
+    for (const [name, initExpr] of branchScopeVars) {
+      // JSX-bearing initializers are handled by the existing
+      // identifier-substitution route in `transformExpressionInner`
+      // (#1410). Text substitution into raw-captured JS would emit
+      // the JSX as TypeScript syntax inside a JS string — invalid.
+      if (initializerShapeContainsJsx(initExpr)) continue
+      branchNames.push(name)
+      branchSubs.set(name, baseGetJS(initExpr))
+    }
+    // Identifier names are syntactically [A-Za-z_$][A-Za-z0-9_$]*, all of
+    // which are regex-safe — no escape needed.
+    const branchPattern = branchNames.length > 0
+      ? new RegExp(`\\b(${branchNames.join('|')})\\b`, 'g')
+      : null
+    const prevCtxGetJS = ctx.getJS
+    const prevAnalyzerGetJS = ctx.analyzer.getJS
+    if (branchPattern) {
+      const substitutedGetJS = (n: ts.Node): string => {
+        const text = baseGetJS(n)
+        return text.replace(branchPattern, (_match, name) => `(${branchSubs.get(name)!})`)
+      }
+      ctx.getJS = substitutedGetJS
+      ctx.analyzer.getJS = substitutedGetJS
+    }
+
     // Transform the JSX return in the then branch
     // Reset isRoot so each branch gets needsScope=true
     ctx.isRoot = true
-    const consequent = transformNode(condReturn.jsxReturn, ctx)
+    let consequent: IRNode | null
+    try {
+      consequent = transformNode(condReturn.jsxReturn, ctx)
+    } finally {
+      if (branchPattern) {
+        ctx.getJS = prevCtxGetJS
+        ctx.analyzer.getJS = prevAnalyzerGetJS
+      }
+    }
 
     ctx._branchScopeVars = prevBranchScopeVars
 
