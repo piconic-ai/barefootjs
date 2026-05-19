@@ -90,6 +90,7 @@ function buildSignalPlan(
     setter: signal.setter,
     initialValueExpr: resolveSignalInitialValue(signal, ctx, lookups),
     controlledEffect: buildControlledSignalEffect(signal, lookups),
+    branchCondition: signal.branchCondition,
   }
 }
 

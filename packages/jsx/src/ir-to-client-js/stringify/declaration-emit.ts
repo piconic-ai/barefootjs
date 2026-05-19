@@ -60,6 +60,29 @@ function emitConstant(lines: string[], plan: ConstantEmitPlan): void {
 }
 
 function emitSignal(lines: string[], plan: SignalEmitPlan): void {
+  if (plan.branchCondition) {
+    // #1414 cell #8: signal declared inside an early-return `if`-block.
+    // Hoist as `let` so closures and event handlers hoisted to outer
+    // init scope can close over the bindings, and assign inside an
+    // `if (<branchCondition>) { ... }` so the `createSignal(...)` only
+    // runs when the branch is taken. Sibling branches with different
+    // signals coexist because each gets its own `let` + guarded assign.
+    if (plan.setter) {
+      lines.push(`  let ${plan.getter}, ${plan.setter}`)
+      lines.push(`  if (${plan.branchCondition}) {`)
+      lines.push(`    ;[${plan.getter}, ${plan.setter}] = createSignal(${plan.initialValueExpr})`)
+      lines.push(`  }`)
+    } else {
+      lines.push(`  let ${plan.getter}`)
+      lines.push(`  if (${plan.branchCondition}) {`)
+      lines.push(`    ;[${plan.getter}] = createSignal(${plan.initialValueExpr})`)
+      lines.push(`  }`)
+    }
+    // Controlled effects don't apply to branch-conditioned signals — a
+    // controlled signal is one whose initial value comes from `props.X`,
+    // which doesn't intersect with the early-return-branch case.
+    return
+  }
   if (plan.setter) {
     lines.push(`  const [${plan.getter}, ${plan.setter}] = createSignal(${plan.initialValueExpr})`)
   } else {

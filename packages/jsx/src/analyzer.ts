@@ -653,6 +653,15 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
         scopeVariables: scopeVars,
         ifStatement: node,
       })
+      // #1414 cell #8: `[X, setX] = createSignal(...)` declarations
+      // inside this branch must round-trip through emission so closures /
+      // event handlers hoisted to outer init scope can reach them.
+      // Tagged with `branchCondition` so the emitter wraps each in
+      // `if (<cond>) [X, setX] = createSignal(...)`. The condition text
+      // mirrors what `conditionalReturns` already records, but as raw JS
+      // for the emit path — destructured-prop rewriting happens later.
+      const branchCondition = node.expression.getText(ctx.sourceFile)
+      collectBranchSignals(node.thenStatement, ctx, branchCondition)
       // Don't set ctx.jsxReturn here - let the final return be processed normally
       // Don't recurse into the if block since we've already captured it
       return
@@ -811,6 +820,48 @@ function collectScopeVariables(
   }
 
   return variables
+}
+
+/**
+ * Walk an if-block body for `createSignal(...)` declarations and add
+ * them to `ctx.signals` tagged with `branchCondition`. The emitter
+ * then wraps each in `if (<branchCondition>) [getter, setter] =
+ * createSignal(<initialValue>)` so closures hoisted to outer init scope
+ * can reach the bindings.
+ *
+ * Only top-level statements of the if-block are inspected — nested
+ * if/for/while blocks aren't supported yet (filed as a follow-up if
+ * the desk migration hits them; the common case is a flat block).
+ */
+function collectBranchSignals(
+  thenStatement: ts.Statement,
+  ctx: AnalyzerContext,
+  branchCondition: string,
+): void {
+  if (!ts.isBlock(thenStatement)) return
+  for (const stmt of thenStatement.statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      // Track signals only. Plain (non-signal) branch-local consts are
+      // already covered by `_branchScopeVars` text substitution
+      // (#1410 / #1412 / #1415 / #1417); they don't need a hoisted
+      // declaration because the substitution pass eliminates the
+      // identifier before emit. Signal pairs can't be substituted
+      // (identity matters — see #1414 cell #8), so they're the only
+      // declaration kind that needs hoisting.
+      if (!isSignalDeclaration(decl, ctx)) continue
+      // Collect using the standard signal-emit path, then tag the
+      // most recently added entry with `branchCondition`. This keeps
+      // signal-shape detection logic (type inference, setter binding,
+      // initialFreeIdentifiers) in one place.
+      const before = ctx.signals.length
+      collectSignal(decl, ctx)
+      const after = ctx.signals.length
+      for (let i = before; i < after; i++) {
+        ctx.signals[i].branchCondition = branchCondition
+      }
+    }
+  }
 }
 
 // =============================================================================
