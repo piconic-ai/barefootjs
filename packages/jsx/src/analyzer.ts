@@ -823,6 +823,65 @@ function collectScopeVariables(
 }
 
 /**
+ * Collect the set of identifier names bound by a function's parameter
+ * list, recursing into `ObjectBindingPattern` / `ArrayBindingPattern`
+ * so destructured params like `function f({ size })` or
+ * `function f([size])` correctly contribute `size` to the bound set.
+ * Mirrors `addBindingNames` inside `extractFreeIdentifiersFromNode`.
+ * #1422.
+ */
+function collectParamBindingNames(
+  params: ts.NodeArray<ts.ParameterDeclaration>,
+): Set<string> {
+  const out = new Set<string>()
+  const addBindingNames = (name: ts.BindingName): void => {
+    if (ts.isIdentifier(name)) {
+      out.add(name.text)
+    } else if (ts.isObjectBindingPattern(name)) {
+      name.elements.forEach(e => addBindingNames(e.name))
+    } else if (ts.isArrayBindingPattern(name)) {
+      name.elements.forEach(e => {
+        if (!ts.isOmittedExpression(e)) addBindingNames(e.name)
+      })
+    }
+  }
+  for (const p of params) addBindingNames(p.name)
+  return out
+}
+
+/**
+ * Walk the ancestor chain of `node` looking for any enclosing
+ * conditional-return `if`-block. Returns a map from branch-local const
+ * name to the text of its initializer. Innermost branch wins on
+ * collision (lexical shadowing). JSX-bearing initializers are skipped —
+ * substituting them as raw text would emit JSX as TypeScript syntax,
+ * which is invalid in raw-JS capture contexts (function bodies, ref
+ * callbacks, event handlers). #1422.
+ */
+function collectEnclosingBranchVars(
+  node: ts.Node,
+  ctx: AnalyzerContext,
+): Map<string, string> {
+  const result = new Map<string, string>()
+  let current: ts.Node | undefined = node.parent
+  while (current) {
+    for (const cr of ctx.conditionalReturns) {
+      if (cr.ifStatement.thenStatement !== current) continue
+      for (const decl of cr.scopeVariables) {
+        if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+        const varName = decl.name.text
+        // Innermost wins — skip if a deeper branch already set this name.
+        if (result.has(varName)) continue
+        if (initializerShapeContainsJsx(decl.initializer)) continue
+        result.set(varName, ctx.getJS(decl.initializer))
+      }
+    }
+    current = current.parent
+  }
+  return result
+}
+
+/**
  * Walk an if-block body for `createSignal(...)` declarations and add
  * them to `ctx.signals` tagged with `branchCondition`. The emitter
  * then wraps each in `if (<branchCondition>) [getter, setter] =
@@ -1768,9 +1827,76 @@ function collectFunction(
     defaultValue: p.initializer ? ctx.getJS(p.initializer) : undefined,
     isRest: !!p.dotDotDotToken || undefined,
   }))
-  const body = node.body ? ctx.getJS(node.body) : ''
+  let body = node.body ? ctx.getJS(node.body) : ''
   const typedBody = node.body ? node.body.getText(ctx.sourceFile) : undefined
   const returnType = typeNodeToTypeInfo(node.type, ctx.sourceFile)
+
+  // #1422: a function declaration nested inside an early-return `if`-block
+  // is captured here with its body as raw text. Downstream
+  // (`compute-scope`) hoists it to outer init scope when it references
+  // any init-required name, so bare references to branch-local consts
+  // resolve at outer scope — wrong-value (when sibling branches declare
+  // the same name) or undefined (single-branch case). The
+  // `_branchScopeVars` text-substitution in `jsx-to-ir.ts` already covers
+  // raw-text capture inside the JSX return (ref callbacks, event
+  // handlers, `{local()}` child positions) but doesn't reach function
+  // declarations because they're collected in this analyzer pass before
+  // Phase 1 runs. Substitute branch-local references in the body here
+  // — same trade-off as #547 / #1410 / #1412 / #1415: text-level
+  // substitution duplicates the initializer per use site.
+  if (node.body && ctx.conditionalReturns.length > 0) {
+    const branchVars = collectEnclosingBranchVars(node, ctx)
+    if (branchVars.size > 0) {
+      const paramNames = collectParamBindingNames(node.parameters)
+      const branchNames: string[] = []
+      const branchSubs = new Map<string, string>()
+      for (const [varName, initText] of branchVars) {
+        // Params shadow outer names inside the function body. This
+        // handles destructured params (`({ size })`, `([size])`) via
+        // the recursive BindingName walk, not just bare identifiers.
+        if (paramNames.has(varName)) continue
+        branchNames.push(varName)
+        branchSubs.set(varName, initText)
+      }
+      if (branchNames.length > 0) {
+        // Identifier-aware boundaries: `\b` treats `$` as a word
+        // separator, which both breaks substitution for valid JS
+        // identifiers containing `$` and lets `foo$bar` partial-match
+        // a `foo` branch name. Use `(?<![\w$])` / `(?![\w$])` to
+        // anchor at true identifier boundaries. The leading guard also
+        // excludes member-access tails (`el.dataset.size`) — `.` is
+        // not in `[\w$]`, but the previous char before `.` is, so the
+        // identifier after `.` still has a `\w` before it once you
+        // step past the dot. We add `(?<![.\w$])` explicitly to skip
+        // the member-access case.
+        //
+        // Branch names are JS identifiers so they have no regex
+        // metacharacters except `$`, which is escaped here for safety
+        // (regex `$` means end-of-input).
+        const escaped = branchNames.map(n => n.replace(/\$/g, '\\$'))
+        const re = new RegExp(`(?<![.\\w$])(${escaped.join('|')})(?![\\w$])`, 'g')
+        // NOTE: this is text-level replacement and so will also rewrite
+        // occurrences inside string literals / comments inside the
+        // captured body. Same trade-off as the existing
+        // `_branchScopeVars` regex in `jsx-to-ir.ts`; users who need
+        // single-evaluation or string-literal-safe semantics should
+        // hoist the local to outer init scope themselves.
+        //
+        // Fixpoint iteration: a branch-local initializer can itself
+        // reference an earlier branch-local (e.g.
+        // `const a = 1; const b = a + 1; function f() { return b }`
+        // → first pass rewrites `b` to `(a + 1)`, leaving a fresh `a`
+        // that the next pass rewrites to `(1)`). Bound by
+        // `branchNames.length + 1` — the worst-case chain length.
+        const maxIter = branchNames.length + 1
+        for (let i = 0; i < maxIter; i++) {
+          const next = body.replace(re, (_m, n) => `(${branchSubs.get(n)!})`)
+          if (next === body) break
+          body = next
+        }
+      }
+    }
+  }
 
   // Check if function contains JSX
   const containsJsx = body.includes('<') && (body.includes('/>') || body.includes('</'))
