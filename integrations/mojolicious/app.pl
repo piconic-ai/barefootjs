@@ -192,10 +192,6 @@ $r->get('/' => sub ($c) {
 });
 
 $r->get('/counter' => sub ($c) {
-    # Auto-init via the plugin's `before_render` hook: scope_id +
-    # manifest-derived child renderers + signal/memo SSR defaults are
-    # all derived from dist/templates/manifest.json. The route is left
-    # as a one-liner; override defaults via stash if needed.
     $c->stash(heading => 'Counter Component');
     $c->render(template => 'Counter', layout => 'default');
 });

@@ -44,13 +44,7 @@ use Mojolicious::Lite -signatures;
 use lib 'lib';
 
 # Load the BarefootJS plugin (vendored under ./lib so the app runs
-# without a CPAN release of the plugin yet). At plugin-register time
-# it reads \`dist/templates/manifest.json\` and installs a
-# \`before_render\` hook that, for every top-level component render,
-# initializes the bf scope, wires up every UI-registry child renderer
-# from the manifest, and seeds the stash with each template
-# variable's statically-derived default — so route handlers stay
-# one-liners.
+# without a CPAN release of the plugin yet).
 plugin 'BarefootJS';
 
 # Dev-only browser auto-reload over SSE. The plugin polls
@@ -88,11 +82,6 @@ get '/static/*asset' => sub ($c) {
     $c->reply->static($c->stash('asset') // '') or $c->reply->not_found;
 };
 
-# Render Counter — no scope-id wrangling, no signal-init callbacks,
-# no per-template stash seeding. The plugin's before_render hook
-# (driven by \`bf build\`'s manifest) handles all three. To override
-# the SSR defaults for a specific request, stash the desired value
-# before calling render: \`$c->stash(count => 10)\`.
 get '/' => sub ($c) {
     $c->render(template => 'Counter', layout => 'default');
 };
