@@ -62,8 +62,8 @@ export function Tag(props: { id: string; variant: 'on' | 'off' }) {
   },
   expectedHtml: `
     <ul bf-s="test" bf="s1">
-      <span class="tag-on" bf-s="Tag_*" data-key="a" bf="s1"><!--bf:s0-->a<!--/--></span>
-      <span class="tag-on" bf-s="Tag_*" data-key="c" bf="s1"><!--bf:s0-->c<!--/--></span>
+      <span bf-s="Tag_*" bf="s1" class="tag-on" data-key="a"><!--bf:s0-->a<!--/--></span>
+      <span bf-s="Tag_*" bf="s1" class="tag-on" data-key="c"><!--bf:s0-->c<!--/--></span>
     </ul>
   `,
 })

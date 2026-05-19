@@ -26,6 +26,6 @@ export function Style3Signals() {
 }
 `,
   expectedHtml: `
-    <div style="background:red;color:white;padding:8px" bf-s="test" bf="s0"> hello </div>
+    <div bf-s="test" bf="s0" style="background:red;color:white;padding:8px"> hello </div>
   `,
 })

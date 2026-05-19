@@ -128,12 +128,6 @@ runAdapterConformanceTests({
     'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
-    // #1244 stress catalog #13 (#1324): JSX spread of a reactive object
-    // (`<div {...attrs()} />`). Go templates can't iterate a runtime
-    // hash into `key="value"` pairs with the escaping / event-filter
-    // semantics that Hono / CSR's `applyRestAttrs` provides, so the
-    // adapter surfaces BF101 instead of silently dropping the spread.
-    'jsx-spread-reactive': [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `GoTemplateAdapter.templatePrimitives` (#1188). The two

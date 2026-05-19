@@ -46,6 +46,6 @@ export function ReactionBar(props: Props) {
     reactions: { '👍': ['alice', 'bob'] },
   },
   expectedHtml: `
-    <div data-reaction-bar="true" bf-s="test" bf="s2"><button type="button" data-key="👍"><span><!--bf:s0-->👍<!--/--></span><span><!--bf:s1-->2<!--/--></span></button></div>
+    <div bf-s="test" bf="s2" data-reaction-bar="true"><button data-key="👍" type="button"><span><!--bf:s0-->👍<!--/--></span><span><!--bf:s1-->2<!--/--></span></button></div>
   `,
 })

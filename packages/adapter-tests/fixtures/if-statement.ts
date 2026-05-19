@@ -25,6 +25,6 @@ export function IfDemo(props: Props) {
 `,
   props: { variant: '' },
   expectedHtml: `
-    <button class="default" bf-s="test" bf="s1"><!--bf:s0-->0<!--/--></button>
+    <button bf-s="test" bf="s1" class="default"><!--bf:s0-->0<!--/--></button>
   `,
 })

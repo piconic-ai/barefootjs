@@ -9,6 +9,6 @@ export function StyleObjectStatic() {
 }
 `,
   expectedHtml: `
-    <div style="background:var(--bg-surface);color:var(--text-primary)" bf-s="test">Hello</div>
+    <div bf-s="test" style="background:var(--bg-surface);color:var(--text-primary)">Hello</div>
   `,
 })

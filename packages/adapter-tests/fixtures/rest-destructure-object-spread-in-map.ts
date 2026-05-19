@@ -63,8 +63,8 @@ export function RestSpread() {
 `,
   expectedHtml: `
     <ul bf-s="test" bf="s2">
-      <li data-priority="high" tag="urgent" data-key="t1" bf="s1"><!--bf:s0-->one<!--/--></li>
-      <li data-priority="low" tag="normal" data-key="t2" bf="s1"><!--bf:s0-->two<!--/--></li>
+      <li bf="s1" data-key="t1" data-priority="high" tag="urgent"><!--bf:s0-->one<!--/--></li>
+      <li bf="s1" data-key="t2" data-priority="low" tag="normal"><!--bf:s0-->two<!--/--></li>
     </ul>
   `,
 })

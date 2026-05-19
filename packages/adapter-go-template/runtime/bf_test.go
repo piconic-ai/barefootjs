@@ -779,3 +779,166 @@ func containsHelper(s, substr string) bool {
 	}
 	return false
 }
+
+func TestSpreadAttrs(t *testing.T) {
+	tests := []struct {
+		name string
+		bag  any
+		want template.HTMLAttr
+	}{
+		{"nil", nil, ""},
+		{"empty", map[string]any{}, ""},
+		{"non-map", "x", ""},
+		{
+			name: "single string",
+			bag:  map[string]any{"id": "a"},
+			want: `id="a"`,
+		},
+		{
+			name: "alphabetic order",
+			bag:  map[string]any{"id": "a", "class": "on"},
+			want: `class="on" id="a"`,
+		},
+		{
+			name: "className → class remap",
+			bag:  map[string]any{"className": "foo"},
+			want: `class="foo"`,
+		},
+		{
+			name: "htmlFor → for remap",
+			bag:  map[string]any{"htmlFor": "x"},
+			want: `for="x"`,
+		},
+		{
+			name: "camelCase → kebab-case",
+			bag:  map[string]any{"dataPriority": "high"},
+			want: `data-priority="high"`,
+		},
+		{
+			name: "SVG viewBox preserved",
+			bag:  map[string]any{"viewBox": "0 0 10 10"},
+			want: `viewBox="0 0 10 10"`,
+		},
+		{
+			name: "event handler skipped",
+			bag:  map[string]any{"onClick": "fn", "id": "a"},
+			want: `id="a"`,
+		},
+		{
+			name: "children skipped",
+			bag:  map[string]any{"children": "x", "id": "a"},
+			want: `id="a"`,
+		},
+		{
+			// Parity with JS `spreadAttrs` — it doesn't filter `ref`,
+			// so neither do we (#1411 review).
+			name: "ref passes through (parity with JS spreadAttrs)",
+			bag:  map[string]any{"ref": "x", "id": "a"},
+			want: `id="a" ref="x"`,
+		},
+		{
+			name: "nil value skipped",
+			bag:  map[string]any{"a": nil, "b": "x"},
+			want: `b="x"`,
+		},
+		{
+			name: "false skipped",
+			bag:  map[string]any{"hidden": false, "id": "a"},
+			want: `id="a"`,
+		},
+		{
+			name: "true → bare attribute",
+			bag:  map[string]any{"hidden": true, "id": "a"},
+			want: `hidden id="a"`,
+		},
+		{
+			name: "HTML escape value",
+			bag:  map[string]any{"title": `<b>"x"</b>`},
+			want: `title="&lt;b&gt;&#34;x&#34;&lt;/b&gt;"`,
+		},
+		{
+			name: "number stringified",
+			bag:  map[string]any{"tabindex": 0},
+			want: `tabindex="0"`,
+		},
+		{
+			name: "style object lowered to CSS",
+			bag:  map[string]any{"style": map[string]any{"backgroundColor": "red", "color": "white"}},
+			want: `style="background-color:red;color:white"`,
+		},
+		{
+			name: "style string passthrough",
+			bag:  map[string]any{"style": "color:red"},
+			want: `style="color:red"`,
+		},
+		// #1411 review parity tests — mirror JS `spreadAttrs` for
+		// edge keys.
+		{
+			name: "leading-uppercase key emits leading dash (parity with JS)",
+			bag:  map[string]any{"XData": "x"},
+			want: `-x-data="x"`,
+		},
+		{
+			name: "event handler with underscore third char skipped (parity with JS)",
+			bag:  map[string]any{"on_custom": "fn", "id": "a"},
+			want: `id="a"`,
+		},
+		{
+			name: "event handler with digit third char skipped (parity with JS)",
+			bag:  map[string]any{"on0": "fn", "id": "a"},
+			want: `id="a"`,
+		},
+		{
+			name: "on followed by lowercase letter NOT treated as event",
+			bag:  map[string]any{"oncology": "x"},
+			want: `oncology="x"`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SpreadAttrs(tt.bag)
+			if got != tt.want {
+				t.Errorf("SpreadAttrs(%v) = %q, want %q", tt.bag, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStyleToCss(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  any
+		want   string
+		wantOk bool
+	}{
+		{"nil", nil, "", false},
+		{"empty map", map[string]any{}, "", false},
+		{"string passthrough", "color:red", "color:red", true},
+		{
+			name:   "camelCase keys",
+			input:  map[string]any{"backgroundColor": "red"},
+			want:   "background-color:red",
+			wantOk: true,
+		},
+		{
+			name:   "multiple keys sorted",
+			input:  map[string]any{"color": "white", "backgroundColor": "red"},
+			want:   "background-color:red;color:white",
+			wantOk: true,
+		},
+		{
+			name:   "nil value skipped",
+			input:  map[string]any{"color": "red", "padding": nil},
+			want:   "color:red",
+			wantOk: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := StyleToCss(tt.input)
+			if got != tt.want || ok != tt.wantOk {
+				t.Errorf("StyleToCss(%v) = (%q, %v), want (%q, %v)", tt.input, got, ok, tt.want, tt.wantOk)
+			}
+		})
+	}
+}

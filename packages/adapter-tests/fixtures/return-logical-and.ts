@@ -22,6 +22,6 @@ export function ReturnLogicalAnd() {
 }
 `,
   expectedHtml: `
-    <div style="display:contents" bf-s="test"><!--bf-cond-start:s0--><!--bf-cond-end:s0--></div>
+    <div bf-s="test" style="display:contents"><!--bf-cond-start:s0--><!--bf-cond-end:s0--></div>
   `,
 })

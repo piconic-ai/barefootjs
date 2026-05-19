@@ -74,6 +74,15 @@ interface TransformContext {
   /** Counter for loop marker IDs (l0, l1, ...) — separate from slot IDs so element bf="sN" numbering stays stable across versions (#1087). */
   loopMarkerCounter: number
   /**
+   * Counter for JSX spread bag slot IDs (`Spread_0`, `Spread_1`, ...).
+   * Separate namespace from element slot IDs (`s0`, `s1`, ...) so
+   * adapters that need to plumb the spread bag through a structured
+   * data path (Go template's `.Spread_N`) don't collide with element
+   * scope IDs (#1407). Component-scoped, allocated only when the
+   * spread falls through to the bag-emitting branch.
+   */
+  spreadIdCounter: number
+  /**
    * Memoized free-refs binding environment. Built lazily by
    * `makeBindingEnv` and reused across every `resolveFreeRefs` call as
    * long as `loopParams` content is unchanged. Invalidated by serializing
@@ -239,6 +248,7 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     slotIdCounter: 0,
     asyncIdCounter: 0,
     loopMarkerCounter: 0,
+    spreadIdCounter: 0,
     isRoot: true,
     insideComponentChildren: false,
     loopParams: new Set(),
@@ -355,6 +365,15 @@ function generateSlotId(ctx: TransformContext, forComponent: boolean = false): s
   // passed as children into a child component's scope.
   if (forComponent) return id
   return ctx.insideComponentChildren ? `^${id}` : id
+}
+
+/**
+ * Allocate a component-scoped slot ID for a JSX spread bag (#1407).
+ * Separate namespace from element slot IDs so Go's `Spread_N` field
+ * names never collide with element `bf="sN"` scope IDs.
+ */
+function generateSpreadSlotId(ctx: TransformContext): string {
+  return `Spread_${ctx.spreadIdCounter++}`
 }
 
 /**
@@ -2847,9 +2866,16 @@ function expandSpreadAttribute(
     }))
   }
 
+  // Allocate a component-scoped slot ID so adapters that need a
+  // structured plumbing path (Go's `.Spread_N` struct field) can
+  // address this spread without recomputing identity downstream
+  // (#1407). Hono / Mojo ignore the field; only the Go adapter consumes
+  // it. The closed-type expansion branch above returns before this
+  // point, so closed-type rest spreads stay on the per-key fast path.
+  const slotId = generateSpreadSlotId(ctx)
   return [{
     name: '...',
-    value: AttrValueOf.spread(spreadExpr, ctx.getTemplateJS(attr.expression)),
+    value: AttrValueOf.spread(spreadExpr, ctx.getTemplateJS(attr.expression), slotId),
     loc,
     freeIdentifiers: spreadFreeIdentifiers,
   }]

@@ -27,6 +27,6 @@ export function ChatList() {
   // The conditional markers (<!--bf-cond-start:s1--><!--bf-cond-end:s1-->) remain
   // and must appear AFTER the loop markers in the raw output.
   expectedHtml: `
-    <div id="container" bf-s="test" bf="s3"><!--bf-cond-start:s1--><!--bf-cond-end:s1--><button bf="s2">Add</button></div>
+    <div bf-s="test" bf="s3" id="container"><!--bf-cond-start:s1--><!--bf-cond-end:s1--><button bf="s2">Add</button></div>
   `,
 })

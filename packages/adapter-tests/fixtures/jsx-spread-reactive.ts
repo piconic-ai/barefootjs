@@ -18,6 +18,6 @@ export function JsxSpreadReactive() {
 }
 `,
   expectedHtml: `
-    <div id="a" class="on" bf-s="test" bf="s0"></div>
+    <div bf-s="test" bf="s0" class="on" id="a"></div>
   `,
 })

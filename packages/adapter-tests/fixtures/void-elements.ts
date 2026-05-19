@@ -19,7 +19,7 @@ export function VoidElements() {
     <div bf-s="test">
       <br>
       <hr>
-      <img src="test.png" alt="test">
+      <img alt="test" src="test.png">
       <input type="text">
     </div>
   `,

@@ -24,6 +24,6 @@ export function TaggedTemplateClassname() {
 }
 `,
   expectedHtml: `
-    <div class="base primary" bf-s="test" bf="s0">x</div>
+    <div bf-s="test" bf="s0" class="base primary">x</div>
   `,
 })

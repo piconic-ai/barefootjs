@@ -9,7 +9,7 @@ export function StyleAttribute() {
 }
 `,
   expectedHtml: `
-    <div style="color: red; font-size: 16px" bf-s="test">Styled</div>
+    <div bf-s="test" style="color: red; font-size: 16px">Styled</div>
   `,
 })
 

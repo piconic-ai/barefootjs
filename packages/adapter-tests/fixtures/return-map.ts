@@ -22,7 +22,7 @@ export function ReturnMap() {
 }
 `,
   expectedHtml: `
-    <div style="display:contents" bf-s="test">
+    <div bf-s="test" style="display:contents">
       <li data-key="a"><!--bf:s0-->a<!--/--></li>
       <li data-key="b"><!--bf:s0-->b<!--/--></li>
     </div>

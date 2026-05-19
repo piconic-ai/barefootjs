@@ -35,6 +35,6 @@ export function Slot({ className, children }: { className: string; children: any
   },
   props: { variant: 'a' },
   expectedHtml: `
-    <span class="base class-a" bf-s="test_s0" bf="s0">hi</span>
+    <span bf-s="test_s0" bf="s0" class="base class-a">hi</span>
   `,
 })

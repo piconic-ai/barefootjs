@@ -21,7 +21,7 @@ export function EventHandlers() {
 `,
   expectedHtml: `
     <div bf-s="test">
-      <input type="text" bf="s0">
+      <input bf="s0" type="text">
       <button bf="s1">Click</button>
       <span bf="s3"><!--bf:s2--><!--/--></span>
       <span bf="s5"><!--bf:s4-->0<!--/--></span>

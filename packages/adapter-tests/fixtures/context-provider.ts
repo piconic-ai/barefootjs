@@ -25,6 +25,6 @@ export function ThemeRoot() {
 }
 `,
   expectedHtml: `
-    <div class="root" bf-s="test"><span class="theme" bf-s="test_s0">dark</span></div>
+    <div bf-s="test" class="root"><span bf-s="test_s0" class="theme">dark</span></div>
   `,
 })

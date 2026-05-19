@@ -25,6 +25,6 @@ export function Variant({ variant }: { variant: 'a' | 'b' }) {
 `,
   props: { variant: 'a' },
   expectedHtml: `
-    <div class="base class-a" bf-s="test" bf="s0">hi</div>
+    <div bf-s="test" bf="s0" class="base class-a">hi</div>
   `,
 })

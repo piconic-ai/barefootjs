@@ -4,6 +4,8 @@
  * Generates Go html/template files from BarefootJS IR.
  */
 
+import ts from 'typescript'
+
 import type {
   ComponentIR,
   IRNode,
@@ -88,6 +90,20 @@ interface StaticChildInstance {
    *  through the parent's `{{.Children}}` read; those cases stay on
    *  the existing drop path. */
   childrenHtml: string | null
+}
+
+/**
+ * Top-level (non-loop) JSX intrinsic-element spread slot (#1407).
+ * Collected by `collectSpreadSlots` so the adapter can emit one
+ * `Spread_<slotId> map[string]any` field on the component's Props
+ * struct and initialise it in `NewXxxProps` from the source JS
+ * expression. Loop-internal spreads don't appear here — they emit
+ * the bag inline via the loop's iteration variable instead.
+ */
+interface SpreadSlotInfo {
+  slotId: string
+  expr: string
+  templateExpr: string | undefined
 }
 
 export interface GoTemplateAdapterOptions {
@@ -557,11 +573,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Generate Input struct for main component
     this.generateInputStruct(lines, ir, componentName, nestedComponents, propTypeOverrides)
 
+    // Compute spread slot info once and thread it through both
+    // generators — `collectSpreadSlots` walks the IR tree, so caching
+    // here saves a second full walk when the component has nested
+    // structure (#1411 review).
+    const spreadSlots = this.collectSpreadSlots(ir.root)
+
     // Generate Props struct for main component
-    this.generatePropsStruct(lines, ir, componentName, nestedComponents, propTypeOverrides)
+    this.generatePropsStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
 
     // Generate NewXxxProps function
-    this.generateNewPropsFunction(lines, ir, componentName, nestedComponents)
+    this.generateNewPropsFunction(lines, ir, componentName, nestedComponents, spreadSlots)
 
     // Imports come at the top, but `usesHtmlTemplate` is only known
     // after the body has been generated. Compose package + imports +
@@ -717,7 +739,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
     componentName: string,
     nestedComponents: NestedComponentInfo[],
-    propTypeOverrides: Map<string, string>
+    propTypeOverrides: Map<string, string>,
+    spreadSlots: SpreadSlotInfo[]
   ): void {
     const propsTypeName = `${componentName}Props`
     lines.push(`// ${propsTypeName} is the props type for the ${componentName} component.`)
@@ -804,6 +827,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
     }
 
+    // (#1407) Add fields for top-level JSX intrinsic-element spreads.
+    // Each non-loop spread gets a `Spread_<slotId> map[string]any`
+    // field; the Go template references it as `.Spread_<slotId>` via
+    // `{{bf_spread_attrs}}`. Loop-internal spreads emit inline and
+    // don't appear here. The slot list is computed once in
+    // `generateTypes` and threaded through both struct/init emitters
+    // so the IR walk runs exactly once per `generate()` call (#1411
+    // review).
+    for (const slot of spreadSlots) {
+      const jsonTag = this.toJsonTag(slot.slotId)
+      lines.push(`\t${slot.slotId} map[string]any \`json:"${jsonTag}"\``)
+    }
+
     lines.push('}')
     lines.push('')
   }
@@ -815,7 +851,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines: string[],
     ir: ComponentIR,
     componentName: string,
-    nestedComponents: NestedComponentInfo[]
+    nestedComponents: NestedComponentInfo[],
+    spreadSlots: SpreadSlotInfo[]
   ): void {
     const inputTypeName = `${componentName}Input`
     const propsTypeName = `${componentName}Props`
@@ -975,6 +1012,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t\t\tChildren: template.HTML(${JSON.stringify(child.childrenHtml)}),`)
       }
       lines.push(`\t\t}),`)
+    }
+
+    // (#1407) Initialise spread bag fields. Unsupported shapes (e.g.
+    // signal getters whose initialValue isn't a plain object literal,
+    // identifiers that don't resolve to a propsParam) fall through to
+    // BF101 below — the field is still declared on the struct so the
+    // template compiles even when the initializer is missing.
+    // `spreadSlots` is computed once in `generateTypes` and threaded
+    // through to avoid a second IR walk (#1411 review).
+    for (const slot of spreadSlots) {
+      const goExpr = this.buildSpreadInitializer(slot.expr, ir)
+      if (goExpr) {
+        lines.push(`\t\t${slot.slotId}: ${goExpr},`)
+      } else {
+        this.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `JSX spread '{...${slot.expr}}' on an intrinsic element has no Go template lowering — only signal getters of plain object literals and rest-prop identifiers are supported in V1`,
+          loc: this.makeLoc(),
+          suggestion: {
+            message: 'Pre-compute the spread bag as a discrete prop, or expand the spread into per-attribute props at the call site.',
+          },
+        })
+      }
     }
 
     lines.push('\t}')
@@ -1149,6 +1210,203 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         this.collectStaticChildInstancesRecursive(child, result, inLoop)
       }
     }
+  }
+
+  /**
+   * Collect top-level (non-loop) JSX intrinsic-element spread slots
+   * from the IR (#1407). Loop-internal spreads are skipped — they
+   * emit the bag inline via the loop's iteration variable in
+   * `elementAttrEmitter.emitSpread`, so they don't need a Props
+   * struct field.
+   *
+   * Walks the IR tree, descending into elements, fragments,
+   * conditionals, providers, async, and components, but stopping at
+   * loop bodies. Each `IRElement.attrs[i].value` of kind `'spread'`
+   * that has a `slotId` becomes one `SpreadSlotInfo` entry.
+   */
+  private collectSpreadSlots(node: IRNode): SpreadSlotInfo[] {
+    const result: SpreadSlotInfo[] = []
+    this.collectSpreadSlotsRecursive(node, result)
+    return result
+  }
+
+  private collectSpreadSlotsRecursive(node: IRNode, result: SpreadSlotInfo[]): void {
+    if (node.type === 'element') {
+      const element = node as IRElement
+      for (const attr of element.attrs) {
+        if (attr.value.kind !== 'spread') continue
+        if (!attr.value.slotId) continue
+        result.push({
+          slotId: attr.value.slotId,
+          expr: attr.value.expr,
+          templateExpr: attr.value.templateExpr,
+        })
+      }
+      for (const child of element.children) {
+        this.collectSpreadSlotsRecursive(child, result)
+      }
+      return
+    }
+    if (node.type === 'fragment') {
+      const fragment = node as IRFragment
+      for (const child of fragment.children) {
+        this.collectSpreadSlotsRecursive(child, result)
+      }
+      return
+    }
+    if (node.type === 'conditional') {
+      const cond = node as IRConditional
+      this.collectSpreadSlotsRecursive(cond.whenTrue, result)
+      if (cond.whenFalse) this.collectSpreadSlotsRecursive(cond.whenFalse, result)
+      return
+    }
+    if (node.type === 'if-statement') {
+      const stmt = node as IRIfStatement
+      this.collectSpreadSlotsRecursive(stmt.consequent, result)
+      if (stmt.alternate) this.collectSpreadSlotsRecursive(stmt.alternate, result)
+      return
+    }
+    if (node.type === 'component') {
+      const comp = node as IRComponent
+      // `IRComponent.children` are the JSX children passed to *this*
+      // component instance at the call site (`<Child>...</Child>`).
+      // They are part of the PARENT's IR and evaluate in the parent's
+      // render scope, so any spreads inside them belong on the parent's
+      // Props struct. The child component's own template body is a
+      // separate `ComponentIR` with its own `ir.root`, compiled in a
+      // separate `generate()` pass — it never appears in the parent's
+      // IR tree, so the recursion never crosses a component boundary
+      // and the per-component `spreadIdCounter` can't collide across
+      // unrelated components (#1411 review).
+      for (const child of comp.children) {
+        this.collectSpreadSlotsRecursive(child, result)
+      }
+      return
+    }
+    if (node.type === 'provider') {
+      const p = node as IRProvider
+      for (const child of p.children) {
+        this.collectSpreadSlotsRecursive(child, result)
+      }
+      return
+    }
+    if (node.type === 'async') {
+      const a = node as IRAsync
+      this.collectSpreadSlotsRecursive(a.fallback, result)
+      for (const child of a.children) {
+        this.collectSpreadSlotsRecursive(child, result)
+      }
+      return
+    }
+    // Loops are intentionally not descended — loop-internal spreads
+    // emit `{{bf_spread_attrs <go-expr>}}` inline from
+    // `elementAttrEmitter.emitSpread` instead of plumbing through a
+    // Props struct field.
+  }
+
+  /**
+   * Parse a JS object-literal source text (the raw string captured
+   * for a signal's `initialValue` or a spread expression's argument)
+   * into a Go `map[string]any{...}` literal source (#1407).
+   *
+   * Supports a deliberately conservative subset so the Go output is
+   * a 1:1 translation of the JS source: string/number/boolean/null
+   * values keyed by identifier or string-literal keys. Returns null
+   * for unsupported shapes (nested objects, computed values,
+   * function calls, spread elements) — callers fall back to BF101.
+   */
+  private parseJsObjectLiteralToGoMap(jsText: string): string | null {
+    const sf = ts.createSourceFile('inline.ts', `(${jsText})`, ts.ScriptTarget.Latest, true)
+    if (sf.statements.length !== 1) return null
+    const stmt = sf.statements[0]
+    if (!ts.isExpressionStatement(stmt)) return null
+    let expr: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+    if (!ts.isObjectLiteralExpression(expr)) return null
+    const entries: string[] = []
+    for (const prop of expr.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      let key: string
+      if (ts.isIdentifier(prop.name)) {
+        key = prop.name.text
+      } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
+        key = prop.name.text
+      } else {
+        return null
+      }
+      const val = prop.initializer
+      let goVal: string
+      if (ts.isStringLiteral(val) || ts.isNoSubstitutionTemplateLiteral(val)) {
+        goVal = JSON.stringify(val.text)
+      } else if (ts.isNumericLiteral(val)) {
+        goVal = val.text
+      } else if (
+        // TypeScript parses `-1` and `+1` as `PrefixUnaryExpression`
+        // rather than `NumericLiteral` — accept both signs explicitly
+        // so a bag like `{count: -1}` doesn't collapse to BF101
+        // (#1411 review).
+        ts.isPrefixUnaryExpression(val)
+        && (val.operator === ts.SyntaxKind.MinusToken || val.operator === ts.SyntaxKind.PlusToken)
+        && ts.isNumericLiteral(val.operand)
+      ) {
+        const sign = val.operator === ts.SyntaxKind.MinusToken ? '-' : ''
+        goVal = `${sign}${val.operand.text}`
+      } else if (val.kind === ts.SyntaxKind.TrueKeyword) {
+        goVal = 'true'
+      } else if (val.kind === ts.SyntaxKind.FalseKeyword) {
+        goVal = 'false'
+      } else if (val.kind === ts.SyntaxKind.NullKeyword) {
+        goVal = 'nil'
+      } else {
+        return null
+      }
+      entries.push(`${JSON.stringify(key)}: ${goVal}`)
+    }
+    return `map[string]any{${entries.join(', ')}}`
+  }
+
+  /**
+   * Build a Go expression for a JSX spread bag's initial value, to
+   * be placed inside `NewXxxProps`'s return literal (#1407).
+   *
+   * Supported shapes (V1):
+   *   - Signal-getter call (e.g. `attrs()`): look up the signal,
+   *     parse its `initialValue` as a JS object literal, and emit a
+   *     Go `map[string]any{...}` literal.
+   *   - Bare identifier matching a `propsParam`: emit
+   *     `in.<FieldName>` — works when the prop's Go type is already
+   *     a map type (`Record<string, ...>` lowered to `map[string]T`).
+   *
+   * Returns null for unsupported shapes so the caller can raise a
+   * narrowed BF101 with the offending expression.
+   */
+  private buildSpreadInitializer(
+    spreadExpr: string,
+    ir: ComponentIR,
+  ): string | null {
+    const trimmed = spreadExpr.trim()
+    // Signal-getter call: `attrs()` — pluck the signal's initialValue
+    // and translate the JS object literal to a Go map literal.
+    const callMatch = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*\)$/.exec(trimmed)
+    if (callMatch) {
+      const getterName = callMatch[1]
+      const signal = ir.metadata.signals.find(s => s.getter === getterName)
+      if (signal && signal.initialValue) {
+        const goMap = this.parseJsObjectLiteralToGoMap(signal.initialValue)
+        if (goMap) return goMap
+      }
+      return null
+    }
+    // Bare identifier: rest-prop or destructured-from-props parameter
+    // name. The corresponding Input field is already populated by the
+    // caller of NewXxxProps.
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
+      const param = ir.metadata.propsParams.find(p => p.name === trimmed)
+      if (param) {
+        return `in.${this.capitalizeFieldName(param.name)}`
+      }
+    }
+    return null
   }
 
   /**
@@ -3139,34 +3397,59 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `${name}="{{${this.convertExpressionToGo(value.expr)}}}"`
     },
     emitBooleanAttr: (_value, name) => name,
-    // Spread attributes (`<div {...attrs()} />`) have no idiomatic Go
-    // template form — Go's `{{range}}` over a map can't emit
-    // `key="value"` pairs with HTML escaping in a way that round-trips
-    // through Hono / CSR's `applyRestAttrs` semantics. Record BF101 so
-    // the user gets a clear diagnostic instead of a silently dropped
-    // spread (#1324). The empty return drops the entry from the
-    // attribute list; `${expr}` still appears as the spread's runtime
-    // value in init code, so wrapping in `'use client'` (or pre-
-    // computing the spread as discrete props) recovers the keys.
+    // Spread attributes (`<div {...attrs()} />`) lower through the
+    // `bf_spread_attrs` runtime helper (#1407). Two paths:
+    //   - Top-level spread: the bag was plumbed onto the component's
+    //     Props struct as `.Spread_<slotId>` by `generatePropsStruct`
+    //     + `generateNewPropsFunction`. Emit a reference to it.
+    //   - Loop-internal spread: the bag lives in the loop iteration
+    //     variable (which surfaces as Go template's `.` plus
+    //     property access). Translate the JS expression via
+    //     `convertExpressionToGo` and emit `{{bf_spread_attrs <e>}}`
+    //     inline — no Props plumbing needed.
+    // Slot IDs are assigned at IR build time so identity is stable
+    // across re-emits; if one isn't present we fall back to BF101.
     emitSpread: (value) => {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `JSX spread '{...${value.expr}}' on an intrinsic element has no Go template lowering`,
-        loc: this.makeLoc(),
-        suggestion: {
-          // The Go SSR path doesn't currently honor
-          // `IRAttribute.clientOnly` for non-rest spreads, and the
-          // client-JS pipeline skips them too — `/* @client */`
-          // wouldn't apply the spread at hydration either. Recommend
-          // the two workarounds that actually work: move the JSX
-          // into a `'use client'` component (so hydration's
-          // `spreadAttrs` helper applies the bag), or expand the
-          // spread into discrete attribute props at the call site.
-          message: 'Move the JSX into a `\'use client\'` component (so hydration applies the spread via `spreadAttrs`), or expand the spread into discrete attribute props at the call site.',
-        },
-      })
-      return ''
+      if (!value.slotId) {
+        this.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `JSX spread '{...${value.expr}}' on an intrinsic element has no Go template lowering (missing slot id)`,
+          loc: this.makeLoc(),
+          suggestion: {
+            message: 'This usually means a closed-type rest-prop spread was unexpectedly routed through the bag path — file a bug with the source.',
+          },
+        })
+        return ''
+      }
+      if (this.inLoop) {
+        // Inside `{{range $_, $t := .Tasks}}`, the iteration value
+        // surfaces as Go template's `.` (current context). A bare
+        // reference to the loop param therefore translates to `.`,
+        // not `.T` (which is what `convertExpressionToGo` would emit
+        // via the generic identifier path). Property access through
+        // the loop param (`t.attrs`) is already handled by the
+        // member-expression path that returns `.Attrs`.
+        //
+        // The emit path is wired up but end-to-end fixture coverage
+        // is gated on two orthogonal harness gaps: (a) `buildGoPropsInit`
+        // in `test-render.ts` can't pass nested-object arrays from JS
+        // into the Go input struct, and (b) `convertInitialValue`
+        // returns `nil` for complex literal arrays so signal-init
+        // arrays of objects don't reach the SSR template. Both are
+        // pre-existing limitations independent of #1407.
+        const trimmed = value.expr.trim()
+        const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
+        if (currentLoopParam && trimmed === currentLoopParam) {
+          return `{{bf_spread_attrs .}}`
+        }
+        const goExpr = this.convertExpressionToGo(value.expr)
+        // `convertExpressionToGo` already pushes BF101 for
+        // unsupported expressions and returns `""`; pass through to
+        // produce a consistent template that still compiles.
+        return `{{bf_spread_attrs ${goExpr}}}`
+      }
+      return `{{bf_spread_attrs .${value.slotId}}}`
     },
     emitTemplate: (value, name) => `${name}="${this.renderTemplateLiteralParts(value.parts)}"`,
     // Neither variant is legal on intrinsic elements.

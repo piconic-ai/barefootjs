@@ -69,6 +69,8 @@ import { fixture as asyncBoundary } from './async-boundary'
 // Priority 10: Compiler stress catalog (#1244)
 import { fixture as style3Signals } from './style-3-signals'
 import { fixture as jsxSpreadReactive } from './jsx-spread-reactive'
+import { fixture as jsxSpreadMultiple } from './jsx-spread-multiple'
+import { fixture as jsxSpreadStaticAndSpread } from './jsx-spread-static-and-spread'
 import { fixture as taggedTemplateClassname } from './tagged-template-classname'
 import { fixture as memberExpressionTag } from './member-expression-tag'
 import { fixture as arrowComponent } from './arrow-component'
@@ -153,6 +155,8 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 10: Compiler stress catalog (#1244)
   style3Signals,
   jsxSpreadReactive,
+  jsxSpreadMultiple,
+  jsxSpreadStaticAndSpread,
   taggedTemplateClassname,
   memberExpressionTag,
   arrowComponent,
