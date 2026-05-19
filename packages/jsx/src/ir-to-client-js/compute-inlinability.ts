@@ -480,17 +480,30 @@ function collectTemplateRiskyNames(irRoot: IRNode): Set<string> {
       // `${cond} ? a : b` — UNSAFE evaluates as undefined (falsey),
       // so the wrong branch renders at SSR. Hydrate corrects, but
       // SSR HTML is silently wrong.
+      //
+      // `/* @client */` opts the condition (and its branches) out of
+      // SSR entirely — the template emits a `<!--bf-c-->` marker and
+      // `insert()` swaps in the branch at hydrate. Identifiers
+      // referenced only from here therefore never reach a risky
+      // template position, so they shouldn't trigger BF060/BF061.
+      // Same carve-out the `expression` visitor uses for slotted
+      // `/* @client */` reads.
+      if (c.clientOnly) return
       addExprIdents(c.templateCondition ?? c.condition)
       descend()
     },
     ifStatement: ({ node: i, descend }) => {
+      if (i.clientOnly) return
       addExprIdents(i.templateCondition ?? i.condition)
       descend()
     },
     loop: ({ node: l, descend }) => {
       // `safeArrayExpr` substitutes `[]` on UNSAFE — SSR has zero
       // items, hydrate reconciles to N. Hydration mismatch in DOM
-      // shape, worth surfacing.
+      // shape, worth surfacing. `/* @client */` loops emit no SSR
+      // items either, but the directive's contract says hydrate
+      // owns the visible state — so the identifier check is moot.
+      if (l.clientOnly) return
       addExprIdents(l.templateArray ?? l.array)
       descend()
     },

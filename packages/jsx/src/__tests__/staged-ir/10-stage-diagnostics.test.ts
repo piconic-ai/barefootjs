@@ -577,4 +577,48 @@ describe('compileJSX surfaces stage-violation diagnostics by default', () => {
     // No diagnostic noise either way.
     expect(errors.find(e => e.startsWith('[BF06'))).toBeUndefined()
   })
+
+  // Regression: prior to this fix, only the `expression` IR visitor in
+  // `collectTemplateRiskyNames` consulted `clientOnly`. The
+  // `conditional`, `ifStatement`, and `loop` visitors walked
+  // unconditionally — so wrapping the condition / array with
+  // `/* @client */` (which DOES mark the IR node `clientOnly: true`)
+  // still added every referenced identifier to `templateRiskyNames`,
+  // and `recordStageDiagnostics` then fired BF061 for any chained
+  // init-local. The `@client` directive is documented as the escape
+  // hatch for these cases; the carve-out belongs in all three node
+  // types, not just `expression`.
+  test('chained const referenced only inside a /* @client */ ternary does NOT fire BF061', () => {
+    const { errors } = compile(`
+      'use client'
+      import { useSettings } from './nodes'
+
+      interface Props {}
+
+      export function Foo(_props: Props) {
+        const setting = useSettings()
+        const enabled = setting === 'on'
+        return <div>{/* @client */ enabled ? 'YES' : 'NO'}</div>
+      }
+    `)
+
+    expect(errors.find(e => e.startsWith('[BF061]'))).toBeUndefined()
+  })
+
+  test('chained const referenced only inside a /* @client */ .map() does NOT fire BF061', () => {
+    const { errors } = compile(`
+      'use client'
+      import { useSettings } from './nodes'
+
+      interface Props {}
+
+      export function Foo(_props: Props) {
+        const setting = useSettings()
+        const items = setting.split(',')
+        return <ul>{/* @client */ items.map((it) => <li key={it}>{it}</li>)}</ul>
+      }
+    `)
+
+    expect(errors.find(e => e.startsWith('[BF061]'))).toBeUndefined()
+  })
 })
