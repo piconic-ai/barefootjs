@@ -121,7 +121,18 @@ export function run(args: string[], ctx: CliContext): void {
       ctx.projectDir ?? ctx.root,
       {},
     )
-    const sourceDerivedMeta: ComponentMeta = { ...meta, category: 'page' }
+    // `extractMetaForFile` derives the component name from the parent
+    // directory of the source file (correct for the registry layout
+    // `<name>/index.tsx`, wrong for the flat `components/<Name>.tsx`
+    // layout page components use — `fileToName(.../components/Counter.tsx)`
+    // would return `'components'`). Use the query as the canonical
+    // name since that's what the user typed in.
+    const sourceDerivedMeta: ComponentMeta = {
+      ...meta,
+      name: query,
+      title: query,
+      category: 'page',
+    }
     const rel = path.relative(ctx.projectDir ?? ctx.root, resolved.filePath)
     const banner = `(source-derived view of ${rel} — no registry meta. Run \`bf docs\` again after \`bf meta extract\` only if you've moved this file under \`paths.components\`.)`
     printComponent(sourceDerivedMeta, ctx.jsonFlag, banner)
