@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/chart",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "SVG chart components for BarefootJS with signal-based reactivity",
   "type": "module",
   "main": "./dist/index.js",
@@ -31,7 +31,7 @@
     "reactive",
     "barefoot"
   ],
-  "author": "",
+  "author": "kobaken <kentafly88@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",

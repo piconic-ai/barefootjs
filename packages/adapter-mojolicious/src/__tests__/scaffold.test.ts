@@ -163,14 +163,17 @@ describe.skipIf(!INTEGRATION)(
         expect(cp).toMatch(/Mojolicious/)
       })
 
-      test('app.pl uses register_components_from_manifest', () => {
+      test('plugin auto-loads manifest — no per-route register_components_from_manifest call', () => {
+        // After #1416, `Mojolicious::Plugin::BarefootJS` reads the
+        // build manifest at plugin-register time and installs a
+        // `before_render` hook that wires up child renderers and
+        // seeds the stash automatically. The scaffold's `app.pl`
+        // therefore no longer mentions either symbol directly — the
+        // user can `bf add <component>` and refresh the browser
+        // without touching the Perl file.
         const app = readFileSync(path.join(projectDir, 'app.pl'), 'utf-8')
-        expect(app).toContain('register_components_from_manifest')
-      })
-
-      test('app.pl reads the build-time manifest from dist/templates', () => {
-        const app = readFileSync(path.join(projectDir, 'app.pl'), 'utf-8')
-        expect(app).toContain("app->home->child('dist/templates/manifest.json')")
+        expect(app).not.toContain('register_components_from_manifest')
+        expect(app).not.toContain("app->home->child('dist/templates/manifest.json')")
       })
 
       test('barefoot.config.ts targets the mojolicious adapter', () => {

@@ -1,0 +1,336 @@
+// SSR template-variable defaults extractor.
+//
+// The Mojo (and other template-stash) adapter renders SSR HTML from a
+// generated template file (`<%= $variant %>`, `<%= $count %>`, ...) so
+// every variable the template references has to live in the stash at
+// render time. Without those values, Perl strict mode aborts the
+// request with `Global symbol "$variant" requires explicit package
+// name`.
+//
+// This module statically evaluates each component's prop destructure
+// defaults, signal initial values, and memo computations into a
+// JSON-encodable seed map. The seed lands in the build manifest so the
+// Mojolicious plugin can populate the stash automatically — no
+// per-component `signal_init` callback required in the user's
+// `app.pl`.
+//
+// Static evaluator scope (intentionally narrow):
+//   - JS literals: number, string, boolean, null, undefined
+//   - Plain object / array literals built from literals
+//   - Coalescing `??`, `||`, `&&`, and ternary `?:`
+//   - Numeric / string `+` `-` `*` `/` `%`
+//   - Bare property access (`props.X`) and element access resolve to
+//     `undefined`, which `??` / `||` flow through to the literal RHS.
+//   - Zero-arg function calls of in-scope identifiers resolve to the
+//     binding value — covers `count() * 2` in memo computations where
+//     `count` is a previously-evaluated signal getter.
+//
+// Anything outside the above leaves the entry as `null` (a sentinel
+// the Perl side falls through to its own template default — typically
+// `undef`, which Mojo renders as empty string).
+
+import ts from 'typescript'
+import type { IRMetadata } from './types'
+
+/**
+ * A single template-variable default. Keyed in the manifest by the
+ * template variable name (`variant`, `count`, ...). The Perl-side
+ * `register_components_from_manifest` reads these entries to populate
+ * each child template's stash.
+ */
+export interface SsrDefault {
+  /**
+   * Static fallback value when neither the caller's props nor the
+   * adapter's own derivation supplies one. JSON-encodable: number,
+   * string, boolean, null, or a tree of plain objects / arrays. `null`
+   * when the source expression isn't statically evaluable.
+   */
+  value: unknown
+  /**
+   * When set, the manifest consumer prefers `props[propName]` over
+   * `value`. Mirrors destructured-prop defaults
+   * (`{ variant = 'default' }`) where the template variable maps 1:1
+   * to a caller-supplied prop. Omitted for signal / memo entries that
+   * are internal to the component.
+   */
+  propName?: string
+  /**
+   * When true, this entry is the rest-props bag (`...props`). The
+   * consumer wires it up as an aggregate hash rather than picking a
+   * single prop.
+   */
+  isRestProps?: boolean
+}
+
+const UNRESOLVED = Symbol('unresolved')
+type EvalResult = unknown | typeof UNRESOLVED
+
+interface EvalContext {
+  /** Identifier name → previously-resolved value (signal getters, memos). */
+  bindings: Record<string, EvalResult>
+  /** Names whose `<name>.X` / `<name>[X]` reads should resolve to `undefined`. */
+  propsLike: ReadonlySet<string>
+}
+
+/**
+ * Extract a JSON-encodable defaults map for the SSR stash.
+ *
+ * The result keys are the template variables the generated SSR
+ * template references — every destructured prop parameter plus every
+ * signal getter and memo name. Returns `undefined` when the component
+ * exposes no template variables (no props, no signals, no memos).
+ */
+export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefault> | undefined {
+  const out: Record<string, SsrDefault> = {}
+
+  const propsLike = new Set<string>()
+  if (metadata.propsObjectName) propsLike.add(metadata.propsObjectName)
+  for (const p of metadata.propsParams) propsLike.add(p.name)
+
+  // Prop destructure defaults. Only emit entries for the
+  // destructured-prop form (`function Foo({ variant = 'default' })`)
+  // where each `propsParam` name corresponds to a template-stash
+  // variable. The bare-props-arg form (`function Foo(props: Props)`)
+  // also populates `propsParams` from the type, but those names are
+  // never referenced as bare scalars in the generated template —
+  // accesses go through `$props->{X}` — so seeding them would just
+  // crowd the manifest with no-op entries.
+  if (metadata.propsObjectName === null) {
+    for (const p of metadata.propsParams) {
+      if (p.isRest) continue
+      if (p.defaultValue !== undefined) {
+        const value = tryStaticEval(p.defaultValue, { bindings: {}, propsLike })
+        out[p.name] = { propName: p.name, value: resultToJsonable(value) }
+      } else {
+        // No destructure default — the template will read it as-is, source
+        // from props and let Perl's `//` operator decide what `undef`
+        // becomes. We still register the entry so consumers can supply
+        // the propName even with no static fallback.
+        out[p.name] = { propName: p.name, value: null }
+      }
+    }
+  }
+  // Rest-props bag (`...props`) — tracked separately from `propsParams`
+  // by the analyzer. Default to an empty plain hash so adapters can
+  // forward it through `spreadAttrs` without a nullability check.
+  if (metadata.restPropsName) {
+    out[metadata.restPropsName] = { isRestProps: true, value: {} }
+  }
+
+  // Signal initial values, in declaration order. Each evaluated value is
+  // fed into the bindings map so subsequent memos can reference earlier
+  // signals (Counter's `doubled = createMemo(() => count() * 2)`).
+  const bindings: Record<string, EvalResult> = {}
+  for (const sig of metadata.signals) {
+    if (!sig.getter) continue
+    const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
+    out[sig.getter] = { value: resultToJsonable(value) }
+    bindings[sig.getter] = value
+  }
+
+  for (const memo of metadata.memos) {
+    const value = tryStaticEval(memo.computation, { bindings, propsLike })
+    out[memo.name] = { value: resultToJsonable(value) }
+    bindings[memo.name] = value
+  }
+
+  return Object.keys(out).length === 0 ? undefined : out
+}
+
+function resultToJsonable(v: EvalResult): unknown {
+  if (v === UNRESOLVED) return null
+  if (v === undefined) return null
+  return v
+}
+
+function tryStaticEval(expr: string, ctx: EvalContext): EvalResult {
+  if (!expr || !expr.trim()) return null
+  const node = parseExpression(expr)
+  if (!node) return UNRESOLVED
+  return evalNode(node, ctx)
+}
+
+function parseExpression(expr: string): ts.Expression | null {
+  // Wrap in parens so a leading `{}` parses as an object literal rather
+  // than an empty block statement.
+  const sf = ts.createSourceFile(
+    '__ssr_default__.ts',
+    `(${expr})`,
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt)) return null
+  const inner = ts.isParenthesizedExpression(stmt.expression)
+    ? stmt.expression.expression
+    : stmt.expression
+  return inner
+}
+
+function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
+  // Strip parentheses / `as` / `satisfies` — they don't affect the value.
+  if (ts.isParenthesizedExpression(node)) return evalNode(node.expression, ctx)
+  if (ts.isAsExpression(node)) return evalNode(node.expression, ctx)
+  if (ts.isSatisfiesExpression(node)) return evalNode(node.expression, ctx)
+  if (ts.isTypeAssertionExpression(node)) return evalNode(node.expression, ctx)
+  if (ts.isNonNullExpression(node)) return evalNode(node.expression, ctx)
+
+  // `createMemo(() => count() * 2)` stores the full arrow expression
+  // string. For evaluation, we only care about the body — and only the
+  // expression-bodied form (`() => expr`). Block-bodied arrows
+  // (`() => { ... }`) would need branch tracking we don't attempt.
+  if (ts.isArrowFunction(node)) {
+    if (node.parameters.length === 0 && !ts.isBlock(node.body)) {
+      return evalNode(node.body as ts.Expression, ctx)
+    }
+    return UNRESOLVED
+  }
+
+  if (ts.isNumericLiteral(node)) return Number(node.text)
+  if (ts.isStringLiteralLike(node)) return node.text
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return true
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return false
+  if (node.kind === ts.SyntaxKind.NullKeyword) return null
+
+  if (ts.isIdentifier(node)) {
+    if (node.text === 'undefined') return undefined
+    if (node.text in ctx.bindings) return ctx.bindings[node.text]
+    if (ctx.propsLike.has(node.text)) return undefined
+    return UNRESOLVED
+  }
+
+  if (ts.isPrefixUnaryExpression(node)) {
+    const arg = evalNode(node.operand, ctx)
+    if (arg === UNRESOLVED) return UNRESOLVED
+    switch (node.operator) {
+      case ts.SyntaxKind.MinusToken:
+        return typeof arg === 'number' ? -arg : UNRESOLVED
+      case ts.SyntaxKind.PlusToken:
+        return typeof arg === 'number' ? +arg : UNRESOLVED
+      case ts.SyntaxKind.ExclamationToken:
+        return !arg
+    }
+    return UNRESOLVED
+  }
+
+  if (ts.isObjectLiteralExpression(node)) {
+    const obj: Record<string, unknown> = {}
+    for (const prop of node.properties) {
+      if (!ts.isPropertyAssignment(prop)) return UNRESOLVED
+      let key: string
+      if (ts.isIdentifier(prop.name) || ts.isStringLiteralLike(prop.name)) {
+        key = prop.name.text
+      } else if (ts.isNumericLiteral(prop.name)) {
+        key = prop.name.text
+      } else {
+        return UNRESOLVED
+      }
+      const v = evalNode(prop.initializer, ctx)
+      if (v === UNRESOLVED) return UNRESOLVED
+      obj[key] = v === undefined ? null : v
+    }
+    return obj
+  }
+
+  if (ts.isArrayLiteralExpression(node)) {
+    const arr: unknown[] = []
+    for (const elem of node.elements) {
+      if (ts.isOmittedExpression(elem)) return UNRESOLVED
+      const v = evalNode(elem, ctx)
+      if (v === UNRESOLVED) return UNRESOLVED
+      arr.push(v === undefined ? null : v)
+    }
+    return arr
+  }
+
+  if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+    // `props.X` / `props?.X` / `props['X']` — read of a binding we know
+    // nothing about, so resolve to `undefined`. Chained access (`a.b.c`)
+    // collapses the same way because the base read is already undefined.
+    const baseResult = evalNode(node.expression, ctx)
+    if (baseResult === undefined) return undefined
+    return UNRESOLVED
+  }
+
+  if (ts.isCallExpression(node)) {
+    // Zero-arg call of a bound identifier — resolves the signal getter
+    // pattern (`count() * 2` in a memo).
+    if (
+      node.arguments.length === 0 &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text in ctx.bindings
+    ) {
+      return ctx.bindings[node.expression.text]
+    }
+    return UNRESOLVED
+  }
+
+  if (ts.isConditionalExpression(node)) {
+    const cond = evalNode(node.condition, ctx)
+    if (cond === UNRESOLVED) return UNRESOLVED
+    return cond ? evalNode(node.whenTrue, ctx) : evalNode(node.whenFalse, ctx)
+  }
+
+  if (ts.isBinaryExpression(node)) {
+    const op = node.operatorToken.kind
+
+    if (op === ts.SyntaxKind.QuestionQuestionToken) {
+      const l = evalNode(node.left, ctx)
+      if (l !== UNRESOLVED && l !== null && l !== undefined) return l
+      return evalNode(node.right, ctx)
+    }
+    if (op === ts.SyntaxKind.BarBarToken) {
+      const l = evalNode(node.left, ctx)
+      if (l !== UNRESOLVED && l) return l
+      return evalNode(node.right, ctx)
+    }
+    if (op === ts.SyntaxKind.AmpersandAmpersandToken) {
+      const l = evalNode(node.left, ctx)
+      if (l === UNRESOLVED) return UNRESOLVED
+      if (!l) return l
+      return evalNode(node.right, ctx)
+    }
+
+    const l = evalNode(node.left, ctx)
+    const r = evalNode(node.right, ctx)
+    if (l === UNRESOLVED || r === UNRESOLVED) return UNRESOLVED
+
+    switch (op) {
+      case ts.SyntaxKind.PlusToken:
+        if (typeof l === 'string' || typeof r === 'string') return `${l}${r}`
+        if (typeof l === 'number' && typeof r === 'number') return l + r
+        return UNRESOLVED
+      case ts.SyntaxKind.MinusToken:
+        return typeof l === 'number' && typeof r === 'number' ? l - r : UNRESOLVED
+      case ts.SyntaxKind.AsteriskToken:
+        return typeof l === 'number' && typeof r === 'number' ? l * r : UNRESOLVED
+      case ts.SyntaxKind.SlashToken:
+        return typeof l === 'number' && typeof r === 'number' && r !== 0 ? l / r : UNRESOLVED
+      case ts.SyntaxKind.PercentToken:
+        return typeof l === 'number' && typeof r === 'number' && r !== 0 ? l % r : UNRESOLVED
+      case ts.SyntaxKind.EqualsEqualsEqualsToken:
+      case ts.SyntaxKind.EqualsEqualsToken:
+        return l === r
+      case ts.SyntaxKind.ExclamationEqualsEqualsToken:
+      case ts.SyntaxKind.ExclamationEqualsToken:
+        return l !== r
+    }
+    return UNRESOLVED
+  }
+
+  if (ts.isTemplateExpression(node)) {
+    // Template literal with no holes is a plain head literal text.
+    if (node.templateSpans.length === 0) return node.head.text
+    let acc = node.head.text
+    for (const span of node.templateSpans) {
+      const v = evalNode(span.expression, ctx)
+      if (v === UNRESOLVED) return UNRESOLVED
+      acc += `${v ?? ''}${span.literal.text}`
+    }
+    return acc
+  }
+  if (ts.isNoSubstitutionTemplateLiteral(node)) return node.text
+
+  return UNRESOLVED
+}

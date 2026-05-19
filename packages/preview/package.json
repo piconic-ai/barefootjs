@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/preview",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Lightweight preview dev server for BarefootJS components",
   "type": "module",
   "private": true,

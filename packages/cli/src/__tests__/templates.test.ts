@@ -129,16 +129,17 @@ describe('adapter registry', () => {
       expect(ADAPTERS.echo.files['go.mod']).toContain('github.com/fsnotify/fsnotify')
     })
 
-    test('mojo passes Counter signal/memo values to the SSR template', () => {
-      // `bf build` derives template variable names ($count,
-      // $doubled) from the JSX createSignal/createMemo declarations.
-      // Perl's strict mode rejects undefined globals, so app.pl has
-      // to stash each one explicitly — otherwise the very first
-      // request 500s with "Global symbol $count requires explicit
-      // package name".
+    test('mojo route handler is a one-liner — plugin auto-seeds stash', () => {
+      // After #1416 the manifest carries each component's prop /
+      // signal / memo defaults, and the `BarefootJS` plugin's
+      // `before_render` hook stashes them automatically. The
+      // route handler is left as a single `$c->render(...)` line
+      // so adding a new UI component via `bf add badge` doesn't
+      // require parallel edits to `app.pl`.
       const appPl = ADAPTERS.mojo.files['app.pl']
-      expect(appPl).toMatch(/count\s+=>/)
-      expect(appPl).toMatch(/doubled\s+=>/)
+      expect(appPl).toMatch(/\$c->render\(template => 'Counter', layout => 'default'\)/)
+      expect(appPl).not.toMatch(/signal_init\s*=>/)
+      expect(appPl).not.toMatch(/_scope_id\(/)
     })
 
     test('mojo disables template cache in development mode', () => {

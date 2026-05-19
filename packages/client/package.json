@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/client",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "BarefootJS client package: reactive primitives (SSR-safe) plus browser runtime under the `/runtime` subpath (compiler target)",
   "type": "module",
   "main": "./dist/index.js",
@@ -45,7 +45,7 @@
     "runtime",
     "barefoot"
   ],
-  "author": "",
+  "author": "kobaken <kentafly88@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",

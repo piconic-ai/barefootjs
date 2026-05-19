@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/form",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Signal-based form management for BarefootJS",
   "type": "module",
   "main": "./dist/index.js",
@@ -28,7 +28,7 @@
     "reactive",
     "barefoot"
   ],
-  "author": "",
+  "author": "kobaken <kentafly88@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",

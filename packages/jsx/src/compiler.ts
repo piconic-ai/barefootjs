@@ -19,6 +19,7 @@ import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/com
 import { generateModuleExports, collectInlineExportedNames } from './module-exports'
 import { applyCssLayerPrefix } from './css-layer-prefixer'
 import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks'
+import { extractSsrDefaults } from './ssr-defaults'
 
 /**
  * Extended compile options with required adapter
@@ -202,6 +203,18 @@ function compileMultipleComponents(
         content: output.rawTemplate,
         type: 'markedTemplate',
       })
+      // SSR defaults, paired with the per-component template file via
+      // the matching basename (the build pipeline pairs them in
+      // `compileEntry`).
+      const ir = entries.find(e => e.componentIR.metadata.componentName === output.componentName)
+      const ssrDefaults = ir ? extractSsrDefaults(ir.componentIR.metadata) : undefined
+      if (ssrDefaults) {
+        files.push({
+          path: dir + output.componentName + '.ssr-defaults.json',
+          content: JSON.stringify(ssrDefaults),
+          type: 'ssrDefaults',
+        })
+      }
     }
     // Types and client JS remain one-per-source-file (shared across components)
     const adapterTypesOutputs = allOutputs.map(o => o.adapterTypes).filter(Boolean) as string[]
@@ -299,6 +312,24 @@ function compileMultipleComponents(
     content: combinedTemplate,
     type: 'markedTemplate',
   })
+
+  // SSR defaults — for non-per-component adapters the single template
+  // is keyed by source filename, so only the entry-point component's
+  // defaults are surfaced (default export → exported sibling → first).
+  {
+    const entryIR =
+      entries.find(e => e.componentIR.metadata.hasDefaultExport) ??
+      entries.find(e => e.componentIR.metadata.isExported) ??
+      entries[0]
+    const ssrDefaults = entryIR ? extractSsrDefaults(entryIR.componentIR.metadata) : undefined
+    if (ssrDefaults) {
+      files.push({
+        path: filePath.replace(/\.tsx?$/, '.ssr-defaults.json'),
+        content: JSON.stringify(ssrDefaults),
+        type: 'ssrDefaults',
+      })
+    }
+  }
 
   // Emit combined adapter types if any
   const adapterTypesOutputs = allOutputs.map(o => o.adapterTypes).filter(Boolean) as string[]
@@ -506,6 +537,22 @@ export function compileJSX(
     content,
     type: 'markedTemplate',
   })
+
+  // SSR defaults — JSON-encoded seed values for the template's
+  // stash, derived statically from props / signals / memos. The CLI
+  // build pipeline reads this output (it isn't written to disk) and
+  // attaches it to the manifest entry so adapters can populate the
+  // SSR stash without per-component wire-up in user code.
+  {
+    const ssrDefaults = extractSsrDefaults(componentIR.metadata)
+    if (ssrDefaults) {
+      files.push({
+        path: filePath.replace(/\.tsx?$/, '.ssr-defaults.json'),
+        content: JSON.stringify(ssrDefaults),
+        type: 'ssrDefaults',
+      })
+    }
+  }
 
   // Emit adapter types as a separate FileOutput
   if (adapterOutput.types) {

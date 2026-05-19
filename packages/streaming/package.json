@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/streaming",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Backend-agnostic SSR streaming helpers for BarefootJS",
   "type": "module",
   "main": "./src/index.ts",
@@ -16,7 +16,7 @@
     "streaming",
     "ssr"
   ],
-  "author": "",
+  "author": "kobaken <kentafly88@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",

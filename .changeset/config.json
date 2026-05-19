@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [["@barefootjs/*", "create-barefootjs"]],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@barefootjs/adapter-tests",
+    "@barefootjs/ui",
+    "barefootjs-hono-jsx-example",
+    "barefootjs-mojolicious-example",
+    "barefootjs-echo-example",
+    "barefootjs-csr-example",
+    "barefootjs-components"
+  ]
+}

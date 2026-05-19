@@ -8,6 +8,10 @@
 export { compileJSX, buildMetadata } from './compiler'
 export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutput } from './compiler'
 
+// SSR template-variable defaults (manifest seeds for stash-based adapters)
+export { extractSsrDefaults } from './ssr-defaults'
+export type { SsrDefault } from './ssr-defaults'
+
 // Pure IR types
 export type {
   ComponentIR,
@@ -101,7 +105,7 @@ export interface PostBuildContext {
   /** Absolute path to the project directory */
   projectDir: string
   /** Build manifest */
-  manifest: Record<string, { clientJs?: string; markedTemplate: string }>
+  manifest: Record<string, { clientJs?: string; markedTemplate: string; ssrDefaults?: Record<string, unknown> }>
   /**
    * Signal that the post-build step wrote (or otherwise altered) outputs the
    * CLI does not track directly — e.g. adapter-generated files produced

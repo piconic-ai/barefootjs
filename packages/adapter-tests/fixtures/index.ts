@@ -71,6 +71,8 @@ import { fixture as style3Signals } from './style-3-signals'
 import { fixture as jsxSpreadReactive } from './jsx-spread-reactive'
 import { fixture as jsxSpreadMultiple } from './jsx-spread-multiple'
 import { fixture as jsxSpreadStaticAndSpread } from './jsx-spread-static-and-spread'
+import { fixture as jsxSpreadRestProp } from './jsx-spread-rest-prop'
+import { fixture as jsxSpreadPropsObject } from './jsx-spread-props-object'
 import { fixture as taggedTemplateClassname } from './tagged-template-classname'
 import { fixture as memberExpressionTag } from './member-expression-tag'
 import { fixture as arrowComponent } from './arrow-component'
@@ -157,6 +159,8 @@ export const jsxFixtures: JSXFixture[] = [
   jsxSpreadReactive,
   jsxSpreadMultiple,
   jsxSpreadStaticAndSpread,
+  jsxSpreadRestProp,
+  jsxSpreadPropsObject,
   taggedTemplateClassname,
   memberExpressionTag,
   arrowComponent,

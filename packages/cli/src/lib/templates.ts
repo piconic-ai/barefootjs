@@ -60,6 +60,16 @@ export interface AdapterTemplate {
    * may not be installed" — init prints them but does not abort.
    */
   prereqWarnings: () => string[]
+  /**
+   * Extra setup commands to insert into the printed "Get started:"
+   * guide after `cd <dir>` and before `<pm> install`. Each entry is
+   * either a {label, command} pair (renders the label as a comment-
+   * styled line above the command — useful for grouping multi-line
+   * setup hints) or a bare command string. Used by adapters whose
+   * runtime is not bundled via `npm install` (e.g. Mojolicious +
+   * cpanm — issue #1416 item 2).
+   */
+  extraSetupSteps?: { label?: string; command: string }[]
 }
 
 // CSS library options offered by `bf init`. The library is

@@ -41,7 +41,6 @@ export default createConfig({
 
 const MOJO_APP_PL = `#!/usr/bin/env perl
 use Mojolicious::Lite -signatures;
-use Mojo::JSON qw(decode_json);
 use lib 'lib';
 
 # Load the BarefootJS plugin (vendored under ./lib so the app runs
@@ -84,48 +83,7 @@ get '/static/*asset' => sub ($c) {
 };
 
 get '/' => sub ($c) {
-    # Initialize the BarefootJS instance for this request so the layout's
-    # \`$c->bf->scripts\` call picks up everything the template registers.
-    my $bf = $c->bf;
-    $bf->_scope_id('Counter_' . substr(rand() =~ s/^0\\.//r, 0, 6));
-
-    # Auto-register every UI registry component the manifest knows
-    # about so Counter's \`<%= bf->render_child('button', ...) %>\` and
-    # similar calls resolve without per-component wire-up. The
-    # \`signal_init\` callbacks supply the SSR defaults for each
-    # template variable (until \`bf build\` learns to embed them
-    # in the manifest itself).
-    my $manifest = decode_json(app->home->child('dist/templates/manifest.json')->slurp);
-    $bf->register_components_from_manifest($manifest, signal_init => {
-        button => sub ($props) {
-            return (
-                asChild   => $props->{asChild}   // 0,
-                variant   => $props->{variant}   // 'default',
-                size      => $props->{size}      // 'default',
-                className => $props->{className} // '',
-                props     => $props->{props}     // {},
-            );
-        },
-        slot => sub ($props) {
-            return (
-                className => $props->{className} // '',
-                props     => $props->{props}     // {},
-            );
-        },
-    });
-
-    # Stash values for every signal/memo Counter.html.ep references.
-    # \`bf build\` derives variable names directly from the JSX
-    # \`createSignal\` / \`createMemo\` declarations (here: \`count\`,
-    # \`doubled\`), so the SSR template needs each one set explicitly —
-    # client-side hydration takes over once the bundle loads.
-    my $initial = 0;
-    $c->render(
-        template => 'Counter',
-        layout   => 'default',
-        count    => $initial,
-        doubled  => $initial * 2,
-    );
+    $c->render(template => 'Counter', layout => 'default');
 };
 
 app->start;
@@ -223,6 +181,16 @@ export const MOJO_ADAPTER: AdapterTemplate = {
     typescript: '^5.6.0',
   },
   prereqWarnings: () => perlPrereqs(),
+  // Mojolicious itself is a Perl dependency, not an npm one — point
+  // the user at the bundled cpanfile so they don't trip over a
+  // missing `morbo` after `npm install`. Surfaced in the printed
+  // "Get started:" guide (issue #1416 item 2).
+  extraSetupSteps: [
+    {
+      label: 'Install Perl deps for the Mojolicious runtime (see cpanfile):',
+      command: 'cpanm --installdeps .',
+    },
+  ],
 }
 
 function perlPrereqs(): string[] {

@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/jsx",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "JSX compiler for BarefootJS - transforms JSX to server HTML + client JS",
   "type": "module",
   "main": "./src/index.ts",
@@ -61,7 +61,7 @@
     "barefoot",
     "ssr"
   ],
-  "author": "",
+  "author": "kobaken <kentafly88@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",

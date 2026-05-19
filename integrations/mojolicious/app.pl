@@ -192,15 +192,8 @@ $r->get('/' => sub ($c) {
 });
 
 $r->get('/counter' => sub ($c) {
-    $c->render_component('Counter',
-        props => { initial => 0 },
-        stash => {
-            count   => 0,
-            initial => 0,
-            doubled => 0,
-        },
-        heading => 'Counter Component',
-    );
+    $c->stash(heading => 'Counter Component');
+    $c->render(template => 'Counter', layout => 'default');
 });
 
 $r->get('/toggle' => sub ($c) {

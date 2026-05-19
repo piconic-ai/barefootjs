@@ -1,6 +1,7 @@
 {
   "name": "@barefootjs/ui",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "private": true,
   "description": "BarefootJS UI component registry",
   "scripts": {
     "build:registry": "bun run build-registry.ts"

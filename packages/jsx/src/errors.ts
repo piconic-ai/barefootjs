@@ -44,6 +44,16 @@ export const ErrorCodes = {
   SIGNAL_GETTER_NOT_CALLED: 'BF044',
   JSX_IN_LOCAL_FUNCTION: 'BF045',
   COMPONENT_REQUIRED_PROP_MISSING: 'BF046',
+  // A JSX-typed `const X = <jsx/>` declared inside an early-return
+  // `if`-block is referenced inside a raw-captured callback body
+  // (`ref={(el) => use(X)}`, `onClick={() => use(X)}`). The
+  // multi-return pipeline has no way to keep the JSX live as a
+  // runtime value here — substituting the JSX literal into the
+  // emitted callback body would produce TS JSX inside a JS string
+  // (invalid), and leaving the bare identifier produces a runtime
+  // ReferenceError at hydrate. Fail loud with workaround pointers
+  // (#1414 cell 5).
+  JSX_BRANCH_LOCAL_IN_CALLBACK: 'BF047',
 
   // Import errors (BF050-BF059)
   SHARED_PROGRAM_REQUIRED: 'BF050',
@@ -136,6 +146,10 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.COMPONENT_REQUIRED_PROP_MISSING]:
     'Built-in component is missing a required prop.',
+
+  [ErrorCodes.JSX_BRANCH_LOCAL_IN_CALLBACK]:
+    "JSX-typed local declared inside an `if`-block cannot be referenced from a callback body (ref / event handler). " +
+    "Render it as a child instead: `<div ref={...}>{local}</div>`.",
 
   [ErrorCodes.SHARED_PROGRAM_REQUIRED]:
     'Shared ts.Program required for type-based reactivity classification. This source imports a Reactive<T>-branded library (e.g. @barefootjs/form) whose getters cannot be classified by regex alone. Pass `options.program` (built via `createProgramForCorpus`) so the analyzer can resolve the brand through the TypeChecker.',

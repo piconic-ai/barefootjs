@@ -932,6 +932,20 @@ export interface SignalInfo {
    * the final string.
    */
   initialFreeIdentifiers?: ReadonlySet<string>
+  /**
+   * When set, this signal was declared inside an early-return `if`-block
+   * and only the marked branch reaches its `createSignal(...)` call. Emit
+   * picks the conditional shape:
+   *
+   *     let getter, setter
+   *     if (<branchCondition>) [getter, setter] = createSignal(<initialValue>)
+   *
+   * Closures and event handlers hoisted to outer init scope close over the
+   * `let` binding, so their references resolve regardless of branch. The
+   * value is the raw JS condition text (already destructured-prop-aware
+   * if applicable) — emitters substitute it verbatim. See #1414 cell #8.
+   */
+  branchCondition?: string
 }
 
 export interface MemoInfo {
@@ -1392,7 +1406,7 @@ export interface CompileOptions {
 export interface FileOutput {
   path: string
   content: string
-  type: 'markedTemplate' | 'clientJs' | 'ir' | 'sourceMap' | 'types'
+  type: 'markedTemplate' | 'clientJs' | 'ir' | 'sourceMap' | 'types' | 'ssrDefaults'
 }
 
 export interface CompileResult {

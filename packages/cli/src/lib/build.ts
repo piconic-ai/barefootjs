@@ -1244,7 +1244,7 @@ type CompileEntryOutcome =
       deps: Record<string, string>
       outputs: string[]
       manifestKey: string | null
-      manifestEntry?: { markedTemplate: string; clientJs?: string; stubDeps?: string[] }
+      manifestEntry?: { markedTemplate: string; clientJs?: string; stubDeps?: string[]; ssrDefaults?: Record<string, unknown> }
       wroteAny: boolean
       types?: string
       typesKey?: string
@@ -1373,15 +1373,33 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
   }
 
   let manifestKey: string | null = null
-  let manifestEntry: { markedTemplate: string; clientJs?: string } | undefined
+  let manifestEntry: { markedTemplate: string; clientJs?: string; ssrDefaults?: Record<string, unknown> } | undefined
   if (!config.clientOnly && markedTemplates.length > 0) {
     const primaryTpl =
       markedTemplates.find(t => effectiveOutName(t.path, baseNameNoExt).startsWith(baseNameNoExt + '.'))
       ?? markedTemplates[0]
     manifestKey = baseNameNoExt
+    // Pair the SSR-defaults JSON to the primary template by basename.
+    // The jsx package emits one ssr-defaults file per generated template
+    // (multi-component-per-file adapters emit per-component pairs); pick
+    // whichever sits next to the primary template.
+    const primaryBase = primaryTpl.path.replace(/\.[^.]+$/, '').replace(/\.html$/, '')
+    const ssrDefaultsFile =
+      result.files.find(
+        f => f.type === 'ssrDefaults' && f.path === primaryBase + '.ssr-defaults.json',
+      ) ?? result.files.find(f => f.type === 'ssrDefaults')
+    let ssrDefaults: Record<string, unknown> | undefined
+    if (ssrDefaultsFile) {
+      try {
+        ssrDefaults = JSON.parse(ssrDefaultsFile.content) as Record<string, unknown>
+      } catch {
+        ssrDefaults = undefined
+      }
+    }
     manifestEntry = {
       markedTemplate: `${templatesSubdir}/${effectiveOutName(primaryTpl.path, baseNameNoExt)}`,
       clientJs: hasClientJs ? `${clientJsSubdir}/${clientJsFilename}` : undefined,
+      ...(ssrDefaults ? { ssrDefaults } : {}),
     }
   }
 

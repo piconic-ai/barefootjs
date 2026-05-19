@@ -1,6 +1,6 @@
 {
   "name": "barefootjs",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "JSX to Marked Template + client JS compiler",
   "type": "module",
   "private": true,
@@ -28,6 +28,7 @@
     "bf": "bun run packages/cli/src/index.ts"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@happy-dom/global-registrator": "^20.0.11",
     "@playwright/test": "^1.57.0",
     "@types/bun": "latest",

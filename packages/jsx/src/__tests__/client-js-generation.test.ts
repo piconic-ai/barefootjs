@@ -32,7 +32,9 @@ describe('Client JS generation', () => {
       const result = compileJSX(source, 'Counter.tsx', { adapter })
 
       expect(result.errors).toHaveLength(0)
-      expect(result.files).toHaveLength(2) // markedJsx + clientJs
+      // markedTemplate + clientJs + ssrDefaults (the latter is a
+      // manifest seed for stash-based adapters — see issue #1416).
+      expect(result.files).toHaveLength(3)
 
       const markedJsx = result.files.find(f => f.type === 'markedTemplate')
       expect(markedJsx).toBeDefined()

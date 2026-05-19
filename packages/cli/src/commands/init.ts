@@ -332,6 +332,17 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
   console.log(`${heading('Get started:')}`)
   console.log(`  cd ${projectName}`)
   console.log(`  ${cmd.install}`)
+  // Adapter-specific setup commands (e.g. Mojolicious's `cpanm
+  // --installdeps .` — issue #1416 item 2). Rendered between
+  // `<pm> install` and `<pm> run dev` so each block reads as a
+  // contiguous "before you can start the dev server, run this"
+  // checklist.
+  if (adapter.extraSetupSteps && adapter.extraSetupSteps.length > 0) {
+    for (const step of adapter.extraSetupSteps) {
+      if (step.label) console.log(`  ${dim(`# ${step.label}`)}`)
+      console.log(`  ${step.command}`)
+    }
+  }
   console.log(`  ${cmd.run('dev')}`)
 
   if (adapter.deploy) {

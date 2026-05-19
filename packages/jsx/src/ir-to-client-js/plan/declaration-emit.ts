@@ -38,6 +38,20 @@ export interface SignalEmitPlan {
    * the signal declaration that syncs the prop value into the setter.
    */
   controlledEffect: ControlledSignalEffectPlan | null
+  /**
+   * When set, the signal was declared inside an early-return `if`-block
+   * and only the marked branch reaches its `createSignal(...)` call.
+   * Stringifier emits:
+   *
+   *     let getter, setter
+   *     if (<branchCondition>) [getter, setter] = createSignal(<initial>)
+   *
+   * instead of the standard unconditional `const [getter, setter] = …`.
+   * Closures and event handlers hoisted to outer init scope close over
+   * the `let` bindings and resolve regardless of branch. See #1414
+   * cell #8.
+   */
+  branchCondition?: string
 }
 
 export interface ControlledSignalEffectPlan {

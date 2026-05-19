@@ -150,6 +150,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private options: Required<MojoAdapterOptions>
   private errors: CompilerError[] = []
   private inLoop: boolean = false
+  /**
+   * SolidJS-style props identifier (`function(props: P)`) and the
+   * analyzer-extracted prop names. Stashed at `generate()` entry so
+   * the per-attribute `emitSpread` callback can build a propsObject
+   * spread bag as an inline Perl hashref literal without re-walking
+   * the IR (#1407 follow-up).
+   */
+  private propsObjectName: string | null = null
+  private propsParams: { name: string }[] = []
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -161,6 +170,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
 
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
+    this.propsObjectName = ir.metadata.propsObjectName ?? null
+    this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -803,6 +814,24 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     emitSpread: (value) => {
       if (this.refuseUnsupportedAttrExpression(value.expr, '...')) {
         return ''
+      }
+      // SolidJS-style props identifier (`(props: P) { <el {...props}/> }`)
+      // has no matching `$props` variable in Mojo's template scope —
+      // Perl props arrive as a flat hash with one key per `propsParams`
+      // entry, not as a single nested object. Emit an inline hashref
+      // literal that enumerates the analyzer-extracted props params
+      // so `$bf->spread_attrs(...)` gets a real hashref (#1407
+      // follow-up; matches the Go adapter's same-shape map-literal
+      // path). For `restPropsName` and other identifier shapes, the
+      // standard `convertExpressionToPerl` translation handles it
+      // (rest binding name → `$<name>` resolves against the hashref
+      // the caller / harness placed under that key).
+      const trimmed = value.expr.trim()
+      if (this.propsObjectName && this.propsObjectName === trimmed) {
+        const entries = this.propsParams.map(p =>
+          `${JSON.stringify(p.name)} => $${p.name}`,
+        )
+        return `<%== bf->spread_attrs({${entries.join(', ')}}) %>`
       }
       const perlExpr = this.convertExpressionToPerl(value.expr)
       return `<%== bf->spread_attrs(${perlExpr}) %>`

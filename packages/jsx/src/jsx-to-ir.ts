@@ -36,7 +36,7 @@ import { createError, ErrorCodes, internalInvariant } from './errors'
 import { containsReactiveExpression } from './reactivity-checker'
 import { rewriteBarePropRefs as rewriteBarePropRefsCore } from './prop-rewrite'
 import { resolveFreeRefs, type BindingEnvironment } from './free-refs'
-import { extractFreeIdentifiersFromNode } from './analyzer'
+import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer'
 import { iterateJsTokens } from './scanner/js-scanner'
 
 // =============================================================================
@@ -111,6 +111,15 @@ interface TransformContext {
    * sibling branches do not see each other's locals.
    */
   _branchScopeVars?: Map<string, ts.Expression>
+  /**
+   * Subset of `_branchScopeVars` names whose initializer carries JSX
+   * (so text substitution into raw-captured callback bodies is unsafe
+   * — TS JSX in JS syntax is invalid). `processAttributes` consults
+   * this set when extracting ref / event-handler bodies and emits
+   * BF047 if any of these names appears as a free identifier in the
+   * callback body. See #1414 cell 5.
+   */
+  _jsxBranchLocalNames?: Set<string>
 }
 
 /**
@@ -2936,6 +2945,32 @@ function computeReactivityFlags(
   }
 }
 
+/**
+ * Emit BF047 if a ref / event-handler callback body references a
+ * JSX-typed branch-local — the multi-return pipeline has no way to
+ * keep the JSX live as a runtime value here (substituting the JSX
+ * literal into the emitted callback body would produce TS JSX
+ * inside a JS string, and leaving the bare identifier produces a
+ * runtime ReferenceError at hydrate). See #1414 cell 5.
+ */
+function reportJsxBranchLocalInCallback(expr: ts.Expression, ctx: TransformContext): void {
+  const jsxNames = ctx._jsxBranchLocalNames
+  if (!jsxNames || jsxNames.size === 0) return
+  const refs = extractFreeIdentifiersFromNode(expr)
+  for (const name of refs) {
+    if (jsxNames.has(name)) {
+      ctx.analyzer.errors.push(
+        createError(
+          ErrorCodes.JSX_BRANCH_LOCAL_IN_CALLBACK,
+          getSourceLocation(expr, ctx.sourceFile, ctx.filePath),
+          { message: `JSX-typed branch local '${name}' referenced inside a callback body (ref / event handler). Render it as a child instead: \`<div ref={...}>{${name}}</div>\`.` },
+        ),
+      )
+      return
+    }
+  }
+}
+
 function processAttributes(
   attributes: ts.JsxAttributes,
   ctx: TransformContext
@@ -2960,6 +2995,7 @@ function processAttributes(
     // `ref` field for the client-JS emitter.
     if (name === 'ref') {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+        reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         ref = ctx.getJS(attr.initializer.expression)
       }
       continue
@@ -2972,6 +3008,7 @@ function processAttributes(
     if (/^on[A-Z]/.test(name)) {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         const eventName = name.slice(2).toLowerCase()
+        reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         events.push({
           name: eventName,
           originalAttr: name,
@@ -3032,7 +3069,24 @@ function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrVa
   // The distinction between "dynamic" (JSX expression) and "reactive" (needs client updates)
   // is handled separately in client JS generation
   if (ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-    const expr = attr.initializer.expression
+    let expr = attr.initializer.expression
+
+    // #1414: a bare-identifier attribute value that resolves to a
+    // local declared inside the surrounding early-return `if`-block
+    // would leak into the emitted template lambda at outer scope
+    // (`style={local}` → `${styleToCss(local)}` → ReferenceError at
+    // hydrate). Substitute the identifier with the initializer's AST
+    // so downstream attribute processing (template-literal /
+    // ternary / generic-expression paths below) sees the resolved
+    // form. JSX-bearing initializers are skipped — attribute values
+    // can't host JSX, so the substitution would produce invalid
+    // output; the JSX-child-position fix (#1410) covers those.
+    if (ts.isIdentifier(expr)) {
+      const branchInit = ctx._branchScopeVars?.get(expr.text)
+      if (branchInit && !initializerShapeContainsJsx(branchInit)) {
+        expr = branchInit
+      }
+    }
 
     // Check for bare signal/memo identifier (BF044)
     checkBareSignalOrMemoIdentifier(expr, ctx)
@@ -3851,23 +3905,93 @@ function buildIfStatementChain(
     // init scope. Saved/restored around `transformNode` so sibling
     // branches and outer scope don't see each other's locals.
     const prevBranchScopeVars = ctx._branchScopeVars
+    const prevJsxBranchLocalNames = ctx._jsxBranchLocalNames
     const branchScopeVars = new Map<string, ts.Expression>()
+    const jsxBranchLocalNames = new Set<string>()
     if (prevBranchScopeVars) {
       for (const [k, v] of prevBranchScopeVars) branchScopeVars.set(k, v)
+    }
+    if (prevJsxBranchLocalNames) {
+      for (const n of prevJsxBranchLocalNames) jsxBranchLocalNames.add(n)
     }
     for (const decl of condReturn.scopeVariables) {
       if (ts.isIdentifier(decl.name) && decl.initializer) {
         branchScopeVars.set(decl.name.text, decl.initializer)
+        if (initializerShapeContainsJsx(decl.initializer)) {
+          jsxBranchLocalNames.add(decl.name.text)
+        } else {
+          // A shadowing non-JSX declaration in a nested branch lifts
+          // the parent's JSX flag for this name.
+          jsxBranchLocalNames.delete(decl.name.text)
+        }
       }
     }
     ctx._branchScopeVars = branchScopeVars
+    ctx._jsxBranchLocalNames = jsxBranchLocalNames
+
+    // #1414 cells 5 & 7: branch-local references that don't reach the
+    // bare-identifier substitution sites (`transformExpressionInner`
+    // for child position, `getAttributeValue` for attribute position)
+    // still leak as undeclared names at outer init scope. The shapes
+    // that miss the existing routes are:
+    //   - `{local()}` — the JSX expression's root is a CallExpression
+    //     (not an Identifier), so `transformExpressionInner`'s
+    //     identifier check doesn't fire.
+    //   - `ref={(el) => use(local)}` — the ref callback's body is
+    //     captured verbatim via `ctx.getJS`, so the local appears
+    //     unchanged in the emitted init function.
+    // Override `ctx.getJS` for the duration of this branch's
+    // `transformNode` so every raw-text capture (call args, ref
+    // callbacks, event handlers, etc.) substitutes branch locals at
+    // the source level. Same trade-off as the JSX-function-inlining
+    // path (#569) and `inlineableJsxConsts` (#1412): substituting
+    // is text-level, so a local read with side effects gets evaluated
+    // at every use site rather than once at declaration. Users who
+    // need single-evaluation semantics should still hoist the local
+    // to outer init scope themselves.
+    const branchNames: string[] = []
+    const branchSubs = new Map<string, string>()
+    const baseGetJS = ctx.analyzer.getJS.bind(ctx.analyzer)
+    for (const [name, initExpr] of branchScopeVars) {
+      // JSX-bearing initializers are handled by the existing
+      // identifier-substitution route in `transformExpressionInner`
+      // (#1410). Text substitution into raw-captured JS would emit
+      // the JSX as TypeScript syntax inside a JS string — invalid.
+      if (initializerShapeContainsJsx(initExpr)) continue
+      branchNames.push(name)
+      branchSubs.set(name, baseGetJS(initExpr))
+    }
+    // Identifier names are syntactically [A-Za-z_$][A-Za-z0-9_$]*, all of
+    // which are regex-safe — no escape needed.
+    const branchPattern = branchNames.length > 0
+      ? new RegExp(`\\b(${branchNames.join('|')})\\b`, 'g')
+      : null
+    const prevCtxGetJS = ctx.getJS
+    const prevAnalyzerGetJS = ctx.analyzer.getJS
+    if (branchPattern) {
+      const substitutedGetJS = (n: ts.Node): string => {
+        const text = baseGetJS(n)
+        return text.replace(branchPattern, (_match, name) => `(${branchSubs.get(name)!})`)
+      }
+      ctx.getJS = substitutedGetJS
+      ctx.analyzer.getJS = substitutedGetJS
+    }
 
     // Transform the JSX return in the then branch
     // Reset isRoot so each branch gets needsScope=true
     ctx.isRoot = true
-    const consequent = transformNode(condReturn.jsxReturn, ctx)
+    let consequent: IRNode | null
+    try {
+      consequent = transformNode(condReturn.jsxReturn, ctx)
+    } finally {
+      if (branchPattern) {
+        ctx.getJS = prevCtxGetJS
+        ctx.analyzer.getJS = prevAnalyzerGetJS
+      }
+    }
 
     ctx._branchScopeVars = prevBranchScopeVars
+    ctx._jsxBranchLocalNames = prevJsxBranchLocalNames
 
     if (!consequent) {
       continue

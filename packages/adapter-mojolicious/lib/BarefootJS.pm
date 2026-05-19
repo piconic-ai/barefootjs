@@ -136,16 +136,20 @@ sub render_child ($self, $name, %props) {
 # `<name>` slot key Counter.html.ep and friends use via
 # `<%= bf->render_child('<name>', ...) %>`.
 #
-# `signal_init` is an optional hashref of `name => coderef`. Each
-# coderef receives the caller's props hashref and returns key/value
-# pairs that get stashed into the child template's lexical scope —
-# typically the initial values of every `createSignal` / `createMemo`
-# declared in the JSX source (Perl's strict mode rejects undefined
-# `$variant`, `$size`, etc. otherwise).
+# Each manifest entry carries an `ssrDefaults` hash derived statically
+# from the component's JSX (prop destructure defaults + signal /
+# memo initial values, see packages/jsx/src/ssr-defaults.ts). The
+# child renderer seeds every template variable from that hash,
+# preferring the caller's matching prop where one exists. This
+# replaces the per-component `signal_init` callback that every
+# scaffold's `app.pl` used to hand-roll for items 1/3 of issue #1416.
 #
-# When `bf build` learns to embed these defaults in the manifest
-# itself (tracked separately), this helper will derive them
-# automatically and callers can drop the signal_init argument.
+# `signal_init` remains as an opt-in override for cases the static
+# extractor can't see through (e.g. signal initial values that
+# reference imported helpers). When supplied for a given slot key
+# it takes precedence over the manifest's `ssrDefaults` for that
+# child, allowing callers to mix manual overrides with auto-derived
+# defaults for siblings.
 sub register_components_from_manifest ($self, $manifest, %opts) {
     my $c = $self->c;
     my $signal_inits = $opts{signal_init} // {};
@@ -168,6 +172,7 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
         $template_name =~ s{\.html\.ep$}{};
 
         my $signal_init = $signal_inits->{$slot_key};
+        my $manifest_defaults = $manifest->{$entry_name}{ssrDefaults};
         $self->register_child_renderer($slot_key, sub {
             my ($props) = @_;
             my $child_bf = BarefootJS->new($c, {});
@@ -187,7 +192,11 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
             $child_bf->_script_seen($parent->_script_seen);
 
             my %extra;
-            %extra = $signal_init->($props) if $signal_init;
+            if ($signal_init) {
+                %extra = $signal_init->($props);
+            } elsif ($manifest_defaults) {
+                %extra = _derive_stash_from_defaults($manifest_defaults, $props);
+            }
 
             my $prev = $c->stash->{'bf.instance'};
             $c->stash->{'bf.instance'} = $child_bf;
@@ -199,6 +208,36 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
             return $html;
         });
     }
+}
+
+# Derive template-stash kvs from a manifest entry's `ssrDefaults`
+# section. Each entry shape:
+#   { value => <static-fallback>, propName => <prop>, isRestProps => bool }
+# For `isRestProps`, the rest bag passes through unchanged (or the
+# static `{}` if the caller didn't supply one). For ordinary entries
+# the caller's `$props->{propName}` wins when defined, otherwise the
+# static `value` does. `propName`-less entries (signal / memo locals)
+# always use the static value — the caller cannot override them.
+sub _derive_stash_from_defaults ($defaults, $props) {
+    my %extra;
+    for my $name (keys %$defaults) {
+        my $d = $defaults->{$name};
+        if (ref($d) ne 'HASH') {
+            $extra{$name} = $d;
+            next;
+        }
+        if ($d->{isRestProps}) {
+            $extra{$name} = exists $props->{$name} ? $props->{$name} : $d->{value};
+            next;
+        }
+        my $prop_name = $d->{propName};
+        if (defined $prop_name && exists $props->{$prop_name} && defined $props->{$prop_name}) {
+            $extra{$name} = $props->{$prop_name};
+        } else {
+            $extra{$name} = $d->{value};
+        }
+    }
+    return %extra;
 }
 
 # ---------------------------------------------------------------------------
