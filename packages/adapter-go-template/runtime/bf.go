@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"math"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -1140,6 +1141,28 @@ type RenderOptions struct {
 
 // Render renders a component to a full HTML page using the configured layout.
 // Child component props are automatically detected (any slice field with ScopeID/Scripts).
+// renderTemplateErrorPanel formats a Go template execution error into a
+// fragment of HTML that's visible in the browser. The panel is
+// HTML-escaped so a faulty template name (anything from `template:
+// "..."`) can't smuggle markup back into the page. Keep the styling
+// inline so the panel surfaces even when the project's CSS hasn't
+// loaded yet (e.g. the failure aborted before the stylesheet links
+// emitted).
+//
+// Surfaced for the #1442 echo repro: a template referencing
+// `.Todo.Done` (instead of the range dot's `.Done`) used to fail
+// silently — Go's html/template aborted mid-stream, the partial body
+// flushed as a 200, and the user saw a truncated list with no console
+// signal. With this panel they get the template name, the error
+// message, and a "what to look at" hint inline.
+func renderTemplateErrorPanel(componentName string, err error) string {
+	return `<div style="margin:1em 0;padding:1em;border:2px solid #d33;background:#fff5f5;color:#900;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px;line-height:1.5"><strong style="display:block;margin-bottom:.5em">Template error in <code>` +
+		template.HTMLEscapeString(componentName) +
+		`</code></strong><pre style="margin:0;white-space:pre-wrap;word-break:break-word">` +
+		template.HTMLEscapeString(err.Error()) +
+		`</pre><div style="margin-top:.75em;font-size:12px;opacity:.7">Common cause: a JSX expression referenced a name the adapter could not resolve to a struct field. Open the matching <code>dist/templates/*.tmpl</code> for the unresolved reference, then fix the source component.</div></div>`
+}
+
 func (r *Renderer) Render(opts RenderOptions) string {
 	// Create script collector and inject into props
 	scriptCollector := NewScriptCollector()
@@ -1168,9 +1191,32 @@ func (r *Renderer) Render(opts RenderOptions) string {
 	// Mark the root component so BfPropsAttr emits bf-p only for it
 	setBoolField(opts.Props, "BfIsRoot", true)
 
-	// Render the component template
+	// Render the component template.
+	//
+	// Errors here are NOT silently dropped. The original implementation
+	// ignored the return value of `ExecuteTemplate`, which masked a real
+	// onboarding failure mode: a template referencing a non-existent
+	// field (`.Todo.Done` instead of the range dot's `.Done`) caused
+	// html/template to abort mid-stream, the partial output got
+	// returned, and the HTTP server happily flushed a 200 with a
+	// truncated body. No error log, no signal — the user just saw a
+	// blank list (#1442 echo TodoApp repro).
+	//
+	// Now we capture the error and replace the partial output with a
+	// visible inline panel (dev mode) or a fenced error comment
+	// (production), so the cause is on-screen and grep-able in logs.
+	// Either way the renderer also writes to stderr so structured log
+	// aggregators see it.
 	var componentBuf strings.Builder
-	r.templates.ExecuteTemplate(&componentBuf, opts.ComponentName, opts.Props)
+	if err := r.templates.ExecuteTemplate(&componentBuf, opts.ComponentName, opts.Props); err != nil {
+		fmt.Fprintf(os.Stderr, "barefoot: template %q failed to render: %v\n", opts.ComponentName, err)
+		// Preserve whatever the template did manage to emit before
+		// failing (Go's text/template flushes incrementally), but
+		// follow it with a clearly-marked error block so the user
+		// notices something is wrong instead of seeing a silent
+		// truncation.
+		componentBuf.WriteString(renderTemplateErrorPanel(opts.ComponentName, err))
+	}
 
 	// Determine title (default: "{ComponentName} - BarefootJS")
 	title := opts.Title

@@ -3,6 +3,7 @@ package bf
 import (
 	"html/template"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -940,5 +941,41 @@ func TestStyleToCss(t *testing.T) {
 				t.Errorf("StyleToCss(%v) = (%q, %v), want (%q, %v)", tt.input, got, ok, tt.want, tt.wantOk)
 			}
 		})
+	}
+}
+
+// Regression for #1442 echo TodoApp repro: template execution errors
+// (e.g. a non-existent field reference like `.Todo.Done` on a
+// `{{range $_, $todo := .Todos}}` body, the old loop-var bug) used
+// to be silently swallowed. ExecuteTemplate's return value was
+// dropped, the partial output flushed as HTTP 200, and the user saw a
+// truncated page with no error in the logs. `Render` now always
+// surfaces the failure: a visible inline panel goes into the page,
+// and a single line goes to stderr.
+func TestRenderer_TemplateErrorSurfaces(t *testing.T) {
+	// Template references a field the props struct doesn't define.
+	tmpl, err := template.New("Broken").Funcs(FuncMap()).Parse(`<p>{{.Missing.Whatever}}</p>`)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	r := &Renderer{
+		templates: tmpl,
+		layout: func(ctx *RenderContext) string {
+			// Layout passes the component HTML through verbatim so the
+			// test can assert on the rendered fragment directly.
+			return string(ctx.ComponentHTML)
+		},
+	}
+	type Props struct {
+		ScopeID   string
+		BfIsRoot  bool
+		BfIsChild bool
+	}
+	out := r.Render(RenderOptions{ComponentName: "Broken", Props: &Props{}})
+	if !strings.Contains(out, "Template error in") {
+		t.Errorf("expected error panel in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "Broken") {
+		t.Errorf("expected component name in error panel, got:\n%s", out)
 	}
 }
