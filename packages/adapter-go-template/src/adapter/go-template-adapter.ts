@@ -2433,21 +2433,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (callee.kind === 'identifier' && args.length === 0) {
       return `.${this.capitalizeFieldName(callee.name)}`
     }
-    // arr.join(sep) → bf_join <arr> <sep> — needed for the registry
-    // Slot's `[a, b].filter(Boolean).join(' ')` chain (#1443). The
-    // generic call below would emit `<arr>.Join " "` (a struct field
-    // access against the slice), which Go template rejects. The
-    // helper itself is already registered (#1187 string ops).
-    if (
-      callee.kind === 'member' &&
-      !callee.computed &&
-      callee.property === 'join' &&
-      args.length === 1
-    ) {
-      const obj = emit(callee.object)
-      const sep = emit(args[0])
-      return `bf_join (${obj}) ${sep}`
-    }
+    // Array methods (`.join` and any others added to ArrayMethod, #1443)
+    // are lifted into the `array-method` IR kind at parse time, so
+    // they never reach this dispatcher. See `arrayMethod()` below.
     // Identifier-path primitive callee (#1188): if the JS call resolves
     // to a path registered on `templatePrimitives` (e.g. `JSON.stringify`,
     // `Math.floor`), substitute the Go template form. The emit fn
@@ -2668,25 +2656,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   arrayMethod(
-    _method: ArrayMethod,
-    _object: ParsedExpr,
-    _args: ParsedExpr[],
-    _emit: (e: ParsedExpr) => string,
+    method: ArrayMethod,
+    object: ParsedExpr,
+    args: ParsedExpr[],
+    emit: (e: ParsedExpr) => string,
   ): string {
-    // Array methods (currently just `.join`) need runtime-helper
-    // lowering (`bf_join`) that the Go adapter doesn't ship in this
-    // PR. Refuse with BF101 so the cross-adapter contract pins the
-    // Go-side gap until the Go lowering lands in the stacked PR.
-    this.errors.push({
-      code: 'BF101',
-      severity: 'error',
-      message: `Array method '.${_method}' cannot be lowered to Go template syntax in this build`,
-      loc: this.makeLoc(),
-      suggestion: {
-        message: 'Options:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code',
-      },
-    })
-    return `""`
+    // #1443: `bf_join` is registered in the runtime FuncMap as a
+    // wrapper around `strings.Join`. The exhaustive switch on
+    // `method` here mirrors the IR-level discriminator — adding a
+    // new `ArrayMethod` variant becomes a TS compile error until
+    // every adapter declares its lowering.
+    switch (method) {
+      case 'join': {
+        const obj = emit(object)
+        const sep = emit(args[0])
+        return `bf_join (${obj}) ${sep}`
+      }
+    }
   }
 
   unsupported(raw: string, _reason: string): string {
