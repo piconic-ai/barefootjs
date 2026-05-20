@@ -42,8 +42,38 @@ function dim(value: string): string {
 // `dist/index.js`. `createRequire`'s `require` is opaque to esbuild,
 // so the JSON isn't pulled into the bundle — npm publish ships the
 // real file alongside `dist/`.
-const { version: CREATE_BAREFOOTJS_VERSION } = require('../package.json') as {
+const ownPkg = require('../package.json') as {
   version: string
+  dependencies?: Record<string, string>
+}
+const CREATE_BAREFOOTJS_VERSION = ownPkg.version
+
+// pkg.pr.new install detection. Until the first npm publish lands,
+// `npm create barefootjs@latest` 404s on the registry; the only working
+// install path is `npm i https://pkg.pr.new/<owner>/<repo>/create-barefootjs@<ref>`,
+// which pkg-pr.new rewrites our own `@barefootjs/cli` dep on to point
+// at the same SHA. If we detect that pattern we propagate the base URL
+// + ref to `bf init` so it can rewrite the generated app's
+// `@barefootjs/*: "latest"` entries to the same SHA — otherwise the
+// user has to do six manual edits in package.json before `npm install`
+// will resolve, which is exactly the friction the docs called out as
+// step 3 of the alpha install path.
+//
+// Matches the URL shape pkg-pr.new emits: `https://pkg.pr.new/<owner>/<repo>/@barefootjs/cli@<ref>`
+// where <ref> is either a 40-char commit SHA, a 7-char short SHA, or
+// a PR number (digits-only). Exported for unit coverage of the parse;
+// runtime invocation is detectPkgPrNewBaseAndRef() below.
+export const PKG_PR_NEW_CLI_RE =
+  /^https:\/\/pkg\.pr\.new\/([^/\s]+\/[^/\s]+)\/@barefootjs\/cli@([0-9a-f]{6,40}|\d+)$/i
+export function parsePkgPrNewCliDep(cliDep: string | undefined): { base: string; ref: string } | null {
+  if (!cliDep) return null
+  const m = PKG_PR_NEW_CLI_RE.exec(cliDep)
+  if (!m) return null
+  const [, ownerRepo, ref] = m
+  return { base: `https://pkg.pr.new/${ownerRepo}`, ref }
+}
+function detectPkgPrNewBaseAndRef(): { base: string; ref: string } | null {
+  return parsePkgPrNewCliDep(ownPkg.dependencies?.['@barefootjs/cli'])
 }
 
 function usage(): never {
@@ -160,6 +190,8 @@ async function main(): Promise<void> {
   // own errors for anything unknown rather than guessing here.
   for (const arg of passthrough) initArgs.push(arg)
 
+  const pkgPrNew = detectPkgPrNewBaseAndRef()
+
   const result = spawnSync('node', [cliBin, 'init', ...initArgs], {
     cwd: targetDir,
     stdio: 'inherit',
@@ -173,20 +205,48 @@ async function main(): Promise<void> {
       // (without this var) are bounced with a redirect to
       // `npm create barefootjs@latest`. See packages/cli/src/commands/init.ts.
       BAREFOOT_INIT_VIA_CREATE: '1',
+      // Alpha install path: when create-barefootjs was itself installed
+      // from pkg.pr.new, forward the base URL + ref so init rewrites
+      // the generated `package.json`'s `@barefootjs/*: "latest"` entries
+      // to URLs pinned at the same SHA. Unset under a normal npm install
+      // — in which case init leaves "latest" alone.
+      ...(pkgPrNew
+        ? {
+            BAREFOOT_PKG_PR_NEW_BASE: pkgPrNew.base,
+            BAREFOOT_PKG_PR_NEW_REF: pkgPrNew.ref,
+          }
+        : {}),
     },
   })
 
   process.exit(result.status ?? 1)
 }
 
-main().catch((err) => {
-  // Bubble up unexpected failures (cancelled prompt, IO error, ...)
-  // with a non-zero status. Known cancellations surface as a calm
-  // single-line message rather than a stack trace.
-  if (err && typeof err === 'object' && 'name' in err && err.name === 'TextCancelled') {
-    console.error('\nCancelled — nothing scaffolded.')
-    process.exit(1)
+// Only auto-run when invoked as a binary (via the shebang) — not when
+// `src/index.ts` is imported from a unit test to exercise the exported
+// pure helpers (`parsePkgPrNewCliDep`, ...). The bundled `dist/index.js`
+// is always run as the entry; the import-time branch only matters for
+// tests that point bun at the TS source.
+const invokedAsScript = (() => {
+  if (!process.argv[1]) return false
+  try {
+    const entryUrl = new URL(`file://${process.argv[1]}`).href
+    return entryUrl === import.meta.url
+  } catch {
+    return false
   }
-  console.error(err)
-  process.exit(1)
-})
+})()
+
+if (invokedAsScript) {
+  main().catch((err) => {
+    // Bubble up unexpected failures (cancelled prompt, IO error, ...)
+    // with a non-zero status. Known cancellations surface as a calm
+    // single-line message rather than a stack trace.
+    if (err && typeof err === 'object' && 'name' in err && err.name === 'TextCancelled') {
+      console.error('\nCancelled — nothing scaffolded.')
+      process.exit(1)
+    }
+    console.error(err)
+    process.exit(1)
+  })
+}

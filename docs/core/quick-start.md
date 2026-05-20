@@ -141,16 +141,14 @@ Until the packages are published to npm, install from per-PR previews built by [
 mkdir -p /tmp/bf-installer && cd /tmp/bf-installer && npm init -y >/dev/null
 npm install https://pkg.pr.new/piconic-ai/barefootjs/create-barefootjs@<PR-or-SHA>
 
-# 2. Scaffold:
+# 2. Scaffold somewhere outside /tmp:
 cd ~/projects
-./tmp/bf-installer/node_modules/.bin/create-barefootjs my-app --yes
+/tmp/bf-installer/node_modules/.bin/create-barefootjs my-app --yes
 
-# 3. Rewrite @barefootjs/* deps in the generated package.json
-#    from "latest" → "https://pkg.pr.new/.../<pkg>@<SHA>" (use the same
-#    SHA pkg-pr-new pinned on create-barefootjs's @barefootjs/cli dep).
-
-# 4. Continue normally:
+# 3. Continue normally:
 cd my-app && npm install && npm run dev
 ```
+
+When `create-barefootjs` is installed from pkg-pr-new it detects the URL it was installed from and rewrites the generated `package.json`'s `@barefootjs/*` deps to URLs pinned at the same SHA — no manual `package.json` edit needed.
 
 This restriction goes away the moment the first npm publish lands.

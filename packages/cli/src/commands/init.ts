@@ -288,6 +288,13 @@ async function scaffoldApp(
     dependencies: { ...adapter.dependencies },
     devDependencies: { ...adapter.devDependencies },
   }
+  // Alpha install path: when create-barefootjs detected its own
+  // @barefootjs/cli dep is a pkg.pr.new URL it forwards the base + ref
+  // via env so we can rewrite "@barefootjs/*": "latest" entries to
+  // pinned pkg.pr.new URLs. Without this rewrite, `npm install` 404s on
+  // every @barefootjs/* dep until the first npm publish — the friction
+  // the docs called out as alpha install step 3 (manual edit).
+  rewriteAlphaPkgPrNewDeps(pkgJson.dependencies, pkgJson.devDependencies)
   if (!existsSync(pkgJsonPath)) {
     writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')
     created++
@@ -357,6 +364,31 @@ function printAppNextSteps(projectDir: string, adapter: AdapterTemplate): void {
     console.log(`${heading('Deploy:')}`)
     console.log(`  ${deployCmd}${dim(`   # deploy to ${adapter.deploy.target}`)}`)
   }
+}
+
+// Alpha pkg.pr.new dep rewrite. When BAREFOOT_PKG_PR_NEW_BASE +
+// BAREFOOT_PKG_PR_NEW_REF are set (create-barefootjs detected a
+// pkg.pr.new install and forwarded them), every `@barefootjs/*: "latest"`
+// entry gets replaced with `<base>/@barefootjs/<name>@<ref>` so the
+// generated app can `npm install` against the same SHA create-barefootjs
+// itself was built from. Otherwise (normal npm install path, post-publish)
+// the deps keep "latest" and resolve from the registry.
+export function rewriteAlphaPkgPrNewDeps(
+  deps: Record<string, string>,
+  devDeps: Record<string, string>,
+): void {
+  const base = process.env.BAREFOOT_PKG_PR_NEW_BASE
+  const ref = process.env.BAREFOOT_PKG_PR_NEW_REF
+  if (!base || !ref) return
+  const apply = (section: Record<string, string>) => {
+    for (const [name, version] of Object.entries(section)) {
+      if (name.startsWith('@barefootjs/') && version === 'latest') {
+        section[name] = `${base}/${name}@${ref}`
+      }
+    }
+  }
+  apply(deps)
+  apply(devDeps)
 }
 
 // ANSI helpers for the next-steps block. All three apply only in a
