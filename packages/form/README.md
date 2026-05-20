@@ -40,26 +40,27 @@ function LoginForm() {
     },
   })
 
-  const email = form.field("email")
-  const password = form.field("password")
-
   return (
     <form onSubmit={form.handleSubmit}>
       <input
         type="email"
-        value={email.value()}
-        onInput={email.handleInput}
-        onBlur={email.handleBlur}
+        value={/* @client */ form.field("email").value()}
+        onInput={(e) => form.field("email").handleInput(e)}
+        onBlur={() => form.field("email").handleBlur()}
       />
-      {email.error() && <span>{email.error()}</span>}
+      {/* @client */ form.field("email").error() && (
+        <span>{/* @client */ form.field("email").error()}</span>
+      )}
 
       <input
         type="password"
-        value={password.value()}
-        onInput={password.handleInput}
-        onBlur={password.handleBlur}
+        value={/* @client */ form.field("password").value()}
+        onInput={(e) => form.field("password").handleInput(e)}
+        onBlur={() => form.field("password").handleBlur()}
       />
-      {password.error() && <span>{password.error()}</span>}
+      {/* @client */ form.field("password").error() && (
+        <span>{/* @client */ form.field("password").error()}</span>
+      )}
 
       <button type="submit" disabled={form.isSubmitting()}>
         {form.isSubmitting() ? "Submitting..." : "Log in"}
@@ -68,6 +69,14 @@ function LoginForm() {
   )
 }
 ```
+
+> **BarefootJS gotcha:** field controllers from `form.field("name")` must be
+> invoked *inside* the JSX (with `/* @client */` for reactive reads) rather
+> than hoisted into init-body `const`s. The compiler analyzes JSX expression
+> scopes statically and rejects init-scope captures from the template
+> position with a `BF0xx Init-scope local referenced from template scope`
+> error. Inlining the call keeps each read in template scope; the
+> `/* @client */` marker tells the compiler not to evaluate the read at SSR.
 
 ## API
 
@@ -164,14 +173,12 @@ const form = createForm({
 
 ## Custom Components
 
-For components that don't use `e.target.value` (e.g. checkboxes, selects, custom widgets), use `setValue` directly:
+For components that don't use `e.target.value` (e.g. checkboxes, selects, custom widgets), use `setValue` directly. Keep the `form.field(...)` call inside the JSX (BarefootJS won't follow an init-scope alias into a template position):
 
 ```tsx
-const active = form.field("active")
-
 <Switch
-  checked={active.value()}
-  onCheckedChange={(checked) => active.setValue(checked)}
+  checked={/* @client */ form.field("active").value()}
+  onCheckedChange={(checked) => form.field("active").setValue(checked)}
 />
 ```
 
