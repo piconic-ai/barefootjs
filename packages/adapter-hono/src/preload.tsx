@@ -1,3 +1,8 @@
+// @jsxRuntime automatic
+// @jsxImportSource hono/jsx
+//
+// Pragmas as line-comments above the JSDoc; see scripts.tsx for the rationale.
+
 /**
  * BfPreload Component
  *
@@ -25,8 +30,6 @@
  * </html>
  * ```
  */
-
-/** @jsxImportSource hono/jsx */
 
 import { Fragment } from 'hono/jsx'
 

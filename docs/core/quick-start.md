@@ -7,8 +7,6 @@ description: Scaffold a BarefootJS app, run the dev server, and tour the generat
 
 This page walks through scaffolding a runnable BarefootJS app, starting the dev server, and editing the starter Counter. It assumes Node 22+ and one of npm / bun / pnpm / yarn.
 
-> **Alpha note** — until the first npm publish, `npm create barefootjs@latest` is not yet on the registry. See [Alpha: install from pkg-pr-new](#alpha-install-from-pkg-pr-new) at the bottom of this page for the temporary install path.
-
 ## 1. Scaffold
 
 <!-- tabs:pm -->
@@ -131,26 +129,3 @@ Read on:
 - [Reactivity](./reactivity.md) — `createSignal`, `createEffect`, `createMemo`
 - [Components](./components.md) — authoring, props, context, slots
 - [Adapters](./adapters.md) — Hono, Go template, writing your own
-
-## Alpha: install from pkg-pr-new
-
-Until the packages are published to npm, install from per-PR previews built by [pkg-pr-new](https://github.com/stackblitz-labs/pkg-pr.new). The latest preview URLs are commented on each PR. To bootstrap:
-
-```sh
-# 1. Install create-barefootjs from the latest pkg-pr-new build:
-mkdir -p /tmp/bf-installer && cd /tmp/bf-installer && npm init -y >/dev/null
-npm install https://pkg.pr.new/piconic-ai/barefootjs/create-barefootjs@<PR-or-SHA>
-
-# 2. Scaffold:
-cd ~/projects
-./tmp/bf-installer/node_modules/.bin/create-barefootjs my-app --yes
-
-# 3. Rewrite @barefootjs/* deps in the generated package.json
-#    from "latest" → "https://pkg.pr.new/.../<pkg>@<SHA>" (use the same
-#    SHA pkg-pr-new pinned on create-barefootjs's @barefootjs/cli dep).
-
-# 4. Continue normally:
-cd my-app && npm install && npm run dev
-```
-
-This restriction goes away the moment the first npm publish lands.

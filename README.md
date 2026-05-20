@@ -35,9 +35,7 @@ npm run dev
 
 Then open the URL the dev server prints (defaults to `http://localhost:8787`). The starter app ships a Counter component you can edit at `components/Counter.tsx`.
 
-The full walkthrough — adapter / CSS choices, generated layout, and the alpha pkg-pr-new install path — lives in [`docs/core/quick-start.md`](./docs/core/quick-start.md).
-
-> While BarefootJS is in alpha (pre-first-npm-publish), `npm create barefootjs@latest` 404s on the npm registry. Use the [pkg-pr-new install path](./docs/core/quick-start.md#alpha-install-from-pkg-pr-new) until the first publish.
+The full walkthrough — adapter / CSS choices, generated layout, and editing the Counter — lives in [`docs/core/quick-start.md`](./docs/core/quick-start.md).
 
 ---
 

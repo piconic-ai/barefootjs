@@ -13,7 +13,6 @@
 - Scaffold an app with `npm create barefootjs@latest`
 - Run the dev server and edit the starter Counter
 - Tour of the generated project structure
-- Alpha workaround for installing from pkg-pr-new previews
 
 ### 3. [Core Concepts](./core-concepts.md)
 

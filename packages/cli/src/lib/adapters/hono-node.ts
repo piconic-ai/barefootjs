@@ -98,7 +98,8 @@ export function createApp(): Hono {
 `
 
 const HONO_NODE_RENDERER_TSX = `import { jsxRenderer } from 'hono/jsx-renderer'
-import { BfImportMap, BfScripts, BfDevReload } from '@barefootjs/hono/app'
+import { BfImportMap, BfDevReload } from '@barefootjs/hono/app'
+import { BfScripts } from '@barefootjs/hono/scripts'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import staticManifest from './dist/components/manifest.json'

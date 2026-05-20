@@ -1,3 +1,8 @@
+// @jsxRuntime automatic
+// @jsxImportSource hono/jsx
+//
+// Pragmas as line-comments above the JSDoc; see scripts.tsx for the rationale.
+
 /**
  * Portal Component for SSR
  *
@@ -17,8 +22,6 @@
  * }
  * ```
  */
-
-/** @jsxImportSource hono/jsx */
 
 import { useRequestContext } from 'hono/jsx-renderer'
 import { Fragment } from 'hono/jsx'

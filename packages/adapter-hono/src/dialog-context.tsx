@@ -1,3 +1,8 @@
+// @jsxRuntime automatic
+// @jsxImportSource hono/jsx
+//
+// Pragmas as line-comments above the JSDoc; see scripts.tsx for the rationale.
+
 /**
  * Dialog Context
  *
@@ -18,8 +23,6 @@
  * <Portal scopeId={ctx?.scopeId}>...</Portal>
  * ```
  */
-
-/** @jsxImportSource hono/jsx */
 
 import { createContext, useContext } from 'hono/jsx'
 

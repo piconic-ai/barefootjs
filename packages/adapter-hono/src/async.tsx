@@ -1,3 +1,11 @@
+// @jsxRuntime automatic
+// @jsxImportSource hono/jsx
+//
+// Pragmas must be line-comments at the very top of the file (above
+// any JSDoc) so esbuild honours them when this module is bundled into
+// a downstream project. See packages/adapter-hono/src/scripts.tsx for
+// the full rationale.
+
 /**
  * BfAsync - Streaming async boundary for Hono
  *
@@ -21,8 +29,6 @@
  *
  * Requires the renderer to be configured with `{ stream: true }`.
  */
-
-/** @jsxImportSource hono/jsx */
 
 import { Suspense } from 'hono/jsx/streaming'
 import type { Child } from 'hono/jsx'

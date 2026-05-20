@@ -1,3 +1,17 @@
+// @jsxRuntime automatic
+// @jsxImportSource hono/jsx
+//
+// Both pragmas must stay as the first lines of the file. The runtime
+// pragma enables the React-17-style import transform — without it
+// esbuild drops the import-source pragma on the floor and the JSX
+// compiles against the consumer's tsconfig runtime. In the scaffold's
+// case that's `@barefootjs/hono/jsx` (the marked-template adapter),
+// which doesn't register Hono's request context, so
+// `useRequestContext()` throws, the catch below swallows it, and
+// BfScripts returns null on every request — pages render server HTML
+// but never hydrate. esbuild also only looks for these pragmas in the
+// FIRST comment block in the file; a JSDoc above them silently wins.
+
 /**
  * BfScripts Component
  *
@@ -23,8 +37,6 @@
  * components reached only through imperative `createComponent()`
  * stub calls — see issue #1243.
  */
-
-/** @jsxImportSource hono/jsx */
 
 import { useRequestContext } from 'hono/jsx-renderer'
 import { Fragment } from 'hono/jsx'

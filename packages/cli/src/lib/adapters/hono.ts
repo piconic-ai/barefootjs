@@ -40,7 +40,8 @@ export default app
 `
 
 const HONO_RENDERER_TSX = `import { jsxRenderer } from 'hono/jsx-renderer'
-import { BfImportMap, BfScripts } from '@barefootjs/hono/app'
+import { BfImportMap } from '@barefootjs/hono/app'
+import { BfScripts } from '@barefootjs/hono/scripts'
 import manifest from './public/components/manifest.json'
 
 declare module 'hono' {

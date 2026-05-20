@@ -1,5 +1,5 @@
 import { describe, test, expect, spyOn, beforeEach, afterEach } from 'bun:test'
-import { search } from '../commands/search'
+import { search, resolvePrintOptions, printSearchResults, type SearchResult } from '../commands/search'
 import { loadIndex, fetchIndex } from '../lib/meta-loader'
 import { scanCoreDocs } from '../lib/docs-loader'
 import type { MetaIndex } from '../lib/types'
@@ -159,5 +159,131 @@ describe('search - core docs', () => {
   test('returns empty when no match in either source', () => {
     const results = search('zzz_nonexistent_zzz', index, coreDocs)
     expect(results).toEqual([])
+  })
+})
+
+describe('resolvePrintOptions — source label + hint trigger', () => {
+  // The hint exists so `bf search` from a fresh scaffold doesn't read
+  // as "this component doesn't exist" when in fact it lives in the
+  // upstream registry the caller hasn't `--registry`'d yet. The hint
+  // SHOULD fire on the default path and SHOULD NOT fire when the
+  // caller already made an explicit scope choice (`--registry` /
+  // `--dir`) or when the metaDir already IS the monorepo registry.
+
+  test('scaffold default: relative path label + registry hint', () => {
+    const opts = resolvePrintOptions({
+      dirFlagUsed: false,
+      metaDir: '/proj/meta',
+      cwd: '/proj',
+      isMonorepoRegistry: false,
+    })
+    expect(opts.sourceLabel).toBe('meta')
+    expect(opts.hintRegistry).toBe(true)
+  })
+
+  test('cwd === metaDir: label collapses to "."', () => {
+    const opts = resolvePrintOptions({
+      dirFlagUsed: false,
+      metaDir: '/proj/meta',
+      cwd: '/proj/meta',
+      isMonorepoRegistry: false,
+    })
+    expect(opts.sourceLabel).toBe('.')
+  })
+
+  test('monorepo registry fallback: shows the real path + suppresses the hint', () => {
+    // `createContext` falls back to `<repo>/ui/meta` when no
+    // barefoot.config.ts is found. The hint pointing at the upstream
+    // registry would be redundant there (that's exactly the data the
+    // upstream is built from), so it's suppressed.
+    const opts = resolvePrintOptions({
+      dirFlagUsed: false,
+      metaDir: '/repo/ui/meta',
+      cwd: '/repo',
+      isMonorepoRegistry: true,
+    })
+    expect(opts.sourceLabel).toBe('ui/meta')
+    expect(opts.hintRegistry).toBe(false)
+  })
+
+  test('--registry <url>: hostname label, no hint', () => {
+    const opts = resolvePrintOptions({
+      registryUrl: 'https://ui.barefootjs.dev/r/',
+      dirFlagUsed: false,
+      metaDir: '/proj/meta',
+      cwd: '/proj',
+      isMonorepoRegistry: false,
+    })
+    expect(opts.sourceLabel).toBe('ui.barefootjs.dev')
+    expect(opts.hintRegistry).toBe(false)
+  })
+
+  test('--dir <path>: relative path label, no hint', () => {
+    const opts = resolvePrintOptions({
+      dirFlagUsed: true,
+      metaDir: '/proj/custom/meta',
+      cwd: '/proj',
+      isMonorepoRegistry: false,
+    })
+    expect(opts.sourceLabel).toBe('custom/meta')
+    expect(opts.hintRegistry).toBe(false)
+  })
+
+  test('metaDir outside cwd: falls back to absolute path', () => {
+    const opts = resolvePrintOptions({
+      dirFlagUsed: true,
+      metaDir: '/elsewhere/meta',
+      cwd: '/proj',
+      isMonorepoRegistry: false,
+    })
+    // path.relative returns "../elsewhere/meta"; the leading "..\"
+    // triggers the absolute-path fallback so the label can't be
+    // mistaken for a sibling of the project.
+    expect(opts.sourceLabel).toBe('/elsewhere/meta')
+    expect(opts.hintRegistry).toBe(false)
+  })
+})
+
+describe('printSearchResults — registry hint surface', () => {
+  let logSpy: ReturnType<typeof spyOn>
+  let logs: string[]
+
+  beforeEach(() => {
+    logs = []
+    logSpy = spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+      logs.push(args.map(String).join(' '))
+    })
+  })
+
+  afterEach(() => {
+    logSpy.mockRestore()
+  })
+
+  const oneResult: SearchResult[] = [
+    { name: 'button', type: 'component', category: 'input', description: 'A button' },
+  ]
+
+  test('prints the source label + registry hint on default path', () => {
+    printSearchResults(oneResult, false, { sourceLabel: 'meta', hintRegistry: true })
+    expect(logs[0]).toBe('Searching: meta')
+    expect(logs[1]).toContain('--registry https://ui.barefootjs.dev/r/')
+  })
+
+  test('omits the hint when caller passed --registry', () => {
+    printSearchResults(oneResult, false, { sourceLabel: 'ui.barefootjs.dev', hintRegistry: false })
+    expect(logs[0]).toBe('Searching: ui.barefootjs.dev')
+    expect(logs.some((l) => l.includes('--registry'))).toBe(false)
+  })
+
+  test('hint fires even when the result set is empty (the case the hint exists for)', () => {
+    printSearchResults([], false, { sourceLabel: 'meta', hintRegistry: true })
+    expect(logs.some((l) => l.includes('--registry https://ui.barefootjs.dev/r/'))).toBe(true)
+    expect(logs.some((l) => l === 'No results found.')).toBe(true)
+  })
+
+  test('--json: header is suppressed (machine output stays just the JSON)', () => {
+    printSearchResults(oneResult, true, { sourceLabel: 'meta', hintRegistry: true })
+    expect(logs).toHaveLength(1)
+    expect(JSON.parse(logs[0])).toEqual(oneResult)
   })
 })
