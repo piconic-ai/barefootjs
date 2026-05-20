@@ -34,10 +34,13 @@ import { type AnalyzerContext, getSourceLocation } from './analyzer-context'
 import { parseExpression, isSupported, parseBlockBody, type ParsedExpr, type ParsedStatement } from './expression-parser'
 import { createError, ErrorCodes, internalInvariant } from './errors'
 import { containsReactiveExpression } from './reactivity-checker'
-import { rewriteBarePropRefs as rewriteBarePropRefsCore } from './prop-rewrite'
+import {
+  rewriteBarePropRefs as rewriteBarePropRefsCore,
+  collectAstPropRefs,
+} from './prop-rewrite'
 import { resolveFreeRefs, type BindingEnvironment } from './free-refs'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer'
-import { iterateJsTokens } from './scanner/js-scanner'
+import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner'
 
 // =============================================================================
 // Transform Context
@@ -120,6 +123,16 @@ interface TransformContext {
    * callback body. See #1414 cell 5.
    */
   _jsxBranchLocalNames?: Set<string>
+  /**
+   * Set of destructured prop names each branch-local transitively
+   * references in its initializer (directly or via inner-branch-local
+   * substitution). Populated alongside `_branchScopeVars`; consumed
+   * by `rewriteBarePropRefs` so prop refs introduced via text-level
+   * branch-local substitution still get bridged to `_p.X` in CSR
+   * template scope even though the use-site AST doesn't carry them.
+   * See #1425.
+   */
+  _branchScopePropDeps?: Map<string, Set<string>>
 }
 
 /**
@@ -204,22 +217,84 @@ function exprHasFunctionCalls(expr: ts.Expression): boolean {
  * Returns undefined if no rewriting is needed (SolidJS-style or no props).
  */
 function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string | undefined {
-  // Build and cache destructured prop names. Use propsParams names regardless
-  // of whether propsObjectName is set — a component may name its arg
-  // `(props)` AND destructure inside the body (`const { org } = props`).
-  // The bare `org` references inside JSX still need rewriting to `_p.org`
-  // for the generated client template's standalone scope.
-  //
-  // Pure SolidJS-style usage (`props.org` everywhere, no destructured local
-  // named `org`) is unaffected: rewriteBarePropRefsCore skips identifiers
-  // appearing on the right side of property access, so `props.org` stays
-  // intact even when `org` is in propNames.
-  //
-  // Shadow guard: a SolidJS-style component may declare a signal / memo /
-  // local const with the SAME name as a prop (e.g. `(props: { label?: string })`
-  // + `const [label, setLabel] = createSignal(props.label ?? '...')`). Those
-  // bare refs target the local binding, not the prop — exclude them from
-  // the rewrite set so the signal getter isn't turned into `_p.label`.
+  const propNames = getDestructuredPropNames(ctx)
+  if (!propNames) return undefined
+  // #1425: union any prop refs that `expr` reaches via branch-local
+  // text substitution. The AST walk in `rewriteBarePropRefsCore`
+  // sees only `expr`'s original AST, so a prop ref introduced via
+  // `ctx.getJS` substituting an earlier `if`-block local would slip
+  // through and land bare in the emitted template (which lives in
+  // module scope where only `_p` exists). The substitution machinery
+  // pre-computes each branch local's transitive prop-ref set into
+  // `_branchScopePropDeps` at branch entry; here we just walk `expr`
+  // for references to those locals and union the matching dep sets.
+  const extraPropRefs = collectBranchLocalPropRefsViaSubstitution(expr, ctx)
+  return rewriteBarePropRefsCore(text, expr, propNames, extraPropRefs)
+}
+
+/**
+ * #1425: For each branch-local identifier referenced inside `node`,
+ * union the transitive prop-ref set recorded for it at branch entry.
+ * Returns `undefined` if no branch-scope substitution machinery is
+ * active or no contributing identifiers are found, so the call site
+ * stays a no-op outside the affected path.
+ */
+function collectBranchLocalPropRefsViaSubstitution(
+  node: ts.Node,
+  ctx: TransformContext,
+): Set<string> | undefined {
+  const propDepsMap = ctx._branchScopePropDeps
+  const branchVars = ctx._branchScopeVars
+  if (!propDepsMap || !branchVars || propDepsMap.size === 0) return undefined
+  let acc: Set<string> | undefined
+  function visit(n: ts.Node, parent?: ts.Node) {
+    if (ts.isIdentifier(n) && propDepsMap!.has(n.text)) {
+      // Same skip rules as `collectAstPropRefs` — only value
+      // positions count, not object keys / property-access names.
+      const isObjectKey = parent && ts.isPropertyAssignment(parent) && parent.name === n
+      const isShorthand = parent && ts.isShorthandPropertyAssignment(parent) && parent.name === n
+      const isAccessName = parent && ts.isPropertyAccessExpression(parent) && parent.name === n
+      if (!isObjectKey && !isShorthand && !isAccessName) {
+        const deps = propDepsMap!.get(n.text)
+        if (deps && deps.size > 0) {
+          if (!acc) acc = new Set()
+          for (const d of deps) acc.add(d)
+        }
+      }
+    }
+    ts.forEachChild(n, child => visit(child, n))
+  }
+  visit(node)
+  return acc
+}
+
+/**
+ * Compute (and memoize on `ctx`) the set of destructured prop names
+ * eligible for `props.X → _p.X` rewriting on template-emit paths.
+ *
+ * - Uses `propsParams` names regardless of whether `propsObjectName`
+ *   is set — a component may declare its arg as `(props)` AND
+ *   destructure inside the body (`const { org } = props`); bare
+ *   `org` references inside JSX still need rewriting to `_p.org`
+ *   for the generated client template's standalone scope.
+ * - SolidJS-style `(props: Type)` with no destructured local of the
+ *   same name is unaffected: `rewriteBarePropRefsCore` skips
+ *   identifiers on the right side of property access, so
+ *   `props.org` stays intact even when `org` is in propNames.
+ * - Shadow guard: a SolidJS-style component may declare a signal /
+ *   memo / local const with the SAME name as a prop (e.g.
+ *   `(props: { label?: string })` + `const [label, setLabel] =
+ *   createSignal(props.label ?? '...')`). Those bare refs target the
+ *   local binding, not the prop — exclude them from the rewrite set
+ *   so the signal getter isn't turned into `_p.label`. Destructured-
+ *   from-props locals (`const { org } = props`) are kept in the
+ *   rewrite set since the JSX bare-name reference must still reach
+ *   `_p.org` in the template's standalone scope.
+ *
+ * Returns `null` (cached) when no destructured props are in scope —
+ * the wrapper can short-circuit before touching the regex.
+ */
+function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
   if (ctx._destructuredPropNames === undefined) {
     const shadowed = new Set<string>()
     if (ctx.analyzer.propsObjectName) {
@@ -229,10 +304,6 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
       }
       for (const m of ctx.analyzer.memos) shadowed.add(m.name)
       for (const c of ctx.analyzer.localConstants) {
-        // A destructured-from-props local has value `<propsObjectName>.X` and
-        // should still be rewritten in templates (the JSX bare-name reference
-        // to the destructured local must reach `_p.X` in the template's
-        // standalone scope). Only skip locals whose value is something else.
         const isDestructureFromProps =
           typeof c.value === 'string' &&
           (c.value === `${ctx.analyzer.propsObjectName}.${c.name}` ||
@@ -245,8 +316,7 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
       .filter(n => !shadowed.has(n))
     ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
   }
-  if (!ctx._destructuredPropNames) return undefined
-  return rewriteBarePropRefsCore(text, expr, ctx._destructuredPropNames)
+  return ctx._destructuredPropNames ?? null
 }
 
 function createTransformContext(analyzer: AnalyzerContext): TransformContext {
@@ -3873,6 +3943,34 @@ function inferExpressionType(
 // =============================================================================
 
 /**
+ * Substitute branch-local identifier references in `text` with the
+ * value returned by `resolve(name)`. Skips occurrences inside string
+ * / regex / template-body / comment tokens via the shared
+ * `replaceInExprContexts` scanner, so a string like `'mergedClass'`
+ * never gets rewritten into invalid JS. Identifier boundaries use
+ * `[\w$]` lookarounds rather than `\b`, since JS regex's word-char
+ * class excludes `$` — a bare `\b` would mis-match the `foo` inside
+ * `$foo`. Branch-local names are syntactically `[A-Za-z_$][A-Za-z0-9_$]*`
+ * (no regex-meta characters), so direct interpolation into the
+ * alternation is safe without escaping.
+ *
+ * Used twice in `buildIfStatementChain`:
+ *   1. Pre-resolving nested branch-local refs in `branchSubs` (so a
+ *      later entry that pulls this one in carries fully-closed text).
+ *   2. The `substitutedGetJS` override that swaps branch-local refs
+ *      at every raw-text capture inside the branch.
+ */
+function replaceBranchLocalRefs(
+  text: string,
+  branchNames: readonly string[],
+  resolve: (name: string) => string,
+): string {
+  if (branchNames.length === 0) return text
+  const pattern = new RegExp(`(?<![\\w$])(${branchNames.join('|')})(?![\\w$])`, 'g')
+  return replaceInExprContexts(text, pattern, (_match, name) => resolve(name))
+}
+
+/**
  * Build a chain of IRIfStatement nodes from conditional returns.
  * The chain is built in reverse order, starting with the final return
  * and working backwards through the if statements.
@@ -3951,6 +4049,18 @@ function buildIfStatementChain(
     // to outer init scope themselves.
     const branchNames: string[] = []
     const branchSubs = new Map<string, string>()
+    // #1425: per branch-local, the set of destructured prop names it
+    // transitively references via its initializer (directly or via
+    // inner-substituted branch locals). Used by
+    // `rewriteBarePropRefs` so prop refs introduced via the text-
+    // level substitution still bridge to `_p.X` in CSR template
+    // scope. Kept separate from `branchSubs` so the substitution
+    // output stays in raw (source-level) form — SSR JSX emission
+    // (via the adapter) evaluates the same text in a scope where
+    // `_p` doesn't exist and `className` / `children` are the
+    // destructured locals, so the rewrite must NOT happen there.
+    const branchPropDeps = new Map<string, Set<string>>()
+    const destructuredPropNames = getDestructuredPropNames(ctx)
     const baseGetJS = ctx.analyzer.getJS.bind(ctx.analyzer)
     for (const [name, initExpr] of branchScopeVars) {
       // JSX-bearing initializers are handled by the existing
@@ -3958,20 +4068,44 @@ function buildIfStatementChain(
       // (#1410). Text substitution into raw-captured JS would emit
       // the JSX as TypeScript syntax inside a JS string — invalid.
       if (initializerShapeContainsJsx(initExpr)) continue
+      // #1425: pre-resolve nested branch-local refs in this
+      // initializer so a downstream substitution that pulls this
+      // entry in doesn't leave an earlier-declared local as a free
+      // identifier in the emitted output. `branchScopeVars` records
+      // entries in source declaration order, so by the time we
+      // reach `name`, every earlier-declared local (the only kind
+      // its initializer can reference — TS rejects forward refs)
+      // is already resolved in `branchSubs`.
+      let text = baseGetJS(initExpr)
+      // Collect destructured prop names the initializer references
+      // directly (AST walk on initExpr) AND transitively through
+      // any earlier branch-local referenced in its text. The first
+      // pass is the same walk `rewriteBarePropRefsCore` uses; the
+      // second unions in each substituted entry's already-built dep
+      // set so the result is closed under substitution.
+      const propDeps = new Set<string>()
+      if (destructuredPropNames) {
+        collectAstPropRefs(initExpr, destructuredPropNames, propDeps)
+      }
+      if (branchNames.length > 0) {
+        text = replaceBranchLocalRefs(text, branchNames, (ref) => {
+          const innerDeps = branchPropDeps.get(ref)
+          if (innerDeps) for (const d of innerDeps) propDeps.add(d)
+          return `(${branchSubs.get(ref)!})`
+        })
+      }
       branchNames.push(name)
-      branchSubs.set(name, baseGetJS(initExpr))
+      branchSubs.set(name, text)
+      branchPropDeps.set(name, propDeps)
     }
-    // Identifier names are syntactically [A-Za-z_$][A-Za-z0-9_$]*, all of
-    // which are regex-safe — no escape needed.
-    const branchPattern = branchNames.length > 0
-      ? new RegExp(`\\b(${branchNames.join('|')})\\b`, 'g')
-      : null
+    const prevBranchScopePropDeps = ctx._branchScopePropDeps
+    ctx._branchScopePropDeps = branchPropDeps
     const prevCtxGetJS = ctx.getJS
     const prevAnalyzerGetJS = ctx.analyzer.getJS
-    if (branchPattern) {
+    if (branchNames.length > 0) {
       const substitutedGetJS = (n: ts.Node): string => {
         const text = baseGetJS(n)
-        return text.replace(branchPattern, (_match, name) => `(${branchSubs.get(name)!})`)
+        return replaceBranchLocalRefs(text, branchNames, (name) => `(${branchSubs.get(name)!})`)
       }
       ctx.getJS = substitutedGetJS
       ctx.analyzer.getJS = substitutedGetJS
@@ -3984,7 +4118,7 @@ function buildIfStatementChain(
     try {
       consequent = transformNode(condReturn.jsxReturn, ctx)
     } finally {
-      if (branchPattern) {
+      if (branchNames.length > 0) {
         ctx.getJS = prevCtxGetJS
         ctx.analyzer.getJS = prevAnalyzerGetJS
       }
@@ -3992,6 +4126,7 @@ function buildIfStatementChain(
 
     ctx._branchScopeVars = prevBranchScopeVars
     ctx._jsxBranchLocalNames = prevJsxBranchLocalNames
+    ctx._branchScopePropDeps = prevBranchScopePropDeps
 
     if (!consequent) {
       continue
