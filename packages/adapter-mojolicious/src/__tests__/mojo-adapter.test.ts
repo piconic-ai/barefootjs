@@ -281,12 +281,14 @@ export function C() {
   return ${body}
 }`
 
+    // #1443 follow-up: destructured filter param and function-keyword
+    // filter no longer fall in this BF101 group — they lower cleanly
+    // via parser-side normalisation (see `lowers .filter(({done}) =>
+    // done) ...` parser tests + the Mojo positive-output test below).
     const cases: { name: string; body: string; needle: string }[] = [
       { name: 'reduce',            body: `<div>{items().reduce((s, x) => s + x, 0)}</div>`,                                                          needle: '.reduce(' },
       { name: 'forEach',           body: `<ul>{items().forEach(x => x)}</ul>`,                                                                       needle: '.forEach(' },
       { name: 'flatMap',           body: `<ul>{items().flatMap(x => x.tags).map(t => <li key={t}>{t}</li>)}</ul>`,                                  needle: '.flatMap(' },
-      { name: 'destructured filter param', body: `<ul>{items().filter(({done}) => done).map(t => <li key={t.id}>{t.name}</li>)}</ul>`,              needle: '.filter(' },
-      { name: 'function-keyword filter',   body: `<ul>{items().filter(function(x) { return x.done }).map(t => <li key={t.id}>{t.name}</li>)}</ul>`, needle: '.filter(' },
       { name: 'nested higher-order in filter predicate', body: `<ul>{items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => <li key={t.id}>{t.name}</li>)}</ul>`, needle: 'higher-order' },
     ]
 
@@ -307,6 +309,41 @@ export function C() {
         expect(bf101).toEqual([])
       })
     }
+  })
+
+  test('lowers .filter(({done}) => done).map(...) — destructured filter param (#1443)', () => {
+    // Pre-#1443 the destructured arrow rejected at the parser and the
+    // surrounding `.map()` loop fell back to a BF101 path. With the
+    // parser rewriting `({done}) => done` to `_t => _t.done`, the
+    // adapter's existing `IRLoop.filterPredicate` path renders the
+    // chain as a Perl `for` over `grep { $_->{done} } @{$items}`.
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`'use client'
+import { createSignal } from '@barefootjs/client'
+export function C() {
+  const [items] = createSignal<any[]>([])
+  return <ul>{items().filter(({done}) => done).map(t => <li key={t.id}>{t.name}</li>)}</ul>
+}`, 'C.tsx', { adapter })
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain('grep { $_->{done} } @{$items}')
+  })
+
+  test('lowers .filter(function (x) { return x.done }).map(...) — function-keyword filter (#1443)', () => {
+    // Function expressions with a single `return <expr>` body normalise
+    // to the arrow-fn IR shape at parse time, so the higher-order
+    // detector + adapter lowering paths fire alongside their arrow
+    // counterparts.
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`'use client'
+import { createSignal } from '@barefootjs/client'
+export function C() {
+  const [items] = createSignal<any[]>([])
+  return <ul>{items().filter(function (x) { return x.done }).map(t => <li key={t.id}>{t.name}</li>)}</ul>
+}`, 'C.tsx', { adapter })
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain('grep { $_->{done} } @{$items}')
   })
 
   test('lowers the registry Slot\'s [a, b].filter(Boolean).join(\' \') chain (#1443)', () => {

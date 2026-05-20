@@ -292,34 +292,227 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     return { kind: 'literal', value: node.text, literalType: 'string' }
   }
 
-  // Arrow function: x => expr
+  // Arrow function: x => expr  /  ({field}) => field  /  (x) => expr
   if (ts.isArrowFunction(node)) {
-    // Only support single parameter without destructuring
+    // Only support single parameter
     if (node.parameters.length !== 1) {
       return { kind: 'unsupported', raw, reason: 'Only single parameter arrow functions are supported' }
     }
     const param = node.parameters[0]
-    if (!ts.isIdentifier(param.name)) {
-      return { kind: 'unsupported', raw, reason: 'Destructuring parameters are not supported' }
-    }
-    const paramName = param.name.text
 
-    // Only expression body is supported (not block body)
+    // Only expression body is supported (not block body). Block bodies
+    // route through `parseBlockBody` at the higher-order recognition
+    // call site so the adapter's filter-block path handles them
+    // separately.
     if (ts.isBlock(node.body)) {
       return { kind: 'unsupported', raw, reason: 'Block body arrow functions are not supported' }
     }
-
     const body = convertNode(node.body, raw)
-    return { kind: 'arrow-fn', param: paramName, body }
+
+    // Destructured-object param: `({done}) => done` (#1443).
+    // We synthesise the equivalent dotted-access form so adapters
+    // can reuse their existing higher-order paths instead of needing
+    // a residual-object-accessor pipeline (#1384 territory). Only the
+    // unrenamed-field / renamed-field forms are handled — nested
+    // destructure / rest / defaults stay unsupported.
+    if (ts.isObjectBindingPattern(param.name)) {
+      const fieldMap = new Map<string, string>()
+      for (const el of param.name.elements) {
+        if (!ts.isBindingElement(el)) {
+          return { kind: 'unsupported', raw, reason: 'Unsupported binding element in destructured filter param' }
+        }
+        if (el.dotDotDotToken) {
+          return { kind: 'unsupported', raw, reason: 'Rest patterns in destructured filter param are not supported' }
+        }
+        if (el.initializer) {
+          return { kind: 'unsupported', raw, reason: 'Default values in destructured filter param are not supported' }
+        }
+        if (!ts.isIdentifier(el.name)) {
+          return { kind: 'unsupported', raw, reason: 'Nested destructuring in filter param is not supported' }
+        }
+        const localName = el.name.text
+        const fieldName =
+          el.propertyName && ts.isIdentifier(el.propertyName)
+            ? el.propertyName.text
+            : localName // shorthand: `{done}` ≡ `{done: done}`
+        fieldMap.set(localName, fieldName)
+      }
+      const syntheticParam = pickSyntheticParam(fieldMap, body)
+      const rewritten = substituteDestructuredFields(body, fieldMap, syntheticParam)
+      return { kind: 'arrow-fn', param: syntheticParam, body: rewritten }
+    }
+
+    if (!ts.isIdentifier(param.name)) {
+      return { kind: 'unsupported', raw, reason: 'Destructuring parameters are not supported' }
+    }
+    return { kind: 'arrow-fn', param: param.name.text, body }
   }
 
-  // Function expression (unsupported)
+  // Function expression: `function (x) { return x.done }` (#1443).
+  // Normalise the single-param + single-return shape into the arrow
+  // form so the higher-order detector at the call site recognises it
+  // alongside `(x) => x.done`. Multi-statement / multi-param / nested-
+  // destructure shapes stay unsupported.
   if (ts.isFunctionExpression(node)) {
-    return { kind: 'unsupported', raw, reason: 'Function expressions cannot be evaluated at SSR time' }
+    if (node.parameters.length !== 1) {
+      return { kind: 'unsupported', raw, reason: 'Only single-parameter function expressions are supported' }
+    }
+    const param = node.parameters[0]
+    if (!ts.isIdentifier(param.name)) {
+      return { kind: 'unsupported', raw, reason: 'Destructured params in function expressions are not supported' }
+    }
+    const stmts = node.body.statements
+    if (stmts.length !== 1 || !ts.isReturnStatement(stmts[0]) || !stmts[0].expression) {
+      return { kind: 'unsupported', raw, reason: 'Function expressions must be `function (x) { return <expr> }`' }
+    }
+    return {
+      kind: 'arrow-fn',
+      param: param.name.text,
+      body: convertNode(stmts[0].expression, raw),
+    }
   }
 
   // Default: unsupported
   return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
+}
+
+/**
+ * Pick a synthetic param name for a rewritten destructured filter
+ * (`({done}) => done` → `(_t) => _t.done`). The name must NOT collide
+ * with anything the body might reference — a `_t` already on the body
+ * (e.g. a signal getter) would silently capture into the rewrite.
+ *
+ * Start with `_t` and add underscores until no collision exists. The
+ * candidate set is "every name the destructure introduced" + "every
+ * identifier referenced inside the body" (collectIdentifiers). Both
+ * are reachable from the local rewrite context, so we avoid all of
+ * them up-front rather than risk a runtime bug from a missed name.
+ */
+function pickSyntheticParam(fieldMap: Map<string, string>, body: ParsedExpr): string {
+  const used = new Set<string>(fieldMap.keys())
+  collectIdentifiers(body, used)
+  let name = '_t'
+  while (used.has(name)) name = name + '_'
+  return name
+}
+
+function collectIdentifiers(expr: ParsedExpr, out: Set<string>): void {
+  switch (expr.kind) {
+    case 'identifier':
+      out.add(expr.name)
+      return
+    case 'call':
+      out.add('_'); // ensure the synthetic-fallback name is reserved on bare callees
+      collectIdentifiers(expr.callee, out)
+      expr.args.forEach(a => collectIdentifiers(a, out))
+      return
+    case 'member':
+      collectIdentifiers(expr.object, out)
+      return
+    case 'binary':
+    case 'logical':
+      collectIdentifiers(expr.left, out)
+      collectIdentifiers(expr.right, out)
+      return
+    case 'unary':
+      collectIdentifiers(expr.argument, out)
+      return
+    case 'conditional':
+      collectIdentifiers(expr.test, out)
+      collectIdentifiers(expr.consequent, out)
+      collectIdentifiers(expr.alternate, out)
+      return
+    case 'template-literal':
+      for (const part of expr.parts) {
+        if (part.type === 'expression') collectIdentifiers(part.expr, out)
+      }
+      return
+    case 'arrow-fn':
+      collectIdentifiers(expr.body, out)
+      return
+    case 'higher-order':
+      collectIdentifiers(expr.object, out)
+      collectIdentifiers(expr.predicate, out)
+      return
+    case 'array-literal':
+      expr.elements.forEach(e => collectIdentifiers(e, out))
+      return
+    case 'array-method':
+      collectIdentifiers(expr.object, out)
+      expr.args.forEach(e => collectIdentifiers(e, out))
+      return
+    case 'literal':
+    case 'unsupported':
+      return
+  }
+}
+
+/**
+ * Rewrite a parsed body that referenced destructured names (`done`)
+ * into the equivalent dotted-access form against a synthetic param
+ * (`_t.done`). Identifiers not in `fieldMap` are left alone — they're
+ * either closure captures (signals, props) or already-synthetic names.
+ */
+function substituteDestructuredFields(
+  expr: ParsedExpr,
+  fieldMap: Map<string, string>,
+  syntheticParam: string,
+): ParsedExpr {
+  const walk = (e: ParsedExpr): ParsedExpr => {
+    switch (e.kind) {
+      case 'identifier': {
+        const field = fieldMap.get(e.name)
+        if (field === undefined) return e
+        return {
+          kind: 'member',
+          object: { kind: 'identifier', name: syntheticParam },
+          property: field,
+          computed: false,
+        }
+      }
+      case 'call':
+        return { kind: 'call', callee: walk(e.callee), args: e.args.map(walk) }
+      case 'member':
+        return { kind: 'member', object: walk(e.object), property: e.property, computed: e.computed }
+      case 'binary':
+        return { kind: 'binary', op: e.op, left: walk(e.left), right: walk(e.right) }
+      case 'logical':
+        return { kind: 'logical', op: e.op, left: walk(e.left), right: walk(e.right) }
+      case 'unary':
+        return { kind: 'unary', op: e.op, argument: walk(e.argument) }
+      case 'conditional':
+        return { kind: 'conditional', test: walk(e.test), consequent: walk(e.consequent), alternate: walk(e.alternate) }
+      case 'template-literal':
+        return {
+          kind: 'template-literal',
+          parts: e.parts.map(p =>
+            p.type === 'expression' ? { type: 'expression', expr: walk(p.expr) } : p,
+          ),
+        }
+      case 'arrow-fn':
+        // A nested arrow inside the predicate body shadows the outer
+        // param. Leave its body alone — its own param-resolution path
+        // handles closure references against the outer fieldMap on its
+        // own terms. This matches how JS scope rules treat the outer
+        // destructured `done` once a shadowing inner arrow declares a
+        // different name (the inner arrow's body sees the outer
+        // `done` only if it doesn't shadow it, which we can't know
+        // without per-scope tracking). Skipping the rewrite is the
+        // conservative choice — worst case the resulting predicate
+        // doesn't lower and the adapter emits BF101.
+        return e
+      case 'higher-order':
+        return e
+      case 'array-literal':
+        return { kind: 'array-literal', elements: e.elements.map(walk) }
+      case 'array-method':
+        return { kind: 'array-method', method: e.method, object: walk(e.object), args: e.args.map(walk) }
+      case 'literal':
+      case 'unsupported':
+        return e
+    }
+  }
+  return walk(expr)
 }
 
 /**

@@ -1379,6 +1379,37 @@ export function V({ variant }: { variant: 'a' | 'b' }) {
     })
   })
 
+  describe('destructured / function-keyword filter shapes (#1443)', () => {
+    test('.filter(({done}) => done).map(...) lowers cleanly', () => {
+      // Pre-#1443 the destructured arrow rejected at the parser and the
+      // surrounding `.map()` loop fell back to a BF101 path. With the
+      // parser rewriting `({done}) => done` to `_t => _t.done`, the
+      // adapter's existing IRLoop.filterPredicate path renders the
+      // chain as `bf_filter .Items "Done" true`.
+      const result = compileAndGenerate(`'use client'
+import { createSignal } from '@barefootjs/client'
+export function C() {
+  const [items] = createSignal<any[]>([])
+  return <ul>{items().filter(({done}) => done).map(t => <li key={t.id}>{t.name}</li>)}</ul>
+}`)
+      expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+      expect(result.template).toContain('bf_filter .Items "Done" true')
+    })
+
+    test('.filter(function (x) { return x.done }).map(...) lowers cleanly', () => {
+      // Function expressions with a single `return <expr>` body
+      // normalise to the arrow-fn IR shape at parse time.
+      const result = compileAndGenerate(`'use client'
+import { createSignal } from '@barefootjs/client'
+export function C() {
+  const [items] = createSignal<any[]>([])
+  return <ul>{items().filter(function (x) { return x.done }).map(t => <li key={t.id}>{t.name}</li>)}</ul>
+}`)
+      expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+      expect(result.template).toContain('bf_filter .Items "Done" true')
+    })
+  })
+
   describe('registry Slot class-merge chain (#1443)', () => {
     test('[a, b].filter(Boolean).join(\' \') lowers to bf_join (bf_filter_truthy (bf_arr ...)) " "', () => {
       // The registry `<Slot>` merges className via

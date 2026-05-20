@@ -299,6 +299,74 @@ describe('expression-parser', () => {
         ])
       }
     })
+
+    // Destructured filter param (#1443). The parser rewrites the
+    // shorthand binding `({done})` into the equivalent dotted-access
+    // form on a synthetic param (`_t.done`), so adapters can reuse
+    // their existing higher-order paths instead of a separate
+    // residual-object-accessor pipeline (#1384 territory).
+    test('lowers .filter(({done}) => done) to higher-order with synthetic param (#1443)', () => {
+      const result = parseExpression('todos().filter(({done}) => done)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.method).toBe('filter')
+        // Synthetic param won't collide with `done` (the destructured
+        // local) or any name in the body.
+        expect(result.param).not.toBe('done')
+        // Predicate is rewritten to `<synthetic>.done`
+        expect(result.predicate.kind).toBe('member')
+        if (result.predicate.kind === 'member') {
+          expect(result.predicate.property).toBe('done')
+          expect(result.predicate.object.kind).toBe('identifier')
+          if (result.predicate.object.kind === 'identifier') {
+            expect(result.predicate.object.name).toBe(result.param)
+          }
+        }
+      }
+    })
+
+    // Renamed destructure: `{ done: isDone }` — the LOCAL name is
+    // `isDone`, the FIELD on the loop var is `done`. The rewrite
+    // substitutes `isDone` (the body reference) with `_t.done` (the
+    // original field name).
+    test('lowers .filter(({done: isDone}) => isDone) to higher-order with renamed destructure (#1443)', () => {
+      const result = parseExpression('todos().filter(({done: isDone}) => isDone)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.predicate.kind).toBe('member')
+        if (result.predicate.kind === 'member') {
+          expect(result.predicate.property).toBe('done') // original field, not the local rename
+        }
+      }
+    })
+
+    // Defaults / rest / nested destructure stay unsupported — each
+    // would need its own residual-object accessor pipeline. We accept
+    // only the unrenamed-field and renamed-field forms here.
+    test('rejects .filter(({done = false}) => done) — defaults in destructure are unsupported (#1443)', () => {
+      const result = parseExpression('todos().filter(({done = false}) => done)')
+      // Falls through to plain `call` (not higher-order), so isSupported
+      // will surface BF101 at the adapter via the UNSUPPORTED_METHODS gate.
+      expect(result.kind).toBe('call')
+    })
+
+    // Function-keyword filter callback (#1443): `function (x) { return
+    // x.done }`. Normalised into the arrow-fn IR shape so the
+    // higher-order detector at the call site recognises it alongside
+    // `(x) => x.done`.
+    test('lowers .filter(function(x) { return x.done }) to higher-order (#1443)', () => {
+      const result = parseExpression('todos().filter(function (x) { return x.done })')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.param).toBe('x')
+        expect(result.predicate.kind).toBe('member')
+      }
+    })
+
+    test('rejects function-keyword filter with multiple statements (#1443)', () => {
+      const result = parseExpression('todos().filter(function (x) { const y = x; return y.done })')
+      expect(result.kind).toBe('call')
+    })
   })
 
   describe('isSupported', () => {
