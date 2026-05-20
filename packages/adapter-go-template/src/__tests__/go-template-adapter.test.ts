@@ -737,6 +737,66 @@ export function TodoList() {
       expect(bf101[0].message).toContain('Filter predicate')
     })
 
+    test('nested higher-order under `.length` emits a syntactically valid Go template (#1440 review)', () => {
+      // Regression for the Copilot review on #1440: the BF101 fallback
+      // used to return the literal string `'false'` from `renderFilterExpr`,
+      // but parent branches (`member` → `${obj}.Length`) would then build
+      // `false.Length` on top of it, producing `{{if gt false.Length 0}}`
+      // — syntactically invalid Go template that crashed `text/template`
+      // parsing with a cascade of confusing secondary errors. The fix
+      // propagates the unsupported state up so the final emitted action
+      // collapses to just `{{if false}}`, which is at least parseable.
+      const adapter = new GoTemplateAdapter()
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Todo = { id: number; name: string; tags: { active: boolean }[] }
+
+export function TodoList() {
+  const [items, setItems] = createSignal<Todo[]>([])
+  return (
+    <ul>
+      {items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => (
+        <li key={t.id}>{t.name}</li>
+      ))}
+    </ul>
+  )
+}
+`, adapter)
+      expect(result.template).toContain('{{if false}}')
+      expect(result.template).not.toContain('false.Length')
+      expect(result.template).not.toContain('[UNSUPPORTED-FILTER-EXPR]')
+    })
+
+    test('state does not bleed between independent filter expressions in the same component (#1440 review)', () => {
+      // After a filter expression hits the BF101 default branch, the
+      // depth-scoped reset must clear `filterExprUnsupported` so a
+      // subsequent supported filter in the same component still renders
+      // its real predicate instead of degrading to the `false` fallback.
+      const adapter = new GoTemplateAdapter()
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Todo = { id: number; name: string; done: boolean; tags: { active: boolean }[] }
+
+export function TodoList() {
+  const [items, setItems] = createSignal<Todo[]>([])
+  return (
+    <div>
+      <ul>{items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => <li key={t.id}>{t.name}</li>)}</ul>
+      <ul>{items().filter(t => !t.done).map(t => <li key={t.id}>{t.name}</li>)}</ul>
+    </div>
+  )
+}
+`, adapter)
+      // First (unsupported) loop collapses to {{if false}}; second
+      // (supported) loop still renders `not .Done`.
+      expect(result.template).toContain('{{if false}}')
+      expect(result.template).toContain('{{if not .Done}}')
+    })
+
     test('nested higher-order in filter predicate + /* @client */ suppresses BF101', () => {
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`

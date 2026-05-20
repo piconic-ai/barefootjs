@@ -191,6 +191,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   name = 'go-template'
   extension = '.tmpl'
 
+  // Recursion-scoped state for `renderFilterExpr`. `filterExprDepth`
+  // tracks nesting so the outer call resets `filterExprUnsupported`
+  // before each independent filter expression; the flag itself is set
+  // in the `default` branch (BF101 emission) and propagated by parent
+  // branches so the final template stays syntactically valid even
+  // when a child rendered to the fallback sentinel (#1440 review).
+  private filterExprDepth = 0
+  private filterExprUnsupported = false
+
   /**
    * Identifier-path callees the Go runtime can render in template
    * scope (#1188). The relocate pass consults this map to mark
@@ -2974,6 +2983,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     param: string,
     localVarMap: Map<string, string> = new Map()
   ): string {
+    // Top-of-recursion: clear the unsupported sentinel so a previous
+    // filter expression's failure doesn't poison this one. Parents
+    // (`member` / `binary` / `unary` / `logical` / `call`) check the
+    // flag after each child render and propagate `false` upward so the
+    // emitted template stays syntactically valid even when the default
+    // branch had to bail out (#1440 review).
+    if (this.filterExprDepth === 0) this.filterExprUnsupported = false
+    this.filterExprDepth++
+    try {
+      return this.renderFilterExprNode(expr, param, localVarMap)
+    } finally {
+      this.filterExprDepth--
+    }
+  }
+
+  private renderFilterExprNode(
+    expr: ParsedExpr,
+    param: string,
+    localVarMap: Map<string, string>
+  ): string {
     switch (expr.kind) {
       case 'identifier': {
         // Check if it's the loop param
@@ -3004,6 +3033,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         }
         // Nested member access or local var.prop
         const obj = this.renderFilterExpr(expr.object, param, localVarMap)
+        if (this.filterExprUnsupported) return 'false'
         return `${obj}.${this.capitalizeFieldName(expr.property)}`
       }
 
@@ -3016,11 +3046,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
           return `$.${this.capitalizeFieldName(expr.callee.name)}`
         }
-        return this.renderFilterExpr(expr.callee, param, localVarMap)
+        const result = this.renderFilterExpr(expr.callee, param, localVarMap)
+        if (this.filterExprUnsupported) return 'false'
+        return result
       }
 
       case 'unary': {
         const arg = this.renderFilterExpr(expr.argument, param, localVarMap)
+        if (this.filterExprUnsupported) return 'false'
         if (expr.op === '!') {
           // Wrap in parens if arg is a function call (eq, ne, gt, etc.) for Go template syntax
           const needsParens = this.isGoFunctionCall(expr.argument)
@@ -3034,7 +3067,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
       case 'binary': {
         const left = this.renderFilterExpr(expr.left, param, localVarMap)
+        if (this.filterExprUnsupported) return 'false'
         const right = this.renderFilterExpr(expr.right, param, localVarMap)
+        if (this.filterExprUnsupported) return 'false'
 
         switch (expr.op) {
           case '===':
@@ -3066,7 +3101,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
       case 'logical': {
         const left = this.renderFilterExpr(expr.left, param, localVarMap)
+        if (this.filterExprUnsupported) return 'false'
         const right = this.renderFilterExpr(expr.right, param, localVarMap)
+        if (this.filterExprUnsupported) return 'false'
         if (expr.op === '&&') {
           return `and (${left}) (${right})`
         }
@@ -3078,10 +3115,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // to a Go template action — most commonly a nested higher-order
         // (`x => x.tags.filter(...).length > 0`). Surface BF101 with the
         // offending expression so the user can either rewrite the
-        // predicate or add `/* @client */`. Returning the placeholder
-        // string previously let the template through with a literal
-        // `[UNSUPPORTED-FILTER-EXPR]` token that only failed at
-        // `text/template` execution time.
+        // predicate or add `/* @client */`. Set the recursion-wide
+        // `filterExprUnsupported` flag so parent branches return `false`
+        // instead of wrapping the sentinel into `false.Length` / `gt
+        // false.Length 0` etc. — the build will fail on BF101 anyway,
+        // but the emitted template must still be syntactically valid
+        // so `text/template` parsing doesn't blow up with a cascade of
+        // confusing secondary errors (#1440 review).
+        this.filterExprUnsupported = true
         this.errors.push({
           code: 'BF101',
           severity: 'error',
