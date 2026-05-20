@@ -10,13 +10,16 @@ import { createFixture } from '../src/types'
  * RHS into the attribute position, so the adapter receives the full
  * higher-order expression to translate.
  *
- * The Hono adapter inlines the expression verbatim (the CSR runtime
- * computes it at hydration time). Mojo (#1443) lowers each piece
- * (array literal → Perl array ref, `.filter(Boolean)` → `grep { $_ }`,
- * `.join(' ')` → `join(' ', @{...})`) so the registry `<Slot>` /
- * `<Button>` render server-side without the `@client` escape hatch.
- * Go still refuses — see `go-template-adapter.test.ts`'s
- * `expectedDiagnostics`.
+ * Lowering strategy per adapter (#1443):
+ *
+ *   - Hono / CSR: inline verbatim — the JS runtime evaluates it.
+ *   - Mojo: array literal → Perl array ref, `.filter(Boolean)` →
+ *     `grep { $_ }`, `.join(' ')` → `join(' ', @{...})`.
+ *   - Go templates: array literal → `bf_arr`, `.filter(Boolean)` →
+ *     `bf_filter_truthy`, `.join(' ')` → `bf_join`.
+ *
+ * All three adapters render the registry `<Slot>` / `<Button>`
+ * server-side without the `@client` escape hatch.
  *
  * Pre-#1421 regression that the in-flight guard locks in: the Mojo
  * `convertHigherOrderExpr` ↔ unsupported-emitter loop had no

@@ -229,6 +229,70 @@ func TestLast(t *testing.T) {
 }
 
 // =============================================================================
+// Array literal + truthy filter (#1443)
+// =============================================================================
+
+func TestArr_VariadicCollectsArgs(t *testing.T) {
+	got := Arr("a", "b", 3)
+	if len(got) != 3 || got[0] != "a" || got[1] != "b" || got[2] != 3 {
+		t.Errorf("Arr(\"a\", \"b\", 3) = %v, want [\"a\", \"b\", 3]", got)
+	}
+}
+
+func TestArr_Empty(t *testing.T) {
+	got := Arr()
+	if len(got) != 0 {
+		t.Errorf("Arr() = %v, want []", got)
+	}
+}
+
+func TestFilterTruthy_DropsJSFalsyValues(t *testing.T) {
+	// The full JS Boolean(x) falsy set: false, 0, "", nil. Anything
+	// else (including the empty slice/map and a struct{}) is truthy.
+	input := []any{"a", "", nil, false, 0, "b", true, 3.14}
+	got := FilterTruthy(input)
+	want := []any{"a", "b", true, 3.14}
+	if len(got) != len(want) {
+		t.Fatalf("FilterTruthy: got %v (len %d), want %v (len %d)", got, len(got), want, len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("FilterTruthy[%d] = %v, want %v", i, got[i], want[i])
+		}
+	}
+}
+
+func TestFilterTruthy_NaNIsFalsy(t *testing.T) {
+	// `Boolean(NaN)` is false in JS — mirror that explicitly so JSON
+	// round-trips through `bf_number` don't sneak NaN through as a
+	// truthy float.
+	nan := math.NaN()
+	got := FilterTruthy([]any{1.0, nan, 2.0})
+	if len(got) != 2 {
+		t.Errorf("FilterTruthy([1, NaN, 2]) = %v, want [1, 2]", got)
+	}
+}
+
+func TestFilterTruthy_NilSliceReturnsNil(t *testing.T) {
+	if got := FilterTruthy(nil); got != nil {
+		t.Errorf("FilterTruthy(nil) = %v, want nil", got)
+	}
+}
+
+// End-to-end shape that the #1443 registry-Slot fix relies on: the
+// chain `[className, childClass].filter(Boolean).join(' ')` lowers to
+// `(bf_join (bf_filter_truthy (bf_arr .ClassName .ChildClass)) " ")`.
+// Pin the composed behaviour so regressions in any one helper surface
+// here, not just at adapter-conformance time.
+func TestArrFilterTruthyJoin_RegistrySlotShape(t *testing.T) {
+	got := Join(FilterTruthy(Arr("btn", "", "btn-primary", nil)), " ")
+	want := "btn btn-primary"
+	if got != want {
+		t.Errorf("composed chain = %q, want %q", got, want)
+	}
+}
+
+// =============================================================================
 // Find / FindIndex Tests
 // =============================================================================
 
@@ -343,6 +407,7 @@ func TestFuncMap(t *testing.T) {
 		"bf_add", "bf_sub", "bf_mul", "bf_div", "bf_mod", "bf_neg",
 		"bf_lower", "bf_upper", "bf_trim", "bf_contains", "bf_join",
 		"bf_len", "bf_at", "bf_includes", "bf_first", "bf_last",
+		"bf_arr", "bf_filter_truthy",
 		"bf_every", "bf_some", "bf_filter", "bf_find", "bf_find_index", "bf_sort",
 		"bfComment", "bfTextStart", "bfTextEnd", "bfPortalHTML",
 	}

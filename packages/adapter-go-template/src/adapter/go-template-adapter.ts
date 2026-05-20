@@ -2433,6 +2433,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (callee.kind === 'identifier' && args.length === 0) {
       return `.${this.capitalizeFieldName(callee.name)}`
     }
+    // arr.join(sep) → bf_join <arr> <sep> — needed for the registry
+    // Slot's `[a, b].filter(Boolean).join(' ')` chain (#1443). The
+    // generic call below would emit `<arr>.Join " "` (a struct field
+    // access against the slice), which Go template rejects. The
+    // helper itself is already registered (#1187 string ops).
+    if (
+      callee.kind === 'member' &&
+      !callee.computed &&
+      callee.property === 'join' &&
+      args.length === 1
+    ) {
+      const obj = emit(callee.object)
+      const sep = emit(args[0])
+      return `bf_join (${obj}) ${sep}`
+    }
     // Identifier-path primitive callee (#1188): if the JS call resolves
     // to a path registered on `templatePrimitives` (e.g. `JSON.stringify`,
     // `Math.floor`), substitute the Go template form. The emit fn
@@ -2594,27 +2609,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `[ARROW-FN: ${param} => ...]`
   }
 
-  arrayLiteral(_elements: ParsedExpr[], _emit: (e: ParsedExpr) => string): string {
-    // Go templates have no array-literal syntax — `slice` builtins
-    // would be the closest analogue, but the registry shape that
-    // motivated array-literal IR (#1443 — Slot's
-    // `[a, b].filter(Boolean).join(' ')`) also needs `.join` lowering
-    // Go doesn't have yet, so this stays a refusal. Pre-#1443 the
-    // parser returned `unsupported` for `[a, b]` and
-    // `convertExpressionToGo`'s `isSupported` gate emitted BF101
-    // up-front; now that `isSupported` accepts array-literal IR, the
-    // gate has moved here so the diagnostic still fires on the same
-    // shapes the Go adapter rejects today.
-    this.errors.push({
-      code: 'BF101',
-      severity: 'error',
-      message: `Array literal expressions cannot be lowered to Go template syntax`,
-      loc: this.makeLoc(),
-      suggestion: {
-        message: 'Options:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code',
-      },
+  arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
+    // `[a, b]` lowers to `bf_arr a b` (#1443) — a variadic runtime
+    // helper that returns `[]any`. The Go template `slice` builtin
+    // can't carry the JS-style heterogeneous element types (string,
+    // signal call, prop reference) without coercion, so we use a
+    // BF-owned helper. Elements get parens so a nested call doesn't
+    // run together with its arguments (`bf_arr .A (bf_filter ...) .B`).
+    // Empty `[]` is `bf_arr` with no args — the helper handles it.
+    if (elements.length === 0) return 'bf_arr'
+    const parts = elements.map(el => {
+      const rendered = emit(el)
+      // Wrap multi-token results (function calls, dotted paths with
+      // arguments) in parens. Simple identifiers / literals stay bare.
+      return rendered.includes(' ') ? `(${rendered})` : rendered
     })
-    return `""`
+    return `bf_arr ${parts.join(' ')}`
   }
 
   higherOrder(
@@ -2765,6 +2775,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     if (expr.method === 'filter') {
+      // .filter(Boolean) — synthesised by the parser as an identity
+      // predicate (`x => x`) so adapters can reuse the higher-order
+      // lowering path (#1443). Lower to `bf_filter_truthy` so the
+      // registry Slot's `[a, b].filter(Boolean).join(' ')` chain
+      // renders server-side on Go templates.
+      if (
+        expr.predicate.kind === 'identifier' &&
+        expr.predicate.name === expr.param
+      ) {
+        return `bf_filter_truthy (${arrayExpr})`
+      }
       const { field, negated } = this.extractFieldPredicate(expr.predicate, expr.param)
       if (!field) return null
       const value = negated ? 'false' : 'true'

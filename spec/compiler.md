@@ -565,7 +565,7 @@ The filter predicate uses a `ParsedExpr` AST (not raw string). Adapters must imp
 | `unary` | Negation (`!`) — mind operator precedence in target language |
 | `logical` | `&&`, `\|\|` |
 | `higher-order` | `filter()`, `every()`, `some()` on arrays. `.filter(Boolean)` synthesises an identity-truthy predicate (#1443). |
-| `array-literal` | `[a, b]` source for higher-order chains (e.g. registry Slot's `[a, b].filter(Boolean).join(' ')`, #1443). |
+| `array-literal` | `[a, b]` source for higher-order chains (e.g. registry Slot's `[a, b].filter(Boolean).join(' ')`, #1443). Mojo lowers to `[$a, $b]` array refs; Go templates lower to `bf_arr a b`. |
 
 #### Standalone Higher-Order Expressions
 

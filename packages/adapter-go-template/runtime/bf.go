@@ -51,6 +51,8 @@ func FuncMap() template.FuncMap {
 		"bf_includes": Includes,
 		"bf_first":    First,
 		"bf_last":     Last,
+		"bf_arr":      Arr,
+		"bf_filter_truthy": FilterTruthy,
 
 		// Higher-order Array Methods
 		"bf_every":      Every,
@@ -655,6 +657,63 @@ func First(items any) any {
 // Last returns the last element of a slice, or nil if empty.
 func Last(items any) any {
 	return At(items, -1)
+}
+
+// Arr builds an []any from variadic args. Used to lower JS array
+// literals like `[a, b]` for the registry Slot's
+// `[className, childClass].filter(Boolean).join(' ')` shape (#1443) —
+// Go templates have no array-literal syntax, so the codegen routes
+// array-literal IR nodes through this helper.
+func Arr(items ...any) []any {
+	return items
+}
+
+// FilterTruthy returns a new slice containing only truthy items.
+// Mirrors `arr.filter(Boolean)` semantics: drop nil, false, 0, "" — the
+// same falsy set JavaScript's `Boolean(x)` recognises. Used to lower
+// the registry Slot's class-merge pattern (#1443); generalising to
+// arbitrary callable predicates would need the callee-resolution path
+// blocked by #1389, so this stays Boolean-specific.
+func FilterTruthy(items any) []any {
+	v := reflect.ValueOf(items)
+	if !v.IsValid() || (v.Kind() != reflect.Slice && v.Kind() != reflect.Array) {
+		return nil
+	}
+	result := make([]any, 0, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		raw := v.Index(i).Interface()
+		if isTruthy(raw) {
+			result = append(result, raw)
+		}
+	}
+	return result
+}
+
+// isTruthy mirrors JavaScript's `Boolean(x)` for the value shapes the
+// template path actually receives — nil / false / 0 / "" are falsy.
+// Other shapes (non-empty maps, slices, structs, true) are truthy, in
+// line with JS's "objects are truthy" rule.
+func isTruthy(v any) bool {
+	if v == nil {
+		return false
+	}
+	switch x := v.(type) {
+	case bool:
+		return x
+	case string:
+		return x != ""
+	case int:
+		return x != 0
+	case int8, int16, int32, int64:
+		return reflect.ValueOf(v).Int() != 0
+	case uint, uint8, uint16, uint32, uint64:
+		return reflect.ValueOf(v).Uint() != 0
+	case float32:
+		return x != 0
+	case float64:
+		return x != 0 && !math.IsNaN(x)
+	}
+	return true
 }
 
 // =============================================================================

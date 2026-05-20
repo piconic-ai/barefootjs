@@ -128,12 +128,10 @@ runAdapterConformanceTests({
     'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
-    // #1421: branch-local higher-order chain at an attribute
-    // (`const merged = [a, b].filter(Boolean).join(' ')` referenced as
-    // `className={merged}`). `convertExpressionToGo` already refuses
-    // the array-literal callee with BF101 — the shared fixture pins the
-    // contract so the Mojo / Go refusal shapes stay aligned.
-    'branch-local-filter-join': [{ code: 'BF101', severity: 'error' }],
+    // #1443: `[a, b].filter(Boolean).join(' ')` (registry Slot) now
+    // lowers to `bf_join (bf_filter_truthy (bf_arr ...)) " "`. No
+    // BF101 expected — pinned positively by the
+    // `branch-local-filter-join-go` template-output test below.
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `GoTemplateAdapter.templatePrimitives` (#1188). The two
@@ -1378,6 +1376,37 @@ export function V({ variant }: { variant: 'a' | 'b' }) {
       const goCode = out.types ?? ''
       expect(goCode).toContain('ClassName:')
       expect(goCode).toContain('case "a": return "class-a"')
+    })
+  })
+
+  describe('registry Slot class-merge chain (#1443)', () => {
+    test('[a, b].filter(Boolean).join(\' \') lowers to bf_join (bf_filter_truthy (bf_arr ...)) " "', () => {
+      // The registry `<Slot>` merges className via
+      // `[className, childClass].filter(Boolean).join(' ')`. Pre-#1443
+      // each link in the chain (array literal, `Boolean` callable
+      // filter, `.join`) hit a Go-side refusal gate and the chain
+      // emitted BF101 — making the scaffold `<Button>` / `<Card>`
+      // unusable on Go templates. The fix lowers all three:
+      //
+      //   - `[a, b]`              → `bf_arr a b`     (variadic helper)
+      //   - `.filter(Boolean)`    → `bf_filter_truthy <arr>`
+      //   - `.join(sep)`          → `bf_join <arr> <sep>`
+      //
+      // Composing through paren-wrapped function calls keeps Go
+      // template's prefix-call precedence well-formed.
+      const result = compileAndGenerate(`
+"use client"
+function Slot({ children, className }: { children?: unknown; className?: string }) {
+  if (children) {
+    const merged = [className].filter(Boolean).join(' ')
+    return <div className={merged}>x</div>
+  }
+  return <div>fallback</div>
+}
+export { Slot }
+`.trimStart())
+      expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+      expect(result.template).toContain('bf_join (bf_filter_truthy (bf_arr .ClassName)) " "')
     })
   })
 })
