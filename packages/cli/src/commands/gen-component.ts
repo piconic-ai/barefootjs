@@ -5,6 +5,7 @@ import path from 'path'
 import type { CliContext } from '../context'
 import { scaffold } from '../lib/scaffold'
 import { resolveScaffoldLayout } from '../lib/scaffold-layout'
+import { commandsFor, detectPackageManager } from '../lib/pm'
 
 export function run(args: string[], ctx: CliContext): void {
   if (args.length < 2) {
@@ -34,12 +35,18 @@ export function run(args: string[], ctx: CliContext): void {
   writeFileSync(componentAbsPath, result.componentCode)
   writeFileSync(testAbsPath, result.testCode)
 
+  // Detected PM controls the test-run hint so the suggestion lines up
+  // with whatever the user has committed to (lockfile-first), instead of
+  // prescribing `bun test` regardless.
+  const pm = detectPackageManager(ctx.projectDir ?? ctx.root)
+  const testCmd = commandsFor(pm).test(result.testPath)
+
   console.log(`Created:`)
   console.log(`  ${result.componentPath}`)
   console.log(`  ${result.testPath}`)
   console.log(``)
   console.log(`Next steps:`)
   console.log(`  1. Implement the component in ${result.componentPath}`)
-  console.log(`  2. bun test ${result.testPath}`)
+  console.log(`  2. ${testCmd}`)
   console.log(`  3. bf gen test ${componentName}  (regenerate richer test)`)
 }

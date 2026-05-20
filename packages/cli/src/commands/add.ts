@@ -6,6 +6,7 @@ import type { CliContext } from '../context'
 import type { BarefootConfig } from '../context'
 import { resolveDependenciesFromSource } from '../lib/dependency-resolver'
 import { extractMetaForFile } from './meta-extract'
+import { commandsFor, detectPackageManager } from '../lib/pm'
 import type { MetaIndex, MetaIndexEntry, ComponentMeta, RegistryItem } from '../lib/types'
 
 export async function run(args: string[], ctx: CliContext): Promise<void> {
@@ -237,7 +238,8 @@ export async function addFromRegistry(
     console.log(`  Use --force to overwrite existing components.`)
   }
   if (added.length > 0) {
-    console.log(`\n  Run tests: bun test ${config.paths.components}/`)
+    const pm = detectPackageManager(projectDir)
+    console.log(`\n  Run tests: ${commandsFor(pm).test(`${config.paths.components}/`)}`)
   }
 }
 
@@ -339,7 +341,8 @@ function addFromLocal(
     console.log(`  Use --force to overwrite existing components.`)
   }
   if (added.length > 0) {
-    console.log(`\n  Run tests: bun test ${config.paths.components}/`)
+    const pm = detectPackageManager(projectDir)
+    console.log(`\n  Run tests: ${commandsFor(pm).test(`${config.paths.components}/`)}`)
   }
 }
 

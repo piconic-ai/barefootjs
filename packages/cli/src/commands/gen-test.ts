@@ -5,6 +5,7 @@ import path from 'path'
 import type { CliContext } from '../context'
 import { resolveComponentSource } from '../lib/resolve-source'
 import { generateTestTemplate } from '../lib/test-template'
+import { commandsFor, detectPackageManager } from '../lib/pm'
 
 export function run(args: string[], ctx: CliContext): void {
   // Two surfacing modes for the generated IR test:
@@ -61,5 +62,11 @@ export function run(args: string[], ctx: CliContext): void {
   const rel = path.relative(ctx.projectDir ?? ctx.root, testPath)
   console.log(`Created: ${rel}`)
   console.log(``)
-  console.log(`Next: bun test ${rel}`)
+  // Route the "next step" hint through the detected package manager so
+  // the suggestion respects whatever PM the user has actually committed
+  // to (lockfile-first, falling back to the PM that spawned this CLI).
+  // Hard-coding `bun test` was prescriptive in a project that explicitly
+  // supports npm / pnpm / yarn / bun.
+  const pm = detectPackageManager(ctx.projectDir ?? ctx.root)
+  console.log(`Next: ${commandsFor(pm).test(rel)}`)
 }

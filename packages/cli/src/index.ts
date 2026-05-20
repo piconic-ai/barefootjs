@@ -2,6 +2,7 @@
 // CLI entry point: arg parse → dispatch.
 
 import { createContext } from './context'
+import { commandsFor, detectPackageManager } from './lib/pm'
 
 const args = process.argv.slice(2)
 const jsonFlag = args.includes('--json')
@@ -13,6 +14,12 @@ const rest = filteredArgs.slice(2)
 const ctx = await createContext(jsonFlag)
 
 function printUsage() {
+  // PM detection runs against cwd so the test-command hint matches the
+  // user's actual tooling (lockfile-first, with sensible defaults when
+  // run outside a project). Hard-coding `bun test` in the workflow
+  // help was prescriptive in a project that supports npm/pnpm/yarn/bun.
+  const pm = detectPackageManager(process.cwd())
+  const testHint = commandsFor(pm).test('<path>')
   console.log(`Usage: bf <command> [options]
 
 Scaffold a new project with \`npm create barefootjs@latest\`, then:
@@ -49,7 +56,7 @@ Workflow:
   3. bf add <comp...>                         — Add to your project
   4. bf docs <component>                      — Learn props and usage
   5. bf guide <topic>                         — Read framework docs
-  6. bun test <path>                          — Verify
+  6. ${testHint.padEnd(41, ' ')}— Verify
   7. bf preview <component>                   — Visual preview in browser
   8. bf debug graph <component>               — Debug: signal dependency graph
   9. bf debug trace <comp> <signal>           — Debug: update propagation path`)

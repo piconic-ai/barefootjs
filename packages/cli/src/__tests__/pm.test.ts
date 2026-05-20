@@ -145,4 +145,27 @@ describe('commandsFor', () => {
     expect(c.run('dev')).toBe('yarn dev')
     expect(c.exec('bf add button')).toBe('yarn dlx bf add button')
   })
+
+  // The `test` helper is what the various "next steps" / "run tests"
+  // hints route through so the CLI never prescribes `bun test` to a
+  // user who picked a different package manager. Two paths matter:
+  // suite-wide ("test") and targeted ("test <path>"). Only npm needs
+  // `--` to forward the path to the underlying test script.
+  test('test() — suite-wide form maps to each PM', () => {
+    expect(commandsFor('npm').test()).toBe('npm test')
+    expect(commandsFor('bun').test()).toBe('bun test')
+    expect(commandsFor('pnpm').test()).toBe('pnpm test')
+    expect(commandsFor('yarn').test()).toBe('yarn test')
+  })
+
+  test('test(path) — targeted form forwards the arg appropriately per PM', () => {
+    expect(commandsFor('npm').test('components/Foo.test.tsx'))
+      .toBe('npm test -- components/Foo.test.tsx')
+    expect(commandsFor('bun').test('components/Foo.test.tsx'))
+      .toBe('bun test components/Foo.test.tsx')
+    expect(commandsFor('pnpm').test('components/Foo.test.tsx'))
+      .toBe('pnpm test components/Foo.test.tsx')
+    expect(commandsFor('yarn').test('components/Foo.test.tsx'))
+      .toBe('yarn test components/Foo.test.tsx')
+  })
 })

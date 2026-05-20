@@ -64,6 +64,14 @@ export interface PmCommands {
   install: string
   run: (script: string) => string
   exec: (cmd: string) => string
+  /**
+   * Test command targeted at a single file or directory. Each PM forwards
+   * extra args to the package.json `test` script slightly differently —
+   * npm requires `--`, the others forward by default — so callers that
+   * want to suggest "run the test you just generated" should route
+   * through this helper instead of hard-coding `bun test`.
+   */
+  test: (pathArg?: string) => string
 }
 
 export function commandsFor(pm: PackageManager): PmCommands {
@@ -73,18 +81,21 @@ export function commandsFor(pm: PackageManager): PmCommands {
         install: 'bun install',
         run: s => `bun run ${s}`,
         exec: c => `bunx ${c}`,
+        test: p => p ? `bun test ${p}` : 'bun test',
       }
     case 'pnpm':
       return {
         install: 'pnpm install',
         run: s => `pnpm ${s}`,
         exec: c => `pnpm dlx ${c}`,
+        test: p => p ? `pnpm test ${p}` : 'pnpm test',
       }
     case 'yarn':
       return {
         install: 'yarn',
         run: s => `yarn ${s}`,
         exec: c => `yarn dlx ${c}`,
+        test: p => p ? `yarn test ${p}` : 'yarn test',
       }
     case 'npm':
     default:
@@ -92,6 +103,8 @@ export function commandsFor(pm: PackageManager): PmCommands {
         install: 'npm install',
         run: s => `npm run ${s}`,
         exec: c => `npx ${c}`,
+        // npm requires `--` to forward args to the script.
+        test: p => p ? `npm test -- ${p}` : 'npm test',
       }
   }
 }
