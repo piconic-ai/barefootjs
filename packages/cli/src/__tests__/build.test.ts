@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import {
   hasUseClientDirective,
+  detectMissingUseClient,
   discoverComponentFiles,
   generateHash,
   resolveBuildConfigFromTs,
@@ -48,6 +49,64 @@ describe('hasUseClientDirective', () => {
 
   test('returns false for empty file', () => {
     expect(hasUseClientDirective('')).toBe(false)
+  })
+})
+
+// ── detectMissingUseClient ───────────────────────────────────────────────
+//
+// The CLI skip-gate drops files without `'use client'` before they ever
+// reach the analyzer, so the analyzer's BF001 diagnostic never gets a
+// chance to fire on plain `export function Foo() { createSignal(...) }`
+// files. `detectMissingUseClient` is the import-side surface check that
+// lets the CLI re-raise BF001 at the skip-gate instead of silently
+// skipping. These tests pin both directions of the gate.
+
+describe('detectMissingUseClient', () => {
+  test('flags createSignal value import', () => {
+    expect(
+      detectMissingUseClient(`import { createSignal } from '@barefootjs/client'\nexport function F() { return <div /> }`),
+    ).toEqual(['createSignal'])
+  })
+
+  test('flags multiple reactive imports', () => {
+    const hits = detectMissingUseClient(
+      `import { createSignal, createMemo, createEffect } from '@barefootjs/client'`,
+    )
+    expect(hits.sort()).toEqual(['createEffect', 'createMemo', 'createSignal'])
+  })
+
+  test('handles renamed bindings via `as`', () => {
+    expect(
+      detectMissingUseClient(`import { createSignal as sig } from '@barefootjs/client'`),
+    ).toEqual(['createSignal'])
+  })
+
+  test('does NOT flag type-only `import type` (erased at compile time)', () => {
+    expect(
+      detectMissingUseClient(`import type { Reactive } from '@barefootjs/client'`),
+    ).toEqual([])
+  })
+
+  test('does NOT flag inline `type` specifiers inside a mixed import', () => {
+    // `type Reactive` is erased; the only runtime binding here is `Reactive`,
+    // not a tripwire primitive, so the file is a legitimate server component.
+    expect(
+      detectMissingUseClient(`import { type Reactive } from '@barefootjs/client'`),
+    ).toEqual([])
+  })
+
+  test('does NOT flag non-tripwire runtime imports (createContext etc.)', () => {
+    // createContext on its own is server-safe; only signal/effect/memo
+    // primitives require the client runtime.
+    expect(
+      detectMissingUseClient(`import { createContext } from '@barefootjs/client'`),
+    ).toEqual([])
+  })
+
+  test('returns empty for plain server components with no @barefootjs/client import', () => {
+    expect(
+      detectMissingUseClient(`export function UserCard({ name }: { name: string }) { return <h3>{name}</h3> }`),
+    ).toEqual([])
   })
 })
 

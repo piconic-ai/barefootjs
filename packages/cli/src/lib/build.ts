@@ -99,6 +99,53 @@ export interface BuildRunOptions {
  * Check if file content starts with a "use client" directive.
  * Skips leading comments (block and line).
  */
+/**
+ * Reactive primitives whose presence (without `'use client'`) is the BF001
+ * trigger. Matches `REACTIVE_PRIMITIVES` in the analyzer — keep the lists in
+ * sync; the analyzer's runtime check stays authoritative, this helper is
+ * just for surfacing the diagnostic at the CLI's skip-gate.
+ */
+const BF001_TRIPWIRE_IMPORTS = new Set([
+  'createSignal',
+  'createEffect',
+  'createMemo',
+  'onMount',
+  'onCleanup',
+  'untrack',
+  'createPortal',
+])
+
+/**
+ * Cheap pre-analyzer scan: does this source `import { ... } from '@barefootjs/client'`
+ * any name from `BF001_TRIPWIRE_IMPORTS`? Returns the offending names so the
+ * diagnostic can list them. Returns `[]` for files that genuinely don't
+ * need `'use client'` (server components, type-only imports).
+ *
+ * Regex-based instead of TS-AST because this runs in the hot skip-gate
+ * before `compileEntry` and must stay sub-millisecond. The downside is
+ * we may match commented-out imports — that's fine for a diagnostic, the
+ * user can resolve it by either adding the directive or removing the
+ * import.
+ */
+export function detectMissingUseClient(content: string): string[] {
+  const importRe = /import\s*(?:type\s+)?\{([^}]+)\}\s*from\s*['"]@barefootjs\/client['"]/g
+  const hits = new Set<string>()
+  for (const m of content.matchAll(importRe)) {
+    // Skip `import type { ... }` — type imports erase at compile time and
+    // never run, so they don't require the client runtime.
+    if (/import\s+type/.test(m[0])) continue
+    for (const raw of m[1].split(',')) {
+      // Handle `as` aliases — the imported binding is what matters.
+      const imported = raw.trim().split(/\s+as\s+/)[0].trim()
+      // Type-only specifiers inside a mixed import (`import { type X, Y }`):
+      // strip the `type` keyword and ignore the type binding itself.
+      if (imported.startsWith('type ')) continue
+      if (BF001_TRIPWIRE_IMPORTS.has(imported)) hits.add(imported)
+    }
+  }
+  return [...hits]
+}
+
 export function hasUseClientDirective(content: string): boolean {
   let trimmed = content.trimStart()
   // Skip block comments
@@ -477,6 +524,22 @@ export async function build(
   for (const entryPath of allFiles) {
     const sourceContent = sourceContents.get(entryPath)!
     if (!hasUseClientDirective(sourceContent)) {
+      // BF001 surface check (#1442). The analyzer raises BF001 when a
+      // component imports reactive primitives without `'use client'`, but
+      // the CLI used to drop these files at the skip-gate above, so the
+      // diagnostic never reached the user — their component would be
+      // compiled to plain HTML, ship zero client JS, and look broken in
+      // the browser with no console output. Mirror just the import-side
+      // check here so the same situation prints the analyzer's message.
+      const missing = detectMissingUseClient(sourceContent)
+      if (missing.length > 0) {
+        console.error(`Errors compiling ${relative(config.projectDir, entryPath)}:`)
+        console.error(
+          `  BF001: 'use client' directive required — imports reactive primitive(s) from @barefootjs/client: ${missing.join(', ')}`,
+        )
+        errorCount++
+        continue
+      }
       skippedCount++
       continue
     }
