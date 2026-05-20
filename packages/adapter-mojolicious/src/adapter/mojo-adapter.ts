@@ -1372,12 +1372,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
 /**
  * Lowering for `array-method` IR nodes (#1443) — shared between the
  * filter and top-level emitters so the Embedded Perl form stays
- * consistent regardless of which context the chain lands in. The
- * exhaustive switch on `method` makes future additions (e.g.
- * `.concat`, `.slice`) a TS compile error here, mirroring the drift
- * defence on `ParsedExpr.kind`.
+ * consistent regardless of which context the chain lands in.
+ *
+ * The exhaustive switch on `method` paired with `assertNever` makes
+ * adding a new variant to `ArrayMethod` a TS compile error here, not
+ * a silent runtime no-op — the drift defence we already apply to
+ * `ParsedExpr.kind` extended to its sub-discriminator.
  */
-function renderMojoArrayMethod(
+function renderArrayMethod(
   method: ArrayMethod,
   object: ParsedExpr,
   args: ParsedExpr[],
@@ -1392,6 +1394,16 @@ function renderMojoArrayMethod(
       const obj = emit(object)
       const sep = emit(args[0])
       return `join(${sep}, @{${obj}})`
+    }
+    default: {
+      // TS-level exhaustiveness guard. If this throws at runtime, the
+      // IR was constructed against a newer `ArrayMethod` variant that
+      // this adapter hasn't been updated for — loud failure is better
+      // than emitting a silent empty string downstream.
+      const _exhaustive: never = method
+      throw new Error(
+        `renderArrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`,
+      )
     }
   }
 }
@@ -1515,7 +1527,7 @@ class MojoFilterEmitter implements ParsedExprEmitter {
     // operate on scalars, not arrays. Defer to the top-level rendering
     // (`join(sep, @{...})`) for any case that does land here so the
     // emission stays consistent across contexts.
-    return renderMojoArrayMethod(method, object, args, emit)
+    return renderArrayMethod(method, object, args, emit)
   }
 
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
@@ -1642,7 +1654,7 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     args: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
-    return renderMojoArrayMethod(method, object, args, emit)
+    return renderArrayMethod(method, object, args, emit)
   }
 
   conditional(
