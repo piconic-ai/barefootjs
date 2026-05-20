@@ -304,4 +304,50 @@ describe('branch-local at element-attribute position (#1414)', () => {
     expect(hydrate).not.toMatch(/\blocal\b/)
     expect(hydrate).toContain('foo bar')
   })
+
+  test('branch-local substitution skips string literals and `$`-prefixed identifiers', () => {
+    // The substitution machinery used to scan with `text.replace(/\b
+    // (name1|name2)\b/g, ...)`, which would (a) rewrite occurrences
+    // of the name inside string literals into invalid JS and
+    // (b) mis-match `\b` between `$` and a word char, splitting an
+    // identifier like `$kind` and rewriting just its `kind` tail.
+    // The fix routes both substitution passes through
+    // `replaceInExprContexts` (skips opaque tokens — strings, regex,
+    // template bodies, comments) and replaces `\b` with `[\w$]`
+    // lookarounds so the boundary check treats `$` as part of an
+    // identifier. This test pins both invariants by declaring a
+    // branch-local whose name collides with a token inside a string
+    // literal *and* with the tail of a `$`-prefixed identifier.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function CaseEdgeBoundary(props: { kind: 'a' | 'b' }) {
+        const [count] = createSignal(0)
+        if (props.kind === 'a') {
+          const $kind = 'dollar'
+          const kind = 'plain'
+          // The data-* string literal contains the bare word "kind"
+          // (a branch-local name) and the identifier "$kind" (whose
+          // tail collides with "kind" under a naive \\b boundary).
+          // Both must survive the substitution pass intact.
+          const tag = \`label:kind=\${$kind}\`
+          return <div data-tag={tag}>A: {kind} {count()}</div>
+        }
+        return <div>B: {count()}</div>
+      }
+    `
+    const result = compileJSX(source, 'CaseEdgeBoundary.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+
+    const clientJs = clientJsContent(result)
+    // The substituted text MUST contain the literal string `label:kind=`
+    // verbatim — pre-fix, the `kind` inside the template-literal head
+    // would have been rewritten into `('plain')`, mangling the string.
+    expect(clientJs).toContain('label:kind=')
+    // The `$kind` identifier must stay intact — pre-fix, `\\bkind\\b`
+    // would have split `$kind` into `$` + `kind` and rewritten just
+    // the `kind` tail.
+    expect(clientJs).toContain('$kind')
+  })
 })

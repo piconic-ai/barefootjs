@@ -40,7 +40,7 @@ import {
 } from './prop-rewrite'
 import { resolveFreeRefs, type BindingEnvironment } from './free-refs'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer'
-import { iterateJsTokens } from './scanner/js-scanner'
+import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner'
 
 // =============================================================================
 // Transform Context
@@ -3943,6 +3943,34 @@ function inferExpressionType(
 // =============================================================================
 
 /**
+ * Substitute branch-local identifier references in `text` with the
+ * value returned by `resolve(name)`. Skips occurrences inside string
+ * / regex / template-body / comment tokens via the shared
+ * `replaceInExprContexts` scanner, so a string like `'mergedClass'`
+ * never gets rewritten into invalid JS. Identifier boundaries use
+ * `[\w$]` lookarounds rather than `\b`, since JS regex's word-char
+ * class excludes `$` — a bare `\b` would mis-match the `foo` inside
+ * `$foo`. Branch-local names are syntactically `[A-Za-z_$][A-Za-z0-9_$]*`
+ * (no regex-meta characters), so direct interpolation into the
+ * alternation is safe without escaping.
+ *
+ * Used twice in `buildIfStatementChain`:
+ *   1. Pre-resolving nested branch-local refs in `branchSubs` (so a
+ *      later entry that pulls this one in carries fully-closed text).
+ *   2. The `substitutedGetJS` override that swaps branch-local refs
+ *      at every raw-text capture inside the branch.
+ */
+function replaceBranchLocalRefs(
+  text: string,
+  branchNames: readonly string[],
+  resolve: (name: string) => string,
+): string {
+  if (branchNames.length === 0) return text
+  const pattern = new RegExp(`(?<![\\w$])(${branchNames.join('|')})(?![\\w$])`, 'g')
+  return replaceInExprContexts(text, pattern, (_match, name) => resolve(name))
+}
+
+/**
  * Build a chain of IRIfStatement nodes from conditional returns.
  * The chain is built in reverse order, starting with the final return
  * and working backwards through the if statements.
@@ -4060,8 +4088,7 @@ function buildIfStatementChain(
         collectAstPropRefs(initExpr, destructuredPropNames, propDeps)
       }
       if (branchNames.length > 0) {
-        const innerPattern = new RegExp(`\\b(${branchNames.join('|')})\\b`, 'g')
-        text = text.replace(innerPattern, (_match, ref) => {
+        text = replaceBranchLocalRefs(text, branchNames, (ref) => {
           const innerDeps = branchPropDeps.get(ref)
           if (innerDeps) for (const d of innerDeps) propDeps.add(d)
           return `(${branchSubs.get(ref)!})`
@@ -4073,17 +4100,12 @@ function buildIfStatementChain(
     }
     const prevBranchScopePropDeps = ctx._branchScopePropDeps
     ctx._branchScopePropDeps = branchPropDeps
-    // Identifier names are syntactically [A-Za-z_$][A-Za-z0-9_$]*, all of
-    // which are regex-safe — no escape needed.
-    const branchPattern = branchNames.length > 0
-      ? new RegExp(`\\b(${branchNames.join('|')})\\b`, 'g')
-      : null
     const prevCtxGetJS = ctx.getJS
     const prevAnalyzerGetJS = ctx.analyzer.getJS
-    if (branchPattern) {
+    if (branchNames.length > 0) {
       const substitutedGetJS = (n: ts.Node): string => {
         const text = baseGetJS(n)
-        return text.replace(branchPattern, (_match, name) => `(${branchSubs.get(name)!})`)
+        return replaceBranchLocalRefs(text, branchNames, (name) => `(${branchSubs.get(name)!})`)
       }
       ctx.getJS = substitutedGetJS
       ctx.analyzer.getJS = substitutedGetJS
@@ -4096,7 +4118,7 @@ function buildIfStatementChain(
     try {
       consequent = transformNode(condReturn.jsxReturn, ctx)
     } finally {
-      if (branchPattern) {
+      if (branchNames.length > 0) {
         ctx.getJS = prevCtxGetJS
         ctx.analyzer.getJS = prevAnalyzerGetJS
       }
