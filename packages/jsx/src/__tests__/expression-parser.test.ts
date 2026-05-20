@@ -253,6 +253,52 @@ describe('expression-parser', () => {
         }
       }
     })
+
+    // #1443: `.filter(Boolean)` is the registry Slot's class-merge
+    // pattern. It's a non-arrow callable that pre-#1443 fell through
+    // to the unsupported-method gate. We synthesise the equivalent
+    // truthy-identity arrow so adapters can lower it with their
+    // existing higher-order paths.
+    test('parses .filter(Boolean) into higher-order kind with synthetic identity predicate (#1443)', () => {
+      const result = parseExpression('arr.filter(Boolean)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.method).toBe('filter')
+        // The synthetic param is just an identifier-matching marker;
+        // adapters substitute it into their loop variable. Whichever
+        // name we pick must equal `predicate.name` so the substitution
+        // round-trips into a truthy check.
+        expect(result.predicate.kind).toBe('identifier')
+        if (result.predicate.kind === 'identifier') {
+          expect(result.predicate.name).toBe(result.param)
+        }
+      }
+    })
+
+    // The Boolean-callable shortcut is filter-specific because the
+    // truthy-identity rewrite only matches `filter`'s semantics. For
+    // `.every(Boolean)` / `.some(Boolean)` etc. the rewrite would
+    // produce different JS semantics — leave them on the unsupported
+    // path until each gets its own deliberate lowering.
+    test('does NOT lower .every(Boolean) or .some(Boolean) — filter-specific shortcut (#1443)', () => {
+      expect(parseExpression('arr.every(Boolean)').kind).not.toBe('higher-order')
+      expect(parseExpression('arr.some(Boolean)').kind).not.toBe('higher-order')
+    })
+
+    // Array literals show up in the registry Slot's
+    // `[a, b].filter(Boolean).join(' ')` shape (#1443). Pre-#1443
+    // `[a, b]` parsed as `unsupported` and dragged the whole chain
+    // into the unsupported / regex-pipeline path that #1421 had to
+    // guard against. Now it's a first-class IR node.
+    test('parses array literal into array-literal kind (#1443)', () => {
+      const result = parseExpression('[a, b, 1, "x"]')
+      expect(result.kind).toBe('array-literal')
+      if (result.kind === 'array-literal') {
+        expect(result.elements.map(e => e.kind)).toEqual([
+          'identifier', 'identifier', 'literal', 'literal',
+        ])
+      }
+    })
   })
 
   describe('isSupported', () => {

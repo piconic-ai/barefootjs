@@ -1467,6 +1467,16 @@ class MojoFilterEmitter implements ParsedExprEmitter {
     return arrayExpr
   }
 
+  arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
+    // Perl array ref: `[$a, $b]`. Filter-context use is rare (the
+    // outer emitter routes most array-literal arrivals via
+    // MojoTopLevelEmitter), but #1443's chain
+    // `[a, b].filter(Boolean).join(' ')` can land here when the
+    // outer `.filter()` recurses into a nested filter whose own
+    // source is an array literal.
+    return `[${elements.map(emit).join(', ')}]`
+  }
+
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
     return '1'
   }
@@ -1520,6 +1530,23 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     if (callee.kind === 'identifier' && args.length === 0) {
       return `$${callee.name}`
     }
+    // arr.join(sep) → join(sep, @{$arr}) — needed for the registry
+    // Slot's `[a, b].filter(Boolean).join(' ')` chain (#1443). The
+    // default member fallback below would render `${arr}->{join}`
+    // (a hash lookup), so detecting `.join` here is the only way to
+    // produce valid Perl. One-arg form only; zero-arg `.join()`
+    // defaults to ',' in JS but Perl's `join` requires a separator,
+    // and no in-tree component uses the implicit form.
+    if (
+      callee.kind === 'member' &&
+      !callee.computed &&
+      callee.property === 'join' &&
+      args.length === 1
+    ) {
+      const obj = emit(callee.object)
+      const sep = emit(args[0])
+      return `join(${sep}, @{${obj}})`
+    }
     return emit(callee)
   }
 
@@ -1568,6 +1595,15 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
     if (method === 'some') return `!!(grep { ${grepBody} } @{${arrayExpr}})`
     return arrayExpr
+  }
+
+  arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
+    // Perl array ref. Identifiers inside elements resolve through the
+    // top-level emitter so `[className, childClass]` becomes
+    // `[$className, $childClass]` (the registry Slot's chain in
+    // #1443). Empty `[]` stays as `[]` — a valid empty Perl array
+    // ref that grep/join handle naturally.
+    return `[${elements.map(emit).join(', ')}]`
   }
 
   conditional(

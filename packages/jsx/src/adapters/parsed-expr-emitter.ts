@@ -82,6 +82,7 @@ export interface ParsedExprEmitter {
     predicate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string
+  arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string
   unsupported(raw: string, reason: string): string
 }
 
@@ -119,6 +120,8 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       return emitter.arrowFn(expr.param, expr.body, emit)
     case 'higher-order':
       return emitter.higherOrder(expr.method, expr.object, expr.param, expr.predicate, emit)
+    case 'array-literal':
+      return emitter.arrayLiteral(expr.elements, emit)
     case 'unsupported':
       return emitter.unsupported(expr.raw, expr.reason)
     default: {

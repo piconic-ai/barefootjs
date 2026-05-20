@@ -1,7 +1,8 @@
 import { createFixture } from '../src/types'
 
 /**
- * Branch-local higher-order chain at an attribute position (#1421).
+ * Branch-local higher-order chain at an attribute position
+ * (#1421 / #1443).
  *
  * Mirrors the scaffold `Slot` shape: `const merged = [a, b].filter(Boolean)
  * .join(' ')` declared inside an `if (...)` branch, then referenced at a
@@ -10,13 +11,19 @@ import { createFixture } from '../src/types'
  * higher-order expression to translate.
  *
  * The Hono adapter inlines the expression verbatim (the CSR runtime
- * computes it at hydration time). Template-language adapters (Mojo, Go)
- * can't lower an array-literal callee into their expression dialect, so
- * they record BF101 instead — see each adapter's `expectedDiagnostics`.
+ * computes it at hydration time). Mojo (#1443) lowers each piece
+ * (array literal → Perl array ref, `.filter(Boolean)` → `grep { $_ }`,
+ * `.join(' ')` → `join(' ', @{...})`) so the registry `<Slot>` /
+ * `<Button>` render server-side without the `@client` escape hatch.
+ * Go still refuses — see `go-template-adapter.test.ts`'s
+ * `expectedDiagnostics`.
  *
- * Pre-fix regression: Mojo's `convertHigherOrderExpr` ↔ unsupported-
- * emitter loop had no terminator and crashed `bf build` with a Node
- * stack overflow before this fixture's compile finished.
+ * Pre-#1421 regression that the in-flight guard locks in: the Mojo
+ * `convertHigherOrderExpr` ↔ unsupported-emitter loop had no
+ * terminator and crashed `bf build` with a Node stack overflow before
+ * this fixture's compile finished. With #1443 the chain succeeds
+ * cleanly so the guard isn't exercised here anymore — the guard
+ * still protects against other unsupported shapes.
  */
 export const fixture = createFixture({
   id: 'branch-local-filter-join',

@@ -24,6 +24,7 @@ export type ParsedExpr =
   | { kind: 'template-literal'; parts: TemplatePart[] }
   | { kind: 'arrow-fn'; param: string; body: ParsedExpr }
   | { kind: 'higher-order'; method: 'filter' | 'every' | 'some' | 'find' | 'findIndex'; object: ParsedExpr; param: string; predicate: ParsedExpr }
+  | { kind: 'array-literal'; elements: ParsedExpr[] }
   | { kind: 'unsupported'; raw: string; reason: string }
 
 export type TemplatePart =
@@ -152,9 +153,35 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           predicate: arrowFn.body,
         }
       }
+      // .filter(Boolean) — non-arrow callable with a fixed JS semantic
+      // (the identity-truthy predicate). Synthesise the equivalent
+      // `x => x` so adapters can re-use their existing higher-order
+      // lowering instead of needing a separate callee-resolution path.
+      // Other identifier-callable predicates would need #1389-style
+      // user-supplied callee resolution; out of scope here.
+      if (
+        callee.property === 'filter' &&
+        args.length === 1 &&
+        args[0].kind === 'identifier' &&
+        args[0].name === 'Boolean'
+      ) {
+        return {
+          kind: 'higher-order',
+          method: 'filter',
+          object: callee.object,
+          param: '_',
+          predicate: { kind: 'identifier', name: '_' },
+        }
+      }
     }
 
     return { kind: 'call', callee, args }
+  }
+
+  // Array literal: [a, b, c]
+  if (ts.isArrayLiteralExpression(node)) {
+    const elements = node.elements.map(el => convertNode(el, raw))
+    return { kind: 'array-literal', elements }
   }
 
   // Property access: user.name, items().length
@@ -360,7 +387,29 @@ function checkSupport(expr: ParsedExpr): SupportResult {
           reason: `Nested higher-order methods are not supported. Use @client directive.`,
         }
       }
+      // The source array also has to be lowerable. Skipping this check
+      // (matching the pre-#1443 behaviour) silently let `array-literal`
+      // sources fall through to the adapter's `unsupported` arm and
+      // through the regex pipeline — the recursion that #1421 / #1427
+      // worked around.
+      const objSupport = checkSupport(expr.object)
+      if (!objSupport.supported) {
+        return objSupport
+      }
       return { supported: true, level: 'L5' }
+    }
+
+    case 'array-literal': {
+      // Array literal is lowerable iff every element is. Adapters that
+      // don't have an array-literal form in their template language
+      // (Go templates) still need to refuse it — they do so in their
+      // own `arrayLiteral` emitter method, not here, because we can't
+      // see which adapter is consuming the IR at this point.
+      for (const el of expr.elements) {
+        const elSupport = checkSupport(el)
+        if (!elSupport.supported) return elSupport
+      }
+      return { supported: true, level: 'L2' }
     }
 
 
@@ -502,6 +551,8 @@ export function containsHigherOrder(expr: ParsedExpr): boolean {
       return containsHigherOrder(expr.test) || containsHigherOrder(expr.consequent) || containsHigherOrder(expr.alternate)
     case 'arrow-fn':
       return containsHigherOrder(expr.body)
+    case 'array-literal':
+      return expr.elements.some(containsHigherOrder)
     default:
       return false
   }
@@ -675,6 +726,8 @@ export function exprToString(expr: ParsedExpr): string {
       return `${expr.param} => ${exprToString(expr.body)}`
     case 'higher-order':
       return `${exprToString(expr.object)}.${expr.method}(${expr.param} => ${exprToString(expr.predicate)})`
+    case 'array-literal':
+      return `[${expr.elements.map(exprToString).join(', ')}]`
     case 'unsupported':
       return `[UNSUPPORTED: ${expr.raw}]`
   }
@@ -726,6 +779,8 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
       return `${expr.param} => ${stringifyParsedExpr(expr.body)}`
     case 'higher-order':
       return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.param} => ${stringifyParsedExpr(expr.predicate)})`
+    case 'array-literal':
+      return `[${expr.elements.map(stringifyParsedExpr).join(', ')}]`
     case 'unsupported':
       return expr.raw
   }

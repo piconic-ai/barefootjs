@@ -101,14 +101,10 @@ runAdapterConformanceTests({
     // (`cn\`base \${tone()}\``) — same family as #1322 above and refused
     // via the same gate.
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
-    // #1421: branch-local higher-order chain inlined at an attribute
-    // (`const merged = [a, b].filter(Boolean).join(' ')` referenced as
-    // `className={merged}`). The array-literal callee isn't a signal /
-    // prop the Mojo expression translator can lower into Embedded Perl,
-    // so `convertHigherOrderExpr` records BF101. The pin also locks in
-    // the recursion-cycle fix — before the cycle guard, this fixture
-    // crashed `bf build` with `RangeError: Maximum call stack size`.
-    'branch-local-filter-join': [{ code: 'BF101', severity: 'error' }],
+    // #1443: `[a, b].filter(Boolean).join(' ')` (the registry Slot's
+    // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.
+    // No BF101 expected — pinned positively via the
+    // `branch-local-filter-join` template-output test below.
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
@@ -313,16 +309,18 @@ export function C() {
     }
   })
 
-  test('breaks the convertHigherOrderExpr ↔ unsupported-emitter loop (#1421)', () => {
-    // Regression: a branch-local `.filter(Boolean).join(' ')` chain
-    // referenced at an attribute used to crash `bf build` with
-    // `RangeError: Maximum call stack size exceeded`. The parser
-    // returns `unsupported` for the array-literal callee while keeping
-    // the full original `raw`, so `MojoTopLevelEmitter.unsupported` →
-    // `_convertExpressionToPerlPublic` → `convertExpressionToPerl`
-    // re-detected `.filter` and re-entered `convertHigherOrderExpr`
-    // forever. The in-flight guard breaks the cycle and surfaces a
-    // BF101 instead.
+  test('lowers the registry Slot\'s [a, b].filter(Boolean).join(\' \') chain (#1443)', () => {
+    // The registry `<Slot>` builds its merged className via
+    // `[className, childClass].filter(Boolean).join(' ')`. Pre-#1443
+    // each link in the chain (array literal, `Boolean` callable
+    // filter, `.join`) hit a separate refusal gate and the chain
+    // emitted BF101 — making the scaffold `<Button>` / `<Card>`
+    // unusable on Mojo. The fix lowers all three to Embedded Perl
+    // (`join(' ', @{[grep { $_ } @{[...]}]})`), unblocking the
+    // registry surface. The #1421 recursion guard stays in place
+    // as defence in depth for other unsupported shapes, but this
+    // specific chain no longer reaches the loop because the parser
+    // succeeds.
     const adapter = new MojoAdapter()
     const result = compileJSX(
       `
@@ -339,10 +337,9 @@ export { Slot }
       'slot.tsx',
       { adapter },
     )
-    const bf101 = result.errors?.find(e => e.code === 'BF101')
-    expect(bf101).toBeDefined()
-    expect(bf101!.message).toContain('higher-order')
-    expect(bf101!.message).toContain('.filter(Boolean).join')
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain(`join(' ', @{[grep { $_ } @{[$className]}]})`)
   })
 
   test('does not leak module-level export statements into the .html.ep template', () => {
