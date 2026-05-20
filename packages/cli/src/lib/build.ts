@@ -1490,6 +1490,32 @@ export async function watch(
     flushTimer = setTimeout(flush, debounceMs)
   }
 
+  // Fingerprint every component source file. Used after each rebuild to
+  // detect (a) edits that raced the readText snapshot taken by `build()`,
+  // and (b) edits whose inotify event was dropped by the recursive
+  // `fs.watch` iterator on Linux. Either way, the next rebuild's hash
+  // check would otherwise treat the now-stale cache as fresh and skip
+  // recompilation. By snapshotting hashes here and comparing on a
+  // post-build pass, we self-heal both scenarios without requiring a
+  // user keypress to nudge the watcher back to life.
+  const lastSeenHashes = new Map<string, string>()
+  const snapshotHashes = async (): Promise<Map<string, string>> => {
+    const snap = new Map<string, string>()
+    const entries: string[] = []
+    for (const dir of config.componentDirs) {
+      entries.push(...await discoverComponentFiles(dir))
+    }
+    await Promise.all(entries.map(async (entry) => {
+      try {
+        snap.set(entry, hashContent(await readText(entry)))
+      } catch {
+        // File deleted between enumeration and read — ignore; the
+        // next rebuild will pick up the deletion via cache invalidation.
+      }
+    }))
+    return snap
+  }
+
   const flush = async () => {
     flushTimer = null
     if (!pending) return
@@ -1503,7 +1529,30 @@ export async function watch(
       `Rebuild: ${result.compiledCount} compiled, ${result.cachedCount} cached, ${result.errorCount} errors (${ms}ms)`,
     )
     await writeBuildId(config.outDir, result)
+
+    // Post-build revalidation. Re-hash every source and reschedule if any
+    // file changed since the build snapshot — this is what recovers from
+    // the "edit raced the build's readText" failure mode where the user
+    // saved twice in quick succession and the second save landed mid-flush.
+    const after = await snapshotHashes()
+    let staleAfterBuild = false
+    for (const [file, hash] of after) {
+      if (lastSeenHashes.get(file) !== hash) {
+        lastSeenHashes.set(file, hash)
+        staleAfterBuild = true
+      }
+    }
+    if (staleAfterBuild && !pending) {
+      // Don't go quiet here — a second rebuild that the user didn't trigger
+      // via fs.watch can otherwise look like a flake. The trailing tick
+      // catches up to whatever the disk actually shows.
+      schedule()
+    }
   }
+
+  // Seed the fingerprint map with the post-initial-build state so the
+  // first user edit registers as "changed".
+  for (const [file, hash] of await snapshotHashes()) lastSeenHashes.set(file, hash)
 
   const isRelevant = (root: string, filename: string | null): boolean => {
     if (!filename) return false
@@ -1529,9 +1578,39 @@ export async function watch(
     }
   }
 
+  // Belt-and-suspenders poll. Linux's recursive `fs.watch` iterator has
+  // a known fragility where the AsyncIterable can stop yielding events
+  // after the first batch in some workloads — leaving the watch process
+  // alive but functionally dead. A low-frequency poll (every two seconds)
+  // catches missed edits via the same hash diff used by the post-build
+  // revalidation. Cheap: `hashContent` of a few dozen sources is sub-ms.
+  const pollIntervalMs = 2000
+  const pollLoop = async () => {
+    while (signal?.aborted !== true) {
+      await new Promise((r) => setTimeout(r, pollIntervalMs))
+      const snap = await snapshotHashes()
+      let changed = false
+      for (const [file, hash] of snap) {
+        if (lastSeenHashes.get(file) !== hash) {
+          lastSeenHashes.set(file, hash)
+          changed = true
+        }
+      }
+      // Detect deletions too, so cache invalidation can fire on rm.
+      for (const file of lastSeenHashes.keys()) {
+        if (!snap.has(file)) {
+          lastSeenHashes.delete(file)
+          changed = true
+        }
+      }
+      if (changed && !pending) schedule()
+    }
+  }
+
   await Promise.all([
     ...componentRoots.map((r) => watchRoot(r, true)),
     watchRoot(configRoot, false),
+    pollLoop(),
   ])
 }
 
