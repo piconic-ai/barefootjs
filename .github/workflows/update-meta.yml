@@ -60,7 +60,10 @@ jobs:
       - name: Check for changes
         id: diff
         run: |
-          if git diff --quiet ui/meta/ docs/core/llms.txt; then
+          # `--` disambiguates the pathspecs from revisions; without it,
+          # `git diff --quiet docs/core/llms.txt` errors with
+          # "ambiguous argument" when docs/core/llms.txt is clean.
+          if git diff --quiet -- ui/meta/ docs/core/llms.txt; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"

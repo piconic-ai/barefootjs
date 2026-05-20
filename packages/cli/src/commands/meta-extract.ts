@@ -14,6 +14,29 @@ import { extractDescription, extractExamples, parsePropsFromDefinition, extractJ
 import { categoryMap, relatedMap, detectTags } from '../lib/categories'
 import type { ComponentMeta, MetaIndex, MetaIndexEntry, PropMeta, SubComponentMeta, SignalMeta, MemoMeta, EffectMeta, CompilerErrorMeta } from '../lib/types'
 
+/**
+ * Decide what `generatedAt` to write for the new `ui/meta/index.json`.
+ * Returns the previous timestamp when the component list is byte-identical
+ * (so the file ends up unchanged on disk), otherwise a fresh ISO timestamp.
+ * Exported for unit testing.
+ */
+export function pickGeneratedAt(
+  previousIndexJson: string | null,
+  nextEntries: MetaIndexEntry[],
+  now: () => string = () => new Date().toISOString(),
+): string {
+  if (previousIndexJson === null) return now()
+  try {
+    const prev = JSON.parse(previousIndexJson) as MetaIndex
+    const prevSig = JSON.stringify({ ...prev, generatedAt: '' })
+    const nextSig = JSON.stringify({ version: 1, generatedAt: '', components: nextEntries })
+    if (prevSig === nextSig) return prev.generatedAt
+  } catch {
+    // Corrupt or unreadable — fall through to a fresh timestamp.
+  }
+  return now()
+}
+
 // Read registry.json for fallback descriptions
 function loadRegistry(root: string): Record<string, { title: string; description: string }> {
   const registryPath = path.join(root, 'ui/registry.json')
@@ -338,16 +361,18 @@ export async function run(_args: string[], ctx: CliContext): Promise<void> {
     count++
   }
 
-  // Write index.json
+  // Write index.json. Preserve the previous `generatedAt` when only the
+  // timestamp would have changed — otherwise every run produces a 1-line
+  // diff in CI even when no component has actually changed, which makes
+  // `update-meta.yml` push useless auto-commits.
+  const indexPath = path.join(ctx.metaDir, 'index.json')
+  const prevRaw = existsSync(indexPath) ? readFileSync(indexPath, 'utf-8') : null
   const index: MetaIndex = {
     version: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt: pickGeneratedAt(prevRaw, indexEntries),
     components: indexEntries,
   }
-  writeFileSync(
-    path.join(ctx.metaDir, 'index.json'),
-    JSON.stringify(index, null, 2) + '\n',
-  )
+  writeFileSync(indexPath, JSON.stringify(index, null, 2) + '\n')
 
   // Generate llms.txt files
   const uiLlmsTxt = generateUiLlmsTxt(index, 'https://ui.barefootjs.dev/r')
