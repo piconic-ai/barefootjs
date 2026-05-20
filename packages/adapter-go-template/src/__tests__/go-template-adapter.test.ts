@@ -846,45 +846,14 @@ export function TodoStatus() {
       expect(result.template).toContain('bf_every .Todos "Done"')
     })
 
-    test('nested higher-order in filter predicate → BF101', () => {
-      // Predicate body contains an inner `.filter()` call —
-      // `renderFilterExpr` cannot lower this to a Go template action.
-      // Previously this fell through to the `[UNSUPPORTED-FILTER-EXPR]`
-      // placeholder which compiled into a broken template at runtime;
-      // adapters now emit BF101 with the offending expression.
-      const adapter = new GoTemplateAdapter()
-      const ir = compileToIR(`
-"use client"
-import { createSignal } from "@barefootjs/client"
-
-type Todo = { id: number; name: string; tags: { active: boolean }[] }
-
-export function TodoList() {
-  const [items, setItems] = createSignal<Todo[]>([])
-  return (
-    <ul>
-      {items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => (
-        <li key={t.id}>{t.name}</li>
-      ))}
-    </ul>
-  )
-}
-`, adapter)
-      adapter.generate(ir)
-      const bf101 = adapter.errors.filter(e => e.code === 'BF101')
-      expect(bf101.length).toBeGreaterThan(0)
-      expect(bf101[0].message).toContain('Filter predicate')
-    })
-
-    test('nested higher-order under `.length` emits a syntactically valid Go template (#1440 review)', () => {
-      // Regression for the Copilot review on #1440: the BF101 fallback
-      // used to return the literal string `'false'` from `renderFilterExpr`,
-      // but parent branches (`member` → `${obj}.Length`) would then build
-      // `false.Length` on top of it, producing `{{if gt false.Length 0}}`
-      // — syntactically invalid Go template that crashed `text/template`
-      // parsing with a cascade of confusing secondary errors. The fix
-      // propagates the unsupported state up so the final emitted action
-      // collapses to just `{{if false}}`, which is at least parseable.
+    test('nested .filter(...).length in filter predicate lowers via len (bf_filter ...) (#1443 PR4)', () => {
+      // Pre-#1443 PR4: `renderFilterExpr` fell through to the
+      // `default` arm for the inner `.filter()` and pushed BF101.
+      // PR4 reuses the top-level `renderFilterLengthExpr` path
+      // (`len (bf_filter <arr> "<field>" <value>)`) inside the filter
+      // predicate emitter, wrapped in parens so the outer `gt` /
+      // `eq` / etc. parses as a single operand. The canonical
+      // "tags has at least one active" shape now renders cleanly.
       const adapter = new GoTemplateAdapter()
       const result = compileAndGenerate(`
 "use client"
@@ -903,16 +872,21 @@ export function TodoList() {
   )
 }
 `, adapter)
-      expect(result.template).toContain('{{if false}}')
-      expect(result.template).not.toContain('false.Length')
+      expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+      expect(result.template).toContain('gt (len (bf_filter .Tags "Active" true)) 0')
+      // No degenerate fallbacks
+      expect(result.template).not.toContain('{{if false}}')
       expect(result.template).not.toContain('[UNSUPPORTED-FILTER-EXPR]')
+      expect(result.template).not.toContain('false.Length')
     })
 
-    test('state does not bleed between independent filter expressions in the same component (#1440 review)', () => {
-      // After a filter expression hits the BF101 default branch, the
-      // depth-scoped reset must clear `filterExprUnsupported` so a
-      // subsequent supported filter in the same component still renders
-      // its real predicate instead of degrading to the `false` fallback.
+    test('state does not bleed between two nested-filter expressions in the same component', () => {
+      // Both filters now lower (one nested + one supported). Pin
+      // both to make sure the depth-scoped state reset
+      // (`filterExprUnsupported`) doesn't accidentally smother a
+      // sibling predicate when a transient default-arm hit DOES
+      // occur (e.g. for the still-unsupported `flatMap` / `reduce`
+      // shapes elsewhere in the same component).
       const adapter = new GoTemplateAdapter()
       const result = compileAndGenerate(`
 "use client"
@@ -930,9 +904,7 @@ export function TodoList() {
   )
 }
 `, adapter)
-      // First (unsupported) loop collapses to {{if false}}; second
-      // (supported) loop still renders `not .Done`.
-      expect(result.template).toContain('{{if false}}')
+      expect(result.template).toContain('gt (len (bf_filter .Tags "Active" true)) 0')
       expect(result.template).toContain('{{if not .Done}}')
     })
 

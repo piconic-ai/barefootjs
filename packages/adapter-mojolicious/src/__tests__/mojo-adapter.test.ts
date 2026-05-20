@@ -285,11 +285,12 @@ export function C() {
     // filter no longer fall in this BF101 group — they lower cleanly
     // via parser-side normalisation (see `lowers .filter(({done}) =>
     // done) ...` parser tests + the Mojo positive-output test below).
+    // The nested-higher-order-in-filter-predicate shape also lowers
+    // now (#1443 PR4) — moved to a positive-output test below.
     const cases: { name: string; body: string; needle: string }[] = [
       { name: 'reduce',            body: `<div>{items().reduce((s, x) => s + x, 0)}</div>`,                                                          needle: '.reduce(' },
       { name: 'forEach',           body: `<ul>{items().forEach(x => x)}</ul>`,                                                                       needle: '.forEach(' },
       { name: 'flatMap',           body: `<ul>{items().flatMap(x => x.tags).map(t => <li key={t}>{t}</li>)}</ul>`,                                  needle: '.flatMap(' },
-      { name: 'nested higher-order in filter predicate', body: `<ul>{items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => <li key={t.id}>{t.name}</li>)}</ul>`, needle: 'higher-order' },
     ]
 
     for (const { name, body, needle } of cases) {
@@ -327,6 +328,27 @@ export function C() {
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
     expect(template).toContain('grep { $_->{done} } @{$items}')
+  })
+
+  test('lowers nested .filter(...).length > 0 in outer filter predicate (#1443 PR4)', () => {
+    // Pre-#1443 PR4: the predicate `x => x.tags.filter(t => t.active).length > 0`
+    // emitted `[grep { ... } ...]->{length}` — a hash-key lookup on
+    // an anonymous array ref, undef at runtime. The
+    // `containsHigherOrder` gate refused this outright with BF101.
+    // PR4 fixes the `member` emit for `.length` on higher-order
+    // objects to produce `scalar(@{...})` and removes the gate, so
+    // the canonical "tags have at least one active" shape lowers
+    // to valid EP.
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`'use client'
+import { createSignal } from '@barefootjs/client'
+export function C() {
+  const [items] = createSignal<any[]>([])
+  return <ul>{items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => <li key={t.id}>{t.name}</li>)}</ul>
+}`, 'C.tsx', { adapter })
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain('scalar(@{[grep { $_->{active} } @{$t->{tags}}]})')
   })
 
   test('lowers .filter(function (x) { return x.done }).map(...) — function-keyword filter (#1443)', () => {

@@ -905,24 +905,19 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
-    // Nested higher-order in a filter predicate body (e.g.
-    // `x => x.tags.filter(t => t.active).length > 0`) — the emitter
-    // lowers the inner grep to a Perl anonymous array ref, but the
-    // surrounding `.length` / member accesses translate to
-    // `[ ... ]->{length}` which is undef at runtime. Surface BF101
-    // up-front instead of shipping silently-broken EP.
-    if (containsHigherOrder(expr)) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Filter predicate contains a nested higher-order method that cannot be lowered to Embedded Perl: ${exprToString(expr)}`,
-        loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message: 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Rewrite the predicate to avoid nested `.filter()` / `.map()` / `.some()` / `.every()` inside the predicate body',
-        },
-      })
-      return '0'
-    }
+    // Nested higher-order in filter predicates was refused outright
+    // until #1443 PR4 because the `member` emit produced
+    // `[ ... ]->{length}` for `.length` on a `[grep ...]` anonymous
+    // array ref — undef at runtime. With `MojoFilterEmitter.member`
+    // now lowering `.length` on a higher-order object to
+    // `scalar(@{...})`, the canonical
+    // `x.tags.filter(t => t.active).length > 0` shape lowers
+    // cleanly. Predicates that combine a nested higher-order with
+    // something OTHER than `.length` (e.g. `.includes`, `.join`)
+    // still fall back to whatever the emitter produces — most of
+    // those would yield runtime errors in Perl, which is the user's
+    // signal to refactor. Wholesale refusal would also block the
+    // canonical case the issue exists to enable.
     return emitParsedExpr(expr, new MojoFilterEmitter(param, localVarMap))
   }
 
@@ -1442,6 +1437,16 @@ class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+    // `.length` on a higher-order result (e.g.
+    // `x.tags.filter(t => t.active).length > 0` inside the outer
+    // filter predicate, #1443). The higher-order emit produces an
+    // anonymous array ref `[grep ...]`; reading `->{length}` on that
+    // is undef at runtime, which is why the pre-#1443 `containsHigherOrder`
+    // gate refused this shape outright. Lowering `.length` to
+    // `scalar(@{...})` makes the result a real Perl integer.
+    if (property === 'length' && (object.kind === 'higher-order' || object.kind === 'array-literal')) {
+      return `scalar(@{${emit(object)}})`
+    }
     return `${emit(object)}->{${property}}`
   }
 

@@ -3185,6 +3185,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.object.kind === 'identifier' && expr.object.name === param) {
           return `.${this.capitalizeFieldName(expr.property)}`
         }
+        // `.length` on a higher-order filter result (e.g.
+        // `x.tags.filter(t => t.active).length > 0`, #1443 PR4).
+        // Reuse the top-level `renderFilterLengthExpr` path so the
+        // inner filter lowers to `bf_filter <arr> "<field>" <value>`
+        // and the outer `.length` wraps it in `len (...)`. Pre-PR4
+        // this fell into the `default` arm and emitted BF101.
+        //
+        // Wrap in parens because the filter-context `binary` /
+        // `unary` arms emit prefix function calls (`gt <l> <r>`) and
+        // Go template would parse `gt len (bf_filter ...) 0` as four
+        // siblings instead of `gt (len (bf_filter ...)) 0`.
+        if (
+          expr.property === 'length' &&
+          expr.object.kind === 'higher-order' &&
+          expr.object.method === 'filter'
+        ) {
+          const lenExpr = this.renderFilterLengthExpr(expr.object, e =>
+            this.renderFilterExpr(e, param, localVarMap),
+          )
+          if (lenExpr) return `(${lenExpr})`
+        }
         // Nested member access or local var.prop
         const obj = this.renderFilterExpr(expr.object, param, localVarMap)
         if (this.filterExprUnsupported) return 'false'
