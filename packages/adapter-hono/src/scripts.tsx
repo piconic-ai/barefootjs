@@ -53,6 +53,23 @@ export interface BfScriptsProps {
    * needs the URL prefix to emit a working `<script src>`.
    */
   base?: string
+  /**
+   * Extra manifest keys to treat as walk roots in addition to the
+   * SSR-rendered set. Use this for pages that mount a `'use client'`
+   * component via an inline `<script type="module">import "X.client.js"; render(root, "X", …)`
+   * instead of SSR'ing `<X />` directly. Without `entryRoots`, the
+   * walker has no anchor for `X`'s `stubDeps` and any sibling `'use
+   * client'` `.tsx` reached only through the imperative
+   * `createComponent` stub rewrite (#1240) never ships as a
+   * `<script>`, leaving the runtime registry empty and rendering
+   * `[ComponentName]` placeholders.
+   *
+   * The caller's inline `<script type="module">import …</script>`
+   * already loads the root bundle, so the root itself is *not*
+   * emitted as a separate `<script src>` — only the transitively
+   * reached `stubDeps` are. See #1431.
+   */
+  entryRoots?: string[]
 }
 
 /**
@@ -75,9 +92,19 @@ export function BfScripts(props: BfScriptsProps = {}) {
 
     const scripts: CollectedScript[] = c.get('bfCollectedScripts') || []
     const outputSet: Set<string> = c.get('bfOutputScripts') || new Set()
-    const { manifest, base } = props
+    const { manifest, base, entryRoots } = props
+    // `entryRoots` extends both the walk-root set AND the `excluded` set.
+    // Walk-root so the root's `stubDeps` get visited (the manually-mounted
+    // component never SSR'd, so it isn't in `bfOutputScripts`). Excluded
+    // so the root's own `.client.js` isn't re-emitted — the caller's
+    // inline `<script type="module">import "X.client.js"; render(...)`
+    // already loaded it. See #1431.
+    const roots = entryRoots && entryRoots.length > 0
+      ? new Set([...outputSet, ...entryRoots])
+      : outputSet
+    if (entryRoots) for (const r of entryRoots) outputSet.add(r)
     const stubScripts = manifest && base
-      ? collectStubDepScripts(manifest, base, outputSet, outputSet)
+      ? collectStubDepScripts(manifest, base, roots, outputSet)
       : new Map<string, CollectedScript>()
     // Record stub-derived names on the same context flag so any later
     // SSR pass (e.g. a Suspense boundary that renders after this point)
