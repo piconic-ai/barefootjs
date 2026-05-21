@@ -34,6 +34,7 @@ import { fixture as counterShared } from '../fixtures/counter-shared'
 import { fixture as toggleShared } from '../fixtures/toggle-shared'
 import { fixture as conditionalReturnButton } from '../fixtures/conditional-return-button'
 import { fixture as conditionalReturnLink } from '../fixtures/conditional-return-link'
+import { fixture as reactiveProps } from '../fixtures/reactive-props'
 import type { JSXFixture, InteractionStep } from '../src/types'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -51,6 +52,7 @@ const fixtures: JSXFixture[] = [
   toggleShared,
   conditionalReturnButton,
   conditionalReturnLink,
+  reactiveProps,
 ]
 const byId = new Map(fixtures.map(f => [f.id, f]))
 

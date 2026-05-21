@@ -23,10 +23,19 @@ export interface RenderOptions {
   props?: Record<string, unknown>
   /** Additional component files (filename → source) */
   components?: Record<string, string>
+  /**
+   * Explicit component to render when the source declares multiple
+   * exports. When omitted, the first function-valued export in
+   * `Object.keys(mod)` iteration order is picked — that order is
+   * alphabetical for dynamically imported ES modules in Bun/V8, so
+   * relying on declaration order can pick the wrong component
+   * (e.g. `PropsReactivityComparison` before `ReactiveProps`).
+   */
+  componentName?: string
 }
 
 export async function renderHonoComponent(options: RenderOptions): Promise<string> {
-  const { source, adapter, props, components } = options
+  const { source, adapter, props, components, componentName: requestedName } = options
 
   // Compile child components first
   const childCodes: string[] = []
@@ -97,11 +106,24 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
   try {
     const mod = await import(tempFile)
 
-    // Find the exported component function
-    const componentName = Object.keys(mod).find(k => typeof mod[k] === 'function')
-    if (!componentName) throw new Error('No component function found in compiled module')
+    // Explicit `componentName` wins; otherwise pick the first
+    // function-valued export. `Object.keys` for dynamically imported
+    // modules iterates alphabetically in Bun/V8, so the fallback can
+    // surprise multi-component files — pass `componentName` to pin.
+    let resolvedName: string | undefined = requestedName
+    if (resolvedName) {
+      if (typeof mod[resolvedName] !== 'function') {
+        const available = Object.keys(mod).filter(k => typeof mod[k] === 'function')
+        throw new Error(
+          `Requested component "${resolvedName}" not found in compiled module. Available: ${available.join(', ')}`,
+        )
+      }
+    } else {
+      resolvedName = Object.keys(mod).find(k => typeof mod[k] === 'function')
+      if (!resolvedName) throw new Error('No component function found in compiled module')
+    }
 
-    const Component = mod[componentName]
+    const Component = mod[resolvedName]
 
     // Render using Hono's app.request()
     const app = new Hono()

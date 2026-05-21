@@ -29,12 +29,14 @@ import { spec as counterSharedSpec } from '../fixtures/counter-shared'
 import { spec as toggleSharedSpec } from '../fixtures/toggle-shared'
 import { spec as conditionalReturnButtonSpec } from '../fixtures/conditional-return-button'
 import { spec as conditionalReturnLinkSpec } from '../fixtures/conditional-return-link'
+import { spec as reactivePropsSpec } from '../fixtures/reactive-props'
 
 const ALL_SPECS: SharedFixtureSpec[] = [
   counterSharedSpec,
   toggleSharedSpec,
   conditionalReturnButtonSpec,
   conditionalReturnLinkSpec,
+  reactivePropsSpec,
 ]
 
 const requested = process.argv.slice(2)
@@ -68,6 +70,10 @@ async function generateSnapshot(spec: SharedFixtureSpec): Promise<void> {
     source,
     adapter: new HonoAdapter(),
     props: ssrProps,
+    // Pin the target export — `Object.keys(mod)` iterates alphabetically
+    // for dynamically imported modules in Bun, so multi-component files
+    // can otherwise render the wrong component.
+    componentName: spec.componentName,
   })
 
   const compiled = compileJSX(
