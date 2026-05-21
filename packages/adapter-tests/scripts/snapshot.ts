@@ -19,7 +19,7 @@ import { writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
-import { compileJSX } from '@barefootjs/jsx'
+import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
 import {
   SHARED_COMPONENTS_DIR,
   SNAPSHOT_DIR,
@@ -34,6 +34,7 @@ import { spec as reactivePropsSpec } from '../fixtures/reactive-props'
 import { spec as propsReactivityComparisonSpec } from '../fixtures/props-reactivity-comparison'
 import { spec as formSpec } from '../fixtures/form'
 import { spec as portalSpec } from '../fixtures/portal'
+import { spec as todoAppSpec } from '../fixtures/todo-app'
 
 const ALL_SPECS: SharedFixtureSpec[] = [
   counterSharedSpec,
@@ -44,6 +45,7 @@ const ALL_SPECS: SharedFixtureSpec[] = [
   propsReactivityComparisonSpec,
   formSpec,
   portalSpec,
+  todoAppSpec,
 ]
 
 const requested = process.argv.slice(2)
@@ -62,6 +64,18 @@ if (requested.length > 0 && selected.length !== requested.length) {
 
 for (const spec of selected) {
   await generateSnapshot(spec)
+}
+
+async function compileClientJs(basename: string): Promise<string> {
+  const sourcePath = resolve(SHARED_COMPONENTS_DIR, `${basename}.tsx`)
+  const source = await Bun.file(sourcePath).text()
+  const compiled = compileJSX(source, `${basename}.tsx`, { adapter: new HonoAdapter() })
+  const file = compiled.files.find(f => f.type === 'clientJs')
+  if (!file) {
+    const errs = compiled.errors.map(e => `${e.severity}: ${e.message}`).join('\n')
+    throw new Error(`No clientJs file in compileJSX output for ${basename}.tsx:\n${errs}`)
+  }
+  return file.content
 }
 
 async function generateSnapshot(spec: SharedFixtureSpec): Promise<void> {
@@ -84,26 +98,32 @@ async function generateSnapshot(spec: SharedFixtureSpec): Promise<void> {
     componentName: spec.componentName,
   })
 
-  const compiled = compileJSX(
-    source,
-    `${sourceBasename}.tsx`,
-    { adapter: new HonoAdapter() },
-  )
-  const clientJsFile = compiled.files.find(f => f.type === 'clientJs')
-  if (!clientJsFile) {
-    const errs = compiled.errors.map(e => `${e.severity}: ${e.message}`).join('\n')
-    throw new Error(
-      `No clientJs file in compileJSX output for ${spec.componentName}.tsx:\n${errs}`,
-    )
+  let clientJs: string
+  const extras = spec.additionalComponents ?? []
+  if (extras.length === 0) {
+    clientJs = await compileClientJs(sourceBasename)
+  } else {
+    // Use `combineParentChildClientJs` (same helper `bf build` uses) to
+    // inline child component bundles into the parent and resolve the
+    // `import '/* @bf-child:... */'` placeholders the compiler emits.
+    // Raw concat would leave the placeholders intact and the browser
+    // would 404 on `/* @bf-child:... */` URLs.
+    const files = new Map<string, string>()
+    files.set(sourceBasename, await compileClientJs(sourceBasename))
+    for (const extra of extras) {
+      files.set(extra, await compileClientJs(extra))
+    }
+    const combined = combineParentChildClientJs(files)
+    clientJs = combined.get(sourceBasename) ?? files.get(sourceBasename)!
   }
 
   const htmlOut = resolve(SNAPSHOT_DIR, `${spec.id}.html`)
   const clientJsOut = resolve(SNAPSHOT_DIR, `${spec.id}.client.js`)
   writeFileSync(htmlOut, ssrHtml.trim() + '\n')
-  writeFileSync(clientJsOut, clientJsFile.content.trimEnd() + '\n')
+  writeFileSync(clientJsOut, clientJs.trimEnd() + '\n')
 
   console.log(
     `[${spec.id}] wrote ${spec.id}.html (${ssrHtml.length}B) + ` +
-      `${spec.id}.client.js (${clientJsFile.content.length}B)`,
+      `${spec.id}.client.js (${clientJs.length}B)`,
   )
 }

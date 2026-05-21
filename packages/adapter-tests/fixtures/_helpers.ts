@@ -56,6 +56,15 @@ export interface SharedFixtureSpec {
    * `sourceFile: 'ReactiveProps'`. Defaults to `componentName` when omitted.
    */
   sourceFile?: string
+  /**
+   * Additional component file basenames (without `.tsx`) under
+   * `integrations/shared/components/` whose client JS must be loaded
+   * alongside the main component for hydration to succeed — typically
+   * children imported with `import Child from './Child'`. The CLI
+   * concatenates each compiled output and dedupes the resulting
+   * `@barefootjs/client/runtime` import block.
+   */
+  additionalComponents?: string[]
   /** Human-readable description for `JSXFixture.description`. */
   description: string
   /**
