@@ -4,7 +4,7 @@ import { compileJSX, combineParentChildClientJs, createProgramForCorpus, formatE
 import type { TemplateAdapter, OutputLayout, PostBuildContext, ExternalSpec, BundleEntry } from '@barefootjs/jsx'
 import type ts from 'typescript'
 import { mkdir, readdir, stat, unlink } from 'node:fs/promises'
-import { resolve, basename, relative, dirname } from 'node:path'
+import { resolve, basename, relative, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveRelativeImports } from './resolve-imports'
 import {
@@ -16,6 +16,14 @@ import {
   type BuildCache,
   type CacheEntry,
 } from './build-cache'
+import {
+  BUNDLE_KEY_PREFIX,
+  emptyLedger,
+  extractLedgerFromCache,
+  loadEmitLedger,
+  saveEmitLedger,
+  type EmitLedger,
+} from './emit-ledger'
 import { writeIfChanged } from './fs-utils'
 import { fileExists, hashBytes, readBytes, readText, transpile } from './runtime'
 import { build as esbuildBuild } from 'esbuild'
@@ -380,15 +388,31 @@ export async function build(
     ...(runtimeSubdir !== clientJsSubdir ? [mkdir(runtimeOutDir, { recursive: true })] : []),
   ])
 
-  // Load cache (discard if global invalidation flag is set)
+  // Load cache (discard if global invalidation flag is set). The on-disk file
+  // is read independently of `force` so we can still bootstrap the emit
+  // ledger below — `--force` should drop compile decisions, not the record
+  // of which output files this build owns.
   const globalHash = await computeGlobalHash(config)
-  const loadedCache = force ? null : await loadCache(config.outDir)
+  const onDiskCache = await loadCache(config.outDir)
+  const loadedCache = force ? null : onDiskCache
   const cache: BuildCache =
     loadedCache && loadedCache.globalHash === globalHash
       ? loadedCache
       : emptyCache(globalHash)
   const nextEntries: Record<string, CacheEntry> = {}
   let anyOutputChanged = false
+
+  // Load the durable emit ledger. The ledger persists across `--force` and
+  // any globalHash invalidation (`bun install`, `barefoot.config.ts` edits),
+  // so the cleanup pass at step 5 always knows what the previous build owned
+  // on disk — even when the per-entry cache was discarded.
+  //
+  // First run after upgrade has no `.bfemit.json` yet; fall back to projecting
+  // the cache file's `entries[*].outputs` into ledger shape so pre-existing
+  // orphans get pruned on the first new-style build. See piconic-ai/barefootjs#1455.
+  const loadedLedger = await loadEmitLedger(config.outDir, config.projectDir)
+  const previousEmitEntries: Record<string, string[]> =
+    loadedLedger?.entries ?? extractLedgerFromCache(onDiskCache)
 
   // 1. Runtime file — copy the standalone runtime bundle (reactive inlined)
   //    to barefoot.js. The sibling `./runtime` entry keeps
@@ -448,7 +472,6 @@ export async function build(
   for (const dir of config.componentDirs) {
     allFiles.push(...await discoverComponentFiles(dir))
   }
-  const allFilesSet = new Set(allFiles)
 
   // 3. Manifest baseline (runtime sentinel always present)
   const manifest: Record<string, { clientJs?: string; markedTemplate: string; stubDeps?: string[] }> = {
@@ -459,6 +482,14 @@ export async function build(
   let skippedCount = 0
   let cachedCount = 0
   let errorCount = 0
+
+  // Sources whose compile errored this run. We preserve their previous
+  // outputs at the cleanup pass below so a single broken component
+  // doesn't take down the last-known-good outputs of other (clean)
+  // components, AND a `--force` build that hits a transient error
+  // doesn't delete cached client JS that the dev's browser is still
+  // loading. See PR #1469 review.
+  const failedSources = new Set<string>()
 
   // Collected types from all components (for postBuild hook)
   const collectedTypes = new Map<string, string>()
@@ -548,6 +579,7 @@ export async function build(
           `  BF001: 'use client' directive required — imports reactive primitive(s) from @barefootjs/client: ${missing.join(', ')}`,
         )
         errorCount++
+        failedSources.add(entryPath)
         continue
       }
       skippedCount++
@@ -586,6 +618,7 @@ export async function build(
 
     if (result.kind === 'error') {
       errorCount++
+      failedSources.add(entryPath)
       // Preserve old cache entry so we do not lose prior outputs on a failed
       // compile (they stay on disk and we reuse the prior manifest row).
       if (cached) {
@@ -637,25 +670,75 @@ export async function build(
     }
   }
 
-  // 5. Prune outputs for cache entries whose source was deleted since last build.
-  //    - Component entries: keyed by source path; delete if path is no longer in allFilesSet.
-  //    - Bundle entries ("bundle:" prefix): delete if no longer present in nextEntries
-  //      (i.e. removed from config.bundleEntries).
-  const toDelete = Object.keys(cache.entries).filter((key) => {
-    if (key.startsWith('bundle:')) return !(key in nextEntries)
-    return !allFilesSet.has(key)
-  })
-  for (const deletedPath of toDelete) {
-    const entry = cache.entries[deletedPath]
-    for (const output of entry.outputs) {
-      const abs = resolve(config.outDir, output)
-      try {
-        await unlink(abs)
-        anyOutputChanged = true
-        console.log(`Deleted: ${output}`)
-      } catch {
-        // already gone
-      }
+  // 5. Prune outputs whose source no longer contributes to the current build.
+  //    Source of truth is the durable emit ledger (`previousEmitEntries`),
+  //    not `cache.entries`: the cache is wiped by `--force` and by any
+  //    globalHash change (lockfile / config edits), and a cache-driven
+  //    cleanup pass would then leave orphans behind. See piconic-ai/barefootjs#1455.
+  //
+  //    Compute orphans as the set difference of previously-emitted paths
+  //    minus paths the current build is producing. Anything in that
+  //    difference is owned by us, lives in `outDir`, and no longer has a
+  //    current source — unlink it.
+  const currentEmitSet = new Set<string>()
+  for (const entry of Object.values(nextEntries)) {
+    for (const output of entry.outputs) currentEmitSet.add(output)
+  }
+  // Failure preservation. A source that errored this run still owns its
+  // previous outputs on disk — deleting them would turn a transient
+  // compile error into a broken-build cascade (the dev's browser
+  // suddenly 404s on the file it was reloading, the manifest still
+  // references the cached entry's previous emit). The cached-entry
+  // carry-forward above handles the case where the cache had a row for
+  // the entry, but `--force` and globalHash flips reset the cache to
+  // empty even when the previous build's outputs are still on disk.
+  // Re-add those outputs to `currentEmitSet` so the orphan diff treats
+  // them as still owned for this run.
+  for (const sourceKey of failedSources) {
+    const prior = previousEmitEntries[sourceKey]
+    if (prior) {
+      for (const output of prior) currentEmitSet.add(output)
+    }
+  }
+  const orphanedOutputs = new Set<string>()
+  for (const previousOutputs of Object.values(previousEmitEntries)) {
+    for (const output of previousOutputs) {
+      if (!currentEmitSet.has(output)) orphanedOutputs.add(output)
+    }
+  }
+  // Containment guard: `.bfemit.json` / `.buildcache.json` are on-disk
+  // inputs that the build re-reads next run, so a corrupted or tampered
+  // file could contain absolute paths or `..` segments that resolve
+  // outside `outDir`. Refuse to unlink anything that escapes — the
+  // ledger only ever owns files the build itself emitted, and those are
+  // always under `outDir`.
+  //
+  // Use `relative()` + `isAbsolute()` rather than a `startsWith(outDir +
+  // '/')` substring check so this stays correct on Windows, where
+  // `resolve()` returns paths separated by `\\` and the hardcoded `/`
+  // would never match.
+  const outDirAbs = resolve(config.outDir)
+  for (const output of orphanedOutputs) {
+    const abs = resolve(config.outDir, output)
+    const rel = relative(outDirAbs, abs)
+    // Reject the empty / `.` case explicitly: a tampered ledger entry
+    // of `""` or `"."` resolves to `outDir` itself, which would attempt
+    // `unlink(outDir)`. The catch below swallows the EISDIR/ENOENT,
+    // but the cleanup pass should never even consider those inputs.
+    const escapes =
+      rel === '' || rel === '.' || rel.startsWith('..') || isAbsolute(rel)
+    if (escapes) {
+      console.warn(
+        `Warning: refusing to delete out-of-tree path from emit ledger: ${output}`,
+      )
+      continue
+    }
+    try {
+      await unlink(abs)
+      anyOutputChanged = true
+      console.log(`Deleted: ${output}`)
+    } catch {
+      // already gone
     }
   }
 
@@ -707,7 +790,7 @@ export async function build(
   //     find nothing, and silently strip the import line. See bf#1133.
   const sourceDirsByManifestKey: Record<string, string[]> = {}
   for (const [sourcePath, entry] of Object.entries(nextEntries)) {
-    if (entry.manifestKey && !sourcePath.startsWith('bundle:')) {
+    if (entry.manifestKey && !sourcePath.startsWith(BUNDLE_KEY_PREFIX)) {
       sourceDirsByManifestKey[entry.manifestKey] = [dirname(sourcePath)]
     }
   }
@@ -741,7 +824,7 @@ export async function build(
       // entry can never be a stub destination — keep it out of the
       // path lookup so we don't accidentally map an unrelated
       // `bundle:foo` key onto a real source path.
-      if (!sourcePath.startsWith('bundle:')) {
+      if (!sourcePath.startsWith(BUNDLE_KEY_PREFIX)) {
         manifestKeyByEntryPath.set(sourcePath, cacheEntry.manifestKey)
       }
     }
@@ -849,12 +932,37 @@ export async function build(
     }
   }
 
-  // 9. Persist cache
+  // 9. Persist cache and the emit ledger. The ledger is written every build,
+  //    regardless of `--force` or globalHash invalidation, so the next build
+  //    has an authoritative record of which output files belong to it.
   const nextCache: BuildCache = {
     globalHash,
     entries: nextEntries,
   }
-  await saveCache(config.outDir, nextCache)
+  const nextLedger: EmitLedger = emptyLedger()
+  for (const [key, entry] of Object.entries(nextEntries)) {
+    if (entry.outputs.length > 0) {
+      nextLedger.entries[key] = entry.outputs.slice()
+    }
+  }
+  // Carry the previous ledger row forward for any source that errored
+  // this run AND has no current nextEntries row (i.e. `--force` reset
+  // the cache so `cached` was undefined when the failure handler ran).
+  // Without this, the next build would lose the ownership claim and
+  // those outputs would persist on disk forever, untracked. With it,
+  // they stay tracked — so if the user later actually deletes the
+  // source, the next clean build prunes them correctly.
+  for (const sourceKey of failedSources) {
+    if (nextLedger.entries[sourceKey]) continue
+    const prior = previousEmitEntries[sourceKey]
+    if (prior && prior.length > 0) {
+      nextLedger.entries[sourceKey] = prior.slice()
+    }
+  }
+  await Promise.all([
+    saveCache(config.outDir, nextCache),
+    saveEmitLedger(config.outDir, config.projectDir, nextLedger),
+  ])
 
   return {
     compiledCount,
@@ -1241,7 +1349,7 @@ export async function processBundleEntries(
     const entryExternals = [...allExternals, ...(entry.externals ?? [])]
     const outfilePath = resolve(clientJsOutDir, entry.outfile)
     const absEntry = resolve(entry.entry)
-    const cacheKey = `bundle:${absEntry}`
+    const cacheKey = `${BUNDLE_KEY_PREFIX}${absEntry}`
 
     const sourceContent = await readText(absEntry)
     const sourceHash = hashContent(sourceContent)

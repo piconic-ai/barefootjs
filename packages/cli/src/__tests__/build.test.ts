@@ -11,10 +11,13 @@ import {
   processBundleEntries,
   computeGlobalHash,
   buildRelativeImportRewriter,
+  build,
 } from '../lib/build'
-import { emptyCache, type BuildCache, type CacheEntry } from '../lib/build-cache'
-import { mkdirSync, writeFileSync, rmSync, existsSync, statSync, readFileSync, realpathSync } from 'fs'
-import { resolve } from 'path'
+import { emptyCache, loadCache, type BuildCache, type CacheEntry } from '../lib/build-cache'
+import { loadEmitLedger } from '../lib/emit-ledger'
+import { TestAdapter } from '../../../jsx/src/adapters/test-adapter'
+import { mkdirSync, writeFileSync, rmSync, existsSync, statSync, readFileSync, realpathSync, unlinkSync } from 'fs'
+import { resolve, relative } from 'path'
 import { tmpdir } from 'os'
 
 // ── hasUseClientDirective ────────────────────────────────────────────────
@@ -1082,5 +1085,311 @@ describe('buildRelativeImportRewriter', () => {
     // against sourceDir → `<root>/components/ui/button/@barefootjs/jsx`,
     // a clearly-bogus path. Production code never hits this branch.
     expect(out.startsWith('.')).toBe(true)
+  })
+})
+
+// ── orphan output cleanup ────────────────────────────────────────────────
+//
+// Regression: piconic-ai/barefootjs#1455 — the cleanup pass walked
+// `cache.entries` to discover which outputs a now-deleted source had
+// previously emitted. Whenever the cache was wiped (`--force`, or any
+// globalHash change from a `bun install` / `barefoot.config.ts` edit)
+// `cache.entries` was `{}`, so orphan outputs survived rebuilds and
+// accumulated in `outDir`. Cleanup now consults a durable emit ledger
+// (`.bfemit.json`) that lives alongside the cache but isn't tied to its
+// invalidation lifecycle.
+
+describe('build() orphan output cleanup', () => {
+  function makeTmpDir(label = 'orphans') {
+    const dir = resolve(tmpdir(), `bf-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+    mkdirSync(dir, { recursive: true })
+    return realpathSync(dir)
+  }
+
+  function makeBuildConfig(projectDir: string, outDir: string) {
+    return {
+      projectDir,
+      adapter: new TestAdapter(),
+      componentDirs: [resolve(projectDir, 'components')],
+      outDir,
+      minify: false,
+      contentHash: false,
+      clientOnly: true,
+    }
+  }
+
+  // Reproducer of the original bug. A previous build emits a client JS
+  // file for a `'use client'` component; the source is then deleted and a
+  // `--force` rebuild runs. Before the fix, the orphan `.client.js`
+  // survived because the cache was empty under `--force`.
+  test('removes orphan outputs after source deletion with --force', async () => {
+    const projectDir = makeTmpDir('force-cleanup-src')
+    const outDir = makeTmpDir('force-cleanup-out')
+    try {
+      const componentsDir = resolve(projectDir, 'components')
+      mkdirSync(componentsDir, { recursive: true })
+      const phantomPath = resolve(componentsDir, 'Phantom.tsx')
+      writeFileSync(
+        phantomPath,
+        `'use client'\n` +
+          `import { createSignal } from '@barefootjs/client'\n` +
+          `export function Phantom() {\n` +
+          `  const [v, setV] = createSignal(0)\n` +
+          `  return <button onClick={() => setV(v() + 1)}>{v()}</button>\n` +
+          `}\n`,
+      )
+
+      const config = makeBuildConfig(projectDir, outDir)
+      const firstBuild = await build(config)
+      expect(firstBuild.errorCount).toBe(0)
+
+      // Find the emitted client JS — output naming includes a `.client.js`
+      // suffix under `clientJsSubdir`. The exact path is taken from the
+      // ledger that the build just wrote, so this stays robust against
+      // adapter-specific output layouts.
+      const ledger = await loadEmitLedger(outDir, projectDir)
+      expect(ledger).not.toBeNull()
+      const phantomOutputs = ledger!.entries[phantomPath]
+      expect(phantomOutputs).toBeDefined()
+      expect(phantomOutputs.length).toBeGreaterThan(0)
+      for (const rel of phantomOutputs) {
+        expect(existsSync(resolve(outDir, rel))).toBe(true)
+      }
+
+      // Delete the source and rebuild with --force. The cache file gets
+      // discarded by --force, so the pre-fix cleanup pass would see an
+      // empty `cache.entries` and skip the orphan deletion.
+      unlinkSync(phantomPath)
+      const secondBuild = await build(config, { force: true })
+      expect(secondBuild.errorCount).toBe(0)
+
+      // The previously-emitted outputs are gone, and the ledger no longer
+      // claims ownership of them.
+      for (const rel of phantomOutputs) {
+        expect(existsSync(resolve(outDir, rel))).toBe(false)
+      }
+      const ledgerAfter = await loadEmitLedger(outDir, projectDir)
+      expect(ledgerAfter!.entries[phantomPath]).toBeUndefined()
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  // The other half of the regression: a `bun install` / config edit
+  // changes the globalHash between builds, which fires the same
+  // `emptyCache(globalHash)` branch as `--force`. The ledger must survive
+  // the cache-invalidation hop so the cleanup pass still sees what was on
+  // disk before.
+  test('removes orphan outputs after source deletion when globalHash changes', async () => {
+    const projectDir = makeTmpDir('hash-cleanup-src')
+    const outDir = makeTmpDir('hash-cleanup-out')
+    try {
+      const componentsDir = resolve(projectDir, 'components')
+      mkdirSync(componentsDir, { recursive: true })
+      const phantomPath = resolve(componentsDir, 'Phantom.tsx')
+      writeFileSync(
+        phantomPath,
+        `'use client'\n` +
+          `import { createSignal } from '@barefootjs/client'\n` +
+          `export function Phantom() {\n` +
+          `  const [v, setV] = createSignal(0)\n` +
+          `  return <button onClick={() => setV(v() + 1)}>{v()}</button>\n` +
+          `}\n`,
+      )
+      // Seed a lockfile so the first build picks it up into the global
+      // hash; mutating it later flips the hash and forces an
+      // `emptyCache(globalHash)`, mirroring the real `bun install` flow.
+      const lockPath = resolve(projectDir, 'bun.lock')
+      writeFileSync(lockPath, 'lock v1\n')
+
+      const config = makeBuildConfig(projectDir, outDir)
+      await build(config)
+      const ledger = await loadEmitLedger(outDir, projectDir)
+      const phantomOutputs = ledger!.entries[phantomPath]
+      expect(phantomOutputs).toBeDefined()
+
+      // Trip the global hash AND delete the source. The cache is loaded
+      // but discarded by the globalHash mismatch — only the ledger keeps
+      // ownership of the prior outputs.
+      writeFileSync(lockPath, 'lock v2\n')
+      unlinkSync(phantomPath)
+      await build(config)
+
+      for (const rel of phantomOutputs) {
+        expect(existsSync(resolve(outDir, rel))).toBe(false)
+      }
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  // Migration path: a user upgrading from a pre-ledger CLI version will
+  // have a `.buildcache.json` on disk but no `.bfemit.json`. The first
+  // post-upgrade build must still prune their pre-existing orphans by
+  // bootstrapping the ledger from the cache file. Without this, the only
+  // way to clean up would be a manual `rm -rf`.
+  test('bootstraps from .buildcache.json when no ledger exists yet', async () => {
+    const projectDir = makeTmpDir('bootstrap-src')
+    const outDir = makeTmpDir('bootstrap-out')
+    try {
+      const componentsDir = resolve(projectDir, 'components')
+      mkdirSync(componentsDir, { recursive: true })
+      const phantomPath = resolve(componentsDir, 'Phantom.tsx')
+      writeFileSync(
+        phantomPath,
+        `'use client'\n` +
+          `import { createSignal } from '@barefootjs/client'\n` +
+          `export function Phantom() {\n` +
+          `  const [v, setV] = createSignal(0)\n` +
+          `  return <button>{v()}</button>\n` +
+          `}\n`,
+      )
+
+      const config = makeBuildConfig(projectDir, outDir)
+      await build(config)
+
+      // Simulate the upgrade scenario: cache file exists from the old CLI
+      // version, but ledger file does not.
+      const ledger = await loadEmitLedger(outDir, projectDir)
+      const phantomOutputs = ledger!.entries[phantomPath]
+      rmSync(resolve(outDir, '.bfemit.json'))
+      expect(await loadCache(outDir)).not.toBeNull()
+
+      // Delete the source — under the old behavior this would orphan
+      // outputs on the next build. The new build bootstraps the missing
+      // ledger from the cache file and prunes them.
+      unlinkSync(phantomPath)
+      await build(config)
+
+      for (const rel of phantomOutputs) {
+        expect(existsSync(resolve(outDir, rel))).toBe(false)
+      }
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  // A `--force` build that hits a compile error on a previously-good
+  // component must NOT delete that component's previously-emitted
+  // outputs. Before the fix, `--force` reset `cache.entries` to empty,
+  // so the failure-handler's cached-entry preservation didn't fire,
+  // and the ledger-driven cleanup pass then orphaned the prior outputs
+  // — turning a single transient compile error into a broken-build
+  // cascade. See PR #1469 review.
+  test('preserves prior outputs when --force rebuild hits a compile error', async () => {
+    const projectDir = makeTmpDir('failure-preserve-src')
+    const outDir = makeTmpDir('failure-preserve-out')
+    try {
+      const componentsDir = resolve(projectDir, 'components')
+      mkdirSync(componentsDir, { recursive: true })
+      const counterPath = resolve(componentsDir, 'Counter.tsx')
+      // Compiles cleanly on the first build.
+      const goodSrc =
+        `'use client'\n` +
+        `import { createSignal } from '@barefootjs/client'\n` +
+        `export function Counter() {\n` +
+        `  const [v, setV] = createSignal(0)\n` +
+        `  return <button onClick={() => setV(v() + 1)}>{v()}</button>\n` +
+        `}\n`
+      writeFileSync(counterPath, goodSrc)
+
+      const config = makeBuildConfig(projectDir, outDir)
+      const firstBuild = await build(config)
+      expect(firstBuild.errorCount).toBe(0)
+
+      const ledger = await loadEmitLedger(outDir, projectDir)
+      const counterOutputs = ledger!.entries[counterPath]
+      expect(counterOutputs).toBeDefined()
+      expect(counterOutputs.length).toBeGreaterThan(0)
+      for (const rel of counterOutputs) {
+        expect(existsSync(resolve(outDir, rel))).toBe(true)
+      }
+
+      // Break the source. An inline JSX callback capturing a loop
+      // variable from the surrounding scope trips BF023 — a real
+      // analyzer-emitted error that flows through `result.errors` and
+      // returns `kind: 'error'` from compileEntry. The prior outputs
+      // on disk are the build's last-known-good emit and must survive
+      // — the dev's browser may still be requesting them.
+      writeFileSync(
+        counterPath,
+        `'use client'\n` +
+          `import { createSignal } from '@barefootjs/client'\n` +
+          `export function Counter() {\n` +
+          `  const arr = [1, 2, 3]\n` +
+          `  return <div>{arr.map(item => <button onClick={() => console.log(item)}>{item}</button>)}</div>\n` +
+          `}\n`,
+      )
+      const failingBuild = await build(config, { force: true })
+      expect(failingBuild.errorCount).toBeGreaterThan(0)
+
+      for (const rel of counterOutputs) {
+        expect(existsSync(resolve(outDir, rel))).toBe(true)
+      }
+      // Ownership claim survives in the ledger too, so the next build
+      // (whether it succeeds, fails again, or the user actually
+      // deletes the source) keeps the prune pass authoritative.
+      const ledgerAfter = await loadEmitLedger(outDir, projectDir)
+      expect(ledgerAfter!.entries[counterPath]).toEqual(counterOutputs)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  // Defence-in-depth: `.bfemit.json` is an on-disk input that the build
+  // re-reads every run. If a corrupted or tampered file claimed
+  // ownership of a path that escapes `outDir` (absolute path, `../`
+  // traversal), the cleanup pass must refuse to unlink it. The ledger
+  // only ever owns files the build itself emitted, and those are
+  // always under `outDir`.
+  test('refuses to unlink paths that escape outDir', async () => {
+    const projectDir = makeTmpDir('containment-src')
+    const outDir = makeTmpDir('containment-out')
+    // The "victim" lives in a separate tmp dir so a buggy cleanup pass
+    // would actually delete a real file. Stays out of both projectDir
+    // and outDir.
+    const victimDir = makeTmpDir('containment-victim')
+    const victimPath = resolve(victimDir, 'precious.txt')
+    writeFileSync(victimPath, 'must survive\n')
+    try {
+      mkdirSync(resolve(projectDir, 'components'), { recursive: true })
+      const config = makeBuildConfig(projectDir, outDir)
+      // Initial build seeds the ledger so save logic is exercised.
+      await build(config)
+
+      // Hand-craft a ledger pointing at a traversal target and an
+      // absolute path. Both should be rejected.
+      const traversal = relative(outDir, victimPath)
+      writeFileSync(
+        resolve(outDir, '.bfemit.json'),
+        JSON.stringify({
+          version: 1,
+          entries: {
+            '/abs/Tampered.tsx': [traversal, victimPath],
+          },
+        }),
+      )
+
+      const warnings: string[] = []
+      const originalWarn = console.warn
+      console.warn = (...args: unknown[]) => { warnings.push(args.join(' ')) }
+      try {
+        await build(config)
+      } finally {
+        console.warn = originalWarn
+      }
+
+      expect(existsSync(victimPath)).toBe(true)
+      const refused = warnings.filter(w => w.includes('out-of-tree'))
+      expect(refused.length).toBeGreaterThanOrEqual(1)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+      rmSync(victimDir, { recursive: true, force: true })
+    }
   })
 })

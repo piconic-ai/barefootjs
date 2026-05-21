@@ -275,14 +275,15 @@ describe('adapter registry', () => {
 
   test('hono adapter .gitignore covers public-as-outDir specifics, not whole-public', () => {
     // Hono's outDir IS `public/`, so we have to thread the needle:
-    // ignore `public/components/` + `public/.buildcache.json` but
-    // commit `public/styles.css` / `public/tokens.css`. Other
-    // adapters use `dist/` so a single line covers their build
-    // output; only Hono needs the per-file split.
+    // ignore `public/components/` + `public/.buildcache.json` +
+    // `public/.bfemit.json` but commit `public/styles.css` /
+    // `public/tokens.css`. Other adapters use `dist/` so a single
+    // line covers their build output; only Hono needs the per-file split.
     const gitignore = ADAPTERS.hono.files['.gitignore']!
     expect(gitignore).toContain('.wrangler/')
     expect(gitignore).toContain('public/components/')
     expect(gitignore).toContain('public/.buildcache.json')
+    expect(gitignore).toContain('public/.bfemit.json')
     // Negative guard: hand-written starter assets must NOT be ignored.
     expect(gitignore).not.toMatch(/^public\/styles\.css/m)
     expect(gitignore).not.toMatch(/^public\/tokens\.css/m)
