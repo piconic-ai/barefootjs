@@ -58,7 +58,7 @@ search → docs → add → <pm> test → debug
 bf search dialog          # find a component in the registry + docs
 bf docs dialog            # read its API (props, examples, a11y)
 bf add dialog             # copy it into your project
-bun test                  # verify the IR (or `npm test` / `pnpm test` / `yarn test`)
+<pm> test                 # verify the IR (bun test / npm test / pnpm test / yarn test)
 bf debug graph dialog     # inspect reactivity
 ```
 

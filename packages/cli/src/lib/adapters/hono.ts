@@ -122,8 +122,8 @@ const HONO_TSCONFIG = `{
     // which exposes types via its own package — no \`types\` array
     // entry needed, so the slot collapses to an empty string. The
     // bun-vs-vitest decision lives in \`testRunnerFor\` in
-    // \`init.ts\`'s pm module; future runners plug into the same
-    // slot there rather than baking another placeholder in here.
+    // \`packages/cli/src/lib/pm.ts\`; future runners plug into the
+    // same slot there rather than baking another placeholder in here.
     "types": ["@cloudflare/workers-types"{{__PM_TYPES_ENTRY__}}],
     "strict": true,
     "skipLibCheck": true,
