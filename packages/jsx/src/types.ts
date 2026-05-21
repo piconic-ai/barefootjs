@@ -643,8 +643,21 @@ export interface IRIfStatement {
   consequent: IRNode
   /** The else branch: either another IRIfStatement (else if) or IRNode (final else) */
   alternate: IRNode | null
-  /** Variables declared in the if block scope */
-  scopeVariables: Array<{ name: string; initializer: string; templateInitializer?: string }>
+  /**
+   * Variables declared in the if block scope. `initializer` is the
+   * de-typed JS source used by client-emit; `typedInitializer` (when
+   * present) is the source-verbatim form including any `as <T>` casts —
+   * preserved so SSR `.tsx` emit can keep the original type information,
+   * which downstream tsc relies on for narrowing (#1453: a
+   * `const Tag = children.tag as any` collapsing to `children.tag` makes
+   * the JSX `<Tag/>` raise TS2604 because `unknown` has no call signature).
+   */
+  scopeVariables: Array<{
+    name: string
+    initializer: string
+    templateInitializer?: string
+    typedInitializer?: string
+  }>
   loc: SourceLocation
 }
 
@@ -1088,6 +1101,26 @@ export interface FunctionInfo {
   body: string
   /** Body with TypeScript type annotations preserved, for .tsx output */
   typedBody?: string
+  /**
+   * Parameter list source text WITH type annotations, defaults, and rest
+   * markers — i.e., everything between the function's `(…)` exactly as the
+   * user wrote it. Preserved for `.tsx` emit so type predicates like
+   * `function isValidElement(element: unknown): element is {…}` keep their
+   * parameter annotations (a predicate requires its parameter to have a
+   * type, otherwise tsc raises TS7006). The reconstructed
+   * `formatParamWithType(params)` form strips explicit `:unknown` (because
+   * it cannot distinguish it from "no annotation" — both surface as
+   * `kind: 'unknown', raw: 'unknown'` in `ParamInfo`).
+   */
+  typedParams?: string
+  /**
+   * Return-type annotation source text (the JS source between `)` and `{`,
+   * minus the leading `:` and surrounding whitespace). Preserved so the
+   * emit can re-attach predicates like `: element is { tag: unknown; … }`.
+   * The existing `returnType` field is structured for analysis; this is
+   * the verbatim source for emit.
+   */
+  typedReturnType?: string
   returnType: TypeInfo | null
   containsJsx: boolean
   isExported?: boolean

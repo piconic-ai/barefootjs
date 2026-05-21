@@ -168,12 +168,21 @@ export abstract class JsxAdapter extends BaseAdapter {
     // Include local functions — skip unreachable ones (only used in event handlers)
     for (const func of localFunctions) {
       if (!reachable.has(func.name)) continue
-      const params = func.params.map(formatParamWithType).join(', ')
+      // Prefer the source-verbatim signature when types are preserved so
+      // type-predicate annotations (`element is { tag: unknown; … }`) and
+      // explicit `:unknown` parameter annotations survive into the emit.
+      // See FunctionInfo.typedParams docstring (#1453).
+      const params = preserveTypes && func.typedParams !== undefined
+        ? func.typedParams
+        : func.params.map(formatParamWithType).join(', ')
+      const returnAnnotation = preserveTypes && func.typedReturnType
+        ? `: ${func.typedReturnType}`
+        : ''
       const body = preserveTypes
         ? (func.typedBody ?? func.body)
         : func.body
       const asyncKw = func.isAsync ? 'async ' : ''
-      lines.push(`  ${asyncKw}function ${func.name}(${params}) ${body}`)
+      lines.push(`  ${asyncKw}function ${func.name}(${params})${returnAnnotation} ${body}`)
     }
 
     return lines.join('\n')

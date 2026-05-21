@@ -10,6 +10,7 @@ import {
   processExternals,
   processBundleEntries,
   computeGlobalHash,
+  rewriteRelativeImportsForOutput,
 } from '../lib/build'
 import { emptyCache, type BuildCache, type CacheEntry } from '../lib/build-cache'
 import { mkdirSync, writeFileSync, rmSync, existsSync, statSync, readFileSync, realpathSync } from 'fs'
@@ -1008,5 +1009,82 @@ describe('processBundleEntries', () => {
       rmSync(projectDir, { recursive: true, force: true })
       rmSync(outDir, { recursive: true, force: true })
     }
+  })
+})
+
+// ── rewriteRelativeImportsForOutput ──────────────────────────────────────
+//
+// Re-anchoring guarantees a Hono scaffold's `public/components/ui/<comp>/
+// index.tsx` emit type-checks against the same files the user-authored
+// `components/ui/<comp>/index.tsx` resolved (#1453). The Hono layout uses
+// `outDir = public/` and `componentDirs = ['components']`, so the depth
+// shift is +1 across the project root — but the component-to-component
+// case must stay at the same relative depth because both ends are
+// mirrored.
+
+describe('rewriteRelativeImportsForOutput', () => {
+  // Standard Hono scaffold layout. `<root>/components/ui/button/index.tsx`
+  // is emitted to `<root>/public/components/ui/button/index.tsx`; the
+  // project root contains `<root>/types/index.tsx` (not mirrored).
+  const ROOT = '/proj'
+  const sourcePath = `${ROOT}/components/ui/button/index.tsx`
+  const outputPath = `${ROOT}/public/components/ui/button/index.tsx`
+  const componentDirs = [`${ROOT}/components`]
+  const templatesOutDir = `${ROOT}/public/components`
+
+  test('rewrites non-component relative imports to include the extra depth', () => {
+    // `../../../types` is correct from the SOURCE position but resolves
+    // to the non-existent `public/types/` from the EMIT position — needs
+    // one more `..` so it points back at `<root>/types`.
+    const input = `import type { Child } from '../../../types'\n`
+    const out = rewriteRelativeImportsForOutput(input, sourcePath, outputPath, componentDirs, templatesOutDir)
+    expect(out).toBe(`import type { Child } from '../../../../types'\n`)
+  })
+
+  test('preserves sibling-component imports unchanged', () => {
+    // Both ends of `../slot` are mirrored under `public/components/ui/`,
+    // so the relative form stays valid by construction. Rewriting it
+    // would resolve to a wrong location.
+    const input = `import { Slot } from '../slot'\n`
+    const out = rewriteRelativeImportsForOutput(input, sourcePath, outputPath, componentDirs, templatesOutDir)
+    expect(out).toBe(`import { Slot } from '../slot'\n`)
+  })
+
+  test('leaves bare package specifiers untouched', () => {
+    const input = `import type { ButtonHTMLAttributes } from '@barefootjs/jsx'\n`
+    const out = rewriteRelativeImportsForOutput(input, sourcePath, outputPath, componentDirs, templatesOutDir)
+    expect(out).toBe(input)
+  })
+
+  test('handles `import type` and side-effect `import` forms', () => {
+    const input = `import type { Child } from '../../../types'\nimport '../slot'\n`
+    const out = rewriteRelativeImportsForOutput(input, sourcePath, outputPath, componentDirs, templatesOutDir)
+    expect(out).toContain(`import type { Child } from '../../../../types'`)
+    // `../slot` is a sibling component (also mirrored), so its relative
+    // form stays unchanged.
+    expect(out).toContain(`import '../slot'`)
+  })
+
+  test('handles `export … from` re-exports', () => {
+    const input = `export type { Child } from '../../../types'\n`
+    const out = rewriteRelativeImportsForOutput(input, sourcePath, outputPath, componentDirs, templatesOutDir)
+    expect(out).toBe(`export type { Child } from '../../../../types'\n`)
+  })
+
+  test('preserves quote style (single vs double)', () => {
+    // The rewrite recomputes the path but the quote style of the source
+    // line is left intact — single-quoted in stays single-quoted out,
+    // double in stays double out.
+    const dq = rewriteRelativeImportsForOutput(
+      `import type { Child } from "../../../types"\n`,
+      sourcePath, outputPath, componentDirs, templatesOutDir,
+    )
+    expect(dq).toBe(`import type { Child } from "../../../../types"\n`)
+
+    const sq = rewriteRelativeImportsForOutput(
+      `import type { Child } from '../../../types'\n`,
+      sourcePath, outputPath, componentDirs, templatesOutDir,
+    )
+    expect(sq).toBe(`import type { Child } from '../../../../types'\n`)
   })
 })

@@ -924,6 +924,77 @@ export function effectiveNamesFor(
 }
 
 /**
+ * Re-anchor every relative `from '…'` / side-effect `import '…'` in a
+ * marked-template's source so the same import points at the same file
+ * after the template is written to its destination on disk.
+ *
+ * `bf build` mirrors `<componentDir>/<rel>/index.tsx` to
+ * `<templatesOutDir>/<rel>/index.tsx`. Crucially, only files under a
+ * componentDir get mirrored; everything else (`../../../types`,
+ * `../shared/helpers`, …) stays at its source path. The user-authored
+ * relative paths were correct from the SOURCE position, but at the
+ * EMIT position they resolve at a different depth — so an unmodified
+ * `'../../../types'` from `public/components/ui/button/index.tsx`
+ * resolves to the non-existent `public/types/` and tsc raises TS2307
+ * across the scaffold (#1453).
+ *
+ * For each relative import:
+ *   1. Resolve against the SOURCE file's directory → `srcAbs`.
+ *   2. If `srcAbs` is under any componentDir, the build emits a mirror
+ *      at `<templatesOutDir>/<rel-under-componentDir>` — point the
+ *      rewritten path at the mirror so sibling-component imports stay
+ *      relative-equivalent. (For the Hono layout this leaves
+ *      `'../slot'` unchanged because both ends of the import are
+ *      mirrored at matching depth.)
+ *   3. Otherwise the file lives only at `srcAbs` — re-relativise from
+ *      the OUTPUT file's directory to that source path.
+ *
+ * Matches `from '…'` and side-effect `import '…'` line forms, including
+ * `import type` and `export … from`. Only relative specifiers (those
+ * starting with `.`) are touched; bare specifiers (`@barefootjs/jsx`)
+ * pass through unchanged.
+ */
+export function rewriteRelativeImportsForOutput(
+  content: string,
+  sourcePath: string,
+  outputPath: string,
+  componentDirs: readonly string[],
+  templatesOutDir: string,
+): string {
+  const sourceDir = dirname(sourcePath)
+  const outputDir = dirname(outputPath)
+  const resolvedComponentDirs = componentDirs.map((d) => resolve(d))
+
+  const resolveTarget = (importPath: string): string => {
+    const srcAbs = resolve(sourceDir, importPath)
+    for (const componentDir of resolvedComponentDirs) {
+      if (srcAbs === componentDir || srcAbs.startsWith(componentDir + '/')) {
+        const relUnderComponentDir = srcAbs.slice(componentDir.length + 1)
+        return relUnderComponentDir
+          ? resolve(templatesOutDir, relUnderComponentDir)
+          : templatesOutDir
+      }
+    }
+    return srcAbs
+  }
+
+  // `\b(?:from|import)\s+` matches the keyword introducing a string
+  // specifier in: `import X from '...'`, `import type X from '...'`,
+  // `export { X } from '...'`, and side-effect `import '...'`. The
+  // capture group keeps the specifier's quote style intact.
+  return content.replace(
+    /(\b(?:from|import)\s+)(['"])(\.[^'"\n]+)\2/g,
+    (_full, kw: string, quote: string, importPath: string) => {
+      const targetAbs = resolveTarget(importPath)
+      let rewritten = relative(outputDir, targetAbs)
+      if (rewritten === '') rewritten = '.'
+      if (!rewritten.startsWith('.')) rewritten = './' + rewritten
+      return `${kw}${quote}${rewritten}${quote}`
+    },
+  )
+}
+
+/**
  * Output filename (relative to the templates dir) for a marked template.
  * The compiler may emit the marked template under the same basename as
  * the source; we splice in the subdir prefix so the on-disk layout
@@ -1435,14 +1506,27 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
   if (!config.clientOnly && markedTemplates.length > 0) {
     for (const tpl of markedTemplates) {
       const outName = effectiveOutName(tpl.path, baseNameNoExt)
+      const target = resolve(templatesOutDir, outName)
       let outputContent = tpl.content
+      // Re-anchor user-authored relative imports so they point at the
+      // same files from the output dir's perspective (#1453). Runs
+      // before `transformMarkedTemplate` so adapter-injected imports
+      // (e.g. Hono's `hono/jsx-renderer` for script collection) — which
+      // are bare specifiers and unaffected by the rewrite — slot in
+      // cleanly on top of the corrected paths.
+      outputContent = rewriteRelativeImportsForOutput(
+        outputContent,
+        entryPath,
+        target,
+        config.componentDirs,
+        templatesOutDir,
+      )
       if (hasClientJs && config.transformMarkedTemplate) {
         const componentId = outName.replace(/\.[^.]+$/, '')
         outputContent = config.transformMarkedTemplate(outputContent, componentId, clientJsFilename)
       }
       const rel = `${templatesSubdir}/${outName}`
       outputs.push(rel)
-      const target = resolve(templatesOutDir, outName)
       await mkdir(dirname(target), { recursive: true })
       if (await writeIfChanged(target, outputContent)) {
         wroteAny = true

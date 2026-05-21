@@ -1844,6 +1844,14 @@ function collectFunction(
   let body = node.body ? ctx.getJS(node.body) : ''
   const typedBody = node.body ? node.body.getText(ctx.sourceFile) : undefined
   const returnType = typeNodeToTypeInfo(node.type, ctx.sourceFile)
+  // Source-verbatim param signature for type-preserving `.tsx` emit.
+  // `formatParamWithType` rebuilds the signature from `ParamInfo` and
+  // strips `:unknown` (the analyzer can't distinguish explicit `:unknown`
+  // from no annotation), so a type predicate like
+  // `function isValidElement(element: unknown): element is {…}` would
+  // lose its parameter annotation and produce TS7006 on emit (#1453).
+  const typedParams = node.parameters.map(p => p.getText(ctx.sourceFile)).join(', ')
+  const typedReturnType = node.type ? node.type.getText(ctx.sourceFile) : undefined
 
   // #1422: a function declaration nested inside an early-return `if`-block
   // is captured here with its body as raw text. Downstream
@@ -1939,6 +1947,8 @@ function collectFunction(
     params,
     body,
     typedBody: typedBody !== body ? typedBody : undefined,
+    typedParams,
+    typedReturnType,
     returnType,
     containsJsx,
     isExported,

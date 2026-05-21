@@ -4133,14 +4133,26 @@ function buildIfStatementChain(
     }
 
     // Collect scope variables with their initializers
-    const scopeVariables: Array<{ name: string; initializer: string; templateInitializer?: string }> = []
+    const scopeVariables: Array<{
+      name: string
+      initializer: string
+      templateInitializer?: string
+      typedInitializer?: string
+    }> = []
     for (const decl of condReturn.scopeVariables) {
       if (ts.isIdentifier(decl.name) && decl.initializer) {
         const init = ctx.getJS(decl.initializer)
+        // Source-verbatim form keeps `as <T>` casts intact for `.tsx`
+        // emit (#1453). `ctx.getJS` strips them, so without this the
+        // emitted const loses type information that downstream tsc
+        // uses for JSX narrowing (`<Tag/>` requires `Tag` not be
+        // `unknown`).
+        const typedInit = decl.initializer.getText(ctx.sourceFile)
         scopeVariables.push({
           name: decl.name.text,
           initializer: init,
           templateInitializer: rewriteBarePropRefs(init, decl.initializer, ctx),
+          typedInitializer: typedInit !== init ? typedInit : undefined,
         })
       }
     }

@@ -35,9 +35,16 @@ export function generateModuleExports(
 
   for (const func of ir.metadata.localFunctions) {
     if (!func.isExported) continue
-    const params = func.params.map(formatParamWithType).join(', ')
+    // Prefer the source-verbatim signature so type predicates and explicit
+    // `:unknown` parameter annotations survive — see FunctionInfo.typedParams
+    // docstring (#1453).
+    const params = func.typedParams !== undefined
+      ? func.typedParams
+      : func.params.map(formatParamWithType).join(', ')
+    const returnAnnotation = func.typedReturnType ? `: ${func.typedReturnType}` : ''
+    const body = func.typedBody ?? func.body
     const asyncKw = func.isAsync ? 'async ' : ''
-    lines.push(`export ${asyncKw}function ${func.name}(${params}) ${func.body}`)
+    lines.push(`export ${asyncKw}function ${func.name}(${params})${returnAnnotation} ${body}`)
   }
 
   const inlineExported = collectInlineExportedNames(ir)

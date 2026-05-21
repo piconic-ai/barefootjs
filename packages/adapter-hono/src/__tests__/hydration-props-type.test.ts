@@ -40,6 +40,56 @@ function compileMarkedTemplate(source: string, file = 'Demo.tsx'): string {
   return tmpl!.content
 }
 
+describe('Hono adapter — type alias preservation (#1453)', () => {
+  test('seeds reachability from `propsTypeName` so the destructured-props alias carries it', () => {
+    // `${Name}PropsWithHydration = ${propsTypeName} & {…}` is emitted
+    // AFTER the component body is scanned for typedef references, so a
+    // body that only mentions `ButtonPropsWithHydration` would not pull
+    // in `ButtonProps`. Without the alias-aware seed, every emitted
+    // Button-shape (the scaffold's onboarding component) raises TS2304
+    // for the very type it documents.
+    const source = `'use client'
+interface ButtonProps { variant?: 'a' | 'b' }
+export function Button({ variant }: ButtonProps) {
+  return <button>{variant}</button>
+}`
+    const tmpl = compileMarkedTemplate(source, 'Button.tsx')
+    expect(tmpl).toContain('interface ButtonProps')
+    expect(tmpl).toContain('type ButtonPropsWithHydration = ButtonProps &')
+  })
+
+  test('pulls in types reached transitively from the seed', () => {
+    // `ButtonProps` references `ButtonVariant`; once `ButtonProps` is
+    // seeded by `propsTypeName`, the transitive closure must include
+    // `ButtonVariant` too — otherwise `[variant]` lookups raise TS7053
+    // because `variant` widens to `any`.
+    const source = `'use client'
+type ButtonVariant = 'default' | 'destructive'
+interface ButtonProps { variant?: ButtonVariant }
+export function Button({ variant = 'default' }: ButtonProps) {
+  return <button>{variant}</button>
+}`
+    const tmpl = compileMarkedTemplate(source, 'Button.tsx')
+    expect(tmpl).toContain("type ButtonVariant = 'default' | 'destructive'")
+    expect(tmpl).toContain('interface ButtonProps')
+  })
+
+  test('carries forward declarations referenced by named re-exports', () => {
+    // `export type { ButtonVariant }` requires `ButtonVariant` to be
+    // declared locally. Even if the component body never mentions
+    // `ButtonVariant`, the re-export ties it to the public surface.
+    const source = `'use client'
+type ButtonVariant = 'default' | 'destructive'
+export function Button() {
+  return <button />
+}
+export type { ButtonVariant }`
+    const tmpl = compileMarkedTemplate(source, 'Button.tsx')
+    expect(tmpl).toContain("type ButtonVariant = 'default' | 'destructive'")
+    expect(tmpl).toContain('export type { ButtonVariant }')
+  })
+})
+
 describe('Hono adapter — hydration-props type annotation', () => {
   test('parameterless client component declares the full hydration-props type', () => {
     // The scaffolded TodoList / "no props" shape — most common case for
