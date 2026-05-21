@@ -97,12 +97,14 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
     const warnings = result.errors.filter(e => e.severity === 'warning')
 
     if (warnings.length > 0) {
-      console.warn(`Warnings compiling ${relative(ROOT_DIR, entryPath)}:`)
-      for (const w of warnings) console.warn(`  ${w.message}`)
+      for (const w of warnings) {
+        console.warn(formatError(w, sourceContent, { projectDir: ROOT_DIR }))
+      }
     }
     if (errors.length > 0) {
-      console.error(`Errors compiling ${relative(ROOT_DIR, entryPath)}:`)
-      for (const e of errors) console.error(`  ${e.message}`)
+      for (const e of errors) {
+        console.error(formatError(e, sourceContent, { projectDir: ROOT_DIR }))
+      }
       continue
     }
 
@@ -187,7 +189,7 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   // dangling stripped binding would crash the previewed component at
   // hydrate time with no clue at compile time. See #1227.
   const { errors: resolveErrors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
-  for (const err of resolveErrors) console.error(formatError(err))
+  for (const err of resolveErrors) console.error(formatError(err, undefined, { projectDir: ROOT_DIR }))
 
   // 6. Rewrite imports and add JSX pragma in compiled .tsx files
   const HONO_UTILS_PATH = resolve(ROOT_DIR, 'packages/adapter-hono/src/utils')

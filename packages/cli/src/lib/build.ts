@@ -720,7 +720,7 @@ export async function build(
   // turn into a non-zero exit at `commands/build.ts` instead of silently
   // shipping a bundle that will `ReferenceError` at runtime. See #1227.
   for (const err of resolveErrors) {
-    console.error(formatError(err))
+    console.error(formatError(err, undefined, { projectDir: config.projectDir }))
     errorCount++
   }
 
@@ -1375,17 +1375,23 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
   const errors = result.errors.filter(e => e.severity === 'error')
   const warnings = result.errors.filter(e => e.severity === 'warning')
 
+  // Use `formatError` so each diagnostic carries its BF code, source
+  // location, code frame, and (when present) `= help` suggestion —
+  // the exact shape `docs/core/advanced/error-codes.md` and the
+  // per-code prose in `docs/core/reactivity/props-reactivity.md`
+  // promise the user. The bare `console.error(error.message)` shape
+  // this replaced dropped the code + loc + frame + suggestion, so
+  // documented codes like BF023 / BF030 / BF043 effectively did not
+  // exist from the CLI surface.
   if (warnings.length > 0) {
-    console.warn(`Warnings compiling ${relative(config.projectDir, entryPath)}:`)
     for (const warning of warnings) {
-      console.warn(`  ${warning.message}`)
+      console.warn(formatError(warning, sourceContent, { projectDir: config.projectDir }))
     }
   }
 
   if (errors.length > 0) {
-    console.error(`Errors compiling ${relative(config.projectDir, entryPath)}:`)
     for (const error of errors) {
-      console.error(`  ${error.message}`)
+      console.error(formatError(error, sourceContent, { projectDir: config.projectDir }))
     }
     return { kind: 'error' }
   }

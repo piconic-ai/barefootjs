@@ -2,6 +2,7 @@
  * BarefootJS Compiler - Error Definitions
  */
 
+import path from 'path'
 import type {
   CompilerError,
   ErrorSeverity,
@@ -281,14 +282,45 @@ export function generateCodeFrame(
 // Error Formatter
 // =============================================================================
 
-export function formatError(error: CompilerError, source?: string): string {
-  const severityLabel = error.severity.toUpperCase()
+// path.relative produces `..`-prefixed results when `from` is outside
+// `projectDir`. For dependency files surfaced through the analyzer
+// (node_modules, sibling workspaces) that's noisier than the absolute
+// path the developer can copy into their editor, so we fall back to
+// the raw path in that case.
+function relativizePath(filePath: string, projectDir: string): string {
+  if (!path.isAbsolute(filePath)) return filePath
+  const rel = path.relative(projectDir, filePath)
+  if (!rel || rel.startsWith('..')) return filePath
+  return rel
+}
+
+
+export function formatError(
+  error: CompilerError,
+  source?: string,
+  options?: { projectDir?: string },
+): string {
+  // Lowercase severity matches the prose convention in
+  // `docs/core/advanced/error-codes.md` (`error[BF001]:`,
+  // `warning[BF043]:`) — that doc IS the rendering contract referenced
+  // by `bf guide advanced/error-codes`, so keep the wire format aligned
+  // with the reference rather than the function's old uppercase shape.
+  const severityLabel = error.severity
   const lines: string[] = []
+
+  // Strip the project root so the `--> file:line:col` row stays terse
+  // in CLI output — absolute paths blow past 80 columns on most
+  // checkouts and obscure the line/column at the tail. The compiler
+  // itself can't know the project root (it sees one file at a time),
+  // so the CLI/preview passes it in here.
+  const displayFile = options?.projectDir
+    ? relativizePath(error.loc.file, options.projectDir)
+    : error.loc.file
 
   lines.push(`${severityLabel}[${error.code}]: ${error.message}`)
   lines.push('')
   lines.push(
-    `  --> ${error.loc.file}:${error.loc.start.line}:${error.loc.start.column}`
+    `  --> ${displayFile}:${error.loc.start.line}:${error.loc.start.column}`
   )
 
   if (source) {
