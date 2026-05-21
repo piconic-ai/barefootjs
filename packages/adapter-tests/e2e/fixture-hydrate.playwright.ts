@@ -39,6 +39,7 @@ import { fixture as propsReactivityComparison } from '../fixtures/props-reactivi
 import { fixture as form } from '../fixtures/form'
 import { fixture as portal } from '../fixtures/portal'
 import { fixture as todoApp } from '../fixtures/todo-app'
+import { fixture as todoAppSsr } from '../fixtures/todo-app-ssr'
 import type { JSXFixture, InteractionStep } from '../src/types'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -61,6 +62,7 @@ const fixtures: JSXFixture[] = [
   form,
   portal,
   todoApp,
+  todoAppSsr,
 ]
 const byId = new Map(fixtures.map(f => [f.id, f]))
 

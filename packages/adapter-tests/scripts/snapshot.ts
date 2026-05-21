@@ -35,6 +35,7 @@ import { spec as propsReactivityComparisonSpec } from '../fixtures/props-reactiv
 import { spec as formSpec } from '../fixtures/form'
 import { spec as portalSpec } from '../fixtures/portal'
 import { spec as todoAppSpec } from '../fixtures/todo-app'
+import { spec as todoAppSsrSpec } from '../fixtures/todo-app-ssr'
 
 const ALL_SPECS: SharedFixtureSpec[] = [
   counterSharedSpec,
@@ -46,6 +47,7 @@ const ALL_SPECS: SharedFixtureSpec[] = [
   formSpec,
   portalSpec,
   todoAppSpec,
+  todoAppSsrSpec,
 ]
 
 const requested = process.argv.slice(2)
@@ -88,6 +90,23 @@ async function generateSnapshot(spec: SharedFixtureSpec): Promise<void> {
   // component. The conformance default `__instanceId: 'test'` yields an
   // underscore-less id the walker cannot dispatch from.
   const ssrProps = { ...spec.props, __instanceId: `${spec.componentName}_test` }
+
+  // SSR-side child injection. When the parent's template invokes child
+  // components synchronously (no `/* @client */` deferral), the temp file
+  // renderHonoComponent writes can't resolve their `./Child` imports — pass
+  // each child's source through `components` so the helper inlines them.
+  //
+  // Key with the leading `./` so `renderHonoComponent`'s import-strip filter
+  // (which does an exact-string match against the import path) matches the
+  // `import Child from './Child'` line the compiled parent template emits.
+  const components: Record<string, string> = {}
+  for (const extra of spec.additionalComponents ?? []) {
+    const extraSource = await Bun.file(
+      resolve(SHARED_COMPONENTS_DIR, `${extra}.tsx`),
+    ).text()
+    components[`./${extra}.tsx`] = extraSource
+  }
+
   const ssrHtml = await renderHonoComponent({
     source,
     adapter: new HonoAdapter(),
@@ -96,6 +115,7 @@ async function generateSnapshot(spec: SharedFixtureSpec): Promise<void> {
     // for dynamically imported modules in Bun, so multi-component files
     // can otherwise render the wrong component.
     componentName: spec.componentName,
+    components: Object.keys(components).length > 0 ? components : undefined,
   })
 
   let clientJs: string
