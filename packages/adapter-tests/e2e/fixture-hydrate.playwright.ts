@@ -36,6 +36,7 @@ import { fixture as conditionalReturnButton } from '../fixtures/conditional-retu
 import { fixture as conditionalReturnLink } from '../fixtures/conditional-return-link'
 import { fixture as reactiveProps } from '../fixtures/reactive-props'
 import { fixture as propsReactivityComparison } from '../fixtures/props-reactivity-comparison'
+import { fixture as form } from '../fixtures/form'
 import type { JSXFixture, InteractionStep } from '../src/types'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -55,6 +56,7 @@ const fixtures: JSXFixture[] = [
   conditionalReturnLink,
   reactiveProps,
   propsReactivityComparison,
+  form,
 ]
 const byId = new Map(fixtures.map(f => [f.id, f]))
 

@@ -32,6 +32,7 @@ import { spec as conditionalReturnButtonSpec } from '../fixtures/conditional-ret
 import { spec as conditionalReturnLinkSpec } from '../fixtures/conditional-return-link'
 import { spec as reactivePropsSpec } from '../fixtures/reactive-props'
 import { spec as propsReactivityComparisonSpec } from '../fixtures/props-reactivity-comparison'
+import { spec as formSpec } from '../fixtures/form'
 
 const ALL_SPECS: SharedFixtureSpec[] = [
   counterSharedSpec,
@@ -40,6 +41,7 @@ const ALL_SPECS: SharedFixtureSpec[] = [
   conditionalReturnLinkSpec,
   reactivePropsSpec,
   propsReactivityComparisonSpec,
+  formSpec,
 ]
 
 const requested = process.argv.slice(2)
