@@ -105,6 +105,23 @@ runAdapterConformanceTests({
     // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.
     // No BF101 expected — pinned positively via the
     // `branch-local-filter-join` template-output test below.
+    //
+    // #1448 Tier A — JS Array / String methods that the Mojo adapter
+    // hasn't lowered yet. Each row drops once the corresponding
+    // method PR lands. Hono / CSR pass these out of the box (they
+    // evaluate JS at runtime) so the pin only applies here.
+    'array-includes':      [{ code: 'BF101', severity: 'error' }],
+    'array-indexOf':       [{ code: 'BF101', severity: 'error' }],
+    'array-lastIndexOf':   [{ code: 'BF101', severity: 'error' }],
+    'array-at':            [{ code: 'BF101', severity: 'error' }],
+    'array-concat':        [{ code: 'BF101', severity: 'error' }],
+    'array-slice':         [{ code: 'BF101', severity: 'error' }],
+    'array-reverse':       [{ code: 'BF101', severity: 'error' }],
+    'array-toReversed':    [{ code: 'BF101', severity: 'error' }],
+    'string-toLowerCase':  [{ code: 'BF101', severity: 'error' }],
+    'string-toUpperCase':  [{ code: 'BF101', severity: 'error' }],
+    'string-trim':         [{ code: 'BF101', severity: 'error' }],
+    'string-includes':     [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining

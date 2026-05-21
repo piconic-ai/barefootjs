@@ -84,6 +84,24 @@ import { fixture as restDestructureObjectInMap } from './rest-destructure-object
 import { fixture as restDestructureObjectSpreadInMap } from './rest-destructure-object-spread-in-map'
 import { fixture as restDestructureArrayInMap } from './rest-destructure-array-in-map'
 import { fixture as restDestructureNestedInMap } from './rest-destructure-nested-in-map'
+// Priority 11: JS Array / String method lowering (#1448 Tier A).
+// One fixture per method — every adapter starts pinned with BF101 in
+// its own `expectedDiagnostics`, and each method PR removes its row
+// once the lowering lands. Hono / CSR pass these out of the box
+// (they evaluate JS at runtime), so the pinning only applies to the
+// template-language adapters (Mojo, Go).
+import { fixture as arrayIncludes } from './methods/array-includes'
+import { fixture as arrayIndexOf } from './methods/array-indexOf'
+import { fixture as arrayLastIndexOf } from './methods/array-lastIndexOf'
+import { fixture as arrayAt } from './methods/array-at'
+import { fixture as arrayConcat } from './methods/array-concat'
+import { fixture as arraySlice } from './methods/array-slice'
+import { fixture as arrayReverse } from './methods/array-reverse'
+import { fixture as arrayToReversed } from './methods/array-toReversed'
+import { fixture as stringToLowerCase } from './methods/string-toLowerCase'
+import { fixture as stringToUpperCase } from './methods/string-toUpperCase'
+import { fixture as stringTrim } from './methods/string-trim'
+import { fixture as stringIncludes } from './methods/string-includes'
 
 import type { JSXFixture } from '../src/types'
 
@@ -179,4 +197,18 @@ export const jsxFixtures: JSXFixture[] = [
   restDestructureObjectSpreadInMap,
   restDestructureArrayInMap,
   restDestructureNestedInMap,
+  // #1448 Tier A — Array methods.
+  arrayIncludes,
+  arrayIndexOf,
+  arrayLastIndexOf,
+  arrayAt,
+  arrayConcat,
+  arraySlice,
+  arrayReverse,
+  arrayToReversed,
+  // #1448 Tier A — String methods.
+  stringToLowerCase,
+  stringToUpperCase,
+  stringTrim,
+  stringIncludes,
 ]

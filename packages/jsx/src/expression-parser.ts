@@ -70,11 +70,46 @@ export interface SupportResult {
   reason?: string
 }
 
-// Higher-order array methods that are not supported
+// JS Array / String prototype methods that the template-language
+// adapters (Mojo, Go) don't yet lower. The parser routes any
+// `<recv>.<method>(...)` call against one of these names to the
+// `call` arm of `isSupported`, which records BF101 — surfacing a
+// loud refusal at compile time instead of silently emitting a
+// `${obj}->{method}(...)` hash lookup that breaks at render time.
+//
+// A method gets removed from this set when its lowering lands —
+// the same flow the higher-order family used in #1443 (parser
+// intercepts the call shape before it falls through to this gate,
+// see the `higher-order` and `array-method` carve-outs in
+// `convertNode`'s call branch).
+//
+// The Hono / CSR adapters never consult `isSupported` (they
+// evaluate JS at runtime via hono/jsx) so this set only constrains
+// the template-language adapters.
 const UNSUPPORTED_METHODS = new Set([
+  // Higher-order array methods. Five of these (`filter`, `every`,
+  // `some`, `find`, `findIndex`) are intercepted as `higher-order`
+  // IR before reaching this gate; `map` is intercepted as an
+  // IRLoop. The rest stay refused — see #1448 Tier C for the
+  // design questions.
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'findLast', 'findLastIndex',
   'forEach', 'flatMap', 'flat',
+  // #1448 Tier A — Array methods. Each method PR adds the lowering
+  // (typically a new `array-method` variant or runtime helper) and
+  // removes its row here. See packages/adapter-tests/fixtures/methods/.
+  'includes',
+  'indexOf', 'lastIndexOf',
+  'at',
+  'concat',
+  'slice',
+  'reverse', 'toReversed',
+  // #1448 Tier A — String methods. `includes` is already listed
+  // above (the method name is shared with the array variant; the
+  // parser refuses both shapes uniformly via this gate, and each
+  // adapter's lowering will branch on the receiver type when the
+  // method is opted in).
+  'toLowerCase', 'toUpperCase', 'trim',
 ])
 
 // =============================================================================

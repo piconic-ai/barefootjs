@@ -132,6 +132,33 @@ runAdapterConformanceTests({
     // lowers to `bf_join (bf_filter_truthy (bf_arr ...)) " "`. No
     // BF101 expected — pinned positively by the
     // `branch-local-filter-join-go` template-output test below.
+    //
+    // #1448 Tier A — JS Array / String methods that the Go template
+    // adapter hasn't lowered yet. Each row drops once the
+    // corresponding method PR lands. Hono / CSR pass these out of
+    // the box (they evaluate JS at runtime) so the pin only applies
+    // here.
+    //
+    // The `.includes()` fixtures land at JSX conditional position
+    // (`{cond ? 'yes' : 'no'}`), which routes through
+    // `convertConditionToGo` and surfaces the existing BF102
+    // ("Condition not supported"); the remaining fixtures land at
+    // expression position and surface BF101 via
+    // `convertExpressionToGo`. Distinct codes for the two paths is
+    // pre-existing adapter behaviour, not something this catalog
+    // should paper over — pinned literally here.
+    'array-includes':      [{ code: 'BF102', severity: 'error' }],
+    'array-indexOf':       [{ code: 'BF101', severity: 'error' }],
+    'array-lastIndexOf':   [{ code: 'BF101', severity: 'error' }],
+    'array-at':            [{ code: 'BF101', severity: 'error' }],
+    'array-concat':        [{ code: 'BF101', severity: 'error' }],
+    'array-slice':         [{ code: 'BF101', severity: 'error' }],
+    'array-reverse':       [{ code: 'BF101', severity: 'error' }],
+    'array-toReversed':    [{ code: 'BF101', severity: 'error' }],
+    'string-toLowerCase':  [{ code: 'BF101', severity: 'error' }],
+    'string-toUpperCase':  [{ code: 'BF101', severity: 'error' }],
+    'string-trim':         [{ code: 'BF101', severity: 'error' }],
+    'string-includes':     [{ code: 'BF102', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `GoTemplateAdapter.templatePrimitives` (#1188). The two

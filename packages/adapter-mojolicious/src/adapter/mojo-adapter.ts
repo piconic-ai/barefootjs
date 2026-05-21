@@ -1139,6 +1139,18 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       return this.convertHigherOrderExpr(expr)
     }
 
+    // #1448 Tier A — JS Array / String methods that the regex
+    // pipeline silently mangles into `${obj}->{<method>}(...)` hash
+    // lookups that fail at render time. Route them through the same
+    // AST path so `isSupported`'s `UNSUPPORTED_METHODS` gate fires
+    // BF101 with the offending expression, matching Go's behaviour.
+    // Each method name drops off the regex as its lowering lands
+    // (the regex stays in sync with `UNSUPPORTED_METHODS` —
+    // `convertHigherOrderExpr` intercepts via `isSupported`).
+    if (/\.\s*(?:includes|indexOf|lastIndexOf|at|concat|slice|reverse|toReversed|toLowerCase|toUpperCase|trim)\s*\(/.test(expr)) {
+      return this.convertHigherOrderExpr(expr)
+    }
+
     // templatePrimitives substitution (#1189): rewrite identifier-path
     // calls like `JSON.stringify(props.config)` / `Math.floor(x)` to
     // their Mojo helper-call form (`bf->json($config)` etc.) BEFORE
