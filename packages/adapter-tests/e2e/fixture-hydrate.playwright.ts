@@ -31,6 +31,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { fixture as counterShared } from '../fixtures/counter-shared'
+import { fixture as toggleShared } from '../fixtures/toggle-shared'
 import type { JSXFixture, InteractionStep } from '../src/types'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -43,7 +44,7 @@ let server: Server
 let baseUrl: string
 let runtimeSource: string
 
-const fixtures: JSXFixture[] = [counterShared]
+const fixtures: JSXFixture[] = [counterShared, toggleShared]
 const byId = new Map(fixtures.map(f => [f.id, f]))
 
 function hostPage(fixture: JSXFixture): string {
