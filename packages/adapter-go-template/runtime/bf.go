@@ -46,13 +46,15 @@ func FuncMap() template.FuncMap {
 		"bf_round":  Round,
 
 		// Array/Slice
-		"bf_len":      Len,
-		"bf_at":       At,
-		"bf_includes": Includes,
-		"bf_first":    First,
-		"bf_last":     Last,
-		"bf_arr":      Arr,
-		"bf_filter_truthy": FilterTruthy,
+		"bf_len":            Len,
+		"bf_at":             At,
+		"bf_includes":       Includes,
+		"bf_index_of":       IndexOf,
+		"bf_last_index_of":  LastIndexOf,
+		"bf_first":          First,
+		"bf_last":           Last,
+		"bf_arr":            Arr,
+		"bf_filter_truthy":  FilterTruthy,
 
 		// Higher-order Array Methods
 		"bf_every":      Every,
@@ -672,6 +674,48 @@ func Includes(recv any, elem any) bool {
 		}
 	}
 	return false
+}
+
+// IndexOf returns the 0-based position of the first item that
+// DeepEquals `elem`, or -1 if not found. Lowers
+// `Array.prototype.indexOf(x)` (#1448 Tier A). The existing
+// `FindIndex` helper does struct-field equality (used by the
+// higher-order `.find` lowering); this one does value equality
+// against scalar / struct items so callers don't have to compose
+// a synthetic predicate.
+//
+// Non-array / non-slice receivers return -1 (matches the JS
+// semantic that `.indexOf` is only defined on Array / TypedArray).
+func IndexOf(items any, elem any) int {
+	v := reflect.ValueOf(items)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return -1
+	}
+	for i := 0; i < v.Len(); i++ {
+		if reflect.DeepEqual(v.Index(i).Interface(), elem) {
+			return i
+		}
+	}
+	return -1
+}
+
+// LastIndexOf returns the 0-based position of the last item that
+// DeepEquals `elem`, or -1 if not found. Mirrors
+// `Array.prototype.lastIndexOf(x)`. The reverse traversal is the
+// only behavioural difference vs `IndexOf` — disambiguating a
+// duplicated value's first vs last position is the canonical
+// reason a JS author reaches for `lastIndexOf`.
+func LastIndexOf(items any, elem any) int {
+	v := reflect.ValueOf(items)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return -1
+	}
+	for i := v.Len() - 1; i >= 0; i-- {
+		if reflect.DeepEqual(v.Index(i).Interface(), elem) {
+			return i
+		}
+	}
+	return -1
 }
 
 // First returns the first element of a slice, or nil if empty.

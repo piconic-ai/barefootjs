@@ -2708,6 +2708,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const needle = emit(args[0])
         return `bf_includes ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(needle)}`
       }
+      case 'indexOf':
+      case 'lastIndexOf': {
+        // Value-equality search (DeepEqual). The existing
+        // `bf_find_index` operates on struct-field equality (used by
+        // the higher-order `.find` lowering); the new helpers handle
+        // the bare `.indexOf(x)` / `.lastIndexOf(x)` shape where
+        // there's no `.field` accessor on the elements.
+        const fn = method === 'indexOf' ? 'bf_index_of' : 'bf_last_index_of'
+        const obj = emit(object)
+        const needle = emit(args[0])
+        return `${fn} ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(needle)}`
+      }
       default: {
         const _exhaustive: never = method
         throw new Error(`Go arrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`)

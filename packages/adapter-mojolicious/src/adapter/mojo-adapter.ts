@@ -1449,6 +1449,19 @@ function renderArrayMethod(
       const needle = emit(args[0])
       return `bf->includes(${obj}, ${needle})`
     }
+    case 'indexOf':
+    case 'lastIndexOf': {
+      // Array `.indexOf(x)` / `.lastIndexOf(x)` value-equality
+      // search. The Perl helpers (`bf->index_of`, `bf->last_index_of`)
+      // walk the array forward / backward and compare with `eq`
+      // (with defined/undef parity). The existing `.find` lowering
+      // uses Perl `grep` for struct-field find — disjoint surface,
+      // disjoint helpers.
+      const fn = method === 'indexOf' ? 'index_of' : 'last_index_of'
+      const obj = emit(object)
+      const needle = emit(args[0])
+      return `bf->${fn}(${obj}, ${needle})`
+    }
     default: {
       // TS-level exhaustiveness guard. If this throws at runtime, the
       // IR was constructed against a newer `ArrayMethod` variant that

@@ -31,7 +31,12 @@ export type ParsedExpr =
   // The set is intentionally narrow; extending it adds a TS compile
   // error in every adapter that hasn't been updated (the same drift
   // defence used for `ParsedExpr.kind`).
-  | { kind: 'array-method'; method: 'join' | 'includes'; object: ParsedExpr; args: ParsedExpr[] }
+  | {
+      kind: 'array-method'
+      method: 'join' | 'includes' | 'indexOf' | 'lastIndexOf'
+      object: ParsedExpr
+      args: ParsedExpr[]
+    }
   | { kind: 'unsupported'; raw: string; reason: string }
 
 export type TemplatePart =
@@ -102,7 +107,9 @@ const UNSUPPORTED_METHODS = new Set([
   // string-receiver shapes lower via the `array-method` IR + a
   // receiver-type-dispatching runtime helper (`bf_includes` on Go,
   // `$bf->includes(...)` on Mojo).
-  'indexOf', 'lastIndexOf',
+  // `indexOf` / `lastIndexOf` likewise lower via the `array-method`
+  // IR + `bf_index_of` / `bf_last_index_of` (Go) and
+  // `$bf->index_of` / `$bf->last_index_of` (Mojo).
   'at',
   'concat',
   'slice',
@@ -235,6 +242,15 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // on Mojo uses `ref()`). See #1448 Tier A.
       if (callee.property === 'includes' && args.length === 1) {
         return { kind: 'array-method', method: 'includes', object: callee.object, args }
+      }
+      // `.indexOf(x)` / `.lastIndexOf(x)` — value-equality search,
+      // both adapters dispatch through a runtime helper that walks
+      // the slice (forward / backward) and compares with `DeepEqual`
+      // (Go) / `eq` (Perl). The existing `bf_find_index` (Go)
+      // operates on struct-field equality and stays — see the
+      // higher-order `.find` lowering. See #1448 Tier A.
+      if ((callee.property === 'indexOf' || callee.property === 'lastIndexOf') && args.length === 1) {
+        return { kind: 'array-method', method: callee.property, object: callee.object, args }
       }
     }
 

@@ -93,4 +93,29 @@ subtest 'includes — array + string + non-array/string dispatch' => sub {
     ok !$bf->includes(sub {}, 'x'),      'code ref → 0';
 };
 
+# `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
+# value-equality search (#1448 Tier A). Non-array receivers return -1.
+# Duplicated-value coverage is the disambiguator between indexOf
+# (forward) and lastIndexOf (backward); pinning a non-final last-match
+# position makes a misdirected walk impossible to hide.
+subtest 'index_of / last_index_of — array value-equality search' => sub {
+    my $arr = ['a', 'b', 'c', 'b', 'd'];
+
+    is $bf->index_of($arr, 'a'),          0,  'first element';
+    is $bf->index_of($arr, 'b'),          1,  'duplicated value: first match';
+    is $bf->index_of($arr, 'd'),          4,  'last element';
+    is $bf->index_of($arr, 'z'),         -1,  'absent → -1';
+    is $bf->index_of([], 'a'),           -1,  'empty array → -1';
+    is $bf->index_of('not an array', 'a'), -1, 'non-array → -1';
+
+    is $bf->last_index_of($arr, 'b'),     3,  'duplicated value: LAST match (non-final position)';
+    is $bf->last_index_of($arr, 'a'),     0,  'unique value still found';
+    is $bf->last_index_of($arr, 'z'),    -1,  'absent → -1';
+    is $bf->last_index_of([], 'a'),      -1,  'empty array → -1';
+
+    # undef parity matches the `includes` helper above.
+    is $bf->index_of([undef, 'x', undef], undef), 0, 'undef matches undef (forward)';
+    is $bf->last_index_of([undef, 'x', undef], undef), 2, 'undef matches undef (backward)';
+};
+
 done_testing;

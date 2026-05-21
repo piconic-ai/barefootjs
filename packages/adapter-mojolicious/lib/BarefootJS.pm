@@ -381,6 +381,36 @@ sub includes ($self, $recv, $elem) {
     return index($recv // '', $elem // '') != -1 ? 1 : 0;
 }
 
+# `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
+# value-equality search (#1448 Tier A). Returns the 0-based position
+# of the first / last matching element, or -1 if not found.
+# Non-array receivers return -1 — matches the JS semantic that
+# `.indexOf` / `.lastIndexOf` are only defined on Array / TypedArray.
+# (The string-position `indexOf` form isn't in Tier A; if it lands
+# later the helper can grow a ref()-dispatch branch like `includes`.)
+
+sub _array_index_of ($recv, $elem, $reverse) {
+    return -1 unless ref($recv) eq 'ARRAY';
+    my @indices = $reverse ? (reverse 0 .. $#{$recv}) : (0 .. $#{$recv});
+    for my $i (@indices) {
+        my $item = $recv->[$i];
+        if (!defined $item) {
+            return $i if !defined $elem;
+            next;
+        }
+        return $i if defined $elem && $item eq $elem;
+    }
+    return -1;
+}
+
+sub index_of ($self, $recv, $elem) {
+    return _array_index_of($recv, $elem, 0);
+}
+
+sub last_index_of ($self, $recv, $elem) {
+    return _array_index_of($recv, $elem, 1);
+}
+
 # ---------------------------------------------------------------------------
 # JSX intrinsic-element spread (#1407)
 # ---------------------------------------------------------------------------

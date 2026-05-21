@@ -112,10 +112,11 @@ runAdapterConformanceTests({
     // evaluate JS at runtime) so the pin only applies here.
     //
     // `array-includes` / `string-includes` no longer pinned — both
-    // shapes lower via the shared `array-method` IR + `$bf->includes`
+    // shapes lower via the shared `array-method` IR + `bf->includes`
     // runtime dispatch (#1448 Tier A first PR).
-    'array-indexOf':       [{ code: 'BF101', severity: 'error' }],
-    'array-lastIndexOf':   [{ code: 'BF101', severity: 'error' }],
+    // `array-indexOf` / `array-lastIndexOf` no longer pinned —
+    // value-equality `bf->index_of` / `bf->last_index_of` helpers
+    // handle the shape (#1448 Tier A second PR).
     'array-at':            [{ code: 'BF101', severity: 'error' }],
     'array-concat':        [{ code: 'BF101', severity: 'error' }],
     'array-slice':         [{ code: 'BF101', severity: 'error' }],
@@ -473,6 +474,42 @@ export function C() {
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
     expect(template).toContain('bf->includes($value, $needle)')
     expect(template).not.toContain('$bf->includes')
+  })
+
+  test('lowers .indexOf(x) on an array prop via bf->index_of(...) (#1448 Tier A)', () => {
+    // Value-equality search. Mojo's `bf->index_of` walks the array
+    // forward and returns the first matching index (or -1). The
+    // existing `.find` lowering uses Perl `grep` for struct-field
+    // find — disjoint surface, disjoint helpers.
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`'use client'
+import { createSignal } from '@barefootjs/client'
+export function C() {
+  const [items] = createSignal<string[]>([])
+  const [target] = createSignal('x')
+  return <div>idx: {items().indexOf(target())}</div>
+}`, 'C.tsx', { adapter })
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain('bf->index_of($items, $target)')
+    expect(template).not.toContain('$bf->index_of')
+  })
+
+  test('lowers .lastIndexOf(x) on an array prop via bf->last_index_of(...) (#1448 Tier A)', () => {
+    // Backward-walk variant. Sharing a helper module with index_of
+    // keeps the dispatch trivial (`_array_index_of(..., $reverse)`)
+    // and the per-direction emit a one-liner.
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`'use client'
+import { createSignal } from '@barefootjs/client'
+export function C() {
+  const [items] = createSignal<string[]>([])
+  const [target] = createSignal('x')
+  return <div>last: {items().lastIndexOf(target())}</div>
+}`, 'C.tsx', { adapter })
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain('bf->last_index_of($items, $target)')
   })
 
   test('does not leak module-level export statements into the .html.ep template', () => {

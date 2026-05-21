@@ -204,6 +204,41 @@ func TestIncludes(t *testing.T) {
 	}
 }
 
+// IndexOf / LastIndexOf — `Array.prototype.indexOf` /
+// `Array.prototype.lastIndexOf` lowering (#1448 Tier A). Value-
+// equality via DeepEqual; non-array receivers return -1.
+func TestIndexOf(t *testing.T) {
+	items := []string{"a", "b", "c", "b", "d"}
+	if got := IndexOf(items, "b"); got != 1 {
+		t.Errorf("IndexOf(items, b) = %d, want 1", got)
+	}
+	if got := IndexOf(items, "z"); got != -1 {
+		t.Errorf("IndexOf(items, z) = %d, want -1", got)
+	}
+	if got := IndexOf([]int{1, 2, 3}, 2); got != 1 {
+		t.Errorf("IndexOf([1,2,3], 2) = %d, want 1", got)
+	}
+	if got := IndexOf("not an array", "n"); got != -1 {
+		t.Errorf("IndexOf(string, ...) = %d, want -1 (non-array)", got)
+	}
+}
+
+func TestLastIndexOf(t *testing.T) {
+	items := []string{"a", "b", "c", "b", "d"}
+	// `LastIndexOf` must walk backward — pinning a non-final
+	// last-match position so a forward-walking implementation can't
+	// pass the assertion.
+	if got := LastIndexOf(items, "b"); got != 3 {
+		t.Errorf("LastIndexOf(items, b) = %d, want 3", got)
+	}
+	if got := LastIndexOf(items, "z"); got != -1 {
+		t.Errorf("LastIndexOf(items, z) = %d, want -1", got)
+	}
+	if got := LastIndexOf([]int{}, 0); got != -1 {
+		t.Errorf("LastIndexOf([], 0) = %d, want -1", got)
+	}
+}
+
 // String receiver covers `String.prototype.includes(sub)` (#1448 Tier A).
 // Both array and string `.includes` lower to the same `bf_includes` call;
 // this helper dispatches on `reflect.Kind()` at evaluation time.
