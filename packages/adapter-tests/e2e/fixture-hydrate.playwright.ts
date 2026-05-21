@@ -50,6 +50,12 @@ function hostPage(fixture: JSXFixture): string {
   // Importmap maps the bare specifier the compiled client JS uses to the
   // standalone runtime bundle. Order matters: importmap must precede the
   // module script that imports against it.
+  //
+  // Prefer `rawExpectedHtml`: `createFixture` whitespace-normalizes
+  // `expectedHtml` for cross-adapter comparison, which would silently
+  // mutate hydration inputs for any fixture whose DOM cares about
+  // inter-element whitespace (e.g. `<pre>`, `<textarea>`).
+  const html = fixture.rawExpectedHtml ?? fixture.expectedHtml ?? ''
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -60,7 +66,7 @@ function hostPage(fixture: JSXFixture): string {
 </script>
 </head>
 <body>
-${fixture.expectedHtml ?? ''}
+${html}
 <script type="module" src="__client.js"></script>
 </body>
 </html>`
@@ -146,15 +152,23 @@ for (const fixture of fixtures) {
     // Hydration is microtask + rAF on the runtime side. A single rAF wait
     // covers both — we don't need to expose flushHydration just for tests.
     await page.evaluate(() => new Promise(r => requestAnimationFrame(() => r(null))))
+    // Only attach browser logs on failure — green runs would otherwise
+    // bloat Playwright artifacts as the corpus grows.
+    let failed = false
     try {
       for (const step of fixture.interactions!) {
         await runStep(page, step)
       }
+    } catch (err) {
+      failed = true
+      throw err
     } finally {
-      await info.attach('browser-logs.txt', {
-        body: browserLogs.join('\n'),
-        contentType: 'text/plain',
-      })
+      if (failed && browserLogs.length > 0) {
+        await info.attach('browser-logs.txt', {
+          body: browserLogs.join('\n'),
+          contentType: 'text/plain',
+        })
+      }
     }
   })
 }

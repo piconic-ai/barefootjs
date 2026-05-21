@@ -55,6 +55,15 @@ export interface JSXFixture {
   /** Expected normalized HTML output (generated from reference Hono adapter) */
   expectedHtml?: string
   /**
+   * Raw (un-normalized) expectedHtml as authored — preserved so the
+   * fixture-hydrate runner (#1467) can serve the byte-exact SSR snapshot
+   * into the browser. `createFixture` collapses whitespace in
+   * `expectedHtml` for cross-adapter comparison ergonomics, which would
+   * silently drift hydration inputs for fixtures whose DOM cares about
+   * inter-element whitespace (e.g. `<pre>`, `<textarea>`).
+   */
+  rawExpectedHtml?: string
+  /**
    * Frozen client JS bundle output (from `generateClientJs`).
    *
    * Set only on fixtures that participate in the fixture-hydrate layer
@@ -110,5 +119,6 @@ export function createFixture(input: {
     source: input.source.trimStart(),
     components: trimmedComponents,
     expectedHtml: normalizedExpectedHtml,
+    rawExpectedHtml: input.expectedHtml,
   }
 }
