@@ -166,7 +166,9 @@ runAdapterConformanceTests({
     // both share the `bf_reverse` helper since SSR templates
     // render a snapshot and the JS mutate-vs-new distinction has
     // no template-level meaning (#1448 Tier A sixth PR).
-    'string-toLowerCase':  [{ code: 'BF101', severity: 'error' }],
+    // `string-toLowerCase` no longer pinned — the pre-existing
+    // `bf_lower` runtime helper now wires to the JS method name
+    // at the adapter layer (#1448 Tier A seventh PR).
     'string-toUpperCase':  [{ code: 'BF101', severity: 'error' }],
     'string-trim':         [{ code: 'BF101', severity: 'error' }],
   },
@@ -1572,6 +1574,20 @@ export { A }`)
     })
   })
 
+  describe('.toLowerCase lowering (#1448 Tier A)', () => {
+    test('value.toLowerCase() emits `bf_lower .Value`', () => {
+      // Pre-#1448: parser refused `.toLowerCase` via
+      // `UNSUPPORTED_METHODS` and surfaced BF101. The runtime's
+      // `bf_lower` helper has been registered from a prior code
+      // path; this PR wires the JS method name to it.
+      const result = compileAndGenerate(`function A({ value }: { value: string }) {
+  return <div>{value.toLowerCase()}</div>
+}
+export { A }`)
+      expect(result.template).toContain('bf_lower .Value')
+    })
+  })
+
   describe('.reverse / .toReversed lowering (#1448 Tier A)', () => {
     test('items.reverse().join(\' \') chains through bf_reverse → bf_join', () => {
       // `Array.prototype.reverse()` mutates the receiver in JS, but
@@ -1638,6 +1654,7 @@ import { fixture as arrayConcatFixture } from '../../../adapter-tests/fixtures/m
 import { fixture as arraySliceFixture } from '../../../adapter-tests/fixtures/methods/array-slice'
 import { fixture as arrayReverseFixture } from '../../../adapter-tests/fixtures/methods/array-reverse'
 import { fixture as arrayToReversedFixture } from '../../../adapter-tests/fixtures/methods/array-toReversed'
+import { fixture as stringToLowerCaseFixture } from '../../../adapter-tests/fixtures/methods/string-toLowerCase'
 
 describe('GoTemplateAdapter - #1448 Tier A fixture-driven lowering pins', () => {
   const cases = [
@@ -1657,6 +1674,7 @@ describe('GoTemplateAdapter - #1448 Tier A fixture-driven lowering pins', () => 
     // .toReversed shares the helper with .reverse — pinning both
     // routings catches a future divergence between them.
     { fixture: arrayToReversedFixture,  expect: 'bf_reverse .Items' },
+    { fixture: stringToLowerCaseFixture,expect: 'bf_lower .Value' },
   ]
 
   for (const { fixture, expect: expectedHelper } of cases) {

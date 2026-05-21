@@ -57,6 +57,7 @@ export type ArrayMethod =
   | 'slice'
   | 'reverse'
   | 'toReversed'
+  | 'toLowerCase'
 
 export type LiteralType = 'string' | 'number' | 'boolean' | 'null'
 

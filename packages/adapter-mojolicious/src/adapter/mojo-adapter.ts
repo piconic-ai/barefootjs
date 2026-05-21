@@ -1500,6 +1500,14 @@ function renderArrayMethod(
       const recv = emit(object)
       return `bf->reverse(${recv})`
     }
+    case 'toLowerCase': {
+      // Perl's native `lc` is the obvious lowering — no helper
+      // method needed. The receiver flows through `emit` so any
+      // upstream coercion (`$value`, `$bf->string(...)`, etc.)
+      // composes naturally.
+      const recv = emit(object)
+      return `lc(${recv})`
+    }
     default: {
       // TS-level exhaustiveness guard. If this throws at runtime, the
       // IR was constructed against a newer `ArrayMethod` variant that

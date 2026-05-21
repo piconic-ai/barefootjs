@@ -131,7 +131,10 @@ runAdapterConformanceTests({
     // SSR templates render a snapshot and the JS mutate-vs-new
     // distinction has no template-level meaning (#1448 Tier A
     // sixth PR).
-    'string-toLowerCase':  [{ code: 'BF101', severity: 'error' }],
+    // `string-toLowerCase` no longer pinned — Perl's native `lc`
+    // is the obvious lowering (no helper method); Go uses the
+    // pre-existing `bf_lower` runtime helper (#1448 Tier A
+    // seventh PR).
     'string-toUpperCase':  [{ code: 'BF101', severity: 'error' }],
     'string-trim':         [{ code: 'BF101', severity: 'error' }],
     // #1448 catalog — `.find` / `.findIndex` have no Mojo lowering
@@ -537,6 +540,23 @@ export { A }`, 'A.tsx', { adapter })
     expect(template).not.toContain('$bf->at(')
   })
 
+  test('lowers .toLowerCase() via Perl native lc (#1448 Tier A)', () => {
+    // Perl's `lc` is the native lowering — no helper needed.
+    // Defensive: must not emit a `$lc(...)` form (which the
+    // test-render patch would mangle); emit must be the bare
+    // `lc(...)` call so it stays well-formed in both the
+    // standalone test renderer and real Mojolicious.
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`function A({ value }: { value: string }) {
+  return <div>{value.toLowerCase()}</div>
+}
+export { A }`, 'A.tsx', { adapter })
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain('lc($value)')
+    expect(template).not.toContain('$lc(')
+  })
+
   test('lowers .reverse().join(\' \') via bf->reverse + join (#1448 Tier A)', () => {
     // SSR templates render a snapshot, so `.reverse` and
     // `.toReversed` share a Mojo lowering — both return a new
@@ -816,6 +836,7 @@ import { fixture as arrayConcatFixture } from '../../../adapter-tests/fixtures/m
 import { fixture as arraySliceFixture } from '../../../adapter-tests/fixtures/methods/array-slice'
 import { fixture as arrayReverseFixture } from '../../../adapter-tests/fixtures/methods/array-reverse'
 import { fixture as arrayToReversedFixture } from '../../../adapter-tests/fixtures/methods/array-toReversed'
+import { fixture as stringToLowerCaseFixture } from '../../../adapter-tests/fixtures/methods/string-toLowerCase'
 
 describe('MojoAdapter - #1448 Tier A fixture-driven lowering pins', () => {
   const cases = [
@@ -830,6 +851,7 @@ describe('MojoAdapter - #1448 Tier A fixture-driven lowering pins', () => {
     // .toReversed shares the helper with .reverse — pinning both
     // routings catches a future divergence between them.
     { fixture: arrayToReversedFixture,  expect: 'bf->reverse($items)' },
+    { fixture: stringToLowerCaseFixture,expect: 'lc($value)' },
   ]
 
   for (const { fixture, expect: expectedHelper } of cases) {
