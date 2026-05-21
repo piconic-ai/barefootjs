@@ -12,10 +12,15 @@ import type { ComponentIR, ParamInfo } from './types'
  * specifier blocks. Specifiers whose local name appears in `extraInlineExported`
  * (already emitted inline) are filtered, except for `from`-form re-exports and
  * aliased forms that introduce a new external name.
+ *
+ * When `rewriteRelativeImport` is supplied, `export … from '<rel>'` blocks
+ * have their relative specifiers re-anchored to the emit location — same
+ * hook adapters consume for plain `import` lines (#1453).
  */
 export function generateModuleExports(
   ir: ComponentIR,
-  extraInlineExported: ReadonlySet<string> = new Set()
+  extraInlineExported: ReadonlySet<string> = new Set(),
+  rewriteRelativeImport?: (importPath: string) => string,
 ): string | null {
   const lines: string[] = []
 
@@ -70,7 +75,10 @@ export function generateModuleExports(
       .join(', ')
     const typeKw = block.isTypeOnly ? 'type ' : ''
     if (isReexportFrom) {
-      lines.push(`export ${typeKw}{ ${specText} } from '${block.source}'`)
+      const source = rewriteRelativeImport && block.source!.startsWith('.')
+        ? rewriteRelativeImport(block.source!)
+        : block.source!
+      lines.push(`export ${typeKw}{ ${specText} } from '${source}'`)
     } else {
       lines.push(`export ${typeKw}{ ${specText} }`)
     }

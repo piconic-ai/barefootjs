@@ -21,6 +21,7 @@ import {
   type AttrValue,
   type IRTemplatePart,
   type ParamInfo,
+  type AdapterGenerateOptions,
   type AdapterOutput,
   type TemplateSections,
   type JsxAdapterConfig,
@@ -97,6 +98,15 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   private isClientComponent: boolean = false
   private hasClientInteractivity: boolean = false
   private currentComponentHasProps: boolean = false
+  /**
+   * Per-call relative-import rewriter supplied by the build pipeline so
+   * source-authored relative paths resolve correctly from the emitted
+   * file's on-disk position (#1453). Stashed for the duration of one
+   * `generate()` call so `generateImports` can apply it; cleared on exit
+   * so a singleton adapter instance does not leak state between
+   * components.
+   */
+  private rewriteRelativeImport?: (importPath: string) => string
   /** Stack of loop keys for generating data-key / data-key-1 attributes on loop items */
   private loopKeyStack: Array<{ key: string | null; param: string }> = []
 
@@ -109,9 +119,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     }
   }
 
-  generate(ir: ComponentIR): AdapterOutput {
+  generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
     this.isClientComponent = ir.metadata.isClientComponent
+    this.rewriteRelativeImport = options?.rewriteRelativeImport
 
     // Generate component body FIRST so we can scan it for used imports
     const component = this.generateComponent(ir)
@@ -141,12 +152,14 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Assemble template for backward compat (external consumers using output.template)
     const template = [imports, moduleConstants, types, component].filter(Boolean).join('\n\n') + defaultExport
 
-    return {
+    const result: AdapterOutput = {
       template,
       sections,
       types: types || undefined,
       extension: this.extension,
     }
+    this.rewriteRelativeImport = undefined
+    return result
   }
 
   private generateModuleLevelContextBindings(ir: ComponentIR): string {
@@ -187,11 +200,14 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     }
 
     // Re-emit template imports, rewriting `@barefootjs/client` to this
-    // adapter's SSR shim. Adapters own the rewrite; the compiler hands us
-    // the raw import list.
+    // adapter's SSR shim AND re-anchoring relative paths from the emit
+    // location when the caller supplied a `rewriteRelativeImport` hook
+    // (#1453). Adapters own both rewrites; the compiler hands us the
+    // raw import list.
     const templateImports = rewriteImportsForTemplate(
       ir.metadata.templateImports,
       this.clientShimSource,
+      this.rewriteRelativeImport,
     )
     for (const imp of templateImports) {
       if (imp.specifiers.length === 0) {

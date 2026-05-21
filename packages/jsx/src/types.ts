@@ -1434,6 +1434,16 @@ export interface CompileOptions {
    * on `AdapterGenerateOptions` for the full semantics.
    */
   siblingTemplatesRegistered?: boolean
+  /**
+   * Relative-import rewriter applied to every `ImportInfo.source` (and
+   * matching `export … from '…'` block source) the compiler hands to
+   * adapters. The CLI build pipeline supplies this so source-authored
+   * paths like `'../../../types'` resolve from the on-disk emit
+   * position rather than the source position (#1453). Bare specifiers
+   * (`@barefootjs/jsx`, `react`) are NOT passed through — only paths
+   * starting with `.`.
+   */
+  rewriteRelativeImport?: (importPath: string) => string
 }
 
 export interface FileOutput {

@@ -26,15 +26,28 @@ const CLIENT_PACKAGE_SOURCES = new Set([
 export function rewriteImportsForTemplate(
   imports: ImportInfo[],
   shimSource: string | undefined,
+  rewriteRelative?: (importPath: string) => string,
 ): ImportInfo[] {
+  const remap = (imp: ImportInfo): ImportInfo => {
+    // Bare specifiers (`@barefootjs/jsx`, `react`, `./` resolved-via-tsconfig
+    // — but the source string is the call site's truth) pass through.
+    // Only literal relative paths beginning with `.` are subject to the
+    // depth-shift rewrite (#1453).
+    if (!rewriteRelative || !imp.source.startsWith('.')) return imp
+    const next = rewriteRelative(imp.source)
+    return next === imp.source ? imp : { ...imp, source: next }
+  }
+
   if (!shimSource) {
-    return imports.filter((imp) => !CLIENT_PACKAGE_SOURCES.has(imp.source))
+    return imports
+      .filter((imp) => !CLIENT_PACKAGE_SOURCES.has(imp.source))
+      .map(remap)
   }
   const merged = new Map<string, ImportInfo>()
   const result: ImportInfo[] = []
   for (const imp of imports) {
     if (!CLIENT_PACKAGE_SOURCES.has(imp.source)) {
-      result.push(imp)
+      result.push(remap(imp))
       continue
     }
     const existing = merged.get(shimSource)

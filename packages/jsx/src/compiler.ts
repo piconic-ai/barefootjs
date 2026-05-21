@@ -154,8 +154,13 @@ function compileMultipleComponents(
     const adapterOutput = adapter.generate(componentIR, {
       scriptBaseName,
       siblingTemplatesRegistered: options.siblingTemplatesRegistered,
+      rewriteRelativeImport: options.rewriteRelativeImport,
     })
-    const moduleExports = generateModuleExports(componentIR, fileWideInlineExported)
+    const moduleExports = generateModuleExports(
+      componentIR,
+      fileWideInlineExported,
+      options.rewriteRelativeImport,
+    )
 
     const s = adapterOutput.sections
     const imports = s.imports
@@ -515,6 +520,7 @@ export function compileJSX(
   const adapterOutput = adapter.generate(componentIR, {
     scriptBaseName: options.scriptBaseName,
     siblingTemplatesRegistered: options.siblingTemplatesRegistered,
+    rewriteRelativeImport: options.rewriteRelativeImport,
   })
 
   // `templatesPerComponent` adapters (Mojolicious) emit non-JS template files
@@ -527,7 +533,7 @@ export function compileJSX(
   if (adapter.templatesPerComponent) {
     content = adapterOutput.template
   } else {
-    const moduleExports = generateModuleExports(componentIR)
+    const moduleExports = generateModuleExports(componentIR, undefined, options.rewriteRelativeImport)
     content = [s.imports, s.moduleConstants ?? '', s.types, moduleExports, s.component]
       .filter(Boolean).join('\n\n') + (s.defaultExport || '')
   }

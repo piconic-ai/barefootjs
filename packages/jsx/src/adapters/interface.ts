@@ -59,6 +59,25 @@ export interface AdapterGenerateOptions {
    * runner) get the loud build-time error.
    */
   siblingTemplatesRegistered?: boolean
+  /**
+   * Optional rewrite hook applied to **relative** module specifiers
+   * (those starting with `.`) when an adapter re-emits the source's
+   * import / re-export list into a marked template. Bare specifiers
+   * (`@barefootjs/jsx`, `react`) are NOT passed through this hook.
+   *
+   * The CLI sets this so source-authored paths still resolve from the
+   * on-disk emit position (#1453): a registry-shaped
+   * `import type { Child } from '../../../types'` written from
+   * `components/ui/button/index.tsx` is correct at source depth but
+   * lands at the wrong depth once emitted to
+   * `public/components/ui/button/index.tsx`.
+   *
+   * Operates on the structured `ImportInfo.source` strings, not the
+   * emitted text — so JSDoc `@example` blocks containing
+   * import-shaped code, template literals, and other source-level
+   * incidentals are unaffected.
+   */
+  rewriteRelativeImport?: (importPath: string) => string
 }
 
 /**

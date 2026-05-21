@@ -924,9 +924,10 @@ export function effectiveNamesFor(
 }
 
 /**
- * Re-anchor every relative `from '…'` / side-effect `import '…'` in a
- * marked-template's source so the same import points at the same file
- * after the template is written to its destination on disk.
+ * Build a relative-import rewriter for a single source-file → emit-file
+ * pair. The returned function takes a relative module specifier (as
+ * written in the source) and returns the same specifier re-anchored
+ * to the emit's on-disk dir.
  *
  * `bf build` mirrors `<componentDir>/<rel>/index.tsx` to
  * `<templatesOutDir>/<rel>/index.tsx`. Crucially, only files under a
@@ -938,7 +939,7 @@ export function effectiveNamesFor(
  * resolves to the non-existent `public/types/` and tsc raises TS2307
  * across the scaffold (#1453).
  *
- * For each relative import:
+ * For each relative specifier:
  *   1. Resolve against the SOURCE file's directory → `srcAbs`.
  *   2. If `srcAbs` is under any componentDir, the build emits a mirror
  *      at `<templatesOutDir>/<rel-under-componentDir>` — point the
@@ -949,49 +950,39 @@ export function effectiveNamesFor(
  *   3. Otherwise the file lives only at `srcAbs` — re-relativise from
  *      the OUTPUT file's directory to that source path.
  *
- * Matches `from '…'` and side-effect `import '…'` line forms, including
- * `import type` and `export … from`. Only relative specifiers (those
- * starting with `.`) are touched; bare specifiers (`@barefootjs/jsx`)
- * pass through unchanged.
+ * Returned function is structural: operates on `ImportInfo.source`
+ * strings handed to it by the compiler, not on the emitted text.
+ * JSDoc `@example` blocks containing import-shaped code are unaffected.
+ * Caller is responsible for guarding bare specifiers — the compiler
+ * already does, but this helper assumes its input begins with `.`.
  */
-export function rewriteRelativeImportsForOutput(
-  content: string,
+export function buildRelativeImportRewriter(
   sourcePath: string,
   outputPath: string,
   componentDirs: readonly string[],
   templatesOutDir: string,
-): string {
+): (importPath: string) => string {
   const sourceDir = dirname(sourcePath)
   const outputDir = dirname(outputPath)
   const resolvedComponentDirs = componentDirs.map((d) => resolve(d))
 
-  const resolveTarget = (importPath: string): string => {
+  return (importPath: string): string => {
     const srcAbs = resolve(sourceDir, importPath)
+    let targetAbs = srcAbs
     for (const componentDir of resolvedComponentDirs) {
       if (srcAbs === componentDir || srcAbs.startsWith(componentDir + '/')) {
         const relUnderComponentDir = srcAbs.slice(componentDir.length + 1)
-        return relUnderComponentDir
+        targetAbs = relUnderComponentDir
           ? resolve(templatesOutDir, relUnderComponentDir)
           : templatesOutDir
+        break
       }
     }
-    return srcAbs
+    let rewritten = relative(outputDir, targetAbs)
+    if (rewritten === '') rewritten = '.'
+    if (!rewritten.startsWith('.')) rewritten = './' + rewritten
+    return rewritten
   }
-
-  // `\b(?:from|import)\s+` matches the keyword introducing a string
-  // specifier in: `import X from '...'`, `import type X from '...'`,
-  // `export { X } from '...'`, and side-effect `import '...'`. The
-  // capture group keeps the specifier's quote style intact.
-  return content.replace(
-    /(\b(?:from|import)\s+)(['"])(\.[^'"\n]+)\2/g,
-    (_full, kw: string, quote: string, importPath: string) => {
-      const targetAbs = resolveTarget(importPath)
-      let rewritten = relative(outputDir, targetAbs)
-      if (rewritten === '') rewritten = '.'
-      if (!rewritten.startsWith('.')) rewritten = './' + rewritten
-      return `${kw}${quote}${rewritten}${quote}`
-    },
-  )
 }
 
 /**
@@ -1423,6 +1414,23 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
     deps[depPath] = hashContent(await readText(depPath))
   }
 
+  // Relative imports authored from `<componentDir>/<rel>/index.tsx` need
+  // to keep resolving to the same files after the template is mirrored
+  // to `<templatesOutDir>/<rel>/index.tsx`. The output path is
+  // computable here from the source-path layout — the marked template's
+  // basename is taken verbatim from the source, and outDir mirroring is
+  // a build-pipeline invariant. See #1453 for the failure mode.
+  const presumedOutputPath = resolve(
+    templatesOutDir,
+    baseFileName.replace(/\.tsx?$/, config.adapter.extension),
+  )
+  const rewriteRelativeImport = buildRelativeImportRewriter(
+    entryPath,
+    presumedOutputPath,
+    config.componentDirs,
+    templatesOutDir,
+  )
+
   const result = compileJSX(
     sourceContent,
     entryPath,
@@ -1440,6 +1448,7 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
       // it can suppress that diagnostic for CLI-managed builds.
       siblingTemplatesRegistered: true,
       localImportPrefixes: config.localImportPrefixes,
+      rewriteRelativeImport,
     },
   )
 
@@ -1506,27 +1515,18 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
   if (!config.clientOnly && markedTemplates.length > 0) {
     for (const tpl of markedTemplates) {
       const outName = effectiveOutName(tpl.path, baseNameNoExt)
-      const target = resolve(templatesOutDir, outName)
       let outputContent = tpl.content
-      // Re-anchor user-authored relative imports so they point at the
-      // same files from the output dir's perspective (#1453). Runs
-      // before `transformMarkedTemplate` so adapter-injected imports
-      // (e.g. Hono's `hono/jsx-renderer` for script collection) — which
-      // are bare specifiers and unaffected by the rewrite — slot in
-      // cleanly on top of the corrected paths.
-      outputContent = rewriteRelativeImportsForOutput(
-        outputContent,
-        entryPath,
-        target,
-        config.componentDirs,
-        templatesOutDir,
-      )
+      // Relative-import re-anchoring (#1453) happens upstream inside
+      // compileJSX via `rewriteRelativeImport` — operates on structured
+      // `ImportInfo.source` strings, so JSDoc / template-literal text is
+      // untouched.
       if (hasClientJs && config.transformMarkedTemplate) {
         const componentId = outName.replace(/\.[^.]+$/, '')
         outputContent = config.transformMarkedTemplate(outputContent, componentId, clientJsFilename)
       }
       const rel = `${templatesSubdir}/${outName}`
       outputs.push(rel)
+      const target = resolve(templatesOutDir, outName)
       await mkdir(dirname(target), { recursive: true })
       if (await writeIfChanged(target, outputContent)) {
         wroteAny = true
