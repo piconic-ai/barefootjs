@@ -279,17 +279,23 @@ describe('adapter registry', () => {
     expect(gitignore).not.toMatch(/^public\/?\s*$/m)
   })
 
-  test('hono scaffold ships bun-types so `bf gen test` files type-check', () => {
-    // `init.ts` hard-codes the scaffold's `test` script to `bun test`
-    // for every adapter, and `bf gen test` writes `*.test.tsx` files
-    // that `import { describe, test, expect } from 'bun:test'`. Without
-    // bun-types in the tsconfig + @types/bun in devDeps, tsc / the IDE
-    // raises TS2307 ("Cannot find module 'bun:test'") on every
-    // generated test the moment the user opens the project. See
-    // onboarding round 5 / PR #1450.
+  test('hono scaffold tsconfig + devDeps are bun-aware via init-time substitution', () => {
+    // The adapter map keeps `@types/bun` OUT of the static
+    // `devDependencies` and renders `"bun-types"` behind a
+    // `{{__BUN_TYPES_ENTRY__}}` placeholder in `tsconfig.json`.
+    // init.ts resolves both at scaffold time against the user's
+    // detected PM: bun users get bun-types in tsconfig + `@types/bun`
+    // in devDeps; npm / pnpm / yarn users get neither. This way the
+    // `bf gen test`-produced `import 'bun:test'` lines type-check
+    // cleanly for bun users without inflicting a bun-only dep on
+    // everybody else. See onboarding round 5 / PR #1450.
     const hono = ADAPTERS.hono
-    expect(hono.files['tsconfig.json']).toContain('"bun-types"')
-    expect(hono.devDependencies['@types/bun']).toBeTruthy()
+    // Adapter ships the placeholder, NOT a baked-in bun-types entry.
+    expect(hono.files['tsconfig.json']).toContain('{{__BUN_TYPES_ENTRY__}}')
+    expect(hono.files['tsconfig.json']).not.toContain('"bun-types"')
+    // And the static devDeps surface stays bun-free; init.ts adds
+    // `@types/bun` only when PM === 'bun'.
+    expect(hono.devDependencies['@types/bun']).toBeUndefined()
   })
 })
 

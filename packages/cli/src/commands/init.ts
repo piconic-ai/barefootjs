@@ -233,12 +233,26 @@ async function scaffoldApp(
   const rawName = flags.name || path.basename(projectDir)
   const pkgName = path.basename(rawName).replace(/[^a-z0-9-_]/gi, '-').toLowerCase() || 'barefoot-app'
 
+  // Resolve PM up-front so file substitution and devDep selection both
+  // see the same answer. (Scripts use it too further down.) When the
+  // user is on bun, the scaffold opts into the bun-types module
+  // declarations in tsconfig.json so `bf gen test`-produced files
+  // (`import { describe, test, expect } from 'bun:test'`) type-check
+  // out of the box; for npm / pnpm / yarn users the placeholder
+  // collapses to an empty string and `@types/bun` stays out of
+  // devDependencies — they can opt in themselves later if they
+  // decide to wire `bun test` in alongside their primary PM.
+  const pm = detectPackageManager(projectDir)
+  const bunTypesEntry = pm === 'bun' ? ', "bun-types"' : ''
+
   // Adapter-contributed files (server, components/Counter, barefoot.config.ts, etc.)
   for (const [relPath, contents] of Object.entries(adapter.files)) {
     const target = path.join(projectDir, relPath)
     if (existsSync(target)) continue
     mkdirSync(path.dirname(target), { recursive: true })
-    const resolved = contents.replace(/\{\{__PROJECT_NAME__\}\}/g, pkgName)
+    const resolved = contents
+      .replace(/\{\{__PROJECT_NAME__\}\}/g, pkgName)
+      .replace(/\{\{__BUN_TYPES_ENTRY__\}\}/g, bunTypesEntry)
     writeFileSync(target, resolved)
     created++
   }
@@ -258,11 +272,21 @@ async function scaffoldApp(
   // Resolve adapter scripts. Function values render against the
   // detected PM so `dev` / `deploy` quote the right dlx form
   // (`bunx wrangler` vs. `npx wrangler` vs. `pnpm dlx wrangler` etc.).
-  const pm = detectPackageManager(projectDir)
+  // (`pm` was resolved earlier so the file-substitution loop and
+  // tsconfig's bun-types entry both see the same value.)
   const resolvedAdapterScripts: Record<string, string> = {}
   for (const [k, v] of Object.entries(adapter.scripts)) {
     resolvedAdapterScripts[k] = typeof v === 'function' ? v(pm) : v
   }
+
+  // Bun-using projects need the `bun:test` module declarations so
+  // `bf gen test` files type-check cleanly. The adapter map keeps
+  // `@types/bun` out by default — adding it here, gated on the
+  // detected PM, avoids shipping a bun-only dep to npm / pnpm / yarn
+  // users who never touch `bun test`. Pairs with the conditional
+  // `"bun-types"` entry that the tsconfig template carries.
+  const conditionalDevDeps: Record<string, string> =
+    pm === 'bun' ? { '@types/bun': '^1.1.0' } : {}
 
   const pkgJson = {
     name: pkgName,
@@ -286,7 +310,7 @@ async function scaffoldApp(
       test: 'bun test',
     },
     dependencies: { ...adapter.dependencies },
-    devDependencies: { ...adapter.devDependencies },
+    devDependencies: { ...adapter.devDependencies, ...conditionalDevDeps },
   }
   if (!existsSync(pkgJsonPath)) {
     writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')

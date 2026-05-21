@@ -111,13 +111,16 @@ const HONO_TSCONFIG = `{
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "jsxImportSource": "@barefootjs/hono/jsx",
-    // \`@cloudflare/workers-types\` covers the deployed Worker. Bun
-    // types are mixed in because the scaffold's \`test\` script is
-    // \`bun test\` and \`bf gen test\` writes \`*.test.tsx\` files
-    // that import \`bun:test\` — without bun-types tsc / the IDE
-    // raise TS2307 ("Cannot find module 'bun:test'") on every
-    // generated test the moment the user opens the project.
-    "types": ["@cloudflare/workers-types", "bun-types"],
+    // \`@cloudflare/workers-types\` covers the deployed Worker.
+    // \`bun-types\` is mixed in only when the user picked \`bun\` as
+    // their package manager (init.ts swaps the placeholder below) —
+    // \`bf gen test\` writes \`*.test.tsx\` files that import
+    // \`bun:test\`, so a bun-using project needs the module
+    // declarations to type-check cleanly. Non-bun projects keep
+    // their \`tsconfig.json\` free of bun-specific noise; if the
+    // user later runs \`bun test\` they can opt in by installing
+    // \`@types/bun\` themselves.
+    "types": ["@cloudflare/workers-types"{{__BUN_TYPES_ENTRY__}}],
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -246,11 +249,11 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // at. Without it the scaffold's `bun test` is a no-op and any
     // generated `index.test.tsx` fails with a module-not-found error.
     '@barefootjs/test': 'latest',
-    // Paired with `"types": ["bun-types"]` in tsconfig.json. The scaffold's
-    // `test` script is `bun test` and every generated test file imports
-    // `bun:test`, so tsc needs the bun module declarations to type-check
-    // the project cleanly. Without it the IDE flags every test red.
-    '@types/bun': '^1.1.0',
+    // `@types/bun` is added by init.ts only when the detected PM is
+    // bun — paired with the conditional `"bun-types"` entry in
+    // tsconfig.json's `types` array. Keeping it out of the static
+    // adapter map avoids shipping a bun-only dep to npm / pnpm / yarn
+    // users who never invoke `bun test`.
     concurrently: '^9.0.0',
     typescript: '^5.6.0',
   },
