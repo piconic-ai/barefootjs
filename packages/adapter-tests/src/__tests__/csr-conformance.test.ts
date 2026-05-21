@@ -86,7 +86,11 @@ describe('CSR Conformance Tests', () => {
     test(`[${fixture.id}] ${fixture.description}`, async () => {
       const html = await renderCsrComponent({
         source: fixture.source,
-        props: fixture.props,
+        // Clone props per render so a mutating method in the fixture
+        // source (`.reverse()`, `.sort()`) doesn't poison the shared
+        // `fixture.props` object across SSR and CSR runs. Mirrors the
+        // same isolation in `jsx-runner.ts` for the SSR side.
+        props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
         components: fixture.components,
       })
 

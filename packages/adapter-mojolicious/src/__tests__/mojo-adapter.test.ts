@@ -122,6 +122,15 @@ runAdapterConformanceTests({
     'string-toUpperCase':  [{ code: 'BF101', severity: 'error' }],
     'string-trim':         [{ code: 'BF101', severity: 'error' }],
     'string-includes':     [{ code: 'BF101', severity: 'error' }],
+    // #1448 catalog — `.find` / `.findIndex` have no Mojo lowering
+    // yet (no `array-method` IR variant, no emitter), so the
+    // Mojo-specific gate in `convertExpressionToPerl` refuses them
+    // up front. `.join` is NOT pinned here — it's lifted to the
+    // `array-method` IR by the parser and `renderArrayMethod`'s
+    // `case 'join'` emits `join(sep, @{arr})` correctly; the
+    // text-expression form is routed through the same AST path.
+    'array-find':          [{ code: 'BF101', severity: 'error' }],
+    'array-findIndex':     [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining

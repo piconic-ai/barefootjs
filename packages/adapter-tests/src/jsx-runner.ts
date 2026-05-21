@@ -423,13 +423,23 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
 
         const adapter = createAdapter()
 
-        // 1. Render with the adapter under test
+        // 1. Render with the adapter under test.
+        //
+        // `structuredClone` isolates the prop object per render so a
+        // mutating method in the fixture's source (e.g. `.reverse()`,
+        // `.sort()`) can't poison subsequent renders against the same
+        // fixture object — same fixture instance is shared by the
+        // reference render below and by csr-conformance, so without
+        // the clone the second run sees an already-mutated array.
+        // CI didn't catch this previously because each adapter
+        // package's tests run in a separate `bun test` process, but a
+        // local `bun test packages/` across packages would.
         let html: string
         try {
           html = await render({
             source: fixture.source,
             adapter,
-            props: fixture.props,
+            props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
             components: fixture.components,
           })
         } catch (err) {
@@ -448,7 +458,9 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
           const refHtml = await referenceRender({
             source: fixture.source,
             adapter: refAdapter,
-            props: fixture.props,
+            // Same prop-mutation isolation as the adapter-under-test
+            // call above (see comment there).
+            props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
             components: fixture.components,
           })
 

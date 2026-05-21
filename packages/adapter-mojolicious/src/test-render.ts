@@ -404,7 +404,18 @@ function buildPerlProps(
         // Mojo::JSON sentinels so BarefootJS helpers can detect
         // booleans via ref() (see toPerlLiteral / spread_attrs).
         entries.push(`${key} => ${value ? 'Mojo::JSON::true' : 'Mojo::JSON::false'}`)
-      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      } else if (Array.isArray(value)) {
+        // Array → Perl arrayref literal. Fixtures that exercise
+        // array-receiver methods (`items.every(...)`, `items.some(...)`,
+        // `items.join(' - ')`, etc. — #1448 method catalog) need the
+        // prop value to reach the template as a real arrayref so the
+        // generated `@{$items}` / `$items->[$i]` references resolve.
+        // Without this branch, `Mojo::Template`'s `vars => 1` never
+        // declares `my $items` (the key is absent from the vars
+        // hash) and the template trips Perl's strict-mode "Global
+        // symbol $items requires explicit package name" check.
+        entries.push(`${key} => ${toPerlLiteral(value)}`)
+      } else if (value && typeof value === 'object') {
         // Plain object → Perl hashref literal (#1407 follow-up).
         // Used by the destructured-rest / propsObject fixtures
         // (`jsx-spread-rest-prop`, `jsx-spread-props-object`) so
@@ -604,7 +615,16 @@ function toPerlLiteral(value: unknown): string {
   // 0/1 would conflate genuine numeric values with booleans and
   // turn `disabled: false` into `disabled="0"` (#1413 review).
   if (typeof value === 'boolean') return value ? 'Mojo::JSON::true' : 'Mojo::JSON::false'
-  if (Array.isArray(value)) return '[]'
+  // Array → Perl arrayref literal, recursing so element types are
+  // serialised correctly. Previously this returned the literal `[]`
+  // — fine when the only caller was the spread-bag initial-value
+  // path (which never carried array shapes), but loses the contents
+  // for #1448's method fixtures where `items: ['a', 'b', 'c']`
+  // needs to reach the template as `['a', 'b', 'c']`, not an empty
+  // arrayref.
+  if (Array.isArray(value)) {
+    return `[${value.map(toPerlLiteral).join(', ')}]`
+  }
   // Plain object → Perl hashref literal. Used by the spread-bag
   // signal initial values (#1407 follow-up). Keys are quoted as
   // Perl strings (escaped via `perlSingleQuote` so values

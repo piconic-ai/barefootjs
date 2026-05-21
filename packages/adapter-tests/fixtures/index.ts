@@ -102,6 +102,26 @@ import { fixture as stringToLowerCase } from './methods/string-toLowerCase'
 import { fixture as stringToUpperCase } from './methods/string-toUpperCase'
 import { fixture as stringTrim } from './methods/string-trim'
 import { fixture as stringIncludes } from './methods/string-includes'
+// #1448 catalog parity: array methods rendered positively by
+// Hono / CSR (runtime JS) and at least one SSR adapter — pinning
+// the canonical surface so a regression surfaces here instead of
+// through whichever downstream fixture happens to compose the
+// same call. Per-adapter pins live in each adapter's test file
+// (Mojo's `expectedDiagnostics` set, Go's `skipJsx` list):
+//   - `.every` / `.some`              — positive across all adapters
+//   - `.join`                         — positive across all adapters
+//                                       (Mojo `array-method` IR
+//                                       emits `join(sep, @{arr})`;
+//                                       Go's `bf_join` helper)
+//   - `.find` / `.findIndex`          — positive on Hono / CSR / Go;
+//                                       Mojo has no lowering yet
+//                                       (`array-method` extension /
+//                                       BF101 pin in mojo-adapter.test)
+import { fixture as arrayJoin } from './methods/array-join'
+import { fixture as arrayFind } from './methods/array-find'
+import { fixture as arrayEvery } from './methods/array-every'
+import { fixture as arraySome } from './methods/array-some'
+import { fixture as arrayFindIndex } from './methods/array-findIndex'
 
 import type { JSXFixture } from '../src/types'
 
@@ -211,4 +231,10 @@ export const jsxFixtures: JSXFixture[] = [
   stringToUpperCase,
   stringTrim,
   stringIncludes,
+  // #1448 catalog parity — already-lowered Array methods.
+  arrayJoin,
+  arrayFind,
+  arrayEvery,
+  arraySome,
+  arrayFindIndex,
 ]

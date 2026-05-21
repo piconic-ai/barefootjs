@@ -1151,6 +1151,37 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       return this.convertHigherOrderExpr(expr)
     }
 
+    // #1443/#1448: `.join(sep)` is lifted by the parser to the
+    // `array-method` IR kind, and `renderArrayMethod`'s `case 'join'`
+    // already emits the correct `join(sep, @{arr})`. Route the
+    // text-expression form through the same AST path so the
+    // regex pipeline below doesn't mangle it into a
+    // `${arr}->{join}(sep)` Perl hash-lookup that errors at render.
+    if (/\.\s*join\s*\(/.test(expr)) {
+      return this.convertHigherOrderExpr(expr)
+    }
+
+    // #1448 catalog — Mojo-specific gap: `.find` / `.findIndex`
+    // have no AST lowering yet (no `array-method` IR variant, no
+    // emitter), and the regex pipeline silently mangles them into
+    // `${obj}->{find}(...)` hash lookups. Emit BF101 here until
+    // either a parser-level `array-method` extension or a
+    // `convertHigherOrderExpr` carve-out lands.
+    const mojoOnlyMatch = /\.\s*(?<method>find|findIndex)\s*\(/.exec(expr)
+    if (mojoOnlyMatch) {
+      const methodName = mojoOnlyMatch.groups!.method!
+      this.errors.push({
+        code: 'BF101',
+        severity: 'error',
+        message: `Mojo adapter has not lowered Array.prototype.${methodName} yet: ${expr.trim()}`,
+        loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+        suggestion: {
+          message: 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl',
+        },
+      })
+      return "''"
+    }
+
     // templatePrimitives substitution (#1189): rewrite identifier-path
     // calls like `JSON.stringify(props.config)` / `Math.floor(x)` to
     // their Mojo helper-call form (`bf->json($config)` etc.) BEFORE
