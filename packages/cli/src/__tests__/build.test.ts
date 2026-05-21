@@ -17,7 +17,7 @@ import { emptyCache, loadCache, type BuildCache, type CacheEntry } from '../lib/
 import { loadEmitLedger } from '../lib/emit-ledger'
 import { TestAdapter } from '../../../jsx/src/adapters/test-adapter'
 import { mkdirSync, writeFileSync, rmSync, existsSync, statSync, readFileSync, realpathSync, unlinkSync } from 'fs'
-import { resolve } from 'path'
+import { resolve, relative } from 'path'
 import { tmpdir } from 'os'
 
 // ── hasUseClientDirective ────────────────────────────────────────────────
@@ -1363,7 +1363,7 @@ describe('build() orphan output cleanup', () => {
 
       // Hand-craft a ledger pointing at a traversal target and an
       // absolute path. Both should be rejected.
-      const traversal = require('path').relative(outDir, victimPath)
+      const traversal = relative(outDir, victimPath)
       writeFileSync(
         resolve(outDir, '.bfemit.json'),
         JSON.stringify({
