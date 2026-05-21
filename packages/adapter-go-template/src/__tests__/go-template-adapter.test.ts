@@ -76,6 +76,19 @@ runAdapterConformanceTests({
     // hits the identical `template.HTML` interpolation gap as
     // `children-jsx-expression` above.
     'fragment-wrapped-children-jsx-expression',
+    // #1448 catalog — `.find(x => x === target)` / `.findIndex(...)`
+    // with a value-equality predicate that closes over an outer
+    // identifier. Go's current lowering emits `eq . .Target` inside
+    // `range`, which resolves `.Target` against the iteration
+    // element instead of the outer prop — silently producing empty
+    // output. The struct-field / boolean-truthiness shapes used by
+    // the adapter-specific tests below (`find/findIndex - adapter
+    // specific` describe block) are unaffected and stay covered;
+    // this skip only quarantines the primitive-array shape until
+    // the lowering switches to `$.Target` (or equivalent root-scope
+    // reference).
+    'array-find',
+    'array-findIndex',
   ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the

@@ -288,7 +288,18 @@ function buildGoPropsInit(
       lines.push(`\t\t${goField}: ${value},`)
     } else if (typeof value === 'boolean') {
       lines.push(`\t\t${goField}: ${value},`)
-    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+    } else if (Array.isArray(value)) {
+      // Array → Go `[]any` literal. Fixtures that exercise
+      // array-receiver methods (`items.every(...)`, `items.join(' - ')`,
+      // etc. — #1448 method catalog) need the prop value to reach
+      // the rendered template as a real slice so `range .Items` /
+      // `bf_join (.Items) ...` see actual elements; without this
+      // branch the prop was silently dropped, the input-struct
+      // field stayed at its zero value, and the template rendered
+      // empty content alongside the expected wrappers (the bug
+      // surfaced as "expected 'idx: 1' / got 'idx:'" on CI).
+      lines.push(`\t\t${goField}: ${goArrayLiteralFromArray(value)},`)
+    } else if (value && typeof value === 'object') {
       // Plain object → Go `map[string]any` literal (#1407 follow-up).
       // Used by `jsx-spread-rest-prop` to populate the input-bag
       // Spread_<N> field that carries the destructured-rest payload.
@@ -298,6 +309,19 @@ function buildGoPropsInit(
     }
   }
   return lines.join('\n')
+}
+
+function goArrayLiteralFromArray(arr: unknown[]): string {
+  const entries: string[] = []
+  for (const v of arr) {
+    if (typeof v === 'string') entries.push(`"${v.replace(/"/g, '\\"')}"`)
+    else if (typeof v === 'number') entries.push(String(v))
+    else if (typeof v === 'boolean') entries.push(String(v))
+    else if (v === null) entries.push('nil')
+    else if (Array.isArray(v)) entries.push(goArrayLiteralFromArray(v))
+    else if (v && typeof v === 'object') entries.push(goMapLiteralFromObject(v as Record<string, unknown>))
+  }
+  return `[]any{${entries.join(', ')}}`
 }
 
 function goMapLiteralFromObject(obj: Record<string, unknown>): string {
