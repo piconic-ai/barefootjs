@@ -54,3 +54,56 @@ describe('normalizeHTML — async placeholder strip', () => {
     expect(normalizeHTML(html)).toBe('<span>R</span>')
   })
 })
+
+describe('normalizeHTML — boolean-attribute canonicalisation (#1466)', () => {
+  test('strips empty-string value on HTML5 boolean attrs (Hono `disabled=""` → bare)', () => {
+    const html = '<button disabled="">x</button>'
+    expect(normalizeHTML(html)).toBe('<button disabled>x</button>')
+  })
+
+  test('covers the spec boolean-attr whitelist (hidden / checked / readonly / required / autofocus)', () => {
+    const html = '<form><input checked="" required="" readonly="" autofocus=""><div hidden="">y</div></form>'
+    expect(normalizeHTML(html)).toBe(
+      '<form><input autofocus checked readonly required><div hidden>y</div></form>',
+    )
+  })
+
+  test('leaves non-boolean empty attrs alone (`class=""`, `aria-label=""`)', () => {
+    // `aria-label=""` is a legitimate ARIA shape (suppress accessible
+    // name); the whitelist must not consume it. Same for `class=""`.
+    const html = '<button aria-label="" class="">x</button>'
+    expect(normalizeHTML(html)).toBe('<button aria-label="" class="">x</button>')
+  })
+
+  test('canonicalises `aria-*="0"` to `aria-*="false"` (Mojo Perl coercion)', () => {
+    // Mojo emits `aria-checked="0"` for JS false; ARIA spec only allows
+    // `"true" | "false" | "mixed"`, so "0" is invalid — round up to
+    // the canonical `"false"`.
+    const html = '<button aria-checked="0" aria-expanded="0">x</button>'
+    expect(normalizeHTML(html)).toBe(
+      '<button aria-checked="false" aria-expanded="false">x</button>',
+    )
+  })
+
+  test('leaves `aria-*="true"` and `aria-*="false"` untouched', () => {
+    const html = '<button aria-checked="true" aria-pressed="false">x</button>'
+    expect(normalizeHTML(html)).toBe(
+      '<button aria-checked="true" aria-pressed="false">x</button>',
+    )
+  })
+
+  test('does NOT rewrite `data-*="0"` (`data-count={0}` must survive)', () => {
+    // Dataset values are freeform — a numeric signal initialised to 0
+    // must serialise as `"0"`, not `"false"`. (Catches the over-broad
+    // rewrite called out in #1496 review.)
+    const html = '<div data-count="0" data-x="0">x</div>'
+    expect(normalizeHTML(html)).toBe('<div data-count="0" data-x="0">x</div>')
+  })
+
+  test('does NOT rewrite `data-*=""` (empty string is a legitimate dataset value)', () => {
+    // (normalizeHTML alphabetises attributes within tags as a separate
+    // step, so the assertion uses the sorted order.)
+    const html = '<div data-state="" data-active="">x</div>'
+    expect(normalizeHTML(html)).toBe('<div data-active="" data-state="">x</div>')
+  })
+})

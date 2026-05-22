@@ -177,35 +177,36 @@ export function normalizeHTML(html: string): string {
     .replace(/bf-s="([A-Z][a-zA-Z]*)_[a-z0-9]+((?:_s\d+)*)"/g, 'bf-s="$1_*$2"')
     // Canonicalise reactive boolean-attribute serialisation across
     // adapters (#1466 follow-up). Same user binding (`disabled={!ok()}`,
-    // `aria-checked={ok()}`, `data-active={count() > 0}`) yields
-    // different bytes per adapter:
+    // `aria-checked={ok()}`) yields different bytes per adapter:
     //
-    //   binding evaluates to        Hono           Mojo           Go
-    //   true (HTML bool attr)       `disabled=""`  `disabled`     `disabled`
-    //   false (aria-* tri-state)    `aria-checked="false"`  `aria-checked="0"`  `aria-checked="false"`
-    //   false (data-* arbitrary)    `data-active="false"`  `data-active=""`     `data-active="false"`
+    //   binding evaluates to        Hono                       Mojo / Go
+    //   true (HTML5 boolean attr)   `disabled=""`              bare `disabled`
+    //   false (aria-* tri-state)    `aria-checked="false"`     `aria-checked="0"` (Mojo only)
     //
-    // All three forms are user-equivalent (the boolean attribute is
-    // present-or-absent; ARIA / data-* false-shapes carry the same
-    // semantic). Collapse to a single canonical form so the byte
-    // comparison reads as cross-adapter equality:
+    // Both forms are user-equivalent — boolean attrs are present-or-
+    // absent, and `aria-*="0"` is invalid per ARIA spec (only
+    // `"true" | "false" | "mixed"` are allowed) so the only adapter
+    // that produces it (Mojo, Perl integer-context coercion of JS
+    // false) is rounded up to the canonical `"false"`.
     //
-    //   - HTML5 boolean attrs (`disabled=""` etc.) → bare attribute.
-    //     The whitelist matches the HTML5 spec set, narrow to avoid
-    //     stripping value-bearing attrs like `class=""`.
-    //   - `aria-*="0"` and `data-*="0"` → `="false"` (Mojo Perl
-    //     integer-context coercion).
-    //   - `aria-*=""` and `data-*=""` → `="false"` (Mojo Perl
-    //     string-context coercion). Symmetric on both sides of the
-    //     compare — a literal-empty value also normalises to "false",
-    //     which loses literal-empty vs JS-false discrimination but is
-    //     acceptable for conformance equality.
+    // Rules kept narrow:
+    //   - HTML5 boolean attrs from the spec whitelist → strip empty
+    //     value so `attr=""` collapses to bare `attr`.
+    //   - `aria-*="0"` → `aria-*="false"`. Only `"0"` — not `""`,
+    //     since `aria-label=""` (suppress accessible name) is
+    //     legitimate.
+    //
+    // `data-*` is intentionally untouched: dataset values are
+    // freeform, and a fixture binding `data-count={count()}` to a
+    // numeric signal must preserve `data-count="0"` rather than be
+    // coerced to `data-count="false"`. Mojo-specific `data-*=""` for
+    // JS boolean false (`data-active={ok()}`) stays per-fixture
+    // skip — adapter bug, not a normalisable shape.
     .replace(
       /\s(disabled|hidden|checked|readonly|required|selected|autofocus|multiple|defer|async|controls|loop|muted|open|reversed|ismap|formnovalidate|nomodule|playsinline|inert|novalidate|allowfullscreen)=""/g,
       ' $1',
     )
-    .replace(/\s(aria-[a-z-]+|data-[a-z-]+)="0"/g, ' $1="false"')
-    .replace(/\s(aria-[a-z-]+|data-[a-z-]+)=""/g, ' $1="false"')
+    .replace(/\s(aria-[a-z-]+)="0"/g, ' $1="false"')
     // Normalize void element self-closing: <br/> or <br /> → <br>
     .replace(new RegExp(`<(${VOID_ELEMENTS})(\\s[^>]*?)?\\s*/>`, 'g'), '<$1$2>')
     // Remove trailing whitespace before >

@@ -28,6 +28,6 @@ export function Card(props: { children?: unknown }) {
 `,
   },
   expectedHtml: `
-    <main bf-s="test" bf="s1" data-x="false"><section bf-s="test_s0"><span>hello</span><span>world</span></section></main>
+    <main bf-s="test" bf="s1" data-x="0"><section bf-s="test_s0"><span>hello</span><span>world</span></section></main>
   `,
 })

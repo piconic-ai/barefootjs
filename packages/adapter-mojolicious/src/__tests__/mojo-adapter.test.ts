@@ -60,18 +60,23 @@ runAdapterConformanceTests({
     // never receives a `theme` key. Provider SSR coverage on Mojo
     // waits on that adapter feature; see #1297 follow-up.
     'context-provider',
-    // Shared-component multi-component fixtures (#1466). Boolean
-    // attribute divergence is now collapsed by `normalizeHTML`
-    // (`disabled="" ↔ disabled`, `aria-*="0" ↔ aria-*="false"`,
-    // `data-*="" ↔ data-*="false"`), so the single-root variants
-    // (`conditional-return-button/link`, `form`, `portal`) participate
-    // again. The fixtures below still diverge because Mojo's child
+    // Shared-component corpus (#1466) — Mojo-specific
+    // `data-*="false"` divergence. The HTML5-boolean-attr and
+    // `aria-*="0"` rules in `normalizeHTML` unskip `form` and
+    // `portal`, but Mojo's Perl string-context coercion of JS false
+    // emits `data-active=""` where Hono / Go emit `data-active="false"`.
+    // Normalising `data-*=""` blanket-wide would mis-coerce
+    // legitimate `data-count={0}` values (see PR #1496 review), so
+    // these stay skipped until the Mojo adapter learns to serialise
+    // JS boolean false as the string "false" for `data-*` bindings.
+    'conditional-return-button',
+    'conditional-return-link',
+    // Multi-component fixtures still diverge because Mojo's child
     // template emitter pins the child's `bf-s` to the literal
     // `test_<sN>` (`_scope_id("test_$sid")` in `test-render.ts`)
-    // instead of `<ChildName>_<id>_<sN>` like Hono / CSR. That mismatch
-    // isn't an attribute-serialisation concern; it's the same family
-    // of test-harness scope-id plumbing that the `componentName`
-    // option fixed on the Hono side. Separate follow-up.
+    // instead of `<ChildName>_<id>_<sN>` like Hono / CSR. Same family
+    // of test-harness scope-id plumbing the `componentName` option
+    // fixed on the Hono side. Separate follow-up.
     'toggle-shared',
     'reactive-props',
     'props-reactivity-comparison',
