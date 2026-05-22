@@ -264,7 +264,14 @@ smoke('bf debug graph Counter', 'npx --no-install bf debug graph Counter', { exp
 smoke('bf debug trace Counter count', 'npx --no-install bf debug trace Counter count', { expect: 'count' })
 
 // — generators
-smoke('bf gen test Counter', 'npx --no-install bf gen test Counter', { expect: 'Counter.test.tsx' })
+// `bf init` now scaffolds `components/Counter.test.tsx` alongside
+// `components/Counter.tsx` (so the starter's `npm test` has something
+// real to run). `bf gen test Counter` refuses to clobber that file by
+// default, which is the correct policy — pass `--force` here to keep
+// exercising the write path through this smoke entry, since that's
+// what this line is actually testing. The companion `--stdout` mode
+// is covered by the unit tests in packages/cli.
+smoke('bf gen test Counter', 'npx --no-install bf gen test Counter --force', { expect: 'Counter.test.tsx' })
 smoke('bf gen preview button', 'npx --no-install bf gen preview button')
 smoke('bf gen component widget button', 'npx --no-install bf gen component widget button', { expect: 'components/ui/widget' })
 smoke('bf preview (list after gen)', 'npx --no-install bf preview', { expect: 'button' })
