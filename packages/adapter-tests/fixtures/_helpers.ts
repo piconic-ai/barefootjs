@@ -82,6 +82,20 @@ export function sourceFileBasename(spec: SharedFixtureSpec): string {
   return spec.sourceFile ?? spec.componentName
 }
 
+/**
+ * Deterministic root-scope id for shared-component fixtures. The
+ * hydration walker keys component dispatch on `bf-s` matching
+ * `<ComponentName>_<id>`; `normalizeHTML` further canonicalises any
+ * `<ComponentName>_<rest>` to `<ComponentName>_*` for cross-adapter
+ * comparison. Pinning the suffix to a literal `test` makes both
+ * happen: hydration dispatches (because of the underscore), and the
+ * conformance comparison normalises both sides to the same canonical
+ * `Counter_*` token regardless of which adapter rendered.
+ */
+export function sharedFixtureInstanceId(spec: SharedFixtureSpec): string {
+  return `${spec.componentName}_test`
+}
+
 export function defineSharedFixture(spec: SharedFixtureSpec): JSXFixture {
   const sourcePath = resolve(
     SHARED_COMPONENTS_DIR,
@@ -89,11 +103,41 @@ export function defineSharedFixture(spec: SharedFixtureSpec): JSXFixture {
   )
   const htmlPath = resolve(SNAPSHOT_DIR, `${spec.id}.html`)
   const clientJsPath = resolve(SNAPSHOT_DIR, `${spec.id}.client.js`)
+  // Merge the deterministic `__instanceId` here so adapter-conformance
+  // runs (which pass `fixture.props` verbatim to the live render) and
+  // snapshot generation share the same root-scope id. The renderer
+  // strips internal `__`-prefixed keys before serialising `bf-p`, so
+  // this does not bloat the embedded props payload.
+  const mergedProps = {
+    ...spec.props,
+    __instanceId: sharedFixtureInstanceId(spec),
+  }
+  // Bundle sibling component sources into `fixture.components` keyed
+  // with the leading `./` so the conformance runner's import-strip
+  // filter recognises the parent's `import Child from './Child'` line
+  // and inlines the child function for SSR. Without this, the temp
+  // file the runner writes can't resolve relative imports outside
+  // its dir.
+  const components: Record<string, string> | undefined = (() => {
+    if (!spec.additionalComponents?.length) return undefined
+    const out: Record<string, string> = {}
+    for (const extra of spec.additionalComponents) {
+      const extraPath = resolve(SHARED_COMPONENTS_DIR, `${extra}.tsx`)
+      out[`./${extra}.tsx`] = readFileSync(extraPath, 'utf8')
+    }
+    return out
+  })()
   return createFixture({
     id: spec.id,
     description: spec.description,
     source: readFileSync(sourcePath, 'utf8'),
-    props: spec.props,
+    components,
+    // Explicit pin — `Object.keys(mod)` iterates alphabetically for
+    // dynamically-imported modules in Bun, so multi-export sources
+    // (e.g. `ReactiveProps.tsx`) would render the wrong sibling
+    // without this. Single-export sources tolerate the absent field.
+    componentName: spec.componentName,
+    props: mergedProps,
     expectedHtml: existsSync(htmlPath)
       ? readFileSync(htmlPath, 'utf8')
       : undefined,

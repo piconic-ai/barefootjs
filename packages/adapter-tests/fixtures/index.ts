@@ -1,4 +1,23 @@
 import { fixture as counter } from './counter'
+// Shared-component corpus (#1466): fixture-hydrate fixtures lifted
+// from `integrations/shared/components/` also participate in
+// cross-adapter HTML conformance so the same .tsx is guaranteed to
+// lower to byte-equivalent normalised HTML across Hono / Echo / Mojo
+// / Go. `defineSharedFixture` merges a deterministic `__instanceId`
+// into `props` so live SSR renders and the frozen
+// `__snapshots__/<id>.html` carry the same `<ComponentName>_test`
+// root scope id, normalised to `<ComponentName>_*` by `normalizeHTML`.
+import { fixture as counterShared } from './counter-shared'
+import { fixture as toggleShared } from './toggle-shared'
+import { fixture as conditionalReturnButton } from './conditional-return-button'
+import { fixture as conditionalReturnLink } from './conditional-return-link'
+import { fixture as reactiveProps } from './reactive-props'
+import { fixture as propsReactivityComparison } from './props-reactivity-comparison'
+import { fixture as form } from './form'
+import { fixture as portal } from './portal'
+import { fixture as todoApp } from './todo-app'
+import { fixture as todoAppSsr } from './todo-app-ssr'
+import { fixture as aiChat } from './ai-chat'
 // Priority 1: Core reactivity
 import { fixture as signalWithFallback } from './signal-with-fallback'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
@@ -137,6 +156,17 @@ import type { JSXFixture } from '../src/types'
 
 export const jsxFixtures: JSXFixture[] = [
   counter,
+  counterShared,
+  toggleShared,
+  conditionalReturnButton,
+  conditionalReturnLink,
+  reactiveProps,
+  propsReactivityComparison,
+  form,
+  portal,
+  todoApp,
+  todoAppSsr,
+  aiChat,
   // Priority 1: Core reactivity
   signalWithFallback,
   signalDefaultFromJsx,

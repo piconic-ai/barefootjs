@@ -88,6 +88,22 @@ const statelessFixtures = new Set([
   // expectedHtml — same SSR/CSR-branch divergence that motivates
   // `if-statement` / `top-level-ternary`.
   'branch-local-filter-join',
+  // Shared-component corpus (#1466). Same SSR/CSR-branch divergence as
+  // the entries above — the SSR pass renders only the active branch
+  // but the client JS bundle wires up markers for all branches:
+  //   - `conditional-return-button`: top-level if/else picks the
+  //     `<button>` branch at SSR; the emitted client JS still
+  //     references the `<a>` branch's `s14` slot for hydration on
+  //     re-render.
+  //   - `todo-app`: `/* @client */` markers on the keyed `.map` and
+  //     other expressions elide their slot markers from SSR; the
+  //     client materialises them on init.
+  //   - `ai-chat`: the streaming-cursor span only exists when
+  //     `isStreaming()` is true; SSR with the default `false` state
+  //     omits its marker but the client JS wires it up regardless.
+  'conditional-return-button',
+  'todo-app',
+  'ai-chat',
 ])
 
 describe('SSR-Hydration Contract', () => {

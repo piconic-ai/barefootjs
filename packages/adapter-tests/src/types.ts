@@ -75,6 +75,14 @@ export interface JSXFixture {
   source: string
   /** Additional component files available for import (filename → source) */
   components?: Record<string, string>
+  /**
+   * Explicit component to render when `source` declares multiple
+   * exports. Omitted for single-export fixtures — adapters fall back
+   * to the first function-valued export, which in Bun is alphabetical
+   * for dynamically-imported modules and can otherwise pick the wrong
+   * sibling (e.g. `PropsReactivityComparison` before `ReactiveProps`).
+   */
+  componentName?: string
   /** Props to pass when rendering (optional) */
   props?: Record<string, unknown>
   /** Expected normalized HTML output (generated from reference Hono adapter) */
@@ -126,6 +134,7 @@ export function createFixture(input: {
   description: string
   source: string
   components?: Record<string, string>
+  componentName?: string
   props?: Record<string, unknown>
   expectedHtml?: string
   expectedClientJs?: string

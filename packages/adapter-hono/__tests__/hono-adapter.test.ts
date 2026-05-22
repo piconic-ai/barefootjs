@@ -16,4 +16,14 @@ runAdapterConformanceTests({
   render: renderHonoComponent,
   // Hono's SSR runtime is JS — broad `acceptsTemplateCall` covers
   // every conformance case.
+  skipMarkerConformance: new Set<string>([
+    // TodoApp's keyed `.map` carries a `/* @client */` marker, which
+    // the compiler intentionally elides on the SSR side (loop body
+    // materialises at hydrate time). Marker conformance then sees
+    // one fewer slot id in the SSR template than the IR declares
+    // (s6 in this case). Real compiler contract, not drift — pin
+    // the gap here until the marker checker learns about
+    // client-only loops.
+    'todo-app',
+  ]),
 })

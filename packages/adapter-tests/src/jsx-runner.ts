@@ -20,6 +20,13 @@ export interface RenderOptions {
   props?: Record<string, unknown>
   /** Additional component files (filename → source) */
   components?: Record<string, string>
+  /**
+   * Explicit component name to render when the source declares multiple
+   * exports (e.g. `ReactiveProps.tsx` defines both `ReactiveProps` and
+   * `PropsReactivityComparison`). Adapters that consume this MUST fall
+   * back to their pre-existing first-export selection when omitted.
+   */
+  componentName?: string
 }
 
 export interface RunJSXConformanceOptions {
@@ -441,6 +448,7 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
             adapter,
             props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
             components: fixture.components,
+            componentName: fixture.componentName,
           })
         } catch (err) {
           if (options.onRenderError?.(err as Error, fixture.id)) return
@@ -462,6 +470,7 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
             // call above (see comment there).
             props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
             components: fixture.components,
+            componentName: fixture.componentName,
           })
 
           const normalizedHtml = stripConditionalMarkersForCrossAdapter(normalizeHTML(html))

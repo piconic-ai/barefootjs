@@ -60,6 +60,29 @@ runAdapterConformanceTests({
     // never receives a `theme` key. Provider SSR coverage on Mojo
     // waits on that adapter feature; see #1297 follow-up.
     'context-provider',
+    // Shared-component corpus (#1466). The following fixtures use
+    // reactive boolean attribute bindings (`data-active={count() > 0}`,
+    // `disabled={!accepted()}`, `aria-checked={accepted()}`,
+    // `hidden={!open()}`) whose Mojo serialisation diverges from
+    // Hono's. Hono stringifies the boolean (`data-active="false"`,
+    // `disabled=""`); Mojo treats `false` as bare (`data-active=""`,
+    // `disabled`) and Perl-coerces other booleans (`aria-checked="0"`
+    // instead of `"false"`). Both shapes are well-formed HTML but
+    // the byte comparison can't reconcile without an adapter-side
+    // normaliser. Same family as the pre-existing
+    // `style-object-dynamic` etc. limitations — pinning here keeps
+    // the shared-component corpus adapter-neutral.
+    'conditional-return-button',
+    'conditional-return-link',
+    'form',
+    'portal',
+    // Parent-with-child fixtures whose children ride the same
+    // boolean-serialisation divergence (e.g. ToggleItem's reactive
+    // style, ReactiveChild's reactive attrs). Skip at the parent
+    // level — SSR output is one comparison.
+    'toggle-shared',
+    'reactive-props',
+    'props-reactivity-comparison',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
@@ -71,6 +94,12 @@ runAdapterConformanceTests({
     // makes the requirement loud. (The barefoot CLI passes
     // `siblingTemplatesRegistered: true` so CLI builds suppress it.)
     'static-array-children': [{ code: 'BF103', severity: 'error' }],
+    // TodoApp / TodoAppSSR import `TodoItem` from a sibling file and
+    // call it inside a keyed `.map`. Same BF103 surface as the
+    // synthetic `static-array-children` above — pinned at adapter
+    // level so the shared-component corpus stays adapter-neutral.
+    'todo-app': [{ code: 'BF103', severity: 'error' }],
+    'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
     // Array-destructure loop param (`([k, v]) => ...`) lowers to
     // invalid Perl (`% my $[k, v] = $entries->[$_i];`).
     'static-array-from-props': [{ code: 'BF104', severity: 'error' }],
@@ -174,6 +203,10 @@ runAdapterConformanceTests({
   skipMarkerConformance: new Set([
     'client-only',
     'client-only-loop-with-sibling-cond',
+    // Same as Hono: `/* @client */` markers on TodoApp's keyed `.map`
+    // intentionally elide a slot id from the SSR template that the IR
+    // still declares (s6). See hono-adapter.test for the contract.
+    'todo-app',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof PerlNotAvailableError) {

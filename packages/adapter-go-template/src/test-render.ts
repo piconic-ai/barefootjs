@@ -182,6 +182,11 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     // Build props initialization
     const propsInit = buildGoPropsInit(componentName, props)
 
+    // Honour `__instanceId` from props for the root scope id so
+    // shared-component fixtures (which pin `<ComponentName>_test`) match
+    // cross-adapter; default to 'test' otherwise.
+    const rootScopeId = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
+
     // main.go — render program
     const mainGo = `package main
 
@@ -224,7 +229,7 @@ func randomID(n int) string {
 func main() {
 	tmpl := template.Must(template.New("").Funcs(bfTestFuncMap()).Parse(tmplContent))
 	props := New${componentName}Props(${componentName}Input{
-		ScopeID: "test",
+		ScopeID: ${JSON.stringify(rootScopeId)},
 ${propsInit}
 	})
 	if err := tmpl.ExecuteTemplate(os.Stdout, "${componentName}", props); err != nil {
@@ -280,6 +285,12 @@ function buildGoPropsInit(
 
   const lines: string[] = []
   for (const [key, value] of Object.entries(props)) {
+    // Skip internal hydration markers — `__instanceId` / `__bfScope`
+    // / `__bfChild` are routed by the framework (consumed via the
+    // separate `ScopeID` struct field for `__instanceId` and never
+    // appear on the user-facing input struct). Including them produces
+    // `unknown field __instanceId in struct literal of type XxxInput`.
+    if (key.startsWith('__')) continue
     // Capitalize first letter for Go field name
     const goField = key.charAt(0).toUpperCase() + key.slice(1)
     if (typeof value === 'string') {

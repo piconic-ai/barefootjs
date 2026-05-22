@@ -17,6 +17,7 @@ import {
   SHARED_COMPONENTS_DIR,
   SNAPSHOT_DIR,
   loadAllSharedSpecs,
+  sharedFixtureInstanceId,
   sourceFileBasename,
   type SharedFixtureSpec,
 } from '../fixtures/_helpers'
@@ -83,11 +84,12 @@ export async function generateSharedComponentSnapshot(
   const sourcePath = resolve(SHARED_COMPONENTS_DIR, `${sourceBasename}.tsx`)
   const source = await Bun.file(sourcePath).text()
 
-  // Pin the root scope's `bf-s` via `__instanceId` so the hydration walker's
-  // scopeName parser (`id.slice(0, id.indexOf('_'))`) resolves the registered
-  // component. The conformance default `__instanceId: 'test'` yields an
-  // underscore-less id the walker cannot dispatch from.
-  const ssrProps = { ...spec.props, __instanceId: `${spec.componentName}_test` }
+  // Pin the root scope's `bf-s` via `__instanceId`. The shared id
+  // helper keeps snapshot generation and adapter-conformance runs
+  // aligned on the same `<ComponentName>_test` token, which both the
+  // hydration walker and `normalizeHTML` know how to dispatch /
+  // canonicalise.
+  const ssrProps = { ...spec.props, __instanceId: sharedFixtureInstanceId(spec) }
 
   // SSR-side child injection. When the parent's template invokes child
   // components synchronously (no `/* @client */` deferral), the temp file
