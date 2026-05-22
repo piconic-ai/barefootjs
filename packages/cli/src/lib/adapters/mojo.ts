@@ -11,6 +11,7 @@ import {
   buildGitignore,
   COMPONENTS_MANIFEST_SEED,
   SHARED_COUNTER_TSX,
+  SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
   TOKENS_CSS,
   UNOCSS_DEV_DEPENDENCIES,
@@ -178,6 +179,7 @@ export const MOJO_ADAPTER: AdapterTemplate = {
     // the same Button-based Counter the Hono / CSR / Echo scaffolds
     // use, so the onboarding story is consistent across adapters.
     'components/Counter.tsx': SHARED_COUNTER_TSX,
+    'components/Counter.test.tsx': SHARED_COUNTER_TEST_TSX,
     'public/styles.css': STYLES_CSS,
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,

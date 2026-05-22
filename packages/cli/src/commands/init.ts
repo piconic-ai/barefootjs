@@ -247,7 +247,16 @@ async function scaffoldApp(
   const runner = testRunnerFor(pm)
   const pmTypesEntry = runner.typesEntry
 
-  // Adapter-contributed files (server, components/Counter, barefoot.config.ts, etc.)
+  // Adapter-contributed files (server, components/Counter, the
+  // companion Counter.test.tsx, barefoot.config.ts, etc.). Adapter
+  // templates declare every file they want on disk in `adapter.files`,
+  // including the IR test paired with the starter Counter — that's
+  // why the scaffold ships a green `<pm> test` from minute zero
+  // without a post-write codegen step. `{{__TEST_RUNNER_IMPORT__}}`
+  // is the PM slot for the test file (`bun:test` on bun scaffolds,
+  // `vitest` everywhere else); same substitution mechanism as
+  // `{{__PROJECT_NAME__}}` (wrangler worker name) and
+  // `{{__PM_TYPES_ENTRY__}}` (tsconfig `types` array entry).
   for (const [relPath, contents] of Object.entries(adapter.files)) {
     const target = path.join(projectDir, relPath)
     if (existsSync(target)) continue
@@ -255,6 +264,7 @@ async function scaffoldApp(
     const resolved = contents
       .replace(/\{\{__PROJECT_NAME__\}\}/g, pkgName)
       .replace(/\{\{__PM_TYPES_ENTRY__\}\}/g, pmTypesEntry)
+      .replace(/\{\{__TEST_RUNNER_IMPORT__\}\}/g, runner.importSource)
     writeFileSync(target, resolved)
     created++
   }

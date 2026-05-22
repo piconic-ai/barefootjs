@@ -33,6 +33,63 @@ export function Counter(props: CounterProps) {
 }
 `
 
+// Starter IR test paired with SHARED_COUNTER_TSX. Pinned to the same
+// assertions \`bf gen test Counter\` would emit against that source, so
+// the scaffold ships a green \`<pm> test\` out of the box and doubles as
+// a worked example of the IR-test pattern the docs steer users toward.
+// Kept as a static template (rather than re-deriving via
+// generateTestTemplate at scaffold time) so the test content is part
+// of the same review surface as SHARED_COUNTER_TSX — if one changes,
+// the other has to be updated in the same commit. The
+// \`{{__TEST_RUNNER_IMPORT__}}\` slot is filled by init.ts with the
+// detected PM's runner (\`bun:test\` for bun, \`vitest\` everywhere
+// else); same slot mechanism as \`{{__PROJECT_NAME__}}\` and
+// \`{{__PM_TYPES_ENTRY__}}\`.
+export const SHARED_COUNTER_TEST_TSX = `import { describe, test, expect } from '{{__TEST_RUNNER_IMPORT__}}'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+import { renderToTest } from '@barefootjs/test'
+
+const CounterSource = readFileSync(resolve(__dirname, 'Counter.tsx'), 'utf-8')
+
+describe('Counter', () => {
+  const result = renderToTest(CounterSource, 'Counter.tsx')
+
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+
+  test('componentName is Counter', () => {
+    expect(result.componentName).toBe('Counter')
+  })
+
+  test('has expected signals', () => {
+    expect(result.signals).toContain('count')
+  })
+
+  test('renders as <div>', () => {
+    expect(result.root.tag).toBe('div')
+  })
+
+  test('has event handlers', () => {
+    const all = result.findAll({})
+    expect(
+      all.some(n => n.events.includes('click') || n.props['onClick'] != null),
+    ).toBe(true)
+  })
+
+  test('contains child components', () => {
+    expect(result.find({ componentName: 'Button' })).not.toBeNull()
+  })
+
+  test('toStructure() shows expected tree', () => {
+    const structure = result.toStructure()
+    expect(structure.length).toBeGreaterThan(0)
+    expect(structure).toContain('div')
+  })
+})
+`
+
 // Theme tokens (CSS variables) referenced by the registry components'
 // utility classes (`bg-primary`, `text-foreground`, etc.). Mirrors
 // integrations/shared/styles/tokens.css so registry components ship

@@ -19,6 +19,7 @@ import type { AdapterTemplate } from '../templates'
 import {
   buildGitignore,
   SHARED_COUNTER_TSX,
+  SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
   TOKENS_CSS,
   UNOCSS_DEV_DEPENDENCIES,
@@ -528,6 +529,7 @@ export const ECHO_ADAPTER: AdapterTemplate = {
       'dist/components/**/*.tsx',
     ]),
     'components/Counter.tsx': SHARED_COUNTER_TSX,
+    'components/Counter.test.tsx': SHARED_COUNTER_TEST_TSX,
     'public/styles.css': STYLES_CSS,
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
