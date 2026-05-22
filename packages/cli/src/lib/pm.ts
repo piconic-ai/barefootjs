@@ -148,19 +148,23 @@ export interface TestRunner {
 
 export function testRunnerFor(pm: PackageManager): TestRunner {
   if (pm === 'bun') {
+    // `--pass-with-no-tests` so `bun test` on a freshly scaffolded
+    // project (before the user has run `bf gen test`) exits 0 instead
+    // of failing the very first `<pm> test` they try.
     return {
       importSource: 'bun:test',
-      scriptValue: 'bun test',
+      scriptValue: 'bun test --pass-with-no-tests',
       devDeps: { '@types/bun': '^1.1.0' },
       typesEntry: ', "bun-types"',
     }
   }
   // Vitest's default `vitest` command runs in watch mode; `vitest run`
   // mirrors `bun test`'s "run once, exit" semantics so `<pm> test` in CI
-  // doesn't hang waiting for stdin.
+  // doesn't hang waiting for stdin. `--passWithNoTests` matches the
+  // bun branch — a fresh scaffold's first `<pm> test` should pass.
   return {
     importSource: 'vitest',
-    scriptValue: 'vitest run',
+    scriptValue: 'vitest run --passWithNoTests',
     devDeps: { vitest: '^2.0.0' },
     typesEntry: '',
   }

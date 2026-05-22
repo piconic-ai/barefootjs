@@ -151,10 +151,10 @@ This runs `bf build`, generates the final `uno.css`, and calls `wrangler deploy`
 - **[`createSignal`](./reactivity/create-signal.md)** and **[`createMemo`](./reactivity/create-memo.md)** — the reactivity primitives you just used.
 - **[Client Directive](./rendering/client-directive.md)** — exactly what `"use client"` does and when to reach for it.
 - **[Hono Adapter](./adapters/hono-adapter.md)** — adapter-specific configuration and output details.
-- Pick a different backend by passing `--adapter` to the scaffolder:
+- Pick a different backend by passing `--adapter` to the scaffolder. Supported values today: `hono` (default — Cloudflare Workers), `hono-node`, `echo` (Go / Echo), `mojo` (Mojolicious / Perl), `csr` (no backend — pure client render). For example:
 
   ```bash
-  npm create barefootjs@latest -- --adapter go-template
+  npm create barefootjs@latest -- --adapter hono-node
   ```
 
-  See [Adapter Architecture](./adapters/adapter-architecture.md) for the full list.
+  See [Adapter Architecture](./adapters/adapter-architecture.md) for the architectural overview, and the per-adapter pages under [`docs/core/adapters/`](./adapters/) for output details. The `@barefootjs/go-template` package is a compile-time adapter API for generating Go `html/template` files — it does not have a `bf init` scaffold; see [Go Template Adapter](./adapters/go-template-adapter.md) for the programmatic usage.

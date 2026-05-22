@@ -177,10 +177,13 @@ describe('commandsFor', () => {
 // Keeping it as a pure data function lets every caller stay in
 // lock-step without re-deriving the branch.
 describe('testRunnerFor', () => {
-  test('bun: ships `bun:test` import + `bun test` script + `@types/bun` + `, "bun-types"` types entry', () => {
+  test('bun: ships `bun:test` import + `bun test --pass-with-no-tests` script + `@types/bun` + `, "bun-types"` types entry', () => {
     const r = testRunnerFor('bun')
     expect(r.importSource).toBe('bun:test')
-    expect(r.scriptValue).toBe('bun test')
+    // `--pass-with-no-tests` so a freshly scaffolded project's first
+    // `<pm> test` (before any `bf gen test` runs) exits 0 instead of
+    // failing on "no tests found".
+    expect(r.scriptValue).toBe('bun test --pass-with-no-tests')
     expect(r.devDeps).toEqual({ '@types/bun': '^1.1.0' })
     // The slot prefix carries its own separator so the empty case
     // still resolves to a valid JSON array.
@@ -191,12 +194,15 @@ describe('testRunnerFor', () => {
   // in-runtime test runner, and vitest's surface is API-compatible
   // with `bun:test` so the same generated file runs unchanged.
   test.each(['npm', 'pnpm', 'yarn'] as const)(
-    '%s: ships `vitest` import + `vitest run` script + vitest devDep + empty types entry',
+    '%s: ships `vitest` import + `vitest run --passWithNoTests` script + vitest devDep + empty types entry',
     (pm) => {
       const r = testRunnerFor(pm)
       expect(r.importSource).toBe('vitest')
       // `vitest run` (not bare `vitest`) so CI doesn't hang in watch.
-      expect(r.scriptValue).toBe('vitest run')
+      // `--passWithNoTests` mirrors the bun branch — a freshly
+      // scaffolded project's first `<pm> test` should pass, since
+      // there are no tests on disk yet until `bf gen test` runs.
+      expect(r.scriptValue).toBe('vitest run --passWithNoTests')
       expect(r.devDeps).toHaveProperty('vitest')
       // Vitest types come from the `vitest` import; no ambient entry
       // needed.
