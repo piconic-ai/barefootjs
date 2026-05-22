@@ -60,17 +60,6 @@ runAdapterConformanceTests({
     // never receives a `theme` key. Provider SSR coverage on Mojo
     // waits on that adapter feature; see #1297 follow-up.
     'context-provider',
-    // Shared-component corpus (#1466) — Mojo-specific
-    // `data-*="false"` divergence. The HTML5-boolean-attr and
-    // `aria-*="0"` rules in `normalizeHTML` unskip `form` and
-    // `portal`, but Mojo's Perl string-context coercion of JS false
-    // emits `data-active=""` where Hono / Go emit `data-active="false"`.
-    // Normalising `data-*=""` blanket-wide would mis-coerce
-    // legitimate `data-count={0}` values (see PR #1496 review), so
-    // these stay skipped until the Mojo adapter learns to serialise
-    // JS boolean false as the string "false" for `data-*` bindings.
-    'conditional-return-button',
-    'conditional-return-link',
     // Multi-component fixtures still diverge because Mojo's child
     // template emitter pins the child's `bf-s` to the literal
     // `test_<sN>` (`_scope_id("test_$sid")` in `test-render.ts`)

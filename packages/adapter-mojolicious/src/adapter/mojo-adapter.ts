@@ -825,6 +825,21 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         // Boolean attributes: render conditionally (present or absent).
         return `<%= ${this.convertExpressionToPerl(value.expr)} ? '${name}' : '' %>`
       }
+      // Boolean-result expressions for non-boolean attributes (#1466
+      // follow-up): when the JS source is a comparison (`count() > 0`),
+      // a logical negation (`!accepted()`), or a literal `true`/`false`,
+      // Perl's auto-stringification renders false as `''` and true as
+      // `'1'` — so `data-active="<%= ($count > 0) %>"` becomes
+      // `data-active=""` where Hono and Go emit `data-active="false"`.
+      // Wrap with an explicit ternary so the serialised value matches
+      // JS's `String(boolean)` exactly. Detection is text-based on the
+      // JS expression — over-detection is fine (a non-bool that
+      // happens to read as a comparison still ternary-stringifies to
+      // 'true'/'false', and our `data-x={count()}` regression tests
+      // catch any unintended coercion of numeric / string values).
+      if (this.looksLikeBooleanResultExpression(value.expr)) {
+        return `${name}="<%= (${this.convertExpressionToPerl(value.expr)}) ? 'true' : 'false' %>"`
+      }
       return `${name}="<%= ${this.convertExpressionToPerl(value.expr)} %>"`
     },
     emitBooleanAttr: (_value, name) => name,
@@ -1155,6 +1170,33 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       },
     })
     return true
+  }
+
+  /**
+   * Cheap text-based detection of expressions whose JS evaluation
+   * yields a boolean. Used by `emitExpression` to wrap such bindings
+   * in an explicit `'true' / 'false'` ternary so Perl's
+   * false → `''` / true → `'1'` stringification doesn't surface as
+   * `attr=""` where Hono and Go emit `attr="false"` (#1466).
+   *
+   * Catches the common shapes — top-level comparison (`x > 0`,
+   * `a === b`), logical-NOT (`!ok()`), and literal `true` / `false` —
+   * without parsing the expression to a ParsedExpr. Over-detection
+   * is acceptable: a non-boolean that happens to read as a
+   * comparison still ternary-stringifies cleanly, and the regression
+   * tests around numeric / string `data-*` bindings catch any
+   * accidental coercion.
+   */
+  private looksLikeBooleanResultExpression(expr: string): boolean {
+    const trimmed = expr.trim()
+    if (trimmed === 'true' || trimmed === 'false') return true
+    // Leading `!` (but not `!=` / `!==`) — unary logical NOT.
+    if (/^!\s*[^!=]/.test(trimmed)) return true
+    // Top-level comparison operator anywhere in the expression.
+    // (Inside string literals would also match here, but reactive
+    // attribute values shouldn't carry raw string literals — the
+    // template-literal path lowers those separately.)
+    return /(?:<|>|<=|>=|===|!==|==|!=)/.test(trimmed)
   }
 
   private convertExpressionToPerl(expr: string): string {
