@@ -70,6 +70,28 @@ sub comment ($self, $text) {
     return "<!--bf-$text-->";
 }
 
+# ---------------------------------------------------------------------------
+# JS-equivalent value stringification
+# ---------------------------------------------------------------------------
+
+# Render a Perl value the way JS `String(value)` would render the
+# equivalent JS expression. Used by the Mojo adapter when emitting
+# reactive attribute bindings whose JS source is a comparison
+# (`count() > 0`), a logical negation (`!ok()`), or a literal
+# `true` / `false`: Perl's auto-stringification of those expressions
+# yields `'' / 1`, but Hono and Go emit `'false' / 'true'`. Centralising
+# the bool→string mapping here keeps the contract testable and the
+# template-emit syntax tidy (`<%= bf->bool_str(...) %>` vs an inline
+# ternary).
+#
+# Mirrors JS:
+#   String(true)  → "true"
+#   String(false) → "false"
+#   (anything else stringifies natively — `String(0)` → "0", etc.)
+sub bool_str ($self, $value) {
+    return $value ? 'true' : 'false';
+}
+
 sub text_start ($self, $slot_id) {
     return "<!--bf:$slot_id-->";
 }
