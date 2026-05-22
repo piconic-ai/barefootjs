@@ -1,0 +1,101 @@
+name: CI — Smoke (published tarballs)
+
+# Packs every publishable workspace via `bun pm pack`, installs the
+# resulting tarballs into a fresh user-style scaffold, and runs a
+# breadth-first sweep of `bf` commands against it.
+#
+# Catches regressions where a command works inside the monorepo but
+# breaks once shipped — e.g. the `bf tokens` failure caused by
+# resolving a workspace-only path through `ctx.root`, which is fine
+# in the repo but lands in `node_modules/` in a real install.
+# pkg-pr-new tests the publish wiring; this job tests the runtime.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Re-run on every publishable package + the runner + the workflow itself.
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/client/**'
+      - 'packages/streaming/**'
+      - 'packages/test/**'
+      - 'packages/adapter-hono/**'
+      - 'packages/adapter-go-template/**'
+      - 'packages/adapter-mojolicious/**'
+      - 'packages/form/**'
+      - 'packages/chart/**'
+      - 'packages/xyflow/**'
+      - 'packages/cli/**'
+      - 'packages/create-barefootjs/**'
+      - 'scripts/smoke-publish.mjs'
+      - 'scripts/swap-publish-config.mjs'
+      - '.github/workflows/ci-smoke-publish.yml'
+  pull_request:
+    paths:
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/client/**'
+      - 'packages/streaming/**'
+      - 'packages/test/**'
+      - 'packages/adapter-hono/**'
+      - 'packages/adapter-go-template/**'
+      - 'packages/adapter-mojolicious/**'
+      - 'packages/form/**'
+      - 'packages/chart/**'
+      - 'packages/xyflow/**'
+      - 'packages/cli/**'
+      - 'packages/create-barefootjs/**'
+      - 'scripts/smoke-publish.mjs'
+      - 'scripts/swap-publish-config.mjs'
+      - '.github/workflows/ci-smoke-publish.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      # Node is required by `create-barefootjs`'s bin — it spawns
+      # `node <cli bin> init`. Bun ships its own Node compat layer but
+      # we exercise the path the user actually walks (`npm create
+      # barefootjs@latest` → `node`).
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install
+
+      # The runner script does its own per-package build via
+      # `bun run --filter '<name>' build`. Embedding adapter runtimes
+      # is part of `@barefootjs/cli` build, so no separate step.
+      - name: Smoke (build + pack + scaffold + bf surface)
+        run: bun run scripts/smoke-publish.mjs
+
+      # Surface the workspace state on failure so the failure mode is
+      # debuggable from the run log. The script writes its own context
+      # to stdout on a failing step, but a `ls -la` snapshot of the
+      # scaffold dir is cheap insurance.
+      - name: Dump scaffold state on failure
+        if: failure()
+        run: |
+          for dir in /tmp/bf-smoke-workspace-*; do
+            [ -d "$dir" ] || continue
+            echo "── $dir ──"
+            ls -la "$dir" || true
+            if [ -f "$dir/app/package.json" ]; then
+              echo "── $dir/app/package.json ──"
+              cat "$dir/app/package.json"
+            fi
+          done
