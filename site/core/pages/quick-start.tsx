@@ -1,216 +1,52 @@
 /**
  * Quick Start page.
  *
- * This is the only docs page that isn't pure markdown — the `npm create
- * barefootjs@latest` command is shown through `<PackageManagerTabs>` so
- * readers see the equivalent command for npm / yarn / pnpm / bun. The
- * content lives in this file as two markdown chunks with the tabs
- * component as a JSX sibling between them. Nothing magic in the
- * markdown source: the split point is the JSX boundary below.
+ * Thin loader for `docs/core/quick-start.mdx` — the prose and the
+ * `<PackageManagerTabs>` JSX node both live in the .mdx source so
+ * there is one canonical Quick Start, regardless of whether you're
+ * reading it on the site, via the `view as markdown` toggle, or
+ * through `bf guide`.
  *
- * `/docs/quick-start.md` synthesises a plain markdown view (npm command
- * shown as a regular code block) so the "view as markdown" toggle and
- * any tooling that scrapes the raw doc keep working.
+ * The `/docs/quick-start.md` synth route projects the .mdx down to
+ * plain markdown (each JSX node is replaced with the projector's
+ * default branch — `npm create barefootjs@latest` for the tabs) so
+ * tooling that scrapes raw docs keeps working.
  */
 
 import type { Hono } from 'hono'
-import { renderMarkdown } from '../lib/markdown'
+import { renderMdx, projectMdxToMarkdown, defaultMdxProjectors } from '../lib/mdx'
 import { getDocsNavLinks } from '../lib/navigation'
-import type { TocItem } from '../../shared/components/table-of-contents'
 import { PackageManagerTabs } from '@/components/package-manager-tabs'
 
 const SLUG = 'quick-start'
-const TITLE = 'Quick Start'
-const DESCRIPTION =
-  'Scaffold a BarefootJS app in under five minutes — Counter component, dev server, deploy.'
 
-const CREATE_COMMAND = 'barefootjs@latest'
-
-const PRELUDE_MD = `Scaffold a BarefootJS app, run it locally, and tour the generated project. About five minutes.
-
-## Prerequisites
-
-- **Node.js 22+** (or Bun).
-- The default scaffold targets [Cloudflare Workers](https://developers.cloudflare.com/workers/) via \`wrangler dev\` — runs locally, no account needed.
-
-## 1. Scaffold the project
-`
-
-const REST_MD = `
-Press Enter at the prompts to accept the defaults (Hono on Cloudflare Workers, UnoCSS).
-
-## 2. Install and run
-
-\`\`\`bash
-cd my-app
-npm install
-npm run dev
-\`\`\`
-
-\`npm run dev\` runs three processes in parallel:
-
-- \`bf build --watch\` — the BarefootJS compiler. Watches \`components/\` and emits marked templates plus client JS to \`public/components/\`.
-- \`unocss --watch\` — scans your JSX for utility classes and writes \`public/uno.css\`.
-- \`wrangler dev --live-reload\` — Cloudflare's local Workers runtime. Serves the app and reloads the browser on rebuilds.
-
-Open the URL Wrangler prints. You should see a counter card with **+1**, **-1**, and **Reset** buttons.
-
-## 3. Look at what was generated
-
-\`\`\`
-my-app/
-├── server.tsx              # Hono routes — entry point
-├── renderer.tsx            # HTML shell (<head>, <body>, BfScripts)
-├── components/
-│   └── Counter.tsx         # The starter component
-├── components/ui/
-│   └── button/             # Pulled from the BarefootJS UI registry
-├── public/                 # Static assets served by Workers
-│   ├── tokens.css          # CSS design tokens
-│   ├── styles.css          # Counter + page styles
-│   └── components/         # Generated client JS (bf build writes here)
-├── barefoot.config.ts      # Compiler + paths config
-├── wrangler.jsonc          # Cloudflare Workers config
-└── uno.config.ts           # UnoCSS scan patterns
-\`\`\`
-
-Open \`components/Counter.tsx\`:
-
-\`\`\`tsx
-'use client'
-
-import { createSignal, createMemo } from '@barefootjs/client'
-import { Button } from '@/components/ui/button'
-
-interface CounterProps {
-  initial?: number
-}
-
-export function Counter(props: CounterProps) {
-  const [count, setCount] = createSignal(props.initial ?? 0)
-  const doubled = createMemo(() => count() * 2)
-
-  return (
-    <div className="counter">
-      <p className="counter-value">count: {count()}</p>
-      <p className="counter-doubled">doubled: {doubled()}</p>
-      <div className="counter-buttons">
-        <Button onClick={() => setCount(n => n + 1)}>+1</Button>
-        <Button onClick={() => setCount(n => n - 1)} variant="secondary">-1</Button>
-        <Button onClick={() => setCount(0)} variant="ghost">Reset</Button>
-      </div>
-    </div>
-  )
-}
-\`\`\`
-
-See [Client Directive](./rendering/client-directive.md), [\`createSignal\`](./reactivity/create-signal.md), and [\`createMemo\`](./reactivity/create-memo.md) for what each piece does. Props are read via \`props.initial\`, not destructured — destructuring captures the value once and breaks reactivity, so the compiler emits warning [\`BF043\`](./advanced/error-codes.md) when it sees that form on a \`"use client"\` component. [Props Reactivity](./reactivity/props-reactivity.md) covers the full rule.
-
-The Counter is mounted in \`server.tsx\`:
-
-\`\`\`tsx
-import { Hono } from 'hono'
-import { renderer } from './renderer'
-import { Counter } from '@/components/Counter'
-
-const app = new Hono()
-
-app.use('*', renderer)
-
-app.get('/', (c) =>
-  c.render(
-    <main>
-      <Counter />
-    </main>,
-    { title: 'BarefootJS app' },
+const COMPONENTS = {
+  PackageManagerTabs: (props: Record<string, string>) => (
+    <PackageManagerTabs
+      command={props.command ?? ''}
+      mode={(props.mode as 'dlx' | 'create') ?? 'dlx'}
+      defaultPm={props.defaultPm}
+    />
   ),
-)
-
-export default app
-\`\`\`
-
-Same \`Counter\` import, two outputs: server renders HTML, client hydrates the buttons.
-
-## 4. Make a change
-
-With \`npm run dev\` still running, pass an initial value from the server. In \`server.tsx\`:
-
-\`\`\`tsx
-app.get('/', (c) =>
-  c.render(
-    <main>
-      <Counter initial={5} />
-    </main>,
-    { title: 'BarefootJS app' },
-  ),
-)
-\`\`\`
-
-Save. The browser reloads and the counter starts at **5**. The server rendered \`5\` into the HTML, and hydration picked it up on the client — the same JSX, evaluated in both places.
-
-Now add a new button to \`Counter.tsx\`:
-
-\`\`\`tsx
-<Button onClick={() => setCount(n => n * 2)} variant="ghost">×2</Button>
-\`\`\`
-
-Save and watch the browser update. No virtual DOM, no diff — the compiler generated an effect that updates only the \`<p>\` text node when \`count\` changes.
-
-## 5. Deploy (optional)
-
-When you're ready to ship:
-
-\`\`\`bash
-npm run deploy
-\`\`\`
-
-This runs \`bf build\`, generates the final \`uno.css\`, and calls \`wrangler deploy\`. The first deploy will prompt you to log into Cloudflare. After that, your app is live on \`*.workers.dev\`.
-
-## Next steps
-
-- **[Core Concepts](./core-concepts.md)** — the four design principles behind BarefootJS: backend freedom, MPA-style rendering, fine-grained reactivity, and AI-native workflows.
-- **[\`createSignal\`](./reactivity/create-signal.md)** and **[\`createMemo\`](./reactivity/create-memo.md)** — the reactivity primitives you just used.
-- **[Client Directive](./rendering/client-directive.md)** — exactly what \`"use client"\` does and when to reach for it.
-- **[Hono Adapter](./adapters/hono-adapter.md)** — adapter-specific configuration and output details.
-- Pick a different backend by passing \`--adapter\` to the scaffolder:
-
-  \`\`\`bash
-  npm create barefootjs@latest -- --adapter go-template
-  \`\`\`
-
-  See [Adapter Architecture](./adapters/adapter-architecture.md) for the full list.
-`
-
-function rawMarkdown(): string {
-  return `---
-title: ${TITLE}
-description: ${DESCRIPTION}
----
-
-# ${TITLE}
-
-${PRELUDE_MD}
-\`\`\`bash
-npm create ${CREATE_COMMAND}
-\`\`\`
-${REST_MD}`
 }
 
-export function registerQuickStartRoutes(app: Hono): void {
+export function registerQuickStartRoutes(app: Hono, mdxSource: string): void {
   app.get(`/${SLUG}`, async (c) => {
-    const before = await renderMarkdown(PRELUDE_MD)
-    const after = await renderMarkdown(REST_MD)
-    const toc: TocItem[] = [...before.toc, ...after.toc]
+    const { frontmatter, toc, parts } = await renderMdx(mdxSource)
     const navLinks = getDocsNavLinks(SLUG)
     return c.render(
       <>
-        <div dangerouslySetInnerHTML={{ __html: before.html }} />
-        <PackageManagerTabs command={CREATE_COMMAND} mode="create" />
-        <div dangerouslySetInnerHTML={{ __html: after.html }} />
+        {parts.map((part) => {
+          if (part.type === 'html') {
+            return <div dangerouslySetInnerHTML={{ __html: part.html }} />
+          }
+          const Component = COMPONENTS[part.name as keyof typeof COMPONENTS]
+          return Component ? <Component {...part.props} /> : null
+        })}
       </>,
       {
-        title: TITLE,
-        description: DESCRIPTION,
+        title: frontmatter.title,
+        description: frontmatter.description,
         slug: SLUG,
         toc,
         prev: navLinks.prev,
@@ -221,6 +57,6 @@ export function registerQuickStartRoutes(app: Hono): void {
 
   app.get(`/${SLUG}.md`, (c) => {
     c.header('Content-Type', 'text/markdown; charset=utf-8')
-    return c.body(rawMarkdown())
+    return c.body(projectMdxToMarkdown(mdxSource, defaultMdxProjectors))
   })
 }

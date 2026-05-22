@@ -6,11 +6,12 @@
  */
 
 import { createApp } from './app'
-import { pagesFromContentMap, type ContentMap } from './lib/content'
+import { pagesFromContentMap, type ContentMap, type MdxContentMap } from './lib/content'
 import contentBundle from './dist/content.json'
 
-const content = contentBundle as ContentMap
+const bundle = contentBundle as { content: ContentMap; mdx: MdxContentMap }
+const { content, mdx } = bundle
 const pages = pagesFromContentMap(content)
-const app = await createApp(content, pages)
+const app = await createApp(content, pages, mdx)
 
 export default app

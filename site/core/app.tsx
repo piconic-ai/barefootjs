@@ -13,15 +13,16 @@ import { createLandingApp } from './landing/routes'
 import { createPlaygroundApp } from './playground/routes'
 import { createIntegrationsApp } from './integrations/routes'
 import { createOgRoute } from './og-route'
-import type { Page, ContentMap } from './lib/content'
+import type { Page, ContentMap, MdxContentMap } from './lib/content'
 
 /**
  * Create the unified Hono app.
  *
- * @param content - Map of slug → raw markdown content
+ * @param content - Map of slug → raw markdown content (.md pages)
  * @param pages   - List of page metadata (slug, name)
+ * @param mdx     - Map of slug → raw MDX source (.mdx pages)
  */
-export async function createApp(content: ContentMap, pages: Page[]): Promise<Hono> {
+export async function createApp(content: ContentMap, pages: Page[], mdx: MdxContentMap = {}): Promise<Hono> {
   const app = new Hono()
 
   // Landing page (GET /)
@@ -29,7 +30,7 @@ export async function createApp(content: ContentMap, pages: Page[]): Promise<Hon
   app.route('/', landingApp)
 
   // Documentation (GET /docs/...)
-  const docsApp = await createDocsApp(content, pages)
+  const docsApp = await createDocsApp(content, pages, mdx)
   app.route('/docs', docsApp)
 
   // Playground (GET /playground)

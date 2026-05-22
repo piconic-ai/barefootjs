@@ -47,9 +47,9 @@ await mkdir(DIST_COMPONENTS_DIR, { recursive: true })
 await mkdir(DIST_STATIC_DIR, { recursive: true })
 
 // ── 1. Bundle markdown content ────────────────────────────────
-const { pages, content } = await loadContentFromDisk(CONTENT_DIR)
-await Bun.write(resolve(DIST_DIR, 'content.json'), JSON.stringify(content))
-console.log(`Bundled: ${pages.length} pages → dist/content.json`)
+const { pages, content, mdx } = await loadContentFromDisk(CONTENT_DIR)
+await Bun.write(resolve(DIST_DIR, 'content.json'), JSON.stringify({ content, mdx }))
+console.log(`Bundled: ${pages.length} md pages + ${Object.keys(mdx).length} mdx pages → dist/content.json`)
 
 // ── 2. Build and copy barefoot.js runtime ─────────────────────
 // Use the standalone runtime (reactive primitives inlined) so the

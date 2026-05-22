@@ -49,8 +49,9 @@ await build({
 chmodSync(outfile, 0o755)
 
 // Ship framework docs alongside the bundle so `bf guide` works in
-// scaffolded apps. We don't gate on file extension — `scanCoreDocs`
-// already filters to .md.
+// scaffolded apps. `cpSync` copies both `.md` and `.mdx`; the CLI
+// projects `.mdx` to plain markdown at read time via
+// `readDocAsMarkdown` so terminal output stays clean.
 if (existsSync(docsSrc)) {
   if (existsSync(docsDst)) rmSync(docsDst, { recursive: true, force: true })
   cpSync(docsSrc, docsDst, { recursive: true })

@@ -2,6 +2,7 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs'
 import path from 'path'
+import { projectMdxToMarkdown, defaultMdxProjectors } from './mdx'
 
 export interface CoreDocMeta {
   slug: string         // e.g., "reactivity/create-signal"
@@ -9,6 +10,7 @@ export interface CoreDocMeta {
   description: string
   category: string     // subdirectory name: "reactivity", "core-concepts", etc.
   filePath: string     // absolute path
+  kind: 'md' | 'mdx'   // source format — mdx files are projected to plain markdown when read
 }
 
 /**
@@ -48,8 +50,13 @@ export function parseFrontmatter(content: string): {
 }
 
 /**
- * Scan docs/core/ recursively and return metadata for all .md files.
- * Excludes README.md.
+ * Scan docs/core/ recursively and return metadata for all .md and .mdx
+ * files. Excludes README.md / README.mdx.
+ *
+ * For `.mdx` files the metadata is parsed from the frontmatter the
+ * same way; reading the body for terminal output goes through
+ * `readDocAsMarkdown` so embedded JSX nodes are projected down to
+ * plain markdown.
  */
 export function scanCoreDocs(docsDir: string): CoreDocMeta[] {
   if (!existsSync(docsDir)) return []
@@ -62,15 +69,20 @@ export function scanCoreDocs(docsDir: string): CoreDocMeta[] {
       const stat = statSync(fullPath)
       if (stat.isDirectory()) {
         scan(fullPath)
-      } else if (entry.endsWith('.md') && entry !== 'README.md') {
-        const relativePath = path.relative(docsDir, fullPath)
-        const slug = relativePath.replace(/\.md$/, '')
-        const parts = slug.split(path.sep)
-        const category = parts.length > 1 ? parts[0] : 'overview'
-        const content = readFileSync(fullPath, 'utf-8')
-        const { title, description } = parseFrontmatter(content)
-        results.push({ slug, title, description, category, filePath: fullPath })
+        continue
       }
+
+      const kind: 'md' | 'mdx' | null = entry.endsWith('.mdx') ? 'mdx' : entry.endsWith('.md') ? 'md' : null
+      if (!kind) continue
+      if (entry === 'README.md' || entry === 'README.mdx') continue
+
+      const relativePath = path.relative(docsDir, fullPath)
+      const slug = relativePath.replace(/\.mdx?$/, '')
+      const parts = slug.split(path.sep)
+      const category = parts.length > 1 ? parts[0] : 'overview'
+      const content = readFileSync(fullPath, 'utf-8')
+      const { title, description } = parseFrontmatter(content)
+      results.push({ slug, title, description, category, filePath: fullPath, kind })
     }
   }
 
@@ -104,4 +116,18 @@ export function resolveDoc(
   if (matches.length > 1) return { doc: null, candidates: matches }
 
   return { doc: null, candidates: [] }
+}
+
+/**
+ * Read a doc's content as plain markdown. For `.mdx` files this
+ * projects each `<Component ... />` tag down to its plain-markdown
+ * form (via `defaultMdxProjectors`), so terminal output and any
+ * tooling that scrapes raw docs sees readable markdown.
+ */
+export function readDocAsMarkdown(doc: CoreDocMeta): string {
+  const raw = readFileSync(doc.filePath, 'utf-8')
+  if (doc.kind === 'mdx') {
+    return projectMdxToMarkdown(raw, defaultMdxProjectors)
+  }
+  return raw
 }

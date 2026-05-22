@@ -8,10 +8,10 @@
 // monorepo `docs/` tree obviously isn't present.
 
 import path from 'path'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync } from 'fs'
 import { fileURLToPath } from 'node:url'
 import type { CliContext } from '../context'
-import { scanCoreDocs, resolveDoc, parseFrontmatter } from '../lib/docs-loader'
+import { scanCoreDocs, resolveDoc, parseFrontmatter, readDocAsMarkdown, type CoreDocMeta } from '../lib/docs-loader'
 
 const thisFile = fileURLToPath(import.meta.url)
 
@@ -63,12 +63,12 @@ function printDocList(docs: ReturnType<typeof scanCoreDocs>, jsonFlag: boolean) 
   console.log(`\n${docs.length} document(s) available. Use 'bf guide <name>' to read.`)
 }
 
-function printDoc(slug: string, filePath: string, jsonFlag: boolean) {
-  const content = readFileSync(filePath, 'utf-8')
+function printDoc(doc: CoreDocMeta, jsonFlag: boolean) {
+  const content = readDocAsMarkdown(doc)
   const { title, description, body } = parseFrontmatter(content)
 
   if (jsonFlag) {
-    console.log(JSON.stringify({ slug, title, description, content: body }, null, 2))
+    console.log(JSON.stringify({ slug: doc.slug, title, description, content: body }, null, 2))
     return
   }
 
@@ -115,5 +115,5 @@ export function run(args: string[], ctx: CliContext): void {
     process.exit(1)
   }
 
-  printDoc(doc.slug, doc.filePath, ctx.jsonFlag)
+  printDoc(doc, ctx.jsonFlag)
 }

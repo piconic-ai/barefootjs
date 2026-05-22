@@ -12,8 +12,16 @@ export interface Page {
   name: string
 }
 
-/** slug → raw markdown content */
+/** slug → raw markdown content (.md pages only). */
 export type ContentMap = Record<string, string>
+
+/**
+ * slug → raw MDX source (.mdx pages only). Kept separate from
+ * `ContentMap` so the standard markdown rendering loop never sees
+ * MDX-shaped content — MDX pages register dedicated handlers
+ * (e.g. `registerQuickStartRoutes`) that own their rendering.
+ */
+export type MdxContentMap = Record<string, string>
 
 /**
  * Build page list from a pre-loaded content map (for Workers).

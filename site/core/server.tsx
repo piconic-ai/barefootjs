@@ -10,7 +10,7 @@ import { createApp } from './app'
 import { loadContentFromDisk } from './lib/content-loader'
 
 const CONTENT_DIR = resolve(dirname(import.meta.path), '../../docs/core')
-const { pages, content } = await loadContentFromDisk(CONTENT_DIR)
+const { pages, content, mdx } = await loadContentFromDisk(CONTENT_DIR)
 
 const server = new Hono()
 
@@ -35,7 +35,7 @@ server.use('/llms.txt', serveStatic({
 }))
 
 // Mount the main app
-const app = await createApp(content, pages)
+const app = await createApp(content, pages, mdx)
 server.route('/', app)
 
 // 4000 is the dev proxy; site/core sits next to it at 4001 so the
