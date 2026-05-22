@@ -58,8 +58,10 @@ describe('isBooleanResultExpr', () => {
   })
 
   test('returns false for unparseable input', () => {
-    // `parseExpression` returns null / unsupported for garbage; the
-    // classifier should not throw, just decline to wrap.
+    // `parseExpression` always returns a `ParsedExpr` — for shapes it
+    // can't categorise it lands on `{ kind: 'unsupported' }`, which
+    // the classifier falls through to the default case and declines
+    // to wrap. The contract here is "do not throw, do not wrap".
     expect(isBooleanResultExpr('???invalid<<')).toBe(false)
   })
 })
