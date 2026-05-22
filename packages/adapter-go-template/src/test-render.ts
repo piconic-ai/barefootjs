@@ -319,21 +319,33 @@ function goArrayLiteralFromArray(arr: unknown[]): string {
     else if (typeof v === 'boolean') entries.push(String(v))
     else if (v === null) entries.push('nil')
     else if (Array.isArray(v)) entries.push(goArrayLiteralFromArray(v))
-    else if (v && typeof v === 'object') entries.push(goMapLiteralFromObject(v as Record<string, unknown>))
+    else if (v && typeof v === 'object') {
+      // Objects inside arrays are accessed via Go-struct-style
+      // template field paths (`{{.Name}}`) and sort projections
+      // (`bf_sort ... "Price" ...`), both of which expect PascalCase
+      // identifiers. html/template does case-sensitive map lookup,
+      // so emit capitalized keys so `{{.Name}}` resolves directly
+      // without relying on the runtime's case-fallback. (#1487)
+      entries.push(goMapLiteralFromObject(v as Record<string, unknown>, true))
+    }
   }
   return `[]any{${entries.join(', ')}}`
 }
 
-function goMapLiteralFromObject(obj: Record<string, unknown>): string {
+function goMapLiteralFromObject(
+  obj: Record<string, unknown>,
+  capitalizeKeys = false,
+): string {
   const entries: string[] = []
   for (const [k, v] of Object.entries(obj)) {
-    const key = JSON.stringify(k)
+    const emittedKey = capitalizeKeys ? k.charAt(0).toUpperCase() + k.slice(1) : k
+    const key = JSON.stringify(emittedKey)
     if (typeof v === 'string') entries.push(`${key}: "${v.replace(/"/g, '\\"')}"`)
     else if (typeof v === 'number') entries.push(`${key}: ${v}`)
     else if (typeof v === 'boolean') entries.push(`${key}: ${v}`)
     else if (v === null) entries.push(`${key}: nil`)
     else if (v && typeof v === 'object' && !Array.isArray(v)) {
-      entries.push(`${key}: ${goMapLiteralFromObject(v as Record<string, unknown>)}`)
+      entries.push(`${key}: ${goMapLiteralFromObject(v as Record<string, unknown>, capitalizeKeys)}`)
     }
   }
   return `map[string]any{${entries.join(', ')}}`

@@ -1153,7 +1153,10 @@ func projectSortKey(item any, keyKind, keyName string) any {
 	return item
 }
 
-// getFieldValue extracts a struct field value using reflection.
+// getFieldValue extracts a struct field value using reflection. For
+// map receivers it falls back to case-variant lookup so JSON-decoded
+// user data (`map[string]any{"price": 30}`) and PascalCase-emitted
+// test data both resolve under a single key name. (#1487)
 func getFieldValue(item any, field string) any {
 	v := reflect.ValueOf(item)
 	if v.Kind() == reflect.Interface {
@@ -1162,6 +1165,27 @@ func getFieldValue(item any, field string) any {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
+
+	if v.Kind() == reflect.Map {
+		if v.Type().Key().Kind() != reflect.String {
+			return nil
+		}
+		if mv := v.MapIndex(reflect.ValueOf(field)); mv.IsValid() {
+			return mv.Interface()
+		}
+		if cap := capitalize(field); cap != field {
+			if mv := v.MapIndex(reflect.ValueOf(cap)); mv.IsValid() {
+				return mv.Interface()
+			}
+		}
+		if low := decapitalize(field); low != field {
+			if mv := v.MapIndex(reflect.ValueOf(low)); mv.IsValid() {
+				return mv.Interface()
+			}
+		}
+		return nil
+	}
+
 	if v.Kind() != reflect.Struct {
 		return nil
 	}
@@ -1179,6 +1203,17 @@ func capitalize(s string) string {
 		return s
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// decapitalize lowercases the first character of a string. Used by
+// `getFieldValue`'s map-receiver fallback when the projected key
+// name is PascalCase but the receiver carries lowercase JS-style
+// keys (the inverse of the `capitalize` lookup).
+func decapitalize(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToLower(s[:1]) + s[1:]
 }
 
 // =============================================================================

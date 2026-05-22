@@ -913,6 +913,47 @@ func TestSort_FieldString(t *testing.T) {
 	}
 }
 
+// (#1487) `bf_sort` is called with a PascalCase key name (the IR
+// emits `bf_sort .Items "field" "Price" ...`), but user data flows
+// in as a `map[string]any` whose keys may be either lowercase
+// (JS-style — JSON.parse output, test-renderer top-level objects)
+// or PascalCase (Go-side data, test-renderer nested-in-array
+// objects). `getFieldValue`'s map fallback resolves both via a
+// case-variant lookup.
+func TestSort_FieldOnMapReceiver_PascalCaseKeys(t *testing.T) {
+	items := []any{
+		map[string]any{"Name": "c", "Price": 30},
+		map[string]any{"Name": "a", "Price": 10},
+		map[string]any{"Name": "b", "Price": 20},
+	}
+	got := Sort(items, "field", "Price", "numeric", "asc")
+	if len(got) != 3 {
+		t.Fatalf("Sort returned %d items, want 3", len(got))
+	}
+	firstPrice := got[0].(map[string]any)["Price"]
+	lastPrice := got[2].(map[string]any)["Price"]
+	if firstPrice != 10 || lastPrice != 30 {
+		t.Errorf("Sort PascalCase map asc = %v, want first.Price=10 last.Price=30", got)
+	}
+}
+
+func TestSort_FieldOnMapReceiver_LowercaseKeys(t *testing.T) {
+	items := []any{
+		map[string]any{"name": "c", "price": 30},
+		map[string]any{"name": "a", "price": 10},
+		map[string]any{"name": "b", "price": 20},
+	}
+	got := Sort(items, "field", "Price", "numeric", "asc")
+	if len(got) != 3 {
+		t.Fatalf("Sort returned %d items, want 3", len(got))
+	}
+	firstPrice := got[0].(map[string]any)["price"]
+	lastPrice := got[2].(map[string]any)["price"]
+	if firstPrice != 10 || lastPrice != 30 {
+		t.Errorf("Sort lowercase map asc = %v, want first.price=10 last.price=30", got)
+	}
+}
+
 // =============================================================================
 // JS-compat callees (#1188): bf_json / bf_string / bf_number /
 // bf_floor / bf_ceil / bf_round / bf_replace.
