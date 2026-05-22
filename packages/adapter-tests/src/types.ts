@@ -30,6 +30,11 @@ export interface ExpectedDiagnostic {
  *   `value` exactly. Use for reactive attribute bindings (e.g.
  *   `data-active`, `aria-pressed`) that the runtime updates separately
  *   from textContent.
+ * - `expectVisible` / `expectHidden` — Playwright `toBeVisible` /
+ *   `toBeHidden`. Pick these when the user-observable signal is
+ *   visibility rather than a specific attribute value — e.g. the
+ *   `hidden` boolean attribute disappears entirely on open, which a
+ *   value-based `expectAttribute` cannot express.
  */
 export type InteractionStep =
   | { type: 'click'; selector: string }
@@ -41,6 +46,8 @@ export type InteractionStep =
       attribute: string
       value: string
     }
+  | { type: 'expectVisible'; selector: string }
+  | { type: 'expectHidden'; selector: string }
 
 /**
  * A JSX fixture defines a component source and optional props for rendering.

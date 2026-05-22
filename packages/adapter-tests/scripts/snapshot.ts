@@ -33,6 +33,7 @@ import { spec as conditionalReturnLinkSpec } from '../fixtures/conditional-retur
 import { spec as reactivePropsSpec } from '../fixtures/reactive-props'
 import { spec as propsReactivityComparisonSpec } from '../fixtures/props-reactivity-comparison'
 import { spec as formSpec } from '../fixtures/form'
+import { spec as portalSpec } from '../fixtures/portal'
 
 const ALL_SPECS: SharedFixtureSpec[] = [
   counterSharedSpec,
@@ -42,6 +43,7 @@ const ALL_SPECS: SharedFixtureSpec[] = [
   reactivePropsSpec,
   propsReactivityComparisonSpec,
   formSpec,
+  portalSpec,
 ]
 
 const requested = process.argv.slice(2)

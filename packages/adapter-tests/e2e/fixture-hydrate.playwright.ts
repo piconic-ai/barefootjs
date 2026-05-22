@@ -37,6 +37,7 @@ import { fixture as conditionalReturnLink } from '../fixtures/conditional-return
 import { fixture as reactiveProps } from '../fixtures/reactive-props'
 import { fixture as propsReactivityComparison } from '../fixtures/props-reactivity-comparison'
 import { fixture as form } from '../fixtures/form'
+import { fixture as portal } from '../fixtures/portal'
 import type { JSXFixture, InteractionStep } from '../src/types'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -57,6 +58,7 @@ const fixtures: JSXFixture[] = [
   reactiveProps,
   propsReactivityComparison,
   form,
+  portal,
 ]
 const byId = new Map(fixtures.map(f => [f.id, f]))
 
@@ -154,6 +156,12 @@ async function runStep(page: Page, step: InteractionStep): Promise<void> {
         step.attribute,
         step.value,
       )
+      return
+    case 'expectVisible':
+      await expect(page.locator(step.selector).first()).toBeVisible()
+      return
+    case 'expectHidden':
+      await expect(page.locator(step.selector).first()).toBeHidden()
       return
     default:
       return assertNever(step)
