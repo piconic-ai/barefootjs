@@ -14,9 +14,10 @@
  * Coverage milestones:
  *   - #1497 — `docs/core/rendering/jsx-compatibility.md`
  *   - #1499 — `docs/core/rendering/{client-directive,fragment}.md`
- *   - this PR — `docs/core/reactivity/create-signal.md` + statement-mode
- *     / module-mode infrastructure so API-reference snippets can be
- *     compiled too (not just JSX expressions in render position)
+ *   - #1502 → #1527 — statement-mode + module-mode infrastructure +
+ *     the rest of `docs/core/**` (29 pages total in the corpus)
+ *   - this PR — client-JS snapshot assertion for ✅ examples (the
+ *     "/and/or" half of #1439 v3's remaining work)
  *
  * Pipeline per page:
  *   1. Walk fenced ```tsx blocks. If a fence contains any `//` marker,
@@ -39,7 +40,14 @@
  *        - module (`'use client'` / `import` / `export` / `type` /
  *          `interface`): compile as-is at module scope.
  *   5. Compile via `TestAdapter` (Hono-like baseline):
- *        - positive / negative-go-mojo-only: assert no fatal errors
+ *        - positive / negative-go-mojo-only: assert no fatal errors AND
+ *          snapshot the generated client JS (when produced) — pins the
+ *          semantic shape so a future regression that silently drops a
+ *          piece of the pipeline (e.g. a `.filter()` falling out of a
+ *          `.filter().map()`, the #1434 failure mode) flips this test
+ *          red instead of compiling through unchanged. Pure-server
+ *          snippets emit no client JS and are not snapshotted here;
+ *          adapter-conformance already covers their template output.
  *        - negative-all-adapters: assert ONLY the expected BFxxx code
  *          is present in fatals (no other fatal codes)
  *
@@ -48,7 +56,7 @@
  * once the mechanism is proven on more pages.
  */
 
-import { describe, test } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { compileJSX } from '../compiler'
@@ -283,7 +291,9 @@ const adapter = new TestAdapter()
 
 function compileOnce(source: string) {
   const result = compileJSX(source, 'DocExample.tsx', { adapter })
-  return result.errors.filter(e => e.severity === 'error')
+  const fatals = result.errors.filter(e => e.severity === 'error')
+  const clientJsFile = result.files.find(f => f.type === 'clientJs')
+  return { fatals, clientJs: clientJsFile?.content ?? null }
 }
 
 for (const page of PAGES) {
@@ -309,7 +319,7 @@ for (const page of PAGES) {
 
       test(name, () => {
         const source = buildSource(ex)
-        const fatals = compileOnce(source)
+        const { fatals, clientJs } = compileOnce(source)
 
         switch (ex.expected.kind) {
           case 'positive':
@@ -321,6 +331,16 @@ for (const page of PAGES) {
               throw new Error(
                 `expected no fatal errors on TestAdapter, got:\n${dump}\n--- source ---\n${source}`,
               )
+            }
+            // Semantic snapshot. Snippets that exercise reactivity emit
+            // client JS — pin it so a future regression that silently
+            // drops, say, a `.filter()` from a list pipeline (the #1434
+            // failure mode) flips this test red instead of compiling
+            // through unchanged. Pure-server snippets (no `"use client"`)
+            // emit no client JS and are skipped here — adapter-conformance
+            // already covers their template output.
+            if (clientJs !== null) {
+              expect(clientJs).toMatchSnapshot()
             }
             return
           }
