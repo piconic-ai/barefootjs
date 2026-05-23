@@ -105,6 +105,9 @@ function detectSharedSkipReason(body: string): string | undefined {
   if (/\(\s*\.\.\.\s*\)/.test(body)) return 'contains `(...)` placeholder'
   if (/>\s*\.\.\.\s*</.test(body)) return 'contains `>...<` placeholder'
   if (/\{\s*\.\.\.\s*\}/.test(body)) return 'contains `{ ... }` placeholder'
+  if (/\bbf[A-Z]\w*\(/.test(body)) {
+    return 'uses compiler-internal helper (bfText/bfComment/bfScopeAttr/...)'
+  }
   if (/^\s*[a-zA-Z][\w-]*\s*=\s*[{"]/.test(body) && !/^\s*(const|let|var)\b/.test(body)) {
     return 'JSX attribute fragment (not a standalone expression / statement)'
   }
@@ -250,6 +253,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/components/portals.md' },
   { path: 'core/components/props-type-safety.md' },
   { path: 'core/components/styling.md' },
+  { path: 'core/core-concepts/how-it-works.md' },
 ]
 
 const adapter = new TestAdapter()
