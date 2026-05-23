@@ -527,33 +527,18 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     }
     const body = convertNode(node.body, raw)
 
-    // Destructured-object param: `({done}) => done` (#1443).
-    // We synthesise the equivalent dotted-access form so adapters
-    // can reuse their existing higher-order paths instead of needing
-    // a residual-object-accessor pipeline (#1384 territory). Only the
-    // unrenamed-field / renamed-field forms are handled — nested
-    // destructure / rest / defaults stay unsupported.
+    // Destructured-object param: `({done}) => done` (#1443),
+    // `({user: {name}}) => name` (#1530). We synthesise the equivalent
+    // dotted-access form so adapters can reuse their existing
+    // higher-order paths instead of needing a residual-object-accessor
+    // pipeline (#1384 territory). Nested destructure recurses into
+    // the inner pattern and threads a dotted path; rest / defaults /
+    // array binding stay unsupported.
     if (ts.isObjectBindingPattern(param.name)) {
-      const fieldMap = new Map<string, string>()
-      for (const el of param.name.elements) {
-        if (!ts.isBindingElement(el)) {
-          return { kind: 'unsupported', raw, reason: 'Unsupported binding element in destructured filter param' }
-        }
-        if (el.dotDotDotToken) {
-          return { kind: 'unsupported', raw, reason: 'Rest patterns in destructured filter param are not supported' }
-        }
-        if (el.initializer) {
-          return { kind: 'unsupported', raw, reason: 'Default values in destructured filter param are not supported' }
-        }
-        if (!ts.isIdentifier(el.name)) {
-          return { kind: 'unsupported', raw, reason: 'Nested destructuring in filter param is not supported' }
-        }
-        const localName = el.name.text
-        const fieldName =
-          el.propertyName && ts.isIdentifier(el.propertyName)
-            ? el.propertyName.text
-            : localName // shorthand: `{done}` ≡ `{done: done}`
-        fieldMap.set(localName, fieldName)
+      const fieldMap = new Map<string, string[]>()
+      const collect = collectDestructureBindings(param.name, [], fieldMap)
+      if (!collect.ok) {
+        return { kind: 'unsupported', raw, reason: collect.reason }
       }
       const syntheticParam = pickSyntheticParam(fieldMap, body)
       const rewritten = substituteDestructuredFields(body, fieldMap, syntheticParam)
@@ -752,6 +737,70 @@ function classifySortOperand(
 }
 
 /**
+ * Walk an object-binding pattern and populate `fieldMap` with
+ * `localName → [field, field, …]` entries. Nested patterns extend
+ * the path; renamed bindings use the property name (the field on
+ * the source object) rather than the local rename. Returns an
+ * error result for any shape outside the supported set so the
+ * caller can surface an `unsupported` IR node verbatim.
+ */
+function collectDestructureBindings(
+  pattern: ts.ObjectBindingPattern,
+  pathPrefix: readonly string[],
+  fieldMap: Map<string, string[]>,
+): { ok: true } | { ok: false; reason: string } {
+  for (const el of pattern.elements) {
+    if (!ts.isBindingElement(el)) {
+      return { ok: false, reason: 'Unsupported binding element in destructured filter param' }
+    }
+    if (el.dotDotDotToken) {
+      return { ok: false, reason: 'Rest patterns in destructured filter param are not supported' }
+    }
+    if (el.initializer) {
+      return { ok: false, reason: 'Default values in destructured filter param are not supported' }
+    }
+    if (ts.isObjectBindingPattern(el.name)) {
+      // Nested object pattern: `{ user: { name } }`. The outer slot
+      // MUST carry an identifier propertyName — the JS grammar for
+      // nested destructure requires `key: <pattern>`, so the
+      // shorthand `{ { name } }` doesn't exist. Computed / string
+      // / numeric property names stay refused.
+      if (!el.propertyName || !ts.isIdentifier(el.propertyName)) {
+        return { ok: false, reason: 'Non-identifier (computed/string/numeric) keys in destructured filter param are not supported' }
+      }
+      const inner = collectDestructureBindings(
+        el.name,
+        [...pathPrefix, el.propertyName.text],
+        fieldMap,
+      )
+      if (!inner.ok) return inner
+      continue
+    }
+    if (!ts.isIdentifier(el.name)) {
+      // Array binding pattern (`[a, b]`) and other shapes — kept refused
+      // per #1530 out-of-scope. Filter predicates rarely receive tuples.
+      return { ok: false, reason: 'Array binding patterns in destructured filter param are not supported' }
+    }
+    // Leaf binding. A non-identifier propertyName (`{ 'x': y }`,
+    // `{ 0: y }`) would silently fall back to `localName` and rewrite
+    // `y` to `<synthetic>.y` instead of `<synthetic>['x']` — a
+    // semantic bug. Refuse explicitly until we extend the path
+    // representation to carry computed segments.
+    let fieldName: string
+    if (el.propertyName) {
+      if (!ts.isIdentifier(el.propertyName)) {
+        return { ok: false, reason: 'Non-identifier (computed/string/numeric) keys in destructured filter param are not supported' }
+      }
+      fieldName = el.propertyName.text
+    } else {
+      fieldName = el.name.text // shorthand: `{done}` ≡ `{done: done}`
+    }
+    fieldMap.set(el.name.text, [...pathPrefix, fieldName])
+  }
+  return { ok: true }
+}
+
+/**
  * Pick a synthetic param name for a rewritten destructured filter
  * (`({done}) => done` → `(_t) => _t.done`). The name must NOT collide
  * with anything the body might reference — a `_t` already on the body
@@ -762,8 +811,12 @@ function classifySortOperand(
  * identifier referenced inside the body" (collectIdentifiers). Both
  * are reachable from the local rewrite context, so we avoid all of
  * them up-front rather than risk a runtime bug from a missed name.
+ * For nested destructure the map's keys are still just the
+ * locally-introduced leaf names — intermediate property names
+ * (`user` in `{ user: { name } }`) are consumed in the path and
+ * never bound in scope, so they don't need collision avoidance.
  */
-function pickSyntheticParam(fieldMap: Map<string, string>, body: ParsedExpr): string {
+function pickSyntheticParam(fieldMap: Map<string, string[]>, body: ParsedExpr): string {
   const used = new Set<string>(fieldMap.keys())
   collectIdentifiers(body, used)
   let name = '_t'
@@ -830,20 +883,22 @@ function collectIdentifiers(expr: ParsedExpr, out: Set<string>): void {
  */
 function substituteDestructuredFields(
   expr: ParsedExpr,
-  fieldMap: Map<string, string>,
+  fieldMap: Map<string, string[]>,
   syntheticParam: string,
 ): ParsedExpr {
   const walk = (e: ParsedExpr): ParsedExpr => {
     switch (e.kind) {
       case 'identifier': {
-        const field = fieldMap.get(e.name)
-        if (field === undefined) return e
-        return {
-          kind: 'member',
-          object: { kind: 'identifier', name: syntheticParam },
-          property: field,
-          computed: false,
+        const path = fieldMap.get(e.name)
+        if (path === undefined) return e
+        // Build `<syntheticParam>.<path[0]>.<path[1]>…` as a left-leaning
+        // chain of `member` nodes. Single-level destructure produces a
+        // one-hop chain identical to the pre-#1530 shape.
+        let node: ParsedExpr = { kind: 'identifier', name: syntheticParam }
+        for (const segment of path) {
+          node = { kind: 'member', object: node, property: segment, computed: false }
         }
+        return node
       }
       case 'call':
         return { kind: 'call', callee: walk(e.callee), args: e.args.map(walk) }

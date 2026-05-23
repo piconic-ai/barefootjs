@@ -340,14 +340,127 @@ describe('expression-parser', () => {
       }
     })
 
-    // Defaults / rest / nested destructure stay unsupported — each
-    // would need its own residual-object accessor pipeline. We accept
-    // only the unrenamed-field and renamed-field forms here.
+    // Defaults / rest stay unsupported — each would need its own
+    // residual-object accessor pipeline. Nested destructure is
+    // covered separately below (#1530).
     test('rejects .filter(({done = false}) => done) — defaults in destructure are unsupported (#1443)', () => {
       const result = parseExpression('todos().filter(({done = false}) => done)')
       // Falls through to plain `call` (not higher-order), so isSupported
       // will surface BF101 at the adapter via the UNSUPPORTED_METHODS gate.
       expect(result.kind).toBe('call')
+    })
+
+    // Nested destructure (#1530). The parser recurses into the inner
+    // object pattern and threads the property path, so
+    // `({user: {name}}) => name === 'alice'` rewrites to
+    // `(_t) => _t.user.name === 'alice'`. Adapters reuse the
+    // higher-order path with no extra work — the IR is identical to
+    // what the user could have written by hand.
+    test('lowers .filter(({user: {name}}) => …) with nested destructure (#1530)', () => {
+      const result = parseExpression("items().filter(({user: {name}}) => name === 'alice')")
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.method).toBe('filter')
+        expect(result.param).not.toBe('name')
+        // Predicate: <_t>.user.name === 'alice'
+        expect(result.predicate.kind).toBe('binary')
+        if (result.predicate.kind === 'binary') {
+          expect(result.predicate.op).toBe('===')
+          // Walk the left-leaning chain: `_t.user.name`.
+          const lhs = result.predicate.left
+          expect(lhs.kind).toBe('member')
+          if (lhs.kind === 'member') {
+            expect(lhs.property).toBe('name')
+            expect(lhs.object.kind).toBe('member')
+            if (lhs.object.kind === 'member') {
+              expect(lhs.object.property).toBe('user')
+              expect(lhs.object.object.kind).toBe('identifier')
+              if (lhs.object.object.kind === 'identifier') {
+                expect(lhs.object.object.name).toBe(result.param)
+              }
+            }
+          }
+        }
+      }
+    })
+
+    test('lowers .filter(({a: {b: {c}}}) => c) with doubly-nested destructure (#1530)', () => {
+      const result = parseExpression('items().filter(({a: {b: {c}}}) => c)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        // Predicate: `_t.a.b.c`.
+        let node = result.predicate
+        const expected = ['c', 'b', 'a']
+        for (const property of expected) {
+          expect(node.kind).toBe('member')
+          if (node.kind !== 'member') return
+          expect(node.property).toBe(property)
+          node = node.object
+        }
+        expect(node.kind).toBe('identifier')
+        if (node.kind === 'identifier') {
+          expect(node.name).toBe(result.param)
+        }
+      }
+    })
+
+    test('lowers .filter(({user: {name: n}}) => n) with renamed inner field (#1530)', () => {
+      // `name: n` — `name` is the field, `n` is the LOCAL. Rewrite
+      // substitutes `n` (body reference) with `_t.user.name` (original
+      // field path).
+      const result = parseExpression('items().filter(({user: {name: n}}) => n)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.param).not.toBe('n')
+        expect(result.predicate.kind).toBe('member')
+        if (result.predicate.kind === 'member') {
+          expect(result.predicate.property).toBe('name') // field, not the rename
+          expect(result.predicate.object.kind).toBe('member')
+          if (result.predicate.object.kind === 'member') {
+            expect(result.predicate.object.property).toBe('user')
+          }
+        }
+      }
+    })
+
+    // Array binding inside an object destructure (`{a: [x]}`) stays
+    // refused — different shape (numeric indices). Lock in the
+    // refusal here so a future change doesn't accidentally start
+    // lowering it via the object-destructure path (#1530).
+    test('rejects .filter(({a: [x]}) => x) — array binding inside object destructure (#1530)', () => {
+      const result = parseExpression('items().filter(({a: [x]}) => x)')
+      // Falls through to plain `call` — adapter surfaces BF101.
+      expect(result.kind).toBe('call')
+    })
+
+    // Non-identifier property names (`{ 'x': y }`, `{ 0: y }`) used to
+    // silently fall back to the local name, which would rewrite `y`
+    // to `<synthetic>.y` instead of the correct `<synthetic>['x']`.
+    // Refuse explicitly until we can carry computed segments through
+    // the path representation (#1530).
+    test('rejects .filter(({ "x": y }) => y) — string-literal key in destructure (#1530)', () => {
+      const result = parseExpression("items().filter(({ 'x': y }) => y)")
+      expect(result.kind).toBe('call')
+    })
+
+    test('rejects .filter(({ 0: y }) => y) — numeric-literal key in destructure (#1530)', () => {
+      const result = parseExpression('items().filter(({ 0: y }) => y)')
+      expect(result.kind).toBe('call')
+    })
+
+    // Synthetic param collision — body references a free `_t` AND the
+    // destructure also introduces `_t` as a leaf binding. Both must be
+    // avoided when picking the synthetic name (#1530 acceptance).
+    test('picks a non-colliding synthetic param when body references `_t` (#1530)', () => {
+      // `_t` here is a free identifier in the body (closure capture);
+      // the synthetic param must NOT be `_t`, otherwise the rewrite
+      // would silently shadow it.
+      const result = parseExpression('items().filter(({user: {name}}) => name === _t)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.param).not.toBe('_t')
+        expect(result.param).toMatch(/^_t_+$/)
+      }
     })
 
     // Function-keyword filter callback (#1443): `function (x) { return
