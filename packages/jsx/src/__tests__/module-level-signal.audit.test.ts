@@ -117,8 +117,7 @@ export function Counter() {
     expect(bf011(compile(src).errors)).toHaveLength(1)
   })
 
-  test('phase 2 pending: `/* @client */` is not yet honored', () => {
-    // Pinned so that wiring up the opt-in flips this test loudly.
+  test('`/* @client */` suppresses BF011 and collects the signal', () => {
     const src = `'use client'
 import { createSignal } from '@barefootjs/client'
 /* @client */
@@ -128,7 +127,43 @@ export function Counter() {
 }
 `
     const ctx = analyzeComponent(src, '/tmp/c.tsx', 'Counter')
-    expect(bf011(ctx.errors)).toHaveLength(1)
+    expect(bf011(ctx.errors)).toHaveLength(0)
+    const moduleSigs = ctx.signals.filter(s => s.isModule)
+    expect(moduleSigs).toHaveLength(1)
+    expect(moduleSigs[0].getter).toBe('count')
+    expect(moduleSigs[0].setter).toBe('setCount')
+  })
+
+  test('`/* @client */` on createMemo suppresses BF011', () => {
+    const src = `'use client'
+import { createMemo } from '@barefootjs/client'
+/* @client */
+const total = createMemo(() => 1 + 1)
+export function Display() {
+  return <span>{total()}</span>
+}
+`
+    const ctx = analyzeComponent(src, '/tmp/d.tsx', 'Display')
+    expect(bf011(ctx.errors)).toHaveLength(0)
+    const moduleMemos = ctx.memos.filter(m => m.isModule)
+    expect(moduleMemos).toHaveLength(1)
+    expect(moduleMemos[0].name).toBe('total')
+  })
+
+  test('`export /* @client */` marks signal as exported', () => {
+    const src = `'use client'
+import { createSignal } from '@barefootjs/client'
+/* @client */
+export const [count, setCount] = createSignal(0)
+export function Counter() {
+  return <span>{count()}</span>
+}
+`
+    const ctx = analyzeComponent(src, '/tmp/c.tsx', 'Counter')
+    expect(bf011(ctx.errors)).toHaveLength(0)
+    const moduleSigs = ctx.signals.filter(s => s.isModule)
+    expect(moduleSigs).toHaveLength(1)
+    expect(moduleSigs[0].isExported).toBe(true)
   })
 
   test('control: in-component signal compiles cleanly', () => {

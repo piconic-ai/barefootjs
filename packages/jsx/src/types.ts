@@ -959,6 +959,15 @@ export interface SignalInfo {
    * if applicable) — emitters substitute it verbatim. See #1414 cell #8.
    */
   branchCondition?: string
+  /**
+   * When true, declared at module level under a `/* @client *​/` directive.
+   * The signal is emitted at module scope in the client bundle and skipped
+   * in the SSR template. Component-body references are treated as implicit
+   * `@client` expressions (placeholder at SSR, live read at hydrate).
+   */
+  isModule?: boolean
+  /** When true, the declaration carries an `export` keyword. */
+  isExported?: boolean
 }
 
 export interface MemoInfo {
@@ -975,6 +984,10 @@ export interface MemoInfo {
    * propagation in `ir-to-client-js` (#1277).
    */
   computationFreeIdentifiers?: ReadonlySet<string>
+  /** Same semantics as `SignalInfo.isModule`. */
+  isModule?: boolean
+  /** When true, the declaration carries an `export` keyword. */
+  isExported?: boolean
 }
 
 export interface EffectInfo {

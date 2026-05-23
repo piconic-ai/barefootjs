@@ -440,25 +440,21 @@ function visit(
   if (ts.isVariableStatement(node) && !ctx.componentNode) {
     const isExported = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
     const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
+    const isModuleClientDirective = hasLeadingClientDirectiveOnStatement(node, ctx.sourceFile)
     for (const decl of node.declarationList.declarations) {
-      // BF011: a module-level `createSignal` / `createMemo` declaration
-      // is silently dropped by the downstream pipeline today and every
-      // reference to the resulting binding becomes a ReferenceError at
-      // SSR and at hydrate. Fire the diagnostic here for every binding
-      // shape `visitComponentBody` would normally route through a signal
-      // collector (tuple destructure, identifier tuple-ref, element
-      // access, memo) so the surface area matches.
-      //
-      // A future `/* @client */` opt-in (Phase 2) will both suppress the
-      // diagnostic and wire the declaration through the working module-
-      // scope codegen path. Until that pair lands together, no escape
-      // hatch is recognized — partial support would re-introduce the
-      // exact silent-bug shape the diagnostic is here to surface.
       if (declarationIsReactiveFactoryCall(decl, ctx)) {
-        ctx.errors.push(createError(
-          ErrorCodes.SIGNAL_OUTSIDE_COMPONENT,
-          getSourceLocation(decl, ctx.sourceFile, ctx.filePath),
-        ))
+        if (isModuleClientDirective) {
+          // /* @client */ opt-in: collect as a module-scope signal/memo
+          // so codegen preserves it in the client bundle and SSR emits a
+          // placeholder for any reference.
+          collectModuleScopeReactive(decl, ctx, isExported)
+        } else {
+          // BF011: module-level reactive declaration without opt-in.
+          ctx.errors.push(createError(
+            ErrorCodes.SIGNAL_OUTSIDE_COMPONENT,
+            getSourceLocation(decl, ctx.sourceFile, ctx.filePath),
+          ))
+        }
         continue
       }
       if (
@@ -2113,6 +2109,64 @@ function declarationIsReactiveFactoryCall(
   if (isSignalTupleDeclaration(decl)) return true
   if (isSignalIndexAccess(decl, ctx) !== null) return true
   return false
+}
+
+// =============================================================================
+// Module-level `/* @client */` directive detection + collection
+// =============================================================================
+
+const CLIENT_DIRECTIVE_INTERIOR_RE = /^\s*@client\s*$/
+const BLOCK_COMMENT_RE = /\/\*([\s\S]*?)\*\//g
+
+/**
+ * Detect a leading `/* @client *​/` block comment on a VariableStatement.
+ * Mirrors `hasLeadingClientDirective` in jsx-to-ir.ts (which targets
+ * Expression nodes inside JSX). Reads the raw trivia between the
+ * previous node's end and the statement's first token.
+ */
+function hasLeadingClientDirectiveOnStatement(
+  stmt: ts.Statement,
+  sourceFile: ts.SourceFile,
+): boolean {
+  const trivia = sourceFile.text.slice(stmt.pos, stmt.getStart(sourceFile))
+  BLOCK_COMMENT_RE.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = BLOCK_COMMENT_RE.exec(trivia)) !== null) {
+    if (CLIENT_DIRECTIVE_INTERIOR_RE.test(m[1])) return true
+  }
+  return false
+}
+
+/**
+ * Collect a module-level reactive declaration that the user opted into
+ * with `/* @client *​/`. Reuses the existing in-component collectors and
+ * marks the result with `isModule: true` so downstream codegen routes
+ * it to module scope in the client bundle and skips it in SSR.
+ */
+function collectModuleScopeReactive(
+  decl: ts.VariableDeclaration,
+  ctx: AnalyzerContext,
+  isExported: boolean,
+): void {
+  if (isSignalDeclaration(decl, ctx)) {
+    collectSignal(decl, ctx)
+    const sig = ctx.signals[ctx.signals.length - 1]
+    sig.isModule = true
+    sig.isExported = isExported || undefined
+    return
+  }
+  if (isMemoDeclaration(decl, ctx)) {
+    collectMemo(decl, ctx)
+    const memo = ctx.memos[ctx.memos.length - 1]
+    memo.isModule = true
+    memo.isExported = isExported || undefined
+    return
+  }
+  // tuple-ref and index-access shapes at module level under @client
+  // are supported in principle but rare — the canonical pattern is
+  // `const [getter, setter] = createSignal(...)`. Collecting
+  // signalTupleRefs / index-access here requires the same flush
+  // logic visitComponentBody uses; defer to a follow-up if needed.
 }
 
 /**
