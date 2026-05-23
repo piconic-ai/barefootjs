@@ -658,7 +658,6 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | Code | Description |
 |------|-------------|
 | BF001 | Missing 'use client' directive |
-| BF002 | Invalid directive position |
 | BF003 | Client component importing server component |
 | BF010 | Unknown signal reference |
 | BF011 | Signal used outside component |

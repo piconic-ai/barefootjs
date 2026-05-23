@@ -17,7 +17,6 @@ import type {
 export const ErrorCodes = {
   // Directive errors (BF001-BF009)
   MISSING_USE_CLIENT: 'BF001',
-  INVALID_DIRECTIVE_POSITION: 'BF002',
   CLIENT_IMPORTING_SERVER: 'BF003',
 
   // Signal/Memo errors (BF010-BF019)
@@ -105,8 +104,6 @@ export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
 const errorMessages: Record<ErrorCode, string> = {
   [ErrorCodes.MISSING_USE_CLIENT]:
     "'use client' directive required for components with createSignal or event handlers",
-  [ErrorCodes.INVALID_DIRECTIVE_POSITION]:
-    "'use client' directive must be at the top of the file",
   [ErrorCodes.CLIENT_IMPORTING_SERVER]:
     'Client component cannot import server component',
 

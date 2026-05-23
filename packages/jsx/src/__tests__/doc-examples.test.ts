@@ -421,7 +421,7 @@ for (const page of PAGES) {
 // `test.skip` rather than removed, so the test corpus stays loud
 // about the doc/compiler drift:
 //
-//   - "Documented but unimplemented" (BF002, BF010, BF011, BF012,
+//   - "Documented but unimplemented" (BF010, BF011, BF012,
 //     BF020, BF022, BF025, BF030, BF031, BF040, BF041, BF042, BF045):
 //     `errors.ts` defines the constant + message but `grep ErrorCodes.X`
 //     across `packages/jsx/src/**` finds zero production emission
@@ -461,7 +461,6 @@ const ERROR_CODES_DOC_TOO_MINIMAL: Record<string, string> = {
 // and `__tests__/`. Documented for visibility; un-skipping requires
 // implementing the missing emission site.
 const ERROR_CODES_UNIMPLEMENTED: Record<string, string> = {
-  BF002: 'documented but no emission site in packages/jsx/src/** (see ErrorCodes.INVALID_DIRECTIVE_POSITION)',
   BF010: 'documented but no emission site (see ErrorCodes.UNKNOWN_SIGNAL)',
   BF011: 'documented but no emission site (see ErrorCodes.SIGNAL_OUTSIDE_COMPONENT)',
   BF012: 'documented but no emission site (see ErrorCodes.INVALID_SIGNAL_USAGE)',

@@ -46,18 +46,6 @@ import { createSignal } from '@barefootjs/client'
 export function Counter() { ... }
 ```
 
-### BF002 — Invalid Directive Position
-
-**Trigger:** `"use client"` not first statement.
-
-```tsx
-// ❌ BF002
-import { createSignal } from '@barefootjs/client'
-"use client"
-```
-
-**Fix:** Move to the first line (before imports).
-
 ### BF003 — Client Component Importing Server Component
 
 **Trigger:** Client component imports from a file without `"use client"`.
@@ -300,7 +288,6 @@ function Component({ checked }: Props) {
 | Code | Severity | Description |
 |------|----------|-------------|
 | BF001 | Error | Missing `"use client"` directive |
-| BF002 | Error | Invalid directive position |
 | BF003 | Error | Client component importing server component |
 | BF010 | Error | Unknown signal reference |
 | BF011 | Error | Signal used outside component |

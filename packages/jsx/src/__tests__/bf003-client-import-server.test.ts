@@ -305,9 +305,9 @@ describe('BF003 — client importing server component', () => {
 
   test('accepts "use client" placed after a value declaration (analyzer semantics)', () => {
     // The analyzer itself treats any ExpressionStatement of `'use client'`
-    // as the directive (BF002 enforces top-of-file placement separately);
-    // BF003 must match that semantics or it would fire on files the
-    // analyzer would classify as client.
+    // as the directive — top-of-file placement is not enforced. BF003
+    // must match that semantics or it would fire on files the analyzer
+    // would classify as client.
     writeFixture('directive-after-import.tsx', `
       import type { ReactNode } from 'react'
       "use client"

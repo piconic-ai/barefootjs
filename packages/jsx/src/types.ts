@@ -1386,7 +1386,7 @@ export interface ComponentIR {
 export type ErrorSeverity = 'error' | 'warning' | 'info'
 
 export interface CompilerError {
-  code: string // 'BF001', 'BF002', etc.
+  code: string // 'BF001', 'BF003', etc.
   severity: ErrorSeverity
   message: string
   loc: SourceLocation

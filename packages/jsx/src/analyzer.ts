@@ -2862,9 +2862,10 @@ function fileHasUseClientDirective(filePath: string): boolean {
   // Match the analyzer's own directive detection on this file: any
   // ExpressionStatement whose expression is the string literal
   // `'use client'` counts, regardless of whether it sits at the
-  // directive-prologue position. BF002 is the spec's enforcement of
-  // top-of-file placement; consulting that semantics here would make
-  // BF003 fire for files the analyzer itself classifies as client.
+  // directive-prologue position. Enforcing top-of-file placement here
+  // would make BF003 fire on files the analyzer itself classifies as
+  // client (see use-client-directive-position.test.ts for the pinned
+  // permissive-detection behavior).
   const sf = ts.createSourceFile(
     filePath,
     content,
