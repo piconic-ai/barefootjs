@@ -276,6 +276,7 @@ const PAGES: PageSpec[] = [
   },
   { path: 'core/advanced/performance.md' },
   { path: 'core/reactivity.md' },
+  { path: 'core/introduction.md' },
 ]
 
 const adapter = new TestAdapter()
