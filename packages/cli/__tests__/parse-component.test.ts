@@ -137,8 +137,8 @@ describe('parseComponent', () => {
     const source = readComponent('label')
     const result = parseComponent(source)
 
-    test('does not have "use client"', () => {
-      expect(result.useClient).toBe(false)
+    test('has "use client" (importable from interactive parents under BF003)', () => {
+      expect(result.useClient).toBe(true)
     })
 
     test('extracts description', () => {
@@ -158,12 +158,12 @@ describe('parseComponent', () => {
     })
   })
 
-  describe('separator.tsx — no "use client", orientation variants', () => {
+  describe('separator.tsx — orientation variants', () => {
     const source = readComponent('separator')
     const result = parseComponent(source)
 
-    test('does not have "use client"', () => {
-      expect(result.useClient).toBe(false)
+    test('has "use client" (importable from interactive parents under BF003)', () => {
+      expect(result.useClient).toBe(true)
     })
 
     test('extracts description', () => {
