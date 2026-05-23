@@ -262,6 +262,18 @@ const PAGES: PageSpec[] = [
   { path: 'core/adapters/custom-adapter.md' },
   { path: 'core/advanced/code-splitting.md' },
   { path: 'core/advanced/compiler-internals.md' },
+  {
+    // Reference page listing every BFxxx code with illustrative
+    // ❌/✅ snippets. Many depend on file-level context (module vs
+    // function scope, directive position, undefined identifiers like
+    // `Child`/`count`) that the shared scaffold can't reproduce, so
+    // they don't fire the BFxxx the doc claims. The extractor still
+    // walks the page to catch markdown structure changes; a
+    // per-BFxxx-section matcher is tracked as future work in #1439.
+    path: 'core/advanced/error-codes.md',
+    pageSkip: () =>
+      'error-reference page — illustrative snippets depend on file-level context (#1439 future work)',
+  },
 ]
 
 const adapter = new TestAdapter()
