@@ -1144,6 +1144,163 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div>\${_p.children}
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/reactivity/create-signal.md doc-examples L33 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L36 — Read — call the getter 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  count()
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L39 — Write — pass a value 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  setCount(5)
+  count()
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L43 — Write — pass an updater function 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  setCount(n => n + 1)
+  count()
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L55 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [name, setName] = createSignal('Alice')
+
+  setName('Alice')
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L62 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [todos, setTodos] = createSignal([{ text: 'Buy milk' }])
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L65 — ❌ Mutating the same array — no update 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const list = todos()
+
+  list.push({ text: 'Walk dog' })
+  setTodos(list)
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L70 — ✅ New array — triggers update 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  setTodos([...todos(), { text: 'Walk dog' }])
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L79 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+
+  setCount(1)
+  setCount(2)
+
+  createEffect(() => {
+  console.log('Count is:', count()) // Runs whenever count changes
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/reactivity/create-signal.md doc-examples L95 — (no label) 1`] = `
 "import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
@@ -1167,6 +1324,169 @@ export function initCounter(__scope, _p = {}) {
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${(0)}<!--/--></p><button bf="s2">+1</button></div>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L118 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+  const [name, setName] = createSignal('Alice')
+  const [visible, setVisible] = createSignal(false)
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-signal.md doc-examples L126 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [user, setUser] = createSignal(null)
+  const [filter, setFilter] = createSignal('all')
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-effect.md doc-examples L20 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+
+  setCount(1)
+
+  createEffect(() => {
+  document.title = \`Count: \${count()}\`
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-effect.md doc-examples L37 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [showName, setShowName] = createSignal(true)
+  const [name, setName] = createSignal('Alice')
+  const [count, setCount] = createSignal(0)
+
+  createEffect(() => {
+  if (showName()) {
+    console.log(name())  // name is tracked
+  } else {
+    console.log(count()) // count is tracked instead
+  }
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-effect.md doc-examples L58 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  createEffect(() => {
+  const timer = setInterval(() => console.log('tick'), 1000)
+  return () => clearInterval(timer)
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-effect.md doc-examples L67 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  createEffect(() => {
+  const timer = setInterval(() => console.log('tick'), 1000)
+  onCleanup(() => clearInterval(timer))
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-effect.md doc-examples L81 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [theme, setTheme] = createSignal('light')
+
+  createEffect(() => {
+  localStorage.setItem('theme', theme())
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-effect.md doc-examples L91 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [query, setQuery] = createSignal('')
+
+  createEffect(() => {
+  const q = query()
+  if (!q) return
+
+  const controller = new AbortController()
+  fetch(\`/api/search?q=\${q}\`, { signal: controller.signal })
+    .then(r => r.json())
+    .then(setResults)
+
+  onCleanup(() => controller.abort())
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/reactivity/create-effect.md doc-examples L115 — (no label) 1`] = `
@@ -1223,6 +1543,82 @@ export function initExample(__scope, _p = {}) {
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div><button \${loading() ? 'disabled' : ''}>Submit</button></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-memo.md doc-examples L22 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(2)
+  const doubled = createMemo(() => count() * 2)
+
+  doubled()
+  setCount(5)
+  doubled()
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-memo.md doc-examples L40 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [todos, setTodos] = createSignal([])
+  const [filter, setFilter] = createSignal('all')
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-memo.md doc-examples L43 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const filteredTodos = createMemo(() => {
+  const list = todos()
+  switch (filter()) {
+    case 'active': return list.filter(t => !t.done)
+    case 'done':   return list.filter(t => t.done)
+    default:       return list
+  }
+})
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-memo.md doc-examples L53 — Used in multiple effects and JSX expressions 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  createEffect(() => console.log(filteredTodos().length))
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/reactivity/create-memo.md doc-examples L60 — No memo needed 1`] = `
@@ -1286,6 +1682,247 @@ export function initExample(__scope, _p = {}) {
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div><p bf="s1"><!--bf:s0-->\${(0) * 2}<!--/--></p></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/create-memo.md doc-examples L69 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(1)
+  const doubled = createMemo(() => count() * 2)
+  const quadrupled = createMemo(() => doubled() * 2)
+
+  setCount(3)
+
+  createEffect(() => {
+  console.log(quadrupled()) // 4
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/on-mount.md doc-examples L20 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  onMount(() => {
+  console.log('Component initialized')
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/on-mount.md doc-examples L33 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  onMount(() => {
+  const hash = window.location.hash
+  setFilter(hash === '#/active' ? 'active' : 'all')
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/on-mount.md doc-examples L42 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  onMount(() => {
+  const handleHashChange = () => setFilter(getFilterFromHash())
+  window.addEventListener('hashchange', handleHashChange)
+  onCleanup(() => window.removeEventListener('hashchange', handleHashChange))
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/on-mount.md doc-examples L52 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  onMount(() => {
+  inputElement.focus()
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/on-cleanup.md doc-examples L20 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  createEffect(() => {
+  const timer = setInterval(() => console.log('tick'), 1000)
+  onCleanup(() => clearInterval(timer))
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/on-cleanup.md doc-examples L51 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  onMount(() => {
+  const handleResize = () => setWidth(window.innerWidth)
+  window.addEventListener('resize', handleResize)
+  onCleanup(() => window.removeEventListener('resize', handleResize))
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/untrack.md doc-examples L22 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+  const [name, setName] = createSignal('Alice')
+
+  setCount(1)
+  setName('Bob')
+
+  createEffect(() => {
+  // count() IS tracked — this effect re-runs when count changes
+  console.log('count:', count())
+
+  // name() is NOT tracked — changing name alone won't trigger this effect
+  console.log('name:', untrack(() => name()))
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/untrack.md doc-examples L43 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  createEffect(() => {
+  // Re-run only when items change, not when sortOrder changes
+  const sorted = [...items()].sort(untrack(() => sortOrder()) === 'asc' ? compare : reverseCompare)
+  setDisplayList(sorted)
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/untrack.md doc-examples L53 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  createEffect(() => {
+  const value = computedResult()
+  console.log('Updated at:', untrack(() => new Date().toISOString()))
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/untrack.md doc-examples L64 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  createEffect(() => {
+  const a = signalA()
+  const b = untrack(() => signalB()) // Read B without tracking
+  setResult(a + b)
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L16 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L30 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/props-reactivity.md doc-examples L55 — @bf-ignore props-destructuring 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L82 — Parent 1`] = `
@@ -1543,6 +2180,15 @@ hydrate('AutoFocus', { init: initAutoFocus, template: (_p) => \`<input placehold
 export function AutoFocus(_p, __bfKey) { return createComponent('AutoFocus', _p, __bfKey) }"
 `;
 
+exports[`docs/core/components/component-authoring.md doc-examples L202 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/components/children-slots.md doc-examples L14 — (no label) 1`] = `
 "import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Card */'
@@ -1603,6 +2249,24 @@ export function initExample(__scope, _p = {}) {
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div>\${renderChild('Card', {children: \`<h2>Title</h2><p>Body text</p>\`}, undefined, 's0')}</div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/children-slots.md doc-examples L21 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/children-slots.md doc-examples L32 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L68 — Input 1`] = `
@@ -2063,6 +2727,15 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/components/context-api.md doc-examples L21 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/components/context-api.md doc-examples L40 — (no label) 1`] = `
 "import { $t, createComponent, createEffect, createSignal, hydrate, provideContext } from '@barefootjs/client/runtime'
 
@@ -2120,6 +2793,24 @@ export function initExample(__scope, _p = {}) {
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div>\${_p.children}</div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/context-api.md doc-examples L53 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/context-api.md doc-examples L70 — 1. Create the context 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L73 — 2. Provider component 1`] = `
@@ -2220,6 +2911,24 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div>\${renderChild(
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/components/context-api.md doc-examples L117 — Create context 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/context-api.md doc-examples L123 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/components/context-api.md doc-examples L127 — (no label) 1`] = `
 "import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, provideContext, untrack } from '@barefootjs/client/runtime'
 
@@ -2234,6 +2943,24 @@ export function initStatementExample(__scope, _p = {}) {
 }
 
 hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div data-slot="accordion">\${props.children}</div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/context-api.md doc-examples L139 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  el.addEventListener('click', () => {
+        ctx.toggle(_p.itemId)
+      })
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
@@ -2398,6 +3125,62 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/components/context-api.md doc-examples L195 — Consumer reads inside createEffect — reactive 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack, useContext } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const ctx = useContext(AccordionContext)
+
+  createEffect(() => {
+  const isOpen = ctx.activeItem() === _p.itemId  // Tracks activeItem signal
+  el.hidden = !isOpen
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/context-api.md doc-examples L210 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/context-api.md doc-examples L213 — If DialogTrigger is used outside a Dialog, useContext throws 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/context-api.md doc-examples L230 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/context-api.md doc-examples L233 — Works even without a ThemeProvider ancestor — returns 'light' 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/components/portals.md doc-examples L53 — (no label) 1`] = `
 "import { $, $t, createComponent, createEffect, createPortal, createSignal, hydrate, isSSRPortal } from '@barefootjs/client/runtime'
 
@@ -2434,6 +3217,15 @@ export function initTooltip(__scope, _p = {}) {
 
 hydrate('Tooltip', { init: initTooltip, template: (_p) => \`<div><span bf="s0">\${_p.children}</span><div class="tooltip" bf="s2"><!--bf:s1-->\${_p.text}<!--/--></div></div>\` })
 export function Tooltip(_p, __bfKey) { return createComponent('Tooltip', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/portals.md doc-examples L120 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/components/portals.md doc-examples L134 — (no label) 1`] = `
@@ -2475,6 +3267,24 @@ hydrate('DialogOverlay__b3c36eee', { init: initDialogOverlay, template: (_p) => 
 export function DialogOverlay(_p, __bfKey) { return createComponent('DialogOverlay__b3c36eee', _p, __bfKey) }"
 `;
 
+exports[`docs/core/components/portals.md doc-examples L190 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createPortal, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const container = document.getElementById('modal-root')
+
+  createPortal(el, container)
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/components/props-type-safety.md doc-examples L16 — (no label) 1`] = `
 "import { $t, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
 
@@ -2501,6 +3311,24 @@ hydrate('Greeting', { init: initGreeting, template: (_p) => \`<h1 bf="s2"><!--bf
 export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, __bfKey) }"
 `;
 
+exports[`docs/core/components/props-type-safety.md doc-examples L32 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/props-type-safety.md doc-examples L42 — @bf-ignore props-destructuring 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/components/props-type-safety.md doc-examples L54 — (no label) 1`] = `
 "import { createComponent, hydrate } from '@barefootjs/client/runtime'
 
@@ -2508,6 +3336,15 @@ function initButton() {}
 
 hydrate('Button__b3c36eee', { init: initButton, template: (_p) => \`<button \${((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) != null ? 'class="' + ((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) + '"' : ''} bf="s0">\${_p.children}</button>\` })
 export function Button(_p, __bfKey) { return createComponent('Button__b3c36eee', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/props-type-safety.md doc-examples L78 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L89 — (no label) 1`] = `
@@ -2572,6 +3409,24 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div>\${renderChild(
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/components/styling.md doc-examples L20 — Source 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/components/styling.md doc-examples L23 — Compiled (cssLayerPrefix: 'components') 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/core-concepts/how-it-works.md doc-examples L33 — (no label) 1`] = `
 "import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
@@ -2595,6 +3450,28 @@ export function initCounter(__scope, _p = {}) {
 
 hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${(0)}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
+`;
+
+exports[`docs/core/core-concepts/reactivity.md doc-examples L15 — (no label) 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+  const doubled = createMemo(() => count() * 2)
+
+  setCount(1)
+
+  createEffect(() => {
+  console.log('Count is:', count())            // re-runs when count changes
+})
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/core-concepts/mpa-style.md doc-examples L23 — (no label) 1`] = `
@@ -3587,6 +4464,15 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/advanced/code-splitting.md doc-examples L98 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
 exports[`docs/core/advanced/compiler-internals.md doc-examples L126 — (no label) 1`] = `
 "import { $, $t, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
 
@@ -3650,6 +4536,68 @@ export function initExample(__scope, _p = {}) {
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).filter(t => !t.done).toSorted((a, b) => a.date - b.date).map((t) => \`<li data-key="\${t.id}"><!--bf:s0-->\${t.name}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/advanced/compiler-internals.md doc-examples L180 — (no label) 1`] = `
+"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+
+function initStatementExample() {}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/advanced/performance.md doc-examples L36 — ❌ Redundant signal 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+  const [doubled, setDoubled] = createSignal(0)
+
+  createEffect(() => setDoubled(count() * 2))
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/advanced/performance.md doc-examples L41 — ✅ Use memo instead 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+  const doubled = createMemo(() => count() * 2)
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/advanced/performance.md doc-examples L51 — Static — no reconciliation generated 1`] = `
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+
+
+export function initStatementExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const tabs = ['Home', 'About', 'Contact']
+
+  {tabs.map(tab => <Tab label={tab} />)}
+
+}
+
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
+export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L67 — ✅ Stable key — DOM nodes reused when list changes 1`] = `
@@ -3782,1013 +4730,6 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/introduction.md doc-examples L15 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
-
-
-export function initCounter(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-
-  const [_s1] = $(__scope, 's1')
-  const [_s0] = $t(__scope, 's0')
-
-  createEffect(() => {
-    const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
-  })
-
-  if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
-}
-
-hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${(0)}<!--/--></button>\` })
-export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L33 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L36 — Read — call the getter 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  count()
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L39 — Write — pass a value 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  setCount(5)
-  count()
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L43 — Write — pass an updater function 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  setCount(n => n + 1)
-  count()
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L55 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [name, setName] = createSignal('Alice')
-
-  setName('Alice')
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L62 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [todos, setTodos] = createSignal([{ text: 'Buy milk' }])
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L65 — ❌ Mutating the same array — no update 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const list = todos()
-
-  list.push({ text: 'Walk dog' })
-  setTodos(list)
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L70 — ✅ New array — triggers update 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  setTodos([...todos(), { text: 'Walk dog' }])
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L79 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-
-  setCount(1)
-  setCount(2)
-
-  createEffect(() => {
-  console.log('Count is:', count()) // Runs whenever count changes
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L118 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-  const [name, setName] = createSignal('Alice')
-  const [visible, setVisible] = createSignal(false)
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-signal.md doc-examples L126 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [user, setUser] = createSignal(null)
-  const [filter, setFilter] = createSignal('all')
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-effect.md doc-examples L20 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-
-  setCount(1)
-
-  createEffect(() => {
-  document.title = \`Count: \${count()}\`
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-effect.md doc-examples L37 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [showName, setShowName] = createSignal(true)
-  const [name, setName] = createSignal('Alice')
-  const [count, setCount] = createSignal(0)
-
-  createEffect(() => {
-  if (showName()) {
-    console.log(name())  // name is tracked
-  } else {
-    console.log(count()) // count is tracked instead
-  }
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-effect.md doc-examples L58 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  createEffect(() => {
-  const timer = setInterval(() => console.log('tick'), 1000)
-  return () => clearInterval(timer)
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-effect.md doc-examples L67 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  createEffect(() => {
-  const timer = setInterval(() => console.log('tick'), 1000)
-  onCleanup(() => clearInterval(timer))
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-effect.md doc-examples L81 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [theme, setTheme] = createSignal('light')
-
-  createEffect(() => {
-  localStorage.setItem('theme', theme())
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-effect.md doc-examples L91 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [query, setQuery] = createSignal('')
-
-  createEffect(() => {
-  const q = query()
-  if (!q) return
-
-  const controller = new AbortController()
-  fetch(\`/api/search?q=\${q}\`, { signal: controller.signal })
-    .then(r => r.json())
-    .then(setResults)
-
-  onCleanup(() => controller.abort())
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-memo.md doc-examples L22 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(2)
-  const doubled = createMemo(() => count() * 2)
-
-  doubled()
-  setCount(5)
-  doubled()
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-memo.md doc-examples L40 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [todos, setTodos] = createSignal([])
-  const [filter, setFilter] = createSignal('all')
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-memo.md doc-examples L43 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const filteredTodos = createMemo(() => {
-  const list = todos()
-  switch (filter()) {
-    case 'active': return list.filter(t => !t.done)
-    case 'done':   return list.filter(t => t.done)
-    default:       return list
-  }
-})
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-memo.md doc-examples L53 — Used in multiple effects and JSX expressions 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  createEffect(() => console.log(filteredTodos().length))
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/create-memo.md doc-examples L69 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(1)
-  const doubled = createMemo(() => count() * 2)
-  const quadrupled = createMemo(() => doubled() * 2)
-
-  setCount(3)
-
-  createEffect(() => {
-  console.log(quadrupled()) // 4
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/on-mount.md doc-examples L20 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  onMount(() => {
-  console.log('Component initialized')
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/on-mount.md doc-examples L33 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  onMount(() => {
-  const hash = window.location.hash
-  setFilter(hash === '#/active' ? 'active' : 'all')
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/on-mount.md doc-examples L42 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  onMount(() => {
-  const handleHashChange = () => setFilter(getFilterFromHash())
-  window.addEventListener('hashchange', handleHashChange)
-  onCleanup(() => window.removeEventListener('hashchange', handleHashChange))
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/on-mount.md doc-examples L52 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  onMount(() => {
-  inputElement.focus()
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/on-cleanup.md doc-examples L20 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  createEffect(() => {
-  const timer = setInterval(() => console.log('tick'), 1000)
-  onCleanup(() => clearInterval(timer))
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/on-cleanup.md doc-examples L51 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  onMount(() => {
-  const handleResize = () => setWidth(window.innerWidth)
-  window.addEventListener('resize', handleResize)
-  onCleanup(() => window.removeEventListener('resize', handleResize))
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/untrack.md doc-examples L22 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-  const [name, setName] = createSignal('Alice')
-
-  setCount(1)
-  setName('Bob')
-
-  createEffect(() => {
-  // count() IS tracked — this effect re-runs when count changes
-  console.log('count:', count())
-
-  // name() is NOT tracked — changing name alone won't trigger this effect
-  console.log('name:', untrack(() => name()))
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/untrack.md doc-examples L43 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  createEffect(() => {
-  // Re-run only when items change, not when sortOrder changes
-  const sorted = [...items()].sort(untrack(() => sortOrder()) === 'asc' ? compare : reverseCompare)
-  setDisplayList(sorted)
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/untrack.md doc-examples L53 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  createEffect(() => {
-  const value = computedResult()
-  console.log('Updated at:', untrack(() => new Date().toISOString()))
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/untrack.md doc-examples L64 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  createEffect(() => {
-  const a = signalA()
-  const b = untrack(() => signalB()) // Read B without tracking
-  setResult(a + b)
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L16 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L30 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/reactivity/props-reactivity.md doc-examples L55 — @bf-ignore props-destructuring 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/component-authoring.md doc-examples L202 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/children-slots.md doc-examples L21 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/children-slots.md doc-examples L32 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L21 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L53 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L70 — 1. Create the context 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L117 — Create context 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L123 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L139 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  el.addEventListener('click', () => {
-        ctx.toggle(_p.itemId)
-      })
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L195 — Consumer reads inside createEffect — reactive 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack, useContext } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const ctx = useContext(AccordionContext)
-
-  createEffect(() => {
-  const isOpen = ctx.activeItem() === _p.itemId  // Tracks activeItem signal
-  el.hidden = !isOpen
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L210 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L213 — If DialogTrigger is used outside a Dialog, useContext throws 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L230 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L233 — Works even without a ThemeProvider ancestor — returns 'light' 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/portals.md doc-examples L21 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createPortal, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  createPortal(children, container?, options?)
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/portals.md doc-examples L120 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/portals.md doc-examples L190 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createPortal, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const container = document.getElementById('modal-root')
-
-  createPortal(el, container)
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/props-type-safety.md doc-examples L32 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/props-type-safety.md doc-examples L42 — @bf-ignore props-destructuring 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/props-type-safety.md doc-examples L78 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/styling.md doc-examples L20 — Source 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/styling.md doc-examples L23 — Compiled (cssLayerPrefix: 'components') 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/core-concepts/reactivity.md doc-examples L15 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-  const doubled = createMemo(() => count() * 2)
-
-  setCount(1)
-
-  createEffect(() => {
-  console.log('Count is:', count())            // re-runs when count changes
-})
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/advanced/code-splitting.md doc-examples L98 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/advanced/compiler-internals.md doc-examples L180 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/advanced/performance.md doc-examples L36 — ❌ Redundant signal 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-  const [doubled, setDoubled] = createSignal(0)
-
-  createEffect(() => setDoubled(count() * 2))
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/advanced/performance.md doc-examples L41 — ✅ Use memo instead 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [count, setCount] = createSignal(0)
-  const doubled = createMemo(() => count() * 2)
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/advanced/performance.md doc-examples L51 — Static — no reconciliation generated 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const tabs = ['Home', 'About', 'Contact']
-
-  {tabs.map(tab => <Tab label={tab} />)}
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/advanced/performance.md doc-examples L55 — Dynamic — reconcileElements needed 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
-
-
-export function initStatementExample(__scope, _p = {}) {
-  if (!__scope) return
-  const __scopeId = __scope.getAttribute('bf-s')
-
-  const [items, setItems] = createSignal([...])
-
-  {items().map(item => <Item key={item.id} data={item} />)}
-
-}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
 exports[`docs/core/advanced/performance.md doc-examples L84 — (no label) 1`] = `
 "import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
@@ -4859,4 +4800,29 @@ export function initStatementExample(__scope, _p = {}) {
 
 hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
+`;
+
+exports[`docs/core/introduction.md doc-examples L15 — (no label) 1`] = `
+"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+
+
+export function initCounter(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [count, setCount] = createSignal(0)
+
+  const [_s1] = $(__scope, 's1')
+  const [_s0] = $t(__scope, 's0')
+
+  createEffect(() => {
+    const __val = count()
+    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+  })
+
+  if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
+}
+
+hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${(0)}<!--/--></button>\` })
+export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;

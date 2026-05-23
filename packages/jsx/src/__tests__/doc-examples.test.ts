@@ -121,6 +121,18 @@ function detectSharedSkipReason(body: string): string | undefined {
   if (/\(\s*\.\.\.\s*\)/.test(body)) return 'contains `(...)` placeholder'
   if (/>\s*\.\.\.\s*</.test(body)) return 'contains `>...<` placeholder'
   if (/\{\s*\.\.\.\s*\}/.test(body)) return 'contains `{ ... }` placeholder'
+  if (/\[\s*\.\.\.\s*\]/.test(body)) return 'contains `[ ... ]` placeholder'
+  // TS-signature notation in prose-style snippets like
+  // `createPortal(children, container?, options?)`. The `?` after an
+  // identifier immediately followed by `,` / `)` is not valid TSX (TS
+  // only allows `?` on parameter declarations, not on call arguments),
+  // so snapshotting these would pin parser leniency rather than any
+  // real compiler semantics — and become fragile if parsing tightens.
+  // Excludes legitimate `?.` optional chaining and `cond ? a : b`
+  // ternaries by requiring `,` or `)` immediately after `?`.
+  if (/\w\?\s*[,)]/.test(body)) {
+    return 'TS-signature notation (`arg?, …` / `arg?)`) — placeholder, not real code'
+  }
   if (/\bbf[A-Z]\w*\(/.test(body)) {
     return 'uses compiler-internal helper (bfText/bfComment/bfScopeAttr/...)'
   }
