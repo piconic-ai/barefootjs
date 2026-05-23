@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Playground Layout Components
  *
@@ -6,8 +8,9 @@
  * 2. Controls sidebar (props editors)
  * 3. Code display (highlighted JSX + copy button)
  *
- * Stateless components — no "use client" needed.
- * Safe to use from "use client" playground components thanks to __slot().
+ * Marked `"use client"` so `"use client"` playground parents can import
+ * the layout under BF003. Bodies remain stateless — the directive only
+ * gates importability per the two-tier directive model.
  */
 
 import type { Child } from 'hono/jsx'
