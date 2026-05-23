@@ -1,5 +1,5 @@
 /**
- * Doc Examples (v2, #1439)
+ * Doc Examples (#1439)
  *
  * Mechanically validates that the fenced code examples in user-facing
  * documentation still compile (or fail with the documented BFxxx code)
@@ -11,28 +11,41 @@
  * is the worst case for end-user trust, so this test treats each doc
  * example as a contract.
  *
- * v1 (#1497) covered `docs/core/rendering/jsx-compatibility.md`.
- * v2 (this file) extends coverage to the rest of `docs/core/rendering/`
- * via a shared scaffold and per-page skip predicates.
+ * Coverage milestones:
+ *   - #1497 — `docs/core/rendering/jsx-compatibility.md`
+ *   - #1499 — `docs/core/rendering/{client-directive,fragment}.md`
+ *   - this PR — `docs/core/reactivity/create-signal.md` + statement-mode
+ *     / module-mode infrastructure so API-reference snippets can be
+ *     compiled too (not just JSX expressions in render position)
  *
  * Pipeline per page:
- *   1. Walk fenced ```tsx blocks; split each fence into segments by
- *      leading `//` comment markers or blank lines.
+ *   1. Walk fenced ```tsx blocks. If a fence contains any `//` marker,
+ *      split it into segments on `//` and blank lines. Otherwise treat
+ *      the whole fence as one segment — this preserves multi-statement
+ *      examples (full modules, `'use client'` + decls) that the doc
+ *      author meant as a single coherent snippet.
  *   2. Classify each segment by the marker on its label line:
  *        - `// ❌ BFxxx (all adapters)` → `negative-all-adapters`
  *        - `// ❌ BFxxx on Go/Mojo`   → `negative-go-mojo-only`
  *        - anything else              → `positive`
- *   3. Skip segments containing markdown shorthand (`(...)`, `>...<`),
- *      non-expression statement bodies, or per-page overrides, with a
- *      recorded reason.
- *   4. Compile each kept segment via `TestAdapter` (Hono-like baseline).
+ *   3. Skip segments matching shared placeholder/fragment patterns or
+ *      per-page overrides, with a recorded reason.
+ *   4. Classify the body by kind (expression / statement / module) and
+ *      wrap with the matching scaffold:
+ *        - expression (`{...}` / `<...>`): wrap inside a JSX render tree
+ *          with pre-declared signals (`count`, `todos`, `items`, …).
+ *        - statement (`const`, `if`, plain call): wrap inside an empty
+ *          function body with the reactivity imports available.
+ *        - module (`'use client'` / `import` / `export` / `type` /
+ *          `interface`): compile as-is at module scope.
+ *   5. Compile via `TestAdapter` (Hono-like baseline):
  *        - positive / negative-go-mojo-only: assert no fatal errors
  *        - negative-all-adapters: assert ONLY the expected BFxxx code
  *          is present in fatals (no other fatal codes)
  *
  * The `negative-go-mojo-only` cases are asserted as positive here — the
  * cross-adapter check (Go / Mojo actually raising BFxxx) is a follow-up
- * once the v1/v2 mechanism is proven on more pages.
+ * once the mechanism is proven on more pages.
  */
 
 import { describe, test } from 'bun:test'
@@ -74,12 +87,25 @@ function parseExpected(labelLine: string): Expected {
   return { kind: 'positive' }
 }
 
+type BodyKind = 'expression' | 'statement' | 'module'
+
+function detectBodyKind(body: string): BodyKind {
+  const trimmed = body.trim()
+  if (/^['"]use client['"]/.test(trimmed)) return 'module'
+  if (/^import\b/.test(trimmed)) return 'module'
+  if (/^export\b/.test(trimmed)) return 'module'
+  if (/^type\b/.test(trimmed)) return 'module'
+  if (/^interface\b/.test(trimmed)) return 'module'
+  const firstChar = trimmed.charAt(0)
+  if (firstChar === '{' || firstChar === '<') return 'expression'
+  return 'statement'
+}
+
 function detectSharedSkipReason(body: string): string | undefined {
   if (/\(\s*\.\.\.\s*\)/.test(body)) return 'contains `(...)` placeholder'
   if (/>\s*\.\.\.\s*</.test(body)) return 'contains `>...<` placeholder'
-  const firstChar = body.trim().charAt(0)
-  if (firstChar !== '{' && firstChar !== '<') {
-    return 'statement-body (not an expression / element)'
+  if (/^\s*[a-zA-Z][\w-]*\s*=\s*[{"]/.test(body) && !/^\s*(const|let|var)\b/.test(body)) {
+    return 'JSX attribute fragment (not a standalone expression / statement)'
   }
   return undefined
 }
@@ -100,6 +126,7 @@ function extractExamples(md: string, page: PageSpec): DocExample[] {
     while (j < lines.length && !/^```\s*$/.test(lines[j])) j++
 
     const blockLines = lines.slice(i + 1, j)
+    const hasMarkerLine = blockLines.some(l => /^\s*\/\//.test(l))
     const segments: Array<{ offset: number; lines: string[] }> = []
     let cur: { offset: number; lines: string[] } | null = null
 
@@ -112,7 +139,7 @@ function extractExamples(md: string, page: PageSpec): DocExample[] {
       if (/^\s*\/\//.test(ln)) {
         flush()
         cur = { offset: idx, lines: [ln] }
-      } else if (ln.trim() === '') {
+      } else if (ln.trim() === '' && hasMarkerLine) {
         flush()
       } else {
         if (!cur) cur = { offset: idx, lines: [] }
@@ -143,7 +170,7 @@ function extractExamples(md: string, page: PageSpec): DocExample[] {
   return examples
 }
 
-const SCAFFOLD_HEADER = `'use client'
+const EXPRESSION_SCAFFOLD_HEADER = `'use client'
 import { createSignal } from '@barefootjs/client'
 
 function TodoItem(props: { todo: any; key?: any }) { return <li>{String(props.todo)}</li> }
@@ -165,14 +192,31 @@ export function Example(props: { children?: any }) {
     <div>
 `
 
-const SCAFFOLD_FOOTER = `
+const EXPRESSION_SCAFFOLD_FOOTER = `
     </div>
   )
 }
 `
 
+const STATEMENT_SCAFFOLD_HEADER = `'use client'
+import { createSignal, createEffect, createMemo, onMount, onCleanup, untrack } from '@barefootjs/client'
+
+export function StatementExample() {
+`
+
+const STATEMENT_SCAFFOLD_FOOTER = `
+}
+`
+
 function buildSource(example: DocExample): string {
-  return SCAFFOLD_HEADER + example.body + SCAFFOLD_FOOTER
+  switch (detectBodyKind(example.body)) {
+    case 'expression':
+      return EXPRESSION_SCAFFOLD_HEADER + example.body + EXPRESSION_SCAFFOLD_FOOTER
+    case 'statement':
+      return STATEMENT_SCAFFOLD_HEADER + example.body + STATEMENT_SCAFFOLD_FOOTER
+    case 'module':
+      return example.body + '\n'
+  }
 }
 
 const PAGES: PageSpec[] = [
@@ -187,6 +231,7 @@ const PAGES: PageSpec[] = [
     },
   },
   { path: 'core/rendering/fragment.md' },
+  { path: 'core/reactivity/create-signal.md' },
 ]
 
 const adapter = new TestAdapter()
