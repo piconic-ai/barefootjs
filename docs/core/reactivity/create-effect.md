@@ -107,13 +107,17 @@ When `query` changes, the previous fetch is aborted before the new one starts.
 
 ### Reactive attributes
 
-The compiler generates effects for reactive attributes:
+The compiler generates effects for reactive attributes.
+
+Source:
 
 ```tsx
-// Source
 <button disabled={loading()}>Submit</button>
+```
 
-// Generated client JS
+Generated client JS:
+
+```js
 const [_s0] = $(__scope, 's0')
 createEffect(() => {
   if (_s0) { _s0.disabled = !!(loading()) }
