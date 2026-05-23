@@ -144,7 +144,7 @@ Field names are automatically capitalized to follow Go conventions.
 ### `.map()`
 
 ```tsx
-{items().map(item => <li>{item}</li>)}
+{items().map(item => <li key={item}>{item}</li>)}
 ```
 
 ```go-template
@@ -156,7 +156,7 @@ Field names are automatically capitalized to follow Go conventions.
 ### `.filter().map()`
 
 ```tsx
-{items().filter(item => item.active).map(item => <li>{item.name}</li>)}
+{items().filter(item => item.active).map(item => <li key={item.id}>{item.name}</li>)}
 ```
 
 ```go-template
@@ -170,7 +170,7 @@ For complex filter predicates, the adapter generates template block functions.
 ### `.sort().map()` / `.toSorted().map()`
 
 ```tsx
-{items.toSorted((a, b) => a.priority - b.priority).map(t => <li>{t.name}</li>)}
+{items.toSorted((a, b) => a.priority - b.priority).map(t => <li key={t.id}>{t.name}</li>)}
 ```
 
 ```go-template
