@@ -234,6 +234,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/reactivity/create-signal.md' },
   { path: 'core/reactivity/create-effect.md' },
   { path: 'core/reactivity/create-memo.md' },
+  { path: 'core/reactivity/on-mount.md' },
 ]
 
 const adapter = new TestAdapter()
