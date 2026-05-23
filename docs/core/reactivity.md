@@ -8,6 +8,7 @@ description: Fine-grained reactive primitives inspired by SolidJS, including sig
 All reactive primitives are imported from `@barefootjs/client`:
 
 ```tsx
+"use client"
 import { createSignal, createEffect, createMemo, onMount, onCleanup, untrack } from '@barefootjs/client'
 ```
 
