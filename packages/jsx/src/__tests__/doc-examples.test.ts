@@ -127,7 +127,11 @@ function extractExamples(md: string, page: PageSpec): DocExample[] {
     while (j < lines.length && !/^```\s*$/.test(lines[j])) j++
 
     const blockLines = lines.slice(i + 1, j)
-    const hasMarkerLine = blockLines.some(l => /^\s*\/\//.test(l))
+    // Marker comments are at column 0 (e.g. `// ❌ BF021`, `// Source`).
+    // Indented `//` lines are in-code comments and must NOT chop the fence
+    // into segments.
+    const isMarker = (l: string) => /^\/\//.test(l)
+    const hasMarkerLine = blockLines.some(isMarker)
     const segments: Array<{ offset: number; lines: string[] }> = []
     let cur: { offset: number; lines: string[] } | null = null
 
@@ -137,7 +141,7 @@ function extractExamples(md: string, page: PageSpec): DocExample[] {
     }
 
     blockLines.forEach((ln, idx) => {
-      if (/^\s*\/\//.test(ln)) {
+      if (isMarker(ln)) {
         flush()
         cur = { offset: idx, lines: [ln] }
       } else if (ln.trim() === '' && hasMarkerLine) {
@@ -241,6 +245,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/reactivity/props-reactivity.md' },
   { path: 'core/components/component-authoring.md' },
   { path: 'core/components/children-slots.md' },
+  { path: 'core/components/context-api.md' },
 ]
 
 const adapter = new TestAdapter()
