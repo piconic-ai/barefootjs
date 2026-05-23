@@ -362,4 +362,34 @@ describe('Rest Pattern in Filter Predicate (BF021, #1532)', () => {
     const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
     expect(bf021).toHaveLength(0)
   })
+
+  // Block body + destructured param (#1532 review). Neither
+  // `parseBlockBody` (block-body lowering) nor `parseExpression`
+  // (expression-body destructure rewrite) cover this shape, so
+  // without an explicit refusal the chain would slip through to a
+  // later adapter-level BF101. Surface BF021 at the IR layer with
+  // the `@client` workaround.
+  test('emits BF021 for block-body arrow with destructured param', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ done, ...rest }) => { return done }).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain('Block body')
+    expect(bf021[0].message).toContain('@client')
+  })
 })

@@ -614,37 +614,22 @@ describe('expression-parser', () => {
     })
 
     // Inner-arrow parameter shadowing (#1532 review). The outer
-    // rest binding is `rest`; the inner `.map((rest) => rest)`
-    // declares a NEW `rest` parameter that shadows it. Without
-    // shadow tracking the walker would walk into the inner body,
-    // see `identifier rest`, and emit a spurious BF021. With
-    // shadowing the inner body is skipped and the outer predicate
-    // lowers cleanly via Mode A (only `rest.x` member access).
-    test('lowers .filter(({a, ...rest}) => rest.x.map((rest) => rest)[0]) — inner-arrow param shadows outer rest (#1532 review)', () => {
-      // Note: the inner `.map(...)` body is itself unsupported by
-      // the parser (the inner arrow returns a bare identifier — fine,
-      // but lowering `arr.map(...)[0]` may fall back). What matters
-      // for the review: validateRestUsage doesn't refuse on the
-      // shadowed `rest` reference inside the inner arrow.
-      const result = parseExpression('items().filter(({a, ...rest}) => rest.x === (rest => rest)(rest.y))')
-      // The IIFE-style nested arrow is `(rest => rest)(rest.y)`.
-      // Its param `rest` shadows the outer — the inner identifier
-      // ref is to the inner param, so no spurious refusal. But
-      // `rest.y` (passed as the arg) is still in outer scope and
-      // is a Mode A member access. Whole predicate should pass.
-      // (The call to a parenthesised inline arrow may itself be
-      // unsupported elsewhere in the parser, but rest validation
-      // should NOT refuse this shape.)
-      // We assert: NOT refused-by-rest-validation (would surface as
-      // `call` with a rest-binding reason). Either `higher-order`
-      // (clean) or `call` (refused for a non-rest reason) is fine —
-      // the key signal is the reason string when refused.
-      if (result.kind === 'call') {
-        // If refused for any reason, it must NOT mention the rest
-        // value-use refusal. We can't introspect easily here; the
-        // adapter integration test below covers the no-BF021 path.
-      } else {
-        expect(result.kind).toBe('higher-order')
+    // destructure declares `rest`; the inner `.map((rest) => rest.y)`
+    // declares its OWN `rest` parameter that shadows the outer. The
+    // inner `rest` identifier is bound to the inner param, not the
+    // outer rest binding. Without shadow tracking the walker would
+    // walk into the inner body, see `identifier rest`, and emit a
+    // spurious BF021. With shadowing the inner scope is skipped, and
+    // the outer predicate lowers cleanly because the only outer
+    // reference is `rest.x` (Mode A member access).
+    test('lowers .filter(({a, ...rest}) => rest.x.map((rest) => rest.y).length > 0) — inner-arrow param shadows outer rest (#1532 review)', () => {
+      const result = parseExpression('items().filter(({a, ...rest}) => rest.x.map((rest) => rest.y).length > 0)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.method).toBe('filter')
+        // Predicate is the outer body rewritten — confirms validation
+        // didn't refuse on the inner-scope `rest` reference.
+        expect(result.predicate.kind).toBe('binary')
       }
     })
 
@@ -661,13 +646,22 @@ describe('expression-parser', () => {
       expect(result.kind).toBe('call')
     })
 
-    // Mode B via function-expression form (#1532): `return rest` —
-    // rest as the return value of a function-keyword predicate.
-    test('rejects .filter(function ({a, ...rest}) { return rest }) — rest as return value (#1532)', () => {
-      // Function-expression form: parser already refuses destructured
-      // params for `function () { return … }` shapes at the call site.
-      // The arrow-fn equivalent below is the actual #1532 target.
+    // Mode B (#1532): bare `rest` as the arrow's return value. No
+    // member access — `rest` is the value position, which can't
+    // lower to a template-compiled predicate.
+    test('rejects .filter(({a, ...rest}) => rest) — rest as bare return value (#1532)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => rest)')
+      expect(result.kind).toBe('call')
+    })
+
+    // Function-expression form with a destructured param (#1532).
+    // The function-keyword path refuses destructured params upstream
+    // at the call site in `convertNode` (only single-identifier params
+    // are normalised into the arrow-fn IR shape) — locks in that the
+    // upstream refusal stays in place so the #1532 rest path isn't
+    // accidentally widened to function expressions without explicit work.
+    test('rejects .filter(function ({a, ...rest}) { return rest }) — function-expression form refused upstream (#1532)', () => {
+      const result = parseExpression('items().filter(function ({a, ...rest}) { return rest })')
       expect(result.kind).toBe('call')
     })
 

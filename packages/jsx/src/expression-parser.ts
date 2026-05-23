@@ -1135,9 +1135,15 @@ function validateRestUsage(
   walk(expr)
 
   if (collision !== null) {
+    // Phrase the diagnostic in terms of the SOURCE key being consumed
+    // by the destructure, not a local binding name. `{ done: d, ...rest }`
+    // and `{ user: {name}, ...rest }` both consume a top-level key
+    // (`done` / `user`) that has no local identifier in user code —
+    // suggesting "reference '<key>' directly" would point at an
+    // undefined identifier (#1532 review).
     return {
       ok: false,
-      reason: `Rest binding '${restName}.${collision}' shadows a declared key '${collision}' and is statically undefined. Workaround: reference the declared binding '${collision}' directly, or remove '${collision}' from the destructure.`,
+      reason: `Rest binding '${restName}.${collision}' reads source key '${collision}' which the destructure already consumed, so the value is statically excluded from '${restName}' and is always undefined. Workaround: read '${collision}' from the iterated item directly (via its destructured binding or by adding it to the destructure), or remove '${collision}' from the destructure so the rest binding includes it.`,
     }
   }
   if (valueUse) {

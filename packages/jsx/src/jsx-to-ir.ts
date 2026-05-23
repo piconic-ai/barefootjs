@@ -1957,7 +1957,18 @@ function extractFilterPredicate(
   // accepts, leaving `result: null` with no reason preserves the
   // existing adapter raw-text lowering path.
   if (!ts.isIdentifier(firstParam.name)) {
-    if (ts.isBlock(callback.body)) return { result: null }
+    // Block body + destructured param: `parseBlockBody` doesn't carry
+    // the destructure rewrite and `parseExpression` only handles
+    // expression-body arrows. Surface BF021 so the user gets a
+    // deterministic pointer at the predicate + `/* @client */` escape
+    // instead of letting it slip through to a later BF101 (#1532 review).
+    if (ts.isBlock(callback.body)) {
+      return {
+        result: null,
+        unsupportedReason:
+          'Block body in a destructured filter param is not supported. Workaround: use an expression-body arrow, or add /* @client */.',
+      }
+    }
     const raw = ctx.getJS(callback)
     const parsed = parseExpression(raw)
     if (parsed.kind === 'unsupported') {
