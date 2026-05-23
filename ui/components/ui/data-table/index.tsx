@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Data Table Helper Components
  *

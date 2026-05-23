@@ -581,6 +581,78 @@ For non-JS backends, ensure proper UTF-8 handling:
 
 ---
 
+## Directive Model
+
+BarefootJS uses a **two-tier** directive model: any component file that
+opts in carries `"use client"`; every other component file is treated as
+a **server** component. There is no `"use server"` directive. The rules
+are one-way:
+
+| From                        | To                          | Allowed? |
+|-----------------------------|-----------------------------|----------|
+| server → `"use client"`     | render a client island       | ✓        |
+| server → server             | static composition           | ✓        |
+| `"use client"` → `"use client"` | import as JSX component  | ✓        |
+| `"use client"` → server     | import as JSX component      | ✗ (BF003) |
+
+Type-only imports (`import type { … } from …`) and pure utility-function
+imports (bindings not used as JSX tags) are not constrained by BF003 —
+the rule is scoped to JSX-rendered component bindings, since they are
+the surface that carries hydration-marker emission and the surface the
+client bundle re-instantiates.
+
+### Why two tiers, not three
+
+A three-tier model (`client` / `universal` / `server-only`) was
+considered and rejected. The failure modes are asymmetric:
+
+| Default                     | Forgetting the marker leads to                                |
+|-----------------------------|---------------------------------------------------------------|
+| **server, opt-in client** (current) | `createSignal` / event-handler usage without `"use client"` → BF001 fires at compile time |
+| universal, opt-in server-only       | server code transitively bundled into the client → **silent leak** at runtime |
+
+The current default is loud on every failure path; the alternative is
+silent on the failure path that matters most (secrets / DB / Node API
+reaching the browser). BarefootJS prefers the safer default.
+
+### Why `"use client"` is cheap here
+
+Unlike frameworks where `"use client"` ships a whole component bundle,
+the BarefootJS compiler already emits a client JS template for every
+component reachable from the build entry — the directive flips which
+runtime-init path the compiled output takes, not whether the output
+exists. For stateless presentational components the emitted `init` is
+near-empty (no signals, no event handlers, no captured locals), so the
+bundle-size cost of marking the entire UI-kit registry `"use client"`
+is bounded and measured in hundreds of bytes per component.
+
+### BF003 enforcement scope
+
+BF003 fires when:
+- The importing file carries `"use client"`, **and**
+- The imported binding is used as a JSX tag (PascalCase opener) in the
+  same file, **and**
+- The import specifier is a relative path (`./foo`, `../foo`) that
+  resolves to an on-disk file, **and**
+- The resolved file does not carry `"use client"`.
+
+Aliased imports (`@/...` and other tsconfig-paths shapes) and npm-package
+specifiers are not currently resolved at this layer; ensuring the
+boundary on those routes remains the responsibility of the framework
+registry (every registry component ships `"use client"`) and of the
+shared-program-aware build pipeline.
+
+**Known limitation — JSX-tag shadowing.** The "used as a JSX tag" check
+matches identifier names lexically, not via symbol resolution. If a
+local binding shadows an imported component name inside an inner scope
+(`function Foo({ Label: NewLabel }) { return <NewLabel /> }`) and the
+import name still appears as a JSX tag elsewhere, BF003 keys off the
+outer reference and can fire on a binding that isn't actually used as a
+component at runtime. Closing this would require feeding the TypeChecker
+symbol of each JSX tag through to the resolver; tracked as a follow-up.
+
+---
+
 ## Error Codes
 
 | Code | Description |

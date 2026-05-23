@@ -16,8 +16,8 @@ describe('DirectionProvider', () => {
     expect(result.componentName).toBe('DirectionProvider')
   })
 
-  test('isClient is false (no "use client" directive)', () => {
-    expect(result.isClient).toBe(false)
+  test('isClient is true ("use client" directive present)', () => {
+    expect(result.isClient).toBe(true)
   })
 
   test('no signals (stateless)', () => {

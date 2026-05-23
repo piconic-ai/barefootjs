@@ -21,6 +21,7 @@ import {
 } from './analyzer-context'
 import { createError, createWarning, ErrorCodes } from './errors'
 import path from 'path'
+import fs from 'fs'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -2700,6 +2701,190 @@ function validateContext(ctx: AnalyzerContext): void {
   // BF110: flag tuple-destructures that would have been silent runtime
   // failures before factory inlining landed (#931).
   validateReactiveFactoryCalls(ctx)
+
+  // BF003: a `"use client"` file may not import a component from a
+  // non-`"use client"` source file (#1501). Server-side knowledge must
+  // not transitively cross into the client bundle, and hydration-marker
+  // emission requires both sides of the boundary to be compile-aware.
+  validateClientImports(ctx)
+}
+
+// =============================================================================
+// BF003 — Cross-file "use client" import validation
+// =============================================================================
+
+/**
+ * Enforce the one-way directionality: a `"use client"` file cannot import
+ * a JSX-component binding from a file that lacks the `"use client"`
+ * directive. The rule is component-scoped — non-JSX value imports
+ * (utility functions, constants, etc.) are not flagged, since they have
+ * no hydration-marker emission and no server-only-rendering surface that
+ * the directive guards.
+ *
+ * Resolution is best-effort:
+ *   - Relative imports (`./foo`, `../foo`) resolve against the file's
+ *     directory with the usual `.tsx`/`.ts`/`index.*` extension fallback.
+ *   - npm packages (`@barefootjs/...`, bare specifiers) and unresolved
+ *     aliased paths (`@/...` without tsconfig paths support) are skipped:
+ *     the BF051 check covers the framework-package shape, and aliased
+ *     resolution requires shared-program / tsconfig wiring that isn't
+ *     guaranteed at this layer.
+ *
+ * The check fires only on imports whose binding appears as a JSX tag
+ * identifier in the current file. This matches the spec language
+ * ("Client component cannot import server component") and avoids
+ * false-positives on legitimate utility-function imports from
+ * non-`"use client"` modules.
+ */
+function validateClientImports(ctx: AnalyzerContext): void {
+  if (!ctx.hasUseClientDirective) return
+  if (ctx.imports.length === 0) return
+
+  const jsxComponentTags = collectJsxComponentTags(ctx.sourceFile)
+  if (jsxComponentTags.size === 0) return
+
+  // Dedup synchronous fs.stat / readFile across imports within this
+  // analyzer call. Same-source imports (`import { A } from './x'` +
+  // `import { B } from './x'`) and index.tsx-resolution probes share
+  // the cache via the resolved absolute path.
+  const resolveCache = new Map<string, string | null>()
+  const directiveCache = new Map<string, boolean>()
+
+  for (const imp of ctx.imports) {
+    if (imp.isTypeOnly) continue
+    if (!isResolvableComponentSource(imp.source)) continue
+
+    const usedAsComponent = imp.specifiers.some(s => {
+      if (s.isNamespace) return false
+      const local = s.alias ?? s.name
+      return jsxComponentTags.has(local)
+    })
+    if (!usedAsComponent) continue
+
+    let resolvedPath = resolveCache.get(imp.source)
+    if (resolvedPath === undefined) {
+      resolvedPath = resolveRelativeImportToFile(imp.source, ctx.filePath)
+      resolveCache.set(imp.source, resolvedPath)
+    }
+    if (!resolvedPath) continue
+
+    let hasDirective = directiveCache.get(resolvedPath)
+    if (hasDirective === undefined) {
+      hasDirective = fileHasUseClientDirective(resolvedPath)
+      directiveCache.set(resolvedPath, hasDirective)
+    }
+    if (hasDirective) continue
+
+    const usedNames = imp.specifiers
+      .filter(s => !s.isNamespace && jsxComponentTags.has(s.alias ?? s.name))
+      .map(s => s.alias ?? s.name)
+    const suggestionTarget = path.relative(path.dirname(ctx.filePath), resolvedPath)
+
+    ctx.errors.push(createError(ErrorCodes.CLIENT_IMPORTING_SERVER, imp.loc, {
+      severity: 'error',
+      message: `Client component cannot import '${usedNames.join("', '")}' from '${imp.source}' — the target file lacks the "use client" directive.`,
+      suggestion: {
+        message: `Add "use client" at the top of ${suggestionTarget}, or move the component into the importing file.`,
+      },
+    }))
+  }
+}
+
+function isResolvableComponentSource(source: string): boolean {
+  // Relative imports — the only specifier shape we can resolve without
+  // a program / tsconfig paths context. Aliased imports (`@/...`,
+  // workspace packages) are intentionally skipped: those resolve via
+  // bundler / shared-program configuration that this layer doesn't
+  // currently consume. Worst case here is a false negative; BF003 is
+  // additive on top of the existing same-file destructure path.
+  return source.startsWith('./') || source.startsWith('../')
+}
+
+function collectJsxComponentTags(sourceFile: ts.SourceFile): Set<string> {
+  const tags = new Set<string>()
+  function visit(node: ts.Node): void {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tagName = node.tagName
+      if (ts.isIdentifier(tagName)) {
+        const first = tagName.text.charAt(0)
+        // PascalCase tags reference component bindings; intrinsic
+        // elements (lowercase) are not import targets.
+        if (first >= 'A' && first <= 'Z') {
+          tags.add(tagName.text)
+        }
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return tags
+}
+
+function resolveRelativeImportToFile(source: string, fromFile: string): string | null {
+  const baseDir = path.dirname(fromFile)
+  const candidate = path.resolve(baseDir, source)
+  // Source already carries an extension (`./x.tsx`) — try the candidate
+  // as-is before falling through to the extension-fallback list, which
+  // would otherwise probe `x.tsx.tsx` / `x.tsx.ts` and silently miss.
+  const KNOWN_EXTS = ['.tsx', '.ts', '.jsx', '.js']
+  const sourceHasExt = KNOWN_EXTS.some(ext => source.endsWith(ext))
+  const candidates = sourceHasExt
+    ? [candidate]
+    : [
+        candidate + '.tsx',
+        candidate + '.ts',
+        candidate + '.jsx',
+        candidate + '.js',
+        path.join(candidate, 'index.tsx'),
+        path.join(candidate, 'index.ts'),
+        path.join(candidate, 'index.jsx'),
+        path.join(candidate, 'index.js'),
+      ]
+  for (const c of candidates) {
+    try {
+      const stat = fs.statSync(c)
+      if (stat.isFile()) return c
+    } catch {
+      // not found — try next
+    }
+  }
+  return null
+}
+
+function fileHasUseClientDirective(filePath: string): boolean {
+  let content: string
+  try {
+    content = fs.readFileSync(filePath, 'utf8')
+  } catch {
+    // Unreadable — silent skip rather than false-firing BF003.
+    return true
+  }
+  // Match the analyzer's own directive detection on this file: any
+  // ExpressionStatement whose expression is the string literal
+  // `'use client'` counts, regardless of whether it sits at the
+  // directive-prologue position. BF002 is the spec's enforcement of
+  // top-of-file placement; consulting that semantics here would make
+  // BF003 fire for files the analyzer itself classifies as client.
+  const sf = ts.createSourceFile(
+    filePath,
+    content,
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TSX,
+  )
+  let found = false
+  function visit(node: ts.Node): void {
+    if (found) return
+    if (ts.isExpressionStatement(node) && ts.isStringLiteral(node.expression)) {
+      if (node.expression.text === 'use client') {
+        found = true
+        return
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return found
 }
 
 function validateInitStatementReferences(ctx: AnalyzerContext): void {

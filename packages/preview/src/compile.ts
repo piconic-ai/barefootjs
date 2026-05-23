@@ -230,34 +230,7 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   }
   await rewriteImports(DIST_COMPONENTS_DIR)
 
-  // 7. Copy server components (without "use client") that compiled components may import
-  for (const entryPath of componentFiles) {
-    const sourceContent = await Bun.file(entryPath).text()
-    if (hasUseClientDirective(sourceContent)) continue
-
-    const relativePath = relative(UI_COMPONENTS_DIR, entryPath)
-    const destPath = resolve(DIST_COMPONENTS_DIR, relativePath)
-    if (await Bun.file(destPath).exists()) continue
-
-    await mkdir(dirname(destPath), { recursive: true })
-    let rewritten = sourceContent
-      .replace(/@ui\/components\/ui\//g, '@/components/ui/')
-
-    // Add JSX pragma for Bun to use Hono JSX
-    if (destPath.endsWith('.tsx') && !rewritten.includes('@jsxImportSource')) {
-      rewritten = '/** @jsxImportSource hono/jsx */\n' + rewritten
-    }
-
-    // Rewrite @barefootjs/hono/utils → relative path
-    if (rewritten.includes('@barefootjs/hono/utils')) {
-      const relPath = relative(dirname(destPath), HONO_UTILS_PATH).replace(/\\/g, '/')
-      rewritten = rewritten.replace(/@barefootjs\/hono\/utils/g, relPath)
-    }
-
-    await Bun.write(destPath, rewritten)
-  }
-
-  // 7b. Copy ui/types/ to .preview-dist/types/ (for ../../types imports)
+  // 7. Copy ui/types/ to .preview-dist/types/ (for ../../types imports)
   const uiTypesDir = resolve(ROOT_DIR, 'ui/types')
   const distTypesDir = resolve(DIST_DIR, 'types')
   await mkdir(distTypesDir, { recursive: true })
