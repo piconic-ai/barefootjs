@@ -529,13 +529,16 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
 
     // Destructured-object param: `({done}) => done` (#1443),
     // `({user: {name}}) => name` (#1530), `({done = false}) => done`
-    // (#1531). We synthesise the equivalent dotted-access form so
-    // adapters can reuse their existing higher-order paths instead of
-    // needing a residual-object-accessor pipeline (#1384 territory).
-    // Nested destructure recurses into the inner pattern and threads
-    // a dotted path; leaf defaults fold into the rewrite as
-    // `(_t.field ?? <default>)`. Rest patterns, array binding
-    // patterns, and defaults at non-leaf (nested-pattern) slots
+    // (#1531), `({done, ...rest}) => rest.priority` (#1532). We
+    // synthesise the equivalent dotted-access form so adapters can
+    // reuse their existing higher-order paths instead of needing a
+    // residual-object-accessor pipeline (#1384 territory). Nested
+    // destructure recurses into the inner pattern and threads a
+    // dotted path; leaf defaults fold into the rewrite as
+    // `(_t.field ?? <default>)`. Top-level rest is rewritten when
+    // every reference is `restName.X` member access; value-use
+    // shapes refuse with BF021 (#1532). Array binding patterns,
+    // nested rest, and defaults at non-leaf (nested-pattern) slots
     // stay unsupported.
     if (ts.isObjectBindingPattern(param.name)) {
       const fieldMap = new Map<string, DestructureBinding>()
@@ -543,6 +546,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       if (!collect.ok) {
         return { kind: 'unsupported', raw, reason: collect.reason }
       }
+      const restName = collect.restName
       // Post-validate defaults (#1536 review). The rewrite inlines the
       // default at every reference site (`x` → `_t.x ?? <default>`), so
       // two shapes that JS would handle differently both produce
@@ -585,8 +589,23 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           }
         }
       }
+      // Post-validate rest usage (#1532). Mode A — `restName.X` member
+      // access — rewrites to `_t.X` because the residual object only
+      // omits the explicitly-bound keys, and `_t.X` for any `X` not in
+      // `fieldMap` returns the same value as `restName.X` would. Any
+      // other use of `restName` (call arg, return value, comparison
+      // operand, computed key) can't be lowered to template syntax —
+      // refuse with BF021 so the user can fall back to `/* @client */`.
+      // Also catches `restName.X` where `X` is a declared field — that
+      // shape is always `undefined` per JS spec and is a user bug.
+      if (restName !== undefined) {
+        const check = validateRestUsage(body, restName, fieldMap)
+        if (!check.ok) {
+          return { kind: 'unsupported', raw, reason: check.reason }
+        }
+      }
       const syntheticParam = pickSyntheticParam(fieldMap, body)
-      const rewritten = substituteDestructuredFields(body, fieldMap, syntheticParam)
+      const rewritten = substituteDestructuredFields(body, fieldMap, syntheticParam, restName)
       return { kind: 'arrow-fn', param: syntheticParam, body: rewritten }
     }
 
@@ -818,13 +837,30 @@ function collectDestructureBindings(
   pathPrefix: readonly string[],
   fieldMap: Map<string, DestructureBinding>,
   raw: string,
-): { ok: true } | { ok: false; reason: string } {
+): { ok: true; restName?: string } | { ok: false; reason: string } {
+  let restName: string | undefined
   for (const el of pattern.elements) {
     if (!ts.isBindingElement(el)) {
       return { ok: false, reason: 'Unsupported binding element in destructured filter param' }
     }
     if (el.dotDotDotToken) {
-      return { ok: false, reason: 'Rest patterns in destructured filter param are not supported' }
+      // Top-level rest pattern (#1532) is supported when every
+      // reference to the rest binding is a `restName.X` member access
+      // — that's safe to rewrite to `_t.X`, because the residual
+      // object only omits explicitly-bound keys, and any `X` not
+      // declared in the destructure has the same value via `_t.X` or
+      // `restName.X`. Other shapes (value use, computed key) refuse
+      // at the post-collection validation step. Nested rest
+      // (`pathPrefix.length > 0`) stays refused — we have no
+      // "residual object at nested key" accessor for templates.
+      if (pathPrefix.length > 0) {
+        return { ok: false, reason: 'Rest patterns at nested destructure levels are not supported' }
+      }
+      if (!ts.isIdentifier(el.name)) {
+        return { ok: false, reason: 'Rest patterns must bind to a simple identifier' }
+      }
+      restName = el.name.text
+      continue
     }
     if (ts.isObjectBindingPattern(el.name)) {
       // Nested object pattern: `{ user: { name } }`. The outer slot
@@ -898,7 +934,7 @@ function collectDestructureBindings(
     }
     fieldMap.set(el.name.text, { path: [...pathPrefix, fieldName], defaultExpr })
   }
-  return { ok: true }
+  return { ok: true, restName }
 }
 
 /**
@@ -959,6 +995,121 @@ function findImpureDefaultNode(expr: ParsedExpr): string | null {
     case 'arrow-fn':
       return expr.kind
   }
+}
+
+/**
+ * Walk the predicate body and classify every reference to the
+ * top-level rest binding (#1532). Two outcomes route to BF021 via
+ * the caller's `unsupported` return path:
+ *
+ *  - Value-use of `restName` in any position other than a static
+ *    member-access object (`fn(rest)`, `Object.keys(rest)`, bare
+ *    `return rest`, `rest in obj`, computed `rest[k]`, etc.).
+ *    These shapes need a residual-object value, which Go's template
+ *    runtime has no primitive for at predicate scope.
+ *
+ *  - `restName.X` where `X` is also a declared field in `fieldMap`.
+ *    Per JS spec the rest binding excludes the explicitly-named
+ *    keys, so the read is statically always `undefined` — flag the
+ *    user bug rather than silently rewrite to `_t.X` (which WOULD
+ *    return the value, masking the mistake).
+ *
+ * The walker recurses into nested arrow / higher-order bodies on
+ * purpose: lexical capture means an inner arrow that references
+ * the outer `restName` is still a use of the same binding, and
+ * `substituteDestructuredFields` does NOT recurse through arrows.
+ * Refusing here keeps the substitution path total — every retained
+ * rest reference is a top-level `restName.X` that the substitution
+ * step rewrites correctly. If a future inner-arrow shadowing model
+ * lands, this can relax to track shadowing scopes.
+ */
+function validateRestUsage(
+  expr: ParsedExpr,
+  restName: string,
+  fieldMap: Map<string, DestructureBinding>,
+): { ok: true } | { ok: false; reason: string } {
+  let valueUse = false
+  let collision: string | null = null
+
+  const walk = (e: ParsedExpr): void => {
+    if (valueUse || collision !== null) return
+    switch (e.kind) {
+      case 'identifier':
+        if (e.name === restName) valueUse = true
+        return
+      case 'member':
+        // Static `restName.X` is the only shape we can lower.
+        // Computed `restName[k]` needs runtime evaluation of `k`
+        // against the residual object — refuse as value-use.
+        if (e.object.kind === 'identifier' && e.object.name === restName) {
+          if (e.computed) {
+            valueUse = true
+            return
+          }
+          if (fieldMap.has(e.property)) {
+            collision = e.property
+          }
+          return
+        }
+        walk(e.object)
+        return
+      case 'call':
+        walk(e.callee)
+        for (const a of e.args) walk(a)
+        return
+      case 'binary':
+      case 'logical':
+        walk(e.left)
+        walk(e.right)
+        return
+      case 'unary':
+        walk(e.argument)
+        return
+      case 'conditional':
+        walk(e.test)
+        walk(e.consequent)
+        walk(e.alternate)
+        return
+      case 'template-literal':
+        for (const part of e.parts) {
+          if (part.type === 'expression') walk(part.expr)
+        }
+        return
+      case 'arrow-fn':
+        walk(e.body)
+        return
+      case 'higher-order':
+        walk(e.object)
+        walk(e.predicate)
+        return
+      case 'array-literal':
+        for (const el of e.elements) walk(el)
+        return
+      case 'array-method':
+        walk(e.object)
+        for (const a of e.args) walk(a)
+        return
+      case 'literal':
+      case 'unsupported':
+        return
+    }
+  }
+
+  walk(expr)
+
+  if (collision !== null) {
+    return {
+      ok: false,
+      reason: `Rest binding '${restName}.${collision}' shadows a declared key '${collision}' and is statically undefined. Workaround: reference the declared binding '${collision}' directly, or remove '${collision}' from the destructure.`,
+    }
+  }
+  if (valueUse) {
+    return {
+      ok: false,
+      reason: `Rest binding '${restName}' cannot be passed as a value to a template-compiled predicate (only '${restName}.<key>' member access is supported). Workaround: add /* @client */ to evaluate the predicate on the client, or rewrite to reference individual destructured fields.`,
+    }
+  }
+  return { ok: true }
 }
 
 /**
@@ -1048,11 +1199,18 @@ function collectIdentifiers(expr: ParsedExpr, out: Set<string>): void {
  * into the equivalent dotted-access form against a synthetic param
  * (`_t.done`). Identifiers not in `fieldMap` are left alone — they're
  * either closure captures (signals, props) or already-synthetic names.
+ *
+ * When `restName` is set, `restName.X` member access is rewritten to
+ * `syntheticParam.X` (#1532). The caller has already validated that
+ * every reference to `restName` in the body is a static
+ * `restName.X` shape and `X` does not collide with `fieldMap`, so
+ * this walk just rewires the object position.
  */
 function substituteDestructuredFields(
   expr: ParsedExpr,
   fieldMap: Map<string, DestructureBinding>,
   syntheticParam: string,
+  restName?: string,
 ): ParsedExpr {
   const walk = (e: ParsedExpr): ParsedExpr => {
     switch (e.kind) {
@@ -1078,6 +1236,19 @@ function substituteDestructuredFields(
       case 'call':
         return { kind: 'call', callee: walk(e.callee), args: e.args.map(walk) }
       case 'member':
+        if (
+          restName !== undefined &&
+          e.object.kind === 'identifier' &&
+          e.object.name === restName &&
+          !e.computed
+        ) {
+          return {
+            kind: 'member',
+            object: { kind: 'identifier', name: syntheticParam },
+            property: e.property,
+            computed: false,
+          }
+        }
         return { kind: 'member', object: walk(e.object), property: e.property, computed: e.computed }
       case 'binary':
         return { kind: 'binary', op: e.op, left: walk(e.left), right: walk(e.right) }

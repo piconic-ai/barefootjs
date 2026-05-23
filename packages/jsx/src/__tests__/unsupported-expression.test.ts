@@ -237,3 +237,129 @@ describe('Unsupported Sort Comparator (BF021)', () => {
     expect(bf021).toHaveLength(0)
   })
 })
+
+// Rest-pattern destructure in filter predicates (#1532). Mode A
+// (`rest.X` member access) rewrites to `_t.X` and compiles cleanly;
+// Mode B (rest as a value) surfaces BF021 with the rest binding
+// name and the `@client` workaround. These tests pin the full
+// pipeline: parser → IR → ctx.errors → BF021 code + message shape.
+describe('Rest Pattern in Filter Predicate (BF021, #1532)', () => {
+  test('no BF021 for Mode A — `rest.X` member access lowers cleanly', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ done, ...rest }) => done && rest.priority > 0).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(0)
+  })
+
+  test('emits BF021 for Mode B — rest passed to call (`Object.keys(rest)`)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ done, ...rest }) => Object.keys(rest).length > 0).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(1)
+    // Reason carries the rest binding name + the `@client` workaround
+    // (the suggestion is attached separately on the error).
+    expect(bf021[0].message).toContain("'rest'")
+    expect(bf021[0].message).toContain('@client')
+    expect(bf021[0].suggestion?.message).toContain('@client')
+  })
+
+  test('emits BF021 for Mode B — `rest` as bare return value', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ done, ...rest }) => rest).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain("'rest'")
+  })
+
+  test('emits BF021 with collision message when `rest.X` shadows a declared key', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ done, ...rest }) => rest.done).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(1)
+    // Reason carries both the rest binding and the shadowed key.
+    expect(bf021[0].message).toContain("'rest.done'")
+    expect(bf021[0].message).toContain("'done'")
+  })
+
+  test('@client suppresses BF021 for Mode B rest usage', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {/* @client */ items().filter(({ done, ...rest }) => Object.keys(rest).length > 0).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(0)
+  })
+})

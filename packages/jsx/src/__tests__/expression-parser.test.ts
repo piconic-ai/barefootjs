@@ -490,9 +490,145 @@ describe('expression-parser', () => {
       }
     })
 
-    // Rest in destructure stays unsupported even with our default work.
-    test('rejects .filter(({a, ...rest}) => a) — rest stays unsupported (#1531)', () => {
+    // Rest pattern with no body reference (#1532): the binding is
+    // present but never read, so the rewrite is identical to the
+    // non-rest shape — Mode A trivially holds (zero rest references
+    // to validate).
+    test('lowers .filter(({a, ...rest}) => a) — unused rest is harmless (#1532)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => a)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.predicate.kind).toBe('member')
+        if (result.predicate.kind === 'member') {
+          expect(result.predicate.property).toBe('a')
+        }
+      }
+    })
+
+    // Mode A (#1532): `restName.X` member access rewrites to
+    // `_t.X`. The residual object only omits explicitly-bound keys,
+    // so `_t.priority` returns the same value as `rest.priority`
+    // would whenever `priority !== 'done'`.
+    test('lowers .filter(({done, ...rest}) => done && rest.priority > 0) — rest member access (#1532)', () => {
+      const result = parseExpression('items().filter(({done, ...rest}) => done && rest.priority > 0)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.method).toBe('filter')
+        // Predicate: `_t.done && _t.priority > 0`.
+        expect(result.predicate.kind).toBe('logical')
+        if (result.predicate.kind === 'logical') {
+          expect(result.predicate.op).toBe('&&')
+          const left = result.predicate.left
+          expect(left.kind).toBe('member')
+          if (left.kind === 'member') {
+            expect(left.property).toBe('done')
+            if (left.object.kind === 'identifier') {
+              expect(left.object.name).toBe(result.param)
+            }
+          }
+          const right = result.predicate.right
+          expect(right.kind).toBe('binary')
+          if (right.kind === 'binary') {
+            const lhs = right.left
+            expect(lhs.kind).toBe('member')
+            if (lhs.kind === 'member') {
+              expect(lhs.property).toBe('priority')
+              if (lhs.object.kind === 'identifier') {
+                expect(lhs.object.name).toBe(result.param)
+              }
+            }
+          }
+        }
+      }
+    })
+
+    test('lowers .filter(({a, ...r}) => r.x && r.y) — multiple rest accesses share the synthetic param (#1532)', () => {
+      const result = parseExpression('items().filter(({a, ...r}) => r.x && r.y)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        // Predicate: `_t.x && _t.y`.
+        expect(result.predicate.kind).toBe('logical')
+        if (result.predicate.kind === 'logical') {
+          const left = result.predicate.left
+          expect(left.kind).toBe('member')
+          if (left.kind === 'member') {
+            expect(left.property).toBe('x')
+            if (left.object.kind === 'identifier') {
+              expect(left.object.name).toBe(result.param)
+            }
+          }
+          const right = result.predicate.right
+          expect(right.kind).toBe('member')
+          if (right.kind === 'member') {
+            expect(right.property).toBe('y')
+            if (right.object.kind === 'identifier') {
+              expect(right.object.name).toBe(result.param)
+            }
+          }
+        }
+      }
+    })
+
+    test('lowers .every(({a, ...rest}) => rest.x) — rest rewrite applies across higher-order methods (#1532)', () => {
+      const result = parseExpression('items().every(({a, ...rest}) => rest.x)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.method).toBe('every')
+        expect(result.predicate.kind).toBe('member')
+        if (result.predicate.kind === 'member') {
+          expect(result.predicate.property).toBe('x')
+        }
+      }
+    })
+
+    // Mode A typed error (#1532): `rest.X` where `X` is also a
+    // declared field. JS spec excludes named keys from the residual
+    // object, so `rest.done` is statically `undefined`. Refuse so
+    // the user fixes the bug rather than silently get rewritten to
+    // `_t.done` (which would return the value, masking the mistake).
+    test('rejects .filter(({done, ...rest}) => rest.done) — rest key collides with declared field (#1532)', () => {
+      const result = parseExpression('items().filter(({done, ...rest}) => rest.done)')
+      // Falls back to plain `call` — adapter surfaces BF021.
+      expect(result.kind).toBe('call')
+    })
+
+    // Mode B (#1532): rest used as a call argument can't be lowered
+    // — the residual object isn't a runtime value in the template
+    // pipeline. Refuse with BF021 + `/* @client */` hint.
+    test('rejects .filter(({a, ...rest}) => Object.keys(rest).length > 0) — rest passed to call (#1532)', () => {
+      const result = parseExpression('items().filter(({a, ...rest}) => Object.keys(rest).length > 0)')
+      expect(result.kind).toBe('call')
+    })
+
+    test('rejects .filter(({a, ...rest}) => fn(rest)) — rest passed as bare arg (#1532)', () => {
+      const result = parseExpression('items().filter(({a, ...rest}) => fn(rest))')
+      expect(result.kind).toBe('call')
+    })
+
+    // Mode B via function-expression form (#1532): `return rest` —
+    // rest as the return value of a function-keyword predicate.
+    test('rejects .filter(function ({a, ...rest}) { return rest }) — rest as return value (#1532)', () => {
+      // Function-expression form: parser already refuses destructured
+      // params for `function () { return … }` shapes at the call site.
+      // The arrow-fn equivalent below is the actual #1532 target.
+      const result = parseExpression('items().filter(({a, ...rest}) => rest)')
+      expect(result.kind).toBe('call')
+    })
+
+    // Computed rest access with a literal key still refuses (#1532):
+    // the residual-object accessor doesn't exist in template syntax,
+    // and rewriting `rest[0]` to `_t[0]` would silently include the
+    // declared keys' positions in the result. Mode B.
+    test('rejects .filter(({a, ...rest}) => rest[0]) — computed rest access with literal key (#1532)', () => {
+      const result = parseExpression('items().filter(({a, ...rest}) => rest[0])')
+      expect(result.kind).toBe('call')
+    })
+
+    // Rest at a nested destructure level (#1532 out-of-scope) — we
+    // have no "residual object at nested key" template accessor, so
+    // refuse explicitly rather than walk past the outer level.
+    test('rejects .filter(({user: {name, ...rest}}) => rest.email) — nested rest (#1532)', () => {
+      const result = parseExpression('items().filter(({user: {name, ...rest}}) => rest.email)')
       expect(result.kind).toBe('call')
     })
 

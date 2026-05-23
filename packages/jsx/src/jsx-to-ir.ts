@@ -1941,7 +1941,36 @@ function extractFilterPredicate(
   if (callback.parameters.length < 1) return { result: null }
 
   const firstParam = callback.parameters[0]
-  if (!ts.isIdentifier(firstParam.name)) return { result: null }
+
+  // Destructured filter param (#1443, #1530, #1531, #1532). Reconstruct
+  // the whole arrow source and route through `parseExpression` so the
+  // parser's destructure rewrite path runs end-to-end: synthesised
+  // `_t` param, body rewritten to `_t.field` (with `??` defaults and
+  // rest member-access rewrites). Refusal reasons from the parser —
+  // including #1532 Mode B (`rest` as value) and the rest/declared-key
+  // collision — surface here as `unsupportedReason`, which the caller
+  // turns into BF021.
+  if (!ts.isIdentifier(firstParam.name)) {
+    if (ts.isBlock(callback.body)) {
+      return {
+        result: null,
+        unsupportedReason:
+          'Block body in a destructured filter param is not supported. Workaround: use an expression-body arrow, or add /* @client */.',
+      }
+    }
+    const raw = ctx.getJS(callback)
+    const parsed = parseExpression(raw)
+    if (parsed.kind === 'unsupported') {
+      return { result: null, unsupportedReason: parsed.reason }
+    }
+    if (parsed.kind !== 'arrow-fn') return { result: null }
+    const support = isSupported(parsed.body)
+    if (!support.supported) {
+      return { result: null, unsupportedReason: support.reason }
+    }
+    const bodyRaw = ctx.getJS(callback.body)
+    return { result: { param: parsed.param, predicate: parsed.body, raw: bodyRaw } }
+  }
 
   const param = firstParam.name.getText(ctx.sourceFile)
 
