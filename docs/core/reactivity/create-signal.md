@@ -7,7 +7,7 @@ description: Creates a reactive getter/setter pair for managing state.
 
 Creates a reactive value. Returns a getter/setter pair.
 
-```tsx
+```ts
 import { createSignal } from '@barefootjs/client'
 
 const [getter, setter] = createSignal<T>(initialValue: T)

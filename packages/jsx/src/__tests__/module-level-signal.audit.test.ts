@@ -1,27 +1,25 @@
 /**
- * Module-level `createSignal` — pinned current (broken) behavior.
+ * Module-level `createSignal` / `createMemo` — BF011 enforcement.
  *
- * The ErrorCodes table reserves a slot for "signal outside component"
- * but grep confirms no production emission. This test pins what the
- * compiler actually does today when a user writes a module-scope
- * `createSignal` call.
+ * The default SSR path cannot host a module-scope reactive declaration
+ * (the binding would leak across requests and the codegen silently
+ * drops it). Authors opt into client-only module-scope state by
+ * prefixing the statement with `/* @client *​/`.
  *
- * Observed silent failure:
- *   - The analyzer reports zero errors.
- *   - The codegen silently drops the module-level declaration.
- *   - Every reference to the resulting binding in the emitted SSR
- *     template AND client init becomes an undeclared identifier,
- *     producing `ReferenceError` at first render and at hydrate.
+ * Phase 1 of the BF011 work (this PR): emit the diagnostic when the
+ * directive is absent. Phase 2/3 (follow-up): wire the working
+ * module-scope path through codegen + cross-file export/import.
  *
- * The pinned assertions document the broken output exactly so a future
- * fix (either implementing a real diagnostic or preserving the
- * declaration) flips the test loudly.
+ * The directive-present tests below pin the *current* behavior so that
+ * when codegen flips to "actually preserve the declaration", the
+ * inversions are loud and intentional.
  */
 
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { compileJSX } from '../compiler'
 import { HonoAdapter } from '../../../../packages/adapter-hono/src/adapter/hono-adapter'
+import { ErrorCodes } from '../errors'
 
 const adapter = new HonoAdapter()
 
@@ -29,11 +27,11 @@ function compile(source: string) {
   return compileJSX(source, 'Counter.tsx', { adapter })
 }
 
-function filesByPath(r: ReturnType<typeof compile>) {
-  return Object.fromEntries(r.files.map(f => [f.path, f.content]))
+function bf011(errors: { code: string }[]) {
+  return errors.filter(e => e.code === ErrorCodes.SIGNAL_OUTSIDE_COMPONENT)
 }
 
-const MODULE_LEVEL_SIGNAL_SRC = `'use client'
+const NO_DIRECTIVE_SRC = `'use client'
 import { createSignal } from '@barefootjs/client'
 
 const [count, setCount] = createSignal(0)
@@ -43,37 +41,64 @@ export function Counter() {
 }
 `
 
-describe('module-level createSignal — pinned broken output', () => {
-  test('analyzer surfaces no diagnostic', () => {
-    const ctx = analyzeComponent(MODULE_LEVEL_SIGNAL_SRC, '/tmp/counter.tsx', 'Counter')
-    expect(ctx.errors).toEqual([])
+const WITH_DIRECTIVE_SRC = `'use client'
+import { createSignal } from '@barefootjs/client'
+
+/* @client */
+const [count, setCount] = createSignal(0)
+
+export function Counter() {
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}
+`
+
+const MEMO_NO_DIRECTIVE_SRC = `'use client'
+import { createMemo } from '@barefootjs/client'
+
+const total = createMemo(() => 1 + 1)
+
+export function Display() {
+  return <span>{total()}</span>
+}
+`
+
+describe('module-level reactive declarations — BF011', () => {
+  test('createSignal without /* @client */: BF011 fires at the declaration', () => {
+    const ctx = analyzeComponent(NO_DIRECTIVE_SRC, '/tmp/counter.tsx', 'Counter')
+    const errs = bf011(ctx.errors)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain('/* @client */')
   })
 
-  test('compile reports no errors', () => {
-    const r = compile(MODULE_LEVEL_SIGNAL_SRC)
-    expect(r.errors).toEqual([])
+  test('createMemo without /* @client */: BF011 fires at the declaration', () => {
+    const ctx = analyzeComponent(MEMO_NO_DIRECTIVE_SRC, '/tmp/display.tsx', 'Display')
+    const errs = bf011(ctx.errors)
+    expect(errs).toHaveLength(1)
   })
 
-  test('emitted SSR template strips the declaration and leaves references undeclared', () => {
-    const r = compile(MODULE_LEVEL_SIGNAL_SRC)
-    const ssr = filesByPath(r)['Counter.tsx']
-    expect(ssr).toBeDefined()
-    expect(ssr).not.toContain('const [count')
-    expect(ssr).not.toContain('createSignal(0)')
-    expect(ssr).toContain('count()')
+  test('full compile surfaces BF011 in the result.errors list', () => {
+    const r = compile(NO_DIRECTIVE_SRC)
+    expect(bf011(r.errors)).toHaveLength(1)
   })
 
-  test('emitted client JS strips the declaration and leaves references undeclared', () => {
-    const r = compile(MODULE_LEVEL_SIGNAL_SRC)
-    const clientJs = filesByPath(r)['Counter.client.js']
+  test('createSignal WITH /* @client */: BF011 does NOT fire', () => {
+    const ctx = analyzeComponent(WITH_DIRECTIVE_SRC, '/tmp/counter.tsx', 'Counter')
+    expect(bf011(ctx.errors)).toEqual([])
+  })
+
+  test('Phase 2/3 pending: WITH /* @client */, codegen still drops the declaration', () => {
+    // Pinned current shape — when the working module-scope path lands,
+    // this test should flip (assert the declaration survives into the
+    // client JS and that SSR uses a placeholder for the reference).
+    const r = compile(WITH_DIRECTIVE_SRC)
+    expect(bf011(r.errors)).toEqual([])
+    const files = Object.fromEntries(r.files.map(f => [f.path, f.content]))
+    const clientJs = files['Counter.client.js']
     expect(clientJs).toBeDefined()
     expect(clientJs).not.toContain('const [count')
-    expect(clientJs).not.toContain('createSignal(0)')
-    expect(clientJs).toContain('count()')
-    expect(clientJs).toContain('setCount(')
   })
 
-  test('control: in-component signal compiles cleanly', () => {
+  test('control: in-component signal compiles cleanly, no BF011', () => {
     const inComponent = `'use client'
 import { createSignal } from '@barefootjs/client'
 
@@ -84,7 +109,7 @@ export function Counter() {
 `
     const r = compile(inComponent)
     expect(r.errors).toEqual([])
-    const clientJs = filesByPath(r)['Counter.client.js']
-    expect(clientJs).toContain('createSignal(0)')
+    const files = Object.fromEntries(r.files.map(f => [f.path, f.content]))
+    expect(files['Counter.client.js']).toContain('createSignal(0)')
   })
 })

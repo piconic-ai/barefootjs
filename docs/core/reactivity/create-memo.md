@@ -7,7 +7,7 @@ description: Creates a cached derived value that recomputes only when its depend
 
 Creates a cached derived value. Recomputes only when its dependencies change.
 
-```tsx
+```ts
 import { createMemo } from '@barefootjs/client'
 
 const getter = createMemo<T>(fn: () => T): Memo<T>

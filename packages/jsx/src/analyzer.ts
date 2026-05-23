@@ -440,7 +440,28 @@ function visit(
   if (ts.isVariableStatement(node) && !ctx.componentNode) {
     const isExported = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
     const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
+    // BF011: a module-level `createSignal` / `createMemo` declaration is
+    // either client-only opt-in (preceded by `/* @client */`) or a silent
+    // bug. Without the directive the downstream pipeline drops the
+    // declaration and every reference to the resulting binding becomes a
+    // ReferenceError. Fire BF011 here regardless of the binding shape so
+    // the user gets the same diagnostic for tuple destructure, identifier
+    // tuple-ref, and element-access variants.
+    const moduleStmtIsClientOnly = hasLeadingClientDirectiveOnStatement(node, ctx.sourceFile)
     for (const decl of node.declarationList.declarations) {
+      if (declarationIsReactiveFactoryCall(decl, ctx)) {
+        if (!moduleStmtIsClientOnly) {
+          ctx.errors.push(createError(
+            ErrorCodes.SIGNAL_OUTSIDE_COMPONENT,
+            getSourceLocation(decl, ctx.sourceFile, ctx.filePath),
+          ))
+        }
+        // Even when the directive is present, downstream emit work is
+        // still pending — Phase 2/3 lands the working module-scope path.
+        // The declaration is intentionally left uncollected for now so the
+        // existing CSR-broken shape is not silently re-introduced.
+        continue
+      }
       if (
         ts.isIdentifier(decl.name) &&
         decl.initializer &&
@@ -2075,6 +2096,53 @@ function nodeContainsArrow(node: ts.Node): boolean {
   }
   visit(node)
   return found
+}
+
+// =============================================================================
+// Module-level `/* @client */` directive detection
+// =============================================================================
+
+const CLIENT_DIRECTIVE_INTERIOR_RE = /^\s*@client\s*$/
+const BLOCK_COMMENT_RE = /\/\*([\s\S]*?)\*\//g
+
+/**
+ * Detect a leading `/* @client *​/` block comment on a Statement node.
+ * Mirrors `hasLeadingClientDirective` in jsx-to-ir.ts (which targets
+ * Expression nodes inside JSX) so the two surfaces share semantics.
+ *
+ * Reads the raw trivia between the previous node's end and the
+ * statement's first token. The directive must be the entire comment
+ * interior (matches `/* @client *​/`, rejects `/* @client-only *​/`).
+ */
+function hasLeadingClientDirectiveOnStatement(
+  stmt: ts.Statement,
+  sourceFile: ts.SourceFile,
+): boolean {
+  const trivia = sourceFile.text.slice(stmt.pos, stmt.getStart(sourceFile))
+  BLOCK_COMMENT_RE.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = BLOCK_COMMENT_RE.exec(trivia)) !== null) {
+    if (CLIENT_DIRECTIVE_INTERIOR_RE.test(m[1])) return true
+  }
+  return false
+}
+
+/**
+ * True when the VariableDeclaration's initializer is recognized as a
+ * `createSignal(...)` / `createMemo(...)` / signal-tuple-ref /
+ * signal-index-access call. Covers every shape `visitComponentBody`
+ * routes through dedicated collectors so BF011 detection at module
+ * scope catches the same surface area.
+ */
+function declarationIsReactiveFactoryCall(
+  decl: ts.VariableDeclaration,
+  ctx: AnalyzerContext,
+): boolean {
+  if (isSignalDeclaration(decl, ctx)) return true
+  if (isMemoDeclaration(decl, ctx)) return true
+  if (isSignalTupleDeclaration(decl)) return true
+  if (isSignalIndexAccess(decl, ctx) !== null) return true
+  return false
 }
 
 /**
