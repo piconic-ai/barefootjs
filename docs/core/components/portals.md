@@ -8,6 +8,7 @@ description: Render elements outside their parent DOM hierarchy for overlays, mo
 Portals render elements outside their parent DOM hierarchy — useful for overlays, modals, and tooltips that need to escape `overflow: hidden` or `z-index` stacking contexts.
 
 ```tsx
+"use client"
 import { createPortal } from '@barefootjs/client'
 ```
 
@@ -89,7 +90,8 @@ export function Tooltip(props: { text: string; children?: Child }) {
 `isSSRPortal` checks whether an element was already portaled during SSR to prevent double-portaling:
 
 ```tsx
-import { isSSRPortal } from '@barefootjs/client'
+"use client"
+import { isSSRPortal, createPortal } from '@barefootjs/client'
 
 const handleMount = (el: HTMLElement) => {
   // Skip if already portaled during SSR
@@ -102,8 +104,10 @@ const handleMount = (el: HTMLElement) => {
 After hydration, remove SSR placeholders:
 
 ```tsx
+"use client"
 import { cleanupPortalPlaceholder } from '@barefootjs/client'
 
+declare const portalId: string
 cleanupPortalPlaceholder(portalId)
 ```
 
@@ -165,6 +169,7 @@ The overlay accesses `DialogContext` from the component tree but is moved to `do
 Combine `portal.unmount()` with `onCleanup`:
 
 ```tsx
+"use client"
 import { createPortal, onCleanup } from '@barefootjs/client'
 
 const handleMount = (el: HTMLElement) => {

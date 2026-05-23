@@ -246,6 +246,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/components/component-authoring.md' },
   { path: 'core/components/children-slots.md' },
   { path: 'core/components/context-api.md' },
+  { path: 'core/components/portals.md' },
 ]
 
 const adapter = new TestAdapter()
