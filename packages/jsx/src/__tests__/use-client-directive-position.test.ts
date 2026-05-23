@@ -1,20 +1,20 @@
 /**
- * BF002 — INVALID_DIRECTIVE_POSITION audit.
+ * `'use client'` directive position — observable behavior.
  *
- * The error code is defined in `errors.ts` but never emitted. The analyzer's
- * `'use client'` detector (analyzer.ts:328) matches a string-literal
- * ExpressionStatement at *any* tree position — see the explicit comment at
- * analyzer.ts:2862-2867 noting this is deliberate so BF003's cross-file
- * client-detection stays consistent with the analyzer's own classification.
+ * The analyzer's directive detector (analyzer.ts:328) treats a
+ * `'use client'` string-literal ExpressionStatement at *any* tree
+ * position as the file-level directive. The comment at
+ * analyzer.ts:2862-2867 spells out why this is deliberate: BF003's
+ * cross-file client classification consults the same shape, so the
+ * detector here must match it exactly.
  *
- * These tests pin the observable consequences of that permissive detection
- * so the BF002 keep / delete / implement decision can be made on evidence.
- *
- * Findings (May 2026):
- *   - Top, after-import, after-statement placements: byte-identical output.
- *   - Inside function body: same SSR template, but the literal string
- *     leaks into the emitted client JS as a no-op expression statement.
- *     Runtime behavior is correct; output contains a stray `'use client'`.
+ * This test pins the consequences of that permissive detection.
+ * Findings:
+ *   - Top, after-import, after-statement placements: compile output
+ *     is byte-identical to a canonical top-of-file placement.
+ *   - In-function-body placement: same SSR template, but the literal
+ *     `'use client'` leaks into the emitted client JS as a no-op
+ *     expression statement. Runtime behavior is unaffected.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -38,8 +38,8 @@ function filesByPath(r: ReturnType<typeof compile>) {
   return Object.fromEntries(r.files.map(f => [f.path, f.content]))
 }
 
-describe('BF002 audit — `use client` directive position', () => {
-  test('control: directive at top is recognized as client', () => {
+describe('`use client` directive position', () => {
+  test('canonical top-of-file: directive recognized, no errors', () => {
     const source = `'use client'
 import { createSignal } from '@barefootjs/client'
 
@@ -49,14 +49,13 @@ ${COUNTER_BODY}`
     expect(ctx.errors.filter(e => e.severity === 'error')).toEqual([])
   })
 
-  test('after import: detector still flips hasUseClientDirective; no BF002', () => {
+  test('after import: detector still flips hasUseClientDirective', () => {
     const source = `import { createSignal } from '@barefootjs/client'
 'use client'
 
 ${COUNTER_BODY}`
     const ctx = analyzeComponent(source, '/tmp/counter.tsx', 'Counter')
     expect(ctx.hasUseClientDirective).toBe(true)
-    expect(ctx.errors.filter(e => e.code === 'BF002')).toEqual([])
   })
 
   test('after a non-import statement: detector still flips', () => {
@@ -69,7 +68,7 @@ ${COUNTER_BODY}`
     expect(ctx.hasUseClientDirective).toBe(true)
   })
 
-  test('inside function body: detector matches (most permissive case)', () => {
+  test('inside function body: detector matches and suppresses BF001', () => {
     const source = `import { createSignal } from '@barefootjs/client'
 
 export function Counter() {
@@ -79,14 +78,14 @@ export function Counter() {
 }
 `
     const ctx = analyzeComponent(source, '/tmp/counter.tsx', 'Counter')
-    // Deliberate snapshot of the surprising behavior. A directive nested
-    // inside a function body has no spec meaning, yet flips the file flag
-    // and suppresses BF001 — which masks the misplacement.
+    // A directive nested inside a function body has no spec meaning, yet
+    // flips the file flag and suppresses BF001 — pinned here so any future
+    // tightening of the detector is a deliberate, observed change.
     expect(ctx.hasUseClientDirective).toBe(true)
     expect(ctx.errors.filter(e => e.code === 'BF001')).toEqual([])
   })
 
-  test('after-import placement produces output byte-identical to top placement', () => {
+  test('after-import placement: output byte-identical to top placement', () => {
     const top = `'use client'
 import { createSignal } from '@barefootjs/client'
 
@@ -119,14 +118,9 @@ export function Counter() {
     const r2 = compile(inBody)
     expect(r1.errors).toEqual([])
     expect(r2.errors).toEqual([])
-    const f1 = filesByPath(r1)
-    const f2 = filesByPath(r2)
     const clientPath = 'Counter.client.js'
-    // Top placement: directive does NOT appear in the emitted runtime body.
-    expect(f1[clientPath]).not.toContain("'use client'")
-    // In-body placement: directive survives as a no-op statement in the
-    // initCounter body — cosmetic, but a real output divergence.
-    expect(f2[clientPath]).toContain("'use client'")
+    expect(filesByPath(r1)[clientPath]).not.toContain("'use client'")
+    expect(filesByPath(r2)[clientPath]).toContain("'use client'")
   })
 
   test('no directive + reactive APIs: BF001 fires (sanity)', () => {
