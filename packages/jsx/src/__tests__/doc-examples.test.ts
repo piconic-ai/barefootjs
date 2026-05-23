@@ -240,6 +240,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/reactivity/untrack.md' },
   { path: 'core/reactivity/props-reactivity.md' },
   { path: 'core/components/component-authoring.md' },
+  { path: 'core/components/children-slots.md' },
 ]
 
 const adapter = new TestAdapter()
