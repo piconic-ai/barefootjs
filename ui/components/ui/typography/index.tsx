@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Typography Components
  *

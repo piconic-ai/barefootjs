@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Aspect Ratio Component
  *

@@ -1,3 +1,5 @@
+"use client"
+
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 
 const baseClasses = 'bg-muted animate-pulse rounded-md'

@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * NativeSelect Component
  *

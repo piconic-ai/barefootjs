@@ -1,3 +1,5 @@
+"use client"
+
 import type { HTMLBaseAttributes } from '@barefootjs/jsx'
 
 /** The direction the separator is rendered in. */
