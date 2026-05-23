@@ -700,6 +700,112 @@ describe('expression-parser', () => {
       expect(result.kind).toBe('call')
     })
 
+    // Default value + rest composition (#1532 review). #1531's leaf
+    // default fold (`_t.done ?? false`) and #1532's rest rewrite must
+    // coexist in the same destructure. Pin the lowering so a future
+    // refactor of either feature can't silently break the cross.
+    test('lowers .filter(({done = false, ...rest}) => done && rest.priority > 0) — default + rest compose (#1532 review)', () => {
+      const result = parseExpression('items().filter(({done = false, ...rest}) => done && rest.priority > 0)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        // Predicate: `(_t.done ?? false) && _t.priority > 0`.
+        expect(result.predicate.kind).toBe('logical')
+        if (result.predicate.kind === 'logical') {
+          // Left: `_t.done ?? false`.
+          expect(result.predicate.left.kind).toBe('logical')
+          if (result.predicate.left.kind === 'logical') {
+            expect(result.predicate.left.op).toBe('??')
+            expect(result.predicate.left.left.kind).toBe('member')
+            if (result.predicate.left.left.kind === 'member') {
+              expect(result.predicate.left.left.property).toBe('done')
+            }
+          }
+          // Right: `_t.priority > 0` — confirms the rest rewrite ran.
+          expect(result.predicate.right.kind).toBe('binary')
+          if (result.predicate.right.kind === 'binary') {
+            expect(result.predicate.right.left.kind).toBe('member')
+            if (result.predicate.right.left.kind === 'member') {
+              expect(result.predicate.right.left.property).toBe('priority')
+            }
+          }
+        }
+      }
+    })
+
+    // Renamed leaf + Mode A rest member access (#1532 review). The
+    // collision negative case (`rest.done` after `done: d`) is
+    // covered above; this is the positive cross — the renamed leaf
+    // uses its local name (`d`) and the rest path uses a different
+    // source key (`priority`). Lowers cleanly.
+    test('lowers .filter(({done: d, ...rest}) => d && rest.priority > 0) — renamed leaf + Mode A (#1532 review)', () => {
+      const result = parseExpression('items().filter(({done: d, ...rest}) => d && rest.priority > 0)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.predicate.kind).toBe('logical')
+        if (result.predicate.kind === 'logical') {
+          // Left: `_t.done` (rename rewrites to the SOURCE key).
+          const left = result.predicate.left
+          expect(left.kind).toBe('member')
+          if (left.kind === 'member') {
+            expect(left.property).toBe('done')
+            if (left.object.kind === 'identifier') {
+              expect(left.object.name).toBe(result.param)
+            }
+          }
+          // Right: `_t.priority > 0` — rest member access.
+          expect(result.predicate.right.kind).toBe('binary')
+        }
+      }
+    })
+
+    // Mixed Mode A + Mode B in the same predicate (#1532 review).
+    // `rest.x` is a legal member access; `fn(rest)` passes rest as
+    // a value. The walker must catch the value-use even when other
+    // references are valid — verifies the early-return ordering
+    // doesn't accept the predicate just because Mode A reached the
+    // member walker first.
+    test('rejects .filter(({a, ...rest}) => rest.x === fn(rest)) — Mode A + Mode B mixed (#1532 review)', () => {
+      const result = parseExpression('items().filter(({a, ...rest}) => rest.x === fn(rest))')
+      expect(result.kind).toBe('call')
+    })
+
+    // Synthetic param collision with closure-captured `_t` (#1532
+    // review, parallels the #1530 collision test). The body
+    // references a free `_t` AND uses rest member access. The
+    // synthetic param picker must avoid `_t` so the rewrite doesn't
+    // silently shadow the closure capture.
+    test('picks a non-colliding synthetic param when rest body references `_t` (#1532 review)', () => {
+      const result = parseExpression('items().filter(({a, ...rest}) => rest.x === _t)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') {
+        expect(result.param).not.toBe('_t')
+        expect(result.param).toMatch(/^_t_+$/)
+      }
+    })
+
+    // Cross-method coverage for the rest rewrite (#1532). The arrow
+    // handler is generic, but pin each higher-order method so a
+    // future narrowing in the call-site dispatch can't silently
+    // drop one. `.every` is covered above; this group adds the
+    // remaining three.
+    test('lowers .some(({a, ...rest}) => rest.x) — cross-method (#1532 review)', () => {
+      const result = parseExpression('items().some(({a, ...rest}) => rest.x)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') expect(result.method).toBe('some')
+    })
+
+    test('lowers .find(({a, ...rest}) => rest.x) — cross-method (#1532 review)', () => {
+      const result = parseExpression('items().find(({a, ...rest}) => rest.x)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') expect(result.method).toBe('find')
+    })
+
+    test('lowers .findIndex(({a, ...rest}) => rest.x) — cross-method (#1532 review)', () => {
+      const result = parseExpression('items().findIndex(({a, ...rest}) => rest.x)')
+      expect(result.kind).toBe('higher-order')
+      if (result.kind === 'higher-order') expect(result.method).toBe('findIndex')
+    })
+
     // Nested destructure with a default on an INNER LEAF composes
     // the two rewrites naturally — the inner leaf is reached through
     // the threaded property path, and the leaf default wraps the

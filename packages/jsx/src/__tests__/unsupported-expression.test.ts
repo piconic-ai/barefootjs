@@ -392,4 +392,165 @@ describe('Rest Pattern in Filter Predicate (BF021, #1532)', () => {
     expect(bf021[0].message).toContain('Block body')
     expect(bf021[0].message).toContain('@client')
   })
+
+  // Method-call refusal end-to-end (#1532 review). Parser-level
+  // tests pin `rest.foo()` → `call`, but the IR-layer wiring needs
+  // its own coverage to confirm the reason string propagates from
+  // `validateRestUsage` through `extractFilterPredicate` to the
+  // BF021 diagnostic with the dedicated `'this' receiver` wording.
+  test('emits BF021 for method call on rest binding', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ a, ...rest }) => rest.foo()).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain("Method call 'rest.foo()'")
+    expect(bf021[0].message).toContain("'this' receiver")
+    expect(bf021[0].message).toContain('@client')
+  })
+
+  // Computed rest access end-to-end (#1532 review). `rest[0]` is
+  // refused at parser as a value-use; pin BF021 fires at the IR
+  // layer with the rest-binding name.
+  test('emits BF021 for computed rest access', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ a, ...rest }) => rest[0]).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain("'rest'")
+  })
+
+  // Renamed-key collision end-to-end (#1532 review). The parser-level
+  // test pins `{done: d, ...rest}` → `call`; pin the IR-layer BF021
+  // surface and the source-key wording (the message phrases the
+  // diagnostic in terms of the SOURCE key 'done', not the local
+  // rename 'd').
+  test('emits BF021 for renamed-key collision (rest.done after {done: d})', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ done: d, ...rest }) => rest.done).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain("'rest.done'")
+    expect(bf021[0].message).toContain('source key')
+  })
+
+  // Nested-pattern outer-key collision end-to-end (#1532 review).
+  // The outer `user` key is consumed by the nested pattern; the
+  // collision message must still fire even though there's no local
+  // binding for `user` in user code.
+  test('emits BF021 for nested-pattern outer-key collision (rest.user after {user: {name}})', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().filter(({ user: { name }, ...rest }) => rest.user).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain("'rest.user'")
+  })
+
+  // `@client` suppresses the collision and method-call refusal
+  // categories too — not just the bare value-use Mode B (#1532
+  // review). Pin one case per refusal kind so a future tweak to
+  // the `isClientOnly` gate can't silently start emitting BF021
+  // for one path while suppressing another.
+  test('@client suppresses BF021 for collision', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {/* @client */ items().filter(({ done, ...rest }) => rest.done).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(0)
+  })
+
+  test('@client suppresses BF021 for method call on rest', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {/* @client */ items().filter(({ a, ...rest }) => rest.foo()).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(0)
+  })
 })
