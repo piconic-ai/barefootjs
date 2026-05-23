@@ -1,0 +1,81 @@
+name: Update Doc Snapshots
+
+# Mirror of `update-fixtures.yml` / `update-meta.yml` but for the
+# `bun test`-managed snapshot file behind the doc-examples test
+# (`packages/jsx/src/__tests__/__snapshots__/doc-examples.test.ts.snap`).
+#
+# Without this workflow, every PR that edits a documented `tsx` snippet
+# under `docs/core/**` — or touches compiler codegen under
+# `packages/jsx/**` — has to also hand-regenerate the snap file with
+# `bun test -u` and commit it. Auto-regen lowers the contribution
+# friction and keeps the snapshot artefact honest, the same way
+# `update-fixtures` keeps `packages/adapter-tests/fixtures/` honest.
+#
+# Note: this auto-commits the regenerated snapshot, so reviewers MUST
+# inspect the bot's diff in the same way they inspect `update-fixtures`
+# bot commits — an unintended snap drift is a compiler regression
+# disguised as a passing test, not a "fix forward" signal.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/core/**'
+      - 'packages/jsx/**'
+      - '.github/workflows/update-doc-snapshots.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-doc-snapshots-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  update-doc-snapshots:
+    runs-on: ubuntu-latest
+    # Skip fork PRs (no write permission to push back to the head branch).
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        # The doc-examples test compiles via `compileJSX` from
+        # `@barefootjs/jsx` (TestAdapter baseline). Build matches what
+        # `ci.yml`'s `test` job does so the regenerated snapshots come
+        # from the same compiler artefacts.
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Regenerate doc-examples snapshots
+        run: bun test packages/jsx/src/__tests__/doc-examples.test.ts -u
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet -- packages/jsx/src/__tests__/__snapshots__/doc-examples.test.ts.snap; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/jsx/src/__tests__/__snapshots__/doc-examples.test.ts.snap
+          git commit -m "Update doc-examples snapshots (auto-generated)"
+          git push
