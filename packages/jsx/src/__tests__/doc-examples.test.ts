@@ -260,6 +260,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/adapters/hono-adapter.md' },
   { path: 'core/adapters/go-template-adapter.md' },
   { path: 'core/adapters/custom-adapter.md' },
+  { path: 'core/advanced/code-splitting.md' },
 ]
 
 const adapter = new TestAdapter()
