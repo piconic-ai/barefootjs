@@ -104,6 +104,7 @@ function detectBodyKind(body: string): BodyKind {
 function detectSharedSkipReason(body: string): string | undefined {
   if (/\(\s*\.\.\.\s*\)/.test(body)) return 'contains `(...)` placeholder'
   if (/>\s*\.\.\.\s*</.test(body)) return 'contains `>...<` placeholder'
+  if (/\{\s*\.\.\.\s*\}/.test(body)) return 'contains `{ ... }` placeholder'
   if (/^\s*[a-zA-Z][\w-]*\s*=\s*[{"]/.test(body) && !/^\s*(const|let|var)\b/.test(body)) {
     return 'JSX attribute fragment (not a standalone expression / statement)'
   }
@@ -238,6 +239,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/reactivity/on-cleanup.md' },
   { path: 'core/reactivity/untrack.md' },
   { path: 'core/reactivity/props-reactivity.md' },
+  { path: 'core/components/component-authoring.md' },
 ]
 
 const adapter = new TestAdapter()
