@@ -187,13 +187,13 @@ Ternaries with element branches use `bf-c` markers. Text-only ternaries use comm
 **Source:**
 
 ```tsx
-{items().map(item => <li>{item}</li>)}
+{items().map(item => <li key={item}>{item}</li>)}
 ```
 
 **Output:**
 
 ```tsx
-{bfComment('loop')}{items().map((item) => <li>{bfText("s0")}{item}{bfTextEnd()}</li>)}{bfComment('/loop')}
+{bfComment('loop')}{items().map((item) => <li key={item}>{bfText("s0")}{item}{bfTextEnd()}</li>)}{bfComment('/loop')}
 ```
 
 Loop markers (`<!--bf-loop-->...<!--bf-/loop-->`) are used for reconciliation. For child components in loops, the adapter generates unique instance IDs per iteration using the loop index or `key`.

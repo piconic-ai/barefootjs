@@ -257,6 +257,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/core-concepts/reactivity.md' },
   { path: 'core/core-concepts/mpa-style.md' },
   { path: 'core/core-concepts/ai-native.md' },
+  { path: 'core/adapters/hono-adapter.md' },
 ]
 
 const adapter = new TestAdapter()
