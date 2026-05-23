@@ -249,6 +249,7 @@ const PAGES: PageSpec[] = [
   { path: 'core/components/context-api.md' },
   { path: 'core/components/portals.md' },
   { path: 'core/components/props-type-safety.md' },
+  { path: 'core/components/styling.md' },
 ]
 
 const adapter = new TestAdapter()
