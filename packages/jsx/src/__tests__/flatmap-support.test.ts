@@ -155,3 +155,64 @@ describe('.flatMap() — single JSX return (same as map)', () => {
     expect(clientJs.content).toContain('data-key')
   })
 })
+
+describe('.flatMap() — variable-assigned result (#1554 comment)', () => {
+  test('flatMap stored in const, then used in JSX, compiles without raw JSX', () => {
+    const source = `
+      'use client'
+
+      export function TimelineBar(props: { items: string[] }) {
+        const children = props.items.flatMap((item, i) => {
+          const panel = (
+            <ResizablePanel key={item} defaultSize={50} className="segment">
+              <span>{i + 1}</span>
+            </ResizablePanel>
+          )
+          if (i === 0) return [panel]
+          return [<ResizableHandle key={\`h-\${item}\`} />, panel]
+        })
+
+        return (
+          <ResizablePanelGroup direction="horizontal">
+            {children}
+          </ResizablePanelGroup>
+        )
+      }
+    `
+    const result = compileJSX(source, 'TimelineBar.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')!
+    // flatMap should be used (not map)
+    expect(clientJs.content).toContain('.flatMap(')
+    // JSX should be compiled to renderChild calls, not raw JSX
+    expect(clientJs.content).toContain("renderChild('ResizablePanel'")
+    expect(clientJs.content).toContain("renderChild('ResizableHandle'")
+    expect(clientJs.content).not.toContain('<ResizablePanel')
+    expect(clientJs.content).not.toContain('<ResizableHandle')
+    // The raw const declaration should not appear in the init function
+    expect(clientJs.content).not.toContain('const children = ')
+  })
+
+  test('map() stored in const with JSX also gets inlined', () => {
+    const source = `
+      'use client'
+
+      export function List(props: { items: string[] }) {
+        const rendered = props.items.map((item, i) => (
+          <ListItem key={i} label={item} />
+        ))
+
+        return (
+          <ul>{rendered}</ul>
+        )
+      }
+    `
+    const result = compileJSX(source, 'List.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')!
+    expect(clientJs.content).not.toContain('<ListItem')
+    expect(clientJs.content).not.toContain('const rendered = ')
+  })
+})

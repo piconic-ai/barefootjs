@@ -2132,6 +2132,32 @@ export function initializerShapeContainsJsx(node: ts.Node): boolean {
 }
 
 /**
+ * True when `node` is a `.map()` or `.flatMap()` call whose callback
+ * argument contains JSX. `initializerShapeContainsJsx` deliberately
+ * stops at arrow boundaries, which means `const x = items.flatMap(
+ * (item) => <div/>)` is not detected. This helper catches that
+ * specific shape so the constant can be inlined at the use site
+ * (#1554).
+ */
+function isMapLikeCallWithJsx(node: ts.Node): boolean {
+  if (!ts.isCallExpression(node)) return false
+  if (!ts.isPropertyAccessExpression(node.expression)) return false
+  const method = node.expression.name.text
+  if (method !== 'map' && method !== 'flatMap') return false
+  const callback = node.arguments[0]
+  if (!callback) return false
+  if (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback)) return false
+  return containsJsxDeep(callback.body)
+}
+
+function containsJsxDeep(node: ts.Node): boolean {
+  if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) return true
+  let found = false
+  node.forEachChild(child => { if (!found) found = containsJsxDeep(child) })
+  return found
+}
+
+/**
  * Check if an AST node contains an arrow function or function expression.
  */
 function nodeContainsArrow(node: ts.Node): boolean {
@@ -2326,6 +2352,22 @@ function collectConstant(
       // expression dispatcher so the conditional / binary shape lowers
       // to IRConditional (with `clientOnly` preserved when applicable)
       // (#1409 follow-up).
+      ctx.inlineableJsxConsts.set(name, init)
+    } else if (isMapLikeCallWithJsx(init)) {
+      // .map() / .flatMap() calls whose callbacks contain JSX (#1554).
+      // The callback arrow blocks `initializerShapeContainsJsx` (by
+      // design — arbitrary nested arrows shouldn't be inlined), but
+      // map/flatMap callbacks ARE the JSX-bearing content. Inline at
+      // the use site so `transformMapCall` compiles the JSX.
+      //
+      // NOT marked `isJsx = true`: that would unconditionally suppress
+      // the const from init emission, breaking cases where the variable
+      // is also referenced outside JSX-child position (e.g.
+      // `children.length`). Instead, rely on the natural
+      // `usedIdentifiers` gate in `classifyConstant` — when the
+      // variable is only used as a JSX child, the inlining removes it
+      // from the reference graph, so the classifier skips it without
+      // `isJsx`.
       ctx.inlineableJsxConsts.set(name, init)
     }
 
