@@ -214,6 +214,9 @@ function exprReferencesModuleClientSignal(expr: ts.Expression, ctx: TransformCon
     for (const m of ctx.analyzer.memos) {
       if (m.isModule) ctx._moduleClientSignalNames.add(m.name)
     }
+    for (const name of ctx.analyzer.importedClientSignalNames) {
+      ctx._moduleClientSignalNames.add(name)
+    }
   }
   if (ctx._moduleClientSignalNames.size === 0) return false
   const names = ctx._moduleClientSignalNames

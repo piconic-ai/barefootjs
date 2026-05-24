@@ -15,6 +15,8 @@ import type { TemplateAdapter } from './adapters/interface'
 import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer'
 import { jsxToIR } from './jsx-to-ir'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js'
+import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level'
+import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode } from './ir-to-client-js/imports'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports'
 import { applyCssLayerPrefix } from './css-layer-prefixer'
@@ -482,7 +484,24 @@ export function compileJSX(
   const ctx = analyzeComponent(compileSource, filePath, undefined, options.program)
 
   if (!ctx.jsxReturn) {
-    errors.push(...ctx.errors)  // Only analyzer errors
+    errors.push(...ctx.errors)
+
+    // State-only file: no component, but has exported @client signals.
+    // Produce a standalone client JS module so other components can
+    // `import { count, setCount } from './state.client.js'`.
+    const exportedModuleSignals = ctx.signals.filter(s => s.isModule && s.isExported)
+    const exportedModuleMemos = ctx.memos.filter(m => m.isModule && m.isExported)
+    if (exportedModuleSignals.length > 0 || exportedModuleMemos.length > 0) {
+      const body = emitModuleLevelDeclarations([], [], exportedModuleSignals, exportedModuleMemos)
+      const imports = detectUsedImportsFromCode(body)
+      const sortedImports = [...imports].sort()
+      const importLine = sortedImports.length > 0
+        ? `import { ${sortedImports.join(', ')} } from '${RUNTIME_MODULE}'\n\n`
+        : ''
+      const clientJsPath = filePath.replace(/\.tsx?$/, '.client.js')
+      files.push({ path: clientJsPath, content: importLine + body, type: 'clientJs' })
+    }
+
     return { files, errors }
   }
 
