@@ -2933,9 +2933,9 @@ function collectJsxComponentTags(sourceFile: ts.SourceFile): Set<string> {
  * Captures the binding names.
  */
 const CLIENT_EXPORT_SIGNAL_RE =
-  /\/\*\s*@client\s*\*\/\s*\n?\s*export\s+const\s+\[(\w+)(?:\s*,\s*(\w+))?\]\s*=\s*createSignal\b/g
+  /\/\*\s*@client\s*\*\/\s*\n?\s*export\s+const\s+\[([$\w]+)(?:\s*,\s*([$\w]+))?\]\s*=\s*createSignal\b/g
 const CLIENT_EXPORT_MEMO_RE =
-  /\/\*\s*@client\s*\*\/\s*\n?\s*export\s+const\s+(\w+)\s*=\s*createMemo\b/g
+  /\/\*\s*@client\s*\*\/\s*\n?\s*export\s+const\s+([$\w]+)\s*=\s*createMemo\b/g
 
 /**
  * Scan imported modules for exported `@client` signal/memo bindings.
@@ -2977,7 +2977,7 @@ function scanImportedClientSignals(ctx: AnalyzerContext): void {
     if (exportedClientNames.size === 0) continue
 
     for (const spec of imp.specifiers) {
-      if (spec.isTypeOnly) continue
+      if (spec.isDefault || spec.isNamespace) continue
       const importedName = spec.name
       if (exportedClientNames.has(importedName)) {
         ctx.importedClientSignalNames.add(spec.alias ?? importedName)

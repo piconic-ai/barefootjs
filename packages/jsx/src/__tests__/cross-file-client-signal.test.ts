@@ -57,8 +57,8 @@ export function Counter() {
 }
 `
     const ctx = analyzeComponent(consumerSource, consumerPath, 'Counter')
-    expect(ctx.importedClientSignalNames).toContain('count')
-    expect(ctx.importedClientSignalNames).toContain('setCount')
+    expect(ctx.importedClientSignalNames.has('count')).toBe(true)
+    expect(ctx.importedClientSignalNames.has('setCount')).toBe(true)
   })
 
   test('imported @client memo is detected', () => {
@@ -79,7 +79,7 @@ export function Display() {
   return <span>{total()}</span>
 }
 `, consumerPath, 'Display')
-    expect(ctx.importedClientSignalNames).toContain('total')
+    expect(ctx.importedClientSignalNames.has('total')).toBe(true)
   })
 
   test('full compile: SSR uses placeholder for imported signal ref', () => {

@@ -493,13 +493,34 @@ export function compileJSX(
     const exportedModuleMemos = ctx.memos.filter(m => m.isModule && m.isExported)
     if (exportedModuleSignals.length > 0 || exportedModuleMemos.length > 0) {
       const body = emitModuleLevelDeclarations([], [], exportedModuleSignals, exportedModuleMemos)
-      const imports = detectUsedImportsFromCode(body)
-      const sortedImports = [...imports].sort()
-      const importLine = sortedImports.length > 0
-        ? `import { ${sortedImports.join(', ')} } from '${RUNTIME_MODULE}'\n\n`
+      const runtimeImports = detectUsedImportsFromCode(body)
+      const sortedRuntimeImports = [...runtimeImports].sort()
+      const runtimeImportLine = sortedRuntimeImports.length > 0
+        ? `import { ${sortedRuntimeImports.join(', ')} } from '${RUNTIME_MODULE}'`
         : ''
+
+      // Preserve non-runtime user imports whose specifiers are referenced
+      // in the generated body (e.g. an initializer that calls an imported
+      // helper: `createSignal(defaultValue())`).
+      const externalImportLines: string[] = []
+      for (const imp of ctx.imports) {
+        if (imp.isTypeOnly) continue
+        if (imp.source === '@barefootjs/client' || imp.source === RUNTIME_MODULE) continue
+        if (imp.specifiers.length === 0) {
+          externalImportLines.push(`import '${imp.source}'`)
+          continue
+        }
+        const used = imp.specifiers
+          .filter(s => !s.isDefault && !s.isNamespace && new RegExp(`\\b${s.alias || s.name}\\b`).test(body))
+          .map(s => s.alias ? `${s.name} as ${s.alias}` : s.name)
+        if (used.length > 0) {
+          externalImportLines.push(`import { ${used.join(', ')} } from '${imp.source}'`)
+        }
+      }
+
+      const allImports = [runtimeImportLine, ...externalImportLines].filter(Boolean).join('\n')
       const clientJsPath = filePath.replace(/\.tsx?$/, '.client.js')
-      files.push({ path: clientJsPath, content: importLine + body, type: 'clientJs' })
+      files.push({ path: clientJsPath, content: allImports + (allImports ? '\n\n' : '') + body, type: 'clientJs' })
     }
 
     return { files, errors }
