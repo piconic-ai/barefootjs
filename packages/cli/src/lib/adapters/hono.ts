@@ -124,6 +124,11 @@ const HONO_TSCONFIG = `{
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
+      // Source first so tsc resolves the authored file (with full
+      // types) rather than the bf-build output (which may have
+      // implicit-any lambdas). Wrangler's bundler follows the same
+      // mapping; the Hono JSX runtime renders hydration markers
+      // from source just as well as from the compiled template.
       "@/components/*": ["./components/*", "./public/components/*"]
     }
   },
