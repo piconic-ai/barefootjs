@@ -97,7 +97,7 @@ export function deduplicateGoTypes(combined: string): string {
   result = typeInsertions + '\n\n' + result
 
   // --- Pass 2: Deduplicate NewXxxProps functions (prefer version with ScopeID) ---
-  const funcRegex = /\/\/ (New\w+Props) creates .*\nfunc \1\([^)]*\) \w+ \{[\s\S]*?\n\}/g
+  const funcRegex = /\/\/ (New\w+Props) creates .*(?:\n\/\/.*)*\nfunc \1\([^)]*\) \w+ \{[\s\S]*?\n\}/g
   const bestFuncs = new Map<string, string>()
   while ((match = funcRegex.exec(result)) !== null) {
     const funcName = match[1]

@@ -390,6 +390,19 @@ func NewTodoItemProps(in TodoItemInput) TodoItemProps {
 }
 
 // NewTodoAppProps creates TodoAppProps from TodoAppInput.
+//
+// NOTE: `TodoItems` is populated by the route handler, not by
+// NewTodoAppProps — the SSR template iterates over it
+// dynamically (`.TodoItems`). Build the slice from your source data and
+// assign it before passing the props to your renderer. Example:
+//
+//   props := NewTodoAppProps(TodoAppInput{ /* ... */ })
+//   props.TodoItems = make([]TodoItemProps, len(items))
+//   for i, item := range items {
+//     props.TodoItems[i] = NewTodoItemProps(TodoItemInput{ /* fields */ })
+//     props.TodoItems[i].BfParent = props.ScopeID
+//     props.TodoItems[i].BfMount = "s3"
+//   }
 func NewTodoAppProps(in TodoAppInput) TodoAppProps {
 	scopeID := in.ScopeID
 	if scopeID == "" {
@@ -569,6 +582,19 @@ func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps
 }
 
 // NewTodoAppSSRProps creates TodoAppSSRProps from TodoAppSSRInput.
+//
+// NOTE: `TodoItems` is populated by the route handler, not by
+// NewTodoAppSSRProps — the SSR template iterates over it
+// dynamically (`.TodoItems`). Build the slice from your source data and
+// assign it before passing the props to your renderer. Example:
+//
+//   props := NewTodoAppSSRProps(TodoAppSSRInput{ /* ... */ })
+//   props.TodoItems = make([]TodoItemProps, len(items))
+//   for i, item := range items {
+//     props.TodoItems[i] = NewTodoItemProps(TodoItemInput{ /* fields */ })
+//     props.TodoItems[i].BfParent = props.ScopeID
+//     props.TodoItems[i].BfMount = "s3"
+//   }
 func NewTodoAppSSRProps(in TodoAppSSRInput) TodoAppSSRProps {
 	scopeID := in.ScopeID
 	if scopeID == "" {
