@@ -253,6 +253,9 @@ export function analyzeComponent(
   // Single pass visitor
   visit(sourceFile, ctx, targetComponentName, namedExports)
 
+  // Cross-file: scan imported modules for exported @client signals/memos
+  scanImportedClientSignals(ctx)
+
   // Post-processing validations
   validateContext(ctx)
 
@@ -2918,6 +2921,69 @@ function collectJsxComponentTags(sourceFile: ts.SourceFile): Set<string> {
   }
   visit(sourceFile)
   return tags
+}
+
+// =============================================================================
+// Cross-file @client signal scanning
+// =============================================================================
+
+/**
+ * Regex that matches `/* @client *​/ export const [name1, name2] = createSignal(...)`
+ * or `/* @client *​/ export const name = createMemo(...)` in a single line.
+ * Captures the binding names.
+ */
+const CLIENT_EXPORT_SIGNAL_RE =
+  /\/\*\s*@client\s*\*\/\s*\n?\s*export\s+const\s+\[([$\w]+)(?:\s*,\s*([$\w]+))?\]\s*=\s*createSignal\b/g
+const CLIENT_EXPORT_MEMO_RE =
+  /\/\*\s*@client\s*\*\/\s*\n?\s*export\s+const\s+([$\w]+)\s*=\s*createMemo\b/g
+
+/**
+ * Scan imported modules for exported `@client` signal/memo bindings.
+ * For each relative import in `ctx.imports`, resolve the file path,
+ * read it, and regex-scan for `/* @client *​/ export const [getter, setter]
+ * = createSignal(...)` patterns. Imported names that match are added to
+ * `ctx.importedClientSignalNames`.
+ *
+ * Uses the same `resolveRelativeImportToFile` + `fs.readFileSync`
+ * pattern as the BF003 cross-file directive check.
+ */
+function scanImportedClientSignals(ctx: AnalyzerContext): void {
+  for (const imp of ctx.imports) {
+    if (imp.isTypeOnly) continue
+    if (!imp.source.startsWith('./') && !imp.source.startsWith('../')) continue
+
+    const resolvedPath = resolveRelativeImportToFile(imp.source, ctx.filePath)
+    if (!resolvedPath) continue
+
+    let content: string
+    try {
+      content = fs.readFileSync(resolvedPath, 'utf8')
+    } catch {
+      continue
+    }
+
+    const exportedClientNames = new Set<string>()
+    CLIENT_EXPORT_SIGNAL_RE.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = CLIENT_EXPORT_SIGNAL_RE.exec(content)) !== null) {
+      if (m[1]) exportedClientNames.add(m[1])
+      if (m[2]) exportedClientNames.add(m[2])
+    }
+    CLIENT_EXPORT_MEMO_RE.lastIndex = 0
+    while ((m = CLIENT_EXPORT_MEMO_RE.exec(content)) !== null) {
+      if (m[1]) exportedClientNames.add(m[1])
+    }
+
+    if (exportedClientNames.size === 0) continue
+
+    for (const spec of imp.specifiers) {
+      if (spec.isDefault || spec.isNamespace) continue
+      const importedName = spec.name
+      if (exportedClientNames.has(importedName)) {
+        ctx.importedClientSignalNames.add(spec.alias ?? importedName)
+      }
+    }
+  }
 }
 
 function resolveRelativeImportToFile(source: string, fromFile: string): string | null {

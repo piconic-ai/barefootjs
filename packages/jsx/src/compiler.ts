@@ -15,6 +15,8 @@ import type { TemplateAdapter } from './adapters/interface'
 import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer'
 import { jsxToIR } from './jsx-to-ir'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js'
+import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level'
+import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode } from './ir-to-client-js/imports'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports'
 import { applyCssLayerPrefix } from './css-layer-prefixer'
@@ -482,7 +484,45 @@ export function compileJSX(
   const ctx = analyzeComponent(compileSource, filePath, undefined, options.program)
 
   if (!ctx.jsxReturn) {
-    errors.push(...ctx.errors)  // Only analyzer errors
+    errors.push(...ctx.errors)
+
+    // State-only file: no component, but has exported @client signals.
+    // Produce a standalone client JS module so other components can
+    // `import { count, setCount } from './state.client.js'`.
+    const exportedModuleSignals = ctx.signals.filter(s => s.isModule && s.isExported)
+    const exportedModuleMemos = ctx.memos.filter(m => m.isModule && m.isExported)
+    if (exportedModuleSignals.length > 0 || exportedModuleMemos.length > 0) {
+      const body = emitModuleLevelDeclarations([], [], exportedModuleSignals, exportedModuleMemos)
+      const runtimeImports = detectUsedImportsFromCode(body)
+      const sortedRuntimeImports = [...runtimeImports].sort()
+      const runtimeImportLine = sortedRuntimeImports.length > 0
+        ? `import { ${sortedRuntimeImports.join(', ')} } from '${RUNTIME_MODULE}'`
+        : ''
+
+      // Preserve non-runtime user imports whose specifiers are referenced
+      // in the generated body (e.g. an initializer that calls an imported
+      // helper: `createSignal(defaultValue())`).
+      const externalImportLines: string[] = []
+      for (const imp of ctx.imports) {
+        if (imp.isTypeOnly) continue
+        if (imp.source === '@barefootjs/client' || imp.source === RUNTIME_MODULE) continue
+        if (imp.specifiers.length === 0) {
+          externalImportLines.push(`import '${imp.source}'`)
+          continue
+        }
+        const used = imp.specifiers
+          .filter(s => !s.isDefault && !s.isNamespace && new RegExp(`\\b${s.alias || s.name}\\b`).test(body))
+          .map(s => s.alias ? `${s.name} as ${s.alias}` : s.name)
+        if (used.length > 0) {
+          externalImportLines.push(`import { ${used.join(', ')} } from '${imp.source}'`)
+        }
+      }
+
+      const allImports = [runtimeImportLine, ...externalImportLines].filter(Boolean).join('\n')
+      const clientJsPath = filePath.replace(/\.tsx?$/, '.client.js')
+      files.push({ path: clientJsPath, content: allImports + (allImports ? '\n\n' : '') + body, type: 'clientJs' })
+    }
+
     return { files, errors }
   }
 

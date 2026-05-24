@@ -166,6 +166,14 @@ export interface AnalyzerContext {
   // Directive
   hasUseClientDirective: boolean
 
+  /**
+   * Names imported from cross-file `@client` signal/memo exports.
+   * Populated by `scanImportedClientSignals` after the initial AST walk.
+   * Consumed by `exprReferencesModuleClientSignal` in jsx-to-ir.ts to
+   * auto-promote JSX references to `clientOnly`.
+   */
+  importedClientSignalNames: Set<string>
+
   // Pre-computed type ranges for type stripping
   typeExcludeRanges: ExcludeRange[]
 
@@ -228,6 +236,7 @@ export function createAnalyzerContext(
     errors: [],
 
     hasUseClientDirective: false,
+    importedClientSignalNames: new Set(),
 
     typeExcludeRanges: collectAllTypeRanges(sourceFile),
     checker: null,
