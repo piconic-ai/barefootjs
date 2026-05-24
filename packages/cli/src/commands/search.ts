@@ -240,6 +240,29 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     ]
     printSearchResults(allResults, ctx.jsonFlag, printOpts)
   } else {
-    printSearchResults(search(query, index, coreDocs), ctx.jsonFlag, printOpts)
+    const results = search(query, index, coreDocs)
+    const hasComponentHits = results.some(r => r.type === 'component')
+
+    if (!hasComponentHits && printOpts.hintRegistry) {
+      try {
+        const upstreamIndex = await fetchIndex(DEFAULT_REGISTRY_URL)
+        const upstreamResults = search(query, upstreamIndex)
+        if (upstreamResults.length > 0) {
+          const upstreamOpts: PrintOptions = {
+            sourceLabel: new URL(DEFAULT_REGISTRY_URL).hostname,
+            hintRegistry: false,
+          }
+          printSearchResults([...results, ...upstreamResults], ctx.jsonFlag, upstreamOpts)
+          if (!ctx.jsonFlag) {
+            console.log(`\nInstall with: bf add <name>`)
+          }
+          return
+        }
+      } catch {
+        // Registry unreachable — fall through to local-only output.
+      }
+    }
+
+    printSearchResults(results, ctx.jsonFlag, printOpts)
   }
 }

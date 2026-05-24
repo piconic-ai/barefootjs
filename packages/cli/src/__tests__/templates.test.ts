@@ -338,7 +338,7 @@ describe('adapter registry', () => {
     // the literal name for documentation purposes.
     expect(hono.files['tsconfig.json']).toContain('{{__PM_TYPES_ENTRY__}}')
     expect(hono.files['tsconfig.json']).toMatch(
-      /"types":\s*\[\s*"@cloudflare\/workers-types"\{\{__PM_TYPES_ENTRY__\}\}\s*\]/,
+      /"types":\s*\[\s*"@cloudflare\/workers-types",\s*"node"\{\{__PM_TYPES_ENTRY__\}\}\s*\]/,
     )
     // Static devDeps don't presume any PM. init.ts merges the
     // PM-specific entries (today: `@types/bun` when bun) onto this.

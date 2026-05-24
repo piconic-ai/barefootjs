@@ -223,14 +223,11 @@ const HONO_NODE_TSCONFIG = `{
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      // Server components (no 'use client') aren't emitted to dist by
-      // \`bf build\`, so the path map falls back to the source so
-      // imports of those components still resolve.
-      "@/components/*": ["./dist/components/*", "./components/*"]
+      "@/components/*": ["./components/*", "./dist/components/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "dist/components/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist/components"]
 }
 `
 
