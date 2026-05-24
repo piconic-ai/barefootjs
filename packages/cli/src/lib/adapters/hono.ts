@@ -231,7 +231,6 @@ export const HONO_ADAPTER: AdapterTemplate = {
   devDependencies: {
     ...UNOCSS_DEV_DEPENDENCIES,
     '@cloudflare/workers-types': '^4.20250101.0',
-    '@types/node': '^22.0.0',
     // `@barefootjs/test` powers `renderToTest()` — the canonical
     // millisecond IR test the docs (and `bf gen test`) point new users
     // at. Without it the scaffold's `test` script is a no-op and any

@@ -211,7 +211,6 @@ export const MOJO_ADAPTER: AdapterTemplate = {
   devDependencies: {
     ...UNOCSS_DEV_DEPENDENCIES,
     '@barefootjs/test': 'latest',
-    '@types/node': '^22.0.0',
     concurrently: '^9.0.0',
     typescript: '^5.6.0',
   },

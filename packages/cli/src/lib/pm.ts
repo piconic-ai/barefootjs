@@ -161,7 +161,7 @@ export function testRunnerFor(pm: PackageManager): TestRunner {
   return {
     importSource: 'vitest',
     scriptValue: 'vitest run',
-    devDeps: { vitest: '^2.0.0' },
+    devDeps: { '@types/node': '^22.0.0', vitest: '^2.0.0' },
     typesEntry: '',
   }
 }
