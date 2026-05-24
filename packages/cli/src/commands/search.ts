@@ -3,7 +3,7 @@
 import path from 'path'
 import type { CliContext } from '../context'
 import type { MetaIndex } from '../lib/types'
-import { loadIndex, fetchIndex } from '../lib/meta-loader'
+import { loadIndex, fetchIndex, tryFetchIndex } from '../lib/meta-loader'
 import { scanCoreDocs, type CoreDocMeta } from '../lib/docs-loader'
 
 // Default upstream UI component registry. Surfaced in the hint footer
@@ -240,6 +240,27 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     ]
     printSearchResults(allResults, ctx.jsonFlag, printOpts)
   } else {
-    printSearchResults(search(query, index, coreDocs), ctx.jsonFlag, printOpts)
+    const results = search(query, index, coreDocs)
+    const hasComponentHits = results.some(r => r.type === 'component')
+
+    if (!hasComponentHits && printOpts.hintRegistry) {
+      const upstreamIndex = await tryFetchIndex(DEFAULT_REGISTRY_URL)
+      if (upstreamIndex) {
+        const upstreamResults = search(query, upstreamIndex)
+        if (upstreamResults.length > 0) {
+          const upstreamOpts: PrintOptions = {
+            sourceLabel: new URL(DEFAULT_REGISTRY_URL).hostname,
+            hintRegistry: false,
+          }
+          printSearchResults(upstreamResults, ctx.jsonFlag, upstreamOpts)
+          if (!ctx.jsonFlag) {
+            console.log(`\nInstall with: bf add <name>`)
+          }
+          return
+        }
+      }
+    }
+
+    printSearchResults(results, ctx.jsonFlag, printOpts)
   }
 }

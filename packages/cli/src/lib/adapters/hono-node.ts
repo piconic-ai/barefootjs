@@ -223,14 +223,15 @@ const HONO_NODE_TSCONFIG = `{
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      // Server components (no 'use client') aren't emitted to dist by
-      // \`bf build\`, so the path map falls back to the source so
-      // imports of those components still resolve.
-      "@/components/*": ["./dist/components/*", "./components/*"]
+      // Source first so tsc resolves the authored file (with full
+      // types) rather than the bf-build output (which may have
+      // implicit-any lambdas). The Hono JSX runtime renders
+      // hydration markers from source at serve time.
+      "@/components/*": ["./components/*", "./dist/components/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "dist/components/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist/components"]
 }
 `
 

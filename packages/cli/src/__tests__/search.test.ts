@@ -1,6 +1,6 @@
 import { describe, test, expect, spyOn, beforeEach, afterEach } from 'bun:test'
 import { search, resolvePrintOptions, printSearchResults, type SearchResult } from '../commands/search'
-import { loadIndex, fetchIndex } from '../lib/meta-loader'
+import { loadIndex, fetchIndex, tryFetchIndex } from '../lib/meta-loader'
 import { scanCoreDocs } from '../lib/docs-loader'
 import type { MetaIndex } from '../lib/types'
 import path from 'path'
@@ -127,6 +127,48 @@ describe('fetchIndex', () => {
     await expect(fetchIndex('https://example.com/r/')).rejects.toThrow('exit')
     expect(exitSpy).toHaveBeenCalledWith(1)
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid JSON'))
+  })
+})
+
+describe('tryFetchIndex', () => {
+  let originalFetch: typeof globalThis.fetch
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch
+  })
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  const fakeIndex: MetaIndex = {
+    version: 1,
+    generatedAt: '2026-01-01',
+    components: [{ name: 'button', title: 'Button', category: 'input', description: 'A button', tags: ['button'], stateful: false }],
+  }
+
+  test('returns index on success', async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify(fakeIndex), { status: 200 })
+    const result = await tryFetchIndex('https://example.com/r/')
+    expect(result).toEqual(fakeIndex)
+  })
+
+  test('returns null on HTTP error (no process.exit)', async () => {
+    globalThis.fetch = async () => new Response('Not Found', { status: 404 })
+    const result = await tryFetchIndex('https://example.com/r/')
+    expect(result).toBeNull()
+  })
+
+  test('returns null on network error (no process.exit)', async () => {
+    globalThis.fetch = async () => { throw new Error('offline') }
+    const result = await tryFetchIndex('https://example.com/r/')
+    expect(result).toBeNull()
+  })
+
+  test('returns null on invalid JSON (no process.exit)', async () => {
+    globalThis.fetch = async () => new Response('not json{{{', { status: 200 })
+    const result = await tryFetchIndex('https://example.com/r/')
+    expect(result).toBeNull()
   })
 })
 

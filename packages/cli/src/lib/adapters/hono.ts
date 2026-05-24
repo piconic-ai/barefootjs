@@ -113,19 +113,10 @@ const HONO_TSCONFIG = `{
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "jsxImportSource": "@barefootjs/hono/jsx",
-    // \`@cloudflare/workers-types\` covers the deployed Worker. The
-    // trailing slot is a PM-specific extension point — init.ts swaps
-    // \`{{__PM_TYPES_ENTRY__}}\` for any extra type packages the
-    // user's detected package manager wants pulled in. Today only
-    // bun contributes (\`, "bun-types"\` so \`bf gen test\`-emitted
-    // \`import 'bun:test'\` lines type-check); npm / pnpm / yarn get
-    // \`vitest\` as their test runner and import \`from 'vitest'\`,
-    // which exposes types via its own package — no \`types\` array
-    // entry needed, so the slot collapses to an empty string. The
-    // bun-vs-vitest decision lives in \`testRunnerFor\` in
-    // \`packages/cli/src/lib/pm.ts\`; future runners plug into the
-    // same slot there rather than baking another placeholder in here.
-    "types": ["@cloudflare/workers-types"{{__PM_TYPES_ENTRY__}}],
+    // \`@cloudflare/workers-types\` covers the deployed Worker;
+    // \`node\` is needed so test files (\`renderToTest\` reads via
+    // \`fs\`) type-check without an extra install step.
+    "types": ["@cloudflare/workers-types", "node"{{__PM_TYPES_ENTRY__}}],
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -133,14 +124,16 @@ const HONO_TSCONFIG = `{
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      // Server components (no 'use client') aren't emitted to dist by
-      // \`bf build\`, so the path map falls back to the source so
-      // imports of those components still resolve.
-      "@/components/*": ["./public/components/*", "./components/*"]
+      // Source first so tsc resolves the authored file (with full
+      // types) rather than the bf-build output (which may have
+      // implicit-any lambdas). Wrangler's bundler follows the same
+      // mapping; the Hono JSX runtime renders hydration markers
+      // from source just as well as from the compiled template.
+      "@/components/*": ["./components/*", "./public/components/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "public/components/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "public/components"]
 }
 `
 

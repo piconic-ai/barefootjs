@@ -15,10 +15,14 @@ export function loadIndex(metaDir: string): MetaIndex {
   return JSON.parse(readFileSync(indexPath, 'utf-8'))
 }
 
-export async function fetchIndex(registryUrl: string): Promise<MetaIndex> {
-  const url = registryUrl.endsWith('/')
+function registryIndexUrl(registryUrl: string): string {
+  return registryUrl.endsWith('/')
     ? `${registryUrl}index.json`
     : `${registryUrl}/index.json`
+}
+
+export async function fetchIndex(registryUrl: string): Promise<MetaIndex> {
+  const url = registryIndexUrl(registryUrl)
   const res = await fetch(url, { signal: AbortSignal.timeout(10_000) }).catch((err: Error) => {
     console.error(`Error: Failed to fetch registry at ${url}: ${err.message}`)
     process.exit(1)
@@ -34,6 +38,17 @@ export async function fetchIndex(registryUrl: string): Promise<MetaIndex> {
     process.exit(1)
   }
   throw new Error('unreachable')
+}
+
+export async function tryFetchIndex(registryUrl: string): Promise<MetaIndex | null> {
+  const url = registryIndexUrl(registryUrl)
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5_000) })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
 }
 
 export async function fetchRegistryItem(registryUrl: string, name: string): Promise<RegistryItem> {
