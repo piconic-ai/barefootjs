@@ -33,7 +33,7 @@ Daily:
   build [--minify] [--force] [--watch]        Compile components using barefoot.config.ts
 
 Create:
-  gen component <name> <comp...>              Generate a new component skeleton + IR test
+  gen component <name> [comp...]              Generate a new component skeleton + IR test
   gen test <component>                        Generate IR test from existing component
   gen preview <component> [--force]           Generate preview file from component metadata
 

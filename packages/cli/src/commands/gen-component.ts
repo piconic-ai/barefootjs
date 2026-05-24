@@ -8,8 +8,8 @@ import { resolveScaffoldLayout } from '../lib/scaffold-layout'
 import { commandsFor, detectPackageManager, testRunnerFor } from '../lib/pm'
 
 export function run(args: string[], ctx: CliContext): void {
-  if (args.length < 2) {
-    console.error('Usage: bf gen component <component-name> <use-component1> [use-component2] ...')
+  if (args.length < 1) {
+    console.error('Usage: bf gen component <component-name> [use-component1] [use-component2] ...')
     console.error('Example: bf gen component settings-form input switch button')
     process.exit(1)
   }
