@@ -2989,7 +2989,7 @@ function buildFlatMapCallback(
     const ir = transformNode(node as any, ctx)
     fragments.push({
       placeholder,
-      ir: ir ?? { type: 'text', content: '', slotId: null, loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath) },
+      ir: ir ?? { type: 'text', value: '', loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath) },
     })
   }
   compiledBody += bodyText.slice(lastEnd)
