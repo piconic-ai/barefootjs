@@ -63,8 +63,10 @@ func FuncMap() template.FuncMap {
 		"bf_every":      Every,
 		"bf_some":       Some,
 		"bf_filter":     Filter,
-		"bf_find":       Find,
-		"bf_find_index": FindIndex,
+		"bf_find":            Find,
+		"bf_find_index":      FindIndex,
+		"bf_find_last":       FindLast,
+		"bf_find_last_index": FindLastIndex,
 		"bf_sort":       Sort,
 
 		// Comment marker (for hydration)
@@ -1046,6 +1048,72 @@ func FindIndex(items any, field string, value any) int {
 
 	capitalizedField := capitalize(field)
 	for i := 0; i < v.Len(); i++ {
+		item := v.Index(i)
+		if item.Kind() == reflect.Interface {
+			item = item.Elem()
+		}
+		if item.Kind() == reflect.Ptr {
+			item = item.Elem()
+		}
+		if item.Kind() != reflect.Struct {
+			continue
+		}
+
+		fieldVal := item.FieldByName(capitalizedField)
+		if !fieldVal.IsValid() {
+			continue
+		}
+
+		if reflect.DeepEqual(fieldVal.Interface(), value) {
+			return i
+		}
+	}
+	return -1
+}
+
+// FindLast returns the last item where item.field == value, or nil if not found.
+// Mirrors JavaScript's Array.prototype.findLast(item => item.field === value).
+func FindLast(items any, field string, value any) any {
+	v := reflect.ValueOf(items)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return nil
+	}
+
+	capitalizedField := capitalize(field)
+	for i := v.Len() - 1; i >= 0; i-- {
+		item := v.Index(i)
+		if item.Kind() == reflect.Interface {
+			item = item.Elem()
+		}
+		if item.Kind() == reflect.Ptr {
+			item = item.Elem()
+		}
+		if item.Kind() != reflect.Struct {
+			continue
+		}
+
+		fieldVal := item.FieldByName(capitalizedField)
+		if !fieldVal.IsValid() {
+			continue
+		}
+
+		if reflect.DeepEqual(fieldVal.Interface(), value) {
+			return v.Index(i).Interface()
+		}
+	}
+	return nil
+}
+
+// FindLastIndex returns the index of the last item where item.field == value, or -1.
+// Mirrors JavaScript's Array.prototype.findLastIndex(item => item.field === value).
+func FindLastIndex(items any, field string, value any) int {
+	v := reflect.ValueOf(items)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return -1
+	}
+
+	capitalizedField := capitalize(field)
+	for i := v.Len() - 1; i >= 0; i-- {
 		item := v.Index(i)
 		if item.Kind() == reflect.Interface {
 			item = item.Elem()

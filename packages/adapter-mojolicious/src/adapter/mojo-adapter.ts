@@ -1184,12 +1184,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private convertExpressionToPerl(expr: string): string {
     // Handle higher-order array methods via ParsedExpr AST.
     // `filter|every|some` lower to Embedded Perl (grep). The rest
-    // (`reduce|reduceRight|forEach|flatMap|flat|findLast|findLastIndex`)
-    // can't lower to EP at all — route them through the same AST path
-    // so `convertHigherOrderExpr`'s `isSupported` gate emits BF101
+    // (`reduce|reduceRight|forEach|flatMap|flat`) can't lower to EP
+    // at all — route them through the same AST path so
+    // `convertHigherOrderExpr`'s `isSupported` gate emits BF101
     // instead of falling into the regex pipeline that mangles
     // `$items->{reduce}->{...}` etc.
-    if (/\.\s*(?:filter|every|some|reduce|reduceRight|forEach|flatMap|flat|findLast|findLastIndex)\s*\(/.test(expr)) {
+    // `findLast|findLastIndex` are caught by the explicit Mojo-gap
+    // refusal below (alongside `find|findIndex`).
+    if (/\.\s*(?:filter|every|some|reduce|reduceRight|forEach|flatMap|flat)\s*\(/.test(expr)) {
       return this.convertHigherOrderExpr(expr)
     }
 
@@ -1215,13 +1217,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       return this.convertHigherOrderExpr(expr)
     }
 
-    // #1448 catalog — Mojo-specific gap: `.find` / `.findIndex`
-    // have no AST lowering yet (no `array-method` IR variant, no
-    // emitter), and the regex pipeline silently mangles them into
-    // `${obj}->{find}(...)` hash lookups. Emit BF101 here until
-    // either a parser-level `array-method` extension or a
-    // `convertHigherOrderExpr` carve-out lands.
-    const mojoOnlyMatch = /\.\s*(?<method>find|findIndex)\s*\(/.exec(expr)
+    // #1448 catalog — Mojo-specific gap: `.find` / `.findIndex` /
+    // `.findLast` / `.findLastIndex` have no AST lowering yet (no
+    // `array-method` IR variant, no emitter), and the regex pipeline
+    // silently mangles them into `${obj}->{find}(...)` hash lookups.
+    // Emit BF101 here until either a parser-level `array-method`
+    // extension or a `convertHigherOrderExpr` carve-out lands.
+    const mojoOnlyMatch = /\.\s*(?<method>find|findIndex|findLast|findLastIndex)\s*\(/.exec(expr)
     if (mojoOnlyMatch) {
       const methodName = mojoOnlyMatch.groups!.method!
       this.errors.push({

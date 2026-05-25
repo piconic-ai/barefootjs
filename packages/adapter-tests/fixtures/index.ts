@@ -141,6 +141,8 @@ import { fixture as arrayFind } from './methods/array-find'
 import { fixture as arrayEvery } from './methods/array-every'
 import { fixture as arraySome } from './methods/array-some'
 import { fixture as arrayFindIndex } from './methods/array-findIndex'
+import { fixture as arrayFindLast } from './methods/array-findLast'
+import { fixture as arrayFindLastIndex } from './methods/array-findLastIndex'
 // #1448 Tier B — `.sort` / `.toSorted` lowering. The Tier A
 // fixtures above gated the standalone-method surface; Tier B
 // adds the comparator-bearing variants (field-based numeric,
@@ -277,6 +279,8 @@ export const jsxFixtures: JSXFixture[] = [
   arrayEvery,
   arraySome,
   arrayFindIndex,
+  arrayFindLast,
+  arrayFindLastIndex,
   // #1448 Tier B — sort / toSorted with structured comparator.
   arraySortFieldAsc,
   arraySortFieldDesc,

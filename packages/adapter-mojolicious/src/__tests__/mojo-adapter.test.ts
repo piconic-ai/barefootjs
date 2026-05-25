@@ -162,6 +162,8 @@ runAdapterConformanceTests({
     // text-expression form is routed through the same AST path.
     'array-find':          [{ code: 'BF101', severity: 'error' }],
     'array-findIndex':     [{ code: 'BF101', severity: 'error' }],
+    'array-findLast':      [{ code: 'BF101', severity: 'error' }],
+    'array-findLastIndex': [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining

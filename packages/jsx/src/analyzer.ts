@@ -2784,7 +2784,7 @@ function inferTypeFromValue(value: string): TypeInfo {
   if (/\.(some|every|includes)\s*\([\s\S]*\)\s*$/.test(trimmed)) {
     return { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
   }
-  if (/\.(indexOf|findIndex|lastIndexOf)\s*\([\s\S]*\)\s*$/.test(trimmed)) {
+  if (/\.(indexOf|findIndex|findLastIndex|lastIndexOf)\s*\([\s\S]*\)\s*$/.test(trimmed)) {
     return { kind: 'primitive', raw: 'number', primitive: 'number' }
   }
 

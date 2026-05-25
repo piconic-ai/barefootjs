@@ -35,7 +35,7 @@
 
 import type { ParsedExpr, SortComparator, TemplatePart } from '../expression-parser'
 
-export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex'
+export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
 /**
  * Non-higher-order array methods (#1443). One discriminator for the

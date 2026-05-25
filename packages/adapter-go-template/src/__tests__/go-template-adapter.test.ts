@@ -1024,6 +1024,74 @@ export function ItemChecker() {
     })
   })
 
+  describe('findLast/findLastIndex - adapter specific', () => {
+    test('renders findLast() with equality predicate via bf_find_last', () => {
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Item = { name: string; done: boolean }
+
+export function ItemChecker() {
+  const [items, setItems] = createSignal<Item[]>([])
+  return <div>{items().findLast(t => t.done) ? 'Found' : 'Not found'}</div>
+}
+`)
+      expect(result.template).toContain('bf_find_last .Items "Done" true')
+      expect(result.template).toContain('Found')
+    })
+
+    test('renders findLast() with complex predicate via range without break', () => {
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Item = { price: number; category: string }
+
+export function ItemFinder() {
+  const [items, setItems] = createSignal<Item[]>([])
+  const [type, setType] = createSignal('')
+  return <div>{items().findLast(t => t.price > 100 && t.category === type())}</div>
+}
+`)
+      expect(result.template).toContain('{{range')
+      expect(result.template).toContain('$bf_result')
+      expect(result.template).not.toContain('{{break}}')
+    })
+
+    test('renders findLastIndex() with equality predicate via bf_find_last_index', () => {
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Item = { name: string; done: boolean }
+
+export function ItemChecker() {
+  const [items, setItems] = createSignal<Item[]>([])
+  return <div>idx: {items().findLastIndex(t => t.done)}</div>
+}
+`)
+      expect(result.template).toContain('bf_find_last_index .Items "Done" true')
+    })
+
+    test('renders findLastIndex() with complex predicate via range', () => {
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Item = { price: number; active: boolean }
+
+export function ItemFinder() {
+  const [items, setItems] = createSignal<Item[]>([])
+  return <div>{items().findLastIndex(t => t.price > 50 && t.active)}</div>
+}
+`)
+      expect(result.template).toContain('$bf_result := -1')
+      expect(result.template).toContain('$bf_result = $i')
+      expect(result.template).not.toContain('{{break}}')
+    })
+  })
+
   describe('component root scope comment propagation', () => {
     test('component root in client component outputs bfScopeComment', () => {
       const result = compileAndGenerate(`

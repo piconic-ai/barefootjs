@@ -23,7 +23,7 @@ export type ParsedExpr =
   | { kind: 'logical'; op: '&&' | '||' | '??'; left: ParsedExpr; right: ParsedExpr }
   | { kind: 'template-literal'; parts: TemplatePart[] }
   | { kind: 'arrow-fn'; param: string; body: ParsedExpr }
-  | { kind: 'higher-order'; method: 'filter' | 'every' | 'some' | 'find' | 'findIndex'; object: ParsedExpr; param: string; predicate: ParsedExpr }
+  | { kind: 'higher-order'; method: 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'; object: ParsedExpr; param: string; predicate: ParsedExpr }
   | { kind: 'array-literal'; elements: ParsedExpr[] }
   // Non-higher-order array methods. Discriminated by `method` so each
   // adapter handles the full set via one exhaustive switch instead of
@@ -157,13 +157,12 @@ export interface SupportResult {
 // evaluate JS at runtime via hono/jsx) so this set only constrains
 // the template-language adapters.
 const UNSUPPORTED_METHODS = new Set([
-  // Higher-order array methods. Five of these (`filter`, `every`,
-  // `some`, `find`, `findIndex`) are intercepted as `higher-order`
-  // IR before reaching this gate; `map` is intercepted as an
-  // IRLoop. The rest stay refused — see #1448 Tier C for the
-  // design questions.
+  // Higher-order array methods. Seven of these (`filter`, `every`,
+  // `some`, `find`, `findIndex`, `findLast`, `findLastIndex`) are
+  // intercepted as `higher-order` IR before reaching this gate;
+  // `map` is intercepted as an IRLoop. The rest stay refused — see
+  // #1448 Tier C for the design questions.
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
-  'findLast', 'findLastIndex',
   'forEach', 'flatMap', 'flat',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
   // (typically a new `array-method` variant or runtime helper) and
@@ -268,12 +267,12 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     const args = node.arguments.map(arg => convertNode(arg, raw))
 
     // Detect higher-order methods: arr.filter(x => pred), arr.every(x => pred), arr.some(x => pred)
-    if (callee.kind === 'member' && ['filter', 'every', 'some', 'find', 'findIndex'].includes(callee.property)) {
+    if (callee.kind === 'member' && ['filter', 'every', 'some', 'find', 'findIndex', 'findLast', 'findLastIndex'].includes(callee.property)) {
       if (args.length === 1 && args[0].kind === 'arrow-fn') {
         const arrowFn = args[0] as { kind: 'arrow-fn'; param: string; body: ParsedExpr }
         return {
           kind: 'higher-order',
-          method: callee.property as 'filter' | 'every' | 'some' | 'find' | 'findIndex',
+          method: callee.property as 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex',
           object: callee.object,
           param: arrowFn.param,
           predicate: arrowFn.body,

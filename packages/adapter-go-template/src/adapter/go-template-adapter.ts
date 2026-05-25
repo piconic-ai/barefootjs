@@ -2530,8 +2530,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (result) return result
     }
 
-    // find().property → {{with bf_find ...}}{{.Property}}{{end}}
-    if (object.kind === 'higher-order' && object.method === 'find') {
+    // find().property / findLast().property → {{with bf_find ...}}{{.Property}}{{end}}
+    if (object.kind === 'higher-order' && (object.method === 'find' || object.method === 'findLast')) {
       const findResult = this.renderHigherOrderExpr(object, emit)
       if (findResult) {
         return `{{with ${findResult}}}{{.${this.capitalizeFieldName(property)}}}{{end}}`
@@ -2672,7 +2672,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const reconstructed = { kind: 'higher-order' as const, method, object, param, predicate }
     const result = this.renderHigherOrderExpr(reconstructed, emit)
     if (result) return result
-    if (method === 'find' || method === 'findIndex') {
+    if (method === 'find' || method === 'findIndex' || method === 'findLast' || method === 'findLastIndex') {
       const templateBlock = this.renderFindTemplateBlock(reconstructed, emit)
       if (templateBlock) return templateBlock
     }
@@ -2941,26 +2941,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `bf_filter ${arrayExpr} "${field}" ${value}`
     }
 
-    if (expr.method === 'find' || expr.method === 'findIndex') {
+    if (expr.method === 'find' || expr.method === 'findIndex' || expr.method === 'findLast' || expr.method === 'findLastIndex') {
       const eqPred = this.extractEqualityPredicate(
         expr.predicate, expr.param, e => this.renderParsedExpr(e)
       )
       if (!eqPred) return null
-      const func = expr.method === 'find' ? 'bf_find' : 'bf_find_index'
-      return `${func} ${arrayExpr} "${eqPred.field}" ${eqPred.value}`
+      const funcMap: Record<string, string> = {
+        find: 'bf_find', findIndex: 'bf_find_index',
+        findLast: 'bf_find_last', findLastIndex: 'bf_find_last_index',
+      }
+      return `${funcMap[expr.method]} ${arrayExpr} "${eqPred.field}" ${eqPred.value}`
     }
 
     return null
   }
 
   /**
-   * Render find()/findIndex() with complex predicates using {{range}}{{if}}...{{break}} blocks.
-   * Falls back from bf_find/bf_find_index when extractEqualityPredicate returns null.
-   * Reuses renderFilterExpr for condition rendering.
+   * Render find/findIndex/findLast/findLastIndex with complex predicates
+   * using range/if blocks. Falls back from bf_find/bf_find_last helpers
+   * when extractEqualityPredicate returns null.
    *
-   * @param expr - The higher-order find/findIndex expression
-   * @param renderArray - Function to render the array expression
-   * @param propertyAccess - Optional property to access on the found element (for find().property)
+   * find/findIndex use break on first match (forward scan).
+   * findLast/findLastIndex iterate forward and keep overwriting a result
+   * variable; the final value is the last match.
    */
   private renderFindTemplateBlock(
     expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
@@ -2978,6 +2981,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     if (expr.method === 'findIndex') {
       return `{{range $i, $_ := ${arrayExpr}}}{{if ${condition}}}{{$i}}{{break}}{{end}}{{end}}`
+    }
+
+    if (expr.method === 'findLast') {
+      const capture = propertyAccess ? `.${propertyAccess}` : '.'
+      return `{{$bf_result := ""}}{{range ${arrayExpr}}}{{if ${condition}}}{{$bf_result = ${capture}}}{{end}}{{end}}{{$bf_result}}`
+    }
+
+    if (expr.method === 'findLastIndex') {
+      return `{{$bf_result := -1}}{{range $i, $_ := ${arrayExpr}}}{{if ${condition}}}{{$bf_result = $i}}{{end}}{{end}}{{$bf_result}}`
     }
 
     return null

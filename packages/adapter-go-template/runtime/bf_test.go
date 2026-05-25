@@ -561,6 +561,85 @@ func TestFindIndex_NotFound(t *testing.T) {
 	}
 }
 
+// =============================================================================
+// FindLast / FindLastIndex Tests
+// =============================================================================
+
+func TestFindLast_ByBooleanField(t *testing.T) {
+	items := []findItem{
+		{Id: 1, Name: "A", Done: true},
+		{Id: 2, Name: "B", Done: false},
+		{Id: 3, Name: "C", Done: true},
+	}
+
+	got := FindLast(items, "done", true)
+	if got == nil {
+		t.Fatal("FindLast by bool: got nil, want item C")
+	}
+	if got.(findItem).Name != "C" {
+		t.Errorf("FindLast by bool: got %v, want C", got.(findItem).Name)
+	}
+}
+
+func TestFindLast_ByIntField(t *testing.T) {
+	items := []findItem{
+		{Id: 1, Name: "A"},
+		{Id: 2, Name: "B"},
+		{Id: 2, Name: "C"},
+	}
+
+	got := FindLast(items, "id", 2)
+	if got == nil {
+		t.Fatal("FindLast by int: got nil, want item C")
+	}
+	if got.(findItem).Name != "C" {
+		t.Errorf("FindLast by int: got %v, want C", got.(findItem).Name)
+	}
+}
+
+func TestFindLast_NotFound(t *testing.T) {
+	items := []findItem{
+		{Id: 1, Name: "A"},
+	}
+
+	got := FindLast(items, "id", 99)
+	if got != nil {
+		t.Errorf("FindLast not found: got %v, want nil", got)
+	}
+}
+
+func TestFindLast_EmptySlice(t *testing.T) {
+	var items []findItem
+	got := FindLast(items, "id", 1)
+	if got != nil {
+		t.Errorf("FindLast empty: got %v, want nil", got)
+	}
+}
+
+func TestFindLastIndex_Found(t *testing.T) {
+	items := []findItem{
+		{Id: 1, Name: "A", Done: true},
+		{Id: 2, Name: "B", Done: false},
+		{Id: 3, Name: "C", Done: true},
+	}
+
+	got := FindLastIndex(items, "done", true)
+	if got != 2 {
+		t.Errorf("FindLastIndex found: got %d, want 2", got)
+	}
+}
+
+func TestFindLastIndex_NotFound(t *testing.T) {
+	items := []findItem{
+		{Id: 1, Name: "A"},
+	}
+
+	got := FindLastIndex(items, "id", 99)
+	if got != -1 {
+		t.Errorf("FindLastIndex not found: got %d, want -1", got)
+	}
+}
+
 func TestComment(t *testing.T) {
 	got := Comment("cond-start:slot_0")
 	want := "<!--bf-cond-start:slot_0-->"
