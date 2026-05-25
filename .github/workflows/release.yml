@@ -49,7 +49,7 @@ jobs:
         uses: changesets/action@e0145edc7d9d8679003495b11f87bd8ef63c0cba # v1.4.9
         with:
           version: bunx changeset version
-          publish: bun run build && bun scripts/changeset-publish.mjs
+          publish: bun run build && bun scripts/changeset-publish.ts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
