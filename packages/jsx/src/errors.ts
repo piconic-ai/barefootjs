@@ -21,7 +21,6 @@ export const ErrorCodes = {
 
   // Signal/Memo errors (BF011-BF019)
   SIGNAL_OUTSIDE_COMPONENT: 'BF011',
-  INVALID_SIGNAL_USAGE: 'BF012',
 
   // JSX errors (BF020-BF029)
   INVALID_JSX_EXPRESSION: 'BF020',
@@ -110,7 +109,6 @@ const errorMessages: Record<ErrorCode, string> = {
     'Module-level reactive declaration (createSignal / createMemo) is not allowed. ' +
     'The downstream codegen drops the declaration silently and every reference becomes a ReferenceError at SSR and at hydrate. ' +
     'Move the declaration inside a component function so each mount gets its own state.',
-  [ErrorCodes.INVALID_SIGNAL_USAGE]: 'Invalid signal usage',
 
   [ErrorCodes.INVALID_JSX_EXPRESSION]: 'Invalid JSX expression',
   [ErrorCodes.UNSUPPORTED_JSX_PATTERN]: 'Unsupported JSX pattern',
