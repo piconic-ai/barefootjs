@@ -36,7 +36,9 @@
     "build:js": "bun build ./src/reactive.ts --outdir ./dist --format esm && bun build ./src/index.ts --outdir ./dist --format esm --external '@barefootjs/client/reactive' && bun build ./src/runtime/index.ts --outdir ./dist/runtime --format esm --external '@barefootjs/client/reactive' && bun build ./src/runtime/index.ts --outfile ./dist/runtime/standalone.js --format esm && bun build ./src/build.ts --outdir ./dist --format esm --external '@barefootjs/jsx'",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
   },
   "keywords": [
     "reactive",

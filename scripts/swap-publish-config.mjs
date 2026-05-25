@@ -1,22 +1,16 @@
 #!/usr/bin/env node
 //
-// Merge / restore `publishConfig` overrides on package.json.
+// Prepack / postpack helper for workspace packages.
 //
-// Why this script exists:
-// Several workspace packages (`@barefootjs/jsx`, `@barefootjs/hono`) ship
-// their TS source via `exports` so the in-monorepo dev loop (bun test,
-// `bf build`, etc.) reads source directly — no rebuild between edits.
-// That works at runtime because bun + esbuild transpile on the fly, but
-// breaks downstream `tsc --noEmit`: TypeScript walks into our raw .ts
-// files in `node_modules`, sees `import fs from 'node:fs'`, and demands
-// the consumer install `@types/node` + add `"node"` to tsconfig.types
-// just to type-check the scaffold.
+// Two responsibilities:
 //
-// The packages keep their src-pointed `exports` in-tree (so monorepo dev
-// stays untouched) and a `publishConfig` block holds the dist-pointed
-// `exports` for the published tarball. npm + bun only merge a small
-// allow-list of `publishConfig` keys at pack time (registry, tag, etc.),
-// so a manual swap is required.
+// 1. Merge `publishConfig` overrides into the top-level manifest so that
+//    `exports` can point to src/ in-tree (bun dev) and dist/ when shipped.
+//
+// 2. Resolve `workspace:*` / `workspace:^` / `workspace:~` references in
+//    dependencies, peerDependencies, and optionalDependencies to concrete
+//    version ranges. npm does not understand the workspace: protocol and
+//    publishes the raw string, causing EUNSUPPORTEDPROTOCOL on install.
 //
 // Usage (wired through package.json scripts):
 //   "scripts": {
@@ -24,13 +18,11 @@
 //     "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
 //   }
 //
-// `pack` snapshots package.json to package.json.publish-bak and merges
-// every key from `publishConfig` into the top-level (overwriting). The
-// `publishConfig` block + the sibling `//publishConfig` comment field
-// are removed from the snapshot so consumers don't see them in the
-// shipped manifest. `unpack` restores from the backup unconditionally.
+// `pack` snapshots package.json to package.json.publish-bak, merges
+// publishConfig, and resolves workspace: deps. `unpack` restores from
+// the backup unconditionally.
 
-import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { argv, cwd, exit } from 'node:process'
 
@@ -42,13 +34,76 @@ function usage() {
   exit(2)
 }
 
+function findRepoRoot(from) {
+  let dir = from
+  while (dir !== resolve(dir, '..')) {
+    const rootPkg = resolve(dir, 'package.json')
+    if (existsSync(rootPkg)) {
+      const p = JSON.parse(readFileSync(rootPkg, 'utf-8'))
+      if (p.workspaces) return dir
+    }
+    dir = resolve(dir, '..')
+  }
+  return null
+}
+
+function resolveWorkspaceVersion(depName, repoRoot) {
+  const shortName = depName.replace(/^@[^/]+\//, '')
+  const searchDirs = ['packages', 'integrations', 'ui', 'site']
+  for (const dir of searchDirs) {
+    const candidate = resolve(repoRoot, dir, shortName, 'package.json')
+    if (existsSync(candidate)) {
+      const p = JSON.parse(readFileSync(candidate, 'utf-8'))
+      if (p.name === depName) return p.version
+    }
+  }
+  const packagesDir = resolve(repoRoot, 'packages')
+  if (existsSync(packagesDir)) {
+    for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const candidate = resolve(packagesDir, entry.name, 'package.json')
+      if (existsSync(candidate)) {
+        const p = JSON.parse(readFileSync(candidate, 'utf-8'))
+        if (p.name === depName) return p.version
+      }
+    }
+  }
+  return null
+}
+
+function resolveWorkspaceDeps(pkg, repoRoot) {
+  const sections = ['dependencies', 'peerDependencies', 'optionalDependencies']
+  let changed = false
+  for (const section of sections) {
+    if (!pkg[section]) continue
+    for (const [name, spec] of Object.entries(pkg[section])) {
+      if (typeof spec !== 'string' || !spec.startsWith('workspace:')) continue
+      const version = resolveWorkspaceVersion(name, repoRoot)
+      if (!version) {
+        console.error(
+          `[swap-publish-config] cannot resolve workspace version for ${name}`,
+        )
+        exit(1)
+      }
+      const qualifier = spec.slice('workspace:'.length)
+      if (qualifier === '*') {
+        pkg[section][name] = version
+      } else if (qualifier === '^' || qualifier === '~') {
+        pkg[section][name] = `${qualifier}${version}`
+      } else {
+        pkg[section][name] = version
+      }
+      changed = true
+    }
+  }
+  return changed
+}
+
 const mode = argv[2]
 if (mode !== 'pack' && mode !== 'unpack') usage()
 
 if (mode === 'pack') {
   if (existsSync(BAK_PATH)) {
-    // A previous pack didn't run postpack — refuse rather than
-    // silently overwrite the backup and lose the original.
     console.error(
       `[swap-publish-config] ${BAK_PATH} already exists. ` +
       `A previous pack didn't complete; restore it manually before retrying.`,
@@ -57,22 +112,24 @@ if (mode === 'pack') {
   }
   const raw = readFileSync(PKG_PATH, 'utf-8')
   const pkg = JSON.parse(raw)
-  if (!pkg.publishConfig) {
-    // Nothing to swap. Still create the backup so `postpack` doesn't
-    // need to special-case "no publishConfig" — it always restores.
+
+  const repoRoot = findRepoRoot(resolve(cwd(), '..'))
+  const hasPublishConfig = !!pkg.publishConfig
+  const hasWorkspaceDeps = repoRoot && resolveWorkspaceDeps(pkg, repoRoot)
+
+  if (!hasPublishConfig && !hasWorkspaceDeps) {
     writeFileSync(BAK_PATH, raw)
     exit(0)
   }
 
-  // Merge each publishConfig key into the top-level. Object values are
-  // replaced wholesale rather than deep-merged so a package can swap
-  // its full `exports` map without leaking the src-pointed entries.
   const merged = { ...pkg }
-  for (const [k, v] of Object.entries(pkg.publishConfig)) {
-    merged[k] = v
+  if (hasPublishConfig) {
+    for (const [k, v] of Object.entries(pkg.publishConfig)) {
+      merged[k] = v
+    }
+    delete merged.publishConfig
+    delete merged['//publishConfig']
   }
-  delete merged.publishConfig
-  delete merged['//publishConfig']
 
   writeFileSync(BAK_PATH, raw)
   writeFileSync(PKG_PATH, JSON.stringify(merged, null, 2) + '\n')

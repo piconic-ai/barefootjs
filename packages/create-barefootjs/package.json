@@ -16,7 +16,9 @@
   "scripts": {
     "build": "node ./scripts/build.mjs",
     "clean": "rm -rf dist",
-    "test": "bun test"
+    "test": "bun test",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
   },
   "dependencies": {
     "@barefootjs/cli": "workspace:*"

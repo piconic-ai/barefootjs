@@ -21,7 +21,9 @@
     "build:js": "bun build ./src/index.ts --outdir ./dist --format esm",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
   },
   "keywords": [
     "test",
