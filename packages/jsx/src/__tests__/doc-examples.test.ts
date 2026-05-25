@@ -426,7 +426,7 @@ for (const page of PAGES) {
 //     a stateful component; BF044 needs a declared signal getter).
 //     These are doc-edit follow-ups.
 //
-// Previously-documented-but-unimplemented codes (BF010, BF012, BF020,
+// Previously-documented-but-unimplemented codes (BF012, BF020,
 // BF022, BF030, BF031, BF040, BF041, BF042) were removed from the
 // doc to keep it honest. The constants remain reserved in `errors.ts`.
 //

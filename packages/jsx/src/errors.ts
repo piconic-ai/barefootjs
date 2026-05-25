@@ -19,8 +19,7 @@ export const ErrorCodes = {
   MISSING_USE_CLIENT: 'BF001',
   CLIENT_IMPORTING_SERVER: 'BF003',
 
-  // Signal/Memo errors (BF010-BF019)
-  UNKNOWN_SIGNAL: 'BF010',
+  // Signal/Memo errors (BF011-BF019)
   SIGNAL_OUTSIDE_COMPONENT: 'BF011',
   INVALID_SIGNAL_USAGE: 'BF012',
 
@@ -107,7 +106,6 @@ const errorMessages: Record<ErrorCode, string> = {
   [ErrorCodes.CLIENT_IMPORTING_SERVER]:
     'Client component cannot import server component',
 
-  [ErrorCodes.UNKNOWN_SIGNAL]: 'Unknown signal reference',
   [ErrorCodes.SIGNAL_OUTSIDE_COMPONENT]:
     'Module-level reactive declaration (createSignal / createMemo) is not allowed. ' +
     'The downstream codegen drops the declaration silently and every reference becomes a ReferenceError at SSR and at hydrate. ' +
