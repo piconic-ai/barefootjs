@@ -8,6 +8,7 @@
 #   - `npm publish <tarball> --provenance` for OIDC auth + provenance attestation
 #
 # No long-lived NPM_TOKEN needed — uses npm Trusted Publishing (OIDC).
+# Requires npm CLI >= 11.5.1 for OIDC support (Node 22 ships npm 10).
 #
 # Prerequisites (one-time setup on npmjs.com):
 #   For each package (or at org level for @barefootjs):
@@ -44,7 +45,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - run: bun install
 
