@@ -7,7 +7,7 @@
 // npm publish does NOT resolve workspace:*, which causes consumers to
 // see EUNSUPPORTEDPROTOCOL errors on install.
 //
-// For each publishable package whose local version is newer than the
+// For each publishable package whose local version differs from the
 // npm registry, runs `bun publish --access public` and creates a git
 // tag. changesets/action reads the tags to create GitHub Releases.
 //
@@ -45,11 +45,16 @@ const PUBLISHABLE = [
 
 function npmView(name) {
   try {
-    return execSync(`npm view "${name}" version 2>/dev/null`, {
+    const result = execSync(`npm view "${name}" version`, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim()
-  } catch {
+    })
+    return result.trim()
+  } catch (err) {
+    if (err.stderr && err.stderr.includes('E404')) {
+      return null
+    }
+    console.warn(`  warn  npm view "${name}" failed: ${(err.stderr || err.message).trim()}`)
     return null
   }
 }

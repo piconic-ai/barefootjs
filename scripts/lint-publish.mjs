@@ -45,47 +45,49 @@ const DEP_SECTIONS = ['dependencies', 'peerDependencies', 'optionalDependencies'
 const tmpDir = mkdtempSync(join(tmpdir(), 'bf-lint-publish-'))
 const failures = []
 
-for (const pkgDir of PUBLISHABLE) {
-  const pkg = JSON.parse(
-    readFileSync(resolve(repoRoot, pkgDir, 'package.json'), 'utf-8'),
-  )
+try {
+  for (const pkgDir of PUBLISHABLE) {
+    const pkg = JSON.parse(
+      readFileSync(resolve(repoRoot, pkgDir, 'package.json'), 'utf-8'),
+    )
 
-  let tarball
-  try {
-    const out = execSync(`bun pm pack --quiet --destination=${tmpDir}`, {
-      cwd: resolve(repoRoot, pkgDir),
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
-    tarball = out.trim().split('\n').pop()
-  } catch (err) {
-    failures.push({ name: pkg.name, issues: [`bun pm pack failed: ${err.stderr || err.message}`] })
-    continue
-  }
+    let tarball
+    try {
+      const out = execSync(`bun pm pack --quiet --destination=${tmpDir}`, {
+        cwd: resolve(repoRoot, pkgDir),
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      })
+      tarball = out.trim().split('\n').pop()
+    } catch (err) {
+      failures.push({ name: pkg.name, issues: [`bun pm pack failed: ${err.stderr || err.message}`] })
+      continue
+    }
 
-  execSync(`tar xzf "${tarball}" package/package.json`, { cwd: tmpDir })
-  const packed = JSON.parse(
-    readFileSync(join(tmpDir, 'package', 'package.json'), 'utf-8'),
-  )
-  rmSync(join(tmpDir, 'package'), { recursive: true })
+    execSync(`tar xzf "${tarball}" package/package.json`, { cwd: tmpDir })
+    const packed = JSON.parse(
+      readFileSync(join(tmpDir, 'package', 'package.json'), 'utf-8'),
+    )
+    rmSync(join(tmpDir, 'package'), { recursive: true })
 
-  const issues = []
-  for (const section of DEP_SECTIONS) {
-    for (const [dep, ver] of Object.entries(packed[section] || {})) {
-      if (String(ver).startsWith('workspace:')) {
-        issues.push(`${section}["${dep}"] = "${ver}"`)
+    const issues = []
+    for (const section of DEP_SECTIONS) {
+      for (const [dep, ver] of Object.entries(packed[section] || {})) {
+        if (String(ver).startsWith('workspace:')) {
+          issues.push(`${section}["${dep}"] = "${ver}"`)
+        }
       }
     }
-  }
 
-  if (issues.length > 0) {
-    failures.push({ name: pkg.name, issues })
-  } else if (verbose) {
-    console.log(`  ✓ ${pkg.name}`)
+    if (issues.length > 0) {
+      failures.push({ name: pkg.name, issues })
+    } else if (verbose) {
+      console.log(`  ✓ ${pkg.name}`)
+    }
   }
+} finally {
+  rmSync(tmpDir, { recursive: true, force: true })
 }
-
-rmSync(tmpDir, { recursive: true, force: true })
 
 if (failures.length > 0) {
   console.error('lint-publish: FAIL — workspace: protocol found in packed manifests\n')
