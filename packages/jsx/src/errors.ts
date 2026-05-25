@@ -28,8 +28,7 @@ export const ErrorCodes = {
   MISSING_KEY_IN_NESTED_LIST: 'BF024',
   UNSUPPORTED_DESTRUCTURE_REST: 'BF025',
 
-  // Component errors (BF040-BF049)
-  COMPONENT_NOT_FOUND: 'BF040',
+  // Component errors (BF041-BF049)
   CIRCULAR_DEPENDENCY: 'BF041',
   INVALID_COMPONENT_NAME: 'BF042',
   PROPS_DESTRUCTURING: 'BF043',
@@ -118,7 +117,6 @@ const errorMessages: Record<ErrorCode, string> = {
     // stable.
     'Computed property key in .map() callback destructure is not supported. Rewrite the callback to destructure explicit bindings (e.g., `({ a, b }) => ...`) so the compiler can rewrite references to per-item signal accessors.',
 
-  [ErrorCodes.COMPONENT_NOT_FOUND]: 'Component not found',
   [ErrorCodes.CIRCULAR_DEPENDENCY]: 'Circular dependency detected',
   [ErrorCodes.INVALID_COMPONENT_NAME]:
     'Component name must start with uppercase letter',
