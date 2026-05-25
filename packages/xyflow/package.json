@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/xyflow",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Signal-based xyflow wrapper for BarefootJS",
   "type": "module",
   "main": "./dist/index.js",
@@ -44,8 +44,8 @@
     "directory": "packages/xyflow"
   },
   "peerDependencies": {
-    "@barefootjs/client": ">=0.1.1",
-    "@barefootjs/jsx": ">=0.1.1"
+    "@barefootjs/client": ">=0.1.2",
+    "@barefootjs/jsx": ">=0.1.2"
   },
   "dependencies": {
     "@xyflow/system": "^0.0.76"

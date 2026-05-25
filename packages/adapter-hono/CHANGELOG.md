@@ -1,5 +1,13 @@
 # @barefootjs/hono
 
+## 0.1.2
+
+### Patch Changes
+
+- @barefootjs/client@0.1.2
+- @barefootjs/jsx@0.1.2
+- @barefootjs/shared@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes
