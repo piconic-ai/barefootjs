@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": { "bun": "./src/index.ts" }
+    ".": {
+      "bun": "./src/index.ts"
+    }
   },
   "scripts": {
     "test:fixture-hydrate": "bunx playwright test --config=playwright.config.ts"

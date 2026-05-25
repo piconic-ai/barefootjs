@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/chart",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SVG chart components for BarefootJS with signal-based reactivity",
   "type": "module",
   "main": "./dist/index.js",
@@ -39,7 +39,7 @@
     "directory": "packages/chart"
   },
   "peerDependencies": {
-    "@barefootjs/client": ">=0.0.1"
+    "@barefootjs/client": ">=0.1.1"
   },
   "dependencies": {
     "d3-array": "^3.2.4",
