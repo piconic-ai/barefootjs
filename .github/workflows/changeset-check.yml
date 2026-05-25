@@ -2,6 +2,7 @@ name: Changeset check
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches: [main]
 
 permissions:
@@ -62,8 +63,9 @@ jobs:
           done
 
           if [ "$needs_changeset" = true ]; then
-            # Check for .changeset/*.md files (excluding README.md)
-            changeset_files=$(find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' 2>/dev/null)
+            # Check the PR diff for new .changeset/*.md files (not find,
+            # which would also see pre-existing changesets on main).
+            changeset_files=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- '.changeset/*.md' | grep -v 'README.md' || true)
 
             if [ -z "$changeset_files" ]; then
               echo "::error::This PR modifies published package source but has no changeset."
