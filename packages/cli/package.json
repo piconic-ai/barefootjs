@@ -14,6 +14,12 @@
     "node": ">=22"
   },
   "author": "kobaken <kentafly88@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/piconic-ai/barefootjs",
+    "directory": "packages/cli"
+  },
   "scripts": {
     "build": "node ./scripts/embed-runtimes.mjs && node ./scripts/build.mjs",
     "embed-runtimes": "node ./scripts/embed-runtimes.mjs",

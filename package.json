@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "setup": "bun install && bun run --filter 'barefootjs-echo-example' setup",
-    "build": "bun run --filter '@barefootjs/client' build && bun run --filter '@barefootjs/jsx' build && bun run --filter '@barefootjs/hono' --filter '@barefootjs/go-template' build && bun run --filter '*' build",
+    "build": "bun run --filter '@barefootjs/shared' build && bun run --filter '@barefootjs/streaming' build && bun run --filter '@barefootjs/jsx' build && bun run --filter '@barefootjs/client' build && bun run --filter '@barefootjs/hono' --filter '@barefootjs/go-template' --filter '@barefootjs/mojolicious' build && bun run --filter '*' build",
     "test": "bun test --cwd . __tests__",
     "test:e2e": "bun run --filter '*' test:e2e",
     "clean": "bun run --filter '*' clean",

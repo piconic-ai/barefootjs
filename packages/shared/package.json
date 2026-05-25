@@ -8,9 +8,28 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
   "files": [
+    "dist",
     "src"
   ],
+  "scripts": {
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm",
+    "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
+    "clean": "rm -rf dist",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
+  },
   "keywords": [
     "barefoot",
     "shared"
