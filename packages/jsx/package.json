@@ -21,8 +21,9 @@
       "types": "./src/jsx-dev-runtime/index.d.ts"
     }
   },
-  "//publishConfig": "When npm/pkg-pr-new packs this package, swap `types` to the built dist/*.d.ts files so downstream `tsc --noEmit` doesn't walk into our TS source (where Node imports like `fs` / `process` would force every consumer to install @types/node). Runtime `import` stays at src — current monorepo + esbuild consumers transpile on the fly, and a future publish-ready dist would point this at dist/index.js once subpath bundles exist (none yet for ./scanner).",
+  "//publishConfig": "At pack time, swap-publish-config.mjs merges these overrides into the top-level so the published tarball resolves all entry points to dist/ instead of src/. Workspace exports stay at src/ so bun resolves source directly during dev.",
   "publishConfig": {
+    "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
       ".": {
@@ -47,7 +48,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts ./src/scanner/js-scanner.ts --outdir ./dist --format esm --external typescript --external @barefootjs/shared --external @barefootjs/client",
+    "build:js": "bun build ./src/index.ts ./src/scanner/js-scanner.ts --root ./src --outdir ./dist --format esm --external typescript --external @barefootjs/shared --external @barefootjs/client",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test && bun run typecheck:tests",
     "typecheck:tests": "tsgo --noEmit -p __tests__/tsconfig.json",
@@ -72,10 +73,10 @@
     "@barefootjs/shared": "workspace:*"
   },
   "peerDependencies": {
-    "@barefootjs/client": "workspace:*"
+    "@barefootjs/client": "workspace:*",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
-    "@happy-dom/global-registrator": "^20.0.11",
-    "typescript": "^5.0.0"
+    "@happy-dom/global-registrator": "^20.0.11"
   }
 }

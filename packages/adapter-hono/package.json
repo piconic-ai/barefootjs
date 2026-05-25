@@ -74,7 +74,7 @@
       "import": "./src/app.ts"
     }
   },
-  "//publishConfig": "When npm/pkg-pr-new packs this package, swap each subpath's `types` to the dist/*.d.ts produced by `tsgo --emitDeclarationOnly`. Downstream consumers' `tsc --noEmit` then walks pure-declaration files instead of our TS source — which transitively pulled `process` / `fs` references and forced every scaffold to install @types/node. Runtime `import` still points at TS source so existing bun + esbuild paths keep working; a future change can repoint these to dist/*.js once subpath bundles exist.",
+  "//publishConfig": "At pack time, swap-publish-config.mjs merges these overrides into the top-level so the published tarball resolves all entry points to dist/ instead of src/. Workspace exports stay at src/ so bun resolves source directly during dev.",
   "publishConfig": {
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
