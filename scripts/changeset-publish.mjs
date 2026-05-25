@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 //
 // Publish script for the release workflow (changesets/action).
 //
@@ -16,15 +16,12 @@
 //   - NODE_AUTH_TOKEN env var (set by actions/setup-node with registry-url)
 //
 // Usage:
-//   node scripts/changeset-publish.mjs
+//   bun scripts/changeset-publish.mjs
 
-import { execSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
+import { $ } from 'bun'
 
-const here = dirname(fileURLToPath(import.meta.url))
-const repoRoot = resolve(here, '..')
+const repoRoot = resolve(import.meta.dir, '..')
 
 // Publish order: dependencies before dependents.
 const PUBLISHABLE = [
@@ -43,20 +40,15 @@ const PUBLISHABLE = [
   'packages/create-barefootjs',
 ]
 
-function npmView(name) {
-  try {
-    const result = execSync(`npm view "${name}" version`, {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
-    return result.trim()
-  } catch (err) {
-    if (err.stderr && err.stderr.includes('E404')) {
-      return null
-    }
-    console.warn(`  warn  npm view "${name}" failed: ${(err.stderr || err.message).trim()}`)
+async function npmView(name) {
+  const result = await $`npm view ${name} version`.quiet().nothrow()
+  if (result.exitCode !== 0) {
+    const stderr = result.stderr.toString()
+    if (stderr.includes('E404')) return null
+    console.warn(`  warn  npm view "${name}" failed: ${stderr.trim()}`)
     return null
   }
+  return result.text().trim()
 }
 
 let published = 0
@@ -64,12 +56,11 @@ let skipped = 0
 const errors = []
 
 for (const pkgDir of PUBLISHABLE) {
-  const pkgPath = resolve(repoRoot, pkgDir, 'package.json')
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+  const pkg = await Bun.file(resolve(repoRoot, pkgDir, 'package.json')).json()
 
   if (pkg.private) continue
 
-  const registryVersion = npmView(pkg.name)
+  const registryVersion = await npmView(pkg.name)
   if (registryVersion === pkg.version) {
     console.log(`  skip  ${pkg.name}@${pkg.version} (already on npm)`)
     skipped++
@@ -81,23 +72,17 @@ for (const pkgDir of PUBLISHABLE) {
     : 'new'
   console.log(`\n  publish  ${pkg.name}@${pkg.version} (${label})`)
 
-  try {
-    execSync('bun publish --access public', {
-      cwd: resolve(repoRoot, pkgDir),
-      stdio: 'inherit',
-    })
-  } catch (err) {
-    errors.push(`${pkg.name}@${pkg.version}: ${err.message}`)
+  const pub = await $`bun publish --access public`
+    .cwd(resolve(repoRoot, pkgDir))
+    .nothrow()
+  if (pub.exitCode !== 0) {
+    errors.push(`${pkg.name}@${pkg.version}`)
     continue
   }
 
   const tag = `${pkg.name}@${pkg.version}`
-  try {
-    execSync(`git tag "${tag}"`, { cwd: repoRoot, stdio: 'pipe' })
-    console.log(`  tagged  ${tag}`)
-  } catch {
-    console.log(`  tagged  ${tag} (already exists)`)
-  }
+  const t = await $`git tag ${tag}`.cwd(repoRoot).quiet().nothrow()
+  console.log(`  tagged  ${tag}${t.exitCode !== 0 ? ' (already exists)' : ''}`)
 
   published++
 }
