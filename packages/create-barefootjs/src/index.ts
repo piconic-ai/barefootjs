@@ -59,7 +59,6 @@ Options:
 
 Forwarded to \`bf init\`:
   --adapter <name>    Adapter to use (default: hono)
-                      Available: hono, hono-node, echo, mojo, csr
   --css <name>        CSS library to use (default: unocss)
 
 After scaffolding:
