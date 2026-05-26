@@ -1857,11 +1857,14 @@ function extractMultiReturnJsxBranches(
       let current: ts.Statement = stmt
       while (ts.isIfStatement(current)) {
         const ifStmt = current
+        // Reject branches with nested control flow — only accept
+        // direct `return <jsx>` / `return null` (or a block with
+        // exactly that as its only return).
+        if (!isDirectReturnBlock(ifStmt.thenStatement)) return null
         const jsxReturn = findJsxReturnInBlock(ifStmt.thenStatement)
         const nullReturn = findNullReturnInBlock(ifStmt.thenStatement)
         if (!jsxReturn && !nullReturn) return null
 
-        // Include both JSX and null-returning branches (guard clauses)
         branches.push({ condition: ifStmt.expression, jsxReturn: jsxReturn ?? null })
 
         if (ifStmt.elseStatement) {
@@ -1869,7 +1872,7 @@ function extractMultiReturnJsxBranches(
             current = ifStmt.elseStatement
             continue
           }
-          // else block
+          if (!isDirectReturnBlock(ifStmt.elseStatement)) return null
           const elseJsx = findJsxReturnInBlock(ifStmt.elseStatement)
           if (elseJsx) {
             fallback = elseJsx
@@ -1928,8 +1931,9 @@ function extractMultiReturnJsxBranches(
       continue
     }
 
-    // Skip variable declarations (they can appear before if/switch)
-    if (ts.isVariableStatement(stmt)) continue
+    // Reject bodies with variable declarations — locals referenced in
+    // conditions or JSX would become undefined after inlining.
+    if (ts.isVariableStatement(stmt)) return null
 
     // Any other statement type → unsupported pattern
     return null
@@ -1937,6 +1941,37 @@ function extractMultiReturnJsxBranches(
 
   if (branches.length === 0) return null
   return { branches, fallback }
+}
+
+/**
+ * Check that a statement is a direct `return ...` or a block whose
+ * only non-variable statements are a single return. Rejects nested
+ * control flow (nested if/switch/for/while) that could cause
+ * `findJsxReturnInBlock` to pick the wrong return.
+ */
+function isDirectReturnBlock(node: ts.Statement): boolean {
+  if (ts.isReturnStatement(node)) return true
+  if (ts.isBlock(node)) {
+    let returnCount = 0
+    for (const stmt of node.statements) {
+      if (ts.isReturnStatement(stmt)) {
+        returnCount++
+      } else if (
+        ts.isIfStatement(stmt) ||
+        ts.isSwitchStatement(stmt) ||
+        ts.isForStatement(stmt) ||
+        ts.isForOfStatement(stmt) ||
+        ts.isForInStatement(stmt) ||
+        ts.isWhileStatement(stmt) ||
+        ts.isDoStatement(stmt) ||
+        ts.isTryStatement(stmt)
+      ) {
+        return false
+      }
+    }
+    return returnCount === 1
+  }
+  return false
 }
 
 function findNullReturnInBlock(node: ts.Statement): boolean {

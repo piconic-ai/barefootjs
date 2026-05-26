@@ -452,6 +452,19 @@ describe('JSX function inlining (#569)', () => {
       const ir = jsxToIR(ctx)
       expect(ir).not.toBeNull()
 
+      // Verify IR contains a conditional node (not an opaque expression)
+      function findConditional(node: any): any {
+        if (node?.type === 'conditional') return node
+        for (const child of node?.children ?? []) {
+          const found = findConditional(child)
+          if (found) return found
+        }
+        return null
+      }
+      const cond = findConditional(ir)
+      expect(cond).not.toBeNull()
+      expect(cond.type).toBe('conditional')
+
       const result = compileJSX(source, 'StatusDisplay.tsx', { adapter })
       expect(result.errors).toHaveLength(0)
 
@@ -460,6 +473,12 @@ describe('JSX function inlining (#569)', () => {
       expect(template).toContain('OK')
       // Helper function should NOT appear verbatim — it's inlined
       expect(template).not.toMatch(/function renderBadge/)
+
+      // Client JS should not contain the raw helper function with JSX
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      if (clientJs) {
+        expect(clientJs.content).not.toMatch(/function renderBadge/)
+      }
     })
 
     test('if/else if/else chain inlines to nested conditionals', () => {

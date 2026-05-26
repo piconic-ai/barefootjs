@@ -1506,17 +1506,27 @@ function transformMultiReturnJsxFunctionCall(
         conditionText = substitutedGetJS(branch.condition)
       }
 
+      // For switch-sourced conditions, merge freeRefs/reactivity from
+      // both the discriminant and case expression so prop rewrites and
+      // reactivity detection cover the full `disc === case` condition.
+      const env = makeBindingEnv(ctx)
+      const caseFreeRefs = resolveFreeRefs(branch.condition, env)
+      const discFreeRefs = info.switchDiscriminant
+        ? resolveFreeRefs(info.switchDiscriminant, env)
+        : []
       const conditionOrigin: OriginInfo = {
         phase: 'tick',
         scope: 'template',
         effect: 'pure',
-        freeRefs: resolveFreeRefs(branch.condition, makeBindingEnv(ctx)),
+        freeRefs: [...discFreeRefs, ...caseFreeRefs],
       }
       const reactive = isReactiveExpression(conditionText, ctx, branch.condition)
         || isReactiveOrigin(conditionOrigin)
       const loopParamReactive = !reactive && referencesLoopParam(conditionText, ctx)
       const callsReactive = exprCallsReactiveGetters(branch.condition, ctx)
+        || (info.switchDiscriminant ? exprCallsReactiveGetters(info.switchDiscriminant, ctx) : false)
       const hasCalls = exprHasFunctionCalls(branch.condition)
+        || (info.switchDiscriminant ? exprHasFunctionCalls(info.switchDiscriminant) : false)
       const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
       const slotId = needsSlot ? generateSlotId(ctx) : null
 
@@ -1524,10 +1534,26 @@ function transformMultiReturnJsxFunctionCall(
         ? (transformNode(branch.jsxReturn, ctx) ?? nullExpr)
         : nullExpr
 
+      // For switch conditions, build templateCondition from both parts
+      let templateCondition: string | undefined
+      if (info.switchDiscriminant) {
+        const discRewritten = rewriteBarePropRefs(
+          substitutedGetJS(info.switchDiscriminant), info.switchDiscriminant, ctx
+        )
+        const caseRewritten = rewriteBarePropRefs(
+          substitutedGetJS(branch.condition), branch.condition, ctx
+        )
+        const discPart = discRewritten ?? substitutedGetJS(info.switchDiscriminant)
+        const casePart = caseRewritten ?? substitutedGetJS(branch.condition)
+        templateCondition = `${discPart} === ${casePart}`
+      } else {
+        templateCondition = rewriteBarePropRefs(conditionText, branch.condition, ctx)
+      }
+
       const conditional: IRConditional = {
         type: 'conditional',
         condition: conditionText,
-        templateCondition: rewriteBarePropRefs(conditionText, branch.condition, ctx),
+        templateCondition,
         conditionType: null,
         reactive,
         whenTrue,
