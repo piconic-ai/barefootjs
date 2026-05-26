@@ -71,6 +71,7 @@ type GoRenderCtx = {
  */
 interface NestedComponentInfo extends IRLoopChildComponent {
   isDynamic: boolean
+  isPropDerived: boolean
 }
 
 interface StaticChildInstance {
@@ -809,8 +810,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\tBfParent string // Optional: parent scope id')
     lines.push('\tBfMount string // Optional: slot id in parent')
 
-    // Static nested components appear in Input; dynamic ones are template-only
-    const staticNested = nestedComponents.filter(n => !n.isDynamic)
+    // Static + prop-derived nested components appear in Input;
+    // signal-backed dynamic ones are template-only
+    const inputNested = nestedComponents.filter(n => !n.isDynamic || n.isPropDerived)
 
     // Collect nested component array field names to skip from propsParams
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
@@ -823,8 +825,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${fieldName} ${goType}`)
     }
 
-    // Add nested component input arrays (static only)
-    for (const nested of staticNested) {
+    // Add nested component input arrays
+    for (const nested of inputNested) {
       lines.push(`\t${nested.name}s []${nested.name}Input`)
     }
 
@@ -955,10 +957,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Add array fields for nested components (for template rendering)
     for (const nested of nestedComponents) {
-      if (nested.isDynamic) {
-        // Dynamic (signal) array loops: template-only, not in JSON
+      if (nested.isDynamic && !nested.isPropDerived) {
+        // Dynamic signal array loops: template-only, not in JSON
         lines.push(`\t${nested.name}s []${nested.name}Props \`json:"-"\``)
       } else {
+        // Static arrays and prop-derived dynamic arrays: include in JSON
+        // so the client can hydrate via mapArray or forEach
         const jsonTag = this.toJsonTag(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
         lines.push(`\t${nested.name}s []${nested.name}Props \`json:"${jsonTag}"\``)
       }
@@ -1007,9 +1011,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // field, the SSR template iterates over it, but
     // `NewTodoAppProps(TodoAppInput{Initial: ...})` returns it empty
     // and the page renders a blank list (#1442 echo TodoApp repro).
-    const dynamicNested = nestedComponents.filter(n => n.isDynamic)
+    const signalDynamicNested = nestedComponents.filter(n => n.isDynamic && !n.isPropDerived)
     lines.push(`// New${componentName}Props creates ${propsTypeName} from ${inputTypeName}.`)
-    for (const nested of dynamicNested) {
+    for (const nested of signalDynamicNested) {
       const arrayField = `${nested.name}s`
       lines.push(`//`)
       lines.push(`// NOTE: \`${arrayField}\` is populated by the route handler, not by`)
@@ -1032,8 +1036,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t}')
     lines.push('')
 
-    // Static nested components only — dynamic ones are set manually by the handler
-    const staticNested = nestedComponents.filter(n => !n.isDynamic)
+    // Static + prop-derived nested components: auto-populate from input.
+    // Signal-backed dynamic arrays are set manually by the handler.
+    const staticNested = nestedComponents.filter(n => !n.isDynamic || n.isPropDerived)
 
     // Handle nested components
     if (staticNested.length > 0) {
@@ -1268,6 +1273,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           result.push({
             ...loop.childComponent,
             isDynamic: !loop.isStaticArray,
+            isPropDerived: !!loop.isPropDerivedArray,
           })
         }
       }

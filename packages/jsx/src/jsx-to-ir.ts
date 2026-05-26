@@ -2855,8 +2855,10 @@ function transformMapCall(
   // the signal accessor at renderItem body entry. No more skip.
   const callsReactive = exprCallsReactiveGetters(arrayExpr, ctx)
   const hasCalls = exprHasFunctionCalls(arrayExpr)
+  const isDirectPropArray = method !== 'flatMap' && isArrayExprDirectPropRef(arrayExpr, ctx)
   const isStaticArray =
     !isSignalOrMemoArray(array, ctx)
+    && !isDirectPropArray
     && !hasCalls
 
   // Collect nested components for both static and dynamic arrays.
@@ -2886,6 +2888,7 @@ function transformMapCall(
     // and ssr-hydration-contract assertions don't shift when loops are added.
     markerId: `l${ctx.loopMarkerCounter++}`,
     isStaticArray,
+    isPropDerivedArray: isDirectPropArray || undefined,
     callsReactiveGetters: callsReactive || undefined,
     hasFunctionCalls: hasCalls || undefined,
     bodyIsMultiRoot: bodyIsMultiRoot || undefined,
@@ -3869,6 +3872,35 @@ function checkBareSignalOrMemoIdentifier(
       return
     }
   }
+}
+
+/**
+ * Structural AST check: is the array expression a direct prop reference?
+ *
+ * Returns true only when arrayExpr is:
+ * (a) An Identifier that is a destructured prop binding (e.g. `toggleItems`)
+ * (b) A PropertyAccessExpression rooted at the props object (e.g. `props.items`)
+ *
+ * Unlike the regex-based `isPropsReference`, this avoids false positives from
+ * unrelated identifiers that happen to share a prop name (e.g. `state.items`
+ * when `items` is also a prop).
+ */
+function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContext): boolean {
+  const propNames = new Set(ctx.patterns.props.map(p => p.name))
+  const propsObjName = ctx.analyzer.propsObjectName
+
+  if (ts.isIdentifier(arrayExpr)) {
+    return propNames.has(arrayExpr.text)
+  }
+
+  if (ts.isPropertyAccessExpression(arrayExpr) && propsObjName) {
+    const obj = arrayExpr.expression
+    if (ts.isIdentifier(obj) && obj.text === propsObjName) {
+      return true
+    }
+  }
+
+  return false
 }
 
 /**

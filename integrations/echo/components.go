@@ -17,106 +17,6 @@ func randomID(n int) string {
 	return string(b)
 }
 
-// PortalExampleInput is the user-facing input type.
-type PortalExampleInput struct {
-	ScopeID string // Optional: if empty, random ID is generated
-	BfParent string // Optional: parent scope id
-	BfMount string // Optional: slot id in parent
-}
-
-// PortalExampleProps is the props type for the PortalExample component.
-type PortalExampleProps struct {
-	ScopeID string `json:"scopeID"`
-	BfIsRoot bool `json:"-"`
-	BfIsChild bool `json:"-"`
-	BfParent string `json:"-"`
-	BfMount string `json:"-"`
-	Scripts *bf.ScriptCollector `json:"-"`
-	Open bool `json:"open"`
-}
-
-// Todo represents a todo.
-type Todo struct {
-	ID int `json:"id"`
-	Text string `json:"text"`
-	Done bool `json:"done"`
-	Editing bool `json:"editing"`
-}
-
-// TodoItemInput is the user-facing input type.
-type TodoItemInput struct {
-	ScopeID string // Optional: if empty, random ID is generated
-	BfParent string // Optional: parent scope id
-	BfMount string // Optional: slot id in parent
-	Todo Todo
-	OnToggle interface{}
-	OnDelete interface{}
-	OnStartEdit interface{}
-	OnFinishEdit interface{}
-}
-
-// TodoItemProps is the props type for the TodoItem component.
-type TodoItemProps struct {
-	ScopeID string `json:"scopeID"`
-	BfIsRoot bool `json:"-"`
-	BfIsChild bool `json:"-"`
-	BfParent string `json:"-"`
-	BfMount string `json:"-"`
-	Scripts *bf.ScriptCollector `json:"-"`
-	Todo Todo `json:"todo"`
-	OnToggle interface{} `json:"onToggle"`
-	OnDelete interface{} `json:"onDelete"`
-	OnStartEdit interface{} `json:"onStartEdit"`
-	OnFinishEdit interface{} `json:"onFinishEdit"`
-}
-
-// Filter is a string type.
-type Filter = string
-
-// TodoAppInput is the user-facing input type.
-type TodoAppInput struct {
-	ScopeID string // Optional: if empty, random ID is generated
-	BfParent string // Optional: parent scope id
-	BfMount string // Optional: slot id in parent
-	InitialTodos []Todo
-}
-
-// TodoAppProps is the props type for the TodoApp component.
-type TodoAppProps struct {
-	ScopeID string `json:"scopeID"`
-	BfIsRoot bool `json:"-"`
-	BfIsChild bool `json:"-"`
-	BfParent string `json:"-"`
-	BfMount string `json:"-"`
-	Scripts *bf.ScriptCollector `json:"-"`
-	InitialTodos []Todo `json:"initialTodos"`
-	Todos []Todo `json:"todos"`
-	NewText string `json:"newText"`
-	Filter Filter `json:"filter"`
-	TodoItems []TodoItemProps `json:"-"`
-}
-
-// CounterInput is the user-facing input type.
-type CounterInput struct {
-	ScopeID string // Optional: if empty, random ID is generated
-	BfParent string // Optional: parent scope id
-	BfMount string // Optional: slot id in parent
-	Initial int
-}
-
-// CounterProps is the props type for the Counter component.
-type CounterProps struct {
-	ScopeID string `json:"scopeID"`
-	BfIsRoot bool `json:"-"`
-	BfIsChild bool `json:"-"`
-	BfParent string `json:"-"`
-	BfMount string `json:"-"`
-	Scripts *bf.ScriptCollector `json:"-"`
-	Initial int `json:"initial"`
-	Count int `json:"count"`
-	Doubled int `json:"doubled"`
-}
-
 // Message represents a message.
 type Message struct {
 	ID int `json:"id"`
@@ -143,6 +43,78 @@ type AIChatInteractiveProps struct {
 	Input string `json:"input"`
 	StreamingText string `json:"streamingText"`
 	IsStreaming bool `json:"isStreaming"`
+}
+
+// PortalExampleInput is the user-facing input type.
+type PortalExampleInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// PortalExampleProps is the props type for the PortalExample component.
+type PortalExampleProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Open bool `json:"open"`
+}
+
+// ConditionalReturnInput is the user-facing input type.
+type ConditionalReturnInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Variant string
+}
+
+// ConditionalReturnProps is the props type for the ConditionalReturn component.
+type ConditionalReturnProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Variant string `json:"variant"`
+	Count int `json:"count"`
+}
+
+// Todo represents a todo.
+type Todo struct {
+	ID int `json:"id"`
+	Text string `json:"text"`
+	Done bool `json:"done"`
+	Editing bool `json:"editing"`
+}
+
+// Filter is a string type.
+type Filter = string
+
+// TodoAppInput is the user-facing input type.
+type TodoAppInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	InitialTodos []Todo
+}
+
+// TodoAppProps is the props type for the TodoApp component.
+type TodoAppProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	InitialTodos []Todo `json:"initialTodos"`
+	Todos []Todo `json:"todos"`
+	NewText string `json:"newText"`
+	Filter Filter `json:"filter"`
+	TodoItems []TodoItemProps `json:"-"`
 }
 
 // ReactiveChildInput is the user-facing input type.
@@ -253,24 +225,43 @@ type PropsReactivityComparisonProps struct {
 	DestructuredStyleChildSlot4 DestructuredStyleChildProps `json:"-"`
 }
 
-// ConditionalReturnInput is the user-facing input type.
-type ConditionalReturnInput struct {
+// CounterInput is the user-facing input type.
+type CounterInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Variant string
+	Initial int
 }
 
-// ConditionalReturnProps is the props type for the ConditionalReturn component.
-type ConditionalReturnProps struct {
+// CounterProps is the props type for the Counter component.
+type CounterProps struct {
 	ScopeID string `json:"scopeID"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Variant string `json:"variant"`
+	Initial int `json:"initial"`
 	Count int `json:"count"`
+	Doubled int `json:"doubled"`
+}
+
+// FormInput is the user-facing input type.
+type FormInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// FormProps is the props type for the Form component.
+type FormProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Accepted bool `json:"accepted"`
 }
 
 // TodoAppSSRInput is the user-facing input type.
@@ -294,6 +285,33 @@ type TodoAppSSRProps struct {
 	NewText string `json:"newText"`
 	Filter Filter `json:"filter"`
 	TodoItems []TodoItemProps `json:"-"`
+}
+
+// TodoItemInput is the user-facing input type.
+type TodoItemInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Todo Todo
+	OnToggle interface{}
+	OnDelete interface{}
+	OnStartEdit interface{}
+	OnFinishEdit interface{}
+}
+
+// TodoItemProps is the props type for the TodoItem component.
+type TodoItemProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Todo Todo `json:"todo"`
+	OnToggle interface{} `json:"onToggle"`
+	OnDelete interface{} `json:"onDelete"`
+	OnStartEdit interface{} `json:"onStartEdit"`
+	OnFinishEdit interface{} `json:"onFinishEdit"`
 }
 
 // ToggleItemInput is the user-facing input type.
@@ -337,22 +355,22 @@ type ToggleProps struct {
 	ToggleItems []ToggleItemProps `json:"toggleItems"`
 }
 
-// FormInput is the user-facing input type.
-type FormInput struct {
-	ScopeID string // Optional: if empty, random ID is generated
-	BfParent string // Optional: parent scope id
-	BfMount string // Optional: slot id in parent
-}
+// NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.
+func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "AIChatInteractive_" + randomID(6)
+	}
 
-// FormProps is the props type for the Form component.
-type FormProps struct {
-	ScopeID string `json:"scopeID"`
-	BfIsRoot bool `json:"-"`
-	BfIsChild bool `json:"-"`
-	BfParent string `json:"-"`
-	BfMount string `json:"-"`
-	Scripts *bf.ScriptCollector `json:"-"`
-	Accepted bool `json:"accepted"`
+	return AIChatInteractiveProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Messages: nil,
+		Input: "",
+		StreamingText: "",
+		IsStreaming: false,
+	}
 }
 
 // NewPortalExampleProps creates PortalExampleProps from PortalExampleInput.
@@ -370,22 +388,19 @@ func NewPortalExampleProps(in PortalExampleInput) PortalExampleProps {
 	}
 }
 
-// NewTodoItemProps creates TodoItemProps from TodoItemInput.
-func NewTodoItemProps(in TodoItemInput) TodoItemProps {
+// NewConditionalReturnProps creates ConditionalReturnProps from ConditionalReturnInput.
+func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps {
 	scopeID := in.ScopeID
 	if scopeID == "" {
-		scopeID = "TodoItem_" + randomID(6)
+		scopeID = "ConditionalReturn_" + randomID(6)
 	}
 
-	return TodoItemProps{
+	return ConditionalReturnProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
-		Todo: in.Todo,
-		OnToggle: in.OnToggle,
-		OnDelete: in.OnDelete,
-		OnStartEdit: in.OnStartEdit,
-		OnFinishEdit: in.OnFinishEdit,
+		Variant: in.Variant,
+		Count: 0,
 	}
 }
 
@@ -417,41 +432,6 @@ func NewTodoAppProps(in TodoAppInput) TodoAppProps {
 		Todos: in.InitialTodos,
 		NewText: "",
 		Filter: "all",
-	}
-}
-
-// NewCounterProps creates CounterProps from CounterInput.
-func NewCounterProps(in CounterInput) CounterProps {
-	scopeID := in.ScopeID
-	if scopeID == "" {
-		scopeID = "Counter_" + randomID(6)
-	}
-
-	return CounterProps{
-		ScopeID: scopeID,
-		BfParent: in.BfParent,
-		BfMount: in.BfMount,
-		Initial: in.Initial,
-		Count: in.Initial,
-		Doubled: in.Initial * 2,
-	}
-}
-
-// NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.
-func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps {
-	scopeID := in.ScopeID
-	if scopeID == "" {
-		scopeID = "AIChatInteractive_" + randomID(6)
-	}
-
-	return AIChatInteractiveProps{
-		ScopeID: scopeID,
-		BfParent: in.BfParent,
-		BfMount: in.BfMount,
-		Messages: nil,
-		Input: "",
-		StreamingText: "",
-		IsStreaming: false,
 	}
 }
 
@@ -565,19 +545,35 @@ func NewPropsReactivityComparisonProps(in PropsReactivityComparisonInput) PropsR
 	}
 }
 
-// NewConditionalReturnProps creates ConditionalReturnProps from ConditionalReturnInput.
-func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps {
+// NewCounterProps creates CounterProps from CounterInput.
+func NewCounterProps(in CounterInput) CounterProps {
 	scopeID := in.ScopeID
 	if scopeID == "" {
-		scopeID = "ConditionalReturn_" + randomID(6)
+		scopeID = "Counter_" + randomID(6)
 	}
 
-	return ConditionalReturnProps{
+	return CounterProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
-		Variant: in.Variant,
-		Count: 0,
+		Initial: in.Initial,
+		Count: in.Initial,
+		Doubled: in.Initial * 2,
+	}
+}
+
+// NewFormProps creates FormProps from FormInput.
+func NewFormProps(in FormInput) FormProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "Form_" + randomID(6)
+	}
+
+	return FormProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Accepted: false,
 	}
 }
 
@@ -609,6 +605,25 @@ func NewTodoAppSSRProps(in TodoAppSSRInput) TodoAppSSRProps {
 		Todos: in.InitialTodos,
 		NewText: "",
 		Filter: "all",
+	}
+}
+
+// NewTodoItemProps creates TodoItemProps from TodoItemInput.
+func NewTodoItemProps(in TodoItemInput) TodoItemProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "TodoItem_" + randomID(6)
+	}
+
+	return TodoItemProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Todo: in.Todo,
+		OnToggle: in.OnToggle,
+		OnDelete: in.OnDelete,
+		OnStartEdit: in.OnStartEdit,
+		OnFinishEdit: in.OnFinishEdit,
 	}
 }
 
@@ -648,20 +663,5 @@ func NewToggleProps(in ToggleInput) ToggleProps {
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
 		ToggleItems: toggleItems,
-	}
-}
-
-// NewFormProps creates FormProps from FormInput.
-func NewFormProps(in FormInput) FormProps {
-	scopeID := in.ScopeID
-	if scopeID == "" {
-		scopeID = "Form_" + randomID(6)
-	}
-
-	return FormProps{
-		ScopeID: scopeID,
-		BfParent: in.BfParent,
-		BfMount: in.BfMount,
-		Accepted: false,
 	}
 }

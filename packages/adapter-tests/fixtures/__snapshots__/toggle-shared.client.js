@@ -1,4 +1,4 @@
-import { $, $t, __bfSlot, createComponent, createEffect, createSignal, hydrate, initChild, insert, qsaChildScopes, renderChild, styleToCss } from '@barefootjs/client/runtime'
+import { $, $t, __bfSlot, createComponent, createEffect, createSignal, hydrate, initChild, insert, mapArray, renderChild, styleToCss } from '@barefootjs/client/runtime'
 
 export function initToggleItem(__scope, _p = {}) {
   if (!__scope) return
@@ -43,14 +43,10 @@ export function initToggle(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
-  // Initialize static array children (hydrate skips nested instances)
-  if (_s1) {
-    const __childScopes = qsaChildScopes(_s1, `[bf-h="${__scopeId}"][bf-m="s0"], [bf-s$="_s0"]`)
-    __childScopes.forEach((childScope, __idx) => {
-      const item = toggleItems[__idx]
-      initChild('ToggleItem__69f56292', childScope, { get label() { return item.label }, get defaultOn() { return item.defaultOn } })
-    })
-  }
+  mapArray(() => toggleItems, _s1, (item) => String(item.label), (item, __idx, __existing) => {
+    if (__existing) { initChild('ToggleItem__69f56292', __existing, { get label() { return item().label }, get defaultOn() { return item().defaultOn } }); return __existing }
+    return createComponent('ToggleItem__69f56292', { get label() { return item().label }, get defaultOn() { return item().defaultOn } }, item().label)
+  }, 'l0')
 
 }
 

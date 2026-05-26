@@ -110,9 +110,10 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     expect(clientJs).not.toMatch(/\breconcileList\s*\(/)
   })
 
-  test('static prop array stays static', () => {
-    // `items` is a non-destructured prop; the AST is just an
-    // Identifier, no calls. Should still take the static path.
+  test('prop array compiles to mapArray (#1586)', () => {
+    // `props.items` is a direct prop reference — props are always
+    // potentially reactive (parent may pass signal getters), so the
+    // loop must use mapArray for reconciliation.
     const source = `
       export function List(props: { items: string[] }) {
         return (
@@ -124,8 +125,7 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     `
 
     const clientJs = getClientJs(source, 'List.tsx')
-    expect(clientJs).not.toMatch(/\bmapArray\s*\(/)
-    expect(clientJs).not.toMatch(/\breconcileList\s*\(/)
+    expect(clientJs).toMatch(/\bmapArray\s*\(/)
   })
 
   test('unrecognised-call chain with filter now reconciles', () => {
