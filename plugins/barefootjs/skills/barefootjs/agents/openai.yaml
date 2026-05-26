@@ -1,0 +1,3 @@
+interface:
+  display_name: "BarefootJS"
+  short_description: "Build, inspect, and debug UI components with the bf CLI"
