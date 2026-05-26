@@ -39,6 +39,21 @@ The full walkthrough — adapter / CSS choices, generated layout, and editing th
 
 ---
 
+## AI-Assisted Development with Claude Code
+
+BarefootJS ships a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skill that gives Claude deep knowledge of the compiler, IR, CLI, and component system — so it can build, test, and debug BarefootJS components autonomously.
+
+**Install the skill in two commands:**
+
+```sh
+/plugin marketplace add piconic-ai/barefootjs
+/plugin install barefootjs@barefootjs
+```
+
+Once installed, Claude can use the `bf` CLI, write IR tests, trace signal graphs, and scaffold components — all without reading source files. See [AI-native Development](./docs/core/core-concepts/ai-native.md) for the full workflow.
+
+---
+
 ## Design Principles
 
 - **Backend Freedom** — Same JSX works with Hono, Go, Mojolicious, etc. No Node.js lock-in.

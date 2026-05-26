@@ -66,6 +66,17 @@ When nothing in the registry fits, `bf gen component <name> <comps...>` scaffold
 
 **Visual preview**: hosted previews live at [ui.barefootjs.dev/components/&lt;name&gt;](https://ui.barefootjs.dev). Standalone `bf preview` for npm-installed projects is tracked in [#885](https://github.com/piconic-ai/barefootjs/issues/885).
 
+## Claude Code Skill
+
+BarefootJS publishes a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skill that gives Claude deep knowledge of the compiler, IR, CLI, and component system. Install it and Claude can build, test, and debug BarefootJS projects autonomously:
+
+```sh
+/plugin marketplace add piconic-ai/barefootjs
+/plugin install barefootjs@barefootjs
+```
+
+With the skill active, Claude understands `bf` CLI commands, IR test patterns, signal graphs, adapter output, and error codes — no manual prompting needed.
+
 ## Agent Loop
 
 The same workflow driven by an AI agent — say, "add a settings form":
