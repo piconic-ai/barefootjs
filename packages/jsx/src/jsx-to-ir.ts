@@ -2855,8 +2855,10 @@ function transformMapCall(
   // the signal accessor at renderItem body entry. No more skip.
   const callsReactive = exprCallsReactiveGetters(arrayExpr, ctx)
   const hasCalls = exprHasFunctionCalls(arrayExpr)
+  const isDirectPropArray = method !== 'flatMap' && ctx.patterns.props.some(p => p.pattern.test(array))
   const isStaticArray =
     !isSignalOrMemoArray(array, ctx)
+    && !isDirectPropArray
     && !hasCalls
 
   // Collect nested components for both static and dynamic arrays.

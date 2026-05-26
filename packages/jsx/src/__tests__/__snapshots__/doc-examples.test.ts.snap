@@ -4119,7 +4119,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L215 — (no label) 1`] = `
-"import { $, createComponent, hydrate, initChild, qsaChildScopes, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:TodoItem */'
 
 
@@ -4131,14 +4131,10 @@ export function initTodoList(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
-  // Initialize static array children (hydrate skips nested instances)
-  if (_s1) {
-    const __childScopes = qsaChildScopes(_s1, \`[bf-h="\${__scopeId}"][bf-m="s0"], [bf-s$="_s0"]\`)
-    __childScopes.forEach((childScope, __idx) => {
-      const item = items[__idx]
-      initChild('TodoItem', childScope, { get "..."() { return item } })
-    })
-  }
+  mapArray(() => items, _s1, (item) => String(item.id), (item, __idx, __existing) => {
+    if (__existing) { initChild('TodoItem', __existing, { get "..."() { return item() } }); return __existing }
+    return createComponent('TodoItem', { get "..."() { return item() } }, item().id)
+  }, 'l0')
 
 }
 

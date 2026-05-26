@@ -1428,14 +1428,11 @@ describe('ref callback re-invocation on remount under the same key (#1244)', () 
     expect(c.clientJs).toContain('const __el = __existing ??')
   })
 
-  test('static-array .map(): ref callback closing over loop param stays raw (no signal-accessor wrap)', () => {
-    // Static-array loops emit `forEach((param, idx) => ...)` where `param`
-    // is the raw item value, not a signal accessor. A ref callback that
-    // closes over `param` (e.g. `ref={(el) => map.set(it.id, el)}`) must
-    // therefore NOT be wrapped via `wrapLoopParamAsAccessor` — that would
-    // rewrite `it.id` to `it().id`, throwing TypeError at runtime ("it is
-    // not a function"). Mirrors how `reactiveTexts` / `reactiveAttrs` are
-    // already passed through unwrapped on the static path.
+  test('prop-array .map(): ref callback closing over loop param uses signal accessor (#1586)', () => {
+    // Prop arrays compile to `mapArray` where the item param is a signal
+    // accessor. A ref callback closing over the param (e.g.
+    // `ref={(el) => map.set(it.id, el)}`) gets rewritten to `it().id`
+    // because `it` is a signal accessor in the mapArray renderItem body.
     const src = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -1455,8 +1452,7 @@ describe('ref callback re-invocation on remount under the same key (#1244)', () 
     `
     const c = compile(src)
     expectNoFatalErrors(c)
-    expect(c.clientJs).toContain('refMap.set(it.id')
-    expect(c.clientJs).not.toMatch(/refMap\.set\(it\(\)\.id/)
+    expect(c.clientJs).toContain('refMap.set(it().id')
   })
 
   test('static inner .map() under reactive outer: ref callback closing over inner param stays raw', () => {

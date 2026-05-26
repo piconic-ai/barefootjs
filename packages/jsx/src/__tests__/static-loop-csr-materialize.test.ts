@@ -77,9 +77,10 @@ describe('#1247 — static-loop CSR self-heal', () => {
     expect(clientJs).not.toMatch(/if \(!__iterEl\)/)
   })
 
-  test('safe-prop array (no init-scope local) does NOT emit the branch', () => {
-    // `props.items` is directly usable in the CSR template — no fallback
-    // needed.
+  test('direct prop array uses mapArray, not static forEach (#1586)', () => {
+    // `props.items` is a direct prop reference — props are always
+    // potentially reactive, so the compiler promotes to mapArray.
+    // mapArray handles CSR mount natively (no materialize needed).
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -94,7 +95,8 @@ describe('#1247 — static-loop CSR self-heal', () => {
       }
     `
     const clientJs = getClientJs(source, 'PropList.tsx')
-    expect(clientJs).not.toMatch(/if \(!__iterEl\)/)
+    expect(clientJs).toMatch(/\bmapArray\s*\(/)
+    expect(clientJs).not.toMatch(/\.forEach\s*\(/)
   })
 
   test('materialize branch uses raw destructured param refs (no __bfItem())', () => {
