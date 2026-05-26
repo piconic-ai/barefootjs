@@ -8,6 +8,7 @@ import type { AttrMeta } from '../types'
 import { isBooleanAttr } from '../html-constants'
 import type { ClientJsContext } from './types'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils'
+import { createStringProtector } from './html-template'
 
 /**
  * Generate JS statements to update a DOM attribute reactively.
@@ -56,7 +57,40 @@ export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContex
   // Skip if the component already uses props object access (not destructuring)
   if (ctx.propsObjectName) return expr
 
-  let result = expr
+  // Protect string literals AND template-literal static segments so prop names
+  // inside CSS selectors (e.g. [class*="size-"]) and class values (e.g. "size-9")
+  // are not replaced. Template literals like `foo ${x} bar` have static parts
+  // ("foo ", " bar") that should never undergo prop substitution.
+  const strings: string[] = []
+  const protect = (s: string): string => {
+    // Protect single/double-quoted strings
+    s = s.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, (match) => {
+      const idx = strings.length
+      strings.push(match)
+      return `__STRLIT_${idx}__`
+    })
+    // Protect template-literal static segments (text outside ${...}).
+    // Match a backtick-enclosed template, then replace only the static parts.
+    s = s.replace(/`([^`]*)`/g, (_full, inner: string) => {
+      // Split on ${...} interpolations (preserving them)
+      const parts = inner.split(/(\$\{[^}]*\})/g)
+      const mapped = parts.map(part => {
+        if (part.startsWith('${')) return part
+        // Static segment — protect it
+        const idx = strings.length
+        strings.push(part)
+        return `__STRLIT_${idx}__`
+      })
+      return '`' + mapped.join('') + '`'
+    })
+    return s
+  }
+  const restore = (s: string): string => {
+    return s.replace(/__STRLIT_(\d+)__/g, (_, idx) => strings[Number(idx)])
+  }
+
+  let result = protect(expr)
+
   for (const prop of ctx.propsParams) {
     if (prop.name === 'children') continue
     const pattern = new RegExp(`(?<![-.])\\b${prop.name}\\b`, 'g')
@@ -69,7 +103,7 @@ export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContex
     result = result.replace(new RegExp(`(?<![-.])\\b${prop.name}\\b`, 'g'), replacement)
   }
 
-  return result
+  return restore(result)
 }
 
 /** Emit createEffect blocks that update text nodes for reactive expressions. */
