@@ -1,6 +1,5 @@
-// Auto-generated preview. Customize by editing this file.
-
 import { Button } from '../button'
+import { PlusIcon, XIcon, CheckIcon } from '../icon'
 
 export function Default() {
   return <Button>Button</Button>
@@ -25,9 +24,9 @@ export function Sizes() {
       <Button size="default">Default</Button>
       <Button size="sm">Sm</Button>
       <Button size="lg">Lg</Button>
-      <Button size="icon">Icon</Button>
-      <Button size="icon-sm">Icon-sm</Button>
-      <Button size="icon-lg">Icon-lg</Button>
+      <Button size="icon"><PlusIcon size="md" /></Button>
+      <Button size="icon-sm"><XIcon size="sm" /></Button>
+      <Button size="icon-lg"><CheckIcon size="lg" /></Button>
     </div>
   )
 }
