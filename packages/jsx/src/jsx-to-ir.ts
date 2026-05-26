@@ -2016,7 +2016,7 @@ function transformConditionalBranch(
   const callsReactive = exprCallsReactiveGetters(node, ctx)
   const hasCalls = exprHasFunctionCalls(node)
   const reactive = isReactiveExpression(exprText, ctx, node) || isReactiveOrigin(branchOrigin)
-  const needsSlot = reactive || callsReactive || hasCalls
+  const needsSlot = reactive || callsReactive
   const slotId = needsSlot ? generateSlotId(ctx) : null
   return {
     type: 'expression',
