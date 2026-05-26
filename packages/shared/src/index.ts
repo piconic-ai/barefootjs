@@ -24,3 +24,13 @@ export {
   BF_ASYNC_RESOLVE,
   BF_PARENT_SCOPE_PLACEHOLDER,
 } from './markers'
+
+export {
+  classifyDOMProp,
+  toHTMLAttrName,
+  toHTMLAttrNameRuntime,
+  isBooleanAttr,
+  isEventProp,
+  BOOLEAN_ATTRS,
+} from './dom-prop'
+export type { DOMPropKind, DOMPropClassification } from './dom-prop'

@@ -1,29 +1,6 @@
 /**
- * HTML boolean attributes that should be rendered without values.
- *
- * When true: render as attribute name only (e.g., `checked`)
- * When false/null/undefined: omit from output entirely
+ * HTML boolean attributes — re-exported from the shared classifier so the
+ * compiler keeps its existing import path while the source of truth lives
+ * in @barefootjs/shared/dom-prop.
  */
-export const BOOLEAN_ATTRS = new Set([
-  'checked',
-  'disabled',
-  'readonly',
-  'selected',
-  'required',
-  'hidden',
-  'autofocus',
-  'autoplay',
-  'controls',
-  'loop',
-  'muted',
-  'open',
-  'multiple',
-  'novalidate',
-])
-
-/**
- * Check if an attribute name is a boolean attribute.
- */
-export function isBooleanAttr(name: string): boolean {
-  return BOOLEAN_ATTRS.has(name.toLowerCase())
-}
+export { BOOLEAN_ATTRS, isBooleanAttr } from '@barefootjs/shared'

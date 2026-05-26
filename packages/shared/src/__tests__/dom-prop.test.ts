@@ -1,0 +1,172 @@
+import { describe, test, expect } from 'bun:test'
+import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, isBooleanAttr, isEventProp } from '../dom-prop'
+
+describe('classifyDOMProp', () => {
+  test('children → skip', () => {
+    expect(classifyDOMProp('children')).toEqual({ kind: 'skip', attrName: 'children' })
+  })
+
+  test('ref → ref', () => {
+    expect(classifyDOMProp('ref')).toEqual({ kind: 'ref', attrName: 'ref' })
+  })
+
+  test('onClick → event', () => {
+    const c = classifyDOMProp('onClick')
+    expect(c.kind).toBe('event')
+  })
+
+  test('onDoubleClick → event', () => {
+    expect(classifyDOMProp('onDoubleClick').kind).toBe('event')
+  })
+
+  test('on (two chars) → attr, not event', () => {
+    expect(classifyDOMProp('on').kind).toBe('attr')
+  })
+
+  test('once → attr, not event (third char lowercase)', () => {
+    expect(classifyDOMProp('once').kind).toBe('attr')
+  })
+
+  test('style → style', () => {
+    expect(classifyDOMProp('style')).toEqual({ kind: 'style', attrName: 'style' })
+  })
+
+  test('value → property', () => {
+    expect(classifyDOMProp('value')).toEqual({ kind: 'property', attrName: 'value' })
+  })
+
+  test('checked → property', () => {
+    expect(classifyDOMProp('checked')).toEqual({ kind: 'property', attrName: 'checked' })
+  })
+
+  test('disabled → boolean', () => {
+    const c = classifyDOMProp('disabled')
+    expect(c.kind).toBe('boolean')
+    expect(c.attrName).toBe('disabled')
+  })
+
+  test('hidden → boolean', () => {
+    expect(classifyDOMProp('hidden').kind).toBe('boolean')
+  })
+
+  test('className → attr with attrName "class"', () => {
+    expect(classifyDOMProp('className')).toEqual({ kind: 'attr', attrName: 'class' })
+  })
+
+  test('htmlFor → attr with attrName "for"', () => {
+    expect(classifyDOMProp('htmlFor')).toEqual({ kind: 'attr', attrName: 'for' })
+  })
+
+  test('strokeWidth → attr with kebab-case attrName', () => {
+    expect(classifyDOMProp('strokeWidth')).toEqual({ kind: 'attr', attrName: 'stroke-width' })
+  })
+
+  test('fillOpacity → attr with kebab-case attrName', () => {
+    expect(classifyDOMProp('fillOpacity')).toEqual({ kind: 'attr', attrName: 'fill-opacity' })
+  })
+
+  test('viewBox → attr with preserved camelCase', () => {
+    expect(classifyDOMProp('viewBox')).toEqual({ kind: 'attr', attrName: 'viewBox' })
+  })
+
+  test('preserveAspectRatio → attr with preserved camelCase', () => {
+    expect(classifyDOMProp('preserveAspectRatio')).toEqual({ kind: 'attr', attrName: 'preserveAspectRatio' })
+  })
+
+  test('data-x → attr passthrough', () => {
+    expect(classifyDOMProp('data-x')).toEqual({ kind: 'attr', attrName: 'data-x' })
+  })
+
+  test('aria-label → attr passthrough', () => {
+    expect(classifyDOMProp('aria-label')).toEqual({ kind: 'attr', attrName: 'aria-label' })
+  })
+})
+
+describe('toHTMLAttrName (compile-time)', () => {
+  test('className → class', () => {
+    expect(toHTMLAttrName('className')).toBe('class')
+  })
+
+  test('htmlFor → for', () => {
+    expect(toHTMLAttrName('htmlFor')).toBe('for')
+  })
+
+  test('strokeWidth → stroke-width', () => {
+    expect(toHTMLAttrName('strokeWidth')).toBe('stroke-width')
+  })
+
+  test('tabIndex passes through (no generic kebab)', () => {
+    expect(toHTMLAttrName('tabIndex')).toBe('tabIndex')
+  })
+
+  test('autoFocus passes through (no generic kebab)', () => {
+    expect(toHTMLAttrName('autoFocus')).toBe('autoFocus')
+  })
+})
+
+describe('toHTMLAttrNameRuntime', () => {
+  test('className → class', () => {
+    expect(toHTMLAttrNameRuntime('className')).toBe('class')
+  })
+
+  test('htmlFor → for', () => {
+    expect(toHTMLAttrNameRuntime('htmlFor')).toBe('for')
+  })
+
+  test('strokeWidth → stroke-width', () => {
+    expect(toHTMLAttrNameRuntime('strokeWidth')).toBe('stroke-width')
+  })
+
+  test('viewBox stays camelCase (SVG XML attr)', () => {
+    expect(toHTMLAttrNameRuntime('viewBox')).toBe('viewBox')
+  })
+
+  test('clipPathUnits stays camelCase (SVG XML attr)', () => {
+    expect(toHTMLAttrNameRuntime('clipPathUnits')).toBe('clipPathUnits')
+  })
+
+  test('generic camelCase → kebab-case', () => {
+    expect(toHTMLAttrNameRuntime('dataTestId')).toBe('data-test-id')
+  })
+})
+
+describe('isBooleanAttr', () => {
+  test('standard booleans', () => {
+    for (const attr of ['checked', 'disabled', 'readonly', 'selected', 'required', 'hidden', 'autofocus', 'autoplay', 'controls', 'loop', 'muted', 'open', 'multiple', 'novalidate']) {
+      expect(isBooleanAttr(attr)).toBe(true)
+    }
+  })
+
+  test('non-booleans', () => {
+    expect(isBooleanAttr('class')).toBe(false)
+    expect(isBooleanAttr('style')).toBe(false)
+    expect(isBooleanAttr('value')).toBe(false)
+  })
+
+  test('case-insensitive', () => {
+    expect(isBooleanAttr('DISABLED')).toBe(true)
+    expect(isBooleanAttr('Checked')).toBe(true)
+  })
+})
+
+describe('isEventProp', () => {
+  test('onClick → true', () => {
+    expect(isEventProp('onClick')).toBe(true)
+  })
+
+  test('onKeyDown → true', () => {
+    expect(isEventProp('onKeyDown')).toBe(true)
+  })
+
+  test('on → false (too short)', () => {
+    expect(isEventProp('on')).toBe(false)
+  })
+
+  test('once → false (third char lowercase)', () => {
+    expect(isEventProp('once')).toBe(false)
+  })
+
+  test('onion → false (third char lowercase)', () => {
+    expect(isEventProp('onion')).toBe(false)
+  })
+})
