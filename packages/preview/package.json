@@ -1,7 +1,7 @@
 {
   "name": "@barefootjs/preview",
-  "version": "0.1.0",
-  "description": "Lightweight preview dev server for BarefootJS components",
+  "version": "0.2.0",
+  "description": "CSR preview dev server for BarefootJS components",
   "type": "module",
   "private": true,
   "exports": {
@@ -10,9 +10,7 @@
     }
   },
   "dependencies": {
-    "@barefootjs/hono": "workspace:*",
-    "@barefootjs/jsx": "workspace:*",
-    "hono": "^4.6.0"
+    "@barefootjs/jsx": "workspace:*"
   },
   "devDependencies": {
     "@unocss/cli": "^66.0.0",

@@ -1,15 +1,11 @@
-/**
- * barefoot preview <component>
- *
- * Entry point: find previews, compile, serve.
- */
-
-/** @jsxImportSource hono/jsx */
+// barefoot preview <component>
+//
+// Entry point: find previews, compile (CSR bundle), serve static files.
 
 import { resolve } from 'node:path'
 import { writeFileSync } from 'node:fs'
 import { compile } from './compile'
-import { createPreviewApp, startServer, pascalToTitle, type PreviewEntry } from './server'
+import { startServer } from './server'
 
 const ROOT_DIR = resolve(import.meta.dir, '../../..')
 const UI_DIR = resolve(ROOT_DIR, 'ui/components/ui')
@@ -47,35 +43,15 @@ export async function runPreview(componentName: string) {
 
   console.log(`Found ${previewNames.length} previews: ${previewNames.join(', ')}`)
 
-  // 3. Compile
+  // 3. Compile (CSR bundle)
   console.log('\nCompiling...')
-  const result = await compile({ previewsPath, previewNames })
+  const result = await compile({ previewsPath, previewNames, componentName })
 
-  // 4. Import compiled previews module
-  const previewsModule = await import(result.previewsCompiledPath)
-
-  // 5. Build preview entries
-  const previews: PreviewEntry[] = previewNames.map(name => ({
-    name,
-    displayName: pascalToTitle(name),
-  }))
-
-  // 6. Create and start server
-  const app = createPreviewApp({
-    previews,
-    componentName: componentName.charAt(0).toUpperCase() + componentName.slice(1),
-    renderPreview: (name: string) => {
-      const Preview = previewsModule[name]
-      if (!Preview) return <div>Preview "{name}" not found</div>
-      return <Preview />
-    },
-    port: DEFAULT_PORT,
-  })
-
-  startServer(app, DEFAULT_PORT)
+  // 4. Start static file server
+  startServer(result.distDir, DEFAULT_PORT)
 }
 
-// Run if called directly (not imported)
+// Run if called directly
 if (import.meta.main) {
   const componentArg = process.argv[2]
   if (componentArg) {

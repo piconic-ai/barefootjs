@@ -1,57 +1,37 @@
-/**
- * Preview compiler pipeline
- *
- * Compiles .previews.tsx and their dependencies into .preview-dist/.
- * Follows site/ui/build.ts patterns but minimal — only what previews need.
- */
+// Preview compiler pipeline (CSR mode)
+//
+// Bundles preview files for client-side rendering using Bun.build()
+// with a custom DOM-based JSX runtime. No Hono SSR at serve time.
 
-import { compileJSX, combineParentChildClientJs, formatError } from '@barefootjs/jsx'
-import { HonoAdapter } from '@barefootjs/hono/adapter'
-import { addScriptCollection } from '@barefootjs/hono/build'
-import { mkdir, readdir, symlink, lstat } from 'node:fs/promises'
-import { dirname, resolve, join, relative, basename } from 'node:path'
+import { mkdir, readdir } from 'node:fs/promises'
+import { resolve, relative, dirname } from 'node:path'
 import {
   hasUseClientDirective,
   discoverComponentFiles,
-  generateHash,
-} from '../../../cli/src/lib/build'
-import { resolveRelativeImports } from '../../../cli/src/lib/resolve-imports'
+} from '../../cli/src/lib/build'
 
 const ROOT_DIR = resolve(import.meta.dir, '../../..')
 const UI_COMPONENTS_DIR = resolve(ROOT_DIR, 'ui/components')
-const DOM_PKG_DIR = resolve(ROOT_DIR, 'packages/client')
 const DIST_DIR = resolve(ROOT_DIR, '.preview-dist')
-const DIST_COMPONENTS_DIR = resolve(DIST_DIR, 'components')
+const DOM_PKG_DIR = resolve(ROOT_DIR, 'packages/client')
+const JSX_RUNTIME_PATH = resolve(import.meta.dir, 'jsx-runtime.ts')
 
 export interface CompileOptions {
-  /** Absolute path to the .previews.tsx file */
   previewsPath: string
-  /** Preview export function names */
   previewNames: string[]
+  componentName: string
 }
 
 export interface CompileResult {
-  /** Compiled preview component path (for import in server) */
-  previewsCompiledPath: string
-  /** Map: componentName → { markedTemplate, clientJs? } */
-  manifest: Record<string, { markedTemplate: string; clientJs?: string }>
+  distDir: string
 }
 
 export async function compile(options: CompileOptions): Promise<CompileResult> {
-  const { previewsPath } = options
+  const { previewsPath, previewNames, componentName } = options
 
-  await mkdir(DIST_COMPONENTS_DIR, { recursive: true })
+  await mkdir(DIST_DIR, { recursive: true })
 
-  // 0. Symlink node_modules so compiled files resolve hono from the same instance as server
-  const distNodeModules = resolve(DIST_DIR, 'node_modules')
-  const previewNodeModules = resolve(ROOT_DIR, 'packages/preview/node_modules')
-  const symlinkExists = await lstat(distNodeModules).then(s => s.isSymbolicLink(), () => false)
-  if (!symlinkExists) {
-    await symlink(previewNodeModules, distNodeModules, 'dir')
-  }
-
-  // 1. Copy barefoot.js runtime — use the standalone runtime (reactive
-  //    primitives inlined) so the browser can load the file directly.
+  // 1. Copy barefoot.js runtime (for future interactive component support)
   const domDistFile = resolve(DOM_PKG_DIR, 'dist/runtime/standalone.js')
   if (!await Bun.file(domDistFile).exists()) {
     console.log('Building @barefootjs/client...')
@@ -73,179 +53,7 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   await Bun.write(resolve(DIST_DIR, 'globals.css'), tokensCSS + '\n' + globalsCSS)
   console.log('Generated: .preview-dist/globals.css')
 
-  // 3. Discover all component files (dependency compilation)
-  const componentFiles = await discoverComponentFiles(UI_COMPONENTS_DIR, {
-    skipDirs: ['__previews__', '__tests__', 'shared'],
-  })
-  // Add the previews file itself
-  const allFiles = [...componentFiles, previewsPath]
-
-  const manifest: Record<string, { markedTemplate: string; clientJs?: string }> = {
-    '__barefoot__': { markedTemplate: '', clientJs: 'barefoot.js' }
-  }
-
-  const adapter = new HonoAdapter()
-
-  // 4. Compile each "use client" component
-  for (const entryPath of allFiles) {
-    const sourceContent = await Bun.file(entryPath).text()
-    if (!hasUseClientDirective(sourceContent)) continue
-
-    const result = compileJSX(sourceContent, entryPath, { adapter })
-
-    const errors = result.errors.filter(e => e.severity === 'error')
-    const warnings = result.errors.filter(e => e.severity === 'warning')
-
-    if (warnings.length > 0) {
-      for (const w of warnings) {
-        console.warn(formatError(w, sourceContent, { projectDir: ROOT_DIR }))
-      }
-    }
-    if (errors.length > 0) {
-      for (const e of errors) {
-        console.error(formatError(e, sourceContent, { projectDir: ROOT_DIR }))
-      }
-      continue
-    }
-
-    const relativePath = relative(UI_COMPONENTS_DIR, entryPath)
-    const dirPath = dirname(relativePath)
-    const baseFileName = basename(entryPath)
-    const baseNameNoExt = baseFileName.replace('.tsx', '')
-
-    const outputDir = dirPath === '.' ? DIST_COMPONENTS_DIR : resolve(DIST_COMPONENTS_DIR, dirPath)
-    await mkdir(outputDir, { recursive: true })
-
-    let markedJsxContent = ''
-    let clientJsContent = ''
-
-    for (const file of result.files) {
-      if (file.type === 'markedTemplate') markedJsxContent = file.content
-      else if (file.type === 'clientJs') clientJsContent = file.content
-    }
-
-    // No marked JSX and no client JS — copy source with "use client" removed
-    if (!markedJsxContent && !clientJsContent) {
-      const transformed = sourceContent.replace(/^['"]use client['"];?\s*/m, '')
-      await Bun.write(resolve(outputDir, baseFileName), transformed)
-      manifest[baseNameNoExt] = { markedTemplate: `components/${relativePath}` }
-      continue
-    }
-
-    // Marked JSX but no client JS
-    if (markedJsxContent && !clientJsContent) {
-      await Bun.write(resolve(outputDir, baseFileName), markedJsxContent)
-      manifest[baseNameNoExt] = { markedTemplate: `components/${relativePath}` }
-      continue
-    }
-
-    // Write client JS with hash
-    const hash = generateHash(clientJsContent || markedJsxContent)
-    const clientJsFilename = `${baseNameNoExt}-${hash}.js`
-
-    if (clientJsContent) {
-      await Bun.write(resolve(outputDir, clientJsFilename), clientJsContent)
-      const clientJsRelativePath = dirPath === '.' ? clientJsFilename : `${dirPath}/${clientJsFilename}`
-      console.log(`Generated: .preview-dist/components/${clientJsRelativePath}`)
-    }
-
-    // Add script collection wrapper
-    if (markedJsxContent && clientJsContent) {
-      const clientJsRelPath = dirPath === '.' ? clientJsFilename : `${dirPath}/${clientJsFilename}`
-      const wrappedContent = addScriptCollection(markedJsxContent, baseNameNoExt, clientJsRelPath)
-      await Bun.write(resolve(outputDir, baseFileName), wrappedContent)
-    } else if (markedJsxContent) {
-      await Bun.write(resolve(outputDir, baseFileName), markedJsxContent)
-    }
-
-    console.log(`Generated: .preview-dist/components/${relativePath}`)
-
-    const clientJsPath = clientJsContent
-      ? `components/${dirPath === '.' ? clientJsFilename : `${dirPath}/${clientJsFilename}`}`
-      : undefined
-    manifest[baseNameNoExt] = { markedTemplate: `components/${relativePath}`, clientJs: clientJsPath }
-  }
-
-  // 5. Combine parent-child client JS
-  const files = new Map<string, string>()
-  for (const [name, entry] of Object.entries(manifest)) {
-    if (!entry.clientJs) continue
-    const filePath = resolve(DIST_DIR, entry.clientJs)
-    const exists = await Bun.file(filePath).exists()
-    if (exists) {
-      files.set(name, await Bun.file(filePath).text())
-    }
-  }
-  const combined = combineParentChildClientJs(files)
-  for (const [name, content] of combined) {
-    const entry = manifest[name]
-    if (!entry?.clientJs) continue
-    await Bun.write(resolve(DIST_DIR, entry.clientJs), content)
-    console.log(`Combined: ${entry.clientJs}`)
-  }
-
-  // 5b. Resolve relative imports. Surface BF053 diagnostics — preview
-  // generation hits the same strip path as the main build, so a
-  // dangling stripped binding would crash the previewed component at
-  // hydrate time with no clue at compile time. See #1227.
-  const { errors: resolveErrors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
-  for (const err of resolveErrors) console.error(formatError(err, undefined, { projectDir: ROOT_DIR }))
-
-  // 6. Rewrite imports and add JSX pragma in compiled .tsx files
-  const HONO_UTILS_PATH = resolve(ROOT_DIR, 'packages/adapter-hono/src/utils')
-  async function rewriteImports(dir: string) {
-    const entries = await readdir(dir, { withFileTypes: true })
-    for (const entry of entries) {
-      const fullPath = join(dir, entry.name)
-      if (entry.isDirectory()) {
-        await rewriteImports(fullPath)
-      } else if (entry.name.endsWith('.tsx')) {
-        let content = await Bun.file(fullPath).text()
-        let changed = false
-
-        // Rewrite @ui/ imports
-        if (content.includes('@ui/')) {
-          content = content.replace(/@ui\/components\/ui\//g, '@/components/ui/')
-          changed = true
-        }
-
-        // Rewrite @barefootjs/hono/utils → relative path to source
-        if (content.includes("@barefootjs/hono/utils")) {
-          const relPath = relative(dirname(fullPath), HONO_UTILS_PATH).replace(/\\/g, '/')
-          content = content.replace(/@barefootjs\/hono\/utils/g, relPath)
-          changed = true
-        }
-
-        // Add JSX pragma if missing (needed for Bun to use Hono's JSX)
-        if (!content.includes('@jsxImportSource')) {
-          content = '/** @jsxImportSource hono/jsx */\n' + content
-          changed = true
-        }
-
-        if (changed) {
-          await Bun.write(fullPath, content)
-        }
-      }
-    }
-  }
-  await rewriteImports(DIST_COMPONENTS_DIR)
-
-  // 7. Copy ui/types/ to .preview-dist/types/ (for ../../types imports)
-  const uiTypesDir = resolve(ROOT_DIR, 'ui/types')
-  const distTypesDir = resolve(DIST_DIR, 'types')
-  await mkdir(distTypesDir, { recursive: true })
-  const typesEntries = await readdir(uiTypesDir).catch(() => [] as string[])
-  for (const f of typesEntries) {
-    if (f.endsWith('.ts') || f.endsWith('.tsx')) {
-      let content = await Bun.file(resolve(uiTypesDir, f)).text()
-      if (f.endsWith('.tsx') && !content.includes('@jsxImportSource')) {
-        content = '/** @jsxImportSource hono/jsx */\n' + content
-      }
-      await Bun.write(resolve(distTypesDir, f), content)
-    }
-  }
-
-  // 8. Generate UnoCSS (run from site/ui where uno.config.ts lives)
+  // 3. Generate UnoCSS
   console.log('Generating UnoCSS...')
   const unoProc = Bun.spawn(
     ['bunx', 'unocss', '../../ui/components/**/*.tsx', './**/*.tsx', './dist/**/*.tsx',
@@ -259,13 +67,173 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   await unoProc.exited
   console.log('Generated: .preview-dist/uno.css')
 
-  // 9. Write manifest
-  await Bun.write(resolve(DIST_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2))
-  console.log('Generated: .preview-dist/manifest.json')
+  // 4. Generate browser entry point that imports previews and mounts them
+  const entrySource = generateEntryScript(previewsPath, previewNames, componentName)
+  const entryPath = resolve(DIST_DIR, '_entry.tsx')
+  await Bun.write(entryPath, entrySource)
 
-  // Determine compiled previews path relative to DIST
-  const previewsRelative = relative(UI_COMPONENTS_DIR, previewsPath)
-  const previewsCompiledPath = resolve(DIST_COMPONENTS_DIR, previewsRelative)
+  // 5. Bundle with Bun.build() using our DOM-based JSX runtime
+  console.log('Bundling for browser...')
+  const buildResult = await Bun.build({
+    entrypoints: [entryPath],
+    outdir: DIST_DIR,
+    target: 'browser',
+    minify: false,
+    sourcemap: 'inline',
+    define: {
+      'process.env.NODE_ENV': '"development"',
+    },
+    plugins: [jsxRuntimePlugin()],
+  })
 
-  return { previewsCompiledPath, manifest }
+  if (!buildResult.success) {
+    console.error('Bundle errors:')
+    for (const log of buildResult.logs) {
+      console.error(log)
+    }
+    throw new Error('Bundle failed')
+  }
+  console.log('Generated: .preview-dist/_entry.js')
+
+  // 6. Generate index.html
+  const html = generateHTML(componentName, previewNames)
+  await Bun.write(resolve(DIST_DIR, 'index.html'), html)
+  console.log('Generated: .preview-dist/index.html')
+
+  return { distDir: DIST_DIR }
+}
+
+function generateEntryScript(
+  previewsPath: string,
+  previewNames: string[],
+  componentName: string,
+): string {
+  const importPath = previewsPath
+  const names = previewNames.join(', ')
+  return `
+import { mount } from '${JSX_RUNTIME_PATH}'
+import { ${names} } from '${importPath}'
+
+const previews = { ${names} }
+const app = document.getElementById('preview-root')!
+
+for (const [name, Preview] of Object.entries(previews)) {
+  const section = document.createElement('div')
+  section.className = 'preview-section'
+  section.dataset.preview = name
+
+  const title = document.createElement('div')
+  title.className = 'preview-title'
+  title.textContent = name.replace(/([a-z])([A-Z])/g, '$1 $2')
+  section.appendChild(title)
+
+  const content = document.createElement('div')
+  mount((Preview as Function)(), content)
+  section.appendChild(content)
+
+  app.appendChild(section)
+}
+`
+}
+
+function generateHTML(componentName: string, previewNames: string[]): string {
+  const displayName = componentName.charAt(0).toUpperCase() + componentName.slice(1)
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${displayName} — Preview</title>
+  <link rel="stylesheet" href="/globals.css" />
+  <link rel="stylesheet" href="/uno.css" />
+  <style>
+    body {
+      padding: 2rem;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .preview-section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .preview-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+    #bf-theme-toggle {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      z-index: 9999;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--foreground);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    #bf-theme-toggle:hover { background: var(--accent); }
+    #bf-theme-toggle .sun { display: none; }
+    #bf-theme-toggle .moon { display: block; }
+    .dark #bf-theme-toggle .sun { display: block; }
+    .dark #bf-theme-toggle .moon { display: none; }
+  </style>
+</head>
+<body>
+  <h1>${displayName}</h1>
+  <div id="preview-root"></div>
+  <button id="bf-theme-toggle" type="button" aria-label="Toggle dark mode"
+    onclick="var r=document.documentElement;r.classList.add('theme-transition');r.classList.toggle('dark');setTimeout(function(){r.classList.remove('theme-transition')},300)">
+    <svg class="sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+    </svg>
+    <svg class="moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    </svg>
+  </button>
+  <script type="module" src="/_entry.js"></script>
+</body>
+</html>`
+}
+
+// Bun plugin: rewrite JSX import source to our DOM runtime for all
+// component files (they have no pragma, so Bun uses the configured default).
+// Files with an explicit @jsxImportSource pragma are left alone, but
+// we strip "use client" directives since they're meaningless in CSR.
+function jsxRuntimePlugin(): import('bun').BunPlugin {
+  return {
+    name: 'preview-jsx',
+    setup(build) {
+      build.onLoad({ filter: /\.tsx$/ }, async (args) => {
+        let contents = await Bun.file(args.path).text()
+
+        // Strip "use client" directive
+        contents = contents.replace(/^['"]use client['"];?\s*\n?/m, '')
+
+        // Strip existing @jsxImportSource pragmas
+        contents = contents.replace(/\/\*\*?\s*@jsxImportSource\s+[^\s*]+\s*\*\//g, '')
+
+        // Add our JSX runtime pragma
+        contents = `/** @jsxImportSource ${JSX_RUNTIME_PATH.replace(/\/jsx-runtime\.ts$/, '')} */\n${contents}`
+
+        return { contents, loader: 'tsx' }
+      })
+    },
+  }
 }
