@@ -20,6 +20,10 @@ export { ArrayValues }
 `,
   props: { items: ['a', 'b', 'c'] },
   expectedHtml: `
-    <ul bf-s="test" bf="s1"><!--bf-loop:l0--><li>a</li><li>b</li><li>c</li><!--bf-/loop:l0--></ul>
+    <ul bf-s="test" bf="s1">
+      <li data-key="a"><!--bf:s0-->a<!--/--></li>
+      <li data-key="b"><!--bf:s0-->b<!--/--></li>
+      <li data-key="c"><!--bf:s0-->c<!--/--></li>
+    </ul>
   `,
 })

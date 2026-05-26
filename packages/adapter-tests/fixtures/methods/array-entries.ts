@@ -21,6 +21,10 @@ export { ArrayEntries }
 `,
   props: { items: ['a', 'b', 'c'] },
   expectedHtml: `
-    <ul bf-s="test" bf="s1"><!--bf-loop:l0--><li>0: a</li><li>1: b</li><li>2: c</li><!--bf-/loop:l0--></ul>
+    <ul bf-s="test" bf="s2">
+      <li data-key="0"><!--bf:s0-->0<!--/-->: <!--bf:s1-->a<!--/--></li>
+      <li data-key="1"><!--bf:s0-->1<!--/-->: <!--bf:s1-->b<!--/--></li>
+      <li data-key="2"><!--bf:s0-->2<!--/-->: <!--bf:s1-->c<!--/--></li>
+    </ul>
   `,
 })

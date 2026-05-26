@@ -19,6 +19,10 @@ export { ArrayKeys }
 `,
   props: { items: ['a', 'b', 'c'] },
   expectedHtml: `
-    <ul bf-s="test" bf="s1"><!--bf-loop:l0--><li>0</li><li>1</li><li>2</li><!--bf-/loop:l0--></ul>
+    <ul bf-s="test" bf="s1">
+      <li data-key="0"><!--bf:s0-->0<!--/--></li>
+      <li data-key="1"><!--bf:s0-->1<!--/--></li>
+      <li data-key="2"><!--bf:s0-->2<!--/--></li>
+    </ul>
   `,
 })
