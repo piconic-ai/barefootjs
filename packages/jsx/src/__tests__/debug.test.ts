@@ -1146,6 +1146,51 @@ describe('buildWhyUpdate', () => {
     expect(signalDep).toBeDefined()
     expect(signalDep!.changedBy[0].via).toBe('addItem')
   })
+
+  test('includes classification and wrapReason for fallback bindings', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { formatTitle } from './format'
+
+      export function Page() {
+        const [, setFoo] = createSignal(0)
+        const page = 'home'
+        return <h1 onClick={() => setFoo(1)}>{formatTitle(page)}</h1>
+      }
+    `
+    const graph = buildComponentGraph(source, 'Page.tsx')
+    const fallback = graph.domBindings.find(d => d.classification === 'fallback' && d.type === 'text')
+    expect(fallback).toBeDefined()
+    const result = buildWhyUpdate(source, 'Page.tsx', fallback!.slotId)
+    expect(result).not.toBeNull()
+    expect(result!.classification).toBe('fallback')
+    expect(result!.wrapReason).toBeDefined()
+    expect(result!.deps).toHaveLength(0)
+  })
+
+  test('returns ambiguous result when multiple bindings share the same label', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TwoStyles() {
+        const [a, setA] = createSignal('red')
+        const [b, setB] = createSignal('blue')
+        return (
+          <div>
+            <div style={a()} />
+            <div style={b()} />
+            <button onClick={() => setA('green')}>A</button>
+          </div>
+        )
+      }
+    `
+    const result = buildWhyUpdate(source, 'TwoStyles.tsx', 'style')
+    expect(result).not.toBeNull()
+    expect(result!.ambiguous).toBeDefined()
+    expect(result!.ambiguous!.length).toBeGreaterThan(1)
+  })
 })
 
 describe('formatWhyUpdate', () => {
@@ -1169,5 +1214,25 @@ describe('formatWhyUpdate', () => {
     expect(output).toContain('style updates because:')
     expect(output).toContain('color changes from:')
     expect(output).toContain('setColor')
+  })
+
+  test('shows fallback note when binding is fallback-wrapped', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { formatTitle } from './format'
+
+      export function Page() {
+        const [, setFoo] = createSignal(0)
+        return <h1 onClick={() => setFoo(1)}>{formatTitle('x')}</h1>
+      }
+    `
+    const graph = buildComponentGraph(source, 'Page.tsx')
+    const fallback = graph.domBindings.find(d => d.classification === 'fallback' && d.type === 'text')
+    expect(fallback).toBeDefined()
+    const result = buildWhyUpdate(source, 'Page.tsx', fallback!.slotId)!
+    const output = formatWhyUpdate(result)
+    expect(output).toContain('fallback-wrapped binding')
+    expect(output).toContain('could not statically prove')
   })
 })
