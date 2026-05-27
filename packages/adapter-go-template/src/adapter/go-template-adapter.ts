@@ -3950,16 +3950,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `loopVarSet`. For `.keys()`, the user's param IS the index
     // (in the `$k, $_` position), so it needs `$name` — don't push
     // it to loopParamStack (`.` would resolve to the value, not key).
-    const prevLoopVars = new Set(this.loopVarSet)
+    // Push `''` instead — falsy, so the `currentLoopParam &&` guard
+    // in `identifier()` / `renderConditionExpr` short-circuits and
+    // no name ever matches the empty string.
+    const addedLoopVars: string[] = []
     if (loop.iterationShape === 'keys') {
       this.loopParamStack.push('')
       this.loopVarSet.add(param)
+      addedLoopVars.push(param)
     } else {
       this.loopParamStack.push(param)
-      if (rangeIndex !== '_') this.loopVarSet.add(rangeIndex)
+      if (rangeIndex !== '_') {
+        this.loopVarSet.add(rangeIndex)
+        addedLoopVars.push(rangeIndex)
+      }
     }
     const children = this.renderChildren(loop.children)
-    this.loopVarSet = prevLoopVars
+    for (const v of addedLoopVars) this.loopVarSet.delete(v)
     this.loopParamStack.pop()
     this.inLoop = false
 
