@@ -4798,6 +4798,141 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
+exports[`docs/core/reactivity/shared-state.md doc-examples L31 — (no label) 1`] = `
+"import { $, createComponent, createContext, createEffect, createSignal, hydrate, provideContext, useContext } from '@barefootjs/client/runtime'
+
+var PlaybackContext = PlaybackContext ?? createContext()
+
+export function initPlaybackProvider(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [elapsedMs, setElapsedMs] = createSignal(0)
+  const [playing, setPlaying] = createSignal(false)
+  const seek = (ms) => setElapsedMs(ms)
+  const toggle = () => setPlaying(p => !p)
+
+
+  // Provide context for child components
+  provideContext(PlaybackContext, { elapsedMs, playing, seek, toggle })
+}
+
+hydrate('PlaybackProvider', { init: initPlaybackProvider, template: (_p) => \`<div style="display:contents">\${_p.children}</div>\` })
+export function PlaybackProvider(_p, __bfKey) { return createComponent('PlaybackProvider', _p, __bfKey) }
+var PlaybackContext = PlaybackContext ?? createContext()
+
+export function initPlayer(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const handleMount = (el) => {
+    const ctx = useContext(PlaybackContext)
+    createEffect(() => {
+      el.textContent = \`\${Math.floor(ctx.elapsedMs() / 1000)}s\`
+    })
+  }
+
+  const [_s0] = $(__scope, 's0')
+
+  if (_s0) (handleMount)(_s0)
+}
+
+hydrate('Player', { init: initPlayer, template: (_p) => \`<div bf="s0">\${_p.children}</div>\` })
+export function Player(_p, __bfKey) { return createComponent('Player', _p, __bfKey) }
+var PlaybackContext = PlaybackContext ?? createContext()
+
+export function initTimelineBar(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const handleMount = (el) => {
+    const ctx = useContext(PlaybackContext)
+    el.addEventListener('click', (e) => {
+      const rect = el.getBoundingClientRect()
+      const ratio = (e.clientX - rect.left) / rect.width
+      ctx.seek(ratio * _p.duration)
+    })
+  }
+
+  const [_s0] = $(__scope, 's0')
+
+  if (_s0) (handleMount)(_s0)
+}
+
+hydrate('TimelineBar', { init: initTimelineBar, template: (_p) => \`<div class="timeline" bf="s0"></div>\` })
+export function TimelineBar(_p, __bfKey) { return createComponent('TimelineBar', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/shared-state.md doc-examples L96 — (no label) 1`] = `
+"import { $, createComponent, createEffect, createSignal, hydrate, onCleanup } from '@barefootjs/client/runtime'
+
+
+export function initPlayer(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [elapsedMs, setElapsedMs] = createSignal(0)
+  const handleMount = (el) => {
+    createEffect(() => {
+      el.dispatchEvent(new CustomEvent('playback:timeupdate', {
+        bubbles: true,
+        detail: { elapsedMs: elapsedMs() },
+      }))
+    })
+
+    const onSeek = ((e) => {
+      setElapsedMs(e.detail.ms)
+    })
+
+    document.addEventListener('playback:seek', onSeek)
+    onCleanup(() => document.removeEventListener('playback:seek', onSeek))
+  }
+
+  const [_s0] = $(__scope, 's0')
+
+  if (_s0) (handleMount)(_s0)
+}
+
+hydrate('Player', { init: initPlayer, template: (_p) => \`<div bf="s0"></div>\` })
+export function Player(_p, __bfKey) { return createComponent('Player', _p, __bfKey) }"
+`;
+
+exports[`docs/core/reactivity/shared-state.md doc-examples L125 — (no label) 1`] = `
+"import { $, createComponent, hydrate, onCleanup } from '@barefootjs/client/runtime'
+
+
+export function initTimelineBar(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const handleMount = (el) => {
+    const onTimeUpdate = ((e) => {
+      const ratio = e.detail.elapsedMs / _p.duration
+      el.style.setProperty('--progress', String(ratio))
+    })
+
+    document.addEventListener('playback:timeupdate', onTimeUpdate)
+    onCleanup(() => document.removeEventListener('playback:timeupdate', onTimeUpdate))
+
+    el.addEventListener('click', (e) => {
+      const rect = el.getBoundingClientRect()
+      const ratio = (e.clientX - rect.left) / rect.width
+      el.dispatchEvent(new CustomEvent('playback:seek', {
+        bubbles: true,
+        detail: { ms: ratio * _p.duration },
+      }))
+    })
+  }
+
+  const [_s0] = $(__scope, 's0')
+
+  if (_s0) (handleMount)(_s0)
+}
+
+hydrate('TimelineBar', { init: initTimelineBar, template: (_p) => \`<div class="timeline" bf="s0"></div>\` })
+export function TimelineBar(_p, __bfKey) { return createComponent('TimelineBar', _p, __bfKey) }"
+`;
+
 exports[`docs/core/introduction.mdx doc-examples L15 — (no label) 1`] = `
 "import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 

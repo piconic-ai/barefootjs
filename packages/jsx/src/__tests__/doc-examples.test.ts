@@ -314,6 +314,13 @@ const PAGES: PageSpec[] = [
   // tie each ❌ snippet to its parent `### BFxxx —` H3.
   { path: 'core/advanced/performance.md' },
   { path: 'core/reactivity.md' },
+  {
+    path: 'core/reactivity/shared-state.md',
+    pageSkip: (body: string) => {
+      if (/\bapp\.get\b/.test(body)) return 'server route example (not a component)'
+      return undefined
+    },
+  },
   { path: 'core/introduction.mdx' },
 ]
 

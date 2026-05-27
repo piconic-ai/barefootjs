@@ -234,3 +234,10 @@ const theme = useContext(ThemeContext)
 ```
 
 Use for optional contexts with a sensible fallback.
+
+
+## Cross-File Context Does Not Work
+
+`createContext()` and all components that use it must be in the **same file**. Importing a context from another file does not work — the compiler does not currently support cross-file context sharing.
+
+This is why compound components (Accordion, Dialog, Select, Tabs) define all sub-components in a single file. For sharing state across components in separate files, see [Shared State Patterns](../reactivity/shared-state.md).

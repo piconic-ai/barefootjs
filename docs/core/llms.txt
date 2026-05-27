@@ -18,6 +18,7 @@
 - [onCleanup](https://barefootjs.dev/docs/reactivity/on-cleanup.md): Registers a cleanup function that runs when the owning effect re-runs or the component is destroyed.
 - [onMount](https://barefootjs.dev/docs/reactivity/on-mount.md): Runs a callback once when the component initializes, without tracking signal dependencies.
 - [Props Reactivity](https://barefootjs.dev/docs/reactivity/props-reactivity.md): How prop access patterns determine whether reactive updates propagate in BarefootJS components.
+- [Shared State Patterns](https://barefootjs.dev/docs/reactivity/shared-state.md): Patterns for sharing reactive state between components in separate files, and when to use each.
 - [untrack](https://barefootjs.dev/docs/reactivity/untrack.md): Executes a function without tracking signal dependencies in the current reactive context.
 
 ## Rendering

@@ -26,3 +26,4 @@ import { createSignal, createEffect, createMemo, onMount, onCleanup, untrack } f
 ## Guides
 
 - [Props Reactivity](./reactivity/props-reactivity.md) — How props stay reactive, and when destructuring breaks it
+- [Shared State Patterns](./reactivity/shared-state.md) — Sharing state across components in separate files
