@@ -715,6 +715,7 @@ export function formatComponentGraph(graph: ComponentGraph): string {
           lines.push(`    ${marker}${depStr} -> ${d.jsxPreview}${locSuffix}`)
         }
       } else {
+        const arrow = d.type === 'event' ? ' ->' : ' <-'
         lines.push(`    ${marker}${d.type} ${id}${arrow} ${depStr}${locSuffix}`)
       }
     }
