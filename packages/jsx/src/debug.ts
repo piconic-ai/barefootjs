@@ -156,6 +156,7 @@ export interface LoopInfo {
   param: string
   index: string | null
   key: string | null
+  method: 'map' | 'flatMap'
   bindings: LoopChildBinding[]
   loc: SourceLocation
 }
@@ -664,9 +665,11 @@ function collectLoops(
         param: node.param,
         index: node.index ?? null,
         key: node.key ?? null,
+        method: node.method === 'flatMap' ? 'flatMap' : 'map',
         bindings,
         loc: node.loc,
       })
+      for (const child of node.children) collectLoops(child, loops, signalGetters, memoNames)
       break
     }
     case 'element': {
@@ -692,6 +695,11 @@ function collectLoops(
       if (node.alternate) collectLoops(node.alternate, loops, signalGetters, memoNames)
       break
     }
+    case 'async': {
+      collectLoops(node.fallback, loops, signalGetters, memoNames)
+      for (const child of node.children) collectLoops(child, loops, signalGetters, memoNames)
+      break
+    }
   }
 }
 
@@ -707,6 +715,7 @@ function collectLoopChildBindings(
       case 'element': {
         const ctx = child.tag
         for (const attr of child.attrs) {
+          if (attr.name === 'key' || attr.name === '...' || attr.name.startsWith('...')) continue
           if (attr.value.kind !== 'expression' && attr.value.kind !== 'template' && attr.value.kind !== 'spread') continue
           const expr = attrValueToString(attr.value)
           if (!expr) continue
@@ -791,11 +800,12 @@ export function formatLoopSummary(summary: LoopSummary): string {
 
   for (const loop of summary.loops) {
     lines.push('')
-    lines.push(`  ${loop.array}.map(${loop.param})`)
+    const params = loop.index ? `${loop.param}, ${loop.index}` : loop.param
+    lines.push(`  ${loop.array}.${loop.method}(${params})`)
     if (loop.key) lines.push(`    key: ${loop.key}`)
 
     for (const b of loop.bindings) {
-      const depStr = b.deps.join(', ')
+      const depStr = b.deps.length > 0 ? b.deps.join(', ') : '(no deps)'
       if (b.kind === 'event') {
         lines.push(`    ${b.elementContext} ${b.name} -> ${depStr}`)
       } else if (b.kind === 'attribute') {
