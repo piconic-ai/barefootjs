@@ -11,11 +11,13 @@ import {
   buildEventSummary,
   buildComponentAnalysis,
   buildLoopSummary,
+  buildWhyUpdate,
   traceUpdatePath,
   formatComponentGraph,
   formatUpdatePath,
   formatEventSummary,
   formatLoopSummary,
+  formatWhyUpdate,
   formatSignalTrace,
   generateStaticTrace,
   graphToJSON,
@@ -1007,5 +1009,119 @@ describe('formatLoopSummary', () => {
     expect(output).toContain('.map(item)')
     expect(output).toContain('key: item.id')
     expect(output).toContain('item')
+  })
+})
+
+// =============================================================================
+// Why-update analysis (bf debug why-update)
+// =============================================================================
+
+describe('buildWhyUpdate', () => {
+  test('traces attribute binding back to signal and event handler', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Panel() {
+        const [color, setColor] = createSignal('red')
+        return (
+          <div>
+            <div style={color()} />
+            <button onClick={() => setColor('blue')}>Change</button>
+          </div>
+        )
+      }
+    `
+    const result = buildWhyUpdate(source, 'Panel.tsx', 'style')
+    expect(result).not.toBeNull()
+    expect(result!.binding).toBe('style')
+    expect(result!.expression).toContain('color()')
+    expect(result!.deps).toHaveLength(1)
+    expect(result!.deps[0].name).toBe('color')
+    expect(result!.deps[0].kind).toBe('signal')
+    expect(result!.deps[0].changedBy.length).toBeGreaterThan(0)
+    expect(result!.deps[0].changedBy[0].setter).toBe('setColor')
+  })
+
+  test('traces through memo dependencies', () => {
+    const source = `
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+
+      export function Dashboard() {
+        const [count, setCount] = createSignal(0)
+        const doubled = createMemo(() => count() * 2)
+        return (
+          <div>
+            <span>{doubled()}</span>
+            <button onClick={() => setCount(n => n + 1)}>+</button>
+          </div>
+        )
+      }
+    `
+    const result = buildWhyUpdate(source, 'Dashboard.tsx', 's0')
+    expect(result).not.toBeNull()
+    const memoDep = result!.deps.find(d => d.kind === 'memo')
+    expect(memoDep).toBeDefined()
+    expect(memoDep!.name).toBe('doubled')
+    expect(memoDep!.dependsOn).toContain('count')
+    const signalDep = result!.deps.find(d => d.kind === 'signal')
+    expect(signalDep).toBeDefined()
+    expect(signalDep!.name).toBe('count')
+    expect(signalDep!.changedBy[0].setter).toBe('setCount')
+  })
+
+  test('returns null for unknown binding', () => {
+    const result = buildWhyUpdate(counterSource, 'Counter.tsx', 'nonExistent')
+    expect(result).toBeNull()
+  })
+
+  test('traces indirect setter via local function', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function App() {
+        const [items, setItems] = createSignal([])
+        function addItem(text: string) {
+          setItems(prev => [...prev, text])
+        }
+        return (
+          <div>
+            <span>{items().length}</span>
+            <button onClick={() => addItem('test')}>Add</button>
+          </div>
+        )
+      }
+    `
+    const result = buildWhyUpdate(source, 'App.tsx', 's0')
+    expect(result).not.toBeNull()
+    const signalDep = result!.deps.find(d => d.name === 'items')
+    expect(signalDep).toBeDefined()
+    expect(signalDep!.changedBy[0].via).toBe('addItem')
+  })
+})
+
+describe('formatWhyUpdate', () => {
+  test('produces readable output', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Panel() {
+        const [color, setColor] = createSignal('red')
+        return (
+          <div>
+            <div style={color()} />
+            <button onClick={() => setColor('blue')}>Change</button>
+          </div>
+        )
+      }
+    `
+    const result = buildWhyUpdate(source, 'Panel.tsx', 'style')!
+    const output = formatWhyUpdate(result)
+    expect(output).toContain('style updates because:')
+    expect(output).toContain('color changes from:')
+    expect(output).toContain('setColor')
   })
 })

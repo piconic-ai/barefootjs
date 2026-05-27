@@ -46,6 +46,7 @@ Debug:
   debug trace <component> <signal>            Trace update propagation for a signal/memo
   debug events <component>                    Show event handlers and their update paths
   debug loops <component>                     Show loop bindings grouped by source collection
+  debug why-update <component> <binding>      Explain why a binding updates
   debug fallbacks <component>                 Show wrap-by-default fallback bindings (#937)
   debug signals <component>                   Show signal initialization trace
 
@@ -158,8 +159,11 @@ switch (command) {
     } else if (sub === 'loops') {
       const { run } = await import('./commands/debug-loops')
       await run(rest, ctx)
+    } else if (sub === 'why-update') {
+      const { run } = await import('./commands/debug-why-update')
+      await run(rest, ctx)
     } else {
-      console.error('Usage: bf debug <graph|trace|fallbacks|signals|events|loops> ...')
+      console.error('Usage: bf debug <graph|trace|fallbacks|signals|events|loops|why-update> ...')
       process.exit(1)
     }
     break
