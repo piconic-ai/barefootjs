@@ -1,6 +1,8 @@
 ---
 name: barefootjs
 description: "Build, inspect, and debug UI components using @barefootjs/cli. Use when: creating/editing/reviewing components, investigating signal dependencies, debugging reactive updates, scaffolding new components, or looking up component APIs."
+metadata:
+  short-description: "BarefootJS component development with bf CLI"
 ---
 # Component Development Skill
 

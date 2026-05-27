@@ -6,15 +6,8 @@
  */
 
 import { createEffect } from '@barefootjs/client/reactive'
+import { classifyDOMProp } from '@barefootjs/shared'
 import { styleToCss } from './style'
-
-/** Map of JSX prop names to HTML attribute names */
-function toAttrName(key: string): string {
-  if (key === 'className') return 'class'
-  if (key === 'htmlFor') return 'for'
-  // Convert camelCase to kebab-case for data-* and aria-* style attributes
-  return key.replace(/([A-Z])/g, '-$1').toLowerCase()
-}
 
 /**
  * Convert a JSX event prop name to a DOM event name for addEventListener.
@@ -23,7 +16,6 @@ function toAttrName(key: string): string {
  */
 const jsxToDomEventMap: Record<string, string> = { doubleclick: 'dblclick' }
 function toEventName(jsxPropName: string): string {
-  // onKeyDown → 'k' + 'eyDown' → 'keydown'
   const raw = (jsxPropName[2].toLowerCase() + jsxPropName.slice(3)).toLowerCase()
   return jsxToDomEventMap[raw] ?? raw
 }
@@ -46,12 +38,13 @@ export function applyRestAttrs(
   // Wire up event handlers and ref callbacks once (not reactively)
   for (const key of Object.keys(source)) {
     if (exclude.has(key)) continue
-    if (key === 'ref') {
+    const c = classifyDOMProp(key)
+    if (c.kind === 'ref') {
       const ref = source[key]
       if (typeof ref === 'function') (ref as (el: Element) => void)(el)
       continue
     }
-    if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) {
+    if (c.kind === 'event') {
       const handler = source[key]
       if (typeof handler === 'function') {
         el.addEventListener(toEventName(key), handler as EventListener)
@@ -62,46 +55,31 @@ export function applyRestAttrs(
   createEffect(() => {
     for (const key of Object.keys(source)) {
       if (exclude.has(key)) continue
-
-      // Event handlers and ref are wired up above, not as attributes
-      if (key === 'ref') continue
-      // `children` is a JSX construct rendered inside the element, never
-      // a DOM attribute. Without this exclusion, parent components that
-      // pass `children` through `{...props}` end up with
-      // `children="<p ...>...</p>"` written as a literal attribute on
-      // the wrapper div. The matching `spreadAttrs` (SSR-string) path
-      // already skips `children` for the same reason.
-      if (key === 'children') continue
-      if (key.startsWith('on') && key.length > 2 && key[2] === key[2].toUpperCase()) continue
+      const c = classifyDOMProp(key)
+      if (c.kind === 'ref' || c.kind === 'event' || c.kind === 'skip') continue
 
       const value = source[key]
-      const attr = toAttrName(key)
 
       if (value != null && value !== false) {
-        // Use DOM property for value/checked (setAttribute sets the default, not current)
-        if (attr === 'value' && 'value' in el) {
+        if (c.kind === 'property' && c.attrName === 'value' && 'value' in el) {
           const strVal = String(value)
           if ((el as HTMLInputElement).value !== strVal) (el as HTMLInputElement).value = strVal
-        } else if (attr === 'checked' && 'checked' in el) {
+        } else if (c.kind === 'property' && c.attrName === 'checked' && 'checked' in el) {
           (el as HTMLInputElement).checked = !!value
-        } else if (attr === 'style') {
-          // Route the `style` prop through `styleToCss` so object literals
-          // (`{'--err': errorHue()}`) and inline strings (`'color:red'`)
-          // both reach the DOM as a real CSS string instead of
-          // `[object Object]`. Mirrors the compiler's
-          // `setAttribute('style', styleToCss(...))` path used when the
-          // attribute is bound directly on a JSX element.
+        } else if (c.kind === 'style') {
           const css = styleToCss(value)
           if (css == null) el.removeAttribute('style')
           else el.setAttribute('style', css)
         } else {
-          el.setAttribute(attr, String(value))
+          el.setAttribute(c.attrName, String(value))
         }
       } else {
-        if (attr === 'checked' && 'checked' in el) {
+        if (c.kind === 'property' && c.attrName === 'value' && 'value' in el) {
+          (el as HTMLInputElement).value = ''
+        } else if (c.kind === 'property' && c.attrName === 'checked' && 'checked' in el) {
           (el as HTMLInputElement).checked = false
         } else {
-          el.removeAttribute(attr)
+          el.removeAttribute(c.attrName)
         }
       }
     }

@@ -1,0 +1,1 @@
+../../../plugins/barefootjs/skills/barefootjs/SKILL.md

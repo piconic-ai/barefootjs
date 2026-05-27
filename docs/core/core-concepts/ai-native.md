@@ -66,6 +66,25 @@ When nothing in the registry fits, `bf gen component <name> <comps...>` scaffold
 
 **Visual preview**: hosted previews live at [ui.barefootjs.dev/components/&lt;name&gt;](https://ui.barefootjs.dev). Standalone `bf preview` for npm-installed projects is tracked in [#885](https://github.com/piconic-ai/barefootjs/issues/885).
 
+## Agent Skill
+
+BarefootJS publishes an agent skill that gives AI deep knowledge of the compiler, IR, CLI, and component system. Install it and the agent can build, test, and debug BarefootJS projects autonomously.
+
+**Claude Code:**
+
+```sh
+/plugin marketplace add piconic-ai/barefootjs
+/plugin install barefootjs@barefootjs
+```
+
+**Codex:**
+
+```
+install the barefootjs skill from piconic-ai/barefootjs
+```
+
+With the skill active, the agent understands `bf` CLI commands, IR test patterns, signal graphs, adapter output, and error codes — no manual prompting needed.
+
 ## Agent Loop
 
 The same workflow driven by an AI agent — say, "add a settings form":

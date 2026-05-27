@@ -16,9 +16,10 @@ import {
   BF_LOOP_END,
   loopStartMarker,
   loopEndMarker,
+  toHTMLAttrName as toHtmlAttrName,
 } from '@barefootjs/shared'
 
-export { DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, BF_LOOP_START, BF_LOOP_END, loopStartMarker, loopEndMarker }
+export { DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, BF_LOOP_START, BF_LOOP_END, loopStartMarker, loopEndMarker, toHtmlAttrName }
 
 /**
  * Parameter name for the props object in generated init/template functions.
@@ -173,70 +174,8 @@ export function quotePropName(name: string): string {
   return JSON.stringify(name)
 }
 
-/**
- * SVG presentation attribute names that are written camelCase in JSX
- * (React-compatible spelling) and must be emitted as kebab-case at the
- * DOM/HTML layer.
- *
- * Why this exists: SSR template output and client-side reactive
- * `setAttribute` both flow through `toHtmlAttrName`. If they disagree on
- * the spelling, SSR emits `stroke-width="1.5"` while hydration writes
- * `setAttribute('strokeWidth', '2.5')`, leaving both attributes on the
- * DOM. The SVG renderer reads the kebab-case form, so reactive updates
- * become invisible. This map keeps both paths in sync. Surfaced by the
- * Graph/DAG Editor block (#135) where edge selection failed to thicken
- * the stroke even though `selectedEdgeId()` updated correctly.
- *
- * Listed names are SVG-only — none of them collide with HTML attributes.
- */
-const SVG_CAMEL_TO_KEBAB: Record<string, string> = {
-  // stroke
-  strokeWidth: 'stroke-width',
-  strokeLinecap: 'stroke-linecap',
-  strokeLinejoin: 'stroke-linejoin',
-  strokeDasharray: 'stroke-dasharray',
-  strokeDashoffset: 'stroke-dashoffset',
-  strokeMiterlimit: 'stroke-miterlimit',
-  strokeOpacity: 'stroke-opacity',
-  // fill
-  fillOpacity: 'fill-opacity',
-  fillRule: 'fill-rule',
-  // gradient stops
-  stopColor: 'stop-color',
-  stopOpacity: 'stop-opacity',
-  // text presentation
-  textAnchor: 'text-anchor',
-  dominantBaseline: 'dominant-baseline',
-  alignmentBaseline: 'alignment-baseline',
-  fontFamily: 'font-family',
-  fontSize: 'font-size',
-  fontWeight: 'font-weight',
-  fontStyle: 'font-style',
-  letterSpacing: 'letter-spacing',
-  wordSpacing: 'word-spacing',
-  // common presentation / interaction
-  pointerEvents: 'pointer-events',
-  vectorEffect: 'vector-effect',
-  colorInterpolation: 'color-interpolation',
-  clipPath: 'clip-path',
-  clipRule: 'clip-rule',
-  // marker references
-  markerStart: 'marker-start',
-  markerMid: 'marker-mid',
-  markerEnd: 'marker-end',
-}
-
-/**
- * Convert JSX attribute name to HTML attribute name.
- * Handles React-style naming conventions (e.g., className → class) and
- * SVG presentation attributes (e.g., strokeWidth → stroke-width).
- */
-export function toHtmlAttrName(jsxAttrName: string): string {
-  if (jsxAttrName === 'className') return 'class'
-  const svgKebab = SVG_CAMEL_TO_KEBAB[jsxAttrName]
-  if (svgKebab !== undefined) return svgKebab
-  return jsxAttrName
-}
+// toHtmlAttrName is now re-exported from @barefootjs/shared (classifyDOMProp's
+// toHTMLAttrName), keeping the same public name for downstream consumers.
 
 /**
  * Wrap arrow function handler in block to prevent accidental return false.
