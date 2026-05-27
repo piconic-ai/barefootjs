@@ -3475,7 +3475,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/core-concepts/mpa-style.md doc-examples L23 — (no label) 1`] = `
-"import { $, $c, $t, createComponent, createEffect, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, createComponent, createEffect, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:ReviewStars */'
 import '/* @bf-child:AddToCart */'
 
@@ -3486,7 +3486,6 @@ export function initProductPage(__scope, _p = {}) {
 
   const product = _p.product ?? {}
 
-  const [_s4] = $(__scope, 's4')
   const [_s0, _s2] = $t(__scope, 's0', 's2')
   const [_s5, _s6] = $c(__scope, 's5', 's6')
 
@@ -3498,12 +3497,6 @@ export function initProductPage(__scope, _p = {}) {
   createEffect(() => {
     const __val = product.description
     if (_s2 && !__val?.__isSlot) _s2.nodeValue = String(__val ?? '')
-  })
-
-  createEffect(() => {
-    if (_s4) {
-      { const __v = _p.product.image; if (__v != null) _s4.setAttribute('src', String(__v)); else _s4.removeAttribute('src') }
-    }
   })
 
 
