@@ -16,7 +16,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
-  const { buildEventSummary, formatEventSummary, buildComponentGraph } = await import('@barefootjs/jsx')
+  const { buildEventSummary, formatEventSummary } = await import('@barefootjs/jsx')
 
   const searched: string[] = []
   const resolved = resolveComponentSource(componentName, ctx, searched)
@@ -31,10 +31,9 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const summary = buildEventSummary(source, resolved.filePath, resolved.componentName)
 
   if (ctx.jsonFlag) {
-    console.log(JSON.stringify(summary, null, 2))
+    console.log(JSON.stringify({ componentName: summary.componentName, sourceFile: summary.sourceFile, events: summary.events }, null, 2))
     return
   }
 
-  const graph = buildComponentGraph(source, resolved.filePath, resolved.componentName)
-  console.log(formatEventSummary(summary, graph))
+  console.log(formatEventSummary(summary, summary.graph))
 }
