@@ -659,7 +659,9 @@ function collectLoops(
   switch (node.type) {
     case 'loop': {
       const bindings: LoopChildBinding[] = []
-      collectLoopChildBindings(node.children, bindings, signalGetters, memoNames, node.param)
+      const paramNames = extractLoopParamNames(node.param, node)
+      if (node.index) paramNames.push(node.index)
+      collectLoopChildBindings(node.children, bindings, signalGetters, memoNames, paramNames)
       loops.push({
         array: node.array,
         param: node.param,
@@ -708,7 +710,7 @@ function collectLoopChildBindings(
   bindings: LoopChildBinding[],
   signalGetters: Set<string>,
   memoNames: Set<string>,
-  loopParam: string,
+  paramNames: string[],
 ): void {
   for (const child of children) {
     switch (child.type) {
@@ -719,13 +721,13 @@ function collectLoopChildBindings(
           if (attr.value.kind !== 'expression' && attr.value.kind !== 'template' && attr.value.kind !== 'spread') continue
           const expr = attrValueToString(attr.value)
           if (!expr) continue
-          const deps = collectLoopDeps(expr, signalGetters, memoNames, loopParam)
+          const deps = collectLoopDeps(expr, signalGetters, memoNames, paramNames)
           if (deps.length > 0) {
             bindings.push({ elementContext: ctx, kind: 'attribute', name: attr.name, deps, loc: attr.loc })
           }
         }
         for (const event of child.events) {
-          const deps = collectLoopDeps(event.handler, signalGetters, memoNames, loopParam)
+          const deps = collectLoopDeps(event.handler, signalGetters, memoNames, paramNames)
           bindings.push({
             elementContext: ctx,
             kind: 'event',
@@ -734,12 +736,12 @@ function collectLoopChildBindings(
             loc: event.loc,
           })
         }
-        collectLoopChildBindings(child.children, bindings, signalGetters, memoNames, loopParam)
+        collectLoopChildBindings(child.children, bindings, signalGetters, memoNames, paramNames)
         break
       }
       case 'expression': {
         if (child.slotId) {
-          const deps = collectLoopDeps(child.expr, signalGetters, memoNames, loopParam)
+          const deps = collectLoopDeps(child.expr, signalGetters, memoNames, paramNames)
           if (deps.length > 0) {
             const parentCtx = 'text'
             bindings.push({ elementContext: parentCtx, kind: 'text', name: child.expr, deps, loc: child.loc })
@@ -754,43 +756,72 @@ function collectLoopChildBindings(
           if (prop.value.kind !== 'expression' && prop.value.kind !== 'template' && prop.value.kind !== 'spread') continue
           const propValue = attrValueToString(prop.value) ?? ''
           if (!propValue) continue
-          const deps = collectLoopDeps(propValue, signalGetters, memoNames, loopParam)
+          const deps = collectLoopDeps(propValue, signalGetters, memoNames, paramNames)
           if (deps.length > 0) {
             bindings.push({ elementContext: ctx, kind: 'attribute', name: prop.name, deps, loc: prop.loc })
           }
         }
         for (const c of child.children) {
-          collectLoopChildBindings([c], bindings, signalGetters, memoNames, loopParam)
+          collectLoopChildBindings([c], bindings, signalGetters, memoNames, paramNames)
         }
         break
       }
       case 'conditional': {
-        collectLoopChildBindings([child.whenTrue], bindings, signalGetters, memoNames, loopParam)
-        collectLoopChildBindings([child.whenFalse], bindings, signalGetters, memoNames, loopParam)
+        collectLoopChildBindings([child.whenTrue], bindings, signalGetters, memoNames, paramNames)
+        collectLoopChildBindings([child.whenFalse], bindings, signalGetters, memoNames, paramNames)
         break
       }
-      case 'fragment': {
-        collectLoopChildBindings(child.children, bindings, signalGetters, memoNames, loopParam)
+      case 'fragment':
+      case 'provider': {
+        collectLoopChildBindings(child.children, bindings, signalGetters, memoNames, paramNames)
+        break
+      }
+      case 'loop': {
+        for (const c of child.children) {
+          collectLoopChildBindings([c], bindings, signalGetters, memoNames, paramNames)
+        }
+        break
+      }
+      case 'if-statement': {
+        collectLoopChildBindings([child.consequent], bindings, signalGetters, memoNames, paramNames)
+        if (child.alternate) collectLoopChildBindings([child.alternate], bindings, signalGetters, memoNames, paramNames)
+        break
+      }
+      case 'async': {
+        collectLoopChildBindings([child.fallback], bindings, signalGetters, memoNames, paramNames)
+        collectLoopChildBindings(child.children, bindings, signalGetters, memoNames, paramNames)
         break
       }
     }
   }
 }
 
+function extractLoopParamNames(loopParam: string, node: IRLoop): string[] {
+  if (node.paramBindings && node.paramBindings.length > 0) {
+    return node.paramBindings.map(b => b.name)
+  }
+  if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(loopParam)) {
+    return [loopParam]
+  }
+  return []
+}
+
 function collectLoopDeps(
   expr: string,
   signalGetters: Set<string>,
   memoNames: Set<string>,
-  loopParam: string,
+  paramNames: string[],
 ): string[] {
   const deps: string[] = []
   for (const getter of signalGetters) {
-    if (new RegExp(`\\b${getter}\\s*\\(`).test(expr)) deps.push(getter)
+    if (makeIdCallRegex(getter).test(expr)) deps.push(getter)
   }
   for (const memo of memoNames) {
-    if (new RegExp(`\\b${memo}\\s*\\(`).test(expr)) deps.push(memo)
+    if (makeIdCallRegex(memo).test(expr)) deps.push(memo)
   }
-  if (new RegExp(`\\b${loopParam}\\b`).test(expr)) deps.push(loopParam)
+  for (const name of paramNames) {
+    if (makeIdRefRegex(name).test(expr)) deps.push(name)
+  }
   return deps
 }
 
@@ -1571,7 +1602,11 @@ function attrValueToString(value: AttrValue): string | null {
       return value.expr
     case 'template':
       return value.parts
-        .map(p => p.type === 'ternary' ? `${p.condition} ${p.whenTrue} ${p.whenFalse}` : '')
+        .map(p => {
+          if (p.type === 'ternary') return `${p.condition} ${p.whenTrue} ${p.whenFalse}`
+          if (p.type === 'lookup') return p.key
+          return ''
+        })
         .join(' ')
     case 'boolean-attr':
     case 'boolean-shorthand':

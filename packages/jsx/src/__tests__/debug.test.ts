@@ -1012,6 +1012,28 @@ describe('formatLoopSummary', () => {
     expect(output).toContain('key: item.id')
     expect(output).toContain('item')
   })
+
+  test('includes index parameter in format output', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function IndexList() {
+        const [items, setItems] = createSignal(['a', 'b', 'c'])
+        return (
+          <ul>
+            {items().map((item, i) => (
+              <li><span>{i}: {item}</span></li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const summary = buildLoopSummary(source, 'IndexList.tsx')
+    expect(summary.loops).toHaveLength(1)
+    const output = formatLoopSummary(summary)
+    expect(output).toContain('.map(item, i)')
+  })
 })
 
 // =============================================================================
