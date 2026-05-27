@@ -966,6 +966,7 @@ describe('buildLoopSummary', () => {
     const textBinding = loop.bindings.find(b => b.kind === 'text')
     expect(textBinding).toBeDefined()
     expect(textBinding!.deps).toContain('item')
+    expect(textBinding!.elementContext).toBe('span')
 
     const clickEvent = loop.bindings.find(b => b.kind === 'event')
     expect(clickEvent).toBeDefined()
@@ -1031,6 +1032,29 @@ describe('formatLoopSummary', () => {
     expect(summary.loops).toHaveLength(1)
     const output = formatLoopSummary(summary)
     expect(output).toContain('.map(item, i)')
+  })
+
+  test('handles destructured loop params via paramBindings', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function ConfigList() {
+        const [entries, setEntries] = createSignal([['key1', { label: 'A' }]])
+        return (
+          <ul>
+            {entries().map(([key, cfg]) => (
+              <li><span>{key}: {cfg.label}</span></li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const summary = buildLoopSummary(source, 'ConfigList.tsx')
+    expect(summary.loops).toHaveLength(1)
+    const loop = summary.loops[0]
+    const textBindings = loop.bindings.filter(b => b.kind === 'text')
+    expect(textBindings.length).toBeGreaterThan(0)
   })
 })
 

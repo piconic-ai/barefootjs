@@ -642,6 +642,12 @@ function flattenUpdateTargets(entries: UpdatePathEntry[]): string[] {
 // Analysis: Loop Bindings
 // =============================================================================
 
+interface PrecompiledLoopPatterns {
+  signalCallPatterns: Array<{ name: string; re: RegExp }>
+  memoCallPatterns: Array<{ name: string; re: RegExp }>
+  paramRefPatterns: Array<{ name: string; re: RegExp }>
+}
+
 export function buildLoopSummary(source: string, filePath: string, componentName?: string): LoopSummary {
   const { graph, ir } = buildComponentAnalysis(source, filePath, componentName)
   const signalGetters = new Set(ir.metadata.signals.map(s => s.getter))
@@ -662,7 +668,12 @@ function collectLoops(
       const bindings: LoopChildBinding[] = []
       const paramNames = extractLoopParamNames(node.param, node)
       if (node.index) paramNames.push(node.index)
-      collectLoopChildBindings(node.children, bindings, signalGetters, memoNames, paramNames)
+      const patterns: PrecompiledLoopPatterns = {
+        signalCallPatterns: [...signalGetters].map(g => ({ name: g, re: makeIdCallRegex(g) })),
+        memoCallPatterns: [...memoNames].map(m => ({ name: m, re: makeIdCallRegex(m) })),
+        paramRefPatterns: paramNames.map(n => ({ name: n, re: makeIdRefRegex(n) })),
+      }
+      collectLoopChildBindings(node.children, bindings, patterns)
       loops.push({
         array: node.array,
         param: node.param,
@@ -709,9 +720,8 @@ function collectLoops(
 function collectLoopChildBindings(
   children: IRNode[],
   bindings: LoopChildBinding[],
-  signalGetters: Set<string>,
-  memoNames: Set<string>,
-  paramNames: string[],
+  patterns: PrecompiledLoopPatterns,
+  parentTag?: string,
 ): void {
   for (const child of children) {
     switch (child.type) {
@@ -722,13 +732,13 @@ function collectLoopChildBindings(
           if (attr.value.kind !== 'expression' && attr.value.kind !== 'template' && attr.value.kind !== 'spread') continue
           const expr = attrValueToString(attr.value)
           if (!expr) continue
-          const deps = collectLoopDeps(expr, signalGetters, memoNames, paramNames)
+          const deps = collectLoopDepsPrecompiled(expr, patterns)
           if (deps.length > 0) {
             bindings.push({ elementContext: ctx, kind: 'attribute', name: attr.name, deps, loc: attr.loc })
           }
         }
         for (const event of child.events) {
-          const deps = collectLoopDeps(event.handler, signalGetters, memoNames, paramNames)
+          const deps = collectLoopDepsPrecompiled(event.handler, patterns)
           bindings.push({
             elementContext: ctx,
             kind: 'event',
@@ -737,15 +747,14 @@ function collectLoopChildBindings(
             loc: event.loc,
           })
         }
-        collectLoopChildBindings(child.children, bindings, signalGetters, memoNames, paramNames)
+        collectLoopChildBindings(child.children, bindings, patterns, ctx)
         break
       }
       case 'expression': {
         if (child.slotId) {
-          const deps = collectLoopDeps(child.expr, signalGetters, memoNames, paramNames)
+          const deps = collectLoopDepsPrecompiled(child.expr, patterns)
           if (deps.length > 0) {
-            const parentCtx = 'text'
-            bindings.push({ elementContext: parentCtx, kind: 'text', name: child.expr, deps, loc: child.loc })
+            bindings.push({ elementContext: parentTag ?? 'text', kind: 'text', name: child.expr, deps, loc: child.loc })
           }
         }
         break
@@ -757,38 +766,38 @@ function collectLoopChildBindings(
           if (prop.value.kind !== 'expression' && prop.value.kind !== 'template' && prop.value.kind !== 'spread') continue
           const propValue = attrValueToString(prop.value) ?? ''
           if (!propValue) continue
-          const deps = collectLoopDeps(propValue, signalGetters, memoNames, paramNames)
+          const deps = collectLoopDepsPrecompiled(propValue, patterns)
           if (deps.length > 0) {
             const isEvent = /^on[A-Z]/.test(prop.name)
             bindings.push({ elementContext: ctx, kind: isEvent ? 'event' : 'attribute', name: prop.name, deps, loc: prop.loc })
           }
         }
         for (const c of child.children) {
-          collectLoopChildBindings([c], bindings, signalGetters, memoNames, paramNames)
+          collectLoopChildBindings([c], bindings, patterns, parentTag)
         }
         break
       }
       case 'conditional': {
-        collectLoopChildBindings([child.whenTrue], bindings, signalGetters, memoNames, paramNames)
-        collectLoopChildBindings([child.whenFalse], bindings, signalGetters, memoNames, paramNames)
+        collectLoopChildBindings([child.whenTrue], bindings, patterns, parentTag)
+        collectLoopChildBindings([child.whenFalse], bindings, patterns, parentTag)
         break
       }
       case 'fragment':
       case 'provider': {
-        collectLoopChildBindings(child.children, bindings, signalGetters, memoNames, paramNames)
+        collectLoopChildBindings(child.children, bindings, patterns, parentTag)
         break
       }
       case 'loop': {
         break
       }
       case 'if-statement': {
-        collectLoopChildBindings([child.consequent], bindings, signalGetters, memoNames, paramNames)
-        if (child.alternate) collectLoopChildBindings([child.alternate], bindings, signalGetters, memoNames, paramNames)
+        collectLoopChildBindings([child.consequent], bindings, patterns, parentTag)
+        if (child.alternate) collectLoopChildBindings([child.alternate], bindings, patterns, parentTag)
         break
       }
       case 'async': {
-        collectLoopChildBindings([child.fallback], bindings, signalGetters, memoNames, paramNames)
-        collectLoopChildBindings(child.children, bindings, signalGetters, memoNames, paramNames)
+        collectLoopChildBindings([child.fallback], bindings, patterns, parentTag)
+        collectLoopChildBindings(child.children, bindings, patterns, parentTag)
         break
       }
     }
@@ -805,21 +814,19 @@ function extractLoopParamNames(loopParam: string, node: IRLoop): string[] {
   return []
 }
 
-function collectLoopDeps(
+function collectLoopDepsPrecompiled(
   expr: string,
-  signalGetters: Set<string>,
-  memoNames: Set<string>,
-  paramNames: string[],
+  patterns: PrecompiledLoopPatterns,
 ): string[] {
   const deps: string[] = []
-  for (const getter of signalGetters) {
-    if (makeIdCallRegex(getter).test(expr)) deps.push(getter)
+  for (const { name, re } of patterns.signalCallPatterns) {
+    if (re.test(expr)) deps.push(name)
   }
-  for (const memo of memoNames) {
-    if (makeIdCallRegex(memo).test(expr)) deps.push(memo)
+  for (const { name, re } of patterns.memoCallPatterns) {
+    if (re.test(expr)) deps.push(name)
   }
-  for (const name of paramNames) {
-    if (makeIdRefRegex(name).test(expr)) deps.push(name)
+  for (const { name, re } of patterns.paramRefPatterns) {
+    if (re.test(expr)) deps.push(name)
   }
   return deps
 }
