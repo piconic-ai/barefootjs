@@ -79,19 +79,16 @@ describe('bf debug fallbacks', () => {
       await run([file], makeCtx(false))
       const output = logSpy.mock.calls.map(c => c[0]).join('\n')
       expect(output).toContain('1 fallback-wrapped expression')
-      // The text binding's slotId appears in the report line.
+      // The text binding's slotId appears in the label.
       expect(output).toMatch(/text "s\d+"/)
-      expect(output).toContain('~')
       // The actual expression text is printed so users can locate the
       // binding in their source without running `inspect` separately.
       expect(output).toContain('formatTitle(page)')
-      // `formatTitle(page)` triggers the AST-level `hasFunctionCalls` flag
-      // but not `callsReactiveGetters` (formatTitle isn't a known signal),
-      // so the emitter's wrap reason is `fallback-function-calls`. Surface
-      // that in the report so users can distinguish it from other fallback
-      // shapes (e.g., signal-like calls on non-reactive sources).
-      expect(output).toContain('[fallback-function-calls]')
-      // Guidance footer — helps the user know what to do next.
+      // Human-readable reason describes why the fallback was triggered.
+      expect(output).toContain('reason:')
+      expect(output).toContain('opaque function call')
+      // Actionable suggestion.
+      expect(output).toContain('suggestion:')
       expect(output).toContain('createMemo')
     } finally {
       logSpy.mockRestore()
@@ -121,11 +118,10 @@ describe('bf debug fallbacks', () => {
       const parsed = JSON.parse(output) as {
         componentName: string
         sourceFile: string
-        fallbacks: Array<{ classification: string; type: string; label: string; deps: string[]; slotId: string; expression?: string; wrapReason?: string }>
+        fallbacks: Array<{ classification: string; type: string; label: string; deps: string[]; slotId: string; expression?: string; wrapReason?: string; reason?: string; suggestion?: string; isEventHandler?: boolean }>
       }
       expect(parsed.componentName).toBe('Tag')
       expect(parsed.fallbacks.length).toBeGreaterThan(0)
-      // All entries must be fallbacks — reactive bindings are filtered out.
       for (const f of parsed.fallbacks) {
         expect(f.classification).toBe('fallback')
       }
@@ -134,11 +130,11 @@ describe('bf debug fallbacks', () => {
       expect(attrFallback!.label).toBe('class')
       expect(attrFallback!.deps).toEqual([])
       expect(attrFallback!.expression).toBe('format(label)')
-      // `format(label)` is an opaque call — AST flag `hasFunctionCalls` is
-      // set but `callsReactiveGetters` is not. Lock in the `wrapReason`
-      // vocabulary so editor integrations can switch on the enum without
-      // re-deriving it from the expression.
       expect(attrFallback!.wrapReason).toBe('fallback-function-calls')
+      // New fields: human-readable reason and suggestion
+      expect(attrFallback!.reason).toContain('opaque function call')
+      expect(attrFallback!.suggestion).toContain('createMemo')
+      expect(attrFallback!.isEventHandler).toBe(false)
     } finally {
       logSpy.mockRestore()
       rmSync(path.dirname(file), { recursive: true, force: true })
