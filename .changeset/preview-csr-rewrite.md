@@ -1,4 +1,5 @@
 ---
+"@barefootjs/preview": minor
 ---
 
-Rewrite `@barefootjs/preview` for CSR rendering with esbuild. No published package changes.
+Rewrite preview to CSR with esbuild. Remove Hono/Bun runtime dependencies, replace built-in server with static file output and `npx serve` instructions.
