@@ -28,7 +28,11 @@ export function spreadAttrs(obj: Record<string, unknown>): string {
       if (css != null) parts.push(`style="${css}"`)
       continue
     }
-    parts.push(value === true ? c.attrName : `${c.attrName}="${value}"`)
+    if (c.kind === 'boolean' && value === true) {
+      parts.push(c.attrName)
+    } else {
+      parts.push(`${c.attrName}="${value}"`)
+    }
   }
   return parts.join(' ')
 }

@@ -6,7 +6,7 @@
  */
 
 import { createEffect } from '@barefootjs/client/reactive'
-import { classifyDOMProp } from '@barefootjs/shared'
+import { classifyDOMProp, type DOMPropClassification } from '@barefootjs/shared'
 import { styleToCss } from './style'
 
 /**
@@ -35,16 +35,19 @@ export function applyRestAttrs(
 ): void {
   const exclude = new Set(excludeKeys)
 
-  // Wire up event handlers and ref callbacks once (not reactively)
+  // Precompute classifications once — keys are stable for rest props.
+  const classified: Array<{ key: string; c: DOMPropClassification }> = []
   for (const key of Object.keys(source)) {
     if (exclude.has(key)) continue
-    const c = classifyDOMProp(key)
+    classified.push({ key, c: classifyDOMProp(key) })
+  }
+
+  // Wire up event handlers and ref callbacks once (not reactively)
+  for (const { key, c } of classified) {
     if (c.kind === 'ref') {
       const ref = source[key]
       if (typeof ref === 'function') (ref as (el: Element) => void)(el)
-      continue
-    }
-    if (c.kind === 'event') {
+    } else if (c.kind === 'event') {
       const handler = source[key]
       if (typeof handler === 'function') {
         el.addEventListener(toEventName(key), handler as EventListener)
@@ -52,12 +55,13 @@ export function applyRestAttrs(
     }
   }
 
-  createEffect(() => {
-    for (const key of Object.keys(source)) {
-      if (exclude.has(key)) continue
-      const c = classifyDOMProp(key)
-      if (c.kind === 'ref' || c.kind === 'event' || c.kind === 'skip') continue
+  // Filter to only attr-like entries for the reactive loop
+  const attrEntries = classified.filter(
+    ({ c }) => c.kind !== 'ref' && c.kind !== 'event' && c.kind !== 'skip',
+  )
 
+  createEffect(() => {
+    for (const { key, c } of attrEntries) {
       const value = source[key]
 
       if (value != null && value !== false) {
@@ -66,6 +70,8 @@ export function applyRestAttrs(
           if ((el as HTMLInputElement).value !== strVal) (el as HTMLInputElement).value = strVal
         } else if (c.kind === 'property' && c.attrName === 'checked' && 'checked' in el) {
           (el as HTMLInputElement).checked = !!value
+        } else if (c.kind === 'boolean') {
+          el.setAttribute(c.attrName, '')
         } else if (c.kind === 'style') {
           const css = styleToCss(value)
           if (css == null) el.removeAttribute('style')
@@ -78,6 +84,8 @@ export function applyRestAttrs(
           (el as HTMLInputElement).value = ''
         } else if (c.kind === 'property' && c.attrName === 'checked' && 'checked' in el) {
           (el as HTMLInputElement).checked = false
+        } else if (c.kind === 'boolean') {
+          el.removeAttribute(c.attrName)
         } else {
           el.removeAttribute(c.attrName)
         }

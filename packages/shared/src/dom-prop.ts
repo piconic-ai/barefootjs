@@ -122,7 +122,7 @@ export interface DOMPropClassification {
 // ---------------------------------------------------------------------------
 
 function isEventProp(key: string): boolean {
-  return key.length > 2 && key[0] === 'o' && key[1] === 'n' && key[2] === key[2].toUpperCase()
+  return key.length > 2 && key[0] === 'o' && key[1] === 'n' && key[2] >= 'A' && key[2] <= 'Z'
 }
 
 /**

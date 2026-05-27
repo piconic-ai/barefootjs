@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, isBooleanAttr, isEventProp } from '../dom-prop'
+import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
 
 describe('classifyDOMProp', () => {
   test('children → skip', () => {
@@ -184,5 +184,24 @@ describe('isEventProp', () => {
 
   test('onion → false (third char lowercase)', () => {
     expect(isEventProp('onion')).toBe(false)
+  })
+
+  test('on1 → false (digit, not uppercase letter)', () => {
+    expect(isEventProp('on1')).toBe(false)
+  })
+
+  test('on_foo → false (underscore, not uppercase letter)', () => {
+    expect(isEventProp('on_foo')).toBe(false)
+  })
+})
+
+describe('BOOLEAN_ATTRS', () => {
+  test('is a ReadonlySet', () => {
+    expect(BOOLEAN_ATTRS).toBeInstanceOf(Set)
+  })
+
+  test('contains expected entries', () => {
+    expect(BOOLEAN_ATTRS.has('disabled')).toBe(true)
+    expect(BOOLEAN_ATTRS.has('formnovalidate')).toBe(true)
   })
 })
