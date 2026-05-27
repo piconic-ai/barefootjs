@@ -90,7 +90,7 @@ try {
     const tarball = resolve(pack.text().trim().split('\n').pop()!)
 
     // Step 2: publish tarball with npm (OIDC auth + provenance)
-    const pub = await $`npm publish ${tarball} --provenance --access public`.nothrow()
+    const pub = await $`npm publish ${tarball} --provenance --access public --tag latest`.nothrow()
     if (pub.exitCode !== 0) {
       errors.push(`${pkg.name}@${pkg.version} (publish)`)
       continue
