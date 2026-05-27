@@ -1,16 +1,14 @@
 // barefoot preview <component>
 //
-// Entry point: find previews, compile (CSR bundle), serve static files.
+// Entry point: find previews, compile (CSR bundle), print serve instructions.
 
-import { resolve } from 'node:path'
+import { resolve, relative } from 'node:path'
 import { writeFileSync } from 'node:fs'
 import { compile } from './compile'
-import { startServer } from './server'
 
 const ROOT_DIR = resolve(import.meta.dir, '../../..')
 const UI_DIR = resolve(ROOT_DIR, 'ui/components/ui')
 const META_DIR = resolve(ROOT_DIR, 'ui/meta')
-const DEFAULT_PORT = 3003
 
 export async function runPreview(componentName: string) {
   const previewsPath = resolve(UI_DIR, componentName, 'index.preview.tsx')
@@ -47,8 +45,10 @@ export async function runPreview(componentName: string) {
   console.log('\nCompiling...')
   const result = await compile({ previewsPath, previewNames, componentName })
 
-  // 4. Start static file server
-  startServer(result.distDir, DEFAULT_PORT)
+  // 4. Print serve instructions
+  const relDir = relative(process.cwd(), result.distDir)
+  console.log(`\n✓ Preview built → ${relDir}/\n`)
+  console.log(`  npx serve ${relDir}`)
 }
 
 // Run if called directly
