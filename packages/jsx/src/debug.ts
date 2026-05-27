@@ -181,6 +181,8 @@ export interface WhyUpdateResult {
   binding: string
   expression: string | null
   deps: WhyUpdateDep[]
+  classification?: 'reactive' | 'fallback'
+  wrapReason?: WrapReason
   ambiguous?: Array<{ label: string; slotId: string }>
 }
 
@@ -990,6 +992,8 @@ export function buildWhyUpdate(
     binding: stableId,
     expression: binding.expression ?? null,
     deps,
+    ...(binding.classification === 'fallback' && { classification: binding.classification as 'fallback' }),
+    ...(binding.wrapReason && { wrapReason: binding.wrapReason }),
   }
 }
 
@@ -999,6 +1003,12 @@ export function formatWhyUpdate(result: WhyUpdateResult): string {
   lines.push(`${result.binding} updates because:`)
   if (result.expression) {
     lines.push(`  ${result.expression}`)
+  }
+
+  if (result.classification === 'fallback') {
+    lines.push('')
+    lines.push(`note: this is a fallback-wrapped binding (${result.wrapReason ?? 'unknown'})`)
+    lines.push('  the compiler could not statically prove reactivity — deps are determined at runtime')
   }
 
   for (const dep of result.deps) {
