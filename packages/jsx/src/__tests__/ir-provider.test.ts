@@ -403,3 +403,97 @@ describe('Context.Provider JSX', () => {
     expect(error?.severity).toBe('error')
   })
 })
+
+describe('Context API constraints (#1607)', () => {
+  test('useContext without "use client" triggers BF001', () => {
+    const source = `
+      import { createContext, useContext } from '@barefootjs/client'
+
+      const Ctx = createContext()
+
+      export function Consumer() {
+        const handleMount = (el: HTMLElement) => {
+          const ctx = useContext(Ctx)
+        }
+        return <div ref={handleMount} />
+      }
+    `
+
+    const result = compileJSX(source, 'Consumer.tsx', { adapter })
+    const bf001 = result.errors.find(e => e.code === ErrorCodes.MISSING_USE_CLIENT)
+    expect(bf001).toBeDefined()
+  })
+
+  test('useContext with "use client" compiles without errors', () => {
+    const source = `
+      'use client'
+      import { createContext, useContext } from '@barefootjs/client'
+
+      const Ctx = createContext()
+
+      export function Consumer() {
+        const handleMount = (el: HTMLElement) => {
+          const ctx = useContext(Ctx)
+        }
+        return <div ref={handleMount} />
+      }
+    `
+
+    const result = compileJSX(source, 'Consumer.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+  })
+
+  test('useContext import is rewritten to runtime path in client JS', () => {
+    const source = `
+      'use client'
+      import { createContext, useContext } from '@barefootjs/client'
+
+      const Ctx = createContext()
+
+      export function Consumer() {
+        const handleMount = (el: HTMLElement) => {
+          const ctx = useContext(Ctx)
+        }
+        return <div ref={handleMount} />
+      }
+    `
+
+    const result = compileJSX(source, 'Consumer.tsx', { adapter })
+    const clientJs = result.files.find(f => f.type === 'clientJs')!
+    expect(clientJs).toBeDefined()
+    expect(clientJs.content).toContain("from '@barefootjs/client/runtime'")
+    expect(clientJs.content).toContain('useContext')
+  })
+
+  test('same-file provider + consumer compiles with provideContext before useContext', () => {
+    const source = `
+      'use client'
+      import { createContext, useContext, createSignal } from '@barefootjs/client'
+
+      const ThemeContext = createContext('light')
+
+      export function ThemeProvider(props) {
+        return (
+          <ThemeContext.Provider value={props.theme}>
+            <ThemedButton />
+          </ThemeContext.Provider>
+        )
+      }
+
+      function ThemedButton() {
+        const handleMount = (el: HTMLButtonElement) => {
+          const theme = useContext(ThemeContext)
+          el.className = theme === 'dark' ? 'btn-dark' : 'btn-light'
+        }
+        return <button ref={handleMount}>click</button>
+      }
+    `
+
+    const result = compileJSX(source, 'Theme.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')!
+    expect(clientJs.content).toContain('provideContext(ThemeContext')
+    expect(clientJs.content).toContain('useContext(ThemeContext')
+  })
+})

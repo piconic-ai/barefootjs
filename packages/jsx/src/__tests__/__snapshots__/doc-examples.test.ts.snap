@@ -3181,24 +3181,6 @@ hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<d
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
-exports[`docs/core/components/context-api.md doc-examples L271 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
-exports[`docs/core/components/context-api.md doc-examples L273 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
-
-function initStatementExample() {}
-
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div></div>\` })
-export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
-`;
-
 exports[`docs/core/components/portals.md doc-examples L53 — (no label) 1`] = `
 "import { $, $t, createComponent, createEffect, createPortal, createSignal, hydrate, isSSRPortal } from '@barefootjs/client/runtime'
 

@@ -236,90 +236,38 @@ const theme = useContext(ThemeContext)
 Use for optional contexts with a sensible fallback.
 
 
-## Where It Works
-
-`useContext` is a **browser-only API**. It runs during hydration, not on the server. Valid call sites:
-
-| Location | Works? | Notes |
-|----------|--------|-------|
-| Inside `handleMount` (ref callback) | Yes | Most common pattern — recommended |
-| Inside `onMount` | Yes | |
-| Inside `createEffect` | Yes | |
-| Component body level | Yes | Only in `"use client"` components — executes during client initialization |
-| Module scope | No | No component context available |
-| Server component body | No | SSR error — `useContext` is not available on the server |
-
-The ref callback pattern (`handleMount`) is the **recommended convention** because it naturally places context access in the hydration phase and co-locates it with DOM setup. Body-level calls work but can't drive JSX expressions directly — use them when you need the context value in `createMemo` or `createEffect`.
-
-
-## Compilation Unit Scope
-
-Context is scoped to a **single compilation unit** — one `.tsx` file that compiles into one `.client.js` bundle.
-
-This means:
-
-- `createContext()` and all its consumers **must live in the same file**
-- Each `.client.js` bundle gets its own `createContext()` call, producing a unique `Symbol` id
-- If you import a context from another file, the consumer's bundle creates a *different* context object — `useContext` will never find the provider's value
-
-This is why compound components (Accordion, Dialog, Select, Tabs) define all sub-components in a single file:
-
-```tsx
-// accordion/index.tsx — all in one file
-"use client"
-
-const AccordionContext = createContext<AccordionContextValue>()
-
-function Accordion(props) { /* provides context */ }
-function AccordionTrigger(props) { /* consumes context */ }
-function AccordionContent(props) { /* consumes context */ }
-
-export { Accordion, AccordionTrigger, AccordionContent }
-```
-
-For sharing reactive state across components in **separate files**, see [Shared State Patterns](../reactivity/shared-state.md).
-
-
 ## Common Mistakes
 
-### Body-level `useContext` in a server component
+### Missing `"use client"`
+
+`useContext` requires `"use client"` — without it, the compiler does not rewrite the import to the runtime implementation, and the SSR shim throws:
 
 ```ts
-// ❌ Missing "use client" — function body runs during SSR
+// ❌ Missing "use client" — the compiler doesn't rewrite the import
 export function Player(props: PlayerProps) {
-  const ctx = useContext(MyContext)  // SSR error: useContext is browser-only
+  const ctx = useContext(MyContext)  // throws: "useContext() is a browser-only API"
   // ...
 }
 ```
 
 Fix: add `"use client"` as the first line.
 
-### Cross-file context import
+### Cross-file context
+
+Context providers and consumers must be in the **same file**. Each `.client.js` bundle gets its own `createContext()` call, producing a different `Symbol` id — so a consumer in one bundle can never find a provider from another:
 
 ```ts
-// ❌ context.tsx
+// ❌ context.tsx — a separate compilation unit
 "use client"
 export const PlaybackContext = createContext<PlaybackValue>()
 export const usePlayback = () => useContext(PlaybackContext)
 
-// ❌ player.tsx — different compilation unit
+// ❌ player.tsx — different bundle, different Symbol id
 "use client"
 import { usePlayback } from './context'
-// The compiler inlines a NEW createContext() call in player.client.js
-// → different Symbol id → useContext returns undefined
+// useContext returns undefined — the context ids don't match
 ```
 
-Fix: put the provider and all consumers in the **same file**, or use [custom events](../reactivity/shared-state.md) for cross-file communication.
+The same problem applies to `src/` utilities that call `createContext` — the compiler inlines them into each bundle, creating separate context objects.
 
-### Cross-file `src/` utility with `useContext`
-
-```ts
-// ❌ src/playback.ts — utility file
-import { createContext, useContext } from '@barefootjs/client'
-const PlaybackContext = createContext()
-export const usePlayback = () => useContext(PlaybackContext)
-```
-
-When the compiler inlines `src/` utilities into each component bundle, each bundle gets its own `createContext()` call — producing separate context objects with different identities. `useContext` in one bundle can never find the value provided by another.
-
-Fix: same as above — keep context within a single file, or use a different state-sharing pattern.
+Fix: keep context within a single file (this is why Accordion, Dialog, Select define all sub-components together), or use [custom events](../reactivity/shared-state.md) for cross-file communication.
