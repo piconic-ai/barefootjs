@@ -1324,7 +1324,7 @@ describe('formatFallbackExplanations', () => {
     `
     const graph = buildComponentGraph(source, 'Page.tsx')
     const fallbacks = graph.domBindings.filter(d => d.classification === 'fallback')
-    const output = formatFallbackExplanations(graph.componentName, graph.sourceFile, fallbacks)
+    const output = formatFallbackExplanations(graph.componentName, fallbacks)
     expect(output).toContain('fallback:')
     expect(output).toContain('expression:')
     expect(output).toContain('reason:')
@@ -1333,7 +1333,7 @@ describe('formatFallbackExplanations', () => {
   })
 
   test('returns clean message for zero fallbacks', () => {
-    const output = formatFallbackExplanations('Counter', 'Counter.tsx', [])
+    const output = formatFallbackExplanations('Counter', [])
     expect(output).toContain('no fallback-wrapped expressions')
   })
 })

@@ -31,7 +31,9 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   const source = readFileSync(resolved.filePath, 'utf-8')
   const graph = buildComponentGraph(source, resolved.filePath, resolved.componentName)
-  const fallbacks = graph.domBindings.filter(d => d.classification === 'fallback')
+  const isEventHandlerProp = (d: { type: string; label: string }) =>
+    d.type === 'attribute' && /^on[A-Z]/.test(d.label.split('.').pop() ?? '')
+  const fallbacks = graph.domBindings.filter(d => d.classification === 'fallback' && !isEventHandlerProp(d))
 
   if (ctx.jsonFlag) {
     console.log(JSON.stringify({
@@ -58,5 +60,5 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     return
   }
 
-  console.log(formatFallbackExplanations(graph.componentName, graph.sourceFile, fallbacks))
+  console.log(formatFallbackExplanations(graph.componentName, fallbacks))
 }
