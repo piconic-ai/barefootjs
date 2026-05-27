@@ -195,6 +195,24 @@ export interface WhyUpdateSource {
   via?: string
 }
 
+// -- Component summary types --------------------------------------------------
+
+export interface ComponentSummary {
+  componentName: string
+  sourceFile: string
+  hydrated: boolean
+  clientBundle: string | null
+  signals: number
+  memos: number
+  effects: number
+  loops: number
+  eventHandlers: number
+  dynamicTextBindings: number
+  dynamicAttributes: number
+  conditionals: number
+  fallbacks: number
+}
+
 // -- Component analysis (shared IR + graph) -----------------------------------
 
 export interface ComponentAnalysis {
@@ -1288,6 +1306,88 @@ export function formatFallbackExplanations(
     lines.push(`    suggestion: ${ex.suggestion}`)
   }
 
+  return lines.join('\n')
+}
+
+// =============================================================================
+// Component Summary (hydration/size overview)
+// =============================================================================
+
+export function buildComponentSummary(source: string, filePath: string, componentName?: string): ComponentSummary {
+  const { graph, ir } = buildComponentAnalysis(source, filePath, componentName)
+  const meta = ir.metadata
+  const isClient = meta.isClientComponent
+  const baseName = meta.componentName
+
+  let loopCount = 0
+  countNodeType(ir.root, 'loop', () => { loopCount++ })
+
+  let conditionalCount = 0
+  countNodeType(ir.root, 'conditional', () => { conditionalCount++ })
+
+  const eventHandlers = graph.domBindings.filter(d => d.type === 'event').length
+  const textBindings = graph.domBindings.filter(d => d.type === 'text').length
+  const attrBindings = graph.domBindings.filter(d => d.type === 'attribute').length
+  const fallbacks = graph.domBindings.filter(d => d.classification === 'fallback').length
+
+  return {
+    componentName: graph.componentName,
+    sourceFile: graph.sourceFile,
+    hydrated: isClient,
+    clientBundle: isClient ? `components/${baseName}.client.js` : null,
+    signals: graph.signals.length,
+    memos: graph.memos.length,
+    effects: graph.effects.length,
+    loops: loopCount,
+    eventHandlers,
+    dynamicTextBindings: textBindings,
+    dynamicAttributes: attrBindings,
+    conditionals: conditionalCount,
+    fallbacks,
+  }
+}
+
+function countNodeType(node: IRNode, targetType: string, cb: () => void): void {
+  if (node.type === targetType) cb()
+  switch (node.type) {
+    case 'element':
+    case 'fragment':
+    case 'provider':
+      for (const child of node.children) countNodeType(child, targetType, cb)
+      break
+    case 'component':
+      for (const child of node.children) countNodeType(child, targetType, cb)
+      break
+    case 'conditional':
+      countNodeType(node.whenTrue, targetType, cb)
+      countNodeType(node.whenFalse, targetType, cb)
+      break
+    case 'loop':
+      for (const child of node.children) countNodeType(child, targetType, cb)
+      break
+    case 'if-statement':
+      countNodeType(node.consequent, targetType, cb)
+      if (node.alternate) countNodeType(node.alternate, targetType, cb)
+      break
+  }
+}
+
+export function formatComponentSummary(summary: ComponentSummary): string {
+  const lines: string[] = []
+  lines.push(summary.componentName)
+  lines.push(`  hydrated: ${summary.hydrated ? 'yes' : 'no'}`)
+  if (summary.clientBundle) {
+    lines.push(`  client bundle: ${summary.clientBundle}`)
+  }
+  lines.push(`  signals: ${summary.signals}`)
+  lines.push(`  memos: ${summary.memos}`)
+  if (summary.effects > 0) lines.push(`  effects: ${summary.effects}`)
+  lines.push(`  loops: ${summary.loops}`)
+  lines.push(`  event handlers: ${summary.eventHandlers}`)
+  lines.push(`  dynamic text bindings: ${summary.dynamicTextBindings}`)
+  lines.push(`  dynamic attributes: ${summary.dynamicAttributes}`)
+  if (summary.conditionals > 0) lines.push(`  conditionals: ${summary.conditionals}`)
+  if (summary.fallbacks > 0) lines.push(`  fallbacks: ${summary.fallbacks}`)
   return lines.join('\n')
 }
 

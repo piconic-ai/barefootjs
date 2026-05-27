@@ -259,11 +259,13 @@ export {
   formatWhyUpdate,
   describeFallback,
   formatFallbackExplanations,
+  buildComponentSummary,
+  formatComponentSummary,
   formatSignalTrace,
   generateStaticTrace,
   graphToJSON,
 } from './debug'
-export type { ComponentGraph, ComponentAnalysis, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace, EventBinding, SetterRef, EventSummary, LoopInfo, LoopChildBinding, LoopSummary, WhyUpdateResult, WhyUpdateDep, WhyUpdateSource, FallbackExplanation } from './debug'
+export type { ComponentGraph, ComponentAnalysis, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace, EventBinding, SetterRef, EventSummary, LoopInfo, LoopChildBinding, LoopSummary, WhyUpdateResult, WhyUpdateDep, WhyUpdateSource, FallbackExplanation, ComponentSummary } from './debug'
 export type { WrapReason } from './ir-to-client-js/reactivity'
 
 // HTML constants

@@ -23,6 +23,8 @@ import {
   graphToJSON,
   describeFallback,
   formatFallbackExplanations,
+  buildComponentSummary,
+  formatComponentSummary,
 } from '../debug'
 
 const counterSource = `
@@ -1222,5 +1224,68 @@ describe('formatFallbackExplanations', () => {
   test('returns clean message for zero fallbacks', () => {
     const output = formatFallbackExplanations('Counter', 'Counter.tsx', [])
     expect(output).toContain('no fallback-wrapped expressions')
+  })
+})
+
+// =============================================================================
+// Component summary (bf debug summary, #1611 TODO 6)
+// =============================================================================
+
+describe('buildComponentSummary', () => {
+  test('counts signals, memos, effects, and bindings for a client component', () => {
+    const summary = buildComponentSummary(dashboardSource, 'Dashboard.tsx')
+    expect(summary.componentName).toBe('Dashboard')
+    expect(summary.hydrated).toBe(true)
+    expect(summary.clientBundle).toBe('components/Dashboard.client.js')
+    expect(summary.signals).toBe(1)
+    expect(summary.memos).toBe(1)
+    expect(summary.effects).toBe(1)
+    expect(summary.eventHandlers).toBeGreaterThanOrEqual(1)
+    expect(summary.dynamicTextBindings).toBeGreaterThanOrEqual(1)
+  })
+
+  test('reports non-hydrated for stateless component', () => {
+    const source = `
+      export function Card(props: { title: string }) {
+        return <div>{props.title}</div>
+      }
+    `
+    const summary = buildComponentSummary(source, 'Card.tsx')
+    expect(summary.hydrated).toBe(false)
+    expect(summary.clientBundle).toBeNull()
+    expect(summary.signals).toBe(0)
+  })
+
+  test('counts loops', () => {
+    const summary = buildComponentSummary(todoSource, 'TodoList.tsx')
+    expect(summary.loops).toBeGreaterThanOrEqual(1)
+  })
+
+  test('counts fallbacks', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { formatTitle } from './format'
+
+      export function Page() {
+        const [, setFoo] = createSignal(0)
+        return <h1 onClick={() => setFoo(1)}>{formatTitle('x')}</h1>
+      }
+    `
+    const summary = buildComponentSummary(source, 'Page.tsx')
+    expect(summary.fallbacks).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('formatComponentSummary', () => {
+  test('produces readable output', () => {
+    const summary = buildComponentSummary(dashboardSource, 'Dashboard.tsx')
+    const output = formatComponentSummary(summary)
+    expect(output).toContain('Dashboard')
+    expect(output).toContain('hydrated: yes')
+    expect(output).toContain('signals: 1')
+    expect(output).toContain('memos: 1')
+    expect(output).toContain('event handlers:')
+    expect(output).toContain('dynamic text bindings:')
   })
 })
