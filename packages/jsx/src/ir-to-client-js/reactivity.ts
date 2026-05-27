@@ -564,7 +564,7 @@ export function collectLoopChildReactiveAttrs(
         // attribute on the live DOM, and (b) burn a no-op createEffect on
         // every loop item. See observation O-3 in tmp/emit-survey.
         if (attr.name === 'key') continue
-        const valueStr = attrValueToString(attr.value, { useTemplate: true })
+        const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
         const expanded = expandConstantForReactivity(valueStr, ctx, attr.freeIdentifiers)
         // `/* @client */` always defers via per-item createEffect

@@ -702,7 +702,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
       // already in the SSR DOM and never change. Only `expression` /
       // `template` / `spread` reach the wrap decision.
       if (attr.value.kind === 'expression' || attr.value.kind === 'template' || attr.value.kind === 'spread') {
-        const valueStr = attrValueToString(attr.value, { useTemplate: true })
+        const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
 
         // Expand local constant references to detect transitive prop dependencies.
@@ -776,7 +776,7 @@ function collectBranchReactiveAttrs(node: IRNode, ctx: ClientJsContext): Conditi
         if (attr.name === '...') continue
         // Only `expression` / `template` / `spread` carry a reactive expression.
         if (attr.value.kind !== 'expression' && attr.value.kind !== 'template' && attr.value.kind !== 'spread') continue
-        const valueStr = attrValueToString(attr.value, { useTemplate: true })
+        const valueStr = attrValueToString(attr.value)
         if (!valueStr) continue
         const expanded = expandConstantForReactivity(valueStr, ctx, attr.freeIdentifiers)
         // Mirror the main-path gate (collectElements.element handler):

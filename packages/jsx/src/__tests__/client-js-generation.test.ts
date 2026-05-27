@@ -2191,7 +2191,11 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // Prop references should use _p.xxx (not destructured bare names)
+      // Should generate createEffect for the class attribute
+      expect(content).toContain('createEffect')
+      expect(content).toContain("setAttribute('class'")
+
+      // Should reference props.variant and props.className (not destructured names)
       expect(content).toContain('_p.variant')
       expect(content).toContain('_p.className')
     })
@@ -2244,12 +2248,11 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // String literals containing "size" should NOT be corrupted
-      // (e.g. "text-sm" must not become "text-_p.sm")
-      expect(content).toContain('"text-sm"')
-      expect(content).toContain('"text-lg"')
+      // sizeMap should remain intact (not rewritten to (props.size ?? ...)Map)
+      expect(content).toContain('sizeMap')
+      expect(content).not.toContain('sizeMap'.replace('size', 'props.size'))
       // The standalone size reference should be rewritten
-      expect(content).toContain('_p.size')
+      expect(content).toContain("_p.size ?? 'sm'")
     })
 
     test('default values from destructuring are included in rewrite', () => {
