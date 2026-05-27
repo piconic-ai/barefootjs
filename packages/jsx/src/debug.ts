@@ -146,6 +146,7 @@ export interface EventSummary {
   componentName: string
   sourceFile: string
   events: EventBinding[]
+  graph: ComponentGraph
 }
 
 // -- Loop analysis types ------------------------------------------------------
@@ -374,7 +375,7 @@ export function buildComponentAnalysis(source: string, filePath: string, compone
   const emptyIR: ComponentIR = {
     version: '0.1',
     metadata: buildMetadata(ctx),
-    root: { type: 'fragment', children: [], loc: { file: filePath, start: { line: 0, column: 0 }, end: { line: 0, column: 0 } } },
+    root: { type: 'fragment', children: [], loc: { file: filePath, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } } },
     errors: [],
   }
 
@@ -413,20 +414,32 @@ export function buildEventSummary(source: string, filePath: string, componentNam
     componentName: graph.componentName,
     sourceFile: graph.sourceFile,
     events,
+    graph,
   }
+}
+
+function escapeForIdBoundary(name: string): string {
+  return name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function makeIdCallRegex(name: string): RegExp {
+  return new RegExp(`(?:^|[^\\w$])${escapeForIdBoundary(name)}\\s*\\(`)
+}
+
+function makeIdRefRegex(name: string): RegExp {
+  return new RegExp(`(?:^|[^\\w$])${escapeForIdBoundary(name)}(?:[^\\w$]|$)`)
 }
 
 function buildLocalFunctionSetterMap(
   meta: IRMetadata,
   setterToSignal: Map<string, string>,
 ): Map<string, string[]> {
+  const setterPatterns = [...setterToSignal.keys()].map(s => ({ name: s, re: makeIdCallRegex(s) }))
   const result = new Map<string, string[]>()
   for (const fn of meta.localFunctions) {
     const setters: string[] = []
-    for (const setter of setterToSignal.keys()) {
-      if (new RegExp(`\\b${setter}\\s*\\(`).test(fn.body)) {
-        setters.push(setter)
-      }
+    for (const { name, re } of setterPatterns) {
+      if (re.test(fn.body)) setters.push(name)
     }
     if (setters.length > 0) result.set(fn.name, setters)
   }
@@ -510,6 +523,13 @@ function walkForEvents(
       if (node.alternate) walkForEvents(node.alternate, events, setterToSignal, fnSetters)
       break
     }
+    case 'async': {
+      walkForEvents(node.fallback, events, setterToSignal, fnSetters)
+      for (const child of node.children) {
+        walkForEvents(child, events, setterToSignal, fnSetters)
+      }
+      break
+    }
   }
 }
 
@@ -520,9 +540,10 @@ function resolveSetters(
 ): SetterRef[] {
   const refs: SetterRef[] = []
   const seen = new Set<string>()
+  const trimmed = handler.trim()
 
   for (const [setter, signal] of setterToSignal) {
-    if (new RegExp(`\\b${setter}\\s*\\(`).test(handler)) {
+    if (trimmed === setter || makeIdCallRegex(setter).test(handler)) {
       if (!seen.has(setter)) {
         refs.push({ setter, signal })
         seen.add(setter)
@@ -531,7 +552,7 @@ function resolveSetters(
   }
 
   for (const [fnName, setters] of fnSetters) {
-    if (new RegExp(`\\b${fnName}\\s*\\(`).test(handler)) {
+    if (trimmed === fnName || makeIdCallRegex(fnName).test(handler)) {
       for (const setter of setters) {
         if (!seen.has(setter)) {
           refs.push({ setter, signal: setterToSignal.get(setter) ?? null, via: fnName })
@@ -574,8 +595,6 @@ export function formatEventSummary(summary: EventSummary, graph: ComponentGraph)
   lines.push(`${summary.componentName} — ${summary.events.length} event handler(s)`)
 
   if (summary.events.length === 0) return lines.join('\n')
-
-  const fileName = summary.sourceFile.split('/').pop() ?? summary.sourceFile
 
   for (const event of summary.events) {
     lines.push('')
@@ -1027,10 +1046,13 @@ export function formatComponentGraph(graph: ComponentGraph): string {
         }
         continue
       }
-      const arrow = d.type === 'event' ? ' ->' : ' <-'
       const depStr = d.deps.join(', ')
       if (d.jsxPreview) {
-        lines.push(`    ${marker}${depStr} -> ${d.jsxPreview}${locSuffix}`)
+        if (d.type === 'event') {
+          lines.push(`    ${marker}${d.jsxPreview} -> ${depStr}${locSuffix}`)
+        } else {
+          lines.push(`    ${marker}${depStr} -> ${d.jsxPreview}${locSuffix}`)
+        }
       } else {
         lines.push(`    ${marker}${d.type} ${id}${arrow} ${depStr}${locSuffix}`)
       }
@@ -1460,7 +1482,9 @@ function collectDomBindings(
             expression: expr,
             wrapReason,
             loc: attr.loc,
-            jsxPreview: `<${node.tag} ${attr.name}={${truncateExpr(expr)}}>`,
+            jsxPreview: attr.value.kind === 'spread'
+              ? `<${node.tag} {...${truncateExpr(expr)}}>`
+              : `<${node.tag} ${attr.name}={${truncateExpr(expr)}}>`,
           })
         }
       }
@@ -1561,7 +1585,7 @@ function collectDomBindings(
             expression: node.array,
             wrapReason,
             loc: node.loc,
-            jsxPreview: `{${truncateExpr(node.array)}.map(${node.param} => ...)}`,
+            jsxPreview: `{${truncateExpr(node.array)}.${node.method === 'flatMap' ? 'flatMap' : 'map'}(${node.param} => ...)}`,
           })
         }
       }
@@ -1592,7 +1616,9 @@ function collectDomBindings(
             expression: propValue,
             wrapReason,
             loc: prop.loc,
-            jsxPreview: `<${node.name} ${prop.name}={${truncateExpr(propValue)}}>`,
+            jsxPreview: prop.value.kind === 'spread'
+              ? `<${node.name} {...${truncateExpr(propValue)}}>`
+              : `<${node.name} ${prop.name}={${truncateExpr(propValue)}}>`,
           })
         }
       }
