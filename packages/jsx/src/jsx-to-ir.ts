@@ -2924,7 +2924,7 @@ function transformMapCall(
         }
       }
     }
-    if (callback.parameters.length > 1) {
+    if (callback.parameters.length > 1 && iterationShape !== 'entries') {
       const secondParam = callback.parameters[1]
       index = secondParam.name.getText(ctx.sourceFile)
       if (secondParam.type) {

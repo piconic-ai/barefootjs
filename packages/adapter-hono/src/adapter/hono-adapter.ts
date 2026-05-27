@@ -830,7 +830,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // param/index, so we reconstruct proper JS: `[...arr.entries()]`
     // (spread into an array so `.map()` works).
     let callbackParam: string
-    if (loop.iterationShape === 'entries') {
+    if (loop.iterationShape === 'entries' && loop.index) {
       chainedArray = `[...${chainedArray}.entries()]`
       callbackParam = `([${loop.index}${indexAnnotation}, ${loop.param}${paramAnnotation}])`
     } else if (loop.iterationShape === 'keys') {

@@ -77,7 +77,7 @@ function applyIterationShape(
   arrayExpr: string,
   indexParam: string,
 ): { array: string; callbackParam: string } {
-  if (node.iterationShape === 'entries') {
+  if (node.iterationShape === 'entries' && node.index) {
     return {
       array: `[...${arrayExpr}.entries()]`,
       callbackParam: `([${node.index}, ${node.param}])`,

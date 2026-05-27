@@ -299,7 +299,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private options: Required<GoTemplateAdapterOptions>
   private inLoop: boolean = false
   private loopParamStack: string[] = []
-  private loopVarSet: Set<string> = new Set()
+  private loopVarRefCount: Map<string, number> = new Map()
   private errors: CompilerError[] = []
   private propsObjectName: string | null = null
   /**
@@ -2477,7 +2477,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   identifier(name: string): string {
     const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
     if (currentLoopParam && name === currentLoopParam) return '.'
-    if (this.loopVarSet.has(name)) return `$${name}`
+    if (this.loopVarRefCount.has(name)) return `$${name}`
     return `.${this.capitalizeFieldName(name)}`
   }
 
@@ -3749,7 +3749,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           if (currentLoopParam && expr.name === currentLoopParam) {
             return plain('.')
           }
-          if (this.loopVarSet.has(expr.name)) {
+          if (this.loopVarRefCount.has(expr.name)) {
             return plain(`$${expr.name}`)
           }
         }
@@ -3947,26 +3947,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Track Go template loop variables. The range *value* variable
     // is the dot context (`.`) and goes on `loopParamStack`; the
     // range *index* variable needs `$name` notation and goes on
-    // `loopVarSet`. For `.keys()`, the user's param IS the index
+    // `loopVarRefCount`. For `.keys()`, the user's param IS the index
     // (in the `$k, $_` position), so it needs `$name` — don't push
     // it to loopParamStack (`.` would resolve to the value, not key).
     // Push `''` instead — falsy, so the `currentLoopParam &&` guard
     // in `identifier()` / `renderConditionExpr` short-circuits and
     // no name ever matches the empty string.
+    // Uses ref-counting (not a flat Set) so nested loops with the
+    // same index var name don't clobber the outer loop's entry on
+    // cleanup.
     const addedLoopVars: string[] = []
     if (loop.iterationShape === 'keys') {
       this.loopParamStack.push('')
-      this.loopVarSet.add(param)
+      this.loopVarRefCount.set(param, (this.loopVarRefCount.get(param) ?? 0) + 1)
       addedLoopVars.push(param)
     } else {
       this.loopParamStack.push(param)
       if (rangeIndex !== '_') {
-        this.loopVarSet.add(rangeIndex)
+        this.loopVarRefCount.set(rangeIndex, (this.loopVarRefCount.get(rangeIndex) ?? 0) + 1)
         addedLoopVars.push(rangeIndex)
       }
     }
     const children = this.renderChildren(loop.children)
-    for (const v of addedLoopVars) this.loopVarSet.delete(v)
+    for (const v of addedLoopVars) {
+      const rc = (this.loopVarRefCount.get(v) ?? 1) - 1
+      if (rc <= 0) this.loopVarRefCount.delete(v)
+      else this.loopVarRefCount.set(v, rc)
+    }
     this.loopParamStack.pop()
     this.inLoop = false
 

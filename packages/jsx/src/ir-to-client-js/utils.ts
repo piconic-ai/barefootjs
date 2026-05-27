@@ -131,18 +131,12 @@ export function exhaustiveAttrValue(value: never): never {
  * branch preserves the chain (#1434).
  */
 export function buildChainedArrayExpr(elem: TopLevelLoop | BranchLoop): string {
-  let result = buildLoopChainExpr({
+  return buildLoopChainExpr({
     base: elem.array,
     sortComparator: elem.sortComparator,
     filterPredicate: elem.filterPredicate,
     chainOrder: elem.chainOrder,
   })
-  if (elem.iterationShape === 'entries') {
-    result = `[...${result}.entries()]`
-  } else if (elem.iterationShape === 'keys') {
-    result = `[...${result}.keys()]`
-  }
-  return result
 }
 
 /**
