@@ -181,6 +181,7 @@ export interface WhyUpdateResult {
   binding: string
   expression: string | null
   deps: WhyUpdateDep[]
+  ambiguous?: Array<{ label: string; slotId: string }>
 }
 
 export interface WhyUpdateDep {
@@ -922,12 +923,20 @@ export function buildWhyUpdate(
 ): WhyUpdateResult | null {
   const { graph, ir } = buildComponentAnalysis(source, filePath, componentName)
 
-  const binding = graph.domBindings.find(d =>
+  const matches = graph.domBindings.filter(d =>
     d.label === bindingLabel ||
-    d.slotId === bindingLabel ||
-    (d.jsxPreview && d.jsxPreview.includes(bindingLabel)),
+    d.slotId === bindingLabel,
   )
-  if (!binding) return null
+  if (matches.length === 0) return null
+  if (matches.length > 1) {
+    return {
+      binding: bindingLabel,
+      expression: null,
+      deps: [],
+      ambiguous: matches.map(d => ({ label: d.label, slotId: d.slotId })),
+    }
+  }
+  const binding = matches[0]
 
   const setterToSignal = new Map<string, string>()
   for (const s of ir.metadata.signals) {
@@ -971,8 +980,9 @@ export function buildWhyUpdate(
 
   for (const dep of binding.deps) traceDep(dep)
 
+  const stableId = binding.type === 'attribute' ? binding.label : binding.slotId
   return {
-    binding: binding.label,
+    binding: stableId,
     expression: binding.expression ?? null,
     deps,
   }
