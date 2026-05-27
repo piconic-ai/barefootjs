@@ -37,9 +37,19 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   if (!result) {
     const graph = buildComponentGraph(source, resolved.filePath, resolved.componentName)
     console.error(`Error: Binding "${bindingLabel}" not found in ${graph.componentName}.`)
-    const available = graph.domBindings.map(d => d.label)
+    const available = graph.domBindings.map(d =>
+      d.type === 'attribute' ? d.label : d.slotId,
+    )
     if (available.length > 0) {
-      console.error(`Available bindings: ${available.join(', ')}`)
+      console.error(`Available bindings: ${[...new Set(available)].join(', ')}`)
+    }
+    process.exit(1)
+  }
+
+  if (result.ambiguous) {
+    console.error(`Error: "${bindingLabel}" matches multiple bindings. Disambiguate with a slot ID:`)
+    for (const m of result.ambiguous) {
+      console.error(`  ${m.slotId} (${m.label})`)
     }
     process.exit(1)
   }
