@@ -249,15 +249,17 @@ export {
   buildComponentAnalysis,
   buildGraphFromIR,
   buildEventSummary,
+  buildLoopSummary,
   traceUpdatePath,
   formatComponentGraph,
   formatUpdatePath,
   formatEventSummary,
+  formatLoopSummary,
   formatSignalTrace,
   generateStaticTrace,
   graphToJSON,
 } from './debug'
-export type { ComponentGraph, ComponentAnalysis, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace, EventBinding, SetterRef, EventSummary } from './debug'
+export type { ComponentGraph, ComponentAnalysis, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace, EventBinding, SetterRef, EventSummary, LoopInfo, LoopChildBinding, LoopSummary } from './debug'
 export type { WrapReason } from './ir-to-client-js/reactivity'
 
 // HTML constants

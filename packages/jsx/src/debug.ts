@@ -149,6 +149,32 @@ export interface EventSummary {
   graph: ComponentGraph
 }
 
+// -- Loop analysis types ------------------------------------------------------
+
+export interface LoopInfo {
+  array: string
+  param: string
+  index: string | null
+  key: string | null
+  method: 'map' | 'flatMap'
+  bindings: LoopChildBinding[]
+  loc: SourceLocation
+}
+
+export interface LoopChildBinding {
+  elementContext: string
+  kind: 'attribute' | 'text' | 'event'
+  name: string
+  deps: string[]
+  loc?: SourceLocation
+}
+
+export interface LoopSummary {
+  componentName: string
+  sourceFile: string
+  loops: LoopInfo[]
+}
+
 // -- Component analysis (shared IR + graph) -----------------------------------
 
 export interface ComponentAnalysis {
@@ -587,6 +613,227 @@ function flattenUpdateTargets(entries: UpdatePathEntry[]): string[] {
     }
   }
   return targets
+}
+
+// =============================================================================
+// Analysis: Loop Bindings
+// =============================================================================
+
+interface PrecompiledLoopPatterns {
+  signalCallPatterns: Array<{ name: string; re: RegExp }>
+  memoCallPatterns: Array<{ name: string; re: RegExp }>
+  paramRefPatterns: Array<{ name: string; re: RegExp }>
+}
+
+export function buildLoopSummary(source: string, filePath: string, componentName?: string): LoopSummary {
+  const { graph, ir } = buildComponentAnalysis(source, filePath, componentName)
+  const signalGetters = new Set(ir.metadata.signals.map(s => s.getter))
+  const memoNames = new Set(ir.metadata.memos.map(m => m.name))
+  const loops: LoopInfo[] = []
+  collectLoops(ir.root, loops, signalGetters, memoNames)
+  return { componentName: graph.componentName, sourceFile: graph.sourceFile, loops }
+}
+
+function collectLoops(
+  node: IRNode,
+  loops: LoopInfo[],
+  signalGetters: Set<string>,
+  memoNames: Set<string>,
+): void {
+  switch (node.type) {
+    case 'loop': {
+      const bindings: LoopChildBinding[] = []
+      const paramNames = extractLoopParamNames(node.param, node)
+      if (node.index) paramNames.push(node.index)
+      const patterns: PrecompiledLoopPatterns = {
+        signalCallPatterns: [...signalGetters].map(g => ({ name: g, re: makeIdCallRegex(g) })),
+        memoCallPatterns: [...memoNames].map(m => ({ name: m, re: makeIdCallRegex(m) })),
+        paramRefPatterns: paramNames.map(n => ({ name: n, re: makeIdRefRegex(n) })),
+      }
+      collectLoopChildBindings(node.children, bindings, patterns)
+      loops.push({
+        array: node.array,
+        param: node.param,
+        index: node.index ?? null,
+        key: node.key ?? null,
+        method: node.method === 'flatMap' ? 'flatMap' : 'map',
+        bindings,
+        loc: node.loc,
+      })
+      for (const child of node.children) collectLoops(child, loops, signalGetters, memoNames)
+      break
+    }
+    case 'element': {
+      for (const child of node.children) collectLoops(child, loops, signalGetters, memoNames)
+      break
+    }
+    case 'component': {
+      for (const child of node.children) collectLoops(child, loops, signalGetters, memoNames)
+      break
+    }
+    case 'fragment':
+    case 'provider': {
+      for (const child of node.children) collectLoops(child, loops, signalGetters, memoNames)
+      break
+    }
+    case 'conditional': {
+      collectLoops(node.whenTrue, loops, signalGetters, memoNames)
+      collectLoops(node.whenFalse, loops, signalGetters, memoNames)
+      break
+    }
+    case 'if-statement': {
+      collectLoops(node.consequent, loops, signalGetters, memoNames)
+      if (node.alternate) collectLoops(node.alternate, loops, signalGetters, memoNames)
+      break
+    }
+    case 'async': {
+      collectLoops(node.fallback, loops, signalGetters, memoNames)
+      for (const child of node.children) collectLoops(child, loops, signalGetters, memoNames)
+      break
+    }
+  }
+}
+
+function collectLoopChildBindings(
+  children: IRNode[],
+  bindings: LoopChildBinding[],
+  patterns: PrecompiledLoopPatterns,
+  parentTag?: string,
+): void {
+  for (const child of children) {
+    switch (child.type) {
+      case 'element': {
+        const ctx = child.tag
+        for (const attr of child.attrs) {
+          if (attr.name === 'key' || attr.name === '...' || attr.name.startsWith('...')) continue
+          if (attr.value.kind !== 'expression' && attr.value.kind !== 'template' && attr.value.kind !== 'spread') continue
+          const expr = attrValueToString(attr.value)
+          if (!expr) continue
+          const deps = collectLoopDepsPrecompiled(expr, patterns)
+          if (deps.length > 0) {
+            bindings.push({ elementContext: ctx, kind: 'attribute', name: attr.name, deps, loc: attr.loc })
+          }
+        }
+        for (const event of child.events) {
+          const deps = collectLoopDepsPrecompiled(event.handler, patterns)
+          bindings.push({
+            elementContext: ctx,
+            kind: 'event',
+            name: event.originalAttr ?? `on${event.name[0].toUpperCase()}${event.name.slice(1)}`,
+            deps,
+            loc: event.loc,
+          })
+        }
+        collectLoopChildBindings(child.children, bindings, patterns, ctx)
+        break
+      }
+      case 'expression': {
+        if (child.slotId) {
+          const deps = collectLoopDepsPrecompiled(child.expr, patterns)
+          if (deps.length > 0) {
+            bindings.push({ elementContext: parentTag ?? 'text', kind: 'text', name: child.expr, deps, loc: child.loc })
+          }
+        }
+        break
+      }
+      case 'component': {
+        const ctx = child.name
+        for (const prop of child.props) {
+          if (prop.name === '...' || prop.name.startsWith('...')) continue
+          if (prop.value.kind !== 'expression' && prop.value.kind !== 'template' && prop.value.kind !== 'spread') continue
+          const propValue = attrValueToString(prop.value) ?? ''
+          if (!propValue) continue
+          const deps = collectLoopDepsPrecompiled(propValue, patterns)
+          if (deps.length > 0) {
+            const isEvent = /^on[A-Z]/.test(prop.name)
+            bindings.push({ elementContext: ctx, kind: isEvent ? 'event' : 'attribute', name: prop.name, deps, loc: prop.loc })
+          }
+        }
+        for (const c of child.children) {
+          collectLoopChildBindings([c], bindings, patterns, parentTag)
+        }
+        break
+      }
+      case 'conditional': {
+        collectLoopChildBindings([child.whenTrue], bindings, patterns, parentTag)
+        collectLoopChildBindings([child.whenFalse], bindings, patterns, parentTag)
+        break
+      }
+      case 'fragment':
+      case 'provider': {
+        collectLoopChildBindings(child.children, bindings, patterns, parentTag)
+        break
+      }
+      case 'loop': {
+        break
+      }
+      case 'if-statement': {
+        collectLoopChildBindings([child.consequent], bindings, patterns, parentTag)
+        if (child.alternate) collectLoopChildBindings([child.alternate], bindings, patterns, parentTag)
+        break
+      }
+      case 'async': {
+        collectLoopChildBindings([child.fallback], bindings, patterns, parentTag)
+        collectLoopChildBindings(child.children, bindings, patterns, parentTag)
+        break
+      }
+    }
+  }
+}
+
+function extractLoopParamNames(loopParam: string, node: IRLoop): string[] {
+  if (node.paramBindings && node.paramBindings.length > 0) {
+    return node.paramBindings.map(b => b.name)
+  }
+  if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(loopParam)) {
+    return [loopParam]
+  }
+  return []
+}
+
+function collectLoopDepsPrecompiled(
+  expr: string,
+  patterns: PrecompiledLoopPatterns,
+): string[] {
+  const deps: string[] = []
+  for (const { name, re } of patterns.signalCallPatterns) {
+    if (re.test(expr)) deps.push(name)
+  }
+  for (const { name, re } of patterns.memoCallPatterns) {
+    if (re.test(expr)) deps.push(name)
+  }
+  for (const { name, re } of patterns.paramRefPatterns) {
+    if (re.test(expr)) deps.push(name)
+  }
+  return deps
+}
+
+export function formatLoopSummary(summary: LoopSummary): string {
+  const lines: string[] = []
+  lines.push(`${summary.componentName} — ${summary.loops.length} loop(s)`)
+
+  for (const loop of summary.loops) {
+    lines.push('')
+    const params = loop.index ? `${loop.param}, ${loop.index}` : loop.param
+    lines.push(`  ${loop.array}.${loop.method}(${params})`)
+    if (loop.key) lines.push(`    key: ${loop.key}`)
+
+    for (const b of loop.bindings) {
+      const depStr = b.deps.length > 0 ? b.deps.join(', ') : '(no deps)'
+      if (b.kind === 'event') {
+        lines.push(`    ${b.elementContext} ${b.name} -> ${depStr}`)
+      } else if (b.kind === 'attribute') {
+        lines.push(`    ${b.elementContext} ${b.name} <- ${depStr}`)
+      } else {
+        lines.push(`    ${b.elementContext} <- ${depStr}`)
+      }
+    }
+
+    const locFile = loop.loc.file.split('/').pop() ?? loop.loc.file
+    lines.push(`    at ${locFile}:${loop.loc.start.line}`)
+  }
+
+  return lines.join('\n')
 }
 
 // =============================================================================
@@ -1132,7 +1379,11 @@ function attrValueToString(value: AttrValue): string | null {
       return value.expr
     case 'template':
       return value.parts
-        .map(p => p.type === 'ternary' ? `${p.condition} ${p.whenTrue} ${p.whenFalse}` : '')
+        .map(p => {
+          if (p.type === 'ternary') return `${p.condition} ${p.whenTrue} ${p.whenFalse}`
+          if (p.type === 'lookup') return p.key
+          return ''
+        })
         .join(' ')
     case 'boolean-attr':
     case 'boolean-shorthand':
