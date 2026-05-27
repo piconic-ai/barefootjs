@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/form",
-  "version": "0.1.3",
+  "version": "1.0.0",
   "description": "Signal-based form management for BarefootJS",
   "type": "module",
   "main": "./dist/index.js",
@@ -36,7 +36,7 @@
     "directory": "packages/form"
   },
   "peerDependencies": {
-    "@barefootjs/client": ">=0.1.3",
+    "@barefootjs/client": ">=1.0.0",
     "@standard-schema/spec": "^1.0.0"
   },
   "dependencies": {

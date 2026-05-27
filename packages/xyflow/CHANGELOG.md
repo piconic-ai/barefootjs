@@ -1,5 +1,18 @@
 # @barefootjs/xyflow
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [2313724]
+- Updated dependencies [bac95e6]
+- Updated dependencies [4e4d31a]
+- Updated dependencies [bff7df6]
+- Updated dependencies [31ce089]
+- Updated dependencies [89a6ad5]
+  - @barefootjs/client@1.0.0
+  - @barefootjs/jsx@1.0.0
+
 ## 0.1.3
 
 ### Patch Changes

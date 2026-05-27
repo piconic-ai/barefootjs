@@ -1,5 +1,22 @@
 # @barefootjs/jsx
 
+## 1.0.0
+
+### Minor Changes
+
+- 4e4d31a: Add `bf debug events` command for tracing event handler -> setter -> signal -> DOM update paths
+- 89a6ad5: Add .entries()/.keys()/.values() iteration shapes (#1448 Tier B)
+
+### Patch Changes
+
+- bac95e6: Extract classifyDOMProp as single source of truth for DOM attribute vs JSX prop classification
+- bff7df6: Fix reactive expressions inside conditional branches not updating when dependencies change
+- 31ce089: Fix prop name substitution corrupting string literals in client JS (e.g. `"size-9"` → `"(_p.size ?? 'default')-9"`)
+- Updated dependencies [2313724]
+- Updated dependencies [bac95e6]
+  - @barefootjs/shared@1.0.0
+  - @barefootjs/client@1.0.0
+
 ## 0.1.3
 
 ### Patch Changes

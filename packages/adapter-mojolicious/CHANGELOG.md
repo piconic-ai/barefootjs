@@ -1,5 +1,22 @@
 # @barefootjs/mojolicious
 
+## 1.0.0
+
+### Minor Changes
+
+- 89a6ad5: Add .entries()/.keys()/.values() iteration shapes (#1448 Tier B)
+
+### Patch Changes
+
+- Updated dependencies [2313724]
+- Updated dependencies [bac95e6]
+- Updated dependencies [4e4d31a]
+- Updated dependencies [bff7df6]
+- Updated dependencies [31ce089]
+- Updated dependencies [89a6ad5]
+  - @barefootjs/shared@1.0.0
+  - @barefootjs/jsx@1.0.0
+
 ## 0.1.3
 
 ### Patch Changes

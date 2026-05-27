@@ -1,5 +1,15 @@
 # @barefootjs/cli
 
+## 1.0.0
+
+### Minor Changes
+
+- 4e4d31a: Add `bf debug events` command for tracing event handler -> setter -> signal -> DOM update paths
+
+### Patch Changes
+
+- 57262dd: Move @barefootjs/cli from dependencies to devDependencies in generated package.json. The CLI is a build tool, not a runtime dependency.
+
 ## 0.1.3
 
 ### Patch Changes
