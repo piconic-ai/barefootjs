@@ -47,7 +47,21 @@ export function applyRegexPropRefRewrite(
   text: string,
   propRefs: Iterable<string>,
 ): string {
+  // Protect string literals and template-literal static segments so prop
+  // names inside CSS selectors (e.g. [class*="size-"]) and class values
+  // (e.g. "size-9") are not rewritten.
+  const stash: string[] = []
+  const save = (s: string) => { const i = stash.length; stash.push(s); return `__PROP_STRLIT_${i}__` }
+
   let result = text
+  // 1. Protect template-literal static segments (text outside ${...}).
+  result = result.replace(/`([^`]*)`/g, (_full, inner: string) => {
+    const parts = splitTemplateInterpolations(inner)
+    return '`' + parts.map(p => p.startsWith('${') ? p : save(p)).join('') + '`'
+  })
+  // 2. Protect remaining single/double-quoted strings.
+  result = result.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, m => save(m))
+
   for (const propName of propRefs) {
     const pattern = new RegExp(`(?<!${PROPS_PARAM}\\.)(?<!['"\\w.-])\\b${propName}\\b(?![a-zA-Z0-9_$])`, 'g')
     result = result.replace(pattern, (match, offset, str) => {
@@ -60,7 +74,35 @@ export function applyRegexPropRefRewrite(
       return `${PROPS_PARAM}.${propName}`
     })
   }
-  return result
+
+  // Restore protected strings
+  return result.replace(/__PROP_STRLIT_(\d+)__/g, (_, i) => stash[Number(i)])
+}
+
+function splitTemplateInterpolations(inner: string): string[] {
+  const parts: string[] = []
+  let i = 0
+  let segStart = 0
+  while (i < inner.length) {
+    if (inner[i] === '$' && inner[i + 1] === '{') {
+      if (i > segStart) parts.push(inner.slice(segStart, i))
+      let depth = 1
+      let j = i + 2
+      while (j < inner.length && depth > 0) {
+        if (inner[j] === '{') depth++
+        else if (inner[j] === '}') depth--
+        if (depth > 0) j++
+      }
+      j++
+      parts.push(inner.slice(i, j))
+      i = j
+      segStart = j
+    } else {
+      i++
+    }
+  }
+  if (segStart < inner.length) parts.push(inner.slice(segStart))
+  return parts
 }
 
 /**
