@@ -18,6 +18,7 @@ import {
   type AdapterOutput,
 } from '@barefootjs/jsx'
 import { resolveDependenciesFromSource } from '../dependency-resolver'
+import { loadTokens, mergeTokenSets, generateCSS } from '../tokens'
 
 // Minimal CSR adapter. compileJSX needs a concrete TemplateAdapter, but
 // preview only consumes the client JS output (the marked template is
@@ -71,15 +72,13 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
 
   await mkdir(MODULES_DIR, { recursive: true })
 
-  // 1. Generate CSS from token JSON
+  // 1. Generate CSS from design tokens. Uses the CLI-owned token
+  //    generator (../tokens) — no runtime import of the workspace-only
+  //    site/shared/tokens TypeScript module, so this runs under Node.
   console.log('Generating CSS...')
-  const { loadTokens, mergeTokenSets, generateCSS } = await import(
-    resolve(rootDir, 'site/shared/tokens/index')
-  )
   const baseTokens = await loadTokens(resolve(rootDir, 'site/shared/tokens/tokens.json'))
   const uiTokens = await loadTokens(resolve(rootDir, 'site/ui/tokens.json'))
-  const mergedTokens = mergeTokenSets(baseTokens, uiTokens)
-  const tokensCSS = generateCSS(mergedTokens)
+  const tokensCSS = generateCSS(mergeTokenSets(baseTokens, uiTokens))
   const globalsCSS = await readFile(resolve(rootDir, 'site/ui/styles/globals.css'), 'utf-8')
   await writeFile(resolve(DIST_DIR, 'globals.css'), tokensCSS + '\n' + globalsCSS)
   console.log('Generated: .preview-dist/globals.css')
@@ -188,23 +187,20 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   // 7. Bundle with esbuild. Alias the runtime to the self-contained
   //    standalone bundle so it resolves to a single shared instance.
   console.log('Bundling for browser...')
-  const runtimeStandalone = resolve(rootDir, 'packages/client/dist/runtime/standalone.js')
-  if (!existsSync(runtimeStandalone)) {
-    console.log('Building @barefootjs/client runtime...')
-    try {
-      execFileSync('bun', ['run', 'build'], {
-        cwd: resolve(rootDir, 'packages/client'),
-        stdio: 'inherit',
-      })
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') {
-        throw new Error(
-          'The @barefootjs/client runtime is not built and `bun` was not found on PATH ' +
-          'to build it. Install Bun (https://bun.sh) or run `bun run --filter @barefootjs/client build` first.',
-        )
-      }
-      throw err
-    }
+  // Resolve the self-contained standalone runtime from the installed
+  //    @barefootjs/client (mirrors how `bf build` resolves it). No build
+  //    step, so this needs neither Bun nor a build toolchain at run time.
+  const runtimeStandalone = [
+    resolve(rootDir, 'packages/client/dist/runtime/standalone.js'),
+    resolve(rootDir, 'node_modules/@barefootjs/client/dist/runtime/standalone.js'),
+    resolve(rootDir, 'node_modules/@barefootjs/client/dist/runtime/index.js'),
+  ].find(existsSync)
+  if (!runtimeStandalone) {
+    throw new Error(
+      'The @barefootjs/client runtime bundle was not found. Install @barefootjs/client ' +
+      '(its dist must include runtime/standalone.js); in the monorepo run ' +
+      '`bun run --filter @barefootjs/client build` first.',
+    )
   }
   await build({
     entryPoints: [entryPath],
