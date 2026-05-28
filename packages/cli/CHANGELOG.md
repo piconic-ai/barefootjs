@@ -1,5 +1,15 @@
 # @barefootjs/cli
 
+## 0.4.0
+
+### Minor Changes
+
+- 085e3d4: `bf build` now maintains a `.assetsignore` in `outDir` for Cloudflare Workers projects so `wrangler deploy` no longer uploads server/build-only outputs (SSR `.tsx` templates, `manifest.json`, `barefoot-externals.json`, `.bfemit.json`, `.buildcache.json`, `.dev/`) as public assets. It's only written when a wrangler config is detected next to `barefoot.config.ts`, and barefoot only owns a marked block — user entries are preserved across rebuilds.
+
+### Patch Changes
+
+- bb5cfc1: externals: stop the false-positive "not browser-ready" warning for chunks whose only unresolved imports are the always-importmap-resolved `@barefootjs/client*` dedup keys, and make `rebundle: true` pass those peers (and other configured externals) as `external` to esbuild so the shared reactive runtime is no longer inlined into the chunk (#1646).
+
 ## 0.3.0
 
 ### Minor Changes

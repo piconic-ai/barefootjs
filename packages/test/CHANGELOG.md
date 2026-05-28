@@ -1,5 +1,13 @@
 # @barefootjs/test
 
+## 0.4.0
+
+### Patch Changes
+
+- dbda2e0: `TestNode#on()` now returns `undefined` (instead of `null`) for unwired events, matching the `onClick`/`onInput`/`onChange`/`onSubmit` shorthand getters — so a single matcher (`toBeUndefined()`) covers either accessor. Also documents that `EventHandler.setters`/`via` resolve only raw signal setters declared in the component and stay empty for library property-access handlers (e.g. `@barefootjs/form`'s `name.handleInput`, `form.handleSubmit`).
+- Updated dependencies [2d817a0]
+  - @barefootjs/jsx@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
