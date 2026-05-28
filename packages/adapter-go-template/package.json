@@ -68,7 +68,7 @@
     "directory": "packages/adapter-go-template"
   },
   "peerDependencies": {
-    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/jsx": ">=0.2.0",
     "typescript": "^5.0.0"
   },
   "devDependencies": {

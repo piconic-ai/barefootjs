@@ -175,9 +175,9 @@
     "directory": "packages/adapter-hono"
   },
   "peerDependencies": {
-    "@barefootjs/client": "workspace:*",
-    "@barefootjs/jsx": "workspace:*",
-    "@barefootjs/shared": "workspace:*",
+    "@barefootjs/client": ">=0.2.0",
+    "@barefootjs/jsx": ">=0.2.0",
+    "@barefootjs/shared": ">=0.2.0",
     "hono": "^4.0.0"
   },
   "devDependencies": {

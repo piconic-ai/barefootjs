@@ -58,7 +58,7 @@
     "@barefootjs/shared": "workspace:*"
   },
   "peerDependencies": {
-    "@barefootjs/jsx": "workspace:*"
+    "@barefootjs/jsx": ">=0.2.0"
   },
   "peerDependenciesMeta": {
     "@barefootjs/jsx": {

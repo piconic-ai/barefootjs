@@ -73,7 +73,7 @@
     "@barefootjs/shared": "workspace:*"
   },
   "peerDependencies": {
-    "@barefootjs/client": "workspace:*",
+    "@barefootjs/client": ">=0.2.0",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
