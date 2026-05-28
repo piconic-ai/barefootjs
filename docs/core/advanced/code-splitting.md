@@ -120,8 +120,8 @@ Some adapters have no render-time component like Hono's `BfImportMap` to read th
 ```html
 <!-- dist/barefoot-importmap.html -->
 <script type="importmap">{"imports":{"@barefootjs/client":"/static/components/barefoot.js","yjs":"/static/components/yjs.js","lodash":"https://esm.sh/lodash@4.17.21"}}</script>
-<link rel="modulepreload" href="/static/components/yjs.js">
-<link rel="modulepreload" href="https://esm.sh/lodash@4.17.21">
+<link rel="modulepreload" href="/static/components/yjs.js" crossorigin>
+<link rel="modulepreload" href="https://esm.sh/lodash@4.17.21" crossorigin>
 ```
 
 Include this file in your page `<head>` using your template language's native include directive, and wire the build's output directory into the template search path so it resolves. The exact directive is language-specific — see your adapter's own documentation for the form it uses.
