@@ -201,3 +201,84 @@ describe('auto-defer brand-package reactive bindings (#1638)', () => {
     expect(templateBody).toContain('data-count=')
   })
 })
+
+describe('client hydrate template defers brand conditionals (#1645)', () => {
+  // The `template: (_p) => ...` lambda runs at module scope when the
+  // component is client-rendered via `createComponent` (not when hydrating
+  // existing SSR DOM). It cannot reproduce per-instance `createForm` state,
+  // so an auto-deferred conditional must emit empty cond markers — exactly
+  // like the SSR adapter — and let `init`'s `insert()` populate the branch.
+
+  test('non-inlinable createForm (onSubmit): no undefined.field, emits cond markers', () => {
+    const { templateBody } = compileWithBrand(`
+      'use client'
+      import { createForm } from './_form-defs'
+
+      export function SignupForm() {
+        const form = createForm({
+          onSubmit: async (data) => { await fetch('/signup', { method: 'POST', body: JSON.stringify(data) }) },
+        })
+        const email = form.field('email')
+        return (
+          <form>
+            <input value={email.value()} />
+            {email.error() && <p>{email.error()}</p>}
+          </form>
+        )
+      }
+    `)
+
+    // Never re-derive the form at module scope: `undefined.field(...)` throws.
+    expect(templateBody).not.toContain('undefined.field')
+    expect(templateBody).not.toContain('.field(')
+    // The deferred conditional collapses to the same empty markers SSR emits.
+    expect(templateBody).toMatch(/<!--bf-cond-start:s\d+--><!--bf-cond-end:s\d+-->/)
+  })
+
+  test('inlinable createForm (no onSubmit): no re-inlined createForm in template', () => {
+    const { templateBody } = compileWithBrand(`
+      'use client'
+      import { createForm } from './_form-defs'
+
+      export function SignupForm() {
+        const form = createForm({ defaultValues: { email: '' } })
+        const email = form.field('email')
+        return (
+          <form>
+            <input value={email.value()} />
+            {email.error() && <p>{email.error()}</p>}
+          </form>
+        )
+      }
+    `)
+
+    // A re-inlined `createForm({...})` would build a throwaway instance on
+    // every template render (error always '', never the live instance).
+    expect(templateBody).not.toContain('createForm(')
+    expect(templateBody).not.toContain('undefined.field')
+    expect(templateBody).toMatch(/<!--bf-cond-start:s\d+--><!--bf-cond-end:s\d+-->/)
+  })
+
+  test('init still wires the deferred conditional via insert()', () => {
+    const { initBody } = compileWithBrand(`
+      'use client'
+      import { createForm } from './_form-defs'
+
+      export function SignupForm() {
+        const form = createForm()
+        const email = form.field('email')
+        return (
+          <form>
+            <input value={email.value()} />
+            {email.error() && <p>{email.error()}</p>}
+          </form>
+        )
+      }
+    `)
+
+    // The reactive binding lives in init (where `email`/`form` are in scope),
+    // not in the module-scope template lambda.
+    expect(initBody).toMatch(/insert\(/)
+    expect(initBody).toContain('email.error()')
+  })
+})

@@ -1040,6 +1040,14 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       return `\${${transformExpr(node.expr, node.templateExpr)}}`
 
     case 'conditional': {
+      // A client-only conditional (auto-deferred brand read or manual
+      // `/* @client */`) is owned by init's `insert()`, not the module-scope
+      // template lambda. Match the SSR adapter: emit empty cond markers so
+      // the client-render path (`createComponent`) produces the same DOM SSR
+      // does, instead of evaluating an init-scope condition here (#1645).
+      if (node.clientOnly && node.slotId) {
+        return `<!--bf-cond-start:${node.slotId}--><!--bf-cond-end:${node.slotId}-->`
+      }
       const trueBranch = recurse(node.whenTrue)
       const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
@@ -1418,6 +1426,15 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       }
 
     case 'conditional': {
+      // An auto-deferred conditional (e.g. `{form.field('x').error() && …}`)
+      // reads per-instance init-scope state the module-scope template lambda
+      // can't evaluate — re-deriving it here yields `undefined.field(...)` or
+      // a throwaway re-inlined `createForm({...})`. Match the SSR adapter:
+      // emit empty cond markers and let init's `insert()` populate the branch
+      // at hydrate time via the reactive binding (#1645).
+      if (node.clientOnly && node.slotId) {
+        return `<!--bf-cond-start:${node.slotId}--><!--bf-cond-end:${node.slotId}-->`
+      }
       const trueBranch = recurse(node.whenTrue)
       const falseBranch = recurse(node.whenFalse)
       const trueHtml = node.slotId ? addCondAttrToTemplate(trueBranch, node.slotId) : trueBranch
