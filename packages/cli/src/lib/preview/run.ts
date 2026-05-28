@@ -4,36 +4,35 @@
 
 import { resolve, relative } from 'node:path'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import type { CliContext } from '../../context'
 import { compile, type CompileResult } from './compile'
+import { resolvePreviewAssets } from './assets'
+import { PreviewError } from './errors'
 import { loadComponent } from '../meta-loader'
 import { generatePreview } from '../preview-generate'
 
+export { PreviewError } from './errors'
+
 export interface RunPreviewOptions {
-  /** Repo/project root (monorepo root or user project dir). */
-  rootDir: string
-  /** Directory containing previewable components (absolute). */
-  uiDir: string
-  /** Directory containing component meta JSON (absolute). */
-  metaDir: string
   /** Inject a live-reload script into the page (watch mode). */
   liveReload?: boolean
 }
 
-// Thrown for expected, user-actionable failures so callers can decide
-// whether to exit (one-shot) or log and keep watching.
-export class PreviewError extends Error {}
+export async function runPreview(
+  componentName: string,
+  ctx: CliContext,
+  opts: RunPreviewOptions = {},
+): Promise<CompileResult> {
+  const assets = await resolvePreviewAssets(ctx)
+  const previewsPath = resolve(assets.srcComponentsDir, componentName, 'index.preview.tsx')
 
-export async function runPreview(componentName: string, opts: RunPreviewOptions): Promise<CompileResult> {
-  const { rootDir, uiDir, metaDir, liveReload } = opts
-  const previewsPath = resolve(uiDir, componentName, 'index.preview.tsx')
-
-  // 1. Auto-generate preview if file doesn't exist
+  // 1. Auto-generate the preview file from component meta if missing.
   if (!existsSync(previewsPath)) {
     try {
-      const meta = loadComponent(metaDir, componentName)
+      const meta = loadComponent(ctx.metaDir, componentName)
       const result = generatePreview(meta)
       writeFileSync(previewsPath, result.code)
-      console.log(`Auto-generated preview: ${relative(rootDir, previewsPath)}`)
+      console.log(`Auto-generated preview: ${relative(assets.rootDir, previewsPath)}`)
     } catch {
       throw new PreviewError(
         `Preview file not found and auto-generation failed for "${componentName}".\n` +
@@ -56,5 +55,5 @@ export async function runPreview(componentName: string, opts: RunPreviewOptions)
   console.log(`Found ${previewNames.length} previews: ${previewNames.join(', ')}`)
 
   // 3. Compile (CSR bundle)
-  return compile({ rootDir, previewsPath, previewNames, componentName, liveReload })
+  return compile({ assets, previewsPath, previewNames, componentName, liveReload: opts.liveReload })
 }

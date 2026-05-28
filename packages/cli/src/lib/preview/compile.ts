@@ -18,7 +18,7 @@ import {
   type AdapterOutput,
 } from '@barefootjs/jsx'
 import { resolveDependenciesFromSource } from '../dependency-resolver'
-import { loadTokens, mergeTokenSets, generateCSS } from '../tokens'
+import type { PreviewAssets } from './assets'
 
 // Minimal CSR adapter. compileJSX needs a concrete TemplateAdapter, but
 // preview only consumes the client JS output (the marked template is
@@ -51,8 +51,8 @@ class PreviewCsrAdapter extends BaseAdapter {
 }
 
 export interface CompileOptions {
-  /** Repo/project root (absolute). */
-  rootDir: string
+  /** Resolved tokens/globals/UnoCSS/runtime/component locations. */
+  assets: PreviewAssets
   previewsPath: string
   previewNames: string[]
   componentName: string
@@ -65,46 +65,35 @@ export interface CompileResult {
 }
 
 export async function compile(options: CompileOptions): Promise<CompileResult> {
-  const { rootDir, previewsPath, previewNames, componentName, liveReload } = options
+  const { assets, previewsPath, previewNames, componentName, liveReload } = options
+  const { rootDir, srcComponentsDir, tokensCss, globalsCss, runtimeStandalone, uno } = assets
 
   const DIST_DIR = resolve(rootDir, '.preview-dist')
   const MODULES_DIR = resolve(DIST_DIR, '_modules')
 
   await mkdir(MODULES_DIR, { recursive: true })
 
-  // 1. Generate CSS from design tokens. Uses the CLI-owned token
-  //    generator (../tokens) — no runtime import of the workspace-only
-  //    site/shared/tokens TypeScript module, so this runs under Node.
+  // 1. Write the design-token CSS + globals (already resolved: user →
+  //    monorepo → bundled default).
   console.log('Generating CSS...')
-  const baseTokens = await loadTokens(resolve(rootDir, 'site/shared/tokens/tokens.json'))
-  const uiTokens = await loadTokens(resolve(rootDir, 'site/ui/tokens.json'))
-  const tokensCSS = generateCSS(mergeTokenSets(baseTokens, uiTokens))
-  const globalsCSS = await readFile(resolve(rootDir, 'site/ui/styles/globals.css'), 'utf-8')
-  await writeFile(resolve(DIST_DIR, 'globals.css'), tokensCSS + '\n' + globalsCSS)
+  await writeFile(resolve(DIST_DIR, 'globals.css'), tokensCss + '\n' + globalsCss)
   console.log('Generated: .preview-dist/globals.css')
 
-  // 2. Generate UnoCSS. Resolve the bin from site/ui (the workspace that
-  //    declares unocss + holds uno.config.ts), falling back to root.
-  //    `.cmd`/`.CMD` shims cover the Windows package-manager layouts.
+  // 2. Generate UnoCSS from the resolved bin/config/globs. The bundled
+  //    default config does `import 'unocss'`, which only resolves from a
+  //    tree that has unocss installed — so copy it into .preview-dist
+  //    (inside the user's project) before pointing UnoCSS at it.
   console.log('Generating UnoCSS...')
-  const binDirs = [
-    resolve(rootDir, 'site/ui/node_modules/.bin'),
-    resolve(rootDir, 'node_modules/.bin'),
-  ]
-  const binNames = ['unocss', 'unocss.cmd', 'unocss.CMD']
-  const unocssbin = binDirs
-    .flatMap(dir => binNames.map(name => resolve(dir, name)))
-    .find(existsSync)
-  if (!unocssbin) {
-    throw new Error(
-      'unocss CLI not found in site/ui or root node_modules. ' +
-      'Install workspace dependencies (e.g. `bun install`) so the unocss bin is present.',
-    )
+  let unoConfigPath = uno.configPath
+  if (uno.configIsBundled) {
+    unoConfigPath = resolve(DIST_DIR, 'uno.config.ts')
+    await writeFile(unoConfigPath, await readFile(uno.configPath, 'utf-8'))
   }
-  execFileSync(unocssbin, [
-    '../../ui/components/**/*.tsx', './**/*.tsx', './dist/**/*.tsx',
+  execFileSync(uno.bin, [
+    ...uno.globs,
+    '--config', unoConfigPath,
     '-o', resolve(DIST_DIR, 'uno.css'),
-  ], { cwd: resolve(rootDir, 'site/ui'), stdio: 'inherit' })
+  ], { cwd: uno.cwd, stdio: 'inherit' })
   console.log('Generated: .preview-dist/uno.css')
 
   // 3. Compile the preview + only the components it transitively uses.
@@ -112,7 +101,6 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   //    preview file imports directly, then follow `../sibling` imports
   //    (the same closure `bf add` ships). Compiling the whole registry
   //    on every run was the bulk of preview build time.
-  const srcComponentsDir = resolve(rootDir, 'ui/components/ui')
   const previewSource = await readFile(previewsPath, 'utf-8')
   const previewSiblings = [
     ...previewSource.matchAll(/from\s*['"]\.\.\/([a-z][a-z0-9-]*)(?:\/[^'"]*)?['"]/g),
@@ -185,23 +173,9 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
   await writeFile(entryPath, entrySource)
 
   // 7. Bundle with esbuild. Alias the runtime to the self-contained
-  //    standalone bundle so it resolves to a single shared instance.
+  //    standalone bundle (resolved in assets) so it resolves to a single
+  //    shared instance.
   console.log('Bundling for browser...')
-  // Resolve the self-contained standalone runtime from the installed
-  //    @barefootjs/client (mirrors how `bf build` resolves it). No build
-  //    step, so this needs neither Bun nor a build toolchain at run time.
-  const runtimeStandalone = [
-    resolve(rootDir, 'packages/client/dist/runtime/standalone.js'),
-    resolve(rootDir, 'node_modules/@barefootjs/client/dist/runtime/standalone.js'),
-    resolve(rootDir, 'node_modules/@barefootjs/client/dist/runtime/index.js'),
-  ].find(existsSync)
-  if (!runtimeStandalone) {
-    throw new Error(
-      'The @barefootjs/client runtime bundle was not found. Install @barefootjs/client ' +
-      '(its dist must include runtime/standalone.js); in the monorepo run ' +
-      '`bun run --filter @barefootjs/client build` first.',
-    )
-  }
   await build({
     entryPoints: [entryPath],
     outfile: resolve(DIST_DIR, '_bundle.js'),

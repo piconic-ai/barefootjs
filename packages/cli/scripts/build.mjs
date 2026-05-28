@@ -30,6 +30,14 @@ const docsDst = resolve(pkgDir, 'dist/docs/core')
 // running inside a scaffolded app instead of the monorepo.
 const tokensSrc = resolve(pkgDir, '../../site/shared/tokens/tokens.json')
 const tokensDst = resolve(pkgDir, 'dist/tokens.json')
+// `bf preview` ships the registry's own globals.css + UnoCSS config as
+// the default styling, so `bf add`-ed components render with zero setup
+// when the user project provides none of its own. Resolved by
+// lib/preview/assets.ts next to the bundle.
+const previewGlobalsSrc = resolve(pkgDir, '../../site/ui/styles/globals.css')
+const previewGlobalsDst = resolve(pkgDir, 'dist/preview-globals.css')
+const previewUnoSrc = resolve(pkgDir, '../../site/ui/uno.config.ts')
+const previewUnoDst = resolve(pkgDir, 'dist/preview-uno.config.ts')
 
 await build({
   entryPoints: [entry],
@@ -71,6 +79,19 @@ if (existsSync(tokensSrc)) {
   console.log(`Copied: ${tokensSrc} -> ${tokensDst}`)
 } else {
   console.warn(`Warning: ${tokensSrc} not found; bf tokens will fail in the built CLI.`)
+}
+
+// Default preview styling (globals.css + UnoCSS config).
+for (const [src, dst, label] of [
+  [previewGlobalsSrc, previewGlobalsDst, 'preview globals.css'],
+  [previewUnoSrc, previewUnoDst, 'preview uno.config.ts'],
+]) {
+  if (existsSync(src)) {
+    copyFileSync(src, dst)
+    console.log(`Copied: ${src} -> ${dst}`)
+  } else {
+    console.warn(`Warning: ${src} not found; bf preview defaults (${label}) will be unavailable.`)
+  }
 }
 
 console.log(`Built: ${outfile}`)

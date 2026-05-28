@@ -1,10 +1,9 @@
 // bf preview — compile a component's previews to a CSR bundle.
 //
-// Preview compilation currently relies on the monorepo layout (the UI
-// component registry, design tokens, and UnoCSS config under `site/`),
-// so it runs only from inside the barefootjs monorepo checkout. Making
-// it work against an arbitrary user project is tracked in
-// https://github.com/piconic-ai/barefootjs/issues/885.
+// Tokens, globals.css, the UnoCSS config and the client runtime are
+// resolved per-environment (user project → monorepo → CLI-bundled
+// defaults) in lib/preview/assets.ts, so this runs both inside the
+// monorepo and in an end-user project under Node.
 
 import { existsSync, readdirSync, watch as fsWatch } from 'fs'
 import path from 'path'
@@ -94,20 +93,12 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
-  // Preview compilation needs the monorepo's UI registry + design tokens.
-  if (ctx.config !== null) {
-    console.error('bf preview currently runs only inside the barefootjs monorepo.')
-    console.error('Tracking issue: https://github.com/piconic-ai/barefootjs/issues/885')
-    process.exit(1)
-  }
-
   const component = opts.component
-  const uiDir = path.join(ctx.root, 'ui/components/ui')
-  const runOpts = { rootDir: ctx.root, uiDir, metaDir: ctx.metaDir, liveReload: opts.watch }
+  const runOpts = { liveReload: opts.watch }
 
   let result
   try {
-    result = await runPreview(component, runOpts)
+    result = await runPreview(component, ctx, runOpts)
   } catch (err) {
     if (err instanceof PreviewError) {
       console.error(`Error: ${err.message}`)
@@ -150,7 +141,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     rebuilding = true
     console.log('\nChange detected — rebuilding...')
     try {
-      await runPreview(component, runOpts)
+      await runPreview(component, ctx, runOpts)
       server.bumpReload()
       console.log('✓ Rebuilt')
     } catch (err) {
@@ -170,12 +161,20 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     timer = setTimeout(() => void rebuild(), 150)
   }
 
+  const { writeRoot, componentsBasePath } = resolveScaffoldLayout(ctx)
   const watchTargets = [
-    uiDir,
+    path.join(writeRoot, componentsBasePath),
+    // Monorepo token/CSS sources
     path.join(ctx.root, 'site/ui/styles'),
     path.join(ctx.root, 'site/ui/tokens.json'),
     path.join(ctx.root, 'site/shared/tokens'),
-  ].filter(existsSync)
+    // Project token/CSS sources
+    ctx.projectDir && path.join(ctx.projectDir, 'styles'),
+    ctx.projectDir && path.join(ctx.projectDir, 'globals.css'),
+    ctx.projectDir && path.join(ctx.projectDir, 'uno.config.ts'),
+    ctx.projectDir && ctx.config?.paths.tokens
+      && path.join(ctx.projectDir, ctx.config.paths.tokens),
+  ].filter((t): t is string => !!t && existsSync(t))
 
   const watchers = watchTargets.map(target =>
     fsWatch(target, { recursive: true }, schedule),
