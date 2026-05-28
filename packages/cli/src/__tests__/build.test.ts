@@ -15,6 +15,7 @@ import {
 } from '../lib/build'
 import { emptyCache, loadCache, type BuildCache, type CacheEntry } from '../lib/build-cache'
 import { loadEmitLedger } from '../lib/emit-ledger'
+import { ASSETS_IGNORE_FILENAME } from '../lib/assets-ignore'
 import { TestAdapter } from '../../../jsx/src/adapters/test-adapter'
 import { mkdirSync, writeFileSync, rmSync, existsSync, statSync, readFileSync, realpathSync, unlinkSync } from 'fs'
 import { resolve, relative } from 'path'
@@ -1390,6 +1391,97 @@ describe('build() orphan output cleanup', () => {
       rmSync(projectDir, { recursive: true, force: true })
       rmSync(outDir, { recursive: true, force: true })
       rmSync(victimDir, { recursive: true, force: true })
+    }
+  })
+})
+
+// ── .assetsignore for Cloudflare Workers ─────────────────────────────────
+//
+// Regression: piconic-ai/barefootjs#1651 — `bf build` writes browser-served
+// and server/build-only files into the same outDir, so a Workers
+// `assets.directory` deploy uploaded the SSR `.tsx` templates and build
+// internals as public assets. The build now maintains a `.assetsignore`
+// (only when a wrangler config marks the project as Workers-bound).
+
+describe('build() Cloudflare Workers .assetsignore', () => {
+  function makeTmpDir(label = 'assetsignore') {
+    const dir = resolve(tmpdir(), `bf-test-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+    mkdirSync(dir, { recursive: true })
+    return realpathSync(dir)
+  }
+
+  function makeConfig(projectDir: string, outDir: string) {
+    return {
+      projectDir,
+      adapter: new TestAdapter(),
+      componentDirs: [resolve(projectDir, 'components')],
+      outDir,
+      minify: false,
+      contentHash: false,
+      clientOnly: false,
+    }
+  }
+
+  function writeCounter(projectDir: string) {
+    const componentsDir = resolve(projectDir, 'components')
+    mkdirSync(componentsDir, { recursive: true })
+    writeFileSync(
+      resolve(componentsDir, 'Counter.tsx'),
+      `'use client'\n` +
+        `import { createSignal } from '@barefootjs/client'\n` +
+        `export function Counter() {\n` +
+        `  const [v, setV] = createSignal(0)\n` +
+        `  return <button onClick={() => setV(v() + 1)}>{v()}</button>\n` +
+        `}\n`,
+    )
+  }
+
+  test('emits .assetsignore listing server-only outputs when a wrangler config is present', async () => {
+    const projectDir = makeTmpDir('wrangler-src')
+    const outDir = makeTmpDir('wrangler-out')
+    try {
+      writeCounter(projectDir)
+      writeFileSync(resolve(projectDir, 'wrangler.toml'), 'name = "demo"\n')
+
+      const result = await build(makeConfig(projectDir, outDir))
+      expect(result.errorCount).toBe(0)
+
+      const ignorePath = resolve(outDir, ASSETS_IGNORE_FILENAME)
+      expect(existsSync(ignorePath)).toBe(true)
+      const raw = readFileSync(ignorePath, 'utf8')
+
+      // Server/build-only outputs are listed.
+      expect(raw).toContain('.dev/')
+      expect(raw).toContain('.bfemit.json')
+      expect(raw).toContain('.buildcache.json')
+      expect(raw).toContain('components/manifest.json')
+
+      // The SSR template (taken from the manifest) is listed; the
+      // browser-served client JS for the same component is not.
+      const templateRel = result.manifest.Counter.markedTemplate
+      expect(templateRel).toBeTruthy()
+      expect(raw).toContain(templateRel)
+      const clientRel = result.manifest.Counter.clientJs
+      expect(clientRel).toBeTruthy()
+      expect(raw.split('\n')).not.toContain(clientRel)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('does not emit .assetsignore for a non-Workers project', async () => {
+    const projectDir = makeTmpDir('no-wrangler-src')
+    const outDir = makeTmpDir('no-wrangler-out')
+    try {
+      writeCounter(projectDir)
+
+      const result = await build(makeConfig(projectDir, outDir))
+      expect(result.errorCount).toBe(0)
+      expect(existsSync(resolve(outDir, ASSETS_IGNORE_FILENAME))).toBe(false)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
     }
   })
 })

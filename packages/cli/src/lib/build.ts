@@ -25,6 +25,12 @@ import {
   type EmitLedger,
 } from './emit-ledger'
 import { writeIfChanged } from './fs-utils'
+import {
+  ASSETS_IGNORE_FILENAME,
+  collectServerOnlyAssets,
+  isCloudflareWorkersProject,
+  writeAssetsIgnore,
+} from './assets-ignore'
 import { fileExists, hashBytes, readBytes, readText, transpile } from './runtime'
 import { build as esbuildBuild } from 'esbuild'
 
@@ -981,6 +987,22 @@ export async function build(
     saveCache(config.outDir, nextCache),
     saveEmitLedger(config.outDir, config.projectDir, nextLedger),
   ])
+
+  // 10. On Cloudflare Workers, keep server/build-only outputs out of the
+  //     deployed assets by maintaining a `.assetsignore` in outDir (#1651).
+  //     Only when the project targets Workers — detected via a wrangler config.
+  if (await isCloudflareWorkersProject(config.projectDir)) {
+    const ignored = collectServerOnlyAssets({
+      devSentinelSubdir: DEV_SENTINEL_SUBDIR,
+      templatesSubdir,
+      manifest,
+      hasExternals: !!config.externals && Object.keys(config.externals).length > 0,
+      clientOnly: config.clientOnly,
+    })
+    if (await writeAssetsIgnore(config.outDir, ignored)) {
+      console.log(`Generated: ${ASSETS_IGNORE_FILENAME}`)
+    }
+  }
 
   return {
     compiledCount,
