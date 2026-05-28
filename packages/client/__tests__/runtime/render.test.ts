@@ -4,6 +4,7 @@ import { createComponent, renderChild } from '../../src/runtime/component'
 import { $c } from '../../src/runtime/query'
 import { registerComponent } from '../../src/runtime/registry'
 import { registerTemplate } from '../../src/runtime/template'
+import { hydrate, flushHydration } from '../../src/runtime/hydrate'
 import { hydratedScopes } from '../../src/runtime/hydration-state'
 import type { ComponentDef } from '../../src/runtime/types'
 import type { InitFn } from '../../src/runtime/types'
@@ -166,6 +167,32 @@ describe('render multi-root (fragment) templates', () => {
     // $c() from init resolved the *second* sibling, not just s0.
     expect(resolved[0]?.getAttribute('data-slot')).toBe('a')
     expect(resolved[1]?.getAttribute('data-slot')).toBe('b')
+  })
+
+  test('does not re-init the fragment when the hydration walker runs', () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+
+    let initCount = 0
+    // Register through hydrate() (the real preview/app path) so the async
+    // document-order walker is scheduled — registerTestComponent bypasses it.
+    // Name must be a single token: the walker derives the component name as
+    // the substring before the first `_` in the scope id.
+    hydrate('RenderFragHydrate', {
+      init: () => {
+        initCount++
+      },
+      template: () => `<h1>a</h1><h2>b</h2>`,
+      comment: true,
+    })
+
+    render(container, 'RenderFragHydrate', {})
+    expect(initCount).toBe(1) // render() initialized it once, synchronously
+
+    // Run the walker synchronously: it visits the bf-scope comment render()
+    // created. Without honouring hydratedScopes it would init a second time.
+    flushHydration()
+    expect(initCount).toBe(1)
   })
 })
 

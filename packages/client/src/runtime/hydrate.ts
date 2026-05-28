@@ -294,6 +294,12 @@ function hydrateCommentScope(comment: Comment): void {
   const proxyEl = nextElementSibling(comment) ?? comment.parentElement
   if (!proxyEl) return
 
+  // A synchronous CSR render() may have already initialized this fragment
+  // scope and claimed its proxy before this async walk runs. Honour the same
+  // `hydratedScopes` signal the element-scope path uses (hydrateElementScope),
+  // so a comment-rooted scope is never re-initialized once claimed.
+  if (hydratedScopes.has(proxyEl)) return
+
   commentScopeRegistry.set(proxyEl, { commentNode: comment, scopeId })
 
   const parsed = parseProps(propsJson || null, `comment scope ${scopeId}`)
