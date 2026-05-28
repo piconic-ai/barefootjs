@@ -671,6 +671,136 @@ describe('processExternals', () => {
       rmSync(outDir, { recursive: true, force: true })
     }
   })
+
+  test('chunk whose only external is @barefootjs/client does NOT warn (#1646)', async () => {
+    const projectDir = makeTmpDir()
+    const outDir = makeTmpDir()
+    try {
+      // import/main fallback, but the only bare import is the always-importmap-
+      // resolved @barefootjs/client dedup key — so the chunk is browser-ready.
+      const pkgDir = resolve(projectDir, 'node_modules', 'client-only-pkg')
+      mkdirSync(pkgDir, { recursive: true })
+      writeFileSync(
+        resolve(pkgDir, 'package.json'),
+        JSON.stringify({ name: 'client-only-pkg', version: '1.0.0', exports: { '.': { import: './index.mjs' } } })
+      )
+      writeFileSync(
+        resolve(pkgDir, 'index.mjs'),
+        `import { createSignal } from '@barefootjs/client'\nexport const x = createSignal(1)`
+      )
+
+      const config = makeConfig(projectDir, outDir, {
+        externals: { 'client-only-pkg': true as const },
+      })
+
+      const warnCalls: string[] = []
+      const originalWarn = console.warn
+      console.warn = (...args: unknown[]) => { warnCalls.push(args.join(' ')) }
+      try {
+        await processExternals(config, 'components', outDir)
+      } finally {
+        console.warn = originalWarn
+      }
+
+      const fallbackWarning = warnCalls.find(m =>
+        m.includes('client-only-pkg') && m.includes('import/main entry')
+      )
+      expect(fallbackWarning).toBeUndefined()
+      // The chunk is still copied and recorded in the importmap.
+      expect(require('fs').existsSync(resolve(outDir, 'client-only-pkg.js'))).toBe(true)
+      const manifest = JSON.parse(
+        require('fs').readFileSync(resolve(outDir, 'barefoot-externals.json'), 'utf8')
+      )
+      expect(manifest.importmap.imports['client-only-pkg']).toBe('/components/client-only-pkg.js')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('chunk still warns about non-importmap bare imports alongside @barefootjs/client (#1646)', async () => {
+    const projectDir = makeTmpDir()
+    const outDir = makeTmpDir()
+    try {
+      const pkgDir = resolve(projectDir, 'node_modules', 'mixed-pkg')
+      mkdirSync(pkgDir, { recursive: true })
+      writeFileSync(
+        resolve(pkgDir, 'package.json'),
+        JSON.stringify({ name: 'mixed-pkg', version: '1.0.0', exports: { '.': { import: './index.mjs' } } })
+      )
+      writeFileSync(
+        resolve(pkgDir, 'index.mjs'),
+        `import { createSignal } from '@barefootjs/client'\nimport { obs } from 'lib0/observable'\nexport const x = createSignal(obs)`
+      )
+
+      const config = makeConfig(projectDir, outDir, {
+        externals: { 'mixed-pkg': true as const },
+      })
+
+      const warnCalls: string[] = []
+      const originalWarn = console.warn
+      console.warn = (...args: unknown[]) => { warnCalls.push(args.join(' ')) }
+      try {
+        await processExternals(config, 'components', outDir)
+      } finally {
+        console.warn = originalWarn
+      }
+
+      const warningMsg = warnCalls.find(m =>
+        m.includes('mixed-pkg') && m.includes('import/main entry')
+      )
+      expect(warningMsg).toBeDefined()
+      // Only the un-resolved import is reported, not @barefootjs/client.
+      expect(warningMsg).toContain('lib0/observable')
+      expect(warningMsg).not.toContain('@barefootjs/client')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test('rebundle keeps @barefootjs/client external instead of inlining it (#1646)', async () => {
+    const projectDir = makeTmpDir()
+    const outDir = makeTmpDir()
+    try {
+      // A fake @barefootjs/client that WOULD be inlined if not marked external.
+      const clientDir = resolve(projectDir, 'node_modules', '@barefootjs', 'client')
+      mkdirSync(clientDir, { recursive: true })
+      writeFileSync(
+        resolve(clientDir, 'package.json'),
+        JSON.stringify({ name: '@barefootjs/client', version: '1.0.0', main: './index.js' })
+      )
+      writeFileSync(resolve(clientDir, 'index.js'), `export const SHARED_RUNTIME_MARKER = 'do-not-inline'`)
+
+      // The rebundled peer imports @barefootjs/client; it must stay a bare import.
+      const pkgDir = resolve(projectDir, 'node_modules', 'rebundle-peer')
+      mkdirSync(pkgDir, { recursive: true })
+      writeFileSync(
+        resolve(pkgDir, 'package.json'),
+        JSON.stringify({ name: 'rebundle-peer', version: '1.0.0', exports: { '.': { import: './index.mjs' } } })
+      )
+      writeFileSync(
+        resolve(pkgDir, 'index.mjs'),
+        `import { SHARED_RUNTIME_MARKER } from '@barefootjs/client'\nexport const value = SHARED_RUNTIME_MARKER`
+      )
+
+      const config = makeConfig(projectDir, outDir, {
+        externals: { 'rebundle-peer': { rebundle: true } as const },
+      })
+
+      await processExternals(config, 'components', outDir)
+
+      const outFile = resolve(outDir, 'rebundle-peer.js')
+      expect(require('fs').existsSync(outFile)).toBe(true)
+      const content = require('fs').readFileSync(outFile, 'utf8')
+      // @barefootjs/client must NOT be bundled in — it resolves via the importmap.
+      expect(content).not.toContain('do-not-inline')
+      expect(content).toMatch(/from\s*['"]@barefootjs\/client['"]/)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
 })
 
 // ── minification ────────────────────────────────────────────────────────
