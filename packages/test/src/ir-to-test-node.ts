@@ -19,7 +19,7 @@ import type {
   IRAsync,
   IRMetadata,
 } from '@barefootjs/jsx'
-import { resolveSetters, buildLocalFunctionSetterMap, type SetterRef } from '@barefootjs/jsx'
+import { resolveSetters, buildLocalFunctionSetterMap, type SetterRef, type FnSetterResolution } from '@barefootjs/jsx'
 
 type IRAttribute = IRElement['attrs'][number]
 type AttrValue = IRAttribute['value']
@@ -29,13 +29,13 @@ import { TestNode, type EventHandler } from './test-node'
 interface ConvertContext {
   cmap: Map<string, string>
   setterToSignal: Map<string, string>
-  fnSetters: Map<string, string[]>
+  fnSetters: Map<string, FnSetterResolution[]>
 }
 
 export function irNodeToTestNode(node: IRNode, constantMap?: Map<string, string>, metadata?: IRMetadata): TestNode {
   const cmap = constantMap ?? new Map<string, string>()
   const setterToSignal = new Map<string, string>()
-  const fnSetters = new Map<string, string[]>()
+  const fnSetters = new Map<string, FnSetterResolution[]>()
   if (metadata) {
     for (const s of metadata.signals) {
       if (s.setter) setterToSignal.set(s.setter, s.getter)
@@ -427,8 +427,10 @@ function refsToHandler(refs: SetterRef[]): EventHandler {
   const setters: string[] = []
   const via: string[] = []
   for (const ref of refs) {
-    setters.push(ref.setter)
-    if (ref.via && !via.includes(ref.via)) via.push(ref.via)
+    if (!setters.includes(ref.setter)) setters.push(ref.setter)
+    for (const v of ref.via ?? []) {
+      if (!via.includes(v)) via.push(v)
+    }
   }
   return { setters, via }
 }

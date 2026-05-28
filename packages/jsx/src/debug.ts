@@ -139,7 +139,14 @@ export interface EventBinding {
 export interface SetterRef {
   setter: string
   signal: string | null
-  via?: string
+  /**
+   * Call chain from the handler to the setter, when the setter is reached
+   * through one or more local helper functions. For a handler that calls
+   * the setter directly this is omitted. For `onClick={handlePointerDown}`
+   * where `handlePointerDown` calls `setValue` which calls `setInternalValue`,
+   * this is `['handlePointerDown', 'setValue']`.
+   */
+  via?: string[]
 }
 
 export interface EventSummary {
@@ -197,7 +204,7 @@ export interface WhyUpdateSource {
   handler: string
   setter: string
   elementContext: string
-  via?: string
+  via?: string[]
 }
 
 // -- Component summary types --------------------------------------------------
@@ -434,34 +441,78 @@ function makeIdRefRegex(name: string): RegExp {
   return new RegExp(`(?:^|[^\\w$])${escapeForIdBoundary(name)}(?:[^\\w$]|$)`)
 }
 
+/**
+ * A setter reachable from a local function, with the chain of intermediate
+ * function names between that function and the setter (excluding the function
+ * itself). For a direct call the chain is empty.
+ */
+export interface FnSetterResolution {
+  setter: string
+  chain: string[]
+}
+
 export function buildLocalFunctionSetterMap(
   meta: IRMetadata,
   setterToSignal: Map<string, string>,
-): Map<string, string[]> {
+): Map<string, FnSetterResolution[]> {
   const setterPatterns = [...setterToSignal.keys()].map(s => ({ name: s, re: makeIdCallRegex(s) }))
-  const result = new Map<string, string[]>()
 
-  const scan = (name: string, body: string) => {
+  // Collect every local function-like binding: `function foo() {}` declarations
+  // plus arrow/function-expression consts (`const foo = () => {}`), which land
+  // in localConstants rather than localFunctions.
+  const bodies = new Map<string, string>()
+  for (const fn of meta.localFunctions) bodies.set(fn.name, fn.body)
+  for (const c of meta.localConstants) {
+    if (c.containsArrow && c.value) bodies.set(c.name, c.value)
+  }
+
+  // Direct setters and direct local-function calls per binding.
+  const fnNamePatterns = [...bodies.keys()].map(n => ({ name: n, re: makeIdCallRegex(n) }))
+  const directSetters = new Map<string, string[]>()
+  const directCalls = new Map<string, string[]>()
+  for (const [name, body] of bodies) {
     const setters: string[] = []
     for (const { name: setter, re } of setterPatterns) {
       if (re.test(body)) setters.push(setter)
     }
-    if (setters.length > 0) result.set(name, setters)
-  }
-
-  // `function foo() {}` declarations
-  for (const fn of meta.localFunctions) {
-    scan(fn.name, fn.body)
-  }
-
-  // `const foo = () => {}` / `const foo = function() {}` — arrow/function
-  // expression handlers assigned to a const land in `localConstants`, not
-  // `localFunctions`. Without this, event handlers written as arrow consts
-  // (the common style for inline-ish handlers) resolve to zero setters.
-  for (const c of meta.localConstants) {
-    if (c.containsArrow && c.value) {
-      scan(c.name, c.value)
+    directSetters.set(name, setters)
+    const calls: string[] = []
+    for (const { name: callee, re } of fnNamePatterns) {
+      if (callee !== name && re.test(body)) calls.push(callee)
     }
+    directCalls.set(name, calls)
+  }
+
+  // Resolve transitively: a handler may reach a setter through a chain of
+  // helper functions (handler -> setValue -> setInternalValue). `stack`
+  // guards against cycles (mutual recursion between helpers). Component
+  // helper graphs are tiny, so a plain DFS per binding is fine.
+  const resolve = (name: string, stack: Set<string>): FnSetterResolution[] => {
+    const out: FnSetterResolution[] = []
+    const seen = new Set<string>()
+    for (const setter of directSetters.get(name) ?? []) {
+      if (!seen.has(setter)) {
+        out.push({ setter, chain: [] })
+        seen.add(setter)
+      }
+    }
+    for (const callee of directCalls.get(name) ?? []) {
+      if (stack.has(callee)) continue
+      const sub = resolve(callee, new Set([...stack, callee]))
+      for (const r of sub) {
+        if (!seen.has(r.setter)) {
+          out.push({ setter: r.setter, chain: [callee, ...r.chain] })
+          seen.add(r.setter)
+        }
+      }
+    }
+    return out
+  }
+
+  const result = new Map<string, FnSetterResolution[]>()
+  for (const name of bodies.keys()) {
+    const resolved = resolve(name, new Set([name]))
+    if (resolved.length > 0) result.set(name, resolved)
   }
 
   return result
@@ -470,7 +521,7 @@ export function buildLocalFunctionSetterMap(
 function collectEventBindings(
   node: IRNode,
   setterToSignal: Map<string, string>,
-  fnSetters: Map<string, string[]>,
+  fnSetters: Map<string, FnSetterResolution[]>,
 ): EventBinding[] {
   const events: EventBinding[] = []
   walkForEvents(node, events, setterToSignal, fnSetters)
@@ -481,7 +532,7 @@ function walkForEvents(
   node: IRNode,
   events: EventBinding[],
   setterToSignal: Map<string, string>,
-  fnSetters: Map<string, string[]>,
+  fnSetters: Map<string, FnSetterResolution[]>,
 ): void {
   switch (node.type) {
     case 'element': {
@@ -557,7 +608,7 @@ function walkForEvents(
 export function resolveSetters(
   handler: string,
   setterToSignal: Map<string, string>,
-  fnSetters: Map<string, string[]>,
+  fnSetters: Map<string, FnSetterResolution[]>,
 ): SetterRef[] {
   const refs: SetterRef[] = []
   const seen = new Set<string>()
@@ -572,12 +623,16 @@ export function resolveSetters(
     }
   }
 
-  for (const [fnName, setters] of fnSetters) {
+  for (const [fnName, resolutions] of fnSetters) {
     if (trimmed === fnName || makeIdCallRegex(fnName).test(handler)) {
-      for (const setter of setters) {
-        if (!seen.has(setter)) {
-          refs.push({ setter, signal: setterToSignal.get(setter) ?? null, via: fnName })
-          seen.add(setter)
+      for (const r of resolutions) {
+        if (!seen.has(r.setter)) {
+          refs.push({
+            setter: r.setter,
+            signal: setterToSignal.get(r.setter) ?? null,
+            via: [fnName, ...r.chain],
+          })
+          seen.add(r.setter)
         }
       }
     }
@@ -622,7 +677,7 @@ export function formatEventSummary(summary: EventSummary, graph: ComponentGraph)
     lines.push(`  ${event.elementContext}`)
 
     const setterParts = event.setterCalls.map(s => {
-      const chain = s.via ? `${s.via} -> ${s.setter}` : s.setter
+      const chain = s.via && s.via.length > 0 ? `${s.via.join(' -> ')} -> ${s.setter}` : s.setter
       return chain
     })
 
@@ -1057,8 +1112,8 @@ export function formatWhyUpdate(result: WhyUpdateResult): string {
         lines.push('  (no event handlers found)')
       }
       for (const src of dep.changedBy) {
-        const chain = src.via
-          ? `${src.elementContext} ${src.handler} -> ${src.via} -> ${src.setter}`
+        const chain = src.via && src.via.length > 0
+          ? `${src.elementContext} ${src.handler} -> ${src.via.join(' -> ')} -> ${src.setter}`
           : `${src.elementContext} ${src.handler} -> ${src.setter}`
         lines.push(`  ${chain}`)
       }

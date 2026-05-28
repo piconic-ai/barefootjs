@@ -821,7 +821,7 @@ describe('buildEventSummary', () => {
     expect(click.setterCalls).toHaveLength(1)
     expect(click.setterCalls[0].setter).toBe('setTodos')
     expect(click.setterCalls[0].signal).toBe('todos')
-    expect(click.setterCalls[0].via).toBe('addTodo')
+    expect(click.setterCalls[0].via).toEqual(['addTodo'])
   })
 
   test('includes component prop events (Button.onClick)', () => {
@@ -1148,7 +1148,7 @@ describe('buildWhyUpdate', () => {
     expect(result).not.toBeNull()
     const signalDep = result!.deps.find(d => d.name === 'items')
     expect(signalDep).toBeDefined()
-    expect(signalDep!.changedBy[0].via).toBe('addItem')
+    expect(signalDep!.changedBy[0].via).toEqual(['addItem'])
   })
 
   test('includes classification and wrapReason for fallback bindings', () => {

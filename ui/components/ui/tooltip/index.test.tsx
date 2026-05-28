@@ -40,6 +40,22 @@ describe('Tooltip', () => {
     expect(result.root.events).toContain('mouseenter')
   })
 
+  test('hover/focus handlers all wire to setOpen', () => {
+    // All four open/close triggers route through their respective handler
+    // function to the single `open` signal setter.
+    for (const [event, via] of [
+      ['mouseenter', 'handleMouseEnter'],
+      ['mouseleave', 'handleMouseLeave'],
+      ['focus', 'handleFocus'],
+      ['blur', 'handleBlur'],
+    ] as const) {
+      const handler = result.root.on(event)
+      expect(handler).not.toBeNull()
+      expect(handler!.via).toContain(via)
+      expect(handler!.setters).toContain('setOpen')
+    }
+  })
+
   test('contains div with role=tooltip', () => {
     const tooltipDiv = result.find({ role: 'tooltip' })
     expect(tooltipDiv).not.toBeNull()

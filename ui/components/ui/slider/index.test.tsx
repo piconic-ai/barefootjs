@@ -48,9 +48,28 @@ describe('Slider', () => {
     expect(result.root.events).toContain('pointerdown')
   })
 
+  test('pointerdown wires to value setters through a transitive helper chain', () => {
+    // The handler reaches the setter via two hops:
+    //   onPointerDown -> handlePointerDown -> setValue -> setInternalValue
+    const handler = result.root.on('pointerdown')
+    expect(handler).not.toBeNull()
+    expect(handler!.via).toContain('handlePointerDown')
+    expect(handler!.via).toContain('setValue')
+    expect(handler!.setters).toContain('setInternalValue')
+    expect(handler!.setters).toContain('setControlledValue')
+  })
+
   test('contains span with role=slider', () => {
     const thumb = result.find({ role: 'slider' })
     expect(thumb).not.toBeNull()
+  })
+
+  test('thumb keydown wires to value setters through the same helper chain', () => {
+    const thumb = result.find({ role: 'slider' })!
+    const handler = thumb.on('keydown')
+    expect(handler).not.toBeNull()
+    expect(handler!.via).toContain('setValue')
+    expect(handler!.setters).toContain('setInternalValue')
   })
 
   test('slider thumb has data-slot=slider-thumb', () => {

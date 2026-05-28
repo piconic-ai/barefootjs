@@ -42,6 +42,25 @@ describe('ScrollArea', () => {
     expect(result.root.events).toContain('mouseenter')
   })
 
+  test('hover handlers wire to the hovered signal', () => {
+    expect(result.root.on('mouseenter')!.setters).toContain('setHovered')
+    expect(result.root.on('mouseleave')!.setters).toContain('setHovered')
+  })
+
+  test('scroll handler wires through updateScrollMetrics to thumb signals', () => {
+    // onScroll -> handleScroll -> updateScrollMetrics -> set* (transitive).
+    // The scroll listener sits on the viewport div, not the root.
+    const viewport = result.findAll({ tag: 'div' })
+      .find(d => d.props['data-slot'] === 'scroll-area-viewport')
+    expect(viewport).toBeDefined()
+    const handler = viewport!.on('scroll')
+    expect(handler).not.toBeNull()
+    expect(handler!.via).toContain('handleScroll')
+    expect(handler!.via).toContain('updateScrollMetrics')
+    expect(handler!.setters).toContain('setScrolling')
+    expect(handler!.setters).toContain('setThumbVPos')
+  })
+
   test('contains viewport div with data-slot=scroll-area-viewport', () => {
     const viewport = result.find({ tag: 'div' })
     expect(viewport).not.toBeNull()

@@ -51,6 +51,32 @@ describe('Calendar', () => {
     expect(root!.events).toContain('click')
   })
 
+  test('day click wires to selection setters through delegated handlers', () => {
+    // The root uses event delegation: a single onClick (handleCalendarClick)
+    // dispatches to handleSingleClick / handleRangeClick, which set the
+    // selection signals.
+    const root = result.find({ tag: 'div' })!
+    const handler = root.on('click')
+    expect(handler).not.toBeNull()
+    expect(handler!.via).toContain('handleCalendarClick')
+    expect(handler!.setters).toContain('setInternalSelected')
+    expect(handler!.setters).toContain('setInternalRange')
+  })
+
+  test('month navigation buttons wire to current month/year setters', () => {
+    const buttons = result.findAll({ tag: 'button' })
+    const navButtons = buttons.filter(b => {
+      const h = b.on('click')
+      return h && (h.via.includes('goToPrevMonth') || h.via.includes('goToNextMonth'))
+    })
+    expect(navButtons.length).toBeGreaterThan(0)
+    for (const btn of navButtons) {
+      const h = btn.on('click')!
+      expect(h.setters).toContain('setCurrentMonth')
+      expect(h.setters).toContain('setCurrentYear')
+    }
+  })
+
   test('toStructure() includes inlined month grids', () => {
     const structure = result.toStructure()
     // #569: renderMonthGrid is inlined at IR level, verify both grids are present
