@@ -113,9 +113,9 @@ export const renderer = jsxRenderer(({ children }) => (
 ))
 ```
 
-## Template-string adapters (Go, Mojolicious)
+## Template-string adapters
 
-Go html/template and Mojolicious are template-string adapters — you hand-write the HTML `<head>`, and there is no component like Hono's `BfImportMap` to read the manifest at render time. For these adapters `bf build` also emits a ready-to-include **`barefoot-importmap.html`** snippet next to `barefoot-externals.json`, generated from the same manifest:
+Some adapters have no render-time component like Hono's `BfImportMap` to read the manifest — they target a template-string language where you hand-write the HTML `<head>`. An adapter declares this by setting `importMapInjection: 'html-snippet'` (component-based adapters set `'component'` instead). For `html-snippet` adapters, `bf build` also emits a ready-to-include **`barefoot-importmap.html`** snippet next to `barefoot-externals.json`, generated from the same manifest:
 
 ```html
 <!-- dist/barefoot-importmap.html -->
@@ -124,19 +124,9 @@ Go html/template and Mojolicious are template-string adapters — you hand-write
 <link rel="modulepreload" href="https://esm.sh/lodash@4.17.21">
 ```
 
-Include it in your page `<head>`:
+Include this file in your page `<head>` using your template language's native include directive, and wire the build's output directory into the template search path so it resolves. The exact directive is language-specific — see your adapter's own documentation for the form it uses.
 
-```go
-{{/* Go html/template */}}
-{{ template "barefoot-importmap.html" . }}
-```
-
-```perl
-%# Mojolicious EP
-%= include 'barefoot-importmap'
-```
-
-Wire the build's output directory into your template search path so the snippet is resolvable. Whether an adapter injects via a component or this snippet is declared by `TemplateAdapter.importMapInjection` and enforced by the cross-adapter importmap-injection contract in `@barefootjs/adapter-tests`.
+Which strategy an adapter uses is the single source of truth in its `TemplateAdapter.importMapInjection` value, enforced for every adapter by the cross-adapter importmap-injection contract in `@barefootjs/adapter-tests` — so this page does not need an entry per adapter.
 
 ## Using the externals list in your own bun build
 
