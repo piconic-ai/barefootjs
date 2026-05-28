@@ -4,6 +4,16 @@
  * Produced by converting the compiler IR into a flat, assertion-friendly shape.
  */
 
+/**
+ * Statically-resolved wiring for a single event handler.
+ *
+ * `setters`/`via` are populated only for handlers that reach raw signal setters
+ * declared in the component — directly (`onClick={() => setX(1)}`) or through
+ * local helper functions (`via`). Handlers backed by a library's
+ * property-access method — e.g. `@barefootjs/form`'s `name.handleInput` or
+ * `form.handleSubmit` — register the event but report empty `setters`/`via`,
+ * because the setter calls live inside the library, not the component body.
+ */
 export interface EventHandler {
   setters: string[]
   via: string[]
@@ -51,8 +61,9 @@ export class TestNode implements TestNodeData {
   get onChange(): EventHandler | undefined { return this.handlers.change }
   get onSubmit(): EventHandler | undefined { return this.handlers.submit }
 
-  on(event: string): EventHandler | null {
-    return this.handlers[event] ?? null
+  /** Returns the handler wired to `event`, or `undefined` if none — matching the shorthand getters. */
+  on(event: string): EventHandler | undefined {
+    return this.handlers[event]
   }
 
   constructor(data: TestNodeData) {

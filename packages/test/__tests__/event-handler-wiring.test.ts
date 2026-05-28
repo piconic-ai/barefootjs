@@ -156,11 +156,11 @@ describe('EventHandler wiring on TestNode', () => {
     `
     const result = renderToTest(source, 'Keyboard.tsx')
     const input = result.find({ tag: 'input' })
-    expect(input!.on('keydown')).not.toBeNull()
+    expect(input!.on('keydown')).toBeDefined()
     expect(input!.on('keydown')!.setters).toContain('setKey')
   })
 
-  test('on() returns null for unregistered events', () => {
+  test('on() and shorthand getters agree on undefined for unregistered events', () => {
     const source = `
       export function Static() {
         return <button>Click</button>
@@ -168,8 +168,9 @@ describe('EventHandler wiring on TestNode', () => {
     `
     const result = renderToTest(source, 'Static.tsx')
     const btn = result.find({ tag: 'button' })
+    // Both access paths use the same "not wired" sentinel (undefined).
     expect(btn!.onClick).toBeUndefined()
-    expect(btn!.on('click')).toBeNull()
+    expect(btn!.on('click')).toBeUndefined()
   })
 
   test('handler with no setter calls returns empty setters', () => {
@@ -235,7 +236,7 @@ describe('EventHandler wiring on TestNode', () => {
     const result = renderToTest(source, 'Form.tsx')
     const sw = result.find({ componentName: 'Switch' })
     expect(sw!.events).toContain('checkedChange')
-    expect(sw!.on('checkedChange')).not.toBeNull()
+    expect(sw!.on('checkedChange')).toBeDefined()
     expect(sw!.on('checkedChange')!.setters).toContain('setEnabled')
   })
 

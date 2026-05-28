@@ -171,7 +171,7 @@ interface TestNodeQuery {
 }
 
 interface EventHandler {
-  setters: string[]      // signal setters the handler ends up calling
+  setters: string[]      // signal setters the handler ends up calling (empty for library property-access handlers — see note below)
   via: string[]          // helper-function call chain to reach those setters
 }
 
@@ -195,9 +195,13 @@ interface TestNode {
   onInput?: EventHandler
   onChange?: EventHandler
   onSubmit?: EventHandler
-  on(event: string): EventHandler | null        // any other event, e.g. on('keydown')
+  on(event: string): EventHandler | undefined   // any other event, e.g. on('keydown')
 }
 ```
+
+Both access paths agree on the "not wired" sentinel: `on('blur')` and the
+shorthand getters (`onInput`, …) all return `undefined` when no handler is
+wired, so a single matcher (`toBeUndefined()`) covers either accessor.
 
 ### Event-handler wiring
 
@@ -221,6 +225,14 @@ expect(root!.on('pointerdown')!.setters).toContain('setInternalValue')
 Assert the *path*, not the value. "Clicking + shows 2" is an E2E concern; the
 wiring layer only proves "onClick reaches setCount". A handler with no setter
 call (e.g. `onClick={() => console.log(x)}`) resolves to empty `setters`.
+
+`setters`/`via` only resolve **raw signal setters declared in the component**.
+Handlers wired through a library's property-access methods — e.g.
+`@barefootjs/form`'s `name.handleInput` or `form.handleSubmit` — register the
+event (so `on('input')`/`onInput` is defined) but report empty `setters`/`via`,
+because the setter calls live inside the library, not the component body. Assert
+that the event is *wired* (`expect(node.onInput).toBeDefined()`) rather than
+which setter it reaches.
 
 ### Pattern
 
