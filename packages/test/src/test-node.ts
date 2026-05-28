@@ -20,7 +20,7 @@ export interface TestNodeData {
   aria: Record<string, string>
   dataState: string | null
   events: string[]
-  handlers: Record<string, EventHandler>
+  handlers: Partial<Record<string, EventHandler>>
   reactive: boolean
   componentName: string | null
 }
@@ -42,7 +42,7 @@ export class TestNode implements TestNodeData {
   aria: Record<string, string>
   dataState: string | null
   events: string[]
-  handlers: Record<string, EventHandler>
+  handlers: Partial<Record<string, EventHandler>>
   reactive: boolean
   componentName: string | null
 
