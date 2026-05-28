@@ -46,6 +46,16 @@ describe('Switch', () => {
     expect(button.events).toContain('click')
   })
 
+  test('click handler wires to checked setters via handleClick', () => {
+    const button = result.find({ role: 'switch' })!
+    // The onClick handler routes through the local `handleClick` function,
+    // which updates either the controlled or uncontrolled checked signal.
+    expect(button.onClick).toBeDefined()
+    expect(button.onClick!.via).toContain('handleClick')
+    expect(button.onClick!.setters).toContain('setInternalChecked')
+    expect(button.onClick!.setters).toContain('setControlledChecked')
+  })
+
   test('has span with data-slot=switch-thumb', () => {
     const thumb = result.find({ tag: 'span' })
     expect(thumb).not.toBeNull()

@@ -46,6 +46,28 @@ describe('EventHandler wiring on TestNode', () => {
     expect(btn!.onClick!.via).toContain('addTodo')
   })
 
+  test('resolves setters through arrow-function const handler', () => {
+    // Arrow-function consts (`const handleClick = () => {...}`) land in
+    // localConstants, not localFunctions. The bare-identifier handler
+    // `onClick={handleClick}` must still resolve the setters it calls.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function Toggle() {
+        const [on, setOn] = createSignal(false)
+        const handleClick = () => {
+          setOn(!on())
+        }
+        return <button onClick={handleClick}>Toggle</button>
+      }
+    `
+    const result = renderToTest(source, 'Toggle.tsx')
+    const btn = result.find({ tag: 'button' })
+    expect(btn!.onClick!.setters).toContain('setOn')
+    expect(btn!.onClick!.via).toContain('handleClick')
+  })
+
   test('multiple events on same element are resolved independently', () => {
     const source = `
       'use client'

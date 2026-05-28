@@ -440,13 +440,30 @@ export function buildLocalFunctionSetterMap(
 ): Map<string, string[]> {
   const setterPatterns = [...setterToSignal.keys()].map(s => ({ name: s, re: makeIdCallRegex(s) }))
   const result = new Map<string, string[]>()
-  for (const fn of meta.localFunctions) {
+
+  const scan = (name: string, body: string) => {
     const setters: string[] = []
-    for (const { name, re } of setterPatterns) {
-      if (re.test(fn.body)) setters.push(name)
+    for (const { name: setter, re } of setterPatterns) {
+      if (re.test(body)) setters.push(setter)
     }
-    if (setters.length > 0) result.set(fn.name, setters)
+    if (setters.length > 0) result.set(name, setters)
   }
+
+  // `function foo() {}` declarations
+  for (const fn of meta.localFunctions) {
+    scan(fn.name, fn.body)
+  }
+
+  // `const foo = () => {}` / `const foo = function() {}` — arrow/function
+  // expression handlers assigned to a const land in `localConstants`, not
+  // `localFunctions`. Without this, event handlers written as arrow consts
+  // (the common style for inline-ish handlers) resolve to zero setters.
+  for (const c of meta.localConstants) {
+    if (c.containsArrow && c.value) {
+      scan(c.name, c.value)
+    }
+  }
+
   return result
 }
 

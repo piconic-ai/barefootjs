@@ -59,6 +59,14 @@ describe('Checkbox', () => {
     expect(button.events).toContain('click')
   })
 
+  test('click handler wires to checked setters via handleClick', () => {
+    const button = result.find({ role: 'checkbox' })!
+    expect(button.onClick).toBeDefined()
+    expect(button.onClick!.via).toContain('handleClick')
+    expect(button.onClick!.setters).toContain('setInternalChecked')
+    expect(button.onClick!.setters).toContain('setControlledChecked')
+  })
+
   test('contains conditional CheckIcon child (checkmark)', () => {
     const icon = result.find({ componentName: 'CheckIcon' })
     expect(icon).not.toBeNull()

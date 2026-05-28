@@ -45,6 +45,13 @@ describe('Toggle', () => {
     expect(result.root.events).toContain('click')
   })
 
+  test('click handler wires to pressed setters via handleClick', () => {
+    expect(result.root.onClick).toBeDefined()
+    expect(result.root.onClick!.via).toContain('handleClick')
+    expect(result.root.onClick!.setters).toContain('setInternalPressed')
+    expect(result.root.onClick!.setters).toContain('setControlledPressed')
+  })
+
   test('root classes are dynamic (reactive memo)', () => {
     // classes are wrapped in createMemo for variant/size reactivity,
     // so the IR sees the expression rather than resolved static classes
