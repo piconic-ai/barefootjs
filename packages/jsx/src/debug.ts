@@ -422,11 +422,11 @@ export function buildEventSummary(source: string, filePath: string, componentNam
   }
 }
 
-function escapeForIdBoundary(name: string): string {
+export function escapeForIdBoundary(name: string): string {
   return name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function makeIdCallRegex(name: string): RegExp {
+export function makeIdCallRegex(name: string): RegExp {
   return new RegExp(`(?:^|[^\\w$])${escapeForIdBoundary(name)}\\s*\\(`)
 }
 
@@ -434,7 +434,7 @@ function makeIdRefRegex(name: string): RegExp {
   return new RegExp(`(?:^|[^\\w$])${escapeForIdBoundary(name)}(?:[^\\w$]|$)`)
 }
 
-function buildLocalFunctionSetterMap(
+export function buildLocalFunctionSetterMap(
   meta: IRMetadata,
   setterToSignal: Map<string, string>,
 ): Map<string, string[]> {
@@ -537,7 +537,7 @@ function walkForEvents(
   }
 }
 
-function resolveSetters(
+export function resolveSetters(
   handler: string,
   setterToSignal: Map<string, string>,
   fnSetters: Map<string, string[]>,

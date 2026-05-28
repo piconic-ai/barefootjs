@@ -17,42 +17,60 @@ import type {
   IRIfStatement,
   IRProvider,
   IRAsync,
+  IRMetadata,
 } from '@barefootjs/jsx'
+import { resolveSetters, buildLocalFunctionSetterMap, type SetterRef } from '@barefootjs/jsx'
 
 type IRAttribute = IRElement['attrs'][number]
 type AttrValue = IRAttribute['value']
 type TemplateAttr = Extract<AttrValue, { kind: 'template' }>
-import { TestNode } from './test-node'
+import { TestNode, type EventHandler } from './test-node'
 
-export function irNodeToTestNode(node: IRNode, constantMap?: Map<string, string>): TestNode {
-  const cmap = constantMap ?? new Map<string, string>()
-  return convert(node, cmap)
+interface ConvertContext {
+  cmap: Map<string, string>
+  setterToSignal: Map<string, string>
+  fnSetters: Map<string, string[]>
 }
 
-function convert(node: IRNode, cmap: Map<string, string>): TestNode {
+export function irNodeToTestNode(node: IRNode, constantMap?: Map<string, string>, metadata?: IRMetadata): TestNode {
+  const cmap = constantMap ?? new Map<string, string>()
+  const setterToSignal = new Map<string, string>()
+  const fnSetters = new Map<string, string[]>()
+  if (metadata) {
+    for (const s of metadata.signals) {
+      if (s.setter) setterToSignal.set(s.setter, s.getter)
+    }
+    for (const [k, v] of buildLocalFunctionSetterMap(metadata, setterToSignal)) {
+      fnSetters.set(k, v)
+    }
+  }
+  return convert(node, { cmap, setterToSignal, fnSetters })
+}
+
+function convert(node: IRNode, ctx: ConvertContext): TestNode {
   switch (node.type) {
     case 'element':
-      return convertElement(node, cmap)
+      return convertElement(node, ctx)
     case 'text':
       return convertText(node)
     case 'expression':
       return convertExpression(node)
     case 'conditional':
-      return convertConditional(node, cmap)
+      return convertConditional(node, ctx)
     case 'loop':
-      return convertLoop(node, cmap)
+      return convertLoop(node, ctx)
     case 'component':
-      return convertComponent(node, cmap)
+      return convertComponent(node, ctx)
     case 'fragment':
-      return convertFragment(node, cmap)
+      return convertFragment(node, ctx)
     case 'slot':
       return convertSlot(node)
     case 'if-statement':
-      return convertIfStatement(node, cmap)
+      return convertIfStatement(node, ctx)
     case 'provider':
-      return convertProvider(node, cmap)
+      return convertProvider(node, ctx)
     case 'async':
-      return convertAsync(node, cmap)
+      return convertAsync(node, ctx)
     default: {
       const _exhaustive: never = node
       throw new Error(`Unhandled IR node type: ${(_exhaustive as IRNode).type}`)
@@ -64,7 +82,7 @@ function convert(node: IRNode, cmap: Map<string, string>): TestNode {
 // Element
 // ---------------------------------------------------------------------------
 
-function convertElement(node: IRElement, cmap: Map<string, string>): TestNode {
+function convertElement(node: IRElement, ctx: ConvertContext): TestNode {
   const props: Record<string, string | boolean | null> = {}
   const aria: Record<string, string> = {}
   let role: string | null = null
@@ -77,8 +95,8 @@ function convertElement(node: IRElement, cmap: Map<string, string>): TestNode {
     if (attr.name === 'className' || attr.name === 'class') {
       if (typeof value === 'string') {
         const isDynamic = attr.value.kind === 'expression' || attr.value.kind === 'template' || attr.value.kind === 'spread'
-        if (isDynamic && cmap.size > 0) {
-          const resolved = resolveClassValue(value, cmap)
+        if (isDynamic && ctx.cmap.size > 0) {
+          const resolved = resolveClassValue(value, ctx.cmap)
           if (resolved !== null) {
             classes = resolved.split(/\s+/).filter(Boolean)
             continue
@@ -110,7 +128,12 @@ function convertElement(node: IRElement, cmap: Map<string, string>): TestNode {
   }
 
   const events = node.events.map(e => e.name)
-  const children = node.children.map(c => convert(c, cmap))
+  const handlers: Record<string, EventHandler> = {}
+  for (const event of node.events) {
+    const refs = resolveSetters(event.handler, ctx.setterToSignal, ctx.fnSetters)
+    handlers[event.name] = refsToHandler(refs)
+  }
+  const children = node.children.map(c => convert(c, ctx))
 
   return new TestNode({
     tag: node.tag,
@@ -123,6 +146,7 @@ function convertElement(node: IRElement, cmap: Map<string, string>): TestNode {
     aria,
     dataState,
     events,
+    handlers,
     reactive: false,
     componentName: null,
   })
@@ -144,6 +168,7 @@ function convertText(node: IRText): TestNode {
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: null,
   })
@@ -165,6 +190,7 @@ function convertExpression(node: IRExpression): TestNode {
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: node.reactive,
     componentName: null,
   })
@@ -174,10 +200,10 @@ function convertExpression(node: IRExpression): TestNode {
 // Conditional
 // ---------------------------------------------------------------------------
 
-function convertConditional(node: IRConditional, cmap: Map<string, string>): TestNode {
-  const children: TestNode[] = [convert(node.whenTrue, cmap)]
+function convertConditional(node: IRConditional, ctx: ConvertContext): TestNode {
+  const children: TestNode[] = [convert(node.whenTrue, ctx)]
   if (node.whenFalse) {
-    children.push(convert(node.whenFalse, cmap))
+    children.push(convert(node.whenFalse, ctx))
   }
 
   return new TestNode({
@@ -191,6 +217,7 @@ function convertConditional(node: IRConditional, cmap: Map<string, string>): Tes
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: node.reactive,
     componentName: null,
   })
@@ -200,8 +227,8 @@ function convertConditional(node: IRConditional, cmap: Map<string, string>): Tes
 // Loop
 // ---------------------------------------------------------------------------
 
-function convertLoop(node: IRLoop, cmap: Map<string, string>): TestNode {
-  const children = node.children.map(c => convert(c, cmap))
+function convertLoop(node: IRLoop, ctx: ConvertContext): TestNode {
+  const children = node.children.map(c => convert(c, ctx))
 
   return new TestNode({
     tag: null,
@@ -214,6 +241,7 @@ function convertLoop(node: IRLoop, cmap: Map<string, string>): TestNode {
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: null,
   })
@@ -223,7 +251,7 @@ function convertLoop(node: IRLoop, cmap: Map<string, string>): TestNode {
 // Component
 // ---------------------------------------------------------------------------
 
-function convertComponent(node: IRComponent, cmap: Map<string, string>): TestNode {
+function convertComponent(node: IRComponent, ctx: ConvertContext): TestNode {
   const props: Record<string, string | boolean | null> = {}
   for (const prop of node.props) {
     switch (prop.value.kind) {
@@ -247,7 +275,7 @@ function convertComponent(node: IRComponent, cmap: Map<string, string>): TestNod
     }
   }
 
-  const children = node.children.map(c => convert(c, cmap))
+  const children = node.children.map(c => convert(c, ctx))
 
   return new TestNode({
     tag: null,
@@ -260,6 +288,7 @@ function convertComponent(node: IRComponent, cmap: Map<string, string>): TestNod
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: node.name,
   })
@@ -269,8 +298,8 @@ function convertComponent(node: IRComponent, cmap: Map<string, string>): TestNod
 // Fragment
 // ---------------------------------------------------------------------------
 
-function convertFragment(node: IRFragment, cmap: Map<string, string>): TestNode {
-  const children = node.children.map(c => convert(c, cmap))
+function convertFragment(node: IRFragment, ctx: ConvertContext): TestNode {
+  const children = node.children.map(c => convert(c, ctx))
 
   return new TestNode({
     tag: null,
@@ -283,6 +312,7 @@ function convertFragment(node: IRFragment, cmap: Map<string, string>): TestNode 
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: null,
   })
@@ -304,6 +334,7 @@ function convertSlot(_node: IRSlot): TestNode {
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: null,
   })
@@ -313,10 +344,10 @@ function convertSlot(_node: IRSlot): TestNode {
 // IfStatement
 // ---------------------------------------------------------------------------
 
-function convertIfStatement(node: IRIfStatement, cmap: Map<string, string>): TestNode {
-  const children: TestNode[] = [convert(node.consequent, cmap)]
+function convertIfStatement(node: IRIfStatement, ctx: ConvertContext): TestNode {
+  const children: TestNode[] = [convert(node.consequent, ctx)]
   if (node.alternate) {
-    children.push(convert(node.alternate, cmap))
+    children.push(convert(node.alternate, ctx))
   }
 
   return new TestNode({
@@ -330,6 +361,7 @@ function convertIfStatement(node: IRIfStatement, cmap: Map<string, string>): Tes
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: null,
   })
@@ -339,9 +371,9 @@ function convertIfStatement(node: IRIfStatement, cmap: Map<string, string>): Tes
 // Provider
 // ---------------------------------------------------------------------------
 
-function convertProvider(node: IRProvider, cmap: Map<string, string>): TestNode {
+function convertProvider(node: IRProvider, ctx: ConvertContext): TestNode {
   // Transparent — just pass through children
-  const children = node.children.map(c => convert(c, cmap))
+  const children = node.children.map(c => convert(c, ctx))
 
   if (children.length === 1) return children[0]
 
@@ -356,6 +388,7 @@ function convertProvider(node: IRProvider, cmap: Map<string, string>): TestNode 
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: null,
   })
@@ -365,9 +398,9 @@ function convertProvider(node: IRProvider, cmap: Map<string, string>): TestNode 
 // Async
 // ---------------------------------------------------------------------------
 
-function convertAsync(node: IRAsync, cmap: Map<string, string>): TestNode {
+function convertAsync(node: IRAsync, ctx: ConvertContext): TestNode {
   // Represent the resolved content as a fragment; tests assert on final state.
-  const children = node.children.map(c => convert(c, cmap))
+  const children = node.children.map(c => convert(c, ctx))
 
   return new TestNode({
     tag: null,
@@ -380,6 +413,7 @@ function convertAsync(node: IRAsync, cmap: Map<string, string>): TestNode {
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: null,
   })
@@ -388,6 +422,16 @@ function convertAsync(node: IRAsync, cmap: Map<string, string>): TestNode {
 // ---------------------------------------------------------------------------
 // Constant-based class value resolution
 // ---------------------------------------------------------------------------
+
+function refsToHandler(refs: SetterRef[]): EventHandler {
+  const setters: string[] = []
+  const via: string[] = []
+  for (const ref of refs) {
+    setters.push(ref.setter)
+    if (ref.via && !via.includes(ref.via)) via.push(ref.via)
+  }
+  return { setters, via }
+}
 
 function resolveClassValue(value: string, cmap: Map<string, string>): string | null {
   // Simple identifier lookup

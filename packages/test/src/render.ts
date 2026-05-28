@@ -52,7 +52,7 @@ export function renderToTest(source: string, filePath: string, componentName?: s
 
   const metadata = buildMetadata(ctx)
   const constantMap = resolveConstants(metadata.localConstants)
-  const root = irNodeToTestNode(ir, constantMap)
+  const root = irNodeToTestNode(ir, constantMap, metadata)
   const signals = metadata.signals.map(s => s.getter)
   const memos = metadata.memos.map(m => m.name)
   const effects = metadata.effects.length
@@ -119,6 +119,7 @@ function emptyResult(
     aria: {},
     dataState: null,
     events: [],
+    handlers: {},
     reactive: false,
     componentName: null,
   })

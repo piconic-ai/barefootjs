@@ -4,6 +4,11 @@
  * Produced by converting the compiler IR into a flat, assertion-friendly shape.
  */
 
+export interface EventHandler {
+  setters: string[]
+  via: string[]
+}
+
 export interface TestNodeData {
   tag: string | null
   type: 'element' | 'text' | 'expression' | 'conditional' | 'loop' | 'component' | 'fragment'
@@ -15,6 +20,7 @@ export interface TestNodeData {
   aria: Record<string, string>
   dataState: string | null
   events: string[]
+  handlers: Partial<Record<string, EventHandler>>
   reactive: boolean
   componentName: string | null
 }
@@ -36,8 +42,18 @@ export class TestNode implements TestNodeData {
   aria: Record<string, string>
   dataState: string | null
   events: string[]
+  handlers: Partial<Record<string, EventHandler>>
   reactive: boolean
   componentName: string | null
+
+  get onClick(): EventHandler | undefined { return this.handlers.click }
+  get onInput(): EventHandler | undefined { return this.handlers.input }
+  get onChange(): EventHandler | undefined { return this.handlers.change }
+  get onSubmit(): EventHandler | undefined { return this.handlers.submit }
+
+  on(event: string): EventHandler | null {
+    return this.handlers[event] ?? null
+  }
 
   constructor(data: TestNodeData) {
     this.tag = data.tag
@@ -50,6 +66,7 @@ export class TestNode implements TestNodeData {
     this.aria = data.aria
     this.dataState = data.dataState
     this.events = data.events
+    this.handlers = data.handlers
     this.reactive = data.reactive
     this.componentName = data.componentName
   }
