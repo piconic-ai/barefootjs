@@ -124,13 +124,31 @@ export function createComponent(
     return result
   })
 
-  // 4. Generate HTML from props.
+  // 4. Pre-generate the component's scope ID.
   //
-  // Thread `slot.parent` into `_parentScopeId` so any hoisted-children
-  // placeholder (#1320) resolves to the calling site's scope.
+  // `comment: true` components (synthesized inline-JSX-callback wrappers
+  // from #1211) render as transparent shells — the parsed `firstChild` is
+  // already the inner component's root with its own bf-s. Don't overwrite
+  // it (scopeId stays null), or `$c(__scope, 's0')` from the wrapper's
+  // init resolves to null.
+  const def = getRegisteredDef(name)
+  const isCommentWrapper = def?.comment === true
+  const scopeId = isCommentWrapper ? null : `${name}_${generateId()}`
+
+  // 5. Generate HTML from props.
+  //
+  // Thread the component's own scope ID into `_parentScopeId` for the
+  // template eval so renderChild() stamps parent-prefixed bf-s / bf-h /
+  // bf-m on child components — matching the SSR convention so a later
+  // `$c(scope, 'sN')` lookup resolves them. Without this, CSR-created
+  // children carry a random prefix and their event handlers never wire
+  // up (#1627). `slot.parent` takes precedence so hoisted-children
+  // placeholders (#1320) still resolve to the calling site's scope.
   const prevParentScopeId = _parentScopeId
   if (slot?.parent) {
     _parentScopeId = slot.parent
+  } else if (scopeId) {
+    _parentScopeId = scopeId
   }
   let html: string
   try {
@@ -139,7 +157,7 @@ export function createComponent(
     _parentScopeId = prevParentScopeId
   }
 
-  // 5. Create DOM element
+  // 6. Create DOM element
   const element = parseHTML(html.trim()).firstChild as HTMLElement
 
   if (!element) {
@@ -147,16 +165,9 @@ export function createComponent(
     return createPlaceholder(name, key)
   }
 
-  // 6. Set scope ID and key attributes.
-  //
-  // `comment: true` components (synthesized inline-JSX-callback wrappers
-  // from #1211) render as transparent shells — the parsed `firstChild` is
-  // already the inner component's root with its own bf-s. Don't overwrite
-  // it, or `$c(__scope, 's0')` from the wrapper's init resolves to null.
-  const def = getRegisteredDef(name)
-  const isCommentWrapper = def?.comment === true
-  if (!isCommentWrapper) {
-    element.setAttribute(BF_SCOPE, `${name}_${generateId()}`)
+  // 7. Set scope ID and key attributes.
+  if (scopeId) {
+    element.setAttribute(BF_SCOPE, scopeId)
   }
   if (slot) {
     if (slot.parent) element.setAttribute(BF_HOST, slot.parent)
@@ -166,18 +177,18 @@ export function createComponent(
     element.setAttribute(BF_KEY, String(key))
   }
 
-  // 7. Set currentScope so provideContext/useContext are element-scoped.
+  // 8. Set currentScope so provideContext/useContext are element-scoped.
   // This allows context providers in initFn to store context on this element.
   const prevScope = setCurrentScope(element)
 
-  // 8. Initialize the component (context providers set up here).
+  // 9. Initialize the component (context providers set up here).
   const initFn = getComponentInit(name)
   if (initFn) {
     // Pass original props (with getters) for reactivity
     initFn(element, props)
   }
 
-  // 9. Evaluate getter children and insert them.
+  // 10. Evaluate getter children and insert them.
   // Children are evaluated NOW (after initFn) so that context provided by
   // the parent is in the global store when children call useContext().
   if (childrenIsGetter) {
@@ -187,13 +198,13 @@ export function createComponent(
     }
   }
 
-  // 10. Restore previous scope
+  // 11. Restore previous scope
   setCurrentScope(prevScope)
 
-  // 11. Mark element as initialized
+  // 12. Mark element as initialized
   hydratedScopes.add(element)
 
-  // 12. Store props and register update function for element reuse in reconcileList
+  // 13. Store props and register update function for element reuse in reconcileList
   propsMap.set(element, props)
   registerPropsUpdate(element, name, props)
 

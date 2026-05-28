@@ -130,13 +130,16 @@ describe('createComponent + hoisted-children scope (#1320)', () => {
     expect(innerWithParent!.getAttribute('bf-s')).toBe(parentScopeId)
 
     // Immediately after, mount a second instance WITHOUT slot.parent.
-    // If the first call had leaked `_parentScopeId` (no finally
-    // restore), this template eval would inherit `parentScopeId` and
-    // the placeholder would substitute. The restore makes
-    // `_parentScopeId` null at this point, so the placeholder strips.
+    // Since #1627, createComponent threads its OWN scope id into
+    // `_parentScopeId` for the template eval, so the hoisted child is
+    // scoped to this fresh instance — NOT a leak of the prior call's
+    // `parentScopeId`. The re-entrant-safety contract is that the prior
+    // value does not bleed through: the span must carry this element's
+    // own scope, never `OuterTwo_xyz789`.
     const elWithoutParent = createComponent('OuterTwo_test1320', {})
     const innerWithoutParent = elWithoutParent.querySelector('span')
-    expect(innerWithoutParent!.hasAttribute('bf-s')).toBe(false)
+    expect(innerWithoutParent!.getAttribute('bf-s')).toBe(elWithoutParent.getAttribute('bf-s'))
+    expect(innerWithoutParent!.getAttribute('bf-s')).not.toBe(parentScopeId)
   })
 
   test('restores _parentScopeId even when the template throws', async () => {
@@ -175,11 +178,46 @@ describe('createComponent + hoisted-children scope (#1320)', () => {
     ).toThrow(/boom/)
 
     // Second call: no slot.parent. If the throw had short-circuited the
-    // restore, this template would inherit `LeakedScope_abc` and the
-    // placeholder would substitute. With the finally in place,
-    // `_parentScopeId` is null and the placeholder strips.
+    // restore, this template would inherit `LeakedScope_abc`. The `finally`
+    // restores `_parentScopeId`, so since #1627 the hoisted child is scoped
+    // to this element's OWN fresh scope — never the leaked `LeakedScope_abc`.
     const el = createComponent('PassThroughOuter_test1320', {})
     const inner = el.querySelector('span')
-    expect(inner!.hasAttribute('bf-s')).toBe(false)
+    expect(inner!.getAttribute('bf-s')).toBe(el.getAttribute('bf-s'))
+    expect(inner!.getAttribute('bf-s')).not.toBe('LeakedScope_abc')
+  })
+
+  // Regression: #1627 bug 2. A component created via createComponent (the
+  // CSR path mapArray takes for new loop items post-hydration) renders its
+  // child components through renderChild. The child's bf-s must carry this
+  // component's scope prefix so the component's init can resolve it via
+  // `$c(scope, 'sN')` and wire up its event handlers. Pre-fix the child
+  // got a random prefix and $c returned null, leaving handlers inert.
+  test('CSR-created component gives child a resolvable parent-prefixed scope (#1627)', async () => {
+    const { hydrate, createComponent, renderChild, $c } = await import('../../src/runtime')
+
+    hydrate('ChildLeaf_test1627', {
+      init: () => {},
+      template: () => `<button data-slot="child-leaf">Delete</button>`,
+    })
+
+    // Parent's template renders ChildLeaf at slot s0 via renderChild.
+    hydrate('ParentCard_test1627', {
+      init: () => {},
+      template: () =>
+        `<div data-slot="parent-card">${renderChild('ChildLeaf_test1627', {}, undefined, 's0')}</div>`,
+    })
+
+    // Mount via createComponent with no slot — the dynamic-instance path.
+    const el = createComponent('ParentCard_test1627', {})
+    document.body.appendChild(el)
+
+    // The parent's own init would run `$c(scope, 's0')` to find the child.
+    // It must resolve to the rendered ChildLeaf, not null.
+    const [child] = $c(el, 's0')
+    expect(child).not.toBeNull()
+    expect(child?.getAttribute('data-slot')).toBe('child-leaf')
+    // The child's scope must be prefixed with the parent's scope id.
+    expect(child?.getAttribute('bf-s')).toBe(`${el.getAttribute('bf-s')}_s0`)
   })
 })

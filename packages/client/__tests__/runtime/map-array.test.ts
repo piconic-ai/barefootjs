@@ -513,6 +513,82 @@ describe('mapArray', () => {
     expect(container.querySelectorAll('span[data-set="a"]').length).toBe(3)
     expect(container.querySelectorAll('span[data-set="b"]').length).toBe(1)
   })
+
+  // Regression: #1627 bug 1. When the client signal has fewer items than
+  // SSR rendered, hydration must remove the orphaned DOM nodes.
+  test('hydration removes excess SSR nodes when client has fewer items (#1627)', () => {
+    const parent = document.createElement('div')
+    parent.appendChild(document.createComment('bf-loop:l0'))
+    // Simulate 3 SSR-rendered items
+    const ssr1 = document.createElement('div')
+    ssr1.textContent = 'Frame 1'
+    ssr1.className = 'frame-editor'
+    parent.appendChild(ssr1)
+    const ssr2 = document.createElement('div')
+    ssr2.textContent = 'Frame 2'
+    ssr2.className = 'frame-editor'
+    parent.appendChild(ssr2)
+    const ssr3 = document.createElement('div')
+    ssr3.textContent = 'Frame 3'
+    ssr3.className = 'frame-editor'
+    parent.appendChild(ssr3)
+    parent.appendChild(document.createComment('bf-/loop:l0'))
+    document.body.replaceChild(parent, container)
+    container = parent
+
+    // Client signal has only 1 item
+    const [items] = createSignal([{ id: 'f1', text: 'Frame 1' }])
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item, _idx, existing) => {
+        if (existing) return existing
+        const div = document.createElement('div')
+        div.className = 'frame-editor'
+        createEffect(() => { div.textContent = item().text })
+        return div
+      },
+      'l0',
+    )
+
+    // Only 1 item should remain — the 2 excess SSR nodes must be removed
+    expect(container.querySelectorAll('.frame-editor').length).toBe(1)
+    expect(container.querySelector('.frame-editor')!.textContent).toBe('Frame 1')
+  })
+
+  // #1627 bug 1 variant: SSR renders items, client hydrates with empty array.
+  test('hydration removes all SSR nodes when client array is empty (#1627)', () => {
+    const parent = document.createElement('div')
+    parent.appendChild(document.createComment('bf-loop:l0'))
+    const ssr1 = document.createElement('div')
+    ssr1.className = 'frame-editor'
+    parent.appendChild(ssr1)
+    const ssr2 = document.createElement('div')
+    ssr2.className = 'frame-editor'
+    parent.appendChild(ssr2)
+    parent.appendChild(document.createComment('bf-/loop:l0'))
+    document.body.replaceChild(parent, container)
+    container = parent
+
+    const [items] = createSignal<{ id: string }[]>([])
+
+    mapArray(
+      items,
+      container,
+      (item) => item.id,
+      (item, _idx, existing) => {
+        if (existing) return existing
+        const div = document.createElement('div')
+        div.className = 'frame-editor'
+        return div
+      },
+      'l0',
+    )
+
+    expect(container.querySelectorAll('.frame-editor').length).toBe(0)
+  })
 })
 
 describe('mapArray duplicate-key warning (#1244)', () => {
