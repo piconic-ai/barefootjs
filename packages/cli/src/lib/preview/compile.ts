@@ -10,9 +10,44 @@ import { existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { resolve, relative } from 'node:path'
 import { build } from 'esbuild'
-import { compileJSX, combineParentChildClientJs, formatError } from '@barefootjs/jsx'
-import { CSRAdapter } from '@barefootjs/client/build'
+import {
+  compileJSX,
+  combineParentChildClientJs,
+  formatError,
+  BaseAdapter,
+  type AdapterOutput,
+} from '@barefootjs/jsx'
 import { discoverComponentFiles } from '../build'
+
+// Minimal CSR adapter. compileJSX needs a concrete TemplateAdapter, but
+// preview only consumes the client JS output (the marked template is
+// discarded), so every render method is a no-op. Defined inline — rather
+// than importing CSRAdapter from `@barefootjs/client/build` — so the CLI
+// bundles from `@barefootjs/jsx` source alone and does not require
+// `@barefootjs/client`'s dist to be built first. `acceptsTemplateCall`
+// returns true so the analyzer keeps calls at template scope (matches
+// the published CSRAdapter contract).
+const EMPTY_OUTPUT: AdapterOutput = Object.freeze({
+  template: '',
+  sections: Object.freeze({ imports: '', types: '', component: '', defaultExport: '' }),
+  extension: '.tsx',
+})
+
+class PreviewCsrAdapter extends BaseAdapter {
+  name = 'csr'
+  extension = '.tsx'
+  acceptsTemplateCall = (): boolean => true
+  generate(): AdapterOutput { return EMPTY_OUTPUT }
+  renderNode(): string { return '' }
+  renderElement(): string { return '' }
+  renderExpression(): string { return '' }
+  renderConditional(): string { return '' }
+  renderLoop(): string { return '' }
+  renderComponent(): string { return '' }
+  renderScopeMarker(): string { return '' }
+  renderSlotMarker(): string { return '' }
+  renderCondMarker(): string { return '' }
+}
 
 export interface CompileOptions {
   /** Repo/project root (absolute). */
@@ -69,7 +104,7 @@ export async function compile(options: CompileOptions): Promise<CompileResult> {
     skipDirs: ['__previews__', '__tests__', 'shared'],
   })
   const allFiles = [...componentFiles, previewsPath]
-  const adapter = new CSRAdapter()
+  const adapter = new PreviewCsrAdapter()
 
   // Map<unique key, clientJs> for combineParentChildClientJs.
   // Track the preview file's own compile result so we can fail loudly

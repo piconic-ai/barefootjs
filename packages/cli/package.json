@@ -32,7 +32,6 @@
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
-    "@types/node": "^22.0.0",
-    "@barefootjs/client": "workspace:*"
+    "@types/node": "^22.0.0"
   }
 }
