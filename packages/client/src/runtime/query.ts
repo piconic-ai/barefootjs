@@ -492,7 +492,12 @@ function $cSingle(scope: Element | null, id: string): Element | null {
     // Precise match found nothing. Check if scope itself matches the short suffix
     // (fragment root / inlined component where scope IS the child).
     if (scope.matches?.(`[${BF_SCOPE}$="_${cleanId}"]`)) return scope
-    return null
+
+    // Fallback for CSR-created components (via createComponent inside mapArray)
+    // whose child scope IDs carry a random prefix instead of the parent's.
+    // Only match DIRECT child scopes — skip elements nested under another
+    // intermediate scope to avoid crossing scope boundaries. (#1627)
+    return findDirectChildScope(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
   }
 
   // Fallback: no parent scope ID available — use short suffix match (best-effort)
@@ -517,6 +522,24 @@ function findChildScope(scope: Element, selector: string): Element | null {
   const scopeId = commentInfo?.scopeId ?? getScopeId(scope)
   if (scopeId) return findInPortals(scopeId, selector)
 
+  return null
+}
+
+/**
+ * Like findChildScope but only matches elements that are DIRECT child
+ * scopes of `scope` — i.e. the candidate's nearest ancestor with bf-s
+ * (excluding itself) must be `scope`. This prevents crossing into nested
+ * component scopes; e.g. searching `Demo_abc` for `_s3` won't reach
+ * `Demo_abc_s4_s3` which belongs to the intermediate scope `Demo_abc_s4`.
+ *
+ * Used as the CSR fallback in $cSingle when the precise parent-prefixed
+ * lookup found nothing (#1627).
+ */
+function findDirectChildScope(scope: Element, selector: string): Element | null {
+  for (const candidate of candidatesInScope(scope, selector)) {
+    const nearestScope = candidate.parentElement?.closest(`[${BF_SCOPE}]`)
+    if (nearestScope === scope) return candidate
+  }
   return null
 }
 

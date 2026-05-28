@@ -565,6 +565,26 @@ describe('$c', () => {
       expect(result).toBeNull()
     })
 
+    // Regression: #1627 bug 2. CSR-created components (via createComponent
+    // inside mapArray) generate child scope IDs with a random prefix instead
+    // of the parent's. $cSingle must still find them via direct-child-only
+    // short suffix fallback.
+    test('finds CSR-created child with random prefix via direct-child fallback (#1627)', () => {
+      document.body.innerHTML = `
+        <div bf-s="FrameEditor_newId">
+          <button bf-s="Button_randomId_s0">Delete</button>
+          <textarea bf-s="Textarea_randomId_s1"></textarea>
+        </div>
+      `
+      const scope = document.querySelector('[bf-s="FrameEditor_newId"]')!
+      const [btn] = $c(scope, 's0')
+      const [textarea] = $c(scope, 's1')
+      expect(btn).not.toBeNull()
+      expect(btn?.getAttribute('bf-s')).toBe('Button_randomId_s0')
+      expect(textarea).not.toBeNull()
+      expect(textarea?.getAttribute('bf-s')).toBe('Textarea_randomId_s1')
+    })
+
     test('scope element itself matches suffix (fragment root / inlined)', () => {
       // When find() returns the scope element itself, it means the child
       // component's scope IS the parent's scope (inlined or fragment root).

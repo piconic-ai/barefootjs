@@ -277,6 +277,17 @@ export function mapArray<T>(
           scopes.set(key, scope)
           insertScope(scope, container, anchor)
         }
+
+        // If client has fewer items than SSR rendered, remove orphaned nodes
+        for (let i = items.length; i < existingRanges.length; i++) {
+          const range = existingRanges[i]
+          if (range.startMarker?.parentNode) range.startMarker.remove()
+          if (range.primaryEl.parentNode) range.primaryEl.remove()
+          for (const ex of range.extras) {
+            if (ex.parentNode) ex.remove()
+          }
+        }
+
         return  // Hydration complete — effects handle future updates
       }
     }
