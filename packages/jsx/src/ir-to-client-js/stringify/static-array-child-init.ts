@@ -161,10 +161,14 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
   for (const stmt of innerPreludeStatements) {
     lines.push(`        ${stmt}`)
   }
-  for (const comp of comps) {
-    lines.push(`        const __compEl = qsaChildScope(__innerEl, ${comp.selector})`)
-    lines.push(`        if (__compEl) initChild('${nameForRegistryRef(comp.componentName)}', __compEl, ${comp.propsExpr})`)
-  }
+  // Each inner-loop component gets a uniquely-suffixed `__compEl` binding.
+  // Multiple comps share one inner `forEach` body, so a fixed name would
+  // re-declare `const __compEl` in the same scope (#1664).
+  comps.forEach((comp, i) => {
+    const compElVar = comps.length > 1 ? `__compEl${i}` : '__compEl'
+    lines.push(`        const ${compElVar} = qsaChildScope(__innerEl, ${comp.selector})`)
+    lines.push(`        if (${compElVar}) initChild('${nameForRegistryRef(comp.componentName)}', ${compElVar}, ${comp.propsExpr})`)
+  })
   lines.push(`      })`)
   lines.push(`    })`)
   lines.push(`  }`)

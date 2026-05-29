@@ -729,4 +729,80 @@ describe('child components inside .map() (#344)', () => {
     expect(content).toContain('children[__idx]')
     expect(content).not.toContain('children[__idx + ')
   })
+
+  test('nested .map() with multiple inner components emits unique __compEl bindings (#1664)', () => {
+    const source = `
+      'use client'
+
+      export function Picker() {
+        const GROUPS = [
+          { id: 'a', items: [{ id: 'x', label: 'X' }] },
+        ]
+        return (
+          <div>
+            {GROUPS.map(group => (
+              <div key={group.id}>
+                {group.items.map(it => (
+                  <div key={it.id}>
+                    <SelectItem value={it.id}>{it.label}</SelectItem>
+                    <SelectIcon name={it.id} />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'Picker.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // Both inner-loop components must be initialised.
+    expect(content).toContain("initChild('SelectItem'")
+    expect(content).toContain("initChild('SelectIcon'")
+
+    // No re-declaration of `__compEl` in the shared inner-forEach scope:
+    // each comp must use a uniquely-suffixed binding.
+    expect(content).toContain('__compEl0')
+    expect(content).toContain('__compEl1')
+
+    // The bug threw "Identifier '__compEl' has already been declared" — the
+    // unsuffixed binding must not appear when multiple comps share a scope.
+    expect(content).not.toContain('const __compEl =')
+  })
+
+  test('nested .map() with a single inner component keeps the plain __compEl binding (#1664)', () => {
+    const source = `
+      'use client'
+
+      export function Picker() {
+        const GROUPS = [
+          { id: 'a', items: [{ id: 'x', label: 'X' }] },
+        ]
+        return (
+          <div>
+            {GROUPS.map(group => (
+              <div key={group.id}>
+                {group.items.map(it => (
+                  <SelectItem key={it.id} value={it.id}>{it.label}</SelectItem>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'Picker.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+    expect(content).toContain("initChild('SelectItem'")
+    // Single comp keeps the unsuffixed name.
+    expect(content).toContain('const __compEl =')
+    expect(content).not.toContain('__compEl0')
+  })
 })
