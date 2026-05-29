@@ -1,4 +1,4 @@
-import { $, $t, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, hydrate, initChild, insert, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
+import { $, $t, __bfSlot, __bfText, createComponent, createDisposableEffect, createEffect, createSignal, hydrate, initChild, insert, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -7,9 +7,10 @@ export function initTodoItem(__scope, _p = {}) {
   const [_s0, _s2, _s3, _s4, _s5] = $(__scope, 's0', 's2', 's3', 's4', 's5')
   const [_s1] = $t(__scope, 's1')
 
+  let __anchor_s1 = _s1
   createEffect(() => {
     const __val = _p.todo.text
-    if (_s1 && !__val?.__isSlot) _s1.nodeValue = String(__val ?? '')
+    __anchor_s1 = __bfText(__anchor_s1, __val)
   })
 
   createEffect(() => {
@@ -160,9 +161,10 @@ export function initTodoAppSSR(__scope, _p = {}) {
   const [_s0, _s10, _s11, _s12, _s1, _s8, _s13, _s4] = $(__scope, 's0', 's10', 's11', 's12', 's1', 's8', 's13', 's4')
   const [_s6] = $t(__scope, 's6')
 
+  let __anchor_s6 = _s6
   createEffect(() => {
     const __val = todos().filter(t => !t.done).length
-    if (_s6 && !__val?.__isSlot) _s6.nodeValue = String(__val ?? '')
+    __anchor_s6 = __bfText(__anchor_s6, __val)
   })
 
   createEffect(() => {

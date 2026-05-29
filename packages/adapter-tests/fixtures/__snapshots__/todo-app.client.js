@@ -1,4 +1,4 @@
-import { $, $t, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, hydrate, initChild, insert, mapArray, onMount, qsa, renderChild, updateClientMarker } from '@barefootjs/client/runtime'
+import { $, $t, __bfSlot, __bfText, createComponent, createDisposableEffect, createEffect, createSignal, hydrate, initChild, insert, mapArray, onMount, qsa, renderChild, updateClientMarker } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -7,9 +7,10 @@ export function initTodoItem(__scope, _p = {}) {
   const [_s0, _s2, _s3, _s4, _s5] = $(__scope, 's0', 's2', 's3', 's4', 's5')
   const [_s1] = $t(__scope, 's1')
 
+  let __anchor_s1 = _s1
   createEffect(() => {
     const __val = _p.todo.text
-    if (_s1 && !__val?.__isSlot) _s1.nodeValue = String(__val ?? '')
+    __anchor_s1 = __bfText(__anchor_s1, __val)
   })
 
   createEffect(() => {

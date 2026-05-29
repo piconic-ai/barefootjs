@@ -81,6 +81,7 @@ export { hydrate, rehydrateAll, flushHydration, getRegisteredDef } from './hydra
 export { registerComponent, getComponentInit, initChild, upsertChild } from './registry'
 export { insert, type BranchConfig, type BranchTemplateResult } from './insert'
 export { __bfSlot } from './branch-slot'
+export { __bfText } from './dynamic-text'
 export { updateClientMarker } from './client-marker'
 
 // Hydration state

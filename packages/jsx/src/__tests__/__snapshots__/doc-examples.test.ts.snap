@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L15 — Ternary 1`] = `
-"import { $, $t, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, $t, __bfSlot, __bfText, createComponent, createDisposableEffect, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -9,9 +9,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -24,9 +25,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -76,7 +78,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L18 — Logical AND 1`] = `
-"import { $, $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, insert, renderChild } from '@barefootjs/client/runtime'
+"import { $, $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, insert, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -84,9 +86,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -99,9 +102,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -150,7 +154,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L31 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -158,9 +162,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -173,9 +178,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -213,7 +219,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L40 — ✅ Simple predicate 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -221,9 +227,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -236,9 +243,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -276,7 +284,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L45 — ✅ Block body with simple statements — also works 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -284,9 +292,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -299,9 +308,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -349,7 +359,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L59 — ✅ Sort then render 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -357,9 +367,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -372,9 +383,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -412,7 +424,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L64 — ✅ Filter, sort, then render 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -420,9 +432,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -435,9 +448,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -475,7 +489,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L75 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -483,9 +497,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -498,9 +513,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -537,7 +553,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L121 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -545,9 +561,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -560,9 +577,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -588,9 +606,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = items().reduce((sum, x) => sum + x.price, 0)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -600,7 +619,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L124 — ✅ Use /* @client */ 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -608,9 +627,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -623,9 +643,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -661,7 +682,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L141 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -669,9 +690,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -684,9 +706,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -712,9 +735,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = items().filter(function(x) { return x.done })
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -724,7 +748,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L144 — ✅ Use arrow functions for adapter portability 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -732,9 +756,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -747,9 +772,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -775,9 +801,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = items().filter(x => x.done)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -787,7 +814,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L158 — ✅ Use /* @client */ 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -795,9 +822,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -810,9 +838,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -850,7 +879,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L59 — Nested higher-order methods 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -858,9 +887,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -873,9 +903,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -911,7 +942,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L62 — Unsupported array methods 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -919,9 +950,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -934,9 +966,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -972,7 +1005,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L74 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -980,9 +1013,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -995,9 +1029,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1033,7 +1068,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/fragment.md doc-examples L11 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1041,9 +1076,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1056,9 +1092,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1089,7 +1126,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/fragment.md doc-examples L23 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1097,9 +1134,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1112,9 +1150,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1302,7 +1341,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-signal.md doc-examples L95 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -1314,9 +1353,10 @@ export function initCounter(__scope, _p = {}) {
   const [_s2] = $(__scope, 's2')
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
@@ -1490,7 +1530,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-effect.md doc-examples L115 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1498,9 +1538,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1513,9 +1554,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1622,7 +1664,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-memo.md doc-examples L60 — No memo needed 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -1630,9 +1672,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1645,9 +1688,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1673,9 +1717,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count() * 2
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1926,7 +1971,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L82 — Parent 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Child */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -1935,9 +1980,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -1950,9 +1996,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2005,7 +2052,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L85 — Compiled props object 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2013,9 +2060,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2028,9 +2076,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2061,7 +2110,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/component-authoring.mdx doc-examples L16 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -2072,9 +2121,10 @@ export function initGreeting(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = name
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2084,7 +2134,7 @@ export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, _
 `;
 
 exports[`docs/core/components/component-authoring.mdx doc-examples L29 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -2096,9 +2146,10 @@ export function initCounter(__scope, _p = {}) {
   const [_s1] = $(__scope, 's1')
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
@@ -2190,7 +2241,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L14 — (no label) 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Card */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2199,9 +2250,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2214,9 +2266,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2270,7 +2323,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L68 — Input 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Slot */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2279,9 +2332,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2294,9 +2348,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2332,7 +2387,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L73 — Output 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2340,9 +2395,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2355,9 +2411,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2391,7 +2448,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L86 — (no label) 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Button */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2400,9 +2457,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2415,9 +2473,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2453,7 +2512,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L93 — (no label) 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Button */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2462,9 +2521,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2477,9 +2537,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2515,7 +2576,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L109 — Dialog trigger as a custom element 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:DialogTrigger */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -2524,9 +2585,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2539,9 +2601,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2577,7 +2640,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L118 — (no label) 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Dialog */'
 import '/* @bf-child:DialogTrigger */'
 import '/* @bf-child:DialogOverlay */'
@@ -2595,9 +2658,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2610,9 +2674,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2665,7 +2730,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L140 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2673,9 +2738,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2688,9 +2754,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2737,7 +2804,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L40 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate, provideContext } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate, provideContext } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -2745,9 +2812,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2760,9 +2828,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2848,7 +2917,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L94 — Usage 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:ThemeProvider */'
 import '/* @bf-child:ThemedButton */'
 
@@ -2858,9 +2927,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2873,9 +2943,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -2999,7 +3070,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L170 — (no label) 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Accordion */'
 import '/* @bf-child:AccordionTrigger */'
 import '/* @bf-child:AccordionContent */'
@@ -3010,9 +3081,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3025,9 +3097,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3067,7 +3140,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L190 — Provider passes signal getter 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate, provideContext } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate, provideContext } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3075,9 +3148,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3090,9 +3164,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3182,7 +3257,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/portals.md doc-examples L53 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createPortal, createSignal, hydrate, isSSRPortal } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createPortal, createSignal, hydrate, isSSRPortal } from '@barefootjs/client/runtime'
 
 
 export function initTooltip(__scope, _p = {}) {
@@ -3205,9 +3280,10 @@ export function initTooltip(__scope, _p = {}) {
   const [_s0, _s2] = $(__scope, 's0', 's2')
   const [_s1] = $t(__scope, 's1')
 
+  let __anchor_s1 = _s1
   createEffect(() => {
     const __val = _p.text
-    if (_s1 && !__val?.__isSlot) _s1.nodeValue = String(__val ?? '')
+    __anchor_s1 = __bfText(__anchor_s1, __val)
   })
 
   if (_s0) _s0.addEventListener('mouseenter', () => { setVisible(true) })
@@ -3286,7 +3362,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L16 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -3295,14 +3371,16 @@ export function initGreeting(__scope, _p = {}) {
 
   const [_s0, _s1] = $t(__scope, 's0', 's1')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = _p.greeting ?? 'Hello'
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
+  let __anchor_s1 = _s1
   createEffect(() => {
     const __val = _p.name
-    if (_s1 && !__val?.__isSlot) _s1.nodeValue = String(__val ?? '')
+    __anchor_s1 = __bfText(__anchor_s1, __val)
   })
 
 }
@@ -3348,7 +3426,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L89 — (no label) 1`] = `
-"import { $c, $t, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, $t, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Card */'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -3357,9 +3435,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3372,9 +3451,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3428,7 +3508,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/core-concepts/how-it-works.mdx doc-examples L33 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -3440,9 +3520,10 @@ export function initCounter(__scope, _p = {}) {
   const [_s1] = $(__scope, 's1')
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
@@ -3475,7 +3556,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/core-concepts/mpa-style.md doc-examples L23 — (no label) 1`] = `
-"import { $, $c, $t, createComponent, createEffect, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $, $c, $t, __bfText, createComponent, createEffect, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:ReviewStars */'
 import '/* @bf-child:AddToCart */'
 
@@ -3490,14 +3571,16 @@ export function initProductPage(__scope, _p = {}) {
   const [_s0, _s2] = $t(__scope, 's0', 's2')
   const [_s5, _s6] = $c(__scope, 's5', 's6')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = product.name
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
+  let __anchor_s2 = _s2
   createEffect(() => {
     const __val = product.description
-    if (_s2 && !__val?.__isSlot) _s2.nodeValue = String(__val ?? '')
+    __anchor_s2 = __bfText(__anchor_s2, __val)
   })
 
   createEffect(() => {
@@ -3529,7 +3612,7 @@ export function ProductPage(_p, __bfKey) { return createComponent('ProductPage',
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L55 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -3538,9 +3621,10 @@ export function initGreeting(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = _p.name
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3550,7 +3634,7 @@ export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, _
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L82 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -3566,9 +3650,10 @@ export function initCounter(__scope, _p = {}) {
   const [_s2] = $(__scope, 's2')
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
@@ -3601,7 +3686,7 @@ export function Layout(_p, __bfKey) { return createComponent('Layout', _p, __bfK
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L167 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3609,9 +3694,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3624,9 +3710,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3669,7 +3756,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L171 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3677,9 +3764,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3692,9 +3780,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3737,7 +3826,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L177 — (no label) 1`] = `
-"import { $, $t, __bfSlot, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, $t, __bfSlot, __bfText, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3745,9 +3834,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3760,9 +3850,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3805,7 +3896,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L190 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3813,9 +3904,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3828,9 +3920,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3870,7 +3963,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L50 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -3879,9 +3972,10 @@ export function initGreeting(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = _p.name
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3891,7 +3985,7 @@ export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, _
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L74 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -3907,9 +4001,10 @@ export function initCounter(__scope, _p = {}) {
   const [_s2] = $(__scope, 's2')
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
@@ -3920,7 +4015,7 @@ export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L147 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3928,9 +4023,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3943,9 +4039,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -3985,7 +4082,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L159 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -3993,9 +4090,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4008,9 +4106,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4050,7 +4149,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L173 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4058,9 +4157,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4073,9 +4173,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4143,7 +4244,7 @@ export function TodoList(_p, __bfKey) { return createComponent('TodoList', _p, _
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L231 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4151,9 +4252,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4166,9 +4268,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4211,7 +4314,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L169 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4219,9 +4322,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4234,9 +4338,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4267,7 +4372,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L174 — (no label) 1`] = `
-"import { $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4275,9 +4380,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4290,9 +4396,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4323,7 +4430,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L195 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4331,9 +4438,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4346,9 +4454,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4392,7 +4501,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L200 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4400,9 +4509,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4415,9 +4525,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4470,7 +4581,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/compiler-internals.md doc-examples L126 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4478,9 +4589,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4493,9 +4605,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4597,7 +4710,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L67 — ✅ Stable key — DOM nodes reused when list changes 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4605,9 +4718,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4620,9 +4734,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4662,7 +4777,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L70 — ❌ Index key — DOM nodes recreated on reorder 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4670,9 +4785,10 @@ export function initTodoItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.todo)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4685,9 +4801,10 @@ export function initItem(__scope, _p = {}) {
 
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = String(_p.item)
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
 }
@@ -4934,7 +5051,7 @@ export function TimelineBar(_p, __bfKey) { return createComponent('TimelineBar',
 `;
 
 exports[`docs/core/introduction.mdx doc-examples L15 — (no label) 1`] = `
-"import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -4946,9 +5063,10 @@ export function initCounter(__scope, _p = {}) {
   const [_s1] = $(__scope, 's1')
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })

@@ -2300,8 +2300,11 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // Text node assignment must guard against nullish values
-      expect(content).toContain("String(__val ?? '')")
+      // Text node updates route through `__bfText`, which renders nullish
+      // values as '' (not the string "undefined") and also splices live
+      // Nodes by identity (#1663). The nullish guard moved from the inline
+      // `String(__val ?? '')` assignment into that helper.
+      expect(content).toContain('__bfText(')
       expect(content).not.toMatch(/\.nodeValue = String\(__val\)(?! )/)
     })
 

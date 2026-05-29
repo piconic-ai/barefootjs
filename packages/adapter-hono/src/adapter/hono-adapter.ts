@@ -510,11 +510,25 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       fullPropsDestructure = `{ ${parts.join(', ')} }`
     }
 
+    // Default the props param to `{}` when the component has no required
+    // props, so a bare no-arg call (`Foo()`) doesn't crash on destructuring
+    // `undefined`. This makes a JSX-returning arrow hoisted from an
+    // object-literal value (e.g. `THEME_LOGOS[id]()`) renderable at SSR
+    // (#1663). Only safe when no required prop exists — otherwise `{}` would
+    // not satisfy the props type. The SolidJS-style (`propsObjectName`)
+    // branch only opts in when there's no declared props type, since a
+    // declared type may carry required fields that `{}` wouldn't satisfy.
+    const hasRequiredProps = ir.metadata.propsParams.some(
+      (p: ParamInfo) => !p.optional && p.defaultValue === undefined && !p.isRest,
+    )
+    const noArgDefault =
+      (propsObjectName ? !propsTypeName : !hasRequiredProps) ? ' = {}' : ''
+
     const lines: string[] = []
     // Module-export keyword belongs to the adapter: it knows the target language
     // and whether the source declared the component as exported.
     const exportPrefix = ir.metadata.isExported === false ? '' : 'export '
-    lines.push(`${exportPrefix}function ${name}(${fullPropsDestructure}${typeAnnotation}) {`)
+    lines.push(`${exportPrefix}function ${name}(${fullPropsDestructure}${typeAnnotation}${noArgDefault}) {`)
 
     // Add props extraction for SolidJS-style pattern
     if (propsExtraction) {

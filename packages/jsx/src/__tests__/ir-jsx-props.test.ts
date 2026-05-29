@@ -359,8 +359,11 @@ describe('JSX props (#559)', () => {
 
       const clientJs = result.files.find(f => f.type === 'clientJs')
       expect(clientJs).toBeDefined()
-      // The generated effect should check __isSlot before updating nodeValue
-      expect(clientJs!.content).toContain('__isSlot')
+      // The text update routes through `__bfText`, which preserves the
+      // server-rendered DOM for `__isSlot` values (and splices live Nodes
+      // by identity) instead of the old inline `nodeValue = String(...)`
+      // assignment. The `__isSlot` guard now lives inside that helper (#1663).
+      expect(clientJs!.content).toContain('__bfText')
     })
   })
 })

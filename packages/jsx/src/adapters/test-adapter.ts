@@ -138,11 +138,22 @@ export class TestAdapter extends JsxAdapter {
     }
     const fullPropsDestructure = `{ ${parts.join(', ')} }`
 
+    // Default the props param to `{}` when the component has no required
+    // props, so a bare no-arg call (`Foo()`) doesn't crash on destructuring
+    // `undefined`. This is what makes a JSX-returning arrow hoisted from an
+    // object-literal value (e.g. `THEME_LOGOS[id]()`) renderable at SSR
+    // (#1663). Only safe when no required prop exists — otherwise `{}` would
+    // not satisfy the props type.
+    const hasRequiredProps = ir.metadata.propsParams.some(
+      (p: ParamInfo) => !p.optional && p.defaultValue === undefined && !p.isRest,
+    )
+    const noArgDefault = hasRequiredProps ? '' : ' = {}'
+
     const lines: string[] = []
     // Module-export keyword belongs to the adapter: it knows the target language
     // and whether the source declared the component as exported.
     const exportPrefix = ir.metadata.isExported === false ? '' : 'export '
-    lines.push(`${exportPrefix}function ${name}(${fullPropsDestructure}${typeAnnotation}) {`)
+    lines.push(`${exportPrefix}function ${name}(${fullPropsDestructure}${typeAnnotation}${noArgDefault}) {`)
 
     // Generate scope ID
     if (hasClientInteractivity) {

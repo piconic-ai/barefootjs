@@ -128,20 +128,38 @@ function runSinglePass(
   }
 
   function visit(node: ts.Node): void {
+    // `renderNode={(n) => <div/>}` — arrow in JsxAttribute position.
     if (ts.isJsxAttribute(node) && node.initializer && ts.isJsxExpression(node.initializer) && node.initializer.expression) {
-      let expr: ts.Expression = node.initializer.expression
-      while (ts.isParenthesizedExpression(expr)) expr = expr.expression
-      if (ts.isArrowFunction(expr) && arrowBodyContainsJsx(expr)) {
-        const handled = handleInlineArrow(expr)
-        if (handled) {
-          // Don't dive into the arrow's body in this pass — the next
-          // fixpoint iteration will see the synthesized component at
-          // module scope and process any nested inline arrows there.
-          return
-        }
+      if (tryHandleArrowValue(node.initializer.expression)) {
+        // Don't dive into the arrow's body in this pass — the next
+        // fixpoint iteration will see the synthesized component at
+        // module scope and process any nested inline arrows there.
+        return
       }
     }
+    // `{ piconic: () => <BrandLogo/> }` — arrow as an object-literal
+    // property value (e.g. a `Record<K, () => JSX>` lookup map). Without
+    // this the JSX leaks untransformed into both the SSR template and the
+    // client bundle (#1663).
+    if (ts.isPropertyAssignment(node) && node.initializer) {
+      if (tryHandleArrowValue(node.initializer)) return
+    }
     ts.forEachChild(node, visit)
+  }
+
+  /**
+   * If `initializer` is (a parenthesized chain wrapping) an arrow function
+   * whose body contains JSX, hoist it into a synthesized component and
+   * record the replacement. Returns true when the arrow was successfully
+   * hoisted, so the caller can skip recursing into the arrow body.
+   */
+  function tryHandleArrowValue(initializer: ts.Expression): boolean {
+    let expr: ts.Expression = initializer
+    while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+    if (ts.isArrowFunction(expr) && arrowBodyContainsJsx(expr)) {
+      return handleInlineArrow(expr)
+    }
+    return false
   }
 
   function handleInlineArrow(arrow: ts.ArrowFunction): boolean {

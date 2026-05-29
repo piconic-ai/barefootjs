@@ -1,4 +1,4 @@
-import { $, $t, __bfSlot, createComponent, createEffect, createSignal, hydrate, initChild, insert, mapArray, renderChild, styleToCss } from '@barefootjs/client/runtime'
+import { $, $t, __bfSlot, __bfText, createComponent, createEffect, createSignal, hydrate, initChild, insert, mapArray, renderChild, styleToCss } from '@barefootjs/client/runtime'
 
 export function initToggleItem(__scope, _p = {}) {
   if (!__scope) return
@@ -9,9 +9,10 @@ export function initToggleItem(__scope, _p = {}) {
   const [_s3, _s2] = $(__scope, 's3', 's2')
   const [_s0] = $t(__scope, 's0')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = _p.label
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   createEffect(() => {
