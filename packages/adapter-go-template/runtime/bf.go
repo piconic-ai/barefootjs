@@ -1149,33 +1149,45 @@ func FindLastIndex(items any, field string, value any) int {
 	return -1
 }
 
+// sortKeySpec is one parsed comparison key. A simple comparator has
+// one; a `||`-chained multi-key comparator has several, applied in
+// order as tie-breakers.
+type sortKeySpec struct {
+	kind        string // "self" | "field"
+	name        string // capitalised field name, or "" for "self"
+	compareType string // "numeric" | "string" | "auto"
+	direction   string // "asc" | "desc"
+}
+
 // Sort returns a new stable-sorted slice. Lowers
 // `Array.prototype.sort` / `Array.prototype.toSorted` (#1448 Tier B).
 // Non-mutating — JS's mutate-vs-new distinction is moot in SSR
 // template context (templates render a snapshot).
 //
-// Call shape (the compiler emits exactly 5 args):
+// Call shape (the compiler emits one 4-string group per key):
 //
-//	bf_sort <items> <keyKind> <keyName> <compareType> <direction>
+//	bf_sort <items> (<keyKind> <keyName> <compareType> <direction>)+
 //
 //	keyKind:      "self" | "field"
 //	keyName:      "" when keyKind == "self"; capitalised struct field
 //	              name (e.g. "Price") otherwise
-//	compareType:  "numeric" | "string"
+//	compareType:  "numeric" | "string" | "auto"
 //	direction:    "asc" | "desc"
 //
-// The 4 string operands cover the accepted comparator catalogue:
-// `(a,b) => a.f - b.f`, `(a,b) => a - b`, and
-// `(a,b) => a[.f].localeCompare(b[.f])`, each with a reversed
-// counterpart for `desc`. Anything outside the catalogue refuses at
-// compile time (BF101 from the JSX compiler) and never reaches this
-// helper.
+// The groups cover the accepted comparator catalogue: `a.f - b.f`,
+// `a - b`, `a[.f].localeCompare(b[.f])`, and relational-ternary keys
+// (`a.f > b.f ? 1 : -1` → "auto"), each `||`-chainable for multi-key
+// tie-breaks. Anything outside refuses at compile time (BF101 from the
+// JSX compiler) and never reaches this helper.
 //
-// A future `nulls => "first" | "last"` knob can land as a 6th arg
-// without rewriting the existing call sites — the keyKind / keyName
-// split already gives the helper everything it needs to project
-// each item's sort key before comparing.
-func Sort(items any, keyKind string, keyName string, compareType string, direction string) []any {
+// "auto" compares numerically when both projected keys parse as
+// numbers, else lexically — mirroring the Perl `bf->sort` helper's
+// `looks_like_number` rule so the two template adapters stay
+// byte-equal. This diverges from JS `<`/`>` only for numeric strings.
+//
+// A future `nulls` knob can extend the per-key group without rewriting
+// existing call sites — each key already projects before comparing.
+func Sort(items any, spec ...string) []any {
 	v := reflect.ValueOf(items)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return nil
@@ -1193,33 +1205,90 @@ func Sort(items any, keyKind string, keyName string, compareType string, directi
 		result[i] = v.Index(i).Interface()
 	}
 
-	desc := direction == "desc"
+	keys := parseSortSpec(spec)
 	sort.SliceStable(result, func(i, j int) bool {
-		ki := projectSortKey(result[i], keyKind, keyName)
-		kj := projectSortKey(result[j], keyKind, keyName)
-		if compareType == "string" {
-			// `toString` maps nil / unknown types to "" — matches
-			// the documented `bf->string(undef) === ""` divergence
-			// from JS and the Perl `bf->sort` helper's `// ''`
-			// undef-coalesce. Using `fmt.Sprint` here would sort
-			// missing fields against the literal string "<nil>".
-			si := toString(ki)
-			sj := toString(kj)
-			if desc {
-				return si > sj
+		for _, k := range keys {
+			ki := projectSortKey(result[i], k.kind, k.name)
+			kj := projectSortKey(result[j], k.kind, k.name)
+			c := compareSortKey(ki, kj, k.compareType)
+			if c == 0 {
+				continue // tie on this key — fall through to the next
 			}
-			return si < sj
+			if k.direction == "desc" {
+				return c > 0
+			}
+			return c < 0
 		}
-		// numeric
-		ni := toFloat64(ki)
-		nj := toFloat64(kj)
-		if desc {
-			return ni > nj
-		}
-		return ni < nj
+		return false
 	})
 
 	return result
+}
+
+// parseSortSpec chunks the variadic operand list into 4-string key
+// groups. A trailing partial group (malformed emit) is ignored rather
+// than panicking — defensive, mirroring the helper's nil-safe stance.
+func parseSortSpec(spec []string) []sortKeySpec {
+	var keys []sortKeySpec
+	for i := 0; i+3 < len(spec); i += 4 {
+		keys = append(keys, sortKeySpec{
+			kind:        spec[i],
+			name:        spec[i+1],
+			compareType: spec[i+2],
+			direction:   spec[i+3],
+		})
+	}
+	return keys
+}
+
+// compareSortKey returns -1 / 0 / 1 for two projected keys under the
+// given compare type (ascending orientation; the caller flips for
+// "desc"). "string" stringifies both (nil → "", matching the
+// documented `bf->string(undef) === ""` divergence). "auto" compares
+// numerically when both parse as numbers, else lexically.
+func compareSortKey(ki, kj any, compareType string) int {
+	switch compareType {
+	case "string":
+		return strings.Compare(toString(ki), toString(kj))
+	case "auto":
+		ni, okI := toFloat64WithOK(ki)
+		nj, okJ := toFloat64WithOK(kj)
+		if okI && okJ {
+			return cmpFloat(ni, nj)
+		}
+		return strings.Compare(toString(ki), toString(kj))
+	default: // numeric
+		return cmpFloat(toFloat64(ki), toFloat64(kj))
+	}
+}
+
+func cmpFloat(a, b float64) int {
+	if a < b {
+		return -1
+	}
+	if a > b {
+		return 1
+	}
+	return 0
+}
+
+// toFloat64WithOK reports a value's numeric float and whether it is
+// number-like. Genuine numeric kinds always qualify; strings qualify
+// when they parse as a float (so the "auto" compare path matches the
+// Perl `looks_like_number` rule). Everything else is non-numeric.
+func toFloat64WithOK(v any) (float64, bool) {
+	switch n := v.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return toFloat64(v), true
+	case string:
+		f, err := strconv.ParseFloat(strings.TrimSpace(n), 64)
+		if err != nil {
+			return 0, false
+		}
+		return f, true
+	default:
+		return 0, false
+	}
 }
 
 // projectSortKey reduces an item to the value the comparator

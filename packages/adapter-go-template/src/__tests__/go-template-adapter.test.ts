@@ -1833,6 +1833,8 @@ import { fixture as arraySortFieldAscFixture } from '../../../adapter-tests/fixt
 import { fixture as arraySortFieldDescFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-desc'
 import { fixture as arraySortPrimitiveFixture } from '../../../adapter-tests/fixtures/methods/array-sort-primitive'
 import { fixture as arraySortLocaleFixture } from '../../../adapter-tests/fixtures/methods/array-sort-locale'
+import { fixture as arraySortMultiKeyFixture } from '../../../adapter-tests/fixtures/methods/array-sort-multikey'
+import { fixture as arraySortTernaryFixture } from '../../../adapter-tests/fixtures/methods/array-sort-ternary'
 import { fixture as arrayToSortedFixture } from '../../../adapter-tests/fixtures/methods/array-toSorted'
 // #1448 Tier B — .entries / .keys / .values iteration shapes.
 import { fixture as arrayEntriesFixture } from '../../../adapter-tests/fixtures/methods/array-entries'
@@ -1867,6 +1869,11 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     { fixture: arraySortFieldDescFixture, expect: 'bf_sort .Items "field" "Price" "numeric" "desc"' },
     { fixture: arraySortPrimitiveFixture, expect: 'bf_sort .Nums "self" "" "numeric" "asc"' },
     { fixture: arraySortLocaleFixture,    expect: 'bf_sort .Names "self" "" "string" "asc"' },
+    // Multi-key (`||`-chain): one 4-string group per comparison key,
+    // applied in priority order as tie-breakers.
+    { fixture: arraySortMultiKeyFixture,  expect: 'bf_sort .Items "field" "Price" "numeric" "asc" "field" "Name" "string" "asc"' },
+    // Relational-ternary comparator lowers to a single `auto` key.
+    { fixture: arraySortTernaryFixture,   expect: 'bf_sort .Items "field" "Rank" "auto" "asc"' },
     { fixture: arrayToSortedFixture,      expect: 'bf_sort .Nums "self" "" "numeric" "asc"' },
     // #1448 Tier B — iteration shapes. These are loop-level
     // patterns (range binding order), not helper function calls.

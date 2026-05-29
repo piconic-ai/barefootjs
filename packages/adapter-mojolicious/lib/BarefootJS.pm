@@ -530,7 +530,8 @@ sub trim ($self, $recv) {
 # lowering (#1448 Tier B). Non-mutating — JS's mutate-vs-new
 # distinction is moot in SSR template context.
 #
-# Opts hash-ref (compiler emits exactly these four keys):
+# Opts hash-ref. The compiler emits a `keys` list of per-key hashes
+# in priority order; each hash carries:
 #
 #   key_kind     => 'self' | 'field'
 #   key          => '' when key_kind eq 'self'; field name verbatim
@@ -539,7 +540,7 @@ sub trim ($self, $recv) {
 #                   applied. Perl hash lookups are case-sensitive so
 #                   the key here must match the actual hash key the
 #                   user populated.
-#   compare_type => 'numeric' | 'string'
+#   compare_type => 'numeric' | 'string' | 'auto'
 #   direction    => 'asc' | 'desc'
 #
 # Accepted comparator catalogue (gated upstream at parse time —
@@ -548,45 +549,71 @@ sub trim ($self, $recv) {
 #   (a,b) => a.f - b.f                       → field, numeric
 #   (a,b) => a - b                           → self,  numeric
 #   (a,b) => a[.f].localeCompare(b[.f])      → field|self, string
+#   (a,b) => a.f > b.f ? 1 : -1              → field|self, auto
+#   any of the above ||-chained              → multi-key tie-breaks
 #   (and reversed-operand variants for `desc`).
 #
-# A future `nulls => 'first' | 'last'` knob can land alongside
-# without churn — the opts hash is the right place to grow.
+# `auto` (relational-ternary lowering) compares numerically when both
+# keys `looks_like_number`, else lexically — Go's `bf_sort` applies the
+# same rule so the two template adapters stay byte-equal.
+#
+# A future `nulls => 'first' | 'last'` knob can land per key without
+# churn — the opts hash is the right place to grow.
 
 sub sort ($self, $recv, $opts = {}) {
     return [] unless ref($recv) eq 'ARRAY';
-    my $key_kind     = $opts->{key_kind}     // 'self';
-    my $key          = $opts->{key}          // '';
-    my $compare_type = $opts->{compare_type} // 'numeric';
-    my $direction    = $opts->{direction}    // 'asc';
 
-    # Schwartzian transform: project each item to its sort key once,
-    # then sort by key, then drop the keys. Cheaper than re-resolving
-    # the field accessor inside every comparison for non-trivial arrays.
+    # Normalise the per-key specs (priority order, length >= 1).
+    my @spec = map {
+        {
+            key_kind     => $_->{key_kind}     // 'self',
+            key          => $_->{key}          // '',
+            compare_type => $_->{compare_type} // 'numeric',
+            direction    => $_->{direction}    // 'asc',
+        }
+    } @{ $opts->{keys} // [] };
+    return [ @$recv ] unless @spec;
+
+    # Schwartzian transform: project each item to all its sort keys
+    # once, then compare projected keys. Cheaper than re-resolving the
+    # field accessors inside every comparison for non-trivial arrays.
     my @keyed = map {
         my $item = $_;
-        my $k = $key_kind eq 'field' && ref($item) eq 'HASH' ? $item->{$key} : $item;
-        [$k, $item]
+        my @ks = map {
+            $_->{key_kind} eq 'field' && ref($item) eq 'HASH' ? $item->{ $_->{key} } : $item;
+        } @spec;
+        [ \@ks, $item ];
     } @$recv;
 
-    my $cmp;
-    if ($compare_type eq 'string') {
-        $cmp = $direction eq 'desc'
-            ? sub { ($b->[0] // '') cmp ($a->[0] // '') }
-            : sub { ($a->[0] // '') cmp ($b->[0] // '') };
-    } else {
-        # Numeric: undef projects to 0 so the sort is total without
-        # warnings on missing fields. Documented divergence from JS
-        # (which would coerce undef → NaN and produce indeterminate
-        # ordering); matching Go's `toFloat64(nil) == 0` keeps the
-        # adapter outputs symmetric.
-        $cmp = $direction eq 'desc'
-            ? sub { ($b->[0] // 0) <=> ($a->[0] // 0) }
-            : sub { ($a->[0] // 0) <=> ($b->[0] // 0) };
-    }
+    my $cmp = sub {
+        for my $i (0 .. $#spec) {
+            my $sp = $spec[$i];
+            my $c  = _compare_sort_key($a->[0][$i], $b->[0][$i], $sp->{compare_type});
+            next if $c == 0;            # tie on this key — try the next
+            return $sp->{direction} eq 'desc' ? -$c : $c;
+        }
+        return 0;
+    };
 
     my @sorted = sort $cmp @keyed;
     return [ map { $_->[1] } @sorted ];
+}
+
+# Compare two projected keys, ascending orientation (-1 / 0 / 1); the
+# caller negates for 'desc'. 'auto' compares numerically when both
+# keys look like numbers, else lexically (matches Go's `bf_sort`).
+# undef coalesces to '' / 0 so the order stays total without warnings.
+sub _compare_sort_key ($av, $bv, $compare_type) {
+    if ($compare_type eq 'string') {
+        return ($av // '') cmp ($bv // '');
+    }
+    if ($compare_type eq 'auto') {
+        if (looks_like_number($av // '') && looks_like_number($bv // '')) {
+            return ($av // 0) <=> ($bv // 0);
+        }
+        return ($av // '') cmp ($bv // '');
+    }
+    return ($av // 0) <=> ($bv // 0);    # numeric
 }
 
 # ---------------------------------------------------------------------------

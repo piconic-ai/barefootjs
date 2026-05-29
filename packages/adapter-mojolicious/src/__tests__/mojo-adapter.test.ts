@@ -894,6 +894,8 @@ import { fixture as arraySortFieldAscFixture } from '../../../adapter-tests/fixt
 import { fixture as arraySortFieldDescFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-desc'
 import { fixture as arraySortPrimitiveFixture } from '../../../adapter-tests/fixtures/methods/array-sort-primitive'
 import { fixture as arraySortLocaleFixture } from '../../../adapter-tests/fixtures/methods/array-sort-locale'
+import { fixture as arraySortMultiKeyFixture } from '../../../adapter-tests/fixtures/methods/array-sort-multikey'
+import { fixture as arraySortTernaryFixture } from '../../../adapter-tests/fixtures/methods/array-sort-ternary'
 import { fixture as arrayToSortedFixture } from '../../../adapter-tests/fixtures/methods/array-toSorted'
 // #1448 Tier B — .entries / .keys / .values iteration shapes.
 import { fixture as arrayEntriesFixture } from '../../../adapter-tests/fixtures/methods/array-entries'
@@ -918,12 +920,17 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: stringTrimFixture,       expect: 'bf->trim($value)' },
     // #1448 Tier B — sort / toSorted. The loop-chained field cases
     // hoist into a `my $bf_iter_lN = bf->sort(...)` local; the
-    // standalone primitive cases inline the call.
-    { fixture: arraySortFieldAscFixture,  expect: `bf->sort($items, { key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' })` },
-    { fixture: arraySortFieldDescFixture, expect: `bf->sort($items, { key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'desc' })` },
-    { fixture: arraySortPrimitiveFixture, expect: `bf->sort($nums, { key_kind => 'self', compare_type => 'numeric', direction => 'asc' })` },
-    { fixture: arraySortLocaleFixture,    expect: `bf->sort($names, { key_kind => 'self', compare_type => 'string', direction => 'asc' })` },
-    { fixture: arrayToSortedFixture,      expect: `bf->sort($nums, { key_kind => 'self', compare_type => 'numeric', direction => 'asc' })` },
+    // standalone primitive cases inline the call. Each comparison key
+    // is one hash under `keys` (a single-key comparator → one element).
+    { fixture: arraySortFieldAscFixture,  expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }] })` },
+    { fixture: arraySortFieldDescFixture, expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'desc' }] })` },
+    { fixture: arraySortPrimitiveFixture, expect: `bf->sort($nums, { keys => [{ key_kind => 'self', compare_type => 'numeric', direction => 'asc' }] })` },
+    { fixture: arraySortLocaleFixture,    expect: `bf->sort($names, { keys => [{ key_kind => 'self', compare_type => 'string', direction => 'asc' }] })` },
+    // Multi-key (`||`-chain): one hash per comparison key, in order.
+    { fixture: arraySortMultiKeyFixture,  expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }, { key_kind => 'field', key => 'name', compare_type => 'string', direction => 'asc' }] })` },
+    // Relational-ternary comparator lowers to a single `auto` key.
+    { fixture: arraySortTernaryFixture,   expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'rank', compare_type => 'auto', direction => 'asc' }] })` },
+    { fixture: arrayToSortedFixture,      expect: `bf->sort($nums, { keys => [{ key_kind => 'self', compare_type => 'numeric', direction => 'asc' }] })` },
     // #1448 Tier B — iteration shapes. These are loop-level patterns.
     // .entries() → for loop with both $i index var and $v value var
     { fixture: arrayEntriesFixture,       expect: '% my $v = $items->[$i];' },

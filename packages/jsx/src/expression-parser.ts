@@ -69,13 +69,12 @@ export type ParsedExpr =
   | { kind: 'unsupported'; raw: string; reason: string }
 
 /**
- * Structured form of a JS `(a, b) => …` sort comparator. Built once
- * at parse time and consumed by both adapters' arrayMethod emit and
- * (when chained directly before `.map()`) the loop-hoist path in
- * `jsx-to-ir.ts`. The shape is intentionally finite — see
- * `extractSortComparatorFromTS` for the accepted catalogue.
+ * One comparison key inside a sort comparator. A simple
+ * `(a, b) => a.f - b.f` produces a single key; a multi-key
+ * `||`-chained comparator (`a.x - b.x || a.y - b.y`) produces one key
+ * per `||` operand, applied in priority order as tie-breakers.
  */
-export type SortComparator = {
+export type SortKey = {
   // What value to compare on each item:
   //   { kind: 'self' }         → primitive array, compare items directly
   //   { kind: 'field', field } → struct-field accessor
@@ -83,11 +82,33 @@ export type SortComparator = {
   // How to compare:
   //   'numeric' → `a - b` subtraction semantics
   //   'string'  → `localeCompare` semantics
-  type: 'numeric' | 'string'
+  //   'auto'    → relational (`>`/`<`) ternary: compare numerically
+  //               when both keys parse as numbers, else lexically.
+  //               Both template runtimes apply the same rule so their
+  //               output stays byte-equal; this diverges from JS
+  //               `<`/`>` only for numeric *strings* (rare in SSR
+  //               data — JS would compare those lexically).
+  type: 'numeric' | 'string' | 'auto'
   direction: 'asc' | 'desc'
+}
+
+/**
+ * Structured form of a JS `(a, b) => …` sort comparator. Built once
+ * at parse time and consumed by both adapters' arrayMethod emit and
+ * (when chained directly before `.map()`) the loop-hoist path in
+ * `jsx-to-ir.ts`. The shape is intentionally finite — see
+ * `extractSortComparatorFromTS` for the accepted catalogue.
+ */
+export type SortComparator = {
+  // Comparison keys in priority order. A simple comparator has one
+  // key; a `||`-chained multi-key comparator has one per operand.
+  // Always length >= 1.
+  keys: SortKey[]
   // Original JS source of the comparator body; preserved so `@client`
   // fallback can re-emit the user's exact expression if the call site
-  // ever gets relocated to the runtime.
+  // ever gets relocated to the runtime. For block-body comparators
+  // this is the returned expression, not the `{ … }` block — so the
+  // client fallback's synthetic `(a, b) => raw` arrow stays valid.
   raw: string
   // The two parameter names the user wrote (e.g. `a`/`b`, or
   // `lhs`/`rhs`). Only consumed by the client-side `@client`
@@ -379,9 +400,11 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // `.sort(cmp)` / `.toSorted(cmp)` (#1448 Tier B). The comparator
       // is extracted into a structured `SortComparator` at parse time;
       // unrecognised shapes fall through to `unsupported` so adapters
-      // surface BF101 (with `@client` as the escape hatch). Block
-      // bodies, multi-key comparators, and function-reference
-      // comparators are out of scope for this PR — see #1448 Tier B
+      // surface BF101 (with `@client` as the escape hatch). Supported:
+      // subtraction / localeCompare / relational-ternary leaves, any
+      // of them `||`-chained (multi-key), and single-`return` block
+      // bodies. Function-reference comparators and `localeCompare`
+      // locale/options args stay out of scope — see #1448 Tier B
       // follow-up.
       if ((callee.property === 'sort' || callee.property === 'toSorted') && node.arguments.length === 1) {
         // Extract from the raw TS AST (not args[0] ParsedExpr) — the
@@ -406,6 +429,8 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
             `  (a, b) => a.field - b.field\n` +
             `  (a, b) => a.localeCompare(b)\n` +
             `  (a, b) => a.field.localeCompare(b.field)\n` +
+            `  (a, b) => a.field > b.field ? 1 : -1   (relational ternary)\n` +
+            `  any of the above ||-chained for multi-key tie-breaks\n` +
             `(reverse the operands for descending order). ` +
             `Wrap the call in /* @client */ to evaluate at hydration.`,
         }
@@ -663,20 +688,28 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
  * match exactly, in which case the caller emits an `unsupported` IR
  * node and adapters surface BF101.
  *
- * Accepted shapes (paired ascending / descending):
+ * Body shapes:
+ *   - expression-bodied arrow (`(a, b) => …`)
+ *   - single-`return` block body — both arrow (`(a, b) => { return …; }`)
+ *     and function expression. Multi-statement / local-var bodies stay
+ *     refused (deferred follow-up).
  *
- *   (a, b) => a.field - b.field            → field, numeric, asc
- *   (a, b) => b.field - a.field            → field, numeric, desc
- *   (a, b) => a - b                        → self,  numeric, asc
- *   (a, b) => b - a                        → self,  numeric, desc
- *   (a, b) => a.field.localeCompare(b.field) → field, string, asc
- *   (a, b) => b.field.localeCompare(a.field) → field, string, desc
- *   (a, b) => a.localeCompare(b)           → self,  string, asc
- *   (a, b) => b.localeCompare(a)           → self,  string, desc
+ * A body is split on top-level `||` into one leaf per operand, giving
+ * a multi-key comparator (`a.x - b.x || a.y - b.y` → sort by x, then y).
+ * Accepted leaf shapes (each paired ascending / descending by operand
+ * order):
  *
- * Anything outside (block bodies, multi-key `a.x-b.x || a.y-b.y`,
- * function-reference comparators, ternary comparators) returns null.
- * Block-body support is deferred to a follow-up.
+ *   a.field - b.field                → field, numeric
+ *   a - b                            → self,  numeric
+ *   a.field.localeCompare(b.field)   → field, string
+ *   a.localeCompare(b)               → self,  string
+ *   a.field > b.field ? 1 : -1       → field, auto (relational ternary)
+ *   a.field < b.field ? -1 : 1       → field, auto
+ *   a < b ? -1 : a > b ? 1 : 0       → self/field, auto (3-way)
+ *   a === b ? 0 : <relational ternary>  → leading-tie 3-way
+ *
+ * Function-reference comparators and `localeCompare(b, locale, opts)`
+ * (the multi-arg form) return null — deferred follow-ups.
  */
 export function extractSortComparatorFromTS(
   node: ts.Node,
@@ -691,38 +724,87 @@ export function extractSortComparatorFromTS(
   const paramA = pA.name.text
   const paramB = pB.name.text
 
-  // Body must be an expression. Arrow-fn carries `.body` directly;
-  // function-expression wraps a single `return <expr>;`. Block bodies
-  // deferred to a follow-up PR.
+  // Resolve the comparator body. Expression-bodied arrows carry it
+  // directly; block bodies (both arrow `=> { … }` and function
+  // expressions) must reduce to exactly one `return <expr>;`. Anything
+  // with locals or multiple statements stays refused — a deferred
+  // follow-up.
   let body: ts.Expression
-  if (ts.isArrowFunction(node)) {
-    if (ts.isBlock(node.body)) return null
+  if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
     body = node.body
   } else {
-    const stmts = node.body.statements
+    const block = node.body as ts.Block
+    const stmts = block.statements
     if (stmts.length !== 1 || !ts.isReturnStatement(stmts[0]) || !stmts[0].expression) return null
     body = stmts[0].expression
   }
 
   // Normalise the comparator body source so consumers of
   // `SortComparator.raw` get the same string regardless of whether
-  // the user wrote an arrow expression (`(a, b) => a.x - b.x`) or
-  // a function expression (`function (a, b) { return a.x - b.x }`).
-  // Pre-normalisation the function-expression form leaked the whole
-  // function declaration into `raw`, breaking `@client` fallback
-  // emit that wraps `raw` in a synthetic arrow.
+  // the user wrote an arrow expression (`(a, b) => a.x - b.x`) or a
+  // block body (`(a, b) => { return a.x - b.x }`). For block bodies
+  // this is the returned expression, not the `{ … }` block — so the
+  // `@client` fallback's synthetic `(a, b) => raw` arrow stays valid.
   //
   // `body.getText()` resolves against the node's source file via the
   // parent chain — `ts.createSourceFile`-parsed nodes (the only
   // shape this helper accepts) carry that wiring.
   const raw = body.getText()
 
-  // Subtraction: `a.field - b.field` / `a - b` etc.
+  // A `||`-chain is a multi-key comparator: each operand is an
+  // independent leaf applied as the next tie-breaker. A non-`||` body
+  // is a single-key comparator (one-element chain).
+  const keys: SortKey[] = []
+  for (const operand of flattenLogicalOr(body)) {
+    const key = classifyLeafComparator(operand, paramA, paramB)
+    if (!key) return null
+    keys.push(key)
+  }
+  if (keys.length === 0) return null
+
+  return { keys, raw, paramA, paramB, method }
+}
+
+/** Strip redundant parentheses so the classifiers see the real node. */
+function unwrapParens(expr: ts.Expression): ts.Expression {
+  let e = expr
+  while (ts.isParenthesizedExpression(e)) e = e.expression
+  return e
+}
+
+/**
+ * Flatten a left-associative top-level `||` chain into its operands.
+ * `a || b || c` parses as `((a || b) || c)`; this returns `[a, b, c]`.
+ * A non-`||` expression returns a single-element list.
+ */
+function flattenLogicalOr(expr: ts.Expression): ts.Expression[] {
+  const inner = unwrapParens(expr)
+  if (ts.isBinaryExpression(inner) && inner.operatorToken.kind === ts.SyntaxKind.BarBarToken) {
+    return [...flattenLogicalOr(inner.left), ...flattenLogicalOr(inner.right)]
+  }
+  return [inner]
+}
+
+/**
+ * Classify a single comparator leaf (one `||` operand) into a SortKey.
+ * Accepts subtraction (numeric), `localeCompare` (string), and
+ * relational-ternary (auto) shapes; returns null otherwise.
+ */
+function classifyLeafComparator(
+  expr: ts.Expression,
+  paramA: string,
+  paramB: string,
+): SortKey | null {
+  const body = unwrapParens(expr)
+
+  // Subtraction: `a.field - b.field` / `a - b` → numeric.
   if (ts.isBinaryExpression(body) && body.operatorToken.kind === ts.SyntaxKind.MinusToken) {
-    return classifyComparatorOperands(body.left, body.right, paramA, paramB, 'numeric', method, raw)
+    return classifyComparatorOperands(body.left, body.right, paramA, paramB, 'numeric')
   }
 
-  // localeCompare call: `<lhs>.localeCompare(<rhs>)`.
+  // localeCompare (zero-arg form): `<lhs>.localeCompare(<rhs>)` →
+  // string. The locale/options form (2–3 args) stays refused — it
+  // needs per-adapter collation plumbing (deferred follow-up).
   if (
     ts.isCallExpression(body) &&
     ts.isPropertyAccessExpression(body.expression) &&
@@ -735,9 +817,12 @@ export function extractSortComparatorFromTS(
       paramA,
       paramB,
       'string',
-      method,
-      raw,
     )
+  }
+
+  // Relational-ternary sign comparator → auto.
+  if (ts.isConditionalExpression(body)) {
+    return classifyTernaryComparator(body, paramA, paramB)
   }
 
   return null
@@ -762,9 +847,7 @@ function classifyComparatorOperands(
   paramA: string,
   paramB: string,
   type: 'numeric' | 'string',
-  method: 'sort' | 'toSorted',
-  raw: string,
-): SortComparator | null {
+): SortKey | null {
   const leftRef = classifySortOperand(left, paramA, paramB)
   const rightRef = classifySortOperand(right, paramA, paramB)
   if (!leftRef || !rightRef) return null
@@ -774,15 +857,139 @@ function classifyComparatorOperands(
     return null
   }
   const direction = leftRef.param === 'A' ? 'asc' : 'desc'
-  return {
-    key: leftRef.key,
-    type,
-    direction,
-    raw,
-    paramA,
-    paramB,
-    method,
+  return { key: leftRef.key, type, direction }
+}
+
+/**
+ * Classify a relational-ternary comparator leaf into an `auto` SortKey.
+ * Handles the 2-way sign form (`a.f > b.f ? 1 : -1`), the canonical
+ * 3-way (`a.f < b.f ? -1 : a.f > b.f ? 1 : 0`), and a leading
+ * equality tie (`a.f === b.f ? 0 : <relational ternary>`).
+ *
+ * Direction is derived from (relational op, operand order, sign of the
+ * `whenTrue` branch); the `whenFalse` branch only needs to be a bounded
+ * shape (sign literal or a nested ternary on the same key) so we don't
+ * silently accept arbitrary expressions.
+ */
+function classifyTernaryComparator(
+  node: ts.ConditionalExpression,
+  paramA: string,
+  paramB: string,
+): SortKey | null {
+  const cond = unwrapParens(node.condition)
+
+  // Leading equality tie: `a.f === b.f ? 0 : <ternary>`. The equality
+  // arm returns 0 (tie); the real ordering lives in the else branch.
+  if (
+    ts.isBinaryExpression(cond) &&
+    (cond.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken ||
+      cond.operatorToken.kind === ts.SyntaxKind.EqualsEqualsToken) &&
+    sameKeyOperands(cond.left, cond.right, paramA, paramB) &&
+    numericSign(node.whenTrue) === 0
+  ) {
+    const elseBranch = unwrapParens(node.whenFalse)
+    if (ts.isConditionalExpression(elseBranch)) {
+      return classifyTernaryComparator(elseBranch, paramA, paramB)
+    }
+    return null
   }
+
+  // Relational condition: `<left> <op> <right>` with op ∈ {<,>,<=,>=}.
+  if (!ts.isBinaryExpression(cond)) return null
+  const op = cond.operatorToken.kind
+  const isGreater =
+    op === ts.SyntaxKind.GreaterThanToken || op === ts.SyntaxKind.GreaterThanEqualsToken
+  const isLess = op === ts.SyntaxKind.LessThanToken || op === ts.SyntaxKind.LessThanEqualsToken
+  if (!isGreater && !isLess) return null
+
+  const leftRef = classifySortOperand(cond.left, paramA, paramB)
+  const rightRef = classifySortOperand(cond.right, paramA, paramB)
+  if (!leftRef || !rightRef) return null
+  if (leftRef.param === rightRef.param) return null
+  if (leftRef.key.kind !== rightRef.key.kind) return null
+  if (leftRef.key.kind === 'field' && rightRef.key.kind === 'field' && leftRef.key.field !== rightRef.key.field) {
+    return null
+  }
+
+  // whenTrue must be a non-zero sign literal (±1); whenFalse a bounded
+  // shape (sign literal or a nested ternary on the same key).
+  const trueSign = numericSign(node.whenTrue)
+  if (trueSign === null || trueSign === 0) return null
+  if (!isBoundedTernaryElse(node.whenFalse, leftRef.key, paramA, paramB)) return null
+
+  // Rewrite so the condition reads as `aKey <op> bKey` (paramA left).
+  // `b.f > a.f` ⇔ `a.f < b.f`, so a paramB-on-left operand flips it.
+  const greaterForA = leftRef.param === 'A' ? isGreater : !isGreater
+
+  // `a.f > b.f ? +n` → bigger sorts later  → ascending
+  // `a.f < b.f ? +n` → bigger sorts earlier → descending
+  const asc = greaterForA ? trueSign > 0 : trueSign < 0
+  return { key: leftRef.key, type: 'auto', direction: asc ? 'asc' : 'desc' }
+}
+
+/** True when both operands resolve to the same key on opposite params. */
+function sameKeyOperands(
+  left: ts.Expression,
+  right: ts.Expression,
+  paramA: string,
+  paramB: string,
+): boolean {
+  const l = classifySortOperand(left, paramA, paramB)
+  const r = classifySortOperand(right, paramA, paramB)
+  if (!l || !r) return false
+  if (l.param === r.param) return false
+  if (l.key.kind !== r.key.kind) return false
+  if (l.key.kind === 'field' && r.key.kind === 'field' && l.key.field !== r.key.field) return false
+  return true
+}
+
+/**
+ * Sign of a numeric literal with optional unary minus: 1, -1, or 0.
+ * Returns null for anything that isn't a (signed) numeric literal.
+ */
+function numericSign(expr: ts.Expression): number | null {
+  const e = unwrapParens(expr)
+  if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.MinusToken) {
+    const inner = numericSign(e.operand)
+    return inner === null ? null : -inner
+  }
+  if (ts.isNumericLiteral(e)) {
+    const n = Number(e.text)
+    if (Number.isNaN(n)) return null
+    if (n === 0) return 0
+    return n > 0 ? 1 : -1
+  }
+  return null
+}
+
+/**
+ * The `whenFalse` arm of a relational ternary is bounded if it's a
+ * sign literal (±1 / 0) or a nested ternary on the same key (the
+ * canonical 3-way form). The outer comparison already fixes direction,
+ * so the nested branch only needs to agree on which key it compares.
+ */
+function isBoundedTernaryElse(
+  expr: ts.Expression,
+  key: { kind: 'self' } | { kind: 'field'; field: string },
+  paramA: string,
+  paramB: string,
+): boolean {
+  const e = unwrapParens(expr)
+  if (numericSign(e) !== null) return true
+  if (ts.isConditionalExpression(e)) {
+    const nested = classifyTernaryComparator(e, paramA, paramB)
+    return nested !== null && sortKeyEquals(nested.key, key)
+  }
+  return false
+}
+
+function sortKeyEquals(
+  a: { kind: 'self' } | { kind: 'field'; field: string },
+  b: { kind: 'self' } | { kind: 'field'; field: string },
+): boolean {
+  if (a.kind !== b.kind) return false
+  if (a.kind === 'field' && b.kind === 'field') return a.field === b.field
+  return true
 }
 
 function classifySortOperand(

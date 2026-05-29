@@ -717,22 +717,29 @@ error[BF021]: Expression cannot be compiled to marked template: Higher-order met
    = help: Add /* @client */ to evaluate this expression on the client only
 ```
 
-**Sort comparators**: Only simple `(a, b) => a.field - b.field` patterns are supported. Complex comparators (`.localeCompare()`, block body, multi-field) trigger BF021.
+**Sort comparators**: The comparator body is parsed into a structured `SortComparator` (a `keys: SortKey[]` list). A body is split on top-level `||` into one comparison key per operand (multi-key tie-breaks), and each operand (leaf) must match one of the accepted shapes below. Comparators outside the catalogue — function references (`sort(myCmp)`), multi-statement / local-var block bodies, and `localeCompare(b, locale, opts)` — trigger BF021.
 
 ```
-error[BF021]: Expression cannot be compiled to marked template: Sort comparator 'a.name.localeCompare(b.name)' is not a simple subtraction pattern (a.field - b.field)
+error[BF021]: Expression cannot be compiled to marked template: Sort comparator 'myCmp' is not a supported shape.
 
   --> src/components/List.tsx:9:30
    |
- 9 |             {items().sort((a, b) => a.name.localeCompare(b.name)).map(t => (
-   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 |             {items().sort(myCmp).map(t => (
+   |                           ^^^^^
    |
    = help: Add /* @client */ to evaluate this expression on the client only
 ```
 
+**Supported sort comparator leaves** (each `||`-chainable; reverse the operands or the ternary sign for descending):
+- `(a, b) => a.price - b.price` → `numeric` key (`a - b` for primitive arrays)
+- `(a, b) => a.name.localeCompare(b.name)` → `string` key (`a.localeCompare(b)` for primitives)
+- `(a, b) => a.rank > b.rank ? 1 : -1` → `auto` key (relational ternary; also the 3-way `a < b ? -1 : a > b ? 1 : 0` and leading-tie `a === b ? 0 : …` forms). `auto` compares numerically when both keys parse as numbers, else lexically — the two template adapters share this rule (diverges from JS `<`/`>` only for numeric strings).
+
 **Supported sort patterns**:
 - `sort((a, b) => a.price - b.price)` → ascending by `price`
 - `toSorted((a, b) => b.priority - a.priority)` → descending by `priority`
+- `sort((a, b) => a.price - b.price || a.name.localeCompare(b.name))` → multi-key: `price` asc, ties broken by `name`
+- `sort((a, b) => { return a.price - b.price })` → single-`return` block body (unwrapped to the returned comparator)
 - `filter(...).sort(...).map(...)` → filter + sort chaining
 - `sort(...).filter(...).map(...)` → sort + filter chaining
 

@@ -179,21 +179,32 @@ function wrapIfMultiToken(rendered: string): string {
  * takes 4 string operands so a future `nulls` knob can grow on the
  * end without rewriting either call site (#1448 Tier B):
  *
- *   bf_sort <recv> <keyKind> <keyName> <compareType> <direction>
+ *   bf_sort <recv> (<keyKind> <keyName> <compareType> <direction>)+
  *
  *   keyKind:      "self" | "field"
  *   keyName:      "" when keyKind=self; capitalised field name otherwise
- *   compareType:  "numeric" | "string"
+ *   compareType:  "numeric" | "string" | "auto"
  *   direction:    "asc" | "desc"
+ *
+ * The 4-string group repeats once per comparison key: a simple
+ * comparator emits one group; a `||`-chained multi-key comparator
+ * emits one per operand, applied in order as tie-breakers by the
+ * variadic `bf_sort` runtime.
  *
  * The capitalisation mirrors the Go-side struct-field convention
  * (`bf_sort .Items "field" "Price" "numeric" "asc"`) so the runtime
  * helper's reflect lookup matches without a recapitalise step.
  */
 function emitBfSort(recv: string, c: SortComparator): string {
-  const keyKind = c.key.kind
-  const keyName = c.key.kind === 'field' ? capitalize(c.key.field) : ''
-  return `bf_sort ${wrapIfMultiToken(recv)} "${keyKind}" "${keyName}" "${c.type}" "${c.direction}"`
+  // One 4-string group per comparison key (keyKind, keyName,
+  // compareType, direction). A single-key comparator emits exactly the
+  // pre-multi-key shape; `||`-chained keys append further groups, which
+  // `bf_sort`'s variadic runtime applies in order as tie-breakers.
+  const groups = c.keys.map((k) => {
+    const keyName = k.key.kind === 'field' ? capitalize(k.key.field) : ''
+    return `"${k.key.kind}" "${keyName}" "${k.type}" "${k.direction}"`
+  })
+  return `bf_sort ${wrapIfMultiToken(recv)} ${groups.join(' ')}`
 }
 
 function capitalize(s: string): string {

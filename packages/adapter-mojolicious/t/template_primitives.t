@@ -244,10 +244,11 @@ subtest 'trim — strip leading + trailing whitespace' => sub {
 };
 
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
-# lowering (#1448 Tier B). The opts hash-ref carries the structured
-# comparator the compiler extracted at parse time — adapter-side
-# emit is a single call shape, runtime branches on `key_kind` /
-# `compare_type` / `direction`.
+# lowering (#1448 Tier B). The opts hash-ref carries a `keys` list of
+# the structured comparison keys the compiler extracted at parse time
+# — adapter-side emit is a single call shape; the runtime walks the
+# keys in priority order, branching on key_kind / compare_type /
+# direction per key.
 subtest 'sort — structured comparator dispatch' => sub {
     my $items = [
         { name => 'c', price => 30 },
@@ -256,28 +257,28 @@ subtest 'sort — structured comparator dispatch' => sub {
     ];
 
     # Numeric field, ascending — the canonical struct-field case.
-    is $bf->sort($items, { key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }),
+    is $bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }] }),
         [ { name => 'a', price => 10 }, { name => 'b', price => 20 }, { name => 'c', price => 30 } ],
         'numeric field asc';
 
     # Numeric field, descending — reverse direction.
-    is $bf->sort($items, { key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'desc' }),
+    is $bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'desc' }] }),
         [ { name => 'c', price => 30 }, { name => 'b', price => 20 }, { name => 'a', price => 10 } ],
         'numeric field desc';
 
     # Primitive numeric — `(a, b) => a - b` shape (key_kind=self).
-    is $bf->sort([3, 1, 2], { key_kind => 'self', compare_type => 'numeric', direction => 'asc' }),
+    is $bf->sort([3, 1, 2], { keys => [{ key_kind => 'self', compare_type => 'numeric', direction => 'asc' }] }),
         [1, 2, 3],
         'numeric self asc';
 
     # Primitive string — `(a, b) => a.localeCompare(b)`. The Perl
     # helper falls back to plain `cmp` (byte-ordering); within the
     # same case it matches lexicographic order.
-    is $bf->sort(['charlie', 'alice', 'bob'], { key_kind => 'self', compare_type => 'string', direction => 'asc' }),
+    is $bf->sort(['charlie', 'alice', 'bob'], { keys => [{ key_kind => 'self', compare_type => 'string', direction => 'asc' }] }),
         ['alice', 'bob', 'charlie'],
         'string self asc';
 
-    is $bf->sort(['charlie', 'alice', 'bob'], { key_kind => 'self', compare_type => 'string', direction => 'desc' }),
+    is $bf->sort(['charlie', 'alice', 'bob'], { keys => [{ key_kind => 'self', compare_type => 'string', direction => 'desc' }] }),
         ['charlie', 'bob', 'alice'],
         'string self desc';
 
@@ -289,24 +290,72 @@ subtest 'sort — structured comparator dispatch' => sub {
         { name => 'second', price => 10 },
         { name => 'third',  price => 10 },
     ];
-    is $bf->sort($stable_input, { key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }),
+    is $bf->sort($stable_input, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }] }),
         $stable_input,
         'stable sort preserves equal-key order';
 
     # Mutation isolation: caller's source array must survive.
     my $src = [{ price => 3 }, { price => 1 }, { price => 2 }];
-    my $out = $bf->sort($src, { key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' });
+    my $out = $bf->sort($src, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }] });
     push @$out, { price => 99 };
     is $src, [{ price => 3 }, { price => 1 }, { price => 2 }],
         'source unchanged after mutating sort result';
 
     # Non-array receivers fall back to empty.
-    is $bf->sort(undef, { key_kind => 'self', compare_type => 'numeric', direction => 'asc' }), [], 'undef receiver → []';
-    is $bf->sort('not an array', { key_kind => 'self', compare_type => 'numeric', direction => 'asc' }), [], 'scalar receiver → []';
-    is $bf->sort({a => 1}, { key_kind => 'self', compare_type => 'numeric', direction => 'asc' }), [], 'hash ref receiver → []';
+    is $bf->sort(undef, { keys => [{ key_kind => 'self', compare_type => 'numeric', direction => 'asc' }] }), [], 'undef receiver → []';
+    is $bf->sort('not an array', { keys => [{ key_kind => 'self', compare_type => 'numeric', direction => 'asc' }] }), [], 'scalar receiver → []';
+    is $bf->sort({a => 1}, { keys => [{ key_kind => 'self', compare_type => 'numeric', direction => 'asc' }] }), [], 'hash ref receiver → []';
 
     # Empty array short-circuits.
-    is $bf->sort([], { key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }), [], 'empty array → []';
+    is $bf->sort([], { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }] }), [], 'empty array → []';
+};
+
+# Multi-key (`||`-chained) comparator: a tie on the primary key falls
+# through to the next key. (#1448 Tier B follow-up.)
+subtest 'sort — multi-key (||-chain) tie-breaks' => sub {
+    # `(a,b) => a.p - b.p || a.name.localeCompare(b.name)`.
+    my $items = [
+        { p => 1, name => 'b' },
+        { p => 1, name => 'a' },
+        { p => 0, name => 'c' },
+    ];
+    is $bf->sort($items, { keys => [
+            { key_kind => 'field', key => 'p',    compare_type => 'numeric', direction => 'asc' },
+            { key_kind => 'field', key => 'name', compare_type => 'string',  direction => 'asc' },
+        ] }),
+        [ { p => 0, name => 'c' }, { p => 1, name => 'a' }, { p => 1, name => 'b' } ],
+        'tie on primary key broken by secondary asc';
+
+    # Descending secondary key: all primaries tie, so price desc orders.
+    my $items2 = [
+        { name => 'a', price => 10 },
+        { name => 'a', price => 30 },
+        { name => 'a', price => 20 },
+    ];
+    is $bf->sort($items2, { keys => [
+            { key_kind => 'field', key => 'name',  compare_type => 'string',  direction => 'asc' },
+            { key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'desc' },
+        ] }),
+        [ { name => 'a', price => 30 }, { name => 'a', price => 20 }, { name => 'a', price => 10 } ],
+        'all primary tie → secondary price desc';
+};
+
+# `compare_type => 'auto'` (relational-ternary lowering): numeric when
+# both keys look like numbers, else lexical. Mirrors Go's `bf_sort`.
+subtest 'sort — auto compare (relational ternary)' => sub {
+    is $bf->sort([3, 1, 2], { keys => [{ key_kind => 'self', compare_type => 'auto', direction => 'asc' }] }),
+        [1, 2, 3],
+        'auto numeric asc';
+
+    is $bf->sort(['charlie', 'alice', 'bob'], { keys => [{ key_kind => 'self', compare_type => 'auto', direction => 'asc' }] }),
+        ['alice', 'bob', 'charlie'],
+        'auto non-numeric strings → lexical';
+
+    # Numeric strings parse as numbers under auto (Go/Perl parity):
+    # "10" sorts after "9", not lexically before it.
+    is $bf->sort(['10', '9', '100'], { keys => [{ key_kind => 'self', compare_type => 'auto', direction => 'asc' }] }),
+        ['9', '10', '100'],
+        'auto numeric strings compare numerically';
 };
 
 done_testing;

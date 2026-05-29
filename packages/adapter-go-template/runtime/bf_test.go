@@ -992,6 +992,68 @@ func TestSort_FieldString(t *testing.T) {
 	}
 }
 
+// Multi-key (`||`-chain): a tie on the primary key falls through to
+// the next. `(a,b) => a.Priority - b.Priority || a.Name.localeCompare(b.Name)`
+// → two 4-string groups.
+func TestSort_MultiKey_TieBreak(t *testing.T) {
+	items := []sortItem{
+		{Name: "b", Priority: 1},
+		{Name: "a", Priority: 1},
+		{Name: "c", Priority: 0},
+	}
+	got := Sort(items, "field", "Priority", "numeric", "asc", "field", "Name", "string", "asc")
+	names := []string{got[0].(sortItem).Name, got[1].(sortItem).Name, got[2].(sortItem).Name}
+	want := []string{"c", "a", "b"} // Priority 0 first; Priority-1 tie broken by Name asc
+	for i := range want {
+		if names[i] != want[i] {
+			t.Errorf("multi-key sort = %v, want %v", names, want)
+			break
+		}
+	}
+}
+
+// Multi-key with a descending secondary key: all primaries tie, so the
+// secondary `Price desc` orders the result.
+func TestSort_MultiKey_DescSecondary(t *testing.T) {
+	items := []sortItem{
+		{Name: "a", Priority: 1, Price: 10},
+		{Name: "a", Priority: 1, Price: 30},
+		{Name: "a", Priority: 1, Price: 20},
+	}
+	got := Sort(items, "field", "Name", "string", "asc", "field", "Price", "numeric", "desc")
+	prices := []float64{got[0].(sortItem).Price, got[1].(sortItem).Price, got[2].(sortItem).Price}
+	if prices[0] != 30 || prices[1] != 20 || prices[2] != 10 {
+		t.Errorf("multi-key desc secondary = %v, want [30 20 10]", prices)
+	}
+}
+
+// `compareType=auto` (relational-ternary lowering) on a numeric array:
+// both keys parse as numbers → numeric compare.
+func TestSort_Auto_Numeric(t *testing.T) {
+	got := Sort([]int{3, 1, 2}, "self", "", "auto", "asc")
+	if len(got) != 3 || got[0] != 1 || got[1] != 2 || got[2] != 3 {
+		t.Errorf("auto numeric asc = %v, want [1 2 3]", got)
+	}
+}
+
+// `auto` on non-numeric strings → lexical compare.
+func TestSort_Auto_StringFallback(t *testing.T) {
+	got := Sort([]string{"charlie", "alice", "bob"}, "self", "", "auto", "asc")
+	if len(got) != 3 || got[0] != "alice" || got[1] != "bob" || got[2] != "charlie" {
+		t.Errorf("auto string asc = %v, want [alice bob charlie]", got)
+	}
+}
+
+// `auto` treats numeric strings as numbers (Go/Perl parity via
+// `looks_like_number`): "10" sorts after "9", not lexically before it.
+// Documented divergence from JS `<`/`>`, which compares these lexically.
+func TestSort_Auto_NumericStringsCompareNumerically(t *testing.T) {
+	got := Sort([]string{"10", "9", "100"}, "self", "", "auto", "asc")
+	if len(got) != 3 || got[0] != "9" || got[1] != "10" || got[2] != "100" {
+		t.Errorf("auto numeric-string asc = %v, want [9 10 100]", got)
+	}
+}
+
 // (#1487) `bf_sort` is called with a PascalCase key name (the IR
 // emits `bf_sort .Items "field" "Price" ...`), but user data flows
 // in as a `map[string]any` whose keys may be either lowercase

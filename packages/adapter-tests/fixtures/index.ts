@@ -153,6 +153,8 @@ import { fixture as arraySortFieldAsc } from './methods/array-sort-field-asc'
 import { fixture as arraySortFieldDesc } from './methods/array-sort-field-desc'
 import { fixture as arraySortPrimitive } from './methods/array-sort-primitive'
 import { fixture as arraySortLocale } from './methods/array-sort-locale'
+import { fixture as arraySortMultiKey } from './methods/array-sort-multikey'
+import { fixture as arraySortTernary } from './methods/array-sort-ternary'
 import { fixture as arrayToSorted } from './methods/array-toSorted'
 // #1448 Tier B — `.entries()` / `.keys()` / `.values()` iteration shapes.
 // The compiler strips the iterator method from the chain and synthesises
@@ -294,6 +296,8 @@ export const jsxFixtures: JSXFixture[] = [
   arraySortFieldDesc,
   arraySortPrimitive,
   arraySortLocale,
+  arraySortMultiKey,
+  arraySortTernary,
   arrayToSorted,
   arrayEntries,
   arrayKeys,

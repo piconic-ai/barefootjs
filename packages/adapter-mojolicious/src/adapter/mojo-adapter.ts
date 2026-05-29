@@ -1606,10 +1606,11 @@ function renderArrayMethod(
  * plus the loop-hoist path in `renderLoop` — same emit shape across
  * all three so a regression in any one path surfaces consistently.
  *
- * The Perl helper accepts a hash-ref opts bag (room for a future
- * `nulls` knob without arity churn), and returns a fresh ARRAY ref
- * so downstream composition (`@{bf->sort(...)}` in `join(...)`, etc.)
- * stays straightforward.
+ * The Perl helper accepts a hash-ref opts bag whose `keys` entry is
+ * an ordered list of per-key hashes (room for a future `nulls` knob
+ * without arity churn), and returns a fresh ARRAY ref so downstream
+ * composition (`@{bf->sort(...)}` in `join(...)`, etc.) stays
+ * straightforward.
  */
 /**
  * Encode an `IRLoop.markerId` into a Perl-identifier-safe suffix
@@ -1629,11 +1630,18 @@ function perlIdentifierFromMarkerId(markerId: string): string {
 }
 
 function renderSortMethod(recv: string, c: SortComparator): string {
-  const keyEntry =
-    c.key.kind === 'self'
-      ? `key_kind => 'self'`
-      : `key_kind => 'field', key => '${c.key.field}'`
-  return `bf->sort(${recv}, { ${keyEntry}, compare_type => '${c.type}', direction => '${c.direction}' })`
+  // One hash per comparison key, in priority order, under `keys`. A
+  // simple comparator yields a one-element list; a `||`-chained
+  // multi-key comparator yields one per operand. `bf->sort` walks them
+  // in order, falling through to the next on a tie.
+  const keyHashes = c.keys.map((k) => {
+    const keyEntry =
+      k.key.kind === 'self'
+        ? `key_kind => 'self'`
+        : `key_kind => 'field', key => '${k.key.field}'`
+    return `{ ${keyEntry}, compare_type => '${k.type}', direction => '${k.direction}' }`
+  })
+  return `bf->sort(${recv}, { keys => [${keyHashes.join(', ')}] })`
 }
 
 /**

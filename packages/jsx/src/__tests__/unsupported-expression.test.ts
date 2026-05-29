@@ -136,21 +136,22 @@ describe('Unsupported Expression Error (BF021)', () => {
 })
 
 describe('Unsupported Sort Comparator (BF021)', () => {
-  test('emits BF021 for multi-key comparator (||-chained) — outside accepted catalogue', () => {
-    // #1448 Tier B widened the accepted catalogue to include
-    // `.localeCompare` and primitive `(a,b) => a - b`. Multi-key
-    // shapes (`a.x - b.x || a.y - b.y`) are still out of scope —
-    // they refuse here and must be `@client`-marked or rewritten
-    // to a single-key sort.
+  test('emits BF021 for function-reference comparator — outside accepted catalogue', () => {
+    // #1448 Tier B follow-up widened the catalogue to include
+    // multi-key (`a.x - b.x || a.y - b.y`), relational ternary, and
+    // single-`return` block bodies. Function-reference comparators
+    // (`arr.sort(cmp)` where `cmp` is a named function) are still out
+    // of scope — they need scope resolution and refuse here.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
 
       export function TodoList() {
         const [items, setItems] = createSignal<any[]>([])
+        const cmp = (a, b) => a.priority - b.priority
         return (
           <ul>
-            {items().sort((a, b) => a.priority - b.priority || a.id - b.id).map(t => (
+            {items().sort(cmp).map(t => (
               <li>{t.name}</li>
             ))}
           </ul>
@@ -162,7 +163,6 @@ describe('Unsupported Sort Comparator (BF021)', () => {
     const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
 
     expect(bf021).toHaveLength(1)
-    expect(bf021[0].message).toContain('not a supported shape')
   })
 
   test('@client suppresses BF021 for unsupported sort comparator', () => {
@@ -172,9 +172,10 @@ describe('Unsupported Sort Comparator (BF021)', () => {
 
       export function TodoList() {
         const [items, setItems] = createSignal<any[]>([])
+        const cmp = (a, b) => a.priority - b.priority
         return (
           <ul>
-            {/* @client */ items().sort((a, b) => a.priority - b.priority || a.id - b.id).map(t => (
+            {/* @client */ items().sort(cmp).map(t => (
               <li>{t.name}</li>
             ))}
           </ul>
@@ -188,9 +189,10 @@ describe('Unsupported Sort Comparator (BF021)', () => {
     expect(bf021).toHaveLength(0)
   })
 
-  test('emits BF021 error for block body sort comparator', () => {
-    // Block-body comparators are deferred to a Tier B follow-up
-    // (the extractor only handles expression-body shapes for now).
+  test('emits BF021 error for multi-statement block-body sort comparator', () => {
+    // Single-`return` block bodies now lower (#1448 Tier B follow-up),
+    // but multi-statement / local-var bodies stay refused — generalising
+    // over arbitrary statement sequences isn't tractable in a template.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -199,7 +201,7 @@ describe('Unsupported Sort Comparator (BF021)', () => {
         const [items, setItems] = createSignal<any[]>([])
         return (
           <ul>
-            {items().sort((a, b) => { return a.price - b.price }).map(t => (
+            {items().sort((a, b) => { const x = a.price; return x - b.price }).map(t => (
               <li>{t.name}</li>
             ))}
           </ul>
