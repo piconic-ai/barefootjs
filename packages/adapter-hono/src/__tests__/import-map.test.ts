@@ -7,7 +7,8 @@
  * when no externals are passed.
  */
 import { describe, test, expect } from 'bun:test'
-import { BfImportMap, type BarefootExternalsManifest } from '../app'
+import { BfImportMap } from '../app'
+import type { ImportMapManifest } from '@barefootjs/jsx'
 
 function parseImportMap(html: string): Record<string, string> {
   const match = html.match(/<script type="importmap">(.*?)<\/script>/s)
@@ -31,7 +32,7 @@ describe('BfImportMap', () => {
   })
 
   test('merges externals importmap on top of the client defaults', () => {
-    const externals: BarefootExternalsManifest = {
+    const externals: ImportMapManifest = {
       importmap: {
         imports: {
           zod: 'https://esm.sh/zod@4.4.3',
@@ -50,7 +51,7 @@ describe('BfImportMap', () => {
   })
 
   test('manifest @barefootjs/client mapping wins over the prop-derived one', () => {
-    const externals: BarefootExternalsManifest = {
+    const externals: ImportMapManifest = {
       importmap: { imports: { '@barefootjs/client': '/vendor/barefoot.js' } },
     }
     const imports = parseImportMap(String(BfImportMap({ base: '/components', externals })))
@@ -58,7 +59,7 @@ describe('BfImportMap', () => {
   })
 
   test('emits modulepreload links for manifest preloads', () => {
-    const externals: BarefootExternalsManifest = {
+    const externals: ImportMapManifest = {
       importmap: { imports: {} },
       preloads: ['/components/form.js', 'https://esm.sh/zod@4.4.3'],
     }
@@ -68,7 +69,7 @@ describe('BfImportMap', () => {
   })
 
   test('emits crossorigin on modulepreload so cross-origin CDN preloads are reused', () => {
-    const externals: BarefootExternalsManifest = {
+    const externals: ImportMapManifest = {
       preloads: ['https://esm.sh/zod@4.4.3'],
     }
     const html = String(BfImportMap({ base: '/components', externals }))
@@ -77,7 +78,7 @@ describe('BfImportMap', () => {
   })
 
   test('preload=false suppresses modulepreload links', () => {
-    const externals: BarefootExternalsManifest = {
+    const externals: ImportMapManifest = {
       preloads: ['/components/form.js'],
     }
     const html = String(BfImportMap({ base: '/components', externals, preload: false }))
@@ -87,7 +88,7 @@ describe('BfImportMap', () => {
   })
 
   test('escapes double quotes in preload hrefs', () => {
-    const externals: BarefootExternalsManifest = {
+    const externals: ImportMapManifest = {
       preloads: ['/components/"onerror=alert(1).js'],
     }
     const html = String(BfImportMap({ base: '/components', externals }))

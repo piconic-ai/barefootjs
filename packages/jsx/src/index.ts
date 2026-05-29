@@ -89,7 +89,7 @@ export { combineParentChildClientJs } from './combine-client-js'
 
 // Externals manifest + importmap snippet renderer (shared by adapters and CLI)
 export { renderImportMapHtml } from './import-map'
-export type { ExternalsManifest } from './import-map'
+export type { ExternalsManifest, ImportMapManifest } from './import-map'
 
 // Build options (shared by adapters and CLI)
 export interface OutputLayout {

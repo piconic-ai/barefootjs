@@ -13,9 +13,24 @@
  */
 
 /**
+ * The subset of `barefoot-externals.json` needed to render the importmap
+ * snippet. All fields are optional so a partial or hand-written manifest
+ * (e.g. a Hono `BfImportMap` `externals` prop) still type-checks. The strict
+ * build-output `ExternalsManifest` is structurally assignable to this, so both
+ * the CLI's emitted manifest and a hand-written one feed `renderImportMapHtml`.
+ * This is the one shared manifest type for every importmap injection path.
+ */
+export interface ImportMapManifest {
+  /** Entries for `<script type="importmap">`. */
+  importmap?: { imports?: Record<string, string> }
+  /** URLs to emit as `<link rel="modulepreload">`. */
+  preloads?: string[]
+}
+
+/**
  * Shape of `barefoot-externals.json`, written by `bf build`. This is the build
  * output contract shared by the CLI (which writes it) and the adapters (which
- * consume it).
+ * consume it) — the all-required superset of {@link ImportMapManifest}.
  */
 export interface ExternalsManifest {
   /** Entries for `<script type="importmap">`. */
@@ -41,10 +56,7 @@ function escapeHtmlAttr(value: string): string {
  * script element — the JSON parser decodes that escape back to `<`, keeping the
  * mapping value-identical.
  */
-export function renderImportMapHtml(manifest: {
-  importmap?: { imports?: Record<string, string> }
-  preloads?: string[]
-}): string {
+export function renderImportMapHtml(manifest: ImportMapManifest): string {
   const imports = manifest.importmap?.imports ?? {}
   const json = JSON.stringify({ imports }).replace(/</g, '\\u003c')
   const lines = [`<script type="importmap">${json}</script>`]
