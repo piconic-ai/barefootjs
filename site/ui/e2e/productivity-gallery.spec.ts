@@ -277,6 +277,53 @@ test.describe('Gallery: Productivity app', () => {
       await expect(doneCard.locator('.move-right')).toHaveCount(1)
     })
 
+    test('board: same-name sibling buttons on an SSR card each wire to their own slot (#1371)', async ({ page }) => {
+      // #1371 DoD — duplicate-prefix scenario at the HYDRATION boundary.
+      // Every task card carries THREE same-name <Button> children
+      // (delete-task, move-left, move-right) plus the column-level add
+      // button, so a card is a cluster of siblings sharing the `Button_`
+      // bf-s name prefix. Slot identity is the (bf-h, bf-m) pair, unique
+      // by construction (#1249): each button must hydrate to its OWN slot
+      // and keep its OWN onClick. If identity had collapsed back to the
+      // name-prefix selector, two of the three would share wiring and a
+      // click would fire the wrong handler.
+      //
+      // Distinct from the "arrow buttons survive moving a task" test
+      // above (which exercises the CSR fresh-insert path, #135): this one
+      // never re-inserts a card — it drives delete / ← / → on cards that
+      // were rendered by SSR and hydrated in place, proving each sibling
+      // resolved to a separate slot from the server-rendered shape alone.
+      await page.goto('/gallery/productivity/board')
+
+      const todoCol = page.locator('[data-col-id="todo"]')
+      const progressCol = page.locator('[data-col-id="progress"]')
+      const doneCol = page.locator('[data-col-id="done"]')
+
+      // → on an SSR card: task 4 (In Progress) moves right into Done.
+      // Proves move-right is wired to moveTask(..., 'right').
+      await expect(progressCol.locator('[data-task-id="4"]')).toHaveCount(1)
+      await progressCol.locator('[data-task-id="4"]').locator('.move-right').click()
+      await expect(doneCol.locator('[data-task-id="4"]')).toHaveCount(1)
+      await expect(progressCol.locator('[data-task-id="4"]')).toHaveCount(0)
+
+      // ← on a different SSR card: task 5 (In Progress) moves left into
+      // To Do. Proves move-left is a DISTINCT slot/handler from
+      // move-right — not the same element reached twice via name prefix.
+      await expect(progressCol.locator('[data-task-id="5"]')).toHaveCount(1)
+      await progressCol.locator('[data-task-id="5"]').locator('.move-left').click()
+      await expect(todoCol.locator('[data-task-id="5"]')).toHaveCount(1)
+      await expect(progressCol.locator('[data-task-id="5"]')).toHaveCount(0)
+
+      // delete (×) on an SSR card: task 3 (To Do) is removed, not moved.
+      // Proves delete-task is its own slot — a collapsed identity would
+      // have made × inherit a move handler (task would relocate, count
+      // unchanged) instead of deleting.
+      const totalBefore = await page.locator('[data-task-id]').count()
+      await todoCol.locator('[data-task-id="3"]').locator('.delete-task').click()
+      await expect(page.locator('[data-task-id="3"]')).toHaveCount(0)
+      await expect(page.locator('[data-task-id]')).toHaveCount(totalBefore - 1)
+    })
+
     test('reading a mail reduces the unread badge count', async ({ page }) => {
       await page.goto('/gallery/productivity/mail')
 
