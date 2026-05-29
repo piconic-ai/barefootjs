@@ -913,6 +913,14 @@ function classifyTernaryComparator(
 
   // whenTrue must be a non-zero sign literal (±1); whenFalse a bounded
   // shape (sign literal or a nested ternary on the same key).
+  //
+  // Direction is derived solely from this outer comparison — the nested
+  // whenFalse branch is only validated for key agreement, not direction
+  // consistency. A contradictory hand-written 3-way (e.g.
+  // `a.f < b.f ? -1 : a.f < b.f ? 1 : 0`) is therefore lowered per the
+  // outer comparison; the JS-runtime (Hono/CSR) path runs the literal
+  // body, so such a degenerate comparator could order differently
+  // there. The canonical asc/desc 3-way forms agree on both paths.
   const trueSign = numericSign(node.whenTrue)
   if (trueSign === null || trueSign === 0) return null
   if (!isBoundedTernaryElse(node.whenFalse, leftRef.key, paramA, paramB)) return null
