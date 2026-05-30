@@ -96,4 +96,44 @@ describe('#1663 — dynamic JSX-returning call renders on the client', () => {
     expect(el.textContent).toBe('piconic')
     expect(el.innerHTML).not.toContain('[object')
   })
+
+  test('dispatch inside a conditional renders the node, not "[object …]"', async () => {
+    // `{show() && themeLogo(id)}` is rendered by insert()/__bfSlot, but the
+    // branch's reactive text effect re-evaluates the expression — it must
+    // splice the live node via __bfText rather than stringify it (#1663).
+    const brandLogo = `
+      'use client'
+      export function BrandLogo(props: { name: string }) {
+        return <span class="logo">{props.name}</span>
+      }
+    `
+    await compileAndEvalClientJs(brandLogo, 'BrandLogo.tsx')
+
+    const header = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { BrandLogo } from './brand-logo'
+      const THEME_LOGOS: Record<string, () => unknown> = {
+        piconic: () => <BrandLogo name="piconic" />,
+      }
+      function themeLogo(id: string) { return THEME_LOGOS[id]() }
+      export function Header(props: { id: string }) {
+        const [show] = createSignal(true)
+        return <div class="hdr">{show() && themeLogo(props.id)}</div>
+      }
+    `
+    await compileAndEvalClientJs(header, 'HeaderCond.tsx')
+
+    const { createComponent } = await import('../../src/runtime')
+    const el = createComponent('Header', { id: 'piconic' }) as Element
+    document.body.appendChild(el)
+
+    const logo = el.querySelector('.logo')
+    expect(logo).not.toBeNull()
+    expect(logo!.textContent).toBe('piconic')
+    expect(el.textContent).toBe('piconic')
+    expect(el.innerHTML).not.toContain('[object')
+    // Exactly one logo in the slot (no stale/duplicate node).
+    expect(el.querySelectorAll('.logo').length).toBe(1)
+  })
 })

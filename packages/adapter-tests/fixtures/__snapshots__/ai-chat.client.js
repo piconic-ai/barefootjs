@@ -1,4 +1,4 @@
-import { $, $t, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, hydrate, insert, mapArray, qsa } from '@barefootjs/client/runtime'
+import { $, $t, __bfSlot, __bfText, createComponent, createDisposableEffect, createEffect, createSignal, hydrate, insert, mapArray, qsa } from '@barefootjs/client/runtime'
 
 
 export function initAIChatInteractive(__scope, _p = {}) {
@@ -62,10 +62,10 @@ export function initAIChatInteractive(__scope, _p = {}) {
     template: () => { const __slots = []; return { html: `<div bf-c="s2" class="chat-msg chat-assistant"><div class="chat-bubble"><p bf="s4"><!--bf:s3-->${__bfSlot(streamingText(), __slots)}<!--/--><span class="streaming-cursor">▌</span></p></div></div>`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
-      const [__el_s3] = $t(__branchScope, 's3')
+      let __anchor_s3 = $t(__branchScope, 's3')[0]
       __disposers.push(createDisposableEffect(() => {
         const __val = streamingText()
-        if (__el_s3 && !__val?.__isSlot) __el_s3.nodeValue = String(__val ?? '')
+        __anchor_s3 = __bfText(__anchor_s3, __val)
       }))
       return () => __disposers.forEach(d => d())
     }

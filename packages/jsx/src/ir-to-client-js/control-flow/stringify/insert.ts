@@ -163,10 +163,15 @@ function emitArmBody(
 
   for (const te of body.textEffects) {
     const v = varSlotId(te.slotId)
-    lines.push(`${indent}const [__el_${v}] = $t(__branchScope, '${te.slotId}')`)
+    // Route through `__bfText` so a JSX-valued expression (`{cond && logo(id)}`)
+    // re-splices the live element by identity instead of stringifying it to
+    // "[object HTMLElement]" — the branch template already spliced it via
+    // `__bfSlot`, and this effect re-renders it when its deps change (#1663).
+    // The `let` tracker carries the replaced node across reactive re-runs.
+    lines.push(`${indent}let __anchor_${v} = $t(__branchScope, '${te.slotId}')[0]`)
     lines.push(`${indent}__disposers.push(createDisposableEffect(() => {`)
     lines.push(`${indent}  const __val = ${te.expression}`)
-    lines.push(`${indent}  if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val ?? '')`)
+    lines.push(`${indent}  __anchor_${v} = __bfText(__anchor_${v}, __val)`)
     lines.push(`${indent}}))`)
   }
 

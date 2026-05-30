@@ -58,10 +58,10 @@ export function initExample(__scope, _p = {}) {
     template: () => { const __slots = []; return { html: \`<p bf-c="s0" bf="s2"><!--bf:s1-->\${__bfSlot(count(), __slots)}<!--/--> items</p>\`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
-      const [__el_s1] = $t(__branchScope, 's1')
+      let __anchor_s1 = $t(__branchScope, 's1')[0]
       __disposers.push(createDisposableEffect(() => {
         const __val = count()
-        if (__el_s1 && !__val?.__isSlot) __el_s1.nodeValue = String(__val ?? '')
+        __anchor_s1 = __bfText(__anchor_s1, __val)
       }))
       return () => __disposers.forEach(d => d())
     }
