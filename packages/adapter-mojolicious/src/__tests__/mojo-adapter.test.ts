@@ -78,8 +78,9 @@ runAdapterConformanceTests({
     // `eq` vs `==` from operand types is a separate pre-existing Mojo
     // limitation (same family as the skipped `logical-or-jsx` /
     // `nullish-coalescing-jsx` map shapes); the anchored SSR shape itself is
-    // covered cross-adapter by Hono + Go conformance and the CSR / runtime
-    // hydration tests.
+    // covered cross-adapter by Hono + CSR conformance and the runtime
+    // hydration tests. Remove this skip once the Mojo limitation is fixed:
+    // https://github.com/piconic-ai/barefootjs/issues/1672
     'loop-item-conditional',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter

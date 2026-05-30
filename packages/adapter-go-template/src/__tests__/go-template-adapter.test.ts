@@ -45,7 +45,8 @@ runAdapterConformanceTests({
     // SSR data context is a separate pre-existing Go limitation — every other
     // signal-loop fixture sidesteps it with an empty initial array. The
     // anchored SSR shape with rendered items is covered by Hono + CSR
-    // conformance and the runtime hydration tests.
+    // conformance and the runtime hydration tests. Remove this skip once the
+    // Go limitation is fixed: https://github.com/piconic-ai/barefootjs/issues/1672
     'loop-item-conditional',
     // #1297 fixed the harness-side IR emission gate (multi-component
     // sources now emit one `ir` file per component, and the harness
