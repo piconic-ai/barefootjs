@@ -122,6 +122,19 @@ export const BF_LOOP_END = 'bf-/loop'
  */
 export const BF_LOOP_ITEM = 'bf-loop-i'
 
+/**
+ * Build the per-item anchor comment value for a loop item: `bf-loop-i:<key>`.
+ *
+ * The key is embedded in the comment value (comments cannot carry
+ * attributes) so an item's identity survives SSR → hydration and so a
+ * range-scoped `insert()` can anchor a whole-item conditional to it
+ * without a wrapper element. An item's range runs from this anchor until
+ * the next `bf-loop-i:*` anchor or the loop end marker.
+ */
+export function loopItemMarker(key: string): string {
+  return `${BF_LOOP_ITEM}:${key}`
+}
+
 /** Build the start-marker comment value for a loop. */
 export function loopStartMarker(markerId: string): string {
   return `${BF_LOOP_START}:${markerId}`

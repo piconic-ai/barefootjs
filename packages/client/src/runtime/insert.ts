@@ -9,7 +9,83 @@
 import { createEffect, untrack } from '@barefootjs/client/reactive'
 import { find } from './query'
 import { setParentScopeId, parseHTML } from './component'
-import { BF_COND, BF_SCOPE } from '@barefootjs/shared'
+import { commentScopeRegistry, getCommentScopeBoundary } from './scope'
+import { BF_COND, BF_SCOPE, BF_LOOP_ITEM } from '@barefootjs/shared'
+
+/**
+ * Resolved search context for an `insert()` call (#1665).
+ *
+ * `anchor === null` is the legacy element-scope path: every DOM read goes
+ * through the component scope element exactly as before. When `insert()` is
+ * given a `<!--bf-loop-i:<key>-->` anchor instead (案Y), the conditional is a
+ * whole loop item with no wrapper element, so all reads are confined to that
+ * item's sibling range — letting every item reuse the same conditional slot
+ * id without colliding.
+ */
+interface CondRegion {
+  /** The loop-item anchor comment, or `null` for element scopes. */
+  anchor: Comment | null
+  /** Element handed to `find()`/`$`/`$t`/`bindEvents`. For loop items this
+   *  is a detached proxy registered in `commentScopeRegistry`, so the shared
+   *  query machinery walks the item's range via the comment-scope branch. */
+  bindScope: Element
+  /** Parent component scope id for `setParentScopeId()` / `renderChild`. */
+  parentScopeId: string | null
+}
+
+function makeRegion(scope: Element | Comment): CondRegion {
+  if (scope.nodeType === Node.COMMENT_NODE) {
+    const anchor = scope as Comment
+    const parentEl = anchor.parentElement
+    const componentScope = parentEl?.closest(`[${BF_SCOPE}]`) ?? null
+    const parentScopeId = componentScope?.getAttribute(BF_SCOPE) ?? null
+    // Detached proxy: candidatesInScope() keys off the registered comment
+    // node (not the proxy's DOM position), so the proxy need not be mounted.
+    const proxyEl = document.createElement('bf-loop-item')
+    commentScopeRegistry.set(proxyEl, { commentNode: anchor, scopeId: parentScopeId ?? '' })
+    return { anchor, bindScope: proxyEl, parentScopeId }
+  }
+  const el = scope as Element
+  return { anchor: null, bindScope: el, parentScopeId: el.getAttribute(BF_SCOPE) }
+}
+
+/** Find the `[bf-c="id"]` element within a loop item's sibling range. */
+function findCondElInRange(anchor: Comment, id: string): Element | null {
+  const sel = `[${BF_COND}="${id}"]`
+  const boundary = getCommentScopeBoundary(anchor)
+  let node: Node | null = anchor.nextSibling
+  while (node && node !== boundary) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element
+      if (el.matches?.(sel)) return el
+      const inner = el.querySelector(sel)
+      if (inner) return inner
+    }
+    node = node.nextSibling
+  }
+  return null
+}
+
+/** Find the `bf-cond-start:id` comment within a loop item's sibling range
+ *  (checking range siblings and their descendants). */
+function findCondStartInRange(anchor: Comment, id: string): Comment | null {
+  const want = `bf-cond-start:${id}`
+  const boundary = getCommentScopeBoundary(anchor)
+  let node: Node | null = anchor.nextSibling
+  while (node && node !== boundary) {
+    if (node.nodeType === Node.COMMENT_NODE && (node as Comment).nodeValue === want) {
+      return node as Comment
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const w = document.createTreeWalker(node as Element, NodeFilter.SHOW_COMMENT)
+      while (w.nextNode()) {
+        if ((w.currentNode as Comment).nodeValue === want) return w.currentNode as Comment
+      }
+    }
+    node = node.nextSibling
+  }
+  return null
+}
 
 /**
  * Result returned by a branch's `template()` when the template captures
@@ -102,7 +178,7 @@ function evalBranchTemplate(branch: BranchConfig): BranchTemplateResult {
  * @param whenFalse - Branch config for when condition is false
  */
 export function insert(
-  scope: Element | null,
+  scope: Element | Comment | null,
   id: string,
   conditionFn: () => boolean,
   whenTrue: BranchConfig,
@@ -110,10 +186,17 @@ export function insert(
 ): void {
   if (!scope) return
 
+  // Resolve the scope into a search region. For an Element scope this is
+  // byte-identical to the legacy descendant search. For a Comment anchor
+  // (`<!--bf-loop-i:<key>-->`, 案Y) the region is the item's sibling range,
+  // so a whole-item conditional toggles only its own item even when every
+  // item shares the same conditional slot id (#1665).
+  const region = makeRegion(scope)
+
   // Extract parent scope ID for renderChild context.
   // When branch templates call renderChild(), it needs the parent scope ID
   // so child mounts can stamp `bf-h` / `bf-m` for slot-resolver lookups.
-  const parentScopeId = scope.getAttribute(BF_SCOPE)
+  const parentScopeId = region.parentScopeId
 
   // Check if either branch uses fragment conditional (comment markers).
   // Both branches need to be checked because SSR may render either branch.
@@ -166,7 +249,9 @@ export function insert(
       setParentScopeId(parentScopeId)
       let result: BranchTemplateResult
       try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
-      const existingEl = find(scope, `[${BF_COND}="${id}"]`)
+      const existingEl = region.anchor
+        ? findCondElInRange(region.anchor, id)
+        : find(region.bindScope, `[${BF_COND}="${id}"]`)
       if (existingEl) {
         // Compare full opening tag signatures to detect branch mismatch.
         // Tag-name-only comparison fails when both branches use the same tag (e.g., <div>).
@@ -182,32 +267,32 @@ export function insert(
           // branch — the SSR DOM is correct, and replacing it would re-render
           // via the registered child template, which doesn't reproduce the
           // bf-h / bf-m markers set by the parent's JSX scope chain.
-          updateFragmentConditional(scope, id, result)
+          updateFragmentConditional(region, id, result)
         } else if (!isFragmentCond && expectedSig && existingSig && expectedSig !== existingSig) {
           // DOM doesn't match expected branch - need to swap
-          updateElementConditional(scope, id, result)
+          updateElementConditional(region, id, result)
         } else if (result.slots.length > 0) {
           // Branch template captured live nodes via __bfSlot (#1213). The
           // SSR DOM rendered Hono-stringified HTML, but the client now needs
           // the live signal-bound nodes installed. Force a swap so the
           // existing element is replaced with the slot-spliced template.
-          updateElementConditional(scope, id, result)
+          updateElementConditional(region, id, result)
         }
       } else if (isFragmentCond) {
         // For @client fragment conditionals, SSR renders only comment markers.
         // We need to insert the actual content on first run.
-        updateFragmentConditional(scope, id, result)
+        updateFragmentConditional(region, id, result)
       }
 
       // Bind events to the (possibly updated) SSR element. Pass isFirstRun
       // so branch composite loops can skip the wipe-then-rebuild path that
       // is only needed for subsequent branch swaps (the SSR-rendered DOM
       // already matches the data and mapArray reconciles by key from it).
-      const cleanup = branch.bindEvents(scope, { isFirstRun: true })
+      const cleanup = branch.bindEvents(region.bindScope, { isFirstRun: true })
       branchCleanup = typeof cleanup === 'function' ? cleanup : null
 
       // Auto-focus on first run too (for components created via createComponent with editing=true)
-      autoFocusConditionalElement(scope, id)
+      autoFocusConditionalElement(region, id)
       return
     }
 
@@ -229,17 +314,17 @@ export function insert(
     let result: BranchTemplateResult
     try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
     if (isFragmentCond) {
-      updateFragmentConditional(scope, id, result)
+      updateFragmentConditional(region, id, result)
     } else {
-      updateElementConditional(scope, id, result)
+      updateElementConditional(region, id, result)
     }
 
     // Bind events to the newly inserted element (branch swap: not first run).
-    const cleanup = branch.bindEvents(scope, { isFirstRun: false })
+    const cleanup = branch.bindEvents(region.bindScope, { isFirstRun: false })
     branchCleanup = typeof cleanup === 'function' ? cleanup : null
 
     // Auto-focus elements with autofocus attribute (for dynamically created elements)
-    autoFocusConditionalElement(scope, id)
+    autoFocusConditionalElement(region, id)
   })
 }
 
@@ -249,12 +334,14 @@ export function insert(
  * Used by insert() to focus inputs when they become visible.
  * Uses requestAnimationFrame to ensure element is in DOM before focusing.
  */
-function autoFocusConditionalElement(scope: Element, id: string): void {
+function autoFocusConditionalElement(region: CondRegion, id: string): void {
   // Use requestAnimationFrame to defer focus until after DOM updates.
   // This is necessary because createComponent() may call insert() before
   // the element is added to the document by reconcileList().
   requestAnimationFrame(() => {
-    const condEl = scope.querySelector(`[${BF_COND}="${id}"]`)
+    const condEl = region.anchor
+      ? findCondElInRange(region.anchor, id)
+      : region.bindScope.querySelector(`[${BF_COND}="${id}"]`)
     if (condEl) {
       const autofocusEl = condEl.matches('[autofocus]')
         ? condEl
@@ -307,20 +394,29 @@ function spliceSlots(fragment: DocumentFragment, slots: Node[]): DocumentFragmen
 /**
  * Update fragment conditional (content between comment markers)
  */
-function updateFragmentConditional(scope: Element, id: string, result: BranchTemplateResult): void {
+function updateFragmentConditional(region: CondRegion, id: string, result: BranchTemplateResult): void {
   const { html, slots } = result
-  // Find start comment marker
+  const scope = region.bindScope
+  // Find start comment marker. For a loop-item region the marker lives
+  // among the anchor's range siblings (no descendant relationship to a
+  // scope element), so locate it within the item range (#1665).
   const startMarker = `bf-cond-start:${id}`
   let startComment: Comment | null = null
-  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
-  while (walker.nextNode()) {
-    if (walker.currentNode.nodeValue === startMarker) {
-      startComment = walker.currentNode as Comment
-      break
+  if (region.anchor) {
+    startComment = findCondStartInRange(region.anchor, id)
+  } else {
+    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
+    while (walker.nextNode()) {
+      if (walker.currentNode.nodeValue === startMarker) {
+        startComment = walker.currentNode as Comment
+        break
+      }
     }
   }
 
-  const condEl = scope.querySelector(`[${BF_COND}="${id}"]`)
+  const condEl = region.anchor
+    ? findCondElInRange(region.anchor, id)
+    : scope.querySelector(`[${BF_COND}="${id}"]`)
 
   const endMarker = `bf-cond-end:${id}`
 
@@ -388,8 +484,10 @@ function updateFragmentConditional(scope: Element, id: string, result: BranchTem
 /**
  * Update element conditional (single element with bf-c)
  */
-function updateElementConditional(scope: Element, id: string, result: BranchTemplateResult): void {
-  const condEl = scope.querySelector(`[${BF_COND}="${id}"]`)
+function updateElementConditional(region: CondRegion, id: string, result: BranchTemplateResult): void {
+  const condEl = region.anchor
+    ? findCondElInRange(region.anchor, id)
+    : region.bindScope.querySelector(`[${BF_COND}="${id}"]`)
   if (!condEl) return
 
   const { html, slots } = result

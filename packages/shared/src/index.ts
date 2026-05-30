@@ -15,6 +15,7 @@ export {
   BF_LOOP_START,
   BF_LOOP_END,
   BF_LOOP_ITEM,
+  loopItemMarker,
   loopStartMarker,
   loopEndMarker,
   BF_KEY,
