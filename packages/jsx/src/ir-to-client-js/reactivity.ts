@@ -574,7 +574,23 @@ export function collectLoopChildReactiveAttrs(
         // SSR template strips the attribute (html-template) and no
         // hydrate-time binding is emitted, leaving the per-item
         // attribute permanently unset.
-        if (!attr.clientOnly && classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') continue
+        //
+        // `classifyReactivity` only proves reactivity for the loop item
+        // accessor or a *directly* read signal/memo/prop. It does NOT see
+        // through an opaque helper that reads an outer signal by index
+        // (e.g. `widthAt(i)` where `const widthAt = (i) => items()[i].w`).
+        // The top-level attribute path (`decideWrapForAttr`) wraps those
+        // anyway via the Solid-style AST-flag fallback (#940); without the
+        // same fallback here, the identical binding on a per-item element
+        // freezes at its SSR value (#1673). Apply the same `callsReactiveGetters`
+        // / `hasFunctionCalls` fallback so the loop-child path matches the
+        // top-level one — a harmless over-wrap at worst (an effect that
+        // subscribes to nothing runs once).
+        const reactive =
+          classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind !== 'none'
+          || attr.callsReactiveGetters
+          || attr.hasFunctionCalls
+        if (!attr.clientOnly && !reactive) continue
         attrs.push({
           childSlotId: el.slotId,
           attrName: attr.name,
