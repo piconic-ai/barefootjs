@@ -1,5 +1,12 @@
 # @barefootjs/streaming
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [113a17c]
+  - @barefootjs/shared@0.5.1
+
 ## 0.5.0
 
 ### Patch Changes

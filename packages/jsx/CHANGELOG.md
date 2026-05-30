@@ -1,5 +1,60 @@
 # @barefootjs/jsx
 
+## 0.5.1
+
+### Patch Changes
+
+- 8742059: Fix two follow-up issues from the #1663 dynamic-dispatch work.
+
+  `__bfText` could render both a stale element and fresh text in a conditional slot: that path re-resolves the anchor via `$t()` each run, which inserts a new text node before an element left by a previous Node-valued run. Writing a primitive now clears any remaining siblings up to the end marker, so switching JSX → text leaves only the text.
+
+  The no-arg props default (`= {}`) is now asserted to the param's annotated type (`= {} as T`) in both the test and Hono adapters. `hasRequiredProps` treats a prop with a destructuring default as non-required, but the declared props type may still mark that field required, so a bare `= {}` failed `tsc` ("Property 'x' is missing in type '{}'..."). The destructuring defaults still supply the values at runtime.
+
+- 9dcffdf: Compile JSX used as an object-literal arrow value and render dynamic dispatch (#1663).
+
+  A `Record<K, () => JSX>` lookup map (`{ piconic: () => <BrandLogo/> }`) was never lowered: a module-level map had its const dropped from the emitted module (`ReferenceError` at SSR), and a function-local map leaked raw `<...>` into the client bundle (`SyntaxError: Unexpected token '<'`). The preprocessor now hoists arrow values in object-literal property assignments into synthesized components, the same lowering already applied to arrows in JSX-attribute position, so the lookup map survives as component references.
+
+  Dynamic dispatch of such a map in child position (`<div>{themeLogo(props.id)}</div>`) now renders on the client: the dynamic-text effect routes through a new `__bfText` runtime helper that splices the live component element into the slot by identity instead of stringifying it to `"[object HTMLElement]"`. Adapters and `createComponent` default missing props to `{}` so a bare no-arg shim call (`LOGOS[id]()`) no longer crashes destructuring `undefined`.
+
+- 5d49015: Per-item attribute reading an outer signal by index now becomes reactive inside `.map()` (#1673).
+
+  A per-item attribute/style expression inside a keyed `.map()` only got a `createEffect` when it read the loop item accessor (`it.w`) or a directly-named signal/memo/prop. If it instead read the source array signal through a helper indexed by position — e.g. `style={`width:${widthAt(i)}%`}` where `const widthAt = (i) => items()[i].w` — the compiler emitted no reactive effect and the value froze at its server-rendered value after hydration. The identical binding on a top-level element updated correctly.
+
+  `collectLoopChildReactiveAttrs` now applies the same Solid-style wrap-by-default AST-flag fallback (`callsReactiveGetters` / `hasFunctionCalls`) that the top-level attribute path (`decideWrapForAttr`, #940) already used. An opaque function call inside a per-item attribute is wrapped in a per-item `createEffect`, so it tracks whatever signals it reads at runtime and reflects current state after hydration — matching the equivalent top-level binding. The emitted effect resolves the loop index reference to the renderItem index variable, so the closure stays valid.
+
+- 113a17c: Reactive whole-item conditionals in loops (#1665).
+
+  `arr.map(t => cond(t) && <li/>)` (and `cond ? <li/> : null`, `expr || <li/>`,
+  `expr ?? <li/>`) makes the conditional the entire loop item, so an item renders
+  0-or-1 element per pass. Previously this either threw at hydration (the loop's
+  children stayed empty and the whole `.map(...)` was emitted verbatim as
+  reactive text — uncompiled inline JSX, undeclared module-level helpers) or, once
+  compiled, crashed at runtime (`firstElementChild.cloneNode` on a null element)
+  or froze at its server-rendered value.
+
+  This is now fully reactive, with identical behaviour whether the array is a
+  `const` or a `signal()`:
+
+  - **Runtime** — new `mapArrayAnchored` tracks each item by an always-present
+    `<!--bf-loop-i:KEY-->` anchor comment (not a root element, which the item may
+    not have); content lives between the anchor and the next anchor / loop end and
+    is derived from the live DOM range each pass. `insert()` accepts the anchor as
+    its scope so a whole-item conditional toggles range-scoped to its own item.
+  - **Compiler** — detect the whole-item conditional, hoist the key from the
+    rendering branch, emit per-item anchors plus a `mapArrayAnchored` renderItem;
+    static-array bodies route through the same path. Logical (`&&`/`||`/`??`) and
+    ternary JSX-helper map bodies are inlined, and BF023 now requires a key on
+    those bodies.
+  - **SSR adapters** — Hono, Go, and Mojo emit the per-item `bf-loop-i:KEY` anchor
+    so server-rendered lists hydrate. Hono also emits `data-key` on the
+    conditional branch's loop-item root, matching Go / CSR.
+
+  Both-branch-element ternaries (`cond ? <A/> : <B/>`) render exactly one element
+  and keep their existing `mapArray` path.
+
+- Updated dependencies [113a17c]
+  - @barefootjs/shared@0.5.1
+
 ## 0.5.0
 
 ### Patch Changes
