@@ -92,18 +92,27 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
     const normalElems = elems.filter(e => !e.insideConditional)
 
     if (normalElems.length > 0 || conditionalElems.length > 0) {
+      // Persistent slot trackers for non-conditional elements. `__bfText`
+      // returns the node now occupying the slot; a JSX-valued expression
+      // (`{themeLogo(id)}`) replaces the text node with a live element, so
+      // the next reactive run must operate on that element, not the stale
+      // text node (#1663). Primitive values keep the same text node.
+      for (const elem of normalElems) {
+        const v = varSlotId(elem.slotId)
+        lines.push(`  let __anchor_${v} = _${v}`)
+      }
       lines.push(`  createEffect(() => {`)
       if (normalElems.length > 0) {
         // Expression is always evaluated for non-conditional elements
         lines.push(`    const __val = ${expr}`)
         for (const elem of normalElems) {
           const v = varSlotId(elem.slotId)
-          lines.push(`    if (_${v} && !__val?.__isSlot) _${v}.nodeValue = String(__val ?? '')`)
+          lines.push(`    __anchor_${v} = __bfText(__anchor_${v}, __val)`)
         }
         for (const elem of conditionalElems) {
           const v = varSlotId(elem.slotId)
           lines.push(`    const [__el_${v}] = $t(__scope, '${elem.slotId}')`)
-          lines.push(`    if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val ?? '')`)
+          lines.push(`    __bfText(__el_${v}, __val)`)
         }
       } else {
         // Only conditional elements — evaluate expression unconditionally
@@ -118,7 +127,7 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
         for (const elem of conditionalElems) {
           const v = varSlotId(elem.slotId)
           lines.push(`    const [__el_${v}] = $t(__scope, '${elem.slotId}')`)
-          lines.push(`    if (__el_${v} && !__val?.__isSlot) __el_${v}.nodeValue = String(__val ?? '')`)
+          lines.push(`    __bfText(__el_${v}, __val)`)
         }
       }
       lines.push(`  })`)

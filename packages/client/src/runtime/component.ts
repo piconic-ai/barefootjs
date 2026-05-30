@@ -74,10 +74,15 @@ export interface CreateComponentSlotInfo {
 
 export function createComponent(
   nameOrDef: string | ComponentDef,
-  props: Record<string, unknown>,
+  props: Record<string, unknown> = {},
   key?: string | number,
   slot?: CreateComponentSlotInfo,
 ): HTMLElement {
+  // A bare callable shim invoked from user code (e.g. an object-literal
+  // value `LOGOS[id]()` whose arrow the compiler hoisted into a component)
+  // reaches us with no props (#1663). Normalize to an empty object so the
+  // descriptor probes below don't throw on `undefined`.
+  if (props == null) props = {}
   // ComponentDef mode: use def directly instead of registry lookup
   if (typeof nameOrDef !== 'string') {
     return createComponentFromDef(nameOrDef, props, key)

@@ -1,4 +1,4 @@
-import { $, $c, $t, createComponent, createEffect, createMemo, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+import { $, $c, $t, __bfText, createComponent, createEffect, createMemo, createSignal, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 
 export function initReactiveChild(__scope, _p = {}) {
   if (!__scope) return
@@ -7,14 +7,16 @@ export function initReactiveChild(__scope, _p = {}) {
   const [_s4] = $(__scope, 's4')
   const [_s0, _s2] = $t(__scope, 's0', 's2')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = _p.label
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
+  let __anchor_s2 = _s2
   createEffect(() => {
     const __val = _p.value
-    if (_s2 && !__val?.__isSlot) _s2.nodeValue = String(__val ?? '')
+    __anchor_s2 = __bfText(__anchor_s2, __val)
   })
 
   if (_s4) _s4.addEventListener('click', () => { _p.onIncrement() })
@@ -33,14 +35,16 @@ export function initReactiveProps(__scope, _p = {}) {
   const [_s0, _s2] = $t(__scope, 's0', 's2')
   const [_s5, _s6] = $c(__scope, 's5', 's6')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
+  let __anchor_s2 = _s2
   createEffect(() => {
     const __val = doubled()
-    if (_s2 && !__val?.__isSlot) _s2.nodeValue = String(__val ?? '')
+    __anchor_s2 = __bfText(__anchor_s2, __val)
   })
 
   if (_s4) _s4.addEventListener('click', () => { setCount(n => n + 1) })
@@ -86,19 +90,22 @@ export function initPropsStyleChild(__scope, _p = {}) {
 
   const [_s0, _s2, _s4] = $t(__scope, 's0', 's2', 's4')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = _p.label
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
+  let __anchor_s2 = _s2
   createEffect(() => {
     const __val = _p.value
-    if (_s2 && !__val?.__isSlot) _s2.nodeValue = String(__val ?? '')
+    __anchor_s2 = __bfText(__anchor_s2, __val)
   })
 
+  let __anchor_s4 = _s4
   createEffect(() => {
     const __val = displayValue()
-    if (_s4 && !__val?.__isSlot) _s4.nodeValue = String(__val ?? '')
+    __anchor_s4 = __bfText(__anchor_s4, __val)
   })
 
 }
@@ -116,19 +123,22 @@ export function initDestructuredStyleChild(__scope, _p = {}) {
 
   const [_s0, _s2, _s4] = $t(__scope, 's0', 's2', 's4')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = label
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
+  let __anchor_s2 = _s2
   createEffect(() => {
     const __val = value
-    if (_s2 && !__val?.__isSlot) _s2.nodeValue = String(__val ?? '')
+    __anchor_s2 = __bfText(__anchor_s2, __val)
   })
 
+  let __anchor_s4 = _s4
   createEffect(() => {
     const __val = displayValue()
-    if (_s4 && !__val?.__isSlot) _s4.nodeValue = String(__val ?? '')
+    __anchor_s4 = __bfText(__anchor_s4, __val)
   })
 
 }
@@ -145,9 +155,10 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
   const [_s0] = $t(__scope, 's0')
   const [_s3, _s4] = $c(__scope, 's3', 's4')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })

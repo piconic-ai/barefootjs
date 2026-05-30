@@ -1,4 +1,4 @@
-import { $, $t, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
+import { $, $t, __bfText, createComponent, createEffect, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initConditionalReturn(__scope, _p = {}) {
@@ -10,10 +10,12 @@ export function initConditionalReturn(__scope, _p = {}) {
   const [_s3, _s1] = $(__scope, 's3', 's1')
   const [_s2, _s0] = $t(__scope, 's2', 's0')
 
+  let __anchor_s2 = _s2
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s2 && !__val?.__isSlot) _s2.nodeValue = String(__val ?? '')
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s2 = __bfText(__anchor_s2, __val)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
   createEffect(() => {

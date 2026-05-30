@@ -1,4 +1,4 @@
-import { $, $t, createComponent, createEffect, createMemo, createSignal, hydrate } from '@barefootjs/client/runtime'
+import { $, $t, __bfText, createComponent, createEffect, createMemo, createSignal, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -15,14 +15,16 @@ export function initCounter(__scope, _p = {}) {
   const [_s4, _s5, _s6] = $(__scope, 's4', 's5', 's6')
   const [_s0, _s2] = $t(__scope, 's0', 's2')
 
+  let __anchor_s0 = _s0
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 
+  let __anchor_s2 = _s2
   createEffect(() => {
     const __val = doubled()
-    if (_s2 && !__val?.__isSlot) _s2.nodeValue = String(__val ?? '')
+    __anchor_s2 = __bfText(__anchor_s2, __val)
   })
 
   if (_s4) _s4.addEventListener('click', () => { setCount(n => n + 1) })

@@ -128,7 +128,18 @@ test.describe('Calendar Reference Page', () => {
       const section = page.locator('[bf-s^="CalendarWithConstraintsDemo_"][bf-r]:not([data-slot])').first()
       const calendar = section.locator('[data-slot="calendar"]')
 
-      const availableDay = calendar.locator('[data-slot="calendar-day-button"]:not([data-outside]):not([data-disabled])').first()
+      const availableSelector = '[data-slot="calendar-day-button"]:not([data-outside]):not([data-disabled])'
+      let availableDay = calendar.locator(availableSelector).first()
+
+      // The demo disables weekends and limits selection to the next 30 days,
+      // so when CI runs on a month-end weekend (e.g. Saturday the 30th) the
+      // current month can have no in-range weekday at all. Advance one month in
+      // that case — the next month always has an in-range weekday within the
+      // 30-day window.
+      if ((await availableDay.count()) === 0) {
+        await calendar.locator('[data-slot="calendar-nav-next"]').click()
+        availableDay = calendar.locator(availableSelector).first()
+      }
       await availableDay.click()
 
       await expect(availableDay).toHaveAttribute('aria-selected', 'true')

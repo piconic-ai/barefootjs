@@ -367,3 +367,98 @@ export function Demo() {
     expect(sharedJs).toMatch(/hydrate\(\s*['"]BFInlineJsxCallback1(?:__|['"])/)
   })
 })
+
+/**
+ * Inline JSX as an object-literal arrow value (#1663).
+ *
+ * A `Record<K, () => JSX>` lookup map (`{ piconic: () => <BrandLogo/> }`)
+ * left the JSX untransformed: a module-level map had its const dropped from
+ * the emitted module (`ReferenceError: THEME_LOGOS is not defined` at SSR),
+ * and a function-local map leaked raw `<...>` into the client bundle
+ * (`SyntaxError: Unexpected token '<'`). Both arrow values must be hoisted
+ * into synthesized components, exactly like an arrow in attribute position.
+ */
+describe('inline JSX as object-literal arrow value (#1663)', () => {
+  function markedTemplate(source: string, fileName = 'Header.tsx'): string {
+    const result = compileJSX(source, fileName, { adapter })
+    expect(result.errors).toEqual([])
+    const file = result.files.find(f => f.type === 'markedTemplate')
+    expect(file).toBeDefined()
+    return file!.content
+  }
+
+  test('module-level lookup map: const is preserved and JSX is lowered (repro A)', () => {
+    const source = `
+      'use client'
+      import { BrandLogo } from './brand-logo'
+
+      const THEME_LOGOS: Record<string, () => unknown> = {
+        piconic: () => <BrandLogo name="piconic" />,
+        other: () => <BrandLogo name="other" />,
+      }
+      function themeLogo(id: string) { return THEME_LOGOS[id]() }
+
+      export function Header(props: { id: string }) {
+        return <div class="hdr">{themeLogo(props.id)}</div>
+      }
+    `
+    const js = clientJs(source)
+    const tmpl = markedTemplate(source)
+
+    // The arrow bodies must not survive as live JSX in either output.
+    expect(js).not.toMatch(/=>\s*<BrandLogo\b/)
+    expect(tmpl).not.toMatch(/=>\s*<BrandLogo\b/)
+
+    // The arrow values are replaced by synthesized component references, so
+    // the THEME_LOGOS const survives (it is no longer dropped → no SSR
+    // ReferenceError).
+    expect(js).toContain('THEME_LOGOS')
+    expect(js).toMatch(/piconic:\s*BFInlineJsxCallback1\b/)
+    expect(js).toMatch(/hydrate\(\s*['"]BFInlineJsxCallback1(?:__|['"])/)
+    expect(tmpl).toContain('THEME_LOGOS')
+  })
+
+  test('function-local lookup map: JSX is lowered, not leaked to client (repro B)', () => {
+    const source = `
+      'use client'
+      import { BrandLogo } from './brand-logo'
+
+      export function Header(props: { id: string }) {
+        function themeLogo(id: string) {
+          const logos: Record<string, () => unknown> = {
+            piconic: () => <BrandLogo name="piconic" />,
+          }
+          return logos[id]()
+        }
+        return <div class="hdr">{themeLogo(props.id)}</div>
+      }
+    `
+    const js = clientJs(source)
+    // No raw JSX in the client bundle (the #1663 SyntaxError).
+    expect(js).not.toMatch(/=>\s*<BrandLogo\b/)
+    expect(js).not.toMatch(/return\s*<BrandLogo\b/)
+    expect(js).toMatch(/hydrate\(\s*['"]BFInlineJsxCallback1(?:__|['"])/)
+  })
+
+  test('dynamic JSX-returning call routes the slot through __bfText', () => {
+    // The child expression `{themeLogo(props.id)}` evaluates to a live
+    // component element on the client; the slot update must splice it in by
+    // identity via __bfText rather than stringify it into "[object …]".
+    const source = `
+      'use client'
+      import { BrandLogo } from './brand-logo'
+
+      const THEME_LOGOS: Record<string, () => unknown> = {
+        piconic: () => <BrandLogo name="piconic" />,
+      }
+      function themeLogo(id: string) { return THEME_LOGOS[id]() }
+
+      export function Header(props: { id: string }) {
+        return <div class="hdr">{themeLogo(props.id)}</div>
+      }
+    `
+    const js = clientJs(source)
+    expect(js).toContain('__bfText(')
+    expect(js).toMatch(/__bfText[^']*from '@barefootjs\/client\/runtime'/)
+  })
+})
