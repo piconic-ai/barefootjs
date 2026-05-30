@@ -2084,19 +2084,20 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
 // The catalogue in #1448 documents `/* @client */` as the universal
 // workaround for any Array/String method shape the template adapters
 // can't lower. This block pins that contract for the Go adapter: for
-// every remaining unsupported entry, wrapping the expression in
-// `/* @client */` must (a) clear the BF021/BF101 build error the bare
-// form raises and (b) emit a client-only placeholder so the Go SSR
-// pass renders valid template that the client runtime fills at
-// hydration.
+// every remaining unsupported entry, the BARE form must surface a
+// BF021/BF101 build error (so the user is told to act), and wrapping
+// the expression in `/* @client */` must clear that error and emit a
+// client-only placeholder so the Go SSR pass renders valid template
+// the client runtime fills at hydration.
 //
-// Why this matters beyond "no error": the unsupported *string* methods
-// are a silent footgun. Unlike the unsupported array methods (which
-// surface BF101 at build time), bare `.startsWith` / `.repeat` / …
-// lower to a Go method-call expression (`{{.Name.StartsWith "a"}}`)
-// that passes the adapter's gate with NO diagnostic — then explodes at
-// `go run` time with `can't evaluate field StartsWith in type string`.
-// `/* @client */` is the only escape hatch, so these tests pin it.
+// History (#1448 follow-up): the unsupported *string* methods used to
+// be a silent footgun — bare `.startsWith` / `.repeat` / … lowered to
+// a Go method-call expression (`{{.Name.StartsWith "a"}}`) that passed
+// the adapter's gate with NO diagnostic, then exploded at `go run`
+// time with `can't evaluate field StartsWith in type string`. They are
+// now listed in `UNSUPPORTED_METHODS`, so `isSupported` refuses them
+// and `convertExpressionToGo` records BF101 — the same treatment the
+// unsupported array methods already got. These tests pin that parity.
 describe('GoTemplateAdapter - #1448 @client escape hatch (unsupported methods)', () => {
   // Compile a single expression placed in `<div>` text position, with
   // and without the directive, and return both the build errors and
@@ -2137,53 +2138,60 @@ export function C() {
     return { errors: adapter.errors ?? [], template }
   }
 
-  // Tier C array methods — bare form raises BF101 at build time.
-  const unsupportedArray: Array<[string, string]> = [
-    ['reduce', `items().reduce((a, b) => a + b.n, 0)`],
-    ['flatMap', `items().flatMap(i => i.tags)`],
-    ['flat', `items().flat()`],
+  // Unsupported methods that surface as BF101 at build time: Tier C
+  // array methods + Tier B/C string methods. `badEmit` is the invalid
+  // Go fragment that must NOT survive into the template (the pre-fix
+  // silent-footgun output for the string rows).
+  const unsupported: Array<{ name: string; expr: string; badEmit: string }> = [
+    // Tier C array methods.
+    { name: 'reduce', expr: `items().reduce((a, b) => a + b.n, 0)`, badEmit: '.Reduce' },
+    { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '.FlatMap' },
+    { name: 'flat', expr: `items().flat()`, badEmit: '.Flat' },
+    // Tier B/C string methods — previously slipped through with no
+    // diagnostic; now gated by `UNSUPPORTED_METHODS`.
+    { name: 'split', expr: `name().split(",")`, badEmit: '.Name.Split' },
+    { name: 'startsWith', expr: `name().startsWith("a")`, badEmit: '.Name.StartsWith' },
+    { name: 'endsWith', expr: `name().endsWith("z")`, badEmit: '.Name.EndsWith' },
+    { name: 'replace', expr: `name().replace("a", "b")`, badEmit: '.Name.Replace' },
+    { name: 'repeat', expr: `name().repeat(3)`, badEmit: '.Name.Repeat' },
+    { name: 'padStart', expr: `name().padStart(5, "0")`, badEmit: '.Name.PadStart' },
+    { name: 'padEnd', expr: `name().padEnd(5, "0")`, badEmit: '.Name.PadEnd' },
+    { name: 'charAt', expr: `name().charAt(0)`, badEmit: '.Name.CharAt' },
   ]
-  for (const [name, expr] of unsupportedArray) {
-    test(`array .${name}: bare raises BF101, @client clears it + emits client placeholder`, () => {
+  for (const { name, expr, badEmit } of unsupported) {
+    test(`.${name}: bare raises BF101, @client clears it + emits client placeholder`, () => {
       const bare = emit(expr, false)
       expect(bare.errors.some(e => e.code === 'BF101')).toBe(true)
+      // The unlowerable method call must NOT leak into the template;
+      // the adapter degrades to a safe empty slot alongside the error.
+      expect(bare.template).not.toContain(badEmit)
 
       const guarded = emit(expr, true)
       expect(guarded.errors).toEqual([])
       // Client-only text slot → `{{bfComment "client:sN"}}` placeholder.
       expect(guarded.template).toMatch(/bfComment "client:s\d+"/)
-      // The unlowerable expression must NOT survive into the template.
-      expect(guarded.template).not.toContain('.Reduce')
-      expect(guarded.template).not.toContain('.FlatMap')
-    })
-  }
-
-  // Tier B/C string methods — bare form emits an INVALID Go method
-  // call with NO build error (the silent footgun). `@client` is the
-  // only thing that prevents the render-time crash.
-  const unsupportedString: Array<[string, string, string]> = [
-    ['split', `name().split(",")`, '.Name.Split'],
-    ['startsWith', `name().startsWith("a")`, '.Name.StartsWith'],
-    ['endsWith', `name().endsWith("z")`, '.Name.EndsWith'],
-    ['replace', `name().replace("a", "b")`, '.Name.Replace'],
-    ['repeat', `name().repeat(3)`, '.Name.Repeat'],
-    ['padStart', `name().padStart(5, "0")`, '.Name.PadStart'],
-    ['padEnd', `name().padEnd(5, "0")`, '.Name.PadEnd'],
-    ['charAt', `name().charAt(0)`, '.Name.CharAt'],
-  ]
-  for (const [name, expr, badEmit] of unsupportedString) {
-    test(`string .${name}: bare emits invalid Go method call, @client emits client placeholder`, () => {
-      const bare = emit(expr, false)
-      // Documents the footgun: no BF101 guard, invalid template emitted.
-      expect(bare.errors.filter(e => e.code === 'BF101')).toEqual([])
-      expect(bare.template).toContain(badEmit)
-
-      const guarded = emit(expr, true)
-      expect(guarded.errors).toEqual([])
-      expect(guarded.template).toMatch(/bfComment "client:s\d+"/)
       expect(guarded.template).not.toContain(badEmit)
     })
   }
+
+  // Predicate-level use of an unsupported string method also fails the
+  // build loudly (intended): a `.filter(t => t.name.startsWith("a"))`
+  // whose predicate calls one of the gated methods now refuses the whole
+  // loop with BF101 (via the shared `isSupported` predicate gate in
+  // jsx-to-ir) rather than lowering to a broken `.StartsWith` inside the
+  // range. Pinning this so the loud-failure contract can't silently
+  // regress back to the old emit-broken-template behaviour.
+  test('unsupported string method inside a .filter() predicate raises BF101', () => {
+    const result = compileJSX(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+export function C() {
+  const [items, setItems] = createSignal<{ name: string }[]>([])
+  return <ul>{items().filter(t => t.name.startsWith("a")).map(t => <li key={t.name}>{t.name}</li>)}</ul>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter() })
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
 
   // Tier B `.sort` / `.toSorted` follow-ups still refused with BF021.
   const unsupportedSort: Array<[string, string]> = [
@@ -2210,22 +2218,25 @@ export function C() {
     })
   }
 
-  // End-to-end proof via `go run`: the bare unsupported form crashes
-  // the Go template execution, while the `@client` form renders a
-  // `<!--bf-client:sN-->` placeholder. Skipped on hosts without Go.
-  test('e2e: bare string method crashes go render, @client renders placeholder', async () => {
-    const guarded = `
+  // End-to-end proof via `go run`: the `@client` form renders a
+  // `<!--bf-client:sN-->` placeholder. The bare form is now caught at
+  // build with BF101 and degrades to an empty, render-safe slot (no
+  // more `can't evaluate field …` crash), so we assert the build error
+  // rather than a render crash. Skipped on hosts without Go.
+  test('e2e: @client renders placeholder; bare is caught at build with BF101', async () => {
+    const bare = emit(`name().repeat(3)`, false)
+    expect(bare.errors.some(e => e.code === 'BF101')).toBe(true)
+
+    try {
+      const html = await renderGoTemplateComponent({
+        source: `
 "use client"
 import { createSignal } from "@barefootjs/client"
 export function C() {
   const [name, setName] = createSignal("hello")
   return <div>{/* @client */ name().repeat(3)}</div>
 }
-`
-    const bareSrc = guarded.replace('/* @client */ ', '')
-    try {
-      const html = await renderGoTemplateComponent({
-        source: guarded.trimStart(),
+`.trimStart(),
         adapter: new GoTemplateAdapter(),
       })
       expect(html).toContain('<!--bf-client:s0-->')
@@ -2236,12 +2247,5 @@ export function C() {
       }
       throw err
     }
-    // Bare form must fail Go template execution (no @client guard).
-    await expect(
-      renderGoTemplateComponent({
-        source: bareSrc.trimStart(),
-        adapter: new GoTemplateAdapter(),
-      }),
-    ).rejects.toThrow(/can't evaluate field Repeat in type string/)
   })
 })

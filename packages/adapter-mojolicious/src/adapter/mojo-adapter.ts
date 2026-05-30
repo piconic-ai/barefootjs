@@ -1258,6 +1258,44 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       return "''"
     }
 
+    // #1448 follow-up — generic unsupported-method gate. Any member
+    // method call (`.foo(...)`) that reached here without matching one
+    // of the supported routes above is checked against the parser's
+    // `isSupported`. Methods listed in the parser's `UNSUPPORTED_METHODS`
+    // (e.g. `String.prototype.startsWith` / `.split` / `.replace`, and
+    // any future un-lowered method) report unsupported and are refused
+    // with BF101 here, instead of being mangled by the regex pipeline
+    // below into a `$obj->{method}(...)` hash-deref that dies at render
+    // ("Can't use string (...) as a HASH ref") with no build diagnostic.
+    //
+    // Driving this off `isSupported` rather than a hand-maintained
+    // method-name regex keeps the parser's `UNSUPPORTED_METHODS` the
+    // single source of truth (matching the Go adapter's
+    // `convertExpressionToGo`, which has no such list): new unsupported
+    // methods need no edit here, and a method that gains a lowering
+    // stops being refused the moment the parser recognises it.
+    // Supported calls — templatePrimitives like `JSON.stringify(x)` /
+    // `Math.floor(x)`, and any expression whose only method-name match
+    // is inside a string literal (`name() + ".replace("`) — report
+    // supported and fall through to the normal pipeline unchanged.
+    if (/\.\s*[A-Za-z_$][\w$]*\s*\(/.test(expr)) {
+      const support = isSupported(parseExpression(expr))
+      if (!support.supported) {
+        this.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Expression not supported: ${expr.trim()}`,
+          loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+          suggestion: {
+            message: support.reason
+              ? `${support.reason}\n\nOptions:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl`
+              : 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl',
+          },
+        })
+        return "''"
+      }
+    }
+
     // templatePrimitives substitution (#1189): rewrite identifier-path
     // calls like `JSON.stringify(props.config)` / `Math.floor(x)` to
     // their Mojo helper-call form (`bf->json($config)` etc.) BEFORE

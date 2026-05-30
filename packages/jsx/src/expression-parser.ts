@@ -214,6 +214,21 @@ const UNSUPPORTED_METHODS = new Set([
   // `bf_lower` / `bf_upper` (Go) and Perl's native `lc` / `uc` (Mojo).
   // `trim` lowers via the `array-method` IR + `bf_trim` (Go) and a
   // Perl regex strip (Mojo).
+  //
+  // #1448 follow-up — String methods that have NO lowering yet. These
+  // were previously absent from this gate, so `isSupported` reported
+  // them "supported" and the adapters emitted a raw method call
+  // (`{{.Name.StartsWith "a"}}` on Go, `$name->{startsWith}('a')` on
+  // Mojo) with no build diagnostic — a silent footgun that only
+  // surfaced as a crash at template-render time. Listing them here
+  // makes the build fail loudly with BF101 (the same treatment the
+  // unsupported array methods above get), pointing users at the
+  // `/* @client */` escape hatch. Each name drops off as its lowering
+  // lands. See #1448 "Unsupported string methods" Tier B / Tier C.
+  'split', 'startsWith', 'endsWith', 'replace', 'replaceAll',
+  'repeat', 'padStart', 'padEnd',
+  'charAt', 'charCodeAt', 'codePointAt', 'normalize',
+  'substring', 'substr', 'match', 'matchAll', 'search',
 ])
 
 // =============================================================================
@@ -1724,7 +1739,7 @@ function checkSupport(expr: ParsedExpr): SupportResult {
           return {
             supported: false,
             level: 'L5_UNSUPPORTED',
-            reason: `Higher-order method '${methodName}()' requires client-side evaluation. Use @client directive or pre-compute in Go.`,
+            reason: `Method '${methodName}()' has no template lowering and requires client-side evaluation. Wrap the expression in /* @client */ to defer it to hydration, or pre-compute the value before rendering.`,
           }
         }
       }

@@ -979,17 +979,19 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
 // Mojo sibling of the Go block: #1448 documents `/* @client */` as the
 // universal workaround for any Array/String method the template
 // adapters can't lower. This pins that contract for the Mojo adapter —
-// wrapping the unsupported expression in the directive must clear the
-// BF021/BF101 build error the bare form raises and emit a client-only
-// placeholder so the Mojo SSR pass renders valid `.html.ep` that the
-// client runtime fills at hydration.
+// the BARE form must surface a BF021/BF101 build error, and wrapping
+// the expression in the directive must clear it and emit a client-only
+// placeholder so the Mojo SSR pass renders valid `.html.ep` the client
+// runtime fills at hydration.
 //
-// Same silent-footgun caveat as Go: the unsupported *string* methods
-// raise NO build diagnostic — bare `.startsWith` / `.repeat` / … lower
-// to a Perl hash-deref-and-call (`$name->{startsWith}('a')`) that
-// passes the adapter gate, then dies at render with
-// `Can't use string (...) as a HASH ref while "strict refs"`.
-// `/* @client */` is the only escape hatch, so these tests pin it.
+// History (#1448 follow-up): the unsupported *string* methods used to
+// raise NO build diagnostic — bare `.startsWith` / `.repeat` / … fell
+// into the regex pipeline and lowered to a Perl hash-deref-and-call
+// (`$name->{startsWith}('a')`) that passed the gate, then died at
+// render with `Can't use string (...) as a HASH ref while "strict
+// refs"`. They are now routed through the AST path in
+// `convertExpressionToPerl` so `isSupported`'s `UNSUPPORTED_METHODS`
+// gate fires BF101 — parity with the Go adapter. These tests pin it.
 describe('MojoAdapter - #1448 @client escape hatch (unsupported methods)', () => {
   function emit(expr: string, client: boolean) {
     const marker = client ? '/* @client */ ' : ''
@@ -1023,49 +1025,85 @@ export function C() {
     return { errors: adapter.errors ?? [], template }
   }
 
-  // Tier C array methods — bare form raises BF101 at build time.
-  const unsupportedArray: Array<[string, string]> = [
-    ['reduce', `items().reduce((a, b) => a + b.n, 0)`],
-    ['flatMap', `items().flatMap(i => i.tags)`],
-    ['flat', `items().flat()`],
+  // Unsupported methods that surface as BF101 at build time: Tier C
+  // array methods + Tier B/C string methods. `badEmit` is the invalid
+  // Perl fragment that must NOT survive into the template (the pre-fix
+  // silent-footgun output for the string rows).
+  const unsupported: Array<{ name: string; expr: string; badEmit: string }> = [
+    // Tier C array methods.
+    { name: 'reduce', expr: `items().reduce((a, b) => a + b.n, 0)`, badEmit: '->{reduce}' },
+    { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '->{flatMap}' },
+    { name: 'flat', expr: `items().flat()`, badEmit: '->{flat}' },
+    // Tier B/C string methods — previously slipped through with no
+    // diagnostic; now routed through the AST / `isSupported` gate.
+    { name: 'split', expr: `name().split(",")`, badEmit: '->{split}' },
+    { name: 'startsWith', expr: `name().startsWith("a")`, badEmit: '->{startsWith}' },
+    { name: 'endsWith', expr: `name().endsWith("z")`, badEmit: '->{endsWith}' },
+    { name: 'replace', expr: `name().replace("a", "b")`, badEmit: '->{replace}' },
+    { name: 'repeat', expr: `name().repeat(3)`, badEmit: '->{repeat}' },
+    { name: 'padStart', expr: `name().padStart(5, "0")`, badEmit: '->{padStart}' },
+    { name: 'padEnd', expr: `name().padEnd(5, "0")`, badEmit: '->{padEnd}' },
+    { name: 'charAt', expr: `name().charAt(0)`, badEmit: '->{charAt}' },
   ]
-  for (const [name, expr] of unsupportedArray) {
-    test(`array .${name}: bare raises BF101, @client clears it + emits client placeholder`, () => {
+  for (const { name, expr, badEmit } of unsupported) {
+    test(`.${name}: bare raises BF101, @client clears it + emits client placeholder`, () => {
       const bare = emit(expr, false)
       expect(bare.errors.some(e => e.code === 'BF101')).toBe(true)
+      // The invalid deref-and-call must NOT leak into the template;
+      // the adapter degrades to a safe empty slot alongside the error.
+      expect(bare.template).not.toContain(badEmit)
 
       const guarded = emit(expr, true)
       expect(guarded.errors).toEqual([])
       // Client-only text slot → `<%== bf->comment("client:sN") %>`.
       expect(guarded.template).toMatch(/bf->comment\("client:s\d+"\)/)
-    })
-  }
-
-  // Tier B/C string methods — bare form emits an INVALID Perl
-  // hash-deref-and-call with NO build error (the silent footgun).
-  const unsupportedString: Array<[string, string, string]> = [
-    ['split', `name().split(",")`, '->{split}'],
-    ['startsWith', `name().startsWith("a")`, '->{startsWith}'],
-    ['endsWith', `name().endsWith("z")`, '->{endsWith}'],
-    ['replace', `name().replace("a", "b")`, '->{replace}'],
-    ['repeat', `name().repeat(3)`, '->{repeat}'],
-    ['padStart', `name().padStart(5, "0")`, '->{padStart}'],
-    ['padEnd', `name().padEnd(5, "0")`, '->{padEnd}'],
-    ['charAt', `name().charAt(0)`, '->{charAt}'],
-  ]
-  for (const [name, expr, badEmit] of unsupportedString) {
-    test(`string .${name}: bare emits invalid Perl deref, @client emits client placeholder`, () => {
-      const bare = emit(expr, false)
-      // Documents the footgun: no BF101 guard, invalid template emitted.
-      expect(bare.errors.filter(e => e.code === 'BF101')).toEqual([])
-      expect(bare.template).toContain(badEmit)
-
-      const guarded = emit(expr, true)
-      expect(guarded.errors).toEqual([])
-      expect(guarded.template).toMatch(/bf->comment\("client:s\d+"\)/)
       expect(guarded.template).not.toContain(badEmit)
     })
   }
+
+  // Routing guard regression: the unsupported-string-method regex is an
+  // unanchored substring test, and these names (`replace`, `split`, …)
+  // are ordinary words that also appear inside string literals. A
+  // SUPPORTED expression whose literal merely contains `.replace(` must
+  // NOT be diverted onto the AST path — doing so would bypass
+  // `rewriteTemplatePrimitives` and silently emit broken Perl
+  // (`$JSON->{stringify} + '.replace('`). The `isSupported` gate on the
+  // regex keeps such expressions on the normal pipeline.
+  test('string-method regex does not misroute a supported expr with a method name inside a literal', () => {
+    const adapter = new MojoAdapter()
+    const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+export function C(props: { config: string }) {
+  return <div>{JSON.stringify(props.config) + ".replace("}</div>
+}
+`, adapter)
+    const template = adapter.generate(ir).template ?? ''
+    expect(adapter.errors ?? []).toEqual([])
+    // templatePrimitive lowering preserved...
+    expect(template).toContain('bf->json($config)')
+    // ...and the literal is NOT mangled into a hash-deref.
+    expect(template).not.toContain('$JSON->{stringify}')
+  })
+
+  // Predicate-level use of an unsupported string method also fails the
+  // build loudly (intended): a `.filter(t => t.name.startsWith("a"))`
+  // whose predicate calls one of the gated methods now refuses the whole
+  // loop with BF101 (via the shared `isSupported` predicate gate in
+  // jsx-to-ir) rather than lowering to a broken `->{startsWith}` inside
+  // the grep. Pinning this so the loud-failure contract can't silently
+  // regress back to the old emit-broken-template behaviour.
+  test('unsupported string method inside a .filter() predicate raises BF101', () => {
+    const result = compileJSX(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+export function C() {
+  const [items, setItems] = createSignal<{ name: string }[]>([])
+  return <ul>{items().filter(t => t.name.startsWith("a")).map(t => <li key={t.name}>{t.name}</li>)}</ul>
+}
+`.trimStart(), 'test.tsx', { adapter: new MojoAdapter() })
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
 
   // Tier B `.sort` / `.toSorted` follow-ups still refused with BF021.
   // The Mojo client-only loop placeholder is an empty element (the
@@ -1097,23 +1135,25 @@ export function C() {
     })
   }
 
-  // End-to-end proof via perl + Mojolicious: the bare unsupported form
-  // crashes Mojo template execution, while the `@client` form renders a
-  // `<!--bf-client:sN-->` placeholder. Skipped on hosts without
-  // Mojolicious installed.
-  test('e2e: bare string method crashes perl render, @client renders placeholder', async () => {
-    const guarded = `
+  // End-to-end proof via perl + Mojolicious: the `@client` form renders
+  // a `<!--bf-client:sN-->` placeholder. The bare form is now caught at
+  // build with BF101 and degrades to an empty, render-safe slot (no
+  // more `HASH ref` crash), so we assert the build error rather than a
+  // render crash. Skipped on hosts without Mojolicious installed.
+  test('e2e: @client renders placeholder; bare is caught at build with BF101', async () => {
+    const bare = emit(`name().repeat(3)`, false)
+    expect(bare.errors.some(e => e.code === 'BF101')).toBe(true)
+
+    try {
+      const html = await renderMojoComponent({
+        source: `
 "use client"
 import { createSignal } from "@barefootjs/client"
 export function C() {
   const [name, setName] = createSignal("hello")
   return <div>{/* @client */ name().repeat(3)}</div>
 }
-`
-    const bareSrc = guarded.replace('/* @client */ ', '')
-    try {
-      const html = await renderMojoComponent({
-        source: guarded.trimStart(),
+`.trimStart(),
         adapter: new MojoAdapter(),
       })
       expect(html).toContain('<!--bf-client:s0-->')
@@ -1124,12 +1164,5 @@ export function C() {
       }
       throw err
     }
-    // Bare form must fail Mojo template execution (no @client guard).
-    await expect(
-      renderMojoComponent({
-        source: bareSrc.trimStart(),
-        adapter: new MojoAdapter(),
-      }),
-    ).rejects.toThrow(/HASH ref/)
   })
 })
