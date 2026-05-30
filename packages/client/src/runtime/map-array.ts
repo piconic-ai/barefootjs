@@ -27,6 +27,7 @@ import {
   BF_LOOP_ITEM,
   loopStartMarker,
   loopEndMarker,
+  loopItemMarker,
 } from '@barefootjs/shared'
 
 type ItemScope<T> = {
@@ -386,6 +387,229 @@ export function mapArray<T>(
     if (!inOrder) {
       for (const scope of desiredOrder) {
         insertScope(scope, container, anchor)
+      }
+    }
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Anchored list rendering (#1665) — whole-item loop conditionals.
+//
+// `arr.map(t => cond(t) && <li/>)` makes the conditional the entire loop
+// item, so an item renders 0-or-1 element per pass. The legacy `mapArray`
+// tracks each item by a required `primaryEl` Element, which cannot represent
+// the empty (false-branch) item. `mapArrayAnchored` instead tracks each item
+// by a `<!--bf-loop-i:KEY-->` anchor comment that is ALWAYS present. The
+// item's content lives between its anchor and the next anchor / loop end and
+// is derived from the live DOM range every pass (never cached): `insert()`
+// owns the content, `mapArrayAnchored` owns the anchors (identity + order).
+// ---------------------------------------------------------------------------
+
+/** Item tracked by its always-present `bf-loop-i:KEY` anchor comment. */
+type AnchorScope<T> = {
+  anchor: Comment
+  /** Detached nodes to mount for a freshly created (CSR) item; null once mounted. */
+  pending: DocumentFragment | null
+  dispose: () => void
+  setItem: (v: T) => void
+}
+
+const ITEM_PREFIX = `${BF_LOOP_ITEM}:`
+
+function isItemAnchor(node: Node): node is Comment {
+  return (
+    node.nodeType === Node.COMMENT_NODE &&
+    ((node as Comment).nodeValue ?? '').startsWith(ITEM_PREFIX)
+  )
+}
+
+/** Collect a live item range: the anchor and every node up to the next item
+ *  anchor or the loop end marker (exclusive). Derived fresh per call (D3). */
+function collectAnchorRange(anchor: Comment, end: Comment | null): Node[] {
+  const nodes: Node[] = [anchor]
+  let node: Node | null = anchor.nextSibling
+  while (node && node !== end) {
+    if (isItemAnchor(node)) break
+    nodes.push(node)
+    node = node.nextSibling
+  }
+  return nodes
+}
+
+/** Partition the loop range into the item anchors present in SSR/CSR DOM. */
+function findItemAnchors(start: Comment, end: Comment): Comment[] {
+  const anchors: Comment[] = []
+  let node: Node | null = start.nextSibling
+  while (node && node !== end) {
+    if (isItemAnchor(node)) anchors.push(node as Comment)
+    node = node.nextSibling
+  }
+  return anchors
+}
+
+/** Move (or first-mount) a scope's whole range immediately before `before`. */
+function placeAnchorScope<T>(
+  scope: AnchorScope<T>,
+  container: HTMLElement,
+  before: Node | null,
+  end: Comment | null,
+): void {
+  if (scope.pending) {
+    container.insertBefore(scope.pending, before)
+    scope.pending = null
+    return
+  }
+  for (const node of collectAnchorRange(scope.anchor, end)) {
+    container.insertBefore(node, before)
+  }
+}
+
+/** Detach a scope's whole range from the DOM. */
+function removeAnchorScope<T>(scope: AnchorScope<T>, end: Comment | null): void {
+  for (const node of collectAnchorRange(scope.anchor, end)) {
+    node.parentNode?.removeChild(node)
+  }
+}
+
+function createAnchorScope<T>(
+  item: T,
+  index: number,
+  key: string,
+  renderItem: (item: () => T, index: number, existing?: Comment) => DocumentFragment | Comment,
+  existingAnchor?: Comment,
+): AnchorScope<T> {
+  let dispose!: () => void
+  let setItem!: (v: T) => void
+  let returned!: DocumentFragment | Comment
+
+  createRoot((d) => {
+    dispose = d
+    const [itemAccessor, itemSetter] = createSignal(item)
+    setItem = itemSetter
+    returned = renderItem(itemAccessor, index, existingAnchor)
+    return undefined
+  })
+
+  if (existingAnchor) {
+    return { anchor: existingAnchor, pending: null, dispose, setItem }
+  }
+  // CSR: renderItem returns a fragment whose first child is the anchor.
+  const frag = returned as DocumentFragment
+  const anchor = frag.firstChild as Comment
+  // The renderItem already encodes the key into the anchor value, but tolerate
+  // a bare anchor by stamping it here so identity/order reads stay consistent.
+  if (anchor && !anchor.nodeValue?.startsWith(ITEM_PREFIX)) {
+    anchor.nodeValue = loopItemMarker(key)
+  }
+  return { anchor, pending: frag, dispose, setItem }
+}
+
+/**
+ * Per-item scoped list rendering for whole-item conditionals (#1665).
+ *
+ * Same call shape as `mapArray`, but `renderItem` returns a `DocumentFragment`
+ * (CSR, first child = `bf-loop-i:KEY` anchor) or the existing anchor Comment
+ * (hydration). Items may render zero elements; the anchor is the stable
+ * identity and position.
+ */
+export function mapArrayAnchored<T>(
+  accessor: () => T[],
+  container: HTMLElement | null,
+  getKey: ((item: T, index: number) => string) | null,
+  renderItem: (item: () => T, index: number, existing?: Comment) => DocumentFragment | Comment,
+  markerId?: string,
+): void {
+  if (!container) return
+
+  const scopes = new Map<string, AnchorScope<T>>()
+  let hydrated = false
+
+  createEffect(() => {
+    const items = accessor()
+    if (!items) return
+
+    const { start, end } = findLoopMarkers(container, markerId)
+    if (!start || !end) return
+
+    // --- First run: adopt / hydrate SSR-rendered item anchors ---
+    if (!hydrated) {
+      hydrated = true
+      const existing = findItemAnchors(start, end)
+      if (existing.length > 0 && scopes.size === 0) {
+        for (let i = 0; i < existing.length && i < items.length; i++) {
+          const item = items[i]
+          const key = getKey ? getKey(item, i) : String(i)
+          scopes.set(key, createAnchorScope(item, i, key, renderItem, existing[i]))
+        }
+        // SSR rendered fewer items than the current array — create the rest.
+        for (let i = existing.length; i < items.length; i++) {
+          const item = items[i]
+          const key = getKey ? getKey(item, i) : String(i)
+          const scope = createAnchorScope(item, i, key, renderItem)
+          scopes.set(key, scope)
+          placeAnchorScope(scope, container, end, end)
+        }
+        // SSR rendered more items than the current array — drop the extras.
+        for (let i = items.length; i < existing.length; i++) {
+          for (const node of collectAnchorRange(existing[i], end)) {
+            node.parentNode?.removeChild(node)
+          }
+        }
+        return
+      }
+    }
+
+    // --- Key-based diff ---
+    const newKeys = new Set<string>()
+    const warnedKeys = new Set<string>()
+    const desiredOrder: AnchorScope<T>[] = []
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const key = getKey ? getKey(item, i) : String(i)
+      if (newKeys.has(key) && !warnedKeys.has(key)) {
+        warnedKeys.add(key)
+        console.warn(
+          `[BarefootJS] mapArrayAnchored: duplicate key "${key}" — items with this key collapse to a ` +
+            `single DOM scope, so only the last one renders. Use a per-item identifier (e.g. \`key={item.id}\`).`,
+        )
+      }
+      newKeys.add(key)
+
+      const existing = scopes.get(key)
+      if (existing) {
+        existing.setItem(item)
+        desiredOrder.push(existing)
+      } else {
+        const scope = createAnchorScope(item, i, key, renderItem)
+        scopes.set(key, scope)
+        desiredOrder.push(scope)
+      }
+    }
+
+    // Remove items no longer present.
+    for (const [key, scope] of scopes) {
+      if (!newKeys.has(key)) {
+        scope.dispose()
+        removeAnchorScope(scope, end)
+        scopes.delete(key)
+      }
+    }
+
+    // Reconcile DOM order. Comparing anchors (not elements) is correct even
+    // for empty items, which contribute only their anchor to the range.
+    let inOrder = true
+    const domAnchors = findItemAnchors(start, end)
+    if (domAnchors.length !== desiredOrder.length) {
+      inOrder = false
+    } else {
+      for (let i = 0; i < desiredOrder.length; i++) {
+        if (domAnchors[i] !== desiredOrder[i].anchor) { inOrder = false; break }
+      }
+    }
+    if (!inOrder) {
+      for (const scope of desiredOrder) {
+        placeAnchorScope(scope, container, end, end)
       }
     }
   })
