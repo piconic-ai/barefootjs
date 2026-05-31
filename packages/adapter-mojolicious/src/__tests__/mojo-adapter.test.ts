@@ -1166,3 +1166,56 @@ export function C() {
     }
   })
 })
+
+// =============================================================================
+// #1682: parse-first expression lowering regressions
+// =============================================================================
+// The parse-first refactor routes every supported expression through the
+// AST emitter. These pin the four behaviours the Copilot review surfaced
+// so they can't silently regress.
+describe('MojoAdapter - #1682 parse-first lowering', () => {
+  function gen(inner: string) {
+    const adapter = new MojoAdapter()
+    const out = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+export function C() {
+  const [role, setRole] = createSignal("admin")
+  const [count, setCount] = createSignal(1)
+  const [obj, setObj] = createSignal({ a: 1 })
+  const [it, setIt] = createSignal("x")
+  return <div>{${inner}}</div>
+}
+`, adapter)
+    return { template: out.template ?? '', errors: adapter.errors ?? [] }
+  }
+
+  test('string === lowers to Perl eq with the literal on EITHER operand', () => {
+    // Reversed literal (`"admin" === role()`) must still use string `eq`,
+    // not numeric `==` (which coerces both sides to 0 in Perl).
+    const { template } = gen('"admin" === role() ? "A" : "B"')
+    expect(template).toContain("'admin' eq $role")
+    expect(template).not.toContain("'admin' ==")
+    expect(template).not.toContain("== 'admin'")
+  })
+
+  test('template literal with a complex expr lowers to Perl concatenation', () => {
+    // Double-quote interpolation would leave `+ 1` unevaluated; concat
+    // (with parens for precedence) evaluates the arithmetic.
+    const { template } = gen('`n=${count() + 1}`')
+    expect(template).toContain('"n=" . ($count + 1)')
+  })
+
+  test('static template-literal text escapes Perl $ and @ sigils', () => {
+    const { template } = gen('`Price: $${it()} @user`')
+    expect(template).toContain('\\$')
+    expect(template).toContain('\\@user')
+  })
+
+  test('wrong-arity templatePrimitive records BF101 and emits no hash-deref', () => {
+    const { template, errors } = gen('JSON.stringify(obj(), null)')
+    expect(errors.some(e => e.code === 'BF101')).toBe(true)
+    // The invalid `$JSON->{stringify}` hash-deref must NOT leak out.
+    expect(template).not.toContain('$JSON->{stringify}')
+  })
+})
