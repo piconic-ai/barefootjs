@@ -21,6 +21,12 @@ export interface RenderOptions {
   /** Additional component files (filename → source) */
   components?: Record<string, string>
   /**
+   * Pre-compiled child SSR modules (import specifier → absolute module
+   * path) — #1467 Phase 2a. Consumed by the Hono render to re-anchor
+   * child imports to committed modules; other adapters ignore it.
+   */
+  componentModules?: Record<string, string>
+  /**
    * Explicit component name to render when the source declares multiple
    * exports (e.g. `ReactiveProps.tsx` defines both `ReactiveProps` and
    * `PropsReactivityComparison`). Adapters that consume this MUST fall
@@ -469,6 +475,7 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
             adapter,
             props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
             components: fixture.components,
+            componentModules: fixture.componentModules,
             componentName: fixture.componentName,
           })
         } catch (err) {
@@ -491,6 +498,7 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
             // call above (see comment there).
             props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
             components: fixture.components,
+            componentModules: fixture.componentModules,
             componentName: fixture.componentName,
           })
 

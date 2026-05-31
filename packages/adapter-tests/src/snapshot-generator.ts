@@ -22,7 +22,9 @@ import {
   resolveSiblingBasenames,
   resolveSiblingComponents,
   sharedFixtureInstanceId,
+  siblingImportKey,
   sourceFileBasename,
+  uiChildModulePath,
   type FixtureSourceRoot,
   type SharedFixtureSpec,
 } from '../fixtures/_helpers'
@@ -70,6 +72,41 @@ async function withSeededMathRandom<T>(seed: number, fn: () => Promise<T>): Prom
   }
 }
 
+/**
+ * Pre-compile a UI fixture's siblings to committed, export-intact SSR
+ * modules (#1467 Phase 2a) and return the import-specifier → path map
+ * the Hono render re-anchors to. Writing the export-intact marked
+ * template (with a jsx pragma) as a real module is what lets SSR load
+ * children through the module system instead of inlining + stripping
+ * their exports. Deterministic: the marked template is a pure function
+ * of the child source (the `Math.random()` scope-id fallback lives in
+ * the emitted string, evaluated only at render time).
+ */
+async function writeUiChildModules(
+  spec: SharedFixtureSpec,
+): Promise<Record<string, string> | undefined> {
+  const root = fixtureSourceRoot(spec)
+  if (root !== 'ui') return undefined
+  const bases = resolveSiblingBasenames(spec)
+  if (bases.length === 0) return undefined
+
+  const map: Record<string, string> = {}
+  for (const base of bases) {
+    const childSource = await Bun.file(componentPath(root, base)).text()
+    const compiled = compileJSX(childSource, `${base}.tsx`, { adapter: new HonoAdapter() })
+    const tmpl = compiled.files.find(f => f.type === 'markedTemplate')
+    if (!tmpl) {
+      const errs = compiled.errors.map(e => `${e.severity}: ${e.message}`).join('\n')
+      throw new Error(`No marked template for sibling ${base}.tsx:\n${errs}`)
+    }
+    const moduleContent = `/** @jsxImportSource hono/jsx */\n${tmpl.content.trimEnd()}\n`
+    const modPath = uiChildModulePath(spec.id, base)
+    writeFileSync(modPath, moduleContent)
+    map[siblingImportKey('ui', base)] = modPath
+  }
+  return map
+}
+
 async function compileClientJs(root: FixtureSourceRoot, basename: string): Promise<string> {
   const source = await Bun.file(componentPath(root, basename)).text()
   const compiled = compileJSX(source, `${basename}.tsx`, { adapter: new HonoAdapter() })
@@ -95,13 +132,17 @@ export async function generateSharedComponentSnapshot(
   // canonicalise.
   const ssrProps = { ...spec.props, __instanceId: sharedFixtureInstanceId(spec) }
 
-  // SSR-side child injection. When the parent's template invokes child
-  // components synchronously (no `/* @client */` deferral), the temp file
-  // renderHonoComponent writes can't resolve their relative imports — pass
-  // each sibling's source through `components` (keyed by the parent's
-  // import specifier) so the helper inlines them. For `ui` fixtures the
-  // sibling set is auto-inferred from `../<name>` imports.
+  // SSR-side child handling.
+  //   - Shared fixtures: pass each sibling's source through `components`
+  //     (keyed by the parent's import specifier) so renderHonoComponent
+  //     inlines them.
+  //   - UI fixtures (#1467 Phase 2a): pre-write each sibling as a
+  //     committed, export-intact SSR module and pass `componentModules`
+  //     so the parent's `../<child>` import is re-anchored to a real
+  //     module — no export stripping. The sibling set is auto-inferred
+  //     from `../<name>` imports.
   const components = resolveSiblingComponents(spec)
+  const componentModules = await writeUiChildModules(spec)
 
   const ssrHtml = await withSeededMathRandom(seedFromId(spec.id), () =>
     renderHonoComponent({
@@ -113,6 +154,7 @@ export async function generateSharedComponentSnapshot(
       // can otherwise render the wrong component.
       componentName: spec.componentName,
       components,
+      componentModules,
     }),
   )
 

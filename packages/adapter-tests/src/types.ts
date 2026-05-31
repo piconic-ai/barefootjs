@@ -76,6 +76,16 @@ export interface JSXFixture {
   /** Additional component files available for import (filename → source) */
   components?: Record<string, string>
   /**
+   * Pre-compiled child SSR modules (import specifier → absolute module
+   * path) for the Hono render — #1467 Phase 2a. Set for `site/ui`
+   * fixtures: the parent's `../<child>` import is re-anchored to a
+   * committed, export-intact marked-template module so SSR loads it as a
+   * real module instead of inlining + stripping the child's exports.
+   * Takes precedence over `components` for the same key; `components`
+   * still feeds the CSR harness (child client JS).
+   */
+  componentModules?: Record<string, string>
+  /**
    * Explicit component to render when `source` declares multiple
    * exports. Omitted for single-export fixtures — adapters fall back
    * to the first function-valued export, which in Bun is alphabetical
@@ -134,6 +144,7 @@ export function createFixture(input: {
   description: string
   source: string
   components?: Record<string, string>
+  componentModules?: Record<string, string>
   componentName?: string
   props?: Record<string, unknown>
   expectedHtml?: string

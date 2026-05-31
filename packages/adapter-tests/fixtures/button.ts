@@ -6,8 +6,11 @@
  *   - `defineUiFixture` loads `ui/components/ui/button/index.tsx`
  *     (the `<name>/index.tsx` layout, not the flat shared one).
  *   - The sibling `Slot` dependency is auto-inferred from Button's
- *     `import { Slot } from '../slot'` and inlined for both SSR and the
- *     combined client JS bundle (`@bf-child:Slot` resolution).
+ *     `import { Slot } from '../slot'`. For SSR it is pre-compiled to a
+ *     committed, export-intact module (`button.slot.ssr.tsx`) that the
+ *     Hono render loads as a real module — no export stripping (#1467
+ *     Phase 2a). For the client bundle it is combined via the
+ *     `@bf-child:Slot` placeholder.
  *   - The `Record<ButtonVariant, string>[variant]` /
  *     `Record<ButtonSize, string>[size]` class composition is baked into
  *     the frozen HTML — the compiled template evaluates the indexed

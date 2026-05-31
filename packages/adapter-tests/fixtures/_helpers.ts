@@ -133,8 +133,39 @@ export function componentSourcePath(spec: SharedFixtureSpec): string {
  * Shared: `./<name>.tsx` (matches `import Child from './Child'`). UI:
  * `../<name>` (matches `import { Slot } from '../slot'`).
  */
-function siblingImportKey(root: FixtureSourceRoot, basename: string): string {
+export function siblingImportKey(root: FixtureSourceRoot, basename: string): string {
   return root === 'ui' ? `../${basename}` : `./${basename}.tsx`
+}
+
+/**
+ * Committed pre-compiled SSR module for a UI fixture's sibling (#1467
+ * Phase 2a). The snapshot generator writes each sibling's export-intact
+ * marked template here; `renderHonoComponent` re-anchors the parent's
+ * `../<child>` import to this path and loads it as a real module, so SSR
+ * never has to strip the child's exports. Co-located with the other
+ * `<id>.*` snapshot artifacts.
+ */
+export function uiChildModulePath(id: string, basename: string): string {
+  return resolve(SNAPSHOT_DIR, `${id}.${basename}.ssr.tsx`)
+}
+
+/**
+ * Map of import specifier → committed pre-compiled module path for a UI
+ * fixture's siblings, or `undefined` when not a UI fixture / no siblings
+ * / the modules haven't been generated yet. Existence-tolerant like the
+ * `expectedHtml` read: pre-snapshot the fixture simply has no module map
+ * (and the runner skips it for lack of `expectedHtml` anyway).
+ */
+export function resolveSiblingModuleMap(
+  spec: SharedFixtureSpec,
+): Record<string, string> | undefined {
+  if (fixtureSourceRoot(spec) !== 'ui') return undefined
+  const out: Record<string, string> = {}
+  for (const base of resolveSiblingBasenames(spec)) {
+    const modPath = uiChildModulePath(spec.id, base)
+    if (existsSync(modPath)) out[siblingImportKey('ui', base)] = modPath
+  }
+  return Object.keys(out).length > 0 ? out : undefined
 }
 
 // `import { X } from '../<name>'` — value imports of a single-segment
@@ -217,16 +248,22 @@ function defineFixture(spec: SharedFixtureSpec): JSXFixture {
     ...spec.props,
     __instanceId: sharedFixtureInstanceId(spec),
   }
-  // Sibling sources keyed by their parent's import specifier so the
-  // conformance runner's import-strip filter recognises the line and
-  // inlines the child for SSR. Without this, the temp file the runner
-  // writes can't resolve relative imports outside its dir.
+  // Sibling sources keyed by their parent's import specifier. Used by
+  // the CSR harness (child client JS) and by the inline SSR path for
+  // shared fixtures. For UI fixtures the Hono SSR render prefers
+  // `componentModules` below (real pre-compiled modules), so `components`
+  // there only feeds CSR.
   const components = resolveSiblingComponents(spec)
+  // UI fixtures (#1467 Phase 2a): re-anchor the parent's `../<child>`
+  // imports to committed, export-intact SSR modules so the Hono render
+  // loads them as real modules instead of inlining + stripping exports.
+  const componentModules = resolveSiblingModuleMap(spec)
   return createFixture({
     id: spec.id,
     description: spec.description,
     source: readFileSync(componentSourcePath(spec), 'utf8'),
     components,
+    componentModules,
     // Explicit pin — `Object.keys(mod)` iterates alphabetically for
     // dynamically-imported modules in Bun, so multi-export sources
     // (e.g. `ReactiveProps.tsx`) would render the wrong sibling
