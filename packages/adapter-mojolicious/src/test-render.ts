@@ -501,7 +501,7 @@ function buildPerlProps(
  * Evaluate a signal initializer expression using provided props.
  * Handles patterns like: props.initial ?? 0, props.value, literal values.
  */
-function evaluateSignalInit(
+export function evaluateSignalInit(
   expr: string,
   props?: Record<string, unknown>,
 ): unknown {
@@ -534,6 +534,29 @@ function parseLiteral(expr: string): unknown {
   if (expr === 'true') return true
   if (expr === 'false') return false
   if (expr === '[]') return []
+
+  // Non-empty array literal (`[{ id: 'a' }, { id: 'b' }]`, `['x', 'y']`).
+  // Each element is parsed recursively; if any element can't be parsed
+  // (identifier, call, member access, …) the whole array bails to null so
+  // the harness falls back to its `undef` behaviour. Mirrors the object-
+  // literal branch below. Needed so signal initial values that are inline
+  // object/scalar arrays seed the Mojo SSR stash (e.g. the whole-item loop
+  // conditional fixture, whose `items` is `[{ id: 'a' }, …]`).
+  {
+    const t = expr.trim()
+    if (t.startsWith('[') && t.endsWith(']')) {
+      const inner = t.slice(1, -1).trim()
+      if (!inner) return []
+      const out: unknown[] = []
+      for (const seg of splitTopLevelCommas(inner)) {
+        if (!seg.trim()) continue
+        const parsed = parseLiteral(seg.trim())
+        if (parsed === null && seg.trim() !== 'null') return null
+        out.push(parsed)
+      }
+      return out
+    }
+  }
   // String literal — require matching opener/closer (the previous
   // regex `^['"]…['"]$` accepted mixed quotes like `'foo"`) and
   // unescape JS-style escape sequences so `'a\\'b'` round-trips as
@@ -559,42 +582,7 @@ function parseLiteral(expr: string): unknown {
     const inner = trimmed.slice(1, -1).trim()
     if (!inner) return {}
     const obj: Record<string, unknown> = {}
-    // Split on commas at depth 0; values may contain `:` so use a
-    // simple state machine instead of a regex.
-    const pairs: string[] = []
-    let depth = 0
-    let start = 0
-    let quote: string | null = null
-    for (let i = 0; i < inner.length; i++) {
-      const c = inner[i]
-      if (quote) {
-        // Quote-termination check: count consecutive backslashes
-        // immediately before the current position. An EVEN count
-        // means each `\\` pair represents a literal backslash and
-        // the quote is unescaped, closing the string. An ODD
-        // count means the trailing `\` escapes the quote, so the
-        // string keeps going. The naive `inner[i-1] !== '\\'`
-        // check mis-classifies even runs (`\\"`) as escaped
-        // (#1413 review).
-        if (c === quote) {
-          let backslashes = 0
-          for (let j = i - 1; j >= 0 && inner[j] === '\\'; j--) backslashes++
-          if (backslashes % 2 === 0) quote = null
-        }
-        continue
-      }
-      if (c === '"' || c === "'") {
-        quote = c
-        continue
-      }
-      if (c === '{' || c === '[') depth++
-      else if (c === '}' || c === ']') depth--
-      else if (c === ',' && depth === 0) {
-        pairs.push(inner.slice(start, i))
-        start = i + 1
-      }
-    }
-    pairs.push(inner.slice(start))
+    const pairs = splitTopLevelCommas(inner)
     for (const pair of pairs) {
       // Skip empty segments — typically a trailing comma's tail
       // (#1413 review).
@@ -615,6 +603,43 @@ function parseLiteral(expr: string): unknown {
     return obj
   }
   return null
+}
+
+/**
+ * Split a comma-separated literal body (object-pair list or array element
+ * list) on top-level commas only — commas nested inside braces, brackets, or
+ * string literals don't split. Backslash-escaped quotes inside strings are
+ * honoured (an odd run of backslashes before a quote keeps the string open).
+ * Shared by the object- and array-literal branches of {@link parseLiteral}.
+ */
+function splitTopLevelCommas(inner: string): string[] {
+  const segments: string[] = []
+  let depth = 0
+  let start = 0
+  let quote: string | null = null
+  for (let i = 0; i < inner.length; i++) {
+    const c = inner[i]
+    if (quote) {
+      if (c === quote) {
+        let backslashes = 0
+        for (let j = i - 1; j >= 0 && inner[j] === '\\'; j--) backslashes++
+        if (backslashes % 2 === 0) quote = null
+      }
+      continue
+    }
+    if (c === '"' || c === "'") {
+      quote = c
+      continue
+    }
+    if (c === '{' || c === '[') depth++
+    else if (c === '}' || c === ']') depth--
+    else if (c === ',' && depth === 0) {
+      segments.push(inner.slice(start, i))
+      start = i + 1
+    }
+  }
+  segments.push(inner.slice(start))
+  return segments
 }
 
 /**

@@ -22,6 +22,7 @@ import type {
   IRTemplatePart,
   AttrValue,
   CompilerError,
+  TypeInfo,
   TemplatePrimitiveRegistry,
 } from '@barefootjs/jsx'
 import {
@@ -39,10 +40,8 @@ import {
   isBooleanAttr,
   parseExpression,
   isSupported,
-  containsHigherOrder,
   exprToString,
   identifierPath,
-  stringifyParsedExpr,
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
@@ -85,19 +84,6 @@ const MOJO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'Math.ceil':      { arity: 1, emit: (args) => `bf->ceil(${args[0]})` },
   'Math.round':     { arity: 1, emit: (args) => `bf->round(${args[0]})` },
 }
-
-/**
- * Cheap substring pre-check: skip the (expensive) `parseExpression`
- * call when no primitive callee path appears in the source string.
- * The common case is "no primitive present"; building the regex
- * once from the registry keys keeps the gate in sync as new
- * primitives land.
- */
-const PRIMITIVE_SUBSTRING_RE = new RegExp(
-  Object.keys(MOJO_TEMPLATE_PRIMITIVES)
-    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|')
-)
 
 /**
  * Module-scope `templatePrimitives` map derived once from the spec
@@ -158,21 +144,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private errors: CompilerError[] = []
   private inLoop: boolean = false
   /**
-   * Re-entry guard for `convertHigherOrderExpr` (#1421).
-   *
-   * `MojoTopLevelEmitter.unsupported` falls back to the regex pipeline
-   * via `_convertExpressionToPerlPublic`, which re-detects the
-   * `.filter|every|some` short-circuit and re-enters
-   * `convertHigherOrderExpr` with the same raw text. When the parser
-   * carries the full original expression down to every nested
-   * `unsupported` node (e.g. an array-literal callee that the AST
-   * can't classify), the cycle has no terminator and the JS stack
-   * blows. The guard records the expression on entry, emits BF101 on
-   * second visit, and bails out — so the user sees an actionable
-   * diagnostic instead of `RangeError: Maximum call stack size`.
-   */
-  private higherOrderInFlight: Set<string> = new Set()
-  /**
    * SolidJS-style props identifier (`function(props: P)`) and the
    * analyzer-extracted prop names. Stashed at `generate()` entry so
    * the per-attribute `emitSpread` callback can build a propsObject
@@ -181,6 +152,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   private propsObjectName: string | null = null
   private propsParams: { name: string }[] = []
+  /**
+   * Names (signal getters + props) whose value is a string, so `===`/`!==`
+   * against them lowers to Perl `eq`/`ne` rather than numeric `==`/`!=`.
+   * Perl's numeric `==` coerces non-numeric strings to 0, making `"b" == "a"`
+   * true — selecting the string operator from the operand's type avoids that.
+   */
+  private stringValueNames: Set<string> = new Set()
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -194,8 +172,21 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.componentName = ir.metadata.componentName
     this.propsObjectName = ir.metadata.propsObjectName ?? null
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    // Record string-typed signals and props so equality comparisons against
+    // them lower to `eq`/`ne` (#1672). A signal is string-typed when its
+    // inferred type is `string` (the analyzer infers this from a string-literal
+    // initial value) or, defensively, when its initial value is a bare string
+    // literal; a prop when its annotated type is `string`.
+    this.stringValueNames = new Set<string>()
+    for (const s of ir.metadata.signals) {
+      if (isStringTypeInfo(s.type) || isBareStringLiteral(s.initialValue)) {
+        this.stringValueNames.add(s.getter)
+      }
+    }
+    for (const p of ir.metadata.propsParams) {
+      if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
+    }
     this.errors = []
-    this.higherOrderInFlight = new Set()
     this.childrenCaptureCounter = 0
 
     // Mirror of the Go adapter's BF103 check (#1266): when a child
@@ -991,7 +982,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // those would yield runtime errors in Perl, which is the user's
     // signal to refactor. Wholesale refusal would also block the
     // canonical case the issue exists to enable.
-    return emitParsedExpr(expr, new MojoFilterEmitter(param, localVarMap))
+    return emitParsedExpr(expr, new MojoFilterEmitter(param, localVarMap, n => this._isStringValueName(n)))
   }
 
   /**
@@ -1202,299 +1193,41 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
 
 
   private convertExpressionToPerl(expr: string): string {
-    // Handle higher-order array methods via ParsedExpr AST.
-    // `filter|every|some` lower to Embedded Perl (grep). The rest
-    // (`reduce|reduceRight|forEach|flatMap|flat`) can't lower to EP
-    // at all — route them through the same AST path so
-    // `convertHigherOrderExpr`'s `isSupported` gate emits BF101
-    // instead of falling into the regex pipeline that mangles
-    // `$items->{reduce}->{...}` etc.
-    // `findLast|findLastIndex` are caught by the explicit Mojo-gap
-    // refusal below (alongside `find|findIndex`).
-    if (/\.\s*(?:filter|every|some|reduce|reduceRight|forEach|flatMap|flat)\s*\(/.test(expr)) {
-      return this.convertHigherOrderExpr(expr)
-    }
+    // Parse-first lowering — parity with the Go adapter's
+    // `convertExpressionToGo`. Parse the JS expression once, gate it on
+    // the shared `isSupported`, and render every supported shape through
+    // the AST emitter (`renderParsedExprToPerl`). The parser's
+    // `UNSUPPORTED_METHODS` is the single source of truth for what's
+    // refused — there are no per-method routing regexes and no regex
+    // string-rewriting pipeline. Unsupported shapes (un-lowered methods,
+    // unparseable hand-written JS, etc.) surface as BF101 with the
+    // `/* @client */` escape hatch instead of being silently mangled.
+    const trimmed = expr.trim()
+    if (trimmed === '') return "''"
 
-    // #1448 Tier A — JS Array / String methods that the regex
-    // pipeline silently mangles into `${obj}->{<method>}(...)` hash
-    // lookups that fail at render time. Route them through the same
-    // AST path so `isSupported`'s `UNSUPPORTED_METHODS` gate fires
-    // BF101 with the offending expression, matching Go's behaviour.
-    // Each method name drops off the regex as its lowering lands
-    // (the regex stays in sync with `UNSUPPORTED_METHODS` —
-    // `convertHigherOrderExpr` intercepts via `isSupported`).
-    if (/\.\s*(?:includes|indexOf|lastIndexOf|at|concat|slice|reverse|toReversed|toLowerCase|toUpperCase|trim)\s*\(/.test(expr)) {
-      return this.convertHigherOrderExpr(expr)
-    }
-
-    // #1443/#1448: `.join(sep)` is lifted by the parser to the
-    // `array-method` IR kind, and `renderArrayMethod`'s `case 'join'`
-    // already emits the correct `join(sep, @{arr})`. Route the
-    // text-expression form through the same AST path so the
-    // regex pipeline below doesn't mangle it into a
-    // `${arr}->{join}(sep)` Perl hash-lookup that errors at render.
-    if (/\.\s*join\s*\(/.test(expr)) {
-      return this.convertHigherOrderExpr(expr)
-    }
-
-    // #1448 catalog — Mojo-specific gap: `.find` / `.findIndex` /
-    // `.findLast` / `.findLastIndex` have no AST lowering yet (no
-    // `array-method` IR variant, no emitter), and the regex pipeline
-    // silently mangles them into `${obj}->{find}(...)` hash lookups.
-    // Emit BF101 here until either a parser-level `array-method`
-    // extension or a `convertHigherOrderExpr` carve-out lands.
-    const mojoOnlyMatch = /\.\s*(?<method>find|findIndex|findLast|findLastIndex)\s*\(/.exec(expr)
-    if (mojoOnlyMatch) {
-      const methodName = mojoOnlyMatch.groups!.method!
+    const parsed = parseExpression(trimmed)
+    const support = isSupported(parsed)
+    if (!support.supported) {
       this.errors.push({
         code: 'BF101',
         severity: 'error',
-        message: `Mojo adapter has not lowered Array.prototype.${methodName} yet: ${expr.trim()}`,
+        message: `Expression not supported: ${trimmed}`,
         loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
-          message: 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl',
+          message: support.reason
+            ? `${support.reason}\n\nOptions:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl`
+            : 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl',
         },
       })
-      return "''"
-    }
-
-    // #1448 follow-up — generic unsupported-method gate. Any member
-    // method call (`.foo(...)`) that reached here without matching one
-    // of the supported routes above is checked against the parser's
-    // `isSupported`. Methods listed in the parser's `UNSUPPORTED_METHODS`
-    // (e.g. `String.prototype.startsWith` / `.split` / `.replace`, and
-    // any future un-lowered method) report unsupported and are refused
-    // with BF101 here, instead of being mangled by the regex pipeline
-    // below into a `$obj->{method}(...)` hash-deref that dies at render
-    // ("Can't use string (...) as a HASH ref") with no build diagnostic.
-    //
-    // Driving this off `isSupported` rather than a hand-maintained
-    // method-name regex keeps the parser's `UNSUPPORTED_METHODS` the
-    // single source of truth (matching the Go adapter's
-    // `convertExpressionToGo`, which has no such list): new unsupported
-    // methods need no edit here, and a method that gains a lowering
-    // stops being refused the moment the parser recognises it.
-    // Supported calls — templatePrimitives like `JSON.stringify(x)` /
-    // `Math.floor(x)`, and any expression whose only method-name match
-    // is inside a string literal (`name() + ".replace("`) — report
-    // supported and fall through to the normal pipeline unchanged.
-    if (/\.\s*[A-Za-z_$][\w$]*\s*\(/.test(expr)) {
-      const support = isSupported(parseExpression(expr))
-      if (!support.supported) {
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Expression not supported: ${expr.trim()}`,
-          loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message: support.reason
-              ? `${support.reason}\n\nOptions:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl`
-              : 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl',
-          },
-        })
-        return "''"
-      }
-    }
-
-    // templatePrimitives substitution (#1189): rewrite identifier-path
-    // calls like `JSON.stringify(props.config)` / `Math.floor(x)` to
-    // their Mojo helper-call form (`bf->json($config)` etc.) BEFORE
-    // the regex pipeline below runs. Using the AST avoids fighting
-    // the existing regex transforms — a registered call's args go
-    // back through `convertExpressionToPerl` recursively so prop
-    // refs / signal calls / member access in the args still get the
-    // standard transforms.
-    expr = this.rewriteTemplatePrimitives(expr)
-
-    // Signal getter calls: count() → $count
-    let result = expr.replace(/\b([a-z_]\w*)\(\)/g, (_, name) => `$${name}`)
-
-    // Props access: props.xxx → $xxx
-    result = result.replace(/\bprops\.(\w+)/g, (_, prop) => `$${prop}`)
-
-    // Bare identifier property access: item.field → $item->{field}
-    // Must run before $-prefixed property access to catch bare identifiers
-    // Use negative lookbehind to skip $-prefixed variables (avoid $$var double-prefix)
-    result = result.replace(/(?<!\$)\b([a-z_]\w*)\.(\w+)/g, (match, obj, field) => {
-      if (match.startsWith('$')) return match
-      return `$${obj}->{${field}}`
-    })
-
-    // $-prefixed property access: $item.field → $item->{field}
-    result = result.replace(/\$(\w+)\.(\w+)/g, (_, obj, field) => `$${obj}->{${field}}`)
-
-    // Chained property access: $item->{field}.sub → $item->{field}->{sub}
-    result = result.replace(/\}->\{(\w+)\}\.(\w+)/g, (_, f1, f2) => `}->{${f1}}->{${f2}}`)
-
-    // .length → scalar(@{...})
-    result = result.replace(/\$(\w+)->\{length\}/g, (_, arr) => `scalar(@{$${arr}})`)
-
-    // Nullish coalescing: a ?? b → a // b (Perl defined-or)
-    result = result.replace(/\?\?/g, '//')
-
-    // String comparison: expr === 'str' → expr eq 'str', expr !== 'str' → expr ne 'str'
-    result = result.replace(/\s*===\s*(['"])/g, ' eq $1')
-    result = result.replace(/\s*!==\s*(['"])/g, ' ne $1')
-    // Also handle: 'str' === expr
-    result = result.replace(/(['"])\s*===\s*/g, '$1 eq ')
-    result = result.replace(/(['"])\s*!==\s*/g, '$1 ne ')
-
-    // Numeric comparison (remaining === / !==)
-    result = result.replace(/===/g, '==')
-    result = result.replace(/!==/g, '!=')
-
-    // Logical not: !expr → !expr (works in Perl too)
-    // No conversion needed
-
-    // Template literals: `str ${expr}` → "str $expr"
-    result = result.replace(/`([^`]*)`/g, (_, content) => {
-      const perlStr = content.replace(/\$\{([^}]+)\}/g, (_: string, e: string) => `${this.convertExpressionToPerl(e)}`)
-      return `"${perlStr}"`
-    })
-
-    // Ensure top-level identifiers become variables
-    if (/^[a-z_]\w*$/i.test(result) && !result.startsWith('$')) {
-      result = `$${result}`
-    }
-
-    return result
-  }
-  /**
-   * Walk the parsed AST of `expr` and substitute each registered
-   * primitive call (e.g. `JSON.stringify(props.config)`) with its
-   * Mojo helper-call equivalent (e.g. `bf->json($config)`). All
-   * other shapes round-trip back to source text via
-   * `stringifyParsedExpr`, so the result is still a JS-shaped
-   * string that the existing regex pipeline in
-   * `convertExpressionToPerl` can finish translating.
-   *
-   * Bails out (returns the input unchanged) when:
-   *   - the expression doesn't parse cleanly,
-   *   - no primitive call is found in the AST, or
-   *   - a primitive's arity doesn't match the registered shape
-   *     (BF101 is recorded so the user sees the diagnostic).
-   *
-   * Identifier-path-only matching (#1187 R1) — same constraint the
-   * Go adapter applies in #1188.
-   */
-  private rewriteTemplatePrimitives(expr: string): string {
-    // Common case: no registered primitive substring — skip the
-    // TS parser entirely. `parseExpression` invokes
-    // `ts.createSourceFile`, which is the dominant compile-hot-path
-    // cost added by this PR.
-    if (!PRIMITIVE_SUBSTRING_RE.test(expr)) return expr
-
-    const parsed = parseExpression(expr)
-    if (parsed.kind === 'unsupported') return expr
-
-    let mutated = false
-    const walk = (n: ParsedExpr): ParsedExpr => {
-      if (n.kind === 'call') {
-        const path = identifierPath(n.callee)
-        const spec = path ? MOJO_TEMPLATE_PRIMITIVES[path] : undefined
-        if (path && spec) {
-          if (n.args.length !== spec.arity) {
-            this.errors.push({
-              code: 'BF101',
-              severity: 'error',
-              message: `templatePrimitive '${path}' expects ${spec.arity} arg(s), got ${n.args.length}`,
-              loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-              suggestion: {
-                message: `Call '${path}' with exactly ${spec.arity} argument(s), or wrap the JSX expression in /* @client */ to defer evaluation.`,
-              },
-            })
-            return { kind: 'call', callee: walk(n.callee), args: n.args.map(walk) }
-          }
-          // Render each arg through the AST-aware sub-pipeline:
-          // walk for nested primitive substitution, then pass the
-          // resulting AST node directly to convertExpressionToPerl
-          // via stringification. The substring pre-check above
-          // guards against re-parsing strings that don't carry a
-          // primitive, so the recursive cost stays bounded.
-          const renderedArgs = n.args.map(a => this.convertExpressionToPerl(stringifyParsedExpr(walk(a))))
-          mutated = true
-          return { kind: 'identifier', name: spec.emit(renderedArgs) }
-        }
-      }
-      switch (n.kind) {
-        case 'call':
-          return { kind: 'call', callee: walk(n.callee), args: n.args.map(walk) }
-        case 'member':
-          return { kind: 'member', object: walk(n.object), property: n.property, computed: n.computed }
-        case 'binary':
-          return { kind: 'binary', op: n.op, left: walk(n.left), right: walk(n.right) }
-        case 'unary':
-          return { kind: 'unary', op: n.op, argument: walk(n.argument) }
-        case 'logical':
-          return { kind: 'logical', op: n.op, left: walk(n.left), right: walk(n.right) }
-        case 'conditional':
-          return { kind: 'conditional', test: walk(n.test), consequent: walk(n.consequent), alternate: walk(n.alternate) }
-        default:
-          return n
-      }
-    }
-
-    const transformed = walk(parsed)
-    if (!mutated) return expr
-    return stringifyParsedExpr(transformed)
-  }
-
-  /**
-   * Convert expressions containing higher-order array methods to Perl.
-   * Parses the full expression as AST and renders recursively.
-   *
-   * Handles patterns like:
-   * - todos().filter(t => !t.done).length → scalar(grep { !$_->{done} } @{$todos})
-   * - todos().every(t => t.done) → !(grep { !$_->{done} } @{$todos})
-   * - todos().filter(t => t.done).length > 0 → scalar(grep { $_->{done} } @{$todos}) > 0
-   */
-  private convertHigherOrderExpr(expr: string): string {
-    if (this.higherOrderInFlight.has(expr)) {
-      this.errors.push({
-        code: 'BF101',
-        severity: 'error',
-        message: `Cannot lower higher-order chain to Embedded Perl: ${expr.trim()}`,
-        loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-        suggestion: {
-          message: "The Mojo adapter cannot lower this `.filter()` / `.every()` / `.some()` chain — typically because the array source is a JS array literal or a non-signal expression the AST classifier doesn't recognise. Move the expression into a `'use client'` component (so hydration computes it client-side), or rewrite it to operate on a signal getter or a prop directly.",
-        },
-      })
-      // Return a Perl empty-string literal — safe in every context the
+      // Safe Perl empty-string literal — valid in every context the
       // result might land in (`<%= '' %>`, `% if ('') {`, attribute
-      // interpolation, template-literal substitution). Returning a raw
-      // empty string here would produce `<%= %>`, which Embedded Perl
-      // rejects as a syntax error and would mask the BF101 diagnostic
-      // behind an opaque template-compilation failure.
+      // interpolation, template-literal substitution).
       return "''"
     }
-    this.higherOrderInFlight.add(expr)
-    try {
-      const parsed = parseExpression(expr)
-      // Parity gate with the Go adapter's `convertExpressionToGo`: if the
-      // parsed expression isn't supported (e.g. `.reduce()` / `.forEach()`,
-      // destructured filter param, function-keyword callback) we cannot
-      // lower it to Embedded Perl. Emit BF101 and return a safe Perl
-      // empty-string literal so downstream concatenation doesn't blow up.
-      const support = isSupported(parsed)
-      if (!support.supported) {
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Cannot lower higher-order chain to Embedded Perl: ${expr.trim()}`,
-          loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message: support.reason
-              ? `${support.reason}\n\nOptions:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl`
-              : 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl',
-          },
-        })
-        return "''"
-      }
-      return this.renderParsedExprToPerl(parsed)
-    } finally {
-      this.higherOrderInFlight.delete(expr)
-    }
+
+    return this.renderParsedExprToPerl(parsed)
   }
+
 
   /**
    * Render a full ParsedExpr tree to Perl for top-level (non-filter)
@@ -1506,9 +1239,29 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     return emitParsedExpr(expr, new MojoTopLevelEmitter(this))
   }
 
-  /** Internal hook exposed to the top-level emitter for unsupported nodes. */
-  _convertExpressionToPerlPublic(raw: string): string {
-    return this.convertExpressionToPerl(raw)
+  /**
+   * Hook for the ParsedExpr emitters to record a BF101 while walking
+   * the AST — used for Mojo-specific gaps (`.find` / `.findIndex` have
+   * no Embedded-Perl lowering) and templatePrimitive arity errors.
+   */
+  /** Whether `name` (a signal getter or prop) holds a string value, so an
+   *  equality comparison against it should use Perl `eq`/`ne` (#1672). */
+  _isStringValueName(name: string): boolean {
+    return this.stringValueNames.has(name)
+  }
+
+  _recordExprBF101(message: string, reason?: string): void {
+    this.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message,
+      loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+      suggestion: {
+        message: reason
+          ? `${reason}\n\nOptions:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl`
+          : 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Pre-compute the value in Perl',
+      },
+    })
   }
 
   /** Internal hook for higher-order: predicate body re-uses the filter emitter. */
@@ -1692,6 +1445,38 @@ function renderSortMethod(recv: string, c: SortComparator): string {
   return `bf->sort(${recv}, { keys => [${keyHashes.join(', ')}] })`
 }
 
+/** True when `type` is the `string` primitive. */
+function isStringTypeInfo(type: TypeInfo | undefined): boolean {
+  return type?.kind === 'primitive' && type.primitive === 'string'
+}
+
+/** True when `initialValue` is a bare string-literal expression (`'x'` /
+ *  `"x"`), used as a fallback for signals whose type wasn't inferred. */
+function isBareStringLiteral(initialValue: string | undefined): boolean {
+  if (!initialValue) return false
+  const v = initialValue.trim()
+  return (v.startsWith("'") && v.endsWith("'")) || (v.startsWith('"') && v.endsWith('"'))
+}
+
+/**
+ * Whether a comparison operand is string-typed, so JS `===`/`!==` against it
+ * must lower to Perl `eq`/`ne` instead of numeric `==`/`!=` (#1672). Covers a
+ * string literal, a string-signal getter call (`sel()`), and a string prop
+ * access (`props.x`). `isStringName` reports whether a getter/prop name is
+ * known-string. Loop-element fields (`t.id`) on untyped arrays have no known
+ * type and stay undetected — a separate, narrower gap.
+ */
+function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string) => boolean): boolean {
+  if (expr.kind === 'literal' && expr.literalType === 'string') return true
+  if (expr.kind === 'call' && expr.callee.kind === 'identifier' && expr.args.length === 0) {
+    return isStringName(expr.callee.name)
+  }
+  if (expr.kind === 'member' && expr.object.kind === 'identifier' && expr.object.name === 'props') {
+    return isStringName(expr.property)
+  }
+  return false
+}
+
 /**
  * Lowering for the predicate body of a filter / every / some / find,
  * plus the same shape used by `renderBlockBodyCondition` for complex
@@ -1709,6 +1494,10 @@ class MojoFilterEmitter implements ParsedExprEmitter {
   constructor(
     private readonly param: string,
     private readonly localVarMap: Map<string, string>,
+    // Reports whether a getter/prop name is string-typed, so `===`/`!==`
+    // against it lowers to `eq`/`ne` (#1672). Defaults to "never" for callers
+    // that don't thread it through.
+    private readonly isStringName: (n: string) => boolean = () => false,
   ) {}
 
   identifier(name: string): string {
@@ -1761,10 +1550,15 @@ class MojoFilterEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = emit(left)
     const r = emit(right)
-    if ((op === '===' || op === '==') && right.kind === 'literal' && right.literalType === 'string') {
+    // String equality: `eq`/`ne` when EITHER operand is string-typed — a string
+    // literal, a string signal getter, or a string prop. Numeric `==`/`!=`
+    // would coerce both sides to 0 and match unrelated non-numeric strings (#1672).
+    const isStr = (e: ParsedExpr) => isStringTypedOperand(e, this.isStringName)
+    const stringCmp = isStr(left) || isStr(right)
+    if ((op === '===' || op === '==') && stringCmp) {
       return `${l} eq ${r}`
     }
-    if ((op === '!==' || op === '!=') && right.kind === 'literal' && right.literalType === 'string') {
+    if ((op === '!==' || op === '!=') && stringCmp) {
       return `${l} ne ${r}`
     }
     const opMap: Record<string, string> = {
@@ -1793,7 +1587,7 @@ class MojoFilterEmitter implements ParsedExprEmitter {
     // higher-order's own `param` (potentially shadowing the outer one),
     // so we spin up a nested emitter with the inner param.
     const arrayExpr = emit(object)
-    const predBody = emitParsedExpr(predicate, new MojoFilterEmitter(param, this.localVarMap))
+    const predBody = emitParsedExpr(predicate, new MojoFilterEmitter(param, this.localVarMap, this.isStringName))
     const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
     if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
     if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
@@ -1876,6 +1670,12 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+    // `props.x` flattens to the bare `$x` the Mojo SSR caller binds each
+    // prop to (props arrive as individual `my $x = ...` vars, not a
+    // `$props` hashref).
+    if (object.kind === 'identifier' && object.name === 'props') {
+      return `$${property}`
+    }
     const obj = emit(object)
     if (property === 'length') return `scalar(@{${obj}})`
     return `${obj}->{${property}}`
@@ -1885,6 +1685,28 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     // Signal getter: count() → $count
     if (callee.kind === 'identifier' && args.length === 0) {
       return `$${callee.name}`
+    }
+    // Identifier-path templatePrimitive (#1189): `JSON.stringify(x)` /
+    // `Math.floor(x)` → `bf->json($x)` / `bf->floor($x)`. Args render
+    // recursively through this same emitter so prop refs / signal calls
+    // inside them get the standard transforms. Mirrors the Go adapter's
+    // `call()` primitive dispatch. A wrong-arity call records BF101 and
+    // returns the safe `''` placeholder (never silently emits a bad call).
+    const path = identifierPath(callee)
+    const spec = path ? MOJO_TEMPLATE_PRIMITIVES[path] : undefined
+    if (path && spec) {
+      if (args.length === spec.arity) {
+        return spec.emit(args.map(emit))
+      }
+      this.adapter._recordExprBF101(
+        `templatePrimitive '${path}' expects ${spec.arity} arg(s), got ${args.length}`,
+        `Call '${path}' with exactly ${spec.arity} argument(s).`,
+      )
+      // Don't fall through to the generic `emit(callee)` below — for a
+      // member callee (`JSON.stringify`) that emits an invalid Perl
+      // hash-deref (`$JSON->{stringify}`). Return the same safe
+      // empty-string placeholder the other BF101 paths use.
+      return "''"
     }
     // Array methods (`.join` and any others added to ArrayMethod, #1443)
     // are lifted into the `array-method` IR kind at parse time, so they
@@ -1905,10 +1727,17 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = emit(left)
     const r = emit(right)
-    if ((op === '===' || op === '==') && right.kind === 'literal' && right.literalType === 'string') {
+    // String equality: `eq`/`ne` when EITHER operand is string-typed — a string
+    // literal (`role() === 'admin'`), a string signal getter (`sel()`), or a
+    // string prop (`props.x`). Falling back to numeric `==`/`!=` would make
+    // Perl coerce both sides to 0 and match unrelated non-numeric strings
+    // (`"b" == "a"` → true), so all loop items render their true branch (#1672).
+    const isStr = (e: ParsedExpr) => isStringTypedOperand(e, n => this.adapter._isStringValueName(n))
+    const stringCmp = isStr(left) || isStr(right)
+    if ((op === '===' || op === '==') && stringCmp) {
       return `${l} eq ${r}`
     }
-    if ((op === '!==' || op === '!=') && right.kind === 'literal' && right.literalType === 'string') {
+    if ((op === '!==' || op === '!=') && stringCmp) {
       return `${l} ne ${r}`
     }
     const opMap: Record<string, string> = {
@@ -1933,6 +1762,16 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     predicate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string {
+    // Mojo-specific gap: `.find` / `.findIndex` / `.findLast` /
+    // `.findLastIndex` have no Embedded-Perl lowering yet. `isSupported`
+    // accepts them (it's adapter-agnostic), so the refusal lands here
+    // rather than at the support gate. BF101 until a lowering lands.
+    if (method === 'find' || method === 'findIndex' || method === 'findLast' || method === 'findLastIndex') {
+      this.adapter._recordExprBF101(
+        `Mojo adapter has not lowered Array.prototype.${method} yet`,
+      )
+      return "''"
+    }
     const arrayExpr = emit(object)
     const predBody = this.adapter._renderPerlFilterExprPublic(predicate, param)
     const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
@@ -1978,21 +1817,53 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     return `(${emit(test)} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
-  templateLiteral(_parts: TemplatePart[]): string {
-    // Template literals don't appear at top level inside Mojo expressions
-    // — they're handled by `convertTemplateLiteralPartsToPerl` at the
-    // attribute / interpolation layer, not the expression dispatcher.
-    return ''
+  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
+    // `` `n=${count() + 1}` `` → Perl string concatenation
+    // (`"n=" . ($count + 1)`), NOT double-quote interpolation. Perl only
+    // interpolates simple `$var` reads inside `"..."`, so complex `${...}`
+    // parts — arithmetic, helper calls (`bf->json(...)`), ternaries —
+    // would render unevaluated if inlined into a quoted string.
+    //   - Static chunks are emitted as quoted literals with the sigils
+    //     that interpolate inside `"..."` (`$`/`@`) plus `"`/`\` escaped,
+    //     so literal text survives verbatim.
+    //   - Expression terms whose Perl precedence is below `.` (binary /
+    //     logical / conditional) wrap in parens so they bind before the
+    //     concatenation.
+    const terms: string[] = []
+    for (const part of parts) {
+      if (part.type === 'string') {
+        if (part.value !== '') {
+          terms.push(`"${part.value.replace(/[\\"$@]/g, m => `\\${m}`)}"`)
+        }
+      } else {
+        const rendered = emit(part.expr)
+        const needsParens =
+          part.expr.kind === 'binary' ||
+          part.expr.kind === 'logical' ||
+          part.expr.kind === 'conditional'
+        terms.push(needsParens ? `(${rendered})` : rendered)
+      }
+    }
+    if (terms.length === 0) return '""'
+    return terms.join(' . ')
   }
 
   arrowFn(_param: string, _body: ParsedExpr): string {
-    return ''
+    // A bare arrow function never stands alone at a render position (it's
+    // only meaningful as a higher-order predicate, handled above). Return
+    // the safe Perl empty-string literal `''` — consistent with the BF101
+    // / `unsupported` paths — so a stray emit can't produce a `<%= %>`
+    // syntax error.
+    return "''"
   }
 
-  unsupported(raw: string, _reason: string): string {
-    // Legacy fallback: the regex pipeline handles shapes the AST can't
-    // classify (mostly hand-written JS that pre-dates the parser).
-    return this.adapter._convertExpressionToPerlPublic(raw)
+  unsupported(_raw: string, _reason: string): string {
+    // Unreachable in the parse-first flow: `convertExpressionToPerl`
+    // gates on `isSupported` before dispatching, and `isSupported`
+    // recurses, so a top-level supported expression never contains an
+    // `unsupported` node. Return a safe Perl empty-string literal in
+    // case a future caller renders a node tree directly.
+    return "''"
   }
 }
 

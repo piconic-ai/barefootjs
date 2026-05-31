@@ -336,6 +336,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * struct literal only names fields the generated struct actually declares.
    */
   private localStructFields: Map<string, Map<string, string>> = new Map()
+  /**
+   * Synthesised array types for untyped object-array signals (signal getter →
+   * `[]SynthStruct` TypeInfo), populated during generateTypes (#1680). An
+   * untyped `createSignal([{ id: "a" }])` has no element type to bake against;
+   * we infer a struct from the literal's shape so the field can be typed and
+   * the items baked. Consulted by both the signal field-type emitter and the
+   * initial-value baker.
+   */
+  private synthStructTypes: Map<string, TypeInfo> = new Map()
 
   /** Set during type generation when any emit references
    *  `template.HTML(...)`; toggles the `"html/template"` import. */
@@ -692,6 +701,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
+    // Synthesise a struct for each untyped object-array signal (#1680) and emit
+    // it, so the signal field can be typed `[]Synth` and its inline items baked
+    // (the loop body reaches each item via struct field access). Registered in
+    // localTypeNames/localStructFields so the baker resolves the element type.
+    this.synthStructTypes = new Map<string, TypeInfo>()
+    for (const signal of ir.metadata.signals) {
+      const synth = this.synthesizeStructFromSignal(signal, componentName)
+      if (!synth) continue
+      this.localTypeNames.add(synth.name)
+      this.localStructFields.set(synth.name, new Map(synth.fields.map(f => [f.tsName, f.goName])))
+      this.synthStructTypes.set(signal.getter, {
+        kind: 'array',
+        raw: `${synth.name}[]`,
+        elementType: { kind: 'interface', raw: synth.name },
+      })
+      const goFields = synth.fields.map(
+        f => `\t${f.goName} ${f.goType} \`json:"${this.toJsonTag(f.tsName)}"\``,
+      )
+      lines.push(`// ${synth.name} is a synthesised element type for the ${signal.getter} signal.`)
+      lines.push(`type ${synth.name} struct {\n${goFields.join('\n')}\n}`)
+      lines.push('')
+    }
+
     // Find nested components (loops with childComponent)
     const nestedComponents = this.findNestedComponents(ir.root)
 
@@ -780,6 +812,123 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       })
     }
     return fields
+  }
+
+  /**
+   * Synthesise a Go struct from an untyped object-array signal's inline initial
+   * value (#1680). Returns the struct name + fields, or `null` when synthesis
+   * isn't possible so the caller keeps the field `[]interface{}`/`nil`.
+   *
+   * Synthesis applies only when:
+   *   - the signal's type is an array with no usable element type (untyped),
+   *   - the initial value is a non-empty array literal of object literals,
+   *   - every element shares the same set of Go-identifier keys, and
+   *   - every value is a scalar literal whose Go type is consistent per key
+   *     (numeric keys widen int→float64 when mixed).
+   *
+   * Any deviation (heterogeneous shape, a nested object/array value, a
+   * non-literal value, a non-identifier key, or a name collision with an
+   * existing type) returns `null`.
+   */
+  private synthesizeStructFromSignal(
+    signal: { getter: string; type: TypeInfo; initialValue: string },
+    componentName: string,
+  ): { name: string; fields: Array<{ tsName: string; goName: string; goType: string }> } | null {
+    // Only untyped arrays: a typed (`Item[]`) or scalar (`string[]`) element
+    // already bakes through the normal path.
+    if (signal.type.kind !== 'array') return null
+    const elem = signal.type.elementType
+    if (elem && elem.kind !== 'unknown') return null
+
+    const node = this.parseLiteralExpression(signal.initialValue)
+    if (!node || !ts.isArrayLiteralExpression(node) || node.elements.length === 0) return null
+
+    // Collect the field order + per-key Go types from the first element, then
+    // require every other element to match exactly.
+    const order: string[] = []
+    const goTypes = new Map<string, string>()
+    for (let i = 0; i < node.elements.length; i++) {
+      const el = node.elements[i]
+      if (!ts.isObjectLiteralExpression(el)) return null
+      const seen = new Set<string>()
+      for (const prop of el.properties) {
+        if (!ts.isPropertyAssignment(prop)) return null
+        if (
+          !ts.isIdentifier(prop.name) &&
+          !ts.isStringLiteral(prop.name) &&
+          !ts.isNumericLiteral(prop.name)
+        ) {
+          return null
+        }
+        const key = prop.name.text
+        if (!GoTemplateAdapter.GO_IDENTIFIER.test(key)) return null
+        const goType = this.scalarLiteralGoType(prop.initializer)
+        if (!goType) return null
+        seen.add(key)
+        const prev = goTypes.get(key)
+        if (prev === undefined) {
+          if (i !== 0) return null // key absent from the first element → shape differs
+          order.push(key)
+          goTypes.set(key, goType)
+        } else {
+          const merged = this.mergeScalarGoType(prev, goType)
+          if (!merged) return null
+          goTypes.set(key, merged)
+        }
+      }
+      // Every key from the first element must be present in this element too.
+      if (seen.size !== order.length) return null
+    }
+
+    const name = `${componentName}${this.capitalizeFieldName(signal.getter)}Item`
+    // Don't shadow a user-defined or already-synthesised type.
+    if (this.localTypeNames.has(name)) return null
+
+    return {
+      name,
+      fields: order.map(key => ({
+        tsName: key,
+        goName: this.capitalizeFieldName(key),
+        goType: goTypes.get(key)!,
+      })),
+    }
+  }
+
+  /**
+   * The Go type for a scalar JS literal used as a synthesised struct field
+   * value, or `null` for anything non-scalar (objects, arrays, identifiers,
+   * calls, interpolated templates) so the caller bails out of synthesis.
+   */
+  private scalarLiteralGoType(node: ts.Expression): string | null {
+    if (
+      ts.isPrefixUnaryExpression(node) &&
+      node.operator === ts.SyntaxKind.MinusToken &&
+      ts.isNumericLiteral(node.operand)
+    ) {
+      return this.numericLiteralGoType(node.operand.text)
+    }
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return 'string'
+    if (ts.isNumericLiteral(node)) return this.numericLiteralGoType(node.text)
+    if (node.kind === ts.SyntaxKind.TrueKeyword || node.kind === ts.SyntaxKind.FalseKeyword) {
+      return 'bool'
+    }
+    return null
+  }
+
+  /** `int` for an integer literal, `float64` when the literal has a fraction
+   *  or exponent. */
+  private numericLiteralGoType(text: string): string {
+    return /[.eE]/.test(text) && !text.startsWith('0x') ? 'float64' : 'int'
+  }
+
+  /** Reconcile two inferred Go types for the same key across elements: equal
+   *  types stay; mixed numeric (int/float64) widens to float64; otherwise null
+   *  (incompatible → bail). */
+  private mergeScalarGoType(a: string, b: string): string | null {
+    if (a === b) return a
+    const numeric = new Set(['int', 'float64'])
+    if (numeric.has(a) && numeric.has(b)) return 'float64'
+    return null
   }
 
   /**
@@ -949,6 +1098,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Skip if a prop field with the same name was already emitted
       if (propFieldNames.has(fieldName)) continue
       const jsonTag = this.toJsonTag(signal.getter)
+      // A synthesised struct type (#1680) wins outright — the signal is an
+      // untyped object array we gave a concrete element type.
+      const synthType = this.synthStructTypes.get(signal.getter)
+      if (synthType) {
+        lines.push(`\t${fieldName} ${this.typeInfoToGo(synthType)} \`json:"${jsonTag}"\``)
+        continue
+      }
       // Infer type from initial value or referenced prop's type
       let goType: string
       let referencedProp = propsParamMap.get(signal.initialValue)
@@ -1160,7 +1316,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (hoisted) {
         lines.push(`\t\t${fieldName}: ${hoisted.varName},`)
       } else {
-        const initialValue = this.convertInitialValue(signal.initialValue, signal.type, ir.metadata.propsParams)
+        // Bake against the synthesised struct type when one was inferred for
+        // this untyped object-array signal (#1680), else the signal's own type.
+        const bakeType = this.synthStructTypes.get(signal.getter) ?? signal.type
+        const initialValue = this.convertInitialValue(signal.initialValue, bakeType, ir.metadata.propsParams)
         lines.push(`\t\t${fieldName}: ${initialValue},`)
       }
     }
@@ -1810,14 +1969,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * which the SSR template reaches via struct field access the map lacks).
    */
   private jsLiteralToGo(value: string, typeInfo: TypeInfo): string | null {
+    const expr = this.parseLiteralExpression(value)
+    if (!expr) return null
+    return this.tsLiteralToGo(expr, typeInfo)
+  }
+
+  /**
+   * Parse a JS expression string into its TS AST node (parentheses unwrapped),
+   * or `null` when it isn't a single expression. Shared by the literal baker
+   * and the struct-shape synthesiser.
+   */
+  private parseLiteralExpression(value: string): ts.Expression | null {
     const sf = ts.createSourceFile(
       '__lit.ts', `(${value})`, ts.ScriptTarget.Latest, /* setParentNodes */ true,
     )
+    // Require exactly one expression statement. A value that error-recovers
+    // into multiple statements (e.g. `1; 2`) isn't a single literal — bail
+    // rather than silently baking only the first.
+    if (sf.statements.length !== 1) return null
     const stmt = sf.statements[0]
-    if (!stmt || !ts.isExpressionStatement(stmt)) return null
+    if (!ts.isExpressionStatement(stmt)) return null
     let expr: ts.Expression = stmt.expression
     while (ts.isParenthesizedExpression(expr)) expr = expr.expression
-    return this.tsLiteralToGo(expr, typeInfo)
+    return expr
   }
 
   /**
