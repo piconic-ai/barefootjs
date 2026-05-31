@@ -1,5 +1,22 @@
 # @barefootjs/jsx
 
+## 0.5.2
+
+### Patch Changes
+
+- ad11fb8: Fix a nested child component being dropped during hydration when a static sibling element precedes a `.map()` inside a component (or fragment / provider / async) container (#1688). `computeLoopSiblingOffsets` only counted preceding DOM siblings under element parents, so a loop nested directly inside such a container got a silently-zero `siblingOffset`. The generated `container.children[__idx]` lookup for each item's nested child was then off by one, resolving the first item's child against the static sibling and dropping it. Sibling counting now runs for every container whose children render as a contiguous run of DOM siblings.
+- 562d343: Bake typed and scalar signal array-literal initial values into the generated `NewXxxProps` SSR data context, so Go server-renders the initial loop items instead of an empty list (#1672). Untyped object arrays and non-literal initialisers continue to default to `nil`.
+
+  `TypeDefinition` now carries structured `properties` (`PropertyInfo[]`) for object/interface types, so adapters can consume a type's field set without re-parsing its source text. The go-template adapter uses this to derive struct fields and bake object literals against the real field set.
+
+- dff7704: Raise BF101 at build time for unsupported `String.prototype` methods on the template-language adapters (#1448 follow-up).
+
+  Methods that have no SSR lowering — `split`, `startsWith`, `endsWith`, `replace`, `replaceAll`, `repeat`, `padStart`, `padEnd`, `charAt`, `charCodeAt`, `codePointAt`, `normalize`, `substring`, `substr`, `match`, `matchAll`, `search` — were previously absent from the `UNSUPPORTED_METHODS` gate, so `isSupported` reported them supported and the Go / Mojolicious adapters emitted an invalid raw method call (`{{.Name.StartsWith "a"}}` / `$name->{startsWith}('a')`) that produced no build diagnostic and only crashed at template-render time.
+
+  They now surface BF101 with an actionable `/* @client */` suggestion (parity with the unsupported array methods), and the adapter degrades to a safe empty slot instead of emitting template that fails at render. The Mojo adapter routes these through the AST path so the shared `isSupported` gate fires rather than the regex pipeline mangling them. The `/* @client */` escape hatch continues to work for any of these expressions.
+
+  - @barefootjs/shared@0.5.2
+
 ## 0.5.1
 
 ### Patch Changes

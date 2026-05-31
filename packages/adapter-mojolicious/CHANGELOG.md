@@ -1,5 +1,24 @@
 # @barefootjs/mojolicious
 
+## 0.5.2
+
+### Patch Changes
+
+- a4f818d: Rewrite the Mojolicious adapter's expression lowering to be parse-first, matching the Go adapter.
+
+  `convertExpressionToPerl` now parses every expression once, gates it on the shared `isSupported`, and renders supported shapes through the AST emitter (`renderParsedExprToPerl`) — the same flow as the Go adapter's `convertExpressionToGo`. The per-method routing regexes, the regex string-rewriting pipeline, `convertHigherOrderExpr`, and `rewriteTemplatePrimitives` are all removed (net −229 lines). The parser's `UNSUPPORTED_METHODS` is now the single source of truth for what is refused, so no adapter-side method-name list has to be kept in sync.
+
+  The AST emitter (`MojoTopLevelEmitter`) gains the handling the regex pipeline previously did: `props.x → $x` flattening, identifier-path templatePrimitive calls (`JSON.stringify` / `Math.floor` → `bf->json` / `bf->floor`), top-level template literals, and a BF101 refusal for the still-unsupported `.find` / `.findIndex` / `.findLast` / `.findLastIndex` Mojo gap. No behaviour change: the full Mojo unit suite and the perl-rendering conformance suite pass unchanged.
+
+- dd2988d: Lower JS `===`/`!==` to Perl `eq`/`ne` when an operand is string-typed — a string signal getter (`sel()`) or a string prop (`props.x`), not only a string literal (#1672). Perl's numeric `==` coerces non-numeric strings to 0, so `"b" == "a"` was true and a whole-item loop conditional like `items().map(t => sel() === t.id && …)` rendered every item's true branch server-side. This unblocks the `loop-item-conditional` conformance fixture on Mojo.
+- dff7704: Raise BF101 at build time for unsupported `String.prototype` methods on the template-language adapters (#1448 follow-up).
+
+  Methods that have no SSR lowering — `split`, `startsWith`, `endsWith`, `replace`, `replaceAll`, `repeat`, `padStart`, `padEnd`, `charAt`, `charCodeAt`, `codePointAt`, `normalize`, `substring`, `substr`, `match`, `matchAll`, `search` — were previously absent from the `UNSUPPORTED_METHODS` gate, so `isSupported` reported them supported and the Go / Mojolicious adapters emitted an invalid raw method call (`{{.Name.StartsWith "a"}}` / `$name->{startsWith}('a')`) that produced no build diagnostic and only crashed at template-render time.
+
+  They now surface BF101 with an actionable `/* @client */` suggestion (parity with the unsupported array methods), and the adapter degrades to a safe empty slot instead of emitting template that fails at render. The Mojo adapter routes these through the AST path so the shared `isSupported` gate fires rather than the regex pipeline mangling them. The `/* @client */` escape hatch continues to work for any of these expressions.
+
+  - @barefootjs/shared@0.5.2
+
 ## 0.5.1
 
 ### Patch Changes
