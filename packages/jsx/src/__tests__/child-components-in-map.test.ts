@@ -773,6 +773,93 @@ describe('child components inside .map() (#344)', () => {
     expect(content).not.toContain('children[__idx]')
   })
 
+  test('two static + .map() groups inside a component: 2nd group offset skips the 1st group items (#1693)', () => {
+    // Follow-up to #1688. With two `<span/> + {arr.map(...)}` groups inside a
+    // self-portaling component, the second group's nested child components
+    // must be resolved past BOTH the static <span>s AND the first group's
+    // mapped items. The static-only offset (#1688) under-counted by the first
+    // array's length, leaving the second group inert after hydration.
+    const source = `
+      'use client'
+
+      function Box(props: { children?: any }) {
+        return <div>{props.children}</div>
+      }
+      function Wrapper(props: { children?: any }) {
+        return <div class="wrapper">{props.children}</div>
+      }
+      function Counter(props: { id: string }) {
+        const [n, setN] = createSignal(0)
+        return <button data-testid={props.id} onClick={() => setN(v => v + 1)}>{n()}</button>
+      }
+      export function TwoGroups() {
+        return (
+          <Box>
+            <span>group 1</span>
+            {['a', 'b'].map(id => (
+              <Wrapper key={id}><Counter id={id} /></Wrapper>
+            ))}
+            <span>group 2</span>
+            {['c', 'd'].map(id => (
+              <Wrapper key={id}><Counter id={id} /></Wrapper>
+            ))}
+          </Box>
+        )
+      }
+    `
+    const result = compileJSX(source, 'TwoGroups.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // First group: one preceding static <span> → `+ 1`.
+    expect(content).toContain('children[__idx + 1]')
+    // Second group: two static <span>s plus the first group's mapped items →
+    // the runtime length of the first array is added to the static count.
+    expect(content).toContain("children[__idx + 2 + (['a', 'b']).length]")
+  })
+
+  test('two consecutive pure .map()s inside a component: 2nd loop offset is the 1st array length (#1693)', () => {
+    // No static siblings: the second loop's items still start after the first
+    // loop's items, so the offset is purely the first array's runtime length.
+    const source = `
+      'use client'
+
+      function Box(props: { children?: any }) {
+        return <div>{props.children}</div>
+      }
+      function Wrapper(props: { children?: any }) {
+        return <div class="wrapper">{props.children}</div>
+      }
+      function Counter(props: { id: string }) {
+        const [n, setN] = createSignal(0)
+        return <button data-testid={props.id} onClick={() => setN(v => v + 1)}>{n()}</button>
+      }
+      export function TwoLoops() {
+        return (
+          <Box>
+            {['a', 'b'].map(id => (
+              <Wrapper key={id}><Counter id={id} /></Wrapper>
+            ))}
+            {['c', 'd'].map(id => (
+              <Wrapper key={id}><Counter id={id} /></Wrapper>
+            ))}
+          </Box>
+        )
+      }
+    `
+    const result = compileJSX(source, 'TwoLoops.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+    // First loop: no preceding siblings → bare access.
+    expect(content).toContain('children[__idx]')
+    // Second loop: offset is the first array's runtime length, no static term.
+    expect(content).toContain("children[__idx + (['a', 'b']).length]")
+  })
+
   test('nested .map() with multiple inner components emits unique __compEl bindings (#1664)', () => {
     const source = `
       'use client'

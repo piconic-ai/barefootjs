@@ -9,6 +9,7 @@ import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWr
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
 import { walkIR, stopAt } from './walker'
+import { buildLoopChainExpr } from '../loop-chain'
 
 /** Check if an IR node produces a DOM child element (for sibling offset counting). */
 function producesDomChild(node: IRNode): boolean {
@@ -19,32 +20,63 @@ function producesDomChild(node: IRNode): boolean {
 }
 
 /**
- * Pre-pass: for every loop node in the IR tree, record the number of non-loop
- * DOM siblings that appear before it in its parent container. Read when
- * constructing TopLevelLoop and NestedLoop so the client JS can offset
- * children[idx] access past statically-rendered siblings.
+ * Offset descriptor for a single loop: how many DOM children precede its
+ * items in the container. Split into the two contributions because only one
+ * of them is known statically.
+ */
+export interface LoopSiblingOffset {
+  /** Count of non-loop (static) DOM siblings before this loop. */
+  staticCount: number
+  /**
+   * Preceding sibling loops, in source order. Each contributes its rendered
+   * array length to the offset at runtime — a static count cannot express
+   * this because the length is only known when the array is evaluated.
+   */
+  precedingLoops: IRLoop[]
+}
+
+/**
+ * Pre-pass: for every loop node in the IR tree, record the DOM siblings that
+ * appear before it in its parent container. Read when constructing
+ * TopLevelLoop and NestedLoop so the client JS can offset children[idx]
+ * access past everything rendered ahead of the loop's items.
+ *
+ * Two contributions are tracked separately:
+ *   - `staticCount`: non-loop DOM siblings (each renders exactly one child).
+ *   - `precedingLoops`: earlier sibling `.map()`s, each of which renders
+ *     `array.length` children — a dynamic count resolved at runtime.
  *
  * Counting must happen for every container whose children render as a
  * contiguous run of DOM siblings into the same parent — not just `element`.
  * A loop nested directly inside a component (`<Wrapper><span/>{xs.map(...)}`
  * </Wrapper>`), fragment, provider, or async boundary has its preceding
- * static sibling rendered as a sibling of the loop's items too, so
- * `children[idx]` access is shifted exactly as it is under an element parent
- * (#1688). Before this, a static sibling before a `.map()` inside a
- * (self-portaling) component dropped the first item's nested child component
- * during hydration because the offset was silently zero.
+ * siblings rendered as siblings of the loop's items too, so `children[idx]`
+ * access is shifted exactly as it is under an element parent (#1688).
+ *
+ * The `precedingLoops` contribution closes the #1688 follow-up (#1693): with
+ * two or more `static + .map()` groups, the second group's offset must also
+ * skip the first group's mapped items, not just the static labels. Before
+ * this, the static-only offset resolved later groups' nested child components
+ * against the wrong `children[idx]`, leaving them inert after hydration.
  *
  * Computed once up front (instead of during collection) so the offset data
  * lives in an explicit value rather than a module-level WeakMap mutated by
  * two separate traversals.
  */
-export function computeLoopSiblingOffsets(root: IRNode): Map<IRLoop, number> {
-  const offsets = new Map<IRLoop, number>()
+export function computeLoopSiblingOffsets(root: IRNode): Map<IRLoop, LoopSiblingOffset> {
+  const offsets = new Map<IRLoop, LoopSiblingOffset>()
   const recordChildren = (children: IRNode[]): void => {
     let nonLoopCount = 0
+    const precedingLoops: IRLoop[] = []
     for (const child of children) {
       if (child.type === 'loop') {
-        if (nonLoopCount > 0) offsets.set(child, nonLoopCount)
+        // Record the offset only when something precedes this loop — either
+        // static siblings or earlier `.map()`s. A leading loop with nothing
+        // before it keeps the bare `children[idx]` access.
+        if (nonLoopCount > 0 || precedingLoops.length > 0) {
+          offsets.set(child, { staticCount: nonLoopCount, precedingLoops: [...precedingLoops] })
+        }
+        precedingLoops.push(child)
       } else if (producesDomChild(child)) {
         nonLoopCount++
       }
@@ -66,6 +98,30 @@ export function computeLoopSiblingOffsets(root: IRNode): Map<IRLoop, number> {
     // default descent with the same scope.
   })
   return offsets
+}
+
+/**
+ * Resolve a loop's offset descriptor into the two fields stored on
+ * `TopLevelLoop` / `NestedLoop`: a static `siblingOffset` and the rendered
+ * array expressions of the preceding sibling loops (whose lengths are added
+ * at codegen via `buildLoopChildIndexExpr`).
+ */
+function resolveLoopOffset(
+  desc: LoopSiblingOffset | undefined,
+): { siblingOffset?: number; precedingLoopArrays?: string[] } {
+  if (!desc) return {}
+  const precedingLoopArrays = desc.precedingLoops.map(loop =>
+    buildLoopChainExpr({
+      base: loop.array,
+      sortComparator: loop.sortComparator,
+      filterPredicate: loop.filterPredicate,
+      chainOrder: loop.chainOrder,
+    }),
+  )
+  return {
+    siblingOffset: desc.staticCount || undefined,
+    precedingLoopArrays: precedingLoopArrays.length > 0 ? precedingLoopArrays : undefined,
+  }
 }
 
 /**
@@ -129,7 +185,7 @@ export const branchInnerLoopOptions: CollectInnerLoopsOptions = {
  */
 export function collectInnerLoops(
   nodes: IRNode[],
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
   outerLoopParam?: string,
   ctx?: ClientJsContext,
   options?: CollectInnerLoopsOptions,
@@ -258,7 +314,7 @@ export function collectInnerLoops(
           refsOuterParam: refsOuter,
           childComponents,
           insideConditional: !flat && scope.insideCond ? true : undefined,
-          siblingOffset: flat ? undefined : (siblingOffsets.get(n) || undefined),
+          ...(flat ? {} : resolveLoopOffset(siblingOffsets.get(n))),
           bindings,
         })
         // Branch-mode callers handle deeper nesting via their own collection paths.
@@ -286,7 +342,7 @@ export function collectInnerLoops(
  */
 function decideLoopRendering(
   loop: IRLoop,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
   ctx: ClientJsContext | undefined,
 ): { useElementReconciliation: boolean; innerLoops: NestedLoop[] | undefined } {
   const hasNestedComps = (loop.nestedComponents?.length ?? 0) > 0
@@ -440,7 +496,7 @@ function buildBranchChildComponents(
 export function collectElements(
   node: IRNode,
   ctx: ClientJsContext,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
   insideConditional = false,
 ): void {
   walkIR<boolean>(node, insideConditional, {
@@ -595,7 +651,7 @@ export function collectElements(
         isStaticArray: l.isStaticArray,
         useElementReconciliation,
         innerLoops: (useElementReconciliation || (l.isStaticArray && innerLoops?.length)) ? innerLoops : undefined,
-        siblingOffset: siblingOffsets.get(l) || undefined,
+        ...resolveLoopOffset(siblingOffsets.get(l)),
         filterPredicate: l.filterPredicate ? {
           param: l.filterPredicate.param,
           raw: l.filterPredicate.raw,
@@ -854,7 +910,7 @@ function collectBranchTextEffects(node: IRNode): ConditionalBranchTextEffect[] {
 function collectBranchLoops(
   node: IRNode,
   ctx: ClientJsContext | undefined,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
 ): BranchLoop[] {
   const loops: BranchLoop[] = []
   const restNames = ctx ? buildRestSpreadNames(ctx) : undefined
@@ -953,7 +1009,7 @@ function collectBranchLoops(
 function buildConditionalMetadata(
   node: IRNode & { type: 'conditional' },
   ctx: ClientJsContext,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
 ): ConditionalElement {
   const restNames = buildRestSpreadNames(ctx)
   // Use loopDepth=-1 so the first loop encountered inside the branch emits
@@ -983,7 +1039,7 @@ function buildConditionalMetadata(
 function summarizeBranch(
   node: IRNode,
   ctx: ClientJsContext,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
 ): import('./types').BranchSummary {
   return {
     events: collectConditionalBranchEvents(node),
@@ -1003,7 +1059,7 @@ function summarizeBranch(
 function collectBranchConditionals(
   node: IRNode,
   ctx: ClientJsContext,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
 ): ConditionalElement[] {
   const result: ConditionalElement[] = []
   walkIR(node, null, {
@@ -1051,7 +1107,7 @@ function collectBranchConditionals(
 export function collectLoopChildBindings(
   children: readonly IRNode[],
   ctx: ClientJsContext,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
   loopParam: string,
   loopParamBindings: readonly import('../types').LoopParamBinding[] | undefined,
 ): LoopChildBindings {
@@ -1069,7 +1125,7 @@ export function collectLoopChildBindings(
 export function collectLoopChildConditionals(
   node: IRNode,
   ctx: ClientJsContext,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
   loopParam?: string,
   loopParamBindings?: readonly import('../types').LoopParamBinding[],
 ): LoopChildConditional[] {
@@ -1144,7 +1200,7 @@ export function collectLoopChildConditionals(
 function summarizeLoopChildBranch(
   node: IRNode,
   ctx: ClientJsContext,
-  siblingOffsets: Map<IRLoop, number>,
+  siblingOffsets: Map<IRLoop, LoopSiblingOffset>,
   loopParam?: string,
   loopParamBindings?: readonly import('../types').LoopParamBinding[],
 ): LoopChildBranchSummary {

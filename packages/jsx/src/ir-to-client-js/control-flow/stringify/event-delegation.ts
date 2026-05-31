@@ -32,7 +32,7 @@
  * sentinel before destructuring (#951 TDZ-safe).
  */
 
-import { toDomEventName, varSlotId, substituteLoopBindings, DATA_KEY, keyAttrName } from '../../utils'
+import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName } from '../../utils'
 import type {
   EventDelegationPlan,
   KeyedItemLookup,
@@ -187,11 +187,11 @@ function emitStaticIndexLookup(
   lookup: StaticIndexItemLookup,
   containerVar: string,
 ): void {
-  const { arrayExpr, param, mapPreamble, siblingOffset } = lookup
+  const { arrayExpr, param, mapPreamble, siblingOffset, precedingLoopArrays } = lookup
   ls.push(`      let __el = ${varSlotId(ev.childSlotId)}El`)
   ls.push(`      while (__el.parentElement && __el.parentElement !== ${containerVar}) __el = __el.parentElement`)
   ls.push(`      if (__el.parentElement === ${containerVar}) {`)
-  const idxOffset = siblingOffset ? ` - ${siblingOffset}` : ''
+  const idxOffset = buildLoopChildIndexSubtraction(siblingOffset ?? undefined, precedingLoopArrays ?? undefined)
   ls.push(`        const __idx = Array.from(${containerVar}.children).indexOf(__el)${idxOffset}`)
   ls.push(`        const ${param} = ${arrayExpr}[__idx]`)
   if (mapPreamble) ls.push(`        ${mapPreamble}`)

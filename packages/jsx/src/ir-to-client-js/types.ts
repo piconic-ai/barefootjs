@@ -365,6 +365,13 @@ export interface NestedLoop extends LoopCore {
   insideConditional?: boolean
   /** Number of non-loop DOM siblings before this loop in its container element */
   siblingOffset?: number
+  /**
+   * Rendered array expressions of preceding sibling loops in the same
+   * container. Their lengths add to `siblingOffset` at runtime so
+   * children[idx] access skips earlier `.map()`s' items, not just static
+   * siblings (#1693).
+   */
+  precedingLoopArrays?: string[]
   // Per-item bindings (events / reactiveAttrs / reactiveTexts / refs / conditionals)
   // now live on `LoopCore.bindings` — see issue #1244 §B.
 }
@@ -470,6 +477,13 @@ export interface TopLevelLoop extends LoopCore {
   innerLoops?: NestedLoop[]
   /** Number of non-loop DOM siblings before this loop in its parent element. Used to offset children[idx] access. */
   siblingOffset?: number
+  /**
+   * Rendered array expressions of preceding sibling loops in the same
+   * container. Their lengths add to `siblingOffset` at runtime so
+   * children[idx] access skips earlier `.map()`s' items, not just static
+   * siblings (#1693).
+   */
+  precedingLoopArrays?: string[]
   filterPredicate?: {
     param: string
     raw: string  // Original filter predicate expression or block body

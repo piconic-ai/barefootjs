@@ -16,7 +16,7 @@
 import type { IRLoopChildComponent } from '../../types'
 import type { NestedLoop, TopLevelLoop } from '../types'
 import type { ClientJsContext } from '../types'
-import { quotePropName, varSlotId, attrValueToString } from '../utils'
+import { quotePropName, varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils'
 import { irChildrenToJsExpr } from '../html-template'
 import { buildCompSelector } from '../control-flow/shared'
 
@@ -98,7 +98,7 @@ function buildOuterNestedPlan(
     arrayExpr: elem.array,
     param: elem.param,
     indexParam,
-    offsetExpr: elem.siblingOffset ? `${indexParam} + ${elem.siblingOffset}` : indexParam,
+    offsetExpr: buildLoopChildIndexExpr(indexParam, elem.siblingOffset, elem.precedingLoopArrays),
     outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
     propsExpr: buildStaticPropsExpr(comp.props),
   }
@@ -122,16 +122,12 @@ function buildInnerLoopNestedPlan(
     outerArrayExpr: elem.array,
     outerParam: elem.param,
     outerIndexParam,
-    outerOffsetExpr: elem.siblingOffset
-      ? `${outerIndexParam} + ${elem.siblingOffset}`
-      : outerIndexParam,
+    outerOffsetExpr: buildLoopChildIndexExpr(outerIndexParam, elem.siblingOffset, elem.precedingLoopArrays),
     outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
     innerContainerSlotId: innerLoop.containerSlotId ?? null,
     innerArrayExpr: innerLoop.array,
     innerParam: innerLoop.param,
-    innerOffsetExpr: innerLoop.siblingOffset
-      ? `__innerIdx + ${innerLoop.siblingOffset}`
-      : '__innerIdx',
+    innerOffsetExpr: buildLoopChildIndexExpr('__innerIdx', innerLoop.siblingOffset, innerLoop.precedingLoopArrays),
     innerPreludeStatements: innerLoop.mapPreamble ? [innerLoop.mapPreamble] : [],
     depth: innerLoop.depth,
     comps,

@@ -146,6 +146,53 @@ export function buildChainedArrayExpr(elem: TopLevelLoop | BranchLoop): string {
 }
 
 /**
+ * Build the additive `children[idx]` offset expression for a loop's items.
+ *
+ * The offset past a loop's preceding siblings is the count of static
+ * (non-loop) DOM siblings *plus* the runtime length of every preceding
+ * sibling loop's rendered array. A static count alone is wrong whenever a
+ * `.map()` precedes this loop inside the same container — the earlier loop
+ * contributes `array.length` DOM children that shift this loop's items, and
+ * that count is only known at runtime (#1693, follow-up to #1688).
+ *
+ * Examples:
+ *   - no offset                  → `__idx`
+ *   - one static sibling         → `__idx + 1`
+ *   - one preceding `.map()`     → `__idx + (arr).length`
+ *   - static sibling + 2 `.map()`→ `__idx + 1 + (a).length + (b).length`
+ */
+export function buildLoopChildIndexExpr(
+  indexParam: string,
+  siblingOffset: number | undefined,
+  precedingLoopArrays: readonly string[] | undefined,
+): string {
+  let expr = indexParam
+  if (siblingOffset) expr += ` + ${siblingOffset}`
+  if (precedingLoopArrays) {
+    for (const arr of precedingLoopArrays) expr += ` + (${arr}).length`
+  }
+  return expr
+}
+
+/**
+ * Build the subtractive counterpart of `buildLoopChildIndexExpr` — used by
+ * event delegation to recover a loop item's array index from its DOM child
+ * index. Returns the trailing `` - <static> - (arr).length …`` suffix (empty
+ * when there is no offset) appended after `…indexOf(__el)`.
+ */
+export function buildLoopChildIndexSubtraction(
+  siblingOffset: number | undefined,
+  precedingLoopArrays: readonly string[] | undefined,
+): string {
+  let expr = ''
+  if (siblingOffset) expr += ` - ${siblingOffset}`
+  if (precedingLoopArrays) {
+    for (const arr of precedingLoopArrays) expr += ` - (${arr}).length`
+  }
+  return expr
+}
+
+/**
  * Map of JSX event names to DOM event property names.
  * JSX uses React-style naming (e.g., onDoubleClick) which gets converted to
  * lowercase (doubleclick), but some DOM events have different names (dblclick).

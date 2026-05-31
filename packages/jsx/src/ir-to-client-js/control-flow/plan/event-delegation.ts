@@ -72,6 +72,13 @@ export interface StaticIndexItemLookup {
   arrayExpr: string
   param: string
   mapPreamble: string | null
-  /** Sibling offset for `__idx` arithmetic; `null` when no offset. */
+  /** Static sibling offset for `__idx` arithmetic; `null` when no offset. */
   siblingOffset: number | null
+  /**
+   * Preceding sibling loops' rendered array expressions. Their lengths are
+   * subtracted (alongside `siblingOffset`) when recovering the item index
+   * from the DOM child index, so later `static + .map()` groups resolve the
+   * correct item (#1693).
+   */
+  precedingLoopArrays: readonly string[] | null
 }

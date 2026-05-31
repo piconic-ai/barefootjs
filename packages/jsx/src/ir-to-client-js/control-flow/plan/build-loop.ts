@@ -25,6 +25,7 @@ import type {
 } from '../../types'
 import {
   buildChainedArrayExpr,
+  buildLoopChildIndexExpr,
   setIntersects,
   varSlotId,
   wrapLoopParamAsAccessor,
@@ -129,7 +130,7 @@ export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<st
   }
 
   const indexParam = elem.index || '__idx'
-  const childIndexExpr = elem.siblingOffset ? `${indexParam} + ${elem.siblingOffset}` : indexParam
+  const childIndexExpr = buildLoopChildIndexExpr(indexParam, elem.siblingOffset, elem.precedingLoopArrays)
 
   return {
     kind: 'static',
