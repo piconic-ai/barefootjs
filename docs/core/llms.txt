@@ -12,6 +12,7 @@
 
 ## Reactivity
 
+- [batch](https://barefootjs.dev/docs/reactivity/batch.md): Groups multiple signal writes so dependent effects and memos run once, after all writes complete.
 - [createEffect](https://barefootjs.dev/docs/reactivity/create-effect.md): Runs a function and re-runs it whenever its tracked signal dependencies change.
 - [createMemo](https://barefootjs.dev/docs/reactivity/create-memo.md): Creates a cached derived value that recomputes only when its dependencies change.
 - [createSignal](https://barefootjs.dev/docs/reactivity/create-signal.md): Creates a reactive getter/setter pair for managing state.

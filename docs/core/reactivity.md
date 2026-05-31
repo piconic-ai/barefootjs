@@ -9,7 +9,7 @@ All reactive primitives are imported from `@barefootjs/client`:
 
 ```tsx
 "use client"
-import { createSignal, createEffect, createMemo, onMount, onCleanup, untrack } from '@barefootjs/client'
+import { createSignal, createEffect, createMemo, onMount, onCleanup, untrack, batch } from '@barefootjs/client'
 ```
 
 ## API Reference
@@ -22,6 +22,7 @@ import { createSignal, createEffect, createMemo, onMount, onCleanup, untrack } f
 | [`onMount`](./reactivity/on-mount.md) | Run once on component initialization |
 | [`onCleanup`](./reactivity/on-cleanup.md) | Register cleanup for effects and lifecycle |
 | [`untrack`](./reactivity/untrack.md) | Read signals without tracking dependencies |
+| [`batch`](./reactivity/batch.md) | Group signal writes so subscribers run once |
 
 ## Guides
 

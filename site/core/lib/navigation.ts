@@ -67,6 +67,7 @@ export const navigation: NavItem[] = [
       { title: 'onMount', slug: 'reactivity/on-mount' },
       { title: 'onCleanup', slug: 'reactivity/on-cleanup' },
       { title: 'untrack', slug: 'reactivity/untrack' },
+      { title: 'batch', slug: 'reactivity/batch' },
       { title: 'Props Reactivity', slug: 'reactivity/props-reactivity' },
     ],
   },
