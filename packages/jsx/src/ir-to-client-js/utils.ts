@@ -157,7 +157,7 @@ function loopOffsetTerms(offset: LoopOffset | undefined): string[] {
   if (!offset) return []
   const terms: string[] = []
   if (offset.staticCount) terms.push(String(offset.staticCount))
-  for (const arr of offset.precedingLoopArrays) terms.push(`(${arr}).length`)
+  terms.push(...offset.dynamicTerms)
   return terms
 }
 

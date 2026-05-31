@@ -860,6 +860,106 @@ describe('child components inside .map() (#344)', () => {
     expect(content).toContain("children[__idx + (['a', 'b']).length]")
   })
 
+  test('conditional (&&) sibling before a static-array loop adds a runtime ternary offset (#1693)', () => {
+    // A `{cond && <span/>}` sibling renders 1 element when true but ZERO
+    // elements (only comment anchors) when false. Counting it as a static
+    // `1` over-counts the false case, so the loop's nested children resolve
+    // against the wrong `children[idx]`. The offset must be a runtime
+    // `(cond ? 1 : 0)` term that collapses to 0 when the branch is absent.
+    const source = `
+      'use client'
+
+      function Box(props: { children?: any }) { return <div>{props.children}</div> }
+      function Wrapper(props: { children?: any }) { return <div>{props.children}</div> }
+      function Counter(props: { id: string }) {
+        const [n, setN] = createSignal(0)
+        return <button onClick={() => setN(v => v + 1)}>{n()}</button>
+      }
+      export function CondGroup(props: { show: boolean }) {
+        return (
+          <Box>
+            {props.show && <span>maybe</span>}
+            {['a', 'b'].map(id => (
+              <Wrapper key={id}><Counter id={id} /></Wrapper>
+            ))}
+          </Box>
+        )
+      }
+    `
+    const result = compileJSX(source, 'CondGroup.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+    // Runtime ternary — `0` when the conditional renders no element. The
+    // condition reuses the same `_p.show` form `insert()` evaluates.
+    expect(content).toContain('children[__idx + (_p.show ? 1 : 0)]')
+    // Must NOT mis-count the conditional as a static sibling.
+    expect(content).not.toContain('children[__idx + 1]')
+  })
+
+  test('ternary sibling with an element in both branches keeps a static offset (#1693)', () => {
+    // `{cond ? <a/> : <b/>}` always renders exactly one element, so both
+    // branch counts are equal and the offset folds to a static `+ 1` — no
+    // runtime ternary needed.
+    const source = `
+      'use client'
+
+      function Box(props: { children?: any }) { return <div>{props.children}</div> }
+      function Wrapper(props: { children?: any }) { return <div>{props.children}</div> }
+      function Counter(props: { id: string }) {
+        const [n, setN] = createSignal(0)
+        return <button onClick={() => setN(v => v + 1)}>{n()}</button>
+      }
+      export function TernaryGroup(props: { show: boolean }) {
+        return (
+          <Box>
+            {props.show ? <span>a</span> : <em>b</em>}
+            {['a', 'b'].map(id => (
+              <Wrapper key={id}><Counter id={id} /></Wrapper>
+            ))}
+          </Box>
+        )
+      }
+    `
+    const result = compileJSX(source, 'TernaryGroup.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+    expect(content).toContain('children[__idx + 1]')
+    expect(content).not.toContain('? 1 : 0')
+  })
+
+  test('non-element (text) sibling before a loop produces no offset (#1693)', () => {
+    // A bare text node is NOT in `.children` (element-only), so it must
+    // contribute 0 to the offset — not be counted as a static sibling.
+    const source = `
+      'use client'
+
+      function Box(props: { children?: any }) { return <div>{props.children}</div> }
+      function Wrapper(props: { children?: any }) { return <div>{props.children}</div> }
+      function Counter(props: { id: string }) {
+        const [n, setN] = createSignal(0)
+        return <button onClick={() => setN(v => v + 1)}>{n()}</button>
+      }
+      export function TextGroup() {
+        return (
+          <Box>
+            hello
+            {['a', 'b'].map(id => (
+              <Wrapper key={id}><Counter id={id} /></Wrapper>
+            ))}
+          </Box>
+        )
+      }
+    `
+    const result = compileJSX(source, 'TextGroup.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+    expect(content).toContain('children[__idx]')
+    expect(content).not.toContain('children[__idx + ')
+  })
+
   test('nested .map() with multiple inner components emits unique __compEl bindings (#1664)', () => {
     const source = `
       'use client'

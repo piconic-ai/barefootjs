@@ -167,24 +167,26 @@ export interface ConditionalBranchReactiveAttr extends AttrMeta {
 }
 
 /**
- * How many DOM children precede a loop's items in its container — the
+ * How many element children precede a loop's items in its container — the
  * offset applied to `container.children[idx]` so each item resolves to the
  * right element during hydration.
  *
  * Two contributions, kept distinct because they codegen differently:
- *   - `staticCount`: non-loop siblings, a compile-time integer (`+ 1`).
- *   - `precedingLoopArrays`: earlier sibling `.map()`s' rendered array
- *     expressions, whose lengths are only known at runtime (`+ (arr).length`).
+ *   - `staticCount`: siblings of statically-known element count, folded to a
+ *     compile-time integer (`+ 1`).
+ *   - `dynamicTerms`: one JS expression per sibling whose element count is
+ *     only known at runtime — a preceding `.map()` (`(arr).length`) or a
+ *     preceding conditional (`(cond ? 1 : 0)`) — each added as `+ <term>`.
  *
  * Carried as one value object end-to-end (collect → IR loop → plan → codegen)
  * so a future offset contributor is added in one place, not threaded as a new
  * field through every layer (#1693).
  */
 export interface LoopOffset {
-  /** Count of static (non-loop) DOM siblings before the loop. `0` = none. */
+  /** Folded element count of statically-sized preceding siblings. `0` = none. */
   staticCount: number
-  /** Rendered array expressions of preceding sibling loops; `[]` = none. */
-  precedingLoopArrays: readonly string[]
+  /** Runtime element-count expressions of dynamic preceding siblings; `[]` = none. */
+  dynamicTerms: readonly string[]
 }
 
 /**
