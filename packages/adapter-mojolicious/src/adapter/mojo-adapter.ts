@@ -39,7 +39,6 @@ import {
   isBooleanAttr,
   parseExpression,
   isSupported,
-  containsHigherOrder,
   exprToString,
   identifierPath,
   emitParsedExpr,
@@ -1487,10 +1486,16 @@ class MojoFilterEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = emit(left)
     const r = emit(right)
-    if ((op === '===' || op === '==') && right.kind === 'literal' && right.literalType === 'string') {
+    // String equality: `eq`/`ne` when EITHER operand is a string
+    // literal (`role() === 'admin'` and the reversed `'admin' === role()`).
+    // Falling back to numeric `==`/`!=` for a string literal would make
+    // Perl coerce both sides to 0 and match unrelated non-numeric strings.
+    const leftStr = left.kind === 'literal' && left.literalType === 'string'
+    const rightStr = right.kind === 'literal' && right.literalType === 'string'
+    if ((op === '===' || op === '==') && (leftStr || rightStr)) {
       return `${l} eq ${r}`
     }
-    if ((op === '!==' || op === '!=') && right.kind === 'literal' && right.literalType === 'string') {
+    if ((op === '!==' || op === '!=') && (leftStr || rightStr)) {
       return `${l} ne ${r}`
     }
     const opMap: Record<string, string> = {
@@ -1634,6 +1639,11 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
         `templatePrimitive '${path}' expects ${spec.arity} arg(s), got ${args.length}`,
         `Call '${path}' with exactly ${spec.arity} argument(s).`,
       )
+      // Don't fall through to the generic `emit(callee)` below — for a
+      // member callee (`JSON.stringify`) that emits an invalid Perl
+      // hash-deref (`$JSON->{stringify}`). Return the same safe
+      // empty-string placeholder the other BF101 paths use.
+      return "''"
     }
     // Array methods (`.join` and any others added to ArrayMethod, #1443)
     // are lifted into the `array-method` IR kind at parse time, so they
@@ -1654,10 +1664,16 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = emit(left)
     const r = emit(right)
-    if ((op === '===' || op === '==') && right.kind === 'literal' && right.literalType === 'string') {
+    // String equality: `eq`/`ne` when EITHER operand is a string
+    // literal (`role() === 'admin'` and the reversed `'admin' === role()`).
+    // Falling back to numeric `==`/`!=` for a string literal would make
+    // Perl coerce both sides to 0 and match unrelated non-numeric strings.
+    const leftStr = left.kind === 'literal' && left.literalType === 'string'
+    const rightStr = right.kind === 'literal' && right.literalType === 'string'
+    if ((op === '===' || op === '==') && (leftStr || rightStr)) {
       return `${l} eq ${r}`
     }
-    if ((op === '!==' || op === '!=') && right.kind === 'literal' && right.literalType === 'string') {
+    if ((op === '!==' || op === '!=') && (leftStr || rightStr)) {
       return `${l} ne ${r}`
     }
     const opMap: Record<string, string> = {
@@ -1742,15 +1758,30 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     // expression parts interpolated (`"chat-$msg->{role}"`). Static
     // chunks escape the characters that are special inside `"..."`
     // (`\`, `"`, and the sigils `$` / `@`) so literal text survives.
-    let out = '"'
+    // Build Perl string concatenation (`"n=" . ($count + 1)`), not
+    // double-quote interpolation. Interpolation only evaluates simple
+    // `$var` reads, so complex `${...}` parts — arithmetic, helper calls
+    // (`bf->json(...)`), ternaries — would render unevaluated. Static
+    // chunks escape the sigils that interpolate inside `"..."` (`$`/`@`)
+    // plus `"`/`\`; expression terms whose Perl precedence is below `.`
+    // wrap in parens so they bind before concatenation.
+    const terms: string[] = []
     for (const part of parts) {
       if (part.type === 'string') {
-        out += part.value.replace(/[\\"$@]/g, m => `\\${m}`)
+        if (part.value !== '') {
+          terms.push(`"${part.value.replace(/[\\"$@]/g, m => `\\${m}`)}"`)
+        }
       } else {
-        out += emit(part.expr)
+        const rendered = emit(part.expr)
+        const needsParens =
+          part.expr.kind === 'binary' ||
+          part.expr.kind === 'logical' ||
+          part.expr.kind === 'conditional'
+        terms.push(needsParens ? `(${rendered})` : rendered)
       }
     }
-    return out + '"'
+    if (terms.length === 0) return '""'
+    return terms.join(' . ')
   }
 
   arrowFn(_param: string, _body: ParsedExpr): string {
