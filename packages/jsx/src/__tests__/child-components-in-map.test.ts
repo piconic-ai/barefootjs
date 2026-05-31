@@ -730,6 +730,49 @@ describe('child components inside .map() (#344)', () => {
     expect(content).not.toContain('children[__idx + ')
   })
 
+  test('static array inside a component container with a preceding static sibling uses siblingOffset (#1688)', () => {
+    // The loop is a direct child of the <Portaled> component (not an
+    // element), with a static <span> sibling before it. Before #1688
+    // computeLoopSiblingOffsets only counted siblings under element
+    // parents, so the offset was silently zero and the first item's
+    // nested child component (Counter) was resolved against the wrong
+    // children[idx] — dropping it during hydration.
+    const source = `
+      'use client'
+
+      function Portaled(props: { children?: any }) {
+        return <div>{props.children}</div>
+      }
+      function Wrapper(props: { children?: any }) {
+        return <div class="wrapper">{props.children}</div>
+      }
+      function Counter(props: { id: string }) {
+        const [n, setN] = createSignal(0)
+        return <button data-testid={props.id} onClick={() => setN(v => v + 1)}>{n()}</button>
+      }
+      export function Repro() {
+        return (
+          <Portaled>
+            <span>static sibling</span>
+            {['a', 'b'].map(id => (
+              <Wrapper key={id}><Counter id={id} /></Wrapper>
+            ))}
+          </Portaled>
+        )
+      }
+    `
+    const result = compileJSX(source, 'Repro.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const content = clientJs!.content
+
+    // The nested Counter lookup must skip the preceding static <span>.
+    expect(content).toContain('children[__idx + 1]')
+    expect(content).not.toContain('children[__idx]')
+  })
+
   test('nested .map() with multiple inner components emits unique __compEl bindings (#1664)', () => {
     const source = `
       'use client'

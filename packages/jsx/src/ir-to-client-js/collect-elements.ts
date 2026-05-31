@@ -20,9 +20,19 @@ function producesDomChild(node: IRNode): boolean {
 
 /**
  * Pre-pass: for every loop node in the IR tree, record the number of non-loop
- * DOM siblings that appear before it in its parent element. Read when
+ * DOM siblings that appear before it in its parent container. Read when
  * constructing TopLevelLoop and NestedLoop so the client JS can offset
  * children[idx] access past statically-rendered siblings.
+ *
+ * Counting must happen for every container whose children render as a
+ * contiguous run of DOM siblings into the same parent — not just `element`.
+ * A loop nested directly inside a component (`<Wrapper><span/>{xs.map(...)}`
+ * </Wrapper>`), fragment, provider, or async boundary has its preceding
+ * static sibling rendered as a sibling of the loop's items too, so
+ * `children[idx]` access is shifted exactly as it is under an element parent
+ * (#1688). Before this, a static sibling before a `.map()` inside a
+ * (self-portaling) component dropped the first item's nested child component
+ * during hydration because the offset was silently zero.
  *
  * Computed once up front (instead of during collection) so the offset data
  * lives in an explicit value rather than a module-level WeakMap mutated by
@@ -30,21 +40,30 @@ function producesDomChild(node: IRNode): boolean {
  */
 export function computeLoopSiblingOffsets(root: IRNode): Map<IRLoop, number> {
   const offsets = new Map<IRLoop, number>()
-  walkIR(root, null, {
-    element: ({ node: el, descend }) => {
-      let nonLoopCount = 0
-      for (const child of el.children) {
-        if (child.type === 'loop') {
-          if (nonLoopCount > 0) offsets.set(child, nonLoopCount)
-        } else if (producesDomChild(child)) {
-          nonLoopCount++
-        }
+  const recordChildren = (children: IRNode[]): void => {
+    let nonLoopCount = 0
+    for (const child of children) {
+      if (child.type === 'loop') {
+        if (nonLoopCount > 0) offsets.set(child, nonLoopCount)
+      } else if (producesDomChild(child)) {
+        nonLoopCount++
       }
-      descend()
-    },
-    // All container kinds (fragment / component / provider / async / loop /
-    // conditional / if-statement) rely on walkIR's default descent with the
-    // same scope. Leaves (text / expression / slot) are no-ops.
+    }
+  }
+  const containerVisit = ({ node, descend }: { node: { children: IRNode[] }; descend: () => void }): void => {
+    recordChildren(node.children)
+    descend()
+  }
+  walkIR(root, null, {
+    element: containerVisit,
+    component: containerVisit,
+    fragment: containerVisit,
+    provider: containerVisit,
+    async: containerVisit,
+    // `loop` / `conditional` / `if-statement` are not flat sibling
+    // containers (their children are item bodies / branches), and leaves
+    // (text / expression / slot) have no children — all rely on walkIR's
+    // default descent with the same scope.
   })
   return offsets
 }
