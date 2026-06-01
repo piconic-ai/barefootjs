@@ -111,11 +111,14 @@ function parseAndMerge(
   // out of its string relocated the component's real runtime import into
   // the literal and left `hydrate` undefined at call time. See
   // piconic-ai/barefootjs#1702.
+  // Parent pointers aren't needed here — we only read `statements` and each
+  // import's `getStart`/`getEnd` — so skip building them to keep the per-chunk
+  // parse cheap when combining many files.
   const sourceFile = ts.createSourceFile(
     'combine.js',
     content,
     ts.ScriptTarget.Latest,
-    /*setParentNodes*/ true,
+    /*setParentNodes*/ false,
     ts.ScriptKind.JS,
   )
 

@@ -1285,6 +1285,22 @@ export function mergeDuplicateNamedImports(content: string): string {
   const dropIndices = new Set<number>()
   let changed = false
 
+  // Cheap pre-scan: are there even two import-shaped lines sharing a source?
+  // Step 6c runs this over every emitted client JS file, so short-circuit
+  // (and skip the TS parse below) for the common case where nothing can
+  // possibly merge.
+  {
+    const seen = new Set<string>()
+    let possibleDuplicate = false
+    for (const line of lines) {
+      const m = line.match(namedImportRe)
+      if (!m) continue
+      if (seen.has(m[3])) { possibleDuplicate = true; break }
+      seen.add(m[3])
+    }
+    if (!possibleDuplicate) return content
+  }
+
   // Restrict merging to lines that are *real* top-level import statements.
   // An `import { … } from '…'` line living inside a string / template
   // literal value (e.g. an inlined code-snippet module) matches the regex
