@@ -42,6 +42,18 @@ services:
       # the root node_modules created by `bun install` on the host.
       - .:/workspace:cached
 
+  h3:
+    build:
+      context: .
+      dockerfile: integrations/h3/Dockerfile.dev
+    working_dir: /workspace/integrations/h3
+    environment:
+      BASE_PATH: /integrations/h3
+    volumes:
+      # Same whole-repo mount as hono: h3 imports the host-built dist/ and
+      # the @barefootjs/* workspace deps from the root node_modules.
+      - .:/workspace:cached
+
   echo:
     build:
       context: .

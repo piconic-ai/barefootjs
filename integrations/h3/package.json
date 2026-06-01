@@ -1,0 +1,23 @@
+{
+  "name": "barefootjs-h3-example",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "bun run ../../packages/cli/src/index.ts build",
+    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "dev": "bun run build && bun run --watch server.tsx",
+    "start": "bun run server.tsx",
+    "test:e2e": "bunx playwright test"
+  },
+  "dependencies": {
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/hono": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/shared": "workspace:*",
+    "h3": "^1.13.0",
+    "hono": "^4"
+  },
+  "devDependencies": {
+    "bun-types": "^1.1.0"
+  }
+}
