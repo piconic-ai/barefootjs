@@ -8,6 +8,8 @@
  * into the parent's file, eliminating the need for separate HTTP requests.
  */
 
+import ts from 'typescript'
+
 const CHILD_PLACEHOLDER_RE = /import '\/\* @bf-child:(\w+) \*\/'/g
 
 /**
@@ -101,33 +103,75 @@ function parseAndMerge(
   otherImports: string[],
   codeSections: string[]
 ): void {
-  const codeLines: string[] = []
+  // Parse the client JS so we only ever treat *real* top-level
+  // `ImportDeclaration` statements as imports. The predecessor matched
+  // raw lines beginning with `import `, which also caught `import …`
+  // lines that merely live *inside a string / template literal value*
+  // (e.g. a data module exporting a code snippet). Tearing such a line
+  // out of its string relocated the component's real runtime import into
+  // the literal and left `hydrate` undefined at call time. See
+  // piconic-ai/barefootjs#1702.
+  // Parent pointers aren't needed here — we only read `statements` and each
+  // import's `getStart`/`getEnd` — so skip building them to keep the per-chunk
+  // parse cheap when combining many files.
+  const sourceFile = ts.createSourceFile(
+    'combine.js',
+    content,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ false,
+    ts.ScriptKind.JS,
+  )
 
-  for (const line of content.split('\n')) {
-    if (line.startsWith('import ')) {
-      if (line.includes('@bf-child:')) continue
+  // Character spans of the top-level imports to strip from the emitted
+  // code, so everything that isn't an import (including literals whose
+  // contents look like imports) is preserved verbatim.
+  const importSpans: Array<[number, number]> = []
 
-      const match = line.match(/^import \{ ([^}]+) \} from ['"]([^'"]+)['"]/)
-      if (match) {
-        const names = match[1].split(',').map(n => n.trim())
-        const source = match[2]
-        if (!importsBySource.has(source)) {
-          importsBySource.set(source, new Set())
-        }
-        for (const name of names) {
-          importsBySource.get(source)!.add(name)
-        }
-      } else {
-        if (!otherImports.includes(line)) {
-          otherImports.push(line)
-        }
+  for (const stmt of sourceFile.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    const start = stmt.getStart(sourceFile)
+    const end = stmt.getEnd()
+    importSpans.push([start, end])
+
+    const stmtText = content.slice(start, end)
+    // `@bf-child:` placeholders are resolved by inlining elsewhere; drop
+    // them entirely (neither merged nor kept as code).
+    if (stmtText.includes('@bf-child:')) continue
+
+    const clause = stmt.importClause
+    const bindings = clause?.namedBindings
+    const specifier = ts.isStringLiteral(stmt.moduleSpecifier)
+      ? stmt.moduleSpecifier.text
+      : ''
+    if (clause && !clause.name && bindings && ts.isNamedImports(bindings)) {
+      // Pure named import (`import { a, b as c } from '…'`) — merge by source.
+      if (!importsBySource.has(specifier)) {
+        importsBySource.set(specifier, new Set())
+      }
+      const set = importsBySource.get(specifier)!
+      for (const el of bindings.elements) {
+        const name = el.propertyName
+          ? `${el.propertyName.text} as ${el.name.text}`
+          : el.name.text
+        set.add(name)
       }
     } else {
-      codeLines.push(line)
+      // default / namespace / side-effect import — keep verbatim.
+      if (!otherImports.includes(stmtText)) {
+        otherImports.push(stmtText)
+      }
     }
   }
 
-  const code = codeLines.join('\n').trim()
+  // Reconstruct the code with the import spans removed.
+  let code = ''
+  let cursor = 0
+  for (const [start, end] of importSpans) {
+    code += content.slice(cursor, start)
+    cursor = end
+  }
+  code += content.slice(cursor)
+  code = code.trim()
   if (code) {
     codeSections.push(code)
   }

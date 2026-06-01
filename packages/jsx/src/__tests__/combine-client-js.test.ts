@@ -204,6 +204,53 @@ describe('combineParentChildClientJs', () => {
     expect(adminCombined).not.toContain('@bf-child:')
   })
 
+  test('does not treat import-shaped lines inside a string literal as real imports (#1702)', () => {
+    // A data module inlined into the parent exports a code snippet whose
+    // *contents* contain a `"use client"` directive and an `import …` line.
+    // The combiner must not relocate the parent's real runtime import into
+    // that string literal, which previously left `hydrate` undefined.
+    const sample = [
+      '`"use client"',
+      '',
+      "import { createSignal } from '@barefootjs/client'",
+      '',
+      'export function Counter() {}`',
+    ].join('\n')
+    const files = new Map([
+      ['Parent', [
+        "import { hydrate, createSignal } from '@barefootjs/client/runtime'",
+        "import '/* @bf-child:Child */'",
+        `const __bf_inline_0 = { SAMPLE: ${sample} };`,
+        "hydrate('Parent', (el) => {})",
+      ].join('\n')],
+      ['Child', [
+        "import { hydrate, createSignal } from '@barefootjs/client/runtime'",
+        "hydrate('Child', (el) => {})",
+      ].join('\n')],
+    ])
+
+    const result = combineParentChildClientJs(files)
+    const combined = result.get('Parent')!
+
+    // The real runtime import survives as the very first line, with `hydrate`.
+    const firstLine = combined.split('\n')[0]
+    expect(firstLine).toContain('hydrate')
+    expect(firstLine).toContain("from '@barefootjs/client/runtime'")
+    // The only real top-level import is the runtime one — the snippet's inner
+    // import line must remain *inside* the `__bf_inline_0` declaration, not
+    // hoisted above it.
+    const inlineIdx = combined.indexOf('const __bf_inline_0')
+    const snippetImportIdx = combined.indexOf("import { createSignal } from '@barefootjs/client'")
+    expect(snippetImportIdx).toBeGreaterThan(inlineIdx)
+
+    // The snippet string is preserved verbatim — its inner import line is
+    // NOT hoisted out, and `@barefootjs/client` stays intact.
+    expect(combined).toContain("import { createSignal } from '@barefootjs/client'")
+    expect(combined).toContain('export function Counter() {}')
+    expect(combined).toContain("hydrate('Parent',")
+    expect(combined).toContain("hydrate('Child',")
+  })
+
   test('deduplicates imports from shared sources', () => {
     const files = new Map([
       ['Parent', [

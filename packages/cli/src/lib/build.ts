@@ -895,12 +895,7 @@ export async function build(
       try {
         let content = await readText(filePath)
         const before = content
-        if (content.includes('@barefootjs/client')) {
-          content = content.replace(
-            /from ['"]@barefootjs\/client(?:\/[^'"]*)?['"]/g,
-            `from '${rel}'`,
-          )
-        }
+        content = rewriteBarefootClientSpecifiers(content, rel)
         content = mergeDuplicateNamedImports(content)
         if (content !== before && await writeIfChanged(filePath, content)) {
           anyOutputChanged = true
@@ -1199,6 +1194,85 @@ export function effectiveOutName(tplPath: string, entryBaseNoExt: string): strin
 }
 
 /**
+ * Line indices (0-based) of `content` that begin a *real* top-level
+ * `import` statement, per the TypeScript parser. Used to keep the
+ * line-based import passes from acting on `import …` text that only
+ * appears inside a string / template literal value. See #1702.
+ */
+function topLevelImportLines(content: string): Set<number> {
+  const lines = new Set<number>()
+  const sourceFile = ts.createSourceFile(
+    'merge.js',
+    content,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ true,
+    ts.ScriptKind.JS,
+  )
+  for (const stmt of sourceFile.statements) {
+    if (ts.isImportDeclaration(stmt)) {
+      const { line } = sourceFile.getLineAndCharacterOfPosition(stmt.getStart(sourceFile))
+      lines.add(line)
+    }
+  }
+  return lines
+}
+
+/**
+ * Rewrite `@barefootjs/client*` specifiers to the relative `barefoot.js`
+ * path `rel`, touching only *real* `import` / `export … from` module
+ * specifiers (and dynamic `import('…')` arguments). The predecessor ran a
+ * global regex over the whole file, which also rewrote `@barefootjs/client`
+ * text that merely lived inside a string / template literal value (e.g. an
+ * inlined code-snippet module), corrupting the displayed text. See
+ * piconic-ai/barefootjs#1702.
+ */
+export function rewriteBarefootClientSpecifiers(content: string, rel: string): string {
+  if (!content.includes('@barefootjs/client')) return content
+
+  const sourceFile = ts.createSourceFile(
+    'client.js',
+    content,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ true,
+    ts.ScriptKind.JS,
+  )
+  const isBarefootClient = (s: string) =>
+    s === '@barefootjs/client' || s.startsWith('@barefootjs/client/')
+
+  // Character spans of the specifier string literals to replace.
+  const spans: Array<[number, number]> = []
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      const ms = node.moduleSpecifier
+      if (ms && ts.isStringLiteral(ms) && isBarefootClient(ms.text)) {
+        spans.push([ms.getStart(sourceFile), ms.getEnd()])
+      }
+    } else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword
+    ) {
+      const arg = node.arguments[0]
+      if (arg && ts.isStringLiteral(arg) && isBarefootClient(arg.text)) {
+        spans.push([arg.getStart(sourceFile), arg.getEnd()])
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+
+  if (spans.length === 0) return content
+
+  // Apply replacements back-to-front so earlier offsets stay valid.
+  spans.sort((a, b) => b[0] - a[0])
+  let out = content
+  for (const [start, end] of spans) {
+    out = out.slice(0, start) + `'${rel}'` + out.slice(end)
+  }
+  return out
+}
+
+/**
  * Collapse multiple `import { ... } from 'X'` lines that share the same source
  * into a single line with the union of their names. No-op if every source
  * appears at most once. Only handles the `import { a, b } from 'X'` form —
@@ -1211,7 +1285,31 @@ export function mergeDuplicateNamedImports(content: string): string {
   const dropIndices = new Set<number>()
   let changed = false
 
+  // Cheap pre-scan: are there even two import-shaped lines sharing a source?
+  // Step 6c runs this over every emitted client JS file, so short-circuit
+  // (and skip the TS parse below) for the common case where nothing can
+  // possibly merge.
+  {
+    const seen = new Set<string>()
+    let possibleDuplicate = false
+    for (const line of lines) {
+      const m = line.match(namedImportRe)
+      if (!m) continue
+      if (seen.has(m[3])) { possibleDuplicate = true; break }
+      seen.add(m[3])
+    }
+    if (!possibleDuplicate) return content
+  }
+
+  // Restrict merging to lines that are *real* top-level import statements.
+  // An `import { … } from '…'` line living inside a string / template
+  // literal value (e.g. an inlined code-snippet module) matches the regex
+  // too, and merging across such lines would silently rewrite the string's
+  // contents. See piconic-ai/barefootjs#1702.
+  const realImportLines = topLevelImportLines(content)
+
   lines.forEach((line, idx) => {
+    if (!realImportLines.has(idx)) return
     const m = line.match(namedImportRe)
     if (!m) return
     const names = m[1].split(',').map(s => s.trim()).filter(Boolean)
