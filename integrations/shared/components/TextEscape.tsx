@@ -12,11 +12,11 @@ import { createSignal } from '@barefootjs/client'
  * path; `<Tag>` inside `label` must surface as literal text, never a real
  * element.
  */
-export function TextEscape({ label }: { label: string }) {
+export function TextEscape(props: { label: string }) {
   const [count, setCount] = createSignal(0)
   return (
     <div class="text-escape">
-      <p class="label">{label}</p>
+      <p class="label">{props.label}</p>
       <button type="button" onClick={() => setCount(count() + 1)}>
         count: {count()}
       </button>
