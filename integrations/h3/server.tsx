@@ -24,7 +24,6 @@ import {
   setCookie,
   readBody,
   getQuery,
-  createEventStream,
   setResponseStatus,
   toWebHandler,
   type H3Event,
@@ -281,22 +280,45 @@ router.get(
   eventHandler((event) => {
     void getQuery(event).q // the user's prompt — ignored by this dummy backend
     const text = FAKE_RESPONSES[Math.floor(Math.random() * FAKE_RESPONSES.length)]
-    const stream = createEventStream(event)
 
-    // Push after `send()` returns the stream — createEventStream keeps the
-    // connection open. Each push frames the payload as `data: <msg>\n\n`,
-    // which is exactly what the island's `EventSource.onmessage` expects:
-    // a JSON-encoded character per token, then a literal `[DONE]`.
-    ;(async () => {
-      for (const ch of [...text]) {
-        await stream.push(JSON.stringify(ch))
-        await new Promise((r) => setTimeout(r, 30))
-      }
-      await stream.push('[DONE]')
-      await stream.close()
-    })()
+    // A raw SSE ReadableStream rather than h3's createEventStream: the
+    // EventSource closes the connection as soon as it reads `[DONE]` (and on
+    // navigation), and createEventStream under the web handler crashes the
+    // process when the push loop writes to the already-closed stream. With a
+    // ReadableStream we stop on `cancel()` and swallow the enqueue-after-close
+    // error, so a client disconnect can never take the server down. Each frame
+    // is one JSON-encoded character, then a literal `[DONE]` — what the
+    // island's `EventSource.onmessage` expects.
+    let cancelled = false
+    const stream = new ReadableStream({
+      async start(controller) {
+        const enc = new TextEncoder()
+        try {
+          for (const ch of [...text]) {
+            if (cancelled) return
+            controller.enqueue(enc.encode(`data: ${JSON.stringify(ch)}\n\n`))
+            await new Promise((r) => setTimeout(r, 30))
+          }
+          if (!cancelled) {
+            controller.enqueue(enc.encode('data: [DONE]\n\n'))
+            controller.close()
+          }
+        } catch {
+          // client disconnected mid-stream — nothing left to do
+        }
+      },
+      cancel() {
+        cancelled = true
+      },
+    })
 
-    return stream.send()
+    return new Response(stream, {
+      headers: {
+        'content-type': 'text/event-stream',
+        'cache-control': 'no-cache',
+        connection: 'keep-alive',
+      },
+    })
   }),
 )
 
