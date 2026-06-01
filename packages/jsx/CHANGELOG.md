@@ -1,5 +1,24 @@
 # @barefootjs/jsx
 
+## 0.5.3
+
+### Patch Changes
+
+- b7ffce1: Implement `dangerouslySetInnerHTML={{ __html }}` on the client. Previously the client codegen treated it as a generic reactive attribute, emitting a bogus `dangerouslySetInnerHTML="[object Object]"` and never setting `innerHTML`, so a `"use client"` component rendered nothing on the client (a silent SSR/CSR mismatch). The client now mirrors the SSR adapters: the `{ __html }` object is suppressed as an attribute, its value is emitted as the element's raw (unescaped) content in the template, and a reactive value also drives an `innerHTML` assignment in init. This is the intentional raw-HTML escape hatch — values are NOT escaped, by design.
+- 2c1f3ad: Client-render templates now HTML-escape interpolated attribute values (via a new `escapeAttr` runtime helper) to match the SSR adapters' attribute escaping (`& " ' < >`). Previously a dynamic attribute value containing `"`, `<`, `>`, or `&` — e.g. UnoCSS arbitrary variants like `[class*="size-"]` or `has-[>svg]` — was concatenated raw into the client template string, which corrupts attribute parsing when the template is inserted via `innerHTML` and diverges from the server-rendered bytes. Escaping at interpolation time is the only correct layer (a post-assembly pass can't tell a delimiter `"` from a value `"`).
+- 5231cc8: Client-render templates now HTML-escape interpolated **text content** (the `<!--bf:sN-->${expr}<!--/-->` slots) via a new `escapeText` runtime helper — the parallel of the #1692 attribute-value fix. A string child containing `<` / `&` (e.g. `{user.name}`) was previously concatenated raw into the template string, which diverges from the SSR-escaped bytes and is a markup-injection vector when the template is inserted via `innerHTML`. Only the text-marker slots are escaped; bare `${children}` passthrough and `renderChild(...)` output are pre-rendered HTML and are left untouched. Hono escapes text with the same set as attribute values (`& " ' < >`), so `escapeText` delegates to the same operation for byte-parity with the conformance layer.
+- 0f0d880: Fix a loop wrapped in a transparent fragment losing its parent container's preceding siblings when computing the `children[idx]` hydration offset (#1699, follow-up to #1688/#1693). A fragment (`<>…</>`) renders no DOM element wrapper, so a `.map()` inside it is a direct sibling of the fragment's siblings in the nearest ancestor element — but `computeLoopSiblingOffsets` treated the fragment as its own container boundary and reset the preceding-sibling run, so elements before the fragment were dropped from the offset and the mapped items resolved against the wrong `children[idx]` (their nested child components stayed inert after hydration). The offset pre-pass now flattens transparent containers (fragment / provider / async) into the enclosing run, so `<Box><hr/><hr/><>{xs.map(...)}</></Box>` correctly offsets the items past both `<hr/>`s while fragment-internal siblings keep counting too.
+- 72fdbe2: `bf build` no longer mangles string-literal contents when inlining a local module into a client component's chunk. The combine and specifier-normalisation passes are now AST-aware, so `import …` lines and `@barefootjs/client` text that merely appear _inside a string value_ (e.g. an inlined data module exporting a code snippet) are left untouched. This fixes a hydration break (`ReferenceError: hydrate is not defined`, where the component's real runtime import was relocated into the literal) and a string-corruption bug (`@barefootjs/client` rewritten to `./barefoot.js` inside snippet text).
+- d32c45d: Fix mapped items in the second and later `static + .map()` groups staying inert after hydration inside a self-portaling container (#1693, follow-up to #1688). The `children[idx]` offset for a loop's nested child components only counted statically-sized preceding siblings, so siblings whose rendered element count is only known at runtime shifted the items and left them resolving against the wrong element (unhydrated):
+
+  - a preceding `.map()` contributes `array.length` children — the original report's two-group shadcn `Select`;
+  - a preceding `{cond && <el/>}` / `{cond ? <el/> : null}` conditional contributes 0 elements when its branch is absent (it renders only comment anchors), but was over-counted as a static `1`.
+
+  The offset is now computed from the actual element count of each preceding sibling — a folded integer for statically-sized nodes, plus a runtime term (`(arr).length`, `(cond ? 1 : 0)`) for dynamic ones. Non-element siblings (bare text / expressions) correctly contribute 0 since `container.children` is element-only.
+
+- Updated dependencies [d87144d]
+  - @barefootjs/shared@0.5.3
+
 ## 0.5.2
 
 ### Patch Changes
