@@ -380,6 +380,12 @@ export interface MergeContext {
 function isMergeableAttr(a: IRAttribute, ctx: MergeContext): boolean {
   if (ctx.honorClientOnly && a.clientOnly) return false
   if (a.name === 'key') return false
+  // `dangerouslySetInnerHTML` is not an attribute — its `{ __html }` value
+  // becomes the element's raw innerHTML (emitted as content, set via
+  // `innerHTML` in init). Keep it out of the `spreadAttrs({...})` merge so
+  // it isn't serialised back into a bogus `dangerouslySetInnerHTML="…"`
+  // attribute when the element also carries a spread.
+  if (a.name === 'dangerouslySetInnerHTML') return false
   const v = a.value
   if (v.kind === 'jsx-children') return false
   if (v.kind === 'boolean-shorthand') return false

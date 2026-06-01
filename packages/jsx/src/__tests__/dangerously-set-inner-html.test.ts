@@ -45,6 +45,27 @@ describe('dangerouslySetInnerHTML (client)', () => {
     expect(clientJs).not.toMatch(/setAttribute\('dangerouslySetInnerHTML'/)
   })
 
+  test('spread + dangerouslySetInnerHTML: kept out of the spreadAttrs merge', () => {
+    // An element that also carries a spread switches to the
+    // `${spreadAttrs({...})}` merge form; `dangerouslySetInnerHTML` must
+    // not be folded into that object (it would serialise as a bogus
+    // `dangerouslySetInnerHTML="[object Object]"` attribute).
+    const clientJs = getClientJs(
+      `'use client'
+       export function A({ rest, html }: { rest: Record<string, unknown>; html: string }) {
+         return <div {...rest} class="x" dangerouslySetInnerHTML={{ __html: html }} />
+       }`,
+      'A.tsx',
+    )
+    expect(clientJs).toContain('spreadAttrs(')
+    // The merge object must NOT contain a dangerouslySetInnerHTML key…
+    expect(clientJs).not.toMatch(/spreadAttrs\([^)]*dangerouslySetInnerHTML/)
+    expect(clientJs).not.toMatch(/dangerouslySetInnerHTML="/)
+    // …and the raw HTML is still emitted as the element's content.
+    expect(clientJs).toMatch(/<\/div>/)
+    expect(clientJs).toMatch(/\.__html/)
+  })
+
   test('static value: raw content emitted in the template (no init needed)', () => {
     const clientJs = getClientJs(
       `'use client'
