@@ -18,6 +18,7 @@ type Adapter = {
 
 const ADAPTERS: Adapter[] = [
   { slug: 'hono',        name: 'Hono',        runtime: 'TypeScript · Cloudflare Workers' },
+  { slug: 'h3',          name: 'h3',          runtime: 'TypeScript · UnJS (Node)' },
   { slug: 'echo',        name: 'Echo',        runtime: 'Go · Labstack Echo' },
   { slug: 'mojolicious', name: 'Mojolicious', runtime: 'Perl · Mojolicious::Lite' },
 ]
@@ -48,7 +49,7 @@ export function createIntegrationsApp() {
     c.render(<IntegrationsIndex />, {
       title: 'Integrations — Barefoot.js',
       description:
-        'Same JSX components running on Hono (Workers), Echo (Go), and Mojolicious (Perl).',
+        'Same JSX components running on Hono (Workers), h3 (UnJS), Echo (Go), and Mojolicious (Perl).',
     }),
   )
 
