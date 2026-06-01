@@ -4,12 +4,13 @@
  *
  *   :4000/integrations/hono/*        → hono service
  *   :4000/integrations/h3/*          → h3 service
+ *   :4000/integrations/elysia/*      → elysia service
  *   :4000/integrations/echo/*        → echo service
  *   :4000/integrations/mojolicious/* → mojolicious service
  *   :4000/*                          → site-core service
  *
  * Designed to run inside the dev docker-compose network where service names
- * (hono, h3, echo, mojolicious, site-core) resolve via Docker DNS. Each upstream
+ * (hono, h3, elysia, echo, mojolicious, site-core) resolve via Docker DNS. Each upstream
  * target is overridable via env vars so the same script also works on the
  * host (e.g. when iterating on the proxy itself), and so individual targets
  * can be redirected to host.docker.internal when an integration is being run
@@ -30,6 +31,7 @@ type Route = {
 const routes: readonly Route[] = [
   { prefix: '/integrations/hono',        target: process.env.HONO_TARGET        ?? 'http://hono:3000',        label: 'Hono' },
   { prefix: '/integrations/h3',          target: process.env.H3_TARGET          ?? 'http://h3:3003',          label: 'h3 (UnJS)' },
+  { prefix: '/integrations/elysia',      target: process.env.ELYSIA_TARGET      ?? 'http://elysia:3005',      label: 'Elysia (Bun)' },
   { prefix: '/integrations/echo',        target: process.env.ECHO_TARGET        ?? 'http://echo:8080',        label: 'Echo (Go)' },
   { prefix: '/integrations/mojolicious', target: process.env.MOJOLICIOUS_TARGET ?? 'http://mojolicious:3000', label: 'Mojolicious (Perl)' },
 ] as const

@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the Elysia integration. Source and host-built dist/
+# are bind-mounted in via docker-compose; bun watches server.tsx and reloads
+# on every save.
+#
+# Build context is the repo root so workspace deps (`@barefootjs/*`,
+# `@barefootjs/hono`) resolve through node_modules at /workspace/node_modules.
+
+FROM oven/bun:1.3-alpine
+
+WORKDIR /workspace/integrations/elysia
+
+EXPOSE 3005
+
+CMD ["bun", "run", "--watch", "server.tsx"]
