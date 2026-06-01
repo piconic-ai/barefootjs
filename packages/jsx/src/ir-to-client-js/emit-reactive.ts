@@ -17,6 +17,15 @@ import { createTemplateAwareStringProtector } from './html-template'
  */
 export function emitAttrUpdate(target: string, attrName: string, expression: string, meta: AttrMeta): string[] {
   const htmlName = toHtmlAttrName(attrName)
+  if (attrName === 'dangerouslySetInnerHTML' || htmlName === 'dangerouslySetInnerHTML') {
+    // `{ __html }` is not an attribute — it replaces the element's content.
+    // Assign `innerHTML` (raw, intentional escape hatch) to mirror the SSR
+    // adapters' native `dangerouslySetInnerHTML` handling instead of
+    // stringifying the object into a bogus attribute.
+    return [
+      `{ const __v = ${expression}; ${target}.innerHTML = __v != null && __v.__html != null ? String(__v.__html) : '' }`,
+    ]
+  }
   if (htmlName === 'style') {
     return [
       `{ const __v = styleToCss(${expression}); if (__v != null) ${target}.setAttribute('style', __v); else ${target}.removeAttribute('style') }`,

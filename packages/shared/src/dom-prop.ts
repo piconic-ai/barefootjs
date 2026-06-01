@@ -110,6 +110,7 @@ export type DOMPropKind =
   | 'property'  // value, checked — must use DOM property, not setAttribute
   | 'boolean'   // disabled, hidden, … — presence/absence attribute
   | 'attr'      // regular setAttribute target
+  | 'innerHTML' // dangerouslySetInnerHTML — { __html } sets el.innerHTML, never an attribute
 
 export interface DOMPropClassification {
   kind: DOMPropKind
@@ -135,6 +136,7 @@ function isEventProp(key: string): boolean {
 export function classifyDOMProp(key: string): DOMPropClassification {
   if (key === 'children') return { kind: 'skip', attrName: key }
   if (key === 'ref')      return { kind: 'ref', attrName: key }
+  if (key === 'dangerouslySetInnerHTML') return { kind: 'innerHTML', attrName: key }
   if (isEventProp(key))   return { kind: 'event', attrName: key }
 
   const attrName = toHTMLAttrNameRuntime(key)

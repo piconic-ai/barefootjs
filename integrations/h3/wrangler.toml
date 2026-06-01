@@ -1,0 +1,30 @@
+name = "barefootjs-h3-example"
+main = "server.tsx"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+# Let the Worker handle routing so basePath requests like `/integrations/h3/`
+# fall through to the h3 app; static files under ./public are served by the
+# Assets binding (the Worker calls env.ASSETS.fetch for /static + /shared).
+run_worker_first = true
+
+# Two patterns because Cloudflare route globs do not match the "/*" suffix as
+# empty — `/integrations/h3/*` matches /integrations/h3/counter and
+# /integrations/h3/, but not the bare /integrations/h3 (no trailing slash),
+# which is the canonical URL the catalog links to.
+[[routes]]
+pattern = "barefootjs.dev/integrations/h3"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/h3/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/h3"
+
+[dev]
+port = 3003

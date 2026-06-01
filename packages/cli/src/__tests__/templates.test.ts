@@ -57,6 +57,20 @@ describe('adapter registry', () => {
     expect(honoNode.devDependencies['@types/node']).toBeTruthy()
   })
 
+  test('hono-node tsconfig keeps dist/components in JSX-transform scope', () => {
+    // The server imports the compiled SSR templates from dist/components
+    // (via the @/components/* path mapping). `tsx` applies the JSX
+    // transform per-file, honouring this tsconfig's include/exclude — so
+    // excluding dist/components strips `jsxImportSource` from those .tsx
+    // files and SSR throws `ReferenceError: React is not defined` on the
+    // first render. Pin that they stay in scope.
+    const tsconfig = ADAPTERS['hono-node'].files['tsconfig.json']
+    expect(tsconfig).toContain('"jsxImportSource": "@barefootjs/hono/jsx"')
+    const excludeMatch = tsconfig.match(/"exclude":\s*\[([^\]]*)\]/)
+    expect(excludeMatch).not.toBeNull()
+    expect(excludeMatch![1]).not.toContain('dist/components')
+  })
+
   // Regression guards for the "edits don't reach the browser" class
   // of bug. Each adapter that does SSR has to invalidate *something*
   // per request in dev — otherwise the boot-time render cache buries

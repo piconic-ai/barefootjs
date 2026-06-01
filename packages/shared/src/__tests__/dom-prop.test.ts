@@ -10,6 +10,13 @@ describe('classifyDOMProp', () => {
     expect(classifyDOMProp('ref')).toEqual({ kind: 'ref', attrName: 'ref' })
   })
 
+  test('dangerouslySetInnerHTML → innerHTML', () => {
+    expect(classifyDOMProp('dangerouslySetInnerHTML')).toEqual({
+      kind: 'innerHTML',
+      attrName: 'dangerouslySetInnerHTML',
+    })
+  })
+
   test('onClick → event', () => {
     const c = classifyDOMProp('onClick')
     expect(c.kind).toBe('event')

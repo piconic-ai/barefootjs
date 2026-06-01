@@ -230,7 +230,13 @@ const HONO_NODE_TSCONFIG = `{
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist/components"]
+  // Do NOT exclude dist/components here. The server imports the compiled
+  // SSR templates from there (see the @/components/* paths above), and
+  // tsx applies the JSX transform per-file honouring this include/
+  // exclude — an excluded .tsx loses jsxImportSource and falls back to
+  // the classic React runtime, so SSR throws "ReferenceError: React is
+  // not defined" at the first render. They must stay in scope.
+  "exclude": ["node_modules"]
 }
 `
 

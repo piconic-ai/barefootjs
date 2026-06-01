@@ -5,8 +5,6 @@ export function initTextEscape(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const label = _p.label
-
   const [count, setCount] = createSignal(0)
 
   const [_s3] = $(__scope, 's3')
@@ -14,7 +12,7 @@ export function initTextEscape(__scope, _p = {}) {
 
   let __anchor_s0 = _s0
   createEffect(() => {
-    const __val = label
+    const __val = _p.label
     __anchor_s0 = __bfText(__anchor_s0, __val)
   })
 

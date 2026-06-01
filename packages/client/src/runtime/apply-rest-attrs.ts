@@ -64,7 +64,13 @@ export function applyRestAttrs(
     for (const { key, c } of attrEntries) {
       const value = source[key]
 
-      if (value != null && value !== false) {
+      if (c.kind === 'innerHTML') {
+        // `dangerouslySetInnerHTML={{ __html }}` arriving via a rest object —
+        // set the element's raw innerHTML (the escape hatch), never an
+        // attribute. Reactive: re-runs when `source` changes.
+        const html = value as { __html?: unknown } | null | undefined
+        el.innerHTML = html != null && html.__html != null ? String(html.__html) : ''
+      } else if (value != null && value !== false) {
         if (c.kind === 'property' && c.attrName === 'value' && 'value' in el) {
           const strVal = String(value)
           if ((el as HTMLInputElement).value !== strVal) (el as HTMLInputElement).value = strVal
