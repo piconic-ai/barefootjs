@@ -11,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3003',
+    baseURL: 'http://localhost:3003/integrations/h3',
     trace: 'on-first-retry',
   },
   projects: [
@@ -25,7 +25,7 @@ export default defineConfig({
     // (barefoot.js) must already exist — built by `@barefootjs/client` in
     // CI before this runs, same as the other integrations.
     command: 'bun run build && bun run start',
-    url: 'http://localhost:3003',
+    url: 'http://localhost:3003/integrations/h3',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },
