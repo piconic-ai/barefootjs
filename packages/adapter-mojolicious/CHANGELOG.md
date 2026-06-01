@@ -1,5 +1,12 @@
 # @barefootjs/mojolicious
 
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [d87144d]
+  - @barefootjs/shared@0.5.3
+
 ## 0.5.2
 
 ### Patch Changes
