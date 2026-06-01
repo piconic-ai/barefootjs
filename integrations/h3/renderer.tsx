@@ -11,6 +11,24 @@
 import { BfImportMap, BfScripts } from '@barefootjs/hono/app'
 import type { BarefootBuildManifest } from '@barefootjs/hono/app'
 
+// Shared site header — same markup/classes as the hono, echo and
+// mojolicious integrations (styled by shared/styles/layout.css) so every
+// adapter demo looks identical. The `/integrations` link points at the
+// catalog at the site root, not under this adapter's base path.
+function SiteHeader() {
+  return (
+    <header className="bf-header">
+      <div className="bf-header-inner">
+        <a href="https://barefootjs.dev" className="bf-header-logo" aria-label="Barefoot.js">
+          <span className="bf-header-logo-img" role="img" aria-hidden="true" />
+        </a>
+        <div className="bf-header-sep" />
+        <a href="/integrations" className="bf-header-link">Integrations</a>
+      </div>
+    </header>
+  )
+}
+
 export interface LayoutProps {
   title?: string
   manifest: BarefootBuildManifest
@@ -42,6 +60,7 @@ export function Layout({ title, manifest, base = '', styles, children }: LayoutP
         <BfImportMap base={componentsBase} />
       </head>
       <body>
+        <SiteHeader />
         {children}
         <BfScripts base={componentsBase} manifest={manifest} />
       </body>
