@@ -165,6 +165,7 @@ router.get(
           toggleItems={[
             { label: 'Setting 1', defaultOn: true },
             { label: 'Setting 2', defaultOn: false },
+            { label: 'Setting 3', defaultOn: false },
           ]}
         />
         <p><a href="/">← Back</a></p>
