@@ -44,12 +44,20 @@ import { AIChatInteractive } from '@/components/AIChatInteractive'
 
 const PORT = Number(process.env.PORT ?? 3003)
 
+// URL prefix everything is mounted under. Empty for the standalone server
+// (`bun run start`, e2e); `/integrations/h3` behind the dev proxy, which
+// forwards the prefix through unchanged. `link()` builds absolute in-app
+// URLs; client islands fetch the API with *relative* URLs ('api/todos'),
+// which resolve under the prefix automatically.
+const BASE = process.env.BASE_PATH ?? ''
+const link = (path: string) => `${BASE}${path}`
+
 // ── static assets ──────────────────────────────────────────────────────────
-// /static/components/* → ./dist/components/*   (barefoot.js + *.client.js)
-// /shared/styles/*     → ../shared/styles/*    (demo stylesheets)
+// {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
+// {BASE}/shared/styles/*     → ../shared/styles/*   (demo stylesheets)
 const STATIC_MOUNTS: Array<{ prefix: string; dir: string }> = [
-  { prefix: '/static/components/', dir: join(import.meta.dir, 'dist/components') },
-  { prefix: '/shared/styles/', dir: join(import.meta.dir, '../shared/styles') },
+  { prefix: `${BASE}/static/components/`, dir: join(import.meta.dir, 'dist/components') },
+  { prefix: `${BASE}/shared/styles/`, dir: join(import.meta.dir, '../shared/styles') },
 ]
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -101,7 +109,7 @@ function getSession(event: H3Event): Session {
   if (!id) {
     id = randomUUID()
     setCookie(event, SESSION_COOKIE, id, {
-      path: '/',
+      path: BASE || '/',
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30,
@@ -122,44 +130,45 @@ async function page(node: unknown): Promise<string> {
 
 const router = createRouter()
 
-router.get(
-  '/',
-  eventHandler(async () =>
-    page(
-      <Layout title="BarefootJS + h3" manifest={manifest}>
-        <h1>BarefootJS + h3 Integration</h1>
-        <nav>
-          <ul>
-            <li><a href="/counter">Counter</a></li>
-            <li><a href="/toggle">Toggle</a></li>
-            <li><a href="/todos">Todo (@client)</a></li>
-            <li><a href="/todos-ssr">Todo (no @client markers)</a></li>
-            <li><a href="/ai-chat">AI Chat (SSE Streaming)</a></li>
-          </ul>
-        </nav>
-      </Layout>,
-    ),
+const homeHandler = eventHandler(async () =>
+  page(
+    <Layout title="BarefootJS + h3" manifest={manifest} base={BASE}>
+      <h1>BarefootJS + h3 Integration</h1>
+      <nav>
+        <ul>
+          <li><a href={link('/counter')}>Counter</a></li>
+          <li><a href={link('/toggle')}>Toggle</a></li>
+          <li><a href={link('/todos')}>Todo (@client)</a></li>
+          <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
+          <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
+        </ul>
+      </nav>
+    </Layout>,
   ),
 )
+router.get(`${BASE}/`, homeHandler)
+// Behind the proxy the prefix arrives without a trailing slash too
+// (e.g. the catalog links to `/integrations/h3`), so register that form.
+if (BASE) router.get(BASE, homeHandler)
 
 router.get(
-  '/counter',
+  link('/counter'),
   eventHandler(async () =>
     page(
-      <Layout title="Counter — BarefootJS + h3" manifest={manifest}>
+      <Layout title="Counter — BarefootJS + h3" manifest={manifest} base={BASE}>
         <h1>Counter</h1>
         <Counter initial={0} />
-        <p><a href="/">← Back</a></p>
+        <p><a href={link('/')}>← Back</a></p>
       </Layout>,
     ),
   ),
 )
 
 router.get(
-  '/toggle',
+  link('/toggle'),
   eventHandler(async () =>
     page(
-      <Layout title="Toggle — BarefootJS + h3" manifest={manifest}>
+      <Layout title="Toggle — BarefootJS + h3" manifest={manifest} base={BASE}>
         <h1>Toggle</h1>
         <Toggle
           toggleItems={[
@@ -168,58 +177,61 @@ router.get(
             { label: 'Setting 3', defaultOn: false },
           ]}
         />
-        <p><a href="/">← Back</a></p>
+        <p><a href={link('/')}>← Back</a></p>
       </Layout>,
     ),
   ),
 )
 
 router.get(
-  '/todos',
+  link('/todos'),
   eventHandler(async (event) =>
     page(
       <Layout
         title="Todo (@client) — BarefootJS + h3"
         manifest={manifest}
-        styles={['/shared/styles/todo-app.css']}
+        base={BASE}
+        styles={[link('/shared/styles/todo-app.css')]}
       >
         <h1>Todo (@client)</h1>
         <div id="app">
           <TodoApp initialTodos={getSession(event).todos} />
         </div>
-        <p><a href="/">← Back</a></p>
+        <p><a href={link('/')}>← Back</a></p>
       </Layout>,
     ),
   ),
 )
 
 router.get(
-  '/todos-ssr',
+  link('/todos-ssr'),
   eventHandler(async (event) =>
     page(
       <Layout
         title="Todo (SSR) — BarefootJS + h3"
         manifest={manifest}
-        styles={['/shared/styles/todo-app.css']}
+        base={BASE}
+        styles={[link('/shared/styles/todo-app.css')]}
       >
         <h1>Todo (no @client markers)</h1>
         <div id="app">
           <TodoAppSSR initialTodos={getSession(event).todos} />
         </div>
-        <p><a href="/">← Back</a></p>
+        <p><a href={link('/')}>← Back</a></p>
       </Layout>,
     ),
   ),
 )
 
 router.get(
-  '/ai-chat',
+  link('/ai-chat'),
   eventHandler(async () =>
     page(
       <Layout
         title="AI Chat — BarefootJS + h3"
         manifest={manifest}
-        styles={['/shared/styles/ai-chat.css']}
+        base={BASE}
+        styles={[link('/shared/styles/ai-chat.css')]}
       >
         <h1>AI Chat — SSE Streaming</h1>
         <p className="demo-notice">
@@ -227,7 +239,7 @@ router.get(
           <code>/api/ai-chat</code> in <code>server.tsx</code> with a real LLM API.
         </p>
         <AIChatInteractive />
-        <p><a href="/">← Back</a></p>
+        <p><a href={link('/')}>← Back</a></p>
       </Layout>,
     ),
   ),
@@ -235,12 +247,12 @@ router.get(
 
 // ── Todo API (relative `api/todos` from the page resolves here) ────────────
 router.get(
-  '/api/todos',
+  link('/api/todos'),
   eventHandler((event) => getSession(event).todos),
 )
 
 router.post(
-  '/api/todos',
+  link('/api/todos'),
   eventHandler(async (event) => {
     const session = getSession(event)
     const body = (await readBody(event)) as { text?: string }
@@ -252,7 +264,7 @@ router.post(
 )
 
 router.put(
-  '/api/todos/:id',
+  link('/api/todos/:id'),
   eventHandler(async (event) => {
     const id = Number(getRouterParam(event, 'id'))
     const session = getSession(event)
@@ -269,7 +281,7 @@ router.put(
 )
 
 router.delete(
-  '/api/todos/:id',
+  link('/api/todos/:id'),
   eventHandler((event) => {
     const id = Number(getRouterParam(event, 'id'))
     const session = getSession(event)
@@ -284,7 +296,7 @@ router.delete(
 )
 
 router.post(
-  '/api/todos/reset',
+  link('/api/todos/reset'),
   eventHandler((event) => {
     const session = getSession(event)
     session.todos = seedTodos()
@@ -301,7 +313,7 @@ const FAKE_RESPONSES = [
 ]
 
 router.get(
-  '/api/ai-chat',
+  link('/api/ai-chat'),
   eventHandler((event) => {
     void getQuery(event).q // the user's prompt — ignored by this dummy backend
     const text = FAKE_RESPONSES[Math.floor(Math.random() * FAKE_RESPONSES.length)]
@@ -339,5 +351,5 @@ app.use(
 app.use(router)
 
 createServer(toNodeListener(app)).listen(PORT, () => {
-  console.log(`  ➜ http://localhost:${PORT}`)
+  console.log(`  ➜ http://localhost:${PORT}${BASE || '/'}`)
 })

@@ -11,37 +11,39 @@
 import { BfImportMap, BfScripts } from '@barefootjs/hono/app'
 import type { BarefootBuildManifest } from '@barefootjs/hono/app'
 
-// URL prefix the server serves compiled bundles from (barefoot.js +
-// *.client.js). Must match the static route in server.tsx and the
-// `scriptBasePath` in barefoot.config.ts.
-const COMPONENTS_BASE = '/static/components'
-
 export interface LayoutProps {
   title?: string
   manifest: BarefootBuildManifest
+  /**
+   * URL prefix everything is mounted under (the BASE_PATH). Empty for the
+   * standalone server; `/integrations/h3` behind the dev proxy. The compiled
+   * bundles and shared styles are served relative to it.
+   */
+  base?: string
   /** Extra stylesheet hrefs to link (e.g. todo-app.css, ai-chat.css). */
   styles?: string[]
   children?: unknown
 }
 
-export function Layout({ title, manifest, styles, children }: LayoutProps) {
+export function Layout({ title, manifest, base = '', styles, children }: LayoutProps) {
+  const componentsBase = `${base}/static/components`
   return (
     <html lang="en" className="dark">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title ?? 'BarefootJS + h3'}</title>
-        <link rel="stylesheet" href="/shared/styles/tokens.css" />
-        <link rel="stylesheet" href="/shared/styles/layout.css" />
-        <link rel="stylesheet" href="/shared/styles/components.css" />
+        <link rel="stylesheet" href={`${base}/shared/styles/tokens.css`} />
+        <link rel="stylesheet" href={`${base}/shared/styles/layout.css`} />
+        <link rel="stylesheet" href={`${base}/shared/styles/components.css`} />
         {(styles ?? []).map((href) => (
           <link rel="stylesheet" href={href} />
         ))}
-        <BfImportMap base={COMPONENTS_BASE} />
+        <BfImportMap base={componentsBase} />
       </head>
       <body>
         {children}
-        <BfScripts base={COMPONENTS_BASE} manifest={manifest} />
+        <BfScripts base={componentsBase} manifest={manifest} />
       </body>
     </html>
   )
