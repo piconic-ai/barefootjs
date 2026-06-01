@@ -29,19 +29,22 @@ import {
   toWebHandler,
   type H3Event,
 } from 'h3'
-import { join, normalize } from 'node:path'
+import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
 
 // h3's `createEventStream` leaks an `undefined` unhandled rejection when an
 // SSE client disconnects under the web handler (`onClosed` does not fire in
 // web mode), which Bun/Node would treat as fatal and exit the process —
-// taking every later request down with it. Swallow it process-wide so a
-// client closing the AI-chat stream can never crash the server. Guarded
-// because on Cloudflare Workers `process.on` may be a no-op and a
-// per-request rejection doesn't kill the isolate anyway.
+// taking every later request down with it. Swallow *only* that specific
+// leak (reason is nullish) and surface anything else, so real bugs are not
+// hidden. Guarded because on Cloudflare Workers `process.on` may be a no-op
+// and a per-request rejection doesn't kill the isolate anyway.
 if (typeof process !== 'undefined' && typeof process.on === 'function') {
-  process.on('unhandledRejection', () => {})
+  process.on('unhandledRejection', (reason) => {
+    if (reason == null) return // the h3 SSE-disconnect leak — expected
+    console.error('[h3] unhandledRejection:', reason)
+  })
 }
 import { Layout } from './renderer'
 import manifest from './dist/components/manifest.json'
@@ -349,7 +352,11 @@ async function serveFromDisk(pathname: string): Promise<Response> {
     : [join(import.meta.dir, '../shared/styles'), `${BASE}/shared/styles/`]
   // normalize() collapses any `..` so a crafted path can't escape `dir`.
   const rel = normalize(pathname.slice(prefix.length))
-  if (rel.startsWith('..')) return new Response('Not found', { status: 404 })
+  // Reject traversal: `..` segments (normalize floats them to the front) and
+  // absolute paths (a `//` in the request can leave a leading `/`). `join`
+  // doesn't actually let an absolute `rel` escape `dir` — that's `resolve` —
+  // but the explicit guard keeps it safe against future refactors too.
+  if (rel.startsWith('..') || isAbsolute(rel)) return new Response('Not found', { status: 404 })
   const file = Bun.file(join(dir, rel))
   if (!(await file.exists())) return new Response('Not found', { status: 404 })
   return new Response(file) // Bun infers Content-Type from the extension
