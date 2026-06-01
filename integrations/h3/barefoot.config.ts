@@ -1,0 +1,17 @@
+import { createConfig } from '@barefootjs/hono/build'
+
+// All compiled client bundles (barefoot.js + *.client.js) and the SSR
+// marked templates land under dist/; the server serves the client bundles
+// from `${staticBase}` and imports the templates from dist/components.
+const staticBase = '/static/components/'
+
+export default createConfig({
+  components: ['../shared/components'],
+  outDir: 'dist',
+  minify: true,
+  scriptBasePath: staticBase,
+  adapterOptions: {
+    clientJsBasePath: staticBase,
+    barefootJsPath: `${staticBase}barefoot.js`,
+  },
+})
