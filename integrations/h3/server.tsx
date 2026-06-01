@@ -24,6 +24,7 @@ import {
   setCookie,
   readBody,
   getQuery,
+  createEventStream,
   setResponseStatus,
   toWebHandler,
   type H3Event,
@@ -31,6 +32,17 @@ import {
 import { join, normalize } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
+
+// h3's `createEventStream` leaks an `undefined` unhandled rejection when an
+// SSE client disconnects under the web handler (`onClosed` does not fire in
+// web mode), which Bun/Node would treat as fatal and exit the process —
+// taking every later request down with it. Swallow it process-wide so a
+// client closing the AI-chat stream can never crash the server. Guarded
+// because on Cloudflare Workers `process.on` may be a no-op and a
+// per-request rejection doesn't kill the isolate anyway.
+if (typeof process !== 'undefined' && typeof process.on === 'function') {
+  process.on('unhandledRejection', () => {})
+}
 import { Layout } from './renderer'
 import manifest from './dist/components/manifest.json'
 import { Counter } from '@/components/Counter'
@@ -281,44 +293,33 @@ router.get(
     void getQuery(event).q // the user's prompt — ignored by this dummy backend
     const text = FAKE_RESPONSES[Math.floor(Math.random() * FAKE_RESPONSES.length)]
 
-    // A raw SSE ReadableStream rather than h3's createEventStream: the
-    // EventSource closes the connection as soon as it reads `[DONE]` (and on
-    // navigation), and createEventStream under the web handler crashes the
-    // process when the push loop writes to the already-closed stream. With a
-    // ReadableStream we stop on `cancel()` and swallow the enqueue-after-close
-    // error, so a client disconnect can never take the server down. Each frame
-    // is one JSON-encoded character, then a literal `[DONE]` — what the
-    // island's `EventSource.onmessage` expects.
-    let cancelled = false
-    const stream = new ReadableStream({
-      async start(controller) {
-        const enc = new TextEncoder()
-        try {
-          for (const ch of [...text]) {
-            if (cancelled) return
-            controller.enqueue(enc.encode(`data: ${JSON.stringify(ch)}\n\n`))
-            await new Promise((r) => setTimeout(r, 30))
-          }
-          if (!cancelled) {
-            controller.enqueue(enc.encode('data: [DONE]\n\n'))
-            controller.close()
-          }
-        } catch {
-          // client disconnected mid-stream — nothing left to do
+    // h3's native SSE helper. The push loop stops on `onClosed` and the
+    // try/catch handles the push-after-close race; the leaked `undefined`
+    // rejection h3 emits on disconnect (web mode) is swallowed by the
+    // process-level guard at the top of this file. Each frame is one
+    // JSON-encoded character, then a literal `[DONE]` — what the island's
+    // `EventSource.onmessage` expects.
+    const eventStream = createEventStream(event)
+    let closed = false
+    eventStream.onClosed(() => {
+      closed = true
+    })
+    ;(async () => {
+      try {
+        for (const ch of [...text]) {
+          if (closed) break
+          await eventStream.push(JSON.stringify(ch))
+          await new Promise((r) => setTimeout(r, 30))
         }
-      },
-      cancel() {
-        cancelled = true
-      },
-    })
+        if (!closed) await eventStream.push('[DONE]')
+      } catch {
+        // client disconnected mid-stream — nothing left to do
+      } finally {
+        await eventStream.close().catch(() => {})
+      }
+    })()
 
-    return new Response(stream, {
-      headers: {
-        'content-type': 'text/event-stream',
-        'cache-control': 'no-cache',
-        connection: 'keep-alive',
-      },
-    })
+    return eventStream.send()
   }),
 )
 
