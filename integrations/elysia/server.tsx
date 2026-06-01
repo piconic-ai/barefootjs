@@ -30,8 +30,11 @@ const PORT = Number(process.env.PORT ?? 3005)
 const BASE = process.env.BASE_PATH ?? ''
 const link = (path: string) => `${BASE}${path}`
 
-const COMPONENTS_DIR = join(import.meta.dir, 'dist/components')
-const STYLES_DIR = join(import.meta.dir, '../shared/styles')
+// Directories the static handlers read from. Overridable via env so the
+// production container (where the server runs as a bundled single file)
+// can point at the copied assets without depending on the source layout.
+const COMPONENTS_DIR = process.env.BF_COMPONENTS_DIR ?? join(import.meta.dir, 'dist/components')
+const STYLES_DIR = process.env.BF_STYLES_DIR ?? join(import.meta.dir, '../shared/styles')
 
 // ── helpers ────────────────────────────────────────────────────────────────
 async function serveFile(dir: string, rel: string, set: { status?: number }) {
@@ -262,17 +265,30 @@ const app = new Elysia()
   // ── AI chat SSE ──────────────────────────────────────────────────────────
   .get(link('/api/ai-chat'), () => {
     const text = FAKE_RESPONSES[Math.floor(Math.random() * FAKE_RESPONSES.length)]
+    // The EventSource closes the connection on `[DONE]` / navigation, so the
+    // loop must stop on `cancel()` and swallow the enqueue-after-close race —
+    // otherwise a disconnect throws and could take the process down. One
+    // JSON-encoded character per `data:` frame, then a literal `[DONE]`.
+    let cancelled = false
     const stream = new ReadableStream({
       async start(controller) {
         const enc = new TextEncoder()
-        for (const ch of [...text]) {
-          // One JSON-encoded character per `data:` frame, then a literal
-          // `[DONE]` — exactly what the island's EventSource.onmessage expects.
-          controller.enqueue(enc.encode(`data: ${JSON.stringify(ch)}\n\n`))
-          await new Promise((r) => setTimeout(r, 30))
+        try {
+          for (const ch of [...text]) {
+            if (cancelled) return
+            controller.enqueue(enc.encode(`data: ${JSON.stringify(ch)}\n\n`))
+            await new Promise((r) => setTimeout(r, 30))
+          }
+          if (!cancelled) {
+            controller.enqueue(enc.encode('data: [DONE]\n\n'))
+            controller.close()
+          }
+        } catch {
+          // client disconnected mid-stream — nothing left to do
         }
-        controller.enqueue(enc.encode('data: [DONE]\n\n'))
-        controller.close()
+      },
+      cancel() {
+        cancelled = true
       },
     })
     return new Response(stream, {
