@@ -6,8 +6,8 @@
   "scripts": {
     "build": "bun run ../../packages/cli/src/index.ts build",
     "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
-    "dev": "bun run build && bun run --watch server.ts",
-    "start": "bun run server.ts",
+    "dev": "bun run build && bun run --watch server.tsx",
+    "start": "bun run server.tsx",
     "test:e2e": "bunx playwright test"
   },
   "dependencies": {
