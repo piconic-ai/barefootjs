@@ -13,6 +13,8 @@
   "dependencies": {
     "@barefootjs/client": "workspace:*",
     "@barefootjs/hono": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/shared": "workspace:*",
     "h3": "^1.13.0",
     "hono": "^4"
   },

@@ -1,4 +1,4 @@
-/** @jsxImportSource hono/jsx */
+/** @jsxImportSource @barefootjs/hono/jsx */
 //
 // HTML page shell, written as a plain hono/jsx component. Nothing here is
 // h3-aware: it's the same layout any host framework would compose, then

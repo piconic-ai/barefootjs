@@ -4,14 +4,13 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx",
+    "jsxImportSource": "@barefootjs/hono/jsx",
     "types": ["bun-types"],
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
       "@/components/*": ["./dist/components/*"]
     }

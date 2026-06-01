@@ -1,4 +1,4 @@
-/** @jsxImportSource hono/jsx */
+/** @jsxImportSource @barefootjs/hono/jsx */
 //
 // BarefootJS on h3 (UnJS) — SSR + client hydration.
 //
