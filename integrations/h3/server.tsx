@@ -2,35 +2,33 @@
 //
 // BarefootJS on h3 (UnJS) — SSR + client hydration.
 //
-// h3 is a pure HTTP framework: it has no JSX runtime, you just return a
-// value from a handler. BarefootJS components compiled with the Hono
-// adapter are plain `hono/jsx` components, so we render them to an HTML
-// string with `renderToHtml` (no Hono app involved) and return that
-// string. Static client bundles are served straight off disk.
+// h3 is a pure HTTP framework with no JSX runtime: BarefootJS components
+// compiled with the Hono adapter are plain `hono/jsx` components, rendered
+// to an HTML string with `renderToHtml` (no Hono app) and returned from h3
+// handlers. The render runtime (`@barefootjs/hono`, the hono/jsx engine) is
+// imported the same way the Go `Echo` integration imports the
+// framework-agnostic `bf` runtime from the go-template adapter.
 //
-// This mirrors the Go `Echo` integration: the framework (h3) lives only
-// here, and the render runtime (`@barefootjs/hono`, the hono/jsx engine)
-// is imported the same way Echo imports the framework-agnostic `bf`
-// runtime shipped by the go-template adapter.
+// Deployment mirrors the Hono integration: the default export is a
+// WinterCG `fetch` handler, so the same file runs on Cloudflare Workers
+// (`wrangler deploy`) and Bun (`bun run server.tsx`, used by the dev
+// compose container and the e2e webServer). Static client bundles come
+// from the Workers Assets binding in production and from disk under Bun.
 
 import {
   createApp,
   createRouter,
   eventHandler,
-  getRequestPath,
   getRouterParam,
   getCookie,
   setCookie,
   readBody,
   getQuery,
   createEventStream,
-  setResponseHeader,
   setResponseStatus,
-  toNodeListener,
+  toWebHandler,
   type H3Event,
 } from 'h3'
-import { createServer } from 'node:http'
-import { readFile } from 'node:fs/promises'
 import { join, normalize } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
@@ -44,52 +42,18 @@ import { AIChatInteractive } from '@/components/AIChatInteractive'
 
 const PORT = Number(process.env.PORT ?? 3003)
 
-// URL prefix everything is mounted under. Empty for the standalone server
-// (`bun run start`, e2e); `/integrations/h3` behind the dev proxy, which
-// forwards the prefix through unchanged. `link()` builds absolute in-app
-// URLs; client islands fetch the API with *relative* URLs ('api/todos'),
-// which resolve under the prefix automatically.
-const BASE = process.env.BASE_PATH ?? ''
+// URL prefix everything is mounted under. Defaults to `/integrations/h3`
+// (the deploy path) so production works without relying on `[vars]` being
+// surfaced on `process.env` at module-load — Cloudflare populates `[vars]`
+// on the `env` binding, not necessarily `process.env`, so a non-empty
+// default is what makes the Worker route correctly (same pattern as the
+// Hono integration). Override via BASE_PATH to mount elsewhere. Client
+// islands fetch the API with relative URLs ('api/todos'), which resolve
+// under the prefix automatically.
+const BASE = process.env.BASE_PATH ?? '/integrations/h3'
 const link = (path: string) => `${BASE}${path}`
 
-// ── static assets ──────────────────────────────────────────────────────────
-// {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
-// {BASE}/shared/styles/*     → ../shared/styles/*   (demo stylesheets)
-const STATIC_MOUNTS: Array<{ prefix: string; dir: string }> = [
-  { prefix: `${BASE}/static/components/`, dir: join(import.meta.dir, 'dist/components') },
-  { prefix: `${BASE}/shared/styles/`, dir: join(import.meta.dir, '../shared/styles') },
-]
-
-const CONTENT_TYPES: Record<string, string> = {
-  '.js': 'text/javascript; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-}
-
-async function tryServeStatic(path: string): Promise<{ body: Buffer; type: string } | null> {
-  for (const { prefix, dir } of STATIC_MOUNTS) {
-    if (!path.startsWith(prefix)) continue
-    // normalize() collapses any `..` so a crafted path can't escape `dir`.
-    const rel = normalize(path.slice(prefix.length))
-    if (rel.startsWith('..')) return null
-    const file = join(dir, rel)
-    try {
-      const body = await readFile(file)
-      const ext = rel.slice(rel.lastIndexOf('.'))
-      return { body, type: CONTENT_TYPES[ext] ?? 'application/octet-stream' }
-    } catch {
-      return null
-    }
-  }
-  return null
-}
-
 // ── per-session todo store ─────────────────────────────────────────────────
-// Each browser gets an opaque id via a cookie; the in-memory map is keyed
-// on it so one visitor's list is never visible to another. Process-local
-// and ephemeral — fine for a demo.
 type Todo = { id: number; text: string; done: boolean }
 type Session = { todos: Todo[]; nextId: number }
 
@@ -147,8 +111,8 @@ const homeHandler = eventHandler(async () =>
   ),
 )
 router.get(`${BASE}/`, homeHandler)
-// Behind the proxy the prefix arrives without a trailing slash too
-// (e.g. the catalog links to `/integrations/h3`), so register that form.
+// Behind the proxy / on Workers the prefix arrives without a trailing slash
+// too (e.g. the catalog links to `/integrations/h3`), so register that form.
 if (BASE) router.get(BASE, homeHandler)
 
 router.get(
@@ -337,19 +301,48 @@ router.get(
 )
 
 const app = createApp()
-
-// Static first: short-circuit asset requests before the router runs.
-app.use(
-  eventHandler(async (event) => {
-    const hit = await tryServeStatic(getRequestPath(event))
-    if (!hit) return // fall through to the router
-    setResponseHeader(event, 'Content-Type', hit.type)
-    return hit.body
-  }),
-)
-
 app.use(router)
+const webHandler = toWebHandler(app)
 
-createServer(toNodeListener(app)).listen(PORT, () => {
-  console.log(`  ➜ http://localhost:${PORT}${BASE || '/'}`)
-})
+// ── static assets ──────────────────────────────────────────────────────────
+// {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
+// {BASE}/shared/styles/*     → ../shared/styles/*   (demo stylesheets)
+//
+// On Workers these are served by the Assets binding (see wrangler.toml);
+// under Bun (dev container, e2e) there's no binding, so read from disk.
+// `import.meta.dir` is undefined on Workers, so the paths are resolved
+// lazily inside serveFromDisk (only reached on the Bun branch) — computing
+// them at module top level would crash the Worker on startup.
+function isStaticPath(pathname: string): boolean {
+  return (
+    pathname.startsWith(`${BASE}/static/components/`) ||
+    pathname.startsWith(`${BASE}/shared/styles/`)
+  )
+}
+
+async function serveFromDisk(pathname: string): Promise<Response> {
+  const [dir, prefix] = pathname.startsWith(`${BASE}/static/components/`)
+    ? [join(import.meta.dir, 'dist/components'), `${BASE}/static/components/`]
+    : [join(import.meta.dir, '../shared/styles'), `${BASE}/shared/styles/`]
+  // normalize() collapses any `..` so a crafted path can't escape `dir`.
+  const rel = normalize(pathname.slice(prefix.length))
+  if (rel.startsWith('..')) return new Response('Not found', { status: 404 })
+  const file = Bun.file(join(dir, rel))
+  if (!(await file.exists())) return new Response('Not found', { status: 404 })
+  return new Response(file) // Bun infers Content-Type from the extension
+}
+
+type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
+
+export default {
+  port: PORT,
+  async fetch(request: Request, env?: Env): Promise<Response> {
+    const url = new URL(request.url)
+    if (isStaticPath(url.pathname)) {
+      // Production (Workers): serve from the Assets binding. Dev (Bun): disk.
+      if (env?.ASSETS) return env.ASSETS.fetch(request)
+      return serveFromDisk(url.pathname)
+    }
+    return webHandler(request)
+  },
+}
