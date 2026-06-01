@@ -192,6 +192,11 @@ const UNSAFE_TEMPLATE_EXPR = 'undefined'
  * @param attr - Attribute metadata (only presenceOrUndefined flag is used)
  */
 function templateAttrExpr(attrName: string, valExpr: string, presenceOrUndefined?: boolean): string {
+  // `dangerouslySetInnerHTML={{ __html }}` is not an attribute — its value
+  // becomes the element's raw innerHTML (emitted as element content). Never
+  // serialise the `{ __html }` object into a `dangerouslySetInnerHTML="…"`
+  // attribute.
+  if (attrName === 'dangerouslySetInnerHTML') return ''
   if (isBooleanAttr(attrName) || presenceOrUndefined) {
     return `\${${valExpr} ? '${attrName}' : ''}`
   }
@@ -238,6 +243,27 @@ function escapeAttrValueExpr(valExpr: string): string {
  */
 function escapeTextSlotExpr(innerExpr: string): string {
   return `escapeText(${innerExpr})`
+}
+
+/**
+ * `dangerouslySetInnerHTML={{ __html: E }}` makes the element's content its
+ * raw innerHTML — the intentional, React-style escape hatch. Returns the
+ * raw-content template expression to use *instead of* the element's normal
+ * children (emitted UNescaped by design, mirroring the SSR adapters'
+ * native handling), or `null` when the element carries no such attribute.
+ * The attribute itself is suppressed in `templateAttrExpr`, and the
+ * matching reactive update is emitted by `emitAttrUpdate` (assigns
+ * `innerHTML`). `toExpr` is the walker's value transform (`wrapExpr` /
+ * `transformExpr`) so the `{ __html }` object is lowered the same way an
+ * attribute value would be.
+ */
+function dangerouslyHtmlChildren(
+  attrs: ReadonlyArray<IRAttribute>,
+  toExpr: (v: { expr: string; templateExpr?: string }) => string,
+): string | null {
+  const attr = attrs.find(a => a.name === 'dangerouslySetInnerHTML')
+  if (!attr || attr.value.kind !== 'expression') return null
+  return `\${((${toExpr(attr.value)}) ?? {}).__html ?? ''}`
 }
 
 /**
@@ -508,7 +534,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
 
       const attrs = attrParts.join(' ')
       const childrenRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, insideLoop, false)
-      const children = node.children.map(childrenRecurse).join('')
+      const children = dangerouslyHtmlChildren(node.attrs, v => wrapExpr(v.expr)) ?? node.children.map(childrenRecurse).join('')
 
       // Non-void elements must use open+close tags (HTML parsers ignore self-closing on div, span, etc.)
       if (children || !VOID_ELEMENTS.has(node.tag)) {
@@ -696,7 +722,7 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       }
 
       const attrs = attrParts.join(' ')
-      const children = node.children.map(recurse).join('')
+      const children = dangerouslyHtmlChildren(node.attrs, v => wrapExpr(v.expr)) ?? node.children.map(recurse).join('')
 
       if (children || !VOID_ELEMENTS.has(node.tag)) {
         return `<${node.tag}${attrs ? ' ' + attrs : ''}>${children}</${node.tag}>`
@@ -1081,7 +1107,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       }
 
       const attrs = attrParts.join(' ')
-      const children = node.children.map(childrenRecurse).join('')
+      const children = dangerouslyHtmlChildren(node.attrs, v => transformExpr(v.expr, v.templateExpr)) ?? node.children.map(childrenRecurse).join('')
 
       if (children || !VOID_ELEMENTS.has(node.tag)) {
         return `<${node.tag}${attrs ? ' ' + attrs : ''}>${children}</${node.tag}>`
@@ -1457,7 +1483,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       }
 
       const attrs = attrParts.join(' ')
-      const children = node.children.map(childrenRecurse).join('')
+      const children = dangerouslyHtmlChildren(node.attrs, v => transformExpr(v.expr, v.templateExpr)) ?? node.children.map(childrenRecurse).join('')
 
       if (children || !VOID_ELEMENTS.has(node.tag)) {
         return `<${node.tag}${attrs ? ' ' + attrs : ''}>${children}</${node.tag}>`
