@@ -40,6 +40,24 @@ describe('applyRestAttrs', () => {
     expect(attr).not.toContain('[object Object]')
   })
 
+  test('dangerouslySetInnerHTML from a rest object sets innerHTML, not an attribute', () => {
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+
+    applyRestAttrs(
+      el,
+      { class: 'y', dangerouslySetInnerHTML: { __html: '<b>x</b> & <i>z</i>' } },
+      [],
+    )
+
+    // Raw HTML becomes real child elements (the escape hatch)…
+    expect(el.querySelector('b')?.textContent).toBe('x')
+    expect(el.querySelector('i')?.textContent).toBe('z')
+    expect(el.getAttribute('class')).toBe('y')
+    // …never a bogus `dangerouslySetInnerHTML="[object Object]"` attribute.
+    expect(el.hasAttribute('dangerouslySetInnerHTML')).toBe(false)
+  })
+
   test('multi-property style object is serialized with kebab-case keys', () => {
     const el = document.createElement('div')
     document.body.appendChild(el)
@@ -103,6 +121,18 @@ describe('applyRestAttrs', () => {
 })
 
 describe('spreadAttrs', () => {
+  test('dangerouslySetInnerHTML is skipped (never a bogus attribute)', () => {
+    const out = spreadAttrs({
+      class: 'y',
+      dangerouslySetInnerHTML: { __html: '<b>x</b>' },
+    })
+    // Emitted as an attribute string, it can't carry content — so it must
+    // be dropped, not serialised as `dangerouslySetInnerHTML="[object Object]"`.
+    expect(out).toBe('class="y"')
+    expect(out).not.toContain('dangerouslySetInnerHTML')
+    expect(out).not.toContain('[object Object]')
+  })
+
   test('object-valued `style` becomes a CSS string attribute', () => {
     const out = spreadAttrs({ style: { '--stat-c': 'hsl(142 71% 45%)' } })
     expect(out).toContain('style="--stat-c:hsl(142 71% 45%)"')

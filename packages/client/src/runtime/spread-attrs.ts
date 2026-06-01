@@ -23,6 +23,12 @@ export function spreadAttrs(obj: Record<string, unknown>): string {
     if (value == null || value === false) continue
     const c = classifyDOMProp(key)
     if (c.kind === 'event' || c.kind === 'skip' || c.kind === 'ref') continue
+    // `dangerouslySetInnerHTML` is not an attribute — its `{ __html }` is the
+    // element's content, which this attribute-string builder can't emit. Skip
+    // it so a spread carrying it never serialises a bogus
+    // `dangerouslySetInnerHTML="[object Object]"`. (Content is set by the
+    // template for an explicit attr, or by `applyRestAttrs` for a rest object.)
+    if (c.kind === 'innerHTML') continue
     if (c.kind === 'style') {
       const css = styleToCss(value)
       if (css != null) parts.push(`style="${css}"`)
