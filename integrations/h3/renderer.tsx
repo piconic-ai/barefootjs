@@ -19,10 +19,12 @@ const COMPONENTS_BASE = '/static/components'
 export interface LayoutProps {
   title?: string
   manifest: BarefootBuildManifest
+  /** Extra stylesheet hrefs to link (e.g. todo-app.css, ai-chat.css). */
+  styles?: string[]
   children?: unknown
 }
 
-export function Layout({ title, manifest, children }: LayoutProps) {
+export function Layout({ title, manifest, styles, children }: LayoutProps) {
   return (
     <html lang="en" className="dark">
       <head>
@@ -32,6 +34,9 @@ export function Layout({ title, manifest, children }: LayoutProps) {
         <link rel="stylesheet" href="/shared/styles/tokens.css" />
         <link rel="stylesheet" href="/shared/styles/layout.css" />
         <link rel="stylesheet" href="/shared/styles/components.css" />
+        {(styles ?? []).map((href) => (
+          <link rel="stylesheet" href={href} />
+        ))}
         <BfImportMap base={COMPONENTS_BASE} />
       </head>
       <body>
