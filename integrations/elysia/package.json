@@ -1,0 +1,26 @@
+{
+  "name": "barefootjs-elysia-example",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/assemble-public.ts",
+    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "dev": "bun run build && wrangler dev",
+    "deploy": "bun run build && wrangler deploy",
+    "start": "bun run server.tsx",
+    "test:e2e": "bunx playwright test"
+  },
+  "dependencies": {
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/hono": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/shared": "workspace:*",
+    "elysia": "^1.1.0",
+    "hono": "^4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4",
+    "bun-types": "^1.1.0",
+    "wrangler": "^4"
+  }
+}

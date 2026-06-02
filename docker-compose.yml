@@ -54,6 +54,18 @@ services:
       # the @barefootjs/* workspace deps from the root node_modules.
       - .:/workspace:cached
 
+  elysia:
+    build:
+      context: .
+      dockerfile: integrations/elysia/Dockerfile.dev
+    working_dir: /workspace/integrations/elysia
+    environment:
+      BASE_PATH: /integrations/elysia
+    volumes:
+      # Same whole-repo mount as hono/h3: Elysia imports the host-built dist/
+      # and the @barefootjs/* workspace deps from the root node_modules.
+      - .:/workspace:cached
+
   echo:
     build:
       context: .

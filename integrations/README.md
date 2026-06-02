@@ -7,6 +7,7 @@ same JSX components on a different stack:
 |---|---|---|---|
 | `hono` | TypeScript / Cloudflare Workers | 3000 (bun default) | container |
 | `h3` | TypeScript / UnJS h3 (Node) | 3003 | container |
+| `elysia` | TypeScript / Elysia (Bun) | 3005 | container |
 | `echo` | Go / Labstack Echo | 8080 | container |
 | `mojolicious` | Perl / Mojolicious::Lite | 3000 (morbo default) | container |
 | `csr` | TypeScript (no SSR) | 3002 | host (manual) |
@@ -40,6 +41,7 @@ The proxy routes by path prefix:
 ```
 :4000/integrations/hono/*        → hono service
 :4000/integrations/h3/*          → h3 service
+:4000/integrations/elysia/*      → elysia service
 :4000/integrations/echo/*        → echo service
 :4000/integrations/mojolicious/* → mojolicious service
 :4000/*                          → site-core (landing / docs / catalog)

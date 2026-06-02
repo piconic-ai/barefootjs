@@ -1,0 +1,30 @@
+name = "barefootjs-elysia-example"
+main = "server.tsx"
+# Elysia's Cloudflare adapter needs a compatibility date >= 2025-06-01.
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+# Let the Worker handle routing so basePath requests fall through to the
+# Elysia app; static files under ./public are served by the Assets binding
+# (the Worker calls env.ASSETS.fetch for /static + /shared).
+run_worker_first = true
+
+# Two patterns because Cloudflare route globs don't match the "/*" suffix as
+# empty — `/integrations/elysia/*` matches /integrations/elysia/counter and
+# /integrations/elysia/, but not the bare /integrations/elysia.
+[[routes]]
+pattern = "barefootjs.dev/integrations/elysia"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/elysia/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/elysia"
+
+[dev]
+port = 3005

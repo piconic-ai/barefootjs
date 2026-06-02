@@ -16,11 +16,15 @@ type Adapter = {
   runtime: string
 }
 
+// 2nd field is consistently `<language> · <runtime>` (the execution runtime,
+// not the framework — the framework is the bold name on the left). For Go and
+// Perl the language is the runtime, so the language alone stands in.
 const ADAPTERS: Adapter[] = [
   { slug: 'hono',        name: 'Hono',        runtime: 'TypeScript · Cloudflare Workers' },
-  { slug: 'h3',          name: 'h3',          runtime: 'TypeScript · UnJS (Node)' },
-  { slug: 'echo',        name: 'Echo',        runtime: 'Go · Labstack Echo' },
-  { slug: 'mojolicious', name: 'Mojolicious', runtime: 'Perl · Mojolicious::Lite' },
+  { slug: 'h3',          name: 'h3',          runtime: 'TypeScript · Node' },
+  { slug: 'elysia',      name: 'Elysia',      runtime: 'TypeScript · Bun' },
+  { slug: 'echo',        name: 'Echo',        runtime: 'Go' },
+  { slug: 'mojolicious', name: 'Mojolicious', runtime: 'Perl' },
 ]
 
 function IntegrationsIndex() {
@@ -49,7 +53,7 @@ export function createIntegrationsApp() {
     c.render(<IntegrationsIndex />, {
       title: 'Integrations — Barefoot.js',
       description:
-        'Same JSX components running on Hono (Workers), h3 (UnJS), Echo (Go), and Mojolicious (Perl).',
+        'Same JSX components running on Hono (Workers), h3 (UnJS), Elysia (Bun), Echo (Go), and Mojolicious (Perl).',
     }),
   )
 

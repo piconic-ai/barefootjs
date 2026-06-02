@@ -1,0 +1,336 @@
+/** @jsxImportSource @barefootjs/hono/jsx */
+//
+// BarefootJS on Elysia (Bun) — SSR + client hydration.
+//
+// Like the h3 integration, Elysia is just the HTTP host: BarefootJS
+// components compiled with the Hono adapter are plain `hono/jsx`
+// components, rendered to an HTML string with `renderToHtml` and returned
+// from Elysia handlers. The render runtime (`@barefootjs/hono`, the
+// hono/jsx engine) is imported the same way the Go `Echo` integration
+// imports the framework-agnostic `bf` runtime from the go-template adapter.
+//
+// Deployment mirrors hono/h3: the default export is a WinterCG `fetch`
+// handler, so the same file runs on Cloudflare Workers (`wrangler deploy`)
+// and Bun (`bun run server.tsx`). Elysia normally JIT-compiles routes with
+// `new Function`, which workerd forbids — `aot: false` switches it to the
+// dynamic interpreter so it runs on Workers. Static bundles come from the
+// Workers Assets binding in production and from disk under Bun.
+
+import { Elysia } from 'elysia'
+import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
+import { join, normalize, isAbsolute } from 'node:path'
+import { randomUUID } from 'node:crypto'
+import { renderToHtml } from '@barefootjs/hono/render'
+import { Layout } from './renderer'
+import manifest from './dist/components/manifest.json'
+import { Counter } from '@/components/Counter'
+import { Toggle } from '@/components/Toggle'
+import TodoApp from '@/components/TodoApp'
+import TodoAppSSR from '@/components/TodoAppSSR'
+import { AIChatInteractive } from '@/components/AIChatInteractive'
+
+const PORT = Number(process.env.PORT ?? 3005)
+
+// URL prefix everything is mounted under. Defaults to `/integrations/elysia`
+// (the deploy path) so production works without relying on `[vars]` being
+// surfaced on `process.env` at module-load — Cloudflare populates `[vars]`
+// on the `env` binding, not necessarily `process.env`, so a non-empty
+// default is what makes the Worker route correctly (same as hono/h3).
+// Override via BASE_PATH to mount elsewhere. Client islands fetch the API
+// with relative URLs ('api/todos'), which resolve under the prefix.
+const BASE = process.env.BASE_PATH ?? '/integrations/elysia'
+const link = (path: string) => `${BASE}${path}`
+
+function html(markup: string): Response {
+  return new Response('<!DOCTYPE html>' + markup, {
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+  })
+}
+
+// ── per-session todo store ─────────────────────────────────────────────────
+type Todo = { id: number; text: string; done: boolean }
+type Session = { todos: Todo[]; nextId: number }
+
+const SESSION_COOKIE = 'bf_session'
+const sessions = new Map<string, Session>()
+
+function seedTodos(): Todo[] {
+  return [
+    { id: 1, text: 'Setup project', done: false },
+    { id: 2, text: 'Create components', done: false },
+    { id: 3, text: 'Write tests', done: true },
+  ]
+}
+
+function getSession(request: Request, set: { headers: Record<string, string> }): Session {
+  const cookieHeader = request.headers.get('cookie') ?? ''
+  let id = new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`).exec(cookieHeader)?.[1]
+  if (!id) {
+    id = randomUUID()
+    set.headers['set-cookie'] =
+      `${SESSION_COOKIE}=${id}; Path=${BASE || '/'}; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}`
+  }
+  let session = sessions.get(id)
+  if (!session) {
+    session = { todos: seedTodos(), nextId: 4 }
+    sessions.set(id, session)
+  }
+  return session
+}
+
+// ── AI chat dummy responses ─────────────────────────────────────────────────
+const FAKE_RESPONSES = [
+  '[Dummy] This text streams one character at a time over Server-Sent Events. Swap /api/ai-chat in server.tsx for a real LLM to make it functional.',
+  '[Dummy] BarefootJS streams tokens with the SSE protocol — each character is its own "data:" event. Wire up OpenAI or Anthropic here for real responses.',
+  '[Dummy] Elysia serves this stream as a ReadableStream; the BarefootJS island consumes it with EventSource and renders token-by-token on the client.',
+]
+
+// On Workers, use Elysia's official Cloudflare adapter (the blessed way to
+// run on workerd — it handles the runtime's constraints around route
+// compilation). It is Workers-only (routes 404 under plain Bun), so under
+// Bun (dev / e2e / compose) we use the default adapter. `typeof Bun` is the
+// runtime discriminator: defined under Bun, absent on workerd.
+const onWorkers = typeof Bun === 'undefined'
+const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
+
+  // ── HTML pages ───────────────────────────────────────────────────────────
+  .get(link('/'), async () =>
+    html(
+      await renderToHtml(
+        <Layout title="BarefootJS + Elysia" manifest={manifest} base={BASE}>
+          <h1>BarefootJS + Elysia Integration</h1>
+          <nav>
+            <ul>
+              <li><a href={link('/counter')}>Counter</a></li>
+              <li><a href={link('/toggle')}>Toggle</a></li>
+              <li><a href={link('/todos')}>Todo (@client)</a></li>
+              <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
+              <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
+            </ul>
+          </nav>
+        </Layout>,
+      ),
+    ),
+  )
+
+  .get(link('/counter'), async () =>
+    html(
+      await renderToHtml(
+        <Layout title="Counter — BarefootJS + Elysia" manifest={manifest} base={BASE}>
+          <h1>Counter</h1>
+          <Counter initial={0} />
+          <p><a href={link('/')}>← Back</a></p>
+        </Layout>,
+      ),
+    ),
+  )
+
+  .get(link('/toggle'), async () =>
+    html(
+      await renderToHtml(
+        <Layout title="Toggle — BarefootJS + Elysia" manifest={manifest} base={BASE}>
+          <h1>Toggle</h1>
+          <Toggle
+            toggleItems={[
+              { label: 'Setting 1', defaultOn: true },
+              { label: 'Setting 2', defaultOn: false },
+              { label: 'Setting 3', defaultOn: false },
+            ]}
+          />
+          <p><a href={link('/')}>← Back</a></p>
+        </Layout>,
+      ),
+    ),
+  )
+
+  .get(link('/todos'), async ({ request, set }) =>
+    html(
+      await renderToHtml(
+        <Layout
+          title="Todo (@client) — BarefootJS + Elysia"
+          manifest={manifest}
+          base={BASE}
+          styles={[link('/shared/styles/todo-app.css')]}
+        >
+          <h1>Todo (@client)</h1>
+          <div id="app">
+            <TodoApp initialTodos={getSession(request, set).todos} />
+          </div>
+          <p><a href={link('/')}>← Back</a></p>
+        </Layout>,
+      ),
+    ),
+  )
+
+  .get(link('/todos-ssr'), async ({ request, set }) =>
+    html(
+      await renderToHtml(
+        <Layout
+          title="Todo (SSR) — BarefootJS + Elysia"
+          manifest={manifest}
+          base={BASE}
+          styles={[link('/shared/styles/todo-app.css')]}
+        >
+          <h1>Todo (no @client markers)</h1>
+          <div id="app">
+            <TodoAppSSR initialTodos={getSession(request, set).todos} />
+          </div>
+          <p><a href={link('/')}>← Back</a></p>
+        </Layout>,
+      ),
+    ),
+  )
+
+  .get(link('/ai-chat'), async () =>
+    html(
+      await renderToHtml(
+        <Layout
+          title="AI Chat — BarefootJS + Elysia"
+          manifest={manifest}
+          base={BASE}
+          styles={[link('/shared/styles/ai-chat.css')]}
+        >
+          <h1>AI Chat — SSE Streaming</h1>
+          <p className="demo-notice">
+            Demo only — responses are dummy content streamed via SSE. Replace{' '}
+            <code>/api/ai-chat</code> in <code>server.tsx</code> with a real LLM API.
+          </p>
+          <AIChatInteractive />
+          <p><a href={link('/')}>← Back</a></p>
+        </Layout>,
+      ),
+    ),
+  )
+
+  // ── Todo API (relative `api/todos` from the page resolves here) ──────────
+  .get(link('/api/todos'), ({ request, set }) => getSession(request, set).todos)
+
+  .post(link('/api/todos'), ({ request, set, body }) => {
+    const session = getSession(request, set)
+    const text = (body as { text?: string })?.text ?? ''
+    const todo: Todo = { id: session.nextId++, text, done: false }
+    session.todos.push(todo)
+    set.status = 201
+    return todo
+  })
+
+  .put(link('/api/todos/:id'), ({ request, set, params, body }) => {
+    const id = Number(params.id)
+    const session = getSession(request, set)
+    const todo = session.todos.find((t) => t.id === id)
+    if (!todo) {
+      set.status = 404
+      return { error: 'not found' }
+    }
+    const patch = body as { text?: string; done?: boolean }
+    if (patch?.text !== undefined) todo.text = patch.text
+    if (patch?.done !== undefined) todo.done = patch.done
+    return todo
+  })
+
+  .delete(link('/api/todos/:id'), ({ request, set, params }) => {
+    const id = Number(params.id)
+    const session = getSession(request, set)
+    const i = session.todos.findIndex((t) => t.id === id)
+    if (i === -1) {
+      set.status = 404
+      return { error: 'not found' }
+    }
+    session.todos.splice(i, 1)
+    return { success: true }
+  })
+
+  .post(link('/api/todos/reset'), ({ request, set }) => {
+    const session = getSession(request, set)
+    session.todos = seedTodos()
+    session.nextId = 4
+    return { success: true }
+  })
+
+  // ── AI chat SSE ──────────────────────────────────────────────────────────
+  .get(link('/api/ai-chat'), () => {
+    const text = FAKE_RESPONSES[Math.floor(Math.random() * FAKE_RESPONSES.length)]
+    // The EventSource closes the connection on `[DONE]` / navigation, so the
+    // loop must stop on `cancel()` and swallow the enqueue-after-close race.
+    // One JSON-encoded character per `data:` frame, then a literal `[DONE]`.
+    let cancelled = false
+    const stream = new ReadableStream({
+      async start(controller) {
+        const enc = new TextEncoder()
+        try {
+          for (const ch of [...text]) {
+            if (cancelled) return
+            controller.enqueue(enc.encode(`data: ${JSON.stringify(ch)}\n\n`))
+            await new Promise((r) => setTimeout(r, 30))
+          }
+          if (!cancelled) {
+            controller.enqueue(enc.encode('data: [DONE]\n\n'))
+            controller.close()
+          }
+        } catch {
+          // client disconnected mid-stream — nothing left to do
+        }
+      },
+      cancel() {
+        cancelled = true
+      },
+    })
+    return new Response(stream, {
+      headers: {
+        'content-type': 'text/event-stream',
+        'cache-control': 'no-cache',
+        connection: 'keep-alive',
+      },
+    })
+  })
+  // The Cloudflare adapter requires `.compile()` before the app is exported;
+  // it's a harmless no-op under the default (Bun) adapter.
+  .compile()
+
+// ── static assets ──────────────────────────────────────────────────────────
+// {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
+// {BASE}/shared/styles/*     → ../shared/styles/*   (demo stylesheets)
+//
+// On Workers these are served by the Assets binding (see wrangler.toml);
+// under Bun (dev container, e2e) there's no binding, so read from disk.
+// `import.meta.dir` is resolved lazily inside serveFromDisk (Bun-only path).
+function isStaticPath(pathname: string): boolean {
+  return (
+    pathname.startsWith(`${BASE}/static/components/`) ||
+    pathname.startsWith(`${BASE}/shared/styles/`)
+  )
+}
+
+async function serveFromDisk(pathname: string): Promise<Response> {
+  const [dir, prefix] = pathname.startsWith(`${BASE}/static/components/`)
+    ? [join(import.meta.dir, 'dist/components'), `${BASE}/static/components/`]
+    : [join(import.meta.dir, '../shared/styles'), `${BASE}/shared/styles/`]
+  const rel = normalize(pathname.slice(prefix.length))
+  if (rel.startsWith('..') || isAbsolute(rel)) return new Response('Not found', { status: 404 })
+  const file = Bun.file(join(dir, rel))
+  if (!(await file.exists())) return new Response('Not found', { status: 404 })
+  return new Response(file) // Bun infers Content-Type from the extension
+}
+
+type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
+
+export default {
+  port: PORT,
+  async fetch(request: Request, env?: Env, ctx?: unknown): Promise<Response> {
+    const url = new URL(request.url)
+    if (isStaticPath(url.pathname)) {
+      // Production (Workers): serve from the Assets binding. Dev (Bun): disk.
+      if (env?.ASSETS) return env.ASSETS.fetch(request)
+      return serveFromDisk(url.pathname)
+    }
+    // Pass env/ctx through so the Cloudflare adapter can wire bindings; the
+    // Bun adapter ignores the extra args.
+    return (app.fetch as (r: Request, env?: unknown, ctx?: unknown) => Promise<Response>)(
+      request,
+      env,
+      ctx,
+    )
+  },
+}
+
+export type App = typeof app
