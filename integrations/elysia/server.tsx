@@ -51,6 +51,9 @@ type Todo = { id: number; text: string; done: boolean }
 type Session = { todos: Todo[]; nextId: number }
 
 const SESSION_COOKIE = 'bf_session'
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30 // 30d
+const MAX_SESSIONS = 1000
+
 const sessions = new Map<string, Session>()
 
 function seedTodos(): Todo[] {
@@ -59,6 +62,22 @@ function seedTodos(): Todo[] {
     { id: 2, text: 'Create components', done: false },
     { id: 3, text: 'Write tests', done: true },
   ]
+}
+
+// Bound the in-memory store and evict least-recently-used sessions, like the
+// hono / echo / mojolicious integrations. The Map's insertion order is the
+// recency order — re-inserting on access keeps the oldest key at the front.
+function touchLRU(id: string, session: Session) {
+  sessions.delete(id)
+  sessions.set(id, session)
+}
+
+function evictIfNeeded() {
+  while (sessions.size > MAX_SESSIONS) {
+    const oldest = sessions.keys().next().value
+    if (oldest === undefined) break
+    sessions.delete(oldest)
+  }
 }
 
 // Use Elysia's reactive `cookie` API instead of hand-parsing the header —
@@ -74,13 +93,16 @@ function getSession(cookie: Record<string, Cookie<string | undefined>>): Session
       path: BASE || '/',
       httpOnly: true,
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: SESSION_TTL_SECONDS,
     })
   }
   let session = sessions.get(id)
   if (!session) {
     session = { todos: seedTodos(), nextId: 4 }
     sessions.set(id, session)
+    evictIfNeeded()
+  } else {
+    touchLRU(id, session)
   }
   return session
 }
