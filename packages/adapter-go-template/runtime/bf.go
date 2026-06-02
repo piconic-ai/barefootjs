@@ -39,6 +39,7 @@ func FuncMap() template.FuncMap {
 		"bf_starts_with": StartsWith,
 		"bf_ends_with":   EndsWith,
 		"bf_replace":     Replace,
+		"bf_repeat":      Repeat,
 		"bf_string":      String,
 
 		// JSON / numeric primitives — JS-compat callees registered on
@@ -554,6 +555,18 @@ func EndsWith(s, suffix string, endPosition ...int) bool {
 // contain `$`-patterns, which are rare in template position).
 func Replace(s, old, new string) string {
 	return strings.Replace(s, old, new, 1)
+}
+
+// Repeat lowers `String.prototype.repeat(n)` (#1448 Tier B): the
+// receiver concatenated n times. JS throws RangeError for a negative
+// count and `strings.Repeat` panics, so a negative count clamps to the
+// empty string — SSR templates degrade rather than crash the render.
+// A zero count is the empty string (JS parity).
+func Repeat(s string, n int) string {
+	if n <= 0 {
+		return ""
+	}
+	return strings.Repeat(s, n)
 }
 
 // Join concatenates elements of a slice with sep. Accepts both

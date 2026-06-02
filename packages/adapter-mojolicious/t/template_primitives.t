@@ -341,6 +341,19 @@ subtest 'replace — first-occurrence string-pattern swap' => sub {
     is $bf->replace(undef, 'a', 'b'),          '',            'undef receiver → empty';
 };
 
+# `String.prototype.repeat(n)` — receiver concatenated n times
+# (#1448 Tier B). Perl `x` operator; negative count clamps to "" (JS
+# throws but SSR degrades), count truncated toward zero.
+subtest 'repeat — string concatenated n times' => sub {
+    is $bf->repeat('ab', 3),  'ababab', 'three times';
+    is $bf->repeat('x',  1),  'x',      'once → unchanged';
+    is $bf->repeat('ab', 0),  '',       'zero → empty';
+    is $bf->repeat('ab', -2), '',       'negative → empty (JS throws; SSR degrades)';
+    is $bf->repeat('ab', 2.9),'abab',   'fractional count truncates toward zero';
+    is $bf->repeat('',   5),  '',       'empty receiver → empty';
+    is $bf->repeat(undef, 3), '',       'undef receiver → empty';
+};
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). The opts hash-ref carries a `keys` list of
 # the structured comparison keys the compiler extracted at parse time

@@ -474,6 +474,19 @@ describe('expression-parser', () => {
         expect(result.reason).toContain('regex form is deferred')
       }
     })
+
+    test('lowers .repeat() and .repeat(n, extra) — full arity (#1448 Tier B)', () => {
+      // `.repeat()` is `repeat(0)` → "" in JS (not a RangeError); a
+      // second+ argument is ignored. Both stay on the lowering path.
+      for (const expr of [`name().repeat()`, `name().repeat(3, 4)`]) {
+        const result = parseExpression(expr)
+        expect(result.kind).toBe('array-method')
+        if (result.kind === 'array-method') {
+          expect(result.method).toBe('repeat')
+        }
+      }
+    })
+
     test('lowers .filter(({label = `untitled-${suffix}`}) => label) — template-literal default (#1531)', () => {
       const result = parseExpression('items().filter(({label = `untitled-${suffix}`}) => label)')
       expect(result.kind).toBe('higher-order')

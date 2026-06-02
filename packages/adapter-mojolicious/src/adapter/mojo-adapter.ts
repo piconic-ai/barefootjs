@@ -1445,6 +1445,17 @@ function renderArrayMethod(
       const newS = emit(args[1])
       return `bf->replace(${recv}, ${oldS}, ${newS})`
     }
+    case 'repeat': {
+      // `.repeat(n)` — string repeated `n` times. The `bf->repeat`
+      // helper wraps Perl's `x` operator with the same negative-count
+      // → "" clamp and integer truncation Go's `bf_repeat` applies, so
+      // the two adapters stay byte-equal. Full JS arity: the no-argument
+      // form is `repeat(0)` → ""; a second+ argument is ignored.
+      // See #1448 Tier B.
+      const recv = emit(object)
+      const count = args.length === 0 ? '0' : emit(args[0])
+      return `bf->repeat(${recv}, ${count})`
+    }
     default: {
       // TS-level exhaustiveness guard. If this throws at runtime, the
       // IR was constructed against a newer `ArrayMethod` variant that

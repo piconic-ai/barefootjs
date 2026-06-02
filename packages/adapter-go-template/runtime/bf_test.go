@@ -270,6 +270,22 @@ func TestReplace(t *testing.T) {
 	}
 }
 
+func TestRepeat(t *testing.T) {
+	if got := Repeat("ab", 3); got != "ababab" {
+		t.Errorf(`Repeat("ab", 3) = %q, want "ababab"`, got)
+	}
+	if got := Repeat("x", 1); got != "x" {
+		t.Errorf(`Repeat("x", 1) = %q, want "x"`, got)
+	}
+	// Zero and negative counts → "" (negative would panic strings.Repeat).
+	if got := Repeat("ab", 0); got != "" {
+		t.Errorf(`Repeat("ab", 0) = %q, want ""`, got)
+	}
+	if got := Repeat("ab", -2); got != "" {
+		t.Errorf(`Repeat("ab", -2) = %q, want "" (clamped, no panic)`, got)
+	}
+}
+
 func TestLen(t *testing.T) {
 	tests := []struct {
 		v    any
