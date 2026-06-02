@@ -213,6 +213,16 @@ export function createComponent(
     const materialised = placeholderWrapper.firstElementChild as HTMLElement | null
     if (materialised && !materialised.hasAttribute(BF_PLACEHOLDER)) {
       // The deferred child was created in place of the placeholder.
+      // NOTE: we intentionally do NOT call registerPropsUpdate() here (unlike
+      // the normal path below). `materialised` is the child's own element,
+      // created via upsertChild -> createComponent, which already registered
+      // its own props-update fn keyed to the child. Registering the *parent's*
+      // here would be wrong: the parent's init replaces a `data-bf-ph`
+      // placeholder via upsertChild, and re-running it on `materialised` (whose
+      // placeholder is already gone) would not re-materialise correctly.
+      // This divergence is unreachable in practice: reconcileList reuses items
+      // by recreating them through renderItem (see reconcile-elements.ts), and
+      // getPropsUpdateFn/getComponentProps have no in-repo callers.
       setCurrentScope(prevScope)
       hydratedScopes.add(materialised)
       propsMap.set(materialised, props)
