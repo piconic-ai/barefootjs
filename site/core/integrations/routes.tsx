@@ -13,18 +13,17 @@ import { landingRenderer } from '../landing/renderer'
 type Adapter = {
   slug: string
   name: string
-  runtime: string
+  language: string
 }
 
-// 2nd field is consistently `<language> · <runtime>` (the execution runtime,
-// not the framework — the framework is the bold name on the left). For Go and
-// Perl the language is the runtime, so the language alone stands in.
+// 2nd field is the implementation language only (the framework is the bold
+// name on the left, so platform/runtime detail would just be noise here).
 const ADAPTERS: Adapter[] = [
-  { slug: 'hono',        name: 'Hono',        runtime: 'TypeScript · Cloudflare Workers' },
-  { slug: 'h3',          name: 'h3',          runtime: 'TypeScript · Node' },
-  { slug: 'elysia',      name: 'Elysia',      runtime: 'TypeScript · Bun' },
-  { slug: 'echo',        name: 'Echo',        runtime: 'Go' },
-  { slug: 'mojolicious', name: 'Mojolicious', runtime: 'Perl' },
+  { slug: 'hono',        name: 'Hono',        language: 'TypeScript' },
+  { slug: 'h3',          name: 'h3',          language: 'TypeScript' },
+  { slug: 'elysia',      name: 'Elysia',      language: 'TypeScript' },
+  { slug: 'echo',        name: 'Echo',        language: 'Go' },
+  { slug: 'mojolicious', name: 'Mojolicious', language: 'Perl' },
 ]
 
 function IntegrationsIndex() {
@@ -37,7 +36,7 @@ function IntegrationsIndex() {
           <li className="py-3 border-b border-border last:border-b-0">
             <a href={`/integrations/${a.slug}`} className="font-semibold">{a.name}</a>
             {' '}
-            <span className="text-sm text-muted-foreground">{a.runtime}</span>
+            <span className="text-sm text-muted-foreground">{a.language}</span>
           </li>
         ))}
       </ul>
