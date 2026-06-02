@@ -1396,6 +1396,25 @@ function renderArrayMethod(
       const recv = emit(object)
       return `bf->trim(${recv})`
     }
+    case 'split': {
+      // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
+      // ARRAY ref via `bf->split`. With no separator the helper returns
+      // the whole string as a single element; otherwise it quotemetas
+      // the separator (literal match, not regex) and keeps trailing
+      // empties (`-1`), staying byte-equal with Go's `bf_split`. The
+      // optional `limit` caps the pieces; JS ignores a third+ argument.
+      // See #1448 Tier B.
+      const recv = emit(object)
+      if (args.length === 0) {
+        return `bf->split(${recv})`
+      }
+      const sep = emit(args[0])
+      if (args.length === 1) {
+        return `bf->split(${recv}, ${sep})`
+      }
+      const limit = emit(args[1])
+      return `bf->split(${recv}, ${sep}, ${limit})`
+    }
     default: {
       // TS-level exhaustiveness guard. If this throws at runtime, the
       // IR was constructed against a newer `ArrayMethod` variant that

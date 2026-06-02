@@ -150,6 +150,49 @@ func TestJoin(t *testing.T) {
 	}
 }
 
+func TestSplit(t *testing.T) {
+	// Round-trips with Join so the slice is observable.
+	if got := Join(Split("a,b,c", ","), "|"); got != "a|b|c" {
+		t.Errorf(`Split("a,b,c", ",") joined = %v, want a|b|c`, got)
+	}
+	// JS keeps trailing empty fields (Perl's bare split drops them —
+	// the `bf->split` helper passes -1 to match this).
+	if got := Split("a,", ","); len(got) != 2 || got[0] != "a" || got[1] != "" {
+		t.Errorf(`Split("a,", ",") = %v, want ["a" ""]`, got)
+	}
+	// Empty separator splits into individual characters.
+	if got := Join(Split("abc", ""), "-"); got != "a-b-c" {
+		t.Errorf(`Split("abc", "") joined = %v, want a-b-c`, got)
+	}
+	// No separator match → single-element slice (the whole string).
+	if got := Split("abc", ","); len(got) != 1 || got[0] != "abc" {
+		t.Errorf(`Split("abc", ",") = %v, want ["abc"]`, got)
+	}
+	// Empty input: non-empty separator → single empty field; empty
+	// separator → empty slice. Both match JS (and the `bf->split`
+	// helper special-cases Perl, whose `split` diverges here).
+	if got := Split("", ","); len(got) != 1 || got[0] != "" {
+		t.Errorf(`Split("", ",") = %v, want [""]`, got)
+	}
+	if got := Split("", ""); len(got) != 0 {
+		t.Errorf(`Split("", "") = %v, want []`, got)
+	}
+	// Optional limit caps the pieces (JS `split(sep, limit)`).
+	if got := Split("a,b,c,d", ",", 2); len(got) != 2 || got[0] != "a" || got[1] != "b" {
+		t.Errorf(`Split("a,b,c,d", ",", 2) = %v, want ["a" "b"]`, got)
+	}
+	// limit 0 → empty; limit >= len or negative → all pieces.
+	if got := Split("a,b", ",", 0); len(got) != 0 {
+		t.Errorf(`Split("a,b", ",", 0) = %v, want []`, got)
+	}
+	if got := Split("a,b", ",", 9); len(got) != 2 {
+		t.Errorf(`Split("a,b", ",", 9) = %v, want 2 pieces`, got)
+	}
+	if got := Split("a,b", ",", -1); len(got) != 2 {
+		t.Errorf(`Split("a,b", ",", -1) = %v, want 2 pieces (negative = all)`, got)
+	}
+}
+
 func TestLen(t *testing.T) {
 	tests := []struct {
 		v    any

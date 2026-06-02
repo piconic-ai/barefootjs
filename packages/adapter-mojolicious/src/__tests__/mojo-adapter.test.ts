@@ -937,6 +937,9 @@ import { fixture as arrayToReversedFixture } from '../../../adapter-tests/fixtur
 import { fixture as stringToLowerCaseFixture } from '../../../adapter-tests/fixtures/methods/string-toLowerCase'
 import { fixture as stringToUpperCaseFixture } from '../../../adapter-tests/fixtures/methods/string-toUpperCase'
 import { fixture as stringTrimFixture } from '../../../adapter-tests/fixtures/methods/string-trim'
+// #1448 Tier B — string methods.
+import { fixture as stringSplitFixture } from '../../../adapter-tests/fixtures/methods/string-split'
+import { fixture as stringSplitLimitFixture } from '../../../adapter-tests/fixtures/methods/string-split-limit'
 // #1448 Tier B — .sort / .toSorted fixtures (loop-chained + standalone).
 import { fixture as arraySortFieldAscFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-asc'
 import { fixture as arraySortFieldDescFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-desc'
@@ -972,6 +975,11 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: stringToLowerCaseFixture,expect: 'lc($value)' },
     { fixture: stringToUpperCaseFixture,expect: 'uc($value)' },
     { fixture: stringTrimFixture,       expect: 'bf->trim($value)' },
+    // #1448 Tier B — string → array. `.split(',')` lowers to
+    // `bf->split`, here chained into `.join('|')` so the array ref is
+    // observable (`join('|', @{bf->split($value, ',')})`).
+    { fixture: stringSplitFixture,      expect: `bf->split($value, ',')` },
+    { fixture: stringSplitLimitFixture, expect: `bf->split($value, ',', 2)` },
     // #1448 Tier B — sort / toSorted. The loop-chained field cases
     // hoist into a `my $bf_iter_lN = bf->sort(...)` local; the
     // standalone primitive cases inline the call. Each comparison key
@@ -1085,7 +1093,9 @@ export function C() {
     { name: 'concat (variadic)', expr: `items().concat(items(), items())`, badEmit: '->{concat}' },
     // Tier B/C string methods — previously slipped through with no
     // diagnostic; now routed through the AST / `isSupported` gate.
-    { name: 'split', expr: `name().split(",")`, badEmit: '->{split}' },
+    // `split` has since landed its full-arity lowering (#1448 Tier B) —
+    // `.split()`, `.split(sep)` and `.split(sep, limit)` all lower — so
+    // it's pinned in the positive fixture-pin block above.
     { name: 'startsWith', expr: `name().startsWith("a")`, badEmit: '->{startsWith}' },
     { name: 'endsWith', expr: `name().endsWith("z")`, badEmit: '->{endsWith}' },
     { name: 'replace', expr: `name().replace("a", "b")`, badEmit: '->{replace}' },

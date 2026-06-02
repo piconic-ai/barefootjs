@@ -2191,6 +2191,9 @@ import { fixture as arrayToReversedFixture } from '../../../adapter-tests/fixtur
 import { fixture as stringToLowerCaseFixture } from '../../../adapter-tests/fixtures/methods/string-toLowerCase'
 import { fixture as stringToUpperCaseFixture } from '../../../adapter-tests/fixtures/methods/string-toUpperCase'
 import { fixture as stringTrimFixture } from '../../../adapter-tests/fixtures/methods/string-trim'
+// #1448 Tier B — string methods.
+import { fixture as stringSplitFixture } from '../../../adapter-tests/fixtures/methods/string-split'
+import { fixture as stringSplitLimitFixture } from '../../../adapter-tests/fixtures/methods/string-split-limit'
 // #1448 Tier B — .sort / .toSorted fixtures.
 import { fixture as arraySortFieldAscFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-asc'
 import { fixture as arraySortFieldDescFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-desc'
@@ -2232,6 +2235,11 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     { fixture: stringToLowerCaseFixture,expect: 'bf_lower .Value' },
     { fixture: stringToUpperCaseFixture,expect: 'bf_upper .Value' },
     { fixture: stringTrimFixture,       expect: 'bf_trim .Value' },
+    // #1448 Tier B — string → array. `.split(',')` lowers to
+    // `bf_split`, here chained into `.join('|')` so the slice is
+    // observable (`bf_join (bf_split .Value ",") "|"`).
+    { fixture: stringSplitFixture,      expect: 'bf_split .Value ","' },
+    { fixture: stringSplitLimitFixture, expect: 'bf_split .Value "," 2' },
     // #1448 Tier B — sort / toSorted. Loop-chained shapes wrap the
     // iterable in `bf_sort .Items <kind> <key> <type> <dir>`;
     // standalone shapes inline the helper at the call site.
@@ -2348,8 +2356,10 @@ export function C() {
     { name: 'includes (2-arg fromIndex)', expr: `items().includes("a", 1)`, badEmit: '.Includes' },
     { name: 'concat (variadic)', expr: `items().concat(items(), items())`, badEmit: '.Concat' },
     // Tier B/C string methods — previously slipped through with no
-    // diagnostic; now gated by `UNSUPPORTED_METHODS`.
-    { name: 'split', expr: `name().split(",")`, badEmit: '.Name.Split' },
+    // diagnostic; now gated by `UNSUPPORTED_METHODS`. `split` has since
+    // landed its full-arity lowering (#1448 Tier B) — `.split()`,
+    // `.split(sep)` and `.split(sep, limit)` all lower — so it's pinned
+    // in the positive fixture-pin block above.
     { name: 'startsWith', expr: `name().startsWith("a")`, badEmit: '.Name.StartsWith' },
     { name: 'endsWith', expr: `name().endsWith("z")`, badEmit: '.Name.EndsWith' },
     { name: 'replace', expr: `name().replace("a", "b")`, badEmit: '.Name.Replace' },

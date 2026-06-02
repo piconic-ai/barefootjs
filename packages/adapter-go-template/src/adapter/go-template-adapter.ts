@@ -3212,6 +3212,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const recv = emit(object)
         return `bf_trim ${wrapIfMultiToken(recv)}`
       }
+      case 'split': {
+        // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
+        // `[]any`. No separator → the whole string as a single element
+        // (`bf_arr`). Otherwise `bf_split` (wraps `strings.Split`,
+        // normalised to `[]any`); a second `limit` argument caps the
+        // pieces. JS ignores a third+ argument. See #1448 Tier B.
+        const recv = emit(object)
+        if (args.length === 0) {
+          return `bf_arr ${wrapIfMultiToken(recv)}`
+        }
+        const sep = emit(args[0])
+        if (args.length === 1) {
+          return `bf_split ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(sep)}`
+        }
+        const limit = emit(args[1])
+        return `bf_split ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(sep)} ${wrapIfMultiToken(limit)}`
+      }
       default: {
         const _exhaustive: never = method
         throw new Error(`Go arrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`)
