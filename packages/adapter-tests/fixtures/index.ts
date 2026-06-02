@@ -122,6 +122,11 @@ import { fixture as arrayLastIndexOf } from './methods/array-lastIndexOf'
 import { fixture as arrayAt } from './methods/array-at'
 import { fixture as arrayConcat } from './methods/array-concat'
 import { fixture as arraySlice } from './methods/array-slice'
+// #1448 full-arity — zero-arg default forms.
+import { fixture as arraySliceCopy } from './methods/array-slice-copy'
+import { fixture as arrayJoinDefault } from './methods/array-join-default'
+import { fixture as arrayAtDefault } from './methods/array-at-default'
+import { fixture as arrayConcatCopy } from './methods/array-concat-copy'
 import { fixture as arrayReverse } from './methods/array-reverse'
 import { fixture as arrayToReversed } from './methods/array-toReversed'
 import { fixture as stringToLowerCase } from './methods/string-toLowerCase'
@@ -285,6 +290,10 @@ export const jsxFixtures: JSXFixture[] = [
   arrayAt,
   arrayConcat,
   arraySlice,
+  arraySliceCopy,
+  arrayJoinDefault,
+  arrayAtDefault,
+  arrayConcatCopy,
   arrayReverse,
   arrayToReversed,
   // #1448 Tier A — String methods.

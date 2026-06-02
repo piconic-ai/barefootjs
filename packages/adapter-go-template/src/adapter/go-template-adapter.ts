@@ -3109,7 +3109,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     switch (method) {
       case 'join': {
         const obj = emit(object)
-        const sep = emit(args[0])
+        // `.join()` defaults the separator to `,` (JS); any extra
+        // argument is ignored. Only `args[0]` is read.
+        const sep = args.length >= 1 ? emit(args[0]) : '","'
         // Both operands need paren-wrapping when they emit a
         // multi-token prefix-call form (e.g. `sep` lowering to
         // `bf_trim .Raw` would make Go template parse
@@ -3145,30 +3147,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // `.at(i)` supports negative indices (`.at(-1)` → last
         // element). The Go `bf_at` helper was already registered in
         // the FuncMap for the runtime — this PR wires it to the JS
-        // method name at the adapter layer.
+        // method name at the adapter layer. `.at()` with no argument is
+        // `.at(0)` (the first element); extra arguments are ignored.
         const obj = emit(object)
-        const idx = emit(args[0])
+        const idx = args.length >= 1 ? emit(args[0]) : '0'
         return `bf_at ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(idx)}`
       }
       case 'concat': {
         // `.concat(other)` merges two arrays. The runtime helper
         // `bf_concat` reflects over both operands so callers can
         // mix `[]string` + `[]string` or `[]any` + `[]string` etc.
-        // without per-call-site type-juggling.
+        // without per-call-site type-juggling. `.concat()` with no
+        // argument is a shallow copy — indistinguishable from the
+        // receiver in an SSR snapshot, so it lowers to the receiver.
+        if (args.length === 0) {
+          return emit(object)
+        }
         const a = emit(object)
         const b = emit(args[0])
         return `bf_concat ${wrapIfMultiToken(a)} ${wrapIfMultiToken(b)}`
       }
       case 'slice': {
-        // `.slice(start)` / `.slice(start, end)` — both forms route
-        // through `bf_slice`. The runtime helper treats a `nil`
-        // `end` (the variadic-arg absence) as "to length", matching
-        // the JS semantic. Out-of-bounds indices clamp instead of
-        // panicking (also JS-compat); same with `start > end`
-        // returning an empty slice.
+        // `.slice()` / `.slice(start)` / `.slice(start, end)` — route
+        // through `bf_slice`. A missing `start` defaults to 0 (full
+        // copy); the runtime helper treats an absent `end` as "to
+        // length". Out-of-bounds indices clamp instead of panicking
+        // (JS-compat); `start > end` returns an empty slice. JS ignores
+        // a third+ argument, so only `args[0]` / `args[1]` are read.
         const recv = emit(object)
-        const start = emit(args[0])
-        if (args.length === 1) {
+        const start = args.length >= 1 ? emit(args[0]) : '0'
+        if (args.length <= 1) {
           return `bf_slice ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(start)}`
         }
         const end = emit(args[1])

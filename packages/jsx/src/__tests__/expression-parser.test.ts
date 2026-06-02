@@ -1358,3 +1358,78 @@ describe('expression-parser', () => {
     })
   })
 })
+
+// =============================================================================
+// Full-arity lowering for the array / string methods (#1448)
+// =============================================================================
+//
+// These methods lower at their full JS arity: zero-arg defaults
+// (`.join()` → `,`, `.slice()` → full copy) and JS-ignored trailing
+// arguments (`.trim(1)`, `.at(i, extra)`, `.slice(s, e, extra)`) are all
+// accepted. The only forms still refused are the ones whose EXTRA
+// argument changes the result and isn't lowered yet — the `fromIndex` of
+// `.includes`/`.indexOf`/`.lastIndexOf` and the variadic `.concat(a, b)`
+// — because silently dropping those would make SSR differ from the
+// client (worse than a build error).
+describe('expression-parser — array-method full-arity lowering (#1448)', () => {
+  const supported: Array<[string, string]> = [
+    // base forms
+    ['join(sep)', 'arr.join("-")'],
+    ['includes(x)', 'arr.includes(x)'],
+    ['indexOf(x)', 'arr.indexOf(x)'],
+    ['at(i)', 'arr.at(1)'],
+    ['concat(other)', 'arr.concat(b)'],
+    ['slice(start)', 'arr.slice(1)'],
+    ['slice(start, end)', 'arr.slice(1, 2)'],
+    ['trim()', 's.trim()'],
+    // zero-arg defaults (every one of these escaping both its arm AND
+    // the guard is the footgun the relaxation must NOT reintroduce)
+    ['join() → default ","', 'arr.join()'],
+    ['slice() → full copy', 'arr.slice()'],
+    ['at() → at(0)', 'arr.at()'],
+    ['concat() → shallow copy', 'arr.concat()'],
+    ['reverse() base', 'arr.reverse()'],
+    ['toReversed() base', 'arr.toReversed()'],
+    ['toLowerCase() base', 's.toLowerCase()'],
+    ['toUpperCase() base', 's.toUpperCase()'],
+    ['lastIndexOf(x) base', 'arr.lastIndexOf(x)'],
+    // JS-ignored trailing arguments
+    ['slice(s, e, extra)', 'arr.slice(1, 2, 3)'],
+    ['at(i, extra)', 'arr.at(1, 2)'],
+    ['reverse(extra)', 'arr.reverse(1)'],
+    ['toReversed(extra)', 'arr.toReversed(1)'],
+    ['toLowerCase(extra)', 's.toLowerCase("x")'],
+    ['toUpperCase(extra)', 's.toUpperCase("x")'],
+    ['trim(extra)', 's.trim(1)'],
+  ]
+  for (const [label, expr] of supported) {
+    test(`${label} — lowers to array-method`, () => {
+      expect(parseExpression(expr).kind).toBe('array-method')
+    })
+  }
+
+  // Still refused (the extra argument is meaningful and not yet
+  // lowered), plus the degenerate zero-arg search forms (`includes()`
+  // searches for `undefined` — refused rather than guessed).
+  const refused: Array<[string, string]> = [
+    ['includes(x, fromIndex)', 'arr.includes(x, 1)'],
+    ['indexOf(x, fromIndex)', 'arr.indexOf(x, 1)'],
+    ['lastIndexOf(x, fromIndex)', 'arr.lastIndexOf(x, 1)'],
+    ['concat(a, b) variadic', 'arr.concat(a, b)'],
+    ['includes() zero-arg', 'arr.includes()'],
+    ['indexOf() zero-arg', 'arr.indexOf()'],
+  ]
+  for (const [label, expr] of refused) {
+    test(`${label} — refuses (meaningful extra arg, not yet lowered)`, () => {
+      const result = parseExpression(expr)
+      expect(result.kind).toBe('unsupported')
+      if (result.kind === 'unsupported') {
+        // Must NOT push `@client` (wrong remedy; doesn't work in
+        // attribute / condition position), and must explain it's a
+        // not-yet-lowered argument.
+        expect(result.reason).not.toContain('@client')
+        expect(result.reason).toContain('not yet lowered')
+      }
+    })
+  }
+})
