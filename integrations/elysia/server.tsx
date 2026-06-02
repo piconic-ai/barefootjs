@@ -11,12 +11,11 @@
 //
 // Deployment mirrors hono/h3: the default export is a WinterCG `fetch`
 // handler, so the same file runs on Cloudflare Workers (`wrangler deploy`)
-// and Bun (`bun run server.tsx`). Elysia normally JIT-compiles routes with
-// `new Function`, which workerd forbids — `aot: false` switches it to the
-// dynamic interpreter so it runs on Workers. Static bundles come from the
-// Workers Assets binding in production and from disk under Bun.
+// and Bun (`bun run server.tsx`). On Workers it uses Elysia's official
+// Cloudflare adapter (see below); static bundles come from the Workers
+// Assets binding in production and from disk under Bun.
 
-import { Elysia } from 'elysia'
+import { Elysia, type Cookie } from 'elysia'
 import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -62,13 +61,21 @@ function seedTodos(): Todo[] {
   ]
 }
 
-function getSession(request: Request, set: { headers: Record<string, string> }): Session {
-  const cookieHeader = request.headers.get('cookie') ?? ''
-  let id = new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`).exec(cookieHeader)?.[1]
+// Use Elysia's reactive `cookie` API instead of hand-parsing the header —
+// reading/writing `cookie[name]` emits the right `Set-Cookie` automatically.
+// Like the other adapters, the cookie just carries an opaque id; the todos
+// live in the server-side `sessions` map keyed by it.
+function getSession(cookie: Record<string, Cookie<string | undefined>>): Session {
+  let id = cookie[SESSION_COOKIE].value
   if (!id) {
     id = randomUUID()
-    set.headers['set-cookie'] =
-      `${SESSION_COOKIE}=${id}; Path=${BASE || '/'}; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}`
+    cookie[SESSION_COOKIE].set({
+      value: id,
+      path: BASE || '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+    })
   }
   let session = sessions.get(id)
   if (!session) {
@@ -143,7 +150,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/todos'), async ({ request, set }) =>
+  .get(link('/todos'), async ({ cookie }) =>
     html(
       await renderToHtml(
         <Layout
@@ -154,7 +161,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
         >
           <h1>Todo (@client)</h1>
           <div id="app">
-            <TodoApp initialTodos={getSession(request, set).todos} />
+            <TodoApp initialTodos={getSession(cookie).todos} />
           </div>
           <p><a href={link('/')}>← Back</a></p>
         </Layout>,
@@ -162,7 +169,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/todos-ssr'), async ({ request, set }) =>
+  .get(link('/todos-ssr'), async ({ cookie }) =>
     html(
       await renderToHtml(
         <Layout
@@ -173,7 +180,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
         >
           <h1>Todo (no @client markers)</h1>
           <div id="app">
-            <TodoAppSSR initialTodos={getSession(request, set).todos} />
+            <TodoAppSSR initialTodos={getSession(cookie).todos} />
           </div>
           <p><a href={link('/')}>← Back</a></p>
         </Layout>,
@@ -203,10 +210,10 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
   )
 
   // ── Todo API (relative `api/todos` from the page resolves here) ──────────
-  .get(link('/api/todos'), ({ request, set }) => getSession(request, set).todos)
+  .get(link('/api/todos'), ({ cookie }) => getSession(cookie).todos)
 
-  .post(link('/api/todos'), ({ request, set, body }) => {
-    const session = getSession(request, set)
+  .post(link('/api/todos'), ({ cookie, set, body }) => {
+    const session = getSession(cookie)
     const text = (body as { text?: string })?.text ?? ''
     const todo: Todo = { id: session.nextId++, text, done: false }
     session.todos.push(todo)
@@ -214,9 +221,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     return todo
   })
 
-  .put(link('/api/todos/:id'), ({ request, set, params, body }) => {
+  .put(link('/api/todos/:id'), ({ cookie, set, params, body }) => {
     const id = Number(params.id)
-    const session = getSession(request, set)
+    const session = getSession(cookie)
     const todo = session.todos.find((t) => t.id === id)
     if (!todo) {
       set.status = 404
@@ -228,9 +235,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     return todo
   })
 
-  .delete(link('/api/todos/:id'), ({ request, set, params }) => {
+  .delete(link('/api/todos/:id'), ({ cookie, set, params }) => {
     const id = Number(params.id)
-    const session = getSession(request, set)
+    const session = getSession(cookie)
     const i = session.todos.findIndex((t) => t.id === id)
     if (i === -1) {
       set.status = 404
@@ -240,8 +247,8 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     return { success: true }
   })
 
-  .post(link('/api/todos/reset'), ({ request, set }) => {
-    const session = getSession(request, set)
+  .post(link('/api/todos/reset'), ({ cookie }) => {
+    const session = getSession(cookie)
     session.todos = seedTodos()
     session.nextId = 4
     return { success: true }
