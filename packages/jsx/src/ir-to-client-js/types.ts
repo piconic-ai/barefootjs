@@ -59,6 +59,16 @@ export interface ClientJsContext {
   loopElements: TopLevelLoop[]
   refElements: RefElement[]
   childInits: ChildInit[]
+  /**
+   * Slot ids of direct child components whose render is DEFERRED to init
+   * (dropped-prop fix). For these, the CSR registration template emits a
+   * `data-bf-ph` placeholder instead of `renderChild(...)`, and the init
+   * body uses `upsertChild` (→ `createComponent` with full getter props)
+   * instead of `initChild`. Computed in `generateInitFunction` once
+   * `unsafeLocalNames` is known, then read by the child-init phase and the
+   * registration-template emit so both agree on which children defer.
+   */
+  deferredChildSlots: Set<string>
   reactiveProps: ReactiveComponentProp[]
   reactiveChildProps: ReactiveChildProp[]
   reactiveAttrs: ReactiveAttribute[]

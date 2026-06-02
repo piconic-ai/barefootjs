@@ -23,6 +23,7 @@ function makeContext(overrides: Partial<ClientJsContext> = {}): ClientJsContext 
     loopElements: [],
     refElements: [],
     childInits: [],
+    deferredChildSlots: new Set(),
     reactiveProps: [],
     reactiveChildProps: [],
     reactiveAttrs: [],

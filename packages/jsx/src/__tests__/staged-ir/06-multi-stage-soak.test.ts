@@ -80,9 +80,24 @@ describe('Multi-stage soak (DeskCanvas-shape)', () => {
     expect(clientJs).toMatch(/import\s+\{[^}]*useYjs[^}]*\}\s+from\s+['"]\.\/useYjs['"]/)
   })
 
-  test('Module → Template: nodeTypes import IS visible to template', () => {
-    const { templateBody } = compile(DESK_CANVAS_SHAPE, 'DeskCanvas.tsx')
-    expect(templateBody).toMatch(/nodeTypes/)
+  test('Module → Init: nodeTypes is forwarded to the deferred child via init', () => {
+    // The `<Flow>` render carries init-scope-only props (`data-yjs={yjs.id}`
+    // where `yjs` is an init-local; `nodes={items()}`). The module-scope
+    // template lambda can't supply those, so the child render is DEFERRED
+    // to a `data-bf-ph` placeholder and `upsertChild` (→ createComponent)
+    // creates `Flow` with the COMPLETE getter props. The inlinable
+    // `nodeTypes` is therefore forwarded through the init `upsertChild`
+    // getter — never dropped — rather than baked into the template lambda.
+    // (Pre-fix this child was rendered eagerly via `renderChild('Flow', {
+    // nodeTypes })` with the init-scope props silently dropped — the
+    // dropped-prop bug.)
+    const { templateBody, initBody } = compile(DESK_CANVAS_SHAPE, 'DeskCanvas.tsx')
+    // Template defers the child render with a placeholder, not renderChild.
+    expect(templateBody).toMatch(/data-bf-ph="s0"/)
+    expect(templateBody).not.toMatch(/renderChild/)
+    // Init forwards nodeTypes (and every other prop) with complete values.
+    expect(initBody).toMatch(/upsertChild\(__scope,\s*'Flow',\s*'s0'/)
+    expect(initBody).toMatch(/get nodeTypes\(\)\s*\{\s*return nodeTypes\s*\}/)
   })
 
   // TODO(#1138 P3 5/N): `useYjs(...)` (init-local initializer) leaks into
