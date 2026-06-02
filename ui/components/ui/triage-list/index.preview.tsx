@@ -18,13 +18,22 @@ export function Default() {
   return <TriageList items={items} />
 }
 
-/** Pre-filtered subset to exercise pagination + selection consistency. */
+const manyItems: TriageItem[] = [
+  { id: 'a', title: 'Triage inbound support tickets', status: 'open', priority: 2 },
+  { id: 'b', title: 'Roll back failed deploy', status: 'open', priority: 1 },
+  { id: 'c', title: 'Write incident postmortem', status: 'done', priority: 8 },
+  { id: 'd', title: 'Tune cache eviction policy', status: 'open', priority: 5 },
+  { id: 'e', title: 'Deprecate legacy endpoint', status: 'done', priority: 9 },
+  { id: 'f', title: 'Add rate limiting to API', status: 'open', priority: 3 },
+  { id: 'g', title: 'Localize onboarding flow', status: 'open', priority: 6 },
+  { id: 'h', title: 'Fix flaky e2e test', status: 'done', priority: 4 },
+  { id: 'i', title: 'Upgrade build toolchain', status: 'open', priority: 7 },
+  { id: 'j', title: 'Document signal graph API', status: 'open', priority: 5 },
+  { id: 'k', title: 'Reduce bundle size', status: 'open', priority: 2 },
+  { id: 'l', title: 'Audit third-party scripts', status: 'done', priority: 9 },
+]
+
+/** Larger set to exercise pagination + selection consistency. */
 export function ManyItems() {
-  const more: TriageItem[] = Array.from({ length: 23 }, (_, i) => ({
-    id: `g${i}`,
-    title: `Generated task ${i + 1}`,
-    status: i % 3 === 0 ? 'done' : 'open',
-    priority: (i % 9) + 1,
-  }))
-  return <TriageList items={more} />
+  return <TriageList items={manyItems} />
 }
