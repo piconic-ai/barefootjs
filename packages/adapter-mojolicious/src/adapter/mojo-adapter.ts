@@ -1295,9 +1295,10 @@ function renderArrayMethod(
       // arr.join(sep) → join(sep, @{arr}). The default `${obj}->{join}`
       // hash-lookup fallback would emit invalid Perl, which is why the
       // IR carves out a dedicated method node instead of routing
-      // through the generic call dispatcher.
+      // through the generic call dispatcher. `.join()` defaults the
+      // separator to `,` (JS) and ignores any extra argument.
       const obj = emit(object)
-      const sep = emit(args[0])
+      const sep = args.length >= 1 ? emit(args[0]) : `','`
       return `join(${sep}, @{${obj}})`
     }
     case 'includes': {
@@ -1333,9 +1334,10 @@ function renderArrayMethod(
       // `.at(i)` with negative-index support — `.at(-1)` is the
       // last element. The Mojo helper wraps the same `length + i`
       // arithmetic the Go `bf_at` does so the lowering stays
-      // symmetric across adapters.
+      // symmetric across adapters. `.at()` with no argument is `.at(0)`
+      // (the first element); extra arguments are ignored.
       const obj = emit(object)
-      const idx = emit(args[0])
+      const idx = args.length >= 1 ? emit(args[0]) : '0'
       return `bf->at(${obj}, ${idx})`
     }
     case 'concat': {
@@ -1343,20 +1345,26 @@ function renderArrayMethod(
       // ref so the result composes with `.join(...)` / other
       // array-shape methods downstream (the canonical Tier A
       // conformance fixture chains `.concat(...).join(' ')`).
+      // `.concat()` with no argument is a shallow copy — indistinguishable
+      // from the receiver in an SSR snapshot, so it lowers to the receiver.
+      if (args.length === 0) {
+        return emit(object)
+      }
       const a = emit(object)
       const b = emit(args[0])
       return `bf->concat(${a}, ${b})`
     }
     case 'slice': {
-      // `.slice(start)` / `.slice(start, end)`. The Mojo helper
-      // mirrors the Go arithmetic (negative-index normalisation,
-      // out-of-bounds clamping, empty result on start >= end).
-      // Absent `end` lowers as `undef`, which the helper treats as
-      // "to length". Returns a new ARRAY ref so the result composes
-      // with `.join(...)` downstream.
+      // `.slice()` / `.slice(start)` / `.slice(start, end)`. The Mojo
+      // helper mirrors the Go arithmetic (negative-index normalisation,
+      // out-of-bounds clamping, empty result on start >= end). A
+      // missing `start` defaults to 0 (full copy); an absent `end`
+      // lowers as `undef`, which the helper treats as "to length". JS
+      // ignores a third+ argument. Returns a new ARRAY ref so the
+      // result composes with `.join(...)` downstream.
       const recv = emit(object)
-      const start = emit(args[0])
-      const end = args.length === 2 ? emit(args[1]) : 'undef'
+      const start = args.length >= 1 ? emit(args[0]) : '0'
+      const end = args.length >= 2 ? emit(args[1]) : 'undef'
       return `bf->slice(${recv}, ${start}, ${end})`
     }
     case 'reverse':

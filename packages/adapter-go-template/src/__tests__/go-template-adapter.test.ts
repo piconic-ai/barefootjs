@@ -2182,6 +2182,10 @@ import { fixture as arrayLastIndexOfFixture } from '../../../adapter-tests/fixtu
 import { fixture as arrayAtFixture } from '../../../adapter-tests/fixtures/methods/array-at'
 import { fixture as arrayConcatFixture } from '../../../adapter-tests/fixtures/methods/array-concat'
 import { fixture as arraySliceFixture } from '../../../adapter-tests/fixtures/methods/array-slice'
+import { fixture as arraySliceCopyFixture } from '../../../adapter-tests/fixtures/methods/array-slice-copy'
+import { fixture as arrayJoinDefaultFixture } from '../../../adapter-tests/fixtures/methods/array-join-default'
+import { fixture as arrayAtDefaultFixture } from '../../../adapter-tests/fixtures/methods/array-at-default'
+import { fixture as arrayConcatCopyFixture } from '../../../adapter-tests/fixtures/methods/array-concat-copy'
 import { fixture as arrayReverseFixture } from '../../../adapter-tests/fixtures/methods/array-reverse'
 import { fixture as arrayToReversedFixture } from '../../../adapter-tests/fixtures/methods/array-toReversed'
 import { fixture as stringToLowerCaseFixture } from '../../../adapter-tests/fixtures/methods/string-toLowerCase'
@@ -2214,6 +2218,13 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     { fixture: arrayAtFixture,          expect: 'bf_at .Items (bf_neg 1)' },
     { fixture: arrayConcatFixture,      expect: 'bf_concat .Left .Right' },
     { fixture: arraySliceFixture,       expect: 'bf_slice .Items 1 3' },
+    // #1448 full-arity — zero-arg defaults. `.slice()` → start 0 (full
+    // copy); `.join()` → default `,` separator.
+    { fixture: arraySliceCopyFixture,   expect: 'bf_slice .Items 0' },
+    { fixture: arrayJoinDefaultFixture, expect: 'bf_join (.Items) ","' },
+    // `.at()` → index 0; `.concat()` → the receiver (shallow copy).
+    { fixture: arrayAtDefaultFixture,   expect: 'bf_at .Items 0' },
+    { fixture: arrayConcatCopyFixture,  expect: 'bf_join (.Items) "|"' },
     { fixture: arrayReverseFixture,     expect: 'bf_reverse .Items' },
     // .toReversed shares the helper with .reverse — pinning both
     // routings catches a future divergence between them.
@@ -2327,6 +2338,15 @@ export function C() {
     { name: 'reduce', expr: `items().reduce((a, b) => a + b.n, 0)`, badEmit: '.Reduce' },
     { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '.FlatMap' },
     { name: 'flat', expr: `items().flat()`, badEmit: '.Flat' },
+    // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
+    // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
+    // and the variadic `.concat`. The parser refuses these (silently
+    // dropping the arg would change the result) rather than emitting a
+    // render-crashing `.Includes` / `.Concat` field access. (The
+    // zero-arg defaults `.join()`/`.slice()` and JS-ignored trailing
+    // args like `.trim(1)` are accepted — pinned in the positive blocks.)
+    { name: 'includes (2-arg fromIndex)', expr: `items().includes("a", 1)`, badEmit: '.Includes' },
+    { name: 'concat (variadic)', expr: `items().concat(items(), items())`, badEmit: '.Concat' },
     // Tier B/C string methods — previously slipped through with no
     // diagnostic; now gated by `UNSUPPORTED_METHODS`.
     { name: 'split', expr: `name().split(",")`, badEmit: '.Name.Split' },

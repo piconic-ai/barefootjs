@@ -928,6 +928,10 @@ import { fixture as arrayLastIndexOfFixture } from '../../../adapter-tests/fixtu
 import { fixture as arrayAtFixture } from '../../../adapter-tests/fixtures/methods/array-at'
 import { fixture as arrayConcatFixture } from '../../../adapter-tests/fixtures/methods/array-concat'
 import { fixture as arraySliceFixture } from '../../../adapter-tests/fixtures/methods/array-slice'
+import { fixture as arraySliceCopyFixture } from '../../../adapter-tests/fixtures/methods/array-slice-copy'
+import { fixture as arrayJoinDefaultFixture } from '../../../adapter-tests/fixtures/methods/array-join-default'
+import { fixture as arrayAtDefaultFixture } from '../../../adapter-tests/fixtures/methods/array-at-default'
+import { fixture as arrayConcatCopyFixture } from '../../../adapter-tests/fixtures/methods/array-concat-copy'
 import { fixture as arrayReverseFixture } from '../../../adapter-tests/fixtures/methods/array-reverse'
 import { fixture as arrayToReversedFixture } from '../../../adapter-tests/fixtures/methods/array-toReversed'
 import { fixture as stringToLowerCaseFixture } from '../../../adapter-tests/fixtures/methods/string-toLowerCase'
@@ -955,6 +959,12 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: arrayAtFixture,          expect: 'bf->at($items, -1)' },
     { fixture: arrayConcatFixture,      expect: 'bf->concat($left, $right)' },
     { fixture: arraySliceFixture,       expect: 'bf->slice($items, 1, 3)' },
+    // #1448 full-arity — zero-arg defaults.
+    { fixture: arraySliceCopyFixture,   expect: 'bf->slice($items, 0, undef)' },
+    { fixture: arrayJoinDefaultFixture, expect: `join(',', @{$items})` },
+    // `.at()` → index 0; `.concat()` → the receiver (shallow copy).
+    { fixture: arrayAtDefaultFixture,   expect: 'bf->at($items, 0)' },
+    { fixture: arrayConcatCopyFixture,  expect: `join('|', @{$items})` },
     { fixture: arrayReverseFixture,     expect: 'bf->reverse($items)' },
     // .toReversed shares the helper with .reverse — pinning both
     // routings catches a future divergence between them.
@@ -1065,6 +1075,14 @@ export function C() {
     { name: 'reduce', expr: `items().reduce((a, b) => a + b.n, 0)`, badEmit: '->{reduce}' },
     { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '->{flatMap}' },
     { name: 'flat', expr: `items().flat()`, badEmit: '->{flat}' },
+    // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
+    // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
+    // and the variadic `.concat`. The parser refuses these (silently
+    // dropping the arg would change the result). (The zero-arg defaults
+    // `.join()`/`.slice()` and JS-ignored trailing args like `.trim(1)`
+    // are accepted — pinned in the positive blocks.)
+    { name: 'includes (2-arg fromIndex)', expr: `items().includes("a", 1)`, badEmit: '->{includes}' },
+    { name: 'concat (variadic)', expr: `items().concat(items(), items())`, badEmit: '->{concat}' },
     // Tier B/C string methods — previously slipped through with no
     // diagnostic; now routed through the AST / `isSupported` gate.
     { name: 'split', expr: `name().split(",")`, badEmit: '->{split}' },

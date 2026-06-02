@@ -231,6 +231,23 @@ const UNSUPPORTED_METHODS = new Set([
   'substring', 'substr', 'match', 'matchAll', 'search',
 ])
 
+// Methods that lower at their single-argument form but whose EXTRA
+// argument is meaningful and NOT yet lowered: the `fromIndex` of
+// `.includes` / `.indexOf` / `.lastIndexOf` (the 2-arg form) and the
+// additional arrays of a variadic `.concat(a, b, …)`. The relaxed
+// per-method arms in `convertNode` accept every method's zero-arg
+// defaults (`.join()` / `.slice()` / `.concat()` / `.at()`) and
+// JS-ignored trailing arguments; this guard catches only the remaining
+// meaningful-extra forms, refusing them with BF101 because silently
+// dropping the argument would make the SSR output differ from the
+// client. See #1448.
+const LOWERED_ARRAY_METHODS = new Set([
+  'includes',
+  'indexOf',
+  'lastIndexOf',
+  'concat',
+])
+
 // =============================================================================
 // Expression Parser
 // =============================================================================
@@ -344,7 +361,10 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     // etc. later means widening the IR discriminator, not adding more
     // branches to every adapter's call dispatch.
     if (callee.kind === 'member' && !callee.computed) {
-      if (callee.property === 'join' && args.length === 1) {
+      // `.join()` / `.join(sep)` — JS defaults the separator to `,` when
+      // omitted and ignores any extra arguments. Accept every arity; the
+      // adapters supply the default separator and read only `args[0]`.
+      if (callee.property === 'join') {
         return { kind: 'array-method', method: 'join', object: callee.object, args }
       }
       // `.includes(x)` — shared between `Array.prototype.includes` and
@@ -369,20 +389,28 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // element). Go has `bf_at` registered already (see runtime
       // FuncMap); Mojo's `bf->at` wraps the same arithmetic.
       // See #1448 Tier A.
-      if (callee.property === 'at' && args.length === 1) {
+      // `.at(i)` — JS ignores any argument past the first, and `.at()`
+      // with no argument is `.at(0)` (the first element). Accept every
+      // arity; the adapters read `args[0]` (defaulting the index to 0).
+      if (callee.property === 'at') {
         return { kind: 'array-method', method: 'at', object: callee.object, args }
       }
-      // `.concat(other)` — merges two arrays in order. Go uses
-      // `bf_concat` (reflect-based append into `[]any`); Mojo uses
-      // `bf->concat` (Perl list builder). Variadic shapes (`.concat(a, b)`)
-      // are out of scope for this PR — gated to single-arg here.
-      if (callee.property === 'concat' && args.length === 1) {
+      // `.concat()` / `.concat(other)` — `.concat()` returns a shallow
+      // copy (indistinguishable from the receiver in an SSR snapshot),
+      // and `.concat(other)` merges the two arrays. Go uses `bf_concat`
+      // (reflect-based append into `[]any`); Mojo uses `bf->concat`
+      // (Perl list builder). The VARIADIC form (`.concat(a, b, …)`) is
+      // not lowered yet — it's refused by the guard below rather than
+      // silently dropping the extra arrays.
+      if (callee.property === 'concat' && args.length <= 1) {
         return { kind: 'array-method', method: 'concat', object: callee.object, args }
       }
-      // `.slice(start)` / `.slice(start, end)` — both forms route
-      // through `bf_slice` (Go) / `bf->slice` (Mojo); the helpers
-      // treat a missing / undef `end` as "to length".
-      if (callee.property === 'slice' && (args.length === 1 || args.length === 2)) {
+      // `.slice()` / `.slice(start)` / `.slice(start, end)` — route
+      // through `bf_slice` (Go) / `bf->slice` (Mojo). A missing `start`
+      // defaults to 0 (full copy), a missing / undef `end` means "to
+      // length", and JS ignores any third+ argument. Accept every arity;
+      // the adapters read only `args[0]` / `args[1]`.
+      if (callee.property === 'slice') {
         return { kind: 'array-method', method: 'slice', object: callee.object, args }
       }
       // `.reverse()` and `.toReversed()` — both zero-arg shapes
@@ -390,7 +418,8 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // of state, so JS's mutate-and-return-receiver (`reverse`)
       // vs return-new-array (`toReversed`) distinction has no
       // template-level meaning; both produce a new reversed array.
-      if ((callee.property === 'reverse' || callee.property === 'toReversed') && args.length === 0) {
+      // JS takes no argument and ignores any that are passed.
+      if (callee.property === 'reverse' || callee.property === 'toReversed') {
         return { kind: 'array-method', method: callee.property, object: callee.object, args }
       }
       // `.toLowerCase()` — string-only (the IR carries a value-builtin
@@ -398,19 +427,40 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // label is a misnomer for string methods but the mechanical
       // pipeline matches). Go uses the existing `bf_lower` helper;
       // Mojo uses Perl's native `lc`. See #1448 Tier A.
-      if (callee.property === 'toLowerCase' && args.length === 0) {
+      if (callee.property === 'toLowerCase') {
         return { kind: 'array-method', method: 'toLowerCase', object: callee.object, args }
       }
       // `.toUpperCase()` — Go uses the existing `bf_upper` helper;
       // Mojo uses Perl's native `uc`.
-      if (callee.property === 'toUpperCase' && args.length === 0) {
+      if (callee.property === 'toUpperCase') {
         return { kind: 'array-method', method: 'toUpperCase', object: callee.object, args }
       }
       // `.trim()` — Go uses the existing `bf_trim` helper; Mojo uses
       // a new `bf->trim` method that mirrors JS's "strip leading +
       // trailing whitespace" semantic via a Perl regex.
-      if (callee.property === 'trim' && args.length === 0) {
+      if (callee.property === 'trim') {
         return { kind: 'array-method', method: 'trim', object: callee.object, args }
+      }
+      // Arity guard for the forms whose EXTRA argument changes the
+      // result and is not yet lowered: the `fromIndex` of `.includes` /
+      // `.indexOf` / `.lastIndexOf` (the 2-arg form), and the additional
+      // arrays of a variadic `.concat(a, b, …)`. Silently dropping those
+      // would make the SSR output *differ* from the client (worse than a
+      // build error), so they refuse with BF101 until lowered. (The
+      // single-argument forms, zero-arg defaults, and JS-ignored
+      // trailing arguments of every method are accepted by the relaxed
+      // arms above.) See #1448.
+      if (LOWERED_ARRAY_METHODS.has(callee.property)) {
+        const argName = callee.property === 'concat' ? 'other' : 'x'
+        const detail =
+          callee.property === 'concat'
+            ? 'the variadic `.concat(a, b, …)` form'
+            : `\`.${callee.property}(…)\` with ${args.length} argument(s)`
+        return {
+          kind: 'unsupported',
+          raw,
+          reason: `${detail} is not yet lowered to the Go/Mojo template adapters. Use the single-argument \`.${callee.property}(${argName})\` form, or pre-compute the value before the template.`,
+        }
       }
       // `.sort(cmp)` / `.toSorted(cmp)` (#1448 Tier B). The comparator
       // is extracted into a structured `SortComparator` at parse time;
