@@ -17,6 +17,7 @@
 // Workers Assets binding in production and from disk under Bun.
 
 import { Elysia } from 'elysia'
+import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
@@ -84,9 +85,13 @@ const FAKE_RESPONSES = [
   '[Dummy] Elysia serves this stream as a ReadableStream; the BarefootJS island consumes it with EventSource and renders token-by-token on the client.',
 ]
 
-// `aot: false` disables Elysia's `new Function` route compiler so it runs on
-// the Workers runtime (which disallows code generation from strings).
-const app = new Elysia({ aot: false })
+// On Workers, use Elysia's official Cloudflare adapter (the blessed way to
+// run on workerd — it handles the runtime's constraints around route
+// compilation). It is Workers-only (routes 404 under plain Bun), so under
+// Bun (dev / e2e / compose) we use the default adapter. `typeof Bun` is the
+// runtime discriminator: defined under Bun, absent on workerd.
+const onWorkers = typeof Bun === 'undefined'
+const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
 
   // ── HTML pages ───────────────────────────────────────────────────────────
   .get(link('/'), async () =>
@@ -278,6 +283,9 @@ const app = new Elysia({ aot: false })
       },
     })
   })
+  // The Cloudflare adapter requires `.compile()` before the app is exported;
+  // it's a harmless no-op under the default (Bun) adapter.
+  .compile()
 
 // ── static assets ──────────────────────────────────────────────────────────
 // {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
@@ -308,14 +316,20 @@ type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
 
 export default {
   port: PORT,
-  async fetch(request: Request, env?: Env): Promise<Response> {
+  async fetch(request: Request, env?: Env, ctx?: unknown): Promise<Response> {
     const url = new URL(request.url)
     if (isStaticPath(url.pathname)) {
       // Production (Workers): serve from the Assets binding. Dev (Bun): disk.
       if (env?.ASSETS) return env.ASSETS.fetch(request)
       return serveFromDisk(url.pathname)
     }
-    return app.fetch(request)
+    // Pass env/ctx through so the Cloudflare adapter can wire bindings; the
+    // Bun adapter ignores the extra args.
+    return (app.fetch as (r: Request, env?: unknown, ctx?: unknown) => Promise<Response>)(
+      request,
+      env,
+      ctx,
+    )
   },
 }
 
