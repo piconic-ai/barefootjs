@@ -49,6 +49,7 @@ export type ParsedExpr =
         | 'split'
         | 'startsWith'
         | 'endsWith'
+        | 'replace'
       object: ParsedExpr
       args: ParsedExpr[]
     }
@@ -235,7 +236,12 @@ const UNSUPPORTED_METHODS = new Set([
   // `startsWith` / `endsWith` are no longer here — both lower via the
   // `array-method` IR + `bf_starts_with` / `bf_ends_with` (Go) and
   // `bf->starts_with` / `bf->ends_with` (Mojo). See #1448 Tier B.
-  'replace', 'replaceAll',
+  // `replace` is no longer here — the string-pattern form lowers via
+  // the `array-method` IR + `bf_replace` (Go) / `bf->replace` (Mojo);
+  // the regex-pattern form is refused at the parse arm below (it would
+  // need the per-adapter regex-flavour decision). `replaceAll` stays
+  // refused. See #1448 Tier B.
+  'replaceAll',
   'repeat', 'padStart', 'padEnd',
   'charAt', 'charCodeAt', 'codePointAt', 'normalize',
   'substring', 'substr', 'match', 'matchAll', 'search',
@@ -503,6 +509,55 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           }
         }
         return { kind: 'array-method', method: callee.property, object: callee.object, args }
+      }
+      // `.replace(pattern, replacement)` — string-pattern form,
+      // replacing the FIRST occurrence (JS semantics for a string
+      // pattern). Go uses `bf_replace` (`strings.Replace` with n=1);
+      // Mojo uses `bf->replace` (index/substr splice, no regex). A
+      // regex-literal pattern parses as `unsupported` (convertNode has
+      // no regex arm), so it's refused explicitly here rather than
+      // emitting a broken `.Replace` — the Perl `s///` vs Go
+      // `regexp.ReplaceAllString` flavour gap is the open design
+      // question in #1448. `replaceAll` stays refused entirely.
+      //
+      // Full JS arity: a third+ argument is ignored (the adapter reads
+      // only the pattern + replacement). The one- and zero-argument
+      // forms are refused: JS coerces the missing replacement (and
+      // pattern) to the literal string "undefined", a degenerate result
+      // (mirrors the `.includes()` / `.startsWith()` zero-arg refusal).
+      if (callee.property === 'replace') {
+        if (args.length < 2) {
+          return {
+            kind: 'unsupported',
+            raw,
+            reason: `\`.replace(${args.length === 0 ? '' : 'pattern'})\` needs both a pattern and a replacement — JS coerces the missing argument to the string "undefined", a degenerate result. Pass both arguments, or pre-compute the value before the template.`,
+          }
+        }
+        // A regex-literal pattern is the deferred form (the Perl `s///`
+        // vs Go `regexp.ReplaceAllString` flavour gap, #1448) — detect it
+        // on the TS node so the message is accurate. Any OTHER unsupported
+        // pattern/replacement (an object literal, an unsupported call, …)
+        // surfaces ITS OWN reason rather than being mislabelled as the
+        // regex form.
+        const patternNode = node.arguments[0]
+        if (patternNode && ts.isRegularExpressionLiteral(patternNode)) {
+          return {
+            kind: 'unsupported',
+            raw,
+            reason:
+              'String.prototype.replace supports only a string pattern + string replacement (the regex form is deferred); use a string pattern or wrap the expression in /* @client */',
+          }
+        }
+        const badArg =
+          args[0].kind === 'unsupported'
+            ? args[0]
+            : args[1].kind === 'unsupported'
+              ? args[1]
+              : undefined
+        if (badArg && badArg.kind === 'unsupported') {
+          return { kind: 'unsupported', raw, reason: badArg.reason }
+        }
+        return { kind: 'array-method', method: 'replace', object: callee.object, args }
       }
       // `.sort(cmp)` / `.toSorted(cmp)` (#1448 Tier B). The comparator
       // is extracted into a structured `SortComparator` at parse time;

@@ -626,6 +626,27 @@ sub ends_with ($self, $recv, $suffix, $end_position = undef) {
     return substr($s, -length $x) eq $x ? 1 : 0;
 }
 
+# `String.prototype.replace(pattern, replacement)` — string-pattern
+# form only (#1448 Tier B), replacing the FIRST occurrence (JS string-
+# pattern semantics). Spliced via index/substr rather than `s///` so
+# BOTH the pattern and the replacement are literal: no Perl regex
+# metacharacters in the pattern and no `$1` / `$&` interpolation in the
+# replacement. Go's `bf_replace` (strings.Replace, n=1) treats the
+# replacement literally too, so the two adapters stay byte-equal — this
+# diverges from JS only for replacement strings containing `$`-patterns
+# (rare in template position). An empty pattern inserts the replacement
+# at the front (`"abc".replace("", "X")` → "Xabc"), matching JS + Go.
+
+sub replace ($self, $recv, $pattern, $replacement) {
+    my $s = defined $recv && !ref($recv) ? "$recv" : '';
+    my $o = defined $pattern ? "$pattern" : '';
+    my $n = defined $replacement ? "$replacement" : '';
+    return $n . $s if $o eq '';
+    my $i = index($s, $o);
+    return $s if $i < 0;
+    return substr($s, 0, $i) . $n . substr($s, $i + length($o));
+}
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). Non-mutating — JS's mutate-vs-new
 # distinction is moot in SSR template context.

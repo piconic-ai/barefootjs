@@ -434,6 +434,46 @@ describe('expression-parser', () => {
       expect(result.kind).toBe('unsupported')
     })
 
+    test('lowers .replace(pattern, replacement, extra) — ignores 3rd+ arg (#1448 Tier B)', () => {
+      const result = parseExpression(`name().replace("o", "0", "extra")`)
+      expect(result.kind).toBe('array-method')
+      if (result.kind === 'array-method') {
+        expect(result.method).toBe('replace')
+      }
+    })
+
+    test('refuses .replace(pattern) with no replacement (#1448 Tier B)', () => {
+      // JS coerces the missing replacement to the string "undefined".
+      const result = parseExpression(`name().replace("o")`)
+      expect(result.kind).toBe('unsupported')
+    })
+
+    test('refuses .replace() with no arguments (#1448 Tier B)', () => {
+      // The zero-arg form is degenerate too (both pattern and
+      // replacement coerce to "undefined") — pin it alongside the
+      // one-arg case so neither regresses.
+      const result = parseExpression(`name().replace()`)
+      expect(result.kind).toBe('unsupported')
+    })
+
+    test('.replace with a non-regex unsupported arg surfaces its own reason (#1448 Tier B)', () => {
+      // An object-literal replacement must NOT be mislabelled as the
+      // deferred regex form — the guard only special-cases a
+      // regex-literal pattern.
+      const result = parseExpression(`name().replace("a", {x: 1})`)
+      expect(result.kind).toBe('unsupported')
+      if (result.kind === 'unsupported') {
+        expect(result.reason).not.toContain('regex form is deferred')
+      }
+    })
+
+    test('.replace(/re/, repl) refuses the regex form with the deferred reason (#1448 Tier B)', () => {
+      const result = parseExpression(`name().replace(/a/g, "b")`)
+      expect(result.kind).toBe('unsupported')
+      if (result.kind === 'unsupported') {
+        expect(result.reason).toContain('regex form is deferred')
+      }
+    })
     test('lowers .filter(({label = `untitled-${suffix}`}) => label) — template-literal default (#1531)', () => {
       const result = parseExpression('items().filter(({label = `untitled-${suffix}`}) => label)')
       expect(result.kind).toBe('higher-order')

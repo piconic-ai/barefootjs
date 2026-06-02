@@ -1432,6 +1432,19 @@ function renderArrayMethod(
       }
       return `bf->${fn}(${recv}, ${arg})`
     }
+    case 'replace': {
+      // `.replace(old, new)` — string-pattern form, first occurrence.
+      // The `bf->replace` helper splices via index/substr (not `s///`)
+      // so both the pattern and the replacement are literal — no Perl
+      // regex metacharacters and no `$1` / `$&` interpolation in the
+      // replacement, keeping it byte-equal with Go's `bf_replace`. The
+      // regex-pattern form is refused upstream at the parser. See
+      // #1448 Tier B.
+      const recv = emit(object)
+      const oldS = emit(args[0])
+      const newS = emit(args[1])
+      return `bf->replace(${recv}, ${oldS}, ${newS})`
+    }
     default: {
       // TS-level exhaustiveness guard. If this throws at runtime, the
       // IR was constructed against a newer `ArrayMethod` variant that
