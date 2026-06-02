@@ -354,6 +354,30 @@ subtest 'repeat — string concatenated n times' => sub {
     is $bf->repeat(undef, 3), '',       'undef receiver → empty';
 };
 
+# `String.prototype.padStart` / `padEnd` (#1448 Tier B) — pad to a
+# target width with a repeat-and-truncate fill (default pad = space).
+# Mirrors Go's rune-based `bf_pad_*`.
+subtest 'pad_start / pad_end — pad to target width' => sub {
+    is $bf->pad_start('42', 5, '0'), '00042', 'left-pad with 0';
+    is $bf->pad_end('42', 5, '.'),   '42...', 'right-pad with .';
+
+    # Default pad is a single space when omitted.
+    is $bf->pad_start('42', 5),      '   42', 'default pad = space (start)';
+    is $bf->pad_end('42', 5),        '42   ', 'default pad = space (end)';
+
+    # Multi-char pad repeated then truncated to fill.
+    is $bf->pad_start('x', 5, 'ab'), 'ababx', 'multi-char pad truncated (start)';
+    is $bf->pad_end('x', 5, 'ab'),   'xabab', 'multi-char pad truncated (end)';
+
+    # Already >= target, or empty pad → unchanged.
+    is $bf->pad_start('hello', 3, '0'), 'hello', 'already >= target → unchanged';
+    is $bf->pad_start('42', 5, ''),     '42',    'empty pad → unchanged';
+
+    # Target truncates toward zero; undef receiver coerces to empty.
+    is $bf->pad_start('7', 4.9, '0'),   '0007',  'fractional target truncates';
+    is $bf->pad_start(undef, 3, '0'),   '000',   'undef receiver pads from empty';
+};
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). The opts hash-ref carries a `keys` list of
 # the structured comparison keys the compiler extracted at parse time

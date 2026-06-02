@@ -660,6 +660,38 @@ sub repeat ($self, $recv, $count) {
     return $n <= 0 ? '' : $s x $n;
 }
 
+# `String.prototype.padStart` / `padEnd` (#1448 Tier B) — pad the
+# receiver to `$target` characters with `$pad` (default a single space)
+# repeated and truncated to fill, prepended or appended. Length is
+# measured in characters (Perl `length`), matching Go's rune-based
+# `bf_pad_*` — diverges from JS's UTF-16-unit length only for
+# astral-plane input. An empty pad, or a receiver already >= `$target`,
+# returns the receiver unchanged (JS parity). The `$target` is
+# truncated toward zero (JS ToLength on the first arg).
+
+sub _pad ($s, $target, $pad, $at_start) {
+    $pad = ' ' unless defined $pad;
+    $pad = "$pad";
+    return $s if $pad eq '';
+    my $len = length $s;
+    my $t   = int($target // 0);
+    return $s if $len >= $t;
+    my $need = $t - $len;
+    # Repeat enough copies to cover $need, then trim to exactly $need.
+    my $fill = substr($pad x (int($need / length($pad)) + 1), 0, $need);
+    return $at_start ? $fill . $s : $s . $fill;
+}
+
+sub pad_start ($self, $recv, $target, $pad = undef) {
+    my $s = defined $recv && !ref($recv) ? "$recv" : '';
+    return _pad($s, $target, $pad, 1);
+}
+
+sub pad_end ($self, $recv, $target, $pad = undef) {
+    my $s = defined $recv && !ref($recv) ? "$recv" : '';
+    return _pad($s, $target, $pad, 0);
+}
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). Non-mutating — JS's mutate-vs-new
 # distinction is moot in SSR template context.

@@ -71,6 +71,8 @@ export type ArrayMethod =
   | 'endsWith'
   | 'replace'
   | 'repeat'
+  | 'padStart'
+  | 'padEnd'
 
 /**
  * Method names handled by the dedicated `sortMethod()` dispatcher

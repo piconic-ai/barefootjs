@@ -487,6 +487,15 @@ describe('expression-parser', () => {
       }
     })
 
+    test('lowers .padStart() / .padEnd(t, p, extra) — full arity (#1448 Tier B)', () => {
+      // `.padStart()` is `padStart(0)` → the receiver unchanged; a
+      // third+ argument is ignored. Both stay on the lowering path.
+      for (const expr of [`name().padStart()`, `name().padEnd(5, "0", "x")`]) {
+        const result = parseExpression(expr)
+        expect(result.kind).toBe('array-method')
+      }
+    })
+
     test('lowers .filter(({label = `untitled-${suffix}`}) => label) — template-literal default (#1531)', () => {
       const result = parseExpression('items().filter(({label = `untitled-${suffix}`}) => label)')
       expect(result.kind).toBe('higher-order')

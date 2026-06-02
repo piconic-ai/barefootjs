@@ -1456,6 +1456,26 @@ function renderArrayMethod(
       const count = args.length === 0 ? '0' : emit(args[0])
       return `bf->repeat(${recv}, ${count})`
     }
+    case 'padStart':
+    case 'padEnd': {
+      // `.padStart(target, pad?)` / `.padEnd(target, pad?)`. The
+      // `bf->pad_*` helpers default the pad to a single space when the
+      // arg is omitted and measure length in characters, matching Go's
+      // rune-based `bf_pad_*`. Full JS arity: the no-argument form is
+      // `padStart(0)` → the receiver unchanged; a third+ argument is
+      // ignored. See #1448 Tier B.
+      const fn = method === 'padStart' ? 'pad_start' : 'pad_end'
+      const recv = emit(object)
+      if (args.length === 0) {
+        return `bf->${fn}(${recv}, 0)`
+      }
+      const target = emit(args[0])
+      if (args.length === 1) {
+        return `bf->${fn}(${recv}, ${target})`
+      }
+      const pad = emit(args[1])
+      return `bf->${fn}(${recv}, ${target}, ${pad})`
+    }
     default: {
       // TS-level exhaustiveness guard. If this throws at runtime, the
       // IR was constructed against a newer `ArrayMethod` variant that
