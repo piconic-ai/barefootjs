@@ -31,6 +31,8 @@ bind-mount the host-built `dist/` and the file-watchers (`bun --watch`,
 host:                                  containers (docker compose):
   - bun install (workspace deps)         - proxy        (bun, 4000 exposed)
   - bun run build:watch per integration  - hono         (bun + Hono)
+                                         - h3           (bun + h3)
+                                         - elysia       (bun + Elysia)
                                          - echo         (golang + air)
                                          - mojolicious  (perl + morbo)
                                          - site-core    (bun + Hono)
@@ -98,8 +100,8 @@ target via env so it forwards to the host:
 HONO_TARGET=http://host.docker.internal:3001 docker compose up proxy
 ```
 
-The same env var pattern works for `ECHO_TARGET`, `MOJOLICIOUS_TARGET`, and
-`SITE_CORE_TARGET`.
+The same env var pattern works for `H3_TARGET`, `ELYSIA_TARGET`,
+`ECHO_TARGET`, `MOJOLICIOUS_TARGET`, and `SITE_CORE_TARGET`.
 
 ### Why dev images are separate from `Dockerfile`
 
@@ -108,3 +110,9 @@ mojolicious and ships only the runtime + the host-built artifacts.
 `Dockerfile.dev` variants add watcher tools (`air`, `morbo`, `bun --watch`)
 and expect source via bind mount. Keeping them separate avoids bloating the
 production image and lets dev tooling evolve independently.
+
+The TypeScript adapters (`hono`, `h3`, `elysia`) have **no production
+`Dockerfile`** — they deploy straight to Cloudflare Workers via
+`wrangler deploy` (Elysia uses its official Cloudflare adapter). Only the
+non-JS adapters (echo, mojolicious) ship a production container image.
+Every adapter still has a `Dockerfile.dev` for the local compose network.
