@@ -283,6 +283,42 @@ subtest 'split — string into array of substrings' => sub {
     is $bf->split(42,      ','),   ['42'],            'numeric receiver stringifies';
 };
 
+# `String.prototype.startsWith` / `endsWith` — string → boolean (1/0)
+# (#1448 Tier B). Literal substr-anchored comparison; mirrors Go's
+# strings.HasPrefix / HasSuffix.
+subtest 'starts_with / ends_with — boolean prefix/suffix tests' => sub {
+    ok  $bf->starts_with('hello world', 'hello'),  'prefix matches';
+    ok !$bf->starts_with('hello world', 'world'),  'prefix mismatch';
+    ok  $bf->starts_with('anything', ''),          'empty prefix is always true';
+    ok !$bf->starts_with('hi', 'longer-than-str'), 'prefix longer than string → false';
+
+    ok  $bf->ends_with('hello world', 'world'),    'suffix matches';
+    ok !$bf->ends_with('hello world', 'hello'),    'suffix mismatch';
+    ok  $bf->ends_with('anything', ''),            'empty suffix is always true';
+    ok !$bf->ends_with('hi', 'longer-than-str'),   'suffix longer than string → false';
+
+    # Separator/search string is matched literally, not as a regex.
+    ok  $bf->starts_with('a.b.c', 'a.'),           'dot in prefix is literal';
+    ok  $bf->ends_with('a.b.c', '.c'),             'dot in suffix is literal';
+
+    # Undef / non-string receivers coerce to empty string.
+    ok !$bf->starts_with(undef, 'x'),              'undef receiver, non-empty prefix → false';
+    ok  $bf->starts_with(undef, ''),               'undef receiver, empty prefix → true';
+    is  $bf->starts_with('hello', 'he'), 1,        'returns 1, not just truthy';
+    is  $bf->ends_with('hello', 'xx'),   0,        'returns 0, not just falsey';
+
+    # Optional position / endPosition (JS `startsWith(p, pos)` /
+    # `endsWith(s, endPos)`), with clamping to [0, length].
+    ok  $bf->starts_with('abc', 'b', 1),           'starts_with at position';
+    ok !$bf->starts_with('abc', 'a', 1),           'starts_with: wrong char at position → false';
+    ok !$bf->starts_with('abc', 'a', 99),          'starts_with: position past end → false (clamped)';
+    ok  $bf->starts_with('abc', 'a', -5),          'starts_with: negative position → from 0 (clamped)';
+    ok  $bf->ends_with('abc', 'b', 2),             'ends_with at endPosition';
+    ok !$bf->ends_with('abc', 'c', 2),             'ends_with: char beyond endPosition → false';
+    ok  $bf->ends_with('abc', 'c', 99),            'ends_with: endPosition past end → true (clamped)';
+    ok !$bf->ends_with('abc', 'a', -1),            'ends_with: negative endPosition → empty (clamped)';
+};
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). The opts hash-ref carries a `keys` list of
 # the structured comparison keys the compiler extracted at parse time

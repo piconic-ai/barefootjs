@@ -47,6 +47,8 @@ export type ParsedExpr =
         | 'toUpperCase'
         | 'trim'
         | 'split'
+        | 'startsWith'
+        | 'endsWith'
       object: ParsedExpr
       args: ParsedExpr[]
     }
@@ -230,7 +232,10 @@ const UNSUPPORTED_METHODS = new Set([
   // via the `array-method` IR + `bf_split` (Go) / `bf->split` (Mojo),
   // returning an array that composes with `.join()` / `.map()` / etc.
   // See #1448 Tier B.
-  'startsWith', 'endsWith', 'replace', 'replaceAll',
+  // `startsWith` / `endsWith` are no longer here — both lower via the
+  // `array-method` IR + `bf_starts_with` / `bf_ends_with` (Go) and
+  // `bf->starts_with` / `bf->ends_with` (Mojo). See #1448 Tier B.
+  'replace', 'replaceAll',
   'repeat', 'padStart', 'padEnd',
   'charAt', 'charCodeAt', 'codePointAt', 'normalize',
   'substring', 'substr', 'match', 'matchAll', 'search',
@@ -479,6 +484,25 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           raw,
           reason: `${detail} is not yet lowered to the Go/Mojo template adapters. Use the single-argument \`.${callee.property}(${argName})\` form, or pre-compute the value before the template.`,
         }
+      }
+      // `.startsWith(search, position?)` / `.endsWith(search, endPosition?)`
+      // — string → boolean, full JS arity. Go uses `bf_starts_with` /
+      // `bf_ends_with` (wrapping `strings.HasPrefix` / `strings.HasSuffix`,
+      // with an optional position that re-anchors the comparison); Mojo
+      // uses `bf->starts_with` / `bf->ends_with` (substr comparison). JS
+      // ignores a third+ argument. The zero-arg form (`.startsWith()`) is
+      // refused: JS coerces the missing search to the literal string
+      // "undefined", a degenerate result not worth lowering (mirrors the
+      // `.includes()` zero-arg refusal). See #1448 Tier B.
+      if (callee.property === 'startsWith' || callee.property === 'endsWith') {
+        if (args.length === 0) {
+          return {
+            kind: 'unsupported',
+            raw,
+            reason: `\`.${callee.property}()\` with no search string is not lowered — JS coerces the missing argument to the string "undefined", a degenerate result. Pass an explicit search string, or pre-compute the value before the template.`,
+          }
+        }
+        return { kind: 'array-method', method: callee.property, object: callee.object, args }
       }
       // `.sort(cmp)` / `.toSorted(cmp)` (#1448 Tier B). The comparator
       // is extracted into a structured `SortComparator` at parse time;
