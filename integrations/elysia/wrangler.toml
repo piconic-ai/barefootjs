@@ -1,26 +1,19 @@
 name = "barefootjs-elysia-example"
-main = "container.ts"
+main = "server.tsx"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-[[containers]]
-class_name = "ElysiaContainer"
-image = "./Dockerfile"
-# Build from the repo root so the Dockerfile can copy the host-built
-# integrations/elysia/dist + integrations/shared/styles.
-image_build_context = "../.."
-max_instances = 1
+[assets]
+directory = "./public"
+binding = "ASSETS"
+# Let the Worker handle routing so basePath requests fall through to the
+# Elysia app; static files under ./public are served by the Assets binding
+# (the Worker calls env.ASSETS.fetch for /static + /shared).
+run_worker_first = true
 
-[[durable_objects.bindings]]
-name = "ELYSIA_CONTAINER"
-class_name = "ElysiaContainer"
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["ElysiaContainer"]
-
-# Two patterns: `/integrations/elysia/*` matches /integrations/elysia/... but
-# not the bare /integrations/elysia, so add the no-slash variant explicitly.
+# Two patterns because Cloudflare route globs don't match the "/*" suffix as
+# empty — `/integrations/elysia/*` matches /integrations/elysia/counter and
+# /integrations/elysia/, but not the bare /integrations/elysia.
 [[routes]]
 pattern = "barefootjs.dev/integrations/elysia"
 zone_name = "barefootjs.dev"
@@ -31,3 +24,6 @@ zone_name = "barefootjs.dev"
 
 [vars]
 BASE_PATH = "/integrations/elysia"
+
+[dev]
+port = 3005

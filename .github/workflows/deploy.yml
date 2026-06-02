@@ -229,9 +229,6 @@ jobs:
       - name: Build integration
         run: cd integrations/elysia && bun run build
 
-      # wrangler deploy builds the Cloudflare Container image from the
-      # integration's Dockerfile, which needs Docker on the runner.
-      # ubuntu-latest ships with a running Docker daemon by default.
       - name: Deploy to Cloudflare Workers
         run: cd integrations/elysia && bunx wrangler deploy
         env:

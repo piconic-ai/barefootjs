@@ -2,15 +2,22 @@
 //
 // BarefootJS on Elysia (Bun) — SSR + client hydration.
 //
-// Like the h3 integration, Elysia is just the HTTP host here: BarefootJS
+// Like the h3 integration, Elysia is just the HTTP host: BarefootJS
 // components compiled with the Hono adapter are plain `hono/jsx`
-// components, rendered to an HTML string with `renderToHtml` (no Hono app)
-// and returned from Elysia handlers. The render runtime (`@barefootjs/hono`,
-// the hono/jsx engine) is imported the same way the Go `Echo` integration
+// components, rendered to an HTML string with `renderToHtml` and returned
+// from Elysia handlers. The render runtime (`@barefootjs/hono`, the
+// hono/jsx engine) is imported the same way the Go `Echo` integration
 // imports the framework-agnostic `bf` runtime from the go-template adapter.
+//
+// Deployment mirrors hono/h3: the default export is a WinterCG `fetch`
+// handler, so the same file runs on Cloudflare Workers (`wrangler deploy`)
+// and Bun (`bun run server.tsx`). Elysia normally JIT-compiles routes with
+// `new Function`, which workerd forbids — `aot: false` switches it to the
+// dynamic interpreter so it runs on Workers. Static bundles come from the
+// Workers Assets binding in production and from disk under Bun.
 
 import { Elysia } from 'elysia'
-import { join, normalize } from 'node:path'
+import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
 import { Layout } from './renderer'
@@ -23,34 +30,15 @@ import { AIChatInteractive } from '@/components/AIChatInteractive'
 
 const PORT = Number(process.env.PORT ?? 3005)
 
-// URL prefix everything is mounted under. Empty for the standalone server
-// (`bun run start`, e2e); `/integrations/elysia` behind the dev proxy, which
-// forwards the prefix unchanged. Client islands fetch the API with relative
-// URLs ('api/todos'), which resolve under the prefix automatically.
-const BASE = process.env.BASE_PATH ?? ''
+// URL prefix everything is mounted under. Defaults to `/integrations/elysia`
+// (the deploy path) so production works without relying on `[vars]` being
+// surfaced on `process.env` at module-load — Cloudflare populates `[vars]`
+// on the `env` binding, not necessarily `process.env`, so a non-empty
+// default is what makes the Worker route correctly (same as hono/h3).
+// Override via BASE_PATH to mount elsewhere. Client islands fetch the API
+// with relative URLs ('api/todos'), which resolve under the prefix.
+const BASE = process.env.BASE_PATH ?? '/integrations/elysia'
 const link = (path: string) => `${BASE}${path}`
-
-// Directories the static handlers read from. Overridable via env so the
-// production container (where the server runs as a bundled single file)
-// can point at the copied assets without depending on the source layout.
-const COMPONENTS_DIR = process.env.BF_COMPONENTS_DIR ?? join(import.meta.dir, 'dist/components')
-const STYLES_DIR = process.env.BF_STYLES_DIR ?? join(import.meta.dir, '../shared/styles')
-
-// ── helpers ────────────────────────────────────────────────────────────────
-async function serveFile(dir: string, rel: string, set: { status?: number }) {
-  // normalize() collapses any `..` so a crafted path can't escape `dir`.
-  const safe = normalize(rel)
-  if (safe.startsWith('..')) {
-    set.status = 404
-    return 'Not found'
-  }
-  const file = Bun.file(join(dir, safe))
-  if (!(await file.exists())) {
-    set.status = 404
-    return 'Not found'
-  }
-  return new Response(file) // Bun infers Content-Type from the extension
-}
 
 function html(markup: string): Response {
   return new Response('<!DOCTYPE html>' + markup, {
@@ -96,17 +84,9 @@ const FAKE_RESPONSES = [
   '[Dummy] Elysia serves this stream as a ReadableStream; the BarefootJS island consumes it with EventSource and renders token-by-token on the client.',
 ]
 
-const app = new Elysia()
-
-  // ── static assets ──────────────────────────────────────────────────────
-  // {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
-  // {BASE}/shared/styles/*     → ../shared/styles/*   (demo stylesheets)
-  .get(`${link('/static/components')}/*`, ({ params, set }) =>
-    serveFile(COMPONENTS_DIR, params['*'], set),
-  )
-  .get(`${link('/shared/styles')}/*`, ({ params, set }) =>
-    serveFile(STYLES_DIR, params['*'], set),
-  )
+// `aot: false` disables Elysia's `new Function` route compiler so it runs on
+// the Workers runtime (which disallows code generation from strings).
+const app = new Elysia({ aot: false })
 
   // ── HTML pages ───────────────────────────────────────────────────────────
   .get(link('/'), async () =>
@@ -266,9 +246,8 @@ const app = new Elysia()
   .get(link('/api/ai-chat'), () => {
     const text = FAKE_RESPONSES[Math.floor(Math.random() * FAKE_RESPONSES.length)]
     // The EventSource closes the connection on `[DONE]` / navigation, so the
-    // loop must stop on `cancel()` and swallow the enqueue-after-close race —
-    // otherwise a disconnect throws and could take the process down. One
-    // JSON-encoded character per `data:` frame, then a literal `[DONE]`.
+    // loop must stop on `cancel()` and swallow the enqueue-after-close race.
+    // One JSON-encoded character per `data:` frame, then a literal `[DONE]`.
     let cancelled = false
     const stream = new ReadableStream({
       async start(controller) {
@@ -300,8 +279,44 @@ const app = new Elysia()
     })
   })
 
-  .listen(PORT, () => {
-    console.log(`  ➜ http://localhost:${PORT}${BASE || '/'}`)
-  })
+// ── static assets ──────────────────────────────────────────────────────────
+// {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
+// {BASE}/shared/styles/*     → ../shared/styles/*   (demo stylesheets)
+//
+// On Workers these are served by the Assets binding (see wrangler.toml);
+// under Bun (dev container, e2e) there's no binding, so read from disk.
+// `import.meta.dir` is resolved lazily inside serveFromDisk (Bun-only path).
+function isStaticPath(pathname: string): boolean {
+  return (
+    pathname.startsWith(`${BASE}/static/components/`) ||
+    pathname.startsWith(`${BASE}/shared/styles/`)
+  )
+}
+
+async function serveFromDisk(pathname: string): Promise<Response> {
+  const [dir, prefix] = pathname.startsWith(`${BASE}/static/components/`)
+    ? [join(import.meta.dir, 'dist/components'), `${BASE}/static/components/`]
+    : [join(import.meta.dir, '../shared/styles'), `${BASE}/shared/styles/`]
+  const rel = normalize(pathname.slice(prefix.length))
+  if (rel.startsWith('..') || isAbsolute(rel)) return new Response('Not found', { status: 404 })
+  const file = Bun.file(join(dir, rel))
+  if (!(await file.exists())) return new Response('Not found', { status: 404 })
+  return new Response(file) // Bun infers Content-Type from the extension
+}
+
+type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
+
+export default {
+  port: PORT,
+  async fetch(request: Request, env?: Env): Promise<Response> {
+    const url = new URL(request.url)
+    if (isStaticPath(url.pathname)) {
+      // Production (Workers): serve from the Assets binding. Dev (Bun): disk.
+      if (env?.ASSETS) return env.ASSETS.fetch(request)
+      return serveFromDisk(url.pathname)
+    }
+    return app.fetch(request)
+  },
+}
 
 export type App = typeof app

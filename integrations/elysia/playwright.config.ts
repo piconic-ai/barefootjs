@@ -11,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3005',
+    baseURL: 'http://localhost:3005/integrations/elysia',
     trace: 'on-first-retry',
   },
   projects: [
@@ -22,7 +22,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'bun run build && bun run start',
-    url: 'http://localhost:3005',
+    url: 'http://localhost:3005/integrations/elysia',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },

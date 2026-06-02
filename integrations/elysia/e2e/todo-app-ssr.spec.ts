@@ -6,4 +6,4 @@
 
 import { todoAppTests } from '../../shared/e2e/todo-app.spec'
 
-todoAppTests('http://localhost:3005', '/todos-ssr')
+todoAppTests('http://localhost:3005/integrations/elysia', '/todos-ssr')

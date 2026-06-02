@@ -6,4 +6,4 @@
 
 import { toggleTests } from '../../shared/e2e/toggle.spec'
 
-toggleTests('http://localhost:3005')
+toggleTests('http://localhost:3005/integrations/elysia')
