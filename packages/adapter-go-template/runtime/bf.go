@@ -35,6 +35,7 @@ func FuncMap() template.FuncMap {
 		"bf_trim":     Trim,
 		"bf_contains": Contains,
 		"bf_join":     Join,
+		"bf_split":    Split,
 		"bf_string":   String,
 
 		// JSON / numeric primitives — JS-compat callees registered on
@@ -476,6 +477,29 @@ func Trim(s string) string {
 // Contains returns true if s contains substr.
 func Contains(s, substr string) bool {
 	return strings.Contains(s, substr)
+}
+
+// Split lowers `String.prototype.split(sep, limit?)` (#1448 Tier B). It
+// wraps `strings.Split` and normalises the result to `[]any` so the
+// slice composes with the array-method surface downstream (`bf_join`,
+// range loops, `bf_len`, …) the same way `bf_slice` / `bf_reverse`
+// results do. Like JS, an empty separator splits into individual UTF-8
+// characters and trailing empty fields are preserved (`"a,".split(",")`
+// → `["a", ""]`). An optional `limit` caps the number of returned
+// pieces (`"a,b,c".split(",", 2)` → `["a", "b"]`); a negative limit is
+// ignored (JS would also return every piece — its ToUint32 wrap makes
+// the limit effectively unbounded). The no-separator form is handled by
+// the adapter (it emits `bf_arr` for the whole-string single element).
+func Split(s, sep string, limit ...int) []any {
+	parts := strings.Split(s, sep)
+	if len(limit) > 0 && limit[0] >= 0 && limit[0] < len(parts) {
+		parts = parts[:limit[0]]
+	}
+	out := make([]any, len(parts))
+	for i, p := range parts {
+		out[i] = p
+	}
+	return out
 }
 
 // Join concatenates elements of a slice with sep. Accepts both

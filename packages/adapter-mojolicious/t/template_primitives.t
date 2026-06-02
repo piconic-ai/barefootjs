@@ -243,6 +243,46 @@ subtest 'trim — strip leading + trailing whitespace' => sub {
     is $bf->trim(42),                  '42',             'numeric receiver stringifies';
 };
 
+# `String.prototype.split(sep)` — string → ARRAY ref (#1448 Tier B).
+# Mirrors the Go `bf_split`: literal (quotemeta'd) separator, trailing
+# empties preserved (the `-1` limit), empty-separator char split.
+subtest 'split — string into array of substrings' => sub {
+    is $bf->split('a,b,c', ','),   ['a', 'b', 'c'],   'comma separator';
+    is $bf->split('a-b-c', '-'),   ['a', 'b', 'c'],   'dash separator';
+
+    # Separator is matched literally, not as a regex — '.' and '|'
+    # would otherwise match every position / alternate emptily.
+    is $bf->split('a.b.c', '.'),   ['a', 'b', 'c'],   'dot is literal, not regex any-char';
+    is $bf->split('a|b',   '|'),   ['a', 'b'],        'pipe is literal, not regex alternation';
+
+    # Trailing empty fields survive (JS keeps them; Perl's bare split
+    # drops them — the -1 limit is what preserves parity).
+    is $bf->split('a,',    ','),   ['a', ''],         'trailing empty field preserved';
+    is $bf->split('a,,b',  ','),   ['a', '', 'b'],    'inner empty field preserved';
+    is $bf->split(',a',    ','),   ['', 'a'],         'leading empty field preserved';
+
+    # Empty separator → individual characters.
+    is $bf->split('abc',   ''),    ['a', 'b', 'c'],   'empty separator splits into chars';
+    is $bf->split('',      ''),    [],                'empty string, empty separator → empty';
+
+    # No match → single-element array (the whole string).
+    is $bf->split('abc',   ','),   ['abc'],           'no separator match → whole string';
+
+    # No separator at all → the whole string (JS `"x".split()`).
+    is $bf->split('a,b,c'),        ['a,b,c'],         'no separator → whole string';
+
+    # Optional limit caps the pieces (JS `split(sep, limit)`); 0 → empty,
+    # negative / >= length → all (matches Go bf_split).
+    is $bf->split('a,b,c,d', ',', 2), ['a', 'b'],     'limit caps pieces';
+    is $bf->split('a,b',     ',', 0), [],             'limit 0 → empty';
+    is $bf->split('a,b',     ',', 9), ['a', 'b'],     'limit >= length → all';
+    is $bf->split('a,b',     ',', -1),['a', 'b'],     'negative limit → all';
+
+    # Undef / non-string receivers render as the empty-string element.
+    is $bf->split(undef,   ','),   [''],              'undef receiver renders single empty-string element';
+    is $bf->split(42,      ','),   ['42'],            'numeric receiver stringifies';
+};
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). The opts hash-ref carries a `keys` list of
 # the structured comparison keys the compiler extracted at parse time

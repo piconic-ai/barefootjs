@@ -133,6 +133,9 @@ import { fixture as stringToLowerCase } from './methods/string-toLowerCase'
 import { fixture as stringToUpperCase } from './methods/string-toUpperCase'
 import { fixture as stringTrim } from './methods/string-trim'
 import { fixture as stringIncludes } from './methods/string-includes'
+// #1448 Tier B — String methods.
+import { fixture as stringSplit } from './methods/string-split'
+import { fixture as stringSplitLimit } from './methods/string-split-limit'
 // #1448 catalog parity: array methods rendered positively by
 // Hono / CSR (runtime JS) and at least one SSR adapter — pinning
 // the canonical surface so a regression surfaces here instead of
@@ -301,6 +304,9 @@ export const jsxFixtures: JSXFixture[] = [
   stringToUpperCase,
   stringTrim,
   stringIncludes,
+  // #1448 Tier B — String methods.
+  stringSplit,
+  stringSplitLimit,
   // #1448 catalog parity — already-lowered Array methods.
   arrayJoin,
   arrayFind,

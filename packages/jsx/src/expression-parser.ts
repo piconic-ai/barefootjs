@@ -46,6 +46,7 @@ export type ParsedExpr =
         | 'toLowerCase'
         | 'toUpperCase'
         | 'trim'
+        | 'split'
       object: ParsedExpr
       args: ParsedExpr[]
     }
@@ -225,7 +226,11 @@ const UNSUPPORTED_METHODS = new Set([
   // unsupported array methods above get), pointing users at the
   // `/* @client */` escape hatch. Each name drops off as its lowering
   // lands. See #1448 "Unsupported string methods" Tier B / Tier C.
-  'split', 'startsWith', 'endsWith', 'replace', 'replaceAll',
+  // `split` is no longer here — `String.prototype.split(sep)` lowers
+  // via the `array-method` IR + `bf_split` (Go) / `bf->split` (Mojo),
+  // returning an array that composes with `.join()` / `.map()` / etc.
+  // See #1448 Tier B.
+  'startsWith', 'endsWith', 'replace', 'replaceAll',
   'repeat', 'padStart', 'padEnd',
   'charAt', 'charCodeAt', 'codePointAt', 'normalize',
   'substring', 'substr', 'match', 'matchAll', 'search',
@@ -440,6 +445,19 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // trailing whitespace" semantic via a Perl regex.
       if (callee.property === 'trim') {
         return { kind: 'array-method', method: 'trim', object: callee.object, args }
+      }
+      // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
+      // array, full JS arity. `.split()` (no separator) returns the
+      // whole string as a single element; `.split(sep)` splits on the
+      // (literal) separator; the optional `limit` caps the number of
+      // pieces. JS ignores a third+ argument. Go uses `bf_split`
+      // (`strings.Split`, optional limit, normalised to `[]any`) and
+      // `bf_arr` for the no-separator whole-string case; Mojo uses
+      // `bf->split`. The regex-separator form stays refused (the parser
+      // never reaches here for it — a regex literal arg is `unsupported`
+      // and propagates). See #1448 Tier B.
+      if (callee.property === 'split') {
+        return { kind: 'array-method', method: 'split', object: callee.object, args }
       }
       // Arity guard for the forms whose EXTRA argument changes the
       // result and is not yet lowered: the `fromIndex` of `.includes` /

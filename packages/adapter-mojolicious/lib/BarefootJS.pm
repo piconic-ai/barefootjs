@@ -526,6 +526,65 @@ sub trim ($self, $recv) {
     return $s;
 }
 
+# `String.prototype.split(sep)` (#1448 Tier B) — string → ARRAY ref.
+#
+# Two JS-parity wrinkles drive the helper (a bare `split` emit would
+# diverge from both JS and Go):
+#
+#   * Perl's `split` treats its first argument as a *regex*, so a
+#     separator like '.' or '|' would match far too much. We
+#     `quotemeta` it to force literal-string matching, mirroring JS's
+#     string-separator semantics (the regex-separator form stays
+#     refused upstream — see the parser arm).
+#   * Perl's `split` drops trailing empty fields by default; JS keeps
+#     them (`"a,".split(",")` is `["a", ""]`). Passing the `-1` limit
+#     preserves them, matching JS and Go's `strings.Split`.
+#
+# An empty separator splits into individual characters (JS + Go agree).
+# Undef receiver renders as the single-element `['']` — the same
+# "missing prop → empty string" convention `bf->trim` uses.
+
+sub split ($self, $recv, $sep = undef, $limit = undef) {
+    my $s = defined $recv && !ref($recv) ? "$recv" : '';
+
+    my @parts;
+    if (!defined $sep) {
+        # No separator → the whole string in a single-element array
+        # (matches JS `"x".split()` / `.split(undefined)`).
+        @parts = ($s);
+    }
+    elsif ("$sep" eq '') {
+        # Empty separator → individual characters. No `-1` limit here:
+        # on an empty pattern Perl's `split` with `-1` appends a spurious
+        # trailing empty field ("abc" → 'a','b','c',''), which JS/Go don't.
+        @parts = split //, $s;
+    }
+    elsif ($s eq '') {
+        # Empty input with a non-empty separator: JS `"".split(",")` is
+        # `[""]` and Go's `strings.Split("", ",")` is `[""]`, but Perl's
+        # `split /,/, ''` returns the empty list — special-case for parity.
+        @parts = ('');
+    }
+    else {
+        # `quotemeta` forces literal-string matching (JS string-separator
+        # semantics); the `-1` keeps trailing empty fields (JS keeps them,
+        # Perl's bare `split` drops them).
+        my $q = quotemeta("$sep");
+        @parts = split /$q/, $s, -1;
+    }
+
+    # Optional `limit` caps the number of pieces (JS `split(sep, limit)`).
+    # 0 → empty; a negative limit keeps all (JS ToUint32 wrap makes it
+    # effectively unbounded) — both match Go's `bf_split`.
+    if (defined $limit) {
+        my $n = int($limit);
+        if ($n == 0) { @parts = () }
+        elsif ($n > 0 && $n < scalar @parts) { @parts = @parts[0 .. $n - 1] }
+    }
+
+    return [@parts];
+}
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). Non-mutating — JS's mutate-vs-new
 # distinction is moot in SSR template context.
