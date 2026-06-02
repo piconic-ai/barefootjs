@@ -3245,6 +3245,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         }
         return base
       }
+      case 'replace': {
+        // `.replace(old, new)` — string-pattern form, first occurrence
+        // only, via the new `bf_replace` helper (`strings.Replace` with
+        // n=1). The regex-pattern form is refused upstream at the
+        // parser. See #1448 Tier B.
+        const recv = emit(object)
+        const oldS = emit(args[0])
+        const newS = emit(args[1])
+        return `bf_replace ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(oldS)} ${wrapIfMultiToken(newS)}`
+      }
       default: {
         const _exhaustive: never = method
         throw new Error(`Go arrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`)

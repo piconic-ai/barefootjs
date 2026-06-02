@@ -2198,6 +2198,7 @@ import { fixture as stringStartsWithFixture } from '../../../adapter-tests/fixtu
 import { fixture as stringStartsWithPositionFixture } from '../../../adapter-tests/fixtures/methods/string-startsWith-position'
 import { fixture as stringEndsWithFixture } from '../../../adapter-tests/fixtures/methods/string-endsWith'
 import { fixture as stringEndsWithPositionFixture } from '../../../adapter-tests/fixtures/methods/string-endsWith-position'
+import { fixture as stringReplaceFixture } from '../../../adapter-tests/fixtures/methods/string-replace'
 // #1448 Tier B — .sort / .toSorted fixtures.
 import { fixture as arraySortFieldAscFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-asc'
 import { fixture as arraySortFieldDescFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-desc'
@@ -2250,6 +2251,8 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     { fixture: stringStartsWithPositionFixture, expect: '{{if bf_starts_with .Value "world" 6}}' },
     { fixture: stringEndsWithFixture,   expect: '{{if bf_ends_with .Value .Suffix}}' },
     { fixture: stringEndsWithPositionFixture,   expect: '{{if bf_ends_with .Value "hello" 5}}' },
+    // #1448 Tier B — string → string, first-occurrence replace.
+    { fixture: stringReplaceFixture,    expect: 'bf_replace .Value "o" "0"' },
     // #1448 Tier B — sort / toSorted. Loop-chained shapes wrap the
     // iterable in `bf_sort .Items <kind> <key> <type> <dir>`;
     // standalone shapes inline the helper at the call site.
@@ -2367,11 +2370,10 @@ export function C() {
     { name: 'concat (variadic)', expr: `items().concat(items(), items())`, badEmit: '.Concat' },
     // Tier B/C string methods — previously slipped through with no
     // diagnostic; now gated by `UNSUPPORTED_METHODS`. `split`,
-    // `startsWith` and `endsWith` have since landed their full-arity
-    // lowerings (#1448 Tier B) and moved to the positive fixture-pin
-    // block above — `.split()`/`.split(sep)`/`.split(sep, limit)` and
-    // the optional `position` / `endPosition` second argument all lower.
-    { name: 'replace', expr: `name().replace("a", "b")`, badEmit: '.Name.Replace' },
+    // `startsWith`, `endsWith` and the string-pattern form of `replace`
+    // have since landed their full-arity lowerings (#1448 Tier B) and
+    // moved to the positive fixture-pin block above. The regex-pattern
+    // `replace` form is pinned separately below.
     { name: 'repeat', expr: `name().repeat(3)`, badEmit: '.Name.Repeat' },
     { name: 'padStart', expr: `name().padStart(5, "0")`, badEmit: '.Name.PadStart' },
     { name: 'padEnd', expr: `name().padEnd(5, "0")`, badEmit: '.Name.PadEnd' },
@@ -2412,6 +2414,23 @@ export function C() {
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter() })
     expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
+
+  // The string-pattern form of `.replace` lowers (#1448 Tier B), but
+  // the regex-pattern form stays refused with BF101 — the Perl `s///`
+  // vs Go `regexp.ReplaceAllString` flavour gap is the open design
+  // question. Pinning the refusal so the string-form lowering can't
+  // accidentally start emitting a broken `.Replace` for the regex form.
+  test('regex-pattern .replace raises BF101 (string-pattern form is lowered)', () => {
+    const result = compileJSX(`
+function C({ value }: { value: string }) {
+  return <div>{value.replace(/o/g, "0")}</div>
+}
+export { C }
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter() })
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    expect(template).not.toContain('.Replace')
   })
 
   // Tier B `.sort` / `.toSorted` follow-ups still refused with BF021.

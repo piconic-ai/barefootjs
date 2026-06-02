@@ -69,6 +69,7 @@ export type ArrayMethod =
   | 'split'
   | 'startsWith'
   | 'endsWith'
+  | 'replace'
 
 /**
  * Method names handled by the dedicated `sortMethod()` dispatcher

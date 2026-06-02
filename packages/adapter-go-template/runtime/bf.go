@@ -38,6 +38,7 @@ func FuncMap() template.FuncMap {
 		"bf_split":       Split,
 		"bf_starts_with": StartsWith,
 		"bf_ends_with":   EndsWith,
+		"bf_replace":     Replace,
 		"bf_string":      String,
 
 		// JSON / numeric primitives — JS-compat callees registered on
@@ -540,6 +541,19 @@ func EndsWith(s, suffix string, endPosition ...int) bool {
 		s = s[:e]
 	}
 	return strings.HasSuffix(s, suffix)
+}
+
+// Replace lowers the string-pattern form of `String.prototype.replace`
+// (#1448 Tier B). JS replaces only the FIRST occurrence for a string
+// pattern, so the count is 1 (`strings.Replace` with n=1; n<0 would
+// replace all — that's `.replaceAll`, still refused). The replacement
+// is treated literally: unlike JS, special replacement patterns like
+// `$&` / `$1` are NOT interpreted (Go and Perl agree on literal
+// replacement, keeping the two template adapters byte-equal; this
+// diverges from the Hono/CSR JS path only for replacement strings that
+// contain `$`-patterns, which are rare in template position).
+func Replace(s, old, new string) string {
+	return strings.Replace(s, old, new, 1)
 }
 
 // Join concatenates elements of a slice with sep. Accepts both

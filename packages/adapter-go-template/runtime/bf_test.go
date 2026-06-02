@@ -250,6 +250,26 @@ func TestEndsWith(t *testing.T) {
 	}
 }
 
+func TestReplace(t *testing.T) {
+	// Only the FIRST occurrence is replaced (JS string-pattern
+	// semantics — not `.replaceAll`).
+	if got := Replace("hello world", "o", "0"); got != "hell0 world" {
+		t.Errorf(`Replace("hello world", "o", "0") = %q, want "hell0 world"`, got)
+	}
+	// No match → unchanged.
+	if got := Replace("abc", "z", "Z"); got != "abc" {
+		t.Errorf(`Replace("abc", "z", "Z") = %q, want "abc"`, got)
+	}
+	// Empty pattern inserts at the front (JS + Go parity).
+	if got := Replace("abc", "", "X"); got != "Xabc" {
+		t.Errorf(`Replace("abc", "", "X") = %q, want "Xabc"`, got)
+	}
+	// Replacement is literal — `$1` / `$&` are NOT interpreted.
+	if got := Replace("ab", "a", "$&"); got != "$&b" {
+		t.Errorf(`Replace("ab", "a", "$&") = %q, want "$&b" (literal)`, got)
+	}
+}
+
 func TestLen(t *testing.T) {
 	tests := []struct {
 		v    any

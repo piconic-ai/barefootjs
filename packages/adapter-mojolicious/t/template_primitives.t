@@ -319,6 +319,28 @@ subtest 'starts_with / ends_with — boolean prefix/suffix tests' => sub {
     ok !$bf->ends_with('abc', 'a', -1),            'ends_with: negative endPosition → empty (clamped)';
 };
 
+# `String.prototype.replace(pattern, replacement)` — string-pattern
+# form, first occurrence only (#1448 Tier B). Literal splice (no s///),
+# so both pattern and replacement are literal — mirrors Go's
+# strings.Replace with n=1.
+subtest 'replace — first-occurrence string-pattern swap' => sub {
+    is $bf->replace('hello world', 'o', '0'), 'hell0 world', 'first occurrence only';
+    is $bf->replace('aaa', 'a', 'b'),          'baa',         'leftmost of repeats';
+    is $bf->replace('abc', 'z', 'Z'),          'abc',         'no match → unchanged';
+    is $bf->replace('abc', 'b', ''),           'ac',          'empty replacement deletes';
+    is $bf->replace('abc', '', 'X'),           'Xabc',        'empty pattern inserts at front';
+
+    # Pattern is literal, not a regex — '.' matches a literal dot only.
+    is $bf->replace('a.b.c', '.', '-'),        'a-b.c',       'dot in pattern is literal';
+
+    # Replacement is literal — no $1 / $& interpolation.
+    is $bf->replace('ab', 'a', '$&'),          '$&b',         'replacement $& is literal';
+    is $bf->replace('ab', 'a', '$1'),          '$1b',         'replacement $1 is literal';
+
+    # Undef / non-string receivers coerce to empty string.
+    is $bf->replace(undef, 'a', 'b'),          '',            'undef receiver → empty';
+};
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). The opts hash-ref carries a `keys` list of
 # the structured comparison keys the compiler extracted at parse time
