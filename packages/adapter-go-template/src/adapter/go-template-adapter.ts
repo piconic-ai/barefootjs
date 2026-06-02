@@ -3229,6 +3229,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const limit = emit(args[1])
         return `bf_split ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(sep)} ${wrapIfMultiToken(limit)}`
       }
+      case 'startsWith':
+      case 'endsWith': {
+        // `.startsWith(prefix, position?)` / `.endsWith(suffix,
+        // endPosition?)` — string → boolean via the `bf_starts_with` /
+        // `bf_ends_with` helpers (`strings.HasPrefix` /
+        // `strings.HasSuffix`). The optional second argument re-anchors
+        // the test; JS ignores a third+ argument. See #1448 Tier B.
+        const fn = method === 'startsWith' ? 'bf_starts_with' : 'bf_ends_with'
+        const recv = emit(object)
+        const arg = emit(args[0])
+        const base = `${fn} ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(arg)}`
+        if (args.length >= 2) {
+          return `${base} ${wrapIfMultiToken(emit(args[1]))}`
+        }
+        return base
+      }
       default: {
         const _exhaustive: never = method
         throw new Error(`Go arrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`)

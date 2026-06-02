@@ -136,6 +136,10 @@ import { fixture as stringIncludes } from './methods/string-includes'
 // #1448 Tier B — String methods.
 import { fixture as stringSplit } from './methods/string-split'
 import { fixture as stringSplitLimit } from './methods/string-split-limit'
+import { fixture as stringStartsWith } from './methods/string-startsWith'
+import { fixture as stringStartsWithPosition } from './methods/string-startsWith-position'
+import { fixture as stringEndsWith } from './methods/string-endsWith'
+import { fixture as stringEndsWithPosition } from './methods/string-endsWith-position'
 // #1448 catalog parity: array methods rendered positively by
 // Hono / CSR (runtime JS) and at least one SSR adapter — pinning
 // the canonical surface so a regression surfaces here instead of
@@ -307,6 +311,10 @@ export const jsxFixtures: JSXFixture[] = [
   // #1448 Tier B — String methods.
   stringSplit,
   stringSplitLimit,
+  stringStartsWith,
+  stringStartsWithPosition,
+  stringEndsWith,
+  stringEndsWithPosition,
   // #1448 catalog parity — already-lowered Array methods.
   arrayJoin,
   arrayFind,

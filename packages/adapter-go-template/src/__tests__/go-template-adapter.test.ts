@@ -2194,6 +2194,10 @@ import { fixture as stringTrimFixture } from '../../../adapter-tests/fixtures/me
 // #1448 Tier B — string methods.
 import { fixture as stringSplitFixture } from '../../../adapter-tests/fixtures/methods/string-split'
 import { fixture as stringSplitLimitFixture } from '../../../adapter-tests/fixtures/methods/string-split-limit'
+import { fixture as stringStartsWithFixture } from '../../../adapter-tests/fixtures/methods/string-startsWith'
+import { fixture as stringStartsWithPositionFixture } from '../../../adapter-tests/fixtures/methods/string-startsWith-position'
+import { fixture as stringEndsWithFixture } from '../../../adapter-tests/fixtures/methods/string-endsWith'
+import { fixture as stringEndsWithPositionFixture } from '../../../adapter-tests/fixtures/methods/string-endsWith-position'
 // #1448 Tier B — .sort / .toSorted fixtures.
 import { fixture as arraySortFieldAscFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-asc'
 import { fixture as arraySortFieldDescFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-desc'
@@ -2240,6 +2244,12 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     // observable (`bf_join (bf_split .Value ",") "|"`).
     { fixture: stringSplitFixture,      expect: 'bf_split .Value ","' },
     { fixture: stringSplitLimitFixture, expect: 'bf_split .Value "," 2' },
+    // #1448 Tier B — string → boolean at condition position, so the
+    // emit lands inside `{{if ...}}`.
+    { fixture: stringStartsWithFixture, expect: '{{if bf_starts_with .Value .Prefix}}' },
+    { fixture: stringStartsWithPositionFixture, expect: '{{if bf_starts_with .Value "world" 6}}' },
+    { fixture: stringEndsWithFixture,   expect: '{{if bf_ends_with .Value .Suffix}}' },
+    { fixture: stringEndsWithPositionFixture,   expect: '{{if bf_ends_with .Value "hello" 5}}' },
     // #1448 Tier B — sort / toSorted. Loop-chained shapes wrap the
     // iterable in `bf_sort .Items <kind> <key> <type> <dir>`;
     // standalone shapes inline the helper at the call site.
@@ -2356,12 +2366,11 @@ export function C() {
     { name: 'includes (2-arg fromIndex)', expr: `items().includes("a", 1)`, badEmit: '.Includes' },
     { name: 'concat (variadic)', expr: `items().concat(items(), items())`, badEmit: '.Concat' },
     // Tier B/C string methods — previously slipped through with no
-    // diagnostic; now gated by `UNSUPPORTED_METHODS`. `split` has since
-    // landed its full-arity lowering (#1448 Tier B) — `.split()`,
-    // `.split(sep)` and `.split(sep, limit)` all lower — so it's pinned
-    // in the positive fixture-pin block above.
-    { name: 'startsWith', expr: `name().startsWith("a")`, badEmit: '.Name.StartsWith' },
-    { name: 'endsWith', expr: `name().endsWith("z")`, badEmit: '.Name.EndsWith' },
+    // diagnostic; now gated by `UNSUPPORTED_METHODS`. `split`,
+    // `startsWith` and `endsWith` have since landed their full-arity
+    // lowerings (#1448 Tier B) and moved to the positive fixture-pin
+    // block above — `.split()`/`.split(sep)`/`.split(sep, limit)` and
+    // the optional `position` / `endPosition` second argument all lower.
     { name: 'replace', expr: `name().replace("a", "b")`, badEmit: '.Name.Replace' },
     { name: 'repeat', expr: `name().repeat(3)`, badEmit: '.Name.Repeat' },
     { name: 'padStart', expr: `name().padStart(5, "0")`, badEmit: '.Name.PadStart' },
@@ -2385,19 +2394,21 @@ export function C() {
   }
 
   // Predicate-level use of an unsupported string method also fails the
-  // build loudly (intended): a `.filter(t => t.name.startsWith("a"))`
+  // build loudly (intended): a `.filter(t => t.name.charAt(0) === "a")`
   // whose predicate calls one of the gated methods now refuses the whole
   // loop with BF101 (via the shared `isSupported` predicate gate in
-  // jsx-to-ir) rather than lowering to a broken `.StartsWith` inside the
+  // jsx-to-ir) rather than lowering to a broken `.CharAt` inside the
   // range. Pinning this so the loud-failure contract can't silently
-  // regress back to the old emit-broken-template behaviour.
+  // regress back to the old emit-broken-template behaviour. (`charAt`
+  // is a Tier C method that stays refused — earlier this test used
+  // `startsWith`, which has since landed its Tier B lowering.)
   test('unsupported string method inside a .filter() predicate raises BF101', () => {
     const result = compileJSX(`
 "use client"
 import { createSignal } from "@barefootjs/client"
 export function C() {
   const [items, setItems] = createSignal<{ name: string }[]>([])
-  return <ul>{items().filter(t => t.name.startsWith("a")).map(t => <li key={t.name}>{t.name}</li>)}</ul>
+  return <ul>{items().filter(t => t.name.charAt(0) === "a").map(t => <li key={t.name}>{t.name}</li>)}</ul>
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter() })
     expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)

@@ -940,6 +940,10 @@ import { fixture as stringTrimFixture } from '../../../adapter-tests/fixtures/me
 // #1448 Tier B — string methods.
 import { fixture as stringSplitFixture } from '../../../adapter-tests/fixtures/methods/string-split'
 import { fixture as stringSplitLimitFixture } from '../../../adapter-tests/fixtures/methods/string-split-limit'
+import { fixture as stringStartsWithFixture } from '../../../adapter-tests/fixtures/methods/string-startsWith'
+import { fixture as stringStartsWithPositionFixture } from '../../../adapter-tests/fixtures/methods/string-startsWith-position'
+import { fixture as stringEndsWithFixture } from '../../../adapter-tests/fixtures/methods/string-endsWith'
+import { fixture as stringEndsWithPositionFixture } from '../../../adapter-tests/fixtures/methods/string-endsWith-position'
 // #1448 Tier B — .sort / .toSorted fixtures (loop-chained + standalone).
 import { fixture as arraySortFieldAscFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-asc'
 import { fixture as arraySortFieldDescFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-desc'
@@ -980,6 +984,11 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     // observable (`join('|', @{bf->split($value, ',')})`).
     { fixture: stringSplitFixture,      expect: `bf->split($value, ',')` },
     { fixture: stringSplitLimitFixture, expect: `bf->split($value, ',', 2)` },
+    // #1448 Tier B — string → boolean at condition position (`% if`).
+    { fixture: stringStartsWithFixture, expect: 'bf->starts_with($value, $prefix)' },
+    { fixture: stringStartsWithPositionFixture, expect: `bf->starts_with($value, 'world', 6)` },
+    { fixture: stringEndsWithFixture,   expect: 'bf->ends_with($value, $suffix)' },
+    { fixture: stringEndsWithPositionFixture,   expect: `bf->ends_with($value, 'hello', 5)` },
     // #1448 Tier B — sort / toSorted. The loop-chained field cases
     // hoist into a `my $bf_iter_lN = bf->sort(...)` local; the
     // standalone primitive cases inline the call. Each comparison key
@@ -1093,11 +1102,11 @@ export function C() {
     { name: 'concat (variadic)', expr: `items().concat(items(), items())`, badEmit: '->{concat}' },
     // Tier B/C string methods — previously slipped through with no
     // diagnostic; now routed through the AST / `isSupported` gate.
-    // `split` has since landed its full-arity lowering (#1448 Tier B) —
-    // `.split()`, `.split(sep)` and `.split(sep, limit)` all lower — so
-    // it's pinned in the positive fixture-pin block above.
-    { name: 'startsWith', expr: `name().startsWith("a")`, badEmit: '->{startsWith}' },
-    { name: 'endsWith', expr: `name().endsWith("z")`, badEmit: '->{endsWith}' },
+    // `split`, `startsWith` and `endsWith` have since landed their
+    // full-arity lowerings (#1448 Tier B) and moved to the positive
+    // fixture-pin block above — `.split()`/`.split(sep)`/`.split(sep,
+    // limit)` and the optional `position` / `endPosition` second
+    // argument all lower.
     { name: 'replace', expr: `name().replace("a", "b")`, badEmit: '->{replace}' },
     { name: 'repeat', expr: `name().repeat(3)`, badEmit: '->{repeat}' },
     { name: 'padStart', expr: `name().padStart(5, "0")`, badEmit: '->{padStart}' },
@@ -1146,19 +1155,21 @@ export function C(props: { config: string }) {
   })
 
   // Predicate-level use of an unsupported string method also fails the
-  // build loudly (intended): a `.filter(t => t.name.startsWith("a"))`
+  // build loudly (intended): a `.filter(t => t.name.charAt(0) === "a")`
   // whose predicate calls one of the gated methods now refuses the whole
   // loop with BF101 (via the shared `isSupported` predicate gate in
-  // jsx-to-ir) rather than lowering to a broken `->{startsWith}` inside
+  // jsx-to-ir) rather than lowering to a broken `->{charAt}` inside
   // the grep. Pinning this so the loud-failure contract can't silently
-  // regress back to the old emit-broken-template behaviour.
+  // regress back to the old emit-broken-template behaviour. (`charAt`
+  // is a Tier C method that stays refused — earlier this test used
+  // `startsWith`, which has since landed its Tier B lowering.)
   test('unsupported string method inside a .filter() predicate raises BF101', () => {
     const result = compileJSX(`
 "use client"
 import { createSignal } from "@barefootjs/client"
 export function C() {
   const [items, setItems] = createSignal<{ name: string }[]>([])
-  return <ul>{items().filter(t => t.name.startsWith("a")).map(t => <li key={t.name}>{t.name}</li>)}</ul>
+  return <ul>{items().filter(t => t.name.charAt(0) === "a").map(t => <li key={t.name}>{t.name}</li>)}</ul>
 }
 `.trimStart(), 'test.tsx', { adapter: new MojoAdapter() })
     expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)

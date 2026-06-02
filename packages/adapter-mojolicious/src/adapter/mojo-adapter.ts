@@ -1415,6 +1415,23 @@ function renderArrayMethod(
       const limit = emit(args[1])
       return `bf->split(${recv}, ${sep}, ${limit})`
     }
+    case 'startsWith':
+    case 'endsWith': {
+      // `.startsWith(prefix, position?)` / `.endsWith(suffix,
+      // endPosition?)` — string → boolean. The Perl helpers
+      // (`bf->starts_with` / `bf->ends_with`) do a `substr`-anchored
+      // comparison so the search string is matched literally (no regex
+      // metachar surprises) and undef receivers stay quiet. The optional
+      // second argument re-anchors the test; JS ignores a third+
+      // argument. See #1448 Tier B.
+      const fn = method === 'startsWith' ? 'starts_with' : 'ends_with'
+      const recv = emit(object)
+      const arg = emit(args[0])
+      if (args.length >= 2) {
+        return `bf->${fn}(${recv}, ${arg}, ${emit(args[1])})`
+      }
+      return `bf->${fn}(${recv}, ${arg})`
+    }
     default: {
       // TS-level exhaustiveness guard. If this throws at runtime, the
       // IR was constructed against a newer `ArrayMethod` variant that

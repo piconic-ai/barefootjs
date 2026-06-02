@@ -32,11 +32,13 @@ func FuncMap() template.FuncMap {
 		// String
 		"bf_lower":    Lower,
 		"bf_upper":    Upper,
-		"bf_trim":     Trim,
-		"bf_contains": Contains,
-		"bf_join":     Join,
-		"bf_split":    Split,
-		"bf_string":   String,
+		"bf_trim":        Trim,
+		"bf_contains":    Contains,
+		"bf_join":        Join,
+		"bf_split":       Split,
+		"bf_starts_with": StartsWith,
+		"bf_ends_with":   EndsWith,
+		"bf_string":      String,
 
 		// JSON / numeric primitives — JS-compat callees registered on
 		// the Go adapter's `templatePrimitives` map (#1188).
@@ -500,6 +502,44 @@ func Split(s, sep string, limit ...int) []any {
 		out[i] = p
 	}
 	return out
+}
+
+// StartsWith lowers `String.prototype.startsWith(prefix, position?)`
+// (#1448 Tier B). Wraps `strings.HasPrefix`; an empty prefix is always
+// true (JS parity). The optional `position` re-anchors the test to start
+// at that index (clamped to `[0, len]` so it never panics), matching JS
+// `"abc".startsWith("b", 1) === true`.
+func StartsWith(s, prefix string, position ...int) bool {
+	if len(position) > 0 {
+		p := position[0]
+		if p < 0 {
+			p = 0
+		}
+		if p > len(s) {
+			p = len(s)
+		}
+		s = s[p:]
+	}
+	return strings.HasPrefix(s, prefix)
+}
+
+// EndsWith lowers `String.prototype.endsWith(suffix, endPosition?)`
+// (#1448 Tier B). Wraps `strings.HasSuffix`; an empty suffix is always
+// true (JS parity). The optional `endPosition` treats the string as if
+// it were only that many bytes long (clamped to `[0, len]`), matching JS
+// `"abc".endsWith("b", 2) === true`.
+func EndsWith(s, suffix string, endPosition ...int) bool {
+	if len(endPosition) > 0 {
+		e := endPosition[0]
+		if e < 0 {
+			e = 0
+		}
+		if e > len(s) {
+			e = len(s)
+		}
+		s = s[:e]
+	}
+	return strings.HasSuffix(s, suffix)
 }
 
 // Join concatenates elements of a slice with sep. Accepts both

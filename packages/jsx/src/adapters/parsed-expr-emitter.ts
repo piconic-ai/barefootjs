@@ -67,6 +67,8 @@ export type ArrayMethod =
   | 'toUpperCase'
   | 'trim'
   | 'split'
+  | 'startsWith'
+  | 'endsWith'
 
 /**
  * Method names handled by the dedicated `sortMethod()` dispatcher

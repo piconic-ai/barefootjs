@@ -585,6 +585,47 @@ sub split ($self, $recv, $sep = undef, $limit = undef) {
     return [@parts];
 }
 
+# `String.prototype.startsWith(prefix, position?)` (#1448 Tier B) —
+# string → boolean (1 / 0). `substr`-anchored literal comparison mirrors
+# Go's `strings.HasPrefix`. An empty prefix is always true (JS parity);
+# undef / non-string receivers coerce to the empty string first. The
+# optional `position` re-anchors the test (clamped to `[0, length]`),
+# matching JS `"abc".startsWith("b", 1)`.
+
+sub starts_with ($self, $recv, $prefix, $position = undef) {
+    my $s = defined $recv && !ref($recv) ? "$recv" : '';
+    my $p = defined $prefix ? "$prefix" : '';
+    if (defined $position) {
+        my $n = int($position);
+        $n = 0 if $n < 0;
+        $n = length($s) if $n > length($s);
+        $s = substr($s, $n);
+    }
+    return substr($s, 0, length $p) eq $p ? 1 : 0;
+}
+
+# `String.prototype.endsWith(suffix, endPosition?)` (#1448 Tier B) —
+# string → boolean (1 / 0). Mirrors Go's `strings.HasSuffix`. An empty
+# suffix is always true (JS parity); a suffix longer than the string is
+# false. `substr($s, -length $x)` would mis-read the whole string when
+# `length $x == 0`, so that case short-circuits. The optional
+# `endPosition` treats the string as if it were only that many chars
+# long (clamped to `[0, length]`), matching JS `"abc".endsWith("b", 2)`.
+
+sub ends_with ($self, $recv, $suffix, $end_position = undef) {
+    my $s = defined $recv && !ref($recv) ? "$recv" : '';
+    my $x = defined $suffix ? "$suffix" : '';
+    if (defined $end_position) {
+        my $e = int($end_position);
+        $e = 0 if $e < 0;
+        $e = length($s) if $e > length($s);
+        $s = substr($s, 0, $e);
+    }
+    return 1 if $x eq '';
+    return 0 if length($s) < length($x);
+    return substr($s, -length $x) eq $x ? 1 : 0;
+}
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). Non-mutating — JS's mutate-vs-new
 # distinction is moot in SSR template context.

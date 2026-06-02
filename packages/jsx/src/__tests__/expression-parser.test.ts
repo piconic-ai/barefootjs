@@ -398,23 +398,40 @@ describe('expression-parser', () => {
       const result = parseExpression("items().filter(({name = 'anon'}) => name.startsWith('a'))")
       expect(result.kind).toBe('higher-order')
       if (result.kind === 'higher-order') {
-        // Predicate: `(_t.name ?? 'anon').startsWith('a')`.
-        expect(result.predicate.kind).toBe('call')
-        if (result.predicate.kind === 'call') {
-          expect(result.predicate.callee.kind).toBe('member')
-          if (result.predicate.callee.kind === 'member') {
-            expect(result.predicate.callee.property).toBe('startsWith')
-            expect(result.predicate.callee.object.kind).toBe('logical')
-            if (result.predicate.callee.object.kind === 'logical') {
-              expect(result.predicate.callee.object.op).toBe('??')
-              expect(result.predicate.callee.object.right.kind).toBe('literal')
-              if (result.predicate.callee.object.right.kind === 'literal') {
-                expect(result.predicate.callee.object.right.value).toBe('anon')
-              }
+        // Predicate: `(_t.name ?? 'anon').startsWith('a')`. Since #1448
+        // Tier B, `.startsWith` lowers to an `array-method` node (it was
+        // a generic `call` before), so the receiver is on `.object`.
+        expect(result.predicate.kind).toBe('array-method')
+        if (result.predicate.kind === 'array-method') {
+          expect(result.predicate.method).toBe('startsWith')
+          expect(result.predicate.object.kind).toBe('logical')
+          if (result.predicate.object.kind === 'logical') {
+            expect(result.predicate.object.op).toBe('??')
+            expect(result.predicate.object.right.kind).toBe('literal')
+            if (result.predicate.object.right.kind === 'literal') {
+              expect(result.predicate.object.right.value).toBe('anon')
             }
           }
         }
       }
+    })
+
+    test('lowers .startsWith(search, position) — full arity (#1448 Tier B)', () => {
+      const result = parseExpression(`name().startsWith("world", 6)`)
+      expect(result.kind).toBe('array-method')
+      if (result.kind === 'array-method') {
+        expect(result.method).toBe('startsWith')
+        // Both the search string and the position survive as args so the
+        // adapter can emit the re-anchored test.
+        expect(result.args.length).toBe(2)
+      }
+    })
+
+    test('refuses .startsWith() with no search string (#1448 Tier B)', () => {
+      // JS coerces the missing argument to the string "undefined" — a
+      // degenerate result not worth lowering (mirrors `.includes()`).
+      const result = parseExpression(`name().startsWith()`)
+      expect(result.kind).toBe('unsupported')
     })
 
     test('lowers .filter(({label = `untitled-${suffix}`}) => label) — template-literal default (#1531)', () => {

@@ -193,6 +193,63 @@ func TestSplit(t *testing.T) {
 	}
 }
 
+func TestStartsWith(t *testing.T) {
+	if !StartsWith("hello world", "hello") {
+		t.Error(`StartsWith("hello world", "hello") should be true`)
+	}
+	if StartsWith("hello world", "world") {
+		t.Error(`StartsWith("hello world", "world") should be false`)
+	}
+	if !StartsWith("anything", "") {
+		t.Error(`StartsWith(_, "") should be true (empty prefix)`)
+	}
+	// Optional position re-anchors the test (JS `startsWith(p, pos)`).
+	if !StartsWith("abc", "b", 1) {
+		t.Error(`StartsWith("abc", "b", 1) should be true`)
+	}
+	if StartsWith("abc", "a", 1) {
+		t.Error(`StartsWith("abc", "a", 1) should be false`)
+	}
+	// Position clamps to [0, len] — out-of-range never panics.
+	if StartsWith("abc", "a", 99) {
+		t.Error(`StartsWith("abc", "a", 99) should be false (clamped to len)`)
+	}
+	if !StartsWith("abc", "a", -5) {
+		t.Error(`StartsWith("abc", "a", -5) should be true (clamped to 0)`)
+	}
+}
+
+func TestEndsWith(t *testing.T) {
+	if !EndsWith("hello world", "world") {
+		t.Error(`EndsWith("hello world", "world") should be true`)
+	}
+	if EndsWith("hello world", "hello") {
+		t.Error(`EndsWith("hello world", "hello") should be false`)
+	}
+	if !EndsWith("anything", "") {
+		t.Error(`EndsWith(_, "") should be true (empty suffix)`)
+	}
+	// A suffix longer than the string is false (no panic).
+	if EndsWith("hi", "longer-than-string") {
+		t.Error(`EndsWith("hi", "longer-than-string") should be false`)
+	}
+	// Optional endPosition treats the string as that many bytes long
+	// (JS `endsWith(s, endPos)`).
+	if !EndsWith("abc", "b", 2) {
+		t.Error(`EndsWith("abc", "b", 2) should be true`)
+	}
+	if EndsWith("abc", "c", 2) {
+		t.Error(`EndsWith("abc", "c", 2) should be false`)
+	}
+	// endPosition clamps to [0, len] — out-of-range never panics.
+	if !EndsWith("abc", "c", 99) {
+		t.Error(`EndsWith("abc", "c", 99) should be true (clamped to len)`)
+	}
+	if EndsWith("abc", "a", -1) {
+		t.Error(`EndsWith("abc", "a", -1) should be false (clamped to 0 → empty)`)
+	}
+}
+
 func TestLen(t *testing.T) {
 	tests := []struct {
 		v    any
