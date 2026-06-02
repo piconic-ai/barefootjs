@@ -1,0 +1,186 @@
+{
+  "name": "triage-list",
+  "title": "Triage List",
+  "category": "display",
+  "description": "TriageList — a deliberately over-coupled cross-cutting UI. Purpose: an experiment in machine-verifiable consistency. The toolbar (search / filter / sort), the selection, the header \"select all\" checkbox, the bulk-action button, and the summary line are all derived from a single source-of-truth set of signals. The number of coupled derived states exceeds a single person's working memory on purpose. The consistency invariant under test: Selection is ALWAYS reckoned against the currently VISIBLE rows (selectedVisibleIds = selectedIds ∩ visibleIds). Everything the user perceives about selection (count, header checkbox, bulk-action enablement, summary) routes through selectedVisibleIds, so changing the filter/search can never leave an \"orphaned\" selection that silently acts on hidden rows.",
+  "tags": [
+    "stateful",
+    "aria"
+  ],
+  "stateful": true,
+  "props": [
+    {
+      "name": "items",
+      "type": "TriageItem[]",
+      "required": true,
+      "description": ""
+    }
+  ],
+  "examples": [],
+  "accessibility": {
+    "role": "checkbox",
+    "ariaAttributes": [
+      "aria-checked"
+    ],
+    "dataAttributes": [
+      "data-slot",
+      "data-state"
+    ]
+  },
+  "dependencies": {
+    "internal": [],
+    "external": [
+      "@barefootjs/client"
+    ]
+  },
+  "related": [],
+  "source": "ui/components/ui/triage-list/index.tsx",
+  "signals": [
+    {
+      "getter": "query",
+      "setter": "setQuery",
+      "initialValue": "''"
+    },
+    {
+      "getter": "filterStatus",
+      "setter": "setFilterStatus",
+      "initialValue": "'all'"
+    },
+    {
+      "getter": "sortDir",
+      "setter": "setSortDir",
+      "initialValue": "'asc'"
+    },
+    {
+      "getter": "selectedIds",
+      "setter": "setSelectedIds",
+      "initialValue": "[]"
+    },
+    {
+      "getter": "page",
+      "setter": "setPage",
+      "initialValue": "0"
+    }
+  ],
+  "memos": [
+    {
+      "name": "normalizedQuery",
+      "deps": [
+        "query"
+      ]
+    },
+    {
+      "name": "statusFiltered",
+      "deps": [
+        "filterStatus"
+      ]
+    },
+    {
+      "name": "searched",
+      "deps": [
+        "normalizedQuery",
+        "statusFiltered"
+      ]
+    },
+    {
+      "name": "sorted",
+      "deps": [
+        "sortDir",
+        "searched"
+      ]
+    },
+    {
+      "name": "totalPages",
+      "deps": [
+        "sorted"
+      ]
+    },
+    {
+      "name": "clampedPage",
+      "deps": [
+        "page",
+        "totalPages"
+      ]
+    },
+    {
+      "name": "visible",
+      "deps": [
+        "sorted",
+        "clampedPage"
+      ]
+    },
+    {
+      "name": "visibleIds",
+      "deps": [
+        "visible"
+      ]
+    },
+    {
+      "name": "selectedVisibleIds",
+      "deps": [
+        "selectedIds",
+        "visibleIds"
+      ]
+    },
+    {
+      "name": "selectedCount",
+      "deps": [
+        "selectedVisibleIds"
+      ]
+    },
+    {
+      "name": "allVisibleSelected",
+      "deps": [
+        "visible",
+        "selectedCount"
+      ]
+    },
+    {
+      "name": "someSelected",
+      "deps": [
+        "selectedCount"
+      ]
+    },
+    {
+      "name": "headerState",
+      "deps": [
+        "allVisibleSelected",
+        "someSelected"
+      ]
+    },
+    {
+      "name": "bulkEnabled",
+      "deps": [
+        "selectedCount"
+      ]
+    },
+    {
+      "name": "bulkLabel",
+      "deps": [
+        "selectedCount"
+      ]
+    },
+    {
+      "name": "openCount",
+      "deps": []
+    },
+    {
+      "name": "doneCount",
+      "deps": []
+    },
+    {
+      "name": "isEmpty",
+      "deps": [
+        "visible"
+      ]
+    },
+    {
+      "name": "summary",
+      "deps": [
+        "sorted",
+        "visible",
+        "selectedCount"
+      ]
+    }
+  ]
+}

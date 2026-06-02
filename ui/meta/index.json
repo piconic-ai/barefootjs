@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-20T03:49:20.824Z",
+  "generatedAt": "2026-06-02T14:12:10.923Z",
   "components": [
     {
       "name": "accordion",
@@ -1049,6 +1049,17 @@
       "title": "Tooltip",
       "category": "overlay",
       "description": "Tooltip Component A popup that displays contextual information on hover or focus. Adapted from shadcn/ui v4 with CSS variable theming support.",
+      "tags": [
+        "stateful",
+        "aria"
+      ],
+      "stateful": true
+    },
+    {
+      "name": "triage-list",
+      "title": "Triage List",
+      "category": "display",
+      "description": "TriageList — a deliberately over-coupled cross-cutting UI. Purpose: an experiment in machine-verifiable consistency. The toolbar (search / filter / sort), the selection, the header \"select all\" checkbox, the bulk-action button, and the summary line are all derived from a single source-of-truth set of signals. The number of coupled derived states exceeds a single person's working memory on purpose. The consistency invariant under test: Selection is ALWAYS reckoned against the currently VISIBLE rows (selectedVisibleIds = selectedIds ∩ visibleIds). Everything the user perceives about selection (count, header checkbox, bulk-action enablement, summary) routes through selectedVisibleIds, so changing the filter/search can never leave an \"orphaned\" selection that silently acts on hidden rows.",
       "tags": [
         "stateful",
         "aria"
