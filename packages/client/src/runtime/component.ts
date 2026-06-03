@@ -213,19 +213,18 @@ export function createComponent(
     const materialised = placeholderWrapper.firstElementChild as HTMLElement | null
     if (materialised && !materialised.hasAttribute(BF_PLACEHOLDER)) {
       // The deferred child was created in place of the placeholder.
-      // NOTE: we intentionally do NOT call registerPropsUpdate() here (unlike
-      // the normal path below). `materialised` is the child's own element,
-      // created via upsertChild -> createComponent, which already registered
-      // its own props-update fn keyed to the child. Registering the *parent's*
-      // here would be wrong: the parent's init replaces a `data-bf-ph`
-      // placeholder via upsertChild, and re-running it on `materialised` (whose
-      // placeholder is already gone) would not re-materialise correctly.
-      // This divergence is unreachable in practice: reconcileList reuses items
-      // by recreating them through renderItem (see reconcile-elements.ts), and
-      // getPropsUpdateFn/getComponentProps have no in-repo callers.
+      // `materialised` is the child's OWN element, created via
+      // upsertChild -> createComponent, which already registered itself
+      // (hydratedScopes / propsMap / registerPropsUpdate) keyed to the
+      // child with the child's own props. We must NOT re-register it here:
+      // overwriting propsMap/registerPropsUpdate with the *parent's* props
+      // would mis-key the child (e.g. a later getComponentProps would read
+      // the parent's props), and re-running the parent's init on an element
+      // whose placeholder is already gone could not re-materialise. So just
+      // restore the scope and return the already-registered child.
+      // (Parent-scope effects are unaffected: createEffect ownership lives
+      // in the EffectContext tree, not the discarded placeholder element.)
       setCurrentScope(prevScope)
-      hydratedScopes.add(materialised)
-      propsMap.set(materialised, props)
       return materialised
     }
     // Placeholder was not replaced (no init / no matching child): fall

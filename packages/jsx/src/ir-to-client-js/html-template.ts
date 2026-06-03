@@ -1473,6 +1473,12 @@ export function computeDeferredChildSlots(
         }
         if (n.slotId) {
           const dropped = n.props.some(p => {
+            // Spread props (`...`) are forwarded via the rest-spread path
+            // (`restSpreadNames`), not the per-prop inline form, so they are
+            // out of scope for this drop check; `key` and event handlers
+            // (`onX`) likewise never carry init-scope render values. This
+            // filter set MUST mirror the `propsEntries` filter in the CSR
+            // `component` emit below so the deferral decision matches output.
             if (p.name === '...' || p.name.startsWith('...') || p.name === 'key') return false
             if (p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()) return false
             if (p.clientOnly) return false

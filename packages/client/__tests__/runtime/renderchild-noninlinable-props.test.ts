@@ -67,6 +67,7 @@ const CHILD_SRC = `
 describe('renderChild — non-inlinable component props are forwarded (no dropped props)', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    ;(globalThis as any).__parentEffectRuns = 0
   })
 
   // The parent's root is a single child component, so `createComponent`
@@ -137,5 +138,30 @@ describe('renderChild — non-inlinable component props are forwarded (no droppe
     const child = findChild(el)
     expect(child).not.toBeNull()
     expect(child!.textContent).toBe('3')
+  })
+
+  // E guards the root-deferred path's effect lifecycle: when the parent's
+  // entire render is a single deferred child, `createComponent` runs the
+  // parent's init on a placeholder element that is then DISCARDED (replaced
+  // by the materialised child). The parent's own `createEffect` must still
+  // fire — effect ownership lives in the EffectContext tree, not the
+  // discarded DOM scope element — and the child must still receive the
+  // complete props. (Pre-fix this whole shape crashed via the dropped prop;
+  // this case additionally proves the parent stays reactive.)
+  test('E: root-deferred parent keeps its own createEffect AND forwards the prop', async () => {
+    const el = await mountParent('E', `
+      'use client'
+      import { createEffect } from '@barefootjs/client'
+      import { DropChild } from './DropChild_E'
+      export function DropParentE() {
+        const rowsE = Array.from({ length: 5 }, (_, i) => ({ id: String(i) }))
+        createEffect(() => { (globalThis as any).__parentEffectRuns = ((globalThis as any).__parentEffectRuns ?? 0) + 1 })
+        return <DropChild rows={rowsE} />
+      }
+    `)
+    const child = findChild(el)
+    expect(child).not.toBeNull()
+    expect(child!.textContent).toBe('5')
+    expect((globalThis as any).__parentEffectRuns).toBeGreaterThanOrEqual(1)
   })
 })

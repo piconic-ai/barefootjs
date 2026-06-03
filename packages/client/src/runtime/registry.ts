@@ -5,7 +5,7 @@
  * Each component registers its init function so parents can initialize children with props.
  */
 
-import { BF_SCOPE, BF_HOST } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_PLACEHOLDER } from '@barefootjs/shared'
 import { hydratedScopes } from './hydration-state'
 import { setCurrentScope } from './context'
 import { createComponent } from './component'
@@ -153,9 +153,9 @@ export function upsertChild(
   // placeholder as `parent` itself (no wrapper element), so match the
   // parent element directly before falling back to a subtree query.
   const phId = slotId ?? name
-  const ph = (parent.getAttribute('data-bf-ph') === phId
+  const ph = (parent.getAttribute(BF_PLACEHOLDER) === phId
     ? (parent as HTMLElement)
-    : parent.querySelector(`[data-bf-ph="${phId}"]`)) as HTMLElement | null
+    : parent.querySelector(`[${BF_PLACEHOLDER}="${phId}"]`)) as HTMLElement | null
   if (ph) {
     const slot = slotId ? buildSlotInfo(parent, slotId, anchorScope) : undefined
     const comp = createComponent(name, props, key, slot)
