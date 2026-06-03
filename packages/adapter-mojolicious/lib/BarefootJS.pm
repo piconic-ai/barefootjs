@@ -809,8 +809,10 @@ sub reduce ($self, $recv, $opts = {}) {
     my @items = ref($recv) eq 'ARRAY' ? @$recv : ();
     # reduceRight folds right-to-left; reversing the snapshot keeps the
     # single forward loop below. Only observable for string concat —
-    # numeric sum / product commute.
-    @items = reverse @items if $direction eq 'right';
+    # numeric sum / product commute. Qualify as CORE::reverse — this
+    # package defines `sub reverse` (the `.reverse()` helper), so a bare
+    # `reverse` is ambiguous under `use warnings`.
+    @items = CORE::reverse(@items) if $direction eq 'right';
     my $project = sub ($item) {
         $key_kind eq 'field' && ref($item) eq 'HASH' ? $item->{$key} : $item;
     };
