@@ -2318,6 +2318,27 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
 // now listed in `UNSUPPORTED_METHODS`, so `isSupported` refuses them
 // and `convertExpressionToGo` records BF101 — the same treatment the
 // unsupported array methods already got. These tests pin that parity.
+describe('GoTemplateAdapter - #1448 Tier C reduce field capitalisation', () => {
+  // #1728 review: `bf_reduce`'s projected field name must use the same
+  // initialism-aware capitalisation the adapter applies when generating
+  // struct fields (`capitalizeFieldName`), or the runtime reflect lookup
+  // misses the exported field (`id` → struct `ID`, not `Id`) and folds a
+  // zero value. Pin the emitted key so a regression to plain
+  // first-letter capitalisation fails here.
+  test('reduce over an initialism field emits the Go-initialism key (ID, not Id)', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+function C({ items }: { items: { id: number }[] }) {
+  return <div>{items.reduce((sum, x) => sum + x.id, 0)}</div>
+}
+export { C }
+`, adapter)
+    const template = adapter.generate(ir).template ?? ''
+    expect(template).toContain('bf_reduce .Items "+" "field" "ID" "numeric" "0"')
+    expect(template).not.toContain('"Id"')
+  })
+})
+
 describe('GoTemplateAdapter - #1448 @client escape hatch (unsupported methods)', () => {
   // Compile a single expression placed in `<div>` text position, with
   // and without the directive, and return both the build errors and

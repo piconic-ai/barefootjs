@@ -44,13 +44,37 @@ describe('reduce() arithmetic-fold catalogue', () => {
     }
   })
 
-  test('string init makes + a concatenation fold', () => {
+  test('string init makes + a concatenation fold (init is the decoded value)', () => {
     const r = parseExpression("items.reduce((acc, x) => acc + x.label, '')")
     expect(r.kind).toBe('array-method')
     if (r.kind === 'array-method' && r.method === 'reduce') {
       expect(r.reduceOp.op).toBe('+')
       expect(r.reduceOp.type).toBe('string')
-      expect(r.reduceOp.init).toBe("''")
+      expect(r.reduceOp.init).toBe('') // decoded contents, not the `''` source
+    }
+  })
+
+  test('non-empty string seed decodes to its contents', () => {
+    const r = parseExpression("items.reduce((acc, x) => acc + x.label, ', ')")
+    expect(r.kind).toBe('array-method')
+    if (r.kind === 'array-method' && r.method === 'reduce') {
+      expect(r.reduceOp.init).toBe(', ')
+    }
+  })
+
+  test('numeric init normalises separators / radix to canonical decimal', () => {
+    // `.text` gives TS's canonical decimal so Go ParseFloat + Perl agree
+    // (#1728 review: raw `1_000` / `0x10` would mis-parse on Go).
+    for (const [src, expected] of [
+      ['1_000', '1000'],
+      ['0x10', '16'],
+      ['1e3', '1000'],
+    ] as const) {
+      const r = parseExpression(`nums.reduce((a, b) => a + b, ${src})`)
+      expect(r.kind).toBe('array-method')
+      if (r.kind === 'array-method' && r.method === 'reduce') {
+        expect(r.reduceOp.init).toBe(expected)
+      }
     }
   })
 
@@ -70,10 +94,15 @@ describe('reduce() arithmetic-fold catalogue', () => {
     }
   })
 
-  test('round-trips back to valid JS via stringifyParsedExpr', () => {
-    const src = 'items.reduce((sum, t) => sum + t.duration, 0)'
-    const r = parseExpression(src)
+  test('round-trips a numeric fold back to valid JS via stringifyParsedExpr', () => {
+    const r = parseExpression('items.reduce((sum, t) => sum + t.duration, 0)')
     expect(stringifyParsedExpr(r)).toBe('items.reduce((sum,t) => sum + t.duration, 0)')
+  })
+
+  test('round-trips a string fold by re-quoting the decoded seed', () => {
+    const r = parseExpression("items.reduce((a, x) => a + x.l, ', ')")
+    // Decoded seed `, ` re-quoted via JSON.stringify → a valid JS string.
+    expect(stringifyParsedExpr(r)).toBe('items.reduce((a,x) => a + x.l, ", ")')
   })
 
   describe('refused shapes → unsupported (BF101)', () => {
@@ -108,6 +137,14 @@ describe('reduce() arithmetic-fold catalogue', () => {
 
     test('deep field access is rejected', () => {
       const r = parseExpression('items.reduce((sum, t) => sum + t.a.b, 0)')
+      expect(r.kind).toBe('unsupported')
+    })
+
+    test('string seed carrying an escape is rejected (cross-adapter safety)', () => {
+      // A seed with an escape can't be guaranteed byte-equal across the
+      // Go-template / Perl string embeddings without per-target decoding,
+      // so it refuses to `unsupported` rather than risk divergence.
+      const r = parseExpression("items.reduce((acc, x) => acc + x.l, '\\n')")
       expect(r.kind).toBe('unsupported')
     })
 

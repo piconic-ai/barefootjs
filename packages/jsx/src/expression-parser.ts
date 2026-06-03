@@ -173,10 +173,13 @@ export type ReduceOp = {
   // diverge from JS for floating-point sums whose decimal expansion
   // differs by runtime (rare in SSR data — integer sums agree).
   type: 'numeric' | 'string'
-  // Source text of the initial-accumulator literal, e.g. `0`, `-1`,
-  // `''`. Preserved verbatim so the `@client` fallback re-emits the
-  // user's exact `.reduce(fn, init)`; adapters derive the runtime
-  // start value from it via `type`.
+  // Decoded initial-accumulator value (never raw source). For a numeric
+  // fold this is TypeScript's canonical decimal form (`1_000` → `1000`,
+  // `0x10` → `16`) so `strconv.ParseFloat` / Perl agree; for a concat
+  // fold it's the string literal's unescaped contents (escape-carrying
+  // literals are refused at parse time, so this is an escape-free
+  // single-line string like `` or `, `). Round-trip emitters re-quote
+  // a string init via `JSON.stringify`; a numeric init re-emits as-is.
   init: string
   // Original JS source of the reducer body (the returned expression
   // for block bodies). Lets the `@client` fallback ship the user's
@@ -1393,7 +1396,7 @@ export function extractReduceOpFromTS(
   const type: 'numeric' | 'string' = init.type
   if (type === 'string' && op !== '+') return null
 
-  return { op, key, type, init: init.text, raw, paramAcc, paramItem }
+  return { op, key, type, init: init.value, raw, paramAcc, paramItem }
 }
 
 /**
@@ -1416,23 +1419,47 @@ function classifyReduceKey(
 }
 
 /**
- * Classify a reduce initial-value node. Accepts a numeric literal
- * (optionally prefixed with `-`) and a string literal; returns the
- * fold type plus the literal's source text (`0`, `-1`, `''`). Any
- * other init (a variable, a call, an object) returns null — the fold
- * start value must be statically known.
+ * Classify a reduce initial-value node into the *decoded* fold seed.
+ * Accepts a numeric literal (optionally prefixed with `-`) and a string
+ * literal; returns `{ type, value }` where `value` is the canonical
+ * value — never the raw source text. Any other init (a variable, a
+ * call, an object) returns null — the fold start value must be
+ * statically known.
+ *
+ * Numeric: `node.text` is TypeScript's canonical decimal form, so
+ * separators and non-decimal radices fold uniformly across adapters
+ * (`1_000` → `1000`, `0x10` → `16`, `1e3` → `1000`). The Go runtime's
+ * `strconv.ParseFloat` and Perl both accept that decimal string —
+ * passing the raw source (`0x10`, `1_000`) would silently fold to 0 on
+ * Go while Perl accepted it (#1728 review).
+ *
+ * String: `node.text` is the *unescaped* contents. To keep the three
+ * adapters byte-equal without teaching each one to re-decode JS escapes
+ * (`\n`, `\u{…}`, `\\`, an escaped quote), we refuse any string literal
+ * whose contents differ from its raw inner source — i.e. any literal
+ * carrying an escape sequence. Accepted seeds are therefore escape-free
+ * single-line strings (`''`, `', '`, `'-'`), which embed safely in both
+ * the Go-template `"…"` operand and the Perl single-quoted literal. The
+ * realistic concat seed (`''`) is unaffected; richer seeds fall back to
+ * the `@client` escape hatch.
  */
 function classifyReduceInit(
   node: ts.Node,
-): { type: 'numeric' | 'string'; text: string } | null {
+): { type: 'numeric' | 'string'; value: string } | null {
   let n: ts.Node = node
   // `-1` parses as a prefix-minus over a numeric literal.
   if (ts.isPrefixUnaryExpression(n) && n.operator === ts.SyntaxKind.MinusToken) {
-    if (ts.isNumericLiteral(n.operand)) return { type: 'numeric', text: n.getText() }
+    if (ts.isNumericLiteral(n.operand)) return { type: 'numeric', value: '-' + n.operand.text }
     return null
   }
-  if (ts.isNumericLiteral(n)) return { type: 'numeric', text: n.getText() }
-  if (ts.isStringLiteral(n)) return { type: 'string', text: n.getText() }
+  if (ts.isNumericLiteral(n)) return { type: 'numeric', value: n.text }
+  if (ts.isStringLiteral(n)) {
+    // Refuse literals carrying escapes so the decoded value equals its
+    // raw inner source (and thus embeds safely + byte-equal everywhere).
+    const raw = n.getText()
+    if (raw.length < 2 || raw.slice(1, -1) !== n.text) return null
+    return { type: 'string', value: n.text }
+  }
   return null
 }
 
@@ -2457,8 +2484,11 @@ export function exprToString(expr: ParsedExpr): string {
         return `${exprToString(expr.object)}.${expr.method}((${paramA},${paramB}) => ${raw})`
       }
       if (expr.method === 'reduce') {
-        const { paramAcc, paramItem, raw, init } = expr.reduceOp
-        return `${exprToString(expr.object)}.reduce((${paramAcc},${paramItem}) => ${raw}, ${init})`
+        const { paramAcc, paramItem, raw, type, init } = expr.reduceOp
+        // `init` is the decoded value: re-quote a string seed, re-emit a
+        // numeric seed as-is (it's already a valid number literal).
+        const initSrc = type === 'string' ? JSON.stringify(init) : init
+        return `${exprToString(expr.object)}.reduce((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
       }
       return `${exprToString(expr.object)}.${expr.method}(${expr.args.map(exprToString).join(', ')})`
     case 'unsupported':
@@ -2526,9 +2556,11 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
         // Round-trip the user's param names + init so downstream
         // re-parsers (the CSR / Hono JS path, templatePrimitive
         // substitution) see valid JS — `raw` references the names
-        // verbatim and `init` is the literal's source text.
-        const { paramAcc, paramItem, raw, init } = expr.reduceOp
-        return `${stringifyParsedExpr(expr.object)}.reduce((${paramAcc},${paramItem}) => ${raw}, ${init})`
+        // verbatim. `init` is the decoded value: re-quote a string
+        // seed via JSON.stringify, re-emit a numeric seed as-is.
+        const { paramAcc, paramItem, raw, type, init } = expr.reduceOp
+        const initSrc = type === 'string' ? JSON.stringify(init) : init
+        return `${stringifyParsedExpr(expr.object)}.reduce((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
       }
       return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.args.map(stringifyParsedExpr).join(', ')})`
     case 'unsupported':

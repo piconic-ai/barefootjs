@@ -1549,19 +1549,16 @@ function renderReduceMethod(recv: string, op: ReduceOp): string {
     op.key.kind === 'self'
       ? `key_kind => 'self'`
       : `key_kind => 'field', key => '${op.key.field}'`
+  // `op.init` is the decoded seed value. A numeric seed is already a
+  // canonical decimal literal Perl reads directly; a concat seed is the
+  // escape-free string contents, embedded in a single-quoted Perl
+  // literal (the `\` / `'` escapes are defensive — accepted seeds carry
+  // neither, since escape-bearing literals are refused at parse time).
   const init =
     op.type === 'string'
-      ? `'${reduceInitContents(op).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+      ? `'${op.init.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
       : op.init
   return `bf->reduce(${recv}, { op => '${op.op}', ${keyEntry}, type => '${op.type}', init => ${init} })`
-}
-
-/**
- * Recover a string-concat fold's seed contents from its init source
- * text (`''` → empty, `'-'` → `-`). Only called for `type === 'string'`.
- */
-function reduceInitContents(op: ReduceOp): string {
-  return op.init.length >= 2 ? op.init.slice(1, -1) : ''
 }
 
 /** True when `type` is the `string` primitive. */

@@ -1664,3 +1664,75 @@ func TestRenderer_TemplateErrorSurfaces(t *testing.T) {
 		t.Errorf("expected component name in error panel, got:\n%s", out)
 	}
 }
+
+// --- Reduce (#1448 Tier C) ---------------------------------------------------
+
+func TestReduce_SumField(t *testing.T) {
+	items := []any{
+		map[string]any{"duration": 95},
+		map[string]any{"duration": 213},
+		map[string]any{"duration": 185},
+	}
+	got := Reduce(items, "+", "field", "Duration", "numeric", "0")
+	if got != float64(493) {
+		t.Errorf("Reduce sum field = %v, want 493", got)
+	}
+}
+
+func TestReduce_SumSelf(t *testing.T) {
+	got := Reduce([]any{10, 20, 30, 5}, "+", "self", "", "numeric", "0")
+	if got != float64(65) {
+		t.Errorf("Reduce sum self = %v, want 65", got)
+	}
+}
+
+func TestReduce_Product(t *testing.T) {
+	items := []any{
+		map[string]any{"qty": 2},
+		map[string]any{"qty": 3},
+		map[string]any{"qty": 4},
+	}
+	got := Reduce(items, "*", "field", "Qty", "numeric", "1")
+	if got != float64(24) {
+		t.Errorf("Reduce product = %v, want 24", got)
+	}
+}
+
+func TestReduce_Concat(t *testing.T) {
+	items := []any{
+		map[string]any{"label": "a"},
+		map[string]any{"label": "b"},
+		map[string]any{"label": "c"},
+	}
+	got := Reduce(items, "+", "field", "Label", "string", "")
+	if got != "abc" {
+		t.Errorf("Reduce concat = %v, want abc", got)
+	}
+}
+
+// Empty receiver returns the init unchanged — like JS reduce(fn, init).
+func TestReduce_EmptyReturnsInit(t *testing.T) {
+	if got := Reduce([]any{}, "*", "self", "", "numeric", "1"); got != float64(1) {
+		t.Errorf("Reduce empty product = %v, want 1", got)
+	}
+	if got := Reduce([]any{}, "+", "self", "", "string", "seed"); got != "seed" {
+		t.Errorf("Reduce empty concat = %v, want seed", got)
+	}
+}
+
+// #1728 review: a Go-initialism field projects as an all-caps key
+// (`id` → `ID`). JSON-decoded data is a `map[string]any` keyed by the
+// lowercase JS name, so `getFieldValue` must fall back to the
+// all-lowercase key to resolve it (the `decapitalize("ID")` = "iD"
+// fallback alone would miss).
+func TestReduce_InitialismFieldOnLowercaseMap(t *testing.T) {
+	items := []any{
+		map[string]any{"id": 10},
+		map[string]any{"id": 20},
+		map[string]any{"id": 30},
+	}
+	got := Reduce(items, "+", "field", "ID", "numeric", "0")
+	if got != float64(60) {
+		t.Errorf("Reduce over initialism field on lowercase-keyed map = %v, want 60", got)
+	}
+}

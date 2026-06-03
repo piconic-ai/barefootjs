@@ -1498,6 +1498,15 @@ func getFieldValue(item any, field string) any {
 				return r
 			}
 		}
+		// All-lowercase fallback: a Go-initialism field projects as an
+		// all-caps key (`id` → `ID`), and `decapitalize("ID")` only
+		// lowers the first char (`iD`), so the JS-keyed map ("id") still
+		// misses. Try the fully-lowered key last to resolve it.
+		if lower := strings.ToLower(field); lower != field && lower != decapitalize(field) {
+			if r, ok := lookup(lower); ok {
+				return r
+			}
+		}
 		return nil
 	}
 
@@ -1542,8 +1551,11 @@ func decapitalize(s string) string {
 //	keyName:  "" when keyKind == "self"; capitalised struct field name
 //	          (e.g. "Duration") otherwise
 //	type:     "numeric" | "string"
-//	init:     the fold's start value — numeric literal text for a numeric
-//	          fold, or string contents for a concat fold
+//	init:     the fold's start value — the compiler emits the *decoded*
+//	          seed, so numeric inits arrive as canonical decimal
+//	          (`1_000`/`0x10` already normalised to `1000`/`16`) that
+//	          ParseFloat accepts, and string inits arrive as escape-free
+//	          contents
 //
 // Numeric folds accumulate as float64 (toFloat64 per projected key);
 // string folds concatenate (toString per projected key, matching the

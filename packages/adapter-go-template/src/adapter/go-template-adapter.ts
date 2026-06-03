@@ -230,21 +230,11 @@ function emitBfSort(recv: string, c: SortComparator): string {
  */
 function emitBfReduce(recv: string, op: ReduceOp): string {
   const keyName = op.key.kind === 'field' ? capitalize(op.key.field) : ''
-  const init = reduceInitValue(op)
-  return `bf_reduce ${wrapIfMultiToken(recv)} "${op.op}" "${op.key.kind}" "${keyName}" "${op.type}" "${escapeGoString(init)}"`
-}
-
-/**
- * Derive the runtime start value from a `ReduceOp`'s init source text.
- * Numeric folds pass the literal verbatim (`0`, `-1`); concat folds
- * strip the surrounding quotes to recover the string contents (`''`
- * → empty, `'-'` → `-`).
- */
-function reduceInitValue(op: ReduceOp): string {
-  if (op.type === 'string') {
-    return op.init.length >= 2 ? op.init.slice(1, -1) : ''
-  }
-  return op.init
+  // `op.init` is already the decoded seed value (canonical decimal for
+  // numeric folds — `strconv.ParseFloat`-safe; escape-free contents for
+  // concat folds). Pass it as a quoted operand the runtime interprets
+  // by `type`.
+  return `bf_reduce ${wrapIfMultiToken(recv)} "${op.op}" "${op.key.kind}" "${keyName}" "${op.type}" "${escapeGoString(op.init)}"`
 }
 
 /** Escape a value for embedding in a Go-template double-quoted string. */
@@ -253,7 +243,17 @@ function escapeGoString(s: string): string {
 }
 
 function capitalize(s: string): string {
-  return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1)
+  if (s.length === 0) return s
+  // Match the adapter's struct-field naming (`capitalizeFieldName`):
+  // a whole-word Go initialism uppercases entirely (`id` → `ID`,
+  // `url` → `URL`) so the `bf_sort` / `bf_reduce` reflect lookup
+  // resolves the generated exported field instead of silently folding
+  // a zero value. The class is fully initialised by the time any emit
+  // helper runs, so referencing the static set here is safe.
+  if (GoTemplateAdapter.GO_INITIALISMS.has(s.toLowerCase())) {
+    return s.toUpperCase()
+  }
+  return s[0].toUpperCase() + s.slice(1)
 }
 
 /**
@@ -2623,7 +2623,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private static GO_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
 
   /** Go common initialisms that should be fully uppercased (https://go.dev/wiki/CodeReviewComments#initialisms) */
-  private static GO_INITIALISMS = new Set([
+  // Not `private`: the module-level `capitalize` helper reads this so
+  // `bf_sort` / `bf_reduce` field projection matches `capitalizeFieldName`.
+  static GO_INITIALISMS = new Set([
     'id', 'url', 'http', 'https', 'api', 'json', 'xml', 'html', 'css', 'sql',
     'ip', 'tcp', 'udp', 'dns', 'ssh', 'tls', 'ssl', 'uri', 'uid', 'uuid',
     'ascii', 'utf8', 'eof', 'grpc', 'rpc', 'cpu', 'gpu', 'ram', 'os',
