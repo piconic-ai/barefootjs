@@ -1544,7 +1544,7 @@ function renderSortMethod(recv: string, c: SortComparator): string {
  * A numeric init passes through as a bare Perl number (`0`, `-1`); a
  * string init (concat fold) is re-quoted from its literal contents.
  */
-function renderReduceMethod(recv: string, op: ReduceOp): string {
+function renderReduceMethod(recv: string, op: ReduceOp, direction: 'left' | 'right'): string {
   const keyEntry =
     op.key.kind === 'self'
       ? `key_kind => 'self'`
@@ -1560,7 +1560,9 @@ function renderReduceMethod(recv: string, op: ReduceOp): string {
     op.type === 'string'
       ? `'${op.init.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
       : op.init
-  return `bf->reduce(${recv}, { op => '${op.op}', ${keyEntry}, type => '${op.type}', init => ${init} })`
+  // `direction` is "left" (reduce) or "right" (reduceRight); the Perl
+  // helper reverses the list for "right". Only observable for concat.
+  return `bf->reduce(${recv}, { op => '${op.op}', ${keyEntry}, type => '${op.type}', init => ${init}, direction => '${direction}' })`
 }
 
 /** True when `type` is the `string` primitive. */
@@ -1745,8 +1747,8 @@ class MojoFilterEmitter implements ParsedExprEmitter {
     return renderSortMethod(emit(object), comparator)
   }
 
-  reduceMethod(object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
-    return renderReduceMethod(emit(object), reduceOp)
+  reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
+    return renderReduceMethod(emit(object), reduceOp, method === 'reduceRight' ? 'right' : 'left')
   }
 
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
@@ -1930,8 +1932,8 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     return renderSortMethod(emit(object), comparator)
   }
 
-  reduceMethod(object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
-    return renderReduceMethod(emit(object), reduceOp)
+  reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
+    return renderReduceMethod(emit(object), reduceOp, method === 'reduceRight' ? 'right' : 'left')
   }
 
   conditional(

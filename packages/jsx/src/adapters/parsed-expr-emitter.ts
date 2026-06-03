@@ -83,13 +83,15 @@ export type ArrayMethod =
 export type SortMethod = 'sort' | 'toSorted'
 
 /**
- * `reduce` is handled by the dedicated `reduceMethod()` dispatcher arm
- * (#1448 Tier C) for the same reason sort is: it carries a structured
- * `ReduceOp` (the parsed arithmetic-fold spec) rather than a
- * `ParsedExpr[]` args list, so folding it into `arrayMethod()` would
- * force a spec-or-args runtime check at every call site.
+ * `reduce` / `reduceRight` are handled by the dedicated `reduceMethod()`
+ * dispatcher arm (#1448 Tier C) for the same reason sort is: they carry
+ * a structured `ReduceOp` (the parsed arithmetic-fold spec) rather than
+ * a `ParsedExpr[]` args list, so folding them into `arrayMethod()` would
+ * force a spec-or-args runtime check at every call site. The method name
+ * is threaded through so adapters can pick the fold direction (left for
+ * `reduce`, right for `reduceRight`).
  */
-export type ReduceMethod = 'reduce'
+export type ReduceMethod = 'reduce' | 'reduceRight'
 
 export type LiteralType = 'string' | 'number' | 'boolean' | 'null'
 
@@ -150,6 +152,7 @@ export interface ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
   ): string
   reduceMethod(
+    method: ReduceMethod,
     object: ParsedExpr,
     reduceOp: ReduceOp,
     emit: (e: ParsedExpr) => string,
@@ -197,8 +200,8 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       if (expr.method === 'sort' || expr.method === 'toSorted') {
         return emitter.sortMethod(expr.method, expr.object, expr.comparator, emit)
       }
-      if (expr.method === 'reduce') {
-        return emitter.reduceMethod(expr.object, expr.reduceOp, emit)
+      if (expr.method === 'reduce' || expr.method === 'reduceRight') {
+        return emitter.reduceMethod(expr.method, expr.object, expr.reduceOp, emit)
       }
       return emitter.arrayMethod(expr.method, expr.object, expr.args, emit)
     case 'unsupported':

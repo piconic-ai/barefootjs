@@ -969,6 +969,7 @@ import { fixture as reduceSumFieldFixture } from '../../../adapter-tests/fixture
 import { fixture as reduceSumSelfFixture } from '../../../adapter-tests/fixtures/methods/reduce-sum-self'
 import { fixture as reduceConcatFixture } from '../../../adapter-tests/fixtures/methods/reduce-concat'
 import { fixture as reduceProductFixture } from '../../../adapter-tests/fixtures/methods/reduce-product'
+import { fixture as reduceRightConcatFixture } from '../../../adapter-tests/fixtures/methods/reduce-right-concat'
 
 describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
   const cases = [
@@ -1031,13 +1032,15 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: arrayValuesFixture,        expect: '% my $v = $items->[$_i];' },
     // #1448 Tier C — .reduce(fn, init) arithmetic fold. The structured
     // ReduceOp lowers to a single `bf->reduce(...)` call with op /
-    // key / type / init in the options hash. Each shape exercises one
-    // arm of the catalogue: field-numeric sum, self-numeric sum,
-    // string-concat fold, and the product (`*`) operator.
-    { fixture: reduceSumFieldFixture,     expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'duration', type => 'numeric', init => 0 })` },
-    { fixture: reduceSumSelfFixture,      expect: `bf->reduce($nums, { op => '+', key_kind => 'self', type => 'numeric', init => 0 })` },
-    { fixture: reduceConcatFixture,       expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'label', type => 'string', init => '' })` },
-    { fixture: reduceProductFixture,      expect: `bf->reduce($items, { op => '*', key_kind => 'field', key => 'qty', type => 'numeric', init => 1 })` },
+    // key / type / init / direction in the options hash. Each shape
+    // exercises one arm: field-numeric sum, self-numeric sum,
+    // string-concat fold, the product (`*`) operator, and the
+    // right-to-left `direction` of reduceRight.
+    { fixture: reduceSumFieldFixture,     expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'duration', type => 'numeric', init => 0, direction => 'left' })` },
+    { fixture: reduceSumSelfFixture,      expect: `bf->reduce($nums, { op => '+', key_kind => 'self', type => 'numeric', init => 0, direction => 'left' })` },
+    { fixture: reduceConcatFixture,       expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'label', type => 'string', init => '', direction => 'left' })` },
+    { fixture: reduceProductFixture,      expect: `bf->reduce($items, { op => '*', key_kind => 'field', key => 'qty', type => 'numeric', init => 1, direction => 'left' })` },
+    { fixture: reduceRightConcatFixture,  expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'label', type => 'string', init => '', direction => 'right' })` },
   ]
 
   for (const { fixture, expect: expectedHelper } of cases) {

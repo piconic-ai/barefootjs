@@ -33,6 +33,24 @@ describe('reduce() arithmetic-fold catalogue', () => {
     }
   })
 
+  test('reduceRight shares the catalogue and preserves the method name', () => {
+    const r = parseExpression("items.reduceRight((acc, x) => acc + x.label, '')")
+    expect(r.kind).toBe('array-method')
+    if (r.kind === 'array-method') {
+      expect(r.method).toBe('reduceRight')
+      if (r.method === 'reduceRight') {
+        expect(r.reduceOp.op).toBe('+')
+        expect(r.reduceOp.key).toEqual({ kind: 'field', field: 'label' })
+        expect(r.reduceOp.type).toBe('string')
+      }
+    }
+  })
+
+  test('reduceRight round-trips with its method name preserved', () => {
+    const r = parseExpression('nums.reduceRight((a, b) => a + b, 0)')
+    expect(stringifyParsedExpr(r)).toBe('nums.reduceRight((a,b) => a + b, 0)')
+  })
+
   test('product over a field with init 1 → field/numeric/*', () => {
     const r = parseExpression('items.reduce((acc, x) => acc * x.qty, 1)')
     expect(r.kind).toBe('array-method')
@@ -172,12 +190,11 @@ describe('reduce() arithmetic-fold catalogue', () => {
       expect(r.kind).toBe('unsupported')
     })
 
-    test('reduceRight stays refused (not in the Tier C landing)', () => {
-      const r = parseExpression('items.reduce((sum, t) => sum + t.n, 0)')
-      expect(r.kind).toBe('array-method')
-      const rr = parseExpression('items.reduceRight((sum, t) => sum + t.n, 0)')
-      // reduceRight isn't intercepted; it falls through to a generic
-      // call whose member callee is in UNSUPPORTED_METHODS.
+    test('reduceRight without an init is refused (like reduce)', () => {
+      // The matching 2-arg form is intercepted; a no-init reduceRight
+      // falls through to a generic call the UNSUPPORTED_METHODS gate
+      // refuses (JS throws on an empty array there).
+      const rr = parseExpression('items.reduceRight((sum, t) => sum + t.n)')
       expect(isSupported(rr).supported).toBe(false)
     })
   })

@@ -1673,14 +1673,14 @@ func TestReduce_SumField(t *testing.T) {
 		map[string]any{"duration": 213},
 		map[string]any{"duration": 185},
 	}
-	got := Reduce(items, "+", "field", "Duration", "numeric", "0")
+	got := Reduce(items, "+", "field", "Duration", "numeric", "0", "left")
 	if got != float64(493) {
 		t.Errorf("Reduce sum field = %v, want 493", got)
 	}
 }
 
 func TestReduce_SumSelf(t *testing.T) {
-	got := Reduce([]any{10, 20, 30, 5}, "+", "self", "", "numeric", "0")
+	got := Reduce([]any{10, 20, 30, 5}, "+", "self", "", "numeric", "0", "left")
 	if got != float64(65) {
 		t.Errorf("Reduce sum self = %v, want 65", got)
 	}
@@ -1692,7 +1692,7 @@ func TestReduce_Product(t *testing.T) {
 		map[string]any{"qty": 3},
 		map[string]any{"qty": 4},
 	}
-	got := Reduce(items, "*", "field", "Qty", "numeric", "1")
+	got := Reduce(items, "*", "field", "Qty", "numeric", "1", "left")
 	if got != float64(24) {
 		t.Errorf("Reduce product = %v, want 24", got)
 	}
@@ -1704,7 +1704,7 @@ func TestReduce_Concat(t *testing.T) {
 		map[string]any{"label": "b"},
 		map[string]any{"label": "c"},
 	}
-	got := Reduce(items, "+", "field", "Label", "string", "")
+	got := Reduce(items, "+", "field", "Label", "string", "", "left")
 	if got != "abc" {
 		t.Errorf("Reduce concat = %v, want abc", got)
 	}
@@ -1712,10 +1712,10 @@ func TestReduce_Concat(t *testing.T) {
 
 // Empty receiver returns the init unchanged — like JS reduce(fn, init).
 func TestReduce_EmptyReturnsInit(t *testing.T) {
-	if got := Reduce([]any{}, "*", "self", "", "numeric", "1"); got != float64(1) {
+	if got := Reduce([]any{}, "*", "self", "", "numeric", "1", "left"); got != float64(1) {
 		t.Errorf("Reduce empty product = %v, want 1", got)
 	}
-	if got := Reduce([]any{}, "+", "self", "", "string", "seed"); got != "seed" {
+	if got := Reduce([]any{}, "+", "self", "", "string", "seed", "left"); got != "seed" {
 		t.Errorf("Reduce empty concat = %v, want seed", got)
 	}
 }
@@ -1731,7 +1731,7 @@ func TestReduce_InitialismFieldOnLowercaseMap(t *testing.T) {
 		map[string]any{"id": 20},
 		map[string]any{"id": 30},
 	}
-	got := Reduce(items, "+", "field", "ID", "numeric", "0")
+	got := Reduce(items, "+", "field", "ID", "numeric", "0", "left")
 	if got != float64(60) {
 		t.Errorf("Reduce over initialism field on lowercase-keyed map = %v, want 60", got)
 	}
@@ -1750,11 +1750,30 @@ func TestReduce_NumericStringKeysParse(t *testing.T) {
 		map[string]any{"n": "10"},
 		map[string]any{"n": 3},
 	}
-	if got := Reduce(items, "+", "field", "N", "numeric", "0"); got != float64(18) {
+	if got := Reduce(items, "+", "field", "N", "numeric", "0", "left"); got != float64(18) {
 		t.Errorf("Reduce over numeric-string keys = %v, want 18", got)
 	}
 	mixed := []any{"5", "x", 2}
-	if got := Reduce(mixed, "+", "self", "", "numeric", "0"); got != float64(7) {
+	if got := Reduce(mixed, "+", "self", "", "numeric", "0", "left"); got != float64(7) {
 		t.Errorf("Reduce mixed self = %v, want 7 (non-numeric → 0)", got)
+	}
+}
+
+// reduceRight folds right-to-left. Only observable for string concat:
+// [a,b,c] concatenated right-to-left from "" yields "cba". Numeric sums
+// are commutative, so the direction doesn't change them.
+func TestReduce_RightConcatReverses(t *testing.T) {
+	items := []any{
+		map[string]any{"label": "a"},
+		map[string]any{"label": "b"},
+		map[string]any{"label": "c"},
+	}
+	if got := Reduce(items, "+", "field", "Label", "string", "", "right"); got != "cba" {
+		t.Errorf("reduceRight concat = %v, want cba", got)
+	}
+	// Numeric sum is identical left vs right.
+	nums := []any{10, 20, 30, 5}
+	if got := Reduce(nums, "+", "self", "", "numeric", "0", "right"); got != float64(65) {
+		t.Errorf("reduceRight numeric sum = %v, want 65 (commutative)", got)
 	}
 }

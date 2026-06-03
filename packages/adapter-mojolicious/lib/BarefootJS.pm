@@ -800,12 +800,17 @@ sub _compare_sort_key ($av, $bv, $compare_type) {
 # like JS. Float stringification can diverge from Go's for inexact binary
 # fractions (e.g. 0.1 + 0.2); integer sums — the common case — agree.
 sub reduce ($self, $recv, $opts = {}) {
-    my $op       = $opts->{op}       // '+';
-    my $key_kind = $opts->{key_kind} // 'self';
-    my $key      = $opts->{key}      // '';
-    my $type     = $opts->{type}     // 'numeric';
+    my $op        = $opts->{op}        // '+';
+    my $key_kind  = $opts->{key_kind}  // 'self';
+    my $key       = $opts->{key}       // '';
+    my $type      = $opts->{type}      // 'numeric';
+    my $direction = $opts->{direction} // 'left';
 
     my @items = ref($recv) eq 'ARRAY' ? @$recv : ();
+    # reduceRight folds right-to-left; reversing the snapshot keeps the
+    # single forward loop below. Only observable for string concat —
+    # numeric sum / product commute.
+    @items = reverse @items if $direction eq 'right';
     my $project = sub ($item) {
         $key_kind eq 'field' && ref($item) eq 'HASH' ? $item->{$key} : $item;
     };

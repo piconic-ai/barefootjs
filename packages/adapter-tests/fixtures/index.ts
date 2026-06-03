@@ -186,6 +186,7 @@ import { fixture as reduceSumField } from './methods/reduce-sum-field'
 import { fixture as reduceSumSelf } from './methods/reduce-sum-self'
 import { fixture as reduceConcat } from './methods/reduce-concat'
 import { fixture as reduceProduct } from './methods/reduce-product'
+import { fixture as reduceRightConcat } from './methods/reduce-right-concat'
 // #1448 Tier B — `.entries()` / `.keys()` / `.values()` iteration shapes.
 // The compiler strips the iterator method from the chain and synthesises
 // proper loop bindings so adapters emit native index+value iteration.
@@ -345,6 +346,7 @@ export const jsxFixtures: JSXFixture[] = [
   reduceSumSelf,
   reduceConcat,
   reduceProduct,
+  reduceRightConcat,
   arraySortFieldDesc,
   arraySortPrimitive,
   arraySortLocale,
