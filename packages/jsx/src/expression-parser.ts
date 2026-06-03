@@ -174,12 +174,14 @@ export type ReduceOp = {
   // differs by runtime (rare in SSR data — integer sums agree).
   type: 'numeric' | 'string'
   // Decoded initial-accumulator value (never raw source). For a numeric
-  // fold this is TypeScript's canonical decimal form (`1_000` → `1000`,
-  // `0x10` → `16`) so `strconv.ParseFloat` / Perl agree; for a concat
-  // fold it's the string literal's unescaped contents (escape-carrying
-  // literals are refused at parse time, so this is an escape-free
-  // single-line string like `` or `, `). Round-trip emitters re-quote
-  // a string init via `JSON.stringify`; a numeric init re-emits as-is.
+  // fold this is TypeScript's canonical decimal form (`1_000` -> `1000`,
+  // `0x10` -> `16`) so `strconv.ParseFloat` / Perl agree; for a concat
+  // fold it's the contents of a quoted string literal (only single- or
+  // double-quoted `ts.StringLiteral` seeds are accepted — template
+  // literals and escape-carrying literals are refused at parse time, so
+  // the value is an escape-free single-line string, e.g. the empty
+  // string "" or a separator like ", "). Round-trip emitters re-quote a
+  // string init via `JSON.stringify`; a numeric init re-emits as-is.
   init: string
   // Original JS source of the reducer body (the returned expression
   // for block bodies). Lets the `@client` fallback ship the user's

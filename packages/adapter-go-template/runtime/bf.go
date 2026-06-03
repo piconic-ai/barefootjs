@@ -1557,17 +1557,25 @@ func decapitalize(s string) string {
 //	          ParseFloat accepts, and string inits arrive as escape-free
 //	          contents
 //
-// Numeric folds accumulate as float64 (toFloat64 per projected key);
-// string folds concatenate (toString per projected key, matching the
-// documented `bf->string(undef) === ""` convention). The init seeds the
-// accumulator, so an empty receiver returns the init unchanged — exactly
-// like JS `reduce(fn, init)`. Anything outside the catalogue refuses at
-// compile time (BF101 from the JSX compiler) and never reaches here.
+// Numeric folds accumulate as float64; each projected key is read via
+// `toFloat64WithOK`, so numeric *strings* ("5" → 5) parse and
+// non-numeric values fold as 0 — matching Perl's
+// `looks_like_number ? $n : 0` so the two template adapters stay
+// byte-equal. String folds concatenate (toString per projected key,
+// matching the documented `bf->string(undef) === ""` convention). The
+// init seeds the accumulator, so an empty receiver returns the init
+// unchanged — exactly like JS `reduce(fn, init)`. Anything outside the
+// catalogue refuses at compile time (BF101 from the JSX compiler) and
+// never reaches here.
 //
-// Numeric float64 stringification can diverge from Perl's for sums whose
-// binary expansion isn't exact (e.g. 0.1 + 0.2); genuine integer sums —
-// the common SSR case — agree across all three adapters. This mirrors
-// the documented `bf_sort` "auto" numeric-string caveat.
+// Two documented divergences from the JS / Hono path, both rare and
+// mirroring the `bf_sort` "auto" caveat:
+//   - float64 stringification differs for sums whose binary expansion
+//     isn't exact (e.g. 0.1 + 0.2);
+//   - numeric-*string* keys fold numerically here, but JS `+`
+//     string-concatenates once an operand is a string, so
+//     numeric-string data can render differently under CSR.
+// Genuine numbers — the common SSR case — agree across all three.
 func Reduce(items any, op, keyKind, keyName, typ, init string) any {
 	v := reflect.ValueOf(items)
 	isSlice := v.Kind() == reflect.Slice || v.Kind() == reflect.Array
@@ -1588,7 +1596,12 @@ func Reduce(items any, op, keyKind, keyName, typ, init string) any {
 	if isSlice {
 		for i := 0; i < v.Len(); i++ {
 			key := projectSortKey(v.Index(i).Interface(), keyKind, keyName)
-			n := toFloat64(key)
+			// `toFloat64WithOK` parses numeric *strings* ("5" → 5) and
+			// returns 0 for non-numeric values — mirroring Perl's
+			// `looks_like_number ? $n : 0` so numeric-string data folds
+			// byte-equal across adapters (the same rule `bf_sort`'s
+			// "auto" compare uses). Plain `toFloat64` would zero "5".
+			n, _ := toFloat64WithOK(key)
 			if op == "*" {
 				acc *= n
 			} else {

@@ -21,4 +21,4 @@ The accumulator must be the binary expression's left operand (`acc + x`, not `x 
 - Go: new `bf_reduce` runtime helper folding to float64 for numeric / Go string for concat.
 - Mojo: new `bf->reduce` helper folding via Perl numeric / string operators.
 
-Float stringification can diverge from JS for inexact binary fractions (e.g. `0.1 + 0.2`); integer sums — the common SSR case — agree across all three adapters.
+Two narrow divergences from the JS / CSR path, both mirroring the `bf_sort` "auto" caveat: float stringification differs for inexact binary fractions (e.g. `0.1 + 0.2`), and numeric-*string* keys fold numerically on the template adapters while JS `+` string-concatenates them. Genuine numbers — the common SSR case — agree across all three adapters.

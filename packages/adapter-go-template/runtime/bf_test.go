@@ -1736,3 +1736,25 @@ func TestReduce_InitialismFieldOnLowercaseMap(t *testing.T) {
 		t.Errorf("Reduce over initialism field on lowercase-keyed map = %v, want 60", got)
 	}
 }
+
+// #1728 review: numeric-string keys ("5") must parse like Perl's
+// `looks_like_number`, not coerce to 0 (plain toFloat64), so the two
+// template adapters (Go + Mojo) stay byte-equal. Non-numeric strings
+// fold as 0. (The JS / Hono path's `+` string-concatenates once an
+// operand is a string, so numeric-string data diverges from CSR
+// regardless — a documented limitation; genuine numbers agree on all
+// three.)
+func TestReduce_NumericStringKeysParse(t *testing.T) {
+	items := []any{
+		map[string]any{"n": "5"},
+		map[string]any{"n": "10"},
+		map[string]any{"n": 3},
+	}
+	if got := Reduce(items, "+", "field", "N", "numeric", "0"); got != float64(18) {
+		t.Errorf("Reduce over numeric-string keys = %v, want 18", got)
+	}
+	mixed := []any{"5", "x", 2}
+	if got := Reduce(mixed, "+", "self", "", "numeric", "0"); got != float64(7) {
+		t.Errorf("Reduce mixed self = %v, want 7 (non-numeric → 0)", got)
+	}
+}
