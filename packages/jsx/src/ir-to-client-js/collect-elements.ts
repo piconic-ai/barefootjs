@@ -428,9 +428,15 @@ function decideLoopRendering(
   ctx: ClientJsContext | undefined,
 ): { useElementReconciliation: boolean; innerLoops: NestedLoop[] | undefined } {
   const hasNestedComps = (loop.nestedComponents?.length ?? 0) > 0
-  const innerLoops = !loop.childComponent
-    ? collectInnerLoops(loop.children, siblingOffsets, loop.param, ctx)
-    : undefined
+  // Collect inner loops even when the outer item is a child component
+  // (#1725): a `.map()` of components living inside the child component's
+  // JSX children (e.g. `<SelectGroup>{items.map(...)}</SelectGroup>`) needs
+  // its own `initChild` pass. `loop.children` is the single child-component
+  // node; `collectInnerLoops` descends into its children to find the nested
+  // loop. These only surface for static arrays (gated at the call site via
+  // `isStaticArray && innerLoops.length`) so dynamic child-component loops —
+  // which render through `createComponent` — are unaffected.
+  const innerLoops = collectInnerLoops(loop.children, siblingOffsets, loop.param, ctx)
   const hasInnerLoops = (innerLoops?.length ?? 0) > 0
   const useElementReconciliation =
     !loop.childComponent && !loop.isStaticArray && (hasNestedComps || hasInnerLoops)

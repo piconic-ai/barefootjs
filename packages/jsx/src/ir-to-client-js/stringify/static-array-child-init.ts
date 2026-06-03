@@ -50,6 +50,7 @@
  */
 
 import type {
+  ComponentRootedInnerLoopInitPlan,
   InnerLoopNestedInitPlan,
   OuterNestedInitPlan,
   SingleCompInitPlan,
@@ -77,6 +78,9 @@ function stringifyOne(lines: string[], plan: StaticArrayChildInitPlan): void {
       break
     case 'inner-loop-nested':
       emitInnerLoopNested(lines, plan)
+      break
+    case 'component-rooted-inner-loop':
+      emitComponentRootedInnerLoop(lines, plan)
       break
   }
 }
@@ -168,6 +172,71 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
     const compElVar = comps.length > 1 ? `__compEl${i}` : '__compEl'
     lines.push(`        const ${compElVar} = qsaChildScope(__innerEl, ${comp.selector})`)
     lines.push(`        if (${compElVar}) initChild('${nameForRegistryRef(comp.componentName)}', ${compElVar}, ${comp.propsExpr})`)
+  })
+  lines.push(`      })`)
+  lines.push(`    })`)
+  lines.push(`  }`)
+  lines.push('')
+}
+
+/**
+ * Emit shape for `component-rooted-inner-loop` (#1725):
+ *
+ *   <i>// Initialize component-rooted inner-loop components (depth N)
+ *   <i>if (<container>) {
+ *   <i>  const <scopes_c> = qsaChildScopes(<container>, <selector_c>)   // per comp
+ *   <i>  let <cursor_c> = 0
+ *   <i>  <outerArr>.forEach((<outerParam>) => {
+ *   <i>    <outerPreludeStatements*>
+ *   <i>    <innerArr>.forEach((<innerParam>) => {
+ *   <i>      <innerPreludeStatements*>
+ *   <i>      const <compEl_c> = <scopes_c>[<cursor_c>++]              // per comp
+ *   <i>      if (<compEl_c>) initChild('<name>', <compEl_c>, <props>)
+ *   <i>    })
+ *   <i>  })
+ *   <i>}
+ *
+ * The scopes are queried once over the whole container and consumed in
+ * document order by a per-component cursor, so the SSR render order
+ * (outer-then-inner, depth-first) pairs each scope with its data item
+ * whether the outer component root is an element or a fragment.
+ */
+function emitComponentRootedInnerLoop(lines: string[], plan: ComponentRootedInnerLoopInitPlan): void {
+  const {
+    containerVar,
+    outerArrayExpr,
+    outerParam,
+    outerPreludeStatements,
+    innerArrayExpr,
+    innerParam,
+    innerPreludeStatements,
+    depth,
+    comps,
+  } = plan
+  // A single comp uses the bare `__compScopes` / `__ci` names; multiple
+  // comps (e.g. `{items.map(it => <><A/><B/></>)}`) get index suffixes so
+  // each keeps its own document-order cursor.
+  const scopesVar = (i: number) => (comps.length > 1 ? `__compScopes${i}` : '__compScopes')
+  const cursorVar = (i: number) => (comps.length > 1 ? `__ci${i}` : '__ci')
+  const compElVar = (i: number) => (comps.length > 1 ? `__compEl${i}` : '__compEl')
+
+  lines.push(`  // Initialize component-rooted inner-loop components (depth ${depth})`)
+  lines.push(`  if (${containerVar}) {`)
+  comps.forEach((comp, i) => {
+    lines.push(`    const ${scopesVar(i)} = qsaChildScopes(${containerVar}, ${comp.selector})`)
+    lines.push(`    let ${cursorVar(i)} = 0`)
+  })
+  lines.push(`    ${outerArrayExpr}.forEach((${outerParam}) => {`)
+  for (const stmt of outerPreludeStatements) {
+    lines.push(`      ${stmt}`)
+  }
+  lines.push(`      ${innerArrayExpr}.forEach((${innerParam}) => {`)
+  for (const stmt of innerPreludeStatements) {
+    lines.push(`        ${stmt}`)
+  }
+  comps.forEach((comp, i) => {
+    lines.push(`        const ${compElVar(i)} = ${scopesVar(i)}[${cursorVar(i)}++]`)
+    lines.push(`        if (${compElVar(i)}) initChild('${nameForRegistryRef(comp.componentName)}', ${compElVar(i)}, ${comp.propsExpr})`)
   })
   lines.push(`      })`)
   lines.push(`    })`)
