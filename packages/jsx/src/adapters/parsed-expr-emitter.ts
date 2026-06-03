@@ -70,6 +70,7 @@ export type ArrayMethod =
   | 'startsWith'
   | 'endsWith'
   | 'replace'
+  | 'repeat'
 
 /**
  * Method names handled by the dedicated `sortMethod()` dispatcher

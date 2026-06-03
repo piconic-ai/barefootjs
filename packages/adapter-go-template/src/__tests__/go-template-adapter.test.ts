@@ -2199,6 +2199,7 @@ import { fixture as stringStartsWithPositionFixture } from '../../../adapter-tes
 import { fixture as stringEndsWithFixture } from '../../../adapter-tests/fixtures/methods/string-endsWith'
 import { fixture as stringEndsWithPositionFixture } from '../../../adapter-tests/fixtures/methods/string-endsWith-position'
 import { fixture as stringReplaceFixture } from '../../../adapter-tests/fixtures/methods/string-replace'
+import { fixture as stringRepeatFixture } from '../../../adapter-tests/fixtures/methods/string-repeat'
 // #1448 Tier B — .sort / .toSorted fixtures.
 import { fixture as arraySortFieldAscFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-asc'
 import { fixture as arraySortFieldDescFixture } from '../../../adapter-tests/fixtures/methods/array-sort-field-desc'
@@ -2253,6 +2254,8 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     { fixture: stringEndsWithPositionFixture,   expect: '{{if bf_ends_with .Value "hello" 5}}' },
     // #1448 Tier B — string → string, first-occurrence replace.
     { fixture: stringReplaceFixture,    expect: 'bf_replace .Value "o" "0"' },
+    // #1448 Tier B — string → string, repeat n times.
+    { fixture: stringRepeatFixture,     expect: 'bf_repeat .Value 3' },
     // #1448 Tier B — sort / toSorted. Loop-chained shapes wrap the
     // iterable in `bf_sort .Items <kind> <key> <type> <dir>`;
     // standalone shapes inline the helper at the call site.
@@ -2370,11 +2373,10 @@ export function C() {
     { name: 'concat (variadic)', expr: `items().concat(items(), items())`, badEmit: '.Concat' },
     // Tier B/C string methods — previously slipped through with no
     // diagnostic; now gated by `UNSUPPORTED_METHODS`. `split`,
-    // `startsWith`, `endsWith` and the string-pattern form of `replace`
-    // have since landed their full-arity lowerings (#1448 Tier B) and
-    // moved to the positive fixture-pin block above. The regex-pattern
-    // `replace` form is pinned separately below.
-    { name: 'repeat', expr: `name().repeat(3)`, badEmit: '.Name.Repeat' },
+    // `startsWith`, `endsWith`, `repeat` and the string-pattern form of
+    // `replace` have since landed their full-arity lowerings (#1448
+    // Tier B) and moved to the positive fixture-pin block above. The
+    // regex-pattern `replace` form is pinned separately below.
     { name: 'padStart', expr: `name().padStart(5, "0")`, badEmit: '.Name.PadStart' },
     { name: 'padEnd', expr: `name().padEnd(5, "0")`, badEmit: '.Name.PadEnd' },
     { name: 'charAt', expr: `name().charAt(0)`, badEmit: '.Name.CharAt' },
@@ -2464,7 +2466,9 @@ export function C() {
   // more `can't evaluate field …` crash), so we assert the build error
   // rather than a render crash. Skipped on hosts without Go.
   test('e2e: @client renders placeholder; bare is caught at build with BF101', async () => {
-    const bare = emit(`name().repeat(3)`, false)
+    // Uses the Tier C `charAt` (still refused) — earlier this test used
+    // `repeat`, which has since landed its #1448 Tier B lowering.
+    const bare = emit(`name().charAt(0)`, false)
     expect(bare.errors.some(e => e.code === 'BF101')).toBe(true)
 
     try {
@@ -2474,7 +2478,7 @@ export function C() {
 import { createSignal } from "@barefootjs/client"
 export function C() {
   const [name, setName] = createSignal("hello")
-  return <div>{/* @client */ name().repeat(3)}</div>
+  return <div>{/* @client */ name().charAt(0)}</div>
 }
 `.trimStart(),
         adapter: new GoTemplateAdapter(),

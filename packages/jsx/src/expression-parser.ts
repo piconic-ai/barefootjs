@@ -50,6 +50,7 @@ export type ParsedExpr =
         | 'startsWith'
         | 'endsWith'
         | 'replace'
+        | 'repeat'
       object: ParsedExpr
       args: ParsedExpr[]
     }
@@ -241,8 +242,11 @@ const UNSUPPORTED_METHODS = new Set([
   // the regex-pattern form is refused at the parse arm below (it would
   // need the per-adapter regex-flavour decision). `replaceAll` stays
   // refused. See #1448 Tier B.
+  // `repeat` is no longer here — `String.prototype.repeat(n)` lowers via
+  // the `array-method` IR + `bf_repeat` (Go) / `bf->repeat` (Mojo).
+  // See #1448 Tier B.
   'replaceAll',
-  'repeat', 'padStart', 'padEnd',
+  'padStart', 'padEnd',
   'charAt', 'charCodeAt', 'codePointAt', 'normalize',
   'substring', 'substr', 'match', 'matchAll', 'search',
 ])
@@ -558,6 +562,19 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           return { kind: 'unsupported', raw, reason: badArg.reason }
         }
         return { kind: 'array-method', method: 'replace', object: callee.object, args }
+      }
+      // `.repeat(n)` — string → string (the receiver concatenated `n`
+      // times). Go uses `bf_repeat` (`strings.Repeat`, clamping a
+      // negative count to "" instead of panicking); Mojo uses
+      // `bf->repeat` (Perl's `x` operator). JS throws RangeError for a
+      // negative count, but SSR templates degrade to the empty string
+      // rather than crashing the render. See #1448 Tier B.
+      // Full JS arity: `.repeat()` (no count) is `repeat(0)` → "" (JS
+      // coerces the missing count to 0, not a RangeError), and a
+      // second+ argument is ignored. The adapter supplies the `0` for
+      // the no-argument form. See #1448 Tier B.
+      if (callee.property === 'repeat') {
+        return { kind: 'array-method', method: 'repeat', object: callee.object, args }
       }
       // `.sort(cmp)` / `.toSorted(cmp)` (#1448 Tier B). The comparator
       // is extracted into a structured `SortComparator` at parse time;

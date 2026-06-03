@@ -141,6 +141,7 @@ import { fixture as stringStartsWithPosition } from './methods/string-startsWith
 import { fixture as stringEndsWith } from './methods/string-endsWith'
 import { fixture as stringEndsWithPosition } from './methods/string-endsWith-position'
 import { fixture as stringReplace } from './methods/string-replace'
+import { fixture as stringRepeat } from './methods/string-repeat'
 // #1448 catalog parity: array methods rendered positively by
 // Hono / CSR (runtime JS) and at least one SSR adapter — pinning
 // the canonical surface so a regression surfaces here instead of
@@ -317,6 +318,7 @@ export const jsxFixtures: JSXFixture[] = [
   stringEndsWith,
   stringEndsWithPosition,
   stringReplace,
+  stringRepeat,
   // #1448 catalog parity — already-lowered Array methods.
   arrayJoin,
   arrayFind,

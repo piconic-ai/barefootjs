@@ -3255,6 +3255,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const newS = emit(args[1])
         return `bf_replace ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(oldS)} ${wrapIfMultiToken(newS)}`
       }
+      case 'repeat': {
+        // `.repeat(n)` — string repeated `n` times via the `bf_repeat`
+        // helper. The helper clamps a negative count to "" instead of
+        // letting `strings.Repeat` panic. Full JS arity: the no-argument
+        // form is `repeat(0)` → ""; a second+ argument is ignored.
+        // See #1448 Tier B.
+        const recv = emit(object)
+        const count = args.length === 0 ? '0' : emit(args[0])
+        return `bf_repeat ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(count)}`
+      }
       default: {
         const _exhaustive: never = method
         throw new Error(`Go arrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`)

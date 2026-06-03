@@ -647,6 +647,19 @@ sub replace ($self, $recv, $pattern, $replacement) {
     return substr($s, 0, $i) . $n . substr($s, $i + length($o));
 }
 
+# `String.prototype.repeat(n)` — the receiver concatenated n times
+# (#1448 Tier B), via Perl's `x` operator. JS throws RangeError for a
+# negative count, but SSR templates degrade to the empty string rather
+# than dying mid-render, so a count <= 0 returns "" (Go's `bf_repeat`
+# applies the same clamp). The count is truncated toward zero
+# (`int`), matching JS's ToIntegerOrInfinity on `"a".repeat(3.7)`.
+
+sub repeat ($self, $recv, $count) {
+    my $s = defined $recv && !ref($recv) ? "$recv" : '';
+    my $n = defined $count ? int($count) : 0;
+    return $n <= 0 ? '' : $s x $n;
+}
+
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
 # lowering (#1448 Tier B). Non-mutating — JS's mutate-vs-new
 # distinction is moot in SSR template context.
