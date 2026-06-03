@@ -213,20 +213,23 @@ function emitBfSort(recv: string, c: SortComparator): string {
  * Emit the `bf_reduce` call for a `.reduce(fn, init)` arithmetic fold
  * (#1448 Tier C):
  *
- *   bf_reduce <recv> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>"
+ *   bf_reduce <recv> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>" "<direction>"
  *
- *   op:       "+" | "*"
- *   keyKind:  "self" | "field"
- *   keyName:  "" when keyKind=self; capitalised field name otherwise
- *             (matches the Go struct-field convention, mirroring
- *             `emitBfSort`)
- *   type:     "numeric" | "string"
- *   init:     the fold's start value — the numeric literal's text for a
- *             numeric fold, or the string literal's contents for a
- *             concat fold
+ *   op:        "+" | "*"
+ *   keyKind:   "self" | "field"
+ *   keyName:   "" when keyKind=self; capitalised field name otherwise
+ *              (matches the Go struct-field convention, mirroring
+ *              `emitBfSort`)
+ *   type:      "numeric" | "string"
+ *   init:      the fold's start value — the numeric literal's text for a
+ *              numeric fold, or the string literal's contents for a
+ *              concat fold
+ *   direction: "left" (reduce) | "right" (reduceRight)
  *
- * The runtime folds `init <op> key(item)` left-to-right and returns the
- * accumulated value (float64 for numeric, string for concat).
+ * The runtime folds `init <op> key(item)` in `direction` order and
+ * returns the accumulated value (float64 for numeric, string for
+ * concat). The order is only observable for string concat — numeric
+ * sum / product commute.
  */
 function emitBfReduce(recv: string, op: ReduceOp, direction: 'left' | 'right'): string {
   const keyName = op.key.kind === 'field' ? capitalize(op.key.field) : ''

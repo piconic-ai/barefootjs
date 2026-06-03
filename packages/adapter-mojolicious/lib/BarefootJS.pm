@@ -783,21 +783,25 @@ sub _compare_sort_key ($av, $bv, $compare_type) {
 }
 
 # Fold an array into a scalar via the arithmetic-fold catalogue
-# (#1448 Tier C). Mirrors Go's `bf_reduce` and JS `reduce(fn, init)` for
-# the shapes `(acc, x) => acc <op> x` / `(acc, x) => acc <op> x.field`:
+# (#1448 Tier C). Mirrors Go's `bf_reduce` and JS `reduce(fn, init)` /
+# `reduceRight(fn, init)` for the shapes `(acc, x) => acc <op> x` /
+# `(acc, x) => acc <op> x.field`:
 #
 #   bf->reduce($recv, {
-#     op       => '+' | '*',
-#     key_kind => 'self' | 'field',
-#     key      => '<field>',         # when key_kind eq 'field'
-#     type     => 'numeric' | 'string',
-#     init     => <seed>,            # number, or string for concat
+#     op        => '+' | '*',
+#     key_kind  => 'self' | 'field',
+#     key       => '<field>',         # when key_kind eq 'field'
+#     type      => 'numeric' | 'string',
+#     init      => <seed>,            # number, or string for concat
+#     direction => 'left' | 'right',  # 'right' = reduceRight (default 'left')
 #   })
 #
 # Numeric folds accumulate with `+` / `*` (non-numeric keys coalesce to
 # 0); string folds concatenate via `bf->string` (undef → ''). The init
 # seeds the accumulator, so an empty array returns it unchanged — exactly
-# like JS. Float stringification can diverge from Go's for inexact binary
+# like JS. `direction => 'right'` folds right-to-left (reduceRight); only
+# observable for string concat, since numeric sum / product commute.
+# Float stringification can diverge from Go's for inexact binary
 # fractions (e.g. 0.1 + 0.2); integer sums — the common case — agree.
 sub reduce ($self, $recv, $opts = {}) {
     my $op        = $opts->{op}        // '+';
