@@ -148,6 +148,21 @@ function buildInnerLoopNestedPlan(
   }
 }
 
+/**
+ * Build the document-order-zip plan for an inner `.map()` of components living
+ * inside a component-rooted loop item (#1725).
+ *
+ * Known limitation (shared with `inner-loop-nested`): the emitted `forEach`
+ * iterates `innerLoop.array` — the *base* inner array. `NestedLoop` doesn't
+ * carry `filterPredicate` / `sortComparator`, so a `.filter()` / `.sort()` on
+ * the inner `.map()` makes the iteration order diverge from the SSR render
+ * order. `inner-loop-nested` masks this per-group (each group re-indexes
+ * `__ic.children` from 0, so a trailing filtered-out item just reads
+ * `undefined`); the zip's single document-order cursor instead misaligns every
+ * later group. Both are wrong for non-trailing filtered items — filter/sort on
+ * a nested static-array loop is unsupported across this family, not a
+ * regression introduced here.
+ */
 function buildComponentRootedInnerLoopPlan(
   elem: TopLevelLoop,
   innerLoop: NestedLoop,
