@@ -286,6 +286,39 @@ func TestRepeat(t *testing.T) {
 	}
 }
 
+func TestPadStart(t *testing.T) {
+	if got := PadStart("42", 5, "0"); got != "00042" {
+		t.Errorf(`PadStart("42", 5, "0") = %q, want "00042"`, got)
+	}
+	// Default pad is a single space when omitted.
+	if got := PadStart("42", 5); got != "   42" {
+		t.Errorf(`PadStart("42", 5) = %q, want "   42"`, got)
+	}
+	// Multi-char pad is repeated then truncated to fill.
+	if got := PadStart("x", 5, "ab"); got != "ababx" {
+		t.Errorf(`PadStart("x", 5, "ab") = %q, want "ababx"`, got)
+	}
+	// Already >= target → unchanged. Empty pad → unchanged.
+	if got := PadStart("hello", 3, "0"); got != "hello" {
+		t.Errorf(`PadStart("hello", 3, "0") = %q, want "hello"`, got)
+	}
+	if got := PadStart("42", 5, ""); got != "42" {
+		t.Errorf(`PadStart("42", 5, "") = %q, want "42"`, got)
+	}
+}
+
+func TestPadEnd(t *testing.T) {
+	if got := PadEnd("42", 5, "."); got != "42..." {
+		t.Errorf(`PadEnd("42", 5, ".") = %q, want "42..."`, got)
+	}
+	if got := PadEnd("42", 5); got != "42   " {
+		t.Errorf(`PadEnd("42", 5) = %q, want "42   "`, got)
+	}
+	if got := PadEnd("x", 5, "ab"); got != "xabab" {
+		t.Errorf(`PadEnd("x", 5, "ab") = %q, want "xabab"`, got)
+	}
+}
+
 func TestLen(t *testing.T) {
 	tests := []struct {
 		v    any

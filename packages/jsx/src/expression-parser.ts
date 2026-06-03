@@ -51,6 +51,8 @@ export type ParsedExpr =
         | 'endsWith'
         | 'replace'
         | 'repeat'
+        | 'padStart'
+        | 'padEnd'
       object: ParsedExpr
       args: ParsedExpr[]
     }
@@ -245,8 +247,10 @@ const UNSUPPORTED_METHODS = new Set([
   // `repeat` is no longer here — `String.prototype.repeat(n)` lowers via
   // the `array-method` IR + `bf_repeat` (Go) / `bf->repeat` (Mojo).
   // See #1448 Tier B.
+  // `padStart` / `padEnd` are no longer here — both lower via the
+  // `array-method` IR + `bf_pad_start` / `bf_pad_end` (Go) and
+  // `bf->pad_start` / `bf->pad_end` (Mojo). See #1448 Tier B.
   'replaceAll',
-  'padStart', 'padEnd',
   'charAt', 'charCodeAt', 'codePointAt', 'normalize',
   'substring', 'substr', 'match', 'matchAll', 'search',
 ])
@@ -575,6 +579,21 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // the no-argument form. See #1448 Tier B.
       if (callee.property === 'repeat') {
         return { kind: 'array-method', method: 'repeat', object: callee.object, args }
+      }
+      // `.padStart(target, pad?)` / `.padEnd(target, pad?)` — string →
+      // string, padded to `target` length with `pad` (default a single
+      // space) repeated + truncated to fill. Go uses `bf_pad_start` /
+      // `bf_pad_end`; Mojo uses `bf->pad_start` / `bf->pad_end`. Both
+      // count length in code points (Go runes / Perl chars) so they
+      // stay byte-equal — this differs from JS's UTF-16-unit length
+      // only for astral-plane receivers, which are vanishingly rare in
+      // numeric / space padding. See #1448 Tier B.
+      // Full JS arity: `.padStart()` (no target) is `padStart(0)` → the
+      // receiver unchanged (JS coerces the missing target to 0), and a
+      // third+ argument is ignored. The adapter supplies the `0` for the
+      // no-argument form and reads only target + padString.
+      if (callee.property === 'padStart' || callee.property === 'padEnd') {
+        return { kind: 'array-method', method: callee.property, object: callee.object, args }
       }
       // `.sort(cmp)` / `.toSorted(cmp)` (#1448 Tier B). The comparator
       // is extracted into a structured `SortComparator` at parse time;

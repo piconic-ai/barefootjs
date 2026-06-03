@@ -3265,6 +3265,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const count = args.length === 0 ? '0' : emit(args[0])
         return `bf_repeat ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(count)}`
       }
+      case 'padStart':
+      case 'padEnd': {
+        // `.padStart(target, pad?)` / `.padEnd(target, pad?)` — pad to
+        // `target` runes with `pad` (default a single space, supplied
+        // by the variadic helper when the arg is absent). Full JS arity:
+        // the no-argument form is `padStart(0)` → the receiver
+        // unchanged; a third+ argument is ignored. See #1448 Tier B.
+        const fn = method === 'padStart' ? 'bf_pad_start' : 'bf_pad_end'
+        const recv = emit(object)
+        if (args.length === 0) {
+          return `${fn} ${wrapIfMultiToken(recv)} 0`
+        }
+        const target = emit(args[0])
+        if (args.length === 1) {
+          return `${fn} ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(target)}`
+        }
+        const pad = emit(args[1])
+        return `${fn} ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(target)} ${wrapIfMultiToken(pad)}`
+      }
       default: {
         const _exhaustive: never = method
         throw new Error(`Go arrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`)

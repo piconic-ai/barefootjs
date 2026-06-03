@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // FuncMap returns a template.FuncMap with all BarefootJS helper functions.
@@ -40,6 +41,8 @@ func FuncMap() template.FuncMap {
 		"bf_ends_with":   EndsWith,
 		"bf_replace":     Replace,
 		"bf_repeat":      Repeat,
+		"bf_pad_start":   PadStart,
+		"bf_pad_end":     PadEnd,
 		"bf_string":      String,
 
 		// JSON / numeric primitives — JS-compat callees registered on
@@ -567,6 +570,57 @@ func Repeat(s string, n int) string {
 		return ""
 	}
 	return strings.Repeat(s, n)
+}
+
+// padTo lowers the shared body of `String.prototype.padStart` /
+// `padEnd` (#1448 Tier B): pad `s` to `target` code points using `pad`
+// repeated and truncated to fill, prepended (atStart) or appended.
+// Length is measured in runes (not bytes) so the result matches the
+// Perl `bf->pad_*` helpers — this diverges from JS's UTF-16-unit length
+// only for astral-plane input. An empty pad, or a receiver already at
+// least `target` long, returns `s` unchanged (JS parity).
+func padTo(s string, target int, pad string, atStart bool) string {
+	if pad == "" {
+		return s
+	}
+	sLen := utf8.RuneCountInString(s)
+	if sLen >= target {
+		return s
+	}
+	need := target - sLen
+	padRunes := []rune(pad)
+	fill := make([]rune, 0, need)
+	for len(fill) < need {
+		for _, r := range padRunes {
+			if len(fill) >= need {
+				break
+			}
+			fill = append(fill, r)
+		}
+	}
+	if atStart {
+		return string(fill) + s
+	}
+	return s + string(fill)
+}
+
+// PadStart lowers `String.prototype.padStart(target, pad?)` (#1448 Tier
+// B). The pad string defaults to a single space when omitted.
+func PadStart(s string, target int, pad ...string) string {
+	p := " "
+	if len(pad) > 0 {
+		p = pad[0]
+	}
+	return padTo(s, target, p, true)
+}
+
+// PadEnd lowers `String.prototype.padEnd(target, pad?)` (#1448 Tier B).
+func PadEnd(s string, target int, pad ...string) string {
+	p := " "
+	if len(pad) > 0 {
+		p = pad[0]
+	}
+	return padTo(s, target, p, false)
 }
 
 // Join concatenates elements of a slice with sep. Accepts both
