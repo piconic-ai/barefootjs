@@ -43,7 +43,7 @@ export function Group(props: { children?: any }) { return <>{props.children}</> 
 const DIV_GROUP = `'use client'
 export function Group(props: { children?: any }) { return <div role="group">{props.children}</div> }`
 
-function reproSource(groupImport: string): string {
+function reproSource(): string {
   return `'use client'
 import { Group } from './Group'
 import { Item } from './Item'
@@ -88,7 +88,7 @@ async function setupHydration(groupSource: string): Promise<{ hydrate: () => voi
   const modules: Array<[string, string, string]> = [
     [ITEM, 'Item.tsx', 'Item'],
     [groupSource, 'Group.tsx', 'Group'],
-    [reproSource(groupSource), 'Repro.tsx', 'Repro'],
+    [reproSource(), 'Repro.tsx', 'Repro'],
   ]
   for (const [source, filename, name] of modules) {
     const file = join(dir, `${name}.mjs`)
@@ -99,7 +99,7 @@ async function setupHydration(groupSource: string): Promise<{ hydrate: () => voi
   // Real SSR HTML (Hono adapter) — same markup a server would send.
   const ssrHtml = await renderHonoComponent({
     adapter: new HonoAdapter(),
-    source: reproSource(groupSource),
+    source: reproSource(),
     components: { './Group.tsx': groupSource, './Item.tsx': ITEM },
     // Root scope must carry a `Name_` prefix so the hydration walk resolves
     // it to the registered `Repro` def (`scopeName` splits on the first `_`).
