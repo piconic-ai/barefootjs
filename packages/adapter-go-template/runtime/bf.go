@@ -76,6 +76,7 @@ func FuncMap() template.FuncMap {
 		"bf_find_last":       FindLast,
 		"bf_find_last_index": FindLastIndex,
 		"bf_sort":       Sort,
+		"bf_reduce":     Reduce,
 
 		// Comment marker (for hydration)
 		"bfComment":    Comment,
@@ -1497,6 +1498,15 @@ func getFieldValue(item any, field string) any {
 				return r
 			}
 		}
+		// All-lowercase fallback: a Go-initialism field projects as an
+		// all-caps key (`id` → `ID`), and `decapitalize("ID")` only
+		// lowers the first char (`iD`), so the JS-keyed map ("id") still
+		// misses. Try the fully-lowered key last to resolve it.
+		if lower := strings.ToLower(field); lower != field && lower != decapitalize(field) {
+			if r, ok := lookup(lower); ok {
+				return r
+			}
+		}
 		return nil
 	}
 
@@ -1528,6 +1538,78 @@ func decapitalize(s string) string {
 		return s
 	}
 	return strings.ToLower(s[:1]) + s[1:]
+}
+
+// Reduce folds an array into a scalar via the arithmetic-fold
+// catalogue (#1448 Tier C). It lowers `Array.prototype.reduce(fn, init)`
+// for the shapes `(acc, x) => acc <op> x` and `(acc, x) => acc <op> x.field`:
+//
+//	bf_reduce <items> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>"
+//
+//	op:       "+" | "*"
+//	keyKind:  "self" | "field"
+//	keyName:  "" when keyKind == "self"; capitalised struct field name
+//	          (e.g. "Duration") otherwise
+//	type:     "numeric" | "string"
+//	init:     the fold's start value — the compiler emits the *decoded*
+//	          seed, so numeric inits arrive as canonical decimal
+//	          (`1_000`/`0x10` already normalised to `1000`/`16`) that
+//	          ParseFloat accepts, and string inits arrive as escape-free
+//	          contents
+//
+// Numeric folds accumulate as float64; each projected key is read via
+// `toFloat64WithOK`, so numeric *strings* ("5" → 5) parse and
+// non-numeric values fold as 0 — matching Perl's
+// `looks_like_number ? $n : 0` so the two template adapters stay
+// byte-equal. String folds concatenate (toString per projected key,
+// matching the documented `bf->string(undef) === ""` convention). The
+// init seeds the accumulator, so an empty receiver returns the init
+// unchanged — exactly like JS `reduce(fn, init)`. Anything outside the
+// catalogue refuses at compile time (BF101 from the JSX compiler) and
+// never reaches here.
+//
+// Two documented divergences from the JS / Hono path, both rare and
+// mirroring the `bf_sort` "auto" caveat:
+//   - float64 stringification differs for sums whose binary expansion
+//     isn't exact (e.g. 0.1 + 0.2);
+//   - numeric-*string* keys fold numerically here, but JS `+`
+//     string-concatenates once an operand is a string, so
+//     numeric-string data can render differently under CSR.
+// Genuine numbers — the common SSR case — agree across all three.
+func Reduce(items any, op, keyKind, keyName, typ, init string) any {
+	v := reflect.ValueOf(items)
+	isSlice := v.Kind() == reflect.Slice || v.Kind() == reflect.Array
+
+	if typ == "string" {
+		acc := init
+		if isSlice {
+			for i := 0; i < v.Len(); i++ {
+				key := projectSortKey(v.Index(i).Interface(), keyKind, keyName)
+				acc += toString(key)
+			}
+		}
+		return acc
+	}
+
+	// numeric fold
+	acc, _ := strconv.ParseFloat(strings.TrimSpace(init), 64)
+	if isSlice {
+		for i := 0; i < v.Len(); i++ {
+			key := projectSortKey(v.Index(i).Interface(), keyKind, keyName)
+			// `toFloat64WithOK` parses numeric *strings* ("5" → 5) and
+			// returns 0 for non-numeric values — mirroring Perl's
+			// `looks_like_number ? $n : 0` so numeric-string data folds
+			// byte-equal across adapters (the same rule `bf_sort`'s
+			// "auto" compare uses). Plain `toFloat64` would zero "5".
+			n, _ := toFloat64WithOK(key)
+			if op == "*" {
+				acc *= n
+			} else {
+				acc += n
+			}
+		}
+	}
+	return acc
 }
 
 // =============================================================================

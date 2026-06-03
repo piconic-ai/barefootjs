@@ -33,7 +33,7 @@
  *     be added in one place.
  */
 
-import type { ParsedExpr, SortComparator, TemplatePart } from '../expression-parser'
+import type { ParsedExpr, SortComparator, ReduceOp, TemplatePart } from '../expression-parser'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -81,6 +81,15 @@ export type ArrayMethod =
  * has no template-level meaning.
  */
 export type SortMethod = 'sort' | 'toSorted'
+
+/**
+ * `reduce` is handled by the dedicated `reduceMethod()` dispatcher arm
+ * (#1448 Tier C) for the same reason sort is: it carries a structured
+ * `ReduceOp` (the parsed arithmetic-fold spec) rather than a
+ * `ParsedExpr[]` args list, so folding it into `arrayMethod()` would
+ * force a spec-or-args runtime check at every call site.
+ */
+export type ReduceMethod = 'reduce'
 
 export type LiteralType = 'string' | 'number' | 'boolean' | 'null'
 
@@ -140,6 +149,11 @@ export interface ParsedExprEmitter {
     comparator: SortComparator,
     emit: (e: ParsedExpr) => string,
   ): string
+  reduceMethod(
+    object: ParsedExpr,
+    reduceOp: ReduceOp,
+    emit: (e: ParsedExpr) => string,
+  ): string
   unsupported(raw: string, reason: string): string
 }
 
@@ -182,6 +196,9 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
     case 'array-method':
       if (expr.method === 'sort' || expr.method === 'toSorted') {
         return emitter.sortMethod(expr.method, expr.object, expr.comparator, emit)
+      }
+      if (expr.method === 'reduce') {
+        return emitter.reduceMethod(expr.object, expr.reduceOp, emit)
       }
       return emitter.arrayMethod(expr.method, expr.object, expr.args, emit)
     case 'unsupported':

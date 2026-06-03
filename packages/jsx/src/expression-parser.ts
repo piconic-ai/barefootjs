@@ -73,6 +73,22 @@ export type ParsedExpr =
       args: []
       comparator: SortComparator
     }
+  // `.reduce(fn, init)` (#1448 Tier C). Like sort, the reducer is
+  // extracted into a structured `ReduceOp` at parse time — the
+  // two-param arrow never reaches `args`, so adapters fold via a
+  // runtime helper instead of re-walking the callback. The accepted
+  // catalogue is the arithmetic-fold family only (`acc + key` /
+  // `acc * key`, numeric or string-concat); any other reducer body,
+  // or a missing initial value, falls through to `unsupported` so
+  // adapters surface BF101 with an @client suggestion. See
+  // `extractReduceOpFromTS` below.
+  | {
+      kind: 'array-method'
+      method: 'reduce'
+      object: ParsedExpr
+      args: []
+      reduceOp: ReduceOp
+    }
   | { kind: 'unsupported'; raw: string; reason: string }
 
 /**
@@ -132,6 +148,53 @@ export type SortComparator = {
   method: 'sort' | 'toSorted'
 }
 
+/**
+ * Structured form of a JS `.reduce((acc, item) => …, init)` call,
+ * built once at parse time and consumed by both template adapters'
+ * `reduceMethod()` emit (#1448 Tier C). The shape is intentionally
+ * finite — only the arithmetic-fold family is lowerable in a
+ * declarative template; arbitrary accumulator bodies are not. See
+ * `extractReduceOpFromTS` for the accepted catalogue.
+ */
+export type ReduceOp = {
+  // The fold operator between accumulator and per-item value. `+`
+  // covers numeric sums and (with a string init) string concatenation;
+  // `*` covers numeric products. Subtraction / division are excluded —
+  // they're order-sensitive and rarely written as a `.reduce`.
+  op: '+' | '*'
+  // What value each item contributes to the fold:
+  //   { kind: 'self' }         → `acc + item`        (primitive array)
+  //   { kind: 'field', field } → `acc + item.field`  (struct-field accessor)
+  key: { kind: 'self' } | { kind: 'field'; field: string }
+  // Numeric fold vs string concatenation. Determined by the init
+  // literal's type: a number init folds numerically; a string init
+  // (only valid with `+`) concatenates. Both template runtimes apply
+  // the same coercion so their output stays byte-equal; this can
+  // diverge from JS for floating-point sums whose decimal expansion
+  // differs by runtime (rare in SSR data — integer sums agree).
+  type: 'numeric' | 'string'
+  // Decoded initial-accumulator value (never raw source). For a numeric
+  // fold this is TypeScript's canonical decimal form (`1_000` -> `1000`,
+  // `0x10` -> `16`) so `strconv.ParseFloat` / Perl agree; for a concat
+  // fold it's the contents of a quoted string literal (only single- or
+  // double-quoted `ts.StringLiteral` seeds are accepted — template
+  // literals and escape-carrying literals are refused at parse time, so
+  // the value is an escape-free single-line string, e.g. the empty
+  // string "" or a separator like ", "). Round-trip emitters re-quote a
+  // string init via `JSON.stringify`; a numeric init re-emits as-is.
+  init: string
+  // Original JS source of the reducer body (the returned expression
+  // for block bodies). Lets the `@client` fallback ship the user's
+  // exact arrow to the JS runtime.
+  raw: string
+  // The two parameter names the user wrote (e.g. `acc`/`item`, or
+  // `sum`/`t`). Only the `@client` fallback reads them — it binds them
+  // in a synthetic `(acc, item) => raw` arrow. Server-side lowering
+  // works off `op` / `key` / `init` and ignores them.
+  paramAcc: string
+  paramItem: string
+}
+
 export type TemplatePart =
   | { type: 'string'; value: string }
   | { type: 'expression'; expr: ParsedExpr }
@@ -188,8 +251,16 @@ const UNSUPPORTED_METHODS = new Set([
   // Higher-order array methods. Seven of these (`filter`, `every`,
   // `some`, `find`, `findIndex`, `findLast`, `findLastIndex`) are
   // intercepted as `higher-order` IR before reaching this gate;
-  // `map` is intercepted as an IRLoop. The rest stay refused — see
-  // #1448 Tier C for the design questions.
+  // `map` is intercepted as an IRLoop. `reduce` stays listed here so
+  // the shapes the Tier C catalogue can't lower still refuse loudly:
+  // the `convertNode` call branch intercepts a matching
+  // `.reduce(fn, init)` into the structured `array-method` + `ReduceOp`
+  // form *before* this gate (returning early), so only the
+  // unlowerable fall-throughs (a `.reduce(fn)` with no initial value,
+  // or a `.reduce` reference passed around) reach the gate and refuse.
+  // A 2-arg call whose reducer/init shape is off-catalogue returns an
+  // explicit `unsupported` from the call branch with a richer message.
+  // The rest stay refused — see #1448 Tier C for the design questions.
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap', 'flat',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
@@ -633,6 +704,41 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
             `Wrap the call in /* @client */ to evaluate at hydration.`,
         }
       }
+
+      // `.reduce(fn, init)` (#1448 Tier C). The reducer + init are
+      // extracted into a structured `ReduceOp` at parse time; the
+      // two-param arrow never reaches the standard convertNode path
+      // (which refuses it), so we read the raw TS AST. Only the
+      // arithmetic-fold catalogue lowers — anything else, or a missing
+      // init, falls through to `unsupported` (BF101 + @client hint).
+      if (callee.property === 'reduce' && node.arguments.length === 2) {
+        const reduceOp = extractReduceOpFromTS(node.arguments[0], node.arguments[1])
+        if (reduceOp) {
+          return {
+            kind: 'array-method',
+            method: 'reduce',
+            object: callee.object,
+            args: [],
+            reduceOp,
+          }
+        }
+        return {
+          kind: 'unsupported',
+          raw,
+          reason:
+            `Reduce shape not supported. Accepted (arithmetic fold, explicit init):\n` +
+            `  arr.reduce((acc, x) => acc + x, 0)\n` +
+            `  arr.reduce((acc, x) => acc + x.field, 0)\n` +
+            `  arr.reduce((acc, x) => acc * x.field, 1)\n` +
+            `  arr.reduce((acc, x) => acc + x.field, '')   (string concat)\n` +
+            `The accumulator must be the left operand and the initial ` +
+            `value a number / string literal. ` +
+            `Wrap the call in /* @client */ to evaluate at hydration.`,
+        }
+      }
+      // A `.reduce(fn)` without an initial value can't be lowered: JS
+      // throws on an empty array, which a template can't mirror. Fall
+      // through to the BF101 gate with the @client escape hatch.
     }
 
     return { kind: 'call', callee, args }
@@ -1220,6 +1326,148 @@ function classifySortOperand(
 }
 
 /**
+ * Recover a `ReduceOp` from the `(reducer, init)` args of
+ * `.reduce(...)` (#1448 Tier C). Operates on the raw TS AST because the
+ * standard `convertNode` arrow-fn path rejects two-param arrows.
+ *
+ * The accepted catalogue is intentionally finite — only the
+ * arithmetic-fold family lowers to a declarative template:
+ *
+ *   (acc, x) => acc + x          → self,  numeric (init: number)
+ *   (acc, x) => acc + x.field    → field, numeric (init: number)
+ *   (acc, x) => acc * x          → self,  numeric (init: number)
+ *   (acc, x) => acc * x.field    → field, numeric (init: number)
+ *   (acc, x) => acc + x          → self,  string  (init: string → concat)
+ *   (acc, x) => acc + x.field    → field, string  (init: string → concat)
+ *
+ * The accumulator must be the binary expression's *left* operand
+ * (canonical reduce form; reversed operands change string-concat
+ * order), the per-item value must be the item param itself or a
+ * single non-computed field access on it, and the init must be a
+ * number or string literal (negative numbers via prefix `-` allowed).
+ * String concatenation requires `+`. Block bodies reduce to a single
+ * `return`, mirroring the sort extractor. Anything else returns null
+ * and the caller emits `unsupported` (BF101).
+ */
+export function extractReduceOpFromTS(
+  reducerNode: ts.Node,
+  initNode: ts.Node,
+): ReduceOp | null {
+  const init = classifyReduceInit(initNode)
+  if (!init) return null
+
+  if (!ts.isArrowFunction(reducerNode) && !ts.isFunctionExpression(reducerNode)) return null
+  // Exactly `(acc, item)` — the index / array reducer params can't be
+  // expressed in a template fold, so refuse the 3- / 4-param forms.
+  if (reducerNode.parameters.length !== 2) return null
+  const pAcc = reducerNode.parameters[0]
+  const pItem = reducerNode.parameters[1]
+  if (!ts.isIdentifier(pAcc.name) || !ts.isIdentifier(pItem.name)) return null
+  const paramAcc = pAcc.name.text
+  const paramItem = pItem.name.text
+
+  // Resolve the reducer body: expression-bodied arrow directly; block
+  // bodies (arrow `=> { … }` and function expressions) must reduce to
+  // exactly one `return <expr>;` — mirrors `extractSortComparatorFromTS`.
+  let body: ts.Expression
+  if (ts.isArrowFunction(reducerNode) && !ts.isBlock(reducerNode.body)) {
+    body = reducerNode.body
+  } else {
+    const block = reducerNode.body as ts.Block
+    const stmts = block.statements
+    if (stmts.length !== 1 || !ts.isReturnStatement(stmts[0]) || !stmts[0].expression) return null
+    body = stmts[0].expression
+  }
+  const raw = body.getText()
+
+  const expr = unwrapParens(body)
+  if (!ts.isBinaryExpression(expr)) return null
+  let op: '+' | '*'
+  if (expr.operatorToken.kind === ts.SyntaxKind.PlusToken) op = '+'
+  else if (expr.operatorToken.kind === ts.SyntaxKind.AsteriskToken) op = '*'
+  else return null
+
+  // The accumulator must be the left operand (`acc + x`, not `x + acc`).
+  const left = unwrapParens(expr.left)
+  if (!ts.isIdentifier(left) || left.text !== paramAcc) return null
+
+  const key = classifyReduceKey(unwrapParens(expr.right), paramItem)
+  if (!key) return null
+
+  // String concatenation only makes sense with `+`.
+  const type: 'numeric' | 'string' = init.type
+  if (type === 'string' && op !== '+') return null
+
+  return { op, key, type, init: init.value, raw, paramAcc, paramItem }
+}
+
+/**
+ * Classify a reduce per-item operand into a `ReduceOp` key. Accepts
+ * the bare item param (`x` → self) and a single non-computed field
+ * access (`x.field` → field); returns null for anything deeper
+ * (`x.a.b`, `x[k]`, a literal, a call, …).
+ */
+function classifyReduceKey(
+  expr: ts.Expression,
+  paramItem: string,
+): { kind: 'self' } | { kind: 'field'; field: string } | null {
+  if (ts.isIdentifier(expr)) {
+    return expr.text === paramItem ? { kind: 'self' } : null
+  }
+  if (ts.isPropertyAccessExpression(expr) && ts.isIdentifier(expr.expression)) {
+    if (expr.expression.text === paramItem) return { kind: 'field', field: expr.name.text }
+  }
+  return null
+}
+
+/**
+ * Classify a reduce initial-value node into the *decoded* fold seed.
+ * Accepts a numeric literal (optionally prefixed with `-`) and a string
+ * literal; returns `{ type, value }` where `value` is the canonical
+ * value — never the raw source text. Any other init (a variable, a
+ * call, an object) returns null — the fold start value must be
+ * statically known.
+ *
+ * Numeric: `node.text` is TypeScript's canonical decimal form, so
+ * separators and non-decimal radices fold uniformly across adapters
+ * (`1_000` → `1000`, `0x10` → `16`, `1e3` → `1000`). The Go runtime's
+ * `strconv.ParseFloat` and Perl both accept that decimal string —
+ * passing the raw source (`0x10`, `1_000`) would silently fold to 0 on
+ * Go while Perl accepted it (#1728 review).
+ *
+ * String: `node.text` is the *unescaped* contents. To keep the three
+ * adapters byte-equal without teaching each one to re-decode JS escapes
+ * (`\n`, `\u{…}`, `\\`, an escaped quote), we refuse any string literal
+ * whose contents differ from its raw inner source — i.e. any literal
+ * carrying an escape sequence. Accepted seeds are therefore escape-free
+ * single-line strings (`''`, `', '`, `'-'`), which embed safely in both
+ * the Go-template `"…"` operand and the Perl single-quoted literal. The
+ * realistic concat seed (`''`) is unaffected; richer seeds fall back to
+ * the `@client` escape hatch.
+ */
+function classifyReduceInit(
+  node: ts.Node,
+): { type: 'numeric' | 'string'; value: string } | null {
+  // Unwrap redundant parens (`(0)` / `(-1)`) so they classify like the
+  // bare literal — matches the extractor's `unwrapParens` use elsewhere.
+  let n: ts.Node = unwrapParens(node as ts.Expression)
+  // `-1` parses as a prefix-minus over a numeric literal.
+  if (ts.isPrefixUnaryExpression(n) && n.operator === ts.SyntaxKind.MinusToken) {
+    if (ts.isNumericLiteral(n.operand)) return { type: 'numeric', value: '-' + n.operand.text }
+    return null
+  }
+  if (ts.isNumericLiteral(n)) return { type: 'numeric', value: n.text }
+  if (ts.isStringLiteral(n)) {
+    // Refuse literals carrying escapes so the decoded value equals its
+    // raw inner source (and thus embeds safely + byte-equal everywhere).
+    const raw = n.getText()
+    if (raw.length < 2 || raw.slice(1, -1) !== n.text) return null
+    return { type: 'string', value: n.text }
+  }
+  return null
+}
+
+/**
  * Per-binding entry stored in `fieldMap`: the dotted path from the
  * synthetic param down to the field, plus an optional default
  * ParsedExpr captured from `({ field = <default> }) => …` (#1531).
@@ -1767,6 +2015,12 @@ function substituteDestructuredFields(
           // enclosing destructure). Preserve verbatim.
           return { kind: 'array-method', method: e.method, object: walk(e.object), args: [], comparator: e.comparator }
         }
+        if (e.method === 'reduce') {
+          // `ReduceOp` is a structured value referencing its own
+          // paramAcc / paramItem, never the enclosing destructure —
+          // preserve verbatim, same as the sort comparator above.
+          return { kind: 'array-method', method: e.method, object: walk(e.object), args: [], reduceOp: e.reduceOp }
+        }
         return { kind: 'array-method', method: e.method, object: walk(e.object), args: e.args.map(walk) }
       case 'literal':
       case 'unsupported':
@@ -2233,6 +2487,13 @@ export function exprToString(expr: ParsedExpr): string {
         const { paramA, paramB, raw } = expr.comparator
         return `${exprToString(expr.object)}.${expr.method}((${paramA},${paramB}) => ${raw})`
       }
+      if (expr.method === 'reduce') {
+        const { paramAcc, paramItem, raw, type, init } = expr.reduceOp
+        // `init` is the decoded value: re-quote a string seed, re-emit a
+        // numeric seed as-is (it's already a valid number literal).
+        const initSrc = type === 'string' ? JSON.stringify(init) : init
+        return `${exprToString(expr.object)}.reduce((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
+      }
       return `${exprToString(expr.object)}.${expr.method}(${expr.args.map(exprToString).join(', ')})`
     case 'unsupported':
       return `[UNSUPPORTED: ${expr.raw}]`
@@ -2294,6 +2555,16 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
         // valid JS — `raw` references the user's names verbatim.
         const { paramA, paramB, raw } = expr.comparator
         return `${stringifyParsedExpr(expr.object)}.${expr.method}((${paramA},${paramB}) => ${raw})`
+      }
+      if (expr.method === 'reduce') {
+        // Round-trip the user's param names + init so downstream
+        // re-parsers (the CSR / Hono JS path, templatePrimitive
+        // substitution) see valid JS — `raw` references the names
+        // verbatim. `init` is the decoded value: re-quote a string
+        // seed via JSON.stringify, re-emit a numeric seed as-is.
+        const { paramAcc, paramItem, raw, type, init } = expr.reduceOp
+        const initSrc = type === 'string' ? JSON.stringify(init) : init
+        return `${stringifyParsedExpr(expr.object)}.reduce((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
       }
       return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.args.map(stringifyParsedExpr).join(', ')})`
     case 'unsupported':

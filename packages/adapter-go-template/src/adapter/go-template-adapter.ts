@@ -27,6 +27,7 @@ import type {
   ParsedExpr,
   ParsedStatement,
   SortComparator,
+  ReduceOp,
   TemplatePart,
   IRIfStatement,
   IRProvider,
@@ -208,8 +209,51 @@ function emitBfSort(recv: string, c: SortComparator): string {
   return `bf_sort ${wrapIfMultiToken(recv)} ${groups.join(' ')}`
 }
 
+/**
+ * Emit the `bf_reduce` call for a `.reduce(fn, init)` arithmetic fold
+ * (#1448 Tier C):
+ *
+ *   bf_reduce <recv> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>"
+ *
+ *   op:       "+" | "*"
+ *   keyKind:  "self" | "field"
+ *   keyName:  "" when keyKind=self; capitalised field name otherwise
+ *             (matches the Go struct-field convention, mirroring
+ *             `emitBfSort`)
+ *   type:     "numeric" | "string"
+ *   init:     the fold's start value — the numeric literal's text for a
+ *             numeric fold, or the string literal's contents for a
+ *             concat fold
+ *
+ * The runtime folds `init <op> key(item)` left-to-right and returns the
+ * accumulated value (float64 for numeric, string for concat).
+ */
+function emitBfReduce(recv: string, op: ReduceOp): string {
+  const keyName = op.key.kind === 'field' ? capitalize(op.key.field) : ''
+  // `op.init` is already the decoded seed value (canonical decimal for
+  // numeric folds — `strconv.ParseFloat`-safe; escape-free contents for
+  // concat folds). Pass it as a quoted operand the runtime interprets
+  // by `type`.
+  return `bf_reduce ${wrapIfMultiToken(recv)} "${op.op}" "${op.key.kind}" "${keyName}" "${op.type}" "${escapeGoString(op.init)}"`
+}
+
+/** Escape a value for embedding in a Go-template double-quoted string. */
+function escapeGoString(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
 function capitalize(s: string): string {
-  return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1)
+  if (s.length === 0) return s
+  // Match the adapter's struct-field naming (`capitalizeFieldName`):
+  // a whole-word Go initialism uppercases entirely (`id` → `ID`,
+  // `url` → `URL`) so the `bf_sort` / `bf_reduce` reflect lookup
+  // resolves the generated exported field instead of silently folding
+  // a zero value. The class is fully initialised by the time any emit
+  // helper runs, so referencing the static set here is safe.
+  if (GoTemplateAdapter.GO_INITIALISMS.has(s.toLowerCase())) {
+    return s.toUpperCase()
+  }
+  return s[0].toUpperCase() + s.slice(1)
 }
 
 /**
@@ -2579,7 +2623,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private static GO_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
 
   /** Go common initialisms that should be fully uppercased (https://go.dev/wiki/CodeReviewComments#initialisms) */
-  private static GO_INITIALISMS = new Set([
+  // Not `private`: the module-level `capitalize` helper reads this so
+  // `bf_sort` / `bf_reduce` field projection matches `capitalizeFieldName`.
+  static GO_INITIALISMS = new Set([
     'id', 'url', 'http', 'https', 'api', 'json', 'xml', 'html', 'css', 'sql',
     'ip', 'tcp', 'udp', 'dns', 'ssh', 'tls', 'ssl', 'uri', 'uid', 'uuid',
     'ascii', 'utf8', 'eof', 'grpc', 'rpc', 'cpu', 'gpu', 'ram', 'os',
@@ -3309,6 +3355,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // flavour warn?) but is unused today.
     void method
     return emitBfSort(emit(object), comparator)
+  }
+
+  reduceMethod(
+    object: ParsedExpr,
+    reduceOp: ReduceOp,
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    // `.reduce(fn, init)` arithmetic-fold lowering (#1448 Tier C). The
+    // structured `ReduceOp` (op / key / type / init) feeds the variadic
+    // `bf_reduce` runtime helper, which folds the receiver into a
+    // scalar.
+    return emitBfReduce(emit(object), reduceOp)
   }
 
   unsupported(raw: string, _reason: string): string {

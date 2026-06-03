@@ -743,6 +743,16 @@ error[BF021]: Expression cannot be compiled to marked template: Sort comparator 
 - `filter(...).sort(...).map(...)` → filter + sort chaining
 - `sort(...).filter(...).map(...)` → sort + filter chaining
 
+**Reduce folds (refused with BF101, not BF021)**: unlike the filter/sort shapes above (which surface BF021), an off-catalogue `.reduce` refuses at the adapter layer with **BF101** — the same gate the other unsupported array methods use. `.reduce(fn, init)` is parsed into a structured `ReduceOp` (`{ op, key, type, init }`) and lowered via `bf_reduce` (Go) / `bf->reduce` (Mojo). The catalogue is the arithmetic-fold family only — anything outside refuses with BF101 (`/* @client */` is the escape hatch):
+
+- `arr.reduce((acc, x) => acc + x, 0)` → numeric sum over self
+- `arr.reduce((acc, x) => acc + x.field, 0)` → numeric sum over a struct field
+- `arr.reduce((acc, x) => acc * x.field, 1)` → numeric product
+- `arr.reduce((acc, x) => acc + x.field, '')` → string concatenation (string init flips the `+` fold to concat)
+- single-`return` block body (`(acc, x) => { return acc + x.n }`) — unwrapped to the returned expression
+
+The accumulator must be the binary expression's left operand (`acc + x`, not `x + acc`), the per-item operand must be the item param or a single non-computed field access on it, and the init must be a number or string literal (negative numbers via prefix `-` allowed). Subtraction / division, deep field access (`x.a.b`), object-building reducers (`{...acc, [x.id]: x}`), the 3- / 4-param reducer form, and `.reduce(fn)` without an initial value all refuse with BF101. `.reduceRight` stays refused entirely. Two narrow divergences from the JS / CSR path (both mirroring the `bf_sort` "auto" caveat): float stringification differs for inexact binary fractions (e.g. 0.1 + 0.2), and numeric-*string* keys fold numerically on the template adapters while JS `+` string-concatenates them. Genuine numbers — the common SSR case — agree across all three adapters.
+
 **Suppression with `@client`**: If the developer intentionally wants client-only evaluation, add `/* @client */` before the expression. This suppresses the BF021 error:
 
 ```tsx

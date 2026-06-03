@@ -2318,6 +2318,27 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
 // now listed in `UNSUPPORTED_METHODS`, so `isSupported` refuses them
 // and `convertExpressionToGo` records BF101 — the same treatment the
 // unsupported array methods already got. These tests pin that parity.
+describe('GoTemplateAdapter - #1448 Tier C reduce field capitalisation', () => {
+  // #1728 review: `bf_reduce`'s projected field name must use the same
+  // initialism-aware capitalisation the adapter applies when generating
+  // struct fields (`capitalizeFieldName`), or the runtime reflect lookup
+  // misses the exported field (`id` → struct `ID`, not `Id`) and folds a
+  // zero value. Pin the emitted key so a regression to plain
+  // first-letter capitalisation fails here.
+  test('reduce over an initialism field emits the Go-initialism key (ID, not Id)', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+function C({ items }: { items: { id: number }[] }) {
+  return <div>{items.reduce((sum, x) => sum + x.id, 0)}</div>
+}
+export { C }
+`, adapter)
+    const template = adapter.generate(ir).template ?? ''
+    expect(template).toContain('bf_reduce .Items "+" "field" "ID" "numeric" "0"')
+    expect(template).not.toContain('"Id"')
+  })
+})
+
 describe('GoTemplateAdapter - #1448 @client escape hatch (unsupported methods)', () => {
   // Compile a single expression placed in `<div>` text position, with
   // and without the directive, and return both the build errors and
@@ -2363,8 +2384,11 @@ export function C() {
   // Go fragment that must NOT survive into the template (the pre-fix
   // silent-footgun output for the string rows).
   const unsupported: Array<{ name: string; expr: string; badEmit: string }> = [
-    // Tier C array methods.
-    { name: 'reduce', expr: `items().reduce((a, b) => a + b.n, 0)`, badEmit: '.Reduce' },
+    // Tier C array methods. The arithmetic-fold `.reduce(fn, init)`
+    // catalogue now lowers (pinned in the positive reduce-* fixtures);
+    // the no-initial-value form stays refused — JS throws on an empty
+    // array there, which a template can't mirror.
+    { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '.Reduce' },
     { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '.FlatMap' },
     { name: 'flat', expr: `items().flat()`, badEmit: '.Flat' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
