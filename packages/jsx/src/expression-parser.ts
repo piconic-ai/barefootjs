@@ -84,7 +84,7 @@ export type ParsedExpr =
   // `extractReduceOpFromTS` below.
   | {
       kind: 'array-method'
-      method: 'reduce'
+      method: 'reduce' | 'reduceRight'
       object: ParsedExpr
       args: []
       reduceOp: ReduceOp
@@ -251,16 +251,17 @@ const UNSUPPORTED_METHODS = new Set([
   // Higher-order array methods. Seven of these (`filter`, `every`,
   // `some`, `find`, `findIndex`, `findLast`, `findLastIndex`) are
   // intercepted as `higher-order` IR before reaching this gate;
-  // `map` is intercepted as an IRLoop. `reduce` stays listed here so
-  // the shapes the Tier C catalogue can't lower still refuse loudly:
-  // the `convertNode` call branch intercepts a matching
-  // `.reduce(fn, init)` into the structured `array-method` + `ReduceOp`
-  // form *before* this gate (returning early), so only the
-  // unlowerable fall-throughs (a `.reduce(fn)` with no initial value,
-  // or a `.reduce` reference passed around) reach the gate and refuse.
-  // A 2-arg call whose reducer/init shape is off-catalogue returns an
-  // explicit `unsupported` from the call branch with a richer message.
-  // The rest stay refused — see #1448 Tier C for the design questions.
+  // `map` is intercepted as an IRLoop. `reduce` / `reduceRight` stay
+  // listed here so the shapes the Tier C catalogue can't lower still
+  // refuse loudly: the `convertNode` call branch intercepts a matching
+  // `.reduce(fn, init)` / `.reduceRight(fn, init)` into the structured
+  // `array-method` + `ReduceOp` form *before* this gate (returning
+  // early), so only the unlowerable fall-throughs (a `.reduce(fn)` with
+  // no initial value, or a bare method reference) reach the gate and
+  // refuse. A 2-arg call whose reducer/init shape is off-catalogue
+  // returns an explicit `unsupported` from the call branch with a richer
+  // message. The rest stay refused — see #1448 Tier C for the design
+  // questions.
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap', 'flat',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
@@ -705,32 +706,39 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
         }
       }
 
-      // `.reduce(fn, init)` (#1448 Tier C). The reducer + init are
-      // extracted into a structured `ReduceOp` at parse time; the
-      // two-param arrow never reaches the standard convertNode path
-      // (which refuses it), so we read the raw TS AST. Only the
-      // arithmetic-fold catalogue lowers — anything else, or a missing
-      // init, falls through to `unsupported` (BF101 + @client hint).
-      if (callee.property === 'reduce' && node.arguments.length === 2) {
+      // `.reduce(fn, init)` / `.reduceRight(fn, init)` (#1448 Tier C).
+      // The reducer + init are extracted into a structured `ReduceOp` at
+      // parse time; the two-param arrow never reaches the standard
+      // convertNode path (which refuses it), so we read the raw TS AST.
+      // Only the arithmetic-fold catalogue lowers — anything else, or a
+      // missing init, falls through to `unsupported` (BF101 + @client
+      // hint). `reduceRight` shares the catalogue; the method name is
+      // preserved so adapters fold right-to-left (only observable for
+      // string concatenation — numeric sum / product are commutative).
+      if (
+        (callee.property === 'reduce' || callee.property === 'reduceRight') &&
+        node.arguments.length === 2
+      ) {
         const reduceOp = extractReduceOpFromTS(node.arguments[0], node.arguments[1])
         if (reduceOp) {
           return {
             kind: 'array-method',
-            method: 'reduce',
+            method: callee.property,
             object: callee.object,
             args: [],
             reduceOp,
           }
         }
+        const m = callee.property
         return {
           kind: 'unsupported',
           raw,
           reason:
             `Reduce shape not supported. Accepted (arithmetic fold, explicit init):\n` +
-            `  arr.reduce((acc, x) => acc + x, 0)\n` +
-            `  arr.reduce((acc, x) => acc + x.field, 0)\n` +
-            `  arr.reduce((acc, x) => acc * x.field, 1)\n` +
-            `  arr.reduce((acc, x) => acc + x.field, '')   (string concat)\n` +
+            `  arr.${m}((acc, x) => acc + x, 0)\n` +
+            `  arr.${m}((acc, x) => acc + x.field, 0)\n` +
+            `  arr.${m}((acc, x) => acc * x.field, 1)\n` +
+            `  arr.${m}((acc, x) => acc + x.field, '')   (string concat)\n` +
             `The accumulator must be the left operand and the initial ` +
             `value a number / string literal. ` +
             `Wrap the call in /* @client */ to evaluate at hydration.`,
@@ -2015,7 +2023,7 @@ function substituteDestructuredFields(
           // enclosing destructure). Preserve verbatim.
           return { kind: 'array-method', method: e.method, object: walk(e.object), args: [], comparator: e.comparator }
         }
-        if (e.method === 'reduce') {
+        if (e.method === 'reduce' || e.method === 'reduceRight') {
           // `ReduceOp` is a structured value referencing its own
           // paramAcc / paramItem, never the enclosing destructure —
           // preserve verbatim, same as the sort comparator above.
@@ -2487,12 +2495,12 @@ export function exprToString(expr: ParsedExpr): string {
         const { paramA, paramB, raw } = expr.comparator
         return `${exprToString(expr.object)}.${expr.method}((${paramA},${paramB}) => ${raw})`
       }
-      if (expr.method === 'reduce') {
+      if (expr.method === 'reduce' || expr.method === 'reduceRight') {
         const { paramAcc, paramItem, raw, type, init } = expr.reduceOp
         // `init` is the decoded value: re-quote a string seed, re-emit a
         // numeric seed as-is (it's already a valid number literal).
         const initSrc = type === 'string' ? JSON.stringify(init) : init
-        return `${exprToString(expr.object)}.reduce((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
+        return `${exprToString(expr.object)}.${expr.method}((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
       }
       return `${exprToString(expr.object)}.${expr.method}(${expr.args.map(exprToString).join(', ')})`
     case 'unsupported':
@@ -2556,7 +2564,7 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
         const { paramA, paramB, raw } = expr.comparator
         return `${stringifyParsedExpr(expr.object)}.${expr.method}((${paramA},${paramB}) => ${raw})`
       }
-      if (expr.method === 'reduce') {
+      if (expr.method === 'reduce' || expr.method === 'reduceRight') {
         // Round-trip the user's param names + init so downstream
         // re-parsers (the CSR / Hono JS path, templatePrimitive
         // substitution) see valid JS — `raw` references the names
@@ -2564,7 +2572,7 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
         // seed via JSON.stringify, re-emit a numeric seed as-is.
         const { paramAcc, paramItem, raw, type, init } = expr.reduceOp
         const initSrc = type === 'string' ? JSON.stringify(init) : init
-        return `${stringifyParsedExpr(expr.object)}.reduce((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
+        return `${stringifyParsedExpr(expr.object)}.${expr.method}((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
       }
       return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.args.map(stringifyParsedExpr).join(', ')})`
     case 'unsupported':

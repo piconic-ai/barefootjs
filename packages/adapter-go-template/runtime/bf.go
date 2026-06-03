@@ -1542,9 +1542,13 @@ func decapitalize(s string) string {
 
 // Reduce folds an array into a scalar via the arithmetic-fold
 // catalogue (#1448 Tier C). It lowers `Array.prototype.reduce(fn, init)`
-// for the shapes `(acc, x) => acc <op> x` and `(acc, x) => acc <op> x.field`:
+// and `Array.prototype.reduceRight(fn, init)` for the shapes
+// `(acc, x) => acc <op> x` and `(acc, x) => acc <op> x.field`:
 //
-//	bf_reduce <items> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>"
+//	bf_reduce <items> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>" "<direction>"
+//
+//	direction: "left" (reduce) | "right" (reduceRight). Only changes the
+//	           result for string concatenation; numeric folds commute.
 //
 //	op:       "+" | "*"
 //	keyKind:  "self" | "field"
@@ -1576,14 +1580,26 @@ func decapitalize(s string) string {
 //     string-concatenates once an operand is a string, so
 //     numeric-string data can render differently under CSR.
 // Genuine numbers — the common SSR case — agree across all three.
-func Reduce(items any, op, keyKind, keyName, typ, init string) any {
+func Reduce(items any, op, keyKind, keyName, typ, init, direction string) any {
 	v := reflect.ValueOf(items)
 	isSlice := v.Kind() == reflect.Slice || v.Kind() == reflect.Array
+
+	// `direction == "right"` (reduceRight) folds right-to-left. Only
+	// observable for string concatenation — numeric sum / product are
+	// commutative, so the order doesn't change the result there. Build a
+	// start/stop/step triple so both folds share one loop shape.
+	start, stop, step := 0, 0, 1
+	if isSlice {
+		stop = v.Len()
+		if direction == "right" {
+			start, stop, step = v.Len()-1, -1, -1
+		}
+	}
 
 	if typ == "string" {
 		acc := init
 		if isSlice {
-			for i := 0; i < v.Len(); i++ {
+			for i := start; i != stop; i += step {
 				key := projectSortKey(v.Index(i).Interface(), keyKind, keyName)
 				acc += toString(key)
 			}
@@ -1594,7 +1610,7 @@ func Reduce(items any, op, keyKind, keyName, typ, init string) any {
 	// numeric fold
 	acc, _ := strconv.ParseFloat(strings.TrimSpace(init), 64)
 	if isSlice {
-		for i := 0; i < v.Len(); i++ {
+		for i := start; i != stop; i += step {
 			key := projectSortKey(v.Index(i).Interface(), keyKind, keyName)
 			// `toFloat64WithOK` parses numeric *strings* ("5" → 5) and
 			// returns 0 for non-numeric values — mirroring Perl's

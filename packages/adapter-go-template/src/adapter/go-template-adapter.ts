@@ -213,28 +213,33 @@ function emitBfSort(recv: string, c: SortComparator): string {
  * Emit the `bf_reduce` call for a `.reduce(fn, init)` arithmetic fold
  * (#1448 Tier C):
  *
- *   bf_reduce <recv> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>"
+ *   bf_reduce <recv> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>" "<direction>"
  *
- *   op:       "+" | "*"
- *   keyKind:  "self" | "field"
- *   keyName:  "" when keyKind=self; capitalised field name otherwise
- *             (matches the Go struct-field convention, mirroring
- *             `emitBfSort`)
- *   type:     "numeric" | "string"
- *   init:     the fold's start value — the numeric literal's text for a
- *             numeric fold, or the string literal's contents for a
- *             concat fold
+ *   op:        "+" | "*"
+ *   keyKind:   "self" | "field"
+ *   keyName:   "" when keyKind=self; capitalised field name otherwise
+ *              (matches the Go struct-field convention, mirroring
+ *              `emitBfSort`)
+ *   type:      "numeric" | "string"
+ *   init:      the fold's start value — the numeric literal's text for a
+ *              numeric fold, or the string literal's contents for a
+ *              concat fold
+ *   direction: "left" (reduce) | "right" (reduceRight)
  *
- * The runtime folds `init <op> key(item)` left-to-right and returns the
- * accumulated value (float64 for numeric, string for concat).
+ * The runtime folds `init <op> key(item)` in `direction` order and
+ * returns the accumulated value (float64 for numeric, string for
+ * concat). The order is only observable for string concat — numeric
+ * sum / product commute.
  */
-function emitBfReduce(recv: string, op: ReduceOp): string {
+function emitBfReduce(recv: string, op: ReduceOp, direction: 'left' | 'right'): string {
   const keyName = op.key.kind === 'field' ? capitalize(op.key.field) : ''
   // `op.init` is already the decoded seed value (canonical decimal for
   // numeric folds — `strconv.ParseFloat`-safe; escape-free contents for
   // concat folds). Pass it as a quoted operand the runtime interprets
-  // by `type`.
-  return `bf_reduce ${wrapIfMultiToken(recv)} "${op.op}" "${op.key.kind}" "${keyName}" "${op.type}" "${escapeGoString(op.init)}"`
+  // by `type`. `direction` is "left" (reduce) or "right" (reduceRight)
+  // — only observable for string concatenation; numeric folds are
+  // commutative.
+  return `bf_reduce ${wrapIfMultiToken(recv)} "${op.op}" "${op.key.kind}" "${keyName}" "${op.type}" "${escapeGoString(op.init)}" "${direction}"`
 }
 
 /** Escape a value for embedding in a Go-template double-quoted string. */
@@ -3358,15 +3363,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   reduceMethod(
+    method: 'reduce' | 'reduceRight',
     object: ParsedExpr,
     reduceOp: ReduceOp,
     emit: (e: ParsedExpr) => string,
   ): string {
-    // `.reduce(fn, init)` arithmetic-fold lowering (#1448 Tier C). The
-    // structured `ReduceOp` (op / key / type / init) feeds the variadic
-    // `bf_reduce` runtime helper, which folds the receiver into a
-    // scalar.
-    return emitBfReduce(emit(object), reduceOp)
+    // `.reduce(fn, init)` / `.reduceRight(fn, init)` arithmetic-fold
+    // lowering (#1448 Tier C). The structured `ReduceOp` (op / key /
+    // type / init) plus the fold direction feed the `bf_reduce` runtime
+    // helper, which folds the receiver into a scalar.
+    const direction = method === 'reduceRight' ? 'right' : 'left'
+    return emitBfReduce(emit(object), reduceOp, direction)
   }
 
   unsupported(raw: string, _reason: string): string {
