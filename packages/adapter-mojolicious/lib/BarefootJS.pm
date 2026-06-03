@@ -819,7 +819,10 @@ sub reduce ($self, $recv, $opts = {}) {
     my $acc = $opts->{init} // 0;
     for my $item (@items) {
         my $n = $project->($item);
-        $n = 0 unless looks_like_number($n);
+        # Guard `defined` before `looks_like_number` so a missing field
+        # (undef) folds as 0 without an "uninitialized value" warning
+        # under `use warnings` — matching the `$av // ''` style `sort` uses.
+        $n = 0 unless defined $n && looks_like_number($n);
         $op eq '*' ? ($acc *= $n) : ($acc += $n);
     }
     return $acc;

@@ -1551,9 +1551,11 @@ function renderReduceMethod(recv: string, op: ReduceOp): string {
       : `key_kind => 'field', key => '${op.key.field}'`
   // `op.init` is the decoded seed value. A numeric seed is already a
   // canonical decimal literal Perl reads directly; a concat seed is the
-  // escape-free string contents, embedded in a single-quoted Perl
-  // literal (the `\` / `'` escapes are defensive — accepted seeds carry
-  // neither, since escape-bearing literals are refused at parse time).
+  // string contents, embedded in a single-quoted Perl literal. The `'`
+  // escape is REQUIRED: a seed decoded from a double-quoted JS literal
+  // (e.g. `"a'b"`) is escape-free yet contains an apostrophe. A literal
+  // backslash can't occur (it would need a `\\` escape, which the parser
+  // refuses), but escaping it too keeps this self-contained.
   const init =
     op.type === 'string'
       ? `'${op.init.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`

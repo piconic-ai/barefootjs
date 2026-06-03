@@ -78,6 +78,30 @@ describe('reduce() arithmetic-fold catalogue', () => {
     }
   })
 
+  test('parenthesized numeric init is unwrapped and accepted', () => {
+    for (const [src, expected] of [
+      ['(0)', '0'],
+      ['(-1)', '-1'],
+    ] as const) {
+      const r = parseExpression(`nums.reduce((a, b) => a + b, ${src})`)
+      expect(r.kind).toBe('array-method')
+      if (r.kind === 'array-method' && r.method === 'reduce') {
+        expect(r.reduceOp.init).toBe(expected)
+      }
+    }
+  })
+
+  test('an escape-free seed containing an apostrophe is accepted (decoded contents kept)', () => {
+    // `"a'b"` is escape-free (decoded === raw inner), so it's accepted;
+    // the decoded value carries the apostrophe, which the Mojo emit
+    // single-quote-escapes.
+    const r = parseExpression(`items.reduce((acc, x) => acc + x.l, "a'b")`)
+    expect(r.kind).toBe('array-method')
+    if (r.kind === 'array-method' && r.method === 'reduce') {
+      expect(r.reduceOp.init).toBe("a'b")
+    }
+  })
+
   test('single-return block body unwraps to the fold expression', () => {
     const r = parseExpression('items.reduce((sum, t) => { return sum + t.n }, 0)')
     expect(r.kind).toBe('array-method')

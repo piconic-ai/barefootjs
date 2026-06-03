@@ -1448,7 +1448,9 @@ function classifyReduceKey(
 function classifyReduceInit(
   node: ts.Node,
 ): { type: 'numeric' | 'string'; value: string } | null {
-  let n: ts.Node = node
+  // Unwrap redundant parens (`(0)` / `(-1)`) so they classify like the
+  // bare literal — matches the extractor's `unwrapParens` use elsewhere.
+  let n: ts.Node = unwrapParens(node as ts.Expression)
   // `-1` parses as a prefix-minus over a numeric literal.
   if (ts.isPrefixUnaryExpression(n) && n.operator === ts.SyntaxKind.MinusToken) {
     if (ts.isNumericLiteral(n.operand)) return { type: 'numeric', value: '-' + n.operand.text }
