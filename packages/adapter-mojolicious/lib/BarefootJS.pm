@@ -782,6 +782,49 @@ sub _compare_sort_key ($av, $bv, $compare_type) {
     return ($av // 0) <=> ($bv // 0);    # numeric
 }
 
+# Fold an array into a scalar via the arithmetic-fold catalogue
+# (#1448 Tier C). Mirrors Go's `bf_reduce` and JS `reduce(fn, init)` for
+# the shapes `(acc, x) => acc <op> x` / `(acc, x) => acc <op> x.field`:
+#
+#   bf->reduce($recv, {
+#     op       => '+' | '*',
+#     key_kind => 'self' | 'field',
+#     key      => '<field>',         # when key_kind eq 'field'
+#     type     => 'numeric' | 'string',
+#     init     => <seed>,            # number, or string for concat
+#   })
+#
+# Numeric folds accumulate with `+` / `*` (non-numeric keys coalesce to
+# 0); string folds concatenate via `bf->string` (undef → ''). The init
+# seeds the accumulator, so an empty array returns it unchanged — exactly
+# like JS. Float stringification can diverge from Go's for inexact binary
+# fractions (e.g. 0.1 + 0.2); integer sums — the common case — agree.
+sub reduce ($self, $recv, $opts = {}) {
+    my $op       = $opts->{op}       // '+';
+    my $key_kind = $opts->{key_kind} // 'self';
+    my $key      = $opts->{key}      // '';
+    my $type     = $opts->{type}     // 'numeric';
+
+    my @items = ref($recv) eq 'ARRAY' ? @$recv : ();
+    my $project = sub ($item) {
+        $key_kind eq 'field' && ref($item) eq 'HASH' ? $item->{$key} : $item;
+    };
+
+    if ($type eq 'string') {
+        my $acc = $opts->{init} // '';
+        $acc .= $self->string($project->($_)) for @items;
+        return $acc;
+    }
+
+    my $acc = $opts->{init} // 0;
+    for my $item (@items) {
+        my $n = $project->($item);
+        $n = 0 unless looks_like_number($n);
+        $op eq '*' ? ($acc *= $n) : ($acc += $n);
+    }
+    return $acc;
+}
+
 # ---------------------------------------------------------------------------
 # JSX intrinsic-element spread (#1407)
 # ---------------------------------------------------------------------------

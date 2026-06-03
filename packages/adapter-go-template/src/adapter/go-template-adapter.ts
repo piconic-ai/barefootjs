@@ -27,6 +27,7 @@ import type {
   ParsedExpr,
   ParsedStatement,
   SortComparator,
+  ReduceOp,
   TemplatePart,
   IRIfStatement,
   IRProvider,
@@ -206,6 +207,49 @@ function emitBfSort(recv: string, c: SortComparator): string {
     return `"${k.key.kind}" "${keyName}" "${k.type}" "${k.direction}"`
   })
   return `bf_sort ${wrapIfMultiToken(recv)} ${groups.join(' ')}`
+}
+
+/**
+ * Emit the `bf_reduce` call for a `.reduce(fn, init)` arithmetic fold
+ * (#1448 Tier C):
+ *
+ *   bf_reduce <recv> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>"
+ *
+ *   op:       "+" | "*"
+ *   keyKind:  "self" | "field"
+ *   keyName:  "" when keyKind=self; capitalised field name otherwise
+ *             (matches the Go struct-field convention, mirroring
+ *             `emitBfSort`)
+ *   type:     "numeric" | "string"
+ *   init:     the fold's start value — the numeric literal's text for a
+ *             numeric fold, or the string literal's contents for a
+ *             concat fold
+ *
+ * The runtime folds `init <op> key(item)` left-to-right and returns the
+ * accumulated value (float64 for numeric, string for concat).
+ */
+function emitBfReduce(recv: string, op: ReduceOp): string {
+  const keyName = op.key.kind === 'field' ? capitalize(op.key.field) : ''
+  const init = reduceInitValue(op)
+  return `bf_reduce ${wrapIfMultiToken(recv)} "${op.op}" "${op.key.kind}" "${keyName}" "${op.type}" "${escapeGoString(init)}"`
+}
+
+/**
+ * Derive the runtime start value from a `ReduceOp`'s init source text.
+ * Numeric folds pass the literal verbatim (`0`, `-1`); concat folds
+ * strip the surrounding quotes to recover the string contents (`''`
+ * → empty, `'-'` → `-`).
+ */
+function reduceInitValue(op: ReduceOp): string {
+  if (op.type === 'string') {
+    return op.init.length >= 2 ? op.init.slice(1, -1) : ''
+  }
+  return op.init
+}
+
+/** Escape a value for embedding in a Go-template double-quoted string. */
+function escapeGoString(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
 function capitalize(s: string): string {
@@ -3309,6 +3353,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // flavour warn?) but is unused today.
     void method
     return emitBfSort(emit(object), comparator)
+  }
+
+  reduceMethod(
+    object: ParsedExpr,
+    reduceOp: ReduceOp,
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    // `.reduce(fn, init)` arithmetic-fold lowering (#1448 Tier C). The
+    // structured `ReduceOp` (op / key / type / init) feeds the variadic
+    // `bf_reduce` runtime helper, which folds the receiver into a
+    // scalar.
+    return emitBfReduce(emit(object), reduceOp)
   }
 
   unsupported(raw: string, _reason: string): string {

@@ -178,6 +178,14 @@ import { fixture as arraySortLocale } from './methods/array-sort-locale'
 import { fixture as arraySortMultiKey } from './methods/array-sort-multikey'
 import { fixture as arraySortTernary } from './methods/array-sort-ternary'
 import { fixture as arrayToSorted } from './methods/array-toSorted'
+// #1448 Tier C — `.reduce(fn, init)` arithmetic-fold catalogue. Numeric
+// sum / product over a field or primitive `self`, plus string concat.
+// Lowers via the `array-method` + `ReduceOp` IR and the `bf_reduce`
+// (Go) / `bf->reduce` (Mojo) runtime helpers.
+import { fixture as reduceSumField } from './methods/reduce-sum-field'
+import { fixture as reduceSumSelf } from './methods/reduce-sum-self'
+import { fixture as reduceConcat } from './methods/reduce-concat'
+import { fixture as reduceProduct } from './methods/reduce-product'
 // #1448 Tier B — `.entries()` / `.keys()` / `.values()` iteration shapes.
 // The compiler strips the iterator method from the chain and synthesises
 // proper loop bindings so adapters emit native index+value iteration.
@@ -333,6 +341,10 @@ export const jsxFixtures: JSXFixture[] = [
   arrayFindLastIndex,
   // #1448 Tier B — sort / toSorted with structured comparator.
   arraySortFieldAsc,
+  reduceSumField,
+  reduceSumSelf,
+  reduceConcat,
+  reduceProduct,
   arraySortFieldDesc,
   arraySortPrimitive,
   arraySortLocale,

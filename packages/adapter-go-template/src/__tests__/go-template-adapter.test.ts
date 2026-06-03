@@ -2363,8 +2363,11 @@ export function C() {
   // Go fragment that must NOT survive into the template (the pre-fix
   // silent-footgun output for the string rows).
   const unsupported: Array<{ name: string; expr: string; badEmit: string }> = [
-    // Tier C array methods.
-    { name: 'reduce', expr: `items().reduce((a, b) => a + b.n, 0)`, badEmit: '.Reduce' },
+    // Tier C array methods. The arithmetic-fold `.reduce(fn, init)`
+    // catalogue now lowers (pinned in the positive reduce-* fixtures);
+    // the no-initial-value form stays refused — JS throws on an empty
+    // array there, which a template can't mirror.
+    { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '.Reduce' },
     { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '.FlatMap' },
     { name: 'flat', expr: `items().flat()`, badEmit: '.Flat' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet

@@ -56,7 +56,7 @@ import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
  * the `IRNodeEmitter` interface.
  */
 type MojoRenderCtx = Record<string, never>
-import type { ParsedExpr, ParsedStatement, SortComparator, TemplatePart } from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement, SortComparator, ReduceOp, TemplatePart } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND } from '@barefootjs/shared'
 
 interface PrimitiveSpec {
@@ -1533,6 +1533,37 @@ function renderSortMethod(recv: string, c: SortComparator): string {
   return `bf->sort(${recv}, { keys => [${keyHashes.join(', ')}] })`
 }
 
+/**
+ * Render a `.reduce(fn, init)` arithmetic fold (#1448 Tier C) as a
+ * `bf->reduce(...)` call. The structured `ReduceOp` maps to the Perl
+ * helper's options hash:
+ *
+ *   bf->reduce($recv, { op => '+', key_kind => 'field', key => 'duration',
+ *                       type => 'numeric', init => 0 })
+ *
+ * A numeric init passes through as a bare Perl number (`0`, `-1`); a
+ * string init (concat fold) is re-quoted from its literal contents.
+ */
+function renderReduceMethod(recv: string, op: ReduceOp): string {
+  const keyEntry =
+    op.key.kind === 'self'
+      ? `key_kind => 'self'`
+      : `key_kind => 'field', key => '${op.key.field}'`
+  const init =
+    op.type === 'string'
+      ? `'${reduceInitContents(op).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+      : op.init
+  return `bf->reduce(${recv}, { op => '${op.op}', ${keyEntry}, type => '${op.type}', init => ${init} })`
+}
+
+/**
+ * Recover a string-concat fold's seed contents from its init source
+ * text (`''` → empty, `'-'` → `-`). Only called for `type === 'string'`.
+ */
+function reduceInitContents(op: ReduceOp): string {
+  return op.init.length >= 2 ? op.init.slice(1, -1) : ''
+}
+
 /** True when `type` is the `string` primitive. */
 function isStringTypeInfo(type: TypeInfo | undefined): boolean {
   return type?.kind === 'primitive' && type.primitive === 'string'
@@ -1715,6 +1746,10 @@ class MojoFilterEmitter implements ParsedExprEmitter {
     return renderSortMethod(emit(object), comparator)
   }
 
+  reduceMethod(object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
+    return renderReduceMethod(emit(object), reduceOp)
+  }
+
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
     return '1'
   }
@@ -1894,6 +1929,10 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
   ): string {
     return renderSortMethod(emit(object), comparator)
+  }
+
+  reduceMethod(object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
+    return renderReduceMethod(emit(object), reduceOp)
   }
 
   conditional(

@@ -395,7 +395,11 @@ export function C() {
     // The nested-higher-order-in-filter-predicate shape also lowers
     // now (#1443 PR4) — moved to a positive-output test below.
     const cases: { name: string; body: string; needle: string }[] = [
-      { name: 'reduce',            body: `<div>{items().reduce((s, x) => s + x, 0)}</div>`,                                                          needle: '.reduce(' },
+      // The arithmetic-fold `.reduce(fn, init)` catalogue now lowers
+      // (positive-output tests below + the reduce-* conformance
+      // fixtures); the no-init form stays refused — JS throws on an
+      // empty array there, which a template can't mirror.
+      { name: 'reduce (no init)',  body: `<div>{items().reduce((s, x) => s + x)}</div>`,                                                             needle: '.reduce(' },
       { name: 'forEach',           body: `<ul>{items().forEach(x => x)}</ul>`,                                                                       needle: '.forEach(' },
       { name: 'flatMap',           body: `<ul>{items().flatMap(x => x.tags).map(t => <li key={t}>{t}</li>)}</ul>`,                                  needle: '.flatMap(' },
     ]
@@ -960,6 +964,11 @@ import { fixture as arrayToSortedFixture } from '../../../adapter-tests/fixtures
 import { fixture as arrayEntriesFixture } from '../../../adapter-tests/fixtures/methods/array-entries'
 import { fixture as arrayKeysFixture } from '../../../adapter-tests/fixtures/methods/array-keys'
 import { fixture as arrayValuesFixture } from '../../../adapter-tests/fixtures/methods/array-values'
+// #1448 Tier C — .reduce(fn, init) arithmetic-fold catalogue.
+import { fixture as reduceSumFieldFixture } from '../../../adapter-tests/fixtures/methods/reduce-sum-field'
+import { fixture as reduceSumSelfFixture } from '../../../adapter-tests/fixtures/methods/reduce-sum-self'
+import { fixture as reduceConcatFixture } from '../../../adapter-tests/fixtures/methods/reduce-concat'
+import { fixture as reduceProductFixture } from '../../../adapter-tests/fixtures/methods/reduce-product'
 
 describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
   const cases = [
@@ -1020,6 +1029,15 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: arrayKeysFixture,          expect: '% for my $k (0..$#{$items})' },
     // .values() → standard for loop (same as plain .map())
     { fixture: arrayValuesFixture,        expect: '% my $v = $items->[$_i];' },
+    // #1448 Tier C — .reduce(fn, init) arithmetic fold. The structured
+    // ReduceOp lowers to a single `bf->reduce(...)` call with op /
+    // key / type / init in the options hash. Each shape exercises one
+    // arm of the catalogue: field-numeric sum, self-numeric sum,
+    // string-concat fold, and the product (`*`) operator.
+    { fixture: reduceSumFieldFixture,     expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'duration', type => 'numeric', init => 0 })` },
+    { fixture: reduceSumSelfFixture,      expect: `bf->reduce($nums, { op => '+', key_kind => 'self', type => 'numeric', init => 0 })` },
+    { fixture: reduceConcatFixture,       expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'label', type => 'string', init => '' })` },
+    { fixture: reduceProductFixture,      expect: `bf->reduce($items, { op => '*', key_kind => 'field', key => 'qty', type => 'numeric', init => 1 })` },
   ]
 
   for (const { fixture, expect: expectedHelper } of cases) {
@@ -1099,8 +1117,11 @@ export function C() {
   // Perl fragment that must NOT survive into the template (the pre-fix
   // silent-footgun output for the string rows).
   const unsupported: Array<{ name: string; expr: string; badEmit: string }> = [
-    // Tier C array methods.
-    { name: 'reduce', expr: `items().reduce((a, b) => a + b.n, 0)`, badEmit: '->{reduce}' },
+    // Tier C array methods. The arithmetic-fold `.reduce(fn, init)`
+    // catalogue now lowers (pinned in the positive reduce-* fixtures);
+    // the no-initial-value form stays refused — JS throws on an empty
+    // array there, which a template can't mirror.
+    { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '->{reduce}' },
     { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '->{flatMap}' },
     { name: 'flat', expr: `items().flat()`, badEmit: '->{flat}' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet

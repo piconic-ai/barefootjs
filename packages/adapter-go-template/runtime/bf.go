@@ -76,6 +76,7 @@ func FuncMap() template.FuncMap {
 		"bf_find_last":       FindLast,
 		"bf_find_last_index": FindLastIndex,
 		"bf_sort":       Sort,
+		"bf_reduce":     Reduce,
 
 		// Comment marker (for hydration)
 		"bfComment":    Comment,
@@ -1528,6 +1529,62 @@ func decapitalize(s string) string {
 		return s
 	}
 	return strings.ToLower(s[:1]) + s[1:]
+}
+
+// Reduce folds an array into a scalar via the arithmetic-fold
+// catalogue (#1448 Tier C). It lowers `Array.prototype.reduce(fn, init)`
+// for the shapes `(acc, x) => acc <op> x` and `(acc, x) => acc <op> x.field`:
+//
+//	bf_reduce <items> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>"
+//
+//	op:       "+" | "*"
+//	keyKind:  "self" | "field"
+//	keyName:  "" when keyKind == "self"; capitalised struct field name
+//	          (e.g. "Duration") otherwise
+//	type:     "numeric" | "string"
+//	init:     the fold's start value — numeric literal text for a numeric
+//	          fold, or string contents for a concat fold
+//
+// Numeric folds accumulate as float64 (toFloat64 per projected key);
+// string folds concatenate (toString per projected key, matching the
+// documented `bf->string(undef) === ""` convention). The init seeds the
+// accumulator, so an empty receiver returns the init unchanged — exactly
+// like JS `reduce(fn, init)`. Anything outside the catalogue refuses at
+// compile time (BF101 from the JSX compiler) and never reaches here.
+//
+// Numeric float64 stringification can diverge from Perl's for sums whose
+// binary expansion isn't exact (e.g. 0.1 + 0.2); genuine integer sums —
+// the common SSR case — agree across all three adapters. This mirrors
+// the documented `bf_sort` "auto" numeric-string caveat.
+func Reduce(items any, op, keyKind, keyName, typ, init string) any {
+	v := reflect.ValueOf(items)
+	isSlice := v.Kind() == reflect.Slice || v.Kind() == reflect.Array
+
+	if typ == "string" {
+		acc := init
+		if isSlice {
+			for i := 0; i < v.Len(); i++ {
+				key := projectSortKey(v.Index(i).Interface(), keyKind, keyName)
+				acc += toString(key)
+			}
+		}
+		return acc
+	}
+
+	// numeric fold
+	acc, _ := strconv.ParseFloat(strings.TrimSpace(init), 64)
+	if isSlice {
+		for i := 0; i < v.Len(); i++ {
+			key := projectSortKey(v.Index(i).Interface(), keyKind, keyName)
+			n := toFloat64(key)
+			if op == "*" {
+				acc *= n
+			} else {
+				acc += n
+			}
+		}
+	}
+	return acc
 }
 
 // =============================================================================
