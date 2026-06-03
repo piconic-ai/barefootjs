@@ -176,6 +176,7 @@ function createContext(
     loopElements: [],
     refElements: [],
     childInits: [],
+    deferredChildSlots: new Set(),
     reactiveProps: [],
     reactiveChildProps: [],
     reactiveAttrs: [],

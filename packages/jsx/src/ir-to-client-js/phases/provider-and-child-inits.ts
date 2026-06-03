@@ -28,8 +28,19 @@ export function emitProviderAndChildInits(lines: string[], ctx: ClientJsContext)
     lines.push('')
     lines.push(`  // Initialize child components with props`)
     for (const child of ctx.childInits) {
+      const registryName = nameForRegistryRef(child.name)
+      // Deferred child (dropped-prop fix): the registration template emits
+      // a `data-bf-ph` placeholder for this slot rather than rendering it.
+      // `upsertChild` resolves both shapes — an existing SSR scope (→
+      // initChild) or the placeholder (→ createComponent with the full
+      // getter props). Use it so the child is created/initialised with
+      // complete props instead of running against a missing prop.
+      if (child.slotId && ctx.deferredChildSlots.has(child.slotId)) {
+        lines.push(`  upsertChild(__scope, '${registryName}', '${child.slotId}', ${child.propsExpr})`)
+        continue
+      }
       const scopeRef = child.slotId ? `_${varSlotId(child.slotId)}` : '__scope'
-      lines.push(`  initChild('${nameForRegistryRef(child.name)}', ${scopeRef}, ${child.propsExpr})`)
+      lines.push(`  initChild('${registryName}', ${scopeRef}, ${child.propsExpr})`)
     }
   }
 }

@@ -5,7 +5,7 @@
  * Each component registers its init function so parents can initialize children with props.
  */
 
-import { BF_SCOPE, BF_HOST } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_PLACEHOLDER } from '@barefootjs/shared'
 import { hydratedScopes } from './hydration-state'
 import { setCurrentScope } from './context'
 import { createComponent } from './component'
@@ -148,8 +148,14 @@ export function upsertChild(
     return ssr
   }
   // CSR: replace placeholder with a freshly-created component.
+  // The placeholder is normally a descendant of `parent`; but a
+  // comment-scope parent whose root IS the deferred child renders the
+  // placeholder as `parent` itself (no wrapper element), so match the
+  // parent element directly before falling back to a subtree query.
   const phId = slotId ?? name
-  const ph = parent.querySelector(`[data-bf-ph="${phId}"]`) as HTMLElement | null
+  const ph = (parent.getAttribute(BF_PLACEHOLDER) === phId
+    ? (parent as HTMLElement)
+    : parent.querySelector(`[${BF_PLACEHOLDER}="${phId}"]`)) as HTMLElement | null
   if (ph) {
     const slot = slotId ? buildSlotInfo(parent, slotId, anchorScope) : undefined
     const comp = createComponent(name, props, key, slot)

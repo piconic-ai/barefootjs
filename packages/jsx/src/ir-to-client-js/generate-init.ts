@@ -14,7 +14,8 @@ import { PROPS_PARAM } from './utils'
 import { buildReferencesGraph } from './build-references'
 import { computePropUsage } from './compute-prop-usage'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER } from './imports'
-import { emitRegistrationAndHydration } from './emit-registration'
+import { emitRegistrationAndHydration, csrInlinableConstantsFromCtx } from './emit-registration'
+import { computeDeferredChildSlots } from './html-template'
 import { emitChildComponentImports } from './child-components'
 import { classifyLocalDeclarations } from './init-declarations'
 import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-level'
@@ -54,6 +55,20 @@ export function generateInitFunction(
   // diagnostics into `ctx.warnings`, so calling it twice would surface
   // duplicate warnings (#1247).
   const inlinability = buildInlinableConstants(ctx, graph, ir.root)
+
+  // Decide which direct child components must defer their render to init
+  // because a forwarded prop resolves to an init-scope-only / non-inlinable
+  // local (dropped-prop fix). The child-init phase reads this set to emit
+  // `upsertChild` instead of `initChild`; `emitRegistrationAndHydration`
+  // reads it to emit a `data-bf-ph` placeholder instead of
+  // `renderChild(...)`. Computed here, once `unsafeLocalNames` is known.
+  ctx.deferredChildSlots = computeDeferredChildSlots(
+    ir.root,
+    ctx,
+    csrInlinableConstantsFromCtx(ctx),
+    inlinability.unsafeLocalNames,
+    ctx.propsObjectName,
+  )
 
   // --- Emission: declarative phase pipeline. Each entry in `PHASES`
   //     declares its inputs (dependsOn) and emission action (run); the

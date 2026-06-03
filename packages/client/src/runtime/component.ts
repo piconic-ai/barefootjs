@@ -11,7 +11,7 @@ import { getRegisteredDef } from './hydrate'
 import { hydratedScopes } from './hydration-state'
 import { untrack } from '@barefootjs/client/reactive'
 import { setCurrentScope } from './context'
-import { BF_SCOPE, BF_KEY, BF_HOST, BF_AT, BF_PARENT_SCOPE_PLACEHOLDER } from '@barefootjs/shared'
+import { BF_SCOPE, BF_KEY, BF_HOST, BF_AT, BF_PARENT_SCOPE_PLACEHOLDER, BF_PLACEHOLDER } from '@barefootjs/shared'
 import type { ComponentDef } from './types'
 
 // Parent scope ID context for renderChild() inside insert() branch templates.
@@ -186,11 +186,50 @@ export function createComponent(
   // This allows context providers in initFn to store context on this element.
   const prevScope = setCurrentScope(element)
 
+  // 8b. Root-level deferred child (dropped-prop fix): a comment-wrapper
+  // parent whose entire render is a single deferred child renders as a
+  // bare `data-bf-ph` placeholder. The parent's init calls
+  // `upsertChild(__scope, ...)` which replaces the placeholder via
+  // `replaceWith` — but a detached root node can't replace itself in
+  // place. Park it in a throwaway wrapper so the replacement lands
+  // somewhere we can recover, then return the materialised child.
+  const rootIsDeferredPlaceholder = element.hasAttribute(BF_PLACEHOLDER)
+  let placeholderWrapper: HTMLElement | null = null
+  if (rootIsDeferredPlaceholder) {
+    placeholderWrapper = parseHTML('<div></div>').firstChild as HTMLElement
+    placeholderWrapper.appendChild(element)
+  }
+
   // 9. Initialize the component (context providers set up here).
   const initFn = getComponentInit(name)
   if (initFn) {
-    // Pass original props (with getters) for reactivity
+    // Pass original props (with getters) for reactivity. For a root
+    // deferred placeholder, init's `upsertChild(element, ...)` matches the
+    // placeholder element itself and replaces it inside the wrapper.
     initFn(element, props)
+  }
+
+  if (rootIsDeferredPlaceholder && placeholderWrapper) {
+    const materialised = placeholderWrapper.firstElementChild as HTMLElement | null
+    if (materialised && !materialised.hasAttribute(BF_PLACEHOLDER)) {
+      // The deferred child was created in place of the placeholder.
+      // `materialised` is the child's OWN element, created via
+      // upsertChild -> createComponent, which already registered itself
+      // (hydratedScopes / propsMap / registerPropsUpdate) keyed to the
+      // child with the child's own props. We must NOT re-register it here:
+      // overwriting propsMap/registerPropsUpdate with the *parent's* props
+      // would mis-key the child (e.g. a later getComponentProps would read
+      // the parent's props), and re-running the parent's init on an element
+      // whose placeholder is already gone could not re-materialise. So just
+      // restore the scope and return the already-registered child.
+      // (Parent-scope effects are unaffected: createEffect ownership lives
+      // in the EffectContext tree, not the discarded placeholder element.)
+      setCurrentScope(prevScope)
+      return materialised
+    }
+    // Placeholder was not replaced (no init / no matching child): fall
+    // through with the original placeholder element detached from wrapper.
+    placeholderWrapper.removeChild(element)
   }
 
   // 10. Evaluate getter children and insert them.

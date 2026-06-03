@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, IRAttribute, IRNode } from '../types'
+import type { AttrValue, IRAttribute, IRNode, IRProp } from '../types'
 import { isBooleanAttr } from '../html-constants'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils'
 import type { LoopParamSpec } from './utils'
@@ -962,6 +962,20 @@ export interface TemplateOptions {
   loopDepth?: number
   /** Emit `bf-s` placeholder on scoped elements inside a jsx-children prop (#1320). */
   inHoistedChildren?: boolean
+  /**
+   * Slot ids of direct child components whose render must be DEFERRED to
+   * init because at least one forwarded (non-`/* @client *\/`) prop value
+   * references an init-scope-only / non-inlinable local — the module-scope
+   * template lambda can't supply it, so eagerly calling `renderChild` with
+   * the prop dropped would make the child template read `undefined`.
+   *
+   * For these slots the CSR `component` case emits a `data-bf-ph`
+   * placeholder instead of `renderChild(...)`; the parent init replaces it
+   * via `upsertChild` (→ `createComponent` with the complete getter props).
+   * Computed up front by `computeDeferredChildSlots` so the init phase and
+   * the template phase agree on which children defer (dropped-prop fix).
+   */
+  deferredChildSlots?: ReadonlySet<string>
 }
 
 /**
@@ -1353,6 +1367,7 @@ export function generateCsrTemplate(
   restSpreadNames?: Set<string>,
   propsObjectName?: string | null,
   unsafeLocalNames?: Set<string>,
+  deferredChildSlots?: ReadonlySet<string>,
 ): string {
   // Build the substitution env once per component. Signals + memos come
   // from `buildSignalMemoEnv`; inlinable constants layer in here so
@@ -1367,7 +1382,134 @@ export function generateCsrTemplate(
       }
     }
   }
-  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, insideLoop, unsafeLocalNames, loopDepth: -1 })
+  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, insideLoop, unsafeLocalNames, deferredChildSlots, loopDepth: -1 })
+}
+
+/**
+ * Build the per-component CSR substitution env (signals + memos + inlinable
+ * constants), matching what `generateCsrTemplate` builds. Shared so the
+ * deferred-child analysis and the template emit agree on substitution
+ * results.
+ */
+function buildCsrEnvForCtx(
+  ctx: ClientJsContext,
+  inlinableConstants: Map<string, string> | undefined,
+  propsObjectName?: string | null,
+): CsrEnv {
+  const base = buildSignalMemoEnv(ctx.signals, ctx.memos, propsObjectName ?? null)
+  const csrEnv: CsrEnv = { substitutions: new Map(base.substitutions), propsObjectName: base.propsObjectName }
+  if (inlinableConstants) {
+    for (const [name, value] of inlinableConstants) {
+      if (!csrEnv.substitutions.has(name)) {
+        csrEnv.substitutions.set(name, { kind: 'identifier', replacement: value, freeIdentifiers: new Set() })
+      }
+    }
+  }
+  return csrEnv
+}
+
+/**
+ * Decide whether a single forwarded component prop value would be DROPPED
+ * by the CSR `component` emit — i.e. after `csrSubstitute` its expression
+ * still references a name in `unsafeLocalNames`. Mirrors the
+ * `transformExpr` UNSAFE gate so the deferral analysis matches the actual
+ * template output exactly.
+ */
+function propResolvesUnsafe(
+  prop: IRProp,
+  env: CsrEnv,
+  unsafeLocalNames: ReadonlySet<string>,
+): boolean {
+  if (unsafeLocalNames.size === 0) return false
+  let source: string | undefined
+  switch (prop.value.kind) {
+    case 'expression':
+    case 'spread':
+      source = prop.value.expr
+      break
+    case 'template':
+      source = attrValueToString(prop.value, { useTemplate: true }) ?? undefined
+      break
+    default:
+      // literal / boolean / jsx-children carry no init-scope identifiers.
+      return false
+  }
+  if (!source) return false
+  const { freeIdentifiers } = csrSubstitute(source, env)
+  return setIntersects(freeIdentifiers, unsafeLocalNames)
+}
+
+/**
+ * Walk the component IR and collect the slot ids of DIRECT child
+ * components whose render must be deferred to init because at least one
+ * forwarded (non-`/* @client *\/`, non-event) prop resolves to an
+ * init-scope-only / non-inlinable local. The module-scope CSR template
+ * lambda can't supply such a value, so `renderChild(...)` would drop the
+ * prop and the child template would read `undefined` and throw.
+ *
+ * Only top-level (non-loop, non-clientOnly-conditional) children are
+ * considered — those are the ones rendered via the `renderChild(...)` form
+ * in the registration template and wired through `ctx.childInits`. Loop /
+ * conditional-branch children already go through their own
+ * placeholder + `createComponent` materialize paths.
+ */
+export function computeDeferredChildSlots(
+  node: IRNode,
+  ctx: ClientJsContext,
+  inlinableConstants: Map<string, string> | undefined,
+  unsafeLocalNames: ReadonlySet<string> | undefined,
+  propsObjectName?: string | null,
+): Set<string> {
+  const deferred = new Set<string>()
+  if (!unsafeLocalNames || unsafeLocalNames.size === 0) return deferred
+  const env = buildCsrEnvForCtx(ctx, inlinableConstants, propsObjectName)
+
+  const visit = (n: IRNode): void => {
+    switch (n.type) {
+      case 'component': {
+        if (n.name === 'Portal') {
+          n.children.forEach(visit)
+          return
+        }
+        if (n.slotId) {
+          const dropped = n.props.some(p => {
+            // Spread props (`...`) are forwarded via the rest-spread path
+            // (`restSpreadNames`), not the per-prop inline form, so they are
+            // out of scope for this drop check; `key` and event handlers
+            // (`onX`) likewise never carry init-scope render values. This
+            // filter set MUST mirror the `propsEntries` filter in the CSR
+            // `component` emit below so the deferral decision matches output.
+            if (p.name === '...' || p.name.startsWith('...') || p.name === 'key') return false
+            if (p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()) return false
+            if (p.clientOnly) return false
+            return propResolvesUnsafe(p, env, unsafeLocalNames)
+          })
+          if (dropped) deferred.add(n.slotId)
+        }
+        // Do not descend into a component's JSX-children props here: those
+        // children render in the parent scope only when hoisted, and the
+        // deferral concern is the direct child component's own props.
+        return
+      }
+      case 'element':
+        n.children.forEach(visit)
+        return
+      case 'fragment':
+        n.children.forEach(visit)
+        return
+      case 'conditional':
+        // Conditional branch children are handled by the branch
+        // materialize path, not the top-level renderChild form.
+        return
+      case 'loop':
+        // Loop children go through the loop materialize path.
+        return
+      default:
+        return
+    }
+  }
+  visit(node)
+  return deferred
 }
 
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
@@ -1540,6 +1682,18 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     case 'component': {
       if (node.name === 'Portal') {
         return node.children.map(recurse).join('')
+      }
+
+      // Deferred child (dropped-prop fix): at least one forwarded prop
+      // resolves to an init-scope-only local the module-scope template
+      // lambda can't supply. Emitting `renderChild('Child', { /* prop
+      // dropped */ })` would make the child template read `undefined` and
+      // throw. Emit a `data-bf-ph` placeholder instead — the parent init
+      // resolves it via `upsertChild` → `createComponent` with the full
+      // getter props (mirrors the `irToPlaceholderTemplate` deferral and
+      // the clientOnly-conditional empty-marker precedent).
+      if (node.slotId && opts.deferredChildSlots?.has(node.slotId)) {
+        return `<div ${DATA_BF_PH}="${node.slotId}"></div>`
       }
 
       const propsEntries = node.props
