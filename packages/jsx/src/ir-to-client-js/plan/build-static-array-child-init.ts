@@ -8,6 +8,10 @@
  *   2. `outer-nested` for each depth-0 entry in `elem.nestedComponents`.
  *   3. `inner-loop-nested` for each `elem.innerLoops` entry that has
  *      matching depth-N components.
+ *   4. `component-rooted-inner-loop` instead of (3) when the outer item is
+ *      itself a child component (#1725) — the inner `.map()` lives inside
+ *      the component's JSX children, so it's addressed by a document-order
+ *      zip rather than element offsets.
  *
  * Selector / propsExpr / offset decisions all resolve here. The
  * stringifier never inspects raw IR.
@@ -23,6 +27,7 @@ import { buildCompSelector } from '../control-flow/shared'
 /** The inline prop shape carried on `IRLoopChildComponent.props`. */
 type LoopChildCompProp = IRLoopChildComponent['props'][number]
 import type {
+  ComponentRootedInnerLoopInitPlan,
   InnerLoopComp,
   InnerLoopNestedInitPlan,
   OuterNestedInitPlan,
@@ -56,7 +61,16 @@ export function buildStaticArrayChildInitsPlan(
             (c.loopDepth ?? 0) === innerLoop.depth && c.innerLoopArray === innerLoop.array,
           )
           if (innerComps.length === 0) continue
-          plans.push(buildInnerLoopNestedPlan(elem, innerLoop, innerComps))
+          // Component-rooted outer item (#1725): the inner `.map()` lives
+          // inside the child component's JSX children. The element-offset
+          // addressing of `inner-loop-nested` can't reach a fragment-rooted
+          // passthrough's flattened items, so use the document-order zip
+          // shape instead.
+          plans.push(
+            elem.childComponent
+              ? buildComponentRootedInnerLoopPlan(elem, innerLoop, innerComps)
+              : buildInnerLoopNestedPlan(elem, innerLoop, innerComps),
+          )
         }
       }
     }
@@ -128,6 +142,31 @@ function buildInnerLoopNestedPlan(
     innerArrayExpr: innerLoop.array,
     innerParam: innerLoop.param,
     innerOffsetExpr: buildLoopChildIndexExpr('__innerIdx', innerLoop.offset),
+    innerPreludeStatements: innerLoop.mapPreamble ? [innerLoop.mapPreamble] : [],
+    depth: innerLoop.depth,
+    comps,
+  }
+}
+
+function buildComponentRootedInnerLoopPlan(
+  elem: TopLevelLoop,
+  innerLoop: NestedLoop,
+  innerComps: readonly IRLoopChildComponent[],
+): ComponentRootedInnerLoopInitPlan {
+  const comps: InnerLoopComp[] = innerComps.map(comp => ({
+    componentName: comp.name,
+    selector: buildCompSelector(comp),
+    propsExpr: buildStaticPropsExpr(comp.props),
+  }))
+
+  return {
+    kind: 'component-rooted-inner-loop',
+    containerVar: `_${varSlotId(elem.slotId)}`,
+    outerArrayExpr: elem.array,
+    outerParam: elem.param,
+    outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
+    innerArrayExpr: innerLoop.array,
+    innerParam: innerLoop.param,
     innerPreludeStatements: innerLoop.mapPreamble ? [innerLoop.mapPreamble] : [],
     depth: innerLoop.depth,
     comps,

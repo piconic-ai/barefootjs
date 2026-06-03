@@ -1181,4 +1181,88 @@ describe('child components inside .map() (#344)', () => {
     expect(content).toContain('const __compEl =')
     expect(content).not.toContain('__compEl0')
   })
+
+  describe('nested .map() inside a component-rooted loop item (#1725)', () => {
+    // The outer loop item root is a *component* (a passthrough wrapper like
+    // `SelectGroup`), not an element. Its JSX children contain a nested
+    // `.map()` of components. The parent init emitted `initChild` for the
+    // outer wrapper but never descended into its children to init the inner
+    // loop's components — they rendered from SSR but never hydrated (silent).
+    test('emits initChild for the inner-loop component (component wrapper)', () => {
+      const source = `
+        'use client'
+
+        export function Repro() {
+          const GROUPS = [
+            { id: 'a', items: [{ id: 'a1', label: 'A1' }] },
+            { id: 'b', items: [{ id: 'b1', label: 'B1' }] },
+          ]
+          return (
+            <div>
+              {GROUPS.map(group => (
+                <Group key={group.id}>
+                  {group.items.map(it => (
+                    <Item key={it.id} label={it.label} />
+                  ))}
+                </Group>
+              ))}
+            </div>
+          )
+        }
+      `
+      const result = compileJSX(source, 'Repro.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const content = result.files.find(f => f.type === 'clientJs')!.content
+      // Both the outer wrapper and the inner-loop component must init.
+      expect(content).toContain("initChild('Group'")
+      expect(content).toContain("initChild('Item'")
+      // The inner component's props read the inner loop param.
+      expect(content).toContain('return it.label')
+      // Document-order zip shape — a flat cursor over the queried scopes
+      // pairs each with its data item across the nested forEach. This shape
+      // is fragment-root safe (no per-group wrapper element to index).
+      expect(content).toContain('qsaChildScopes')
+      expect(content).toMatch(/__compScopes\[__ci\+\+\]/)
+      // No element-offset addressing (`__outerEl = ...children[...]`) — that
+      // would break for a fragment-rooted passthrough.
+      expect(content).not.toContain('__outerEl')
+    })
+
+    test('multiple inner components each get their own document-order cursor', () => {
+      const source = `
+        'use client'
+
+        export function Repro() {
+          const GROUPS = [{ id: 'a', items: [{ id: 'a1', label: 'A1' }] }]
+          return (
+            <div>
+              {GROUPS.map(group => (
+                <Group key={group.id}>
+                  {group.items.map(it => (
+                    <>
+                      <Item key={it.id} label={it.label} />
+                      <Badge text={it.label} />
+                    </>
+                  ))}
+                </Group>
+              ))}
+            </div>
+          )
+        }
+      `
+      const result = compileJSX(source, 'Repro.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const content = result.files.find(f => f.type === 'clientJs')!.content
+      expect(content).toContain("initChild('Item'")
+      expect(content).toContain("initChild('Badge'")
+      // Distinct scope arrays + cursors so each comp consumes its own
+      // document-order stream (no `const __compEl` redeclaration, #1664).
+      expect(content).toContain('__compScopes0')
+      expect(content).toContain('__compScopes1')
+      expect(content).toMatch(/__ci0\+\+/)
+      expect(content).toMatch(/__ci1\+\+/)
+    })
+  })
 })
