@@ -743,7 +743,7 @@ error[BF021]: Expression cannot be compiled to marked template: Sort comparator 
 - `filter(...).sort(...).map(...)` → filter + sort chaining
 - `sort(...).filter(...).map(...)` → sort + filter chaining
 
-**Reduce folds**: `.reduce(fn, init)` is parsed into a structured `ReduceOp` (`{ op, key, type, init }`) and lowered via `bf_reduce` (Go) / `bf->reduce` (Mojo). The catalogue is the arithmetic-fold family only — anything outside refuses with BF101 (`/* @client */` is the escape hatch):
+**Reduce folds (refused with BF101, not BF021)**: unlike the filter/sort shapes above (which surface BF021), an off-catalogue `.reduce` refuses at the adapter layer with **BF101** — the same gate the other unsupported array methods use. `.reduce(fn, init)` is parsed into a structured `ReduceOp` (`{ op, key, type, init }`) and lowered via `bf_reduce` (Go) / `bf->reduce` (Mojo). The catalogue is the arithmetic-fold family only — anything outside refuses with BF101 (`/* @client */` is the escape hatch):
 
 - `arr.reduce((acc, x) => acc + x, 0)` → numeric sum over self
 - `arr.reduce((acc, x) => acc + x.field, 0)` → numeric sum over a struct field
