@@ -56,6 +56,8 @@ import {
 import { TOKENS_CSS } from './generated/tokens-bundle'
 import { UI_SHELL_HTML, UI_CLIENT_JS } from './ui'
 import { handleChat, type AiBinding } from './agent'
+import { Hono } from 'hono'
+import { setCookie } from 'hono/cookie'
 
 interface WorkerLoaderModules {
   // Plain string = ESM source (key must end .js/.py). Object form
@@ -254,168 +256,132 @@ function dispatchToSession(
   return app.getEntrypoint().fetch(request)
 }
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url)
+const app = new Hono<{ Bindings: Env }>()
 
-    // Health/diagnostic endpoint served by the host worker itself.
-    if (url.pathname === '/__host_health') {
-      return new Response(
-        JSON.stringify({ ok: true, hasLoader: typeof env.LOADER?.get === 'function' }),
-        { headers: { 'content-type': 'application/json' } },
-      )
-    }
+// Health/diagnostic endpoint served by the host worker itself.
+app.get('/__host_health', (c) =>
+  c.json({ ok: true, hasLoader: typeof c.env.LOADER?.get === 'function' }),
+)
 
-    // Spike path: trivial module, kept to isolate the Loader machinery.
-    if (url.pathname === '/__spike') {
-      const spike = env.LOADER.get('spike-trivial', async () => ({
-        compatibilityDate: '2025-05-01',
-        mainModule: 'index.js',
-        modules: { 'index.js': TRIVIAL_MODULE },
-        globalOutbound: null,
-      }))
-      return spike.getEntrypoint().fetch(request)
-    }
+// Spike path: trivial module, kept to isolate the Loader machinery.
+app.all('/__spike', (c) => {
+  const spike = c.env.LOADER.get('spike-trivial', async () => ({
+    compatibilityDate: '2025-05-01',
+    mainModule: 'index.js',
+    modules: { 'index.js': TRIVIAL_MODULE },
+    globalOutbound: null,
+  }))
+  return spike.getEntrypoint().fetch(c.req.raw)
+})
 
-    // Playground UI shell. Issues a session cookie so the very first preview /
-    // build share one opaque session id.
-    //
-    // `/` is overloaded: the top-level document is the playground UI, but the
-    // PREVIEW APP's own home is also `/`. A request for `/` originating from
-    // inside the preview iframe — e.g. the app's `<a href="/">` Home link, or
-    // the URL bar navigating Home — must render the APP's home, NOT the UI,
-    // otherwise the whole playground nests inside its own preview. The browser
-    // tags iframe-context document loads with `Sec-Fetch-Dest: iframe`, which
-    // distinguishes them from the top-level page load.
-    if (url.pathname === '/' && request.method === 'GET') {
-      if (request.headers.get('Sec-Fetch-Dest') === 'iframe') {
-        return dispatchToSession(env, readSessionId(request), request)
-      }
-      const headers = new Headers({ 'content-type': 'text/html; charset=utf-8' })
-      if (!readSessionId(request)) {
-        headers.append(
-          'set-cookie',
-          `${SESSION_COOKIE}=${newSessionId()}; Path=/; SameSite=Lax`,
-        )
-      }
-      return new Response(UI_SHELL_HTML, { headers })
-    }
+// Playground UI shell. Issues a session cookie so the very first preview /
+// build share one opaque session id.
+//
+// `/` is overloaded: the top-level document is the playground UI, but the
+// PREVIEW APP's own home is also `/`. A request for `/` originating from inside
+// the preview iframe — e.g. the app's `<a href="/">` Home link, or the URL bar
+// navigating Home — must render the APP's home, NOT the UI, otherwise the whole
+// playground nests inside its own preview. The browser tags iframe-context
+// document loads with `Sec-Fetch-Dest: iframe`, which distinguishes them from
+// the top-level page load.
+app.get('/', (c) => {
+  if (c.req.header('Sec-Fetch-Dest') === 'iframe') {
+    return dispatchToSession(c.env, readSessionId(c.req.raw), c.req.raw)
+  }
+  if (!readSessionId(c.req.raw)) {
+    setCookie(c, SESSION_COOKIE, newSessionId(), { path: '/', sameSite: 'Lax' })
+  }
+  return c.html(UI_SHELL_HTML)
+})
 
-    // Explorer feed: the app's embedded source files.
-    if (url.pathname === '/_pg/files' && request.method === 'GET') {
-      return new Response(JSON.stringify({ files: APP_FILES }), {
-        headers: { 'content-type': 'application/json; charset=utf-8' },
-      })
-    }
+// Explorer feed: the app's embedded source files.
+app.get('/_pg/files', (c) => c.json({ files: APP_FILES }))
 
-    // Monaco TypeScript .d.ts bundle.
-    if (url.pathname === '/_pg/types-bundle.json' && request.method === 'GET') {
-      return new Response(JSON.stringify(TYPES_BUNDLE), {
-        headers: { 'content-type': 'application/json; charset=utf-8' },
-      })
-    }
+// Monaco TypeScript .d.ts bundle.
+app.get('/_pg/types-bundle.json', (c) => c.json(TYPES_BUNDLE))
 
-    // UI client script.
-    if (url.pathname === '/_pg/app.js' && request.method === 'GET') {
-      return new Response(UI_CLIENT_JS, {
-        headers: { 'content-type': 'text/javascript; charset=utf-8' },
-      })
-    }
+// UI client script.
+app.get('/_pg/app.js', (c) =>
+  c.body(UI_CLIENT_JS, 200, { 'content-type': 'text/javascript; charset=utf-8' }),
+)
 
-    // Browser compile worker (compileAppCore + @barefootjs/jsx + UnoCSS +
-    // esbuild-wasm). Spawned by the UI as a module web worker.
-    if (url.pathname === '/_pg/compile-worker.js' && request.method === 'GET') {
-      return new Response(COMPILE_WORKER_JS, {
-        headers: { 'content-type': 'text/javascript; charset=utf-8' },
-      })
-    }
+// Browser compile worker (compileAppCore + @barefootjs/jsx + UnoCSS +
+// esbuild-wasm). Spawned by the UI as a module web worker.
+app.get('/_pg/compile-worker.js', (c) =>
+  c.body(COMPILE_WORKER_JS, 200, { 'content-type': 'text/javascript; charset=utf-8' }),
+)
 
-    // The fixed barefoot.js DOM runtime, fetched by the compile worker to bake
-    // the inline _assets.js module.
-    if (url.pathname === '/_pg/barefoot-runtime.js' && request.method === 'GET') {
-      return new Response(BAREFOOT_RUNTIME_JS, {
-        headers: { 'content-type': 'text/javascript; charset=utf-8' },
-      })
-    }
+// The fixed barefoot.js DOM runtime, fetched by the compile worker to bake the
+// inline _assets.js module.
+app.get('/_pg/barefoot-runtime.js', (c) =>
+  c.body(BAREFOOT_RUNTIME_JS, 200, { 'content-type': 'text/javascript; charset=utf-8' }),
+)
 
-    // AI chat: stream an agent reply (Workers AI, or MOCK mode locally) as SSE.
-    // The browser parses fenced file-edit blocks from the reply and runs the
-    // existing compile→/_pg/build→reload-preview loop.
-    if (url.pathname === '/_pg/chat' && request.method === 'POST') {
-      return handleChat(request, env.AI)
-    }
+// AI chat: stream an agent reply (Workers AI, or MOCK mode locally) as SSE. The
+// browser parses fenced file-edit blocks from the reply and runs the existing
+// compile→/_pg/build→reload-preview loop.
+app.post('/_pg/chat', (c) => handleChat(c.req.raw, c.env.AI))
 
-    // Stash a session's compiled user modules (posted by the UI after a Run).
-    if (url.pathname === '/_pg/build' && request.method === 'POST') {
-      let sessionId = readSessionId(request)
-      const issueCookie = !sessionId
-      if (!sessionId) sessionId = newSessionId()
+// Stash a session's compiled user modules (posted by the UI after a Run).
+app.post('/_pg/build', async (c) => {
+  let sessionId = readSessionId(c.req.raw)
+  const issueCookie = !sessionId
+  if (!sessionId) sessionId = newSessionId()
 
-      let body: {
-        userModules?: Record<string, string>
-        mainModule?: string
-        assets?: RtAppAssets
-      }
-      try {
-        body = await request.json()
-      } catch {
-        return new Response(
-          JSON.stringify({ ok: false, error: 'Invalid JSON body' }),
-          { status: 400, headers: { 'content-type': 'application/json' } },
-        )
-      }
-      if (!body.userModules || !body.mainModule || !body.assets) {
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: 'Missing userModules/mainModule/assets',
-          }),
-          { status: 400, headers: { 'content-type': 'application/json' } },
-        )
-      }
+  let body: {
+    userModules?: Record<string, string>
+    mainModule?: string
+    assets?: RtAppAssets
+  }
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ ok: false, error: 'Invalid JSON body' }, 400)
+  }
+  if (!body.userModules || !body.mainModule || !body.assets) {
+    return c.json({ ok: false, error: 'Missing userModules/mainModule/assets' }, 400)
+  }
 
-      const prev = SESSIONS.get(sessionId)
-      SESSIONS.set(sessionId, {
-        mainModule: body.mainModule,
-        userModules: body.userModules,
-        assets: body.assets,
-        generation: (prev?.generation ?? 0) + 1,
-      })
+  const prev = SESSIONS.get(sessionId)
+  SESSIONS.set(sessionId, {
+    mainModule: body.mainModule,
+    userModules: body.userModules,
+    assets: body.assets,
+    generation: (prev?.generation ?? 0) + 1,
+  })
 
-      const headers = new Headers({ 'content-type': 'application/json' })
-      if (issueCookie) {
-        headers.append(
-          'set-cookie',
-          `${SESSION_COOKIE}=${sessionId}; Path=/; SameSite=Lax`,
-        )
-      }
-      return new Response(JSON.stringify({ ok: true }), { headers })
-    }
+  if (issueCookie) {
+    setCookie(c, SESSION_COOKIE, sessionId, { path: '/', sameSite: 'Lax' })
+  }
+  return c.json({ ok: true })
+})
 
-    const sessionId = readSessionId(request)
+// Everything else: host-owned static assets, the preview iframe entry, and the
+// live app's own page routes. Order matters — assets are checked before any app
+// dispatch.
+app.all('*', (c) => {
+  const url = new URL(c.req.url)
+  const sessionId = readSessionId(c.req.raw)
 
-    // Host-owned static assets (barefoot.js, <Name>.client.js, uno.css). Served
-    // from the session's stored assets so the AI's server.tsx only contains page
-    // routes. Checked before any app dispatch.
-    const asset = serveAsset(url.pathname, assetsForSession(sessionId))
-    if (asset) return asset
+  // Host-owned static assets (barefoot.js, <Name>.client.js, uno.css,
+  // tokens.css) served from the session's stored assets, so the AI's server.tsx
+  // only contains page routes.
+  const asset = serveAsset(url.pathname, assetsForSession(sessionId))
+  if (asset) return asset
 
-    // Preview iframe entry document. Rewrite to the app's root and dispatch
-    // into the session app (or the default app if no build yet). The mini-browser
-    // URL bar navigates the iframe to arbitrary app paths (e.g. /counter), which
-    // hit the catch-all below.
-    if (url.pathname === '/_preview' || url.pathname === '/_preview/') {
-      const rewritten = new URL(request.url)
-      rewritten.pathname = '/'
-      return dispatchToSession(
-        env,
-        sessionId,
-        new Request(rewritten, request),
-      )
-    }
+  // Preview iframe entry document. Rewrite to the app's root and dispatch into
+  // the session app (or the default app if no build yet). The mini-browser URL
+  // bar navigates the iframe to arbitrary app paths (e.g. /counter), which hit
+  // the unchanged dispatch below.
+  if (url.pathname === '/_preview' || url.pathname === '/_preview/') {
+    const rewritten = new URL(c.req.url)
+    rewritten.pathname = '/'
+    return dispatchToSession(c.env, sessionId, new Request(rewritten, c.req.raw))
+  }
 
-    // Everything else (HTML page routes like /, /counter, /todo typed in the URL
-    // bar): dispatch UNCHANGED into the session app.
-    return dispatchToSession(env, sessionId, request)
-  },
-}
+  // HTML page routes (/, /counter, /todo … typed in the URL bar): dispatch
+  // UNCHANGED into the session app.
+  return dispatchToSession(c.env, sessionId, c.req.raw)
+})
+
+export default app
