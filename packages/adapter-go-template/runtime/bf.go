@@ -62,6 +62,7 @@ func FuncMap() template.FuncMap {
 		"bf_concat":         Concat,
 		"bf_slice":          Slice,
 		"bf_reverse":        Reverse,
+		"bf_flat":           Flat,
 		"bf_first":          First,
 		"bf_last":           Last,
 		"bf_arr":            Arr,
@@ -973,6 +974,35 @@ func Reverse(items any) []any {
 	out := make([]any, length)
 	for i := 0; i < length; i++ {
 		out[length-1-i] = v.Index(i).Interface()
+	}
+	return out
+}
+
+// Flat flattens nested slices/arrays `depth` levels deep. Lowers
+// `Array.prototype.flat(depth?)` (#1448 Tier C). A `depth` of `-1` is the
+// `Infinity` sentinel (flatten fully); `0` (or negative-from-JS, already
+// normalised to 0 at compile time) returns a shallow copy. Non-array
+// elements are kept as-is (JS only flattens nested arrays). A non-array
+// receiver returns an empty `[]any`.
+func Flat(items any, depth int) []any {
+	v := reflect.ValueOf(items)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return []any{}
+	}
+	out := make([]any, 0, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		el := v.Index(i).Interface()
+		ev := reflect.ValueOf(el)
+		if depth != 0 && (ev.Kind() == reflect.Slice || ev.Kind() == reflect.Array) {
+			// `-1` (Infinity) recurses unbounded; a finite depth spends one level.
+			next := depth
+			if depth > 0 {
+				next = depth - 1
+			}
+			out = append(out, Flat(el, next)...)
+		} else {
+			out = append(out, el)
+		}
 	}
 	return out
 }

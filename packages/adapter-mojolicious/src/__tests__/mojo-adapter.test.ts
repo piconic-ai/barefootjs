@@ -1062,6 +1062,31 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
   }
 })
 
+describe('MojoAdapter - #1448 Tier C .flat(depth?)', () => {
+  function emitFlat(expr: string): string {
+    const a = new MojoAdapter()
+    const ir = compileToIR(`
+function C({ rows }: { rows: number[][] }) {
+  return <div>{${expr}}</div>
+}
+export { C }
+`, a)
+    return a.generate(ir).template ?? ''
+  }
+
+  test('.flat() emits bf->flat with default depth 1', () => {
+    expect(emitFlat('rows.flat()')).toContain('bf->flat($rows, 1)')
+  })
+
+  test('.flat(2) emits the explicit depth', () => {
+    expect(emitFlat('rows.flat(2)')).toContain('bf->flat($rows, 2)')
+  })
+
+  test('.flat(Infinity) emits the -1 full-depth sentinel', () => {
+    expect(emitFlat('rows.flat(Infinity)')).toContain('bf->flat($rows, -1)')
+  })
+})
+
 // =============================================================================
 // #1448 — `/* @client */` escape hatch for STILL-UNSUPPORTED methods
 // =============================================================================
@@ -1126,7 +1151,6 @@ export function C() {
     // array there, which a template can't mirror.
     { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '->{reduce}' },
     { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '->{flatMap}' },
-    { name: 'flat', expr: `items().flat()`, badEmit: '->{flat}' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
     // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
     // and the variadic `.concat`. The parser refuses these (silently

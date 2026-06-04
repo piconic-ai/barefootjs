@@ -129,6 +129,10 @@ import { fixture as arrayAtDefault } from './methods/array-at-default'
 import { fixture as arrayConcatCopy } from './methods/array-concat-copy'
 import { fixture as arrayReverse } from './methods/array-reverse'
 import { fixture as arrayToReversed } from './methods/array-toReversed'
+// #1448 Tier C — .flat(depth?).
+import { fixture as arrayFlat } from './methods/array-flat'
+import { fixture as arrayFlatDepth } from './methods/array-flat-depth'
+import { fixture as arrayFlatInfinity } from './methods/array-flat-infinity'
 import { fixture as stringToLowerCase } from './methods/string-toLowerCase'
 import { fixture as stringToUpperCase } from './methods/string-toUpperCase'
 import { fixture as stringTrim } from './methods/string-trim'
@@ -316,6 +320,9 @@ export const jsxFixtures: JSXFixture[] = [
   arrayConcatCopy,
   arrayReverse,
   arrayToReversed,
+  arrayFlat,
+  arrayFlatDepth,
+  arrayFlatInfinity,
   // #1448 Tier A — String methods.
   stringToLowerCase,
   stringToUpperCase,

@@ -2339,6 +2339,31 @@ export { C }
   })
 })
 
+describe('GoTemplateAdapter - #1448 Tier C .flat(depth?)', () => {
+  function emitFlat(expr: string): string {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+function C({ rows }: { rows: number[][] }) {
+  return <div>{${expr}}</div>
+}
+export { C }
+`, adapter)
+    return adapter.generate(ir).template ?? ''
+  }
+
+  test('.flat() emits bf_flat with default depth 1', () => {
+    expect(emitFlat('rows.flat()')).toContain('bf_flat .Rows 1')
+  })
+
+  test('.flat(2) emits the explicit depth', () => {
+    expect(emitFlat('rows.flat(2)')).toContain('bf_flat .Rows 2')
+  })
+
+  test('.flat(Infinity) emits the -1 full-depth sentinel', () => {
+    expect(emitFlat('rows.flat(Infinity)')).toContain('bf_flat .Rows -1')
+  })
+})
+
 describe('GoTemplateAdapter - #1448 @client escape hatch (unsupported methods)', () => {
   // Compile a single expression placed in `<div>` text position, with
   // and without the directive, and return both the build errors and
@@ -2390,7 +2415,6 @@ export function C() {
     // array there, which a template can't mirror.
     { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '.Reduce' },
     { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '.FlatMap' },
-    { name: 'flat', expr: `items().flat()`, badEmit: '.Flat' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
     // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
     // and the variadic `.concat`. The parser refuses these (silently
