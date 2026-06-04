@@ -2187,7 +2187,7 @@ function checkSupport(expr: ParsedExpr): SupportResult {
         // C / Tier D-class). Its only meaningful use is side effects inside
         // event handlers / `createEffect` callbacks, which are client JS and
         // never reach this gate. Give it a dedicated reason rather than the
-        // generic "defer to hydration" hint (deferring a `undefined`-valued
+        // generic "defer to hydration" hint (deferring an `undefined`-valued
         // expression still renders nothing).
         if (methodName === 'forEach') {
           return {

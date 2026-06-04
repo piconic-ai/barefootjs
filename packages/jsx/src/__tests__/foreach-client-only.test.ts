@@ -69,8 +69,11 @@ describe('.forEach() — client-callback use passes through (#1448)', () => {
     const result = compileJSX(source, 'C.tsx', { adapter })
     const client = result.files.find(f => f.path.endsWith('.client.js'))
     expect(client).toBeDefined()
-    // Both the handler call and the createEffect call survive.
-    const occurrences = client!.content.match(/forEach/g) ?? []
+    // Target the user's own `items().forEach(...)` calls specifically — a bare
+    // `/forEach/g` count would also catch any `forEach` the client-code
+    // generator emits for loop / hydration infrastructure, making this flaky.
+    // Both the handler call and the createEffect call must survive verbatim.
+    const occurrences = client!.content.match(/items\(\)\.forEach\(/g) ?? []
     expect(occurrences.length).toBe(2)
   })
 })
