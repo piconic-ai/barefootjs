@@ -46,6 +46,7 @@ import {
   type IRNodeEmitter,
   type EmitIRNode,
   type AttrValueEmitter,
+  type SupportResult,
   isBooleanAttr,
   parseExpression,
   isSupported,
@@ -286,6 +287,22 @@ function slotIdToFieldSuffix(slotId: string): string {
 interface PrimitiveSpec {
   arity: number
   emit: (args: string[]) => string
+}
+
+// Generic remediation appended to BF101 / BF102 diagnostics whose reason
+// doesn't already carry actionable next steps.
+const GO_REMEDIATION_OPTIONS =
+  'Options:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code'
+
+// Build the `suggestion.message` for an unsupported expression/condition.
+// A self-contained reason (it already spells out the fix — e.g. the
+// pre-compute / @client hint or the tailored forEach message) is shown
+// as-is; a low-level reason gets the generic options appended; with no
+// reason at all we fall back to the options alone.
+function buildUnsupportedSuggestion(support: SupportResult): string {
+  if (!support.reason) return GO_REMEDIATION_OPTIONS
+  if (support.selfContained) return support.reason
+  return `${support.reason}\n\n${GO_REMEDIATION_OPTIONS}`
 }
 
 const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
@@ -3140,7 +3157,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       message: `Higher-order method '.${method}' shape cannot be lowered to a Go template action`,
       loc: this.makeLoc(),
       suggestion: {
-        message: 'Options:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code',
+        message: GO_REMEDIATION_OPTIONS,
       },
     })
     return `""`
@@ -4111,9 +4128,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         message: `Expression not supported: ${trimmed}`,
         loc: this.makeLoc(),
         suggestion: {
-          message: support.reason
-            ? `${support.reason}\n\nOptions:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code`
-            : 'Options:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code',
+          message: buildUnsupportedSuggestion(support),
         },
       })
       // Return empty string - Go template comments must be separate actions
@@ -4151,7 +4166,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             message: `Complex predicate in else-if is not supported: ${altIfStmt.condition}`,
             loc: this.makeLoc(),
             suggestion: {
-              message: 'Options:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code',
+              message: GO_REMEDIATION_OPTIONS,
             },
           })
         }
@@ -4248,9 +4263,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         message: `Condition not supported: ${trimmed}`,
         loc: this.makeLoc(),
         suggestion: {
-          message: support.reason
-            ? `${support.reason}\n\nOptions:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code`
-            : 'Expression contains unsupported syntax',
+          message: buildUnsupportedSuggestion(support),
         },
       })
       // Return false - Go template comments must be separate actions

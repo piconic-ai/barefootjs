@@ -229,6 +229,13 @@ export interface SupportResult {
   supported: boolean
   level?: SupportLevel
   reason?: string
+  /**
+   * The `reason` already spells out the fix (the pre-compute / `@client`
+   * hint, or a tailored message like the `forEach` diagnostic), so adapters
+   * surface it as-is instead of appending their own remediation block.
+   * Low-level reasons (operators, comparators, predicates) leave this unset.
+   */
+  selfContained?: boolean
 }
 
 // JS Array / String prototype methods that the template-language
@@ -261,7 +268,8 @@ const UNSUPPORTED_METHODS = new Set([
   // refuse. A 2-arg call whose reducer/init shape is off-catalogue
   // returns an explicit `unsupported` from the call branch with a richer
   // message. The rest stay refused — see #1448 Tier C for the design
-  // questions.
+  // questions. `forEach` carries a tailored reason (see
+  // `UNSUPPORTED_METHOD_REASONS`).
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap', 'flat',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
@@ -326,6 +334,20 @@ const UNSUPPORTED_METHODS = new Set([
   'charAt', 'charCodeAt', 'codePointAt', 'normalize',
   'substring', 'substr', 'match', 'matchAll', 'search',
 ])
+
+// Per-method override reasons for the BF101 refusal. A method here is still
+// refused via `UNSUPPORTED_METHODS` above; this only swaps the generic hint
+// for a tailored one. Add a row here rather than a branch in the support gate
+// when a method needs special wording.
+const UNSUPPORTED_METHOD_REASONS: Record<string, string> = {
+  // `forEach` returns `undefined`, so the generic pre-compute / @client hint
+  // is misleading (renders nothing either way) — steer to `.map(...)` /
+  // `createEffect`. Rationale pinned in foreach-client-only.test.ts.
+  forEach:
+    `'.forEach()' returns undefined and has no template-position meaning. ` +
+    `Use it for side effects inside an event handler or createEffect callback ` +
+    `(client JS), or use '.map(...)' if you meant to render each item.`,
+}
 
 // Methods that lower at their single-argument form but whose EXTRA
 // argument is meaningful and NOT yet lowered: the `fromIndex` of
@@ -2180,11 +2202,17 @@ function checkSupport(expr: ParsedExpr): SupportResult {
       // This handles the case where the pattern wasn't recognized as higher-order
       if (expr.callee.kind === 'member') {
         const methodName = expr.callee.property
+        // No template lowering → BF101. `UNSUPPORTED_METHOD_REASONS` supplies
+        // a tailored reason for some methods (e.g. `forEach`); the rest get the
+        // generic hint. Both already carry next steps, hence `selfContained`.
         if (UNSUPPORTED_METHODS.has(methodName)) {
           return {
             supported: false,
             level: 'L5_UNSUPPORTED',
-            reason: `Method '${methodName}()' has no template lowering and requires client-side evaluation. Wrap the expression in /* @client */ to defer it to hydration, or pre-compute the value before rendering.`,
+            selfContained: true,
+            reason:
+              UNSUPPORTED_METHOD_REASONS[methodName] ??
+              `'${methodName}()' can't render on the server. Pre-compute the value, or add /* @client */ for client-only (no SSR).`,
           }
         }
       }
