@@ -81,9 +81,20 @@ export const UI_SHELL_HTML = /* html */ `<!doctype html>
         flex: 1;
         min-height: 0;
         display: grid;
-        grid-template-columns: 1fr 1.4fr 1.2fr;
-        gap: 1px;
+        /* 3 panels with two draggable 6px gutters between them. The exact
+           column sizes are driven from JS (see the resizable-panels code). */
+        grid-template-columns: 1fr 6px 1.4fr 6px 1.2fr;
+        background: var(--bg);
+      }
+      /* Draggable divider between panels. */
+      .gutter {
         background: var(--border);
+        cursor: col-resize;
+        transition: background 0.15s;
+      }
+      .gutter:hover,
+      .gutter.dragging {
+        background: var(--accent);
       }
       .panel {
         display: flex;
@@ -441,6 +452,8 @@ export const UI_SHELL_HTML = /* html */ `<!doctype html>
         </div>
       </section>
 
+      <div class="gutter" data-gutter="0" role="separator" aria-orientation="vertical"></div>
+
       <!-- Middle: Code Explorer (editable Monaco editor) -->
       <section class="panel" aria-label="Code Explorer">
         <div class="panel-head">
@@ -460,12 +473,13 @@ export const UI_SHELL_HTML = /* html */ `<!doctype html>
         </div>
       </section>
 
+      <div class="gutter" data-gutter="1" role="separator" aria-orientation="vertical"></div>
+
       <!-- Right: Live Preview (mini-browser) -->
       <section class="panel" aria-label="Preview">
         <div class="panel-head">
           Preview
           <span class="preview-actions">
-            <button type="button" id="refresh-preview">Reload</button>
             <a id="open-tab" href="/_preview" target="_blank" rel="noreferrer">Open in new tab ↗</a>
           </span>
         </div>
@@ -519,7 +533,6 @@ const MONACO_CDN = ${JSON.stringify(MONACO_CDN)}
 const treeEl = document.getElementById('file-tree')
 const editorEl = document.getElementById('editor')
 const runBtn = document.getElementById('run-btn')
-const refreshBtn = document.getElementById('refresh-preview')
 const iframe = document.getElementById('preview')
 const toastEl = document.getElementById('toast')
 const urlInputEl = document.getElementById('url-input')
@@ -798,9 +811,6 @@ function reloadPreview() {
   iframe.src = iframeUrlFor(currentPath)
 }
 
-if (refreshBtn) {
-  refreshBtn.addEventListener('click', () => reloadPreview())
-}
 if (urlGoEl && urlInputEl) {
   const go = () => navigatePreview(urlInputEl.value.trim() || '/')
   urlGoEl.addEventListener('click', go)
@@ -839,6 +849,53 @@ if (iframe) {
 if (urlReloadEl) {
   urlReloadEl.addEventListener('click', () => reloadPreview())
 }
+
+// Resizable panels: drag a gutter to reallocate width between its two
+// neighbouring panels. Column sizes are kept as fr units and written to
+// main's grid-template-columns. Monaco (automaticLayout) and the preview
+// iframe reflow on resize automatically.
+;(function setupResizablePanels() {
+  const mainEl = document.querySelector('main')
+  if (!mainEl) return
+  const cols = [1, 1.4, 1.2] // fr widths of the 3 panels
+  const MIN_FR = 0.3 // keep every panel usably wide
+  const apply = () => {
+    mainEl.style.gridTemplateColumns =
+      cols[0] + 'fr 6px ' + cols[1] + 'fr 6px ' + cols[2] + 'fr'
+  }
+  apply()
+  const panels = mainEl.querySelectorAll(':scope > .panel')
+  mainEl.querySelectorAll(':scope > .gutter').forEach((gutter) => {
+    const gi = Number(gutter.getAttribute('data-gutter')) // 0 or 1
+    gutter.addEventListener('pointerdown', (e) => {
+      e.preventDefault()
+      const startX = e.clientX
+      const leftPx = panels[gi].offsetWidth
+      const rightPx = panels[gi + 1].offsetWidth
+      const leftFr = cols[gi]
+      const rightFr = cols[gi + 1]
+      const sumFr = leftFr + rightFr
+      const pxPerFr = (leftPx + rightPx) / sumFr || 1
+      gutter.classList.add('dragging')
+      gutter.setPointerCapture(e.pointerId)
+      const onMove = (ev) => {
+        let l = leftFr + (ev.clientX - startX) / pxPerFr
+        l = Math.max(MIN_FR, Math.min(sumFr - MIN_FR, l))
+        cols[gi] = l
+        cols[gi + 1] = sumFr - l
+        apply()
+      }
+      const onUp = (ev) => {
+        gutter.classList.remove('dragging')
+        gutter.releasePointerCapture(ev.pointerId)
+        gutter.removeEventListener('pointermove', onMove)
+        gutter.removeEventListener('pointerup', onUp)
+      }
+      gutter.addEventListener('pointermove', onMove)
+      gutter.addEventListener('pointerup', onUp)
+    })
+  })
+})()
 
 // The core live-recompile loop, shared by the Run button and the chat agent:
 // collect every editor model's text → compile in the browser worker → POST to
