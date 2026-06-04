@@ -229,6 +229,16 @@ export interface SupportResult {
   supported: boolean
   level?: SupportLevel
   reason?: string
+  /**
+   * The `reason` already carries actionable remediation (e.g. the
+   * pre-compute / `/* @client *​/` hint, or a tailored message like the
+   * `forEach` diagnostic). Adapters should surface `reason` as-is and NOT
+   * append their own generic "Options" block, which would duplicate the
+   * guidance — or, for tailored messages, contradict it. Low-level
+   * reasons (operators, comparators, complex predicates) leave this unset
+   * so adapters still attach their remediation options.
+   */
+  selfContained?: boolean
 }
 
 // JS Array / String prototype methods that the template-language
@@ -2210,6 +2220,10 @@ function checkSupport(expr: ParsedExpr): SupportResult {
           return {
             supported: false,
             level: 'L5_UNSUPPORTED',
+            // Both the tailored and generic reasons already spell out the
+            // next steps, so mark them self-contained — adapters skip their
+            // generic options block (which would duplicate / contradict it).
+            selfContained: true,
             reason:
               UNSUPPORTED_METHOD_REASONS[methodName] ??
               `'${methodName}()' can't render on the server. Pre-compute the value, or add /* @client */ for client-only (no SSR).`,

@@ -2425,6 +2425,40 @@ export function C() {
     })
   }
 
+  // The diagnostic's `suggestion.message` is shaped by `isSupported`'s
+  // `selfContained` flag: reasons that already spell out the fix are shown
+  // as-is, while low-level parser reasons still get the adapter's generic
+  // "Options" remediation appended so users never lose actionable steps.
+  function suggestionFor(expr: string): string {
+    const { errors } = emit(expr, false)
+    const e = errors.find(e => e.code === 'BF101' || e.code === 'BF102')
+    return e?.suggestion?.message ?? ''
+  }
+
+  test('self-contained reason is shown without the generic Options block', () => {
+    // Generic unsupported-method reason already carries the remedy.
+    const msg = suggestionFor('items().reduce((a, b) => a + b.n)')
+    expect(msg).toContain('no SSR')
+    expect(msg).not.toContain('Options:')
+  })
+
+  test('tailored forEach reason keeps its own guidance, no Options block', () => {
+    const msg = suggestionFor('items().forEach(x => x)')
+    expect(msg).toContain("'.map(")
+    // The forEach message deliberately steers away from @client; the
+    // generic Options block (which re-suggests it) must not be appended.
+    expect(msg).not.toContain('Options:')
+    expect(msg).not.toContain('@client')
+  })
+
+  test('low-level reason still gets the actionable Options block appended', () => {
+    // `typeof` has no structured remedy reason → users must keep the
+    // generic next steps (regression guard for #1730 review).
+    const msg = suggestionFor('typeof items()')
+    expect(msg).toContain('Options:')
+    expect(msg).toContain('@client')
+  })
+
   // Predicate-level use of an unsupported string method also fails the
   // build loudly (intended): a `.filter(t => t.name.charAt(0) === "a")`
   // whose predicate calls one of the gated methods now refuses the whole
