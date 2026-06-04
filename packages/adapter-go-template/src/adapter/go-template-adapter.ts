@@ -29,6 +29,7 @@ import type {
   SortComparator,
   ReduceOp,
   FlatDepth,
+  FlatMapOp,
   TemplatePart,
   IRIfStatement,
   IRProvider,
@@ -3401,6 +3402,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // template/runtime/bf.go.
     const d = depth === 'infinity' ? -1 : depth
     return `bf_flat ${wrapIfMultiToken(emit(object))} ${d}`
+  }
+
+  flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
+    // `.flatMap(i => i)` / `.flatMap(i => i.field)` → `bf_flat_map <recv>
+    // "<keyKind>" "<keyName>"`. The runtime projects each item (self or a
+    // struct field) then flattens one level. The field name uses the Go
+    // struct-field capitalisation, matching `bf_reduce` / `bf_sort`.
+    const recv = wrapIfMultiToken(emit(object))
+    if (op.key.kind === 'self') {
+      return `bf_flat_map ${recv} "self" ""`
+    }
+    return `bf_flat_map ${recv} "field" "${capitalize(op.key.field)}"`
   }
 
   unsupported(raw: string, _reason: string): string {

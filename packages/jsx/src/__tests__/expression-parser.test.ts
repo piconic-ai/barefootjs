@@ -1555,3 +1555,44 @@ describe('expression-parser — .flat(depth?) lowering (#1448 Tier C)', () => {
     expect(exprToString(parseExpression('arr.flat(0)'))).toBe('arr.flat(0)')
   })
 })
+
+describe('expression-parser — .flatMap(fn) field projection (#1448 Tier C)', () => {
+  // Accepted catalogue: self (`i => i`) and single field (`i => i.field`).
+  const accepted: Array<[string, string, { kind: 'self' } | { kind: 'field'; field: string }]> = [
+    ['self (i => i)', 'arr.flatMap(i => i)', { kind: 'self' }],
+    ['field (i => i.tags)', 'arr.flatMap(i => i.tags)', { kind: 'field', field: 'tags' }],
+    ['single-return block body', 'arr.flatMap(i => { return i.tags })', { kind: 'field', field: 'tags' }],
+  ]
+  for (const [label, expr, key] of accepted) {
+    test(`${label} — lowers to a flatMap array-method`, () => {
+      const result = parseExpression(expr)
+      expect(result.kind).toBe('array-method')
+      if (result.kind === 'array-method' && result.method === 'flatMap') {
+        expect(result.flatMapOp.key).toEqual(key)
+      } else {
+        throw new Error(`expected a flatMap array-method, got ${result.kind}`)
+      }
+    })
+  }
+
+  // Out of the field-projection catalogue → refused (BF101 + @client hint).
+  const refused = [
+    ['array-literal projection', 'arr.flatMap(i => [i.a, i.b])'],
+    ['deep field access', 'arr.flatMap(i => i.a.b)'],
+    ['index/array callback params', 'arr.flatMap((i, idx) => i.tags)'],
+  ]
+  for (const [label, expr] of refused) {
+    test(`${label} — refuses`, () => {
+      const result = parseExpression(expr)
+      expect(result.kind).toBe('unsupported')
+      if (result.kind === 'unsupported') {
+        expect(result.reason).toContain('field projection')
+      }
+    })
+  }
+
+  test('exprToString / stringify round-trip the callback', () => {
+    expect(exprToString(parseExpression('arr.flatMap(i => i.tags)'))).toBe('arr.flatMap(i => i.tags)')
+    expect(exprToString(parseExpression('arr.flatMap(t => t)'))).toBe('arr.flatMap(t => t)')
+  })
+})

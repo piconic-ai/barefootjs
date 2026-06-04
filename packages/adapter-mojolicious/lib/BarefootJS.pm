@@ -527,6 +527,25 @@ sub flat ($self, $recv, $depth = 1) {
     return \@out;
 }
 
+# `Array.prototype.flatMap(fn)` value-returning field projection
+# (#1448 Tier C) — map each element through a self / field projection,
+# then flatten one level. `field` reads a HASH-ref key (the raw JS prop
+# name, as `bf->reduce` does); a projected non-ARRAY value is kept as-is
+# (flatMap = map + flat(1)). Non-ARRAY receiver → [].
+sub flat_map ($self, $recv, $key_kind, $key) {
+    return [] unless ref($recv) eq 'ARRAY';
+    my @projected;
+    for my $el (@$recv) {
+        if ($key_kind eq 'field') {
+            push @projected, ref($el) eq 'HASH' ? $el->{$key} : $el;
+        }
+        else {
+            push @projected, $el;
+        }
+    }
+    return $self->flat(\@projected, 1);
+}
+
 # `String.prototype.trim()` — strip leading + trailing whitespace.
 # JS's `String.prototype.trim` matches `\s` in the Unicode sense
 # (any whitespace including non-breaking space U+00A0); Perl's `\s`

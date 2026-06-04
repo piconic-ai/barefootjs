@@ -56,7 +56,7 @@ import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
  * the `IRNodeEmitter` interface.
  */
 type MojoRenderCtx = Record<string, never>
-import type { ParsedExpr, ParsedStatement, SortComparator, ReduceOp, FlatDepth, TemplatePart } from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND } from '@barefootjs/shared'
 
 interface PrimitiveSpec {
@@ -1573,6 +1573,15 @@ function renderFlatMethod(recv: string, depth: FlatDepth): string {
   return `bf->flat(${recv}, ${d})`
 }
 
+// `.flatMap(i => i)` / `.flatMap(i => i.field)` → `bf->flat_map($recv,
+// 'self'|'field', 'field')`. The runtime projects each item then flattens
+// one level. The field key is the raw JS prop name (Perl hashes are keyed
+// by it), mirroring `bf->reduce`. See `sub flat_map` in BarefootJS.pm.
+function renderFlatMapMethod(recv: string, op: FlatMapOp): string {
+  if (op.key.kind === 'self') return `bf->flat_map(${recv}, 'self', '')`
+  return `bf->flat_map(${recv}, 'field', '${op.key.field}')`
+}
+
 /** True when `type` is the `string` primitive. */
 function isStringTypeInfo(type: TypeInfo | undefined): boolean {
   return type?.kind === 'primitive' && type.primitive === 'string'
@@ -1763,6 +1772,10 @@ class MojoFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth)
   }
 
+  flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
+    return renderFlatMapMethod(emit(object), op)
+  }
+
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
     return '1'
   }
@@ -1950,6 +1963,10 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
 
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
     return renderFlatMethod(emit(object), depth)
+  }
+
+  flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
+    return renderFlatMapMethod(emit(object), op)
   }
 
   conditional(
