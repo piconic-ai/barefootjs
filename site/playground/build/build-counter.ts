@@ -58,6 +58,14 @@ await import('./build-vendor')
 log('0b/4 registry-bundle.ts + tokens-bundle.ts')
 await import('./build-registry')
 
+// 0c. knowledge-bundle.ts — extract BarefootJS/Hono knowledge via the `bf` CLI
+//     (docs / search / guide) and freeze it as generated/knowledge-bundle.ts.
+//     The tool-calling agent (agent.ts, imported by worker.ts) queries this at
+//     request time; the CLI cannot run inside workerd, so it must run here at
+//     build time, before the host worker bundle is produced/served.
+log('0c/4 knowledge-bundle.ts')
+await import('./build-knowledge')
+
 // Now that the generated bundles exist, it's safe to load compile-app /
 // build-compile-worker (both statically import from `../generated/...`).
 const { compileApp } = await import('./compile-app')

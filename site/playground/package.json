@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250101.0",
+    "@hono/cli": "0.1.10",
     "@unocss/core": "^66.0.0",
     "@unocss/preset-wind3": "^66.0.0",
     "bun-types": "^1.1.0",
