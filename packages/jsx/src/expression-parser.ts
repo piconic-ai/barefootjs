@@ -230,13 +230,10 @@ export interface SupportResult {
   level?: SupportLevel
   reason?: string
   /**
-   * The `reason` already carries actionable remediation (e.g. the
-   * pre-compute / `/* @client *​/` hint, or a tailored message like the
-   * `forEach` diagnostic). Adapters should surface `reason` as-is and NOT
-   * append their own generic "Options" block, which would duplicate the
-   * guidance — or, for tailored messages, contradict it. Low-level
-   * reasons (operators, comparators, complex predicates) leave this unset
-   * so adapters still attach their remediation options.
+   * The `reason` already spells out the fix (the pre-compute / `@client`
+   * hint, or a tailored message like the `forEach` diagnostic), so adapters
+   * surface it as-is instead of appending their own remediation block.
+   * Low-level reasons (operators, comparators, predicates) leave this unset.
    */
   selfContained?: boolean
 }
@@ -271,9 +268,8 @@ const UNSUPPORTED_METHODS = new Set([
   // refuse. A 2-arg call whose reducer/init shape is off-catalogue
   // returns an explicit `unsupported` from the call branch with a richer
   // message. The rest stay refused — see #1448 Tier C for the design
-  // questions. `forEach` stays listed here too, with a tailored refusal
-  // reason in `UNSUPPORTED_METHOD_REASONS` explaining its `undefined`
-  // return (client-callback-only; #1448 Tier C / Tier D-class).
+  // questions. `forEach` carries a tailored reason (see
+  // `UNSUPPORTED_METHOD_REASONS`).
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap', 'flat',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
@@ -339,19 +335,14 @@ const UNSUPPORTED_METHODS = new Set([
   'substring', 'substr', 'match', 'matchAll', 'search',
 ])
 
-// Per-method override reasons for the BF101 refusal. A method listed here
-// is still refused via `UNSUPPORTED_METHODS` above — this only swaps the
-// generic "pre-compute, or /* @client */ for client-only" hint for a
-// method-specific one. Add a row here instead of a new branch in the
-// support gate when a method needs a tailored explanation.
+// Per-method override reasons for the BF101 refusal. A method here is still
+// refused via `UNSUPPORTED_METHODS` above; this only swaps the generic hint
+// for a tailored one. Add a row here rather than a branch in the support gate
+// when a method needs special wording.
 const UNSUPPORTED_METHOD_REASONS: Record<string, string> = {
-  // `.forEach()` returns `undefined`, so there is no value to render in
-  // template position — it is never a lowering target (#1448 Tier C /
-  // Tier D-class). Its only meaningful use is side effects inside event
-  // handlers / `createEffect` callbacks, which are client JS and never
-  // reach this gate. The generic "pre-compute / @client" hint is misleading
-  // here (an `undefined`-valued expression renders nothing either way), so
-  // point at `.map(...)` / `createEffect` instead.
+  // `forEach` returns `undefined`, so the generic pre-compute / @client hint
+  // is misleading (renders nothing either way) — steer to `.map(...)` /
+  // `createEffect`. Rationale pinned in foreach-client-only.test.ts.
   forEach:
     `'.forEach()' returns undefined and has no template-position meaning. ` +
     `Use it for side effects inside an event handler or createEffect callback ` +
@@ -2211,18 +2202,13 @@ function checkSupport(expr: ParsedExpr): SupportResult {
       // This handles the case where the pattern wasn't recognized as higher-order
       if (expr.callee.kind === 'member') {
         const methodName = expr.callee.property
-        // A method with no template lowering is refused as BF101. Most get
-        // the generic pre-compute / `@client` hint; methods listed in
-        // `UNSUPPORTED_METHOD_REASONS` (e.g. `forEach`) get a tailored
-        // explanation instead — add a row to that map rather than a branch
-        // here when a method needs special wording.
+        // No template lowering → BF101. `UNSUPPORTED_METHOD_REASONS` supplies
+        // a tailored reason for some methods (e.g. `forEach`); the rest get the
+        // generic hint. Both already carry next steps, hence `selfContained`.
         if (UNSUPPORTED_METHODS.has(methodName)) {
           return {
             supported: false,
             level: 'L5_UNSUPPORTED',
-            // Both the tailored and generic reasons already spell out the
-            // next steps, so mark them self-contained — adapters skip their
-            // generic options block (which would duplicate / contradict it).
             selfContained: true,
             reason:
               UNSUPPORTED_METHOD_REASONS[methodName] ??
