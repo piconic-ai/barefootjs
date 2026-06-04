@@ -66,6 +66,7 @@
     }
   },
   "devDependencies": {
+    "@barefootjs/jsx": "workspace:*",
     "@happy-dom/global-registrator": "^20.0.11",
     "typescript": "^5.0.0"
   }

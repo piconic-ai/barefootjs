@@ -27,8 +27,11 @@ import { spawnSync } from 'node:child_process'
 import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { compileApp } from './compile-app'
-import { buildCompileWorker } from './build-compile-worker'
+// NOTE: `./compile-app` and `./build-compile-worker` are imported dynamically
+// AFTER step 0 has generated `generated/registry-bundle.ts` and
+// `generated/vendor-bundle.ts`, which they statically import. A top-level
+// static import here would resolve those generated modules before step 0
+// runs, breaking the very first run when they don't exist yet.
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PLAYGROUND = join(HERE, '..')
@@ -42,12 +45,23 @@ function log(step: string) {
 
 await mkdir(GENERATED, { recursive: true })
 
-// 0. registry-bundle.ts + tokens-bundle.ts — pre-compile the FIXED ui registry
-//    components (Button, Card, …) and the design-token CSS. compile-app /
-//    worker.ts import these generated modules, so they must exist before
-//    step 1 runs. (Idempotent; safe to re-run.)
-log('0/4 registry-bundle.ts + tokens-bundle.ts')
+// 0a. vendor-bundle.ts — the FIXED framework Worker-Loader modules
+//     (hono + @barefootjs/hono runtime). compile-app.ts imports it through
+//     vendor-modules.ts, so it must exist before step 1 runs.
+log('0a/4 vendor-bundle.ts')
+await import('./build-vendor')
+
+// 0b. registry-bundle.ts + tokens-bundle.ts — pre-compile the FIXED ui registry
+//     components (Button, Card, …) and the design-token CSS. compile-app /
+//     worker.ts import these generated modules, so they must exist before
+//     step 1 runs. (Idempotent; safe to re-run.)
+log('0b/4 registry-bundle.ts + tokens-bundle.ts')
 await import('./build-registry')
+
+// Now that the generated bundles exist, it's safe to load compile-app /
+// build-compile-worker (both statically import from `../generated/...`).
+const { compileApp } = await import('./compile-app')
+const { buildCompileWorker } = await import('./build-compile-worker')
 
 // 1. rt-counter.ts — the default app's Worker-Loader modules + host assets.
 log('1/4 rt-counter.ts')

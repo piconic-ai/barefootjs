@@ -59,9 +59,31 @@ clean `scriptBasePath` of `/static/components/`.
 
 ```sh
 cd site/playground
-bun run build/build-counter.ts      # (re)build the embedded app bundle
-bunx wrangler dev --port 8799       # worker_loaders runs locally (miniflare)
-# open http://127.0.0.1:8799/
+
+# Default: MOCK AI, no Cloudflare login required.
+bun run dev                          # build + wrangler dev --local
+# open http://127.0.0.1:8787/
+
+# Real Workers AI (requires `wrangler login` once, and a Workers AI-enabled
+# account — calls proxy to the real account and may incur usage charges).
+bun run dev:ai                       # build + wrangler dev (remote AI binding)
+```
+
+`bun run dev` runs `build/build-counter.ts` (writes `generated/`) and then
+starts `wrangler dev --local`. `--local` keeps the Workers AI binding offline,
+so `/_pg/chat` falls back to MOCK mode — no `wrangler login` / account ID
+needed just to boot the playground UI.
+
+`bun run dev:ai` drops `--local`: wrangler establishes a remote proxy for
+`env.AI` and `/_pg/chat` calls the real model. Run `wrangler login` first.
+
+The lower-level recipe still works if you want explicit control:
+
+```sh
+bun run build/build-counter.ts      # (re)build the embedded artifacts
+bunx wrangler dev --local           # boot the host worker (mock AI)
+# …or, with `wrangler login` first, for real AI:
+bunx wrangler dev
 ```
 
 ## Roadmap

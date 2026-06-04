@@ -7,7 +7,11 @@
   // This binding points at no external resource — it only enables runtime
   // loading of generated Worker code into fresh, isolated V8 isolates.
   "worker_loaders": [{ "binding": "LOADER" }],
-  // Workers AI: backs the chat agent at POST /_pg/chat. Absent in local dev
-  // (no account), so the endpoint falls back to MOCK mode there.
+  // Workers AI: backs the chat agent at POST /_pg/chat.
+  //   - `bun run dev`    passes `--local` → binding "not supported" → `env.AI`
+  //                      undefined → handleChat falls back to MOCK mode (no
+  //                      `wrangler login` / Cloudflare account needed).
+  //   - `bun run dev:ai` runs without `--local` → wrangler proxies AI to the
+  //                      real account (requires `wrangler login` first).
   "ai": { "binding": "AI" }
 }

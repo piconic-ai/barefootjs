@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "build": "bun run build/build-counter.ts",
+    "dev": "bun run build && wrangler dev --local",
+    "dev:ai": "bun run build && wrangler dev",
+    "deploy": "bun run build && wrangler deploy"
   },
   "dependencies": {
     "@barefootjs/client": "workspace:*",
     "@barefootjs/hono": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
     "hono": "^4"
   },
   "devDependencies": {
@@ -17,6 +20,7 @@
     "@unocss/core": "^66.0.0",
     "@unocss/preset-wind3": "^66.0.0",
     "bun-types": "^1.1.0",
+    "esbuild": "0.25.4",
     "esbuild-wasm": "0.25.4",
     "unocss": "^66.0.0",
     "wrangler": "^4.90.0"
