@@ -17,6 +17,8 @@
     "barefootjs-components",
     "barefootjs-csr-example",
     "barefootjs-echo-example",
+    "barefootjs-elysia-example",
+    "barefootjs-h3-example",
     "barefootjs-hono-jsx-example",
     "barefootjs-integrations-shared",
     "barefootjs-mojolicious-example",
