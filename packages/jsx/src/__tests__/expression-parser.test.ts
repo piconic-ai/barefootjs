@@ -1580,6 +1580,9 @@ describe('expression-parser — .flatMap(fn) field projection (#1448 Tier C)', (
     ['array-literal projection', 'arr.flatMap(i => [i.a, i.b])'],
     ['deep field access', 'arr.flatMap(i => i.a.b)'],
     ['index/array callback params', 'arr.flatMap((i, idx) => i.tags)'],
+    // Wrong-arity forms are intercepted by the same arm (not the generic
+    // "flatMap has no template lowering" gate) so the reason stays tailored.
+    ['2-arg flatMap(fn, thisArg)', 'arr.flatMap(i => i.tags, ctx)'],
   ]
   for (const [label, expr] of refused) {
     test(`${label} — refuses`, () => {

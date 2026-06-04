@@ -330,11 +330,12 @@ const UNSUPPORTED_METHODS = new Set([
   // `array-method` IR (structured `FlatDepth`) + `bf_flat` (Go) /
   // `bf->flat` (Mojo). `flatMap` stays listed as a fallback: the
   // field-projection form (`i => i` / `i => i.field`) lowers via a
-  // structured `FlatMapOp`, but the convertNode arm intercepts that
-  // shape before this gate — only the degenerate forms (a bare method
-  // reference, a 0- / 2-arg call) reach here and refuse. Array-literal /
-  // transform callbacks refuse with an explicit reason from the arm. The
-  // JSX-returning `.flatMap` lowers as an `IRLoop` upstream. See #1448.
+  // structured `FlatMapOp`. The convertNode arm intercepts EVERY
+  // `.flatMap(...)` call before this gate — matching shapes lower, and the
+  // off-catalogue / wrong-arity forms get a tailored `unsupported` reason
+  // there — so only a bare method *reference* (`arr.flatMap` uncalled)
+  // falls through to this gate. The JSX-returning `.flatMap` lowers as an
+  // `IRLoop` upstream. See #1448.
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
@@ -881,8 +882,13 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // array-literal / transform forms aren't lowered, so they refuse
       // with BF101 + the @client hint. Go uses `bf_flat_map`; Mojo uses
       // `bf->flat_map`.
-      if (callee.property === 'flatMap' && node.arguments.length === 1) {
-        const flatMapOp = extractFlatMapOpFromTS(node.arguments[0])
+      // Intercept EVERY `.flatMap(...)` call (not just the 1-arg form) so
+      // the off-catalogue and wrong-arity shapes get this tailored reason
+      // rather than the generic "flatMap has no template lowering" gate
+      // message, which now misleads (the field-projection form does lower).
+      if (callee.property === 'flatMap') {
+        const flatMapOp =
+          node.arguments.length === 1 ? extractFlatMapOpFromTS(node.arguments[0]) : null
         if (flatMapOp) {
           return {
             kind: 'array-method',
@@ -896,10 +902,11 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           kind: 'unsupported',
           raw,
           reason:
-            `flatMap shape not supported. Accepted (field projection):\n` +
+            `flatMap shape not supported. Accepted (field projection, no thisArg):\n` +
             `  arr.flatMap(i => i)         (flatten one level)\n` +
             `  arr.flatMap(i => i.field)   (flatten a per-item array field)\n` +
-            `Array-literal / transform callbacks aren't lowered yet. ` +
+            `Array-literal / transform callbacks and the 2-arg ` +
+            `\`flatMap(fn, thisArg)\` form aren't lowered. ` +
             `Wrap the call in /* @client */ to evaluate at hydration.`,
         }
       }
