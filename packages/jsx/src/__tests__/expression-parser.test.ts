@@ -1588,6 +1588,9 @@ describe('expression-parser — .flatMap(fn) projection (#1448 Tier C)', () => {
     ['tuple with literal element', 'arr.flatMap(i => [i.a, "x"])'],
     ['tuple with deep access', 'arr.flatMap(i => [i.a, i.b.c])'],
     ['tuple with spread', 'arr.flatMap(i => [...i.a])'],
+    // Empty tuple is a degenerate no-op — refused so emitters never
+    // produce a zero-arg `flat_map_tuple` call.
+    ['empty tuple', 'arr.flatMap(i => [])'],
     // Wrong-arity forms are intercepted by the same arm (not the generic
     // "flatMap has no template lowering" gate) so the reason stays tailored.
     ['2-arg flatMap(fn, thisArg)', 'arr.flatMap(i => i.tags, ctx)'],

@@ -1633,6 +1633,10 @@ export function extractFlatMapOpFromTS(cbNode: ts.Node): FlatMapOp | null {
   // lowered). flat(1) removes only the literal's wrapper, so each leaf is
   // appended verbatim — handled by the `bf_flat_map_tuple` runtime.
   if (ts.isArrayLiteralExpression(inner)) {
+    // An empty tuple (`i => []`) is a degenerate no-op projection (always
+    // yields nothing). Refuse it so the emitters never produce a
+    // zero-arg `bf_flat_map_tuple` / `bf->flat_map_tuple(...,)` call.
+    if (inner.elements.length === 0) return null
     const elements: FlatMapLeaf[] = []
     for (const el of inner.elements) {
       // Spread / holes (`[...xs]`, `[, x]`) aren't leaves.
