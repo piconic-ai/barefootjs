@@ -63,6 +63,7 @@ func FuncMap() template.FuncMap {
 		"bf_slice":          Slice,
 		"bf_reverse":        Reverse,
 		"bf_flat":           Flat,
+		"bf_flat_map":       FlatMap,
 		"bf_first":          First,
 		"bf_last":           Last,
 		"bf_arr":            Arr,
@@ -1005,6 +1006,29 @@ func Flat(items any, depth int) []any {
 		}
 	}
 	return out
+}
+
+// FlatMap projects each element through a `self` / `field` projection and
+// flattens the result one level. Lowers value-returning
+// `Array.prototype.flatMap(fn)` for the field-projection catalogue
+// (#1448 Tier C): `items.flatMap(i => i)` (self) and
+// `items.flatMap(i => i.field)` (field). A projected non-array value is
+// kept as-is (flatMap = map + flat(1)). Non-array receiver → empty.
+func FlatMap(items any, keyKind, keyName string) []any {
+	v := reflect.ValueOf(items)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return []any{}
+	}
+	projected := make([]any, 0, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		el := v.Index(i).Interface()
+		if keyKind == "field" {
+			projected = append(projected, getFieldValue(el, keyName))
+		} else {
+			projected = append(projected, el)
+		}
+	}
+	return Flat(projected, 1)
 }
 
 // First returns the first element of a slice, or nil if empty.

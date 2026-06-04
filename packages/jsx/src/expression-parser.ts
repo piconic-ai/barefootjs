@@ -102,6 +102,20 @@ export type ParsedExpr =
       args: []
       flatDepth: FlatDepth
     }
+  // `.flatMap(fn)` value-returning field projection (#1448 Tier C). The
+  // callback is extracted into a structured `FlatMapOp` (self / field
+  // projection) at parse time, mirroring sort / reduce. The projected
+  // per-item value is flattened one level (flatMap = map + flat(1)).
+  // Array-literal / complex callbacks fall through to `unsupported`; the
+  // JSX-returning `.flatMap` is handled as an `IRLoop` upstream and never
+  // reaches here. See `extractFlatMapOpFromTS` below.
+  | {
+      kind: 'array-method'
+      method: 'flatMap'
+      object: ParsedExpr
+      args: []
+      flatMapOp: FlatMapOp
+    }
   | { kind: 'unsupported'; raw: string; reason: string }
 
 /**
@@ -218,6 +232,25 @@ export type ReduceOp = {
  */
 export type FlatDepth = number | 'infinity'
 
+/**
+ * Structured form of a value-returning `.flatMap(fn)` callback (#1448
+ * Tier C). The accepted catalogue is the field-projection family only —
+ * the callback maps each item to either itself (`i => i`) or a single
+ * non-computed field (`i => i.tags`), and the projected value is then
+ * flattened one level (flatMap = map + flat(1)). A projected non-array
+ * value is kept as-is, matching JS. Array-literal / transform callbacks
+ * (`i => [i.a, i.b]`) are out of scope and refuse with BF101. See
+ * `extractFlatMapOpFromTS`.
+ */
+export type FlatMapOp = {
+  // What each item projects to before the one-level flatten.
+  key: { kind: 'self' } | { kind: 'field'; field: string }
+  // The callback param name the user wrote (for the `@client` round-trip).
+  param: string
+  // Original JS source of the callback body (for the `@client` fallback).
+  raw: string
+}
+
 export type TemplatePart =
   | { type: 'string'; value: string }
   | { type: 'expression'; expr: ParsedExpr }
@@ -295,9 +328,14 @@ const UNSUPPORTED_METHODS = new Set([
   // `UNSUPPORTED_METHOD_REASONS`).
   // `flat` is no longer here — `.flat(depth?)` lowers via the
   // `array-method` IR (structured `FlatDepth`) + `bf_flat` (Go) /
-  // `bf->flat` (Mojo). The value-returning `.flatMap` stays refused (the
-  // transform layer is the deferred Tier C design question; the
-  // JSX-returning `.flatMap` already lowers as an `IRLoop`). See #1448.
+  // `bf->flat` (Mojo). `flatMap` stays listed as a fallback: the
+  // field-projection form (`i => i` / `i => i.field`) lowers via a
+  // structured `FlatMapOp`. The convertNode arm intercepts EVERY
+  // `.flatMap(...)` call before this gate — matching shapes lower, and the
+  // off-catalogue / wrong-arity forms get a tailored `unsupported` reason
+  // there — so only a bare method *reference* (`arr.flatMap` uncalled)
+  // falls through to this gate. The JSX-returning `.flatMap` lowers as an
+  // `IRLoop` upstream. See #1448.
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
@@ -836,6 +874,42 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // A `.reduce(fn)` without an initial value can't be lowered: JS
       // throws on an empty array, which a template can't mirror. Fall
       // through to the BF101 gate with the @client escape hatch.
+
+      // `.flatMap(fn)` value-returning field projection (#1448 Tier C).
+      // The callback is extracted into a structured `FlatMapOp` (self /
+      // field projection) from the raw TS AST. The JSX-returning form is
+      // handled as an `IRLoop` upstream and never reaches here; the
+      // array-literal / transform forms aren't lowered, so they refuse
+      // with BF101 + the @client hint. Go uses `bf_flat_map`; Mojo uses
+      // `bf->flat_map`.
+      // Intercept EVERY `.flatMap(...)` call (not just the 1-arg form) so
+      // the off-catalogue and wrong-arity shapes get this tailored reason
+      // rather than the generic "flatMap has no template lowering" gate
+      // message, which now misleads (the field-projection form does lower).
+      if (callee.property === 'flatMap') {
+        const flatMapOp =
+          node.arguments.length === 1 ? extractFlatMapOpFromTS(node.arguments[0]) : null
+        if (flatMapOp) {
+          return {
+            kind: 'array-method',
+            method: 'flatMap',
+            object: callee.object,
+            args: [],
+            flatMapOp,
+          }
+        }
+        return {
+          kind: 'unsupported',
+          raw,
+          reason:
+            `flatMap shape not supported. Accepted (field projection, no thisArg):\n` +
+            `  arr.flatMap(i => i)         (flatten one level)\n` +
+            `  arr.flatMap(i => i.field)   (flatten a per-item array field)\n` +
+            `Array-literal / transform callbacks and the 2-arg ` +
+            `\`flatMap(fn, thisArg)\` form aren't lowered. ` +
+            `Wrap the call in /* @client */ to evaluate at hydration.`,
+        }
+      }
     }
 
     return { kind: 'call', callee, args }
@@ -1499,6 +1573,51 @@ export function extractReduceOpFromTS(
 }
 
 /**
+ * Recover a `FlatMapOp` from the single-argument callback of a
+ * value-returning `.flatMap(fn)` (#1448 Tier C). Operates on the raw TS
+ * AST, mirroring `extractReduceOpFromTS`.
+ *
+ * The accepted catalogue is the field-projection family only:
+ *
+ *   i => i          → self  (flatMap(identity) === flat(1))
+ *   i => i.field    → field (flatten a per-item array field)
+ *
+ * The callback must take exactly one identifier param (the index / array
+ * params can't be expressed in a template projection), and the body must
+ * be the param itself or a single non-computed field access on it. Block
+ * bodies reduce to a single `return`, like the reduce / sort extractors.
+ * Array-literal and any other body returns null and the caller emits
+ * `unsupported` (BF101).
+ */
+export function extractFlatMapOpFromTS(cbNode: ts.Node): FlatMapOp | null {
+  if (!ts.isArrowFunction(cbNode) && !ts.isFunctionExpression(cbNode)) return null
+  // Exactly `(item)` — a `(item, index)` / `(item, index, array)` callback
+  // can't be lowered to a declarative projection.
+  if (cbNode.parameters.length !== 1) return null
+  const p = cbNode.parameters[0]
+  if (!ts.isIdentifier(p.name)) return null
+  const param = p.name.text
+
+  let body: ts.Expression
+  if (ts.isArrowFunction(cbNode) && !ts.isBlock(cbNode.body)) {
+    body = cbNode.body
+  } else {
+    const block = cbNode.body as ts.Block
+    const stmts = block.statements
+    if (stmts.length !== 1 || !ts.isReturnStatement(stmts[0]) || !stmts[0].expression) return null
+    body = stmts[0].expression
+  }
+  const raw = body.getText()
+
+  // Reuse the reduce key classifier — `i` → self, `i.field` → field, and
+  // null for anything deeper (`i.a.b`, `i[k]`, an array literal, a call).
+  const key = classifyReduceKey(unwrapParens(body), param)
+  if (!key) return null
+
+  return { key, param, raw }
+}
+
+/**
  * Classify a reduce per-item operand into a `ReduceOp` key. Accepts
  * the bare item param (`x` → self) and a single non-computed field
  * access (`x.field` → field); returns null for anything deeper
@@ -2123,6 +2242,11 @@ function substituteDestructuredFields(
           // substitute. Preserve verbatim, same as sort / reduce above.
           return { kind: 'array-method', method: 'flat', object: walk(e.object), args: [], flatDepth: e.flatDepth }
         }
+        if (e.method === 'flatMap') {
+          // `FlatMapOp` references its own callback param, never the
+          // enclosing destructure — preserve verbatim, like reduce / sort.
+          return { kind: 'array-method', method: 'flatMap', object: walk(e.object), args: [], flatMapOp: e.flatMapOp }
+        }
         return { kind: 'array-method', method: e.method, object: walk(e.object), args: e.args.map(walk) }
       case 'literal':
       case 'unsupported':
@@ -2609,6 +2733,10 @@ export function exprToString(expr: ParsedExpr): string {
         const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
         return `${exprToString(expr.object)}.flat(${d === 1 ? '' : depthSrc})`
       }
+      if (expr.method === 'flatMap') {
+        const { param, raw } = expr.flatMapOp
+        return `${exprToString(expr.object)}.flatMap(${param} => ${raw})`
+      }
       return `${exprToString(expr.object)}.${expr.method}(${expr.args.map(exprToString).join(', ')})`
     case 'unsupported':
       return `[UNSUPPORTED: ${expr.raw}]`
@@ -2687,6 +2815,12 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
         const d = expr.flatDepth
         const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
         return `${stringifyParsedExpr(expr.object)}.flat(${d === 1 ? '' : depthSrc})`
+      }
+      if (expr.method === 'flatMap') {
+        // Round-trip the user's callback param + body so the CSR / Hono
+        // path re-parses valid JS (`raw` references the param verbatim).
+        const { param, raw } = expr.flatMapOp
+        return `${stringifyParsedExpr(expr.object)}.flatMap(${param} => ${raw})`
       }
       return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.args.map(stringifyParsedExpr).join(', ')})`
     case 'unsupported':

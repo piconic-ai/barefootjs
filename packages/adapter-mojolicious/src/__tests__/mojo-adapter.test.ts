@@ -401,7 +401,10 @@ export function C() {
       // empty array there, which a template can't mirror.
       { name: 'reduce (no init)',  body: `<div>{items().reduce((s, x) => s + x)}</div>`,                                                             needle: '.reduce(' },
       { name: 'forEach',           body: `<ul>{items().forEach(x => x)}</ul>`,                                                                       needle: '.forEach(' },
-      { name: 'flatMap',           body: `<ul>{items().flatMap(x => x.tags).map(t => <li key={t}>{t}</li>)}</ul>`,                                  needle: '.flatMap(' },
+      // The field-projection `.flatMap(x => x.tags)` now lowers (#1448
+      // Tier C) — even as a loop base — so it moved to the positive test
+      // below. The array-literal / transform form stays refused.
+      { name: 'flatMap (array-literal)', body: `<div>{items().flatMap(x => [x.tags, x.tags])}</div>`,                                              needle: '.flatMap(' },
     ]
 
     for (const { name, body, needle } of cases) {
@@ -1087,6 +1090,40 @@ export { C }
   })
 })
 
+describe('MojoAdapter - #1448 Tier C .flatMap(field projection)', () => {
+  function emitFlatMap(expr: string): string {
+    const a = new MojoAdapter()
+    const ir = compileToIR(`
+function C({ rows }: { rows: { tags: string[] }[] }) {
+  return <div>{${expr}}</div>
+}
+export { C }
+`, a)
+    return a.generate(ir).template ?? ''
+  }
+
+  test('.flatMap(i => i.field) emits bf->flat_map with the raw field key', () => {
+    expect(emitFlatMap('rows.flatMap(i => i.tags).join(" ")')).toContain(`bf->flat_map($rows, 'field', 'tags')`)
+  })
+
+  test('.flatMap(i => i) emits the self projection', () => {
+    expect(emitFlatMap('rows.flatMap(i => i).join(" ")')).toContain(`bf->flat_map($rows, 'self', '')`)
+  })
+
+  test('field-projection flatMap as a loop base lowers (no BF101)', () => {
+    const a = new MojoAdapter()
+    const ir = compileToIR(`'use client'
+import { createSignal } from '@barefootjs/client'
+export function C() {
+  const [items] = createSignal<{ tags: string[] }[]>([])
+  return <ul>{items().flatMap(x => x.tags).map(t => <li key={t}>{t}</li>)}</ul>
+}`, a)
+    const template = a.generate(ir).template ?? ''
+    expect((a.errors ?? []).filter(e => e.code === 'BF101')).toEqual([])
+    expect(template).toContain(`bf->flat_map($items, 'field', 'tags')`)
+  })
+})
+
 // =============================================================================
 // #1448 — `/* @client */` escape hatch for STILL-UNSUPPORTED methods
 // =============================================================================
@@ -1150,7 +1187,9 @@ export function C() {
     // the no-initial-value form stays refused — JS throws on an empty
     // array there, which a template can't mirror.
     { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '->{reduce}' },
-    { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '->{flatMap}' },
+    // Field-projection `.flatMap(i => i.tags)` now lowers (#1448 Tier C);
+    // the array-literal / transform form stays refused.
+    { name: 'flatMap (array-literal)', expr: `items().flatMap(i => [i.name, i.n])`, badEmit: '->{flatMap}' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
     // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
     // and the variadic `.concat`. The parser refuses these (silently

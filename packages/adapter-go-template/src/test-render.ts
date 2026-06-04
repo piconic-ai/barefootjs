@@ -355,7 +355,14 @@ function goMapLiteralFromObject(
     else if (typeof v === 'number') entries.push(`${key}: ${v}`)
     else if (typeof v === 'boolean') entries.push(`${key}: ${v}`)
     else if (v === null) entries.push(`${key}: nil`)
-    else if (v && typeof v === 'object' && !Array.isArray(v)) {
+    else if (Array.isArray(v)) {
+      // Array-valued field inside an object-in-array (e.g. the `tags`
+      // of `items.flatMap(i => i.tags)`). Without this branch the field
+      // was silently dropped, leaving an empty map so the template
+      // rendered nothing for the projection (#1448 Tier C flatMap).
+      entries.push(`${key}: ${goArrayLiteralFromArray(v)}`)
+    }
+    else if (v && typeof v === 'object') {
       entries.push(`${key}: ${goMapLiteralFromObject(v as Record<string, unknown>, capitalizeKeys)}`)
     }
   }

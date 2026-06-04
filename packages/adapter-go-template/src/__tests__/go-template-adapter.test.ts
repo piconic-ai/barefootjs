@@ -2364,6 +2364,27 @@ export { C }
   })
 })
 
+describe('GoTemplateAdapter - #1448 Tier C .flatMap(field projection)', () => {
+  function emitFlatMap(expr: string): string {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+function C({ rows }: { rows: { tags: string[] }[] }) {
+  return <div>{${expr}}</div>
+}
+export { C }
+`, adapter)
+    return adapter.generate(ir).template ?? ''
+  }
+
+  test('.flatMap(i => i.field) emits bf_flat_map with the Go-capitalised field', () => {
+    expect(emitFlatMap('rows.flatMap(i => i.tags).join(" ")')).toContain('bf_flat_map .Rows "field" "Tags"')
+  })
+
+  test('.flatMap(i => i) emits the self projection', () => {
+    expect(emitFlatMap('rows.flatMap(i => i).join(" ")')).toContain('bf_flat_map .Rows "self" ""')
+  })
+})
+
 describe('GoTemplateAdapter - #1448 @client escape hatch (unsupported methods)', () => {
   // Compile a single expression placed in `<div>` text position, with
   // and without the directive, and return both the build errors and
@@ -2414,7 +2435,9 @@ export function C() {
     // the no-initial-value form stays refused — JS throws on an empty
     // array there, which a template can't mirror.
     { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '.Reduce' },
-    { name: 'flatMap', expr: `items().flatMap(i => i.tags)`, badEmit: '.FlatMap' },
+    // Field-projection `.flatMap(i => i.tags)` now lowers (#1448 Tier C);
+    // the array-literal / transform form stays refused.
+    { name: 'flatMap (array-literal)', expr: `items().flatMap(i => [i.name, i.n])`, badEmit: '.FlatMap' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
     // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
     // and the variadic `.concat`. The parser refuses these (silently
