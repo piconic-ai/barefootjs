@@ -4112,7 +4112,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         loc: this.makeLoc(),
         suggestion: {
           message: support.reason
-            ? `${support.reason}\n\nOptions:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code`
+            ? support.reason
             : 'Options:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code',
         },
       })
@@ -4249,7 +4249,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         loc: this.makeLoc(),
         suggestion: {
           message: support.reason
-            ? `${support.reason}\n\nOptions:\n1. Use @client directive for client-side evaluation\n2. Pre-compute the value in Go code`
+            ? support.reason
             : 'Expression contains unsupported syntax',
         },
       })

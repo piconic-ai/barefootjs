@@ -7,7 +7,7 @@
  *  1. In **template position** the support gate refuses it (the template
  *     adapters surface this as BF101 via `isSupported`), with a dedicated
  *     reason that explains the `undefined` return — not the generic
- *     "defer to hydration" hint.
+ *     `/* @client *​/` escape-hatch hint.
  *  2. Inside an **event handler / `createEffect` callback** it is client JS
  *     and passes straight through to the emitted runtime untouched — this is
  *     the only valid use.
@@ -31,11 +31,12 @@ describe('.forEach() — template position is refused (#1448)', () => {
     const support = isSupported(parseExpression('items().forEach(t => t.x)'))
     expect(support.supported).toBe(false)
     if (support.supported) return
-    // Dedicated forEach message — not the generic "defer to hydration" one.
+    // Dedicated forEach message that steers to .map(...) / createEffect —
+    // not the generic refusal, which offers the /* @client */ escape hatch.
     expect(support.reason).toContain('returns undefined')
     expect(support.reason).toContain('createEffect')
     expect(support.reason).toContain('.map(')
-    expect(support.reason).not.toContain('defer it to hydration')
+    expect(support.reason).not.toContain('/* @client */')
   })
 
   test('a bare-identifier receiver is refused too (not just signal getters)', () => {

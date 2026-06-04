@@ -331,7 +331,7 @@ const UNSUPPORTED_METHODS = new Set([
 
 // Per-method override reasons for the BF101 refusal. A method listed here
 // is still refused via `UNSUPPORTED_METHODS` above — this only swaps the
-// generic "wrap in /* @client */ to defer to hydration" hint for a
+// generic "pre-compute, or /* @client */ for client-only" hint for a
 // method-specific one. Add a row here instead of a new branch in the
 // support gate when a method needs a tailored explanation.
 const UNSUPPORTED_METHOD_REASONS: Record<string, string> = {
@@ -339,9 +339,9 @@ const UNSUPPORTED_METHOD_REASONS: Record<string, string> = {
   // template position — it is never a lowering target (#1448 Tier C /
   // Tier D-class). Its only meaningful use is side effects inside event
   // handlers / `createEffect` callbacks, which are client JS and never
-  // reach this gate. The generic "defer to hydration" hint is misleading
-  // here (deferring an `undefined`-valued expression still renders
-  // nothing), so point at `.map(...)` / `createEffect` instead.
+  // reach this gate. The generic "pre-compute / @client" hint is misleading
+  // here (an `undefined`-valued expression renders nothing either way), so
+  // point at `.map(...)` / `createEffect` instead.
   forEach:
     `'.forEach()' returns undefined and has no template-position meaning. ` +
     `Use it for side effects inside an event handler or createEffect callback ` +
@@ -2202,7 +2202,7 @@ function checkSupport(expr: ParsedExpr): SupportResult {
       if (expr.callee.kind === 'member') {
         const methodName = expr.callee.property
         // A method with no template lowering is refused as BF101. Most get
-        // the generic "defer to hydration" hint; methods listed in
+        // the generic pre-compute / `@client` hint; methods listed in
         // `UNSUPPORTED_METHOD_REASONS` (e.g. `forEach`) get a tailored
         // explanation instead — add a row to that map rather than a branch
         // here when a method needs special wording.
@@ -2212,7 +2212,7 @@ function checkSupport(expr: ParsedExpr): SupportResult {
             level: 'L5_UNSUPPORTED',
             reason:
               UNSUPPORTED_METHOD_REASONS[methodName] ??
-              `Method '${methodName}()' has no template lowering and requires client-side evaluation. Wrap the expression in /* @client */ to defer it to hydration, or pre-compute the value before rendering.`,
+              `'${methodName}()' can't render on the server. Pre-compute the value, or add /* @client */ for client-only (no SSR).`,
           }
         }
       }
