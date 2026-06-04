@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ESNext"],
+    "types": ["@cloudflare/workers-types", "bun-types"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  // The template is a self-contained Barefoot/Hono project with its own
+  // tsconfig (jsxImportSource: @barefootjs/hono/jsx). Excluding it here keeps
+  // the host worker's React-flavored JSX config from leaking onto template
+  // components. `generated` and `dist` hold build output, not source.
+  "include": ["worker.ts", "build/**/*.ts"],
+  "exclude": ["template", "generated", "dist", "node_modules"]
+}

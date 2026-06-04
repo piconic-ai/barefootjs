@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "barefootjs-playground",
+  "main": "worker.ts",
+  "compatibility_date": "2025-05-01",
+  // Dynamic Workers: grants access to the Worker Loader API (env.LOADER).
+  // This binding points at no external resource — it only enables runtime
+  // loading of generated Worker code into fresh, isolated V8 isolates.
+  "worker_loaders": [{ "binding": "LOADER" }],
+  // Workers AI: backs the chat agent at POST /_pg/chat. Absent in local dev
+  // (no account), so the endpoint falls back to MOCK mode there.
+  "ai": { "binding": "AI" }
+}
