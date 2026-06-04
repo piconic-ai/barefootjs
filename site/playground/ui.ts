@@ -583,8 +583,19 @@ function ensureCompileWorker() {
       const pending = pendingCompiles.get(msg.id)
       if (!pending) return
       pendingCompiles.delete(msg.id)
-      if (msg.ok) pending.resolve(msg)
-      else pending.reject(new Error((msg.errors || ['Compile failed']).join('\\n')))
+      if (msg.ok) {
+        pending.resolve(msg)
+      } else {
+        // A failed result MAY carry reactive-wiring issues (a wiring bug that
+        // also broke compilation — e.g. a no-initial-value signal). Attach them
+        // to the rejection so the caller can auto-repair / warn rather than
+        // surfacing the opaque compile error.
+        const err = new Error((msg.errors || ['Compile failed']).join('\\n'))
+        if (Array.isArray(msg.wiringIssues) && msg.wiringIssues.length > 0) {
+          err.wiringIssues = msg.wiringIssues
+        }
+        pending.reject(err)
+      }
     }
   })
   compileWorker.addEventListener('error', (e) => {
@@ -906,6 +917,11 @@ if (urlReloadEl) {
 // collect every editor model's text → compile in the browser worker → POST to
 // /_pg/build → cache-bust the preview iframe → clear dirty markers. Throws on
 // compile/build failure so callers can surface the error their own way.
+//
+// Returns the reactive-WIRING issues the compile worker reported (no-initial-
+// value signals, …) — the same analysis \`bf debug graph\` uses. The build still
+// shipped (these are runtime reactive bugs, not compile errors); callers decide
+// what to do: the chat flow auto-repairs them, the Run button warns.
 async function compileAndPreview() {
   if (!iframe) throw new Error('Preview iframe not ready')
   if (editorEntries.length === 0) throw new Error('Editor still loading')
@@ -938,6 +954,14 @@ async function compileAndPreview() {
     entry.dirty = false
     if (entry.button) entry.button.classList.remove('dirty')
   }
+  return Array.isArray(result.wiringIssues) ? result.wiringIssues : []
+}
+
+// Render wiring issues as a single human / model-readable string (one line per
+// issue: \`<path>: <message>\`). Used for the human-Run warning and as the AI
+// repair prompt body — mirrors formatWiringIssues in build/wiring-check.ts.
+function formatWiringIssues(issues) {
+  return issues.map((i) => i.path + ': ' + i.message).join('\\n')
 }
 
 if (runBtn && iframe) {
@@ -957,10 +981,18 @@ if (runBtn && iframe) {
       await compileAndPreview()
       showToast('Preview updated.')
     } catch (err) {
-      const msg = err && err.message ? err.message : String(err)
-      // Keep the message short in the toast; full text to the console.
-      console.error('Run failed:', err)
-      showToast('Compile error: ' + msg.split('\\n')[0])
+      // Human Run edits are DELIBERATE: surface a wiring issue as a clear,
+      // non-blocking warning rather than hijacking the edit into an AI round
+      // (auto-repair is reserved for chat-generated builds, see sendChat).
+      if (err && err.wiringIssues && err.wiringIssues.length > 0) {
+        console.warn('Wiring issues:\\n' + formatWiringIssues(err.wiringIssues))
+        showToast('Wiring issue: ' + err.wiringIssues[0].message)
+      } else {
+        const msg = err && err.message ? err.message : String(err)
+        // Keep the message short in the toast; full text to the console.
+        console.error('Run failed:', err)
+        showToast('Compile error: ' + msg.split('\\n')[0])
+      }
     } finally {
       running = false
       runBtn.disabled = false
@@ -976,6 +1008,26 @@ if (runBtn && iframe) {
 // new model + tree entry for unknown paths), and runs compileAndPreview().
 
 const chatHistory = [] // { role: 'user' | 'assistant', content }
+
+// Max AUTOMATIC wiring-repair rounds for an AI-generated build. The compile
+// worker runs the same reactive analysis \`bf debug graph\` uses; if the model's
+// build has wiring issues (e.g. a no-initial-value signal), we feed them back to
+// the agent as a focused repair request, apply the fix, and recompile — bounded
+// so a stubborn model can't loop. After the cap, the remaining issues surface as
+// a chat error and we stop.
+const MAX_WIRING_REPAIR = 2
+
+// Phrase wiring issues into a focused repair instruction for the agent. Concrete
+// and bounded: the analysis already told us the exact file + fix.
+function buildWiringRepairMessage(issues) {
+  return (
+    'The app compiled, but a reactive-wiring check (the same analysis ' +
+    '\`bf debug graph\` uses) found ' + issues.length + ' issue(s) that will ' +
+    'crash at render/hydration. Fix EXACTLY these and output the COMPLETE ' +
+    'corrected file(s), each in its own \`\`\`tsx path="..."\`\`\` block. Change ' +
+    'nothing else.\\n\\n' + formatWiringIssues(issues)
+  )
+}
 
 function appendBubble(role, text) {
   if (!chatMessagesEl) return null
@@ -1127,15 +1179,81 @@ if (chatSendEl && chatInputEl) {
 
       if (changed) {
         statusBubble.textContent = 'Compiling preview…'
-        try {
-          await compileAndPreview()
-          statusBubble.remove()
-          appendBubble('status', 'Preview updated.')
-        } catch (err) {
-          const msg = err && err.message ? err.message : String(err)
-          console.error('Chat compile failed:', err)
-          statusBubble.remove()
+        // Compile, then auto-repair AI builds with reactive-wiring issues. A
+        // wiring issue surfaces as a rejected compile carrying \`.wiringIssues\`
+        // (the bug also broke compilation); a clean build resolves. We feed any
+        // issues back to the agent, apply its fix, and recompile — capped at
+        // MAX_WIRING_REPAIR rounds. After the cap, surface and stop (no loop).
+        let round = 0
+        let lastWiring = null
+        let hardError = null
+        for (;;) {
+          try {
+            await compileAndPreview()
+            lastWiring = null
+            break // clean build (or non-wiring success).
+          } catch (err) {
+            if (!err || !err.wiringIssues || err.wiringIssues.length === 0) {
+              hardError = err // a real compile error, not a wiring issue.
+              break
+            }
+            lastWiring = err.wiringIssues
+            if (round >= MAX_WIRING_REPAIR) break
+            round++
+            console.warn(
+              'Wiring repair round ' + round + ':\\n' +
+                formatWiringIssues(lastWiring),
+            )
+            statusBubble.textContent =
+              'Fixing ' + lastWiring.length + ' wiring issue(s)…'
+
+            chatHistory.push({
+              role: 'user',
+              content: buildWiringRepairMessage(lastWiring),
+            })
+            const repairBubble = appendBubble('assistant', '')
+            const curFiles = editorEntries.map((e) => ({
+              path: e.file.path,
+              content: e.model.getValue(),
+            }))
+            const repairReply = await streamChat(
+              chatHistory.slice(),
+              curFiles,
+              repairBubble,
+            )
+            chatHistory.push({ role: 'assistant', content: repairReply })
+
+            let repairChanged = false
+            for (const block of parseFileBlocks(repairReply)) {
+              if (applyFileBlock(block)) repairChanged = true
+            }
+            if (!repairChanged) break // model returned nothing to apply; stop.
+            statusBubble.textContent = 'Recompiling preview…'
+          }
+        }
+
+        statusBubble.remove()
+        if (hardError) {
+          const msg = hardError.message ? hardError.message : String(hardError)
+          console.error('Chat compile failed:', hardError)
           appendBubble('error', 'Compile error: ' + msg.split('\\n')[0])
+        } else if (lastWiring && lastWiring.length > 0) {
+          // Still failing after the repair cap — surface, do not loop.
+          console.error(
+            'Wiring issues remain after ' + round + ' repair round(s):\\n' +
+              formatWiringIssues(lastWiring),
+          )
+          appendBubble(
+            'error',
+            'Wiring issue(s) remain after auto-repair: ' + lastWiring[0].message,
+          )
+        } else if (round > 0) {
+          appendBubble(
+            'status',
+            'Preview updated (auto-fixed ' + round + ' wiring issue(s)).',
+          )
+        } else {
+          appendBubble('status', 'Preview updated.')
         }
       } else {
         statusBubble.remove()

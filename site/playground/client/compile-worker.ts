@@ -8,7 +8,7 @@
  *
  * Protocol:
  *   ← postMessage({ type: 'compile', id, files })   { [path]: content }
- *   → postMessage({ type: 'result', id, ok: true, userModules, mainModule, assets })
+ *   → postMessage({ type: 'result', id, ok: true, userModules, mainModule, assets, wiringIssues })
  *   → postMessage({ type: 'result', id, ok: false, errors: string[] })
  *   → postMessage({ type: 'ready' })                once esbuild-wasm is init'd
  *
@@ -18,6 +18,7 @@
 
 import * as esbuild from 'esbuild-wasm'
 import { compileAppCore } from '../build/compile-app-core'
+import { WiringIssuesError } from '../build/wiring-check'
 
 // esbuild-wasm version is pinned to match the playground's esbuild — both
 // produce identical single-file transform output. Fetch the wasm from jsdelivr
@@ -93,8 +94,27 @@ self.addEventListener('message', (event: MessageEvent<CompileMessage>) => {
         userModules: result.userModules,
         mainModule: result.mainModule,
         assets: result.assets,
+        // Reactive-wiring issues (no-initial-value signals, …) found by the
+        // same analysis `bf debug graph` uses. Empty when wiring is clean. The
+        // client auto-repairs AI builds and warns on human Run edits.
+        wiringIssues: result.wiringIssues,
       })
     } catch (err) {
+      // A WiringIssuesError means the build failed BECAUSE of a reactive-wiring
+      // bug (e.g. a no-initial-value signal whose broken SSR template would
+      // otherwise throw a cryptic esbuild error). Report the structured issues
+      // on the failed result so the client runs the SAME auto-repair / warn path
+      // as a non-fatal wiring issue — instead of surfacing the opaque error.
+      if (err instanceof WiringIssuesError) {
+        ctx.postMessage({
+          type: 'result',
+          id,
+          ok: false,
+          errors: [err.message],
+          wiringIssues: err.issues,
+        })
+        return
+      }
       const message =
         err instanceof Error ? err.stack || err.message : String(err)
       ctx.postMessage({

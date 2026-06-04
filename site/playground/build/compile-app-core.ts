@@ -63,10 +63,13 @@ import { createGenerator, type UserConfig } from '@unocss/core'
 import { presetWind4 } from 'unocss/preset-wind4'
 import { addScriptCollection } from '@barefootjs/hono/build'
 import { STATIC_BASE, buildComponentToMemory } from './build-to-memory'
+import { checkAppWiring, WiringIssuesError, type WiringIssue } from './wiring-check'
 import {
   REGISTRY_UNO_SOURCE,
   REGISTRY_IMPORT_MAP,
 } from '../generated/registry-bundle'
+
+export type { WiringIssue } from './wiring-check'
 
 // STATIC_BASE (the host-served asset base) lives in build-to-memory — the
 // browser-safe primitive the HonoAdapter is configured with — and is re-exported
@@ -134,6 +137,15 @@ export interface CompileAppCoreResult {
     unoCss: string
     clientJs: Record<string, string>
   }
+  /**
+   * Reactive-WIRING issues found by analyzing the user's `src/*.tsx` components
+   * with the same static analysis `bf debug graph` uses (see wiring-check.ts).
+   * These are NOT compile errors — the app compiled fine — but reactive bugs
+   * that crash at render/hydration (e.g. a no-initial-value signal rendered with
+   * .map()). Empty when the wiring is clean. The client decides what to do:
+   * auto-repair for AI-generated builds, warn for human Run edits.
+   */
+  wiringIssues: WiringIssue[]
 }
 
 /**
@@ -294,6 +306,22 @@ export async function compileAppCore(
     throw new Error('No server.tsx supplied (and no default available)')
   }
 
+  // 0. Reactive-WIRING analysis FIRST — the same static analysis `bf debug
+  //    graph` uses (see wiring-check.ts). It runs on the analysis graph
+  //    (analyzeComponent → jsxToIR), NOT the SSR-template emit + esbuild
+  //    transpile that the steps below run, so it surveys the components even
+  //    when those would fail. This ordering is load-bearing: a no-initial-value
+  //    signal makes the compiler emit a broken SSR template (`const x = () =>`),
+  //    so the transpile in step 4 throws a cryptic `Unexpected "return"` before
+  //    any result exists. Detecting the wiring issue up front lets us surface a
+  //    clear, actionable message (and feed the AI repair loop) instead. A wiring
+  //    issue is therefore reported as a `WiringIssuesError` here rather than
+  //    `result.wiringIssues` (which stays for any FUTURE non-fatal check).
+  const wiringIssues = checkAppWiring(merged)
+  if (wiringIssues.length > 0) {
+    throw new WiringIssuesError(wiringIssues)
+  }
+
   // 1. Compile EVERY src/*.tsx component (in source order for determinism).
   const componentPaths = Object.keys(merged)
     .filter((p) => /^src\/.+\.tsx$/.test(p))
@@ -395,5 +423,9 @@ export async function compileAppCore(
     mainModule: 'index.js',
     runtime: { assetPath: `${STATIC_BASE}barefoot.js`, source: barefootRuntime },
     assets: { barefootJs: barefootRuntime, unoCss, clientJs },
+    // Up-front analysis already short-circuited on any wiring issue (throwing
+    // WiringIssuesError), so a successful build is wiring-clean. The field stays
+    // for any FUTURE check that is non-fatal (detectable but still compilable).
+    wiringIssues: [],
   }
 }
