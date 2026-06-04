@@ -99,15 +99,6 @@ export const UI_SHELL_HTML = /* html */ `<!doctype html>
         font-weight: 600;
         color: var(--fg-muted);
       }
-      header .hnote {
-        margin-left: auto;
-        font-size: 12px;
-        color: var(--fg-muted);
-      }
-      header .hnote a {
-        color: var(--accent);
-        text-decoration: none;
-      }
       main {
         flex: 1;
         min-height: 0;
@@ -454,13 +445,6 @@ export const UI_SHELL_HTML = /* html */ `<!doctype html>
       </a>
       <span class="hsep" aria-hidden="true"></span>
       <span class="hlabel">Playground</span>
-      <span class="hnote">
-        Running live on
-        <a href="https://developers.cloudflare.com/dynamic-workers/" target="_blank" rel="noreferrer"
-          >Cloudflare Dynamic Workers</a
-        >
-        &middot; Barefoot + Hono + UnoCSS
-      </span>
     </header>
     <main>
       <!-- Left: AI Chat -->
