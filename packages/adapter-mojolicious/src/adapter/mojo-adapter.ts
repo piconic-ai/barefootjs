@@ -56,7 +56,7 @@ import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
  * the `IRNodeEmitter` interface.
  */
 type MojoRenderCtx = Record<string, never>
-import type { ParsedExpr, ParsedStatement, SortComparator, ReduceOp, TemplatePart } from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement, SortComparator, ReduceOp, FlatDepth, TemplatePart } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND } from '@barefootjs/shared'
 
 interface PrimitiveSpec {
@@ -1565,6 +1565,14 @@ function renderReduceMethod(recv: string, op: ReduceOp, direction: 'left' | 'rig
   return `bf->reduce(${recv}, { op => '${op.op}', ${keyEntry}, type => '${op.type}', init => ${init}, direction => '${direction}' })`
 }
 
+// `.flat(depth?)` → `bf->flat($recv, $depth)`. The `Infinity` form lowers
+// to the `-1` sentinel (flatten fully); a finite depth flattens that many
+// levels (`0` = shallow copy). See `sub flat` in BarefootJS.pm. (#1448)
+function renderFlatMethod(recv: string, depth: FlatDepth): string {
+  const d = depth === 'infinity' ? -1 : depth
+  return `bf->flat(${recv}, ${d})`
+}
+
 /** True when `type` is the `string` primitive. */
 function isStringTypeInfo(type: TypeInfo | undefined): boolean {
   return type?.kind === 'primitive' && type.primitive === 'string'
@@ -1751,6 +1759,10 @@ class MojoFilterEmitter implements ParsedExprEmitter {
     return renderReduceMethod(emit(object), reduceOp, method === 'reduceRight' ? 'right' : 'left')
   }
 
+  flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
+    return renderFlatMethod(emit(object), depth)
+  }
+
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
     return '1'
   }
@@ -1934,6 +1946,10 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
 
   reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
     return renderReduceMethod(emit(object), reduceOp, method === 'reduceRight' ? 'right' : 'left')
+  }
+
+  flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
+    return renderFlatMethod(emit(object), depth)
   }
 
   conditional(

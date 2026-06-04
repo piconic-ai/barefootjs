@@ -508,6 +508,25 @@ sub reverse ($self, $recv) {
     return [ reverse @$recv ];
 }
 
+# `Array.prototype.flat(depth?)` (#1448 Tier C) — flatten nested ARRAY
+# refs `$depth` levels deep. A `$depth` of -1 is the `Infinity` sentinel
+# (flatten fully); 0 returns a shallow copy. Non-ARRAY elements are kept
+# as-is (JS only flattens nested arrays). Non-ARRAY receiver → [].
+sub flat ($self, $recv, $depth = 1) {
+    return [] unless ref($recv) eq 'ARRAY';
+    my @out;
+    for my $el (@$recv) {
+        if ($depth != 0 && ref($el) eq 'ARRAY') {
+            my $next = $depth > 0 ? $depth - 1 : $depth;
+            push @out, @{ $self->flat($el, $next) };
+        }
+        else {
+            push @out, $el;
+        }
+    }
+    return \@out;
+}
+
 # `String.prototype.trim()` — strip leading + trailing whitespace.
 # JS's `String.prototype.trim` matches `\s` in the Unicode sense
 # (any whitespace including non-breaking space U+00A0); Perl's `\s`

@@ -28,6 +28,7 @@ import type {
   ParsedStatement,
   SortComparator,
   ReduceOp,
+  FlatDepth,
   TemplatePart,
   IRIfStatement,
   IRProvider,
@@ -3391,6 +3392,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // helper, which folds the receiver into a scalar.
     const direction = method === 'reduceRight' ? 'right' : 'left'
     return emitBfReduce(emit(object), reduceOp, direction)
+  }
+
+  flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
+    // `.flat(depth?)` → `bf_flat <recv> <depth>`. The `Infinity` form
+    // lowers to the `-1` sentinel (flatten fully); a finite depth flattens
+    // that many levels (`0` = shallow copy). See packages/adapter-go-
+    // template/runtime/bf.go.
+    const d = depth === 'infinity' ? -1 : depth
+    return `bf_flat ${wrapIfMultiToken(emit(object))} ${d}`
   }
 
   unsupported(raw: string, _reason: string): string {

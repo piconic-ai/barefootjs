@@ -33,7 +33,7 @@
  *     be added in one place.
  */
 
-import type { ParsedExpr, SortComparator, ReduceOp, TemplatePart } from '../expression-parser'
+import type { ParsedExpr, SortComparator, ReduceOp, FlatDepth, TemplatePart } from '../expression-parser'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -157,6 +157,14 @@ export interface ParsedExprEmitter {
     reduceOp: ReduceOp,
     emit: (e: ParsedExpr) => string,
   ): string
+  // `.flat(depth?)` gets its own dispatcher arm (#1448 Tier C): it carries
+  // a structured `FlatDepth` (the validated literal / `'infinity'`) rather
+  // than a `ParsedExpr[]` args list, same rationale as sort / reduce.
+  flatMethod(
+    object: ParsedExpr,
+    depth: FlatDepth,
+    emit: (e: ParsedExpr) => string,
+  ): string
   unsupported(raw: string, reason: string): string
 }
 
@@ -202,6 +210,9 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       }
       if (expr.method === 'reduce' || expr.method === 'reduceRight') {
         return emitter.reduceMethod(expr.method, expr.object, expr.reduceOp, emit)
+      }
+      if (expr.method === 'flat') {
+        return emitter.flatMethod(expr.object, expr.flatDepth, emit)
       }
       return emitter.arrayMethod(expr.method, expr.object, expr.args, emit)
     case 'unsupported':

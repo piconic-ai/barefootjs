@@ -89,6 +89,19 @@ export type ParsedExpr =
       args: []
       reduceOp: ReduceOp
     }
+  // `.flat(depth?)` (#1448 Tier C). The flatten depth is validated and
+  // normalised into a structured `FlatDepth` at parse time — the literal
+  // never reaches `args`, so adapters fold via a runtime helper instead of
+  // re-inspecting the depth argument. A non-literal depth refuses with
+  // BF101 (the depth must be known at template time). See the `.flat` arm
+  // in `convertNode`.
+  | {
+      kind: 'array-method'
+      method: 'flat'
+      object: ParsedExpr
+      args: []
+      flatDepth: FlatDepth
+    }
   | { kind: 'unsupported'; raw: string; reason: string }
 
 /**
@@ -195,6 +208,16 @@ export type ReduceOp = {
   paramItem: string
 }
 
+/**
+ * Flatten depth for `.flat(depth?)` (#1448 Tier C). A finite non-negative
+ * integer flattens that many levels (`.flat()` defaults to `1`; a `0` or
+ * negative JS depth means "no flatten" → a shallow copy, normalised to
+ * `0` here); `'infinity'` is the `.flat(Infinity)` full-depth form. The
+ * depth must be a literal — a non-literal argument can't be resolved at
+ * template time and refuses with BF101.
+ */
+export type FlatDepth = number | 'infinity'
+
 export type TemplatePart =
   | { type: 'string'; value: string }
   | { type: 'expression'; expr: ParsedExpr }
@@ -270,8 +293,13 @@ const UNSUPPORTED_METHODS = new Set([
   // message. The rest stay refused — see #1448 Tier C for the design
   // questions. `forEach` carries a tailored reason (see
   // `UNSUPPORTED_METHOD_REASONS`).
+  // `flat` is no longer here — `.flat(depth?)` lowers via the
+  // `array-method` IR (structured `FlatDepth`) + `bf_flat` (Go) /
+  // `bf->flat` (Mojo). The value-returning `.flatMap` stays refused (the
+  // transform layer is the deferred Tier C design question; the
+  // JSX-returning `.flatMap` already lowers as an `IRLoop`). See #1448.
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
-  'forEach', 'flatMap', 'flat',
+  'forEach', 'flatMap',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
   // (typically a new `array-method` variant or runtime helper) and
   // removes its row here. See packages/adapter-tests/fixtures/methods/.
@@ -539,6 +567,45 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // JS takes no argument and ignores any that are passed.
       if (callee.property === 'reverse' || callee.property === 'toReversed') {
         return { kind: 'array-method', method: callee.property, object: callee.object, args }
+      }
+      // `.flat(depth?)` — flatten nested arrays `depth` levels deep
+      // (default 1). The depth is validated to a literal and normalised
+      // into a structured `FlatDepth` here: `Infinity` becomes the
+      // full-depth form, a 0 / negative JS depth normalises to 0 ("no
+      // flatten" → shallow copy), and a fractional literal truncates
+      // toward zero (JS ToIntegerOrInfinity). A NON-literal depth can't be
+      // resolved at template time, so it refuses with BF101 rather than
+      // emitting a broken helper call. Go uses `bf_flat`; Mojo uses
+      // `bf->flat`. See #1448 Tier C.
+      if (callee.property === 'flat') {
+        const depthNode = node.arguments[0]
+        let flatDepth: FlatDepth
+        if (depthNode === undefined) {
+          flatDepth = 1
+        } else if (ts.isIdentifier(depthNode) && depthNode.text === 'Infinity') {
+          flatDepth = 'infinity'
+        } else {
+          let n: number | undefined
+          if (ts.isNumericLiteral(depthNode)) {
+            n = Number(depthNode.text)
+          } else if (
+            ts.isPrefixUnaryExpression(depthNode) &&
+            depthNode.operator === ts.SyntaxKind.MinusToken &&
+            ts.isNumericLiteral(depthNode.operand)
+          ) {
+            n = -Number(depthNode.operand.text)
+          }
+          if (n === undefined || Number.isNaN(n)) {
+            return {
+              kind: 'unsupported',
+              raw,
+              reason: `\`.flat(depth)\` needs a literal integer or \`Infinity\` depth — a computed depth can't be resolved at template time. Use a literal depth, or pre-compute the value before the template.`,
+            }
+          }
+          const truncated = Math.trunc(n)
+          flatDepth = truncated < 0 ? 0 : truncated
+        }
+        return { kind: 'array-method', method: 'flat', object: callee.object, args: [], flatDepth }
       }
       // `.toLowerCase()` — string-only (the IR carries a value-builtin
       // tag, not a receiver-type discriminator, so the `array-method`
@@ -2051,6 +2118,11 @@ function substituteDestructuredFields(
           // preserve verbatim, same as the sort comparator above.
           return { kind: 'array-method', method: e.method, object: walk(e.object), args: [], reduceOp: e.reduceOp }
         }
+        if (e.method === 'flat') {
+          // `flatDepth` is a normalised literal — no destructure refs to
+          // substitute. Preserve verbatim, same as sort / reduce above.
+          return { kind: 'array-method', method: 'flat', object: walk(e.object), args: [], flatDepth: e.flatDepth }
+        }
         return { kind: 'array-method', method: e.method, object: walk(e.object), args: e.args.map(walk) }
       case 'literal':
       case 'unsupported':
@@ -2601,6 +2673,13 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
         const { paramAcc, paramItem, raw, type, init } = expr.reduceOp
         const initSrc = type === 'string' ? JSON.stringify(init) : init
         return `${stringifyParsedExpr(expr.object)}.${expr.method}((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
+      }
+      if (expr.method === 'flat') {
+        // Round-trip the normalised depth back to JS for the CSR / Hono
+        // path: `'infinity'` → `Infinity`, `1` is left implicit (`.flat()`).
+        const d = expr.flatDepth
+        const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
+        return `${stringifyParsedExpr(expr.object)}.flat(${d === 1 ? '' : depthSrc})`
       }
       return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.args.map(stringifyParsedExpr).join(', ')})`
     case 'unsupported':

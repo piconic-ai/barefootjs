@@ -1512,3 +1512,37 @@ describe('expression-parser — array-method full-arity lowering (#1448)', () =>
     })
   }
 })
+
+describe('expression-parser — .flat(depth?) lowering (#1448 Tier C)', () => {
+  // Depth literals normalise into a structured `flatDepth` at parse time.
+  const depths: Array<[string, string, number | 'infinity']> = [
+    ['.flat() → depth 1', 'arr.flat()', 1],
+    ['.flat(2) → depth 2', 'arr.flat(2)', 2],
+    ['.flat(Infinity) → "infinity"', 'arr.flat(Infinity)', 'infinity'],
+    ['.flat(0) → depth 0 (shallow copy)', 'arr.flat(0)', 0],
+    ['.flat(-1) → normalised to 0 (JS clamps)', 'arr.flat(-1)', 0],
+    ['.flat(1.9) → truncated to 1', 'arr.flat(1.9)', 1],
+  ]
+  for (const [label, expr, expected] of depths) {
+    test(label, () => {
+      const result = parseExpression(expr)
+      expect(result.kind).toBe('array-method')
+      if (result.kind === 'array-method' && result.method === 'flat') {
+        expect(result.flatDepth).toBe(expected)
+      } else {
+        throw new Error(`expected a flat array-method, got ${result.kind}`)
+      }
+    })
+  }
+
+  test('non-literal depth refuses (must be resolvable at template time)', () => {
+    const result = parseExpression('arr.flat(n)')
+    expect(result.kind).toBe('unsupported')
+    if (result.kind === 'unsupported') {
+      // Wrong remedy `@client` must not be suggested (doesn't work in
+      // attribute / condition position).
+      expect(result.reason).not.toContain('@client')
+      expect(result.reason).toContain('literal')
+    }
+  })
+})
