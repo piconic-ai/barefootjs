@@ -3405,15 +3405,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
-    // `.flatMap(i => i)` / `.flatMap(i => i.field)` → `bf_flat_map <recv>
-    // "<keyKind>" "<keyName>"`. The runtime projects each item (self or a
-    // struct field) then flattens one level. The field name uses the Go
-    // struct-field capitalisation, matching `bf_reduce` / `bf_sort`.
     const recv = wrapIfMultiToken(emit(object))
-    if (op.key.kind === 'self') {
+    const proj = op.projection
+    // Tuple projection `i => [i.a, i.b]` → `bf_flat_map_tuple <recv>
+    // "<kind>" "<name>" ...` (one quoted pair per leaf). flat(1) removes
+    // only the literal's wrapper, so the runtime appends each leaf verbatim.
+    if (proj.kind === 'tuple') {
+      const pairs = proj.elements
+        .map(l => (l.kind === 'self' ? `"self" ""` : `"field" "${capitalize(l.field)}"`))
+        .join(' ')
+      return `bf_flat_map_tuple ${recv} ${pairs}`
+    }
+    // Scalar `.flatMap(i => i)` / `.flatMap(i => i.field)` → `bf_flat_map
+    // <recv> "<kind>" "<name>"`. The runtime projects each item then
+    // flattens one level. The field name uses the Go struct-field
+    // capitalisation, matching `bf_reduce` / `bf_sort`.
+    if (proj.kind === 'self') {
       return `bf_flat_map ${recv} "self" ""`
     }
-    return `bf_flat_map ${recv} "field" "${capitalize(op.key.field)}"`
+    return `bf_flat_map ${recv} "field" "${capitalize(proj.field)}"`
   }
 
   unsupported(raw: string, _reason: string): string {

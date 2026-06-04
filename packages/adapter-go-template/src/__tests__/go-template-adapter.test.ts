@@ -2368,7 +2368,7 @@ describe('GoTemplateAdapter - #1448 Tier C .flatMap(field projection)', () => {
   function emitFlatMap(expr: string): string {
     const adapter = new GoTemplateAdapter()
     const ir = compileToIR(`
-function C({ rows }: { rows: { tags: string[] }[] }) {
+function C({ rows }: { rows: { a: string; b: string; tags: string[] }[] }) {
   return <div>{${expr}}</div>
 }
 export { C }
@@ -2382,6 +2382,14 @@ export { C }
 
   test('.flatMap(i => i) emits the self projection', () => {
     expect(emitFlatMap('rows.flatMap(i => i).join(" ")')).toContain('bf_flat_map .Rows "self" ""')
+  })
+
+  test('.flatMap(i => [i.a, i.b]) emits bf_flat_map_tuple with capitalised leaves', () => {
+    expect(emitFlatMap('rows.flatMap(i => [i.a, i.b]).join(" ")')).toContain('bf_flat_map_tuple .Rows "field" "A" "field" "B"')
+  })
+
+  test('tuple self + field leaves', () => {
+    expect(emitFlatMap('rows.flatMap(i => [i, i.a]).join(" ")')).toContain('bf_flat_map_tuple .Rows "self" "" "field" "A"')
   })
 })
 
@@ -2435,9 +2443,9 @@ export function C() {
     // the no-initial-value form stays refused — JS throws on an empty
     // array there, which a template can't mirror.
     { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '.Reduce' },
-    // Field-projection `.flatMap(i => i.tags)` now lowers (#1448 Tier C);
-    // the array-literal / transform form stays refused.
-    { name: 'flatMap (array-literal)', expr: `items().flatMap(i => [i.name, i.n])`, badEmit: '.FlatMap' },
+    // Self / field / field-tuple `.flatMap` now lowers (#1448 Tier C); a
+    // tuple with a non-leaf element (here a string literal) stays refused.
+    { name: 'flatMap (literal element)', expr: `items().flatMap(i => [i.name, "x"])`, badEmit: '.FlatMap' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
     // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
     // and the variadic `.concat`. The parser refuses these (silently

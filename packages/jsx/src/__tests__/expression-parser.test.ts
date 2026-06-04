@@ -1556,30 +1556,38 @@ describe('expression-parser — .flat(depth?) lowering (#1448 Tier C)', () => {
   })
 })
 
-describe('expression-parser — .flatMap(fn) field projection (#1448 Tier C)', () => {
-  // Accepted catalogue: self (`i => i`) and single field (`i => i.field`).
-  const accepted: Array<[string, string, { kind: 'self' } | { kind: 'field'; field: string }]> = [
+describe('expression-parser — .flatMap(fn) projection (#1448 Tier C)', () => {
+  // Accepted catalogue: self, single field, and array-literal tuples of
+  // self / field leaves.
+  type Proj = { kind: 'self' } | { kind: 'field'; field: string } | { kind: 'tuple'; elements: unknown[] }
+  const accepted: Array<[string, string, Proj]> = [
     ['self (i => i)', 'arr.flatMap(i => i)', { kind: 'self' }],
     ['field (i => i.tags)', 'arr.flatMap(i => i.tags)', { kind: 'field', field: 'tags' }],
     ['single-return block body', 'arr.flatMap(i => { return i.tags })', { kind: 'field', field: 'tags' }],
+    ['tuple of fields', 'arr.flatMap(i => [i.a, i.b])', { kind: 'tuple', elements: [{ kind: 'field', field: 'a' }, { kind: 'field', field: 'b' }] }],
+    ['tuple self + field', 'arr.flatMap(i => [i, i.tags])', { kind: 'tuple', elements: [{ kind: 'self' }, { kind: 'field', field: 'tags' }] }],
   ]
-  for (const [label, expr, key] of accepted) {
+  for (const [label, expr, projection] of accepted) {
     test(`${label} — lowers to a flatMap array-method`, () => {
       const result = parseExpression(expr)
       expect(result.kind).toBe('array-method')
       if (result.kind === 'array-method' && result.method === 'flatMap') {
-        expect(result.flatMapOp.key).toEqual(key)
+        expect(result.flatMapOp.projection).toEqual(projection)
       } else {
         throw new Error(`expected a flatMap array-method, got ${result.kind}`)
       }
     })
   }
 
-  // Out of the field-projection catalogue → refused (BF101 + @client hint).
+  // Out of catalogue → refused (BF101 + @client hint).
   const refused = [
-    ['array-literal projection', 'arr.flatMap(i => [i.a, i.b])'],
     ['deep field access', 'arr.flatMap(i => i.a.b)'],
     ['index/array callback params', 'arr.flatMap((i, idx) => i.tags)'],
+    // Tuple with a non-leaf element (arithmetic / literal / deep access).
+    ['tuple with arithmetic element', 'arr.flatMap(i => [i.a, i.b + 1])'],
+    ['tuple with literal element', 'arr.flatMap(i => [i.a, "x"])'],
+    ['tuple with deep access', 'arr.flatMap(i => [i.a, i.b.c])'],
+    ['tuple with spread', 'arr.flatMap(i => [...i.a])'],
     // Wrong-arity forms are intercepted by the same arm (not the generic
     // "flatMap has no template lowering" gate) so the reason stays tailored.
     ['2-arg flatMap(fn, thisArg)', 'arr.flatMap(i => i.tags, ctx)'],
@@ -1589,7 +1597,7 @@ describe('expression-parser — .flatMap(fn) field projection (#1448 Tier C)', (
       const result = parseExpression(expr)
       expect(result.kind).toBe('unsupported')
       if (result.kind === 'unsupported') {
-        expect(result.reason).toContain('field projection')
+        expect(result.reason).toContain('flatMap shape not supported')
       }
     })
   }

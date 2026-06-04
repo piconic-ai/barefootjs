@@ -233,18 +233,31 @@ export type ReduceOp = {
 export type FlatDepth = number | 'infinity'
 
 /**
+ * A single non-computed projection leaf on the flatMap callback param —
+ * the item itself (`i`) or one of its fields (`i.field`). Shared by the
+ * scalar and tuple `FlatMapOp` projections.
+ */
+export type FlatMapLeaf = { kind: 'self' } | { kind: 'field'; field: string }
+
+/**
  * Structured form of a value-returning `.flatMap(fn)` callback (#1448
- * Tier C). The accepted catalogue is the field-projection family only —
- * the callback maps each item to either itself (`i => i`) or a single
- * non-computed field (`i => i.tags`), and the projected value is then
- * flattened one level (flatMap = map + flat(1)). A projected non-array
- * value is kept as-is, matching JS. Array-literal / transform callbacks
- * (`i => [i.a, i.b]`) are out of scope and refuse with BF101. See
- * `extractFlatMapOpFromTS`.
+ * Tier C). The accepted catalogue:
+ *
+ *   i => i            → self  projection (flatten one level)
+ *   i => i.field      → field projection (flatten a per-item array field)
+ *   i => [i.a, i.b]   → tuple projection (gather per-item leaves)
+ *
+ * The scalar `self` / `field` projections return a value that is then
+ * flattened one level (flatMap = map + flat(1)) — a non-array value is
+ * kept as-is, matching JS. The `tuple` projection returns an array
+ * literal; flat(1) removes only that literal's wrapper, so each leaf is
+ * appended verbatim (an array-valued leaf is NOT spread). Leaves outside
+ * self / field (literals, `i.a + 1`, calls, deep access) refuse with
+ * BF101. See `extractFlatMapOpFromTS`.
  */
 export type FlatMapOp = {
   // What each item projects to before the one-level flatten.
-  key: { kind: 'self' } | { kind: 'field'; field: string }
+  projection: FlatMapLeaf | { kind: 'tuple'; elements: FlatMapLeaf[] }
   // The callback param name the user wrote (for the `@client` round-trip).
   param: string
   // Original JS source of the callback body (for the `@client` fallback).
@@ -875,13 +888,13 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // throws on an empty array, which a template can't mirror. Fall
       // through to the BF101 gate with the @client escape hatch.
 
-      // `.flatMap(fn)` value-returning field projection (#1448 Tier C).
-      // The callback is extracted into a structured `FlatMapOp` (self /
-      // field projection) from the raw TS AST. The JSX-returning form is
-      // handled as an `IRLoop` upstream and never reaches here; the
-      // array-literal / transform forms aren't lowered, so they refuse
-      // with BF101 + the @client hint. Go uses `bf_flat_map`; Mojo uses
-      // `bf->flat_map`.
+      // `.flatMap(fn)` value-returning projection (#1448 Tier C). The
+      // callback is extracted into a structured `FlatMapOp` (self / field
+      // scalar projection, or an array-literal tuple of self / field
+      // leaves) from the raw TS AST. The JSX-returning form is handled as
+      // an `IRLoop` upstream and never reaches here; richer callbacks
+      // refuse with BF101 + the @client hint. Go uses `bf_flat_map` /
+      // `bf_flat_map_tuple`; Mojo uses `bf->flat_map` / `bf->flat_map_tuple`.
       // Intercept EVERY `.flatMap(...)` call (not just the 1-arg form) so
       // the off-catalogue and wrong-arity shapes get this tailored reason
       // rather than the generic "flatMap has no template lowering" gate
@@ -902,12 +915,13 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           kind: 'unsupported',
           raw,
           reason:
-            `flatMap shape not supported. Accepted (field projection, no thisArg):\n` +
-            `  arr.flatMap(i => i)         (flatten one level)\n` +
-            `  arr.flatMap(i => i.field)   (flatten a per-item array field)\n` +
-            `Array-literal / transform callbacks and the 2-arg ` +
-            `\`flatMap(fn, thisArg)\` form aren't lowered. ` +
-            `Wrap the call in /* @client */ to evaluate at hydration.`,
+            `flatMap shape not supported. Accepted (self / field leaves, no thisArg):\n` +
+            `  arr.flatMap(i => i)          (flatten one level)\n` +
+            `  arr.flatMap(i => i.field)    (flatten a per-item array field)\n` +
+            `  arr.flatMap(i => [i.a, i.b]) (gather per-item fields)\n` +
+            `Richer callbacks (computed / nested access, arithmetic, calls, ` +
+            `literal elements) and the 2-arg \`flatMap(fn, thisArg)\` form ` +
+            `aren't lowered. Wrap the call in /* @client */ to evaluate at hydration.`,
         }
       }
     }
@@ -1577,17 +1591,20 @@ export function extractReduceOpFromTS(
  * value-returning `.flatMap(fn)` (#1448 Tier C). Operates on the raw TS
  * AST, mirroring `extractReduceOpFromTS`.
  *
- * The accepted catalogue is the field-projection family only:
+ * The accepted catalogue:
  *
- *   i => i          → self  (flatMap(identity) === flat(1))
- *   i => i.field    → field (flatten a per-item array field)
+ *   i => i            → self  (flatMap(identity) === flat(1))
+ *   i => i.field      → field (flatten a per-item array field)
+ *   i => [i.a, i.b]   → tuple (gather per-item self / field leaves)
  *
  * The callback must take exactly one identifier param (the index / array
  * params can't be expressed in a template projection), and the body must
- * be the param itself or a single non-computed field access on it. Block
- * bodies reduce to a single `return`, like the reduce / sort extractors.
- * Array-literal and any other body returns null and the caller emits
- * `unsupported` (BF101).
+ * be the param itself, a single non-computed field access on it, or an
+ * array literal whose every element is one of those leaves. Block bodies
+ * reduce to a single `return`, like the reduce / sort extractors. Any
+ * other body (deep access, computed members, calls, arithmetic, a
+ * literal element) returns null and the caller emits `unsupported`
+ * (BF101).
  */
 export function extractFlatMapOpFromTS(cbNode: ts.Node): FlatMapOp | null {
   if (!ts.isArrowFunction(cbNode) && !ts.isFunctionExpression(cbNode)) return null
@@ -1608,13 +1625,31 @@ export function extractFlatMapOpFromTS(cbNode: ts.Node): FlatMapOp | null {
     body = stmts[0].expression
   }
   const raw = body.getText()
+  const inner = unwrapParens(body)
 
-  // Reuse the reduce key classifier — `i` → self, `i.field` → field, and
-  // null for anything deeper (`i.a.b`, `i[k]`, an array literal, a call).
-  const key = classifyReduceKey(unwrapParens(body), param)
-  if (!key) return null
+  // Array-literal body → tuple projection. Every element must be a
+  // self / field leaf; a literal / computed / nested element refuses the
+  // whole shape (the per-item evaluation of richer expressions isn't
+  // lowered). flat(1) removes only the literal's wrapper, so each leaf is
+  // appended verbatim — handled by the `bf_flat_map_tuple` runtime.
+  if (ts.isArrayLiteralExpression(inner)) {
+    const elements: FlatMapLeaf[] = []
+    for (const el of inner.elements) {
+      // Spread / holes (`[...xs]`, `[, x]`) aren't leaves.
+      if (ts.isSpreadElement(el) || ts.isOmittedExpression(el)) return null
+      const leaf = classifyReduceKey(unwrapParens(el), param)
+      if (!leaf) return null
+      elements.push(leaf)
+    }
+    return { projection: { kind: 'tuple', elements }, param, raw }
+  }
 
-  return { key, param, raw }
+  // Scalar body. Reuse the reduce key classifier — `i` → self,
+  // `i.field` → field, null for anything deeper (`i.a.b`, `i[k]`, a call).
+  const leaf = classifyReduceKey(inner, param)
+  if (!leaf) return null
+
+  return { projection: leaf, param, raw }
 }
 
 /**

@@ -64,6 +64,7 @@ func FuncMap() template.FuncMap {
 		"bf_reverse":        Reverse,
 		"bf_flat":           Flat,
 		"bf_flat_map":       FlatMap,
+		"bf_flat_map_tuple": FlatMapTuple,
 		"bf_first":          First,
 		"bf_last":           Last,
 		"bf_arr":            Arr,
@@ -1029,6 +1030,33 @@ func FlatMap(items any, keyKind, keyName string) []any {
 		}
 	}
 	return Flat(projected, 1)
+}
+
+// FlatMapTuple lowers an array-literal flatMap projection
+// `items.flatMap(i => [i.a, i.b])` (#1448 Tier C). `specs` is a flat list
+// of (kind, name) pairs, one per array-literal leaf: ("self", "") for the
+// item itself, ("field", "<Name>") for a struct field. For each item it
+// appends every leaf's value in order. Unlike the scalar `FlatMap`, the
+// per-item array is flattened only one level (flat(1) removes the literal
+// wrapper), so an array-valued leaf is appended verbatim rather than
+// spread — which is exactly "append each leaf". Non-array receiver → empty.
+func FlatMapTuple(items any, specs ...string) []any {
+	v := reflect.ValueOf(items)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return []any{}
+	}
+	out := make([]any, 0, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		el := v.Index(i).Interface()
+		for j := 0; j+1 < len(specs); j += 2 {
+			if specs[j] == "field" {
+				out = append(out, getFieldValue(el, specs[j+1]))
+			} else {
+				out = append(out, el)
+			}
+		}
+	}
+	return out
 }
 
 // First returns the first element of a slice, or nil if empty.
