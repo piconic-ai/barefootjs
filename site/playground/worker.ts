@@ -58,6 +58,7 @@ import { UI_SHELL_HTML, UI_CLIENT_JS } from './ui'
 import { handleChat, type AiBinding } from './agent'
 import { Hono } from 'hono'
 import { setCookie } from 'hono/cookie'
+import { DurableObject } from 'cloudflare:workers'
 
 interface WorkerLoaderModules {
   // Plain string = ESM source (key must end .js/.py). Object form
@@ -90,20 +91,55 @@ interface Env {
   // Workers AI binding (see wrangler.jsonc). Absent in local dev, which routes
   // the chat endpoint into MOCK mode (see agent.ts).
   AI?: AiBinding
+  // Per-session state (one DO instance per session id). See PlaygroundSession.
+  PLAYGROUND_SESSION: DurableObjectNamespace<PlaygroundSession>
 }
 
-// A compiled session: the user modules produced by the browser compile worker,
-// plus the static asset bodies the HOST serves over HTTP for this session.
-interface Session {
+// A compiled session, persisted in a Durable Object. barefoot.js is NOT stored
+// here — it is the fixed DOM runtime, served from BAREFOOT_RUNTIME_JS — which
+// keeps the stored value well under the 128 KiB DO value limit.
+interface StoredSession {
   mainModule: string
   userModules: Record<string, string>
-  // Static assets (barefoot.js + uno.css + per-component client.js). Served by
-  // the host so the AI's server.tsx only contains page routes, not asset
-  // plumbing. See STATIC_BASE / UNO_CSS_PATH below.
-  assets: RtAppAssets
+  // The app's generated UnoCSS (user-dependent: only the classes this app uses).
+  unoCss: string
+  // Per-user-component hydration JS, keyed by component name. (Registry
+  // components' client JS is fixed — served from REGISTRY_CLIENT_JS.)
+  clientJs: Record<string, string>
   // Monotonic build counter, appended to the Loader cache key so each Run loads
   // a fresh isolate rather than reusing the previous build for the same session.
   generation: number
+}
+
+// Evict a session this long after its last build (the alarm is refreshed on
+// every build).
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Per-session state — one DO instance per session id (`idFromName`). Strongly
+ * consistent and isolate-independent: a build is immediately visible to the
+ * next preview request and survives isolate eviction, unlike the in-memory Map
+ * this replaces (which was lost on every cold start and not shared across
+ * isolates).
+ */
+export class PlaygroundSession extends DurableObject {
+  async putBuild(build: Omit<StoredSession, 'generation'>): Promise<void> {
+    const prev = await this.ctx.storage.get<StoredSession>('session')
+    await this.ctx.storage.put('session', {
+      ...build,
+      generation: (prev?.generation ?? 0) + 1,
+    })
+    await this.ctx.storage.setAlarm(Date.now() + SESSION_TTL_MS)
+  }
+
+  async getSession(): Promise<StoredSession | null> {
+    return (await this.ctx.storage.get<StoredSession>('session')) ?? null
+  }
+
+  // TTL cleanup: drop the session once the alarm fires without a newer build.
+  async alarm(): Promise<void> {
+    await this.ctx.storage.deleteAll()
+  }
 }
 
 // Static asset URL convention. MUST match compile-app-core.ts's STATIC_BASE /
@@ -119,20 +155,26 @@ const TOKENS_CSS_PATH = '/__rt-static/tokens.css'
  * the host-owned asset routes. Returns null for non-asset paths so the caller
  * falls through to dispatching into the app.
  */
-function serveAsset(pathname: string, assets: RtAppAssets): Response | null {
+function serveAsset(
+  pathname: string,
+  unoCss: string,
+  clientJs: Record<string, string>,
+): Response | null {
+  // tokens.css and barefoot.js are FIXED across sessions — served from embedded
+  // constants (not the per-session store), so they never bloat a session value.
   if (pathname === TOKENS_CSS_PATH) {
     return new Response(TOKENS_CSS, {
       headers: { 'content-type': 'text/css; charset=utf-8' },
     })
   }
-  if (pathname === UNO_CSS_PATH) {
-    return new Response(assets.unoCss, {
-      headers: { 'content-type': 'text/css; charset=utf-8' },
+  if (pathname === `${STATIC_BASE}barefoot.js`) {
+    return new Response(BAREFOOT_RUNTIME_JS, {
+      headers: { 'content-type': 'text/javascript; charset=utf-8' },
     })
   }
-  if (pathname === `${STATIC_BASE}barefoot.js`) {
-    return new Response(assets.barefootJs, {
-      headers: { 'content-type': 'text/javascript; charset=utf-8' },
+  if (pathname === UNO_CSS_PATH) {
+    return new Response(unoCss, {
+      headers: { 'content-type': 'text/css; charset=utf-8' },
     })
   }
   // /__rt-static/components/<Name>.client.js → the session's own user component
@@ -143,7 +185,7 @@ function serveAsset(pathname: string, assets: RtAppAssets): Response | null {
   // its hydration (`hydrate('Button', …)`) reaches the page.
   if (pathname.startsWith(STATIC_BASE) && pathname.endsWith('.client.js')) {
     const name = pathname.slice(STATIC_BASE.length, -'.client.js'.length)
-    const js = assets.clientJs[name] ?? REGISTRY_CLIENT_JS[name]
+    const js = clientJs[name] ?? REGISTRY_CLIENT_JS[name]
     if (js != null) {
       return new Response(js, {
         headers: { 'content-type': 'text/javascript; charset=utf-8' },
@@ -153,10 +195,17 @@ function serveAsset(pathname: string, assets: RtAppAssets): Response | null {
   return null
 }
 
-// In-memory session store. Ephemeral (see file header). Keyed by session id.
-const SESSIONS = new Map<string, Session>()
-
 const SESSION_COOKIE = 'bf_pg_session'
+
+// Fetch a session's persisted state from its Durable Object (null if none yet).
+function getSession(
+  env: Env,
+  sessionId: string | null,
+): Promise<StoredSession | null> {
+  if (!sessionId) return Promise.resolve(null)
+  const ns = env.PLAYGROUND_SESSION
+  return ns.get(ns.idFromName(sessionId)).getSession()
+}
 
 function readSessionId(request: Request): string | null {
   const cookie = request.headers.get('cookie')
@@ -210,28 +259,21 @@ export default {
 }
 `
 
-// The static assets the host serves for a given session (or the default app if
-// the session has not built yet).
-function assetsForSession(sessionId: string | null): RtAppAssets {
-  const session = sessionId ? SESSIONS.get(sessionId) : undefined
-  return session ? session.assets : RT_COUNTER_ASSETS
-}
-
-// Dispatch a request into the app for the given session. If the session has a
-// compiled build, load (user modules + vendor); otherwise fall back to the
-// default app compiled at build time (generated/rt-counter.ts), so a fresh
-// visitor sees a working preview before their first Run.
+// Dispatch a request into the app for an ALREADY-FETCHED session (callers fetch
+// once via getSession and pass it in, so a single request never hits the DO
+// twice). If the session has no build yet, fall back to the default app
+// compiled at build time (generated/rt-counter.ts), so a fresh visitor sees a
+// working preview before their first Run.
 //
 // The loaded app contains ONLY page routes — static assets (barefoot.js,
-// <Name>.client.js, uno.css) are served by the host (see serveAsset), so
-// requests for them never reach the loaded isolate.
-function dispatchToSession(
+// <Name>.client.js, uno.css, tokens.css) are served by the host (see
+// serveAsset), so requests for them never reach the loaded isolate.
+function loadAndDispatch(
   env: Env,
   sessionId: string | null,
+  session: StoredSession | null,
   request: Request,
 ): Promise<Response> {
-  const session = sessionId ? SESSIONS.get(sessionId) : undefined
-
   if (!session) {
     // No build yet → the prebuilt default app (same module shape as a session,
     // just compiled offline). Keyed distinctly so it never collides with a real
@@ -284,9 +326,10 @@ app.all('/__spike', (c) => {
 // playground nests inside its own preview. The browser tags iframe-context
 // document loads with `Sec-Fetch-Dest: iframe`, which distinguishes them from
 // the top-level page load.
-app.get('/', (c) => {
+app.get('/', async (c) => {
   if (c.req.header('Sec-Fetch-Dest') === 'iframe') {
-    return dispatchToSession(c.env, readSessionId(c.req.raw), c.req.raw)
+    const sid = readSessionId(c.req.raw)
+    return loadAndDispatch(c.env, sid, await getSession(c.env, sid), c.req.raw)
   }
   if (!readSessionId(c.req.raw)) {
     setCookie(c, SESSION_COOKIE, newSessionId(), { path: '/', sameSite: 'Lax' })
@@ -342,12 +385,14 @@ app.post('/_pg/build', async (c) => {
     return c.json({ ok: false, error: 'Missing userModules/mainModule/assets' }, 400)
   }
 
-  const prev = SESSIONS.get(sessionId)
-  SESSIONS.set(sessionId, {
+  // Persist in the session's DO. barefoot.js is dropped (served from the fixed
+  // embedded constant), keeping the stored value small.
+  const ns = c.env.PLAYGROUND_SESSION
+  await ns.get(ns.idFromName(sessionId)).putBuild({
     mainModule: body.mainModule,
     userModules: body.userModules,
-    assets: body.assets,
-    generation: (prev?.generation ?? 0) + 1,
+    unoCss: body.assets.unoCss,
+    clientJs: body.assets.clientJs,
   })
 
   if (issueCookie) {
@@ -359,14 +404,18 @@ app.post('/_pg/build', async (c) => {
 // Everything else: host-owned static assets, the preview iframe entry, and the
 // live app's own page routes. Order matters — assets are checked before any app
 // dispatch.
-app.all('*', (c) => {
+app.all('*', async (c) => {
   const url = new URL(c.req.url)
   const sessionId = readSessionId(c.req.raw)
+  // Fetch the session once; reuse it for both asset serving and dispatch.
+  const session = await getSession(c.env, sessionId)
+  const unoCss = session ? session.unoCss : RT_COUNTER_ASSETS.unoCss
+  const clientJs = session ? session.clientJs : RT_COUNTER_ASSETS.clientJs
 
-  // Host-owned static assets (barefoot.js, <Name>.client.js, uno.css,
-  // tokens.css) served from the session's stored assets, so the AI's server.tsx
-  // only contains page routes.
-  const asset = serveAsset(url.pathname, assetsForSession(sessionId))
+  // Host-owned static assets (barefoot.js + tokens.css are fixed constants;
+  // uno.css + per-component client.js come from the session). The AI's
+  // server.tsx only contains page routes.
+  const asset = serveAsset(url.pathname, unoCss, clientJs)
   if (asset) return asset
 
   // Preview iframe entry document. Rewrite to the app's root and dispatch into
@@ -376,12 +425,12 @@ app.all('*', (c) => {
   if (url.pathname === '/_preview' || url.pathname === '/_preview/') {
     const rewritten = new URL(c.req.url)
     rewritten.pathname = '/'
-    return dispatchToSession(c.env, sessionId, new Request(rewritten, c.req.raw))
+    return loadAndDispatch(c.env, sessionId, session, new Request(rewritten, c.req.raw))
   }
 
   // HTML page routes (/, /counter, /todo … typed in the URL bar): dispatch
   // UNCHANGED into the session app.
-  return dispatchToSession(c.env, sessionId, c.req.raw)
+  return loadAndDispatch(c.env, sessionId, session, c.req.raw)
 })
 
 export default app

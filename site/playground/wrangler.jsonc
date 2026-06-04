@@ -13,5 +13,17 @@
   //                      `wrangler login` / Cloudflare account needed).
   //   - `bun run dev:ai` runs without `--local` → wrangler proxies AI to the
   //                      real account (requires `wrangler login` first).
-  "ai": { "binding": "AI" }
+  "ai": { "binding": "AI" },
+  // Per-user session state (compiled app modules + uno.css + client JS). One
+  // Durable Object instance per session id gives strong, isolate-independent
+  // persistence so build → preview is consistent and survives isolate eviction
+  // (the in-memory Map this replaces was lost on every cold start). barefoot.js
+  // is fixed and served from an embedded constant, so it is NOT stored here —
+  // keeping each session value comfortably under the 128 KiB DO value limit.
+  "durable_objects": {
+    "bindings": [
+      { "name": "PLAYGROUND_SESSION", "class_name": "PlaygroundSession" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PlaygroundSession"] }]
 }
