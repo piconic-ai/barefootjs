@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { parseExpression, isSupported, exprToString, parseBlockBody } from '../expression-parser'
+import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody } from '../expression-parser'
 import { collectAllTypeRanges, reconstructWithoutTypes } from '../strip-types'
 
 describe('expression-parser', () => {
@@ -1606,7 +1606,17 @@ describe('expression-parser — .flatMap(fn) projection (#1448 Tier C)', () => {
   }
 
   test('exprToString / stringify round-trip the callback', () => {
-    expect(exprToString(parseExpression('arr.flatMap(i => i.tags)'))).toBe('arr.flatMap(i => i.tags)')
-    expect(exprToString(parseExpression('arr.flatMap(t => t)'))).toBe('arr.flatMap(t => t)')
+    // Scalar projections, plus the array-literal tuple — the round-trip
+    // relies on the callback `raw`, so a regression in raw capture would
+    // surface here for every projection shape.
+    for (const src of [
+      'arr.flatMap(i => i.tags)',
+      'arr.flatMap(t => t)',
+      'arr.flatMap(i => [i.a, i.b])',
+      'arr.flatMap(i => [i, i.tags])',
+    ]) {
+      expect(exprToString(parseExpression(src))).toBe(src)
+      expect(stringifyParsedExpr(parseExpression(src))).toBe(src)
+    }
   })
 })
