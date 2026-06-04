@@ -682,6 +682,11 @@ async function init() {
     noSyntaxValidation: false,
     noSuggestionDiagnostics: true,
   })
+  // Include EVERY model in the TS program, not just the one currently open in
+  // the editor. Without this, server.tsx can't resolve its sibling imports
+  // (./renderer, ./src/Home, …) because those models haven't been "opened" —
+  // surfacing a spurious "Cannot find module './renderer'".
+  ts.typescriptDefaults.setEagerModelSync(true)
 
   let files = []
   try {
