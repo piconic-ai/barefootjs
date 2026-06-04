@@ -55,25 +55,56 @@ export const UI_SHELL_HTML = /* html */ `<!doctype html>
         display: flex;
         flex-direction: column;
       }
+      /* Header matches the existing barefootjs.dev/playground: logo link +
+         separator + "Playground" label, with a right-aligned muted note. */
       header {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         gap: 12px;
-        padding: 12px 20px;
+        padding: 0 16px;
+        height: 52px;
+        flex-shrink: 0;
         border-bottom: 1px solid var(--border);
         background: var(--bg-panel);
       }
-      header h1 {
-        font-size: 16px;
-        font-weight: 600;
-        margin: 0;
-        letter-spacing: 0.2px;
+      @media (min-width: 640px) {
+        header {
+          padding: 0 24px;
+          gap: 20px;
+        }
       }
-      header .note {
+      header .logo-link {
+        display: inline-flex;
+        align-items: center;
+        color: inherit;
+      }
+      header .logo {
+        height: 1.5rem;
+        width: auto;
+        display: block;
+      }
+      header .hsep {
+        display: none;
+        width: 1px;
+        height: 20px;
+        background: var(--border);
+      }
+      @media (min-width: 640px) {
+        header .hsep {
+          display: block;
+        }
+      }
+      header .hlabel {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--fg-muted);
+      }
+      header .hnote {
+        margin-left: auto;
         font-size: 12px;
         color: var(--fg-muted);
       }
-      header .note a {
+      header .hnote a {
         color: var(--accent);
         text-decoration: none;
       }
@@ -418,8 +449,12 @@ export const UI_SHELL_HTML = /* html */ `<!doctype html>
   </head>
   <body>
     <header>
-      <h1>BarefootJS Playground</h1>
-      <span class="note">
+      <a class="logo-link" href="https://barefootjs.dev" aria-label="Barefoot.js home">
+        <img class="logo" src="/_pg/logo.svg" alt="Barefoot.js" />
+      </a>
+      <span class="hsep" aria-hidden="true"></span>
+      <span class="hlabel">Playground</span>
+      <span class="hnote">
         Running live on
         <a href="https://developers.cloudflare.com/dynamic-workers/" target="_blank" rel="noreferrer"
           >Cloudflare Dynamic Workers</a
