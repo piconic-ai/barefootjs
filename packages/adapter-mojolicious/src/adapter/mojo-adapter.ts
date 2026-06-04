@@ -1574,12 +1574,21 @@ function renderFlatMethod(recv: string, depth: FlatDepth): string {
 }
 
 // `.flatMap(i => i)` / `.flatMap(i => i.field)` → `bf->flat_map($recv,
-// 'self'|'field', 'field')`. The runtime projects each item then flattens
-// one level. The field key is the raw JS prop name (Perl hashes are keyed
-// by it), mirroring `bf->reduce`. See `sub flat_map` in BarefootJS.pm.
+// 'self'|'field', 'field')`, and the array-literal tuple form
+// `i => [i.a, i.b]` → `bf->flat_map_tuple($recv, ['field','a'], ...)`
+// (one arrayref per leaf). The field key is the raw JS prop name (Perl
+// hashes are keyed by it), mirroring `bf->reduce`. See `sub flat_map` /
+// `sub flat_map_tuple` in BarefootJS.pm.
 function renderFlatMapMethod(recv: string, op: FlatMapOp): string {
-  if (op.key.kind === 'self') return `bf->flat_map(${recv}, 'self', '')`
-  return `bf->flat_map(${recv}, 'field', '${op.key.field}')`
+  const proj = op.projection
+  if (proj.kind === 'tuple') {
+    const specs = proj.elements
+      .map(l => (l.kind === 'self' ? `['self', '']` : `['field', '${l.field}']`))
+      .join(', ')
+    return `bf->flat_map_tuple(${recv}, ${specs})`
+  }
+  if (proj.kind === 'self') return `bf->flat_map(${recv}, 'self', '')`
+  return `bf->flat_map(${recv}, 'field', '${proj.field}')`
 }
 
 /** True when `type` is the `string` primitive. */

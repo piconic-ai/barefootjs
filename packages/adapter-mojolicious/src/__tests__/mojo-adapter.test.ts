@@ -401,10 +401,10 @@ export function C() {
       // empty array there, which a template can't mirror.
       { name: 'reduce (no init)',  body: `<div>{items().reduce((s, x) => s + x)}</div>`,                                                             needle: '.reduce(' },
       { name: 'forEach',           body: `<ul>{items().forEach(x => x)}</ul>`,                                                                       needle: '.forEach(' },
-      // The field-projection `.flatMap(x => x.tags)` now lowers (#1448
-      // Tier C) — even as a loop base — so it moved to the positive test
-      // below. The array-literal / transform form stays refused.
-      { name: 'flatMap (array-literal)', body: `<div>{items().flatMap(x => [x.tags, x.tags])}</div>`,                                              needle: '.flatMap(' },
+      // Self / field / field-tuple `.flatMap` now lowers (#1448 Tier C) —
+      // even as a loop base — so those moved to positive tests below. A
+      // tuple with a non-leaf element (a string literal) stays refused.
+      { name: 'flatMap (literal element)', body: `<div>{items().flatMap(x => [x.tag, "x"])}</div>`,                                                needle: '.flatMap(' },
     ]
 
     for (const { name, body, needle } of cases) {
@@ -1094,7 +1094,7 @@ describe('MojoAdapter - #1448 Tier C .flatMap(field projection)', () => {
   function emitFlatMap(expr: string): string {
     const a = new MojoAdapter()
     const ir = compileToIR(`
-function C({ rows }: { rows: { tags: string[] }[] }) {
+function C({ rows }: { rows: { a: string; b: string; tags: string[] }[] }) {
   return <div>{${expr}}</div>
 }
 export { C }
@@ -1108,6 +1108,14 @@ export { C }
 
   test('.flatMap(i => i) emits the self projection', () => {
     expect(emitFlatMap('rows.flatMap(i => i).join(" ")')).toContain(`bf->flat_map($rows, 'self', '')`)
+  })
+
+  test('.flatMap(i => [i.a, i.b]) emits bf->flat_map_tuple with leaf specs', () => {
+    expect(emitFlatMap('rows.flatMap(i => [i.a, i.b]).join(" ")')).toContain(`bf->flat_map_tuple($rows, ['field', 'a'], ['field', 'b'])`)
+  })
+
+  test('tuple self + field leaves', () => {
+    expect(emitFlatMap('rows.flatMap(i => [i, i.a]).join(" ")')).toContain(`bf->flat_map_tuple($rows, ['self', ''], ['field', 'a'])`)
   })
 
   test('field-projection flatMap as a loop base lowers (no BF101)', () => {
@@ -1187,9 +1195,9 @@ export function C() {
     // the no-initial-value form stays refused — JS throws on an empty
     // array there, which a template can't mirror.
     { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '->{reduce}' },
-    // Field-projection `.flatMap(i => i.tags)` now lowers (#1448 Tier C);
-    // the array-literal / transform form stays refused.
-    { name: 'flatMap (array-literal)', expr: `items().flatMap(i => [i.name, i.n])`, badEmit: '->{flatMap}' },
+    // Self / field / field-tuple `.flatMap` now lowers (#1448 Tier C); a
+    // tuple with a non-leaf element (here a string literal) stays refused.
+    { name: 'flatMap (literal element)', expr: `items().flatMap(i => [i.name, "x"])`, badEmit: '->{flatMap}' },
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
     // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
     // and the variadic `.concat`. The parser refuses these (silently

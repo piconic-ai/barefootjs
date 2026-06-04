@@ -549,6 +549,30 @@ sub flat_map ($self, $recv, $key_kind, $key) {
     return $self->flat(\@projected, 1);
 }
 
+# `Array.prototype.flatMap(i => [i.a, i.b])` — array-literal tuple
+# projection (#1448 Tier C). Each `@specs` entry is a [kind, key] arrayref
+# (['self', ''] or ['field', 'a']). For each element, every leaf's value
+# is appended in order. flat(1) removes only the literal wrapper, so an
+# array-valued leaf is appended verbatim (no spread) — i.e. just append
+# each leaf. A non-HASH element under a `field` leaf yields undef (JS
+# `i.field` on a non-object). Non-ARRAY receiver → [].
+sub flat_map_tuple ($self, $recv, @specs) {
+    return [] unless ref($recv) eq 'ARRAY';
+    my @out;
+    for my $el (@$recv) {
+        for my $spec (@specs) {
+            my ($kind, $key) = @$spec;
+            if ($kind eq 'field') {
+                push @out, ref($el) eq 'HASH' ? $el->{$key} : undef;
+            }
+            else {
+                push @out, $el;
+            }
+        }
+    }
+    return \@out;
+}
+
 # `String.prototype.trim()` — strip leading + trailing whitespace.
 # JS's `String.prototype.trim` matches `\s` in the Unicode sense
 # (any whitespace including non-breaking space U+00A0); Perl's `\s`

@@ -135,6 +135,7 @@ import { fixture as arrayFlatDepth } from './methods/array-flat-depth'
 import { fixture as arrayFlatInfinity } from './methods/array-flat-infinity'
 import { fixture as arrayFlatMapField } from './methods/array-flatmap-field'
 import { fixture as arrayFlatMapSelf } from './methods/array-flatmap-self'
+import { fixture as arrayFlatMapTuple } from './methods/array-flatmap-tuple'
 import { fixture as stringToLowerCase } from './methods/string-toLowerCase'
 import { fixture as stringToUpperCase } from './methods/string-toUpperCase'
 import { fixture as stringTrim } from './methods/string-trim'
@@ -327,6 +328,7 @@ export const jsxFixtures: JSXFixture[] = [
   arrayFlatInfinity,
   arrayFlatMapField,
   arrayFlatMapSelf,
+  arrayFlatMapTuple,
   // #1448 Tier A — String methods.
   stringToLowerCase,
   stringToUpperCase,
