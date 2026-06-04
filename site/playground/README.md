@@ -106,12 +106,41 @@ bunx wrangler dev
       routes + page components) + a mini-browser preview URL bar.
 - [x] **Phase 4-4** — shadcn-style registry components (Button/Card/Input/Label/
       Badge/Separator) pre-compiled and importable as `@/components/ui/*`, with the
-      semantic UnoCSS theme + tokens.css.
-- [ ] **Phase 5** — deploy to `playground.barefootjs.dev` (paid plan + Dynamic
-      Workers beta; add to `.github/workflows/deploy.yml`).
+      semantic UnoCSS theme + tokens.css. Sources fetched from the live
+      `https://ui.barefootjs.dev/r/<name>.json` registry at build time.
+- [x] **Phase 4-5 / 4-6** — tool-calling agent (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`)
+      with build-time-extracted bf/Hono CLI knowledge as in-Worker tools
+      (`search_components` / `get_component_docs` / `barefoot_guide` / `hono_docs`),
+      a validate→self-repair loop, and a deterministic wiring check.
+- [x] **Session persistence** — per-session Durable Object (`PlaygroundSession`)
+      stores the compiled modules; survives `wrangler dev` restarts. The fixed
+      `barefoot.js` runtime is served from an embedded constant to stay under the
+      DO 128 KiB value limit.
+- [ ] **Phase 5** — public deploy to `playground.barefootjs.dev`. **Deferred —
+      see "Public release / cost" below.**
 
 ## Status
 
-Phases 1–2 complete. The host Worker loads an embedded Counter app bundle into a
-Dynamic Worker; SSR markup, the three inline asset routes, and client hydration
-(clicking **+1** increments the signal) are all verified locally.
+**Feature-complete and fully working locally; not publicly deployed.**
+
+The end-to-end loop works under `wrangler dev`: chat with the AI agent (or edit
+in Monaco) → compile in the browser → load a fresh Dynamic Worker isolate per
+session → SSR + client hydration in the preview iframe, across multi-route apps,
+the shadcn registry components, and DO-backed persistence. Verified locally with
+real Workers AI (counter, todo, and a shadcn contact form).
+
+### Public release / cost
+
+After observing real Workers AI usage, **opening this as a public instance is
+not cost-viable today, so Phase 5 (public deploy) is deferred.** Every chat turn
+runs *multiple* 70B inferences — the tool-calling round(s), the validate→repair
+round(s, cap 2), and the wiring fix — so a single "build me a todo app" request
+fans out into a handful of large-model calls. An unauthenticated public endpoint
+would incur unbounded Workers AI neuron cost and is an obvious abuse target.
+
+Making it public would first require cost controls that are out of scope here:
+authentication, per-user quotas / rate limiting, and/or a cheaper model (the
+8B model is unreliable even with the guardrails — it detects issues but cannot
+fix them; the cheap models we tried were not viable). The branch is kept so the
+playground can be revived once those controls — or a more cost-effective model —
+are in place.
