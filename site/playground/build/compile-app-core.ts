@@ -61,22 +61,17 @@
 // meta-package `export *`), so it does not drag in the attributify transformer.
 import { createGenerator, type UserConfig } from '@unocss/core'
 import { presetWind4 } from 'unocss/preset-wind4'
-import {
-  compileJSX,
-  listComponentFunctions,
-  type FileOutput,
-} from '@barefootjs/jsx'
-import { HonoAdapter } from '@barefootjs/hono'
 import { addScriptCollection } from '@barefootjs/hono/build'
+import { STATIC_BASE, buildComponentToMemory } from './build-to-memory'
 import {
   REGISTRY_UNO_SOURCE,
   REGISTRY_IMPORT_MAP,
 } from '../generated/registry-bundle'
 
-// Distinct static base so the runtime-compiled app's asset routes never collide
-// with the prebuilt app path. The host serves assets under this base; the
-// renderer references it (import map + uno.css link).
-export const STATIC_BASE = '/__rt-static/components/'
+// STATIC_BASE (the host-served asset base) lives in build-to-memory — the
+// browser-safe primitive the HonoAdapter is configured with — and is re-exported
+// here so existing importers of `compile-app-core`'s STATIC_BASE keep working.
+export { STATIC_BASE }
 export const UNO_CSS_PATH = '/__rt-static/uno.css'
 // Design-token CSS variables (--primary, --background, …). Served by the host
 // and linked BEFORE uno.css so the variables exist before utilities use them.
@@ -193,78 +188,6 @@ function makeUnoConfig(): UserConfig {
       },
     },
   }
-}
-
-function makeAdapter(): HonoAdapter {
-  return new HonoAdapter({
-    clientJsBasePath: STATIC_BASE,
-    barefootJsPath: `${STATIC_BASE}barefoot.js`,
-  })
-}
-
-/**
- * Compile a single user component .tsx → { ssrTemplate, clientJs } using the
- * exact in-process path `bf build` uses (compileJSX + HonoAdapter).
- */
-function compileComponent(
-  source: string,
-  filePath: string,
-  baseNameNoExt: string,
-): { ssrTemplate: string; clientJs: string; componentName: string } {
-  const names = listComponentFunctions(source, filePath)
-  if (names.length === 0) {
-    throw new Error(`No component function found in ${filePath}`)
-  }
-  const componentName = names[names.length - 1]
-
-  const result = compileJSX(source, filePath, {
-    adapter: makeAdapter(),
-    scriptBaseName: baseNameNoExt,
-    siblingTemplatesRegistered: true,
-    // The AI's app imports registry components as `@/components/ui/<name>`.
-    // Declaring `@/` a local-import prefix lets the compiler treat those as
-    // CHILD components (emit a `<Button>` SSR template call + `initChild` /
-    // `renderChild` on the client) rather than unknown opaque imports.
-    localImportPrefixes: ['@/'],
-  })
-
-  const errors = result.errors.filter((e) => e.severity === 'error')
-  if (errors.length > 0) {
-    throw new Error(
-      `compileJSX errors for ${filePath}:\n` +
-        errors.map((e) => `[${e.code ?? '?'}] ${e.message}`).join('\n'),
-    )
-  }
-
-  const files: FileOutput[] = result.files
-  const tpl = files.find((f) => f.type === 'markedTemplate')
-  const cjs = files.find((f) => f.type === 'clientJs')
-  if (!tpl) throw new Error(`No SSR template emitted for ${filePath}`)
-  return {
-    ssrTemplate: tpl.content,
-    // A user component that places a registry child (e.g. <Button>) emits a
-    // `import '/* @bf-child:Button */'` placeholder. In the site UI build the
-    // child's client JS is INLINED there; in the playground the registry is
-    // pre-compiled separately and its client JS arrives via its OWN
-    // script-collection `<script>` tag (emitted by the registry SSR template).
-    // So the placeholder must be stripped — left in, it is an `import` of a
-    // bogus comment-string specifier that the browser ESM loader rejects.
-    // `initChild('Button', …)` then finds the registry-registered init (or
-    // queues until the registry script loads — see runtime registry.ts).
-    clientJs: stripChildPlaceholders(cjs?.content ?? ''),
-    componentName,
-  }
-}
-
-/**
- * Remove `@bf-child:` placeholder imports from compiled client JS. These mark
- * child-component dependencies for the site build's inliner; in the playground
- * the registry children are pre-compiled and self-register via their own
- * served client JS, so the placeholder import (a non-resolvable comment-string
- * specifier) must be dropped before the module reaches the browser loader.
- */
-function stripChildPlaceholders(clientJs: string): string {
-  return clientJs.replace(/import\s+'\/\* @bf-child:\w+ \*\/'\n?/g, '')
 }
 
 /**
@@ -392,8 +315,19 @@ export async function compileAppCore(
           `"${baseNameNoExt}.js" — rename the component file.`,
       )
     }
-    const { ssrTemplate: rawSsrTemplate, clientJs, componentName } =
-      compileComponent(source, path, baseNameNoExt)
+    // Compile this user page to in-memory artifacts. `@/components/ui/<name>`
+    // registry imports are CHILD components (the default `['@/']` local-import
+    // prefix), and the `@bf-child:` placeholders are stripped because the
+    // registry children self-register via their OWN served client JS (the
+    // placeholder import would otherwise be a non-resolvable comment-string
+    // specifier the browser ESM loader rejects).
+    const { ssrTemplate: rawSsrTemplate, clientJs, names } =
+      buildComponentToMemory(source, path, {
+        scriptBaseName: baseNameNoExt,
+        stripChildPlaceholders: true,
+      })
+    // The last component in source order is this page's entry.
+    const componentName = names[names.length - 1]
 
     // Inject the Hono script-collection wrapper so the rendered component emits
     // its barefoot.js + <Name>.client.js hydration tags (deduped per request).

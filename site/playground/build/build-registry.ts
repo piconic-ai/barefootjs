@@ -62,20 +62,9 @@ import { writeFile, mkdir } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { transform } from 'esbuild'
-import {
-  compileJSX,
-  listComponentFunctions,
-  combineParentChildClientJs,
-  type FileOutput,
-} from '@barefootjs/jsx'
-import { HonoAdapter } from '@barefootjs/hono'
+import { combineParentChildClientJs } from '@barefootjs/jsx'
 import { addScriptCollection } from '@barefootjs/hono/build'
-
-// The host-served static base. Duplicated as a local constant (rather than
-// imported from compile-app-core) so this build step has NO dependency on
-// compile-app-core — which imports the registry bundle this step GENERATES,
-// a bootstrap cycle. MUST stay in sync with compile-app-core.ts's STATIC_BASE.
-const STATIC_BASE = '/__rt-static/components/'
+import { STATIC_BASE, buildComponentToMemory } from './build-to-memory'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PLAYGROUND = join(HERE, '..')
@@ -116,13 +105,6 @@ const REGISTRY: RegistryEntry[] = [
   { name: 'label', expose: true },
   { name: 'separator', expose: true },
 ]
-
-function makeAdapter(): HonoAdapter {
-  return new HonoAdapter({
-    clientJsBasePath: STATIC_BASE,
-    barefootJsPath: `${STATIC_BASE}barefoot.js`,
-  })
-}
 
 /**
  * The ROOT module key for a registry component (`button` → `ui_button.js`).
@@ -220,37 +202,24 @@ async function compileRegistryComponent(
   const filePath = `components/ui/${entry.name}/index.tsx`
   const source = await fetchRegistrySource(entry.name)
 
-  const exports = listComponentFunctions(source, filePath)
-  if (exports.length === 0) {
-    throw new Error(`No component function found in ${filePath}`)
-  }
-
-  const result = compileJSX(source, filePath, {
-    adapter: makeAdapter(),
-    scriptBaseName: entry.name,
-    siblingTemplatesRegistered: true,
-    localImportPrefixes: ['@/'],
-    rewriteRelativeImport,
-  })
-
-  const errors = result.errors.filter((e) => e.severity === 'error')
-  if (errors.length > 0) {
-    throw new Error(
-      `compileJSX errors for ${filePath}:\n` +
-        errors.map((e) => `[${e.code ?? '?'}] ${e.message}`).join('\n'),
-    )
-  }
-
-  const files: FileOutput[] = result.files
-  const tpl = files.find((f) => f.type === 'markedTemplate')
-  const cjs = files.find((f) => f.type === 'clientJs')
-  if (!tpl) throw new Error(`No SSR template emitted for ${filePath}`)
+  // Compile to in-memory artifacts. `rewriteRelativeImport` maps a sibling
+  // import (`../slot` → `./ui_slot.js`) onto the root module map. The `@bf-child:`
+  // placeholders are KEPT (stripChildPlaceholders defaults off): the registry
+  // build runs `combineParentChildClientJs` over the raw client JS itself.
+  const { names, ssrTemplate, clientJs } = buildComponentToMemory(
+    source,
+    filePath,
+    {
+      scriptBaseName: entry.name,
+      rewriteRelativeImport,
+    },
+  )
 
   return {
     name: entry.name,
-    ssrTemplate: tpl.content,
-    clientJs: cjs?.content ?? '',
-    exports,
+    ssrTemplate,
+    clientJs,
+    exports: names,
     source,
   }
 }
