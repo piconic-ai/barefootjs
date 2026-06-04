@@ -261,7 +261,9 @@ const UNSUPPORTED_METHODS = new Set([
   // refuse. A 2-arg call whose reducer/init shape is off-catalogue
   // returns an explicit `unsupported` from the call branch with a richer
   // message. The rest stay refused — see #1448 Tier C for the design
-  // questions.
+  // questions. `forEach` stays listed as a fallback but is intercepted by
+  // a dedicated branch in the support gate that explains its `undefined`
+  // return (client-callback-only; #1448 Tier C / Tier D-class).
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap', 'flat',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
@@ -2180,6 +2182,23 @@ function checkSupport(expr: ParsedExpr): SupportResult {
       // This handles the case where the pattern wasn't recognized as higher-order
       if (expr.callee.kind === 'member') {
         const methodName = expr.callee.property
+        // `.forEach()` returns `undefined`, so there is no value to render
+        // in template position — it is never a lowering target (#1448 Tier
+        // C / Tier D-class). Its only meaningful use is side effects inside
+        // event handlers / `createEffect` callbacks, which are client JS and
+        // never reach this gate. Give it a dedicated reason rather than the
+        // generic "defer to hydration" hint (deferring a `undefined`-valued
+        // expression still renders nothing).
+        if (methodName === 'forEach') {
+          return {
+            supported: false,
+            level: 'L5_UNSUPPORTED',
+            reason:
+              `'.forEach()' returns undefined and has no template-position meaning. ` +
+              `Use it for side effects inside an event handler or createEffect callback ` +
+              `(client JS), or use '.map(...)' if you meant to render each item.`,
+          }
+        }
         if (UNSUPPORTED_METHODS.has(methodName)) {
           return {
             supported: false,
