@@ -261,8 +261,8 @@ const UNSUPPORTED_METHODS = new Set([
   // refuse. A 2-arg call whose reducer/init shape is off-catalogue
   // returns an explicit `unsupported` from the call branch with a richer
   // message. The rest stay refused — see #1448 Tier C for the design
-  // questions. `forEach` stays listed as a fallback but is intercepted by
-  // a dedicated branch in the support gate that explains its `undefined`
+  // questions. `forEach` stays listed here too, with a tailored refusal
+  // reason in `UNSUPPORTED_METHOD_REASONS` explaining its `undefined`
   // return (client-callback-only; #1448 Tier C / Tier D-class).
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap', 'flat',
@@ -328,6 +328,25 @@ const UNSUPPORTED_METHODS = new Set([
   'charAt', 'charCodeAt', 'codePointAt', 'normalize',
   'substring', 'substr', 'match', 'matchAll', 'search',
 ])
+
+// Per-method override reasons for the BF101 refusal. A method listed here
+// is still refused via `UNSUPPORTED_METHODS` above — this only swaps the
+// generic "wrap in /* @client */ to defer to hydration" hint for a
+// method-specific one. Add a row here instead of a new branch in the
+// support gate when a method needs a tailored explanation.
+const UNSUPPORTED_METHOD_REASONS: Record<string, string> = {
+  // `.forEach()` returns `undefined`, so there is no value to render in
+  // template position — it is never a lowering target (#1448 Tier C /
+  // Tier D-class). Its only meaningful use is side effects inside event
+  // handlers / `createEffect` callbacks, which are client JS and never
+  // reach this gate. The generic "defer to hydration" hint is misleading
+  // here (deferring an `undefined`-valued expression still renders
+  // nothing), so point at `.map(...)` / `createEffect` instead.
+  forEach:
+    `'.forEach()' returns undefined and has no template-position meaning. ` +
+    `Use it for side effects inside an event handler or createEffect callback ` +
+    `(client JS), or use '.map(...)' if you meant to render each item.`,
+}
 
 // Methods that lower at their single-argument form but whose EXTRA
 // argument is meaningful and NOT yet lowered: the `fromIndex` of
@@ -2182,28 +2201,18 @@ function checkSupport(expr: ParsedExpr): SupportResult {
       // This handles the case where the pattern wasn't recognized as higher-order
       if (expr.callee.kind === 'member') {
         const methodName = expr.callee.property
-        // `.forEach()` returns `undefined`, so there is no value to render
-        // in template position — it is never a lowering target (#1448 Tier
-        // C / Tier D-class). Its only meaningful use is side effects inside
-        // event handlers / `createEffect` callbacks, which are client JS and
-        // never reach this gate. Give it a dedicated reason rather than the
-        // generic "defer to hydration" hint (deferring an `undefined`-valued
-        // expression still renders nothing).
-        if (methodName === 'forEach') {
-          return {
-            supported: false,
-            level: 'L5_UNSUPPORTED',
-            reason:
-              `'.forEach()' returns undefined and has no template-position meaning. ` +
-              `Use it for side effects inside an event handler or createEffect callback ` +
-              `(client JS), or use '.map(...)' if you meant to render each item.`,
-          }
-        }
+        // A method with no template lowering is refused as BF101. Most get
+        // the generic "defer to hydration" hint; methods listed in
+        // `UNSUPPORTED_METHOD_REASONS` (e.g. `forEach`) get a tailored
+        // explanation instead — add a row to that map rather than a branch
+        // here when a method needs special wording.
         if (UNSUPPORTED_METHODS.has(methodName)) {
           return {
             supported: false,
             level: 'L5_UNSUPPORTED',
-            reason: `Method '${methodName}()' has no template lowering and requires client-side evaluation. Wrap the expression in /* @client */ to defer it to hydration, or pre-compute the value before rendering.`,
+            reason:
+              UNSUPPORTED_METHOD_REASONS[methodName] ??
+              `Method '${methodName}()' has no template lowering and requires client-side evaluation. Wrap the expression in /* @client */ to defer it to hydration, or pre-compute the value before rendering.`,
           }
         }
       }
