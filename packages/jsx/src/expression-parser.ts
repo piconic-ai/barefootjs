@@ -2602,6 +2602,13 @@ export function exprToString(expr: ParsedExpr): string {
         const initSrc = type === 'string' ? JSON.stringify(init) : init
         return `${exprToString(expr.object)}.${expr.method}((${paramAcc},${paramItem}) => ${raw}, ${initSrc})`
       }
+      if (expr.method === 'flat') {
+        // Preserve the normalised depth so diagnostics don't misleadingly
+        // print `.flat()` for a `.flat(2)` / `.flat(Infinity)` source.
+        const d = expr.flatDepth
+        const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
+        return `${exprToString(expr.object)}.flat(${d === 1 ? '' : depthSrc})`
+      }
       return `${exprToString(expr.object)}.${expr.method}(${expr.args.map(exprToString).join(', ')})`
     case 'unsupported':
       return `[UNSUPPORTED: ${expr.raw}]`

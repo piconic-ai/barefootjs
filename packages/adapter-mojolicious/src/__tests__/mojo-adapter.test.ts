@@ -1062,25 +1062,6 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
   }
 })
 
-// =============================================================================
-// #1448 — `/* @client */` escape hatch for STILL-UNSUPPORTED methods
-// =============================================================================
-//
-// Mojo sibling of the Go block: #1448 documents `/* @client */` as the
-// universal workaround for any Array/String method the template
-// adapters can't lower. This pins that contract for the Mojo adapter —
-// the BARE form must surface a BF021/BF101 build error, and wrapping
-// the expression in the directive must clear it and emit a client-only
-// placeholder so the Mojo SSR pass renders valid `.html.ep` the client
-// runtime fills at hydration.
-//
-// History (#1448 follow-up): the unsupported *string* methods used to
-// raise NO build diagnostic — bare `.startsWith` / `.repeat` / … fell
-// into the regex pipeline and lowered to a Perl hash-deref-and-call
-// (`$name->{startsWith}('a')`) that passed the gate, then died at
-// render with `Can't use string (...) as a HASH ref while "strict
-// refs"`. They are now routed through the AST path in
-// `convertExpressionToPerl` so `isSupported`'s `UNSUPPORTED_METHODS`
 describe('MojoAdapter - #1448 Tier C .flat(depth?)', () => {
   function emitFlat(expr: string): string {
     const a = new MojoAdapter()
@@ -1106,6 +1087,25 @@ export { C }
   })
 })
 
+// =============================================================================
+// #1448 — `/* @client */` escape hatch for STILL-UNSUPPORTED methods
+// =============================================================================
+//
+// Mojo sibling of the Go block: #1448 documents `/* @client */` as the
+// universal workaround for any Array/String method the template
+// adapters can't lower. This pins that contract for the Mojo adapter —
+// the BARE form must surface a BF021/BF101 build error, and wrapping
+// the expression in the directive must clear it and emit a client-only
+// placeholder so the Mojo SSR pass renders valid `.html.ep` the client
+// runtime fills at hydration.
+//
+// History (#1448 follow-up): the unsupported *string* methods used to
+// raise NO build diagnostic — bare `.startsWith` / `.repeat` / … fell
+// into the regex pipeline and lowered to a Perl hash-deref-and-call
+// (`$name->{startsWith}('a')`) that passed the gate, then died at
+// render with `Can't use string (...) as a HASH ref while "strict
+// refs"`. They are now routed through the AST path in
+// `convertExpressionToPerl` so `isSupported`'s `UNSUPPORTED_METHODS`
 // gate fires BF101 — parity with the Go adapter. These tests pin it.
 describe('MojoAdapter - #1448 @client escape hatch (unsupported methods)', () => {
   function emit(expr: string, client: boolean) {

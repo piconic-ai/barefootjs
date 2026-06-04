@@ -1545,4 +1545,13 @@ describe('expression-parser — .flat(depth?) lowering (#1448 Tier C)', () => {
       expect(result.reason).toContain('literal')
     }
   })
+
+  // exprToString (diagnostics / debug output) must preserve the normalised
+  // depth, not collapse every form to `.flat()`.
+  test('exprToString round-trips the normalised depth', () => {
+    expect(exprToString(parseExpression('arr.flat()'))).toBe('arr.flat()')
+    expect(exprToString(parseExpression('arr.flat(2)'))).toBe('arr.flat(2)')
+    expect(exprToString(parseExpression('arr.flat(Infinity)'))).toBe('arr.flat(Infinity)')
+    expect(exprToString(parseExpression('arr.flat(0)'))).toBe('arr.flat(0)')
+  })
 })
