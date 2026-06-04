@@ -537,7 +537,10 @@ sub flat_map ($self, $recv, $key_kind, $key) {
     my @projected;
     for my $el (@$recv) {
         if ($key_kind eq 'field') {
-            push @projected, ref($el) eq 'HASH' ? $el->{$key} : $el;
+            # JS `i => i.field` on a non-object yields `undefined`, not the
+            # element itself — push `undef` so a scalar element doesn't leak
+            # into the output (matches Go's `getFieldValue` returning nil).
+            push @projected, ref($el) eq 'HASH' ? $el->{$key} : undef;
         }
         else {
             push @projected, $el;
