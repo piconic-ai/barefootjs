@@ -21,6 +21,17 @@ import { fixture as aiChat } from './ai-chat'
 // #1467 Phase 2a: first `site/ui` source-root fixture (Button + its
 // auto-inferred Slot sibling), proving the UI loader infrastructure.
 import { fixture as button } from './button'
+// #1467 Phase 2b: basic interactive `site/ui` primitives. Uncontrolled
+// state toggles (`toggle` / `switch` / `checkbox`), pass-through native
+// form controls (`input` / `textarea`), and static helpers exercising the
+// runner's `interactions: undefined` skip path (`label` / `kbd`).
+import { fixture as toggle } from './toggle'
+import { fixture as switchFixture } from './switch'
+import { fixture as checkbox } from './checkbox'
+import { fixture as input } from './input'
+import { fixture as textarea } from './textarea'
+import { fixture as label } from './label'
+import { fixture as kbd } from './kbd'
 // #1694: text-content HTML-escaping (parallel to the #1692 attribute fix).
 import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
@@ -217,6 +228,14 @@ export const jsxFixtures: JSXFixture[] = [
   todoAppSsr,
   aiChat,
   button,
+  // #1467 Phase 2b: basic interactive `site/ui` primitives.
+  toggle,
+  switchFixture,
+  checkbox,
+  input,
+  textarea,
+  label,
+  kbd,
   textEscape,
   // Priority 1: Core reactivity
   signalWithFallback,

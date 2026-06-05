@@ -76,12 +76,19 @@ runAdapterConformanceTests({
     // option fixed on the Hono side. Separate follow-up.
     'toggle-shared',
     'props-reactivity-comparison',
-    // Button now participates in Go conformance: it renders the
-    // `asChild:false` `<button>` branch, and its `Slot` sibling registers
-    // cleanly because the dynamic `<Tag>` (`const Tag = children.tag`)
-    // lowers to a children passthrough instead of `{{template "Tag" ...}}`.
-    // (True server-side asChild prop-merge on Go is a separate, deferred
-    // concern.)
+    // #1467 Phase 2b: basic interactive `site/ui` primitives. Cross-adapter
+    // parity for the `site/ui` corpus is Phase 3, so these participate only
+    // in Hono SSR conformance + the fixture-hydrate runtime layer for now.
+    // (`label` and `kbd` are static helpers; `toggle` / `switch` /
+    // `checkbox` carry uncontrolled state; `input` / `textarea` are
+    // pass-through native controls.)
+    'toggle',
+    'switch',
+    'checkbox',
+    'input',
+    'textarea',
+    'label',
+    'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
