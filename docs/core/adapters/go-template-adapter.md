@@ -12,6 +12,27 @@ npm install @barefootjs/go-template
 ```
 
 
+## Server integration
+
+The adapter is **web-framework-agnostic** — it emits plain Go `html/template`
+files plus a small runtime (`FuncMap`, `Renderer`), so any server that can
+parse and execute `html/template` can render the output. The scaffolder
+(`npm create barefootjs@latest -- --adapter <name>`) ships runnable starters
+for four Go servers, all built on this adapter:
+
+| `--adapter` | Framework | Router |
+|-------------|-----------|--------|
+| `echo` | [Echo](https://echo.labstack.com/) | `echo.Renderer` |
+| `gin` | [Gin](https://gin-gonic.com/) | `gin.Engine` |
+| `chi` | [Chi](https://go-chi.io/) | `chi.Router` (net/http) |
+| `nethttp` | Go standard library | `http.ServeMux` |
+
+Each scaffold loads the generated `.tmpl` files into a `template.Template`
+with `bf.FuncMap()`, then renders a component through `bf.NewRenderer(...)`.
+Runnable end-to-end examples for all four live under
+[`integrations/`](https://github.com/piconic-ai/barefootjs/tree/main/integrations).
+
+
 ## Basic Usage
 
 ```typescript
@@ -220,6 +241,14 @@ export function TodoList({ items }: { items: TodoItem[] }) {
   )
 }
 ```
+
+Child component props carry a `ScopeID` used for hydration. You don't have to
+mint these by hand: `bf.Renderer.Render` backfills a unique
+`<Component>_<random>` id for any child (in a slice or a single field) whose
+`ScopeID` is empty — the same shape the generated `New{Component}Props()`
+constructor uses. Build child props with just the data they need (e.g.
+`TodoItemProps{Todo: t}`) and the runtime fills in the rest. Setting `ScopeID`
+explicitly still works and is preserved when you need a stable id.
 
 ## Conditional Rendering
 
