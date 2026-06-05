@@ -10,7 +10,7 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["bun", "node"],
+    "types": ["node"],
     "rootDir": "./src",
     "outDir": "./dist"
   },
