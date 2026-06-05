@@ -527,6 +527,35 @@ sub some ($self, $recv, $pred) {
     return 0;
 }
 
+# `Array.prototype.find(fn)` / `.findIndex(fn)` / `.findLast(fn)` /
+# `.findLastIndex(fn)` — same Kolon-lambda predicate mechanism as filter. The
+# camelCase JS names lower to these snake_case methods (like index_of /
+# last_index_of). `find` / `find_last` return the matching element (or undef →
+# JS `undefined`); the index forms return the 0-based position (or -1).
+sub find ($self, $recv, $pred) {
+    return undef unless ref($recv) eq 'ARRAY';
+    for my $item (@$recv) { return $item if $pred->($item) }
+    return undef;
+}
+
+sub find_index ($self, $recv, $pred) {
+    return -1 unless ref($recv) eq 'ARRAY';
+    for my $i (0 .. $#$recv) { return $i if $pred->($recv->[$i]) }
+    return -1;
+}
+
+sub find_last ($self, $recv, $pred) {
+    return undef unless ref($recv) eq 'ARRAY';
+    for my $i (reverse 0 .. $#$recv) { return $recv->[$i] if $pred->($recv->[$i]) }
+    return undef;
+}
+
+sub find_last_index ($self, $recv, $pred) {
+    return -1 unless ref($recv) eq 'ARRAY';
+    for my $i (reverse 0 .. $#$recv) { return $i if $pred->($recv->[$i]) }
+    return -1;
+}
+
 # `String.prototype.toLowerCase()` / `.toUpperCase()`. Kolon has a builtin
 # `.join` array method (so the adapter uses that directly) but no builtin
 # `lc` / `uc`, so these live on the runtime object. `CORE::` avoids recursing

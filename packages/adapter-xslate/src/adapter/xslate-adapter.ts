@@ -1717,27 +1717,25 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
     predicate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string {
-    // `.find` / `.findIndex` / `.findLast` / `.findLastIndex` have no Kolon
-    // lowering yet (mojo refuses these too). BF101 until a lowering lands.
-    if (method === 'find' || method === 'findIndex' || method === 'findLast' || method === 'findLastIndex') {
-      this.adapter._recordExprBF101(
-        `Xslate adapter has not lowered Array.prototype.${method} yet`,
-      )
-      return "''"
-    }
-    // Standalone `.filter` / `.every` / `.some` go through the runtime object
-    // (`$bf.filter` / `$bf.every` / `$bf.some`), consistent with the other
-    // array helpers ($bf.includes / $bf.slice / ...). A JS arrow predicate
-    // lowers to a Kolon lambda `-> $param { PRED }`, which is callable from
-    // Perl as a code ref, so the runtime method applies it to each element.
-    // The `.filter(...).map(...)` *loop* form is handled separately by
-    // renderLoop's inline predicate, so it still works.
+    // Higher-order array methods all take a JS arrow predicate, lowered to a
+    // Kolon lambda `-> $param { PRED }` (callable from Perl as a code ref), and
+    // go through the runtime object — consistent with the other array helpers
+    // ($bf.includes / $bf.slice / ...). `.find*` map to snake_case runtime
+    // methods (like index_of / last_index_of). The `.filter(...).map(...)`
+    // *loop* form is handled separately by renderLoop's inline predicate.
     const arrayExpr = emit(object)
     const predBody = this.adapter._renderKolonFilterExprPublic(predicate, param)
     const lambda = `-> $${param} { ${predBody} }`
-    if (method === 'filter') return `$bf.filter(${arrayExpr}, ${lambda})`
-    if (method === 'every') return `$bf.every(${arrayExpr}, ${lambda})`
-    if (method === 'some') return `$bf.some(${arrayExpr}, ${lambda})`
+    const fn: Record<string, string> = {
+      filter: 'filter',
+      every: 'every',
+      some: 'some',
+      find: 'find',
+      findIndex: 'find_index',
+      findLast: 'find_last',
+      findLastIndex: 'find_last_index',
+    }
+    if (fn[method]) return `$bf.${fn[method]}(${arrayExpr}, ${lambda})`
     void predicate
     void param
     return emit(object)

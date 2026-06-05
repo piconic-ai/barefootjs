@@ -10,8 +10,9 @@ fixture corpus as mojo.
 Make the adapter's runtime-helper calls consistent: every JS-semantics-sensitive
 value operation goes through a `$bf` method, so the runtime's JS-compat handling
 is always applied (rather than a raw Kolon builtin). `.filter` / `.every` /
-`.some`, `.toLowerCase` / `.toUpperCase`, `.join`, and `.length` lower to
-`$bf.filter` / `every` / `some` / `lc` / `uc` / `join` / `length` — new methods
+`.some` / `.find` / `.findIndex` / `.findLast` / `.findLastIndex`,
+`.toLowerCase` / `.toUpperCase`, `.join`, and `.length` lower to the
+corresponding `$bf` methods — new methods
 on the `BarefootJS` runtime in `@barefootjs/perl`. This also fixes a latent bug:
 `.length` previously used Kolon's array-only `.size()`, which faults on a string;
 `$bf.length` handles both arrays (element count) and strings (char count).

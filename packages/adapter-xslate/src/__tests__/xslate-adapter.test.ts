@@ -106,15 +106,10 @@ runAdapterConformanceTests({
     // Tagged-template-literal call in a className — same family, same
     // refusal (BF101).
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
-    // `.find` / `.findIndex` / `.findLast` / `.findLastIndex` have no
-    // Kolon lowering yet (mojo refuses these too). The standalone
-    // `.filter` / `.every` / `.some` shapes are NOT pinned here — they
-    // now lower to `grep_filter` / `grep_every` / `grep_some` Kolon
-    // functions.
-    'array-find':          [{ code: 'BF101', severity: 'error' }],
-    'array-findIndex':     [{ code: 'BF101', severity: 'error' }],
-    'array-findLast':      [{ code: 'BF101', severity: 'error' }],
-    'array-findLastIndex': [{ code: 'BF101', severity: 'error' }],
+    // NB: `.find` / `.findIndex` / `.findLast` / `.findLastIndex` are NOT
+    // pinned here — unlike mojo (which refuses them), Xslate lowers them to
+    // `$bf.find` / `find_index` / `find_last` / `find_last_index` via the same
+    // Kolon-lambda mechanism as `.filter` / `.every` / `.some`, so they render.
   },
   // Template-primitive registry parity: same V1 surface as mojo, so the
   // same two cases stay skipped (bespoke user import + customSerialize
