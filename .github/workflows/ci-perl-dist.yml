@@ -51,7 +51,10 @@ jobs:
       # Minilla (build tool) + the dists' runtime/test deps. Minilla does not
       # auto-install cpanfile deps, so the engines and Test2::Suite are explicit.
       - name: Install Minilla + dist dependencies
-        run: cpanm --notest Minilla Test2::Suite Text::Xslate Mojolicious
+        # Software::License::MIT is needed by Minilla to resolve the MIT license
+        # (Minilla bundles only its own Perl_5 license class). Test2::Suite is the
+        # dists' test dep; Text::Xslate / Mojolicious are backend runtime deps.
+        run: cpanm --notest Minilla Software::License Test2::Suite Text::Xslate Mojolicious
 
       # Core must be built and installed first so the backend dists can resolve
       # `requires 'BarefootJS'` from their cpanfile during `minil test`.
