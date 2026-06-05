@@ -1,4 +1,5 @@
 package Mojolicious::Plugin::BarefootJS;
+our $VERSION = "0.01";
 use Mojo::Base 'Mojolicious::Plugin', -signatures;
 
 use Mojo::File qw(path);
@@ -102,3 +103,58 @@ sub _load_manifest ($app, $config) {
 }
 
 1;
+__END__
+
+=encoding utf8
+
+=head1 NAME
+
+Mojolicious::Plugin::BarefootJS - Mojolicious integration for BarefootJS
+
+=head1 SYNOPSIS
+
+    # Mojolicious application
+    $self->plugin('BarefootJS');
+
+    # In a controller / template, the `bf` helper exposes a per-request
+    # BarefootJS runtime backed by BarefootJS::Backend::Mojo.
+
+=head1 DESCRIPTION
+
+Wires the L<BarefootJS> server runtime into L<Mojolicious>. It registers a
+C<bf> controller helper that lazily instantiates one BarefootJS object per
+request (rendering via L<BarefootJS::Backend::Mojo>), and supports rendering
+compiled marked templates as Mojolicious templates.
+
+For non-Mojolicious / PSGI hosts, see L<BarefootJS::Backend::Xslate>, which
+drives the same runtime with Text::Xslate and no web framework.
+
+=head1 METHODS
+
+L<Mojolicious::Plugin::BarefootJS> inherits all methods from
+L<Mojolicious::Plugin> and implements the following new one.
+
+=head2 register
+
+    $plugin->register(Mojolicious->new, \%conf);
+
+Registers the plugin (the C<bf> helper and supporting hooks) in a Mojolicious
+application.
+
+=head1 SEE ALSO
+
+L<BarefootJS>, L<BarefootJS::Backend::Mojo>, L<BarefootJS::Backend::Xslate>,
+L<Mojolicious>, L<https://github.com/piconic-ai/barefootjs>
+
+=head1 AUTHOR
+
+kobaken E<lt>kentafly88@gmail.comE<gt>
+
+=head1 LICENSE
+
+Copyright (c) 2025-present BarefootJS Contributors.
+
+This library is free software; you can redistribute it and/or modify it under
+the MIT License. See the F<LICENSE> file in the distribution for the full text.
+
+=cut

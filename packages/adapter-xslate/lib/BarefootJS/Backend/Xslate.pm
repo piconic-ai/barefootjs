@@ -1,4 +1,5 @@
 package BarefootJS::Backend::Xslate;
+our $VERSION = "0.01";
 use strict;
 use warnings;
 use utf8;
@@ -84,3 +85,68 @@ sub render_named ($self, $template_name, $child_bf, $vars) {
 }
 
 1;
+__END__
+
+=encoding utf8
+
+=head1 NAME
+
+BarefootJS::Backend::Xslate - Text::Xslate (Kolon) rendering backend for BarefootJS
+
+=head1 SYNOPSIS
+
+    use BarefootJS;
+    use BarefootJS::Backend::Xslate;
+
+    my $backend = BarefootJS::Backend::Xslate->new(path => ['templates']);
+    my $bf = BarefootJS->new(undef, { backend => $backend });
+
+    # Renders templates/counter.tx, binding the runtime as the `bf` object.
+    my $html = $backend->render_named('counter', $bf, { count => 0 });
+
+=head1 DESCRIPTION
+
+A rendering backend that lets the engine-agnostic L<BarefootJS> runtime render
+its marked templates with L<Text::Xslate> (Kolon syntax). Because it has no
+dependency on a web framework, a plain Text::Xslate instance renders templates
+from a path, so it runs under any PSGI / Plack application (or none at all).
+
+Pair it with the C<@barefootjs/xslate> compile-time adapter, which emits Kolon
+C<.tx> templates that call the runtime as a C<bf> object — C<< <: $bf.scope_attr()
+:> >>, C<< <: $bf.json($x) :> >>, C<< <: $bf.spread_attrs($h) :> >>. Kolon
+auto-escapes C<< <: ... :> >> interpolations (the backend builds Text::Xslate
+with C<< type => 'html' >>); helpers that emit markup return C<mark_raw> values,
+mirroring Mojo EP's C<< <%== >> versus C<< <%= >>.
+
+=head1 METHODS
+
+=head2 new(%args)
+
+Constructs a backend. Accepts a pre-built C<xslate> instance, or a C<path>
+(arrayref of template directories) plus optional C<xslate_options> to build a
+Kolon, html-escaping Text::Xslate. C<json_encoder> overrides the default
+canonical L<JSON::PP> encoder.
+
+=head2 encode_json($data) / mark_raw($str) / materialize($value) / render_named($name, $bf, \%vars)
+
+The four engine-specific operations the runtime delegates to. C<mark_raw> uses
+C<Text::Xslate::mark_raw>; C<render_named> renders C<< <name>.tx >> with C<$bf>
+bound as the C<bf> variable plus C<\%vars>.
+
+=head1 SEE ALSO
+
+L<BarefootJS>, L<Text::Xslate>, L<Plack>,
+L<https://github.com/piconic-ai/barefootjs>
+
+=head1 AUTHOR
+
+kobaken E<lt>kentafly88@gmail.comE<gt>
+
+=head1 LICENSE
+
+Copyright (c) 2025-present BarefootJS Contributors.
+
+This library is free software; you can redistribute it and/or modify it under
+the MIT License. See the F<LICENSE> file in the distribution for the full text.
+
+=cut

@@ -1,0 +1,6 @@
+Revision history for Perl extension BarefootJS-Backend-Xslate
+
+{{$NEXT}}
+
+    - Initial version. Text::Xslate (Kolon) rendering backend for the
+      BarefootJS runtime; runs under any PSGI/Plack app.

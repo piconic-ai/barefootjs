@@ -1,0 +1,8 @@
+requires 'perl', '5.020';
+requires 'BarefootJS';
+requires 'Mojolicious', '9.0';
+
+on 'test' => sub {
+    requires 'Test2::V0';
+    requires 'Test::Mojo';
+};

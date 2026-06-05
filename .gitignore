@@ -73,3 +73,10 @@ test-results/
 # Render temp files (adapter-tests)
 .render-temp/
 .playwright-mcp/
+
+# Perl CPAN dist build artifacts (Minilla, via scripts/perl-dist.sh)
+packages/adapter-*/*.tar.gz
+packages/adapter-*/.build/
+packages/adapter-*/blib/
+packages/adapter-*/Build
+packages/adapter-*/MYMETA.*

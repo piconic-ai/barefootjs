@@ -1,4 +1,5 @@
 package BarefootJS;
+our $VERSION = "0.01";
 use strict;
 use warnings;
 use utf8;
@@ -1157,3 +1158,62 @@ sub spread_attrs ($self, $bag) {
 }
 
 1;
+__END__
+
+=encoding utf8
+
+=head1 NAME
+
+BarefootJS - Engine- and framework-agnostic server runtime for BarefootJS marked templates
+
+=head1 SYNOPSIS
+
+    use BarefootJS;
+
+    # A host injects a rendering backend (see BarefootJS::Backend::Xslate or
+    # Mojolicious::Plugin::BarefootJS for shipping backends).
+    my $bf = BarefootJS->new($context, { backend => $backend });
+
+    # The compiled marked template calls the runtime as a `bf` object:
+    #   <: $bf.scope_attr() :>  <: $bf.json($data) :>  <: $bf.spread_attrs($h) :>
+
+=head1 DESCRIPTION
+
+BarefootJS compiles JSX/TSX into a marked template plus client JS. This module
+is the server-side runtime the marked templates call into at render time. It is
+deliberately template-engine- and web-framework-agnostic: every operation that
+depends on I<how> a template is rendered — JSON marshalling, raw-string marking,
+JSX-children materialisation, and named-template rendering — is delegated to a
+pluggable C<backend>.
+
+That design lets the one runtime drive any backend. Shipping backends:
+
+=over 4
+
+=item * L<BarefootJS::Backend::Xslate> — Text::Xslate (Kolon); runs under any PSGI/Plack app.
+
+=item * L<BarefootJS::Backend::Mojo> — Mojolicious (via L<Mojolicious::Plugin::BarefootJS>).
+
+=back
+
+The core itself pulls in only core Perl modules (C<POSIX>, C<Scalar::Util>);
+no template engine or web framework is loaded unless a backend that needs one
+is used.
+
+=head1 SEE ALSO
+
+L<BarefootJS::Backend::Xslate>, L<Mojolicious::Plugin::BarefootJS>,
+L<https://github.com/piconic-ai/barefootjs>
+
+=head1 AUTHOR
+
+kobaken E<lt>kentafly88@gmail.comE<gt>
+
+=head1 LICENSE
+
+Copyright (c) 2025-present BarefootJS Contributors.
+
+This library is free software; you can redistribute it and/or modify it under
+the MIT License. See the F<LICENSE> file in the distribution for the full text.
+
+=cut

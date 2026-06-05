@@ -1,0 +1,6 @@
+Revision history for Perl extension Mojolicious-Plugin-BarefootJS
+
+{{$NEXT}}
+
+    - Initial version. Mojolicious integration for the BarefootJS runtime:
+      the `bf` helper, BarefootJS::Backend::Mojo, and the DevReload plugin.

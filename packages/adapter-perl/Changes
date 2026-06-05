@@ -1,0 +1,6 @@
+Revision history for Perl extension BarefootJS
+
+{{$NEXT}}
+
+    - Initial version. Engine- and framework-agnostic server runtime for
+      BarefootJS marked templates, driven by a pluggable rendering backend.
