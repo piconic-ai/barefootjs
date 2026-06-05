@@ -1206,12 +1206,12 @@ function renderArrayMethod(
 ): string {
   switch (method) {
     case 'join': {
-      // Kolon has a builtin `.join` array method whose semantics match JS
-      // (undef elements render as empty: `[1,nil,2].join(",")` → "1,,2"), so
-      // use it directly rather than a runtime helper.
+      // Route through the runtime (`$bf.join`) rather than Kolon's builtin
+      // `.join`, so the JS-compat element handling (undef → empty, default
+      // separator) is applied consistently — same reasoning as $bf.lc / etc.
       const obj = emit(object)
       const sep = args.length >= 1 ? emit(args[0]) : `','`
-      return `${obj}.join(${sep})`
+      return `$bf.join(${obj}, ${sep})`
     }
     case 'includes': {
       const obj = emit(object)
@@ -1501,9 +1501,11 @@ class XslateFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
-    // `.length` on an array — Kolon's array length is `$arr.size()`.
+    // `.length` — route through `$bf.length` (handles both array element
+    // count and string char count, JS-compatibly). Kolon's builtin `.size()`
+    // is array-only and faults on a string.
     if (property === 'length') {
-      return `${emit(object)}.size()`
+      return `$bf.length(${emit(object)})`
     }
     // Hash field access — Kolon dot works on hash refs.
     return `${emit(object)}.${property}`
@@ -1649,8 +1651,9 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
       return `$${property}`
     }
     const obj = emit(object)
-    // Kolon array length is `$arr.size()`.
-    if (property === 'length') return `${obj}.size()`
+    // `.length` → `$bf.length` (array count or string char count, JS-compat);
+    // Kolon's builtin `.size()` is array-only and faults on a string.
+    if (property === 'length') return `$bf.length(${obj})`
     // Kolon dot access works for hash refs.
     return `${obj}.${property}`
   }

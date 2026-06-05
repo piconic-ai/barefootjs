@@ -7,13 +7,14 @@ Add `runAdapterConformanceTests` for the Text::Xslate adapter (with a
 `renderXslateComponent` test renderer), validated against the same shared
 fixture corpus as mojo.
 
-Make the adapter's runtime-helper calls consistent: every helper is now either
-a `$bf` method or a Kolon builtin — no bare `bf_*` / `grep_*` functions.
-`.filter` / `.every` / `.some` and `.toLowerCase` / `.toUpperCase` lower to
-`$bf.filter` / `$bf.every` / `$bf.some` / `$bf.lc` / `$bf.uc` (new methods on the
-`BarefootJS` runtime in `@barefootjs/perl`), and `.join` uses Kolon's builtin
-`.join` array method (whose `undef`→empty semantics match JS). The Xslate
-backend no longer registers any custom Kolon `function` map.
+Make the adapter's runtime-helper calls consistent: every JS-semantics-sensitive
+value operation goes through a `$bf` method, so the runtime's JS-compat handling
+is always applied (rather than a raw Kolon builtin). `.filter` / `.every` /
+`.some`, `.toLowerCase` / `.toUpperCase`, `.join`, and `.length` lower to
+`$bf.filter` / `every` / `some` / `lc` / `uc` / `join` / `length` — new methods
+on the `BarefootJS` runtime in `@barefootjs/perl`. This also fixes a latent bug:
+`.length` previously used Kolon's array-only `.size()`, which faults on a string;
+`$bf.length` handles both arrays (element count) and strings (char count).
 
 The skip list is verified, not inherited: the six fixtures mojo skips for
 Perl-EP scoping faults (`logical-or-jsx`, `nullish-coalescing-jsx`,

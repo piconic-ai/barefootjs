@@ -5,6 +5,13 @@ use warnings;
 use utf8;
 use feature 'signatures';
 no warnings 'experimental::signatures';
+# Several runtime helpers are named after the JS operation they mirror
+# (`join`, `length`, `uc`, alongside the existing `reverse` / `sort` / `split`),
+# which collide with Perl builtins of the same name. Method dispatch
+# (`$bf->length(...)`) is never ambiguous; only the module's own bareword
+# builtin calls (`length($x)`) are, and Perl always resolves those to the
+# builtin (CORE::) — so silence that benign category.
+no warnings 'ambiguous';
 
 use POSIX ();
 use Scalar::Util qw(looks_like_number weaken);
@@ -533,6 +540,25 @@ sub some ($self, $recv, $pred) {
 # into these methods.
 sub lc ($self, $s) { return defined $s ? CORE::lc($s) : '' }
 sub uc ($self, $s) { return defined $s ? CORE::uc($s) : '' }
+
+# `Array.prototype.join(sep)` with JS semantics: separator defaults to ",",
+# and undefined / null elements render as empty (`[1,,2].join(",")` → "1,,2").
+# Kolon has a builtin `.join`, but routing through the runtime keeps the
+# JS-compat element handling in one place. `CORE::join` avoids recursing.
+sub join ($self, $recv, $sep = undef) {
+    return '' unless ref($recv) eq 'ARRAY';
+    $sep //= ',';
+    return CORE::join($sep, map { defined $_ ? $_ : '' } @$recv);
+}
+
+# `.length` — JS works on BOTH arrays (element count) and strings (character
+# count); Kolon's builtin `.size()` is array-only and faults on a string. So
+# dispatch on ref type here. `CORE::length` avoids recursing into this method.
+sub length ($self, $recv) {
+    return scalar @$recv if ref($recv) eq 'ARRAY';
+    return 0 if ref($recv);
+    return CORE::length($recv // '');
+}
 
 # `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
 # value-equality search (#1448 Tier A). Returns the 0-based position
