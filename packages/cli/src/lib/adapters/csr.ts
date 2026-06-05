@@ -59,7 +59,7 @@ const CSR_SERVER_TS = `// Tiny \`node:http\` server for the CSR starter:
 
 import { createServer, type ServerResponse } from 'node:http'
 import { readFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { dirname, resolve, relative, isAbsolute, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
@@ -70,7 +70,15 @@ const PUBLIC_DIR = resolve(ROOT, 'public')
 const port = Number(process.env.PORT ?? 3003)
 
 const server = createServer(async (req, res) => {
-  const path = decodeURIComponent((req.url ?? '/').split('?')[0])
+  let path: string
+  try {
+    path = decodeURIComponent((req.url ?? '/').split('?')[0])
+  } catch {
+    // Malformed percent-encoding (e.g. \`/%%\`) — answer 400 instead of
+    // letting the decode throw take down the dev server.
+    res.writeHead(400).end('Bad Request')
+    return
+  }
 
   if (path.startsWith('/static/components/')) {
     return serveFromDir(res, resolve(DIST_DIR, 'components'), path.slice('/static/components/'.length))
@@ -85,16 +93,26 @@ const server = createServer(async (req, res) => {
 
 async function serveFromDir(res: ServerResponse, dir: string, rel: string): Promise<void> {
   const target = resolve(dir, rel)
-  // Defense-in-depth path traversal guard.
-  if (!target.startsWith(dir + '/') && target !== dir) {
+  // Defense-in-depth path traversal guard. Compare via relative() so it
+  // holds on Windows (\`\\\` separators) too — a literal \`dir + '/'\` prefix
+  // check would 403 every request there.
+  const rel2 = relative(dir, target)
+  if (rel2 === '..' || rel2.startsWith('..' + sep) || isAbsolute(rel2)) {
     res.writeHead(403).end('Forbidden')
     return
   }
   try {
     const body = await readFile(target)
     res.writeHead(200, { 'Content-Type': contentTypeFor(target) }).end(body)
-  } catch {
-    res.writeHead(404).end('Not Found')
+  } catch (err) {
+    // Missing path → 404; anything else (permissions, IO) → 500, so real
+    // problems surface in development instead of masquerading as 404s.
+    const code = (err as { code?: string }).code
+    if (code === 'ENOENT' || code === 'ENOTDIR' || code === 'EISDIR') {
+      res.writeHead(404).end('Not Found')
+    } else {
+      res.writeHead(500).end('Internal Server Error')
+    }
   }
 }
 
