@@ -357,6 +357,40 @@ describe('adapter registry', () => {
         }
       },
     )
+
+    // Scaffold files and prereq warnings have no package-manager context
+    // to render against (unlike scripts), so a literal `bun run` /
+    // `bun install` / `bunx` token there is always wrong for an
+    // npm/pnpm/yarn user — it tells them to drive their project with a
+    // runtime they didn't pick. Generated Go source ("did you run
+    // `bf build`?") and prereq warnings ("...before starting the dev
+    // server") must stay PM-neutral. The Bun *global API* is covered
+    // separately above; this catches the command-string form.
+    const BUN_COMMAND = /\bbunx\b|\bbun\s+(run|install|add|create|x|--watch)\b|\bbun\s+server\b/
+
+    test.each(Object.keys(ADAPTERS))(
+      '%s scaffold files hardcode no bun command',
+      (id) => {
+        for (const [file, contents] of Object.entries(ADAPTERS[id].files)) {
+          expect(
+            contents,
+            `${id}/${file} hardcodes a bun command (should be PM-neutral / use \`bf\`)`,
+          ).not.toMatch(BUN_COMMAND)
+        }
+      },
+    )
+
+    test.each(Object.keys(ADAPTERS))(
+      '%s prereq warnings hardcode no bun command',
+      (id) => {
+        for (const warning of ADAPTERS[id].prereqWarnings()) {
+          expect(
+            warning,
+            `${id} prereq warning hardcodes a bun command: ${warning}`,
+          ).not.toMatch(BUN_COMMAND)
+        }
+      },
+    )
   })
 
   // Every adapter must ship a `.gitignore` so the user's first

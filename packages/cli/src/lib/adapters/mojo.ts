@@ -242,13 +242,13 @@ function perlPrereqs(): string[] {
   try {
     execSync('perl --version', { stdio: 'ignore' })
   } catch {
-    warnings.push('Perl not found on PATH. Install Perl 5.20+ before `bun run dev`.')
+    warnings.push('Perl not found on PATH. Install Perl 5.20+ before starting the dev server.')
   }
   try {
     execSync('perl -MMojolicious -e1', { stdio: 'ignore' })
   } catch {
     warnings.push(
-      'Mojolicious not installed. Run `cpanm --installdeps .` (or `cpan Mojolicious`) before `bun run dev`.',
+      'Mojolicious not installed. Run `cpanm --installdeps .` (or `cpan Mojolicious`) before starting the dev server.',
     )
   }
   return warnings

@@ -266,7 +266,7 @@ func mustNewRenderer() echo.Renderer {
 \ttmpl, err := loadTemplates()
 \tif err != nil {
 \t\tfmt.Fprintf(os.Stderr, "barefoot: failed to load templates from dist/templates: %v\\n", err)
-\t\tfmt.Fprintln(os.Stderr, "barefoot: did you run \`bun run build\` first?")
+\t\tfmt.Fprintln(os.Stderr, "barefoot: did you run \`bf build\` first?")
 \t\tos.Exit(1)
 \t}
 \treturn &echoRenderer{
@@ -563,7 +563,7 @@ function goPrereqs(): string[] {
     return []
   } catch {
     return [
-      'Go toolchain not found on PATH. Install Go 1.22+ (https://go.dev/dl/) before `bun run dev`.',
+      'Go toolchain not found on PATH. Install Go 1.22+ (https://go.dev/dl/) before starting the dev server.',
     ]
   }
 }
