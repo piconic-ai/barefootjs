@@ -208,15 +208,20 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   private loopBoundNames: Map<string, number> = new Map()
   /**
-   * Prop names that are OPTIONAL and have NO destructure default, so the
-   * Perl props hash leaves them `undef` when the caller omits them.
-   * Populated at `generate()` entry from `propsParams` (`optional &&
-   * !defaultValue`). Used by `elementAttrEmitter.emitExpression` to guard
-   * a dynamic attribute whose value is a BARE reference to such a prop
-   * with a Perl `defined $x` check — so an unset optional prop DROPS the
-   * attribute (`<textarea>` omits `rows`) instead of rendering `attr=""`,
-   * matching Hono's nullish-attribute omission. Concrete/defaulted props
-   * are excluded and always emit unconditionally.
+   * Prop names whose value is `undef` in the template body when the caller
+   * omits them — so a bare-reference attribute should be dropped rather
+   * than rendered as `attr=""`. The actual population criterion (see
+   * `generate()`) is: NO destructure default (`defaultValue === undefined`)
+   * AND non-rest (`!isRest`) AND non-primitive type (`type.kind !==
+   * 'primitive'`). It deliberately does NOT consult `p.optional`: the
+   * analyzer derives `optional` from the presence of a default initializer,
+   * not the `?` token, so it's not the right witness here. Excluding
+   * concrete primitives (`string`/`number`/`boolean`) mirrors the Go
+   * adapter's scope, which guards only `interface{}` (nillable) fields.
+   * Used by `elementAttrEmitter.emitExpression` to guard such an attribute
+   * with a Perl `defined $x` check (`<textarea>` omits `rows`), matching
+   * Hono's nullish-attribute omission. Concrete/defaulted props are
+   * excluded and always emit unconditionally.
    */
   private nullableOptionalProps: Set<string> = new Set()
 

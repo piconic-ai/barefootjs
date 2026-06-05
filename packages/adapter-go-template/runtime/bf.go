@@ -1100,6 +1100,13 @@ func FilterTruthy(items any) []any {
 	return result
 }
 
+// Truthy is the exported form of isTruthy — JavaScript's `Boolean(x)`
+// semantics — for generated `NewXxxProps` code lowering a conditional
+// inline-object spread condition on an `interface{}` prop (whose runtime
+// value may be a string, number, bool, …). Keeps the spread bag's
+// inclusion test faithful to JS rather than string-biased (#1752).
+func Truthy(v any) bool { return isTruthy(v) }
+
 // isTruthy mirrors JavaScript's `Boolean(x)` for the value shapes the
 // template path actually receives — nil / false / 0 / "" are falsy.
 // Other shapes (non-empty maps, slices, structs, true) are truthy, in

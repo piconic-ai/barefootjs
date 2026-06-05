@@ -840,10 +840,10 @@ function Box({ describedBy }: { describedBy?: string }) {
       // Template emission is unchanged from the proven {...props} path.
       expect(template).toContain('{{bf_spread_attrs .Spread_0}}')
       // The bag value is a conditional map built in NewBoxProps. The
-      // prop type is unresolved (interface{}), so the condition is the
-      // nil/empty-string truthiness guard.
+      // prop type is unresolved (interface{}), so the condition routes
+      // through `bf.Truthy` for a faithful JS `Boolean(x)` test.
       expect(types).toContain('Spread_0: func() map[string]any {')
-      expect(types).toContain('if in.DescribedBy != nil && in.DescribedBy != "" {')
+      expect(types).toContain('if bf.Truthy(in.DescribedBy) {')
       expect(types).toContain('return map[string]any{"aria-describedby": in.DescribedBy}')
       expect(types).toContain('return map[string]any{}')
     })
@@ -858,8 +858,8 @@ function Box({ label }: { label: string }) {
       // The condition prop and the value reference resolve to `in.<Field>`,
       // the static key is preserved. (The analyzer surfaces these
       // destructured props as `unknown`/`interface{}`, so the condition
-      // is the nil/empty-string guard rather than the bare `!= ""` form.)
-      expect(types).toContain('if in.Label != nil && in.Label != "" {')
+      // routes through `bf.Truthy` for a faithful JS truthiness test.)
+      expect(types).toContain('if bf.Truthy(in.Label) {')
       expect(types).toContain('return map[string]any{"data-label": in.Label}')
     })
 

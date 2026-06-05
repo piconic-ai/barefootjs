@@ -2125,15 +2125,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     } else if (prim === 'string') {
       truthy = `${field} != ""`
     } else {
-      // unknown / interface{}: non-nil non-empty-string.
-      truthy = `${field} != nil && ${field} != ""`
+      // unknown / interface{}: the runtime value may be a string, number,
+      // bool, etc., so a string-biased `!= ""` test would diverge from JS
+      // truthiness (e.g. an `interface{}` holding `0` or `false` is falsy in
+      // JS but `!= ""` reads true). Route through `bf.Truthy`, the exported
+      // `Boolean(x)` equivalent, for a faithful check (Copilot review #1752).
+      truthy = `bf.Truthy(${field})`
     }
     if (!negate) return truthy
     // Negation: wrap so `!` applies to the whole truthiness test.
     if (prim === 'boolean') return `!${field}`
     if (prim === 'number') return `${field} == 0`
     if (prim === 'string') return `${field} == ""`
-    return `${field} == nil || ${field} == ""`
+    return `!bf.Truthy(${field})`
   }
 
   /**
