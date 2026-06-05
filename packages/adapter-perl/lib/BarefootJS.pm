@@ -504,6 +504,36 @@ sub includes ($self, $recv, $elem) {
     return index($recv // '', $elem // '') != -1 ? 1 : 0;
 }
 
+# `Array.prototype.filter(fn)` / `.every(fn)` / `.some(fn)`. The Xslate adapter
+# lowers a JS arrow predicate to a Kolon lambda (`-> $x { ... }`), which is
+# callable from Perl as a code ref, and emits `$bf.filter($arr, <lambda>)`.
+# `filter` returns a new arrayref; `every` / `some` return 1/0. Non-array /
+# empty receivers follow JS (`filter` → [], `every` → true, `some` → false).
+# (The Mojo adapter lowers these shapes inline and never reaches these methods.)
+sub filter ($self, $recv, $pred) {
+    return [] unless ref($recv) eq 'ARRAY';
+    return [ grep { $pred->($_) } @$recv ];
+}
+
+sub every ($self, $recv, $pred) {
+    return 1 unless ref($recv) eq 'ARRAY';
+    for my $item (@$recv) { return 0 unless $pred->($item) }
+    return 1;
+}
+
+sub some ($self, $recv, $pred) {
+    return 0 unless ref($recv) eq 'ARRAY';
+    for my $item (@$recv) { return 1 if $pred->($item) }
+    return 0;
+}
+
+# `String.prototype.toLowerCase()` / `.toUpperCase()`. Kolon has a builtin
+# `.join` array method (so the adapter uses that directly) but no builtin
+# `lc` / `uc`, so these live on the runtime object. `CORE::` avoids recursing
+# into these methods.
+sub lc ($self, $s) { return defined $s ? CORE::lc($s) : '' }
+sub uc ($self, $s) { return defined $s ? CORE::uc($s) : '' }
+
 # `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
 # value-equality search (#1448 Tier A). Returns the 0-based position
 # of the first / last matching element, or -1 if not found.

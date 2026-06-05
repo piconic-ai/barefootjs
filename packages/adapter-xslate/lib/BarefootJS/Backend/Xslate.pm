@@ -45,44 +45,17 @@ sub new ($class, %args) {
     };
 
     # Accept a pre-built Text::Xslate instance, or build one from `path`
-    # (a dir of `.tx` templates) plus any extra `xslate_options`.
-    #
-    # The adapter lowers standalone `Array.prototype.filter` / `.every` /
-    # `.some` to the bare Kolon functions `grep_filter` / `grep_every` /
-    # `grep_some`, each invoked as `grep_filter($arr, -> $x { PRED })`. Kolon
-    # lambdas are callable from Perl, so these functions apply the predicate
-    # code ref to each element. Register them on the default instance here.
-    # (Callers passing their own `xslate` instance must register the same
-    # `function => { ... }` entries themselves for filter/every/some to lower.)
+    # (a dir of `.tx` templates) plus any extra `xslate_options`. The adapter
+    # calls every runtime helper as a `$bf` method (`$bf.filter`, `$bf.lc`, …)
+    # or a Kolon builtin (`.join`, `.size`), so no custom `function` map is
+    # needed here — a plain Kolon, html-escaping instance suffices.
     my $xslate = $args{xslate};
     unless ($xslate) {
-        # Merge caller-supplied xslate_options, then layer the grep_* functions
-        # on top of any caller-supplied `function` map so the adapter's
-        # filter/every/some lowering always resolves.
-        my %opts = %{ $args{xslate_options} // {} };
-        my %functions = (
-            %{ $opts{function} // {} },
-            grep_filter => sub { my ($arr, $f) = @_; [ grep { $f->($_) } @{ $arr // [] } ] },
-            grep_every  => sub { my ($arr, $f) = @_; for (@{ $arr // [] }) { return 0 unless $f->($_) } 1 },
-            grep_some   => sub { my ($arr, $f) = @_; for (@{ $arr // [] }) { return 1 if $f->($_) } 0 },
-            # `.join` / `.toLowerCase` / `.toUpperCase` lower to these bare
-            # Kolon functions. The engine-agnostic runtime has no `join` /
-            # `lc` / `uc` method (Kolon also has no builtin), so they live
-            # here as backend functions. `bf_join` over an array ref maps
-            # undef elements to '' to match JS's `[a,,b].join` semantics.
-            bf_join => sub { my ($arr, $sep) = @_; $sep //= ','; join($sep, map { defined $_ ? $_ : '' } @{ $arr // [] }) },
-            bf_lc   => sub { my ($s) = @_; defined $s ? lc($s) : '' },
-            bf_uc   => sub { my ($s) = @_; defined $s ? uc($s) : '' },
-        );
-        delete $opts{function};
-        delete $opts{syntax};
-        delete $opts{type};
         $xslate = Text::Xslate->new(
-            syntax   => 'Kolon',
-            type     => 'html',
-            function => \%functions,
+            syntax => 'Kolon',
+            type   => 'html',
             ($args{path} ? (path => $args{path}) : ()),
-            %opts,
+            %{ $args{xslate_options} // {} },
         );
     }
 
@@ -157,28 +130,10 @@ Constructs a backend. Accepts a pre-built C<xslate> instance, or a C<path>
 Kolon, html-escaping Text::Xslate. C<json_encoder> overrides the default
 canonical L<JSON::PP> encoder.
 
-The default-built instance registers Kolon C<function>s the
-C<@barefootjs/xslate> adapter emits:
-
-=over 4
-
-=item *
-
-C<grep_filter> / C<grep_every> / C<grep_some> — standalone
-C<Array.prototype.filter> / C<.every> / C<.some> (e.g.
-C<< grep_filter($items, -> $t { $t.done }) >>). Kolon lambdas are callable
-from Perl, so each applies the predicate code ref to the array's elements.
-
-=item *
-
-C<bf_join> / C<bf_lc> / C<bf_uc> — C<Array.prototype.join> and
-C<String.prototype.toLowerCase> / C<toUpperCase>. These have no
-runtime-object method (Kolon has no builtin either), so they live here.
-
-=back
-
-When you supply your own C<xslate> instance, register the same C<function>
-entries on it for those shapes to render.
+No custom Kolon C<function> map is needed: the C<@barefootjs/xslate> adapter
+calls every runtime helper as a C<$bf> method (C<< $bf.filter($arr, -> $x {
+... }) >>, C<< $bf.lc($s) >>, …) or a Kolon builtin (C<< $arr.join(", ") >>,
+C<< $arr.size() >>), so a plain instance renders the emitted templates.
 
 =head2 encode_json($data) / mark_raw($str) / materialize($value) / render_named($name, $bf, \%vars)
 

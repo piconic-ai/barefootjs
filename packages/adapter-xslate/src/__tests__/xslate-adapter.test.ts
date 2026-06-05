@@ -23,42 +23,33 @@ runAdapterConformanceTests({
   name: 'xslate',
   factory: () => new XslateAdapter(),
   render: renderXslateComponent,
-  // The Xslate adapter shares the Mojo adapter's Perl-scoping and
-  // SSR-context limitations (it was ported from it). These fixtures
-  // reference a prop / signal directly inside a conditional or return
-  // branch without a `my $x = …` declaration, so the engine rejects the
-  // template with an undefined-variable fault — the same divergence
-  // class mojo skips. Out of scope for the conformance port.
+  // Skips here are VERIFIED, not inherited from mojo. Notably, the six
+  // fixtures mojo skips for Perl-EP scoping faults — `logical-or-jsx`,
+  // `nullish-coalescing-jsx`, `branch-map`, `return-logical-or`,
+  // `return-nullish-coalescing`, `return-map` (bare `$label` / `$items`
+  // without a `my` binding) — all PASS on Xslate, because Kolon resolves
+  // `$label` from the per-render vars rather than a Perl lexical, so there
+  // is no undefined-symbol fault. Xslate therefore skips strictly fewer
+  // fixtures than mojo. Each entry below was confirmed to fail with
+  // skipJsx emptied.
   skipJsx: [
-    // Dynamic JS object literal in a `style={{…}}` attribute has no
-    // idiomatic Kolon form (mojo skips for the same reason).
-    'style-object-dynamic',
-    // Prop referenced directly inside a conditional / return branch
-    // (`$label`, `$banner`, `$active`) without a binding — same
-    // Perl-scoping divergence mojo skips.
-    'logical-or-jsx',
-    'nullish-coalescing-jsx',
-    'branch-map',
-    'return-logical-or',
-    'return-nullish-coalescing',
-    'return-map',
-    // No SSR context-propagation mechanism: `<Ctx.Provider value="dark">`
-    // doesn't make `useContext(Ctx)` resolve at template-eval time. Same
-    // adapter-feature gap mojo skips.
+    // No SSR context propagation: `<Ctx.Provider value="dark">` doesn't make
+    // `useContext(Ctx)` resolve at template-eval time (the template reads a
+    // `theme` key that's never seeded). A real adapter feature, not yet
+    // implemented on either Perl backend. (Compiles clean; render-mismatches.)
     'context-provider',
-    // Multi-component shared-state fixtures: the Toggle/ToggleItem and
-    // props-reactivity pairs render their children inside a keyed `.map`
-    // (loop children, so no `_bf_slot`), where the harness derives a
-    // non-deterministic `<child>_<rand>` scope id instead of the
-    // canonical `<ChildName>_*` the reference HTML pins, and the loop
-    // body's per-item reactive state isn't seeded server-side. Same
-    // test-harness scope-id + shared-state divergence the Mojo suite
-    // skips for this pair. (Single-component `reactive-props` passes.)
+    // Multi-component shared-state pairs whose children render inside a keyed
+    // `.map` (loop children, no `_bf_slot`): the test harness derives a
+    // non-deterministic `<child>_<rand>` scope id instead of the canonical
+    // `<ChildName>_*` the reference HTML pins, and per-item loop state isn't
+    // seeded server-side. Harness-level scope-id plumbing; single-component
+    // `reactive-props` passes. (Same pair mojo skips.)
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b interactive `site/ui` primitives — cross-adapter
-    // parity is a later phase; these participate only in Hono SSR
-    // conformance for now (mojo skips identically).
+    // #1467 Phase 2b interactive `site/ui` primitives. Cross-adapter SSR
+    // parity for this corpus is a later phase (they participate in Hono SSR
+    // conformance + the fixture-hydrate runtime layer for now); mojo skips
+    // them identically. Confirmed render-mismatch, not a hard error.
     'toggle',
     'switch',
     'checkbox',
@@ -107,6 +98,11 @@ runAdapterConformanceTests({
     // JS object literal in an attribute value (`style={{ … }}`) has no
     // Kolon form — refused via the same gate as mojo (BF101).
     'style-3-signals': [{ code: 'BF101', severity: 'error' }],
+    // Dynamic `style={{ … }}` object: the Xslate adapter cleanly refuses it
+    // with BF101 (no idiomatic Kolon form). mojo *skips* this fixture because
+    // its EP path emits invalid Perl silently — Xslate's build-time diagnostic
+    // is the stronger contract, so it's pinned here rather than skipped.
+    'style-object-dynamic': [{ code: 'BF101', severity: 'error' }],
     // Tagged-template-literal call in a className — same family, same
     // refusal (BF101).
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],

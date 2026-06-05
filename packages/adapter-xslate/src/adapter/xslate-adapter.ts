@@ -1206,13 +1206,12 @@ function renderArrayMethod(
 ): string {
   switch (method) {
     case 'join': {
-      // `.join` lowers to the bare Kolon `bf_join` function registered on
-      // the default Text::Xslate instance (the runtime object has no
-      // `join` method — only the engine-specific backend has access to a
-      // join over an array ref). Bare-function form mirrors grep_filter.
+      // Kolon has a builtin `.join` array method whose semantics match JS
+      // (undef elements render as empty: `[1,nil,2].join(",")` → "1,,2"), so
+      // use it directly rather than a runtime helper.
       const obj = emit(object)
       const sep = args.length >= 1 ? emit(args[0]) : `','`
-      return `bf_join(${obj}, ${sep})`
+      return `${obj}.join(${sep})`
     }
     case 'includes': {
       const obj = emit(object)
@@ -1253,15 +1252,14 @@ function renderArrayMethod(
       return `$bf.reverse(${recv})`
     }
     case 'toLowerCase': {
-      // Perl-native `lc` / `uc` have no runtime-object method; emit the
-      // bare Kolon `bf_lc` / `bf_uc` functions registered on the default
-      // Text::Xslate instance (same pattern as bf_join / grep_filter).
+      // Kolon has no builtin string `lc` / `uc`, so these go through the
+      // runtime object (consistent with $bf.includes / $bf.slice / etc.).
       const recv = emit(object)
-      return `bf_lc(${recv})`
+      return `$bf.lc(${recv})`
     }
     case 'toUpperCase': {
       const recv = emit(object)
-      return `bf_uc(${recv})`
+      return `$bf.uc(${recv})`
     }
     case 'trim': {
       const recv = emit(object)
@@ -1724,21 +1722,19 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
       )
       return "''"
     }
-    // Standalone `.filter` / `.every` / `.some` lower to bare Kolon functions
-    // registered on the default Text::Xslate instance built by
-    // `BarefootJS::Backend::Xslate->new` (`grep_filter` / `grep_every` /
-    // `grep_some`). Kolon lambdas are callable from Perl, so each function
-    // receives the array plus a `-> $param { PRED }` code ref and applies the
-    // predicate. The predicate body re-uses the filter emitter (it emits
-    // `$param.field` references that match the lambda's bound `$param`). The
-    // `.filter(...).map(...)` *loop* form is handled separately by
+    // Standalone `.filter` / `.every` / `.some` go through the runtime object
+    // (`$bf.filter` / `$bf.every` / `$bf.some`), consistent with the other
+    // array helpers ($bf.includes / $bf.slice / ...). A JS arrow predicate
+    // lowers to a Kolon lambda `-> $param { PRED }`, which is callable from
+    // Perl as a code ref, so the runtime method applies it to each element.
+    // The `.filter(...).map(...)` *loop* form is handled separately by
     // renderLoop's inline predicate, so it still works.
     const arrayExpr = emit(object)
     const predBody = this.adapter._renderKolonFilterExprPublic(predicate, param)
     const lambda = `-> $${param} { ${predBody} }`
-    if (method === 'filter') return `grep_filter(${arrayExpr}, ${lambda})`
-    if (method === 'every') return `grep_every(${arrayExpr}, ${lambda})`
-    if (method === 'some') return `grep_some(${arrayExpr}, ${lambda})`
+    if (method === 'filter') return `$bf.filter(${arrayExpr}, ${lambda})`
+    if (method === 'every') return `$bf.every(${arrayExpr}, ${lambda})`
+    if (method === 'some') return `$bf.some(${arrayExpr}, ${lambda})`
     void predicate
     void param
     return emit(object)
