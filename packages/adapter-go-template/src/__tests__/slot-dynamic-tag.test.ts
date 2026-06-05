@@ -50,4 +50,16 @@ describe('Slot dynamic-tag Go lowering', () => {
     expect(template.content).not.toContain('{{template "Tag"')
     expect(template.content).not.toContain('.IsValidElement')
   })
+
+  test('the unevaluatable `isValidElement` predicate is forced to false with a BF102 warning (not silently truthy)', () => {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(SLOT_SSR, 'slot.tsx', { adapter, componentName: 'Slot' })
+    // The forced term is the SAFE default `false` (gated branch hidden, not
+    // exposed), and the author is warned rather than left with a silent
+    // vacuously-true SSR condition.
+    const warnings = result.errors.filter(e => e.severity === 'warning')
+    expect(
+      warnings.some(w => w.code === 'BF102' && /cannot be evaluated/i.test(w.message))
+    ).toBe(true)
+  })
 })

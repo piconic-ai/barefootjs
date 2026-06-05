@@ -4350,15 +4350,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // like `isValidElement(children)`) has no server-side evaluator and
         // is not a registered template primitive. Emitting a generic call
         // (`.IsValidElement .Children`) would fabricate a bogus `.IsValidElement`
-        // struct-field access that Go's html/template rejects. Lower it to a
-        // safe truthy literal so it drops out of the surrounding boolean
-        // condition — e.g. `and .Children (isValidElement children)` collapses
-        // to the resolvable `and .Children true` ≡ `{{if .Children}}`.
+        // struct-field access that Go's html/template rejects. We cannot
+        // evaluate the predicate at SSR time, so force the term to the SAFE
+        // default `false` — matching BF102's unsupported-condition behaviour,
+        // a gated branch stays hidden rather than being exposed (forcing
+        // `true` could accidentally render auth-gated content like
+        // `isAdmin(user)`). Emit a warning so authors know the predicate was
+        // forced and can switch to a supported primitive or `/* @client */`
+        // when the condition's value matters.
         if (
           expr.callee.kind === 'identifier' &&
           !this.templatePrimitives[identifierPath(expr.callee) ?? '']
         ) {
-          return plain('true')
+          const path = identifierPath(expr.callee) ?? expr.callee.name
+          this.errors.push({
+            code: 'BF102',
+            severity: 'warning',
+            message:
+              `Predicate '${path}(...)' cannot be evaluated in a Go template; ` +
+              `forcing this condition term to false (the gated branch will not render server-side).`,
+            loc: this.makeLoc(),
+            suggestion: { message: GO_REMEDIATION_OPTIONS },
+          })
+          return plain('false')
         }
         return plain(this.renderParsedExpr(expr))
       }
