@@ -7,7 +7,7 @@ on:
       - 'packages/client/**'
       - 'packages/shared/**'
       - 'packages/jsx/**'
-      - 'packages/perl/**'
+      - 'packages/adapter-perl/**'
       - 'packages/adapter-mojolicious/**'
       - 'packages/adapter-tests/**'
       - '.github/workflows/ci-mojolicious.yml'
@@ -16,7 +16,7 @@ on:
       - 'packages/client/**'
       - 'packages/shared/**'
       - 'packages/jsx/**'
-      - 'packages/perl/**'
+      - 'packages/adapter-perl/**'
       - 'packages/adapter-mojolicious/**'
       - 'packages/adapter-tests/**'
       - '.github/workflows/ci-mojolicious.yml'
@@ -54,12 +54,12 @@ jobs:
           bun run --filter '@barefootjs/mojolicious' build
 
       - name: Run BarefootJS core Perl tests (engine-agnostic, no Mojo)
-        run: cd packages/perl && prove -lv t/
+        run: cd packages/adapter-perl && prove -lv t/
 
       - name: Run Mojolicious Perl unit tests
         # The Mojo binding's tests `use BarefootJS`, which now lives in
         # @barefootjs/perl — add its lib to @INC alongside this package's.
-        run: cd packages/adapter-mojolicious && prove -lv -I ../perl/lib t/
+        run: cd packages/adapter-mojolicious && prove -lv -I ../adapter-perl/lib t/
 
       - name: Run unit tests
         run: bun test packages/adapter-mojolicious

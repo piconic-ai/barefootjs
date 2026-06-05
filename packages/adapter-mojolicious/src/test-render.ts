@@ -16,7 +16,7 @@ const RENDER_TEMP_DIR = resolve(import.meta.dir, '../.render-temp')
 // Both dirs must be on the render script's @INC so `use BarefootJS` and
 // `use BarefootJS::Backend::Mojo` resolve.
 const LIB_DIR = resolve(import.meta.dir, '../lib')
-const PERL_CORE_LIB_DIR = resolve(import.meta.dir, '../../perl/lib')
+const PERL_CORE_LIB_DIR = resolve(import.meta.dir, '../../adapter-perl/lib')
 
 export class PerlNotAvailableError extends Error {
   constructor(message: string) {

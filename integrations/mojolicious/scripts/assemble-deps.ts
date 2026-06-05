@@ -3,7 +3,7 @@
  * mojolicious example directory so the same layout works in local dev and
  * inside the container image.
  *
- *   ./lib          ← packages/perl/lib (engine-agnostic BarefootJS runtime)
+ *   ./lib          ← packages/adapter-perl/lib (engine-agnostic BarefootJS runtime)
  *                  + packages/adapter-mojolicious/lib (Mojo backend + plugin)
  *                    merged into one @INC dir so `use BarefootJS` and
  *                    `use BarefootJS::Backend::Mojo` both resolve.
@@ -36,7 +36,7 @@ async function merge(src: string, dest: string) {
 
 const LIB_DEST = join(ROOT, 'lib')
 await rm(LIB_DEST, { recursive: true, force: true })
-await merge(join(ROOT, '../../packages/perl/lib'), LIB_DEST)
+await merge(join(ROOT, '../../packages/adapter-perl/lib'), LIB_DEST)
 await merge(join(ROOT, '../../packages/adapter-mojolicious/lib'), LIB_DEST)
 
 await mirror(join(ROOT, '../shared/styles'), join(ROOT, 'dist/styles'))

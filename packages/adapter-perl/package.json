@@ -20,6 +20,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/piconic-ai/barefootjs",
-    "directory": "packages/perl"
+    "directory": "packages/adapter-perl"
   }
 }

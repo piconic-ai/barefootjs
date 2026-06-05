@@ -22,4 +22,4 @@ EXPOSE 3000
 # bind-mounted plugin + runtime sources so edits to either trigger a restart
 # (the engine-agnostic BarefootJS.pm lives in @barefootjs/perl; the Mojo
 # backend + plugin in @barefootjs/mojolicious).
-CMD ["morbo", "-w", "app.pl", "-w", "lib", "-w", "/workspace/packages/perl/lib", "-w", "/workspace/packages/adapter-mojolicious/lib", "app.pl"]
+CMD ["morbo", "-w", "app.pl", "-w", "lib", "-w", "/workspace/packages/adapter-perl/lib", "-w", "/workspace/packages/adapter-mojolicious/lib", "app.pl"]
