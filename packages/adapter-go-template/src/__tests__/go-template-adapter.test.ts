@@ -85,9 +85,7 @@ runAdapterConformanceTests({
     'toggle',
     'switch',
     'checkbox',
-    'input',
     'textarea',
-    'label',
     'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Go template
@@ -299,6 +297,28 @@ export function Counter(props: { initial?: number }) {
       expect(result.types).toContain('ScopeID string')
       expect(result.types).toContain('Initial int')
       expect(result.types).toContain('Count int')
+    })
+
+    test('module pure-string const referenced in className inlines the literal (#1467 Phase 2b)', () => {
+      // A module-scope `const X = 'literal'` used inside a className
+      // template literal must inline its value, NOT emit `{{.X}}` against a
+      // Props field that never exists (Go fails `can't evaluate field X`).
+      // Hono inlines it at runtime; this restores byte-parity.
+      const source = `
+"use client"
+const labelClasses = 'flex items-center group-data-[disabled=true]:opacity-50'
+export function Label({ className = '' }: { className?: string }) {
+  return <label className={\`\${labelClasses} \${className}\`} />
+}
+`
+      const { template, types } = compileAndGenerate(source)
+      // The literal is inlined as a Go string literal, escaped tokens intact.
+      expect(template).toContain(
+        '{{"flex items-center group-data-[disabled=true]:opacity-50"}}',
+      )
+      // No struct-field reference to the const, and no Props field for it.
+      expect(template).not.toContain('.LabelClasses')
+      expect(types).not.toContain('LabelClasses')
     })
 
     test('dynamic loop with child component → NewXxxProps carries a populate-this-slice doc comment (#1442 echo TodoApp repro)', () => {

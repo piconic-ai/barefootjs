@@ -34,6 +34,7 @@ import type {
   IRIfStatement,
   IRProvider,
   IRAsync,
+  IRMetadata,
   TemplatePrimitiveRegistry,
 } from '@barefootjs/jsx'
 import {
@@ -418,6 +419,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *  `template.HTML(...)`; toggles the `"html/template"` import. */
   private usesHtmlTemplate: boolean = false
 
+  /**
+   * Module-scope pure string-literal constants (`const X = 'literal'` at
+   * file top-level), keyed by name → resolved literal value. Populated at
+   * `generate()` entry from `ir.metadata.localConstants`. When an identifier
+   * in an expression resolves to one of these, the adapter inlines the
+   * literal value instead of emitting a struct-field reference
+   * (`{{.X}}`) — the field never exists on the Props struct, so without
+   * inlining Go's template engine fails with `can't evaluate field X`.
+   * Hono inlines it for free (it evaluates real JS); this restores parity.
+   * Only module-scope, pure string literals qualify — function-scope
+   * locals legitimately become template vars/props, and `Record<T,string>`
+   * indexed lookups / memos / signals are deliberately excluded.
+   */
+  private moduleStringConsts: Map<string, string> = new Map()
+
   constructor(options: GoTemplateAdapterOptions = {}) {
     super()
     this.options = {
@@ -438,6 +454,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.templateVarCounter = 0
     this.propsObjectName = ir.metadata.propsObjectName
     this.restPropsName = ir.metadata.restPropsName ?? null
+    this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
 
     // Surface loop-body usages of components imported from sibling
     // .tsx files. The adapter emits `{{template "X" .}}` for these,
@@ -2901,6 +2918,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   // ===========================================================================
 
   identifier(name: string): string {
+    // Module pure-string const (e.g. `const baseClasses = '...'` used in a
+    // className template literal): inline the literal value rather than
+    // emit `{{.BaseClasses}}` against a Props field that never exists.
+    const inlined = this.resolveModuleStringConst(name)
+    if (inlined !== null) return inlined
     const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
     if (currentLoopParam && name === currentLoopParam) return '.'
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
@@ -2935,6 +2957,72 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private rootFieldRef(name: string): string {
     const prefix = this.loopParamStack.length > 0 ? '$.' : '.'
     return `${prefix}${this.capitalizeFieldName(name)}`
+  }
+
+  /**
+   * Build the module pure-string-const map from the IR's localConstants.
+   * A const qualifies only when it is module-scope (`isModule`) and its
+   * initializer parses to a single string literal (`ts.StringLiteral` or
+   * `ts.NoSubstitutionTemplateLiteral` — a backtick string with no `${}`).
+   * Template literals *with* interpolations, numeric/object initializers,
+   * `Record<T,string>` maps, memos, and signals are all excluded: only a
+   * pure compile-time string can be safely inlined byte-for-byte.
+   */
+  private collectModuleStringConsts(constants: IRMetadata['localConstants']): Map<string, string> {
+    const map = new Map<string, string>()
+    for (const c of constants ?? []) {
+      if (!c.isModule) continue
+      if (c.value === undefined) continue
+      const literal = this.parsePureStringLiteral(c.value)
+      if (literal !== null) map.set(c.name, literal)
+    }
+    return map
+  }
+
+  /**
+   * Parse a const initializer's source text. Returns the unescaped string
+   * value when the whole initializer is a single string literal (or a
+   * no-substitution template literal), else `null`. Uses the TS parser so
+   * escapes/quotes are resolved exactly as JS would, matching the value
+   * the Hono reference inlines at runtime.
+   */
+  private parsePureStringLiteral(source: string): string | null {
+    const sf = ts.createSourceFile(
+      '__const.ts',
+      `const __x = (${source});`,
+      ts.ScriptTarget.Latest,
+      /*setParentNodes*/ false,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isVariableStatement(stmt)) return null
+    const decl = stmt.declarationList.declarations[0]
+    let init = decl?.initializer
+    while (init && ts.isParenthesizedExpression(init)) init = init.expression
+    if (!init) return null
+    if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
+      return init.text
+    }
+    return null
+  }
+
+  /**
+   * Resolve an identifier to its inlined Go string literal when it names a
+   * module pure-string const. Returns the Go template literal form
+   * (`"<escaped>"`) so callers can drop it straight into a `{{...}}` action,
+   * or `null` when the name is not such a const (the caller then falls back
+   * to its normal field-ref lowering). The value is escaped for a Go
+   * double-quoted string literal — Go's `html/template` then applies the
+   * same contextual auto-escaping it applies to any literal, matching Hono.
+   */
+  private resolveModuleStringConst(name: string): string | null {
+    if (this.loopParamStack.length > 0 && this.loopParamStack[this.loopParamStack.length - 1] === name) {
+      return null
+    }
+    if (this.loopVarRefCount.has(name)) return null
+    if (this.isOuterLoopParam(name)) return null
+    const value = this.moduleStringConsts.get(name)
+    if (value === undefined) return null
+    return `"${this.escapeGoString(value)}"`
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
@@ -4323,6 +4411,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     switch (expr.kind) {
       case 'identifier':
         {
+          const inlined = this.resolveModuleStringConst(expr.name)
+          if (inlined !== null) return plain(inlined)
           const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
           if (currentLoopParam && expr.name === currentLoopParam) {
             return plain('.')

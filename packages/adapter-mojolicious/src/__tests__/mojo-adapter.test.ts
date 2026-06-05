@@ -78,9 +78,7 @@ runAdapterConformanceTests({
     'toggle',
     'switch',
     'checkbox',
-    'input',
     'textarea',
-    'label',
     'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
@@ -257,6 +255,26 @@ export function Hello() {
   test('generates .html.ep extension', () => {
     const adapter = new MojoAdapter()
     expect(adapter.extension).toBe('.html.ep')
+  })
+
+  test('module pure-string const referenced in className inlines the literal (#1467 Phase 2b)', () => {
+    // A module-scope `const X = 'literal'` used inside a className template
+    // literal must inline its value, NOT emit `$X` against a stash variable
+    // that is never bound (the value would render empty). Hono inlines it at
+    // runtime; this restores byte-parity.
+    const result = compileAndGenerate(`
+"use client"
+const labelClasses = 'flex items-center group-data-[disabled=true]:opacity-50'
+export function Label({ className = '' }: { className?: string }) {
+  return <label className={\`\${labelClasses} \${className}\`} />
+}
+`)
+    // Inlined as a Perl single-quoted literal, escaped tokens intact.
+    expect(result.template).toContain(
+      "'flex items-center group-data-[disabled=true]:opacity-50'",
+    )
+    // No stash-variable reference to the const.
+    expect(result.template).not.toContain('$labelClasses')
   })
 
   test('generates conditional with Perl if/else', () => {

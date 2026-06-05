@@ -4,8 +4,10 @@
  * Generates Mojolicious EP template files (.html.ep) from BarefootJS IR.
  */
 
+import ts from 'typescript'
 import type {
   ComponentIR,
+  IRMetadata,
   IRNode,
   IRElement,
   IRText,
@@ -117,6 +119,32 @@ export interface MojoAdapterOptions {
   barefootJsPath?: string
 }
 
+/**
+ * Parse a const initializer's source text. Returns the unescaped string
+ * value when the whole initializer is a single string literal (or a
+ * no-substitution template literal), else `null`. Uses the TS parser so
+ * escapes/quotes resolve exactly as JS would, matching the value the Hono
+ * reference inlines at runtime.
+ */
+function parsePureStringLiteral(source: string): string | null {
+  const sf = ts.createSourceFile(
+    '__const.ts',
+    `const __x = (${source});`,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ false,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  const decl = stmt.declarationList.declarations[0]
+  let init = decl?.initializer
+  while (init && ts.isParenthesizedExpression(init)) init = init.expression
+  if (!init) return null
+  if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
+    return init.text
+  }
+  return null
+}
+
 export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx> {
   name = 'mojolicious'
   extension = '.html.ep'
@@ -159,6 +187,17 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * true — selecting the string operator from the operand's type avoids that.
    */
   private stringValueNames: Set<string> = new Set()
+  /**
+   * Module-scope pure string-literal constants (`const X = 'literal'` at
+   * file top-level), keyed by name → resolved literal value. Populated at
+   * `generate()` entry from `ir.metadata.localConstants`. When an identifier
+   * in an expression resolves to one of these, the adapter inlines the
+   * literal instead of emitting `$X` against a stash variable that is never
+   * bound (a module const isn't a prop, signal, or local — the value would
+   * render empty). Hono inlines it for free; this restores parity. Only
+   * module-scope pure string literals qualify (see `collectModuleStringConsts`).
+   */
+  private moduleStringConsts: Map<string, string> = new Map()
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -186,6 +225,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     for (const p of ir.metadata.propsParams) {
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
+    this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -236,6 +276,38 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       sections,
       extension: this.extension,
     }
+  }
+
+  /**
+   * Build the module pure-string-const map from the IR's localConstants.
+   * A const qualifies only when it is module-scope (`isModule`) and its
+   * initializer parses to a single string literal (`ts.StringLiteral` or
+   * `ts.NoSubstitutionTemplateLiteral`). Template literals with `${}`,
+   * numeric/object initializers, `Record<T,string>` maps, memos, and
+   * signals are all excluded — only a pure compile-time string can be
+   * inlined byte-for-byte.
+   */
+  private collectModuleStringConsts(constants: IRMetadata['localConstants']): Map<string, string> {
+    const map = new Map<string, string>()
+    for (const c of constants ?? []) {
+      if (!c.isModule) continue
+      if (c.value === undefined) continue
+      const literal = parsePureStringLiteral(c.value)
+      if (literal !== null) map.set(c.name, literal)
+    }
+    return map
+  }
+
+  /**
+   * Resolve an identifier to its inlined Perl single-quoted string literal
+   * when it names a module pure-string const, else `null` (the caller then
+   * falls back to its normal `$name` stash lowering). Returns the Perl
+   * literal form `'<escaped>'` ready to drop into an expression.
+   */
+  resolveModuleStringConst(name: string): string | null {
+    const value = this.moduleStringConsts.get(name)
+    if (value === undefined) return null
+    return `'${value.replace(/[\\']/g, m => `\\${m}`)}'`
   }
 
   // ===========================================================================
@@ -1817,6 +1889,11 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
   constructor(private readonly adapter: MojoAdapter) {}
 
   identifier(name: string): string {
+    // Module pure-string const (e.g. `const baseClasses = '...'` used in a
+    // className template literal): inline the literal value rather than emit
+    // `$baseClasses` against a stash variable that is never bound.
+    const inlined = this.adapter.resolveModuleStringConst(name)
+    if (inlined !== null) return inlined
     return `$${name}`
   }
 
