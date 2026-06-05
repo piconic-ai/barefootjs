@@ -44,6 +44,7 @@
 - [Writing a Custom Adapter](https://barefootjs.dev/docs/adapters/custom-adapter.md): Step-by-step guide to building a custom adapter using the TestAdapter as a reference.
 - [Go Template Adapter](https://barefootjs.dev/docs/adapters/go-template-adapter.md): Generate Go html/template files and type definitions from the compiler's IR.
 - [Hono Adapter](https://barefootjs.dev/docs/adapters/hono-adapter.md): Generate Hono JSX templates from the compiler's IR for Hono-based servers.
+- [Perl Adapter](https://barefootjs.dev/docs/adapters/perl-adapter.md): Render BarefootJS components from Perl — one engine-agnostic runtime with Mojolicious and Text::Xslate (PSGI/Plack) backends.
 
 ## Advanced
 
