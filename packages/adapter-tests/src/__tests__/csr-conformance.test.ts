@@ -107,6 +107,26 @@ describe('CSR Conformance Tests', () => {
     'array-entries',
     'array-keys',
     'array-values',
+    // #1467 Phase 2b: `kbd/index.tsx` exports two components (`Kbd` then
+    // `KbdGroup`). The CSR harness evaluates `__lastComponent` — the last
+    // `hydrate()` registration — which is `KbdGroup`, so it renders the
+    // wrong sibling (`data-slot="kbd-group"` vs the pinned `Kbd`'s
+    // `data-slot="kbd"`). Same multi-export-source harness limitation that
+    // CSR-skips `reactive-props` / `props-reactivity-comparison`; the
+    // SSR-side pin (`componentName: 'Kbd'`) keeps Hono conformance correct,
+    // and `kbd` ships no interactions so the fixture-hydrate layer skips it
+    // regardless.
+    'kbd',
+    // #1467 Phase 2b: `input/index.tsx` renders its `placeholder` (and any
+    // other native attr) through the `{...props}` spread → `applyRestAttrs`
+    // at init time, not as an explicit template attribute. The CSR harness
+    // stubs `applyRestAttrs` as a noop (it only evaluates the template
+    // lambda), so the spread-applied `placeholder` is absent from CSR output
+    // while present in the SSR HTML. Same `applyRestAttrs`-not-modeled
+    // limitation that CSR-skips `jsx-spread-rest-prop` / `jsx-spread-props-
+    // object`; the real-browser fixture-hydrate layer exercises the spread
+    // for real (and the typed value survives hydration there).
+    'input',
   ])
 
   for (const fixture of jsxFixtures) {

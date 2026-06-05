@@ -853,9 +853,26 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
         const elemRestName = ctx.restPropsName
         const elemPropsObjName = ctx.propsObjectName
         if (spreadVal && (spreadVal === elemRestName || spreadVal === elemPropsObjName)) {
-          const excludeKeys = element.attrs
+          // `applyRestAttrs(_el, _p, exclude)` is handed the FULL props
+          // object (`PROPS_PARAM`), not a computed JS rest binding, and the
+          // runtime filters by SOURCE KEY (`source[key]`). So `exclude` must
+          // list every prop the component already consumed, keyed the way it
+          // arrives on `_p`. For the destructured `...rest` form that set is
+          // exactly the destructured param names (the JS rest-exclusion set):
+          // it covers every statically/reactively bound attr AND the
+          // separately-wired event/ref handlers. Without it, applyRestAttrs
+          // re-binds those events (double-fire) and re-emits consumed-but-
+          // unbound props under their raw key (e.g. `error` → `error="…"`,
+          // `describedBy` → `describedBy="…"`). The element-attr-name list
+          // alone was wrong on both counts — it keys on HTML attr names
+          // (`aria-invalid` ≠ source key `error`) and omits event handlers.
+          // (#1467)
+          const consumedKeys =
+            spreadVal === elemRestName ? ctx.propsParams.map(p => p.name) : []
+          const staticAttrKeys = element.attrs
             .filter(a => a.name !== '...')
             .map(a => a.name)
+          const excludeKeys = [...new Set([...consumedKeys, ...staticAttrKeys])]
           ctx.restAttrElements.push({
             slotId: element.slotId,
             source: PROPS_PARAM,

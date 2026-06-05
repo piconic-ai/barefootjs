@@ -550,6 +550,13 @@ export interface RestAttrElement {
   slotId: string
   /** The spread source expression (e.g., 'rest', 'props') */
   source: string
-  /** Attribute names already statically set on the element (exclude from applyRestAttrs) */
+  /**
+   * Prop SOURCE KEYS already consumed by the component (exclude from
+   * applyRestAttrs). For the destructured `...rest` form this is the
+   * destructured param names (the JS rest-exclusion set) unioned with any
+   * statically-set attr names; applyRestAttrs filters `source[key]` by these
+   * so it neither re-binds separately-wired events nor re-emits consumed
+   * props under their raw key. See collect-elements.ts for the rationale.
+   */
   excludeKeys: string[]
 }

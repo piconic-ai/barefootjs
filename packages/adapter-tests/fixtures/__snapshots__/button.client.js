@@ -65,7 +65,7 @@ export function initButton(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","variant","size","asChild","children"])
 
 
   // Reactive child component props

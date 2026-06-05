@@ -69,6 +69,19 @@ runAdapterConformanceTests({
     'toggle-shared',
     'reactive-props',
     'props-reactivity-comparison',
+    // #1467 Phase 2b: basic interactive `site/ui` primitives. Cross-adapter
+    // parity for the `site/ui` corpus is Phase 3, so these participate only
+    // in Hono SSR conformance + the fixture-hydrate runtime layer for now.
+    // (`label` and `kbd` are static helpers; `toggle` / `switch` /
+    // `checkbox` carry uncontrolled state; `input` / `textarea` are
+    // pass-through native controls.)
+    'toggle',
+    'switch',
+    'checkbox',
+    'input',
+    'textarea',
+    'label',
+    'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
