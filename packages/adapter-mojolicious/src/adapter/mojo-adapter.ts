@@ -207,6 +207,23 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * loop-var shadowing guards). (#1749 review)
    */
   private loopBoundNames: Map<string, number> = new Map()
+  /**
+   * Prop names whose value is `undef` in the template body when the caller
+   * omits them — so a bare-reference attribute should be dropped rather
+   * than rendered as `attr=""`. The actual population criterion (see
+   * `generate()`) is: NO destructure default (`defaultValue === undefined`)
+   * AND non-rest (`!isRest`) AND non-primitive type (`type.kind !==
+   * 'primitive'`). It deliberately does NOT consult `p.optional`: the
+   * analyzer derives `optional` from the presence of a default initializer,
+   * not the `?` token, so it's not the right witness here. Excluding
+   * concrete primitives (`string`/`number`/`boolean`) mirrors the Go
+   * adapter's scope, which guards only `interface{}` (nillable) fields.
+   * Used by `elementAttrEmitter.emitExpression` to guard such an attribute
+   * with a Perl `defined $x` check (`<textarea>` omits `rows`), matching
+   * Hono's nullish-attribute omission. Concrete/defaulted props are
+   * excluded and always emit unconditionally.
+   */
+  private nullableOptionalProps: Set<string> = new Set()
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -220,6 +237,31 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.componentName = ir.metadata.componentName
     this.propsObjectName = ir.metadata.propsObjectName ?? null
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    // No-destructure-default props → `undef` when the caller omits them
+    // → guard their bare-reference attribute emission with Perl `defined`
+    // so the attribute drops instead of rendering `attr=""` (Hono-style
+    // nullish omission). A prop WITH a destructure default (`value = ''`)
+    // is never `undef` in the body and must stay unconditional, so it is
+    // excluded. This mirrors the Go adapter's nillable-field guard: there
+    // the witness is the resolved `interface{}` field type; here it is
+    // the absence of a default (the analyzer reports `rows` — a
+    // `TextareaHTMLAttributes` member destructured without a default — as
+    // no-default, `type.kind: 'unknown'`).
+    // Excludes concrete-primitive types (`string`/`number`/`boolean`)
+    // to match the Go adapter's scope, which guards only `interface{}`
+    // (nillable) fields and leaves concrete fields unconditional. So a
+    // required, no-default `string` prop still emits `attr=""` like Hono,
+    // and only nillable (`unknown`/object/array) no-default props guard.
+    this.nullableOptionalProps = new Set(
+      ir.metadata.propsParams
+        .filter(
+          p =>
+            p.defaultValue === undefined &&
+            !p.isRest &&
+            p.type?.kind !== 'primitive',
+        )
+        .map(p => p.name),
+    )
     // Record string-typed signals and props so equality comparisons against
     // them lower to `eq`/`ne` (#1672). A signal is string-typed when its
     // inferred type is `string` (the analyzer infers this from a string-literal
@@ -935,6 +977,32 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
+      // Hono-style nullish-attribute omission (#textarea rows): when the
+      // attribute value is a BARE reference to an optional, no-default
+      // prop (which is `undef` when the caller omits it), guard the
+      // attribute with Perl `defined` so it DROPS rather than rendering
+      // `attr=""`. The guarded body reuses the exact normal emission, so
+      // value escaping (`<%= ... %>`) is unchanged; only the presence is
+      // conditional. The `% if`/`% end` line directives surround the
+      // attribute inline — the conformance comparator collapses the
+      // resulting whitespace, exactly like the existing boolean-attr and
+      // hydration-marker patterns. Scope is deliberately narrow (bare
+      // identifiers resolving to an optional-no-default prop) so member
+      // exprs, calls, concrete/defaulted props, and boolean attrs are
+      // unaffected and still emit unconditionally.
+      const bareId = value.expr.trim()
+      if (
+        !isBooleanAttr(name) &&
+        !value.presenceOrUndefined &&
+        this.nullableOptionalProps.has(bareId)
+      ) {
+        const perl = this.convertExpressionToPerl(value.expr)
+        const body =
+          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name)
+            ? `${name}="<%= bf->bool_str(${perl}) %>"`
+            : `${name}="<%= ${perl} %>"`
+        return `<% if (defined ${perl}) { %>${body}<% } %>`
+      }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
         // Boolean attributes: render conditionally (present or absent).
         return `<%= ${this.convertExpressionToPerl(value.expr)} ? '${name}' : '' %>`
@@ -1007,6 +1075,17 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
           `${JSON.stringify(p.name)} => $${p.name}`,
         )
         return `<%== bf->spread_attrs({${entries.join(', ')}}) %>`
+      }
+      // Conditional inline-object spread:
+      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
+      // Emit a Perl inline ternary of hashrefs — Perl truthiness
+      // handles the condition for free, and the falsy `{}` branch
+      // OMITS the key (`bf->spread_attrs` does NOT filter empty
+      // strings, so we cannot always-include it). Mirrors the Go
+      // adapter's IIFE-of-maps lowering (#textarea).
+      const ternaryHashref = this.conditionalSpreadToPerl(trimmed)
+      if (ternaryHashref !== null) {
+        return `<%== bf->spread_attrs(${ternaryHashref}) %>`
       }
       const perlExpr = this.convertExpressionToPerl(value.expr)
       return `<%== bf->spread_attrs(${perlExpr}) %>`
@@ -1291,6 +1370,77 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       },
     })
     return true
+  }
+
+
+  /**
+   * Lower a conditional inline-object spread expression
+   *   `(COND ? { 'aria-describedby': describedBy } : {})`
+   * (either branch possibly `{}`) into a Perl inline ternary of
+   * hashrefs for `bf->spread_attrs`:
+   *   `$describedBy ? { 'aria-describedby' => $describedBy } : {}`
+   *
+   * The condition is translated via `convertExpressionToPerl` (a bare
+   * prop ident becomes `$describedBy`; Perl truthiness handles the
+   * test). Object literals become Perl hashrefs with `=>`; string-
+   * literal keys are quoted, values resolve via `convertExpressionToPerl`.
+   *
+   * Returns null when the expression is NOT this shape, or when a part
+   * can't be faithfully lowered (non-static key, etc.) so the caller
+   * falls back to the standard `convertExpressionToPerl` path (which
+   * records BF101). Scoped strictly to ternary-of-object-literals so no
+   * other spread shape regresses.
+   */
+  private conditionalSpreadToPerl(expr: string): string | null {
+    const sf = ts.createSourceFile('__spread.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
+    if (sf.statements.length !== 1) return null
+    const stmt = sf.statements[0]
+    if (!ts.isExpressionStatement(stmt)) return null
+    let node: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    if (!ts.isConditionalExpression(node)) return null
+    const unwrap = (e: ts.Expression): ts.Expression => {
+      let n = e
+      while (ts.isParenthesizedExpression(n)) n = n.expression
+      return n
+    }
+    const whenTrue = unwrap(node.whenTrue)
+    const whenFalse = unwrap(node.whenFalse)
+    if (!ts.isObjectLiteralExpression(whenTrue) || !ts.isObjectLiteralExpression(whenFalse)) {
+      return null
+    }
+    const condPerl = this.convertExpressionToPerl(node.condition.getText(sf))
+    const truePerl = this.objectLiteralToPerlHashref(whenTrue, sf)
+    const falsePerl = this.objectLiteralToPerlHashref(whenFalse, sf)
+    if (truePerl === null || falsePerl === null) return null
+    return `${condPerl} ? ${truePerl} : ${falsePerl}`
+  }
+
+  /**
+   * Convert a static object literal into a Perl hashref string for a
+   * conditional spread. Only static string/identifier keys are allowed;
+   * values resolve via `convertExpressionToPerl`. Returns null for any
+   * computed/spread/dynamic key. Empty object → `{}`.
+   */
+  private objectLiteralToPerlHashref(
+    obj: ts.ObjectLiteralExpression,
+    sf: ts.SourceFile,
+  ): string | null {
+    const entries: string[] = []
+    for (const prop of obj.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      let key: string
+      if (ts.isIdentifier(prop.name)) {
+        key = prop.name.text
+      } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
+        key = prop.name.text
+      } else {
+        return null
+      }
+      const valPerl = this.convertExpressionToPerl(prop.initializer.getText(sf))
+      entries.push(`'${key.replace(/'/g, "\\'")}' => ${valPerl}`)
+    }
+    return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
   }
 
 
