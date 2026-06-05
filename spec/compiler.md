@@ -764,6 +764,17 @@ The accumulator must be the binary expression's left operand (`acc + x`, not `x 
 
 When `@client` is present, the compiler skips template generation for that expression without emitting an error.
 
+### Known limitations — methods that don't lower to the template adapters
+
+The Go / Mojo template adapters lower a finite, growing catalogue of `Array.prototype` / `String.prototype` methods (see "Currently lowered" in the now-closed origin catalogue issue [#1448](https://github.com/piconic-ai/barefootjs/issues/1448), whose residual gaps are folded into the master known-limitations catalog [#1395](https://github.com/piconic-ai/barefootjs/issues/1395)). The shapes below are the residual gaps. They are intentional — each is either covered by an escape hatch or carries a cross-adapter design barrier — and `/* @client */` (or lifting the expression into an event handler / `createEffect`, where full JS is available) is the workaround for all of them.
+
+- **`.flat` / `.flatMap` richer transforms (BF101).** Value-returning `.flat(depth?)` and `.flatMap` lower for the structured catalogue: `flat` with a literal depth (`FlatDepth`), and `flatMap` self / field / array-literal-tuple-of-leaves projections (`FlatMapOp`) — `i => i`, `i => i.field`, `i => [i.a, i.b]`. Refused: a non-literal `.flat()` depth, and `.flatMap` callbacks with a transform body (arithmetic, calls, computed / deep access, **literal** array elements, the spread form) or the 2-arg `flatMap(fn, thisArg)`. The **JSX-returning** `.flatMap` lowers separately as an `IRLoop` and is unaffected.
+- **Sort comparator follow-ups (BF021).** Function-reference comparators (`sort(myCmp)` — needs scope resolution; inline the comparator instead) and `localeCompare(b, locale, opts)`. The latter is effectively won't-fix for byte-equal SSR: Go (`golang.org/x/text/collate`) and Perl (`Unicode::Collate`) collation cannot be guaranteed byte-equal to each other or to the JS / CSR path, which breaks the three-adapter parity contract.
+- **String methods out of scope.** `.charAt`, `.charCodeAt`, `.codePointAt`, `.normalize` (rarely needed in template position — compose with `String(...)` if required) and the iterator forms (`@@iterator`, `matchAll`, which would need synthetic IR).
+- **Mutating array methods (Tier D).** `.push` / `.pop` / `.splice` / `.fill` / … have no template-level meaning (SSR renders a snapshot); they only appear in client-runtime callbacks, which never reach the lowering path.
+
+Tracked limitations live under the [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation) label (the source of truth).
+
 ### Missing Key in List (BF023 / BF024)
 
 When a `.map()` callback returns JSX without a `key` prop on the root element, the compiler emits **BF023** (outer loop) or **BF024** (inner loop of a nested `.map()`). A missing `key` prevents efficient reconciliation and can cause incorrect event delegation at runtime.
