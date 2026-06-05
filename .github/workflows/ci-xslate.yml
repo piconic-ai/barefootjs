@@ -1,0 +1,60 @@
+name: CI — Xslate Adapter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-perl/**'
+      - 'packages/adapter-xslate/**'
+      - 'packages/adapter-tests/**'
+      - '.github/workflows/ci-xslate.yml'
+  pull_request:
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-perl/**'
+      - 'packages/adapter-xslate/**'
+      - 'packages/adapter-tests/**'
+      - '.github/workflows/ci-xslate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@a198315ec4e9244f206879ea7b63078003aec8a6 # v1
+        with:
+          perl-version: '5.40'
+
+      - name: Install Text::Xslate
+        run: cpanm --notest Text::Xslate
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/xslate' build
+
+      # The render test compiles the Counter, then renders the emitted Kolon
+      # `.tx` through real Text::Xslate + the BarefootJS runtime (it skips
+      # gracefully when Text::Xslate is absent — installed above so it runs).
+      - name: Run unit tests (incl. live Text::Xslate render)
+        run: bun test packages/adapter-xslate

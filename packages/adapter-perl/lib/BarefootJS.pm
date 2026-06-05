@@ -214,9 +214,14 @@ sub register_child_renderer ($self, $name, $renderer) {
     $self->_child_renderers->{$name} = $renderer;
 }
 
-sub render_child ($self, $name, %props) {
+sub render_child ($self, $name, @args) {
     my $renderer = $self->_child_renderers->{$name};
     die "No renderer registered for child component '$name'" unless $renderer;
+    # Accept both the Mojo list form — `bf->render_child($name, k => v, ...)`
+    # — and the single-hashref form — `$bf.render_child($name, { k => v })`.
+    # Template languages whose method calls can't splat a hash into positional
+    # args (Text::Xslate Kolon, Template Toolkit) pass one hashref instead.
+    my %props = (@args == 1 && ref $args[0] eq 'HASH') ? %{ $args[0] } : @args;
     # JSX children come in via the engine's children-capture mechanism
     # (Mojo's `begin %>...<% end`, which produces a CODE ref returning a
     # Mojo::ByteStream). Materialize it through the backend before handing
