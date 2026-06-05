@@ -71,6 +71,7 @@
     "directory": "packages/adapter-mojolicious"
   },
   "dependencies": {
+    "@barefootjs/perl": "workspace:*",
     "@barefootjs/shared": "workspace:*"
   },
   "peerDependencies": {

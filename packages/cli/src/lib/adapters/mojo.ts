@@ -19,6 +19,7 @@ import {
   unoConfigTs,
 } from './shared'
 import {
+  barefootBackendMojoPmSource,
   barefootDevReloadPmSource,
   barefootPluginPmSource,
   barefootPmSource,
@@ -164,6 +165,7 @@ export const MOJO_ADAPTER: AdapterTemplate = {
     'app.pl': MOJO_APP_PL,
     'cpanfile': MOJO_CPANFILE,
     'lib/BarefootJS.pm': barefootPmSource,
+    'lib/BarefootJS/Backend/Mojo.pm': barefootBackendMojoPmSource,
     'lib/Mojolicious/Plugin/BarefootJS.pm': barefootPluginPmSource,
     'lib/Mojolicious/Plugin/BarefootJS/DevReload.pm': barefootDevReloadPmSource,
     'barefoot.config.ts': MOJO_BAREFOOT_CONFIG_TS,

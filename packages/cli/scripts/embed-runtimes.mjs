@@ -26,7 +26,10 @@ const sources = {
   bfGoSource: 'packages/adapter-go-template/runtime/bf.go',
   streamingGoSource: 'packages/adapter-go-template/runtime/streaming.go',
   bfdevGoSource: 'packages/adapter-go-template/runtime/bfdev/bfdev.go',
-  barefootPmSource: 'packages/adapter-mojolicious/lib/BarefootJS.pm',
+  // The engine-agnostic core runtime now lives in @barefootjs/perl; the
+  // Mojo-specific backend + plugin stay in @barefootjs/mojolicious.
+  barefootPmSource: 'packages/adapter-perl/lib/BarefootJS.pm',
+  barefootBackendMojoPmSource: 'packages/adapter-mojolicious/lib/BarefootJS/Backend/Mojo.pm',
   barefootPluginPmSource: 'packages/adapter-mojolicious/lib/Mojolicious/Plugin/BarefootJS.pm',
   barefootDevReloadPmSource:
     'packages/adapter-mojolicious/lib/Mojolicious/Plugin/BarefootJS/DevReload.pm',

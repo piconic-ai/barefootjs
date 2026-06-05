@@ -1307,7 +1307,7 @@ function renderArrayMethod(
       // runtime's `bf->includes($recv, $elem)` inspects `ref($recv)`
       // and dispatches: ARRAY ref scans the list with `eq`, scalar
       // falls back to `index(..., ...) != -1`. Helper lives in
-      // packages/adapter-mojolicious/lib/BarefootJS.pm.
+      // packages/adapter-perl/lib/BarefootJS.pm.
       //
       // The `bf->` (no `$`) form matches every other helper emit —
       // in real Mojolicious `bf` is a controller helper; the

@@ -135,6 +135,7 @@ services:
       MOJO_MODE: development
     volumes:
       - ./integrations/mojolicious:/workspace/integrations/mojolicious
+      - ./packages/adapter-perl/lib:/workspace/packages/adapter-perl/lib
       - ./packages/adapter-mojolicious/lib:/workspace/packages/adapter-mojolicious/lib
 
   site-core:

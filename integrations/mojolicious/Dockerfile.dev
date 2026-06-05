@@ -19,5 +19,7 @@ WORKDIR /workspace/integrations/mojolicious
 EXPOSE 3000
 
 # morbo's default watch list covers app.pl, lib/, and templates/. Add the
-# bind-mounted plugin source so plugin edits also trigger a restart.
-CMD ["morbo", "-w", "app.pl", "-w", "lib", "-w", "/workspace/packages/adapter-mojolicious/lib", "app.pl"]
+# bind-mounted plugin + runtime sources so edits to either trigger a restart
+# (the engine-agnostic BarefootJS.pm lives in @barefootjs/perl; the Mojo
+# backend + plugin in @barefootjs/mojolicious).
+CMD ["morbo", "-w", "app.pl", "-w", "lib", "-w", "/workspace/packages/adapter-perl/lib", "-w", "/workspace/packages/adapter-mojolicious/lib", "app.pl"]

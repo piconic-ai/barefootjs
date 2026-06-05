@@ -53,6 +53,7 @@ const PUBLISHABLE = [
   'packages/test',
   'packages/adapter-hono',
   'packages/adapter-go-template',
+  'packages/adapter-perl',
   'packages/adapter-mojolicious',
   'packages/form',
   'packages/chart',
