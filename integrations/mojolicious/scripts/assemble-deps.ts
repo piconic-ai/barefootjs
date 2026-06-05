@@ -3,7 +3,10 @@
  * mojolicious example directory so the same layout works in local dev and
  * inside the container image.
  *
- *   ./lib          ← packages/adapter-mojolicious/lib (BarefootJS Mojo plugin)
+ *   ./lib          ← packages/perl/lib (engine-agnostic BarefootJS runtime)
+ *                  + packages/adapter-mojolicious/lib (Mojo backend + plugin)
+ *                    merged into one @INC dir so `use BarefootJS` and
+ *                    `use BarefootJS::Backend::Mojo` both resolve.
  *   ./dist/styles  ← integrations/shared/styles  (design-system stylesheets)
  */
 
@@ -21,5 +24,19 @@ async function mirror(src: string, dest: string) {
   console.log(`Copied ${src} → ${dest.replace(ROOT + '/', '')}`)
 }
 
-await mirror(join(ROOT, '../../packages/adapter-mojolicious/lib'), join(ROOT, 'lib'))
+// Merge both packages' `lib/` into a single ./lib @INC root. Unlike `mirror`,
+// `merge` must not `rm` between copies so the core runtime (BarefootJS.pm from
+// @barefootjs/perl) and the Mojo binding (BarefootJS/Backend/Mojo.pm +
+// Mojolicious/Plugin/* from @barefootjs/mojolicious) coexist in one tree.
+async function merge(src: string, dest: string) {
+  await mkdir(dest, { recursive: true })
+  await cp(src, dest, { recursive: true })
+  console.log(`Merged ${src} → ${dest.replace(ROOT + '/', '')}`)
+}
+
+const LIB_DEST = join(ROOT, 'lib')
+await rm(LIB_DEST, { recursive: true, force: true })
+await merge(join(ROOT, '../../packages/perl/lib'), LIB_DEST)
+await merge(join(ROOT, '../../packages/adapter-mojolicious/lib'), LIB_DEST)
+
 await mirror(join(ROOT, '../shared/styles'), join(ROOT, 'dist/styles'))

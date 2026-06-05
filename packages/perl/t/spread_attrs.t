@@ -9,14 +9,26 @@ use Test2::V0;
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
-use Mojo::JSON qw(true false);
-
 use BarefootJS;
 
-# `BarefootJS->new` requires a controller; the runtime spread
-# helper is a pure function of $self + bag, so a bare blessed hash
-# is sufficient.
-my $bf = bless { c => undef, config => {} }, 'BarefootJS';
+# Boolean sentinels via core JSON::PP (not Mojo::JSON) so this engine-agnostic
+# test runs with zero Mojo present. `spread_attrs` recognises the
+# JSON::PP::Boolean ref the same way it recognises Mojo::JSON's sentinel.
+use JSON::PP ();
+sub true  { JSON::PP::true }
+sub false { JSON::PP::false }
+
+# Minimal pure-Perl backend: `spread_attrs` only reaches the backend for
+# `mark_raw` (raw-string marking), which is the identity here.
+{
+    package PureBackend;
+    sub new      { bless {}, shift }
+    sub mark_raw { $_[1] }
+}
+
+# The runtime spread helper is a pure function of $self + bag; a bare blessed
+# hash with an injected pure backend is sufficient.
+my $bf = bless { c => undef, config => {}, backend => PureBackend->new }, 'BarefootJS';
 
 # spread_attrs returns Mojo::ByteStream so callers can `<%==` it
 # without re-escaping. Stringify here for assertion convenience.

@@ -8,11 +8,24 @@ use lib "$Bin/../lib";
 
 use BarefootJS;
 
-# `BarefootJS->new` requires a controller for the helper plumbing,
-# but the JS-compat helpers are pure functions of `$self` + args —
-# they don't reach into the controller. A bare hash blessed into
-# the package is enough for these unit tests.
-my $bf = bless { c => undef, config => {} }, 'BarefootJS';
+# Pure-Perl backend (core JSON::PP only) so this engine-agnostic test runs
+# with zero Mojo present — `BarefootJS` itself is Mojo-free; only the optional
+# BarefootJS::Backend::Mojo (shipped by @barefootjs/mojolicious) pulls in Mojo.
+{
+    package PureBackend;
+    use JSON::PP ();
+    my $J = JSON::PP->new->canonical->allow_nonref;
+    sub new         { bless {}, shift }
+    sub encode_json { $J->encode($_[1]) }
+    sub mark_raw    { $_[1] }
+    sub materialize { ref($_[1]) eq 'CODE' ? $_[1]->() : $_[1] }
+    sub render_named { '' }
+}
+
+# The JS-compat helpers are pure functions of `$self` + args; only `json`
+# reaches the backend (for JSON encoding). A bare hash blessed into the
+# package with an injected pure backend is enough for these unit tests.
+my $bf = bless { c => undef, config => {}, backend => PureBackend->new }, 'BarefootJS';
 
 subtest 'json — mirrors JS JSON.stringify (with documented undef divergence)' => sub {
     is $bf->json({a => 1}),  '{"a":1}', 'hash';

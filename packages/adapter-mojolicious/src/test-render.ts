@@ -11,7 +11,12 @@ import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 const RENDER_TEMP_DIR = resolve(import.meta.dir, '../.render-temp')
+// Mojo-specific lib (BarefootJS::Backend::Mojo + the plugin) lives in this
+// package; the engine-agnostic core (BarefootJS.pm) moved to @barefootjs/perl.
+// Both dirs must be on the render script's @INC so `use BarefootJS` and
+// `use BarefootJS::Backend::Mojo` resolve.
 const LIB_DIR = resolve(import.meta.dir, '../lib')
+const PERL_CORE_LIB_DIR = resolve(import.meta.dir, '../../perl/lib')
 
 export class PerlNotAvailableError extends Error {
   constructor(message: string) {
@@ -216,7 +221,7 @@ use strict;
 use warnings;
 use utf8;
 
-use lib '${LIB_DIR}';
+use lib '${LIB_DIR}', '${PERL_CORE_LIB_DIR}';
 use Mojolicious;
 use Mojo::Template;
 # Boolean values in spread bags arrive as Mojo::JSON::true /

@@ -90,6 +90,7 @@ services:
       MOJO_MODE: development
     volumes:
       - ./integrations/mojolicious:/workspace/integrations/mojolicious
+      - ./packages/perl/lib:/workspace/packages/perl/lib
       - ./packages/adapter-mojolicious/lib:/workspace/packages/adapter-mojolicious/lib
 
   site-core:

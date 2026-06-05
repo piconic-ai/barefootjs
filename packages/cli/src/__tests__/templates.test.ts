@@ -256,6 +256,9 @@ describe('adapter registry', () => {
   test('mojo bundles the vendored Perl plugin', () => {
     const mojo = ADAPTERS.mojo
     expect(mojo.files['lib/BarefootJS.pm']).toMatch(/^package BarefootJS;/m)
+    // The Mojo rendering backend the runtime lazily requires must be bundled
+    // too, otherwise `BarefootJS->new($c)` dies at request time.
+    expect(mojo.files['lib/BarefootJS/Backend/Mojo.pm']).toMatch(/^package BarefootJS::Backend::Mojo;/m)
     expect(mojo.files['lib/Mojolicious/Plugin/BarefootJS.pm']).toMatch(/^package Mojolicious::Plugin::BarefootJS;/m)
     expect(mojo.files['cpanfile']).toMatch(/^requires 'Mojolicious'/m)
   })

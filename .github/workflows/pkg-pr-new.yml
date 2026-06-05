@@ -66,6 +66,7 @@ jobs:
             './packages/test' \
             './packages/adapter-hono' \
             './packages/adapter-go-template' \
+            './packages/perl' \
             './packages/adapter-mojolicious' \
             './packages/cli' \
             './packages/create-barefootjs' \
