@@ -39,6 +39,7 @@ import type {
   CompilerError,
   TypeInfo,
   TemplatePrimitiveRegistry,
+  IRMetadata,
 } from '@barefootjs/jsx'
 import {
   BaseAdapter,
@@ -159,6 +160,16 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    */
   private stringValueNames: Set<string> = new Set()
 
+  /**
+   * Module-scope pure-string consts (`const x = 'literal'`), keyed by name →
+   * unescaped value. A className template literal that references such a const
+   * (`className={`${x} ${className}`}`) must inline the literal: the const is
+   * module-scope, so it never reaches the per-render template stash and a bare
+   * `$x` reference would render empty. Mirrors the Mojo adapter's
+   * `moduleStringConsts` fix.
+   */
+  private moduleStringConsts: Map<string, string> = new Map()
+
   constructor(options: XslateAdapterOptions = {}) {
     super()
     this.options = {
@@ -184,6 +195,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     for (const p of ir.metadata.propsParams) {
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
+    this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -1134,6 +1146,21 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     return this.stringValueNames.has(name)
   }
 
+  /**
+   * Resolve an identifier to its inlined Kolon single-quoted literal when it
+   * names a module pure-string const, else `null` (caller falls back to the
+   * normal `$name` stash lowering). Loop-bound names shadow module consts, so
+   * never inline inside a loop body. Returns `'<escaped>'`.
+   */
+  _resolveModuleStringConst(name: string): string | null {
+    // A loop body may bind `my $<param>` that shadows a module const of the
+    // same name; never inline inside one (conservative — drop to `$name`).
+    if (this.inLoop) return null
+    const value = this.moduleStringConsts.get(name)
+    if (value === undefined) return null
+    return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+  }
+
   _recordExprBF101(message: string, reason?: string): void {
     this.errors.push({
       code: 'BF101',
@@ -1179,6 +1206,9 @@ function renderArrayMethod(
 ): string {
   switch (method) {
     case 'join': {
+      // Route through the runtime (`$bf.join`) rather than Kolon's builtin
+      // `.join`, so the JS-compat element handling (undef → empty, default
+      // separator) is applied consistently — same reasoning as $bf.lc / etc.
       const obj = emit(object)
       const sep = args.length >= 1 ? emit(args[0]) : `','`
       return `$bf.join(${obj}, ${sep})`
@@ -1211,7 +1241,9 @@ function renderArrayMethod(
     case 'slice': {
       const recv = emit(object)
       const start = args.length >= 1 ? emit(args[0]) : '0'
-      const end = args.length >= 2 ? emit(args[1]) : 'undef'
+      // Kolon's undefined literal is `nil`, not Perl's `undef` — the
+      // runtime `slice` treats it as "to end".
+      const end = args.length >= 2 ? emit(args[1]) : 'nil'
       return `$bf.slice(${recv}, ${start}, ${end})`
     }
     case 'reverse':
@@ -1220,6 +1252,8 @@ function renderArrayMethod(
       return `$bf.reverse(${recv})`
     }
     case 'toLowerCase': {
+      // Kolon has no builtin string `lc` / `uc`, so these go through the
+      // runtime object (consistent with $bf.includes / $bf.slice / etc.).
       const recv = emit(object)
       return `$bf.lc(${recv})`
     }
@@ -1339,6 +1373,72 @@ function renderFlatMapMethod(recv: string, op: FlatMapOp): string {
   return `$bf.flat_map(${recv}, 'field', '${proj.field}')`
 }
 
+/**
+ * Parse a const initializer's source text. Returns the unescaped string value
+ * when the whole initializer is a single pure string literal — single/double
+ * quoted, or a no-substitution backtick template (no `${}`) — else `null`.
+ * Only such a value can be inlined byte-for-byte; template literals with
+ * interpolation, numbers, objects, and `Record<T,string>` maps are excluded.
+ */
+function parsePureStringLiteral(source: string): string | null {
+  let s = source.trim()
+  // Peel a single layer of wrapping parens.
+  while (s.startsWith('(') && s.endsWith(')')) s = s.slice(1, -1).trim()
+  const quote = s[0]
+  if ((quote === "'" || quote === '"') && s[s.length - 1] === quote) {
+    const body = s.slice(1, -1)
+    // Reject if an unescaped matching quote appears inside (not a single
+    // literal then).
+    if (containsUnescaped(body, quote)) return null
+    return unescapeStringLiteralBody(body)
+  }
+  if (quote === '`' && s[s.length - 1] === '`') {
+    const body = s.slice(1, -1)
+    if (body.includes('${')) return null
+    if (containsUnescaped(body, '`')) return null
+    return unescapeStringLiteralBody(body)
+  }
+  return null
+}
+
+/** Whether `s` contains an unescaped occurrence of `ch`. */
+function containsUnescaped(s: string, ch: string): boolean {
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '\\') { i++; continue }
+    if (s[i] === ch) return true
+  }
+  return false
+}
+
+/** Unescape a JS string-literal body's common escape sequences. */
+function unescapeStringLiteralBody(s: string): string {
+  return s.replace(/\\(.)/g, (_, c) => {
+    switch (c) {
+      case 'n': return '\n'
+      case 'r': return '\r'
+      case 't': return '\t'
+      case '0': return '\0'
+      default: return c
+    }
+  })
+}
+
+/**
+ * Build the module pure-string-const map from the IR's localConstants. A const
+ * qualifies only when module-scope (`isModule`) and its initializer parses to a
+ * single pure string literal.
+ */
+function collectModuleStringConsts(constants: IRMetadata['localConstants'] | undefined): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const c of constants ?? []) {
+    if (!c.isModule) continue
+    if (c.value === undefined) continue
+    const literal = parsePureStringLiteral(c.value)
+    if (literal !== null) map.set(c.name, literal)
+  }
+  return map
+}
+
 /** True when `type` is the `string` primitive. */
 function isStringTypeInfo(type: TypeInfo | undefined): boolean {
   return type?.kind === 'primitive' && type.primitive === 'string'
@@ -1396,14 +1496,16 @@ class XslateFilterEmitter implements ParsedExprEmitter {
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
     if (literalType === 'string') return `'${value}'`
     if (literalType === 'boolean') return value ? '1' : '0'
-    if (literalType === 'null') return 'undef'
+    if (literalType === 'null') return 'nil'
     return String(value)
   }
 
   member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
-    // `.length` on an array — Kolon's array length is `$arr.size()`.
+    // `.length` — route through `$bf.length` (handles both array element
+    // count and string char count, JS-compatibly). Kolon's builtin `.size()`
+    // is array-only and faults on a string.
     if (property === 'length') {
-      return `${emit(object)}.size()`
+      return `$bf.length(${emit(object)})`
     }
     // Hash field access — Kolon dot works on hash refs.
     return `${emit(object)}.${property}`
@@ -1430,14 +1532,10 @@ class XslateFilterEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = emit(left)
     const r = emit(right)
-    const isStr = (e: ParsedExpr) => isStringTypedOperand(e, this.isStringName)
-    const stringCmp = isStr(left) || isStr(right)
-    if ((op === '===' || op === '==') && stringCmp) {
-      return `${l} eq ${r}`
-    }
-    if ((op === '!==' || op === '!=') && stringCmp) {
-      return `${l} ne ${r}`
-    }
+    // Kolon's `==` / `!=` are value-equality operators that compare strings
+    // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
+    // adapter must steer around with `eq`/`ne`). Kolon has no `eq`/`ne`
+    // operator at all, so string comparisons stay on `==` / `!=` here.
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*', '/': '/',
@@ -1532,13 +1630,17 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
   constructor(private readonly adapter: XslateAdapter) {}
 
   identifier(name: string): string {
+    // Inline a module-scope pure-string const (`const x = 'literal'`) — it
+    // never reaches the per-render stash, so a bare `$x` would render empty.
+    const inlined = this.adapter._resolveModuleStringConst(name)
+    if (inlined !== null) return inlined
     return `$${name}`
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
     if (literalType === 'string') return `'${value}'`
     if (literalType === 'boolean') return value ? '1' : '0'
-    if (literalType === 'null') return 'undef'
+    if (literalType === 'null') return 'nil'
     return String(value)
   }
 
@@ -1549,8 +1651,9 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
       return `$${property}`
     }
     const obj = emit(object)
-    // Kolon array length is `$arr.size()`.
-    if (property === 'length') return `${obj}.size()`
+    // `.length` → `$bf.length` (array count or string char count, JS-compat);
+    // Kolon's builtin `.size()` is array-only and faults on a string.
+    if (property === 'length') return `$bf.length(${obj})`
     // Kolon dot access works for hash refs.
     return `${obj}.${property}`
   }
@@ -1588,14 +1691,10 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = emit(left)
     const r = emit(right)
-    const isStr = (e: ParsedExpr) => isStringTypedOperand(e, n => this.adapter._isStringValueName(n))
-    const stringCmp = isStr(left) || isStr(right)
-    if ((op === '===' || op === '==') && stringCmp) {
-      return `${l} eq ${r}`
-    }
-    if ((op === '!==' || op === '!=') && stringCmp) {
-      return `${l} ne ${r}`
-    }
+    // Kolon's `==` / `!=` are value-equality operators handling both strings
+    // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
+    // route around with `eq`/`ne`). Kolon has no `eq`/`ne` operator, so all
+    // equality comparisons — string or numeric — stay on `==` / `!=`.
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
@@ -1618,27 +1717,25 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
     predicate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string {
-    // `.filter` / `.every` / `.some` route through `$bf` array helpers that
-    // accept a Kolon code-ref predicate. `.find*` have no lowering yet.
-    if (method === 'find' || method === 'findIndex' || method === 'findLast' || method === 'findLastIndex') {
-      this.adapter._recordExprBF101(
-        `Xslate adapter has not lowered Array.prototype.${method} yet`,
-      )
-      return "''"
+    // Higher-order array methods all take a JS arrow predicate, lowered to a
+    // Kolon lambda `-> $param { PRED }` (callable from Perl as a code ref), and
+    // go through the runtime object — consistent with the other array helpers
+    // ($bf.includes / $bf.slice / ...). `.find*` map to snake_case runtime
+    // methods (like index_of / last_index_of). The `.filter(...).map(...)`
+    // *loop* form is handled separately by renderLoop's inline predicate.
+    const arrayExpr = emit(object)
+    const predBody = this.adapter._renderKolonFilterExprPublic(predicate, param)
+    const lambda = `-> $${param} { ${predBody} }`
+    const fn: Record<string, string> = {
+      filter: 'filter',
+      every: 'every',
+      some: 'some',
+      find: 'find',
+      findIndex: 'find_index',
+      findLast: 'find_last',
+      findLastIndex: 'find_last_index',
     }
-    // Standalone `.filter` / `.every` / `.some` would need v1 runtime array
-    // helpers that accept a Kolon code-ref predicate, which the Xslate runtime
-    // doesn't expose. Refuse with a clear diagnostic rather than emit a call to
-    // a non-existent helper. The common `.filter(...).map(...)` *loop* form is
-    // handled separately by renderLoop's inline predicate, so it still works.
-    if (method === 'filter' || method === 'every' || method === 'some') {
-      this.adapter._recordExprBF101(
-        `Xslate adapter does not lower a standalone Array.prototype.${method} yet ` +
-        `(the .filter(...).map(...) loop form is supported). ` +
-        `Use /* @client */ or precompute the value.`,
-      )
-      return "''"
-    }
+    if (fn[method]) return `$bf.${fn[method]}(${arrayExpr}, ${lambda})`
     void predicate
     void param
     return emit(object)

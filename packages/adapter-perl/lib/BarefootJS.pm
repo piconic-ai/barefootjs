@@ -504,6 +504,84 @@ sub includes ($self, $recv, $elem) {
     return index($recv // '', $elem // '') != -1 ? 1 : 0;
 }
 
+# `Array.prototype.filter(fn)` / `.every(fn)` / `.some(fn)`. The Xslate adapter
+# lowers a JS arrow predicate to a Kolon lambda (`-> $x { ... }`), which is
+# callable from Perl as a code ref, and emits `$bf.filter($arr, <lambda>)`.
+# `filter` returns a new arrayref; `every` / `some` return 1/0. Non-array /
+# empty receivers follow JS (`filter` → [], `every` → true, `some` → false).
+# (The Mojo adapter lowers these shapes inline and never reaches these methods.)
+sub filter ($self, $recv, $pred) {
+    return [] unless ref($recv) eq 'ARRAY';
+    return [ grep { $pred->($_) } @$recv ];
+}
+
+sub every ($self, $recv, $pred) {
+    return 1 unless ref($recv) eq 'ARRAY';
+    for my $item (@$recv) { return 0 unless $pred->($item) }
+    return 1;
+}
+
+sub some ($self, $recv, $pred) {
+    return 0 unless ref($recv) eq 'ARRAY';
+    for my $item (@$recv) { return 1 if $pred->($item) }
+    return 0;
+}
+
+# `Array.prototype.find(fn)` / `.findIndex(fn)` / `.findLast(fn)` /
+# `.findLastIndex(fn)` — same Kolon-lambda predicate mechanism as filter. The
+# camelCase JS names lower to these snake_case methods (like index_of /
+# last_index_of). `find` / `find_last` return the matching element (or undef →
+# JS `undefined`); the index forms return the 0-based position (or -1).
+sub find ($self, $recv, $pred) {
+    return undef unless ref($recv) eq 'ARRAY';
+    for my $item (@$recv) { return $item if $pred->($item) }
+    return undef;
+}
+
+sub find_index ($self, $recv, $pred) {
+    return -1 unless ref($recv) eq 'ARRAY';
+    for my $i (0 .. $#$recv) { return $i if $pred->($recv->[$i]) }
+    return -1;
+}
+
+sub find_last ($self, $recv, $pred) {
+    return undef unless ref($recv) eq 'ARRAY';
+    for my $i (reverse 0 .. $#$recv) { return $recv->[$i] if $pred->($recv->[$i]) }
+    return undef;
+}
+
+sub find_last_index ($self, $recv, $pred) {
+    return -1 unless ref($recv) eq 'ARRAY';
+    for my $i (reverse 0 .. $#$recv) { return $i if $pred->($recv->[$i]) }
+    return -1;
+}
+
+# `String.prototype.toLowerCase()` / `.toUpperCase()`. Kolon has a builtin
+# `.join` array method (so the adapter uses that directly) but no builtin
+# `lc` / `uc`, so these live on the runtime object. `CORE::` avoids recursing
+# into these methods.
+sub lc ($self, $s) { return defined $s ? CORE::lc($s) : '' }
+sub uc ($self, $s) { return defined $s ? CORE::uc($s) : '' }
+
+# `Array.prototype.join(sep)` with JS semantics: separator defaults to ",",
+# and undefined / null elements render as empty (`[1,,2].join(",")` → "1,,2").
+# Kolon has a builtin `.join`, but routing through the runtime keeps the
+# JS-compat element handling in one place. `CORE::join` avoids recursing.
+sub join ($self, $recv, $sep = undef) {
+    return '' unless ref($recv) eq 'ARRAY';
+    $sep //= ',';
+    return CORE::join($sep, map { defined $_ ? $_ : '' } @$recv);
+}
+
+# `.length` — JS works on BOTH arrays (element count) and strings (character
+# count); Kolon's builtin `.size()` is array-only and faults on a string. So
+# dispatch on ref type here. `CORE::length` avoids recursing into this method.
+sub length ($self, $recv) {
+    return scalar @$recv if ref($recv) eq 'ARRAY';
+    return 0 if ref($recv);
+    return CORE::length($recv // '');
+}
+
 # `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
 # value-equality search (#1448 Tier A). Returns the 0-based position
 # of the first / last matching element, or -1 if not found.
@@ -762,10 +840,10 @@ sub starts_with ($self, $recv, $prefix, $position = undef) {
     if (defined $position) {
         my $n = int($position);
         $n = 0 if $n < 0;
-        $n = length($s) if $n > length($s);
+        $n = CORE::length($s) if $n > CORE::length($s);
         $s = substr($s, $n);
     }
-    return substr($s, 0, length $p) eq $p ? 1 : 0;
+    return substr($s, 0, CORE::length $p) eq $p ? 1 : 0;
 }
 
 # `String.prototype.endsWith(suffix, endPosition?)` (#1448 Tier B) —
@@ -782,12 +860,12 @@ sub ends_with ($self, $recv, $suffix, $end_position = undef) {
     if (defined $end_position) {
         my $e = int($end_position);
         $e = 0 if $e < 0;
-        $e = length($s) if $e > length($s);
+        $e = CORE::length($s) if $e > CORE::length($s);
         $s = substr($s, 0, $e);
     }
     return 1 if $x eq '';
-    return 0 if length($s) < length($x);
-    return substr($s, -length $x) eq $x ? 1 : 0;
+    return 0 if CORE::length($s) < CORE::length($x);
+    return substr($s, -CORE::length $x) eq $x ? 1 : 0;
 }
 
 # `String.prototype.replace(pattern, replacement)` — string-pattern
@@ -808,7 +886,7 @@ sub replace ($self, $recv, $pattern, $replacement) {
     return $n . $s if $o eq '';
     my $i = index($s, $o);
     return $s if $i < 0;
-    return substr($s, 0, $i) . $n . substr($s, $i + length($o));
+    return substr($s, 0, $i) . $n . substr($s, $i + CORE::length($o));
 }
 
 # `String.prototype.repeat(n)` — the receiver concatenated n times
@@ -837,12 +915,12 @@ sub _pad ($s, $target, $pad, $at_start) {
     $pad = ' ' unless defined $pad;
     $pad = "$pad";
     return $s if $pad eq '';
-    my $len = length $s;
+    my $len = CORE::length $s;
     my $t   = int($target // 0);
     return $s if $len >= $t;
     my $need = $t - $len;
     # Repeat enough copies to cover $need, then trim to exactly $need.
-    my $fill = substr($pad x (int($need / length($pad)) + 1), 0, $need);
+    my $fill = substr($pad x (int($need / CORE::length($pad)) + 1), 0, $need);
     return $at_start ? $fill . $s : $s . $fill;
 }
 
@@ -1097,7 +1175,7 @@ sub _style_to_css ($value) {
     # `typeof value !== 'object'` branch in `styleToCss`.
     if (ref($value) ne 'HASH') {
         my $s = "$value";
-        return length $s ? $s : undef;
+        return CORE::length $s ? $s : undef;
     }
     my @parts;
     for my $key (sort keys %$value) {
@@ -1107,7 +1185,7 @@ sub _style_to_css ($value) {
         $prop =~ s/([A-Z])/-\L$1/g;
         push @parts, "$prop:$v";
     }
-    return @parts ? join(';', @parts) : undef;
+    return @parts ? CORE::join(';', @parts) : undef;
 }
 
 sub spread_attrs ($self, $bag) {
@@ -1117,9 +1195,9 @@ sub spread_attrs ($self, $bag) {
         # Event handlers: skip when key starts `on` and the third
         # character is its own uppercase form (uppercase letter,
         # digit, underscore, …). Mirrors the JS predicate.
-        if (length($key) > 2 && substr($key, 0, 2) eq 'on') {
+        if (CORE::length($key) > 2 && substr($key, 0, 2) eq 'on') {
             my $c = substr($key, 2, 1);
-            next if uc($c) eq $c;
+            next if CORE::uc($c) eq $c;
         }
         next if $key eq 'children';
         my $val = $bag->{$key};
@@ -1143,7 +1221,7 @@ sub spread_attrs ($self, $bag) {
         # serialise to a real CSS string.
         if ($key eq 'style') {
             my $css = _style_to_css($val);
-            next unless defined $css && length $css;
+            next unless defined $css && CORE::length $css;
             push @parts, qq{style="} . _html_escape($css) . qq{"};
             next;
         }
@@ -1154,7 +1232,7 @@ sub spread_attrs ($self, $bag) {
     # Mark the result raw so the calling template's `<%==` raw-emit
     # doesn't re-escape the already-escaped values (the Mojo backend
     # returns a Mojo::ByteStream).
-    return $self->backend->mark_raw(join(' ', @parts));
+    return $self->backend->mark_raw(CORE::join(' ', @parts));
 }
 
 1;

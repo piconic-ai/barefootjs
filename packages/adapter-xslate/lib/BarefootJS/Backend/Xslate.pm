@@ -45,7 +45,10 @@ sub new ($class, %args) {
     };
 
     # Accept a pre-built Text::Xslate instance, or build one from `path`
-    # (a dir of `.tx` templates) plus any extra `xslate_options`.
+    # (a dir of `.tx` templates) plus any extra `xslate_options`. The adapter
+    # calls every runtime helper as a `$bf` method (`$bf.filter`, `$bf.lc`, …)
+    # or a Kolon builtin (`.join`, `.size`), so no custom `function` map is
+    # needed here — a plain Kolon, html-escaping instance suffices.
     my $xslate = $args{xslate};
     unless ($xslate) {
         $xslate = Text::Xslate->new(
@@ -126,6 +129,11 @@ Constructs a backend. Accepts a pre-built C<xslate> instance, or a C<path>
 (arrayref of template directories) plus optional C<xslate_options> to build a
 Kolon, html-escaping Text::Xslate. C<json_encoder> overrides the default
 canonical L<JSON::PP> encoder.
+
+No custom Kolon C<function> map is needed: the C<@barefootjs/xslate> adapter
+calls every runtime helper as a C<$bf> method (C<< $bf.filter($arr, -> $x {
+... }) >>, C<< $bf.lc($s) >>, …) or a Kolon builtin (C<< $arr.join(", ") >>,
+C<< $arr.size() >>), so a plain instance renders the emitted templates.
 
 =head2 encode_json($data) / mark_raw($str) / materialize($value) / render_named($name, $bf, \%vars)
 

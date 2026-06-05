@@ -1,0 +1,593 @@
+/**
+ * Text::Xslate (Kolon) template test renderer
+ *
+ * Compiles JSX source with `XslateAdapter` and renders the resulting
+ * `.tx` templates to HTML via `perl` + `Text::Xslate` driven through
+ * `BarefootJS` + `BarefootJS::Backend::Xslate`. Used by the
+ * adapter-tests conformance runner (`runAdapterConformanceTests`).
+ *
+ * Mirrors the sibling Mojolicious `test-render.ts` (same `RenderOptions`
+ * contract, same prop / signal / memo seeding, same multi-component
+ * child-renderer registration), but the render path is engine-agnostic:
+ * the backend builds a plain Kolon Text::Xslate from a template dir, so
+ * the harness needs no web framework. Child components are wired through
+ * the production `BarefootJS::register_child_renderer` so the child's
+ * `bf-s` scope id derives from `<parentScope>_<slotId>` exactly as a real
+ * `bf build` page would — closer to the canonical cross-adapter shape
+ * than the Mojo harness's literal `test_<sN>`.
+ */
+
+import { compileJSX, extractSsrDefaults } from '@barefootjs/jsx'
+import type { ComponentIR } from '@barefootjs/jsx'
+import { mkdir, rm } from 'node:fs/promises'
+import { resolve } from 'node:path'
+
+const RENDER_TEMP_DIR = resolve(import.meta.dir, '../.render-temp')
+// Xslate-specific lib (BarefootJS::Backend::Xslate) lives in this package; the
+// engine-agnostic core (BarefootJS.pm) is in @barefootjs/perl. Both dirs must
+// be on the render script's @INC so `use BarefootJS` and
+// `use BarefootJS::Backend::Xslate` resolve.
+const LIB_DIR = resolve(import.meta.dir, '../lib')
+const PERL_CORE_LIB_DIR = resolve(import.meta.dir, '../../adapter-perl/lib')
+
+export class XslateNotAvailableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'XslateNotAvailableError'
+  }
+}
+
+/**
+ * Recover the bare component name from a compiler-emitted template file
+ * path. `templatesPerComponent` adapters write each component to
+ * `<dir>/<ComponentName><adapter.extension>` (Xslate: `.tx`), and
+ * downstream pairing logic needs the raw component name back so it can
+ * look up the matching IR in `irsByName`.
+ *
+ * Exported for testing.
+ */
+export function templateBaseName(path: string, extension: string): string {
+  const filename = path.substring(path.lastIndexOf('/') + 1)
+  return filename.endsWith(extension)
+    ? filename.slice(0, -extension.length)
+    : filename
+}
+
+/**
+ * Escape a string for safe embedding inside a Perl single-quoted
+ * literal (`'…'`). Single-quoted Perl strings honour only two
+ * metacharacters: `\\` and `\'`.
+ */
+function escapePerlSingleQuoted(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
+let _perlAvailable: boolean | null = null
+async function isXslateAvailable(): Promise<boolean> {
+  if (_perlAvailable !== null) return _perlAvailable
+  try {
+    const proc = Bun.spawn(['perl', '-MText::Xslate', '-e', 'print $Text::Xslate::VERSION'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    await proc.exited
+    _perlAvailable = proc.exitCode === 0
+  } catch {
+    _perlAvailable = false
+  }
+  return _perlAvailable
+}
+
+export interface RenderOptions {
+  /** JSX source code */
+  source: string
+  /** Template adapter to use */
+  adapter: import('@barefootjs/jsx').TemplateAdapter
+  /** Props to inject (optional) */
+  props?: Record<string, unknown>
+  /** Additional component files (filename → source) */
+  components?: Record<string, string>
+}
+
+export async function renderXslateComponent(options: RenderOptions): Promise<string> {
+  const { source, adapter, props, components } = options
+
+  // Compile child components first.
+  const childTemplates: Map<string, { template: string; ir: ComponentIR }> = new Map()
+  if (components) {
+    for (const [filename, childSource] of Object.entries(components)) {
+      const childResult = compileJSX(childSource, filename, { adapter, outputIR: true })
+      const childErrors = childResult.errors.filter(e => e.severity === 'error')
+      if (childErrors.length > 0) {
+        throw new Error(`Compilation errors in ${filename}:\n${childErrors.map(e => e.message).join('\n')}`)
+      }
+      const childTemplateFiles = childResult.files.filter(f => f.type === 'markedTemplate')
+      if (childTemplateFiles.length === 0) throw new Error(`No marked template for ${filename}`)
+      const childIrFiles = childResult.files.filter(f => f.type === 'ir')
+      if (childIrFiles.length === 0) throw new Error(`No IR output for ${filename}`)
+      const childIrs = childIrFiles.map(f => JSON.parse(f.content) as ComponentIR)
+      if (childTemplateFiles.length === 1) {
+        childTemplates.set(childIrs[0].metadata.componentName, { template: childTemplateFiles[0].content, ir: childIrs[0] })
+      } else {
+        // Multi-component child source: pair template ↔ IR by basename.
+        const childIrsByName = new Map(childIrs.map(i => [i.metadata.componentName, i]))
+        for (const tf of childTemplateFiles) {
+          const baseName = templateBaseName(tf.path, adapter.extension)
+          const matchedIR = childIrsByName.get(baseName) ?? childIrs[0]
+          childTemplates.set(matchedIR.metadata.componentName, { template: tf.content, ir: matchedIR })
+        }
+      }
+    }
+  }
+
+  // Compile parent source.
+  const result = compileJSX(source, 'component.tsx', { adapter, outputIR: true })
+
+  const errors = result.errors.filter(e => e.severity === 'error')
+  if (errors.length > 0) {
+    throw new Error(`Compilation errors:\n${errors.map(e => e.message).join('\n')}`)
+  }
+
+  const templateFiles = result.files.filter(f => f.type === 'markedTemplate')
+  if (templateFiles.length === 0) throw new Error('No marked template in compile output')
+
+  const irFiles = result.files.filter(f => f.type === 'ir')
+  if (irFiles.length === 0) throw new Error('No IR output (set outputIR: true)')
+  const irs = irFiles.map(f => JSON.parse(f.content) as ComponentIR)
+  const ir =
+    irs.find(i => i.metadata.hasDefaultExport) ??
+    irs.find(i => i.metadata.isExported) ??
+    irs[0]
+
+  let templateFile: { content: string } | undefined
+  if (templateFiles.length === 1) {
+    templateFile = templateFiles[0]
+  } else {
+    // Multi-component source: split the entry-point template from
+    // siblings by pairing each template file to its IR by basename.
+    const irsByName = new Map(irs.map(i => [i.metadata.componentName, i]))
+    for (const tf of templateFiles) {
+      const baseName = templateBaseName(tf.path, adapter.extension)
+      const matchedIR = irsByName.get(baseName)
+      if (matchedIR === ir) {
+        templateFile = tf
+      } else if (matchedIR) {
+        childTemplates.set(matchedIR.metadata.componentName, { template: tf.content, ir: matchedIR })
+      }
+    }
+  }
+  if (!templateFile) throw new Error('No marked template in compile output')
+
+  const componentName = ir.metadata.componentName
+
+  // Build temp directory.
+  const tempDir = resolve(
+    RENDER_TEMP_DIR,
+    `xslate-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  )
+  await mkdir(tempDir, { recursive: true })
+
+  try {
+    // Write `.tx` files (parent + children), named by snake_case so
+    // the adapter's `$bf.render_child('<snake>', …)` calls + the
+    // backend's `render_named('<snake>', …)` resolve from the dir.
+    await Bun.write(resolve(tempDir, `${toSnakeCase(componentName)}.tx`), templateFile.content)
+    for (const [childName, { template }] of childTemplates) {
+      await Bun.write(resolve(tempDir, `${toSnakeCase(childName)}.tx`), template)
+    }
+
+    // Build props hash for Perl.
+    const propsPerl = buildPerlProps(componentName, props, ir)
+
+    // Honour `__instanceId` from props for the root scope id so
+    // shared-component fixtures (which pin `<ComponentName>_test`) match
+    // cross-adapter; default to 'test' otherwise.
+    const rootScopeIdRaw = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
+    const rootScopeId = escapePerlSingleQuoted(rootScopeIdRaw)
+
+    // Build child-renderer registration for Perl.
+    const childRenderers = buildChildRenderers(childTemplates, ir)
+
+    const renderScript = `#!/usr/bin/env perl
+use strict;
+use warnings;
+use utf8;
+
+use lib '${LIB_DIR}', '${PERL_CORE_LIB_DIR}';
+use JSON::PP ();
+use BarefootJS;
+use BarefootJS::Backend::Xslate;
+
+binmode(STDOUT, ':utf8');
+
+# Single Text::Xslate (Kolon) backend over the temp template dir. The
+# default-built instance registers the grep_filter / grep_every /
+# grep_some functions the adapter emits for standalone
+# .filter / .every / .some lowering.
+my $backend = BarefootJS::Backend::Xslate->new(path => ['${tempDir}']);
+my $bf = BarefootJS->new(undef, { backend => $backend });
+# Honour an explicit __instanceId so shared-component fixtures match the
+# scope ids Hono / Go emit; default to 'test'.
+$bf->_scope_id('${rootScopeId}');
+
+my $props = ${propsPerl};
+
+${childRenderers}
+
+my \$html = \$backend->render_named('${toSnakeCase(componentName)}', \$bf, \$props);
+print \$html;
+`
+    await Bun.write(resolve(tempDir, 'render.pl'), renderScript)
+
+    if (!await isXslateAvailable()) {
+      throw new XslateNotAvailableError('perl with Text::Xslate not found — skipping Xslate rendering')
+    }
+
+    const proc = Bun.spawn(['perl', 'render.pl'], {
+      cwd: tempDir,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+
+    const [stdout, stderr] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ])
+
+    const exitCode = await proc.exited
+    if (exitCode !== 0) {
+      throw new Error(`perl render failed (exit ${exitCode}):\n${stderr}`)
+    }
+
+    return stdout
+  } finally {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {})
+  }
+}
+
+/**
+ * Build Perl code that registers one child-component renderer per child
+ * template via the production `BarefootJS::register_child_renderer`.
+ *
+ * The closure mirrors the manifest-driven path in `BarefootJS.pm`: it
+ * derives the child scope id from `<parentScope>_<slotId>` (the parent's
+ * `$bf.render_child('<name>', { …, _bf_slot => '<slotId>' })` passes
+ * `_bf_slot`), seeds signal / memo / prop defaults from the child IR's
+ * `ssrDefaults`, shares the parent's script list, and renders the child
+ * `.tx` through the same backend. Loop children (no `_bf_slot`) fall back
+ * to `<snake_name>` like the Mojo harness.
+ */
+function buildChildRenderers(
+  childTemplates: Map<string, { template: string; ir: ComponentIR }>,
+  _parentIR: ComponentIR,
+): string {
+  if (childTemplates.size === 0) return ''
+
+  const lines: string[] = []
+  lines.push(`# Register child component renderers`)
+
+  for (const [componentName, { ir: childIR }] of childTemplates) {
+    const snakeName = toSnakeCase(componentName)
+    // Statically-derived ssrDefaults the child template's vars seed from
+    // (prop defaults + signal / memo initial values), serialised to a
+    // Perl hashref literal.
+    const ssrDefaults = extractSsrDefaults(childIR.metadata) ?? {}
+    const defaultsPerl = ssrDefaultsToPerl(ssrDefaults)
+    const restPropsName = childIR.metadata.restPropsName
+
+    lines.push(`{`)
+    lines.push(`  my $defaults = ${defaultsPerl};`)
+    lines.push(`  $bf->register_child_renderer('${snakeName}', sub {`)
+    lines.push(`    my ($child_props) = @_;`)
+    // A child that destructures a rest bag references `$<rest>` in its
+    // template; seed it with an empty hashref when the caller didn't pass
+    // one so Kolon's var lookup doesn't fault.
+    if (restPropsName) {
+      lines.push(`    $child_props->{${restPropsName}} = {} unless defined $child_props->{${restPropsName}};`)
+    }
+    lines.push(`    my $slot_id = delete $child_props->{_bf_slot};`)
+    lines.push(`    my $child_bf = BarefootJS->new(undef, { backend => $backend });`)
+    lines.push(`    $child_bf->_scope_id($slot_id ? '${rootChildScopePrefix(snakeName)}' . '_' . $slot_id : '${snakeName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
+    lines.push(`    $child_bf->_is_child(1);`)
+    lines.push(`    if ($slot_id) { $child_bf->_bf_parent('${rootChildScopePrefix(snakeName)}'); $child_bf->_bf_mount($slot_id); }`)
+    lines.push(`    $child_bf->_scripts($bf->_scripts);`)
+    lines.push(`    $child_bf->_script_seen($bf->_script_seen);`)
+    // Seed template vars: static ssrDefaults first, caller's props win.
+    lines.push(`    my %vars = (%$defaults, %$child_props);`)
+    lines.push(`    my $rendered = $backend->render_named('${snakeName}', $child_bf, \\%vars);`)
+    lines.push(`    chomp $rendered;`)
+    lines.push(`    return $rendered;`)
+    lines.push(`  });`)
+    lines.push(`}`)
+    lines.push(``)
+  }
+
+  return lines.join('\n')
+}
+
+/**
+ * The parent scope prefix child scope ids derive from. The harness pins
+ * the root scope id to `test` (or `__instanceId`); children read the live
+ * parent scope at render time, but the test renderer doesn't have the
+ * parent `$bf` in lexical scope inside `buildChildRenderers`, so we use
+ * the same `$bf->_scope_id` value the script set. Emitted as the literal
+ * `$bf->_scope_id` lookup so an explicit `__instanceId` still flows
+ * through.
+ */
+function rootChildScopePrefix(_snakeName: string): string {
+  // Resolve the parent scope dynamically in Perl rather than baking the
+  // literal here — keeps the child id correct under an explicit
+  // __instanceId. The single quotes in the caller string-concat are
+  // closed around this Perl fragment.
+  return `' . $bf->_scope_id . '`
+}
+
+/** Serialise an ssrDefaults map to a Perl hashref literal. */
+function ssrDefaultsToPerl(defaults: Record<string, unknown>): string {
+  const entries: string[] = []
+  for (const [name, d] of Object.entries(defaults)) {
+    // ssrDefaults entries are `{ value, propName?, isRestProps? }` or a
+    // bare value. The child renderer's caller props win, so we only need
+    // the static fallback `value` here.
+    let value: unknown = d
+    if (d && typeof d === 'object' && 'value' in (d as Record<string, unknown>)) {
+      value = (d as Record<string, unknown>).value
+    }
+    entries.push(`${perlSingleQuote(name)} => ${toPerlLiteral(value)}`)
+  }
+  return `{${entries.join(', ')}}`
+}
+
+/**
+ * Convert PascalCase to snake_case for template naming (matches the
+ * adapter's `toTemplateName`).
+ */
+function toSnakeCase(name: string): string {
+  return name
+    .replace(/([A-Z])/g, '_$1')
+    .toLowerCase()
+    .replace(/^_/, '')
+}
+
+/**
+ * Build a Perl hash literal from props (+ signal / memo seeds).
+ */
+function buildPerlProps(
+  _componentName: string,
+  props: Record<string, unknown> | undefined,
+  ir: ComponentIR,
+): string {
+  const entries: string[] = []
+
+  const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
+  entries.push(`scope_id => '${escapePerlSingleQuoted(explicitScope)}'`)
+
+  // Prop params with defaults (before signals, so signals can reference them).
+  for (const param of ir.metadata.propsParams) {
+    if (props && param.name in props) continue
+    if (param.defaultValue) {
+      const perlValue = jsToPerlValue(param.defaultValue)
+      if (perlValue !== null) {
+        entries.push(`${param.name} => ${perlValue}`)
+        continue
+      }
+    }
+    // No default + no caller value: pass `undef` so Kolon's var lookup
+    // for an optional prop doesn't fault before its falsy branch elides.
+    entries.push(`${param.name} => undef`)
+  }
+
+  // Route undeclared props into the rest bag (`spread_attrs($<rest>)`).
+  const restPropsName = ir.metadata.restPropsName
+  const declaredParams = new Set(ir.metadata.propsParams.map(p => p.name))
+  const restBagEntries: Array<[string, unknown]> = []
+  if (restPropsName && props) {
+    for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('__')) continue
+      if (key === restPropsName || declaredParams.has(key)) continue
+      restBagEntries.push([key, value])
+    }
+  }
+  const routedKeys = new Set(restBagEntries.map(([k]) => k))
+
+  if (restPropsName && !(props && restPropsName in props)) {
+    entries.push(`${restPropsName} => ${toPerlLiteral(Object.fromEntries(restBagEntries))}`)
+  }
+
+  // User props.
+  if (props) {
+    for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('__')) continue
+      if (routedKeys.has(key)) continue
+      if (typeof value === 'string') {
+        entries.push(`${key} => '${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`)
+      } else if (typeof value === 'number') {
+        entries.push(`${key} => ${value}`)
+      } else if (typeof value === 'boolean') {
+        // JSON::PP boolean sentinels so BarefootJS::spread_attrs can
+        // detect them via `ref() eq 'JSON::PP::Boolean'`.
+        entries.push(`${key} => ${value ? 'JSON::PP::true' : 'JSON::PP::false'}`)
+      } else if (Array.isArray(value) || (value && typeof value === 'object')) {
+        entries.push(`${key} => ${toPerlLiteral(value)}`)
+      }
+    }
+  }
+
+  // Signal values evaluated from props (after user props).
+  for (const signal of ir.metadata.signals) {
+    const value = evaluateSignalInit(signal.initialValue.trim(), props)
+    if (value !== null) {
+      entries.push(`${signal.getter} => ${toPerlLiteral(value)}`)
+    }
+  }
+
+  // Memo values seeded from the statically-evaluated ssrDefaults, same
+  // as the production plugin's before_render hook.
+  const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
+  for (const memo of ir.metadata.memos) {
+    const entry = ssrDefaults[memo.name]
+    const value = entry && typeof entry === 'object' && 'value' in entry ? entry.value : 0
+    entries.push(`${memo.name} => ${toPerlLiteral(value ?? 0)}`)
+  }
+
+  return `{${entries.join(', ')}}`
+}
+
+/**
+ * Evaluate a signal initializer expression using provided props.
+ * Handles: props.initial ?? 0, props.value, literal values.
+ */
+export function evaluateSignalInit(
+  expr: string,
+  props?: Record<string, unknown>,
+): unknown {
+  const nullishMatch = expr.match(/^props\.(\w+)\s*\?\?\s*(.+)$/)
+  if (nullishMatch) {
+    const propName = nullishMatch[1]
+    const defaultExpr = nullishMatch[2].trim()
+    if (props && propName in props) return props[propName]
+    return parseLiteral(defaultExpr)
+  }
+
+  const propsMatch = expr.match(/^props\.(\w+)$/)
+  if (propsMatch) {
+    if (props && propsMatch[1] in props) return props[propsMatch[1]]
+    return null
+  }
+
+  return parseLiteral(expr)
+}
+
+function parseLiteral(expr: string): unknown {
+  if (/^-?\d+(\.\d+)?$/.test(expr)) return Number(expr)
+  if (expr === 'true') return true
+  if (expr === 'false') return false
+  if (expr === '[]') return []
+
+  {
+    const t = expr.trim()
+    if (t.startsWith('[') && t.endsWith(']')) {
+      const inner = t.slice(1, -1).trim()
+      if (!inner) return []
+      const out: unknown[] = []
+      for (const seg of splitTopLevelCommas(inner)) {
+        if (!seg.trim()) continue
+        const parsed = parseLiteral(seg.trim())
+        if (parsed === null && seg.trim() !== 'null') return null
+        out.push(parsed)
+      }
+      return out
+    }
+  }
+
+  const stringMatch = expr.match(/^(['"])(.*)\1$/s)
+  if (stringMatch) return unescapeJsString(stringMatch[2])
+
+  const trimmed = expr.trim()
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    const inner = trimmed.slice(1, -1).trim()
+    if (!inner) return {}
+    const obj: Record<string, unknown> = {}
+    for (const pair of splitTopLevelCommas(inner)) {
+      if (!pair.trim()) continue
+      const colonIdx = pair.indexOf(':')
+      if (colonIdx < 0) return null
+      let key = pair.slice(0, colonIdx).trim()
+      const val = pair.slice(colonIdx + 1).trim()
+      const keyMatch = key.match(/^(['"])(.*)\1$/s)
+      if (keyMatch) key = unescapeJsString(keyMatch[2])
+      const parsedVal = parseLiteral(val)
+      if (parsedVal === null && val !== 'null') return null
+      obj[key] = parsedVal
+    }
+    return obj
+  }
+  return null
+}
+
+function splitTopLevelCommas(inner: string): string[] {
+  const segments: string[] = []
+  let depth = 0
+  let start = 0
+  let quote: string | null = null
+  for (let i = 0; i < inner.length; i++) {
+    const c = inner[i]
+    if (quote) {
+      if (c === quote) {
+        let backslashes = 0
+        for (let j = i - 1; j >= 0 && inner[j] === '\\'; j--) backslashes++
+        if (backslashes % 2 === 0) quote = null
+      }
+      continue
+    }
+    if (c === '"' || c === "'") {
+      quote = c
+      continue
+    }
+    if (c === '{' || c === '[') depth++
+    else if (c === '}' || c === ']') depth--
+    else if (c === ',' && depth === 0) {
+      segments.push(inner.slice(start, i))
+      start = i + 1
+    }
+  }
+  segments.push(inner.slice(start))
+  return segments
+}
+
+function unescapeJsString(s: string): string {
+  return s.replace(/\\(.)/g, (_, c) => {
+    switch (c) {
+      case 'n': return '\n'
+      case 'r': return '\r'
+      case 't': return '\t'
+      case '0': return '\0'
+      default: return c
+    }
+  })
+}
+
+/** Perl single-quoted string escape: `'` AND `\` need escaping. */
+function perlSingleQuote(s: string): string {
+  return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+}
+
+function toPerlLiteral(value: unknown): string {
+  if (typeof value === 'string') return perlSingleQuote(value)
+  if (typeof value === 'number') return String(value)
+  // JS booleans → JSON::PP sentinels so `spread_attrs` can detect them
+  // via `ref()` and apply boolean-attr semantics.
+  if (typeof value === 'boolean') return value ? 'JSON::PP::true' : 'JSON::PP::false'
+  if (Array.isArray(value)) {
+    return `[${value.map(toPerlLiteral).join(', ')}]`
+  }
+  if (value && typeof value === 'object') {
+    const entries: string[] = []
+    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+      entries.push(`${perlSingleQuote(key)} => ${toPerlLiteral(v)}`)
+    }
+    return `{${entries.join(', ')}}`
+  }
+  return 'undef'
+}
+
+/**
+ * Convert a JS literal value to a Perl literal.
+ * Handles: numbers, strings, booleans, empty arrays, props.xxx ?? default.
+ */
+function jsToPerlValue(jsValue: string): string | null {
+  const v = jsValue.trim()
+
+  if (/^-?\d+(\.\d+)?$/.test(v)) return v
+  if (/^['"].*['"]$/.test(v)) return v
+  if (v === 'true') return '1'
+  if (v === 'false') return '0'
+  if (v === '[]') return '[]'
+
+  const nullishMatch = v.match(/\?\?\s*(.+)$/)
+  if (nullishMatch) return jsToPerlValue(nullishMatch[1])
+
+  if (v.startsWith('props.')) return 'undef'
+
+  return null
+}
