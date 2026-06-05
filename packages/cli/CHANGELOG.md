@@ -1,5 +1,38 @@
 # @barefootjs/cli
 
+## 0.7.0
+
+### Minor Changes
+
+- e6b0428: Add Gin, Chi, and net/http (Go standard library) adapters to `bf init`,
+  alongside the existing Echo adapter. Each scaffolds a runnable
+  html/template SSR app with the BarefootJS runtime vendored under
+  `./bf-runtime` (now including the `bfdev` subpackage for SSE dev
+  auto-reload).
+- 1c9e5bf: Go runtime: `bf.Renderer.Render` now backfills a unique `ScopeID` for
+  child components (slice and single) whose `ScopeID` was left empty,
+  deriving the `<Component>_<random>` prefix from the props type. This
+  lets application handlers build child props without minting scope ids by
+  hand (e.g. `TodoItemProps{Todo: t}` instead of
+  `TodoItemProps{ScopeID: ..., Todo: t}`). Explicit `ScopeID` values are
+  preserved. Shipped with the vendored runtime in `bf init` scaffolds.
+
+### Patch Changes
+
+- 27bb9e6: Stop pushing the Bun runtime onto users who didn't pick it.
+
+  - CSR starter: the scaffold's `server.ts` now runs on plain `node:http` +
+    `node:fs` (launched via `tsx`, matching the hono-node starter) instead of
+    `Bun.serve` / `Bun.file`, so npm / pnpm / yarn users are no longer forced
+    to install Bun. Scripts use `tsx`, deps use `@types/node` + `tsx` instead
+    of `@types/bun`, and the Bun-on-PATH prerequisite warning is gone. The
+    server still runs unchanged under Bun or Deno.
+  - Mojolicious / Go (Echo, Gin, Chi, net/http) starters: prerequisite
+    warnings and the generated server's "did you run the build?" hint no
+    longer hardcode `bun run dev` / `bun run build` — they're now PM-neutral
+    (`bf build`, "before starting the dev server"), since these strings are
+    shown to every user regardless of their package manager.
+
 ## 0.6.1
 
 ## 0.6.0
