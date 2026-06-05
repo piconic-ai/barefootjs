@@ -1777,3 +1777,80 @@ func TestReduce_RightConcatReverses(t *testing.T) {
 		t.Errorf("reduceRight numeric sum = %v, want 65 (commutative)", got)
 	}
 }
+
+// --- Auto-assigned child ScopeIDs (#absorb manual ScopeID) ------------------
+
+// setScopeIDsOnSlice backfills an empty ScopeID on every child in a slice
+// with a `<Type>_<random>` id while leaving caller-pinned ids untouched.
+func TestSetScopeIDsOnSlice(t *testing.T) {
+	type itemProps struct {
+		ScopeID string
+		Scripts *ScriptCollector
+	}
+	items := []itemProps{{}, {ScopeID: "keep"}, {}}
+	setScopeIDsOnSlice(items)
+
+	if !strings.HasPrefix(items[0].ScopeID, "item_") {
+		t.Fatalf("item 0: expected an item_ prefix, got %q", items[0].ScopeID)
+	}
+	if items[1].ScopeID != "keep" {
+		t.Fatalf("item 1: explicit ScopeID must be preserved, got %q", items[1].ScopeID)
+	}
+	if items[2].ScopeID == "" || items[2].ScopeID == items[0].ScopeID {
+		t.Fatalf("item 2: expected a distinct generated ScopeID, got %q (item0=%q)", items[2].ScopeID, items[0].ScopeID)
+	}
+}
+
+// setScopeIDOnSingle backfills a single child's empty ScopeID and preserves
+// an explicit one.
+func TestSetScopeIDOnSingle(t *testing.T) {
+	type widgetProps struct {
+		ScopeID string
+		Scripts *ScriptCollector
+	}
+	w := &widgetProps{}
+	setScopeIDOnSingle(w)
+	if !strings.HasPrefix(w.ScopeID, "widget_") {
+		t.Fatalf("expected a widget_ prefix, got %q", w.ScopeID)
+	}
+
+	w2 := &widgetProps{ScopeID: "fixed"}
+	setScopeIDOnSingle(w2)
+	if w2.ScopeID != "fixed" {
+		t.Fatalf("explicit ScopeID must be preserved, got %q", w2.ScopeID)
+	}
+}
+
+// Render backfills empty child ScopeIDs in place before executing the
+// template, so application code no longer has to mint scope ids by hand.
+func TestRender_AutoAssignsChildScopeIDs(t *testing.T) {
+	type childProps struct {
+		ScopeID   string
+		Scripts   *ScriptCollector
+		BfIsChild bool
+		Label     string
+	}
+	type listProps struct {
+		ScopeID  string
+		Scripts  *ScriptCollector
+		BfIsRoot bool
+		Items    []childProps
+	}
+
+	tmpl := template.New("").Funcs(FuncMap())
+	template.Must(tmpl.New("List").Parse(`{{range .Items}}<i bf-s="{{bfScopeAttr .}}">{{.Label}}</i>{{end}}`))
+
+	r := NewRenderer(tmpl, func(ctx *RenderContext) string { return string(ctx.ComponentHTML) })
+	props := &listProps{Items: []childProps{{Label: "a"}, {ScopeID: "pinned", Label: "b"}}}
+	out := r.Render(RenderOptions{ComponentName: "List", Props: props})
+
+	if !strings.Contains(out, `bf-s="child_`) {
+		t.Fatalf("expected an auto-generated child_ ScopeID in output, got: %s", out)
+	}
+	if !strings.Contains(out, `bf-s="pinned"`) {
+		t.Fatalf("expected the explicit ScopeID to be preserved, got: %s", out)
+	}
+	if props.Items[0].ScopeID == "" {
+		t.Fatal("expected Render to backfill the empty child ScopeID in place")
+	}
+}

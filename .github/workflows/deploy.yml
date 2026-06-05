@@ -27,6 +27,9 @@ on:
           - integrations-h3
           - integrations-elysia
           - integrations-echo
+          - integrations-gin
+          - integrations-chi
+          - integrations-nethttp
           - integrations-mojolicious
 
 permissions:
@@ -272,6 +275,129 @@ jobs:
       # ubuntu-latest ships with a running Docker daemon by default.
       - name: Deploy to Cloudflare Workers
         run: cd integrations/echo && bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-integrations-gin:
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'integrations' || github.event.inputs.site == 'integrations-gin')
+      || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/go-template' build
+
+      - name: Build integration
+        run: cd integrations/gin && bun run build
+
+      # wrangler deploy builds the Cloudflare Container image from the
+      # integration's Dockerfile, which needs Docker on the runner.
+      # ubuntu-latest ships with a running Docker daemon by default.
+      - name: Deploy to Cloudflare Workers
+        run: cd integrations/gin && bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-integrations-chi:
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'integrations' || github.event.inputs.site == 'integrations-chi')
+      || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/go-template' build
+
+      - name: Build integration
+        run: cd integrations/chi && bun run build
+
+      # wrangler deploy builds the Cloudflare Container image from the
+      # integration's Dockerfile, which needs Docker on the runner.
+      # ubuntu-latest ships with a running Docker daemon by default.
+      - name: Deploy to Cloudflare Workers
+        run: cd integrations/chi && bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-integrations-nethttp:
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'integrations' || github.event.inputs.site == 'integrations-nethttp')
+      || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/go-template' build
+
+      - name: Build integration
+        run: cd integrations/nethttp && bun run build
+
+      # wrangler deploy builds the Cloudflare Container image from the
+      # integration's Dockerfile, which needs Docker on the runner.
+      # ubuntu-latest ships with a running Docker daemon by default.
+      - name: Deploy to Cloudflare Workers
+        run: cd integrations/nethttp && bunx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 

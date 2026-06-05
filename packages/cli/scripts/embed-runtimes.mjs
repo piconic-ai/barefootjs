@@ -25,6 +25,7 @@ const repoRoot = resolve(cliPkg, '../..')
 const sources = {
   bfGoSource: 'packages/adapter-go-template/runtime/bf.go',
   streamingGoSource: 'packages/adapter-go-template/runtime/streaming.go',
+  bfdevGoSource: 'packages/adapter-go-template/runtime/bfdev/bfdev.go',
   // The engine-agnostic core runtime now lives in @barefootjs/perl; the
   // Mojo-specific backend + plugin stay in @barefootjs/mojolicious.
   barefootPmSource: 'packages/adapter-perl/lib/BarefootJS.pm',

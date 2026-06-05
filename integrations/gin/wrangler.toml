@@ -1,0 +1,33 @@
+name = "barefootjs-gin-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "GinContainer"
+image = "./Dockerfile"
+# Build from the repo root so the go.mod `replace` directive pointing at
+# ../../packages/adapter-go-template/runtime can resolve inside the image.
+image_build_context = "../.."
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "GIN_CONTAINER"
+class_name = "GinContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GinContainer"]
+
+# Two patterns: `/integrations/gin/*` matches /integrations/gin/... but not the
+# bare /integrations/gin, so add the no-slash variant explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/gin"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/gin/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/gin"
