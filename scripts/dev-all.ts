@@ -40,6 +40,7 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/chi',         target: process.env.CHI_TARGET         ?? 'http://chi:8082',         label: 'Chi (Go)' },
   { prefix: '/integrations/nethttp',     target: process.env.NETHTTP_TARGET     ?? 'http://nethttp:8083',     label: 'net/http (Go)' },
   { prefix: '/integrations/mojolicious', target: process.env.MOJOLICIOUS_TARGET ?? 'http://mojolicious:3000', label: 'Mojolicious (Perl)' },
+  { prefix: '/integrations/xslate',      target: process.env.XSLATE_TARGET      ?? 'http://xslate:3007',      label: 'Text::Xslate (Perl)' },
 ] as const
 
 const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'

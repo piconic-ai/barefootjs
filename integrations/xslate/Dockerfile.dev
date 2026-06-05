@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the Text::Xslate integration. app.psgi and the
+# host-built dist/ are bind-mounted in; plackup (Starman backend) restarts on
+# app.psgi / lib changes. Templates re-render on each request because the
+# dev-mode Text::Xslate cache is disabled (see app.psgi: PLACK_ENV).
+
+FROM perl:5.40-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends make gcc libc-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN cpanm --notest Text::Xslate Plack Starman
+
+WORKDIR /workspace/integrations/xslate
+
+EXPOSE 3007
+
+# Starman (prefork) so the SSE routes work; plackup -R restarts on changes to
+# app.psgi and the bind-mounted runtime/backend lib.
+CMD ["plackup", "-s", "Starman", "--workers", "5", "-p", "3007", \
+     "-R", "app.psgi,lib,/workspace/packages/adapter-perl/lib,/workspace/packages/adapter-xslate/lib", \
+     "app.psgi"]

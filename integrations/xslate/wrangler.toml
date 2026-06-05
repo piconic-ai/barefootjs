@@ -1,0 +1,31 @@
+name = "barefootjs-xslate-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "XslateContainer"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "XSLATE_CONTAINER"
+class_name = "XslateContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["XslateContainer"]
+
+# Two patterns: `/integrations/xslate/*` matches /integrations/xslate/...
+# but not the bare /integrations/xslate, so add the no-slash variant
+# explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/xslate"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/xslate/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/xslate"

@@ -80,3 +80,6 @@ packages/adapter-*/.build/
 packages/adapter-*/blib/
 packages/adapter-*/Build
 packages/adapter-*/MYMETA.*
+
+# Perl integration runtime libs (assembled by scripts/assemble-deps.ts)
+integrations/*/lib
