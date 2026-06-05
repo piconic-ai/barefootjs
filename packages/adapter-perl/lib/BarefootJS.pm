@@ -5,13 +5,6 @@ use warnings;
 use utf8;
 use feature 'signatures';
 no warnings 'experimental::signatures';
-# Several runtime helpers are named after the JS operation they mirror
-# (`join`, `length`, `uc`, alongside the existing `reverse` / `sort` / `split`),
-# which collide with Perl builtins of the same name. Method dispatch
-# (`$bf->length(...)`) is never ambiguous; only the module's own bareword
-# builtin calls (`length($x)`) are, and Perl always resolves those to the
-# builtin (CORE::) — so silence that benign category.
-no warnings 'ambiguous';
 
 use POSIX ();
 use Scalar::Util qw(looks_like_number weaken);
@@ -818,10 +811,10 @@ sub starts_with ($self, $recv, $prefix, $position = undef) {
     if (defined $position) {
         my $n = int($position);
         $n = 0 if $n < 0;
-        $n = length($s) if $n > length($s);
+        $n = CORE::length($s) if $n > CORE::length($s);
         $s = substr($s, $n);
     }
-    return substr($s, 0, length $p) eq $p ? 1 : 0;
+    return substr($s, 0, CORE::length $p) eq $p ? 1 : 0;
 }
 
 # `String.prototype.endsWith(suffix, endPosition?)` (#1448 Tier B) —
@@ -838,12 +831,12 @@ sub ends_with ($self, $recv, $suffix, $end_position = undef) {
     if (defined $end_position) {
         my $e = int($end_position);
         $e = 0 if $e < 0;
-        $e = length($s) if $e > length($s);
+        $e = CORE::length($s) if $e > CORE::length($s);
         $s = substr($s, 0, $e);
     }
     return 1 if $x eq '';
-    return 0 if length($s) < length($x);
-    return substr($s, -length $x) eq $x ? 1 : 0;
+    return 0 if CORE::length($s) < CORE::length($x);
+    return substr($s, -CORE::length $x) eq $x ? 1 : 0;
 }
 
 # `String.prototype.replace(pattern, replacement)` — string-pattern
@@ -864,7 +857,7 @@ sub replace ($self, $recv, $pattern, $replacement) {
     return $n . $s if $o eq '';
     my $i = index($s, $o);
     return $s if $i < 0;
-    return substr($s, 0, $i) . $n . substr($s, $i + length($o));
+    return substr($s, 0, $i) . $n . substr($s, $i + CORE::length($o));
 }
 
 # `String.prototype.repeat(n)` — the receiver concatenated n times
@@ -893,12 +886,12 @@ sub _pad ($s, $target, $pad, $at_start) {
     $pad = ' ' unless defined $pad;
     $pad = "$pad";
     return $s if $pad eq '';
-    my $len = length $s;
+    my $len = CORE::length $s;
     my $t   = int($target // 0);
     return $s if $len >= $t;
     my $need = $t - $len;
     # Repeat enough copies to cover $need, then trim to exactly $need.
-    my $fill = substr($pad x (int($need / length($pad)) + 1), 0, $need);
+    my $fill = substr($pad x (int($need / CORE::length($pad)) + 1), 0, $need);
     return $at_start ? $fill . $s : $s . $fill;
 }
 
@@ -1153,7 +1146,7 @@ sub _style_to_css ($value) {
     # `typeof value !== 'object'` branch in `styleToCss`.
     if (ref($value) ne 'HASH') {
         my $s = "$value";
-        return length $s ? $s : undef;
+        return CORE::length $s ? $s : undef;
     }
     my @parts;
     for my $key (sort keys %$value) {
@@ -1163,7 +1156,7 @@ sub _style_to_css ($value) {
         $prop =~ s/([A-Z])/-\L$1/g;
         push @parts, "$prop:$v";
     }
-    return @parts ? join(';', @parts) : undef;
+    return @parts ? CORE::join(';', @parts) : undef;
 }
 
 sub spread_attrs ($self, $bag) {
@@ -1173,9 +1166,9 @@ sub spread_attrs ($self, $bag) {
         # Event handlers: skip when key starts `on` and the third
         # character is its own uppercase form (uppercase letter,
         # digit, underscore, …). Mirrors the JS predicate.
-        if (length($key) > 2 && substr($key, 0, 2) eq 'on') {
+        if (CORE::length($key) > 2 && substr($key, 0, 2) eq 'on') {
             my $c = substr($key, 2, 1);
-            next if uc($c) eq $c;
+            next if CORE::uc($c) eq $c;
         }
         next if $key eq 'children';
         my $val = $bag->{$key};
@@ -1199,7 +1192,7 @@ sub spread_attrs ($self, $bag) {
         # serialise to a real CSS string.
         if ($key eq 'style') {
             my $css = _style_to_css($val);
-            next unless defined $css && length $css;
+            next unless defined $css && CORE::length $css;
             push @parts, qq{style="} . _html_escape($css) . qq{"};
             next;
         }
@@ -1210,7 +1203,7 @@ sub spread_attrs ($self, $bag) {
     # Mark the result raw so the calling template's `<%==` raw-emit
     # doesn't re-escape the already-escaped values (the Mojo backend
     # returns a Mojo::ByteStream).
-    return $self->backend->mark_raw(join(' ', @parts));
+    return $self->backend->mark_raw(CORE::join(' ', @parts));
 }
 
 1;
