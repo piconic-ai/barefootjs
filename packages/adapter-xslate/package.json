@@ -1,0 +1,32 @@
+{
+  "name": "@barefootjs/xslate",
+  "version": "0.1.0",
+  "description": "Text::Xslate (Kolon) adapter for BarefootJS — compiles IR to .tx templates and ships the Xslate rendering backend; runs under any PSGI/Plack app",
+  "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "lib",
+    "README.md"
+  ],
+  "keywords": [
+    "xslate",
+    "text-xslate",
+    "kolon",
+    "perl",
+    "plack",
+    "psgi",
+    "barefoot",
+    "ssr"
+  ],
+  "author": "kobaken <kentafly88@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/piconic-ai/barefootjs",
+    "directory": "packages/adapter-xslate"
+  },
+  "dependencies": {
+    "@barefootjs/perl": "workspace:*"
+  }
+}
