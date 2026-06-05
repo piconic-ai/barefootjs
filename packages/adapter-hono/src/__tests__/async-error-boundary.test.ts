@@ -40,15 +40,17 @@ describe('compiled <Async> boundary — ErrorBoundary wrapping (#1375)', () => {
       }
     `)
 
-    expect(template).toContain('<ErrorBoundary fallback={<>')
-    expect(template).toContain('<Suspense fallback={<>')
+    // Tags are emitted under `__Bf`-prefixed aliases so they can't collide
+    // with a user component named `ErrorBoundary` / `Suspense` (#1375).
+    expect(template).toContain('<__BfErrorBoundary fallback={<>')
+    expect(template).toContain('<__BfSuspense fallback={<>')
     // ErrorBoundary must enclose Suspense (catch errors raised while the
     // Suspense body resolves), not the reverse.
-    expect(template.indexOf('<ErrorBoundary')).toBeLessThan(template.indexOf('<Suspense'))
-    expect(template).toContain('</Suspense></ErrorBoundary>')
+    expect(template.indexOf('<__BfErrorBoundary')).toBeLessThan(template.indexOf('<__BfSuspense'))
+    expect(template).toContain('</__BfSuspense></__BfErrorBoundary>')
   })
 
-  test('injects the ErrorBoundary import alongside Suspense', () => {
+  test('injects the aliased ErrorBoundary import alongside Suspense', () => {
     const template = templateOf(`
       export function Page() {
         return (
@@ -59,8 +61,32 @@ describe('compiled <Async> boundary — ErrorBoundary wrapping (#1375)', () => {
       }
     `)
 
-    expect(template).toContain(`import { Suspense } from 'hono/jsx/streaming'`)
-    expect(template).toContain(`import { ErrorBoundary } from 'hono/jsx'`)
+    expect(template).toContain(`import { Suspense as __BfSuspense } from 'hono/jsx/streaming'`)
+    expect(template).toContain(`import { ErrorBoundary as __BfErrorBoundary } from 'hono/jsx'`)
+  })
+
+  test('aliasing avoids a duplicate import when the body uses a user component named ErrorBoundary', () => {
+    // Regression for the bare-name collision: a user component literally
+    // named `ErrorBoundary` used inside the boundary must not cause the
+    // injected Hono import to duplicate the user's own `ErrorBoundary`
+    // binding (which would be a "Duplicate identifier" build error).
+    const template = templateOf(`
+      import { ErrorBoundary } from './my-error-boundary'
+      export function Page() {
+        return (
+          <Async fallback={<ErrorBoundary><p>fail</p></ErrorBoundary>}>
+            <span>Resolved</span>
+          </Async>
+        )
+      }
+    `)
+
+    // Exactly one `ErrorBoundary` binding survives — the user's. The Hono
+    // wrapper imports under the `__BfErrorBoundary` alias, so no collision.
+    const bareImports = template.match(/import \{ ErrorBoundary \} from/g) ?? []
+    expect(bareImports.length).toBe(1)
+    expect(template).toContain(`import { ErrorBoundary } from './my-error-boundary'`)
+    expect(template).toContain(`import { ErrorBoundary as __BfErrorBoundary } from 'hono/jsx'`)
   })
 
   test('each of multiple boundaries gets its own ErrorBoundary wrapper', () => {
@@ -79,7 +105,7 @@ describe('compiled <Async> boundary — ErrorBoundary wrapping (#1375)', () => {
       }
     `)
 
-    const wrappers = template.match(/<ErrorBoundary fallback=\{<>/g) ?? []
+    const wrappers = template.match(/<__BfErrorBoundary fallback=\{<>/g) ?? []
     expect(wrappers.length).toBe(2)
   })
 })
