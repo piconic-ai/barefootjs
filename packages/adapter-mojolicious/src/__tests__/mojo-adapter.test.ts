@@ -72,8 +72,8 @@ runAdapterConformanceTests({
     // #1467 Phase 2b: basic interactive `site/ui` primitives. Cross-adapter
     // parity for the `site/ui` corpus is Phase 3, so these participate only
     // in Hono SSR conformance + the fixture-hydrate runtime layer for now.
-    // (`label` and `kbd` are static helpers; `toggle` / `switch` /
-    // `checkbox` carry uncontrolled state; `input` is a pass-through
+    // (`label` and `kbd` are static helpers; `toggle` / `switch`
+    // carry uncontrolled state; `input` is a pass-through
     // native control.)
     //
     // `textarea` now participates: its conditional inline-object spread
@@ -83,9 +83,17 @@ runAdapterConformanceTests({
     // `elementAttrEmitter.emitExpression`
     // (`<% if (defined $rows) { %>rows="<%= $rows %>"<% } %>`), matching
     // Hono's nullish-attribute omission.
+    //
+    // `checkbox` now participates too: it composes `CheckIcon` and uses the
+    // SolidJS props-object pattern. Unblocked by quoting hyphenated child
+    // attribute names in `render_child` (`'data-slot' => ...`), declaring +
+    // `defined`-guarding inherited props-object accesses (`$id` / `$disabled`
+    // / `$className`), and seeding module-const + `.join()` values into
+    // `extractSsrDefaults` so the `classes` memo resolves to the full class
+    // string. `toggle`/`switch` share the inherited-attr fix but stay skipped
+    // on an additional `Record[key]`-in-memo-className blocker.
     'toggle',
     'switch',
-    'checkbox',
     'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
@@ -284,6 +292,120 @@ function Box({ k, v }: { k?: string; v?: string }) {
     adapter.generate(ir)
     const errs = (adapter as unknown as { errors: { code: string }[] }).errors
     expect(errs.some(e => e.code === 'BF101')).toBe(true)
+  })
+})
+
+describe('MojoAdapter - local-const conditional-spread resolution (#checkbox icon)', () => {
+  // A FUNCTION-scope const holding a `cond ? {…} : {}` ternary, spread as
+  // a bare identifier (`{...attrs}`), resolves through the same Perl
+  // ternary-of-hashrefs lowering as the inline form. CheckIcon's
+  // `const sizeAttrs = size ? {…} : {}` is exactly this shape.
+  test('resolves a bare-identifier spread of a function-scope conditional const', () => {
+    const { template } = compileAndGenerate(`
+function Box({ flag }: { flag?: boolean }) {
+  const attrs = flag ? { 'data-on': 'yes' } : {}
+  return <div {...attrs} />
+}
+`)
+    expect(template).toContain(
+      "bf->spread_attrs($flag ? { 'data-on' => 'yes' } : {})",
+    )
+  })
+
+  // A const that aliases another bare identifier must NOT be forwarded
+  // (loop guard): the resolver bails, so the spread falls through to the
+  // standard `convertExpressionToPerl` path emitting the bare `$attrs`
+  // variable rather than recursively resolving the alias into a hashref.
+  test('does not forward a const that aliases another identifier (loop guard)', () => {
+    const { template } = compileAndGenerate(`
+function Box({ other }: { other?: object }) {
+  const attrs = other
+  return <div {...attrs} />
+}
+`)
+    expect(template).toContain('bf->spread_attrs($attrs)')
+  })
+})
+
+describe('MojoAdapter - Record<staticKeys,scalar>[propKey] spread value (#checkbox icon)', () => {
+  // `const sizeMap: Record<IconSize, number> = { sm: 16, ... }` indexed by
+  // a prop inside a conditional-spread object value lowers to an inline
+  // indexed Perl hashref `{ ... }->{$key}`. This is CheckIcon's
+  // `{ width: sizeMap[size], height: sizeMap[size] }` shape.
+  test('lowers an indexed module-const map to an inline hashref index', () => {
+    const { template } = compileAndGenerate(`
+const sizeMap: Record<string, number> = { sm: 16, md: 20, lg: 24, xl: 32 }
+function Box({ size }: { size?: string }) {
+  const attrs = size ? { width: sizeMap[size] } : {}
+  return <div {...attrs} />
+}
+`)
+    expect(template).toContain(
+      "{ 'sm' => 16, 'md' => 20, 'lg' => 24, 'xl' => 32 }->{$size}",
+    )
+  })
+
+  test('lowers string-valued record maps too', () => {
+    const { template } = compileAndGenerate(`
+const labelMap: Record<string, string> = { a: 'Alpha', b: 'Beta' }
+function Box({ k }: { k?: string }) {
+  const attrs = k ? { 'data-label': labelMap[k] } : {}
+  return <div {...attrs} />
+}
+`)
+    expect(template).toContain("{ 'a' => 'Alpha', 'b' => 'Beta' }->{$k}")
+  })
+
+  // A non-scalar record value (object) is out of shape: the spread object
+  // value can't lower, so the whole spread falls back to BF101.
+  test('refuses a non-scalar record value with BF101 (out-of-shape fallback)', () => {
+    const adapter = new MojoAdapter()
+    const ir = compileToIR(`
+const sizeMap: Record<string, object> = { sm: { w: 1 } }
+function Box({ size }: { size?: string }) {
+  const attrs = size ? { width: sizeMap[size] } : {}
+  return <div {...attrs} />
+}
+`, adapter)
+    adapter.generate(ir)
+    const errs = (adapter as unknown as { errors: { code: string }[] }).errors
+    expect(errs.some(e => e.code === 'BF101')).toBe(true)
+  })
+})
+
+describe('MojoAdapter - props-object inherited-attribute enumeration (#checkbox)', () => {
+  // A SolidJS props-object component reads inherited attributes (`props.id`)
+  // not enumerated in `propsParams`. The bare optional attribute must be
+  // guarded with Perl `defined` so it's omitted when unset (Hono parity),
+  // even though `id` isn't a declared param.
+  test('guards a props-object bare optional attr (props.id) with defined', () => {
+    const { template } = compileAndGenerate(`
+"use client"
+interface P { tone?: string }
+export function Widget(props: P) {
+  return <button id={props.id}>x</button>
+}
+`)
+    expect(template).toContain('<% if (defined $id) { %>id="<%= $id %>"<% } %>')
+  })
+})
+
+describe('MojoAdapter - hyphenated child attr hash key (#checkbox)', () => {
+  // A child component prop whose JSX name isn't a bare Perl identifier
+  // (`<CheckIcon data-slot="..."/>`) must be quoted in the `render_child`
+  // named-arg list — an unquoted `data-slot => ...` parses as `data - slot`.
+  test('quotes a hyphenated child attribute name in render_child', () => {
+    const { template } = compileAndGenerate(`
+"use client"
+import { Leaf } from './leaf'
+export function Host() {
+  return <div><Leaf data-slot="indicator" size="sm" /></div>
+}
+`)
+    expect(template).toContain("'data-slot' => 'indicator'")
+    // A bare-identifier name stays unquoted.
+    expect(template).toContain('size => ')
+    expect(template).not.toContain('data-slot => ')
   })
 })
 

@@ -115,4 +115,28 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.count).toEqual({ value: 3 })
     expect(defaults?.squared).toEqual({ value: 9 })
   })
+
+  // (#checkbox) A className memo interpolating module string consts — incl. a
+  // `[...].join(' ')` const — plus `props.className ?? ''` resolves to a
+  // concrete string so the SSR `class="..."` renders the full token list
+  // (Checkbox's `classes` memo). Without seeding module consts / evaluating
+  // `.join`, the memo collapsed to `null` and the class attribute rendered
+  // empty.
+  test('module-const + join template-literal className memo resolves to a string', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      const base = 'a b'
+      const states = ['c', 'd'].join(' ')
+      function Box(props: { tone?: string }) {
+        const classes = createMemo(() => \`\${base} \${states} \${props.className ?? ''} tail\`)
+        return <button class={classes()}>x</button>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    // props.className is undefined → `?? ''` → '' → 'a b c d  tail' (the double
+    // space mirrors Hono's empty-className interpolation).
+    expect(defaults?.classes).toEqual({ value: 'a b c d  tail' })
+  })
 })

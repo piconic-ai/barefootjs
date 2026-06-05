@@ -145,6 +145,17 @@ function parsePureStringLiteral(source: string): string | null {
   return null
 }
 
+/**
+ * (#checkbox) Quote a `render_child` named-arg / hashref key when it isn't a
+ * bare Perl identifier. A JSX attribute name like `data-slot` would otherwise
+ * emit `data-slot => '...'`, which Perl parses as the subtraction
+ * `data - slot`. Identifier-safe names (`className`, `size`, `_bf_slot`) pass
+ * through unquoted to keep the generated template readable.
+ */
+function perlHashKey(name: string): string {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${name.replace(/'/g, "\\'")}'`
+}
+
 export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx> {
   name = 'mojolicious'
   extension = '.html.ep'
@@ -199,6 +210,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   private moduleStringConsts: Map<string, string> = new Map()
   /**
+   * Full local-constant metadata from the entry IR, kept so spread
+   * lowering can resolve a bare-identifier spread (`{...sizeAttrs}`) to
+   * its initializer text and a `Record[propKey]` spread value to the
+   * module-const object literal it indexes (#checkbox / icon). Populated
+   * at `generate()` entry alongside `moduleStringConsts`.
+   */
+  private localConstants: IRMetadata['localConstants'] = []
+  /**
    * Names currently bound by an enclosing loop body — the `my $<param>` and
    * `my $<index>` bindings `renderLoop` introduces — ref-counted so nested
    * loops compose. `resolveModuleStringConst` consults this so a loop
@@ -233,9 +252,87 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
   }
 
+  /**
+   * (#checkbox) Enumerate inherited-attribute accesses for the SolidJS
+   * props-object pattern, appending any `props.<name>` the component reads but
+   * that isn't in `propsParams` (inherited `ButtonHTMLAttributes` members like
+   * `className` / `id` / `disabled`). Mutates `ir.metadata.propsParams` in
+   * place so `nullableOptionalProps` (and the template emission) treat them
+   * uniformly. Idempotent. See the Go adapter's identically-named method.
+   *
+   * Types: a bare-reference attribute (`id={props.id}`) → `unknown` (no
+   * default → guarded with Perl `defined`, so the attribute is omitted when
+   * the caller doesn't pass it — Hono parity); a boolean attribute
+   * (`disabled`) → `boolean`; otherwise (`className`) → `string`.
+   */
+  private augmentInheritedPropAccesses(ir: ComponentIR): void {
+    const propsObj = ir.metadata.propsObjectName
+    if (!propsObj) return
+    const existing = new Set(ir.metadata.propsParams.map(p => p.name))
+
+    const accessed = new Set<string>()
+    const bareRefProps = new Set<string>()
+    const booleanAttrProps = new Set<string>()
+    const accessRe = new RegExp(`(?:^|[^\\w$.])${propsObj}\\.([A-Za-z_$][\\w$]*)`, 'g')
+    const scan = (s: string | undefined): void => {
+      if (!s) return
+      for (const m of s.matchAll(accessRe)) accessed.add(m[1])
+    }
+    for (const memo of ir.metadata.memos) scan(memo.computation)
+    for (const sig of ir.metadata.signals) scan(sig.initialValue)
+    for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
+
+    const prefix = `${propsObj}.`
+    const walk = (node: unknown): void => {
+      if (!node || typeof node !== 'object') return
+      const el = node as {
+        attrs?: Array<{ name: string; value?: { kind?: string; expr?: string; presenceOrUndefined?: boolean } }>
+        children?: unknown[]
+      }
+      for (const attr of el.attrs ?? []) {
+        const v = attr.value
+        if (v?.kind === 'expression' && typeof v.expr === 'string') {
+          scan(v.expr)
+          const expr = v.expr.trim()
+          if (isBooleanAttr(attr.name) || v.presenceOrUndefined) {
+            const m = expr.match(new RegExp(`^${propsObj}\\.([A-Za-z_$][\\w$]*)`))
+            if (m) booleanAttrProps.add(m[1])
+          } else if (expr.startsWith(prefix)) {
+            const rest = expr.slice(prefix.length)
+            if (/^[A-Za-z_$][\w$]*$/.test(rest)) bareRefProps.add(rest)
+          }
+        }
+      }
+      for (const child of el.children ?? []) {
+        const c = child as { element?: unknown }
+        walk(c.element ?? child)
+      }
+    }
+    walk(ir.root)
+
+    for (const name of accessed) {
+      if (existing.has(name)) continue
+      const type: TypeInfo = booleanAttrProps.has(name)
+        ? { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
+        : bareRefProps.has(name)
+          ? { kind: 'unknown', raw: 'unknown' }
+          : { kind: 'primitive', raw: 'string', primitive: 'string' }
+      ir.metadata.propsParams.push({ name, type, optional: true })
+      existing.add(name)
+    }
+  }
+
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
     this.propsObjectName = ir.metadata.propsObjectName ?? null
+    // (#checkbox) Enumerate inherited-attribute accesses for the props-object
+    // pattern (`function Checkbox(props: CheckboxProps)`) before deriving
+    // `nullableOptionalProps`, so a bare optional attribute like
+    // `id={props.id}` gets the Perl `defined`-guard (Hono-style omission).
+    // Mirrors the Go adapter's `augmentInheritedPropAccesses`. The harness
+    // separately declares the matching stash vars (Pass-1 IR serialization
+    // happens before `generate`, so this mutation doesn't reach it).
+    this.augmentInheritedPropAccesses(ir)
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
     // No-destructure-default props → `undef` when the caller omits them
     // → guard their bare-reference attribute emission with Perl `defined`
@@ -277,6 +374,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.localConstants = ir.metadata.localConstants ?? []
     this.loopBoundNames.clear()
     this.errors = []
     this.childrenCaptureCounter = 0
@@ -808,7 +906,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * `render_child` named-arg list.
    */
   private readonly componentPropEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name} => '${value.value}'`,
+    emitLiteral: (value, name) => `${perlHashKey(name)} => '${value.value}'`,
     emitExpression: (value, name) => {
       // The IR producer collapses component-prop `template` kinds
       // into `expression` for client-runtime reasons but preserves
@@ -817,9 +915,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // `${MAP[KEY]}` shapes (the JS object literal leaks into the
       // Perl template).
       if (value.parts) {
-        return `${name} => ${this.convertTemplateLiteralPartsToPerl(value.parts)}`
+        return `${perlHashKey(name)} => ${this.convertTemplateLiteralPartsToPerl(value.parts)}`
       }
-      return `${name} => ${this.convertExpressionToPerl(value.expr)}`
+      return `${perlHashKey(name)} => ${this.convertExpressionToPerl(value.expr)}`
     },
     emitSpread: (value) => {
       // Perl has no JS-style spread — emit the source as a hash
@@ -832,9 +930,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       return perlExpr.startsWith('%') ? perlExpr : `%{${perlExpr}}`
     },
     emitTemplate: (value, name) =>
-      `${name} => ${this.convertTemplateLiteralPartsToPerl(value.parts)}`,
-    emitBooleanAttr: (_value, name) => `${name} => 1`,
-    emitBooleanShorthand: (_value, name) => `${name} => 1`,
+      `${perlHashKey(name)} => ${this.convertTemplateLiteralPartsToPerl(value.parts)}`,
+    emitBooleanAttr: (_value, name) => `${perlHashKey(name)} => 1`,
+    emitBooleanShorthand: (_value, name) => `${perlHashKey(name)} => 1`,
     // JSX children flow through Mojo's `begin %>…<% end` capture
     // below; they're not part of the named-arg list.
     emitJsxChildren: () => '',
@@ -991,10 +1089,19 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // exprs, calls, concrete/defaulted props, and boolean attrs are
       // unaffected and still emit unconditionally.
       const bareId = value.expr.trim()
+      // Normalize a props-object access (`props.id`) to its bare prop name
+      // (`id`) so the nullable-optional set — keyed by bare name — matches the
+      // SolidJS props-object pattern, not just destructured params (#checkbox
+      // `id={props.id}`).
+      const normalizedBareId =
+        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
+          ? bareId.slice(this.propsObjectName.length + 1)
+          : bareId
       if (
         !isBooleanAttr(name) &&
         !value.presenceOrUndefined &&
-        this.nullableOptionalProps.has(bareId)
+        /^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
+        this.nullableOptionalProps.has(normalizedBareId)
       ) {
         const perl = this.convertExpressionToPerl(value.expr)
         const body =
@@ -1086,6 +1193,26 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       const ternaryHashref = this.conditionalSpreadToPerl(trimmed)
       if (ternaryHashref !== null) {
         return `<%== bf->spread_attrs(${ternaryHashref}) %>`
+      }
+      // Function-scope local const holding a conditional inline-object
+      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
+      // (#checkbox / icon). Resolve the bare identifier to its
+      // initializer text and route through the same conditional-spread
+      // lowering. Only function-scope (`!isModule`) consts whose value is
+      // NOT itself a bare identifier (loop guard) are considered.
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
+        const localConst = this.localConstants.find(
+          c => c.name === trimmed && !c.isModule,
+        )
+        if (localConst?.value !== undefined) {
+          const initTrimmed = localConst.value.trim()
+          if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
+            const resolved = this.conditionalSpreadToPerl(initTrimmed)
+            if (resolved !== null) {
+              return `<%== bf->spread_attrs(${resolved}) %>`
+            }
+          }
+        }
       }
       const perlExpr = this.convertExpressionToPerl(value.expr)
       return `<%== bf->spread_attrs(${perlExpr}) %>`
@@ -1437,10 +1564,82 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       } else {
         return null
       }
-      const valPerl = this.convertExpressionToPerl(prop.initializer.getText(sf))
+      const initNode = (() => {
+        let n: ts.Expression = prop.initializer
+        while (ts.isParenthesizedExpression(n)) n = n.expression
+        return n
+      })()
+      const indexed = this.recordIndexAccessToPerl(initNode)
+      const valPerl =
+        indexed !== null
+          ? indexed
+          : this.convertExpressionToPerl(prop.initializer.getText(sf))
       entries.push(`'${key.replace(/'/g, "\\'")}' => ${valPerl}`)
     }
     return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
+  }
+
+  /**
+   * Lower a spread-object VALUE of the form `IDENT[KEY]` where:
+   *   - `IDENT` resolves via `localConstants` to a MODULE-scope object
+   *     literal whose property values are all scalar (number/string)
+   *     literals under static (string-literal or identifier) keys
+   *     (a `Record<staticKeys, scalar>` map like `sizeMap`), AND
+   *   - `KEY` is a bare identifier that is a prop.
+   * Emits an inline indexed Perl hashref:
+   *   `{ 'sm' => 16, 'md' => 20, ... }->{$size}`
+   *
+   * Returns the Perl string when convertible, else `null` so the caller
+   * falls back to its normal value lowering (which records BF101 for an
+   * unsupported shape). Mirror of the Go adapter's `recordIndexAccessToGoMap`.
+   */
+  private recordIndexAccessToPerl(val: ts.Expression): string | null {
+    if (!ts.isElementAccessExpression(val)) return null
+    const obj = val.expression
+    const arg = val.argumentExpression
+    if (!ts.isIdentifier(obj) || !ts.isIdentifier(arg)) return null
+    // KEY must be a prop.
+    if (!this.propsParams.some(p => p.name === arg.text)) return null
+    // IDENT must resolve to a module-scope object-literal const.
+    const constInfo = this.localConstants.find(
+      c => c.name === obj.text && c.isModule,
+    )
+    if (constInfo?.value === undefined) return null
+    const sf = ts.createSourceFile(
+      '__rec.ts', `(${constInfo.value})`, ts.ScriptTarget.Latest, true,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isExpressionStatement(stmt)) return null
+    let parsed: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(parsed)) parsed = parsed.expression
+    if (!ts.isObjectLiteralExpression(parsed)) return null
+    const entries: string[] = []
+    for (const prop of parsed.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      let mapKey: string
+      if (ts.isIdentifier(prop.name)) {
+        mapKey = prop.name.text
+      } else if (
+        ts.isStringLiteral(prop.name) ||
+        ts.isNoSubstitutionTemplateLiteral(prop.name)
+      ) {
+        mapKey = prop.name.text
+      } else {
+        return null
+      }
+      let v: ts.Expression = prop.initializer
+      while (ts.isParenthesizedExpression(v)) v = v.expression
+      let mapVal: string
+      if (ts.isNumericLiteral(v)) {
+        mapVal = v.text
+      } else if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) {
+        mapVal = `'${v.text.replace(/'/g, "\\'")}'`
+      } else {
+        return null
+      }
+      entries.push(`'${mapKey.replace(/'/g, "\\'")}' => ${mapVal}`)
+    }
+    return `{ ${entries.join(', ')} }->{$${arg.text}}`
   }
 
 

@@ -103,6 +103,17 @@ interface StaticChildInstance {
 }
 
 /**
+ * Cross-component shape of a child component the parent renders (#checkbox).
+ * `paramNames` are the child's declared `propsParams`; `restBagField` is the
+ * Go field name of the child's open-ended rest bag (`Capitalize(restPropsName)`),
+ * or null when the child has no `...props` rest spread.
+ */
+interface ChildComponentShape {
+  paramNames: Set<string>
+  restBagField: string | null
+}
+
+/**
  * Top-level (non-loop) JSX intrinsic-element spread slot (#1407).
  * Collected by `collectSpreadSlots` so the adapter can emit one
  * `Spread_<slotId> map[string]any` field on the component's Props
@@ -419,6 +430,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *  `template.HTML(...)`; toggles the `"html/template"` import. */
   private usesHtmlTemplate: boolean = false
 
+  /** Set during type generation when any emit references
+   *  `fmt.Sprint(...)` — e.g. a `Record<staticKeys, scalar>[propKey]`
+   *  indexed-map spread value (#checkbox); toggles the `"fmt"` import. */
+  private usesFmt: boolean = false
+
+  /**
+   * Cross-component child shapes (#checkbox), keyed by child component name.
+   * Populated out-of-band via `registerChildComponentShape` before the parent
+   * component's `generateTypes` runs, so the static-child-init codegen can
+   * route an attribute that is NOT a declared param of the child
+   * (`<CheckIcon data-slot=.../>`) into the child's rest bag
+   * (`Capitalize(restPropsName)` map field) instead of emitting an invalid
+   * hyphenated top-level field (`Data-slot:`). A child with no rest bag and
+   * an unknown attr is left as-is so the existing field path / Go compile
+   * error still surfaces.
+   */
+  private childComponentShapes: Map<string, ChildComponentShape> = new Map()
+
   /**
    * Module-scope pure string-literal constants (`const X = 'literal'` at
    * file top-level), keyed by name → resolved literal value. Populated at
@@ -470,6 +499,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.propsObjectName = ir.metadata.propsObjectName
     this.restPropsName = ir.metadata.restPropsName ?? null
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
+    // before computing the nillable set / rendering, so the synthetic params
+    // participate in attribute omission and field binding uniformly.
+    this.augmentInheritedPropAccesses(ir)
     this.nillablePropNames = this.collectNillablePropNames(ir)
 
     // Surface loop-body usages of components imported from sibling
@@ -762,8 +795,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `{{if .Scripts}}${registrations.join('')}{{end}}\n`
   }
 
+  /**
+   * Register a child component's shape (#checkbox) so a parent's
+   * static-child-init codegen can route non-param attributes into the child's
+   * rest bag rather than emitting an invalid hyphenated top-level field. Call
+   * once per known child IR (siblings in the same source, auto-inferred
+   * `../<name>` imports) before generating the parent's types. Idempotent.
+   */
+  registerChildComponentShape(ir: ComponentIR): void {
+    const name = ir.metadata.componentName
+    if (!name) return
+    const paramNames = new Set((ir.metadata.propsParams ?? []).map(p => p.name))
+    const restPropsName = ir.metadata.restPropsName ?? null
+    const restBagField = restPropsName ? this.capitalizeFieldName(restPropsName) : null
+    this.childComponentShapes.set(name, { paramNames, restBagField })
+  }
+
   generateTypes(ir: ComponentIR): string | null {
     this.usesHtmlTemplate = false
+    this.usesFmt = false
+    // (#checkbox) Mirror `generate()`: enumerate inherited-attribute accesses
+    // so the Input/Props structs expose `ClassName`/`ID`/`Disabled` fields the
+    // template + caller bind against. `generateTypes` runs on a separately
+    // round-tripped IR, so this must be applied here too; the method is
+    // idempotent. `propsObjectName` is needed by the scan.
+    this.propsObjectName = ir.metadata.propsObjectName
+    this.augmentInheritedPropAccesses(ir)
     const lines: string[] = []
 
     const componentName = ir.metadata.componentName
@@ -856,6 +913,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     header.push(`package ${this.options.packageName}`)
     header.push('')
     header.push('import (')
+    // Go's import block is conventionally sorted; emit in lexical order
+    // (`fmt` < `html/template` < `math/rand`).
+    if (this.usesFmt) header.push('\t"fmt"')
     if (this.usesHtmlTemplate) header.push('\t"html/template"')
     header.push('\t"math/rand"')
     header.push('')
@@ -1113,6 +1173,100 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
     return nillable
+  }
+
+  /**
+   * (#checkbox) Enumerate inherited-attribute accesses for the SolidJS
+   * props-object pattern.
+   *
+   * `function Checkbox(props: CheckboxProps)` only lists `CheckboxProps`'s own
+   * members in `propsParams`; the inherited `ButtonHTMLAttributes` members the
+   * component actually reads (`props.className` in the classes memo,
+   * `props.id`, `props.disabled` on the root element) are never enumerated, so
+   * the generated Input/Props structs have no field to bind a caller's
+   * `className: ''` / `id` / `disabled` to — Go fails with `unknown field
+   * ClassName`. This scans the component's expressions for `props.<name>`
+   * accesses (where `props` is the resolved `propsObjectName`) and appends any
+   * not-already-a-param as a synthetic prop param, with a type inferred from
+   * how the access is used:
+   *   - rendered as a bare-reference attribute (`id={props.id}`) → `interface{}`
+   *     (nillable, so the attribute is omitted when unset — Hono parity);
+   *   - a boolean attribute (`disabled`) → `bool`;
+   *   - otherwise (`className`, read in a string memo) → `string`.
+   *
+   * Idempotent: re-running (e.g. once in `generate`, again in `generateTypes`
+   * on the round-tripped IR) is a no-op once the params are present. Mutates
+   * `ir.metadata.propsParams` in place so every downstream emitter — struct
+   * fields, nillable set, memo init, template — sees one consistent param list.
+   */
+  private augmentInheritedPropAccesses(ir: ComponentIR): void {
+    const propsObj = ir.metadata.propsObjectName
+    if (!propsObj) return // only the props-object pattern is affected
+
+    const existing = new Set(ir.metadata.propsParams.map(p => p.name))
+
+    // Collect bare-reference attribute exprs (`attr={props.id}`) and boolean
+    // attributes from the template so we can classify accessed props by use.
+    const bareRefProps = new Set<string>()
+    const booleanAttrProps = new Set<string>()
+    const accessed = new Set<string>()
+    const accessRe = new RegExp(`(?:^|[^\\w$.])${propsObj}\\.([A-Za-z_$][\\w$]*)`, 'g')
+    const scan = (s: string | undefined): void => {
+      if (!s) return
+      for (const m of s.matchAll(accessRe)) accessed.add(m[1])
+    }
+
+    // Memos, signals, init statements, effects: any `props.X` read.
+    for (const memo of ir.metadata.memos) scan(memo.computation)
+    for (const signal of ir.metadata.signals) scan(signal.initialValue)
+    for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
+    for (const eff of ir.metadata.effects ?? []) scan((eff as { body?: string }).body)
+
+    // Template attribute exprs — also note bare-ref / boolean usage.
+    const walk = (node: IRNode | undefined): void => {
+      if (!node) return
+      const el = node as unknown as IRElement
+      for (const attr of el.attrs ?? []) {
+        const v = attr.value as { kind?: string; expr?: string; presenceOrUndefined?: boolean }
+        if (v?.kind === 'expression' && typeof v.expr === 'string') {
+          scan(v.expr)
+          const expr = v.expr.trim()
+          const prefix = `${propsObj}.`
+          // A boolean HTML attribute (`disabled={props.disabled ?? false}`)
+          // marks the referenced prop as boolean even when wrapped in a
+          // `?? false` default — extract the prop name from the expr.
+          if (isBooleanAttr(attr.name) || v.presenceOrUndefined) {
+            const m = expr.match(new RegExp(`^${propsObj}\\.([A-Za-z_$][\\w$]*)`))
+            if (m) booleanAttrProps.add(m[1])
+          } else if (expr.startsWith(prefix)) {
+            const rest = expr.slice(prefix.length)
+            // A pure bare-reference attribute (`id={props.id}`) → nillable.
+            if (/^[A-Za-z_$][\w$]*$/.test(rest)) bareRefProps.add(rest)
+          }
+        }
+      }
+      for (const child of (el.children ?? []) as unknown[]) {
+        const c = child as { element?: IRNode }
+        walk((c.element ?? child) as IRNode)
+      }
+    }
+    walk(ir.root)
+
+    for (const name of accessed) {
+      if (existing.has(name)) continue
+      let raw: string
+      if (booleanAttrProps.has(name)) raw = 'boolean'
+      else if (bareRefProps.has(name)) raw = 'unknown' // → interface{} (nillable, omittable)
+      else raw = 'string' // read in a memo / string context (e.g. className)
+      const type: TypeInfo =
+        raw === 'boolean'
+          ? { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
+          : raw === 'string'
+            ? { kind: 'primitive', raw: 'string', primitive: 'string' }
+            : { kind: 'unknown', raw: 'unknown' }
+      ir.metadata.propsParams.push({ name, type, optional: true })
+      existing.add(name)
+    }
   }
 
   /**
@@ -1466,9 +1620,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // Add memo initial values (computed from signal initial values)
+    const memoPropsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
     for (const memo of ir.metadata.memos) {
       const fieldName = this.capitalizeFieldName(memo.name)
-      const memoValue = this.computeMemoInitialValue(memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars)
+      // (#checkbox) Pass the memo's inferred Go type so an unresolved
+      // computation falls back to that type's zero value (`false` for a
+      // boolean memo like `isChecked`), not the int `0`.
+      const goType = this.inferMemoType(memo, ir.metadata.signals, memoPropsParamMap)
+      const memoValue = this.computeMemoInitialValue(memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
       lines.push(`\t\t${fieldName}: ${memoValue},`)
     }
 
@@ -1481,15 +1640,37 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // own NewProps (BfParent/BfMount fields).
       lines.push(`\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\tBfMount: "${child.slotId}",`)
+      // (#checkbox) Cross-component shape lookup: an attribute that is NOT a
+      // declared param of the child but the child has a `...props` rest bag
+      // (`<CheckIcon data-slot=.../>`, where CheckIcon's params are
+      // `size`/`className` and the rest binding is `props`) must be routed
+      // into the child's rest-bag map field — emitting `Data-slot:` as a
+      // top-level Go field is a syntax error (hyphen). `restBagEntries`
+      // collects `"jsx-attr-name": goValue` pairs for that map.
+      const childShape = this.childComponentShapes.get(child.name)
+      const restBagEntries: string[] = []
+      // Emit a child input field, OR collect it as a rest-bag entry when the
+      // attr isn't a declared child param and a rest bag exists.
+      const emitChildField = (jsxName: string, goValue: string): void => {
+        if (
+          childShape &&
+          childShape.restBagField &&
+          !childShape.paramNames.has(jsxName)
+        ) {
+          restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
+          return
+        }
+        lines.push(`\t\t\t${this.capitalizeFieldName(jsxName)}: ${goValue},`)
+      }
       // Add prop values
       for (const prop of child.props) {
         switch (prop.value.kind) {
           case 'literal':
-            lines.push(`\t\t\t${this.capitalizeFieldName(prop.name)}: ${this.goLiteral(prop.value.value)},`)
+            emitChildField(prop.name, this.goLiteral(prop.value.value))
             break
           case 'boolean-shorthand':
           case 'boolean-attr':
-            lines.push(`\t\t\t${this.capitalizeFieldName(prop.name)}: true,`)
+            emitChildField(prop.name, 'true')
             break
           case 'expression':
           case 'spread':
@@ -1508,7 +1689,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
               const goExpr = this.templatePartsToGoCode(parts, ir.metadata.propsParams)
               if (goExpr !== null) {
                 // Parts path succeeded — emit and move on.
-                lines.push(`\t\t\t${this.capitalizeFieldName(prop.name)}: ${goExpr},`)
+                emitChildField(prop.name, goExpr)
                 break
               }
               // Parts exist but templatePartsToGoCode opted out (unsupported
@@ -1526,7 +1707,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
               ir.metadata.propsParams
             )
             if (resolvedValue !== null) {
-              lines.push(`\t\t\t${this.capitalizeFieldName(prop.name)}: ${resolvedValue},`)
+              emitChildField(prop.name, resolvedValue)
             }
             break
           }
@@ -1534,6 +1715,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             // Handled separately via `child.childrenText` / `child.childrenHtml` below.
             break
         }
+      }
+      // (#checkbox) Emit the collected rest-bag entries as the child's
+      // open-ended bag field (`Props: map[string]any{...}`), matching how the
+      // child's `NewXxxProps` maps `in.Props` onto its `Spread_<N>` field.
+      if (childShape?.restBagField && restBagEntries.length > 0) {
+        lines.push(
+          `\t\t\t${childShape.restBagField}: map[string]any{${restBagEntries.join(', ')}},`,
+        )
       }
       // Pass through JSX children as the child slot's `Children` input.
       // Two paths:
@@ -2029,6 +2218,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (ir.metadata.restPropsName === trimmed) {
         return `in.${this.capitalizeFieldName(trimmed)}`
       }
+      // 4. Function-scope local const holding a conditional inline-object
+      //    spread: `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
+      //    (#checkbox / icon). Resolve the identifier to its initializer
+      //    text and route through the conditional-spread lowering. Only
+      //    function-scope (`!isModule`) consts qualify — a module const is
+      //    a different shape, and the resolved initializer must itself be a
+      //    conditional-of-object-literals (else `buildConditionalSpreadInitializer`
+      //    returns undefined and we fall through to BF101). Guard against a
+      //    const that resolves to another bare identifier (loop / non-literal).
+      const localConst = (ir.metadata.localConstants ?? []).find(
+        c => c.name === trimmed && !c.isModule,
+      )
+      if (localConst?.value !== undefined) {
+        const initTrimmed = localConst.value.trim()
+        // Reject a const resolving to a bare identifier to avoid an
+        // unbounded resolution loop / non-literal forwarding.
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
+          const resolved = this.buildConditionalSpreadInitializer(initTrimmed, ir)
+          // `undefined` → not a conditional-spread shape; fall through to
+          // BF101. `null` → that shape but unconvertible; also BF101.
+          if (resolved) return resolved
+          if (resolved === null) return null
+        }
+      }
     }
     return null
   }
@@ -2172,11 +2385,77 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (!param) return null
         goVal = `in.${this.capitalizeFieldName(param.name)}`
       } else {
-        return null
+        const indexed = this.recordIndexAccessToGoMap(val, ir)
+        if (indexed === null) return null
+        goVal = indexed
       }
       entries.push(`${JSON.stringify(key)}: ${goVal}`)
     }
     return `map[string]any{${entries.join(', ')}}`
+  }
+
+  /**
+   * Lower a spread-object VALUE of the form `IDENT[KEY]` where:
+   *   - `IDENT` resolves via `localConstants` to a MODULE-scope object
+   *     literal whose property values are all scalar (number/string)
+   *     literals under static (string-literal or identifier) keys
+   *     (a `Record<staticKeys, scalar>` map like `sizeMap`), AND
+   *   - `KEY` is a bare identifier that is a prop.
+   * Emits an inline indexed Go map:
+   *   `map[string]any{"sm": 16, ...}[fmt.Sprint(in.Size)]`
+   * (`fmt.Sprint` coerces the `interface{}`/typed prop to the map's
+   * string key space — sets `usesFmt` so the `"fmt"` import is added).
+   *
+   * Returns the Go string when convertible, else `null` (caller → BF101)
+   * for any non-scalar value, non-static key, or non-prop index so
+   * unrelated shapes don't regress. (#checkbox / icon `sizeMap[size]`.)
+   */
+  private recordIndexAccessToGoMap(
+    val: ts.Expression,
+    ir: ComponentIR,
+  ): string | null {
+    if (!ts.isElementAccessExpression(val)) return null
+    const obj = val.expression
+    const arg = val.argumentExpression
+    if (!ts.isIdentifier(obj) || !ts.isIdentifier(arg)) return null
+    // KEY must be a prop.
+    const keyParam = ir.metadata.propsParams.find(p => p.name === arg.text)
+    if (!keyParam) return null
+    // IDENT must resolve to a module-scope object-literal const.
+    const constInfo = (ir.metadata.localConstants ?? []).find(
+      c => c.name === obj.text && c.isModule,
+    )
+    if (constInfo?.value === undefined) return null
+    const parsed = this.parseLiteralExpression(constInfo.value)
+    if (!parsed || !ts.isObjectLiteralExpression(parsed)) return null
+    const entries: string[] = []
+    for (const prop of parsed.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      let mapKey: string
+      if (ts.isIdentifier(prop.name)) {
+        mapKey = prop.name.text
+      } else if (
+        ts.isStringLiteral(prop.name) ||
+        ts.isNoSubstitutionTemplateLiteral(prop.name)
+      ) {
+        mapKey = prop.name.text
+      } else {
+        return null
+      }
+      const v = this.unwrapParens(prop.initializer)
+      let mapVal: string
+      if (ts.isNumericLiteral(v)) {
+        mapVal = v.text
+      } else if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) {
+        mapVal = JSON.stringify(v.text)
+      } else {
+        return null
+      }
+      entries.push(`${JSON.stringify(mapKey)}: ${mapVal}`)
+    }
+    this.usesFmt = true
+    const field = `in.${this.capitalizeFieldName(keyParam.name)}`
+    return `map[string]any{${entries.join(', ')}}[fmt.Sprint(${field})]`
   }
 
   /**
@@ -2588,11 +2867,129 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * referenced prop, substitute it for `in.FieldName` so the memo
    * inherits the signal-time `??` fallback.
    */
+  /**
+   * (#checkbox) Compute the SSR initial value of a template-literal memo as a
+   * Go `string` expression. The memo computation looks like
+   * `() => `${a} ${b} ${props.className ?? ''} grid place-content-center``.
+   *
+   * Each quasi (literal text span) becomes a Go string literal; each
+   * interpolation is resolved:
+   *   - an identifier naming a module string const → its inlined literal
+   *     (covers both pure-string and `[...].join(' ')` consts);
+   *   - `props.<name> ?? '<fallback>'` or bare `props.<name>` → `in.<Field>`
+   *     when `<name>` is a known prop param (typed `string`); the `?? ''`
+   *     fallback maps to Go's zero value for an unset string field, matching
+   *     the Hono reference's empty-string result.
+   *
+   * Returns the `"a" + in.Field + " grid..."` concatenation, or null when the
+   * computation isn't a single template literal or any interpolation isn't
+   * representable (so the caller keeps its existing pattern matching).
+   */
+  private computeTemplateLiteralMemoInitialValue(
+    computation: string,
+    propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  ): string | null {
+    const sf = ts.createSourceFile(
+      '__memo.ts',
+      `const __x = (${computation});`,
+      ts.ScriptTarget.Latest,
+      /*setParentNodes*/ false,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isVariableStatement(stmt)) return null
+    let init = stmt.declarationList.declarations[0]?.initializer
+    while (init && ts.isParenthesizedExpression(init)) init = init.expression
+    if (!init || !ts.isArrowFunction(init)) return null
+    let body = init.body as ts.Node
+    while (ts.isParenthesizedExpression(body as ts.Expression)) {
+      body = (body as ts.ParenthesizedExpression).expression
+    }
+    if (!ts.isTemplateExpression(body) && !ts.isNoSubstitutionTemplateLiteral(body)) {
+      return null
+    }
+    const propNames = new Set(propsParams.map(p => p.name))
+    const escGo = (s: string) => `"${this.escapeGoString(s)}"`
+    const segments: string[] = []
+
+    if (ts.isNoSubstitutionTemplateLiteral(body)) {
+      return escGo(body.text)
+    }
+    // head + each span
+    if (body.head.text) segments.push(escGo(body.head.text))
+    for (const span of body.templateSpans) {
+      const resolved = this.resolveTemplateInterpolation(span.expression, propNames)
+      if (resolved === null) return null
+      segments.push(resolved)
+      if (span.literal.text) segments.push(escGo(span.literal.text))
+    }
+    if (segments.length === 0) return '""'
+    return segments.join(' + ')
+  }
+
+  /**
+   * (#checkbox) Resolve one `${expr}` interpolation of a template-literal memo
+   * to a Go string expression, or null when unsupported. See
+   * `computeTemplateLiteralMemoInitialValue` for the supported shapes.
+   */
+  private resolveTemplateInterpolation(
+    expr: ts.Expression,
+    propNames: Set<string>,
+  ): string | null {
+    let node: ts.Expression = expr
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+
+    // Identifier → module string const inline.
+    if (ts.isIdentifier(node)) {
+      const inlined = this.resolveModuleStringConst(node.text)
+      if (inlined !== null) return inlined
+      return null
+    }
+
+    // `props.X ?? '...'` — string-typed prop with an empty-string fallback.
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+    ) {
+      const right = node.right
+      const isEmptyStr =
+        (ts.isStringLiteral(right) || ts.isNoSubstitutionTemplateLiteral(right)) &&
+        right.text === ''
+      const propName = this.propsAccessName(node.left)
+      if (propName && propNames.has(propName) && isEmptyStr) {
+        // Unset string field is "" in Go — same as `?? ''`.
+        return `in.${this.capitalizeFieldName(propName)}`
+      }
+      return null
+    }
+
+    // Bare `props.X` (string-typed prop).
+    const propName = this.propsAccessName(node)
+    if (propName && propNames.has(propName)) {
+      return `in.${this.capitalizeFieldName(propName)}`
+    }
+    return null
+  }
+
+  /**
+   * If `node` is a `<propsObjectName>.<name>` access, return `<name>`, else
+   * null. Used to recognize props-object reads inside memo interpolations.
+   */
+  private propsAccessName(node: ts.Expression): string | null {
+    if (!ts.isPropertyAccessExpression(node)) return null
+    if (!ts.isIdentifier(node.expression)) return null
+    if (!this.propsObjectName || node.expression.text !== this.propsObjectName) return null
+    return node.name.text
+  }
+
   private computeMemoInitialValue(
     memo: { name: string; computation: string; deps: string[] },
     signals: { getter: string; initialValue: string }[],
     propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
     propFallbackVars: ReadonlyMap<string, PropFallbackVar> = GoTemplateAdapter.EMPTY_PROP_FALLBACK_VARS,
+    // (#checkbox) Go type of the memo field; used to pick the zero-value
+    // fallback for an unresolved computation (`false` for `bool`, `""` for
+    // `string`, else the historical `0`).
+    goType?: string,
   ): string {
     const computation = memo.computation
     // Helper to pick the hoisted var (if any) or fall back to `in.X`.
@@ -2601,6 +2998,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (hoisted) return hoisted.varName
       return `in.${this.capitalizeFieldName(propName)}`
     }
+
+    // (#checkbox) Pattern: () => `...${expr}...` — a template-literal memo
+    // (the classes memo: `${baseClasses} ${focusClasses} ... ${props.className
+    // ?? ''} grid place-content-center`). Build a Go string concatenation that
+    // inlines module string consts (incl. `[...].join(' ')` consts resolved by
+    // `resolveModuleStringConst`) and resolves `props.X ?? ''` / bare `props.X`
+    // to the corresponding `in.Field`. Returns null when any interpolation
+    // isn't representable, so the existing patterns below still apply.
+    const tmplMemo = this.computeTemplateLiteralMemoInitialValue(computation, propsParams)
+    if (tmplMemo !== null) return tmplMemo
 
     // Pattern: () => dep() * N or () => dep() + N etc.
     const arithmeticMatch = computation.match(/\(\)\s*=>\s*(\w+)\(\)\s*([*+\-/])\s*(\d+)/)
@@ -2680,7 +3087,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    // Default: return 0 for unknown computations
+    // Default: zero value for the memo's Go type (#checkbox). A boolean memo
+    // (`isChecked`) renders `false`, a string memo `""`; otherwise the
+    // historical int `0`.
+    if (goType === 'bool') return 'false'
+    if (goType === 'string') return '""'
     return '0'
   }
 
@@ -2719,8 +3130,56 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
+    // (#checkbox) Boolean memo: a comparison/negation/ternary whose dependency
+    // signals are all boolean (`isChecked = isControlled() ? controlledChecked()
+    // : internalChecked()`). Inferring `bool` makes the field render `false`
+    // (not the int `0`) for `aria-checked={isChecked()}`, matching Hono's SSR
+    // initial value. Only fires when the declared memo type is unknown so an
+    // explicitly-typed memo still wins.
+    if (this.typeInfoToGo(memo.type) === 'interface{}' && this.isBooleanMemo(memo, signals, propsParamMap)) {
+      return 'bool'
+    }
+
     // Default to the memo's declared type
     return this.typeInfoToGo(memo.type)
+  }
+
+  /**
+   * (#checkbox) Heuristic: does this memo evaluate to a boolean? True when its
+   * computation is a comparison (`!==`/`===`/`!=`/`==`), a negation (`!x`), or
+   * a ternary whose branches are all boolean signals/props. Used to pick `bool`
+   * (zero value `false`) over the int `0` default for the SSR initial value.
+   */
+  private isBooleanMemo(
+    memo: { computation: string; deps: string[] },
+    signals: { getter: string; initialValue: string; type: TypeInfo }[],
+    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>,
+  ): boolean {
+    const c = memo.computation
+    if (/(!==|===|!=(?!=)|==(?!=))/.test(c)) return true
+    if (/=>\s*!/.test(c)) return true
+    // Ternary `() => cond() ? a() : b()` — boolean when both branches are
+    // boolean-resolving getters (signals whose value is boolean, or boolean
+    // props).
+    const isBoolGetter = (name: string): boolean => {
+      const sig = signals.find(s => s.getter === name)
+      if (sig) {
+        if (this.typeInfoToGo(sig.type) === 'bool') return true
+        // Signal initialised from `props.X ?? false` / a boolean prop.
+        if (/\?\?\s*(true|false)\b/.test(sig.initialValue)) return true
+        const propName = this.extractPropNameFromInitialValue(sig.initialValue) ?? sig.initialValue
+        const prop = propsParamMap.get(propName)
+        if (prop && this.typeInfoToGo(prop.type, prop.defaultValue) === 'bool') return true
+        return false
+      }
+      const prop = propsParamMap.get(name)
+      return !!prop && this.typeInfoToGo(prop.type, prop.defaultValue) === 'bool'
+    }
+    const ternary = c.match(/=>\s*\w+\(\)\s*\?\s*(\w+)\(\)\s*:\s*(\w+)\(\)/)
+    if (ternary) {
+      return isBoolGetter(ternary[1]) && isBoolGetter(ternary[2])
+    }
+    return false
   }
 
   /**
@@ -3207,7 +3666,47 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
       return init.text
     }
+    // (#checkbox) `[...string literals].join(SEP)` — a const that flattens an
+    // array of pure string literals to a single string at module load (e.g.
+    // Checkbox's `stateClasses = [...].join(' ')`). Evaluate it statically so
+    // the const inlines byte-for-byte like the Hono reference. Only fires when
+    // every array element is a string/no-substitution-template literal and the
+    // separator is a string-literal argument (or omitted → default `,`).
+    const joined = this.evalStringArrayJoin(init)
+    if (joined !== null) return joined
     return null
+  }
+
+  /**
+   * (#checkbox) Statically evaluate `[<string literals>].join(<sep?>)`.
+   * Returns the joined string, or null when the shape doesn't match (non-call,
+   * non-`.join`, non-array receiver, any non-string-literal element, or a
+   * non-string-literal separator). Comments/whitespace between elements are
+   * irrelevant — the TS parser already discarded them.
+   */
+  private evalStringArrayJoin(node: ts.Expression): string | null {
+    if (!ts.isCallExpression(node)) return null
+    const callee = node.expression
+    if (!ts.isPropertyAccessExpression(callee)) return null
+    if (callee.name.text !== 'join') return null
+    let recv: ts.Expression = callee.expression
+    while (ts.isParenthesizedExpression(recv)) recv = recv.expression
+    if (!ts.isArrayLiteralExpression(recv)) return null
+    const parts: string[] = []
+    for (const el of recv.elements) {
+      if (ts.isStringLiteral(el) || ts.isNoSubstitutionTemplateLiteral(el)) {
+        parts.push(el.text)
+      } else {
+        return null
+      }
+    }
+    let sep = ','
+    if (node.arguments.length >= 1) {
+      const arg = node.arguments[0]
+      if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) sep = arg.text
+      else return null
+    }
+    return parts.join(sep)
   }
 
   /**
@@ -5101,8 +5600,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // concrete-typed props (which are never nil) are unaffected and
       // still emit `attr=""` / `attr="0"` exactly as Hono does.
       const bareId = value.expr.trim()
-      if (this.nillablePropNames.has(bareId)) {
-        const field = `.${this.capitalizeFieldName(bareId)}`
+      // Normalize a props-object access (`props.id`) to its bare prop name
+      // (`id`) so the nillable set — which is keyed by bare prop name —
+      // matches the SolidJS-style props-object pattern too, not just
+      // destructured params (#checkbox `id={props.id}`).
+      const propName =
+        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
+          ? bareId.slice(this.propsObjectName.length + 1)
+          : bareId
+      if (/^[A-Za-z_$][\w$]*$/.test(propName) && this.nillablePropNames.has(propName)) {
+        const field = `.${this.capitalizeFieldName(propName)}`
         return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr)}}}"{{end}}`
       }
       return `${name}="{{${this.convertExpressionToGo(value.expr)}}}"`

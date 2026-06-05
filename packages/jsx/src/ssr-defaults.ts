@@ -121,6 +121,20 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   // fed into the bindings map so subsequent memos can reference earlier
   // signals (Counter's `doubled = createMemo(() => count() * 2)`).
   const bindings: Record<string, EvalResult> = {}
+
+  // (#checkbox) Seed module-scope constants so a memo template-literal that
+  // references them resolves to a concrete string. Checkbox's `classes` memo
+  // interpolates `baseClasses` / `focusClasses` / `errorClasses` (pure string
+  // consts) and `stateClasses` (`[...].join(' ')`). Without these in scope the
+  // memo evaluates to `null` and the SSR `class="..."` renders empty, diverging
+  // from Hono. Only module-scope consts are seeded (component-scope locals can
+  // depend on signals/props and are evaluated lazily elsewhere).
+  for (const c of metadata.localConstants ?? []) {
+    if (!c.isModule || c.value === undefined) continue
+    if (c.name in bindings) continue
+    const v = tryStaticEval(c.value, { bindings, propsLike })
+    if (v !== UNRESOLVED) bindings[c.name] = v
+  }
   for (const sig of metadata.signals) {
     if (!sig.getter || sig.isModule) continue
     const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
@@ -263,6 +277,25 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
       node.expression.text in ctx.bindings
     ) {
       return ctx.bindings[node.expression.text]
+    }
+    // `<array>.join(<sep?>)` — evaluate when the receiver resolves to an array
+    // and the separator (default `,`) is a string. Covers `stateClasses =
+    // [...].join(' ')` (#checkbox). Other array methods stay unresolved.
+    if (
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'join'
+    ) {
+      const recv = evalNode(node.expression.expression, ctx)
+      if (Array.isArray(recv)) {
+        let sep = ','
+        if (node.arguments.length >= 1) {
+          const sepVal = evalNode(node.arguments[0], ctx)
+          if (typeof sepVal !== 'string') return UNRESOLVED
+          sep = sepVal
+        }
+        return recv.map(x => (x === null || x === undefined ? '' : `${x}`)).join(sep)
+      }
+      return UNRESOLVED
     }
     return UNRESOLVED
   }
