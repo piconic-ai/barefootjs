@@ -19,13 +19,12 @@ import path from 'node:path'
 
 export type PackageManager = 'npm' | 'bun' | 'pnpm' | 'yarn' | 'deno'
 
-// Deno is matched last: a Deno project may keep a `package.json` (and
-// thus an npm-family lockfile) for editor tooling, but `deno.lock` /
-// `deno.json(c)` is the authoritative signal that the user drives the
-// project with Deno. Listing it after the npm-family tools means a
-// repo that committed to both still resolves to the npm-family
-// lockfile that's actually installed, while a Deno-only repo (config
-// but no npm lockfile) still resolves to `deno`.
+// Deno is matched last, on purpose. A Deno project may keep a
+// `package.json` (and a bun/npm/pnpm/yarn lockfile) for editor tooling,
+// and when both are present that lockfile reflects an actually-installed
+// node_modules tree — so it takes precedence. A Deno-only repo has just
+// `deno.lock` / `deno.json(c)` and still resolves to `deno` because the
+// earlier checks find nothing.
 const LOCKFILES: Record<PackageManager, string[]> = {
   bun: ['bun.lock', 'bun.lockb'],
   pnpm: ['pnpm-lock.yaml'],

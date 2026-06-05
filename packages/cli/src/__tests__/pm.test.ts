@@ -71,10 +71,11 @@ describe('detectPackageManager', () => {
     expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('bun')
   })
 
-  // A Deno project that also keeps a package.json + npm lockfile (for
-  // editor tooling) resolves to the npm-family lockfile that's actually
-  // installed — `deno` is the last lockfile signal, not the first.
-  test('prefers an npm-family lockfile over deno.json when both exist', () => {
+  // A Deno project that also keeps a package.json + a non-Deno lockfile
+  // (here bun.lock, for editor tooling) resolves to that lockfile's
+  // tool, since it reflects an actually-installed tree — `deno` is the
+  // last lockfile signal, not the first.
+  test('prefers a non-Deno lockfile (bun) over deno.json when both exist', () => {
     writeFileSync(path.join(tmpDir, 'deno.json'), '{}')
     writeFileSync(path.join(tmpDir, 'bun.lock'), '')
     expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('bun')

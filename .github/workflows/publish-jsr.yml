@@ -1,34 +1,29 @@
-# Publish to JSR (https://jsr.io/@barefootjs)
+# Publish to JSR (https://jsr.io/@barefootjs) — manual / backfill.
 #
-# Mirrors the npm release of the core libraries onto JSR so Deno (and
-# other JSR consumers) can `import { ... } from "jsr:@barefootjs/jsx"`.
+# The automatic JSR publish runs as a step in release.yml off the same
+# Changesets bump that publishes to npm (see `scripts/jsr-publish.ts`).
+# This workflow is the manual escape hatch: re-run a publish, or
+# `dry_run` to preview the generated JSR manifests for every eligible
+# `@barefootjs/*` package without publishing.
 #
-# Gated on purpose — runs only on a manual dispatch or a pushed `v*`
-# release tag, never on PRs or ordinary pushes to main, so it can't
-# interfere with the regular CI lanes. Publishing uses JSR's GitHub
-# Actions OIDC flow (no long-lived token): the `id-token: write`
-# permission below is what authenticates `deno publish`.
+# Packages and their JSR manifests are discovered + generated
+# dynamically from each package.json, so there is nothing to maintain
+# here when a package is added — it is picked up automatically.
 #
-# One-time prerequisites (on jsr.io):
-#   1. Create the `@barefootjs` scope.
-#   2. Create each package (@barefootjs/shared, /client, /jsx) and link
-#      it to GitHub repo piconic-ai/barefootjs for OIDC publishing.
-#
-# Versions come from each package's jsr.json `version` field — keep them
-# in lock-step with package.json (the Changesets release bumps both).
-# Packages are published in dependency order (shared → client → jsx) so
-# each `jsr:@barefootjs/...` import resolves against an already-live
-# version.
-name: Publish to JSR
+# One-time prerequisites (on jsr.io): create the `@barefootjs` scope and
+# each package, linked to GitHub repo piconic-ai/barefootjs for OIDC.
+name: Publish to JSR (manual)
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
+    inputs:
+      dry_run:
+        description: 'Preview generated manifests without publishing'
+        type: boolean
+        default: false
 
 concurrency:
-  group: publish-jsr-${{ github.ref }}
+  group: publish-jsr-manual
   cancel-in-progress: false
 
 permissions:
@@ -41,6 +36,11 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
       # Floating major tag (other workflows SHA-pin their actions; pin
       # this to a verified denoland/setup-deno commit in a follow-up).
       - name: Setup Deno
@@ -48,18 +48,5 @@ jobs:
         with:
           deno-version: v2.x
 
-      # `--allow-slow-types`: the libraries don't yet carry explicit
-      # return types on every public symbol (JSR's "slow types" rule),
-      # so we opt into the slower inference instead of blocking the
-      # release on a full annotation pass.
-      - name: Publish @barefootjs/shared
-        working-directory: packages/shared
-        run: deno publish --allow-slow-types --allow-dirty
-
-      - name: Publish @barefootjs/client
-        working-directory: packages/client
-        run: deno publish --allow-slow-types --allow-dirty
-
-      - name: Publish @barefootjs/jsx
-        working-directory: packages/jsx
-        run: deno publish --allow-slow-types --allow-dirty
+      - name: Publish (or preview) JSR packages
+        run: bun scripts/jsr-publish.ts ${{ inputs.dry_run && '--dry-run' || '' }}
