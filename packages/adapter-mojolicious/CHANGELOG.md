@@ -1,5 +1,53 @@
 # @barefootjs/mojolicious
 
+## 0.7.0
+
+### Minor Changes
+
+- ac91bc6: Extract the engine-agnostic Perl runtime (`BarefootJS.pm`) into a new
+  `@barefootjs/perl` package. `@barefootjs/mojolicious` now depends on it and
+  keeps only the Mojo-specific pieces — `BarefootJS::Backend::Mojo`, the
+  `Mojolicious::Plugin::BarefootJS` binding, and the compile-time adapter that
+  emits Embedded Perl (`.html.ep`).
+
+  The runtime is Mojo-free at load time and drives any Perl template engine
+  through a pluggable backend (`encode_json` / `mark_raw` / `materialize` /
+  `render_named`), with an injectable JSON encoder. SSR output is unchanged for
+  the Mojolicious path.
+
+  Note for consumers that wire Perl `@INC` by hand: `BarefootJS.pm` now ships in
+  `@barefootjs/perl/lib` rather than `@barefootjs/mojolicious/lib`. Point `@INC`
+  at both package `lib/` directories (the Mojolicious integration's build does
+  this automatically).
+
+### Patch Changes
+
+- c02017b: Inline module-scope pure string-literal constants referenced in
+  expressions (e.g. `const labelClasses = '...'` used in a `className`
+  template literal) on the Go and Mojo template adapters. Previously such
+  an identifier lowered to an unpopulated struct-field / stash-variable
+  reference (`{{.LabelClasses}}` on Go — failing `can't evaluate field
+LabelClasses`; `$labelClasses` on Mojo — rendering empty), because a
+  module const is neither a prop, signal, nor local and no field/var ever
+  bound it. The adapters now resolve the identifier through the IR's
+  `localConstants` and inline the literal value (escaped for the target
+  template language), matching what the Hono reference produces by
+  evaluating the real JS. Only module-scope pure string literals qualify —
+  `Record<T,string>` indexed lookups, memos, signals, and function-scope
+  locals are deliberately excluded — and inlining is suppressed for any name
+  shadowed by an enclosing loop binding (matching the Go adapter's
+  loop-shadowing guards). This unblocks cross-adapter conformance for the
+  `site/ui` `label` and `input` primitives.
+
+  The Mojolicious adapter now relies on `typescript` at runtime (to parse
+  const initializers), so it is externalized in the build and declared as a
+  peer dependency, consistent with `@barefootjs/go-template`.
+
+- Updated dependencies [ac91bc6]
+- Updated dependencies [199644e]
+  - @barefootjs/perl@0.7.0
+  - @barefootjs/shared@0.7.0
+
 ## 0.6.1
 
 ### Patch Changes

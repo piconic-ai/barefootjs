@@ -1,5 +1,48 @@
 # @barefootjs/go-template
 
+## 0.7.0
+
+### Patch Changes
+
+- c02017b: Inline module-scope pure string-literal constants referenced in
+  expressions (e.g. `const labelClasses = '...'` used in a `className`
+  template literal) on the Go and Mojo template adapters. Previously such
+  an identifier lowered to an unpopulated struct-field / stash-variable
+  reference (`{{.LabelClasses}}` on Go — failing `can't evaluate field
+LabelClasses`; `$labelClasses` on Mojo — rendering empty), because a
+  module const is neither a prop, signal, nor local and no field/var ever
+  bound it. The adapters now resolve the identifier through the IR's
+  `localConstants` and inline the literal value (escaped for the target
+  template language), matching what the Hono reference produces by
+  evaluating the real JS. Only module-scope pure string literals qualify —
+  `Record<T,string>` indexed lookups, memos, signals, and function-scope
+  locals are deliberately excluded — and inlining is suppressed for any name
+  shadowed by an enclosing loop binding (matching the Go adapter's
+  loop-shadowing guards). This unblocks cross-adapter conformance for the
+  `site/ui` `label` and `input` primitives.
+
+  The Mojolicious adapter now relies on `typescript` at runtime (to parse
+  const initializers), so it is externalized in the build and declared as a
+  peer dependency, consistent with `@barefootjs/go-template`.
+
+- 677c614: Render the `Slot` component's runtime-chosen dynamic tag (`const Tag =
+children.tag`) as a children passthrough in the Go template adapter
+  instead of an impossible `{{template "Tag"}}` call, which Go's
+  `html/template` rejected (`no such template "Tag"`) while escape-walking
+  all registered templates. This lets components that use the `asChild` /
+  `Slot` pattern (e.g. `Button`) be registered and rendered server-side on
+  the Go adapter. A new additive `IRComponent.dynamicTag` flag marks the
+  node; it is consumed only by the Go adapter (Hono/CSR/Mojo ignore it).
+  Also fixes two latent Go-adapter divergences surfaced by this path. The
+  `isValidElement(x)` element guard now lowers to a real server-side
+  truthiness check (an element is renderable when there is markup to emit)
+  instead of a bogus `.IsValidElement` field access; any other user-defined
+  predicate call in a condition (e.g. `isAdmin(user)`), which a server-side
+  template genuinely cannot evaluate, now refuses with a hard `BF102` error
+  pointing to `/* @client */` rather than silently rendering a gated branch.
+  And `Record<T,string>` case values in template-literal lookups are
+  HTML-escaped to match the reference output.
+
 ## 0.6.1
 
 ### Patch Changes
