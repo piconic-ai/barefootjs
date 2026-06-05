@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"math"
+	"math/rand"
 	"os"
 	"reflect"
 	"sort"
@@ -1996,6 +1997,7 @@ func (r *Renderer) Render(opts RenderOptions) string {
 	// Auto-detect and process child component props (slices)
 	childSlices := findChildComponentSlices(opts.Props)
 	for _, slice := range childSlices {
+		setScopeIDsOnSlice(slice)
 		setScriptsOnSlice(slice, scriptCollector)
 		setPortalsOnSlice(slice, portalCollector)
 		setBoolOnSlice(slice, "BfIsChild", true)
@@ -2004,6 +2006,7 @@ func (r *Renderer) Render(opts RenderOptions) string {
 	// Auto-detect and process single child component props
 	singleChildren := findSingleChildComponents(opts.Props)
 	for _, child := range singleChildren {
+		setScopeIDOnSingle(child)
 		setScriptsOnSingle(child, scriptCollector)
 		setPortalsOnSingle(child, portalCollector)
 		setBoolField(child, "BfIsChild", true)
@@ -2136,6 +2139,89 @@ func getStringField(v interface{}, fieldName string) string {
 		return ""
 	}
 	return field.String()
+}
+
+// scopeIDChars is the alphabet for auto-generated ScopeID suffixes. It
+// mirrors the `randomID` helper the go-template adapter emits into the
+// generated New<Component>Props constructors so runtime-assigned and
+// constructor-assigned ids are indistinguishable.
+const scopeIDChars = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+// randomScopeSuffix returns a random lowercase-alphanumeric string of
+// length n. math/rand (auto-seeded since Go 1.20) is sufficient here: the
+// suffix only needs to be unique enough to keep a page's bf-s scope ids
+// from colliding, not cryptographically unpredictable.
+func randomScopeSuffix(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = scopeIDChars[rand.Intn(len(scopeIDChars))]
+	}
+	return string(b)
+}
+
+// scopeIDPrefix derives the human-readable ScopeID prefix from a child
+// component's type, e.g. `TodoItemProps` → `TodoItem`. Matches the
+// `"<Component>_" + randomID(6)` shape the generated constructors use.
+func scopeIDPrefix(t reflect.Type) string {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return strings.TrimSuffix(t.Name(), "Props")
+}
+
+// assignScopeID fills a child component's ScopeID with a generated id when
+// the caller left it empty, so application code doesn't have to mint scope
+// ids by hand (the parent's New<Component>Props constructor does the same
+// for components built through it). A non-empty ScopeID is left untouched,
+// so callers can still pin a stable id when they need one.
+func assignScopeID(structVal reflect.Value, prefix string) {
+	field := structVal.FieldByName("ScopeID")
+	if !field.IsValid() || !field.CanSet() || field.Kind() != reflect.String {
+		return
+	}
+	if field.String() != "" {
+		return
+	}
+	id := randomScopeSuffix(6)
+	if prefix != "" {
+		id = prefix + "_" + id
+	}
+	field.SetString(id)
+}
+
+// setScopeIDsOnSlice assigns a generated ScopeID to every child in a slice
+// whose ScopeID is empty.
+func setScopeIDsOnSlice(slice interface{}) {
+	v := reflect.ValueOf(slice)
+	if v.Kind() != reflect.Slice {
+		return
+	}
+	prefix := scopeIDPrefix(v.Type().Elem())
+	for i := 0; i < v.Len(); i++ {
+		item := v.Index(i)
+		if item.Kind() == reflect.Ptr {
+			if item.IsNil() {
+				continue
+			}
+			item = item.Elem()
+		}
+		if item.Kind() == reflect.Struct {
+			assignScopeID(item, prefix)
+		}
+	}
+}
+
+// setScopeIDOnSingle assigns a generated ScopeID to a single child
+// component when its ScopeID is empty.
+func setScopeIDOnSingle(child interface{}) {
+	v := reflect.ValueOf(child)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return
+	}
+	assignScopeID(v, scopeIDPrefix(v.Type()))
 }
 
 // findChildComponentSlices finds slice fields containing child component props.

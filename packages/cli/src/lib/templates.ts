@@ -4,11 +4,14 @@
 // `./adapters/<name>.ts` so this file stays focused on registration
 // surface (types, the registry maps, and defaults).
 
+import { CHI_ADAPTER } from './adapters/chi'
 import { CSR_ADAPTER } from './adapters/csr'
 import { ECHO_ADAPTER } from './adapters/echo'
+import { GIN_ADAPTER } from './adapters/gin'
 import { HONO_ADAPTER } from './adapters/hono'
 import { HONO_NODE_ADAPTER } from './adapters/hono-node'
 import { MOJO_ADAPTER } from './adapters/mojo'
+import { NETHTTP_ADAPTER } from './adapters/nethttp'
 import type { PackageManager } from './pm'
 
 /**
@@ -106,6 +109,9 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
   hono: HONO_ADAPTER,
   'hono-node': HONO_NODE_ADAPTER,
   echo: ECHO_ADAPTER,
+  gin: GIN_ADAPTER,
+  chi: CHI_ADAPTER,
+  nethttp: NETHTTP_ADAPTER,
   mojo: MOJO_ADAPTER,
   csr: CSR_ADAPTER,
 }

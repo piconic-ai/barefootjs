@@ -9,6 +9,9 @@ same JSX components on a different stack:
 | `h3` | TypeScript / UnJS h3 (Node) | 3003 | container |
 | `elysia` | TypeScript / Elysia (Bun) | 3005 | container |
 | `echo` | Go / Labstack Echo | 8080 | container |
+| `gin` | Go / Gin | 8081 | container |
+| `chi` | Go / Chi | 8082 | container |
+| `nethttp` | Go / net/http (stdlib) | 8083 | container |
 | `mojolicious` | Perl / Mojolicious::Lite | 3000 (morbo default) | container |
 | `csr` | TypeScript (no SSR) | 3002 | host (manual) |
 
@@ -34,6 +37,9 @@ host:                                  containers (docker compose):
                                          - h3           (bun + h3)
                                          - elysia       (bun + Elysia)
                                          - echo         (golang + air)
+                                         - gin          (golang + air)
+                                         - chi          (golang + air)
+                                         - nethttp      (golang + air)
                                          - mojolicious  (perl + morbo)
                                          - site-core    (bun + Hono)
 ```
@@ -45,6 +51,9 @@ The proxy routes by path prefix:
 :4000/integrations/h3/*          → h3 service
 :4000/integrations/elysia/*      → elysia service
 :4000/integrations/echo/*        → echo service
+:4000/integrations/gin/*         → gin service
+:4000/integrations/chi/*         → chi service
+:4000/integrations/nethttp/*     → nethttp service
 :4000/integrations/mojolicious/* → mojolicious service
 :4000/*                          → site-core (landing / docs / catalog)
 ```
@@ -101,7 +110,8 @@ HONO_TARGET=http://host.docker.internal:3001 docker compose up proxy
 ```
 
 The same env var pattern works for `H3_TARGET`, `ELYSIA_TARGET`,
-`ECHO_TARGET`, `MOJOLICIOUS_TARGET`, and `SITE_CORE_TARGET`.
+`ECHO_TARGET`, `GIN_TARGET`, `CHI_TARGET`, `NETHTTP_TARGET`,
+`MOJOLICIOUS_TARGET`, and `SITE_CORE_TARGET`.
 
 ### Why dev images are separate from `Dockerfile`
 
@@ -116,3 +126,8 @@ The TypeScript adapters (`hono`, `h3`, `elysia`) have **no production
 `wrangler deploy` (Elysia uses its official Cloudflare adapter). Only the
 non-JS adapters (echo, mojolicious) ship a production container image.
 Every adapter still has a `Dockerfile.dev` for the local compose network.
+
+The newer Go adapters (`gin`, `chi`, `nethttp`) are local showcase peers:
+they ship a `Dockerfile.dev` (so they run in the compose network behind the
+proxy) but no production `Dockerfile`/`wrangler.toml` yet — `echo` remains the
+deploy reference for the Go path.

@@ -1,0 +1,23 @@
+# air config for the Gin integration's dev container.
+# Watches .go sources and the host-built dist/ (templates + client JS) so
+# either kind of change triggers a rebuild + restart.
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/gin-server ."
+  bin = "./tmp/gin-server"
+  include_ext = ["go", "tmpl", "html", "js", "css"]
+  include_dir = ["dist"]
+  exclude_dir = ["tmp", "node_modules", "playwright-report", "test-results"]
+  delay = 500
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = "1s"
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true

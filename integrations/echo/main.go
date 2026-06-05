@@ -68,7 +68,11 @@ const siteHeaderHTML = `<header class="bf-header">
             <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
         </a>
         <div class="bf-header-sep"></div>
-        <a href="/integrations" class="bf-header-link">Integrations</a>
+        <nav class="bf-header-crumbs" aria-label="Breadcrumb">
+            <a href="/integrations" class="bf-header-link">Integrations</a>
+            <span class="bf-header-crumb-sep" aria-hidden="true">/</span>
+            <span class="bf-header-current" aria-current="page">Echo</span>
+        </nav>
     </div>
 </header>`
 
@@ -335,10 +339,9 @@ func todosHandler(c echo.Context) error {
 	// Build TodoItemProps array with ScopeID for each item
 	todoItems := make([]TodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
-		todoItems[i] = TodoItemProps{
-			ScopeID: fmt.Sprintf("TodoItem_%d", t.ID),
-			Todo:    t,
-		}
+		// ScopeID is left empty on purpose: bf.Renderer.Render backfills a
+		// unique one for each child at render time.
+		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
 	props := NewTodoAppProps(TodoAppInput{
@@ -418,10 +421,9 @@ func todosSSRHandler(c echo.Context) error {
 	// Build TodoItemProps array with ScopeID for each item
 	todoItems := make([]TodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
-		todoItems[i] = TodoItemProps{
-			ScopeID: fmt.Sprintf("TodoItem_%d", t.ID),
-			Todo:    t,
-		}
+		// ScopeID is left empty on purpose: bf.Renderer.Render backfills a
+		// unique one for each child at render time.
+		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
 	props := NewTodoAppSSRProps(TodoAppSSRInput{
