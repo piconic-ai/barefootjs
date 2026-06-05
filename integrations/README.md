@@ -123,11 +123,13 @@ production image and lets dev tooling evolve independently.
 
 The TypeScript adapters (`hono`, `h3`, `elysia`) have **no production
 `Dockerfile`** — they deploy straight to Cloudflare Workers via
-`wrangler deploy` (Elysia uses its official Cloudflare adapter). Only the
-non-JS adapters (echo, mojolicious) ship a production container image.
-Every adapter still has a `Dockerfile.dev` for the local compose network.
+`wrangler deploy` (Elysia uses its official Cloudflare adapter). The Go
+adapters (`echo`, `gin`, `chi`, `nethttp`) and `mojolicious` ship a
+production container image (`Dockerfile`) deployed as a Cloudflare
+Container. Every adapter still has a `Dockerfile.dev` for the local
+compose network.
 
-The newer Go adapters (`gin`, `chi`, `nethttp`) are local showcase peers:
-they ship a `Dockerfile.dev` (so they run in the compose network behind the
-proxy) but no production `Dockerfile`/`wrangler.toml` yet — `echo` remains the
-deploy reference for the Go path.
+Each Go adapter is its own Cloudflare Worker + Container, routed on the
+`barefootjs.dev` zone via its `wrangler.toml` (e.g.
+`barefootjs.dev/integrations/gin*`), and deployed by the matching
+`deploy-integrations-*` job in `.github/workflows/deploy.yml`.

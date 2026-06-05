@@ -7,7 +7,7 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["bun-types"]
+    "types": ["bun-types", "@cloudflare/workers-types"]
   },
   "include": ["*.ts", "*.tsx", "e2e/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "dist"]
