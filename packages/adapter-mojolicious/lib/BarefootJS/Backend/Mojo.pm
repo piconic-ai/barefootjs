@@ -3,6 +3,7 @@ use Mojo::Base -base, -signatures;
 
 use Mojo::ByteStream qw(b);
 use Mojo::JSON qw(to_json);
+use Scalar::Util qw(weaken);
 
 # ---------------------------------------------------------------------------
 # Reference rendering backend (Mojolicious / Mojo::Template).
@@ -41,6 +42,17 @@ has 'c';
 # props payloads; the seam lets a host pick its own implementation without
 # touching the runtime.
 has 'json_encoder' => sub { \&to_json };
+
+# Hold the controller weakly for the same reason BarefootJS does: the
+# controller owns the bf instance (which owns this backend) via its stash,
+# so a strong back-reference would close a per-request cycle the refcount GC
+# can't reclaim. `render_named` only touches `$self->c` mid-render, while the
+# controller is still alive on the request stack.
+sub new ($class, %args) {
+    my $self = $class->SUPER::new(%args);
+    weaken($self->{c}) if $self->{c};
+    return $self;
+}
 
 sub encode_json ($self, $data) {
     return $self->json_encoder->($data);

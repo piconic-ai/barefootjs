@@ -84,11 +84,21 @@ sub new ($class, $c, $config = {}) {
                 : ()),
         );
     }
-    return bless {
+    my $self = bless {
         c       => $c,
         config  => $config,
         backend => $backend,
     }, $class;
+    # Hold the controller weakly. Mojolicious stashes this bf instance under
+    # `$c->stash->{'bf.instance'}`, so a strong bf -> controller back-reference
+    # closes a per-request cycle ($c -> stash -> bf -> $c) that Perl's
+    # refcount GC cannot reclaim, leaking one controller + bf + child-renderer
+    # closures per request. The controller owns (outlives) the per-request bf,
+    # so the weak ref stays valid for the whole render. Callers that need the
+    # controller to outlive the bf instance independently must keep their own
+    # strong reference (the normal Mojo request scope already does).
+    weaken($self->{c}) if defined $c;
+    return $self;
 }
 
 # ---------------------------------------------------------------------------
@@ -246,9 +256,15 @@ sub render_child ($self, $name, %props) {
 # child, allowing callers to mix manual overrides with auto-derived
 # defaults for siblings.
 sub register_components_from_manifest ($self, $manifest, %opts) {
-    my $c = $self->c;
     my $signal_inits = $opts{signal_init} // {};
     my $parent_scope = $self->_scope_id;
+    # Weaken the parent capture so the child-renderer closures stored on
+    # `$self->_child_renderers` don't keep `$self` alive (the direct
+    # closure <-> parent cycle). The controller is reached through `$parent`
+    # at call time rather than captured strongly here, so the closures hold
+    # no strong reference to `$c` either — see the controller-cycle note in
+    # `new`. `$parent` is always live whenever a closure runs (the closure is
+    # stored on `$parent`, so `$parent` outlives every invocation).
     weaken(my $parent = $self);
 
     for my $entry_name (keys %$manifest) {
@@ -272,8 +288,10 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
             my ($props) = @_;
             # Child shares the parent's backend so nested renders go
             # through the same engine + controller (and inherit any
-            # injected json_encoder).
-            my $child_bf = BarefootJS->new($c, { backend => $parent->backend });
+            # injected json_encoder). The controller is fetched via the weak
+            # `$parent` at call time — never captured strongly — so the
+            # closure adds no edge to the per-request reference cycle.
+            my $child_bf = BarefootJS->new($parent->c, { backend => $parent->backend });
             my $slot_id = delete $props->{_bf_slot};
             $child_bf->_scope_id(
                 $slot_id ? $parent_scope . '_' . $slot_id
