@@ -117,3 +117,27 @@ a {
   color: var(--foreground);
   background: color-mix(in oklch, var(--accent) 50%, transparent);
 }
+
+/*
+ * Breadcrumb trail in the header: "Integrations / <adapter>". Grouped in
+ * one flex container with a tight internal gap so the trail reads as a
+ * unit regardless of the wider `.bf-header-inner` gap.
+ */
+.bf-header-crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.bf-header-crumb-sep {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  user-select: none;
+}
+
+.bf-header-current {
+  padding: 6px var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+}

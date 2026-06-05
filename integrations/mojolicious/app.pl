@@ -452,7 +452,11 @@ __DATA__
             <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
         </a>
         <div class="bf-header-sep"></div>
-        <a href="/integrations" class="bf-header-link">Integrations</a>
+        <nav class="bf-header-crumbs" aria-label="Breadcrumb">
+            <a href="/integrations" class="bf-header-link">Integrations</a>
+            <span class="bf-header-crumb-sep" aria-hidden="true">/</span>
+            <span class="bf-header-current" aria-current="page">Mojolicious</span>
+        </nav>
     </div>
 </header>
 

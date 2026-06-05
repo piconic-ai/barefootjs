@@ -27,7 +27,11 @@ function SiteHeader() {
           <span className="bf-header-logo-img" role="img" aria-hidden="true" />
         </a>
         <div className="bf-header-sep" />
-        <a href="/integrations" className="bf-header-link">Integrations</a>
+        <nav className="bf-header-crumbs" aria-label="Breadcrumb">
+          <a href="/integrations" className="bf-header-link">Integrations</a>
+          <span className="bf-header-crumb-sep" aria-hidden="true">/</span>
+          <span className="bf-header-current" aria-current="page">Hono</span>
+        </nav>
       </div>
     </header>
   )
