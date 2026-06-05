@@ -99,6 +99,7 @@ export const navigation: NavItem[] = [
       { title: 'Adapter Architecture', slug: 'adapters/adapter-architecture' },
       { title: 'Hono Adapter', slug: 'adapters/hono-adapter' },
       { title: 'Go Template Adapter', slug: 'adapters/go-template-adapter' },
+      { title: 'Perl Adapter', slug: 'adapters/perl-adapter' },
       { title: 'Custom Adapter', slug: 'adapters/custom-adapter' },
     ],
   },
