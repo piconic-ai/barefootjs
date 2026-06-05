@@ -30,21 +30,12 @@ C<< enabled => 1 >> to force-enable.
 use Mojo::ByteStream qw(b);
 use Mojo::IOLoop;
 use File::Spec;
+use BarefootJS::DevReload ();
 
-# Sentinel path contract with @barefootjs/cli (DEV_SENTINEL_SUBDIR /
-# DEV_SENTINEL_FILENAME in packages/cli/src/lib/build.ts). Duplicated so this
-# package avoids a runtime dep on the CLI — keep in sync with the CLI.
-my $DEV_SUBDIR         = '.dev';
-my $BUILD_ID_FILE      = 'build-id';
-my $SCROLL_STORAGE_KEY = '__bf_devreload_scroll';
-
-# Heartbeat < any reasonable proxy/IOLoop idle timeout so a quiet connection
-# doesn't get reaped between rebuilds.
-my $HEARTBEAT_S = 5;
-
-# Polling instead of Linux::Inotify2 / Mac::FSEvents keeps the runtime
-# dependency-free. Sub-second latency is imperceptible next to browser reload.
-my $POLL_S = 0.5;
+# Engine-agnostic snippet, build-id reading, and timing constants are shared
+# with the PSGI/Plack path in BarefootJS::DevReload — one source of truth.
+my $HEARTBEAT_S = $BarefootJS::DevReload::HEARTBEAT_S;
+my $POLL_S      = $BarefootJS::DevReload::POLL_S;
 
 sub register ($self, $app, $config = {}) {
     my $dist_dir = $config->{dist_dir} // 'dist';
@@ -57,7 +48,7 @@ sub register ($self, $app, $config = {}) {
     # on mode — it simply returns an empty ByteStream when disabled.
     $app->helper(bf_dev_snippet => sub ($c) {
         return b('') unless $enabled;
-        return b(_snippet($endpoint));
+        return b(BarefootJS::DevReload->snippet($endpoint));
     });
 
     return unless $enabled;
@@ -68,9 +59,8 @@ sub register ($self, $app, $config = {}) {
     my $dist_abs = File::Spec->file_name_is_absolute($dist_dir)
         ? $dist_dir
         : $app->home->child($dist_dir)->to_string;
-    my $dev_dir       = File::Spec->catdir($dist_abs, $DEV_SUBDIR);
-    my $build_id_path = File::Spec->catfile($dev_dir, $BUILD_ID_FILE);
-    mkdir $dev_dir unless -d $dev_dir;
+    BarefootJS::DevReload->ensure_dev_dir($dist_abs);
+    my $build_id_path = BarefootJS::DevReload->build_id_path($dist_abs);
 
     $app->routes->get($endpoint => sub ($c) {
         my $last_event_id = $c->req->headers->header('Last-Event-ID') // '';
@@ -83,7 +73,7 @@ sub register ($self, $app, $config = {}) {
 
         $c->write("retry: 1000\n\n");
 
-        my $initial_id = _read_build_id($build_id_path);
+        my $initial_id = BarefootJS::DevReload->read_build_id($build_id_path);
         my $last_sent  = '';
         if (length $initial_id) {
             $last_sent = $initial_id;
@@ -106,7 +96,7 @@ sub register ($self, $app, $config = {}) {
             $c->write(": hb\n\n");
         });
         $poll_id = Mojo::IOLoop->recurring($POLL_S => sub {
-            my $id = _read_build_id($build_id_path);
+            my $id = BarefootJS::DevReload->read_build_id($build_id_path);
             return unless length $id;
             return if $id eq $last_sent;
             $last_sent = $id;
@@ -115,37 +105,6 @@ sub register ($self, $app, $config = {}) {
     });
 
     return;
-}
-
-sub _read_build_id ($path) {
-    return '' unless -f $path;
-    open my $fh, '<', $path or return '';
-    local $/;
-    my $content = <$fh>;
-    close $fh;
-    $content //= '';
-    $content =~ s/^\s+|\s+$//g;
-    return $content;
-}
-
-sub _snippet ($endpoint) {
-    my $ep = _js_str($endpoint);
-    my $sk = _js_str($SCROLL_STORAGE_KEY);
-    # Small IIFE: EventSource subscriber + scrollY preservation. Idempotent
-    # across duplicate mounts (window.__bfDevReload guard).
-    return qq{<script>(function(){if(window.__bfDevReload)return;window.__bfDevReload=1;try{var s=sessionStorage.getItem($sk);if(s){sessionStorage.removeItem($sk);var y=parseInt(s,10);if(!isNaN(y)){var restore=function(){window.scrollTo(0,y)};if(document.readyState==='loading'){addEventListener('DOMContentLoaded',restore,{once:true})}else{restore()}}}}catch(e){}var es=new EventSource($ep);es.addEventListener('reload',function(){try{sessionStorage.setItem($sk,String(window.scrollY))}catch(e){}location.reload()});es.addEventListener('error',function(){})})();</script>};
-}
-
-sub _js_str ($s) {
-    # Minimal JS string escape for the handful of characters that can appear
-    # in a URL path or storage key. Good enough for package-internal + trusted
-    # operator-supplied strings; never interpolate untrusted input here.
-    my $t = $s;
-    $t =~ s/\\/\\\\/g;
-    $t =~ s/"/\\"/g;
-    $t =~ s/\n/\\n/g;
-    $t =~ s/\r/\\r/g;
-    return qq{"$t"};
 }
 
 1;
