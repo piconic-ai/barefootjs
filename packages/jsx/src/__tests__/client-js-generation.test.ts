@@ -2051,6 +2051,57 @@ describe('Client JS generation', () => {
       expect(content).toContain('applyRestAttrs')
     })
 
+    test('applyRestAttrs excludes destructured event handlers + consumed props (#1467)', () => {
+      // Regression: the runtime hands applyRestAttrs the FULL props object
+      // and filters by source key, so the exclude list must be the
+      // destructured param names (the JS rest-exclusion set) — NOT the
+      // element's HTML attr names. When a component destructures event
+      // handlers and wires them separately while also spreading `...props`,
+      // omitting them from the exclude list double-binds the handlers
+      // (fires twice) and re-emits consumed props (e.g. `error`) as raw
+      // attributes.
+      const source = `
+        'use client'
+        interface FieldProps {
+          error?: boolean
+          describedBy?: string
+          onInput?: (e: Event) => void
+          [key: string]: unknown
+        }
+        export function Field({
+          error = false,
+          describedBy,
+          onInput = () => {},
+          ...props
+        }: FieldProps) {
+          return (
+            <input
+              aria-invalid={error || undefined}
+              onInput={onInput}
+              {...props}
+            />
+          )
+        }
+      `
+      const result = compileJSX(source, 'Field.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+      const content = result.files.find(f => f.type === 'clientJs')!.content
+
+      const call = content.match(/applyRestAttrs\([^)]*\[([^\]]*)\]\)/)
+      expect(call).not.toBeNull()
+      const excluded = call![1]
+        .split(',')
+        .map(s => s.trim().replace(/^["']|["']$/g, ''))
+
+      // Destructured handler + consumed props must be excluded by SOURCE KEY
+      // so applyRestAttrs neither re-binds the event nor re-emits them. The
+      // old behaviour keyed only on HTML attr names (`aria-invalid`) and so
+      // never excluded the source key `error` — these three were missing.
+      expect(excluded).toContain('onInput')
+      expect(excluded).toContain('error')
+      expect(excluded).toContain('describedBy')
+    })
+
     test('multi-component file: stateless icons in conditional rendering produce renderChild + hydrate', () => {
       const source = `
         'use client'

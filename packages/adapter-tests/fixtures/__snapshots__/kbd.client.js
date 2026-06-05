@@ -47,7 +47,7 @@ export function initKbd(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["data-slot","className"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","asChild","children","data-slot"])
 
 
   // Reactive child component props
@@ -83,7 +83,7 @@ export function initKbdGroup(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["data-slot","className"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","asChild","children","data-slot"])
 
 
   // Reactive child component props
