@@ -73,12 +73,19 @@ runAdapterConformanceTests({
     // parity for the `site/ui` corpus is Phase 3, so these participate only
     // in Hono SSR conformance + the fixture-hydrate runtime layer for now.
     // (`label` and `kbd` are static helpers; `toggle` / `switch` /
-    // `checkbox` carry uncontrolled state; `input` / `textarea` are
-    // pass-through native controls.)
+    // `checkbox` carry uncontrolled state; `input` is a pass-through
+    // native control.)
+    //
+    // `textarea` now participates: its conditional inline-object spread
+    // (`{...(describedBy ? {...} : {})}`) lowers via
+    // `conditionalSpreadToPerl`, and its optional `rows={rows}`
+    // attribute is omitted when `undef` via the `defined`-guard in
+    // `elementAttrEmitter.emitExpression`
+    // (`<% if (defined $rows) { %>rows="<%= $rows %>"<% } %>`), matching
+    // Hono's nullish-attribute omission.
     'toggle',
     'switch',
     'checkbox',
-    'textarea',
     'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
@@ -239,6 +246,76 @@ function compileAndGenerate(source: string, adapter?: MojoAdapter) {
 // =============================================================================
 // Mojo-Specific Tests
 // =============================================================================
+
+describe('MojoAdapter - conditional inline-object spread (textarea aria-describedby)', () => {
+  // `{...(cond ? { 'aria-describedby': cond } : {})}` lowers to a Perl
+  // inline ternary of hashrefs so the falsy `{}` branch OMITS the key
+  // (bf->spread_attrs does not filter empty strings). The shared
+  // fixture only exercises the falsy branch; this pins the truthy one.
+  test('emits a Perl inline ternary of hashrefs through bf->spread_attrs', () => {
+    const { template } = compileAndGenerate(`
+function Box({ describedBy }: { describedBy?: string }) {
+  return <div {...(describedBy ? { 'aria-describedby': describedBy } : {})} />
+}
+`)
+    expect(template).toContain(
+      "bf->spread_attrs($describedBy ? { 'aria-describedby' => $describedBy } : {})",
+    )
+  })
+
+  test('resolves the value reference and preserves the static key for a second prop', () => {
+    const { template } = compileAndGenerate(`
+function Box({ label }: { label: string }) {
+  return <div {...(label ? { 'data-label': label } : {})} />
+}
+`)
+    expect(template).toContain(
+      "bf->spread_attrs($label ? { 'data-label' => $label } : {})",
+    )
+  })
+
+  test('falls back to BF101 for a computed (non-static) object key', () => {
+    const adapter = new MojoAdapter()
+    const ir = compileToIR(`
+function Box({ k, v }: { k?: string; v?: string }) {
+  return <div {...(v ? { [k]: v } : {})} />
+}
+`, adapter)
+    adapter.generate(ir)
+    const errs = (adapter as unknown as { errors: { code: string }[] }).errors
+    expect(errs.some(e => e.code === 'BF101')).toBe(true)
+  })
+})
+
+describe('MojoAdapter - nullish optional-attribute omission (textarea rows)', () => {
+  // A no-destructure-default, nillable-typed prop is `undef` when the
+  // caller omits it; guard its bare-reference attribute with Perl
+  // `defined` so it DROPS instead of rendering `attr=""` — matching
+  // Hono's nullish-attribute omission. Concrete/defaulted props are
+  // never `undef` and stay unconditional.
+  test('guards a no-default nillable attr with a Perl defined check', () => {
+    const { template } = compileAndGenerate(`
+function C({ rows }: { rows?: number }) {
+  return <textarea rows={rows} />
+}
+`)
+    expect(template).toContain('<% if (defined $rows) { %>rows="<%= $rows %>"<% } %>')
+    // Must NOT emit the bare unconditional form.
+    expect(template).not.toMatch(/(?<!\{ %>)rows="<%= \$rows %>"/)
+  })
+
+  test('leaves a defaulted attr unconditional (scope did not widen)', () => {
+    const { template } = compileAndGenerate(`
+function C({ value = '' }: { value?: string }) {
+  return <textarea value={value} />
+}
+`)
+    // `value` has a destructure default → never undef → unconditional,
+    // exactly like Hono's value="".
+    expect(template).toContain('value="<%= $value %>"')
+    expect(template).not.toContain('defined $value')
+  })
+})
 
 describe('MojoAdapter - Template Generation', () => {
   test('generates basic element with scope marker', () => {

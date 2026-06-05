@@ -434,6 +434,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private moduleStringConsts: Map<string, string> = new Map()
 
+  /**
+   * Set of prop NAMES whose resolved Go struct-field type is exactly
+   * `interface{}` — i.e. nillable. Populated at `generate()` entry from
+   * the SAME per-prop Go-type computation `generatePropsStruct` /
+   * `generateInputStruct` use (`propTypeOverrides` + `typeInfoToGo`), so
+   * it can't drift from the actual field types. Used by
+   * `elementAttrEmitter.emitExpression` to omit a dynamic attribute whose
+   * value is a bare reference to a nillable prop when that prop is nil
+   * (Hono-style nullish-attribute omission: an `undefined`-valued
+   * attribute is dropped rather than rendered as `attr=""`). Concrete
+   * (`string`/`int`/`bool`) fields are never in this set and always emit
+   * unconditionally, matching Hono's `value=""` / `data-count="0"`.
+   */
+  private nillablePropNames: Set<string> = new Set()
+
   constructor(options: GoTemplateAdapterOptions = {}) {
     super()
     this.options = {
@@ -455,6 +470,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.propsObjectName = ir.metadata.propsObjectName
     this.restPropsName = ir.metadata.restPropsName ?? null
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.nillablePropNames = this.collectNillablePropNames(ir)
 
     // Surface loop-body usages of components imported from sibling
     // .tsx files. The adapter emits `{{template "X" .}}` for these,
@@ -1066,6 +1082,40 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * Resolve a prop param's Go struct-field type using the SAME logic
+   * `generatePropsStruct` / `generateInputStruct` use for the field
+   * declaration: a `propTypeOverrides` entry (signal-inferred override)
+   * wins, otherwise `typeInfoToGo(param.type, param.defaultValue)`.
+   * Factored out so the nillable-field set (`collectNillablePropNames`)
+   * can't drift from the actual emitted field types.
+   */
+  private resolvePropGoType(
+    param: IRMetadata['propsParams'][number],
+    propTypeOverrides: Map<string, string>,
+  ): string {
+    return propTypeOverrides.get(param.name) ?? this.typeInfoToGo(param.type, param.defaultValue)
+  }
+
+  /**
+   * Build the set of prop NAMES whose resolved Go field type is exactly
+   * `interface{}` (nillable). Uses the same `propTypeOverrides` +
+   * `resolvePropGoType` pipeline as the struct generators, so a prop
+   * that ends up `interface{}` on the Props struct — and only such a
+   * prop — is treated as nillable for Hono-style attribute omission.
+   * Concrete (`string`/`int`/`bool`/`[]T`/struct) types are excluded.
+   */
+  private collectNillablePropNames(ir: ComponentIR): Set<string> {
+    const propTypeOverrides = this.buildPropTypeOverrides(ir)
+    const nillable = new Set<string>()
+    for (const param of ir.metadata.propsParams) {
+      if (this.resolvePropGoType(param, propTypeOverrides) === 'interface{}') {
+        nillable.add(param.name)
+      }
+    }
+    return nillable
+  }
+
+  /**
    * Generate Input struct for a component
    */
   private generateInputStruct(
@@ -1096,7 +1146,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const param of ir.metadata.propsParams) {
       const fieldName = this.capitalizeFieldName(param.name)
       if (nestedArrayFields.has(fieldName)) continue
-      const goType = propTypeOverrides.get(param.name) ?? this.typeInfoToGo(param.type, param.defaultValue)
+      const goType = this.resolvePropGoType(param, propTypeOverrides)
       lines.push(`\t${fieldName} ${goType}`)
     }
 
@@ -1169,7 +1219,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const fieldName = this.capitalizeFieldName(param.name)
       // Skip if this field will be replaced by a typed array for nested components
       if (nestedArrayFields.has(fieldName)) continue
-      const goType = propTypeOverrides.get(param.name) ?? this.typeInfoToGo(param.type, param.defaultValue)
+      const goType = this.resolvePropGoType(param, propTypeOverrides)
       const jsonTag = this.toJsonTag(param.name)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
       propFieldNames.add(fieldName)
@@ -1922,6 +1972,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
   ): string | null {
     const trimmed = spreadExpr.trim()
+    // Conditional inline-object spread:
+    //   `{...(COND ? { 'k': v } : {})}` (either branch possibly `{}`).
+    // Lower to an immediately-invoked func literal that conditionally
+    // builds the bag, so the falsy branch yields an empty map (the key
+    // is OMITTED rather than rendered as `k=""` — `SpreadAttrs` does
+    // NOT filter empty strings). Returns null for any shape it can't
+    // faithfully convert so the caller falls back to BF101 (#textarea).
+    const conditional = this.buildConditionalSpreadInitializer(trimmed, ir)
+    if (conditional !== undefined) return conditional
     // Signal-getter call: `attrs()` — pluck the signal's initialValue
     // and translate the JS object literal to a Go map literal.
     const callMatch = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*\)$/.exec(trimmed)
@@ -1972,6 +2031,148 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
     return null
+  }
+
+  /**
+   * Lower a conditional inline-object spread bag value:
+   *   `(COND ? { 'aria-describedby': describedBy } : {})`
+   * into an immediately-invoked Go func literal that conditionally
+   * builds the map (so the falsy branch OMITS the key rather than
+   * rendering it as an empty string, which `SpreadAttrs` does not
+   * filter):
+   *
+   *   func() map[string]any {
+   *     if in.DescribedBy != nil && in.DescribedBy != "" {
+   *       return map[string]any{"aria-describedby": in.DescribedBy}
+   *     }
+   *     return map[string]any{}
+   *   }()
+   *
+   * Returns:
+   *   - `undefined` when the expression is NOT a parenthesized ternary
+   *     of object literals — the caller falls through to other shapes.
+   *   - `null` when it IS that shape but a part can't be faithfully
+   *     converted (non-static key, unsupported condition, …) — the
+   *     caller raises BF101.
+   *   - the Go IIFE string when fully convertible.
+   */
+  private buildConditionalSpreadInitializer(
+    spreadExpr: string,
+    ir: ComponentIR,
+  ): string | null | undefined {
+    const expr = this.parseLiteralExpression(spreadExpr)
+    if (!expr || !ts.isConditionalExpression(expr)) return undefined
+    const whenTrue = this.unwrapParens(expr.whenTrue)
+    const whenFalse = this.unwrapParens(expr.whenFalse)
+    if (!ts.isObjectLiteralExpression(whenTrue) || !ts.isObjectLiteralExpression(whenFalse)) {
+      return undefined
+    }
+    // Condition → Go bool against `in.`, type-aware on the prop.
+    const goCond = this.conditionToGoBool(expr.condition, ir)
+    if (goCond === null) return null
+    const trueMap = this.objectLiteralToGoSpreadMap(whenTrue, ir)
+    const falseMap = this.objectLiteralToGoSpreadMap(whenFalse, ir)
+    if (trueMap === null || falseMap === null) return null
+    return (
+      `func() map[string]any {\n` +
+      `\t\tif ${goCond} {\n` +
+      `\t\t\treturn ${trueMap}\n` +
+      `\t\t}\n` +
+      `\t\treturn ${falseMap}\n` +
+      `\t}()`
+    )
+  }
+
+  /** Strip redundant parenthesised wrappers off a TS expression. */
+  private unwrapParens(node: ts.Expression): ts.Expression {
+    let e = node
+    while (ts.isParenthesizedExpression(e)) e = e.expression
+    return e
+  }
+
+  /**
+   * Convert a conditional-spread condition expression to a Go bool in
+   * the `in.` context. Supports a bare prop identifier (`describedBy`)
+   * and its negation (`!describedBy`), type-aware on the prop:
+   *   string  → `in.X != ""`
+   *   boolean → `in.X`
+   *   number  → `in.X != 0`
+   *   unknown / interface{} → `in.X != nil && in.X != ""`
+   *     (faithful JS string-truthiness for an interface holding a
+   *     string — textarea's `describedBy` resolves to interface{}).
+   * Returns null for any other shape (caller → BF101).
+   */
+  private conditionToGoBool(
+    condition: ts.Expression,
+    ir: ComponentIR,
+  ): string | null {
+    let node = this.unwrapParens(condition)
+    let negate = false
+    if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.ExclamationToken) {
+      negate = true
+      node = this.unwrapParens(node.operand)
+    }
+    if (!ts.isIdentifier(node)) return null
+    const param = ir.metadata.propsParams.find(p => p.name === node.text)
+    if (!param) return null
+    const field = `in.${this.capitalizeFieldName(param.name)}`
+    const prim = param.type.kind === 'primitive' ? param.type.primitive : undefined
+    let truthy: string
+    if (prim === 'boolean') {
+      truthy = field
+    } else if (prim === 'number') {
+      truthy = `${field} != 0`
+    } else if (prim === 'string') {
+      truthy = `${field} != ""`
+    } else {
+      // unknown / interface{}: non-nil non-empty-string.
+      truthy = `${field} != nil && ${field} != ""`
+    }
+    if (!negate) return truthy
+    // Negation: wrap so `!` applies to the whole truthiness test.
+    if (prim === 'boolean') return `!${field}`
+    if (prim === 'number') return `${field} == 0`
+    if (prim === 'string') return `${field} == ""`
+    return `${field} == nil || ${field} == ""`
+  }
+
+  /**
+   * Convert a static object literal (`{ 'aria-describedby': describedBy }`)
+   * into a Go `map[string]any{...}` literal for a conditional spread.
+   * Only static string/identifier keys are allowed; values resolve
+   * prop-identifier references to `in.FieldName` and string literals to
+   * Go string literals. Returns null for any computed/spread/dynamic
+   * key or unsupported value (caller → BF101). Empty object → `map[string]any{}`.
+   */
+  private objectLiteralToGoSpreadMap(
+    obj: ts.ObjectLiteralExpression,
+    ir: ComponentIR,
+  ): string | null {
+    const entries: string[] = []
+    for (const prop of obj.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      let key: string
+      if (ts.isIdentifier(prop.name)) {
+        key = prop.name.text
+      } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
+        key = prop.name.text
+      } else {
+        return null
+      }
+      const val = this.unwrapParens(prop.initializer)
+      let goVal: string
+      if (ts.isStringLiteral(val) || ts.isNoSubstitutionTemplateLiteral(val)) {
+        goVal = JSON.stringify(val.text)
+      } else if (ts.isIdentifier(val)) {
+        const param = ir.metadata.propsParams.find(p => p.name === val.text)
+        if (!param) return null
+        goVal = `in.${this.capitalizeFieldName(param.name)}`
+      } else {
+        return null
+      }
+      entries.push(`${JSON.stringify(key)}: ${goVal}`)
+    }
+    return `map[string]any{${entries.join(', ')}}`
   }
 
   /**
@@ -4885,6 +5086,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (parsed.kind === 'conditional' || parsed.kind === 'template-literal') {
         // Inline Go template syntax with embedded `{{...}}` actions.
         return `${name}="${this.renderParsedExpr(parsed)}"`
+      }
+      // Hono-style nullish-attribute omission (#textarea rows): when the
+      // attribute value is a BARE reference to a nillable (`interface{}`)
+      // prop field, guard emission on `ne .X nil` so an unset optional
+      // prop drops the attribute entirely instead of rendering `attr=""`.
+      // Hono omits `undefined`/`null`-valued attributes; this restores
+      // parity. Scope is deliberately narrow — bare identifiers only — so
+      // member exprs, calls, ternaries, template literals, and
+      // concrete-typed props (which are never nil) are unaffected and
+      // still emit `attr=""` / `attr="0"` exactly as Hono does.
+      const bareId = value.expr.trim()
+      if (this.nillablePropNames.has(bareId)) {
+        const field = `.${this.capitalizeFieldName(bareId)}`
+        return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr)}}}"{{end}}`
       }
       return `${name}="{{${this.convertExpressionToGo(value.expr)}}}"`
     },

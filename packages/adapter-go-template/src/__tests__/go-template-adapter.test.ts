@@ -80,12 +80,19 @@ runAdapterConformanceTests({
     // parity for the `site/ui` corpus is Phase 3, so these participate only
     // in Hono SSR conformance + the fixture-hydrate runtime layer for now.
     // (`label` and `kbd` are static helpers; `toggle` / `switch` /
-    // `checkbox` carry uncontrolled state; `input` / `textarea` are
-    // pass-through native controls.)
+    // `checkbox` carry uncontrolled state; `input` is a pass-through
+    // native control.)
+    //
+    // `textarea` now participates: its conditional inline-object spread
+    // (`{...(describedBy ? {...} : {})}`) lowers via
+    // `buildConditionalSpreadInitializer`, and its optional
+    // `rows={rows}` attribute is omitted when nil via the nillable-field
+    // guard in `elementAttrEmitter.emitExpression`
+    // (`{{if ne .Rows nil}}rows="{{.Rows}}"{{end}}`), matching Hono's
+    // nullish-attribute omission.
     'toggle',
     'switch',
     'checkbox',
-    'textarea',
     'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Go template
@@ -815,6 +822,90 @@ export function List() {
 }
 `)
       expect(adapter.generate(structIr).types!).toContain('Items: []Item{Item{ID: "a"}},')
+    })
+  })
+
+  describe('conditional inline-object spread (textarea aria-describedby)', () => {
+    // `{...(cond ? { 'aria-describedby': cond } : {})}` lowers to an
+    // IIFE-of-maps in `NewXxxProps` so the falsy branch OMITS the key
+    // (SpreadAttrs does not filter empty strings). The fixture only
+    // exercises the falsy branch; this pins the TRUTHY branch.
+    test('lowers to a conditional map IIFE and keeps the {{bf_spread_attrs}} template', () => {
+      const source = `
+function Box({ describedBy }: { describedBy?: string }) {
+  return <div {...(describedBy ? { 'aria-describedby': describedBy } : {})} />
+}
+`
+      const { template, types } = compileAndGenerate(source)
+      // Template emission is unchanged from the proven {...props} path.
+      expect(template).toContain('{{bf_spread_attrs .Spread_0}}')
+      // The bag value is a conditional map built in NewBoxProps. The
+      // prop type is unresolved (interface{}), so the condition is the
+      // nil/empty-string truthiness guard.
+      expect(types).toContain('Spread_0: func() map[string]any {')
+      expect(types).toContain('if in.DescribedBy != nil && in.DescribedBy != "" {')
+      expect(types).toContain('return map[string]any{"aria-describedby": in.DescribedBy}')
+      expect(types).toContain('return map[string]any{}')
+    })
+
+    test('resolves the object value reference and key for a second prop', () => {
+      const source = `
+function Box({ label }: { label: string }) {
+  return <div {...(label ? { 'data-label': label } : {})} />
+}
+`
+      const { types } = compileAndGenerate(source)
+      // The condition prop and the value reference resolve to `in.<Field>`,
+      // the static key is preserved. (The analyzer surfaces these
+      // destructured props as `unknown`/`interface{}`, so the condition
+      // is the nil/empty-string guard rather than the bare `!= ""` form.)
+      expect(types).toContain('if in.Label != nil && in.Label != "" {')
+      expect(types).toContain('return map[string]any{"data-label": in.Label}')
+    })
+
+    test('refuses a non-identifier condition with BF101 (out-of-shape fallback)', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+function Box({ a, b }: { a?: string; b?: string }) {
+  return <div {...(a === b ? { 'data-x': a } : {})} />
+}
+`
+      const ir = compileToIR(source, adapter)
+      adapter.generate(ir)
+      const errs = (adapter as unknown as { errors: { code: string }[] }).errors
+      expect(errs.some(e => e.code === 'BF101')).toBe(true)
+    })
+  })
+
+  describe('nullish optional-attribute omission (textarea rows)', () => {
+    // An optional, no-default prop whose Go field type resolves to
+    // `interface{}` (nillable) is emitted with a `ne .X nil` guard so an
+    // unset value DROPS the attribute instead of rendering `attr=""` —
+    // matching Hono's nullish-attribute omission. Concrete/defaulted
+    // props are never nil and stay unconditional.
+    test('guards a nillable optional attr with {{if ne .X nil}}', () => {
+      const source = `
+function C({ rows }: { rows?: number }) {
+  return <textarea rows={rows} />
+}
+`
+      const { template } = compileAndGenerate(source)
+      expect(template).toContain('{{if ne .Rows nil}}rows="{{.Rows}}"{{end}}')
+      // Must NOT emit the bare unconditional form.
+      expect(template).not.toMatch(/(?<!if ne \.Rows nil}})rows="\{\{\.Rows\}\}"/)
+    })
+
+    test('leaves a concrete/defaulted attr unconditional (scope did not widen)', () => {
+      const source = `
+function C({ value = '' }: { value?: string }) {
+  return <textarea value={value} />
+}
+`
+      const { template } = compileAndGenerate(source)
+      // `value` has a destructure default → concrete `string` field →
+      // never nil → emitted unconditionally, exactly like Hono's value="".
+      expect(template).toContain('value="{{.Value}}"')
+      expect(template).not.toContain('if ne .Value nil')
     })
   })
 
