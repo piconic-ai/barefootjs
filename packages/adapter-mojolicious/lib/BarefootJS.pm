@@ -1,40 +1,72 @@
 package BarefootJS;
-use Mojo::Base -base, -signatures;
+use strict;
+use warnings;
+use utf8;
+use feature 'signatures';
+no warnings 'experimental::signatures';
 
 use POSIX ();
 use Scalar::Util qw(looks_like_number weaken);
 
-# NOTE: This runtime is template-engine-agnostic by design. All operations
-# that depend on *how* a template is rendered — JSON marshalling, raw-string
-# marking, JSX-children materialisation, and named-template rendering — are
-# delegated to a pluggable `backend` (see BarefootJS::Backend::Mojo for the
-# reference Mojolicious implementation). The only residual core dependency on
-# the Mojo distribution is `Mojo::Base` above (OO + signatures); the
-# value/render seam no longer hard-codes Mojo::JSON / Mojo::ByteStream.
+# NOTE: This runtime is template-engine-agnostic AND framework-agnostic by
+# design, so it can ship as a standalone CPAN distribution. It depends only on
+# core Perl (subroutine signatures + the hand-rolled minimal accessor base
+# below — no Mojo::Base, no Class::Tiny). Every operation that depends on *how*
+# a template is rendered — JSON marshalling, raw-string marking, JSX-children
+# materialisation, and named-template rendering — is delegated to a pluggable
+# `backend` (see BarefootJS::Backend::Mojo for the reference Mojolicious
+# implementation), which is the only component that pulls in the Mojo
+# distribution, and only when it is actually used.
 
-has 'c';       # Mojolicious controller (kept for back-compat accessors)
-has 'config';  # Plugin config
+# ---------------------------------------------------------------------------
+# Minimal accessor base (no Mojo::Base / Class::Tiny dependency)
+# ---------------------------------------------------------------------------
+#
+# Generates read/write accessors with optional lazy defaults so the runtime
+# stays free of any non-core OO base. Semantics mirror the Mojo::Base `has`
+# this class used to inherit: a getter returns the stored value (building it
+# from the default on first access if unset); a setter stores the value and
+# returns $self for chaining. A default is either a plain scalar or a coderef
+# invoked as `$default->($self)` (for per-instance refs like `[]` / `{}` and
+# the lazily-required Mojo backend).
+my %ATTR_DEFAULT = (
+    _scripts         => sub { [] },
+    _script_seen     => sub { {} },
+    _child_renderers => sub { {} },
+    _is_child        => 0,
+    # Lazily fall back to the Mojo reference backend so a bare-blessed
+    # instance (the pure-function unit tests) and the historical
+    # `BarefootJS->new($c, ...)` callers keep working unchanged. A non-Mojo
+    # host injects its own backend via `BarefootJS->new($c, { backend => $b })`
+    # and never triggers this require — keeping the core load Mojo-free.
+    backend          => sub {
+        require BarefootJS::Backend::Mojo;
+        return BarefootJS::Backend::Mojo->new;
+    },
+);
 
-# Rendering backend — the template-engine seam (#engine-abstraction). Lazily
-# defaults to the Mojo reference backend so a bare-blessed instance (used by
-# the pure-function unit tests) and the historical `BarefootJS->new($c, ...)`
-# callers keep working unchanged. A non-Mojo host injects its own backend via
-# `BarefootJS->new($c, { backend => $b })`. `require`d lazily so loading the
-# default doesn't drag the Mojo render modules in until something actually
-# renders.
-has 'backend' => sub {
-    require BarefootJS::Backend::Mojo;
-    return BarefootJS::Backend::Mojo->new;
-};
-
-# Internal state
-has '_scripts' => sub { [] };
-has '_script_seen' => sub { {} };
-has '_scope_id';
-has '_is_child' => 0;
-has '_bf_parent';  # Host scope id when this scope is a slot-attached child
-has '_bf_mount';   # Slot id in host
-has '_props';
+# c            — Mojolicious controller (kept for back-compat accessors)
+# config       — plugin / instance config
+# backend      — the template-engine seam (#engine-abstraction)
+# _scope_id    — addressable scope id
+# _bf_parent / _bf_mount — slot identity when this scope is slot-attached
+# _props       — props serialised into bf-p / the scope comment
+for my $attr (qw(
+    c config backend
+    _scripts _script_seen _scope_id _is_child _bf_parent _bf_mount _props
+    _child_renderers
+)) {
+    no strict 'refs';
+    *{"BarefootJS::$attr"} = sub {
+        my $self = shift;
+        if (@_) { $self->{$attr} = shift; return $self; }
+        if (!exists $self->{$attr} && exists $ATTR_DEFAULT{$attr}) {
+            my $d = $ATTR_DEFAULT{$attr};
+            $self->{$attr} = ref($d) eq 'CODE' ? $d->($self) : $d;
+        }
+        return $self->{$attr};
+    };
+}
 
 sub new ($class, $c, $config = {}) {
     # Build (or accept an injected) rendering backend. The default Mojo
@@ -52,11 +84,11 @@ sub new ($class, $c, $config = {}) {
                 : ()),
         );
     }
-    return $class->SUPER::new(
+    return bless {
         c       => $c,
         config  => $config,
         backend => $backend,
-    );
+    }, $class;
 }
 
 # ---------------------------------------------------------------------------
@@ -166,8 +198,7 @@ sub register_script ($self, $path) {
 # ---------------------------------------------------------------------------
 # Child Component Rendering
 # ---------------------------------------------------------------------------
-
-has '_child_renderers' => sub { {} };
+# (`_child_renderers` accessor is generated by the minimal accessor base above.)
 
 sub register_child_renderer ($self, $name, $renderer) {
     $self->_child_renderers->{$name} = $renderer;
