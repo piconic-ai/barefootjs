@@ -76,35 +76,15 @@ runAdapterConformanceTests({
     // option fixed on the Hono side. Separate follow-up.
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b: basic interactive `site/ui` primitives. Cross-adapter
-    // parity for the `site/ui` corpus is Phase 3, so these participate only
-    // in Hono SSR conformance + the fixture-hydrate runtime layer for now.
-    // (`label` and `kbd` are static helpers; `toggle` / `switch` /
-    // `checkbox` carry uncontrolled state; `input` is a pass-through
-    // native control.)
-    //
-    // `textarea` now participates: its conditional inline-object spread
-    // (`{...(describedBy ? {...} : {})}`) lowers via
-    // `buildConditionalSpreadInitializer`, and its optional
-    // `rows={rows}` attribute is omitted when nil via the nillable-field
-    // guard in `elementAttrEmitter.emitExpression`
-    // (`{{if ne .Rows nil}}rows="{{.Rows}}"{{end}}`), matching Hono's
-    // nullish-attribute omission.
+    // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity
+    // (label / input / textarea / checkbox now participate):
+    //   toggle / switch — the reactive `classes` memo interpolates
+    //     `Record<T,string>[variant|size]` lookups, which have no SSR
+    //     lowering yet (known limitation).
+    //   kbd — multi-export source (Kbd / KbdGroup); the harness renders the
+    //     last-registered export rather than the pinned Kbd.
     'toggle',
     'switch',
-    // `checkbox` now participates: it composes `CheckIcon` and uses the
-    // SolidJS props-object pattern. Unblocked by (a) re-adding the merged
-    // sibling's `"fmt"` import + emitting only referenced child components in
-    // the harness; (b) routing the non-param `<CheckIcon data-slot=.../>`
-    // attribute into the child's rest bag instead of an invalid `Data-slot`
-    // field; (c) enumerating inherited props-object accesses
-    // (`className`/`id`/`disabled`) as Input/Props fields, computing the
-    // template-literal `classes` memo's SSR value, and rendering boolean
-    // ternary memos (`isChecked`) as `false`. See the
-    // `props-object inherited-attribute enumeration` / `cross-component child
-    // rest-bag routing` unit tests below. `toggle`/`switch` share the
-    // inherited-attr fix but stay skipped on an additional
-    // `Record[key]`-in-memo-className blocker.
     'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Go template

@@ -280,6 +280,10 @@ export type { WrapReason } from './ir-to-client-js/reactivity'
 // HTML constants
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants'
 
+// Shared props-object-pattern helpers for the Go / Mojo template adapters
+export { augmentInheritedPropAccesses, parseRecordIndexAccess } from './augment-inherited-props'
+export type { RecordIndexAccess, RecordIndexEntry } from './augment-inherited-props'
+
 // HTML element attribute types
 export type {
   // Event types

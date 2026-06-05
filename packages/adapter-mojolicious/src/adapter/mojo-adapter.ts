@@ -47,6 +47,8 @@ import {
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
+  augmentInheritedPropAccesses,
+  parseRecordIndexAccess,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
 
@@ -252,76 +254,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
   }
 
-  /**
-   * (#checkbox) Enumerate inherited-attribute accesses for the SolidJS
-   * props-object pattern, appending any `props.<name>` the component reads but
-   * that isn't in `propsParams` (inherited `ButtonHTMLAttributes` members like
-   * `className` / `id` / `disabled`). Mutates `ir.metadata.propsParams` in
-   * place so `nullableOptionalProps` (and the template emission) treat them
-   * uniformly. Idempotent. See the Go adapter's identically-named method.
-   *
-   * Types: a bare-reference attribute (`id={props.id}`) → `unknown` (no
-   * default → guarded with Perl `defined`, so the attribute is omitted when
-   * the caller doesn't pass it — Hono parity); a boolean attribute
-   * (`disabled`) → `boolean`; otherwise (`className`) → `string`.
-   */
-  private augmentInheritedPropAccesses(ir: ComponentIR): void {
-    const propsObj = ir.metadata.propsObjectName
-    if (!propsObj) return
-    const existing = new Set(ir.metadata.propsParams.map(p => p.name))
-
-    const accessed = new Set<string>()
-    const bareRefProps = new Set<string>()
-    const booleanAttrProps = new Set<string>()
-    const accessRe = new RegExp(`(?:^|[^\\w$.])${propsObj}\\.([A-Za-z_$][\\w$]*)`, 'g')
-    const scan = (s: string | undefined): void => {
-      if (!s) return
-      for (const m of s.matchAll(accessRe)) accessed.add(m[1])
-    }
-    for (const memo of ir.metadata.memos) scan(memo.computation)
-    for (const sig of ir.metadata.signals) scan(sig.initialValue)
-    for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
-
-    const prefix = `${propsObj}.`
-    const walk = (node: unknown): void => {
-      if (!node || typeof node !== 'object') return
-      const el = node as {
-        attrs?: Array<{ name: string; value?: { kind?: string; expr?: string; presenceOrUndefined?: boolean } }>
-        children?: unknown[]
-      }
-      for (const attr of el.attrs ?? []) {
-        const v = attr.value
-        if (v?.kind === 'expression' && typeof v.expr === 'string') {
-          scan(v.expr)
-          const expr = v.expr.trim()
-          if (isBooleanAttr(attr.name) || v.presenceOrUndefined) {
-            const m = expr.match(new RegExp(`^${propsObj}\\.([A-Za-z_$][\\w$]*)`))
-            if (m) booleanAttrProps.add(m[1])
-          } else if (expr.startsWith(prefix)) {
-            const rest = expr.slice(prefix.length)
-            if (/^[A-Za-z_$][\w$]*$/.test(rest)) bareRefProps.add(rest)
-          }
-        }
-      }
-      for (const child of el.children ?? []) {
-        const c = child as { element?: unknown }
-        walk(c.element ?? child)
-      }
-    }
-    walk(ir.root)
-
-    for (const name of accessed) {
-      if (existing.has(name)) continue
-      const type: TypeInfo = booleanAttrProps.has(name)
-        ? { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
-        : bareRefProps.has(name)
-          ? { kind: 'unknown', raw: 'unknown' }
-          : { kind: 'primitive', raw: 'string', primitive: 'string' }
-      ir.metadata.propsParams.push({ name, type, optional: true })
-      existing.add(name)
-    }
-  }
-
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
     this.propsObjectName = ir.metadata.propsObjectName ?? null
@@ -329,10 +261,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // pattern (`function Checkbox(props: CheckboxProps)`) before deriving
     // `nullableOptionalProps`, so a bare optional attribute like
     // `id={props.id}` gets the Perl `defined`-guard (Hono-style omission).
-    // Mirrors the Go adapter's `augmentInheritedPropAccesses`. The harness
-    // separately declares the matching stash vars (Pass-1 IR serialization
-    // happens before `generate`, so this mutation doesn't reach it).
-    this.augmentInheritedPropAccesses(ir)
+    // Shared with the Go adapter (single source of truth in `@barefootjs/jsx`).
+    // The harness separately declares the matching stash vars (Pass-1 IR
+    // serialization happens before `generate`, so this mutation doesn't reach it).
+    augmentInheritedPropAccesses(ir)
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
     // No-destructure-default props → `undef` when the caller omits them
     // → guard their bare-reference attribute emission with Perl `defined`
@@ -1594,52 +1526,17 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * unsupported shape). Mirror of the Go adapter's `recordIndexAccessToGoMap`.
    */
   private recordIndexAccessToPerl(val: ts.Expression): string | null {
-    if (!ts.isElementAccessExpression(val)) return null
-    const obj = val.expression
-    const arg = val.argumentExpression
-    if (!ts.isIdentifier(obj) || !ts.isIdentifier(arg)) return null
-    // KEY must be a prop.
-    if (!this.propsParams.some(p => p.name === arg.text)) return null
-    // IDENT must resolve to a module-scope object-literal const.
-    const constInfo = this.localConstants.find(
-      c => c.name === obj.text && c.isModule,
-    )
-    if (constInfo?.value === undefined) return null
-    const sf = ts.createSourceFile(
-      '__rec.ts', `(${constInfo.value})`, ts.ScriptTarget.Latest, true,
-    )
-    const stmt = sf.statements[0]
-    if (!stmt || !ts.isExpressionStatement(stmt)) return null
-    let parsed: ts.Expression = stmt.expression
-    while (ts.isParenthesizedExpression(parsed)) parsed = parsed.expression
-    if (!ts.isObjectLiteralExpression(parsed)) return null
-    const entries: string[] = []
-    for (const prop of parsed.properties) {
-      if (!ts.isPropertyAssignment(prop)) return null
-      let mapKey: string
-      if (ts.isIdentifier(prop.name)) {
-        mapKey = prop.name.text
-      } else if (
-        ts.isStringLiteral(prop.name) ||
-        ts.isNoSubstitutionTemplateLiteral(prop.name)
-      ) {
-        mapKey = prop.name.text
-      } else {
-        return null
-      }
-      let v: ts.Expression = prop.initializer
-      while (ts.isParenthesizedExpression(v)) v = v.expression
-      let mapVal: string
-      if (ts.isNumericLiteral(v)) {
-        mapVal = v.text
-      } else if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) {
-        mapVal = `'${v.text.replace(/'/g, "\\'")}'`
-      } else {
-        return null
-      }
-      entries.push(`'${mapKey.replace(/'/g, "\\'")}' => ${mapVal}`)
-    }
-    return `{ ${entries.join(', ')} }->{$${arg.text}}`
+    // Shared structural parse (single source of truth in `@barefootjs/jsx`);
+    // this wrapper only does the Perl-specific emit (single-quote escaping)
+    // from the structured result.
+    const parsed = parseRecordIndexAccess(val, this.localConstants, this.propsParams)
+    if (!parsed) return null
+    const entries = parsed.entries.map(e => {
+      const mapVal =
+        e.value.kind === 'number' ? e.value.text : `'${e.value.text.replace(/'/g, "\\'")}'`
+      return `'${e.key.replace(/'/g, "\\'")}' => ${mapVal}`
+    })
+    return `{ ${entries.join(', ')} }->{$${parsed.indexPropName}}`
   }
 
 

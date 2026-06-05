@@ -58,6 +58,8 @@ import {
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
+  augmentInheritedPropAccesses,
+  parseRecordIndexAccess,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 
@@ -501,8 +503,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
     // before computing the nillable set / rendering, so the synthetic params
-    // participate in attribute omission and field binding uniformly.
-    this.augmentInheritedPropAccesses(ir)
+    // participate in attribute omission and field binding uniformly. Shared
+    // with the Mojo adapter (single source of truth in `@barefootjs/jsx`).
+    augmentInheritedPropAccesses(ir)
     this.nillablePropNames = this.collectNillablePropNames(ir)
 
     // Surface loop-body usages of components imported from sibling
@@ -820,7 +823,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // round-tripped IR, so this must be applied here too; the method is
     // idempotent. `propsObjectName` is needed by the scan.
     this.propsObjectName = ir.metadata.propsObjectName
-    this.augmentInheritedPropAccesses(ir)
+    augmentInheritedPropAccesses(ir)
     const lines: string[] = []
 
     const componentName = ir.metadata.componentName
@@ -1173,100 +1176,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
     return nillable
-  }
-
-  /**
-   * (#checkbox) Enumerate inherited-attribute accesses for the SolidJS
-   * props-object pattern.
-   *
-   * `function Checkbox(props: CheckboxProps)` only lists `CheckboxProps`'s own
-   * members in `propsParams`; the inherited `ButtonHTMLAttributes` members the
-   * component actually reads (`props.className` in the classes memo,
-   * `props.id`, `props.disabled` on the root element) are never enumerated, so
-   * the generated Input/Props structs have no field to bind a caller's
-   * `className: ''` / `id` / `disabled` to — Go fails with `unknown field
-   * ClassName`. This scans the component's expressions for `props.<name>`
-   * accesses (where `props` is the resolved `propsObjectName`) and appends any
-   * not-already-a-param as a synthetic prop param, with a type inferred from
-   * how the access is used:
-   *   - rendered as a bare-reference attribute (`id={props.id}`) → `interface{}`
-   *     (nillable, so the attribute is omitted when unset — Hono parity);
-   *   - a boolean attribute (`disabled`) → `bool`;
-   *   - otherwise (`className`, read in a string memo) → `string`.
-   *
-   * Idempotent: re-running (e.g. once in `generate`, again in `generateTypes`
-   * on the round-tripped IR) is a no-op once the params are present. Mutates
-   * `ir.metadata.propsParams` in place so every downstream emitter — struct
-   * fields, nillable set, memo init, template — sees one consistent param list.
-   */
-  private augmentInheritedPropAccesses(ir: ComponentIR): void {
-    const propsObj = ir.metadata.propsObjectName
-    if (!propsObj) return // only the props-object pattern is affected
-
-    const existing = new Set(ir.metadata.propsParams.map(p => p.name))
-
-    // Collect bare-reference attribute exprs (`attr={props.id}`) and boolean
-    // attributes from the template so we can classify accessed props by use.
-    const bareRefProps = new Set<string>()
-    const booleanAttrProps = new Set<string>()
-    const accessed = new Set<string>()
-    const accessRe = new RegExp(`(?:^|[^\\w$.])${propsObj}\\.([A-Za-z_$][\\w$]*)`, 'g')
-    const scan = (s: string | undefined): void => {
-      if (!s) return
-      for (const m of s.matchAll(accessRe)) accessed.add(m[1])
-    }
-
-    // Memos, signals, init statements, effects: any `props.X` read.
-    for (const memo of ir.metadata.memos) scan(memo.computation)
-    for (const signal of ir.metadata.signals) scan(signal.initialValue)
-    for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
-    for (const eff of ir.metadata.effects ?? []) scan((eff as { body?: string }).body)
-
-    // Template attribute exprs — also note bare-ref / boolean usage.
-    const walk = (node: IRNode | undefined): void => {
-      if (!node) return
-      const el = node as unknown as IRElement
-      for (const attr of el.attrs ?? []) {
-        const v = attr.value as { kind?: string; expr?: string; presenceOrUndefined?: boolean }
-        if (v?.kind === 'expression' && typeof v.expr === 'string') {
-          scan(v.expr)
-          const expr = v.expr.trim()
-          const prefix = `${propsObj}.`
-          // A boolean HTML attribute (`disabled={props.disabled ?? false}`)
-          // marks the referenced prop as boolean even when wrapped in a
-          // `?? false` default — extract the prop name from the expr.
-          if (isBooleanAttr(attr.name) || v.presenceOrUndefined) {
-            const m = expr.match(new RegExp(`^${propsObj}\\.([A-Za-z_$][\\w$]*)`))
-            if (m) booleanAttrProps.add(m[1])
-          } else if (expr.startsWith(prefix)) {
-            const rest = expr.slice(prefix.length)
-            // A pure bare-reference attribute (`id={props.id}`) → nillable.
-            if (/^[A-Za-z_$][\w$]*$/.test(rest)) bareRefProps.add(rest)
-          }
-        }
-      }
-      for (const child of (el.children ?? []) as unknown[]) {
-        const c = child as { element?: IRNode }
-        walk((c.element ?? child) as IRNode)
-      }
-    }
-    walk(ir.root)
-
-    for (const name of accessed) {
-      if (existing.has(name)) continue
-      let raw: string
-      if (booleanAttrProps.has(name)) raw = 'boolean'
-      else if (bareRefProps.has(name)) raw = 'unknown' // → interface{} (nillable, omittable)
-      else raw = 'string' // read in a memo / string context (e.g. className)
-      const type: TypeInfo =
-        raw === 'boolean'
-          ? { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
-          : raw === 'string'
-            ? { kind: 'primitive', raw: 'string', primitive: 'string' }
-            : { kind: 'unknown', raw: 'unknown' }
-      ir.metadata.propsParams.push({ name, type, optional: true })
-      existing.add(name)
-    }
   }
 
   /**
@@ -2414,47 +2323,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     val: ts.Expression,
     ir: ComponentIR,
   ): string | null {
-    if (!ts.isElementAccessExpression(val)) return null
-    const obj = val.expression
-    const arg = val.argumentExpression
-    if (!ts.isIdentifier(obj) || !ts.isIdentifier(arg)) return null
-    // KEY must be a prop.
-    const keyParam = ir.metadata.propsParams.find(p => p.name === arg.text)
-    if (!keyParam) return null
-    // IDENT must resolve to a module-scope object-literal const.
-    const constInfo = (ir.metadata.localConstants ?? []).find(
-      c => c.name === obj.text && c.isModule,
+    // Shared structural parse (single source of truth in `@barefootjs/jsx`);
+    // this wrapper only does the Go-specific emit from the structured result.
+    const parsed = parseRecordIndexAccess(
+      val,
+      ir.metadata.localConstants ?? [],
+      ir.metadata.propsParams,
     )
-    if (constInfo?.value === undefined) return null
-    const parsed = this.parseLiteralExpression(constInfo.value)
-    if (!parsed || !ts.isObjectLiteralExpression(parsed)) return null
-    const entries: string[] = []
-    for (const prop of parsed.properties) {
-      if (!ts.isPropertyAssignment(prop)) return null
-      let mapKey: string
-      if (ts.isIdentifier(prop.name)) {
-        mapKey = prop.name.text
-      } else if (
-        ts.isStringLiteral(prop.name) ||
-        ts.isNoSubstitutionTemplateLiteral(prop.name)
-      ) {
-        mapKey = prop.name.text
-      } else {
-        return null
-      }
-      const v = this.unwrapParens(prop.initializer)
-      let mapVal: string
-      if (ts.isNumericLiteral(v)) {
-        mapVal = v.text
-      } else if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) {
-        mapVal = JSON.stringify(v.text)
-      } else {
-        return null
-      }
-      entries.push(`${JSON.stringify(mapKey)}: ${mapVal}`)
-    }
+    if (!parsed) return null
+    const entries = parsed.entries.map(e => {
+      const mapVal = e.value.kind === 'number' ? e.value.text : JSON.stringify(e.value.text)
+      return `${JSON.stringify(e.key)}: ${mapVal}`
+    })
     this.usesFmt = true
-    const field = `in.${this.capitalizeFieldName(keyParam.name)}`
+    const field = `in.${this.capitalizeFieldName(parsed.indexPropName)}`
     return `map[string]any{${entries.join(', ')}}[fmt.Sprint(${field})]`
   }
 

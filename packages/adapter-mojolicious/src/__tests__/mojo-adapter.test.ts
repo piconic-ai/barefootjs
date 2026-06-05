@@ -69,29 +69,13 @@ runAdapterConformanceTests({
     'toggle-shared',
     'reactive-props',
     'props-reactivity-comparison',
-    // #1467 Phase 2b: basic interactive `site/ui` primitives. Cross-adapter
-    // parity for the `site/ui` corpus is Phase 3, so these participate only
-    // in Hono SSR conformance + the fixture-hydrate runtime layer for now.
-    // (`label` and `kbd` are static helpers; `toggle` / `switch`
-    // carry uncontrolled state; `input` is a pass-through
-    // native control.)
-    //
-    // `textarea` now participates: its conditional inline-object spread
-    // (`{...(describedBy ? {...} : {})}`) lowers via
-    // `conditionalSpreadToPerl`, and its optional `rows={rows}`
-    // attribute is omitted when `undef` via the `defined`-guard in
-    // `elementAttrEmitter.emitExpression`
-    // (`<% if (defined $rows) { %>rows="<%= $rows %>"<% } %>`), matching
-    // Hono's nullish-attribute omission.
-    //
-    // `checkbox` now participates too: it composes `CheckIcon` and uses the
-    // SolidJS props-object pattern. Unblocked by quoting hyphenated child
-    // attribute names in `render_child` (`'data-slot' => ...`), declaring +
-    // `defined`-guarding inherited props-object accesses (`$id` / `$disabled`
-    // / `$className`), and seeding module-const + `.join()` values into
-    // `extractSsrDefaults` so the `classes` memo resolves to the full class
-    // string. `toggle`/`switch` share the inherited-attr fix but stay skipped
-    // on an additional `Record[key]`-in-memo-className blocker.
+    // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity
+    // (label / input / textarea / checkbox now participate):
+    //   toggle / switch — the reactive `classes` memo interpolates
+    //     `Record<T,string>[variant|size]` lookups, which have no SSR
+    //     lowering yet (known limitation).
+    //   kbd — multi-export source (Kbd / KbdGroup); the harness renders the
+    //     last-registered export rather than the pinned Kbd.
     'toggle',
     'switch',
     'kbd',
