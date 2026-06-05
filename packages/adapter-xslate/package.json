@@ -14,6 +14,9 @@
       "types": "./src/adapter/index.ts",
       "import": "./src/adapter/index.ts"
     },
+    "./test-render": {
+      "bun": "./src/test-render.ts"
+    },
     "./build": {
       "types": "./src/build.ts",
       "import": "./src/build.ts"
@@ -28,6 +31,9 @@
       "./adapter": {
         "types": "./dist/adapter/index.d.ts",
         "import": "./dist/adapter/index.js"
+      },
+      "./test-render": {
+        "bun": "./src/test-render.ts"
       },
       "./build": {
         "types": "./dist/build.d.ts",
