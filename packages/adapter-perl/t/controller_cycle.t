@@ -15,7 +15,7 @@ use warnings;
 # backend (no Mojolicious dependency, so it runs anywhere) and asserts the
 # whole graph is freed once the request-scope lexicals drop.
 
-use Test::More;
+use Test2::V0;
 use Scalar::Util qw(weaken);
 
 use FindBin qw($Bin);
@@ -71,9 +71,9 @@ my ($probe_bf, $probe_c);
     weaken($probe_c  = $c);
 }    # request-scope lexicals ($c, $bf) drop here
 
-ok !defined $probe_bf,
+is $probe_bf, undef,
     'parent bf is reclaimed at request end (no controller reference cycle)';
-ok !defined $probe_c,
+is $probe_c, undef,
     'controller is reclaimed at request end (no controller reference cycle)';
 
 done_testing;
