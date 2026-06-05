@@ -147,6 +147,70 @@ describe('<Async> streaming boundary', () => {
     }
   })
 
+  // -------------------------------------------------------------------------
+  // #1375 — body throw, sync + async error paths.
+  //
+  // Whether the body throws (sync) or rejects (async) is a *runtime* property
+  // the compiler can't observe. What Layer 1 can lock in is the structural
+  // prerequisite for the runtime fallback to fire: the boundary keeps a
+  // fallback distinct from its children, with an assigned id, even when the
+  // body is a component that will throw / reject at render time. The adapter
+  // then wires that fallback into an error-catching boundary (`ErrorBoundary`
+  // for Hono — see the adapter `renderAsync` test and
+  // `packages/adapter-hono/src/async.tsx`).
+  // -------------------------------------------------------------------------
+
+  test('body component that throws at render keeps fallback + child wired on the boundary', () => {
+    const source = `
+      export function Page() {
+        return (
+          <Async fallback={<p>Fallback</p>}>
+            <Throws />
+          </Async>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Page.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ctx.errors.filter(e => e.severity === 'error')).toEqual([])
+
+    const asyncNode = ir as IRAsync
+    expect(asyncNode.type).toBe('async')
+    expect(asyncNode.id).toBe('a0')
+    // Fallback is preserved and distinct from the (throwing) body.
+    expect(asyncNode.fallback.type).toBe('element')
+    if (asyncNode.fallback.type === 'element') {
+      expect(asyncNode.fallback.tag).toBe('p')
+    }
+    expect(asyncNode.children.length).toBe(1)
+    expect(asyncNode.children[0].type).toBe('component')
+  })
+
+  test('async (Promise-returning) body component keeps the boundary intact', () => {
+    const source = `
+      export function Page() {
+        return (
+          <Async fallback={<Skeleton />}>
+            <SlowData />
+          </Async>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Page.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ctx.errors.filter(e => e.severity === 'error')).toEqual([])
+
+    const asyncNode = ir as IRAsync
+    expect(asyncNode.type).toBe('async')
+    expect(asyncNode.fallback.type).toBe('component')
+    expect(asyncNode.children.length).toBe(1)
+    expect(asyncNode.children[0].type).toBe('component')
+  })
+
   test('compileJSX surfaces BF046 in errors without crashing on multi-child stub', () => {
     // Multi-child + root pins the scope-metadata path: a transparent stub
     // would suppress needsScopeComment and leak ctx.isRoot to only the first

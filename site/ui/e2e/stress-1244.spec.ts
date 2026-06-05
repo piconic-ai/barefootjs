@@ -96,6 +96,57 @@ test.describe('Compiler stress (#1244) — E2E surfaces awaiting demo pages', ()
     },
   )
 
+  // ---- Async boundary error path (#1375) --------------------------------
+  // `<Async>` whose body throws — sync + async error paths. The adapter
+  // wraps the body in an ErrorBoundary (sharing the loading fallback), so
+  // a failing body surfaces the fallback instead of aborting the stream or
+  // leaking an unhandled rejection. The SSR / streaming halves are pinned
+  // by `packages/adapter-hono/src/__tests__/async.test.tsx`; the four
+  // browser-level cases below need a live page to observe.
+
+  test.fixme(
+    'async-error: synchronous throw in body renders the fallback',
+    async ({ page }) => {
+      // Visit `${STRESS_BASE}/async-error-sync`. The boundary body throws
+      // synchronously on first render. Assert the fallback is shown (not
+      // empty / not a crashed page) and the resolved content never appears.
+      await page.goto(`${STRESS_BASE}/async-error-sync`)
+    },
+  )
+
+  test.fixme(
+    'async-error: async throw (Promise rejection) renders fallback, no late DOM mutation',
+    async ({ page }) => {
+      // Visit `${STRESS_BASE}/async-error-async`. The body's async render
+      // rejects after a delay. Assert the fallback stays put, the rejected
+      // content is never swapped in (no late DOM mutation after the
+      // rejection settles), and no exception reaches `window.onerror`.
+      await page.goto(`${STRESS_BASE}/async-error-async`)
+    },
+  )
+
+  test.fixme(
+    'async-error: reset signal re-mounts the body from fallback',
+    async ({ page }) => {
+      // Visit `${STRESS_BASE}/async-error-reset`. After the body has errored
+      // into the fallback, toggling a reset signal re-mounts the boundary;
+      // assert the body attempts to render again (fallback → resolved on a
+      // now-succeeding render), proving the boundary isn't latched.
+      await page.goto(`${STRESS_BASE}/async-error-reset`)
+    },
+  )
+
+  test.fixme(
+    'async-error: throw during cleanup of body subtree still renders fallback cleanly',
+    async ({ page }) => {
+      // Visit `${STRESS_BASE}/async-error-cleanup`. A child registers an
+      // onCleanup that throws; unmount the subtree (or error it). Assert the
+      // fallback still renders cleanly and no orphan DOM / dangling effect
+      // is left behind.
+      await page.goto(`${STRESS_BASE}/async-error-cleanup`)
+    },
+  )
+
   // ---- Value-shape edges ------------------------------------------------
 
   test.fixme(

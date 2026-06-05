@@ -1069,6 +1069,49 @@ describe('.map() inside <Async> — loop body wired after async chunk lands', ()
   })
 })
 
+describe('<Async> body error path — sync throw + async reject (#1375)', () => {
+  // Whether the body throws synchronously or rejects asynchronously is a
+  // runtime property the compiler can't see. The Layer 1 contract is that
+  // neither shape degrades the boundary's compile output: a throwing /
+  // rejecting body still produces a well-formed `<Async>` boundary with the
+  // fallback preserved, so the adapter has something to fall back to.
+  //
+  // The boundary's fallback is wired into an error-catching boundary by the
+  // adapter: the Hono `renderAsync` emit (see
+  // `packages/adapter-hono/src/__tests__/async-error-boundary.test.ts`) and
+  // the runtime `BfAsync` component (see
+  // `packages/adapter-hono/src/__tests__/async.test.tsx`) both wrap the body
+  // in `ErrorBoundary`. The browser-level behaviour (fallback rendered,
+  // reset-signal re-mount, throw-during-cleanup) is covered by the Layer 6
+  // stubs in `site/ui/e2e/stress-1244.spec.ts`.
+
+  test('synchronously-throwing body component compiles to a clean boundary', () => {
+    const src = `
+      export function Demo() {
+        return (
+          <Async fallback={<p>Fallback</p>}>
+            <Throws />
+          </Async>
+        )
+      }
+    `
+    expectNoFatalErrors(compile(src, 'Demo.tsx'))
+  })
+
+  test('async (Promise-returning) body component compiles to a clean boundary', () => {
+    const src = `
+      export function Demo() {
+        return (
+          <Async fallback={<Skeleton />}>
+            <SlowData />
+          </Async>
+        )
+      }
+    `
+    expectNoFatalErrors(compile(src, 'Demo.tsx'))
+  })
+})
+
 describe('createPortal inside .map() — per-item portal owner tracking', () => {
   test('one portal created per loop item', () => {
     const src = `

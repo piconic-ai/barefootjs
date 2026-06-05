@@ -229,9 +229,16 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       lines.push(`import { ${utilImports.join(', ')} } from '@barefootjs/hono/utils'`)
     }
 
-    // Import Suspense when async boundaries are used
-    if (componentCode.includes('<Suspense')) {
-      lines.push(`import { Suspense } from 'hono/jsx/streaming'`)
+    // Import Suspense / ErrorBoundary when async boundaries are used. Both
+    // are imported under `__Bf`-prefixed aliases (and emitted as such by
+    // `renderAsync`) so the generated tags can never collide with a user
+    // component literally named `Suspense` or `ErrorBoundary` — a bare-name
+    // import would otherwise duplicate the user's own import binding (#1375).
+    if (componentCode.includes('<__BfSuspense')) {
+      lines.push(`import { Suspense as __BfSuspense } from 'hono/jsx/streaming'`)
+    }
+    if (componentCode.includes('<__BfErrorBoundary')) {
+      lines.push(`import { ErrorBoundary as __BfErrorBoundary } from 'hono/jsx'`)
     }
 
     // Re-emit template imports, rewriting `@barefootjs/client` to this
@@ -962,7 +969,19 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   renderAsync(node: IRAsync): string {
     const fallback = this.renderNode(node.fallback)
     const children = this.renderChildren(node.children)
-    return `<Suspense fallback={<>${fallback}</>}>${children}</Suspense>`
+    // Wrap the streaming body in an ErrorBoundary so a synchronous throw or
+    // a rejected Promise during async resolution falls back to the same
+    // `fallback` instead of aborting the stream / leaking an unhandled
+    // rejection. Mirrors the runtime `BfAsync` component (#1375).
+    //
+    // Both tags use `__Bf`-prefixed aliases (see the import injection above)
+    // so they can't collide with a user component named `Suspense` /
+    // `ErrorBoundary` in the same module.
+    return (
+      `<__BfErrorBoundary fallback={<>${fallback}</>}>` +
+      `<__BfSuspense fallback={<>${fallback}</>}>${children}</__BfSuspense>` +
+      `</__BfErrorBoundary>`
+    )
   }
 
   renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean; isLoopItemRoot?: boolean }): string {
