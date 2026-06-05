@@ -1,13 +1,31 @@
 package BarefootJS;
 use Mojo::Base -base, -signatures;
 
-use Mojo::ByteStream qw(b);
-use Mojo::JSON qw(encode_json to_json);
 use POSIX ();
 use Scalar::Util qw(looks_like_number weaken);
 
-has 'c';       # Mojolicious controller
+# NOTE: This runtime is template-engine-agnostic by design. All operations
+# that depend on *how* a template is rendered — JSON marshalling, raw-string
+# marking, JSX-children materialisation, and named-template rendering — are
+# delegated to a pluggable `backend` (see BarefootJS::Backend::Mojo for the
+# reference Mojolicious implementation). The only residual core dependency on
+# the Mojo distribution is `Mojo::Base` above (OO + signatures); the
+# value/render seam no longer hard-codes Mojo::JSON / Mojo::ByteStream.
+
+has 'c';       # Mojolicious controller (kept for back-compat accessors)
 has 'config';  # Plugin config
+
+# Rendering backend — the template-engine seam (#engine-abstraction). Lazily
+# defaults to the Mojo reference backend so a bare-blessed instance (used by
+# the pure-function unit tests) and the historical `BarefootJS->new($c, ...)`
+# callers keep working unchanged. A non-Mojo host injects its own backend via
+# `BarefootJS->new($c, { backend => $b })`. `require`d lazily so loading the
+# default doesn't drag the Mojo render modules in until something actually
+# renders.
+has 'backend' => sub {
+    require BarefootJS::Backend::Mojo;
+    return BarefootJS::Backend::Mojo->new;
+};
 
 # Internal state
 has '_scripts' => sub { [] };
@@ -19,9 +37,25 @@ has '_bf_mount';   # Slot id in host
 has '_props';
 
 sub new ($class, $c, $config = {}) {
+    # Build (or accept an injected) rendering backend. The default Mojo
+    # backend wraps the controller and honours an optional `json_encoder`
+    # override so a host can swap in a faster XS JSON implementation
+    # without subclassing. A caller targeting another template engine
+    # passes its own backend via `$config->{backend}`.
+    my $backend = $config->{backend};
+    unless ($backend) {
+        require BarefootJS::Backend::Mojo;
+        $backend = BarefootJS::Backend::Mojo->new(
+            c => $c,
+            ($config->{json_encoder}
+                ? (json_encoder => $config->{json_encoder})
+                : ()),
+        );
+    }
     return $class->SUPER::new(
-        c      => $c,
-        config => $config,
+        c       => $c,
+        config  => $config,
+        backend => $backend,
     );
 }
 
@@ -57,8 +91,9 @@ sub hydration_attrs ($self) {
 sub props_attr ($self) {
     my $props = $self->_props;
     return '' unless $props && %$props;
-    # to_json returns a character string (not bytes) for safe embedding in templates
-    my $json = to_json($props);
+    # encode_json returns a character string (not bytes) for safe embedding
+    # in templates (the Mojo backend uses Mojo::JSON::to_json).
+    my $json = $self->backend->encode_json($props);
     return qq{ bf-p='$json'};
 }
 
@@ -113,7 +148,7 @@ sub scope_comment ($self) {
     }
     my $props_json = '';
     if ($self->_props && %{$self->_props}) {
-        $props_json = '|' . to_json($self->_props);
+        $props_json = '|' . $self->backend->encode_json($self->_props);
     }
     return "<!--bf-scope:$scope_id$host_segment$props_json-->";
 }
@@ -141,11 +176,16 @@ sub register_child_renderer ($self, $name, $renderer) {
 sub render_child ($self, $name, %props) {
     my $renderer = $self->_child_renderers->{$name};
     die "No renderer registered for child component '$name'" unless $renderer;
-    # JSX children come in via Mojo `begin %>...<% end` capture, which
-    # produces a CODE ref returning a Mojo::ByteStream. Materialize it
-    # before handing the props to the child renderer so the child
-    # template sees `$children` as already-rendered HTML.
-    $props{children} = $props{children}->() if ref($props{children}) eq 'CODE';
+    # JSX children come in via the engine's children-capture mechanism
+    # (Mojo's `begin %>...<% end`, which produces a CODE ref returning a
+    # Mojo::ByteStream). Materialize it through the backend before handing
+    # the props to the child renderer so the child template sees
+    # `$children` as already-rendered HTML. Guard on `exists` so a
+    # childless invocation (`bf->render_child('counter')`) doesn't gain a
+    # spurious `children => undef` key — preserving the historical "only
+    # touch children when present" behaviour.
+    $props{children} = $self->backend->materialize($props{children})
+        if exists $props{children};
     return $renderer->(\%props);
 }
 
@@ -199,7 +239,10 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
         my $manifest_defaults = $manifest->{$entry_name}{ssrDefaults};
         $self->register_child_renderer($slot_key, sub {
             my ($props) = @_;
-            my $child_bf = BarefootJS->new($c, {});
+            # Child shares the parent's backend so nested renders go
+            # through the same engine + controller (and inherit any
+            # injected json_encoder).
+            my $child_bf = BarefootJS->new($c, { backend => $parent->backend });
             my $slot_id = delete $props->{_bf_slot};
             $child_bf->_scope_id(
                 $slot_id ? $parent_scope . '_' . $slot_id
@@ -222,12 +265,12 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
                 %extra = _derive_stash_from_defaults($manifest_defaults, $props);
             }
 
-            my $prev = $c->stash->{'bf.instance'};
-            $c->stash->{'bf.instance'} = $child_bf;
-            my $html = $c->render_to_string(
-                template => $template_name, %$props, %extra,
+            # Render the child template with $child_bf bound as the active
+            # instance for the nested render. The backend owns the
+            # engine-specific binding + restore (stash juggle for Mojo).
+            my $html = $parent->backend->render_named(
+                $template_name, $child_bf, { %$props, %extra },
             );
-            $c->stash->{'bf.instance'} = $prev;
             chomp $html;
             return $html;
         });
@@ -287,9 +330,10 @@ sub streaming_bootstrap ($self) {
 sub async_boundary ($self, $id, $fallback_html) {
     # The fallback comes in via Mojo `begin %>...<% end` capture (see
     # MojoAdapter::renderAsync), which produces a CODE ref returning a
-    # Mojo::ByteStream. Materialize it so the rendered HTML embeds in
-    # the placeholder rather than the CODE ref's stringification.
-    $fallback_html = $fallback_html->() if ref($fallback_html) eq 'CODE';
+    # Mojo::ByteStream. Materialize it through the backend so the rendered
+    # HTML embeds in the placeholder rather than the CODE ref's
+    # stringification.
+    $fallback_html = $self->backend->materialize($fallback_html);
     return qq{<div bf-async="$id">$fallback_html</div>};
 }
 
@@ -323,7 +367,7 @@ sub json ($self, $value) {
     # ergonomics: an unset prop becomes the string "null" rather than
     # the literal text "undefined" or an empty attribute. Matches the
     # `null` case of JS exactly; diverges from the `undefined` case.
-    return to_json($value);
+    return $self->backend->encode_json($value);
 }
 
 sub string ($self, $value) {
@@ -1052,9 +1096,10 @@ sub spread_attrs ($self, $bag) {
         push @parts, $name . qq{="} . _html_escape($val) . qq{"};
     }
     return '' unless @parts;
-    # Return a Mojo::ByteStream so the calling template's `<%==`
-    # raw-emit doesn't re-escape the already-escaped values.
-    return b(join(' ', @parts));
+    # Mark the result raw so the calling template's `<%==` raw-emit
+    # doesn't re-escape the already-escaped values (the Mojo backend
+    # returns a Mojo::ByteStream).
+    return $self->backend->mark_raw(join(' ', @parts));
 }
 
 1;
