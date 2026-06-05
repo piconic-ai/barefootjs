@@ -293,12 +293,104 @@ describe('adapter registry', () => {
     expect(mojo.files['cpanfile']).toMatch(/^requires 'Mojolicious'/m)
   })
 
-  test('csr scaffolds a static HTML page + Bun server', () => {
+  test('csr scaffolds a static HTML page + node:http server (no Bun runtime)', () => {
     const csr = ADAPTERS.csr
-    expect(csr.files['server.ts']).toMatch(/Bun\.serve/)
+    // Plain node:http so an npm / pnpm / yarn user isn't forced to
+    // install Bun. Runs via `tsx` like the hono-node starter.
+    expect(csr.files['server.ts']).toMatch(/from 'node:http'/)
+    expect(csr.files['server.ts']).toMatch(/createServer\(/)
+    expect(csr.files['server.ts']).not.toMatch(/\bBun\./)
+    expect(csr.scripts.start).toBe('tsx server.ts')
+    expect(csr.devDependencies.tsx).toBeTruthy()
+    expect(csr.devDependencies['@types/bun']).toBeUndefined()
     expect(csr.files['pages/index.html']).toMatch(/<div id="app">/)
     expect(csr.files['pages/index.html']).toMatch(/@barefootjs\/client\/runtime/)
     expect(csr.files['barefoot.config.ts']).toMatch(/@barefootjs\/client\/build/)
+  })
+
+  // Recurring regression guard (this has bitten us more than once): a
+  // scaffold must run under whatever package manager / runtime the user
+  // already has. The Bun *global* API (`Bun.serve`, `Bun.file`, ...) and
+  // Bun-only modules (`import ... from 'bun'` / `'bun:sqlite'`) only work
+  // under the Bun runtime, and a bare `bun` / `bunx` token in a script
+  // hard-wires the Bun binary. None of our adapters target Bun
+  // specifically — they target Go, Perl, Cloudflare Workers, or
+  // Node-via-tsx — so no scaffolded file or script should force Bun onto
+  // a user who picked npm / pnpm / yarn. PM-aware scripts are rendered
+  // here with a NON-bun PM precisely so a `bunx` that's only correct
+  // when pm=bun would still trip this guard.
+  describe('no adapter forces the Bun runtime on users', () => {
+    const NON_BUN_PM = 'npm' as const
+
+    // Only JS/TS scaffold files can actually execute the Bun global API —
+    // the Go/Perl runtimes can't, and their doc comments legitimately
+    // mention `Bun.serve` (idle-timeout trivia). Scope the content check
+    // to the files where a Bun-ism would really run.
+    const isJsLike = (file: string) => /\.(m|c)?[jt]sx?$/.test(file)
+
+    test.each(Object.keys(ADAPTERS))(
+      '%s JS/TS scaffold files use no Bun-only global API or module',
+      (id) => {
+        for (const [file, contents] of Object.entries(ADAPTERS[id].files)) {
+          if (!isJsLike(file)) continue
+          expect(
+            contents,
+            `${id}/${file} calls the Bun-only global API`,
+          ).not.toMatch(/\bBun\.(serve|file|write|spawn|spawnSync|env|build|\$|connect|listen)\b/)
+          expect(
+            contents,
+            `${id}/${file} imports a Bun-only module`,
+          ).not.toMatch(/from\s+['"]bun(:[a-z]+)?['"]/)
+        }
+      },
+    )
+
+    test.each(Object.keys(ADAPTERS))(
+      '%s scripts do not invoke the bun runtime for a non-bun PM',
+      (id) => {
+        for (const [name, value] of Object.entries(ADAPTERS[id].scripts)) {
+          const rendered = typeof value === 'function' ? value(NON_BUN_PM) : value
+          expect(
+            rendered,
+            `${id} script "${name}" forces the bun runtime: ${rendered}`,
+          ).not.toMatch(/\bbunx?\b/)
+        }
+      },
+    )
+
+    // Scaffold files and prereq warnings have no package-manager context
+    // to render against (unlike scripts), so a literal `bun run` /
+    // `bun install` / `bunx` token there is always wrong for an
+    // npm/pnpm/yarn user — it tells them to drive their project with a
+    // runtime they didn't pick. Generated Go source ("did you run
+    // `bf build`?") and prereq warnings ("...before starting the dev
+    // server") must stay PM-neutral. The Bun *global API* is covered
+    // separately above; this catches the command-string form.
+    const BUN_COMMAND = /\bbunx\b|\bbun\s+(run|install|add|create|x|--watch)\b|\bbun\s+server\b/
+
+    test.each(Object.keys(ADAPTERS))(
+      '%s scaffold files hardcode no bun command',
+      (id) => {
+        for (const [file, contents] of Object.entries(ADAPTERS[id].files)) {
+          expect(
+            contents,
+            `${id}/${file} hardcodes a bun command (should be PM-neutral / use \`bf\`)`,
+          ).not.toMatch(BUN_COMMAND)
+        }
+      },
+    )
+
+    test.each(Object.keys(ADAPTERS))(
+      '%s prereq warnings hardcode no bun command',
+      (id) => {
+        for (const warning of ADAPTERS[id].prereqWarnings()) {
+          expect(
+            warning,
+            `${id} prereq warning hardcodes a bun command: ${warning}`,
+          ).not.toMatch(BUN_COMMAND)
+        }
+      },
+    )
   })
 
   // Every adapter must ship a `.gitignore` so the user's first

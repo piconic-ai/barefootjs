@@ -82,7 +82,7 @@ describe('select — confirmation line', () => {
       message: 'Choose a framework or runtime',
       options: [
         { value: 'hono', label: 'Hono (Node, JSX SSR + hydration)' },
-        { value: 'csr', label: 'CSR (Bun, client-side rendering only)' },
+        { value: 'csr', label: 'CSR (client-side rendering only)' },
       ],
       defaultValue: 'hono',
       input,
