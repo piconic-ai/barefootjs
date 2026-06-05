@@ -4346,18 +4346,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
           return plain(this.rootFieldRef(expr.callee.name))
         }
-        // A user-defined predicate call with arguments (e.g. a type guard
-        // like `isValidElement(children)`) has no server-side evaluator and
-        // is not a registered template primitive. Emitting a generic call
-        // (`.IsValidElement .Children`) would fabricate a bogus `.IsValidElement`
-        // struct-field access that Go's html/template rejects. We cannot
-        // evaluate the predicate at SSR time, so force the term to the SAFE
-        // default `false` — matching BF102's unsupported-condition behaviour,
-        // a gated branch stays hidden rather than being exposed (forcing
-        // `true` could accidentally render auth-gated content like
-        // `isAdmin(user)`). Emit a warning so authors know the predicate was
-        // forced and can switch to a supported primitive or `/* @client */`
-        // when the condition's value matters.
+        // `isValidElement(x)` — the framework "is this a renderable element?"
+        // predicate. In the Go SSR children model an element is represented by
+        // its already-rendered markup, so this evaluates faithfully as a
+        // truthiness check on the argument (an element is "valid" when there is
+        // something to render). Lowering it as a real, evaluatable expression —
+        // rather than a fabricated `.IsValidElement` field access — is what lets
+        // the `Slot` dynamic-tag guard register and run cleanly on Go.
+        if (
+          expr.callee.kind === 'identifier' &&
+          (identifierPath(expr.callee) ?? expr.callee.name) === 'isValidElement' &&
+          expr.args.length === 1
+        ) {
+          return this.renderConditionExpr(expr.args[0])
+        }
+        // Any other user-defined predicate call with arguments (e.g.
+        // `isAdmin(user)`) has no server-side evaluator and is not a registered
+        // template primitive. There is no honest way to evaluate it at SSR time,
+        // and silently forcing it (to true OR false) is a correctness hazard —
+        // a forced-true could expose auth-gated content, a forced-false could
+        // hide required content, and a warning is too easily ignored. Refuse
+        // with a hard BF102 error so the author must move the predicate to a
+        // supported primitive or defer it with `/* @client */`.
         if (
           expr.callee.kind === 'identifier' &&
           !this.templatePrimitives[identifierPath(expr.callee) ?? '']
@@ -4365,13 +4375,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const path = identifierPath(expr.callee) ?? expr.callee.name
           this.errors.push({
             code: 'BF102',
-            severity: 'warning',
+            severity: 'error',
             message:
-              `Predicate '${path}(...)' cannot be evaluated in a Go template; ` +
-              `forcing this condition term to false (the gated branch will not render server-side).`,
+              `Predicate '${path}(...)' cannot be evaluated in a Go template. ` +
+              `A server-side template cannot call user-defined JavaScript predicates.`,
             loc: this.makeLoc(),
             suggestion: { message: GO_REMEDIATION_OPTIONS },
           })
+          // Go template actions must be self-contained; emit a literal so the
+          // partial still parses while the build fails on the BF102 error.
           return plain('false')
         }
         return plain(this.renderParsedExpr(expr))

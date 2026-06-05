@@ -51,15 +51,29 @@ describe('Slot dynamic-tag Go lowering', () => {
     expect(template.content).not.toContain('.IsValidElement')
   })
 
-  test('the unevaluatable `isValidElement` predicate is forced to false with a BF102 warning (not silently truthy)', () => {
+  test('`isValidElement(children)` lowers to a real truthiness check — no diagnostic, no forced literal', () => {
     const adapter = new GoTemplateAdapter()
     const result = compileJSX(SLOT_SSR, 'slot.tsx', { adapter, componentName: 'Slot' })
-    // The forced term is the SAFE default `false` (gated branch hidden, not
-    // exposed), and the author is warned rather than left with a silent
-    // vacuously-true SSR condition.
-    const warnings = result.errors.filter(e => e.severity === 'warning')
+    // The guard evaluates faithfully on Go (element ⟺ has children to render),
+    // so there is neither an error nor an ignorable warning, and the condition
+    // is a real `.Children` truthiness check rather than a fudged literal.
+    expect(result.errors).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')!
+    expect(template.content).toContain('.Children')
+  })
+
+  test('a non-isValidElement user predicate (e.g. `isAdmin`) is a hard BF102 error, not a silent literal', () => {
+    const SRC = `/** @jsxImportSource hono/jsx */
+declare function isAdmin(u: unknown): boolean
+export function Gate({ user }: { user?: unknown }) {
+  return <div>{isAdmin(user) ? <span>secret</span> : null}</div>
+}
+`
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(SRC, 'gate.tsx', { adapter, componentName: 'Gate' })
+    const errors = result.errors.filter(e => e.severity === 'error')
     expect(
-      warnings.some(w => w.code === 'BF102' && /cannot be evaluated/i.test(w.message))
+      errors.some(e => e.code === 'BF102' && /cannot be evaluated/i.test(e.message))
     ).toBe(true)
   })
 })
