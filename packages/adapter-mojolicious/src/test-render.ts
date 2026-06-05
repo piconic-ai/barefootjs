@@ -433,6 +433,25 @@ function buildPerlProps(
     entries.push(`${param.name} => undef`)
   }
 
+  // A `{...props}` rest spread means props that aren't declared named
+  // params flow through the rest bag (`bf->spread_attrs($<restPropsName>)`),
+  // not their own top-level template var. Route them into the bag hashref so
+  // a fixture passing e.g. `placeholder` to `Input` (whose declared params
+  // are `className` / `type`) renders `placeholder="..."` via the spread
+  // rather than silently dropping it into an unused `my $placeholder`. (#1467
+  // Phase 2b — mirrors the Go harness fix in the sibling `test-render.ts`.)
+  const restPropsName = ir.metadata.restPropsName
+  const declaredParams = new Set(ir.metadata.propsParams.map(p => p.name))
+  const restBagEntries: Array<[string, unknown]> = []
+  if (restPropsName && props) {
+    for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('__')) continue
+      if (key === restPropsName || declaredParams.has(key)) continue
+      restBagEntries.push([key, value])
+    }
+  }
+  const routedKeys = new Set(restBagEntries.map(([k]) => k))
+
   // (#1407 follow-up) Default the rest-binding identifier to an
   // empty hashref so `bf->spread_attrs($extras)` in the generated
   // Mojo template doesn't trip Perl's strict-mode "Global symbol
@@ -441,13 +460,16 @@ function buildPerlProps(
   // the COMPILE path on Go, where the bag plumbing matters; the
   // runtime is a no-op when the caller leaves the bag unset, which
   // mirrors the empty-spread case on every adapter).
-  if (ir.metadata.restPropsName && !(props && ir.metadata.restPropsName in props)) {
-    entries.push(`${ir.metadata.restPropsName} => {}`)
+  // When the fixture supplied undeclared props, seed the bag with those
+  // routed entries instead of an empty hashref.
+  if (restPropsName && !(props && restPropsName in props)) {
+    entries.push(`${restPropsName} => ${toPerlLiteral(Object.fromEntries(restBagEntries))}`)
   }
 
   // Add user props
   if (props) {
     for (const [key, value] of Object.entries(props)) {
+      if (routedKeys.has(key)) continue
       if (typeof value === 'string') {
         entries.push(`${key} => '${value.replace(/'/g, "\\'")}'`)
       } else if (typeof value === 'number') {

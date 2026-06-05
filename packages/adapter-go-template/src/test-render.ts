@@ -180,7 +180,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     const escapedTemplate = template.replace(/`/g, '` + "`" + `')
 
     // Build props initialization
-    const propsInit = buildGoPropsInit(componentName, props)
+    const propsInit = buildGoPropsInit(componentName, props, ir)
 
     // Honour `__instanceId` from props for the root scope id so
     // shared-component fixtures (which pin `<ComponentName>_test`) match
@@ -280,10 +280,26 @@ ${propsInit}
 function buildGoPropsInit(
   _componentName: string,
   props?: Record<string, unknown>,
+  ir?: ComponentIR,
 ): string {
   if (!props) return ''
 
+  // A `{...props}` rest spread on a component means props that are NOT
+  // declared as named params don't get their own top-level Input struct
+  // field — they flow through the open-ended rest bag (`Props map[string]any`,
+  // the `Capitalize(restPropsName)` field). Without routing them there, a
+  // fixture passing e.g. `placeholder` to the `Input` component (whose only
+  // declared params are `className` / `type`) emits a top-level
+  // `Placeholder:` initializer and Go fails with `unknown field Placeholder
+  // in struct literal of type InputInput`. (#1467 Phase 2b)
+  const declaredParams = new Set((ir?.metadata.propsParams ?? []).map(p => p.name))
+  const restPropsName = ir?.metadata.restPropsName ?? null
+  const restBagField = restPropsName
+    ? restPropsName.charAt(0).toUpperCase() + restPropsName.slice(1)
+    : null
+
   const lines: string[] = []
+  const restBagEntries: Array<[string, unknown]> = []
   for (const [key, value] of Object.entries(props)) {
     // Skip internal hydration markers — `__instanceId` / `__bfScope`
     // / `__bfChild` are routed by the framework (consumed via the
@@ -291,6 +307,15 @@ function buildGoPropsInit(
     // appear on the user-facing input struct). Including them produces
     // `unknown field __instanceId in struct literal of type XxxInput`.
     if (key.startsWith('__')) continue
+    // A prop that isn't a declared named param on a rest-spread component
+    // belongs in the rest bag, not a top-level field. A key that literally
+    // matches `restPropsName` already carries a pre-formed bag object and
+    // maps straight onto the `Capitalize(restPropsName)` field, so it falls
+    // through to the normal (object → map literal) emit below.
+    if (restBagField && key !== restPropsName && !declaredParams.has(key)) {
+      restBagEntries.push([key, value])
+      continue
+    }
     // Capitalize first letter for Go field name
     const goField = key.charAt(0).toUpperCase() + key.slice(1)
     if (typeof value === 'string') {
@@ -318,6 +343,13 @@ function buildGoPropsInit(
       // passes a `Record<string, unknown>`-shaped prop through.
       lines.push(`\t\t${goField}: ${goMapLiteralFromObject(value as Record<string, unknown>)},`)
     }
+  }
+  // Emit the collected rest-bag entries as the open-ended bag field. Skip
+  // when a direct `restPropsName`-keyed prop already populated it above
+  // (merging two sources isn't a shape any fixture needs).
+  if (restBagField && restBagEntries.length > 0 && !(restPropsName! in props)) {
+    const bag = Object.fromEntries(restBagEntries)
+    lines.push(`\t\t${restBagField}: ${goMapLiteralFromObject(bag)},`)
   }
   return lines.join('\n')
 }

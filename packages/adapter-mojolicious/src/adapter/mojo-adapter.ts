@@ -4,8 +4,10 @@
  * Generates Mojolicious EP template files (.html.ep) from BarefootJS IR.
  */
 
+import ts from 'typescript'
 import type {
   ComponentIR,
+  IRMetadata,
   IRNode,
   IRElement,
   IRText,
@@ -117,6 +119,32 @@ export interface MojoAdapterOptions {
   barefootJsPath?: string
 }
 
+/**
+ * Parse a const initializer's source text. Returns the unescaped string
+ * value when the whole initializer is a single string literal (or a
+ * no-substitution template literal), else `null`. Uses the TS parser so
+ * escapes/quotes resolve exactly as JS would, matching the value the Hono
+ * reference inlines at runtime.
+ */
+function parsePureStringLiteral(source: string): string | null {
+  const sf = ts.createSourceFile(
+    '__const.ts',
+    `const __x = (${source});`,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ false,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  const decl = stmt.declarationList.declarations[0]
+  let init = decl?.initializer
+  while (init && ts.isParenthesizedExpression(init)) init = init.expression
+  if (!init) return null
+  if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
+    return init.text
+  }
+  return null
+}
+
 export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx> {
   name = 'mojolicious'
   extension = '.html.ep'
@@ -159,6 +187,26 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * true — selecting the string operator from the operand's type avoids that.
    */
   private stringValueNames: Set<string> = new Set()
+  /**
+   * Module-scope pure string-literal constants (`const X = 'literal'` at
+   * file top-level), keyed by name → resolved literal value. Populated at
+   * `generate()` entry from `ir.metadata.localConstants`. When an identifier
+   * in an expression resolves to one of these, the adapter inlines the
+   * literal instead of emitting `$X` against a stash variable that is never
+   * bound (a module const isn't a prop, signal, or local — the value would
+   * render empty). Hono inlines it for free; this restores parity. Only
+   * module-scope pure string literals qualify (see `collectModuleStringConsts`).
+   */
+  private moduleStringConsts: Map<string, string> = new Map()
+  /**
+   * Names currently bound by an enclosing loop body — the `my $<param>` and
+   * `my $<index>` bindings `renderLoop` introduces — ref-counted so nested
+   * loops compose. `resolveModuleStringConst` consults this so a loop
+   * variable whose name happens to match a module string const is NOT
+   * inlined as the const literal (mirrors the Go adapter's loop-param /
+   * loop-var shadowing guards). (#1749 review)
+   */
+  private loopBoundNames: Map<string, number> = new Map()
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -186,6 +234,8 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     for (const p of ir.metadata.propsParams) {
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
+    this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.loopBoundNames.clear()
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -236,6 +286,41 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       sections,
       extension: this.extension,
     }
+  }
+
+  /**
+   * Build the module pure-string-const map from the IR's localConstants.
+   * A const qualifies only when it is module-scope (`isModule`) and its
+   * initializer parses to a single string literal (`ts.StringLiteral` or
+   * `ts.NoSubstitutionTemplateLiteral`). Template literals with `${}`,
+   * numeric/object initializers, `Record<T,string>` maps, memos, and
+   * signals are all excluded — only a pure compile-time string can be
+   * inlined byte-for-byte.
+   */
+  private collectModuleStringConsts(constants: IRMetadata['localConstants']): Map<string, string> {
+    const map = new Map<string, string>()
+    for (const c of constants ?? []) {
+      if (!c.isModule) continue
+      if (c.value === undefined) continue
+      const literal = parsePureStringLiteral(c.value)
+      if (literal !== null) map.set(c.name, literal)
+    }
+    return map
+  }
+
+  /**
+   * Resolve an identifier to its inlined Perl single-quoted string literal
+   * when it names a module pure-string const, else `null` (the caller then
+   * falls back to its normal `$name` stash lowering). Returns the Perl
+   * literal form `'<escaped>'` ready to drop into an expression.
+   */
+  resolveModuleStringConst(name: string): string | null {
+    // A loop body introduces `my $<param>` / `my $<index>` bindings that
+    // shadow a module const of the same name — never inline inside one.
+    if (this.loopBoundNames.has(name)) return null
+    const value = this.moduleStringConsts.get(name)
+    if (value === undefined) return null
+    return `'${value.replace(/[\\']/g, m => `\\${m}`)}'`
   }
 
   // ===========================================================================
@@ -587,6 +672,16 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     const indexVar = loop.iterationShape === 'keys'
       ? `$${param}`
       : loop.index ? `$${loop.index}` : '$_i'
+    // Names this loop binds in body scope. Guard module-const inlining for
+    // the whole body (children + key + filter) so a same-named loop variable
+    // isn't replaced by the const literal (#1749 review). Ref-counted for
+    // nested loops; released after the body lines are assembled below.
+    const loopBound = loop.iterationShape === 'keys'
+      ? [param]
+      : [param, loop.index ?? '_i']
+    for (const n of loopBound) {
+      this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
+    }
     const prevInLoop = this.inLoop
     this.inLoop = true
     const renderedChildren = this.renderChildren(loop.children)
@@ -642,6 +737,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       lines.push(`% }`)
     } else {
       lines.push(children)
+    }
+
+    // Body fully rendered — release the loop-bound names.
+    for (const n of loopBound) {
+      const c = (this.loopBoundNames.get(n) ?? 1) - 1
+      if (c <= 0) this.loopBoundNames.delete(n)
+      else this.loopBoundNames.set(n, c)
     }
 
     lines.push(`% }`)
@@ -1817,6 +1919,11 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
   constructor(private readonly adapter: MojoAdapter) {}
 
   identifier(name: string): string {
+    // Module pure-string const (e.g. `const baseClasses = '...'` used in a
+    // className template literal): inline the literal value rather than emit
+    // `$baseClasses` against a stash variable that is never bound.
+    const inlined = this.adapter.resolveModuleStringConst(name)
+    if (inlined !== null) return inlined
     return `$${name}`
   }
 

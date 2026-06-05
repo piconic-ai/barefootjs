@@ -48,7 +48,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/build.ts --root ./src --outdir ./dist --format esm --external @barefootjs/jsx --external @barefootjs/shared",
+    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/build.ts --root ./src --outdir ./dist --format esm --external @barefootjs/jsx --external @barefootjs/shared --external typescript",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist",
@@ -75,11 +75,11 @@
     "@barefootjs/shared": "workspace:*"
   },
   "peerDependencies": {
-    "@barefootjs/jsx": ">=0.2.0"
+    "@barefootjs/jsx": ">=0.2.0",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
     "@barefootjs/adapter-tests": "workspace:*",
-    "@barefootjs/jsx": "workspace:*",
-    "typescript": "^5.0.0"
+    "@barefootjs/jsx": "workspace:*"
   }
 }
