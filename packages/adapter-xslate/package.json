@@ -3,12 +3,53 @@
   "version": "0.1.0",
   "description": "Text::Xslate (Kolon) adapter for BarefootJS — compiles IR to .tx templates and ships the Xslate rendering backend; runs under any PSGI/Plack app",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./adapter": {
+      "types": "./src/adapter/index.ts",
+      "import": "./src/adapter/index.ts"
+    },
+    "./build": {
+      "types": "./src/build.ts",
+      "import": "./src/build.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./adapter": {
+        "types": "./dist/adapter/index.d.ts",
+        "import": "./dist/adapter/index.js"
+      },
+      "./build": {
+        "types": "./dist/build.d.ts",
+        "import": "./dist/build.js"
+      }
+    }
+  },
   "files": [
     "dist",
     "src",
     "lib",
     "README.md"
   ],
+  "scripts": {
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/build.ts --root ./src --outdir ./dist --format esm --external @barefootjs/jsx --external @barefootjs/shared",
+    "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
+    "test": "bun test",
+    "clean": "rm -rf dist",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
+  },
   "keywords": [
     "xslate",
     "text-xslate",
@@ -27,6 +68,15 @@
     "directory": "packages/adapter-xslate"
   },
   "dependencies": {
-    "@barefootjs/perl": "workspace:*"
+    "@barefootjs/perl": "workspace:*",
+    "@barefootjs/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "@barefootjs/jsx": ">=0.2.0"
+  },
+  "devDependencies": {
+    "@barefootjs/adapter-tests": "workspace:*",
+    "@barefootjs/jsx": "workspace:*",
+    "typescript": "^5.0.0"
   }
 }
