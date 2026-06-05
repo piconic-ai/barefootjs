@@ -788,8 +788,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   private renderSlot(_slot: IRSlot): string {
-    // The slot's content arrives as the `content` template var.
-    return `<: $content :>`
+    // Captured children arrive under the `children` key (see renderComponent's
+    // macro capture + render_child call), so the var is `$children`, not
+    // `$content`. The content is already-rendered markup, so emit it raw —
+    // otherwise Kolon's html-escape would entity-escape the child tags.
+    // (The IR producer doesn't currently emit `slot` nodes — `{children}`
+    // lowers to an expression whose macro-captured value is already raw — so
+    // this is defensive correctness for if/when a slot node is produced.)
+    return `<: $children | mark_raw :>`
   }
 
   renderAsync(node: IRAsync): string {
