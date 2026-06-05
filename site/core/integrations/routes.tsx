@@ -55,7 +55,7 @@ export function createIntegrationsApp() {
     c.render(<IntegrationsIndex />, {
       title: 'Integrations — Barefoot.js',
       description:
-        'Same JSX components running on Hono (Workers), h3 (UnJS), Elysia (Bun), Echo, Gin, Chi and net/http (Go), and Mojolicious (Perl).',
+        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), and Mojolicious (Perl).',
     }),
   )
 
