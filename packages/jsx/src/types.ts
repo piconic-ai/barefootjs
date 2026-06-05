@@ -674,6 +674,15 @@ export interface IRComponent {
   children: IRNode[]
   template: string // Reference to partial
   slotId: string | null // For components with event handlers
+  /**
+   * True when `name` is a dynamic-tag local (`const Tag = children.tag`)
+   * rather than a real component reference. Such a "component" has no
+   * registrable template — it is a runtime-chosen tag. Consumed ONLY by
+   * the Go template adapter, which lowers it to a children passthrough so
+   * the dead branch registers cleanly (Hono/CSR/Mojo ignore this flag).
+   * Omitted (undefined) for ordinary components to keep IR diffs minimal.
+   */
+  dynamicTag?: boolean
   loc: SourceLocation
 }
 

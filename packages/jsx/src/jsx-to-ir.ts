@@ -1050,6 +1050,7 @@ function transformComponentElement(
     children,
     template: name.toLowerCase(),
     slotId,
+    ...(isDynamicTagLocal(name, ctx) ? { dynamicTag: true } : {}),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -1079,6 +1080,7 @@ function transformSelfClosingComponent(
     children: [],
     template: name.toLowerCase(),
     slotId,
+    ...(isDynamicTagLocal(name, ctx) ? { dynamicTag: true } : {}),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -3957,6 +3959,73 @@ function findLocalConst(name: string, ctx: TransformContext) {
   const fnScoped = matches.filter(c => !c.isModule)
   const pool = fnScoped.length > 0 ? fnScoped : matches
   return pool[pool.length - 1]
+}
+
+/**
+ * Detect a PascalCase JSX tag that is really a *dynamic tag* local
+ * (`const Tag = children.tag`) rather than a component reference.
+ *
+ * Such a "component" has no registrable template — the tag is chosen at
+ * runtime. The Go template adapter consumes the resulting `dynamicTag`
+ * flag to lower the node to a children passthrough so its dead branch
+ * registers cleanly (Hono/CSR/Mojo ignore the flag).
+ *
+ * A name qualifies only when (a) a `const <name> = <expr>.tag` binding
+ * exists somewhere in the source — at any nesting depth, since the
+ * canonical pattern lives inside an `if (isValidElement(children)) {…}`
+ * block and never reaches the analyzer's `localConstants` (which only
+ * collects component-body-level bindings) — AND (b) the name is NOT a
+ * JSX-producing local (those are tracked in the analyzer's jsx* /
+ * inlineable sets). The `.tag` initializer check already excludes real
+ * imported components (their binding is an import, not a `.tag` const)
+ * and local component factories like `const Foo = () => <div/>` (an
+ * arrow initializer, not a `.tag` access); the jsx* guards are a
+ * belt-and-suspenders second line. Each set is guarded defensively in
+ * case it is absent on a given analyzer context.
+ */
+function isDynamicTagLocal(name: string, ctx: TransformContext): boolean {
+  if (!hasDynamicTagBinding(name, ctx.sourceFile)) return false
+  const a = ctx.analyzer
+  if (a.jsxConstants?.has(name)) return false
+  if (a.jsxFunctions?.has(name)) return false
+  if (a.jsxMultiReturnFunctions?.has(name)) return false
+  if (a.inlineableJsxConsts?.has(name)) return false
+  return true
+}
+
+/**
+ * True when the source contains a `const <name> = <expr>.tag` (the
+ * dynamic-tag pattern), at any nesting depth. The initializer may be
+ * wrapped in an `as`/`satisfies`/parenthesized cast (`children.tag as any`).
+ */
+function hasDynamicTagBinding(name: string, sourceFile: ts.SourceFile): boolean {
+  let found = false
+  const visit = (node: ts.Node): void => {
+    if (found) return
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === name &&
+      node.initializer
+    ) {
+      let init: ts.Expression = node.initializer
+      while (
+        ts.isAsExpression(init) ||
+        ts.isSatisfiesExpression(init) ||
+        ts.isParenthesizedExpression(init) ||
+        ts.isNonNullExpression(init)
+      ) {
+        init = init.expression
+      }
+      if (ts.isPropertyAccessExpression(init) && init.name.text === 'tag') {
+        found = true
+        return
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return found
 }
 
 /**

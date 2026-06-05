@@ -1624,6 +1624,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     if (node.type === 'component') {
       const comp = node as IRComponent
+      // Dynamic-tag locals (`const Tag = children.tag`) have no registrable
+      // template, so they get no `.<Name>SlotN` struct field. Recurse into
+      // their children (which lower as a passthrough) so any real static
+      // child components nested inside still get their slot fields.
+      if (comp.dynamicTag) {
+        for (const child of comp.children) {
+          this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        }
+        return
+      }
       // Skip Portal components (handled separately via PortalCollector)
       // Skip components inside loops (handled by nestedComponents)
       if (comp.name !== 'Portal' && !inLoop && comp.slotId) {
@@ -4336,6 +4346,46 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
           return plain(this.rootFieldRef(expr.callee.name))
         }
+        // `isValidElement(x)` — the framework "is this a renderable element?"
+        // predicate. In the Go SSR children model an element is represented by
+        // its already-rendered markup, so this evaluates faithfully as a
+        // truthiness check on the argument (an element is "valid" when there is
+        // something to render). Lowering it as a real, evaluatable expression —
+        // rather than a fabricated `.IsValidElement` field access — is what lets
+        // the `Slot` dynamic-tag guard register and run cleanly on Go.
+        if (
+          expr.callee.kind === 'identifier' &&
+          (identifierPath(expr.callee) ?? expr.callee.name) === 'isValidElement' &&
+          expr.args.length === 1
+        ) {
+          return this.renderConditionExpr(expr.args[0])
+        }
+        // Any other user-defined predicate call with arguments (e.g.
+        // `isAdmin(user)`) has no server-side evaluator and is not a registered
+        // template primitive. There is no honest way to evaluate it at SSR time,
+        // and silently forcing it (to true OR false) is a correctness hazard —
+        // a forced-true could expose auth-gated content, a forced-false could
+        // hide required content, and a warning is too easily ignored. Refuse
+        // with a hard BF102 error so the author must move the predicate to a
+        // supported primitive or defer it with `/* @client */`.
+        if (
+          expr.callee.kind === 'identifier' &&
+          !this.templatePrimitives[identifierPath(expr.callee) ?? '']
+        ) {
+          const path = identifierPath(expr.callee) ?? expr.callee.name
+          this.errors.push({
+            code: 'BF102',
+            severity: 'error',
+            message:
+              `Predicate '${path}(...)' cannot be evaluated in a Go template. ` +
+              `A server-side template cannot call user-defined JavaScript predicates.`,
+            loc: this.makeLoc(),
+            suggestion: { message: GO_REMEDIATION_OPTIONS },
+          })
+          // Go template actions must be self-contained; emit a literal so the
+          // partial still parses while the build fails on the BF102 error.
+          return plain('false')
+        }
         return plain(this.renderParsedExpr(expr))
       }
 
@@ -4634,6 +4684,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return this.renderPortalComponent(comp)
     }
 
+    // Dynamic-tag local (`const Tag = children.tag`): there is no template
+    // named `<Tag>` to call — emitting `{{template "Tag" .TagSlot0}}` would
+    // reference a template that can never be registered, and Go's
+    // html/template escape-walks ALL registered templates (even dead
+    // branches), so the whole render fails with `no such template "Tag"`.
+    // Lower it to its children passthrough instead, so the dead branch
+    // renders harmlessly and the Slot template registers cleanly. (Real
+    // server-side asChild prop-merge on Go is a separate, deferred concern.)
+    if (comp.dynamicTag) {
+      return this.renderChildren(comp.children)
+    }
+
     // In Go templates, components are rendered using {{template "name" data}}
     let templateCall: string
     if (this.inLoop) {
@@ -4907,7 +4969,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (caseEntries.length === 0) continue
         const branches = caseEntries.map(([k, v], i) => {
           const head = i === 0 ? '{{if' : '{{else if'
-          return `${head} eq ${keyExpr} ${JSON.stringify(k)}}}${v}`
+          // The case value is a static Record<T,string> literal emitted
+          // straight into attribute-value text, so HTML-escape it the same
+          // way `string` parts are (via substituteJsInterpolations →
+          // escapeAttrText). Without this, UnoCSS tokens like
+          // `has-[>svg]:px-2.5` would leak a raw `>` and diverge from the
+          // Hono reference, which escapes it to `&gt;`.
+          return `${head} eq ${keyExpr} ${JSON.stringify(k)}}}${this.escapeAttrText(v)}`
         })
         output += branches.join('') + '{{end}}'
       }
