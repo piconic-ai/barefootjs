@@ -361,10 +361,9 @@ func todosHandler(w http.ResponseWriter, req *http.Request) {
 
 	todoItems := make([]TodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
-		todoItems[i] = TodoItemProps{
-			ScopeID: fmt.Sprintf("TodoItem_%d", t.ID),
-			Todo:    t,
-		}
+		// ScopeID is left empty on purpose: bf.Renderer.Render backfills a
+		// unique one for each child at render time.
+		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
 	props := NewTodoAppProps(TodoAppInput{InitialTodos: currentTodos})
@@ -386,10 +385,9 @@ func todosSSRHandler(w http.ResponseWriter, req *http.Request) {
 
 	todoItems := make([]TodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
-		todoItems[i] = TodoItemProps{
-			ScopeID: fmt.Sprintf("TodoItem_%d", t.ID),
-			Todo:    t,
-		}
+		// ScopeID is left empty on purpose: bf.Renderer.Render backfills a
+		// unique one for each child at render time.
+		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
 	props := NewTodoAppSSRProps(TodoAppSSRInput{InitialTodos: currentTodos})

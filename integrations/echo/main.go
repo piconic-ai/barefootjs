@@ -339,10 +339,9 @@ func todosHandler(c echo.Context) error {
 	// Build TodoItemProps array with ScopeID for each item
 	todoItems := make([]TodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
-		todoItems[i] = TodoItemProps{
-			ScopeID: fmt.Sprintf("TodoItem_%d", t.ID),
-			Todo:    t,
-		}
+		// ScopeID is left empty on purpose: bf.Renderer.Render backfills a
+		// unique one for each child at render time.
+		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
 	props := NewTodoAppProps(TodoAppInput{
@@ -422,10 +421,9 @@ func todosSSRHandler(c echo.Context) error {
 	// Build TodoItemProps array with ScopeID for each item
 	todoItems := make([]TodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
-		todoItems[i] = TodoItemProps{
-			ScopeID: fmt.Sprintf("TodoItem_%d", t.ID),
-			Todo:    t,
-		}
+		// ScopeID is left empty on purpose: bf.Renderer.Render backfills a
+		// unique one for each child at render time.
+		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
 	props := NewTodoAppSSRProps(TodoAppSSRInput{
