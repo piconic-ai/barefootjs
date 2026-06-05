@@ -15,5 +15,11 @@ bound it. The adapters now resolve the identifier through the IR's
 template language), matching what the Hono reference produces by
 evaluating the real JS. Only module-scope pure string literals qualify —
 `Record<T,string>` indexed lookups, memos, signals, and function-scope
-locals are deliberately excluded. This unblocks cross-adapter conformance
-for the `site/ui` `label` and `input` primitives.
+locals are deliberately excluded — and inlining is suppressed for any name
+shadowed by an enclosing loop binding (matching the Go adapter's
+loop-shadowing guards). This unblocks cross-adapter conformance for the
+`site/ui` `label` and `input` primitives.
+
+The Mojolicious adapter now relies on `typescript` at runtime (to parse
+const initializers), so it is externalized in the build and declared as a
+peer dependency, consistent with `@barefootjs/go-template`.

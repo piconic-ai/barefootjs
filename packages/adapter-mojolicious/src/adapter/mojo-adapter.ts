@@ -198,6 +198,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * module-scope pure string literals qualify (see `collectModuleStringConsts`).
    */
   private moduleStringConsts: Map<string, string> = new Map()
+  /**
+   * Names currently bound by an enclosing loop body — the `my $<param>` and
+   * `my $<index>` bindings `renderLoop` introduces — ref-counted so nested
+   * loops compose. `resolveModuleStringConst` consults this so a loop
+   * variable whose name happens to match a module string const is NOT
+   * inlined as the const literal (mirrors the Go adapter's loop-param /
+   * loop-var shadowing guards). (#1749 review)
+   */
+  private loopBoundNames: Map<string, number> = new Map()
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -226,6 +235,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.loopBoundNames.clear()
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -305,6 +315,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * literal form `'<escaped>'` ready to drop into an expression.
    */
   resolveModuleStringConst(name: string): string | null {
+    // A loop body introduces `my $<param>` / `my $<index>` bindings that
+    // shadow a module const of the same name — never inline inside one.
+    if (this.loopBoundNames.has(name)) return null
     const value = this.moduleStringConsts.get(name)
     if (value === undefined) return null
     return `'${value.replace(/[\\']/g, m => `\\${m}`)}'`
@@ -659,6 +672,16 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     const indexVar = loop.iterationShape === 'keys'
       ? `$${param}`
       : loop.index ? `$${loop.index}` : '$_i'
+    // Names this loop binds in body scope. Guard module-const inlining for
+    // the whole body (children + key + filter) so a same-named loop variable
+    // isn't replaced by the const literal (#1749 review). Ref-counted for
+    // nested loops; released after the body lines are assembled below.
+    const loopBound = loop.iterationShape === 'keys'
+      ? [param]
+      : [param, loop.index ?? '_i']
+    for (const n of loopBound) {
+      this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
+    }
     const prevInLoop = this.inLoop
     this.inLoop = true
     const renderedChildren = this.renderChildren(loop.children)
@@ -714,6 +737,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       lines.push(`% }`)
     } else {
       lines.push(children)
+    }
+
+    // Body fully rendered — release the loop-bound names.
+    for (const n of loopBound) {
+      const c = (this.loopBoundNames.get(n) ?? 1) - 1
+      if (c <= 0) this.loopBoundNames.delete(n)
+      else this.loopBoundNames.set(n, c)
     }
 
     lines.push(`% }`)

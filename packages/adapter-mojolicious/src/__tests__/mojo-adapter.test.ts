@@ -277,6 +277,22 @@ export function Label({ className = '' }: { className?: string }) {
     expect(result.template).not.toContain('$labelClasses')
   })
 
+  test('module pure-string const is NOT inlined when shadowed by a loop variable (#1749 review)', () => {
+    // A loop param whose name matches a module const must keep its loop
+    // binding (`$label`) inside the body — the const literal must not leak
+    // in. `renderLoop` guards module-const inlining for the loop body.
+    const result = compileAndGenerate(`
+"use client"
+const label = 'MODULE_CONST'
+export function List({ items }: { items: string[] }) {
+  return <ul>{items.map(label => <li>{label}</li>)}</ul>
+}
+`)
+    // Inside the loop the param wins — emit the loop variable, not the const.
+    expect(result.template).toContain('$label')
+    expect(result.template).not.toContain('MODULE_CONST')
+  })
+
   test('generates conditional with Perl if/else', () => {
     const result = compileAndGenerate(`
 "use client"
