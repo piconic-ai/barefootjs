@@ -233,6 +233,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (componentCode.includes('<Suspense')) {
       lines.push(`import { Suspense } from 'hono/jsx/streaming'`)
     }
+    // Async boundaries also wrap in ErrorBoundary for the body error path (#1375).
+    if (componentCode.includes('<ErrorBoundary')) {
+      lines.push(`import { ErrorBoundary } from 'hono/jsx'`)
+    }
 
     // Re-emit template imports, rewriting `@barefootjs/client` to this
     // adapter's SSR shim AND re-anchoring relative paths from the emit
@@ -962,7 +966,15 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   renderAsync(node: IRAsync): string {
     const fallback = this.renderNode(node.fallback)
     const children = this.renderChildren(node.children)
-    return `<Suspense fallback={<>${fallback}</>}>${children}</Suspense>`
+    // Wrap the streaming body in an ErrorBoundary so a synchronous throw or
+    // a rejected Promise during async resolution falls back to the same
+    // `fallback` instead of aborting the stream / leaking an unhandled
+    // rejection. Mirrors the runtime `BfAsync` component (#1375).
+    return (
+      `<ErrorBoundary fallback={<>${fallback}</>}>` +
+      `<Suspense fallback={<>${fallback}</>}>${children}</Suspense>` +
+      `</ErrorBoundary>`
+    )
   }
 
   renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean; isLoopItemRoot?: boolean }): string {
