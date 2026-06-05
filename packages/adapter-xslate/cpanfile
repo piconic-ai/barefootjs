@@ -1,0 +1,14 @@
+requires 'perl', '5.020';
+requires 'BarefootJS';
+requires 'Text::Xslate', '3.4.0';
+# JSON::PP is a core module (default encoder).
+
+on 'test' => sub {
+    requires 'Test2::V0';
+};
+
+# Authoring tools — building the CPAN dist with Minilla (scripts/perl-dist.sh).
+on 'develop' => sub {
+    requires 'Minilla';
+    requires 'Software::License::MIT';
+};

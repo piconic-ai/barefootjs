@@ -1,0 +1,6 @@
+name = "BarefootJS-Backend-Xslate"
+license = "MIT"
+
+# Assembled into an isolated build dir by scripts/perl-dist.sh, so the npm/TS
+# files in this package (package.json, tsconfig.json, src/) never reach the
+# CPAN tarball — only lib/ and t/.

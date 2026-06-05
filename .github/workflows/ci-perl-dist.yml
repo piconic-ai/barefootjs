@@ -1,0 +1,75 @@
+name: CI — Perl CPAN dists (Minilla)
+
+# Verifies the three Perl distributions assemble, test, and build as CPAN
+# tarballs via Minilla (scripts/perl-dist.sh). This is the "buildable/testable"
+# check for the dist packaging — it does not publish to CPAN.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/adapter-perl/**'
+      - 'packages/adapter-xslate/lib/**'
+      - 'packages/adapter-xslate/minil.toml'
+      - 'packages/adapter-xslate/cpanfile'
+      - 'packages/adapter-xslate/t/**'
+      - 'packages/adapter-mojolicious/lib/**'
+      - 'packages/adapter-mojolicious/minil.toml'
+      - 'packages/adapter-mojolicious/cpanfile'
+      - 'packages/adapter-mojolicious/t/**'
+      - 'scripts/perl-dist.sh'
+      - '.github/workflows/ci-perl-dist.yml'
+  pull_request:
+    paths:
+      - 'packages/adapter-perl/**'
+      - 'packages/adapter-xslate/lib/**'
+      - 'packages/adapter-xslate/minil.toml'
+      - 'packages/adapter-xslate/cpanfile'
+      - 'packages/adapter-xslate/t/**'
+      - 'packages/adapter-mojolicious/lib/**'
+      - 'packages/adapter-mojolicious/minil.toml'
+      - 'packages/adapter-mojolicious/cpanfile'
+      - 'packages/adapter-mojolicious/t/**'
+      - 'scripts/perl-dist.sh'
+      - '.github/workflows/ci-perl-dist.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  dist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@a198315ec4e9244f206879ea7b63078003aec8a6 # v1
+        with:
+          perl-version: '5.40'
+
+      # Minilla (build tool) + the dists' runtime/test deps. Minilla does not
+      # auto-install cpanfile deps, so the engines and Test2::Suite are explicit.
+      - name: Install Minilla + dist dependencies
+        # Software::License::MIT is needed by Minilla to resolve the MIT license
+        # (Minilla bundles only its own Perl_5 license class). Test2::Suite is the
+        # dists' test dep; Text::Xslate / Mojolicious are backend runtime deps.
+        run: cpanm --notest Minilla Software::License Test2::Suite Text::Xslate Mojolicious
+
+      # Core must be built and installed first so the backend dists can resolve
+      # `requires 'BarefootJS'` from their cpanfile during `minil test`.
+      - name: Build, test & install core (BarefootJS)
+        run: |
+          bash scripts/perl-dist.sh packages/adapter-perl test
+          bash scripts/perl-dist.sh packages/adapter-perl dist
+          cpanm --notest packages/adapter-perl/BarefootJS-*.tar.gz
+
+      - name: Build & test BarefootJS-Backend-Xslate
+        run: |
+          bash scripts/perl-dist.sh packages/adapter-xslate test
+          bash scripts/perl-dist.sh packages/adapter-xslate dist
+
+      - name: Build & test Mojolicious-Plugin-BarefootJS
+        run: |
+          bash scripts/perl-dist.sh packages/adapter-mojolicious test
+          bash scripts/perl-dist.sh packages/adapter-mojolicious dist
