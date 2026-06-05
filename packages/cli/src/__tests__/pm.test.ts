@@ -50,10 +50,38 @@ describe('detectPackageManager', () => {
     expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('npm')
   })
 
+  test('detects deno via deno.lock', () => {
+    writeFileSync(path.join(tmpDir, 'deno.lock'), '')
+    expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('deno')
+  })
+
+  test('detects deno via deno.json', () => {
+    writeFileSync(path.join(tmpDir, 'deno.json'), '{}')
+    expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('deno')
+  })
+
+  test('detects deno via deno.jsonc', () => {
+    writeFileSync(path.join(tmpDir, 'deno.jsonc'), '{}')
+    expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('deno')
+  })
+
   test('prefers bun over npm when both lockfiles exist', () => {
     writeFileSync(path.join(tmpDir, 'bun.lock'), '')
     writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}')
     expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('bun')
+  })
+
+  // A Deno project that also keeps a package.json + npm lockfile (for
+  // editor tooling) resolves to the npm-family lockfile that's actually
+  // installed — `deno` is the last lockfile signal, not the first.
+  test('prefers an npm-family lockfile over deno.json when both exist', () => {
+    writeFileSync(path.join(tmpDir, 'deno.json'), '{}')
+    writeFileSync(path.join(tmpDir, 'bun.lock'), '')
+    expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('bun')
+  })
+
+  test('falls back to deno runtime when env has no UA (e.g. `deno run npm:bf`)', () => {
+    expect(detectPackageManager(tmpDir, EMPTY_ENV, { deno: '2.0.0' })).toBe('deno')
   })
 
   test('falls back to invoking PM (bunx) when no lockfile is present', () => {
@@ -107,13 +135,24 @@ describe('detectInvokingPackageManager', () => {
     expect(detectInvokingPackageManager(env, EMPTY_VERSIONS)).toBe('yarn')
   })
 
-  test('returns null for unknown user agent (not on bun)', () => {
-    const env = { npm_config_user_agent: 'deno/1.0.0' } as NodeJS.ProcessEnv
+  test('detects deno via user agent', () => {
+    const env = { npm_config_user_agent: 'deno/2.0.0' } as NodeJS.ProcessEnv
+    expect(detectInvokingPackageManager(env, EMPTY_VERSIONS)).toBe('deno')
+  })
+
+  test('returns null for unknown user agent (not on bun/deno)', () => {
+    const env = { npm_config_user_agent: 'cnpm/1.0.0' } as NodeJS.ProcessEnv
     expect(detectInvokingPackageManager(env, EMPTY_VERSIONS)).toBeNull()
   })
 
   test('detects bun runtime when UA is absent', () => {
     expect(detectInvokingPackageManager(EMPTY_ENV, { bun: '1.3.0' })).toBe('bun')
+  })
+
+  // Deno does not set `npm_config_user_agent`, so the runtime version
+  // is the signal that catches `deno run -A npm:bf` in an empty dir.
+  test('detects deno runtime when UA is absent', () => {
+    expect(detectInvokingPackageManager(EMPTY_ENV, { deno: '2.0.0' })).toBe('deno')
   })
 })
 
@@ -146,6 +185,15 @@ describe('commandsFor', () => {
     expect(c.exec('bf add button')).toBe('yarn dlx bf add button')
   })
 
+  test('deno commands', () => {
+    const c = commandsFor('deno')
+    expect(c.install).toBe('deno install')
+    expect(c.run('dev')).toBe('deno task dev')
+    // The `npm:` specifier is what makes `deno run -A npm:bf ...` the
+    // Deno equivalent of `bunx bf ...` / `npx bf ...`.
+    expect(c.exec('bf add button')).toBe('deno run -A npm:bf add button')
+  })
+
   // The `test` helper is what the various "next steps" / "run tests"
   // hints route through so the CLI never prescribes `bun test` to a
   // user who picked a different package manager. Two paths matter:
@@ -156,6 +204,7 @@ describe('commandsFor', () => {
     expect(commandsFor('bun').test()).toBe('bun test')
     expect(commandsFor('pnpm').test()).toBe('pnpm test')
     expect(commandsFor('yarn').test()).toBe('yarn test')
+    expect(commandsFor('deno').test()).toBe('deno task test')
   })
 
   test('test(path) — targeted form forwards the arg appropriately per PM', () => {
@@ -167,6 +216,8 @@ describe('commandsFor', () => {
       .toBe('pnpm test components/Foo.test.tsx')
     expect(commandsFor('yarn').test('components/Foo.test.tsx'))
       .toBe('yarn test components/Foo.test.tsx')
+    expect(commandsFor('deno').test('components/Foo.test.tsx'))
+      .toBe('deno task test components/Foo.test.tsx')
   })
 })
 
@@ -190,7 +241,11 @@ describe('testRunnerFor', () => {
   // npm / pnpm / yarn share the vitest path — none of them ships an
   // in-runtime test runner, and vitest's surface is API-compatible
   // with `bun:test` so the same generated file runs unchanged.
-  test.each(['npm', 'pnpm', 'yarn'] as const)(
+  // Deno ships an in-runtime test runner, but it is not `describe` /
+  // `test` / `expect`-compatible with the `bun:test` line `bf gen test`
+  // emits — so a Deno scaffold rides the same vitest path as npm/pnpm/
+  // yarn, keeping the generated test file runnable unchanged.
+  test.each(['npm', 'pnpm', 'yarn', 'deno'] as const)(
     '%s: ships `vitest` import + `vitest run` script + vitest devDep + empty types entry',
     (pm) => {
       const r = testRunnerFor(pm)

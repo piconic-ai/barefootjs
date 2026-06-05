@@ -9,24 +9,37 @@
 //
 // Falls back to 'npm' when neither signal is available.
 
-import { existsSync } from 'fs'
-import path from 'path'
+// `node:` prefixes (not bare `fs` / `path`) so this module loads
+// unchanged under every runtime `bf` may execute on — Node, Bun, and
+// Deno. Deno only resolves builtins through the `node:` specifier, so
+// the prefix is what lets `detectPackageManager` run under
+// `deno run npm:bf ...` without a bundler rewrite.
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 
-export type PackageManager = 'npm' | 'bun' | 'pnpm' | 'yarn'
+export type PackageManager = 'npm' | 'bun' | 'pnpm' | 'yarn' | 'deno'
 
+// Deno is matched last: a Deno project may keep a `package.json` (and
+// thus an npm-family lockfile) for editor tooling, but `deno.lock` /
+// `deno.json(c)` is the authoritative signal that the user drives the
+// project with Deno. Listing it after the npm-family tools means a
+// repo that committed to both still resolves to the npm-family
+// lockfile that's actually installed, while a Deno-only repo (config
+// but no npm lockfile) still resolves to `deno`.
 const LOCKFILES: Record<PackageManager, string[]> = {
   bun: ['bun.lock', 'bun.lockb'],
   pnpm: ['pnpm-lock.yaml'],
   yarn: ['yarn.lock'],
   npm: ['package-lock.json'],
+  deno: ['deno.lock', 'deno.json', 'deno.jsonc'],
 }
 
 export function detectPackageManager(
   dir: string,
   env: NodeJS.ProcessEnv = process.env,
-  versions: { bun?: string } = process.versions as { bun?: string },
+  versions: { bun?: string; deno?: string } = process.versions as { bun?: string; deno?: string },
 ): PackageManager {
-  for (const pm of ['bun', 'pnpm', 'yarn', 'npm'] as const) {
+  for (const pm of ['bun', 'pnpm', 'yarn', 'npm', 'deno'] as const) {
     for (const file of LOCKFILES[pm]) {
       if (existsSync(path.join(dir, file))) return pm
     }
@@ -40,14 +53,20 @@ export function detectPackageManager(
 //   - `npm_config_user_agent`: every major PM sets this to a
 //     `<name>/<version> ...` string when it spawns a child. Reliable for
 //     `bunx <published-pkg>`, `npx`, `pnpm dlx`, `yarn dlx`.
-//   - `process.versions.bun`: present whenever the bun runtime is in
-//     use (covers local-path invocations like `bun ./dist/cli.js` or
-//     a `#!/usr/bin/env bun` shebang, where the UA is not set). pnpm
-//     and yarn share node's runtime, so they fall through to the UA
-//     path only.
+//   - `process.versions.bun` / `process.versions.deno`: present
+//     whenever the bun / Deno runtime is in use (covers local-path and
+//     `npm:`-specifier invocations like `bun ./dist/cli.js`,
+//     `deno run -A npm:bf`, or a `#!/usr/bin/env bun` shebang, where the
+//     UA is not set). pnpm and yarn share node's runtime, so they fall
+//     through to the UA path only.
+//
+// Deno is unusual: it does not set `npm_config_user_agent` and runs
+// `bf` via `deno run npm:bf`, so the runtime version is the only
+// reliable signal — checked after the UA so an explicit
+// `pnpm dlx`/`npx` wrapper (which would set the UA) still wins.
 export function detectInvokingPackageManager(
   env: NodeJS.ProcessEnv = process.env,
-  versions: { bun?: string } = process.versions as { bun?: string },
+  versions: { bun?: string; deno?: string } = process.versions as { bun?: string; deno?: string },
 ): PackageManager | null {
   const ua = env.npm_config_user_agent
   if (ua) {
@@ -55,8 +74,10 @@ export function detectInvokingPackageManager(
     if (ua.startsWith('pnpm/')) return 'pnpm'
     if (ua.startsWith('yarn/')) return 'yarn'
     if (ua.startsWith('npm/')) return 'npm'
+    if (ua.startsWith('deno/')) return 'deno'
   }
   if (versions.bun) return 'bun'
+  if (versions.deno) return 'deno'
   return null
 }
 
@@ -96,6 +117,24 @@ export function commandsFor(pm: PackageManager): PmCommands {
         run: s => `yarn ${s}`,
         exec: c => `yarn dlx ${c}`,
         test: p => p ? `yarn test ${p}` : 'yarn test',
+      }
+    case 'deno':
+      return {
+        // Deno 2 reads `package.json` (and `deno.json` tasks), so
+        // `deno install` materialises the same dependency tree the
+        // other PMs produce — no separate `deno cache` step needed.
+        install: 'deno install',
+        // package.json scripts surface as Deno tasks, so `deno task
+        // <script>` mirrors `bun run <script>` / `pnpm <script>`.
+        run: s => `deno task ${s}`,
+        // One-shot binaries run straight from npm via the `npm:`
+        // specifier; `-A` grants the filesystem/network access `bf`
+        // needs to download and write components.
+        exec: c => `deno run -A npm:${c}`,
+        // The scaffold's `test` task forwards extra args without a `--`
+        // separator (like bun/pnpm/yarn), so the targeted form just
+        // appends the path.
+        test: p => p ? `deno task test ${p}` : 'deno task test',
       }
     case 'npm':
     default:

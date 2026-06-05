@@ -12,6 +12,31 @@ import { build } from 'esbuild'
 import { chmodSync, copyFileSync, cpSync, existsSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { builtinModules } from 'node:module'
+
+// Normalise every Node builtin import to the `node:` specifier. Source
+// files import a mix of bare (`from 'fs'`) and prefixed
+// (`from 'node:fs'`) builtins; esbuild preserves whichever the source
+// used. Deno only resolves Node builtins through the `node:` form, so
+// without this the published bundle fails to load under
+// `deno run -A npm:bf`. Node 22 and Bun both accept `node:`, so the
+// rewrite is a no-op for them — it only unlocks the Deno runtime.
+const nodeProtocolPlugin = {
+  name: 'node-protocol',
+  setup(b) {
+    b.onResolve({ filter: /^[a-z@]/ }, (args) => {
+      if (args.path.startsWith('node:')) return { path: args.path, external: true }
+      // `fs/promises` → base `fs`; scoped/npm packages fall through.
+      const base = args.path.split('/')[0]
+      if (builtinModules.includes(base)) {
+        return { path: `node:${args.path}`, external: true }
+      }
+      // Non-builtins (typescript, esbuild, bundled deps) keep esbuild's
+      // default resolution — `external` config still applies.
+      return null
+    })
+  },
+}
 
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(here, '..')
@@ -48,6 +73,9 @@ await build({
   target: 'node22',
   // Keep runtime deps external so they are resolved from node_modules, not inlined.
   external: ['typescript', 'esbuild'],
+  // Rewrite bare Node builtins to the `node:` specifier so the bundle
+  // loads under Deno as well as Node/Bun.
+  plugins: [nodeProtocolPlugin],
   // Source index.ts carries the shebang; esbuild preserves it. No banner needed.
   legalComments: 'none',
   logLevel: 'info',

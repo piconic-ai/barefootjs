@@ -1,15 +1,15 @@
 {
-  "name": "@barefootjs/jsx",
+  "name": "@barefootjs/client",
   "version": "0.6.1",
   "exports": {
     ".": "./src/index.ts",
-    "./scanner": "./src/scanner/js-scanner.ts",
-    "./import-map": "./src/import-map.ts"
+    "./reactive": "./src/reactive.ts",
+    "./runtime": "./src/runtime/index.ts",
+    "./build": "./src/build.ts"
   },
   "imports": {
     "@barefootjs/shared": "jsr:@barefootjs/shared@^0.6.1",
-    "@barefootjs/client": "jsr:@barefootjs/client@^0.6.1",
-    "typescript": "npm:typescript@^5.0.0"
+    "@barefootjs/client/reactive": "./src/reactive.ts"
   },
   "publish": {
     "include": ["src", "README.md", "LICENSE", "jsr.json"]

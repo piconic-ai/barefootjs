@@ -1,0 +1,10 @@
+{
+  "name": "@barefootjs/shared",
+  "version": "0.6.1",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publish": {
+    "include": ["src", "README.md", "LICENSE", "jsr.json"]
+  }
+}

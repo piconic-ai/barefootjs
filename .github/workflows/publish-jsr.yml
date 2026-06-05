@@ -1,0 +1,65 @@
+# Publish to JSR (https://jsr.io/@barefootjs)
+#
+# Mirrors the npm release of the core libraries onto JSR so Deno (and
+# other JSR consumers) can `import { ... } from "jsr:@barefootjs/jsx"`.
+#
+# Gated on purpose — runs only on a manual dispatch or a pushed `v*`
+# release tag, never on PRs or ordinary pushes to main, so it can't
+# interfere with the regular CI lanes. Publishing uses JSR's GitHub
+# Actions OIDC flow (no long-lived token): the `id-token: write`
+# permission below is what authenticates `deno publish`.
+#
+# One-time prerequisites (on jsr.io):
+#   1. Create the `@barefootjs` scope.
+#   2. Create each package (@barefootjs/shared, /client, /jsx) and link
+#      it to GitHub repo piconic-ai/barefootjs for OIDC publishing.
+#
+# Versions come from each package's jsr.json `version` field — keep them
+# in lock-step with package.json (the Changesets release bumps both).
+# Packages are published in dependency order (shared → client → jsx) so
+# each `jsr:@barefootjs/...` import resolves against an already-live
+# version.
+name: Publish to JSR
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: publish-jsr-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      # Floating major tag (other workflows SHA-pin their actions; pin
+      # this to a verified denoland/setup-deno commit in a follow-up).
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # `--allow-slow-types`: the libraries don't yet carry explicit
+      # return types on every public symbol (JSR's "slow types" rule),
+      # so we opt into the slower inference instead of blocking the
+      # release on a full annotation pass.
+      - name: Publish @barefootjs/shared
+        working-directory: packages/shared
+        run: deno publish --allow-slow-types --allow-dirty
+
+      - name: Publish @barefootjs/client
+        working-directory: packages/client
+        run: deno publish --allow-slow-types --allow-dirty
+
+      - name: Publish @barefootjs/jsx
+        working-directory: packages/jsx
+        run: deno publish --allow-slow-types --allow-dirty
