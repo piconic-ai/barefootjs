@@ -1,5 +1,13 @@
 # @barefootjs/xslate
 
+## 0.8.0
+
+### Patch Changes
+
+- Updated dependencies [3ed9659]
+  - @barefootjs/perl@0.8.0
+  - @barefootjs/shared@0.8.0
+
 ## 0.7.0
 
 ### Minor Changes
