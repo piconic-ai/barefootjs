@@ -39,6 +39,8 @@ const PUBLISHABLE = [
   'packages/xyflow',
   'packages/adapter-hono',
   'packages/adapter-go-template',
+  'packages/adapter-perl',
+  'packages/adapter-xslate',
   'packages/adapter-mojolicious',
   'packages/cli',
   'packages/create-barefootjs',
