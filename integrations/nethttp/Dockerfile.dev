@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the net/http integration. Source and the host-built dist/
+# are bind-mounted in (see docker-compose.yml); air watches for .go and
+# template changes and rebuilds on the fly.
+#
+# Build context is the repo root so the go.mod `replace` path
+# (../../packages/adapter-go-template/runtime) resolves the same as on the host.
+
+FROM golang:1.25-alpine
+
+RUN apk add --no-cache git
+
+# air provides live-reload for Go. Pinned to a recent tag for reproducibility.
+RUN go install github.com/air-verse/air@v1.61.5
+
+WORKDIR /workspace/integrations/nethttp
+
+EXPOSE 8083
+
+CMD ["air"]

@@ -25,6 +25,7 @@ const repoRoot = resolve(cliPkg, '../..')
 const sources = {
   bfGoSource: 'packages/adapter-go-template/runtime/bf.go',
   streamingGoSource: 'packages/adapter-go-template/runtime/streaming.go',
+  bfdevGoSource: 'packages/adapter-go-template/runtime/bfdev/bfdev.go',
   barefootPmSource: 'packages/adapter-mojolicious/lib/BarefootJS.pm',
   barefootPluginPmSource: 'packages/adapter-mojolicious/lib/Mojolicious/Plugin/BarefootJS.pm',
   barefootDevReloadPmSource:

@@ -80,6 +80,51 @@ services:
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/root/.cache/go-build
 
+  gin:
+    build:
+      context: .
+      dockerfile: integrations/gin/Dockerfile.dev
+    working_dir: /workspace/integrations/gin
+    environment:
+      APP_ENV: development
+      BASE_PATH: /integrations/gin
+      PORT: "8081"
+    volumes:
+      - ./integrations/gin:/workspace/integrations/gin
+      - ./packages/adapter-go-template/runtime:/workspace/packages/adapter-go-template/runtime
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+  chi:
+    build:
+      context: .
+      dockerfile: integrations/chi/Dockerfile.dev
+    working_dir: /workspace/integrations/chi
+    environment:
+      APP_ENV: development
+      BASE_PATH: /integrations/chi
+      PORT: "8082"
+    volumes:
+      - ./integrations/chi:/workspace/integrations/chi
+      - ./packages/adapter-go-template/runtime:/workspace/packages/adapter-go-template/runtime
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+  nethttp:
+    build:
+      context: .
+      dockerfile: integrations/nethttp/Dockerfile.dev
+    working_dir: /workspace/integrations/nethttp
+    environment:
+      APP_ENV: development
+      BASE_PATH: /integrations/nethttp
+      PORT: "8083"
+    volumes:
+      - ./integrations/nethttp:/workspace/integrations/nethttp
+      - ./packages/adapter-go-template/runtime:/workspace/packages/adapter-go-template/runtime
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
   mojolicious:
     build:
       context: .

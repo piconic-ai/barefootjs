@@ -10,9 +10,39 @@ describe('adapter registry', () => {
     expect(DEFAULT_ADAPTER).toBe('hono')
   })
 
-  test.each(['hono', 'hono-node', 'echo', 'mojo', 'csr'])('%s adapter is registered', id => {
-    expect(ADAPTERS[id]).toBeDefined()
-  })
+  test.each(['hono', 'hono-node', 'echo', 'gin', 'chi', 'nethttp', 'mojo', 'csr'])(
+    '%s adapter is registered',
+    id => {
+      expect(ADAPTERS[id]).toBeDefined()
+    },
+  )
+
+  test.each(['gin', 'chi', 'nethttp'])(
+    '%s Go adapter scaffolds the shared Go runtime + render glue',
+    id => {
+      const adapter = ADAPTERS[id]
+      // Framework-specific entry files.
+      expect(adapter.files['main.go']).toBeDefined()
+      expect(adapter.files['bf_render.go']).toBeDefined()
+      expect(adapter.files['go.mod']).toContain('barefoot-app')
+      // Shared Go pieces every Go adapter contributes.
+      expect(adapter.files['renderer.go']).toContain('func defaultLayout')
+      expect(adapter.files['env.go']).toContain('func IsDev')
+      // Vendored runtime, including the bfdev subpackage the dev
+      // auto-reload handler lives in.
+      expect(adapter.files['bf-runtime/bf.go']).toContain('package bf')
+      expect(adapter.files['bf-runtime/bfdev/bfdev.go']).toContain('package bfdev')
+      expect(adapter.files['go.mod']).toContain(
+        'replace github.com/barefootjs/runtime/bf => ./bf-runtime',
+      )
+      // The render bridge wires the dev auto-reload endpoint + snippet.
+      expect(adapter.files['bf_render.go']).toContain('/_bf/reload')
+      expect(adapter.files['bf_render.go']).toContain('bfdev.Snippet')
+      // Client JS and public assets are served from disjoint prefixes
+      // (so Gin's router tree doesn't panic on nested catch-alls).
+      expect(adapter.files['barefoot.config.ts']).toContain("clientJsBasePath: '/client/'")
+    },
+  )
 
   test('hono and hono-node disambiguate via shortLabel in confirmation', () => {
     // Both have "Hono" as the root noun, so the menu confirmation
