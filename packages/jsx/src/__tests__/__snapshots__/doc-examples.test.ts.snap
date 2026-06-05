@@ -4092,7 +4092,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/go-template-adapter.md doc-examples L70 — (no label) 1`] = `
+exports[`docs/core/adapters/go-template-adapter.md doc-examples L71 — (no label) 1`] = `
 "import { $t, __bfText, createComponent, createEffect, escapeText, hydrate } from '@barefootjs/client/runtime'
 
 
@@ -4114,7 +4114,7 @@ hydrate('Greeting', { init: initGreeting, template: (_p) => \`<p bf="s1">Hello, 
 export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/go-template-adapter.md doc-examples L94 — (no label) 1`] = `
+exports[`docs/core/adapters/go-template-adapter.md doc-examples L95 — (no label) 1`] = `
 "import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
 
 
@@ -4144,7 +4144,7 @@ hydrate('Counter', { init: initCounter, template: (_p) => \`<div><span bf="s1">C
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/go-template-adapter.md doc-examples L167 — (no label) 1`] = `
+exports[`docs/core/adapters/go-template-adapter.md doc-examples L168 — (no label) 1`] = `
 "import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -4211,7 +4211,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/go-template-adapter.md doc-examples L179 — (no label) 1`] = `
+exports[`docs/core/adapters/go-template-adapter.md doc-examples L180 — (no label) 1`] = `
 "import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -4278,7 +4278,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/go-template-adapter.md doc-examples L193 — (no label) 1`] = `
+exports[`docs/core/adapters/go-template-adapter.md doc-examples L194 — (no label) 1`] = `
 "import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -4349,7 +4349,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/go-template-adapter.md doc-examples L235 — (no label) 1`] = `
+exports[`docs/core/adapters/go-template-adapter.md doc-examples L236 — (no label) 1`] = `
 "import { $, createComponent, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:TodoItem */'
 
@@ -4373,7 +4373,7 @@ hydrate('TodoList', { init: initTodoList, template: (_p) => \`<ul bf="s1"><!--bf
 export function TodoList(_p, __bfKey) { return createComponent('TodoList', _p, __bfKey) }"
 `;
 
-exports[`docs/core/adapters/go-template-adapter.md doc-examples L259 — (no label) 1`] = `
+exports[`docs/core/adapters/go-template-adapter.md doc-examples L260 — (no label) 1`] = `
 "import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {

@@ -16,8 +16,9 @@ npm install @barefootjs/go-template
 
 The adapter is **web-framework-agnostic** — it emits plain Go `html/template`
 files plus a small runtime (`FuncMap`, `Renderer`), so any server that can
-parse and execute `html/template` can render the output. `bf init` ships
-runnable scaffolds for four Go servers, all built on this adapter:
+parse and execute `html/template` can render the output. The scaffolder
+(`npm create barefootjs@latest -- --adapter <name>`) ships runnable starters
+for four Go servers, all built on this adapter:
 
 | `--adapter` | Framework | Router |
 |-------------|-----------|--------|

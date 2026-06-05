@@ -26,7 +26,7 @@ JSX Source
 
 > CSR is not an IR→template adapter. It renders components directly in the browser using client-side template functions — use it when the server can't (or shouldn't) emit the initial HTML.
 
-The `GoTemplateAdapter` is web-framework-agnostic: its `html/template` output runs on any Go server. `bf init` ships scaffolds for Echo, Gin, Chi, and net/http — see [Go Template Adapter → Server integration](./adapters/go-template-adapter.md#server-integration).
+The `GoTemplateAdapter` is web-framework-agnostic: its `html/template` output runs on any Go server. `npm create barefootjs@latest` ships scaffolds for Echo, Gin, Chi, and net/http (via `--adapter`) — see [Go Template Adapter → Server integration](./adapters/go-template-adapter.md#server-integration).
 
 ## Pages
 
