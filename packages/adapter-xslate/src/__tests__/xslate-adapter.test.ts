@@ -46,14 +46,17 @@ runAdapterConformanceTests({
     // `reactive-props` passes. (Same pair mojo skips.)
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b interactive `site/ui` primitives. Cross-adapter SSR
-    // parity for this corpus is a later phase (they participate in Hono SSR
-    // conformance + the fixture-hydrate runtime layer for now); mojo skips
-    // them identically. Confirmed render-mismatch, not a hard error.
+    // #1467 Phase 2b interactive `site/ui` primitives. `textarea` and
+    // `checkbox` now PASS (conditional inline-object spread, nullish
+    // optional-attribute omission, `Record[propKey]` spread values,
+    // props-object inherited-attr enumeration, and hyphenated child hash keys
+    // were ported from the Mojo adapter in Kolon form). The remaining three
+    // stay skipped: cross-adapter SSR parity for them is a later phase (they
+    // participate in Hono SSR conformance + the fixture-hydrate runtime layer
+    // for now); mojo skips the same three. Confirmed render-mismatch, not a
+    // hard error.
     'toggle',
     'switch',
-    'checkbox',
-    'textarea',
     'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Xslate adapter

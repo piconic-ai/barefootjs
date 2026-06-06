@@ -60,8 +60,11 @@ import {
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
+  augmentInheritedPropAccesses,
+  parseRecordIndexAccess,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
+import ts from 'typescript'
 
 /**
  * Xslate adapter's IRNode render context. Like the Mojo adapter, Kolon's
@@ -109,6 +112,25 @@ const XSLATE_PRIMITIVE_EMIT_MAP: Record<string, (args: string[]) => string> =
  * AttrValue `kind` discriminator so adapter code stays type-safe if the IR
  * shape evolves.
  */
+/**
+ * Escape a string for a Kolon/Perl single-quoted literal: backslash first
+ * (so it doesn't double-escape the quote we add next), then the quote. Used
+ * by every `'…'` hashref key/value emitter below.
+ */
+function escapeKolonSingleQuoted(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
+/**
+ * Quote a hashref KEY for Kolon when it isn't a bare-identifier-safe name.
+ * Kolon parses `data-slot` as `data - slot` (subtraction) and faults on the
+ * undefined `data` symbol, so a hyphenated key (`data-slot`, `aria-label`)
+ * must be single-quoted: `'data-slot'`. Bare identifiers pass through unquoted.
+ */
+function kolonHashKey(name: string): string {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${escapeKolonSingleQuoted(name)}'`
+}
+
 function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
   const prop = props.find(p => p.name === 'children')
   if (!prop) return []
@@ -170,6 +192,23 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    */
   private moduleStringConsts: Map<string, string> = new Map()
 
+  /**
+   * Local + module constants from the IR, used by the conditional-spread and
+   * `Record<staticKeys, scalar>[propKey]` lowering paths (#textarea / #checkbox).
+   * Stashed at `generate()` entry so `emitSpread` can resolve a bare local
+   * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
+   */
+  private localConstants: IRMetadata['localConstants'] = []
+
+  /**
+   * Optional, no-default props that are `undef` when the caller omits them.
+   * Their bare-reference attribute emission is guarded with Kolon `defined` so
+   * the attribute DROPS rather than rendering `attr=""` (Hono-style nullish
+   * omission, e.g. textarea's `rows`). The filter excludes destructure-
+   * defaulted, rest, and concrete-primitive props.
+   */
+  private nullableOptionalProps: Set<string> = new Set()
+
   constructor(options: XslateAdapterOptions = {}) {
     super()
     this.options = {
@@ -181,7 +220,25 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
     this.propsObjectName = ir.metadata.propsObjectName ?? null
+    // (#checkbox) Enumerate the props-object pattern's inherited attribute
+    // accesses (`props.className`/`id`/`disabled`) into propsParams via the
+    // shared helper, before deriving `nullableOptionalProps` below.
+    augmentInheritedPropAccesses(ir)
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    this.localConstants = ir.metadata.localConstants ?? []
+    // Bare references to optional, no-default, non-primitive props (e.g.
+    // textarea's `rows`) are `undef` when omitted → `defined`-guarded in
+    // `emitExpression`. See the `nullableOptionalProps` field docstring.
+    this.nullableOptionalProps = new Set(
+      ir.metadata.propsParams
+        .filter(
+          p =>
+            p.defaultValue === undefined &&
+            !p.isRest &&
+            p.type?.kind !== 'primitive',
+        )
+        .map(p => p.name),
+    )
     // Record string-typed signals and props so equality comparisons against
     // them lower to `eq`/`ne`. A signal is string-typed when its inferred
     // type is `string` (or, defensively, when its initial value is a bare
@@ -665,12 +722,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * below, not threaded through the hashref entry list.
    */
   private readonly componentPropEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name} => '${value.value}'`,
+    emitLiteral: (value, name) => `${kolonHashKey(name)} => '${value.value}'`,
     emitExpression: (value, name) => {
       if (value.parts) {
-        return `${name} => ${this.convertTemplateLiteralPartsToKolon(value.parts)}`
+        return `${kolonHashKey(name)} => ${this.convertTemplateLiteralPartsToKolon(value.parts)}`
       }
-      return `${name} => ${this.convertExpressionToKolon(value.expr)}`
+      return `${kolonHashKey(name)} => ${this.convertExpressionToKolon(value.expr)}`
     },
     emitSpread: (value) => {
       // Kolon hashrefs can't be splatted into the entry list the way Perl
@@ -682,9 +739,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       return this.convertExpressionToKolon(value.expr)
     },
     emitTemplate: (value, name) =>
-      `${name} => ${this.convertTemplateLiteralPartsToKolon(value.parts)}`,
-    emitBooleanAttr: (_value, name) => `${name} => 1`,
-    emitBooleanShorthand: (_value, name) => `${name} => 1`,
+      `${kolonHashKey(name)} => ${this.convertTemplateLiteralPartsToKolon(value.parts)}`,
+    emitBooleanAttr: (_value, name) => `${kolonHashKey(name)} => 1`,
+    emitBooleanShorthand: (_value, name) => `${kolonHashKey(name)} => 1`,
     // JSX children flow through the Kolon macro capture below; they're not
     // part of the hashref entry list.
     emitJsxChildren: () => '',
@@ -836,6 +893,34 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
+      // Hono-style nullish omission: a bare reference to an optional,
+      // no-default prop (`nullableOptionalProps`) is `defined`-guarded so the
+      // attribute drops instead of rendering `attr=""`. Narrowly scoped to bare
+      // identifiers — member exprs, calls, and concrete/defaulted props are
+      // unaffected.
+      const bareId = value.expr.trim()
+      // Normalize a props-object access (`props.id`) to its bare prop name
+      // (`id`) so the nullable-optional set — keyed by bare name — matches the
+      // SolidJS props-object pattern, not just destructured params.
+      const normalizedBareId =
+        this.propsObjectName && bareId.startsWith(`${this.propsObjectName}.`)
+          ? bareId.slice(this.propsObjectName.length + 1)
+          : bareId
+      if (
+        !isBooleanAttr(name) &&
+        !value.presenceOrUndefined &&
+        /^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
+        this.nullableOptionalProps.has(normalizedBareId)
+      ) {
+        const perl = this.convertExpressionToKolon(value.expr)
+        const body =
+          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name)
+            ? `${name}="<: $bf.bool_str(${perl}) :>"`
+            : `${name}="<: ${perl} :>"`
+        // Kolon `:` line directives must each stand alone on their own line, so
+        // wrap in newlines (`normalizeHTML` collapses the surrounding space).
+        return `\n: if (defined ${perl}) {\n${body}\n: }\n`
+      }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
         // Boolean attributes: render conditionally (present or absent).
         return `<: ${this.convertExpressionToKolon(value.expr)} ? '${name}' : '' :>`
@@ -867,6 +952,35 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
           `${JSON.stringify(p.name)} => $${p.name}`,
         )
         return `<: $bf.spread_attrs({${entries.join(', ')}}) | mark_raw :>`
+      }
+      // Conditional inline-object spread (#textarea):
+      //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
+      // Emit a Kolon inline ternary of hashrefs — Perl truthiness handles the
+      // condition for free, and the falsy `{}` branch OMITS the key
+      // (`spread_attrs` does NOT emit empty hashref entries).
+      const ternaryHashref = this.conditionalSpreadToKolon(trimmed)
+      if (ternaryHashref !== null) {
+        return `<: $bf.spread_attrs(${ternaryHashref}) | mark_raw :>`
+      }
+      // Function-scope local const holding a conditional inline-object
+      //   `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
+      // (#checkbox / icon). Resolve the bare identifier to its initializer text
+      // and route through the same conditional-spread lowering. Only
+      // function-scope (`!isModule`) consts whose value is NOT itself a bare
+      // identifier (loop guard) are considered.
+      if (/^[A-Za-z_$][\w$]*$/.test(trimmed)) {
+        const localConst = (this.localConstants ?? []).find(
+          c => c.name === trimmed && !c.isModule,
+        )
+        if (localConst?.value !== undefined) {
+          const initTrimmed = localConst.value.trim()
+          if (!/^[A-Za-z_$][\w$]*$/.test(initTrimmed)) {
+            const resolved = this.conditionalSpreadToKolon(initTrimmed)
+            if (resolved !== null) {
+              return `<: $bf.spread_attrs(${resolved}) | mark_raw :>`
+            }
+          }
+        }
       }
       const perlExpr = this.convertExpressionToKolon(value.expr)
       return `<: $bf.spread_attrs(${perlExpr}) | mark_raw :>`
@@ -1100,6 +1214,98 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       },
     })
     return true
+  }
+
+  /**
+   * Lower a conditional inline-object spread
+   *   `COND ? { 'aria-describedby': describedBy } : {}`
+   * to a Kolon inline ternary of hashrefs
+   *   `$describedBy ? { 'aria-describedby' => $describedBy } : {}`.
+   * Both branches must be object literals; the condition + values route through
+   * `convertExpressionToKolon`. Returns `null` for any other shape so the caller
+   * falls back to its normal lowering. Mirror of `conditionalSpreadToPerl`.
+   */
+  private conditionalSpreadToKolon(expr: string): string | null {
+    const sf = ts.createSourceFile('__spread.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
+    if (sf.statements.length !== 1) return null
+    const stmt = sf.statements[0]
+    if (!ts.isExpressionStatement(stmt)) return null
+    let node: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    if (!ts.isConditionalExpression(node)) return null
+    const unwrap = (e: ts.Expression): ts.Expression => {
+      let n = e
+      while (ts.isParenthesizedExpression(n)) n = n.expression
+      return n
+    }
+    const whenTrue = unwrap(node.whenTrue)
+    const whenFalse = unwrap(node.whenFalse)
+    if (!ts.isObjectLiteralExpression(whenTrue) || !ts.isObjectLiteralExpression(whenFalse)) {
+      return null
+    }
+    const condPerl = this.convertExpressionToKolon(node.condition.getText(sf))
+    const truePerl = this.objectLiteralToKolonHashref(whenTrue, sf)
+    const falsePerl = this.objectLiteralToKolonHashref(whenFalse, sf)
+    if (truePerl === null || falsePerl === null) return null
+    return `${condPerl} ? ${truePerl} : ${falsePerl}`
+  }
+
+  /**
+   * Convert a static object literal into a Kolon hashref string for a
+   * conditional spread. Only static string/identifier keys are allowed; values
+   * resolve via `convertExpressionToKolon` (or the `Record[propKey]` index
+   * lowering). Returns `null` for any computed/spread/dynamic key. Empty object
+   * → `{}`. Mirror of `objectLiteralToPerlHashref`.
+   */
+  private objectLiteralToKolonHashref(
+    obj: ts.ObjectLiteralExpression,
+    sf: ts.SourceFile,
+  ): string | null {
+    const entries: string[] = []
+    for (const prop of obj.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      let key: string
+      if (ts.isIdentifier(prop.name)) {
+        key = prop.name.text
+      } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
+        key = prop.name.text
+      } else {
+        return null
+      }
+      const initNode = (() => {
+        let n: ts.Expression = prop.initializer
+        while (ts.isParenthesizedExpression(n)) n = n.expression
+        return n
+      })()
+      const indexed = this.recordIndexAccessToKolon(initNode)
+      const valPerl =
+        indexed !== null
+          ? indexed
+          : this.convertExpressionToKolon(prop.initializer.getText(sf))
+      entries.push(`'${escapeKolonSingleQuoted(key)}' => ${valPerl}`)
+    }
+    return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
+  }
+
+  /**
+   * Lower a spread-object VALUE of the form `IDENT[KEY]` (CheckIcon's
+   * `sizeMap[size]`) to an inline indexed Kolon hashref
+   *   `{ 'sm' => 16, 'md' => 20, ... }[$size]`.
+   * Reuses the shared structural parse (`parseRecordIndexAccess`); this wrapper
+   * only does the single-quote escaping + Kolon index emit. NB: Kolon indexes a
+   * hashref literal with bracket syntax `{…}[$key]`, NOT Perl's arrow-deref
+   * `{…}->{$key}` (which Kolon's parser rejects) — this is the one divergence
+   * from the Mojo `recordIndexAccessToPerl` emit.
+   */
+  private recordIndexAccessToKolon(val: ts.Expression): string | null {
+    const parsed = parseRecordIndexAccess(val, this.localConstants ?? [], this.propsParams)
+    if (!parsed) return null
+    const entries = parsed.entries.map(e => {
+      const mapVal =
+        e.value.kind === 'number' ? e.value.text : `'${escapeKolonSingleQuoted(e.value.text)}'`
+      return `'${escapeKolonSingleQuoted(e.key)}' => ${mapVal}`
+    })
+    return `{ ${entries.join(', ')} }[$${parsed.indexPropName}]`
   }
 
   private convertExpressionToKolon(expr: string): string {
