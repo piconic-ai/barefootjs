@@ -33,10 +33,9 @@ runAdapterConformanceTests({
   // fixtures than mojo. Each entry below was confirmed to fail with
   // skipJsx emptied.
   skipJsx: [
-    // No SSR context propagation: `<Ctx.Provider value="dark">` doesn't make
-    // `useContext(Ctx)` resolve at template-eval time (the template reads a
-    // `theme` key that's never seeded). A real adapter feature, not yet
-    // implemented on either Perl backend. (Compiles clean; render-mismatches.)
+    // SSR context propagation (`<Ctx.Provider value>` → `useContext`): the
+    // template reads a stash key that's never seeded. Implemented on Go; the
+    // Perl stash-seed path is a follow-up port, so Xslate stays skipped (#1297).
     'context-provider',
     // Multi-component shared-state pairs whose children render inside a keyed
     // `.map` (loop children, no `_bf_slot`): the test harness derives a
@@ -46,14 +45,8 @@ runAdapterConformanceTests({
     // `reactive-props` passes. (Same pair mojo skips.)
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b interactive `site/ui` primitives. `textarea` and
-    // `checkbox` now PASS. `toggle` / `switch` stay skipped: their reactive
-    // `classes` memo interpolates `Record<T,string>[variant|size]` lookups
-    // with no SSR lowering yet (mojo skips the same pair). `kbd` is NOT a
-    // render-mismatch — it's a BF101 refusal (Kolon can't splat the Slot's
-    // `{...props}`), so it's pinned in `expectedDiagnostics` below.
-    'toggle',
-    'switch',
+    // (`kbd` is not skipped here — it's a BF101 refusal pinned in
+    // `expectedDiagnostics` below, not a render-mismatch.)
   ],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering

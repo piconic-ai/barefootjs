@@ -202,6 +202,17 @@ export function normalizeHTML(html: string): string {
       /\s(disabled|hidden|checked|readonly|required|selected|autofocus|multiple|defer|async|controls|loop|muted|open|reversed|ismap|formnovalidate|nomodule|playsinline|inert|novalidate|allowfullscreen)=""/g,
       ' $1',
     )
+    // HTML character-reference canonicalisation. A special char in an attribute
+    // value (e.g. the `"` in `[class*="size-"]`) is escaped as a NAMED entity by
+    // Hono but a NUMERIC reference by Go's `html/template`. Both decode to the
+    // same char, so collapse the interchangeable numeric (decimal + hex) forms
+    // to one canonical form on both sides — adapter-neutral, same motivation as
+    // the boolean-attribute / void-element canonicalisation above.
+    .replace(/&#0*34;|&#[xX]0*22;/g, '&quot;')
+    .replace(/&#0*38;|&#[xX]0*26;/g, '&amp;')
+    .replace(/&#0*60;|&#[xX]0*3[cC];/g, '&lt;')
+    .replace(/&#0*62;|&#[xX]0*3[eE];/g, '&gt;')
+    .replace(/&#0*39;|&#[xX]0*27;/g, '&#39;')
     // Normalize void element self-closing: <br/> or <br /> → <br>
     .replace(new RegExp(`<(${VOID_ELEMENTS})(\\s[^>]*?)?\\s*/>`, 'g'), '<$1$2>')
     // Remove trailing whitespace before >

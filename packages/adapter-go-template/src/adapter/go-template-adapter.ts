@@ -60,6 +60,8 @@ import {
   emitAttrValue,
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
+  collectContextConsumers,
+  type ContextConsumer,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 
@@ -102,6 +104,13 @@ interface StaticChildInstance {
    *  through the parent's `{{.Children}}` read; those cases stay on
    *  the existing drop path. */
   childrenHtml: string | null
+  /**
+   * Context values from enclosing `<Ctx.Provider value>` ancestors
+   * (`createContext` identifier → Go value literal), wired into this child
+   * slot's input against its own context-consumer fields. Empty/undefined when
+   * the child isn't under any provider. (#1297)
+   */
+  contextBindings?: ReadonlyMap<string, string>
 }
 
 /**
@@ -466,6 +475,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private moduleStringConsts: Map<string, string> = new Map()
 
   /**
+   * All local constants (module + function-scope) from the IR, retained for
+   * the lifetime of `generate()` so the memo-computation path can resolve
+   * `Record`-index lookups (`variantClasses[variant]`) without re-threading the
+   * full `ir` through every helper. Reset at `generate()` entry.
+   */
+  private localConstants: IRMetadata['localConstants'] = []
+
+  /**
+   * `useContext(...)` consumers in the component being generated. Each becomes
+   * a struct field defaulted to the `createContext` default, which an enclosing
+   * `<Ctx.Provider value>` overwrites for descendant child slots. Reset at
+   * `generate()` / `generateTypes()` entry. (#1297)
+   */
+  private contextConsumers: ContextConsumer[] = []
+
+  /** Child component name → the contexts it consumes (cross-component, for provider wiring). */
+  private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
+
+  /**
    * Set of prop NAMES whose resolved Go struct-field type is exactly
    * `interface{}` — i.e. nillable. Populated at `generate()` entry from
    * the SAME per-prop Go-type computation `generatePropsStruct` /
@@ -501,6 +529,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.propsObjectName = ir.metadata.propsObjectName
     this.restPropsName = ir.metadata.restPropsName ?? null
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.localConstants = ir.metadata.localConstants ?? []
+    this.contextConsumers = collectContextConsumers(ir.metadata)
     // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
     // before computing the nillable set / rendering, so the synthetic params
     // participate in attribute omission and field binding uniformly. Shared
@@ -812,6 +842,38 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const restPropsName = ir.metadata.restPropsName ?? null
     const restBagField = restPropsName ? this.capitalizeFieldName(restPropsName) : null
     this.childComponentShapes.set(name, { paramNames, restBagField })
+    // Record the contexts this child consumes so a parent wrapping it in
+    // `<Ctx.Provider value>` can set the matching field on the child's slot input.
+    this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
+  }
+
+  /** Go field name for a `useContext` consumer (the capitalized local binding). */
+  private contextFieldName(c: ContextConsumer): string {
+    return this.capitalizeFieldName(c.localName)
+  }
+
+  /** Go type for a context-consumer field, from its `createContext` default's type. */
+  private contextConsumerGoType(c: ContextConsumer): string {
+    if (typeof c.defaultValue === 'number') return 'int'
+    if (typeof c.defaultValue === 'boolean') return 'bool'
+    return 'string'
+  }
+
+  /** Go literal for a context-consumer's default value (the `createContext` arg). */
+  private contextConsumerGoDefault(c: ContextConsumer): string {
+    if (typeof c.defaultValue === 'number') return String(c.defaultValue)
+    if (typeof c.defaultValue === 'boolean') return String(c.defaultValue)
+    if (typeof c.defaultValue === 'string') return `"${this.escapeGoString(c.defaultValue)}"`
+    return '""'
+  }
+
+  /**
+   * Context-consumer fields that don't collide with an already-emitted prop /
+   * signal / memo field. The template reads them as `{{.Field}}` (the local
+   * `useContext` binding lowered to a root field); the struct must carry them.
+   */
+  private nonCollidingContextConsumers(taken: ReadonlySet<string>): ContextConsumer[] {
+    return this.contextConsumers.filter(c => !taken.has(this.contextFieldName(c)))
   }
 
   generateTypes(ir: ComponentIR): string | null {
@@ -824,6 +886,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // idempotent. `propsObjectName` is needed by the scan.
     this.propsObjectName = ir.metadata.propsObjectName
     augmentInheritedPropAccesses(ir)
+    // Mirror `generate()`: the `NewXxxProps` initializer computes memo SSR
+    // values, which inline module string consts and resolve `Record`-index
+    // lookups — both need the const tables populated on this standalone entry.
+    this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.localConstants = ir.metadata.localConstants ?? []
+    this.contextConsumers = collectContextConsumers(ir.metadata)
     const lines: string[] = []
 
     const componentName = ir.metadata.componentName
@@ -1218,6 +1286,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${nested.name}s []${nested.name}Input`)
     }
 
+    // `useContext` consumer fields — settable by an enclosing provider on the
+    // parent's side; default applied in NewXxxProps.
+    const takenInput = new Set(ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)))
+    for (const c of this.nonCollidingContextConsumers(takenInput)) {
+      lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)}`)
+    }
+
     // (#1407 follow-up) Input-side bag field for restPropsName spreads.
     // The destructured-rest pattern
     // (`function({a, ...rest}: P) { <el {...rest}/> }`) surfaces
@@ -1348,6 +1423,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Memos that depend on number signals are usually numbers
       const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
+    }
+
+    // `useContext` consumer fields (skip names already taken by a prop /
+    // signal / memo field).
+    const takenProps = new Set<string>([
+      ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => this.capitalizeFieldName(m.name)),
+    ])
+    for (const c of this.nonCollidingContextConsumers(takenProps)) {
+      const jsonTag = this.toJsonTag(c.localName)
+      lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)} \`json:"${jsonTag}"\``)
     }
 
     // Add array fields for nested components (for template rendering)
@@ -1540,6 +1627,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${fieldName}: ${memoValue},`)
     }
 
+    // `useContext` consumer fields: default to the `createContext` default
+    // when the caller (a provider) didn't set them.
+    const takenInit = new Set<string>([
+      ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => this.capitalizeFieldName(m.name)),
+    ])
+    for (const c of this.nonCollidingContextConsumers(takenInit)) {
+      const field = this.contextFieldName(c)
+      const def = this.contextConsumerGoDefault(c)
+      const defaulted =
+        c.defaultValue === null || def === '""' || def === '0' || def === 'false'
+          ? `in.${field}`
+          : this.applyGoFallback(`in.${field}`, def)
+      lines.push(`\t\t${field}: ${defaulted},`)
+    }
+
     // Add static child component instances
     const staticChildren = this.collectStaticChildInstances(ir.root)
     for (const child of staticChildren) {
@@ -1549,6 +1653,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // own NewProps (BfParent/BfMount fields).
       lines.push(`\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\tBfMount: "${child.slotId}",`)
+      // SSR context propagation: if this child is wrapped in a `<Ctx.Provider
+      // value>` it consumes, set its context-consumer field to the provider
+      // value (else the child's own NewProps applies the `createContext`
+      // default). (#1297)
+      if (child.contextBindings) {
+        for (const consumer of this.childContextConsumers.get(child.name) ?? []) {
+          const goVal = child.contextBindings.get(consumer.contextName)
+          if (goVal !== undefined) {
+            lines.push(`\t\t\t${this.contextFieldName(consumer)}: ${goVal},`)
+          }
+        }
+      }
       // (#checkbox) Cross-component shape lookup: an attribute that is NOT a
       // declared param of the child but the child has a `...props` rest bag
       // (`<CheckIcon data-slot=.../>`, where CheckIcon's params are
@@ -1744,7 +1860,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private collectStaticChildInstances(node: IRNode): Array<StaticChildInstance> {
     const result: StaticChildInstance[] = []
-    this.collectStaticChildInstancesRecursive(node, result, false)
+    this.collectStaticChildInstancesRecursive(node, result, false, new Map())
     return result
   }
 
@@ -1785,7 +1901,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private collectStaticChildInstancesRecursive(
     node: IRNode,
     result: StaticChildInstance[],
-    inLoop: boolean
+    inLoop: boolean,
+    providerCtx: ReadonlyMap<string, string>,
   ): void {
     if (node.type === 'component') {
       const comp = node as IRComponent
@@ -1795,7 +1912,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // child components nested inside still get their slot fields.
       if (comp.dynamicTag) {
         for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
         }
         return
       }
@@ -1810,55 +1927,77 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           fieldName: `${comp.name}${suffix}`,
           childrenText: this.extractTextChildren(comp.children),
           childrenHtml: this.extractHtmlChildren(comp.children),
+          contextBindings: providerCtx.size > 0 ? providerCtx : undefined,
         })
       }
       // Recurse into Portal's children to find nested components
       if (comp.name === 'Portal' && comp.children) {
         for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
         }
       }
     } else if (node.type === 'loop') {
       const loop = node as IRLoop
       // Mark children as inside loop
       for (const child of loop.children) {
-        this.collectStaticChildInstancesRecursive(child, result, true)
+        this.collectStaticChildInstancesRecursive(child, result, true, providerCtx)
       }
     } else if (node.type === 'element') {
       const element = node as IRElement
       for (const child of element.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
       }
     } else if (node.type === 'fragment') {
       const fragment = node as IRFragment
       for (const child of fragment.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
       }
     } else if (node.type === 'conditional') {
       const cond = node as IRConditional
-      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop)
+      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop, providerCtx)
       if (cond.whenFalse) {
-        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop)
+        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx)
       }
     } else if (node.type === 'provider') {
-      // Provider is a transparent wrapper at the SSR layer — context
-      // propagation is purely a client-runtime concern. Recurse into
-      // its children so any static <Child/> nested under <Ctx.Provider>
-      // still gets a slot field generated on the parent's props type.
+      // SSR context propagation: record the provider's value against its
+      // context name and extend the active binding map for descendants. A
+      // literal value lowers to a Go literal; a non-literal is left unbound
+      // (the consumer keeps its default). (#1297)
       const p = node as IRProvider
+      const childCtx = this.extendProviderContext(providerCtx, p)
       for (const child of p.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, childCtx)
       }
     } else if (node.type === 'async') {
       // Async fallback + children render server-side via the OOS
       // protocol; static child components inside them still need slot
       // fields on the parent struct.
       const a = node as IRAsync
-      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop)
+      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop, providerCtx)
       for (const child of a.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
       }
     }
+  }
+
+  /**
+   * Extend the active provider-context map with one `<Ctx.Provider value>`. A
+   * string/number/boolean literal value is lowered to a Go literal; any other
+   * shape is skipped (the descendant consumer keeps its `createContext` default).
+   */
+  private extendProviderContext(
+    current: ReadonlyMap<string, string>,
+    p: IRProvider,
+  ): ReadonlyMap<string, string> {
+    const v = p.valueProp?.value as { kind?: string; value?: unknown } | undefined
+    if (!v || v.kind !== 'literal') return current
+    let goLit: string | null = null
+    if (typeof v.value === 'string') goLit = `"${this.escapeGoString(v.value)}"`
+    else if (typeof v.value === 'number' || typeof v.value === 'boolean') goLit = String(v.value)
+    if (goLit === null) return current
+    const next = new Map(current)
+    next.set(p.contextName, goLit)
+    return next
   }
 
   /**
@@ -2786,6 +2925,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     while (ts.isParenthesizedExpression(body as ts.Expression)) {
       body = (body as ts.ParenthesizedExpression).expression
     }
+
+    // Block-bodied arrow (the Toggle `classes` memo): collect leading
+    // `const X = props.Y ?? 'lit'` key bindings, then resolve against the
+    // single returned template literal. The bindings let `variantClasses[variant]`
+    // resolve `variant` to prop `variant` with its `'default'` fallback key.
+    const localKeyBindings = new Map<string, { propName: string; defaultLiteral?: string }>()
+    if (ts.isBlock(body)) {
+      let returned: ts.Node | null = null
+      for (const s of body.statements) {
+        if (ts.isVariableStatement(s)) {
+          for (const d of s.declarationList.declarations) {
+            if (!ts.isIdentifier(d.name) || !d.initializer) continue
+            const binding = this.parseLocalKeyBinding(d.initializer)
+            if (binding) localKeyBindings.set(d.name.text, binding)
+          }
+        } else if (ts.isReturnStatement(s) && s.expression) {
+          returned = s.expression
+        } else if (ts.isExpressionStatement(s) || ts.isEmptyStatement(s)) {
+          // ignore
+        } else {
+          return null // unsupported statement shape — bail to existing patterns
+        }
+      }
+      if (!returned) return null
+      body = returned
+      while (ts.isParenthesizedExpression(body as ts.Expression)) {
+        body = (body as ts.ParenthesizedExpression).expression
+      }
+    }
+
     if (!ts.isTemplateExpression(body) && !ts.isNoSubstitutionTemplateLiteral(body)) {
       return null
     }
@@ -2799,7 +2968,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // head + each span
     if (body.head.text) segments.push(escGo(body.head.text))
     for (const span of body.templateSpans) {
-      const resolved = this.resolveTemplateInterpolation(span.expression, propNames)
+      const resolved = this.resolveTemplateInterpolation(span.expression, propNames, localKeyBindings)
       if (resolved === null) return null
       segments.push(resolved)
       if (span.literal.text) segments.push(escGo(span.literal.text))
@@ -2816,6 +2985,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private resolveTemplateInterpolation(
     expr: ts.Expression,
     propNames: Set<string>,
+    localKeyBindings: ReadonlyMap<string, { propName: string; defaultLiteral?: string }> = new Map(),
   ): string | null {
     let node: ts.Expression = expr
     while (ts.isParenthesizedExpression(node)) node = node.expression
@@ -2824,6 +2994,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (ts.isIdentifier(node)) {
       const inlined = this.resolveModuleStringConst(node.text)
       if (inlined !== null) return inlined
+      return null
+    }
+
+    // `recordConst[key]` → inline indexed Go map (the Toggle `classes` memo's
+    // `variantClasses[variant]` / `sizeClasses[size]`).
+    if (ts.isElementAccessExpression(node)) {
+      const indexed = this.recordIndexInterpolationToGo(node, propNames, localKeyBindings)
+      if (indexed !== null) return indexed
       return null
     }
 
@@ -2850,6 +3028,70 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `in.${this.capitalizeFieldName(propName)}`
     }
     return null
+  }
+
+  /**
+   * Parse a memo-local `const X = …` initializer into a `Record`-index key
+   * binding: `props.Y ?? 'lit'` → `{ propName: 'Y', defaultLiteral: 'lit' }`,
+   * or bare `props.Y` → `{ propName: 'Y' }`. Returns null for any other shape
+   * (a literal const, a call, etc.) so it simply isn't registered as a key.
+   */
+  private parseLocalKeyBinding(
+    init: ts.Expression,
+  ): { propName: string; defaultLiteral?: string } | null {
+    let node: ts.Expression = init
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+    ) {
+      const propName = this.propsAccessName(node.left)
+      const right = node.right
+      if (
+        propName &&
+        (ts.isStringLiteral(right) || ts.isNoSubstitutionTemplateLiteral(right))
+      ) {
+        return { propName, defaultLiteral: right.text }
+      }
+      return null
+    }
+    const propName = this.propsAccessName(node)
+    if (propName) return { propName }
+    return null
+  }
+
+  /**
+   * Lower a `recordConst[key]` interpolation to an inline indexed Go map,
+   * emitting `map[string]string{…}[fmt.Sprint(in.Field)]` (or `map[string]any`
+   * for mixed values). `key` is a bare prop or a memo-local const bound to
+   * `props.X ?? 'default'` (resolved via `localKeyBindings`); a `'default'`
+   * fallback also maps `""` to that entry, so an unset prop (Go zero value `""`)
+   * renders the default — matching Hono's `props.X ?? 'default'`. Returns null
+   * for any non-record / non-resolvable key so the caller falls through.
+   */
+  private recordIndexInterpolationToGo(
+    node: ts.ElementAccessExpression,
+    propNames: Set<string>,
+    localKeyBindings: ReadonlyMap<string, { propName: string; defaultLiteral?: string }>,
+  ): string | null {
+    const parsed = parseRecordIndexAccess(
+      node,
+      this.localConstants ?? [],
+      [...propNames].map(name => ({ name })),
+      name => localKeyBindings.get(name) ?? null,
+    )
+    if (!parsed) return null
+    const goVal = (v: { kind: 'number' | 'string'; text: string }) =>
+      v.kind === 'number' ? v.text : JSON.stringify(v.text)
+    const entries = parsed.entries.map(e => `${JSON.stringify(e.key)}: ${goVal(e.value)}`)
+    if (parsed.defaultKey !== undefined) {
+      const def = parsed.entries.find(e => e.key === parsed.defaultKey)
+      if (def) entries.unshift(`"": ${goVal(def.value)}`)
+    }
+    const allString = parsed.entries.every(e => e.value.kind === 'string')
+    const mapType = allString ? 'map[string]string' : 'map[string]any'
+    this.usesFmt = true
+    return `${mapType}{${entries.join(', ')}}[fmt.Sprint(in.${this.capitalizeFieldName(parsed.indexPropName)})]`
   }
 
   /**
@@ -2978,6 +3220,34 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * Whether a memo is an arrow whose result is a template literal — either a
+   * concise body (`() => \`…\``) or a block body whose `return` is one.
+   */
+  private isTemplateLiteralMemo(computation: string): boolean {
+    const sf = ts.createSourceFile(
+      '__memo.ts', `const __x = (${computation});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isVariableStatement(stmt)) return false
+    let init = stmt.declarationList.declarations[0]?.initializer
+    while (init && ts.isParenthesizedExpression(init)) init = init.expression
+    if (!init || !ts.isArrowFunction(init)) return false
+    let body = init.body as ts.Node
+    while (ts.isParenthesizedExpression(body as ts.Expression)) {
+      body = (body as ts.ParenthesizedExpression).expression
+    }
+    if (ts.isBlock(body)) {
+      const ret = body.statements.find(ts.isReturnStatement)
+      if (!ret || !ret.expression) return false
+      body = ret.expression
+      while (ts.isParenthesizedExpression(body as ts.Expression)) {
+        body = (body as ts.ParenthesizedExpression).expression
+      }
+    }
+    return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
+  }
+
+  /**
    * Infer the Go type for a memo based on its computation and dependencies.
    */
   private inferMemoType(
@@ -2985,6 +3255,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     signals: { getter: string; initialValue: string; type: TypeInfo }[],
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
   ): string {
+    // A template-literal memo always produces a string. Decide this first so a
+    // class-string `/` (e.g. `ring-ring/50`) doesn't trip the arithmetic
+    // heuristic below into `int`.
+    if (this.isTemplateLiteralMemo(memo.computation)) return 'string'
+
     // Check if computation involves multiplication (*) - likely number
     if (memo.computation.includes('*') || memo.computation.includes('/') ||
         memo.computation.includes('+') || memo.computation.includes('-')) {

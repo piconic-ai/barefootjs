@@ -12,8 +12,89 @@
 
 import ts from 'typescript'
 
-import type { ComponentIR, IRNode, IRElement, TypeInfo } from './types'
+import type { ComponentIR, IRMetadata, IRNode, IRElement, TypeInfo } from './types'
 import { isBooleanAttr } from './html-constants'
+
+/**
+ * A `const x = useContext(SomeContext)` consumer in a component body. SSR
+ * template adapters have no JS runtime context stack, so a consumer's value is
+ * threaded in at the data-construction layer: the adapter exposes a field/stash
+ * var defaulted to the context default, which an enclosing `<Ctx.Provider
+ * value>` overwrites for descendant child slots.
+ */
+export interface ContextConsumer {
+  /** The local const bound to the `useContext` call (e.g. `theme`). */
+  localName: string
+  /** The `createContext` identifier read (e.g. `ThemeContext`). */
+  contextName: string
+  /**
+   * The `createContext(<default>)` argument as a JS literal, or `null` when
+   * absent / not a literal (the consumer then defaults to the empty value).
+   */
+  defaultValue: string | number | boolean | null
+}
+
+/**
+ * Collect every `const x = useContext(Ctx)` consumer in a component, resolving
+ * each `Ctx` to its `createContext(<default>)` default via the component's
+ * module-scope `createContext` constants. Returns `[]` when the component
+ * consumes no context. Single source of truth for the SSR-context adapters.
+ */
+export function collectContextConsumers(metadata: IRMetadata): ContextConsumer[] {
+  const constants = metadata.localConstants ?? []
+  // Map each createContext const name → its default-arg literal value.
+  const contextDefaults = new Map<string, string | number | boolean | null>()
+  for (const c of constants) {
+    if (c.systemConstructKind !== 'createContext' || c.value === undefined) continue
+    contextDefaults.set(c.name, parseCreateContextDefault(c.value))
+  }
+  if (contextDefaults.size === 0) return []
+
+  const consumers: ContextConsumer[] = []
+  for (const c of constants) {
+    if (c.value === undefined) continue
+    const ctxName = parseUseContextArg(c.value)
+    if (ctxName === null || !contextDefaults.has(ctxName)) continue
+    consumers.push({
+      localName: c.name,
+      contextName: ctxName,
+      defaultValue: contextDefaults.get(ctxName) ?? null,
+    })
+  }
+  return consumers
+}
+
+/** Parse `useContext(Ident)` → `Ident`, else `null`. */
+function parseUseContextArg(source: string): string | null {
+  const expr = parseSingleExpression(source)
+  if (!expr || !ts.isCallExpression(expr)) return null
+  if (!ts.isIdentifier(expr.expression) || expr.expression.text !== 'useContext') return null
+  if (expr.arguments.length !== 1) return null
+  const arg = expr.arguments[0]
+  return ts.isIdentifier(arg) ? arg.text : null
+}
+
+/** Parse `createContext(<literal>)` → the default value, else `null`. */
+function parseCreateContextDefault(source: string): string | number | boolean | null {
+  const expr = parseSingleExpression(source)
+  if (!expr || !ts.isCallExpression(expr)) return null
+  if (expr.arguments.length === 0) return null
+  const arg = expr.arguments[0]
+  if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) return arg.text
+  if (ts.isNumericLiteral(arg)) return Number(arg.text)
+  if (arg.kind === ts.SyntaxKind.TrueKeyword) return true
+  if (arg.kind === ts.SyntaxKind.FalseKeyword) return false
+  return null
+}
+
+function parseSingleExpression(source: string): ts.Expression | null {
+  const sf = ts.createSourceFile('__ctx.ts', `(${source})`, ts.ScriptTarget.Latest, false)
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt)) return null
+  let e: ts.Expression = stmt.expression
+  while (ts.isParenthesizedExpression(e)) e = e.expression
+  return e
+}
 
 /**
  * (#checkbox) Enumerate inherited-attribute accesses for the SolidJS
@@ -69,6 +150,15 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
   for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
   for (const eff of ir.metadata.effects ?? []) scan((eff as { body?: string }).body)
 
+  // Function-scope plain-const initializers (the Switch pattern): a
+  // `const trackClasses = \`… ${props.className ?? ''}\`` holds the only
+  // `props.X` read. Skip module consts — they can't reference function-scoped
+  // `props`. Reads land in string context, so the default `string` type holds.
+  for (const c of ir.metadata.localConstants ?? []) {
+    if (c.isModule) continue
+    scan(c.value)
+  }
+
   // Template attribute exprs — also note bare-ref / boolean usage.
   const walk = (node: IRNode | undefined): void => {
     if (!node) return
@@ -116,6 +206,47 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
   }
 }
 
+/**
+ * Statically evaluate `[<string literals>].join(<sep?>)` (e.g. a module-scope
+ * `const stateClasses = ['…', …].join(' ')`) to its joined string, so SSR
+ * adapters inline the flattened literal byte-for-byte like the Hono reference
+ * instead of referencing a binding that doesn't exist server-side. Default
+ * separator `,` matches JS `Array.prototype.join`. Returns `null` for any
+ * other shape (non-`.join` call, non-array receiver, non-string-literal element
+ * or separator). Shared by the Mojo + Xslate adapters; Go keeps a private copy.
+ */
+export function evalStringArrayJoin(source: string): string | null {
+  const sf = ts.createSourceFile(
+    '__join.ts', `const __x = (${source});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  let node = stmt.declarationList.declarations[0]?.initializer
+  while (node && ts.isParenthesizedExpression(node)) node = node.expression
+  if (!node || !ts.isCallExpression(node)) return null
+  const callee = node.expression
+  if (!ts.isPropertyAccessExpression(callee)) return null
+  if (callee.name.text !== 'join') return null
+  let recv: ts.Expression = callee.expression
+  while (ts.isParenthesizedExpression(recv)) recv = recv.expression
+  if (!ts.isArrayLiteralExpression(recv)) return null
+  const parts: string[] = []
+  for (const el of recv.elements) {
+    if (ts.isStringLiteral(el) || ts.isNoSubstitutionTemplateLiteral(el)) {
+      parts.push(el.text)
+    } else {
+      return null
+    }
+  }
+  let sep = ','
+  if (node.arguments.length >= 1) {
+    const arg = node.arguments[0]
+    if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) sep = arg.text
+    else return null
+  }
+  return parts.join(sep)
+}
+
 /** A minimal `{ name }` shape — both adapters pass their own param/const lists. */
 interface NamedConst {
   name: string
@@ -135,6 +266,13 @@ export interface RecordIndexAccess {
   indexPropName: string
   /** The map's entries in source order — each a static key + scalar literal value. */
   entries: RecordIndexEntry[]
+  /**
+   * When the index key is a local const with a `props.X ?? '<lit>'` default
+   * (the Toggle `classes` memo's `const variant = props.variant ?? 'default'`),
+   * the `<lit>` fallback key — so a caller can render the default entry's value
+   * when the prop is unset. Absent when the key is a bare prop with no default.
+   */
+  defaultKey?: string
 }
 
 /**
@@ -159,13 +297,33 @@ export function parseRecordIndexAccess(
   val: ts.Expression,
   localConstants: readonly NamedConst[],
   propsParams: ReadonlyArray<{ name: string }>,
+  /**
+   * Resolves an index key that isn't a bare prop (a memo-local const like
+   * `const variant = props.variant ?? 'default'`) to its underlying prop + an
+   * optional default-key literal; returns `null` to reject. Keeps the parse
+   * generic — the caller owns the block-scoped binding map.
+   */
+  resolveKey?: (name: string) => { propName: string; defaultLiteral?: string } | null,
 ): RecordIndexAccess | null {
   if (!ts.isElementAccessExpression(val)) return null
   const obj = val.expression
   const arg = val.argumentExpression
   if (!ts.isIdentifier(obj) || !ts.isIdentifier(arg)) return null
-  // KEY must be a prop.
-  if (!propsParams.some(p => p.name === arg.text)) return null
+  // KEY resolution. A caller-supplied local key wins first — the Toggle memo's
+  // `const variant = props.variant ?? 'default'` shadows the same-named
+  // `variant` prop, and only the local binding carries the `'default'` fallback.
+  // Otherwise the key must be a bare prop (`sizeMap[size]`).
+  let indexPropName: string
+  let defaultKey: string | undefined
+  const resolved = resolveKey?.(arg.text)
+  if (resolved) {
+    indexPropName = resolved.propName
+    defaultKey = resolved.defaultLiteral
+  } else if (propsParams.some(p => p.name === arg.text)) {
+    indexPropName = arg.text
+  } else {
+    return null
+  }
   // IDENT must resolve to a module-scope object-literal const.
   const constInfo = localConstants.find(c => c.name === obj.text && c.isModule)
   if (constInfo?.value === undefined) return null
@@ -204,5 +362,5 @@ export function parseRecordIndexAccess(
       return null
     }
   }
-  return { indexPropName: arg.text, entries }
+  return { indexPropName, entries, defaultKey }
 }

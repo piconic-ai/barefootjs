@@ -18,13 +18,9 @@ runAdapterConformanceTests({
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
   skipJsx: [
-    // #1297 fixed the harness-side IR emission gate. The remaining
-    // gap is adapter-side: the Mojo adapter has no SSR context-
-    // propagation mechanism, so `<Ctx.Provider value="dark">` doesn't
-    // make `useContext(Ctx)` resolve to `"dark"` at template-eval
-    // time — the template emits `<%= $theme %>` against a hash that
-    // never receives a `theme` key. Provider SSR coverage on Mojo
-    // waits on that adapter feature; see #1297 follow-up.
+    // SSR context propagation (`<Ctx.Provider value>` → `useContext`): the
+    // template reads a stash key that's never seeded. Implemented on Go; the
+    // Perl stash-seed path is a follow-up port, so Mojo stays skipped (#1297).
     'context-provider',
     // Multi-component shared fixtures with per-item loop state. The child
     // scope-id plumbing is now fixed (children derive `<parentScope>_<sN>`
@@ -34,12 +30,6 @@ runAdapterConformanceTests({
     // skips the same pair.)
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity:
-    //   toggle / switch — the reactive `classes` memo interpolates
-    //     `Record<T,string>[variant|size]` lookups, which have no SSR
-    //     lowering yet (known limitation).
-    'toggle',
-    'switch',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
