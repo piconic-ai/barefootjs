@@ -466,6 +466,11 @@ __DATA__
 <ul>
     <li><a href="<%= $bp %>/counter">Counter</a></li>
     <li><a href="<%= $bp %>/toggle">Toggle</a></li>
+    <li><a href="<%= $bp %>/form">Form</a></li>
+    <li><a href="<%= $bp %>/reactive-props">Reactive Props</a></li>
+    <li><a href="<%= $bp %>/conditional-return">Conditional Return</a></li>
+    <li><a href="<%= $bp %>/props-reactivity">Props Reactivity</a></li>
+    <li><a href="<%= $bp %>/portal">Portal</a></li>
     <li><a href="<%= $bp %>/todos">Todo (@client)</a></li>
     <li><a href="<%= $bp %>/todos-ssr">Todo (no @client markers)</a></li>
     <li><a href="<%= $bp %>/ai-chat">AI Chat (SSE Streaming)</a></li>

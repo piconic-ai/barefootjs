@@ -108,6 +108,11 @@ app.get('/', (c) => {
         <ul>
           <li><a href={link('/counter')}>Counter</a></li>
           <li><a href={link('/toggle')}>Toggle</a></li>
+          <li><a href={link('/form')}>Form</a></li>
+          <li><a href={link('/reactive-props')}>Reactive Props</a></li>
+          <li><a href={link('/conditional-return')}>Conditional Return</a></li>
+          <li><a href={link('/props-reactivity')}>Props Reactivity</a></li>
+          <li><a href={link('/portal')}>Portal</a></li>
           <li><a href={link('/todos')}>Todo (@client)</a></li>
           <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
           <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>

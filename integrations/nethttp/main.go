@@ -312,10 +312,15 @@ func indexHandler(w http.ResponseWriter, _ *http.Request) {
     <ul>
         <li><a href="%s/counter">Counter</a></li>
         <li><a href="%s/toggle">Toggle</a></li>
+        <li><a href="%s/form">Form</a></li>
+        <li><a href="%s/reactive-props">Reactive Props</a></li>
+        <li><a href="%s/conditional-return">Conditional Return</a></li>
+        <li><a href="%s/props-reactivity">Props Reactivity</a></li>
+        <li><a href="%s/portal">Portal</a></li>
         <li><a href="%s/todos">Todo (@client)</a></li>
         <li><a href="%s/todos-ssr">Todo (no @client markers)</a></li>
         <li><a href="%s/ai-chat">AI Chat (SSE Streaming)</a></li>
-    </ul>`, basePath, basePath, basePath, basePath, basePath)
+    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath, basePath, basePath, basePath, basePath)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, `<!DOCTYPE html>
