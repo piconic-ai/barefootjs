@@ -13,6 +13,7 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
     await expect(tablist.getByRole('tab', { name: 'npm', exact: true })).toBeVisible()
     await expect(tablist.getByRole('tab', { name: 'pnpm' })).toBeVisible()
     await expect(tablist.getByRole('tab', { name: 'yarn' })).toBeVisible()
+    await expect(tablist.getByRole('tab', { name: 'deno' })).toBeVisible()
   })
 
   test('npm tab is selected by default', async ({ page }) => {
@@ -53,6 +54,16 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
 
     await expect(yarnTab).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('text=yarn dlx bf add checkbox')).toBeVisible()
+  })
+
+  test('clicking deno tab switches content', async ({ page }) => {
+    const tablist = page.locator('[role="tablist"]').first()
+    const denoTab = tablist.getByRole('tab', { name: 'deno' })
+
+    await denoTab.click()
+
+    await expect(denoTab).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('text=deno run -A npm:bf add checkbox')).toBeVisible()
   })
 
   test('switching tabs updates aria-selected correctly', async ({ page }) => {

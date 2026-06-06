@@ -13,7 +13,7 @@
  * Usage:
  * ```tsx
  * import { BfPreload } from '@barefootjs/hono/preload'
- * import manifest from './dist/components/manifest.json'
+ * import manifest from './dist/components/manifest.json' with { type: 'json' }
  *
  * <html>
  *   <head>

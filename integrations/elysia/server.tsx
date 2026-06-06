@@ -21,7 +21,7 @@ import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
 import { Layout } from './renderer'
-import manifest from './dist/components/manifest.json'
+import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
 import { Toggle } from '@/components/Toggle'
 import TodoApp from '@/components/TodoApp'

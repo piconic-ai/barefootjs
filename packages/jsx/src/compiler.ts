@@ -31,6 +31,70 @@ export interface CompileOptionsWithAdapter extends CompileOptions {
   adapter: TemplateAdapter
 }
 
+/**
+ * Merge the import lines of a multi-component template file into a single,
+ * conflict-free block.
+ *
+ * Named value/type imports from the same source are folded into their first
+ * occurrence (preserving line order and first-seen symbol order); every
+ * other import form (side-effect, default, namespace) is kept in place and
+ * de-duplicated by exact line. This ensures a symbol is never imported
+ * twice across sibling components — a redeclaration that Bun tolerates but
+ * stricter ESM parsers (the Deno runtime that renders SSR templates) reject.
+ *
+ * For a single-component file the output is identical to the input order;
+ * only repeated sibling imports collapse.
+ *
+ * Matching is whitespace-insensitive (`import {a,b} from 'x'` and
+ * `import {  a , b  }  from  "x"` fold the same): the merge must not silently
+ * depend on the emitter's exact spacing. A named import that failed to match
+ * would fall through to the by-line branch below and re-introduce the very
+ * duplicate-binding SyntaxError this function exists to prevent, so the
+ * patterns tolerate any spacing the generated lines might carry.
+ */
+export function mergeTemplateImports(lines: string[]): string {
+  const result: string[] = []
+  const valueIdx = new Map<string, number>()
+  const valueNames = new Map<string, Set<string>>()
+  const typeIdx = new Map<string, number>()
+  const typeNames = new Map<string, Set<string>>()
+  const seenOther = new Set<string>()
+
+  const fold = (
+    src: string,
+    rawNames: string,
+    idx: Map<string, number>,
+    names: Map<string, Set<string>>,
+    render: (src: string, names: Set<string>) => string,
+  ) => {
+    if (!idx.has(src)) {
+      idx.set(src, result.length)
+      names.set(src, new Set())
+      result.push('')
+    }
+    const set = names.get(src)!
+    for (const n of rawNames.split(',').map(s => s.trim()).filter(Boolean)) set.add(n)
+    result[idx.get(src)!] = render(src, set)
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line) continue
+    const typeMatch = line.match(/^import\s+type\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?$/)
+    const valueMatch = line.match(/^import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?$/)
+    if (valueMatch) {
+      fold(valueMatch[2], valueMatch[1], valueIdx, valueNames, (s, n) => `import { ${[...n].join(', ')} } from '${s}'`)
+    } else if (typeMatch) {
+      fold(typeMatch[2], typeMatch[1], typeIdx, typeNames, (s, n) => `import type { ${[...n].join(', ')} } from '${s}'`)
+    } else if (!seenOther.has(line)) {
+      seenOther.add(line)
+      result.push(line)
+    }
+  }
+
+  return result.filter(Boolean).join('\n')
+}
+
 // =============================================================================
 // Multiple Component Compilation
 // =============================================================================
@@ -264,20 +328,17 @@ function compileMultipleComponents(
     return { files, errors }
   }
 
-  // Merge imports from all components, deduplicating by line
-  const seenImportLines = new Set<string>()
-  const uniqueImports: string[] = []
-  for (const output of allOutputs) {
-    if (output.imports) {
-      for (const line of output.imports.split('\n')) {
-        if (line.trim() && !seenImportLines.has(line)) {
-          seenImportLines.add(line)
-          uniqueImports.push(line)
-        }
-      }
-    }
-  }
-  const mergedImports = uniqueImports.join('\n')
+  // Merge imports from all components. Named imports from the same source
+  // are combined into their first occurrence rather than deduplicated by
+  // exact line: in a multi-component file each component emits its own
+  // `import { … } from '@barefootjs/hono/utils'` listing only the symbols
+  // it uses, so plain line-dedup leaves several statements that re-declare
+  // the same binding (e.g. `bfComment`). Bun tolerates the redeclaration,
+  // but stricter ESM parsers — including Deno, used to render the SSR
+  // template — reject it as a SyntaxError.
+  const mergedImports = mergeTemplateImports(
+    allOutputs.flatMap(o => (o.imports ? o.imports.split('\n') : [])),
+  )
 
   // Combine unique type definitions
   const seenTypes = new Set<string>()

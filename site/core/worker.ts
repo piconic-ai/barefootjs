@@ -7,7 +7,7 @@
 
 import { createApp } from './app'
 import { pagesFromContentMap, type ContentMap, type MdxContentMap } from './lib/content'
-import contentBundle from './dist/content.json'
+import contentBundle from './dist/content.json' with { type: 'json' }
 
 const bundle = contentBundle as { content: ContentMap; mdx: MdxContentMap }
 const { content, mdx } = bundle

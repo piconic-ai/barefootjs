@@ -13,7 +13,7 @@ import { createSignal, createMemo } from '@barefootjs/client'
 export interface PackageManagerTabsProps {
   command: string
   mode?: 'dlx' | 'create'
-  defaultPm?: 'npm' | 'bun' | 'pnpm' | 'yarn'
+  defaultPm?: 'npm' | 'bun' | 'pnpm' | 'yarn' | 'deno'
 }
 
 const tabTriggerBase = 'inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] outline-none'
@@ -33,11 +33,18 @@ export function PackageManagerTabs(props: PackageManagerTabsProps) {
       if (pm === 'npm') return `npm create ${props.command}`
       if (pm === 'bun') return `bun create ${stripped}`
       if (pm === 'pnpm') return `pnpm create ${stripped}`
+      // Deno has no `create` shorthand — it runs the `create-*` package
+      // straight from npm via the `npm:` specifier (e.g.
+      // `create barefootjs@latest` → `deno run -A npm:create-barefootjs`).
+      if (pm === 'deno') return `deno run -A npm:create-${stripped}`
       return `yarn create ${stripped}`
     }
     if (pm === 'bun') return `bunx --bun ${props.command}`
     if (pm === 'pnpm') return `pnpm dlx ${props.command}`
     if (pm === 'yarn') return `yarn dlx ${props.command}`
+    // `deno run -A npm:<cmd>` is Deno's one-shot-binary form (mirrors
+    // `npx <cmd>`); `-A` grants the access `bf` needs to write files.
+    if (pm === 'deno') return `deno run -A npm:${props.command}`
     return `npx ${props.command}`
   })
 
@@ -55,6 +62,7 @@ export function PackageManagerTabs(props: PackageManagerTabsProps) {
         <button role="tab" aria-selected={selected() === 'yarn'} data-state={selected() === 'yarn' ? 'active' : 'inactive'} onClick={() => setSelected('yarn')} className={`${tabTriggerBase} ${tabTriggerFocus} ${selected() === 'yarn' ? tabTriggerActive : tabTriggerInactive}`} tabindex={selected() === 'yarn' ? 0 : -1}>yarn</button>
         <button role="tab" aria-selected={selected() === 'pnpm'} data-state={selected() === 'pnpm' ? 'active' : 'inactive'} onClick={() => setSelected('pnpm')} className={`${tabTriggerBase} ${tabTriggerFocus} ${selected() === 'pnpm' ? tabTriggerActive : tabTriggerInactive}`} tabindex={selected() === 'pnpm' ? 0 : -1}>pnpm</button>
         <button role="tab" aria-selected={selected() === 'bun'} data-state={selected() === 'bun' ? 'active' : 'inactive'} onClick={() => setSelected('bun')} className={`${tabTriggerBase} ${tabTriggerFocus} ${selected() === 'bun' ? tabTriggerActive : tabTriggerInactive}`} tabindex={selected() === 'bun' ? 0 : -1}>bun</button>
+        <button role="tab" aria-selected={selected() === 'deno'} data-state={selected() === 'deno' ? 'active' : 'inactive'} onClick={() => setSelected('deno')} className={`${tabTriggerBase} ${tabTriggerFocus} ${selected() === 'deno' ? tabTriggerActive : tabTriggerInactive}`} tabindex={selected() === 'deno' ? 0 : -1}>deno</button>
       </div>
       <div className="relative group">
         <pre className="!m-0 p-4 pr-12 bg-muted rounded-lg overflow-x-auto text-sm font-mono border">

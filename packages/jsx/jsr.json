@@ -1,8 +1,0 @@
-{
-  "name": "@barefootjs/jsx",
-  "version": "0.0.1",
-  "exports": {
-    ".": "./src/index.ts",
-    "./adapters/testing": "./src/adapters/testing.ts"
-  }
-}

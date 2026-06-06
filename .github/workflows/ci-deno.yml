@@ -1,0 +1,41 @@
+# CI — Deno
+#
+# Proves `bf`'s package-manager layer runs natively under the Deno
+# runtime (issue #1361). The smoke imports `packages/cli/src/lib/pm.ts`
+# directly — that module only touches `node:fs` / `node:path`, so it
+# loads under Deno with zero npm resolution — and asserts that
+# `detectPackageManager` / `commandsFor` resolve `deno` correctly when
+# `process.versions.deno` is genuinely set, rather than only under bun's
+# test runner.
+name: CI — Deno
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/cli/**'
+      - '.github/workflows/ci-deno.yml'
+  pull_request:
+    paths:
+      - 'packages/cli/**'
+      - '.github/workflows/ci-deno.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
+        with:
+          deno-version: v2.x
+
+      - name: Run Deno smoke test (bf package-manager layer)
+        run: >-
+          deno run --allow-read --allow-write --allow-env
+          packages/cli/scripts/deno-smoke.ts
