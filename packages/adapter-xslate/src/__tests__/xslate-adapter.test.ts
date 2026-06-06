@@ -12,12 +12,14 @@
  * genuinely differs. Every divergence carries a one-line rationale.
  */
 
+import { describe, test, expect } from 'bun:test'
 import {
   runAdapterConformanceTests,
   TemplatePrimitiveCaseId,
 } from '@barefootjs/adapter-tests'
 import { XslateAdapter } from '../adapter'
 import { renderXslateComponent, XslateNotAvailableError } from '../test-render'
+import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 
 runAdapterConformanceTests({
   name: 'xslate',
@@ -33,10 +35,13 @@ runAdapterConformanceTests({
   // fixtures than mojo. Each entry below was confirmed to fail with
   // skipJsx emptied.
   skipJsx: [
-    // SSR context propagation (`<Ctx.Provider value>` → `useContext`): the
-    // template reads a stash key that's never seeded. Implemented on Go; the
-    // Perl stash-seed path is a follow-up port, so Xslate stays skipped (#1297).
-    'context-provider',
+    // `context-provider` graduated: SSR context propagation now mirrors the
+    // client `provideContext` / `useContext`. `<Ctx.Provider value>` brackets
+    // its children with inline `$bf.provide_context` / `$bf.revoke_context`
+    // (a package-level value stack; both return '' so the `<: … :>` discards
+    // them), and each `useContext` consumer is seeded with
+    // `: my $x = $bf.use_context('Ctx', <default>)`. Renders byte-for-byte
+    // against Hono on real Text::Xslate. (#1297)
     // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
     // sibling `ToggleItem` children inside a keyed `.map`. Three gaps
     // remain (same as mojo): the loop-child `on = props.defaultOn ??
@@ -142,4 +147,57 @@ runAdapterConformanceTests({
     }
     return false
   },
+})
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function compileToIR(source: string): ComponentIR {
+  const result = compileJSX(source.trimStart(), 'test.tsx', {
+    adapter: new XslateAdapter(),
+    outputIR: true,
+  })
+  const irFile = result.files.find(f => f.type === 'ir')
+  if (!irFile) throw new Error('No IR output')
+  return JSON.parse(irFile.content) as ComponentIR
+}
+
+function compileAndGenerate(source: string) {
+  return new XslateAdapter().generate(compileToIR(source))
+}
+
+// =============================================================================
+// Xslate-Specific Tests
+// =============================================================================
+
+describe('XslateAdapter - SSR context propagation (#1297)', () => {
+  // `<Ctx.Provider value>` brackets its children with inline provide/revoke
+  // calls (both return '' so the `<: … :>` discards them); descendant
+  // `useContext` consumers read the value during the same render.
+  test('provider brackets children with provide_context / revoke_context', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const ThemeContext = createContext('light')
+export function ThemeRoot() {
+  return <div><ThemeContext.Provider value="dark"><ThemeLabel /></ThemeContext.Provider></div>
+}
+function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
+`)
+    expect(template).toContain("$bf.provide_context('ThemeContext', 'dark')")
+    expect(template).toContain("$bf.revoke_context('ThemeContext')")
+    expect(template.indexOf('provide_context')).toBeLessThan(template.indexOf('render_child'))
+    expect(template.indexOf('render_child')).toBeLessThan(template.indexOf('revoke_context'))
+  })
+
+  test('consumer seeds its local from use_context with the createContext default', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const ThemeContext = createContext('light')
+export function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
+`)
+    expect(template).toContain(": my $theme = $bf.use_context('ThemeContext', 'light');")
+  })
 })
