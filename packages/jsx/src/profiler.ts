@@ -518,6 +518,96 @@ export function formatHotSubscribers(r: HotSubscribersResult): string {
   return lines.join('\n')
 }
 
+// -- Analysis: batch advisor (v1, §4.2.3) -------------------------------------
+
+export type BatchSafety = 'safe' | 'unsafe' | 'unverified'
+
+export interface BatchCandidate {
+  /** The turn's handler id (`<Component>#handler:<slot>:<event>`). */
+  turn: string
+  /** Total effect runs in the turn. */
+  totalRuns: number
+  /** Distinct effects that ran (the floor a batched turn would collapse to). */
+  distinctSubscribers: number
+  /** `totalRuns − distinctSubscribers` — runs a `batch()` wrap would remove. */
+  savings: number
+  /**
+   * Whether wrapping the handler in `batch()` is provably behavior-preserving.
+   * `'unverified'` until the static post-write-derived-read oracle (SR4) runs —
+   * a savings opportunity is surfaced, but never advised as `'safe'` without
+   * proof (§4.2.3).
+   */
+  safety: BatchSafety
+}
+
+export interface BatchAdvisorResult {
+  kind: 'batch-advisor'
+  /** Turns with `savings > 0`, ranked by `savings` descending. */
+  candidates: BatchCandidate[]
+}
+
+/**
+ * Batch advisor (§4.2.3). BarefootJS uses **explicit** `batch()` — `set()`
+ * notifies synchronously — so a turn that writes several signals re-runs shared
+ * effects once per write. Per turn this measures `totalRuns` (effect runs) vs
+ * `distinctSubscribers` (unique effects); `savings = totalRuns −
+ * distinctSubscribers` is what a `batch()` wrap would collapse.
+ *
+ * Measured half only: every candidate is reported `safety: 'unverified'`. The
+ * static safety oracle that upgrades a candidate to `'safe'`/`'unsafe'` lands
+ * in a follow-up — an advisory that could change behavior must not be labeled
+ * safe (§4.2.3).
+ */
+export function analyzeBatchAdvisor(events: readonly ProfilerEvent[]): BatchAdvisorResult {
+  interface TurnAcc {
+    totalRuns: number
+    subscribers: Set<string>
+  }
+  const byTurn = new Map<string, TurnAcc>()
+
+  for (const e of events) {
+    if (e.type !== 'effectEnter' || e.turn === null) continue
+    let acc = byTurn.get(e.turn)
+    if (!acc) {
+      acc = { totalRuns: 0, subscribers: new Set() }
+      byTurn.set(e.turn, acc)
+    }
+    acc.totalRuns++
+    if (e.subscriber !== undefined) acc.subscribers.add(e.subscriber)
+  }
+
+  const candidates: BatchCandidate[] = []
+  for (const [turn, acc] of byTurn) {
+    const distinctSubscribers = acc.subscribers.size
+    const savings = acc.totalRuns - distinctSubscribers
+    if (savings > 0) {
+      candidates.push({
+        turn,
+        totalRuns: acc.totalRuns,
+        distinctSubscribers,
+        savings,
+        safety: 'unverified',
+      })
+    }
+  }
+  candidates.sort((a, b) => b.savings - a.savings || b.totalRuns - a.totalRuns)
+
+  return { kind: 'batch-advisor', candidates }
+}
+
+export function formatBatchAdvisor(r: BatchAdvisorResult): string {
+  const lines: string[] = []
+  lines.push('batch advisor — unbatched multi-write turns')
+  if (r.candidates.length === 0) {
+    lines.push('  (no turn would benefit from batching)')
+  }
+  for (const c of r.candidates) {
+    const safe = c.safety === 'safe' ? ', safe' : c.safety === 'unsafe' ? ', UNSAFE' : ', safety unverified'
+    lines.push(`  ${c.turn.padEnd(28)} batch candidate ${c.totalRuns}→${c.distinctSubscribers} (saves ${c.savings}${safe})`)
+  }
+  return lines.join('\n')
+}
+
 // -- Dynamic report (SR1–SR4) — placeholder seam ------------------------------
 
 export interface ProfileReport {
