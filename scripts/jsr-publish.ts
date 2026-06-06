@@ -95,31 +95,34 @@ for (const dir of pkgDirs) {
 
 // ── Resolve a single export entry to a publishable `src` TS file ──────
 function resolveExportTarget(dir: string, entry: unknown): string | null {
-  // Pick the most source-like condition: bun/import/default, then types.
-  let target: string | undefined
+  // Gather candidate targets across conditions, most source-like first.
+  const targets: string[] = []
   if (typeof entry === 'string') {
-    target = entry
+    targets.push(entry)
   } else if (entry && typeof entry === 'object') {
     const e = entry as Record<string, string>
-    target = e.bun ?? e.import ?? e.default ?? e.types
-  }
-  if (!target) return null
-
-  const tryPaths: string[] = []
-  // Built outputs map back to their TS source under src/.
-  if (target.includes('/dist/')) {
-    tryPaths.push(target.replace('/dist/', '/src/').replace(/\.d\.ts$/, '.ts').replace(/\.js$/, '.ts'))
-  }
-  // A `.d.ts` source has no runtime module JSR can publish — but a `.ts`
-  // sibling (some `types` point straight at `.d.ts` shims) might exist.
-  if (target.endsWith('.d.ts')) {
-    tryPaths.push(target.replace(/\.d\.ts$/, '.ts'))
-  } else {
-    tryPaths.push(target)
+    for (const cond of [e.bun, e.import, e.default, e.types]) {
+      if (cond) targets.push(cond)
+    }
   }
 
-  for (const p of tryPaths) {
-    if (!p.endsWith('.d.ts') && existsSync(join(dir, p))) return p
+  // Map each candidate to the TS source JSR would publish and return the
+  // first that actually exists under src/. Built outputs (`dist/*.js`,
+  // `dist/*.d.ts`) map back to their `src/*.ts` sibling. A condition may
+  // point at a path with no source sibling — e.g. client's
+  // `./runtime/standalone` → `dist/runtime/standalone.js`, a bundler-only
+  // variant of `src/runtime/index.ts` that its `types` condition still
+  // resolves to — so we fall through to the next condition rather than
+  // dropping the export (or, worse, emitting an unpublished `dist/*`
+  // path). Candidates that only resolve to a `.d.ts` shim (e.g. the
+  // jsx-runtime type-only exports) have no `src` sibling and drop out.
+  for (const target of targets) {
+    const src = target
+      .replace('/dist/', '/src/')
+      .replace(/\.d\.ts$/, '.ts')
+      .replace(/\.js$/, '.ts')
+    if (src.endsWith('.d.ts')) continue
+    if (existsSync(join(dir, src))) return src
   }
   return null
 }
