@@ -12,14 +12,14 @@
  *   control-flow.ts -> control-flow/{plan,stringify}/* -> shared.ts
  */
 
-import type { LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedLoop } from '../types'
-import type { IRLoopChildComponent, LoopParamBinding } from '../../types'
-import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils'
-import { irChildrenToJsExpr } from '../html-template'
-import { emitListenerBlock } from './stringify/event-listener'
-import { nameForRegistryRef } from '../component-scope'
+import type { LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedLoop } from '../types.ts'
+import type { IRLoopChildComponent, LoopParamBinding } from '../../types.ts'
+import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils.ts'
+import { irChildrenToJsExpr } from '../html-template.ts'
+import { emitListenerBlock } from './stringify/event-listener.ts'
+import { nameForRegistryRef } from '../component-scope.ts'
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
-import type { LoopChildRefBinding } from './plan/loop'
+import type { LoopChildRefBinding } from './plan/loop.ts'
 
 /**
  * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
@@ -144,7 +144,7 @@ export function destructureLoopParam(
  * Shared by emitComponentLoopReconciliation and emitCompositeElementReconciliation.
  */
 export function buildComponentPropsExpr(
-  comp: { props: Array<{ name: string; value: import('../../types').AttrValue; isEventHandler: boolean }>, children?: import('../../types').IRNode[] },
+  comp: { props: Array<{ name: string; value: import('../../types.ts').AttrValue; isEventHandler: boolean }>, children?: import('../../types.ts').IRNode[] },
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
 ): string {

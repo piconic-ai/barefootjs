@@ -5,12 +5,12 @@
  */
 
 // Main compiler API
-export { compileJSX, buildMetadata } from './compiler'
-export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutput } from './compiler'
+export { compileJSX, buildMetadata } from './compiler.ts'
+export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutput } from './compiler.ts'
 
 // SSR template-variable defaults (manifest seeds for stash-based adapters)
-export { extractSsrDefaults } from './ssr-defaults'
-export type { SsrDefault } from './ssr-defaults'
+export { extractSsrDefaults } from './ssr-defaults.ts'
+export type { SsrDefault } from './ssr-defaults.ts'
 
 // Pure IR types
 export type {
@@ -45,20 +45,20 @@ export type {
   TypeDefinition,
   SourceLocation,
   CompilerError,
-} from './types'
+} from './types.ts'
 
 // Analyzer
-export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, createProgramForFile, needsTypeBasedDetection, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext } from './analyzer'
-export { createProgramForCorpus, type SharedProgramOptions } from './shared-program'
+export { analyzeComponent, listComponentFunctions, listComponentFunctions as listExportedComponents, createProgramForFile, needsTypeBasedDetection, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, type AnalyzerContext } from './analyzer.ts'
+export { createProgramForCorpus, type SharedProgramOptions } from './shared-program.ts'
 
 // JSX to IR transformer
-export { jsxToIR } from './jsx-to-ir'
+export { jsxToIR } from './jsx-to-ir.ts'
 
 // Module exports generation (compiler layer)
-export { generateModuleExports, extractFunctionParams, formatParamWithType, findReachableNames } from './module-exports'
+export { generateModuleExports, extractFunctionParams, formatParamWithType, findReachableNames } from './module-exports.ts'
 
 // Adapters
-export { BaseAdapter } from './adapters/interface'
+export { BaseAdapter } from './adapters/interface.ts'
 export type {
   TemplateAdapter,
   AdapterOutput,
@@ -67,31 +67,31 @@ export type {
   TemplatePrimitiveEmit,
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
-} from './adapters/interface'
-export { JsxAdapter } from './adapters/jsx-adapter'
-export type { JsxAdapterConfig } from './adapters/jsx-adapter'
-export { rewriteImportsForTemplate } from './adapters/template-imports'
-export { emitParsedExpr } from './adapters/parsed-expr-emitter'
-export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter'
-export { emitIRNode } from './adapters/ir-node-emitter'
-export type { IRNodeEmitter, EmitIRNode } from './adapters/ir-node-emitter'
-export { emitAttrValue } from './adapters/attr-value-emitter'
-export type { AttrValueEmitter } from './adapters/attr-value-emitter'
+} from './adapters/interface.ts'
+export { JsxAdapter } from './adapters/jsx-adapter.ts'
+export type { JsxAdapterConfig } from './adapters/jsx-adapter.ts'
+export { rewriteImportsForTemplate } from './adapters/template-imports.ts'
+export { emitParsedExpr } from './adapters/parsed-expr-emitter.ts'
+export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
+export { emitIRNode } from './adapters/ir-node-emitter.ts'
+export type { IRNodeEmitter, EmitIRNode } from './adapters/ir-node-emitter.ts'
+export { emitAttrValue } from './adapters/attr-value-emitter.ts'
+export type { AttrValueEmitter } from './adapters/attr-value-emitter.ts'
 
 // Client JS Generator
-export { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js'
-export type { ClientJsResult } from './ir-to-client-js'
+export { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
+export type { ClientJsResult } from './ir-to-client-js/index.ts'
 
 // Source Map
-export { SourceMapGenerator, buildSourceMapFromIR } from './ir-to-client-js/source-map'
-export type { SourceMapV3 } from './ir-to-client-js/source-map'
+export { SourceMapGenerator, buildSourceMapFromIR } from './ir-to-client-js/source-map.ts'
+export type { SourceMapV3 } from './ir-to-client-js/source-map.ts'
 
 // Client JS Combiner (for build scripts)
-export { combineParentChildClientJs } from './combine-client-js'
+export { combineParentChildClientJs } from './combine-client-js.ts'
 
 // Externals manifest + importmap snippet renderer (shared by adapters and CLI)
-export { renderImportMapHtml } from './import-map'
-export type { ExternalsManifest, ImportMapManifest } from './import-map'
+export { renderImportMapHtml } from './import-map.ts'
+export type { ExternalsManifest, ImportMapManifest } from './import-map.ts'
 
 // Build options (shared by adapters and CLI)
 export interface OutputLayout {
@@ -226,10 +226,10 @@ export interface BuildOptions {
 }
 
 // AttrValue constructors
-export { AttrValueOf } from './types'
+export { AttrValueOf } from './types.ts'
 
 // CSS Layer Prefixer
-export { applyCssLayerPrefix } from './css-layer-prefixer'
+export { applyCssLayerPrefix } from './css-layer-prefixer.ts'
 
 // Compiler instrumentation (bench + perf debugging)
 export {
@@ -238,16 +238,16 @@ export {
   resetCompilerCounters,
   getCompilerCounters,
   type CompilerCounters,
-} from './instrumentation'
+} from './instrumentation.ts'
 
 // Errors
-export { ErrorCodes, createError, formatError, generateCodeFrame } from './errors'
+export { ErrorCodes, createError, formatError, generateCodeFrame } from './errors.ts'
 
 // Expression Parser
-export { parseExpression, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, containsHigherOrder } from './expression-parser'
-export type { ParsedExpr, ParsedStatement, SortComparator, SortKey, ReduceOp, FlatDepth, FlatMapOp, FlatMapLeaf, SupportLevel, SupportResult, TemplatePart } from './expression-parser'
-export { buildLoopChainExpr } from './loop-chain'
-export type { LoopChainInputs } from './loop-chain'
+export { parseExpression, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, containsHigherOrder } from './expression-parser.ts'
+export type { ParsedExpr, ParsedStatement, SortComparator, SortKey, ReduceOp, FlatDepth, FlatMapOp, FlatMapLeaf, SupportLevel, SupportResult, TemplatePart } from './expression-parser.ts'
+export { buildLoopChainExpr } from './loop-chain.ts'
+export type { LoopChainInputs } from './loop-chain.ts'
 
 // Debug analysis
 export {
@@ -273,16 +273,16 @@ export {
   resolveSetters,
   buildLocalFunctionSetterMap,
   makeIdCallRegex,
-} from './debug'
-export type { ComponentGraph, ComponentAnalysis, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace, EventBinding, SetterRef, FnSetterResolution, EventSummary, LoopInfo, LoopChildBinding, LoopSummary, WhyUpdateResult, WhyUpdateDep, WhyUpdateSource, FallbackExplanation, ComponentSummary } from './debug'
-export type { WrapReason } from './ir-to-client-js/reactivity'
+} from './debug.ts'
+export type { ComponentGraph, ComponentAnalysis, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace, EventBinding, SetterRef, FnSetterResolution, EventSummary, LoopInfo, LoopChildBinding, LoopSummary, WhyUpdateResult, WhyUpdateDep, WhyUpdateSource, FallbackExplanation, ComponentSummary } from './debug.ts'
+export type { WrapReason } from './ir-to-client-js/reactivity.ts'
 
 // HTML constants
-export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants'
+export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
-export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectContextConsumers } from './augment-inherited-props'
-export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props'
+export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectContextConsumers } from './augment-inherited-props.ts'
+export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props.ts'
 
 // HTML element attribute types
 export type {
@@ -319,4 +319,4 @@ export type {
   ImgHTMLAttributes,
   LabelHTMLAttributes,
   OptionHTMLAttributes,
-} from './html-types'
+} from './html-types.ts'

@@ -20,13 +20,13 @@ import type {
   MemoInfo,
   EffectInfo,
   SourceLocation,
-} from './types'
-import { analyzeComponent, listComponentFunctions } from './analyzer'
-import { jsxToIR } from './jsx-to-ir'
-import { buildMetadata } from './compiler'
-import { analyzeClientNeeds } from './ir-to-client-js'
-import type { WrapReason } from './ir-to-client-js/reactivity'
-import { decideWrapFromAstFlags } from './ir-to-client-js/reactivity'
+} from './types.ts'
+import { analyzeComponent, listComponentFunctions } from './analyzer.ts'
+import { jsxToIR } from './jsx-to-ir.ts'
+import { buildMetadata } from './compiler.ts'
+import { analyzeClientNeeds } from './ir-to-client-js/index.ts'
+import type { WrapReason } from './ir-to-client-js/reactivity.ts'
+import { decideWrapFromAstFlags } from './ir-to-client-js/reactivity.ts'
 
 // =============================================================================
 // Types

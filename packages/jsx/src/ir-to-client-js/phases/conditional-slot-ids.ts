@@ -8,7 +8,7 @@
  * Cached once per generate-init invocation (see `buildPhaseCtx`).
  */
 
-import type { ClientJsContext } from '../types'
+import type { ClientJsContext } from '../types.ts'
 
 export function collectConditionalSlotIds(ctx: ClientJsContext): Set<string> {
   const slots = new Set<string>()

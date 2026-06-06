@@ -4,11 +4,11 @@
  * client-only expressions, and reactive component prop bindings.
  */
 
-import type { AttrMeta } from '../types'
-import { isBooleanAttr } from '../html-constants'
-import type { ClientJsContext } from './types'
-import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils'
-import { createTemplateAwareStringProtector } from './html-template'
+import type { AttrMeta } from '../types.ts'
+import { isBooleanAttr } from '../html-constants.ts'
+import type { ClientJsContext } from './types.ts'
+import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
+import { createTemplateAwareStringProtector } from './html-template.ts'
 
 /**
  * Generate JS statements to update a DOM attribute reactively.

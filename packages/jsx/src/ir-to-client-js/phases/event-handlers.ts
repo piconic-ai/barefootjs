@@ -9,8 +9,8 @@
  * root element carries the listener (no `bf=` slot).
  */
 
-import type { ClientJsContext } from '../types'
-import { toDomEventName, varSlotId, wrapHandlerInBlock } from '../utils'
+import type { ClientJsContext } from '../types.ts'
+import { toDomEventName, varSlotId, wrapHandlerInBlock } from '../utils.ts'
 
 export function emitEventHandlers(
   lines: string[],

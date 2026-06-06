@@ -4,12 +4,12 @@
  * and the final hydrate() call emission.
  */
 
-import type { ComponentIR, IRFragment, IRNode, ReferencesGraph } from '../types'
-import type { ClientJsContext } from './types'
-import { PROPS_PARAM } from './utils'
-import { computeInlinability, toLegacyInlinability } from './compute-inlinability'
-import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template'
-import { nameForRegistryRef } from './component-scope'
+import type { ComponentIR, IRFragment, IRNode, ReferencesGraph } from '../types.ts'
+import type { ClientJsContext } from './types.ts'
+import { PROPS_PARAM } from './utils.ts'
+import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
+import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
+import { nameForRegistryRef } from './component-scope.ts'
 
 /**
  * Resolve chained references within a constants map.

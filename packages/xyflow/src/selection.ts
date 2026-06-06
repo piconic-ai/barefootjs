@@ -1,6 +1,6 @@
 import { onCleanup, untrack } from '@barefootjs/client'
 import type { NodeBase, EdgeBase, InternalNodeBase, Transform } from '@xyflow/system'
-import type { FlowStore, InternalFlowStore, SelectionMode } from './types'
+import type { FlowStore, InternalFlowStore, SelectionMode } from './types.ts'
 
 /**
  * Set up keyboard handlers for the flow container.

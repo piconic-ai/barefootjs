@@ -1,8 +1,8 @@
-export { createForm } from "./create-form";
-export { validateSchema, validateField } from "./validate";
+export { createForm } from "./create-form.ts";
+export { validateSchema, validateField } from "./validate.ts";
 export type {
   CreateFormOptions,
   FormReturn,
   FieldReturn,
   ValidateOn,
-} from "./types";
+} from "./types.ts";

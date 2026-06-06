@@ -13,30 +13,30 @@
  * a long manual sequence.
  */
 
-import type { ComponentIR, PropUsage, ReferencesGraph } from '../types'
-import type { ClientJsContext } from './types'
-import type { LocalClassification } from './init-declarations'
-import { collectConditionalSlotIds } from './phases/conditional-slot-ids'
-import { emitEffectsAndOnMounts } from './phases/effects-and-on-mounts'
-import { emitEventHandlers } from './phases/event-handlers'
-import { emitInitStatements } from './phases/init-statements'
-import { emitProviderAndChildInits } from './phases/provider-and-child-inits'
-import { emitPropsEventHandlers } from './phases/props-event-handlers'
-import { emitPropsExtraction } from './phases/props-extraction'
-import { emitRefCallbacks } from './phases/ref-callbacks'
-import { emitRestAttrApplications } from './phases/rest-attr-applications'
-import { emitStaticArrayChildInits } from './phases/static-array-child-inits'
-import { emitClientOnlyConditionals, emitConditionalUpdates, emitLoopUpdates } from './control-flow'
+import type { ComponentIR, PropUsage, ReferencesGraph } from '../types.ts'
+import type { ClientJsContext } from './types.ts'
+import type { LocalClassification } from './init-declarations.ts'
+import { collectConditionalSlotIds } from './phases/conditional-slot-ids.ts'
+import { emitEffectsAndOnMounts } from './phases/effects-and-on-mounts.ts'
+import { emitEventHandlers } from './phases/event-handlers.ts'
+import { emitInitStatements } from './phases/init-statements.ts'
+import { emitProviderAndChildInits } from './phases/provider-and-child-inits.ts'
+import { emitPropsEventHandlers } from './phases/props-event-handlers.ts'
+import { emitPropsExtraction } from './phases/props-extraction.ts'
+import { emitRefCallbacks } from './phases/ref-callbacks.ts'
+import { emitRestAttrApplications } from './phases/rest-attr-applications.ts'
+import { emitStaticArrayChildInits } from './phases/static-array-child-inits.ts'
+import { emitClientOnlyConditionals, emitConditionalUpdates, emitLoopUpdates } from './control-flow.ts'
 import {
   emitClientOnlyExpressions,
   emitDynamicTextUpdates,
   emitReactiveAttributeUpdates,
   emitReactiveChildProps,
   emitReactivePropBindings,
-} from './emit-reactive'
-import { emitSortedDeclarations } from './init-declarations'
-import { generateElementRefs } from './element-refs'
-import { graphUsedFunctions } from './build-references'
+} from './emit-reactive.ts'
+import { emitSortedDeclarations } from './init-declarations.ts'
+import { generateElementRefs } from './element-refs.ts'
+import { graphUsedFunctions } from './build-references.ts'
 
 /**
  * Inputs available to every phase. Built once by `generateInitFunction`

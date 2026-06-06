@@ -22,8 +22,8 @@ import type {
   ParamInfo,
   PropertyInfo,
   ReactiveFactoryInfo,
-} from './types'
-import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types'
+} from './types.ts'
+import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types.ts'
 
 /**
  * Deferred info for BF043 (props destructuring warning).

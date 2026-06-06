@@ -110,9 +110,9 @@ export interface BranchInnerLoop {
    * Inner-wrapped component IR for `emitComponentAndEventSetup`. Inner-wrap
    * runs at build time; the helper still applies `outerWrap` at emit time.
    */
-  legacyComponents: readonly import('../../../types').IRLoopChildComponent[]
+  legacyComponents: readonly import('../../../types.ts').IRLoopChildComponent[]
   /** Inner-wrapped event IR for `emitComponentAndEventSetup`. */
-  legacyEvents: readonly import('../../types').LoopChildEvent[]
+  legacyEvents: readonly import('../../types.ts').LoopChildEvent[]
   /** Pre-wrapped reactive text effects for the inner-item body. */
   reactiveTexts: readonly BranchInnerLoopText[]
   /**
@@ -124,11 +124,11 @@ export interface BranchInnerLoop {
   /** Inner loop param identifier — needed for the legacy recursion. */
   innerLoopParam: string
   /** Inner loop param destructuring metadata. */
-  innerLoopParamBindings?: readonly import('../../../types').LoopParamBinding[]
+  innerLoopParamBindings?: readonly import('../../../types.ts').LoopParamBinding[]
   /** Outer loop param identifier — threaded into emitComponentAndEventSetup. */
   outerLoopParam: string
   /** Outer loop param destructuring metadata. */
-  outerLoopParamBindings?: readonly import('../../../types').LoopParamBinding[]
+  outerLoopParamBindings?: readonly import('../../../types.ts').LoopParamBinding[]
 }
 
 export type BranchInnerLoopsPlan = readonly BranchInnerLoop[]

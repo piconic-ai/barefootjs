@@ -34,12 +34,12 @@ import type {
   ReferenceEdge,
   ReferenceSource,
   ReferencesGraph,
-} from '../types'
-import type { IRVisitor as WalkerVisitor } from './walker'
-import { attrValueToString } from './utils'
-import type { ClientJsContext } from './types'
-import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers'
-import { walkIR } from './walker'
+} from '../types.ts'
+import type { IRVisitor as WalkerVisitor } from './walker.ts'
+import { attrValueToString } from './utils.ts'
+import type { ClientJsContext } from './types.ts'
+import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers.ts'
+import { walkIR } from './walker.ts'
 
 // All non-declaration edge origins share a single null source — no
 // query on the graph distinguishes them on read today. Stage E

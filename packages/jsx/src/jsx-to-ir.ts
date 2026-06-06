@@ -31,18 +31,18 @@ import {
   type OriginInfo,
   isReactiveOrigin,
   AttrValueOf,
-} from './types'
-import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation } from './analyzer-context'
-import { parseExpression, isSupported, parseBlockBody, extractSortComparatorFromTS, type ParsedExpr, type ParsedStatement, type SortComparator } from './expression-parser'
-import { createError, ErrorCodes, internalInvariant } from './errors'
-import { containsReactiveExpression } from './reactivity-checker'
+} from './types.ts'
+import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation } from './analyzer-context.ts'
+import { parseExpression, isSupported, parseBlockBody, extractSortComparatorFromTS, type ParsedExpr, type ParsedStatement, type SortComparator } from './expression-parser.ts'
+import { createError, ErrorCodes, internalInvariant } from './errors.ts'
+import { containsReactiveExpression } from './reactivity-checker.ts'
 import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
-} from './prop-rewrite'
-import { resolveFreeRefs, type BindingEnvironment } from './free-refs'
-import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer'
-import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner'
+} from './prop-rewrite.ts'
+import { resolveFreeRefs, type BindingEnvironment } from './free-refs.ts'
+import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
+import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 
 // =============================================================================
 // Transform Context

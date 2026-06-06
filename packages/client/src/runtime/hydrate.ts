@@ -37,13 +37,13 @@
  *   — the previous ancestor-walk guard is gone.
  */
 
-import { setCurrentScope } from './context'
-import { commentScopeRegistry } from './scope'
-import { hydratedScopes } from './hydration-state'
-import { registerComponent } from './registry'
-import { registerTemplate } from './template'
+import { setCurrentScope } from './context.ts'
+import { commentScopeRegistry } from './scope.ts'
+import { hydratedScopes } from './hydration-state.ts'
+import { registerComponent } from './registry.ts'
+import { registerTemplate } from './template.ts'
 import { BF_SCOPE, BF_PROPS, BF_HOST, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
-import type { ComponentDef } from './types'
+import type { ComponentDef } from './types.ts'
 
 /**
  * Registry of all hydrated component definitions.

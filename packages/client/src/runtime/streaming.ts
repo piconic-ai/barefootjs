@@ -14,7 +14,7 @@
  */
 
 import { BF_ASYNC, BF_ASYNC_RESOLVE } from '@barefootjs/shared'
-import { rehydrateAll } from './hydrate'
+import { rehydrateAll } from './hydrate.ts'
 
 /**
  * Swap a streaming fallback placeholder with its resolved content.

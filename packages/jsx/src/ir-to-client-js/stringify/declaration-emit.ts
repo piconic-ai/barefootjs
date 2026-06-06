@@ -29,7 +29,7 @@ import type {
   FunctionEmitPlan,
   MemoEmitPlan,
   SignalEmitPlan,
-} from '../plan/declaration-emit'
+} from '../plan/declaration-emit.ts'
 
 export function stringifyDeclarationEmit(
   lines: string[],

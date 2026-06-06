@@ -1,8 +1,8 @@
 // Go template build config factory for barefoot.config.ts
 
 import type { BuildOptions, PostBuildContext } from '@barefootjs/jsx'
-import { GoTemplateAdapter } from './adapter'
-import type { GoTemplateAdapterOptions } from './adapter'
+import { GoTemplateAdapter } from './adapter/index.ts'
+import type { GoTemplateAdapterOptions } from './adapter/index.ts'
 
 export interface GoTemplateBuildOptions extends BuildOptions {
   /** Adapter-specific options passed to GoTemplateAdapter */

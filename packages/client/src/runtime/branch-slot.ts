@@ -23,7 +23,7 @@
  * to splice. (Doing it here rather than wrapping the whole `__bfSlot(...)`
  * call in `escapeText` is what lets the marker path stay raw.)
  */
-import { escapeText } from './component'
+import { escapeText } from './component.ts'
 
 export function __bfSlot(value: unknown, slots: Node[]): string {
   if (value == null || value === false || value === true) return ''

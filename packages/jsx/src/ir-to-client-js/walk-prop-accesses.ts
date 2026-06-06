@@ -19,8 +19,8 @@
  */
 
 import ts from 'typescript'
-import type { PropAccessKind } from '../types'
-import { extractTemplateExpressions } from './identifiers'
+import type { PropAccessKind } from '../types.ts'
+import { extractTemplateExpressions } from './identifiers.ts'
 
 /** Map from prop name → set of access kinds observed across all sources. */
 export type PropAccessKindMap = Map<string, Set<PropAccessKind>>

@@ -56,8 +56,8 @@ import type {
   SingleCompInitPlan,
   StaticArrayChildInitPlan,
   StaticArrayChildInitsPlan,
-} from '../plan/static-array-child-init'
-import { nameForRegistryRef } from '../component-scope'
+} from '../plan/static-array-child-init.ts'
+import { nameForRegistryRef } from '../component-scope.ts'
 
 export function stringifyStaticArrayChildInits(
   lines: string[],

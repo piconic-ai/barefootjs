@@ -7,7 +7,7 @@
 
 import { createEffect } from '@barefootjs/client/reactive'
 import { classifyDOMProp, type DOMPropClassification } from '@barefootjs/shared'
-import { styleToCss } from './style'
+import { styleToCss } from './style.ts'
 
 /**
  * Convert a JSX event prop name to a DOM event name for addEventListener.

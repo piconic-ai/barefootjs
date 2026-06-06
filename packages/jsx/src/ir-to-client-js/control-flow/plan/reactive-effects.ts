@@ -9,8 +9,8 @@
  * nested conditionals) into a single `LoopChildArmPlan`.
  */
 
-import type { AttrMeta } from '../../../types'
-import type { LoopChildArmPlan } from './loop-child-arm'
+import type { AttrMeta } from '../../../types.ts'
+import type { LoopChildArmPlan } from './loop-child-arm.ts'
 
 /** A single reactive attribute effect (one createEffect block). */
 export interface ReactiveAttrEffect {

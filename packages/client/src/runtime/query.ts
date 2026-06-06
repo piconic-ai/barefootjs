@@ -6,8 +6,8 @@
  * nested scope boundaries and comment-based scopes.
  */
 
-import { commentScopeRegistry, getCommentScopeBoundary } from './scope'
-import { hydratedScopes } from './hydration-state'
+import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
+import { hydratedScopes } from './hydration-state.ts'
 import { BF_SCOPE, BF_SLOT, BF_PORTAL_OWNER, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
 
 /** CSS attribute-value escape with a fallback for environments lacking CSS.escape. */

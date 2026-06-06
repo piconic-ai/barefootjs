@@ -5,7 +5,7 @@
 import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
-} from '../adapters/interface'
+} from '../adapters/interface.ts'
 import type {
   AttrMeta,
   IREvent,
@@ -19,8 +19,8 @@ import type {
   ConstantInfo,
   ParamInfo,
   CompilerError,
-} from '../types'
-import type { CsrInlinabilityMap } from './csr-substitute'
+} from '../types.ts'
+import type { CsrInlinabilityMap } from './csr-substitute.ts'
 
 export interface ClientJsContext {
   componentName: string
@@ -218,7 +218,7 @@ export interface LoopCore {
    * signal accessor instead of a once-captured local. Absent for
    * simple-name callbacks.
    */
-  paramBindings?: readonly import('../types').LoopParamBinding[]
+  paramBindings?: readonly import('../types.ts').LoopParamBinding[]
   /**
    * Unique id for this loop's `<!--bf-loop:<id>--> ... <!--bf-/loop:<id>-->`
    * marker pair, threaded from `IRLoop.markerId`. Each `mapArray()` /
@@ -393,7 +393,7 @@ export interface NestedLoop extends LoopCore {
   /** Whether the inner array references the outer loop param (needs reactive mapArray) */
   refsOuterParam?: boolean
   /** Child components inside inner loop items (for initChild/createComponent) */
-  childComponents?: import('../types').IRLoopChildComponent[]
+  childComponents?: import('../types.ts').IRLoopChildComponent[]
   /** True when this loop is inside a conditional branch (handled by insert() bindEvents instead) */
   insideConditional?: boolean
   /** Offset of this loop's items past its preceding container siblings (#1693). */
@@ -452,7 +452,7 @@ export interface LoopChildBranchSummary {
    * carry raw `props` + `children` — `propsExpr` is built by the emitter
    * inside the loop's mapArray callback where the loop param is in scope.
    */
-  childComponents: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: import('../types').IRNode[] }>
+  childComponents: Array<{ name: string; slotId: string | null; props: import('../types.ts').IRProp[]; children: import('../types.ts').IRNode[] }>
   /** Inner loops inside the branch that need mapArray setup. */
   innerLoops?: NestedLoop[]
   /** Nested conditionals inside the branch (recursive — Path A, #830). */

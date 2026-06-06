@@ -17,12 +17,12 @@
  * stringifier never inspects raw IR.
  */
 
-import type { IRLoopChildComponent } from '../../types'
-import type { NestedLoop, TopLevelLoop } from '../types'
-import type { ClientJsContext } from '../types'
-import { quotePropName, varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils'
-import { irChildrenToJsExpr } from '../html-template'
-import { buildCompSelector } from '../control-flow/shared'
+import type { IRLoopChildComponent } from '../../types.ts'
+import type { NestedLoop, TopLevelLoop } from '../types.ts'
+import type { ClientJsContext } from '../types.ts'
+import { quotePropName, varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils.ts'
+import { irChildrenToJsExpr } from '../html-template.ts'
+import { buildCompSelector } from '../control-flow/shared.ts'
 
 /** The inline prop shape carried on `IRLoopChildComponent.props`. */
 type LoopChildCompProp = IRLoopChildComponent['props'][number]
@@ -35,7 +35,7 @@ import type {
   SingleCompInitPlan,
   StaticArrayChildInitPlan,
   StaticArrayChildInitsPlan,
-} from './static-array-child-init'
+} from './static-array-child-init.ts'
 
 export function buildStaticArrayChildInitsPlan(
   ctx: ClientJsContext,

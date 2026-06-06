@@ -16,19 +16,19 @@
 import type {
   LoopChildEvent,
   NestedLoop,
-} from '../../types'
+} from '../../types.ts'
 import type {
   AttrValue,
   IRLoopChildComponent,
   IRNode,
   LoopParamBinding,
-} from '../../../types'
-import { AttrValueOf, pickAttrMeta } from '../../../types'
+} from '../../../types.ts'
+import { AttrValueOf, pickAttrMeta } from '../../../types.ts'
 import {
   wrapLoopParamAsAccessor,
   attrValueToString,
-} from '../../utils'
-import { buildChildRefBindings, buildStaticChildRefBindings } from '../shared'
+} from '../../utils.ts'
+import { buildChildRefBindings, buildStaticChildRefBindings } from '../shared.ts'
 
 /**
  * Mirror of the helper in `build-loop-child-arm.ts` — kept local to avoid
@@ -54,11 +54,11 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
       return AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined)
   }
 }
-import type { DepthLevel } from '../shared'
+import type { DepthLevel } from '../shared.ts'
 import {
   destructureLoopParam,
   loopKeyFn,
-} from '../shared'
+} from '../shared.ts'
 import type {
   InnerLoopPlan,
   InnerLoopReactiveAttr,
@@ -66,7 +66,7 @@ import type {
   InnerLoopStaticEmit,
   InnerLoopText,
   InnerLoopsPlan,
-} from './inner-loop'
+} from './inner-loop.ts'
 
 export interface BuildInnerLoopsArgs {
   levels: readonly DepthLevel[]

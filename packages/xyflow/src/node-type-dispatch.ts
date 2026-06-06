@@ -16,8 +16,8 @@
  * See piconic-ai/barefootjs#1236 for the migration motivation.
  */
 
-import type { NodeBase } from './types'
-import type { NodeComponentProps } from './types'
+import type { NodeBase } from './types.ts'
+import type { NodeComponentProps } from './types.ts'
 
 /**
  * Cross-shape `nodeTypes` entry. The return type covers both supported

@@ -16,10 +16,10 @@ import type {
   IRComponent,
   IRFragment,
   ParamInfo,
-} from '../types'
-import type { AdapterOutput, TemplateSections } from './interface'
-import { type JsxAdapterConfig, JsxAdapter } from './jsx-adapter'
-import { rewriteImportsForTemplate } from './template-imports'
+} from '../types.ts'
+import type { AdapterOutput, TemplateSections } from './interface.ts'
+import { type JsxAdapterConfig, JsxAdapter } from './jsx-adapter.ts'
+import { rewriteImportsForTemplate } from './template-imports.ts'
 
 export class TestAdapter extends JsxAdapter {
   name = 'test'
@@ -314,7 +314,7 @@ export class TestAdapter extends JsxAdapter {
   private flattenTemplate(value: { kind: string }): string {
     // Simple stringifier for `template`-kind values; tests only need a
     // recognisable JSX shape, not byte-exact reproduction.
-    const v = value as { kind: 'template'; parts: import('../types').IRTemplatePart[] }
+    const v = value as { kind: 'template'; parts: import('../types.ts').IRTemplatePart[] }
     return '`' + v.parts.map(p => {
       if (p.type === 'string') return p.value
       if (p.type === 'ternary') return `\${${p.condition} ? '${p.whenTrue}' : '${p.whenFalse}'}`

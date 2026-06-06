@@ -10,18 +10,18 @@ import type {
   CompileOptions,
   CompileResult,
   FileOutput,
-} from './types'
-import type { TemplateAdapter } from './adapters/interface'
-import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer'
-import { jsxToIR } from './jsx-to-ir'
-import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js'
-import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level'
-import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode } from './ir-to-client-js/imports'
-import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope'
-import { generateModuleExports, collectInlineExportedNames } from './module-exports'
-import { applyCssLayerPrefix } from './css-layer-prefixer'
-import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks'
-import { extractSsrDefaults } from './ssr-defaults'
+} from './types.ts'
+import type { TemplateAdapter } from './adapters/interface.ts'
+import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer.ts'
+import { jsxToIR } from './jsx-to-ir.ts'
+import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
+import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level.ts'
+import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode } from './ir-to-client-js/imports.ts'
+import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope.ts'
+import { generateModuleExports, collectInlineExportedNames } from './module-exports.ts'
+import { applyCssLayerPrefix } from './css-layer-prefixer.ts'
+import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.ts'
+import { extractSsrDefaults } from './ssr-defaults.ts'
 
 /**
  * Extended compile options with required adapter

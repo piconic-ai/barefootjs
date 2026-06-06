@@ -8,8 +8,8 @@
  * skipped — they are declared in the same file and already resolve.
  */
 
-import type { IRNode } from '../types'
-import type { ClientJsContext, ConditionalElement } from './types'
+import type { IRNode } from '../types.ts'
+import type { ClientJsContext, ConditionalElement } from './types.ts'
 
 /** Emit child-component import marker lines for every component name
  *  reachable from the current component's IR (minus siblings). */

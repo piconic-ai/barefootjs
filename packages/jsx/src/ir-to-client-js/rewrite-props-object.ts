@@ -23,7 +23,7 @@
  */
 
 import ts from 'typescript'
-import { PROPS_PARAM } from './utils'
+import { PROPS_PARAM } from './utils.ts'
 
 /**
  * Rename every value-position reference to `propsObjectName` in `code`

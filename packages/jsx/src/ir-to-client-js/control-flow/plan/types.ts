@@ -16,18 +16,18 @@
  *   event-delegation.ts  — `EventDelegationPlan`, `ItemLookup` family
  *
  * This file lets callers continue to write
- * `import type { ... } from '../plan/types'` without caring which file
+ * `import type { ... } from '../plan/types.ts'` without caring which file
  * a particular Plan type lives in.
  */
 
-export type { ScopeRef } from './common'
+export type { ScopeRef } from './common.ts'
 export type {
   ReactiveEffectsPlan,
   ReactiveAttrSlot,
   ReactiveAttrEffect,
   ReactiveTextEffect,
   NestedConditionalPlan,
-} from './reactive-effects'
+} from './reactive-effects.ts'
 export type {
   InsertPlan,
   InsertArm,
@@ -36,7 +36,7 @@ export type {
   ArmRefBind,
   ArmChildComponentInit,
   ArmTextEffect,
-} from './insert'
+} from './insert.ts'
 export type {
   LoopPlan,
   PlainLoopPlan,
@@ -46,14 +46,14 @@ export type {
   StaticLoopMaterializePlan,
   NestedComponentInit,
   LoopChildRefBinding,
-} from './loop'
+} from './loop.ts'
 export type {
   EventDelegationPlan,
   ItemLookup,
   KeyedItemLookup,
   DynamicIndexItemLookup,
   StaticIndexItemLookup,
-} from './event-delegation'
+} from './event-delegation.ts'
 
 // Re-export legacy types referenced from Plan-level code paths.
 export type {
@@ -61,4 +61,4 @@ export type {
   LoopChildConditional,
   BranchLoop,
   LoopChildEvent,
-} from '../../types'
+} from '../../types.ts'

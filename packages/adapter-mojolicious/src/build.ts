@@ -1,8 +1,8 @@
 // Mojolicious build config factory for barefoot.config.ts
 
 import type { BuildOptions } from '@barefootjs/jsx'
-import { MojoAdapter } from './adapter'
-import type { MojoAdapterOptions } from './adapter'
+import { MojoAdapter } from './adapter/index.ts'
+import type { MojoAdapterOptions } from './adapter/index.ts'
 
 export interface MojoBuildOptions extends BuildOptions {
   /** Adapter-specific options passed to MojoAdapter */

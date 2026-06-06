@@ -4,5 +4,5 @@
  * Generates Mojolicious EP template files from BarefootJS IR.
  */
 
-export { MojoAdapter, mojoAdapter } from './adapter'
-export type { MojoAdapterOptions } from './adapter'
+export { MojoAdapter, mojoAdapter } from './adapter/index.ts'
+export type { MojoAdapterOptions } from './adapter/index.ts'

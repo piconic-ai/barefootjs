@@ -42,7 +42,7 @@ import type {
   IRIfStatement,
   IRProvider,
   IRAsync,
-} from '../types'
+} from '../types.ts'
 
 /**
  * Arguments passed to every per-kind visitor callback.

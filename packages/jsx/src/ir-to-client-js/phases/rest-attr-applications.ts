@@ -6,8 +6,8 @@
  * DOM attributes, skipping the keys statically set on the element.
  */
 
-import type { ClientJsContext } from '../types'
-import { varSlotId } from '../utils'
+import type { ClientJsContext } from '../types.ts'
+import { varSlotId } from '../utils.ts'
 
 export function emitRestAttrApplications(lines: string[], ctx: ClientJsContext): void {
   if (ctx.restAttrElements.length === 0) return

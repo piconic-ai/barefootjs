@@ -19,13 +19,13 @@
  * them onto the placeholder replacements at the end of emission.
  */
 
-import type { ComponentIR, ConstantInfo, FunctionInfo, SignalInfo, MemoInfo } from '../types'
+import type { ComponentIR, ConstantInfo, FunctionInfo, SignalInfo, MemoInfo } from '../types.ts'
 import {
   RUNTIME_MODULE,
   collectExternalImports,
   collectUserDomImports,
   detectUsedImports,
-} from './imports'
+} from './imports.ts'
 
 /**
  * Build the module-level code block that replaces `MODULE_CONSTANTS_PLACEHOLDER`.

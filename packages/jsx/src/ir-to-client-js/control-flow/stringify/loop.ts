@@ -24,13 +24,13 @@
  * passed in via `topIndent`.
  */
 
-import { emitRefCall, varSlotId } from '../../utils'
-import { emitAttrUpdate } from '../../emit-reactive'
-import { stringifyReactiveEffects } from './reactive-effects'
-import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse'
-import { stringifyComponentLoop } from './component-loop'
-import { stringifyCompositeLoop } from './composite-loop'
-import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types'
+import { emitRefCall, varSlotId } from '../../utils.ts'
+import { emitAttrUpdate } from '../../emit-reactive.ts'
+import { stringifyReactiveEffects } from './reactive-effects.ts'
+import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse.ts'
+import { stringifyComponentLoop } from './component-loop.ts'
+import { stringifyCompositeLoop } from './composite-loop.ts'
+import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
 
 /**
  * Emit `(callback)(__rf)` for each ref on a per-item slot, looking up the

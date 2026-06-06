@@ -7,10 +7,10 @@
 
 import { analyzeComponent, jsxToIR } from '@barefootjs/jsx'
 import type { IRMetadata, CompilerError } from '@barefootjs/jsx'
-import { TestNode, type TestNodeQuery } from './test-node'
-import { irNodeToTestNode } from './ir-to-test-node'
-import { resolveConstants } from './resolve-constants'
-import { toStructure } from './structure'
+import { TestNode, type TestNodeQuery } from './test-node.ts'
+import { irNodeToTestNode } from './ir-to-test-node.ts'
+import { resolveConstants } from './resolve-constants.ts'
+import { toStructure } from './structure.ts'
 
 export interface TestResult {
   root: TestNode

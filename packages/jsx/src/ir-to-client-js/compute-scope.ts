@@ -14,13 +14,13 @@ import type {
   DeclarationScope,
   FunctionInfo,
   ReferencesGraph,
-} from '../types'
-import type { ClientJsContext } from './types'
+} from '../types.ts'
+import type { ClientJsContext } from './types.ts'
 import {
   graphAssignedIdentifiers,
   graphFunctionReferences,
   graphUsedIdentifiers,
-} from './build-references'
+} from './build-references.ts'
 
 export interface DeclarationScopes {
   constantScope: Map<string, DeclarationScope>

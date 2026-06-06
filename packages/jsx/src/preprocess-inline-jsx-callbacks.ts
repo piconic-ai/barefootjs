@@ -31,8 +31,8 @@
  */
 
 import ts from 'typescript'
-import type { CompilerError, SourceLocation } from './types'
-import { ErrorCodes, createError } from './errors'
+import type { CompilerError, SourceLocation } from './types.ts'
+import { ErrorCodes, createError } from './errors.ts'
 
 export interface PreprocessResult {
   /** Source after rewriting; identical to the input when no inline arrows are found. */

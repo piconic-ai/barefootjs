@@ -16,7 +16,7 @@
  * Adapters are responsible for calling this themselves before emitting any
  * import block. The compiler hands them `metadata.imports` unchanged.
  */
-import type { ImportInfo, ImportSpecifier } from '../types'
+import type { ImportInfo, ImportSpecifier } from '../types.ts'
 
 const CLIENT_PACKAGE_SOURCES = new Set([
   '@barefootjs/client',

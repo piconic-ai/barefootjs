@@ -24,7 +24,7 @@ import type {
   SVGBaseAttributes,
   SVGPresentationAttributes,
   SVGMarkerReferenceAttributes,
-} from '../html-types'
+} from '../html-types.ts'
 
 // Stub function types (for type checking only - no runtime implementation)
 export declare const jsx: (

@@ -20,16 +20,16 @@
  *     control-flow.ts -> control-flow/{plan,stringify}/* -> legacy-helpers.ts
  */
 
-import type { ClientJsContext, TopLevelLoop } from './types'
-import { buildInsertPlan } from './control-flow/plan/build-insert'
-import { stringifyInsert } from './control-flow/stringify/insert'
-import { buildLoopPlan } from './control-flow/plan/build-loop'
-import { stringifyLoop } from './control-flow/stringify/loop'
+import type { ClientJsContext, TopLevelLoop } from './types.ts'
+import { buildInsertPlan } from './control-flow/plan/build-insert.ts'
+import { stringifyInsert } from './control-flow/stringify/insert.ts'
+import { buildLoopPlan } from './control-flow/plan/build-loop.ts'
+import { stringifyLoop } from './control-flow/stringify/loop.ts'
 import {
   buildDynamicLoopDelegationPlan,
   buildStaticArrayDelegationPlan,
-} from './control-flow/plan/build-event-delegation'
-import { stringifyEventDelegation } from './control-flow/stringify/event-delegation'
+} from './control-flow/plan/build-event-delegation.ts'
+import { stringifyEventDelegation } from './control-flow/stringify/event-delegation.ts'
 
 /** Emit insert() calls for server-rendered reactive conditionals with branch configs. */
 export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): void {

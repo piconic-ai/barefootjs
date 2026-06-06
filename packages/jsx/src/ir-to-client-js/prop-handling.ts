@@ -2,8 +2,8 @@
  * Props expansion, dependency analysis, and controlled component detection.
  */
 
-import type { ParamInfo, SignalInfo } from '../types'
-import type { ClientJsContext } from './types'
+import type { ParamInfo, SignalInfo } from '../types.ts'
+import type { ClientJsContext } from './types.ts'
 
 /**
  * Expand dynamic prop value by resolving local constants.

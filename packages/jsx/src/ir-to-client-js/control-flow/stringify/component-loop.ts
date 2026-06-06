@@ -30,9 +30,9 @@
  * SSR-side nested-comp lines use 6 spaces (matches legacy).
  */
 
-import { stringifyReactiveEffects } from './reactive-effects'
-import type { ComponentLoopPlan, NestedComponentInit } from '../plan/types'
-import { nameForRegistryRef } from '../../component-scope'
+import { stringifyReactiveEffects } from './reactive-effects.ts'
+import type { ComponentLoopPlan, NestedComponentInit } from '../plan/types.ts'
+import { nameForRegistryRef } from '../../component-scope.ts'
 
 export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan): void {
   const {

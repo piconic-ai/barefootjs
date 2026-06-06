@@ -22,29 +22,29 @@
 import type {
   TopLevelLoop,
   LoopChildReactiveAttr,
-} from '../../types'
+} from '../../types.ts'
 import {
   buildChainedArrayExpr,
   buildLoopChildIndexExpr,
   setIntersects,
   varSlotId,
   wrapLoopParamAsAccessor,
-} from '../../utils'
+} from '../../utils.ts'
 import {
   loopKeyFn,
   destructureLoopParam,
   buildChildRefBindings,
   buildStaticChildRefBindings,
-} from '../shared'
-import { buildLoopReactiveEffectsPlan } from './build-reactive-effects'
-import { buildComponentLoopPlan } from './build-component-loop'
-import { buildTopLevelCompositePlan } from './build-composite-loop'
+} from '../shared.ts'
+import { buildLoopReactiveEffectsPlan } from './build-reactive-effects.ts'
+import { buildComponentLoopPlan } from './build-component-loop.ts'
+import { buildTopLevelCompositePlan } from './build-composite-loop.ts'
 import type {
   LoopPlan,
   PlainLoopPlan,
   StaticLoopMaterializePlan,
   StaticLoopPlan,
-} from './types'
+} from './types.ts'
 
 /** Inputs only the static-array variant consumes. */
 export interface BuildLoopPlanOptions {

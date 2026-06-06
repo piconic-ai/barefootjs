@@ -7,12 +7,12 @@
  */
 
 import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
-import { setParentScopeId } from './component'
-import { hydratedScopes } from './hydration-state'
-import { getComponentInit } from './registry'
-import { commentScopeRegistry } from './scope'
-import { getTemplate, type TemplateFn } from './template'
-import type { ComponentDef, InitFn } from './types'
+import { setParentScopeId } from './component.ts'
+import { hydratedScopes } from './hydration-state.ts'
+import { getComponentInit } from './registry.ts'
+import { commentScopeRegistry } from './scope.ts'
+import { getTemplate, type TemplateFn } from './template.ts'
+import type { ComponentDef, InitFn } from './types.ts'
 
 /**
  * Render a component into a container element (CSR mode).

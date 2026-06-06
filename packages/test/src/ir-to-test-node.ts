@@ -24,7 +24,7 @@ import { resolveSetters, buildLocalFunctionSetterMap, type SetterRef, type FnSet
 type IRAttribute = IRElement['attrs'][number]
 type AttrValue = IRAttribute['value']
 type TemplateAttr = Extract<AttrValue, { kind: 'template' }>
-import { TestNode, type EventHandler } from './test-node'
+import { TestNode, type EventHandler } from './test-node.ts'
 
 interface ConvertContext {
   cmap: Map<string, string>

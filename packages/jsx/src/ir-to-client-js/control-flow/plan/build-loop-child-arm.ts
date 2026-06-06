@@ -12,17 +12,17 @@ import type {
   LoopChildConditional,
   LoopChildEvent,
   NestedLoop,
-} from '../../types'
+} from '../../types.ts'
 import type {
   AttrValue,
   IRLoopChildComponent,
   IRNode,
   IRProp,
   LoopParamBinding,
-} from '../../../types'
-import { AttrValueOf } from '../../../types'
-import { quotePropName, wrapLoopParamAsAccessor, attrValueToString } from '../../utils'
-import { addCondAttrToTemplate, irChildrenToJsExpr } from '../../html-template'
+} from '../../../types.ts'
+import { AttrValueOf } from '../../../types.ts'
+import { quotePropName, wrapLoopParamAsAccessor, attrValueToString } from '../../utils.ts'
+import { addCondAttrToTemplate, irChildrenToJsExpr } from '../../html-template.ts'
 
 /**
  * Apply a string-level expression rewriter (loop-param-accessor wrap, prop
@@ -57,7 +57,7 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
       return AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined)
   }
 }
-import { destructureLoopParam, loopKeyFn, buildCompSelector } from '../shared'
+import { destructureLoopParam, loopKeyFn, buildCompSelector } from '../shared.ts'
 import { BF_HOST, BF_AT } from '@barefootjs/shared'
 import type {
   BranchChildComponentInit,
@@ -70,7 +70,7 @@ import type {
   BranchInnerLoopsPlan,
   LoopChildArmPlan,
   LoopChildConditionalPlan,
-} from './loop-child-arm'
+} from './loop-child-arm.ts'
 
 export interface BuildBranchEventBindingsArgs {
   events: readonly ConditionalBranchEvent[] | undefined

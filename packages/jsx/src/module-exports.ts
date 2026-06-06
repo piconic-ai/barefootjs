@@ -5,7 +5,7 @@
  * This is a compiler-layer concern, not adapter-specific.
  */
 
-import type { ComponentIR, ParamInfo } from './types'
+import type { ComponentIR, ParamInfo } from './types.ts'
 
 /**
  * Emit module-level exports for local declarations and `export { ... } [from '...']`

@@ -1,8 +1,8 @@
 // Text::Xslate build config factory for barefoot.config.ts
 
 import type { BuildOptions } from '@barefootjs/jsx'
-import { XslateAdapter } from './adapter'
-import type { XslateAdapterOptions } from './adapter'
+import { XslateAdapter } from './adapter/index.ts'
+import type { XslateAdapterOptions } from './adapter/index.ts'
 
 export interface XslateBuildOptions extends BuildOptions {
   /** Adapter-specific options passed to XslateAdapter */

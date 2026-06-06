@@ -2,13 +2,13 @@
  * BarefootJS Compiler - Error Definitions
  */
 
-import path from 'path'
+import path from 'node:path'
 import type {
   CompilerError,
   ErrorSeverity,
   ErrorSuggestion,
   SourceLocation,
-} from './types'
+} from './types.ts'
 
 // =============================================================================
 // Error Codes

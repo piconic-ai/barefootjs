@@ -40,7 +40,7 @@
 
 import { useRequestContext } from 'hono/jsx-renderer'
 import { Fragment } from 'hono/jsx'
-import { relPathFromComponentsBase, type BarefootBuildManifest } from './app'
+import { relPathFromComponentsBase, type BarefootBuildManifest } from './app.ts'
 
 export type CollectedScript = {
   src: string

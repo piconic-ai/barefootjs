@@ -2,6 +2,6 @@ export {
   renderAsyncBoundary,
   renderAsyncResolve,
   streamingBootstrap,
-} from './html'
+} from './html.ts'
 
-export { AsyncIdGenerator } from './id'
+export { AsyncIdGenerator } from './id.ts'

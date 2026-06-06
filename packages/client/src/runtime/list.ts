@@ -5,7 +5,7 @@
  * Delegates to reconcileElements for element-based rendering.
  */
 
-import { reconcileElements } from './reconcile-elements'
+import { reconcileElements } from './reconcile-elements.ts'
 
 /**
  * Render function type for list items.

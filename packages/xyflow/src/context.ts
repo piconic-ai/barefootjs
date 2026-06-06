@@ -1,5 +1,5 @@
 import { createContext } from '@barefootjs/client'
-import type { FlowStore } from './types'
+import type { FlowStore } from './types.ts'
 
 /**
  * Context for sharing the flow store across child components.

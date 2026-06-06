@@ -12,9 +12,9 @@
  * case.
  */
 
-import type { ConstantInfo, PropUsage } from '../types'
-import type { ClientJsContext } from './types'
-import { collectPropAccesses, type PropAccessKindMap } from './walk-prop-accesses'
+import type { ConstantInfo, PropUsage } from '../types.ts'
+import type { ClientJsContext } from './types.ts'
+import { collectPropAccesses, type PropAccessKindMap } from './walk-prop-accesses.ts'
 
 export function computePropUsage(
   ctx: ClientJsContext,

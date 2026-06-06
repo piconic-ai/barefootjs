@@ -30,15 +30,15 @@
  *     <indent>}) }
  */
 
-import { keyAttrName } from '../../utils'
-import { emitComponentAndEventSetup } from '../shared'
-import { emitAttrUpdate } from '../../emit-reactive'
-import { emitMultiRootTemplateCloneLines } from './template-parse'
-import { emitLoopChildRefs } from './loop'
+import { keyAttrName } from '../../utils.ts'
+import { emitComponentAndEventSetup } from '../shared.ts'
+import { emitAttrUpdate } from '../../emit-reactive.ts'
+import { emitMultiRootTemplateCloneLines } from './template-parse.ts'
+import { emitLoopChildRefs } from './loop.ts'
 import type {
   InnerLoopPlan,
   InnerLoopsPlan,
-} from '../plan/inner-loop'
+} from '../plan/inner-loop.ts'
 
 export function stringifyInnerLoops(
   lines: string[],

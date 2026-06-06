@@ -26,7 +26,7 @@
  */
 
 import ts from 'typescript'
-import path from 'path'
+import path from 'node:path'
 
 export interface SharedProgramOptions {
   /** Override baseUrl for module resolution. Defaults to common parent of files. */

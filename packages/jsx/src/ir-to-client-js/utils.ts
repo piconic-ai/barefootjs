@@ -4,15 +4,15 @@
  */
 
 import ts from 'typescript'
-import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode } from '../types'
-import type { TopLevelLoop, BranchLoop, LoopOffset } from './types'
-import { buildLoopChainExpr } from '../loop-chain'
+import type { AttrValue, IRTemplatePart, LoopParamBinding, FreeReference, IRNode } from '../types.ts'
+import type { TopLevelLoop, BranchLoop, LoopOffset } from './types.ts'
+import { buildLoopChainExpr } from '../loop-chain.ts'
 import {
   iterateJsTokens,
   isIdentifierLikeToken,
   isTriviaKind,
   replaceInExprContexts,
-} from '../scanner/js-scanner'
+} from '../scanner/js-scanner.ts'
 import {
   BF_KEY as DATA_KEY,
   BF_KEY_PREFIX as DATA_KEY_PREFIX,

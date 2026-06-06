@@ -21,10 +21,10 @@ import type {
   LoopChildReactiveAttr,
   LoopChildReactiveText,
   TopLevelLoop,
-} from '../../types'
-import type { IRLoopChildComponent } from '../../../types'
-import type { ReactiveEffectsPlan } from './reactive-effects'
-import type { InnerLoopsPlan } from './inner-loop'
+} from '../../types.ts'
+import type { IRLoopChildComponent } from '../../../types.ts'
+import type { ReactiveEffectsPlan } from './reactive-effects.ts'
+import type { InnerLoopsPlan } from './inner-loop.ts'
 
 /** Fields shared by every `LoopPlan` variant. */
 interface LoopPlanCommon {

@@ -19,10 +19,10 @@
 import { createEffect, onCleanup, untrack } from '@barefootjs/client'
 import { PanOnScrollMode, XYPanZoom } from '@xyflow/system'
 import type { InternalNodeBase, NodeLookup, Transform, Viewport, XYPosition } from '@xyflow/system'
-import { INFINITE_EXTENT } from './constants'
-import { computeEdgePosition, getEdgePath } from './edge-path'
-import { setupKeyboardHandlers, setupSelectionRectangle } from './selection'
-import type { FlowProps, InternalFlowStore, NodeBase, EdgeBase } from './types'
+import { INFINITE_EXTENT } from './constants.ts'
+import { computeEdgePosition, getEdgePath } from './edge-path.ts'
+import { setupKeyboardHandlers, setupSelectionRectangle } from './selection.ts'
+import type { FlowProps, InternalFlowStore, NodeBase, EdgeBase } from './types.ts'
 
 /**
  * Clamp a child node's drag position so the node's rect stays inside

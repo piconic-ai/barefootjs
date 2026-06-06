@@ -26,8 +26,8 @@ import type {
   PostBuildContext,
   TemplateAdapter,
 } from '@barefootjs/jsx'
-import { CSRAdapter } from './csr-adapter'
-import type { CSRAdapterOptions } from './csr-adapter'
+import { CSRAdapter } from './csr-adapter.ts'
+import type { CSRAdapterOptions } from './csr-adapter.ts'
 
 export interface CSRBuildOptions {
   /** Project layout paths consumed by registry tooling. */
@@ -88,5 +88,5 @@ export function createConfig(options: CSRBuildOptions = {}) {
   }
 }
 
-export { CSRAdapter } from './csr-adapter'
-export type { CSRAdapterOptions } from './csr-adapter'
+export { CSRAdapter } from './csr-adapter.ts'
+export type { CSRAdapterOptions } from './csr-adapter.ts'

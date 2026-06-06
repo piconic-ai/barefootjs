@@ -13,7 +13,7 @@
  * by `@client` conditionals).
  */
 
-import { toDomEventName, wrapHandlerInBlock } from '../../utils'
+import { toDomEventName, wrapHandlerInBlock } from '../../utils.ts'
 
 export type EventNameMode = 'dom' | 'raw'
 

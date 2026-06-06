@@ -25,9 +25,9 @@
  */
 
 import ts from 'typescript'
-import { PROPS_PARAM, inferDefaultValue } from './utils'
-import { extractFreeIdentifiersFromNode } from '../analyzer'
-import type { MemoInfo, SignalInfo } from '../types'
+import { PROPS_PARAM, inferDefaultValue } from './utils.ts'
+import { extractFreeIdentifiersFromNode } from '../analyzer.ts'
+import type { MemoInfo, SignalInfo } from '../types.ts'
 
 /**
  * CSR-substituted const value: the const's initializer with every

@@ -32,14 +32,14 @@
  * sentinel before destructuring (#951 TDZ-safe).
  */
 
-import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName } from '../../utils'
+import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName } from '../../utils.ts'
 import type {
   EventDelegationPlan,
   KeyedItemLookup,
   DynamicIndexItemLookup,
   StaticIndexItemLookup,
   LoopChildEvent,
-} from '../plan/types'
+} from '../plan/types.ts'
 
 /** Non-bubbling events that require addEventListener with capture for delegation. */
 const NON_BUBBLING_EVENTS = new Set([

@@ -33,7 +33,7 @@ import { useRequestContext } from 'hono/jsx-renderer'
 // Zero-dependency subpath — keeps the compiler (and its `typescript` dep) out
 // of this runtime/Workers-bundled module while sharing one importmap renderer.
 import { renderImportMapHtml, type ImportMapManifest } from '@barefootjs/jsx/import-map'
-import { createDevReloader } from './dev-worker'
+import { createDevReloader } from './dev-worker.ts'
 
 const DEV_RELOAD_ENDPOINT_KEY = 'bfDevReloadEndpoint'
 

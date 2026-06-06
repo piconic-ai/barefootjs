@@ -18,15 +18,15 @@ export {
   type EffectFn,
 } from '@barefootjs/client/reactive'
 
-export { splitProps } from './split-props'
+export { splitProps } from './split-props.ts'
 
-export { __slot, type SlotMarker } from './slot'
+export { __slot, type SlotMarker } from './slot.ts'
 
-export { forwardProps } from './forward-props'
+export { forwardProps } from './forward-props.ts'
 
-export { unwrap } from './unwrap'
+export { unwrap } from './unwrap.ts'
 
-export { createContext, type Context } from './context'
+export { createContext, type Context } from './context.ts'
 
 export {
   useContext,
@@ -39,4 +39,4 @@ export {
   type PortalChildren,
   type PortalOptions,
   type Renderable,
-} from './shims'
+} from './shims.ts'

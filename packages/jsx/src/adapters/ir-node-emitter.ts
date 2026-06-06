@@ -41,7 +41,7 @@ import type {
   IRIfStatement,
   IRProvider,
   IRAsync,
-} from '../types'
+} from '../types.ts'
 
 /**
  * Recursive emit callback handed to each visitor method. Adapters

@@ -5,7 +5,7 @@
  * for CSS cascade ordering. Un-layered user classes always beat layered component classes.
  */
 
-import type { ComponentIR, IRNode, IRTemplatePart } from './types'
+import type { ComponentIR, IRNode, IRTemplatePart } from './types.ts'
 
 /**
  * Prefix a single CSS class token with a layer variant.

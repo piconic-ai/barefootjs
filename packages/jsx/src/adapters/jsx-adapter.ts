@@ -9,10 +9,10 @@ import type {
   ComponentIR,
   IRNode,
   ImportSpecifier,
-} from '../types'
+} from '../types.ts'
 import { BF_SCOPE, BF_SLOT, BF_COND } from '@barefootjs/shared'
-import { BaseAdapter } from './interface'
-import { formatParamWithType, findReachableNames } from '../module-exports'
+import { BaseAdapter } from './interface.ts'
+import { formatParamWithType, findReachableNames } from '../module-exports.ts'
 
 export interface JsxAdapterConfig {
   /** Use typed versions (typedInitialValue, etc.) for type-safe .tsx output */

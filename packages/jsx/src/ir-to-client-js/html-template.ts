@@ -2,16 +2,16 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, IRAttribute, IRNode, IRProp } from '../types'
-import { isBooleanAttr } from '../html-constants'
-import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils'
-import type { LoopParamSpec } from './utils'
-import { nameForRegistryRef } from './component-scope'
-import { assertNever } from './walker'
-import { buildSignalMemoEnv, csrSubstitute, applyPropsRewrite, type CsrEnv } from './csr-substitute'
-import type { ClientJsContext } from './types'
+import type { AttrValue, IRAttribute, IRNode, IRProp } from '../types.ts'
+import { isBooleanAttr } from '../html-constants.ts'
+import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils.ts'
+import type { LoopParamSpec } from './utils.ts'
+import { nameForRegistryRef } from './component-scope.ts'
+import { assertNever } from './walker.ts'
+import { buildSignalMemoEnv, csrSubstitute, applyPropsRewrite, type CsrEnv } from './csr-substitute.ts'
+import type { ClientJsContext } from './types.ts'
 import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE } from '@barefootjs/shared'
-import { buildLoopChainExpr } from '../loop-chain'
+import { buildLoopChainExpr } from '../loop-chain.ts'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -114,7 +114,7 @@ const VOID_ELEMENTS = new Set([
  * The `base` override lets the CSR-template path pre-substitute
  * props (`_p.items.toSorted(...)`) before the chain rides on top.
  */
-function applyLoopChain(loop: import('../types').IRLoop, base: string = loop.array): string {
+function applyLoopChain(loop: import('../types.ts').IRLoop, base: string = loop.array): string {
   return buildLoopChainExpr({
     base,
     sortComparator: loop.sortComparator,
@@ -129,7 +129,7 @@ function applyLoopChain(loop: import('../types').IRLoop, base: string = loop.arr
  * Returns the (possibly wrapped) array and the callback param string.
  */
 function applyIterationShape(
-  node: import('../types').IRLoop,
+  node: import('../types.ts').IRLoop,
   arrayExpr: string,
   indexParam: string,
 ): { array: string; callbackParam: string } {

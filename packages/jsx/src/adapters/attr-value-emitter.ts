@@ -43,7 +43,7 @@ import type {
   TemplateAttr,
   SpreadAttr,
   JsxChildrenAttr,
-} from '../types'
+} from '../types.ts'
 
 /**
  * Per-kind methods carry an `emit` prefix (same convention as

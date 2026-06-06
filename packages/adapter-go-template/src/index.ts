@@ -4,5 +4,5 @@
  * Generates Go html/template files from BarefootJS IR.
  */
 
-export { GoTemplateAdapter, goTemplateAdapter } from './adapter'
-export type { GoTemplateAdapterOptions } from './adapter'
+export { GoTemplateAdapter, goTemplateAdapter } from './adapter/index.ts'
+export type { GoTemplateAdapterOptions } from './adapter/index.ts'

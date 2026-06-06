@@ -24,7 +24,7 @@ export {
   BF_ASYNC,
   BF_ASYNC_RESOLVE,
   BF_PARENT_SCOPE_PLACEHOLDER,
-} from './markers'
+} from './markers.ts'
 
 export {
   classifyDOMProp,
@@ -33,5 +33,5 @@ export {
   isBooleanAttr,
   isEventProp,
   BOOLEAN_ATTRS,
-} from './dom-prop'
-export type { DOMPropKind, DOMPropClassification } from './dom-prop'
+} from './dom-prop.ts'
+export type { DOMPropKind, DOMPropClassification } from './dom-prop.ts'
