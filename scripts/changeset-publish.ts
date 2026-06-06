@@ -102,7 +102,13 @@ try {
     // The action parses stdout for "New tag: <name>@<version>" lines to set
     // its `published` output and to create GitHub Releases.
     const tag = `${pkg.name}@${pkg.version}`
-    await $`git tag ${tag}`.cwd(repoRoot).quiet().nothrow()
+    const t = await $`git tag ${tag}`.cwd(repoRoot).quiet().nothrow()
+    const tagAlreadyExists = t.exitCode !== 0 && t.stderr.toString().includes('already exists')
+    if (t.exitCode !== 0 && !tagAlreadyExists) {
+      console.error(`  git tag failed: ${t.stderr.toString().trim()}`)
+      errors.push(`${tag} (tag)`)
+      continue
+    }
     console.log(`New tag: ${tag}`)
 
     published++
