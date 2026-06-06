@@ -53,17 +53,11 @@ runAdapterConformanceTests({
     // aborting, so this surfaces as a render mismatch (not a hard error).
     // Separate follow-up.
     'toggle-shared',
-    // `props-reactivity-comparison` (the `PropsReactivityComparison`
-    // export of `ReactiveProps.tsx`): componentName selection is now
-    // honoured, but the child `PropsStyleChild`'s `displayValue =
-    // props.value * 10` memo has no static SSR default
-    // (`extractSsrDefaults` → `null` for a prop-derived expression) and
-    // the Perl SSR model seeds child memos from static defaults. Kolon
-    // renders the unseeded `$displayValue` as empty, so `child-computed-
-    // value` is blank where Hono / Go emit `10` (Go computes it in a
-    // generated child constructor — the Perl static path has no
-    // equivalent). (Same reason mojo skips.)
-    'props-reactivity-comparison',
+    // `props-reactivity-comparison` graduated: the child `PropsStyleChild`'s
+    // `displayValue = props.value * 10` memo has a `null` static SSR default.
+    // The adapter now computes such memos in-template from the seeded prop var
+    // (`: my $displayValue = $value * 10;`) — mirroring Go's generated child
+    // constructor — so `child-computed-value` renders `10` to match Hono. (#1297)
     // (`kbd` is not skipped here — it's a BF101 refusal pinned in
     // `expectedDiagnostics` below, not a render-mismatch.)
   ],
@@ -199,5 +193,34 @@ const ThemeContext = createContext('light')
 export function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
 `)
     expect(template).toContain(": my $theme = $bf.use_context('ThemeContext', 'light');")
+  })
+})
+
+describe('XslateAdapter - prop-derived memo SSR seeding (#1297)', () => {
+  // A memo whose body can't be statically folded (`props.value * 10`) gets a
+  // `null` SSR default; the adapter computes it in-template from the seeded
+  // prop var so the child renders the value instead of empty.
+  test('seeds a prop-derived memo from the prop var', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function Child(props: { value: number }) {
+  const displayValue = createMemo(() => props.value * 10)
+  return <span>{displayValue()}</span>
+}
+`)
+    expect(template).toContain(': my $displayValue = $value * 10;')
+  })
+
+  test('seeds a memo over a destructured prop', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function Child({ value }: { value: number }) {
+  const displayValue = createMemo(() => value * 10)
+  return <span>{displayValue()}</span>
+}
+`)
+    expect(template).toContain(': my $displayValue = $value * 10;')
   })
 })
