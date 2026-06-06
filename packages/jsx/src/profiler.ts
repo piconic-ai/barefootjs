@@ -393,13 +393,19 @@ export interface HotSubscriber {
   loc?: { file: string; line: number }
   name?: string
   kind?: 'signal' | 'memo' | 'effect'
-  /** Number of times this subscriber ran (`effectEnter` count). */
+  /** Total times this subscriber ran (`effectEnter` count), mount included. */
   runs: number
+  /** Runs during initial mount (outside any turn) — the unavoidable baseline. */
+  mountRuns: number
   /** Total run time in ms (Σ `effectExit.dur`). */
   totalMs: number
-  /** Distinct turns in which it ran at least once. */
+  /** Distinct *interaction* turns it ran in (mount excluded). */
   turns: number
-  /** `runs / turns` — average runs per active turn (re-run pressure). */
+  /**
+   * Interaction runs per active turn — `(runs − mountRuns) / turns`, the
+   * re-run-pressure signal. Mount is excluded so a click that re-runs an effect
+   * 5× reads as `5.0`, not diluted by the one-time mount run.
+   */
   runsPerTurn: number
   /** True when `runsPerTurn` meets the configured threshold. */
   hot: boolean
@@ -440,6 +446,7 @@ export function analyzeHotSubscribers(
 
   interface Acc {
     runs: number
+    mountRuns: number
     totalMs: number
     turns: Set<string>
   }
@@ -447,7 +454,7 @@ export function analyzeHotSubscribers(
   const acc = (id: string): Acc => {
     let a = byId.get(id)
     if (!a) {
-      a = { runs: 0, totalMs: 0, turns: new Set() }
+      a = { runs: 0, mountRuns: 0, totalMs: 0, turns: new Set() }
       byId.set(id, a)
     }
     return a
@@ -458,9 +465,10 @@ export function analyzeHotSubscribers(
     if (e.type === 'effectEnter') {
       const a = acc(e.subscriber)
       a.runs++
-      // `turn` is the handler in scope; '' keys the no-turn bucket so a
-      // subscriber that only runs outside any turn still has turns ≥ 1.
-      a.turns.add(e.turn ?? '')
+      // Runs outside any turn are the one-time mount/setup baseline — kept
+      // separate so they don't dilute the per-interaction `runsPerTurn`.
+      if (e.turn === null) a.mountRuns++
+      else a.turns.add(e.turn)
     } else if (e.type === 'effectExit' && e.dur !== undefined) {
       acc(e.subscriber).totalMs += e.dur
     }
@@ -475,13 +483,15 @@ export function analyzeHotSubscribers(
   let subscribers: HotSubscriber[] = [...byId.entries()].map(([subscriber, a]) => {
     const node = nodeFor.get(subscriber)
     const turns = a.turns.size
-    const runsPerTurn = turns > 0 ? a.runs / turns : a.runs
+    const interactionRuns = a.runs - a.mountRuns
+    const runsPerTurn = turns > 0 ? interactionRuns / turns : 0
     return {
       subscriber,
       loc: node?.loc,
       name: node?.name,
       kind: node?.kind,
       runs: a.runs,
+      mountRuns: a.mountRuns,
       totalMs: a.totalMs,
       turns,
       runsPerTurn,
@@ -508,9 +518,9 @@ export function formatHotSubscribers(r: HotSubscribersResult): string {
   }
   for (const s of r.subscribers) {
     const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
-    const label = s.name ?? s.subscriber
+    const label = `${s.name ?? s.subscriber}${s.kind ? ` (${s.kind})` : ''}`
     const note = s.hot ? `   ⚠ hot: ${s.runsPerTurn.toFixed(1)} runs/turn` : ''
-    lines.push(`  ${label.padEnd(16)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
+    lines.push(`  ${label.padEnd(20)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
   }
   if (r.unattributed.length > 0) {
     lines.push(`  ⚠ coverage: ${r.unattributed.length} unresolved subscriber id(s)`)

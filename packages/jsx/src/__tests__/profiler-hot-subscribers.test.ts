@@ -66,6 +66,38 @@ describe('analyzeHotSubscribers', () => {
     expect(r.subscribers[0].hot).toBe(true)
   })
 
+  test('mount runs (turn=null) are excluded from runsPerTurn, kept as mountRuns', () => {
+    seq = 0
+    const id = 'Calc#memo:a'
+    // 1 mount run + 5 runs in one interaction turn = the worst case the e2e
+    // surfaced: per-turn pressure is 5.0, not (6 runs / 2 buckets) = 3.0.
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: id }), // mount (turn null)
+      ev('effectEnter', { subscriber: id, turn: 't1' }),
+      ev('effectEnter', { subscriber: id, turn: 't1' }),
+      ev('effectEnter', { subscriber: id, turn: 't1' }),
+      ev('effectEnter', { subscriber: id, turn: 't1' }),
+      ev('effectEnter', { subscriber: id, turn: 't1' }),
+    ]
+    const top = analyzeHotSubscribers(events, index).subscribers[0]
+    expect(top.runs).toBe(6)
+    expect(top.mountRuns).toBe(1)
+    expect(top.turns).toBe(1)
+    expect(top.runsPerTurn).toBe(5)
+    expect(top.hot).toBe(true)
+  })
+
+  test('a subscriber that only ran at mount has runsPerTurn 0 (not hot)', () => {
+    seq = 0
+    const id = 'Calc#memo:a'
+    const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: id })]
+    const top = analyzeHotSubscribers(events, index).subscribers[0]
+    expect(top.mountRuns).toBe(1)
+    expect(top.turns).toBe(0)
+    expect(top.runsPerTurn).toBe(0)
+    expect(top.hot).toBe(false)
+  })
+
   test('one run per turn across turns is not hot', () => {
     seq = 0
     const id = 'Calc#memo:a'
