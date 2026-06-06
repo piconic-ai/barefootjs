@@ -202,127 +202,156 @@ my @ai_responses = (
 # ---------------------------------------------------------------------------
 # Routes — PATH_INFO here is already stripped of $BASE by Plack::Builder mount.
 # ---------------------------------------------------------------------------
+# --- page handlers: one sub per route, each returns a PSGI response ---
+sub home_route ($req) { html_response(home_page()) }
+
+sub counter_route ($req) {
+    html_response(render_component('Counter', heading => 'Counter Component'));
+}
+
+sub toggle_route ($req) {
+    my $items = [
+        { label => 'Setting 1', defaultOn => jbool(1) },
+        { label => 'Setting 2', defaultOn => jbool(0) },
+        { label => 'Setting 3', defaultOn => jbool(0) },
+    ];
+    html_response(render_component('Toggle',
+        heading     => 'Toggle Component',
+        children    => { toggle_item => 'ToggleItem' },
+        signal_init => { toggle_item => sub ($p) { (on => ($p->{defaultOn} ? 1 : 0)) } },
+        props       => { toggleItems => $items },
+        stash       => { toggleItems => $items },
+    ));
+}
+
+sub form_route ($req) {
+    html_response(render_component('Form',
+        heading => 'Form Example', props => {}, stash => { accepted => 0 }));
+}
+
+sub reactive_props_route ($req) {
+    html_response(render_component('ReactiveProps',
+        heading  => 'Reactive Props Test',
+        children => { reactive_child => 'ReactiveChild' },
+        props    => {}, stash => { count => 0, doubled => 0 }));
+}
+
+sub conditional_return_route ($req, $suffix = '') {
+    my $variant = $suffix eq '-link' ? 'link' : '';
+    html_response(render_component('ConditionalReturn',
+        heading => 'Conditional Return Example' . ($variant ? ' (Link)' : ''),
+        props   => { variant => $variant },
+        stash   => { variant => $variant, count => 0 }));
+}
+
+sub props_reactivity_route ($req) {
+    my $mk = sub ($p) { (displayValue => ($p->{value} // 0) * 10) };
+    html_response(render_component('PropsReactivityComparison',
+        heading     => 'Props Reactivity Comparison',
+        children    => { props_style_child => 'PropsStyleChild', destructured_style_child => 'DestructuredStyleChild' },
+        signal_init => { props_style_child => $mk, destructured_style_child => $mk },
+        props => {}, stash => { count => 1 }));
+}
+
+sub portal_route ($req) {
+    html_response(render_component('PortalExample',
+        heading => 'Portal Example', props => {}, stash => { open => 0 }));
+}
+
+sub ai_chat_route ($req) {
+    html_response(render_component('AIChatInteractive',
+        title     => 'AI Chat — SSE Streaming (Text::Xslate)',
+        heading   => 'AI Chat — SSE Streaming',
+        stash     => { messages => [], input => '', streamingText => '', isStreaming => 0 },
+        extra_css => qq{<link rel="stylesheet" href="$BASE/styles/ai-chat.css">}));
+}
+
+sub todos_route ($req, $suffix = '') {
+    my ($session, $set_cookie) = get_session($req);
+    my @todos = map { {%$_} } @{ $session->{todos} };
+    my $done  = grep { $_->{done} } @todos;
+    my $component = $suffix eq '-ssr' ? 'TodoAppSSR' : 'TodoApp';
+    my $html = render_component($component,
+        children => { todo_item => 'TodoItem' },
+        props    => { initialTodos => \@todos },
+        stash    => { todos => \@todos, newText => '', filter => 'all', doneCount => $done });
+    html_response($html, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
+}
+
+# --- todo REST API handlers ---
+sub api_todos_list ($req) {
+    my ($session) = get_session($req);
+    json_response($session->{todos});
+}
+
+sub api_todos_create ($req) {
+    my ($session, $set_cookie) = get_session($req);
+    my $input = eval { $J->decode($req->content) } // {};
+    my $todo = { id => $session->{next_id}++, text => $input->{text}, done => jbool(0), editing => jbool(0) };
+    push @{ $session->{todos} }, $todo;
+    json_response($todo, 201, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
+}
+
+sub api_todos_update ($req, $id) {
+    my ($session) = get_session($req);
+    my $input = eval { $J->decode($req->content) } // {};
+    for my $todo (@{ $session->{todos} }) {
+        next unless $todo->{id} == $id;
+        $todo->{text} = $input->{text} if exists $input->{text};
+        $todo->{done} = jbool($input->{done}) if exists $input->{done};
+        return json_response($todo);
+    }
+    json_response({ error => 'not found' }, 404);
+}
+
+sub api_todos_delete ($req, $id) {
+    my ($session) = get_session($req);
+    $session->{todos} = [ grep { $_->{id} != $id } @{ $session->{todos} } ];
+    [204, [], []];
+}
+
+sub api_todos_reset ($req) {
+    my ($session) = get_session($req);
+    $session->{todos}   = seed_todos();
+    $session->{next_id} = 4;
+    [200, ['Content-Type' => 'text/plain'], ['ok']];
+}
+
+# Route table: [ METHOD, path pattern, handler ]. First match wins; any regex
+# captures (e.g. /api/todos/(\d+), /todos(-ssr)?) are passed to the handler
+# after the request.
+my @ROUTES = (
+    [ GET    => qr{^/$}                           => \&home_route ],
+    [ GET    => qr{^/counter$}                    => \&counter_route ],
+    [ GET    => qr{^/toggle$}                     => \&toggle_route ],
+    [ GET    => qr{^/form$}                       => \&form_route ],
+    [ GET    => qr{^/reactive-props$}             => \&reactive_props_route ],
+    [ GET    => qr{^/conditional-return(-link)?$} => \&conditional_return_route ],
+    [ GET    => qr{^/props-reactivity$}           => \&props_reactivity_route ],
+    [ GET    => qr{^/portal$}                     => \&portal_route ],
+    [ GET    => qr{^/todos(-ssr)?$}               => \&todos_route ],
+    [ GET    => qr{^/ai-chat$}                    => \&ai_chat_route ],
+    [ GET    => qr{^/api/todos$}                  => \&api_todos_list ],
+    [ POST   => qr{^/api/todos$}                  => \&api_todos_create ],
+    [ POST   => qr{^/api/todos/reset$}            => \&api_todos_reset ],
+    [ PUT    => qr{^/api/todos/(\d+)$}            => \&api_todos_update ],
+    [ DELETE => qr{^/api/todos/(\d+)$}            => \&api_todos_delete ],
+    [ GET    => qr{^/api/ai-chat$}                => \&ai_chat_stream ],
+);
+
 my $routes = sub ($env) {
     my $req    = Plack::Request->new($env);
+    my $method = $req->method;
     my $path   = $req->path_info;
     $path = '/' if $path eq '';
-    my $method = $req->method;
 
-    # --- pages ---
-    if ($method eq 'GET') {
-        return html_response(home_page()) if $path eq '/';
-
-        return html_response(render_component('Counter', heading => 'Counter Component'))
-            if $path eq '/counter';
-
-        if ($path eq '/toggle') {
-            my $items = [
-                { label => 'Setting 1', defaultOn => jbool(1) },
-                { label => 'Setting 2', defaultOn => jbool(0) },
-                { label => 'Setting 3', defaultOn => jbool(0) },
-            ];
-            return html_response(render_component('Toggle',
-                heading     => 'Toggle Component',
-                children    => { toggle_item => 'ToggleItem' },
-                signal_init => { toggle_item => sub ($p) { (on => ($p->{defaultOn} ? 1 : 0)) } },
-                props       => { toggleItems => $items },
-                stash       => { toggleItems => $items },
-            ));
-        }
-
-        return html_response(render_component('Form',
-            heading => 'Form Example', props => {}, stash => { accepted => 0 }))
-            if $path eq '/form';
-
-        return html_response(render_component('ReactiveProps',
-            heading  => 'Reactive Props Test',
-            children => { reactive_child => 'ReactiveChild' },
-            props    => {}, stash => { count => 0, doubled => 0 }))
-            if $path eq '/reactive-props';
-
-        if ($path eq '/conditional-return' || $path eq '/conditional-return-link') {
-            my $variant = $path =~ /link/ ? 'link' : '';
-            return html_response(render_component('ConditionalReturn',
-                heading => 'Conditional Return Example' . ($variant ? ' (Link)' : ''),
-                props   => { variant => $variant },
-                stash   => { variant => $variant, count => 0 }));
-        }
-
-        if ($path eq '/todos' || $path eq '/todos-ssr') {
-            my ($session, $set_cookie) = get_session($req);
-            my @todos = map { {%$_} } @{ $session->{todos} };
-            my $done  = grep { $_->{done} } @todos;
-            my $component = $path eq '/todos-ssr' ? 'TodoAppSSR' : 'TodoApp';
-            my $html = render_component($component,
-                children => { todo_item => 'TodoItem' },
-                props    => { initialTodos => \@todos },
-                stash    => { todos => \@todos, newText => '', filter => 'all', doneCount => $done });
-            return html_response($html, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
-        }
-
-        if ($path eq '/props-reactivity') {
-            my $mk = sub ($p) { (displayValue => ($p->{value} // 0) * 10) };
-            return html_response(render_component('PropsReactivityComparison',
-                heading     => 'Props Reactivity Comparison',
-                children    => { props_style_child => 'PropsStyleChild', destructured_style_child => 'DestructuredStyleChild' },
-                signal_init => { props_style_child => $mk, destructured_style_child => $mk },
-                props => {}, stash => { count => 1 }));
-        }
-
-        return html_response(render_component('PortalExample',
-            heading => 'Portal Example', props => {}, stash => { open => 0 }))
-            if $path eq '/portal';
-
-        if ($path eq '/ai-chat') {
-            return html_response(render_component('AIChatInteractive',
-                title     => 'AI Chat — SSE Streaming (Text::Xslate)',
-                heading   => 'AI Chat — SSE Streaming',
-                stash     => { messages => [], input => '', streamingText => '', isStreaming => 0 },
-                extra_css => qq{<link rel="stylesheet" href="$BASE/styles/ai-chat.css">}));
-        }
-
-        # --- todo API (GET) ---
-        if ($path eq '/api/todos') {
-            my ($session) = get_session($req);
-            return json_response($session->{todos});
-        }
-
-        # --- AI chat SSE stream ---
-        return ai_chat_stream($env) if $path eq '/api/ai-chat';
+    for my $route (@ROUTES) {
+        my ($m, $pattern, $handler) = @$route;
+        next if $method ne $m;
+        next unless $path =~ $pattern;
+        # @{^CAPTURE} holds just this match's capture groups (empty for none).
+        return $handler->($req, @{^CAPTURE});
     }
-
-    # --- todo API (writes) ---
-    if ($path eq '/api/todos' && $method eq 'POST') {
-        my ($session, $set_cookie) = get_session($req);
-        my $input = eval { $J->decode($req->content) } // {};
-        my $todo = { id => $session->{next_id}++, text => $input->{text}, done => jbool(0), editing => jbool(0) };
-        push @{ $session->{todos} }, $todo;
-        return json_response($todo, 201, $set_cookie ? ('Set-Cookie' => $set_cookie) : ());
-    }
-    if (my ($id) = $path =~ m{^/api/todos/(\d+)$}) {
-        my ($session) = get_session($req);
-        if ($method eq 'PUT') {
-            my $input = eval { $J->decode($req->content) } // {};
-            for my $todo (@{ $session->{todos} }) {
-                next unless $todo->{id} == $id;
-                $todo->{text} = $input->{text} if exists $input->{text};
-                $todo->{done} = jbool($input->{done}) if exists $input->{done};
-                return json_response($todo);
-            }
-            return json_response({ error => 'not found' }, 404);
-        }
-        if ($method eq 'DELETE') {
-            $session->{todos} = [ grep { $_->{id} != $id } @{ $session->{todos} } ];
-            return [204, [], []];
-        }
-    }
-    if ($path eq '/api/todos/reset' && $method eq 'POST') {
-        my ($session) = get_session($req);
-        $session->{todos}   = seed_todos();
-        $session->{next_id} = 4;
-        return [200, ['Content-Type' => 'text/plain'], ['ok']];
-    }
-
     return [404, ['Content-Type' => 'text/plain'], ['Not Found']];
 };
 
@@ -352,7 +381,8 @@ HTML
 
 # Char-by-char SSE stream. Streaming PSGI response with a blocking 30ms loop —
 # fine under a prefork server (Starman), which the demo runs.
-sub ai_chat_stream ($env) {
+sub ai_chat_stream ($req) {
+    my $env = $req->env;
     return [500, ['Content-Type' => 'text/plain'], ['streaming server required']]
         unless $env->{'psgi.streaming'};
     my $text  = $ai_responses[ int(rand(@ai_responses)) ];
