@@ -8,8 +8,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": true
   },
-  "include": ["src"],
-  "exclude": ["src/__tests__"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "src/__tests__"
+  ]
 }
