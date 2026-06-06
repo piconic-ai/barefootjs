@@ -98,10 +98,18 @@ try {
       continue
     }
 
-    // Tag for changesets/action to create GitHub Releases
+    // Create a local git tag so changesets/action can detect the publish.
+    // The action parses stdout for "New tag: <name>@<version>" lines to set
+    // its `published` output and to create GitHub Releases.
     const tag = `${pkg.name}@${pkg.version}`
     const t = await $`git tag ${tag}`.cwd(repoRoot).quiet().nothrow()
-    console.log(`  tagged  ${tag}${t.exitCode !== 0 ? ' (already exists)' : ''}`)
+    const tagAlreadyExists = t.exitCode !== 0 && t.stderr.toString().includes('already exists')
+    if (t.exitCode !== 0 && !tagAlreadyExists) {
+      console.error(`  git tag failed: ${t.stderr.toString().trim()}`)
+      errors.push(`${tag} (tag)`)
+      continue
+    }
+    console.log(`New tag: ${tag}`)
 
     published++
   }
