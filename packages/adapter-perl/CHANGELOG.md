@@ -1,5 +1,7 @@
 # @barefootjs/perl
 
+## 0.9.1
+
 ## 0.9.0
 
 ### Minor Changes
