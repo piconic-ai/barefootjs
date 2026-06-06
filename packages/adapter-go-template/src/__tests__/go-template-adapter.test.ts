@@ -65,16 +65,6 @@ runAdapterConformanceTests({
     // option fixed on the Hono side. Separate follow-up.
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b `site/ui` primitives (`toggle`, `switch`) are no longer
-    // skipped. `switch` assembles classes in function-scope plain consts;
-    // `toggle`'s `classes` memo interpolates `Record<T,string>[variant|size]`
-    // lookups keyed by a memo-local `const variant = props.variant ?? 'default'`.
-    // The compiler now lowers both: `augmentInheritedPropAccesses` scans
-    // function-scope const initializers for `props.className`; `[...].join(' ')`
-    // module consts inline via the shared `evalStringArrayJoin`; and the
-    // template-literal memo path resolves block-bodied arrows + `recordConst[key]`
-    // to an inline `map[string]string{…, "": <default>}[fmt.Sprint(in.Field)]`
-    // (the `""` entry renders the `?? 'default'` fallback for an unset prop).
   ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the

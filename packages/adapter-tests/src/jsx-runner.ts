@@ -202,15 +202,12 @@ export function normalizeHTML(html: string): string {
       /\s(disabled|hidden|checked|readonly|required|selected|autofocus|multiple|defer|async|controls|loop|muted|open|reversed|ismap|formnovalidate|nomodule|playsinline|inert|novalidate|allowfullscreen)=""/g,
       ' $1',
     )
-    // HTML character-reference canonicalisation. A literal special char
-    // inside an attribute value — e.g. the `"` in the Toggle `baseClasses`
-    // `[class*="size-"]` — is escaped as a NAMED entity (`&quot;`) by Hono's
-    // JSX serializer but as a NUMERIC reference (`&#34;`) by Go's
-    // `html/template`. Both decode to the identical character, so the choice
-    // is HTML-semantically irrelevant; collapse the interchangeable numeric
-    // (decimal + hex) forms to one canonical named form on BOTH sides so the
-    // byte comparison stays adapter-neutral (same motivation as the boolean-
-    // attribute and void-element canonicalisation above).
+    // HTML character-reference canonicalisation. A special char in an attribute
+    // value (e.g. the `"` in `[class*="size-"]`) is escaped as a NAMED entity by
+    // Hono but a NUMERIC reference by Go's `html/template`. Both decode to the
+    // same char, so collapse the interchangeable numeric (decimal + hex) forms
+    // to one canonical form on both sides — adapter-neutral, same motivation as
+    // the boolean-attribute / void-element canonicalisation above.
     .replace(/&#0*34;|&#[xX]0*22;/g, '&quot;')
     .replace(/&#0*38;|&#[xX]0*26;/g, '&amp;')
     .replace(/&#0*60;|&#[xX]0*3[cC];/g, '&lt;')

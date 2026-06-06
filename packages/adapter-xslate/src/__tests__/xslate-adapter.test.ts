@@ -33,12 +33,9 @@ runAdapterConformanceTests({
   // fixtures than mojo. Each entry below was confirmed to fail with
   // skipJsx emptied.
   skipJsx: [
-    // SSR context propagation: `<Ctx.Provider value="dark">` doesn't make
-    // `useContext(Ctx)` resolve at template-eval time (the template reads a
-    // `theme` key that's never seeded). The Go adapter now implements this
-    // (consumer-side default + provider-side child-slot wiring); the Perl
-    // backends share the stash-seed render path and would port it the same
-    // way as Mojo — deferred, so Xslate stays skipped (#1297 follow-up).
+    // SSR context propagation (`<Ctx.Provider value>` → `useContext`): the
+    // template reads a stash key that's never seeded. Implemented on Go; the
+    // Perl stash-seed path is a follow-up port, so Xslate stays skipped (#1297).
     'context-provider',
     // Multi-component shared-state pairs whose children render inside a keyed
     // `.map` (loop children, no `_bf_slot`): the test harness derives a
@@ -48,14 +45,8 @@ runAdapterConformanceTests({
     // `reactive-props` passes. (Same pair mojo skips.)
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b interactive `site/ui` primitives. `textarea`, `checkbox`,
-    // `switch`, and `toggle` now PASS — `switch`/`toggle` via the shared
-    // `@barefootjs/jsx` lowerings (function-scope const prop enumeration,
-    // `[...].join(' ')` inlining, and `extractSsrDefaults` evaluating the
-    // block-bodied `classes` memo + `variantClasses[variant]` index, which the
-    // Xslate adapter consumes through the same SSR-seed path as mojo).
-    // `kbd` is NOT a render-mismatch — it's a BF101 refusal (Kolon can't splat
-    // the Slot's `{...props}`), so it's pinned in `expectedDiagnostics` below.
+    // (`kbd` is not skipped here — it's a BF101 refusal pinned in
+    // `expectedDiagnostics` below, not a render-mismatch.)
   ],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering

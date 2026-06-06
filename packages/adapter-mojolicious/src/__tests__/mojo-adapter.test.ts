@@ -18,15 +18,9 @@ runAdapterConformanceTests({
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
   skipJsx: [
-    // SSR context propagation: `<Ctx.Provider value="dark">` doesn't make
-    // `useContext(Ctx)` resolve to `"dark"` at template-eval time — the
-    // template emits `<%= $theme %>` against a hash that never receives a
-    // `theme` key. The Go adapter now implements this (consumer-side field
-    // defaulted to the `createContext` default + provider-side child-slot
-    // wiring via `collectContextConsumers`); porting it to the Mojo stash-seed
-    // path (`extractSsrDefaults` would need to seed the consumer var and the
-    // provider would set it through `render_child`) is a follow-up — Mojo
-    // stays skipped for now (#1297 follow-up).
+    // SSR context propagation (`<Ctx.Provider value>` → `useContext`): the
+    // template reads a stash key that's never seeded. Implemented on Go; the
+    // Perl stash-seed path is a follow-up port, so Mojo stays skipped (#1297).
     'context-provider',
     // Multi-component shared fixtures with per-item loop state. The child
     // scope-id plumbing is now fixed (children derive `<parentScope>_<sN>`
@@ -36,15 +30,6 @@ runAdapterConformanceTests({
     // skips the same pair.)
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b `site/ui` primitives (`toggle`, `switch`) are no longer
-    // skipped. `switch` assembles classes in function-scope plain consts whose
-    // `[...].join(' ')` module consts inline via the shared `evalStringArrayJoin`;
-    // `toggle`'s block-bodied `classes` memo interpolates `variantClasses[variant]`
-    // / `sizeClasses[size]`. `extractSsrDefaults` (the Mojo SSR stash seed) now
-    // evaluates block-bodied arrows and indexes seeded module-const objects with a
-    // resolved key, so the seeded `classes` is a concrete string; and
-    // `augmentInheritedPropAccesses` scans function-scope consts for
-    // `props.className`. All fixes live in `@barefootjs/jsx`.
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file

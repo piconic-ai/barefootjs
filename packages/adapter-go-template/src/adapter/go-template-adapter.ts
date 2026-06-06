@@ -105,11 +105,10 @@ interface StaticChildInstance {
    *  the existing drop path. */
   childrenHtml: string | null
   /**
-   * (#1297 follow-up) Context values supplied by enclosing `<Ctx.Provider
-   * value>` ancestors: `createContext` identifier → Go value literal. The
-   * static-child init reads these against the child's own context-consumer
-   * fields to wire `<Provider value>` into the child slot's input. Empty when
-   * the child isn't under any provider.
+   * Context values from enclosing `<Ctx.Provider value>` ancestors
+   * (`createContext` identifier → Go value literal), wired into this child
+   * slot's input against its own context-consumer fields. Empty/undefined when
+   * the child isn't under any provider. (#1297)
    */
   contextBindings?: ReadonlyMap<string, string>
 }
@@ -484,11 +483,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private localConstants: IRMetadata['localConstants'] = []
 
   /**
-   * `useContext(...)` consumers in the component being generated (#1297
-   * follow-up). Each becomes a struct field defaulted to the context's
-   * `createContext` default, which an enclosing `<Ctx.Provider value>`
-   * overwrites for descendant child slots. Reset at `generate()` /
-   * `generateTypes()` entry.
+   * `useContext(...)` consumers in the component being generated. Each becomes
+   * a struct field defaulted to the `createContext` default, which an enclosing
+   * `<Ctx.Provider value>` overwrites for descendant child slots. Reset at
+   * `generate()` / `generateTypes()` entry. (#1297)
    */
   private contextConsumers: ContextConsumer[] = []
 
@@ -844,9 +842,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const restPropsName = ir.metadata.restPropsName ?? null
     const restBagField = restPropsName ? this.capitalizeFieldName(restPropsName) : null
     this.childComponentShapes.set(name, { paramNames, restBagField })
-    // (#1297 follow-up) Record the contexts this child consumes so a parent
-    // wrapping it in `<Ctx.Provider value>` can set the matching field on the
-    // child's slot input.
+    // Record the contexts this child consumes so a parent wrapping it in
+    // `<Ctx.Provider value>` can set the matching field on the child's slot input.
     this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
   }
 
@@ -1289,8 +1286,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${nested.name}s []${nested.name}Input`)
     }
 
-    // (#1297 follow-up) `useContext` consumer fields — settable by an enclosing
-    // provider on the parent's side; default applied in NewXxxProps.
+    // `useContext` consumer fields — settable by an enclosing provider on the
+    // parent's side; default applied in NewXxxProps.
     const takenInput = new Set(ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)))
     for (const c of this.nonCollidingContextConsumers(takenInput)) {
       lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)}`)
@@ -1428,8 +1425,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
 
-    // (#1297 follow-up) `useContext` consumer fields (skip names already taken
-    // by a prop / signal / memo field).
+    // `useContext` consumer fields (skip names already taken by a prop /
+    // signal / memo field).
     const takenProps = new Set<string>([
       ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
       ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
@@ -1630,8 +1627,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${fieldName}: ${memoValue},`)
     }
 
-    // (#1297 follow-up) `useContext` consumer fields: default to the
-    // `createContext` default when the caller (a provider) didn't set them.
+    // `useContext` consumer fields: default to the `createContext` default
+    // when the caller (a provider) didn't set them.
     const takenInit = new Set<string>([
       ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
       ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
@@ -1656,11 +1653,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // own NewProps (BfParent/BfMount fields).
       lines.push(`\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\tBfMount: "${child.slotId}",`)
-      // (#1297 follow-up) SSR context propagation: if this child is wrapped in
-      // a `<Ctx.Provider value>` and consumes that context, set its
-      // context-consumer field to the provider value so `useContext(Ctx)`
-      // resolves to the provided value at template-eval time (else the child's
-      // own NewProps applies the `createContext` default).
+      // SSR context propagation: if this child is wrapped in a `<Ctx.Provider
+      // value>` it consumes, set its context-consumer field to the provider
+      // value (else the child's own NewProps applies the `createContext`
+      // default). (#1297)
       if (child.contextBindings) {
         for (const consumer of this.childContextConsumers.get(child.name) ?? []) {
           const goVal = child.contextBindings.get(consumer.contextName)
@@ -1963,10 +1959,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx)
       }
     } else if (node.type === 'provider') {
-      // SSR context propagation (#1297 follow-up): record the provider's
-      // value against its context name and extend the active binding map
-      // for descendants. A literal `value="dark"` lowers to a Go literal;
-      // a non-literal value is left unbound (the consumer keeps its default).
+      // SSR context propagation: record the provider's value against its
+      // context name and extend the active binding map for descendants. A
+      // literal value lowers to a Go literal; a non-literal is left unbound
+      // (the consumer keeps its default). (#1297)
       const p = node as IRProvider
       const childCtx = this.extendProviderContext(providerCtx, p)
       for (const child of p.children) {
@@ -1985,11 +1981,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Extend the active provider-context map with one `<Ctx.Provider value>`.
-   * The value is lowered to a Go literal when it's a string / number / boolean
-   * literal; any other shape is skipped (the descendant consumer keeps its
-   * `createContext` default), since a non-literal provider value has no
-   * SSR-template form yet.
+   * Extend the active provider-context map with one `<Ctx.Provider value>`. A
+   * string/number/boolean literal value is lowered to a Go literal; any other
+   * shape is skipped (the descendant consumer keeps its `createContext` default).
    */
   private extendProviderContext(
     current: ReadonlyMap<string, string>,
@@ -3067,19 +3061,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Lower a `recordConst[key]` interpolation of a template-literal memo to an
-   * inline indexed Go map. `recordConst` must be a module-scope
-   * `Record<staticKeys, scalar>` object literal; `key` is either a bare prop or
-   * a memo-local const bound to `props.X ?? 'default'` (resolved via
-   * `localKeyBindings`). When the key carries a `'default'` fallback, the map
-   * also maps the empty key `""` to that default entry's value, so an unset
-   * prop (Go zero value `""`) renders the default instead of an empty string —
-   * matching the Hono reference's `props.X ?? 'default'` runtime evaluation.
-   *
-   * Emits `map[string]string{…}[fmt.Sprint(in.Field)]` when every entry value
-   * is a string (composable with `+` in the surrounding concatenation), else
-   * `map[string]any{…}`. Returns null for any non-record / non-resolvable key
-   * so the caller falls through.
+   * Lower a `recordConst[key]` interpolation to an inline indexed Go map,
+   * emitting `map[string]string{…}[fmt.Sprint(in.Field)]` (or `map[string]any`
+   * for mixed values). `key` is a bare prop or a memo-local const bound to
+   * `props.X ?? 'default'` (resolved via `localKeyBindings`); a `'default'`
+   * fallback also maps `""` to that entry, so an unset prop (Go zero value `""`)
+   * renders the default — matching Hono's `props.X ?? 'default'`. Returns null
+   * for any non-record / non-resolvable key so the caller falls through.
    */
   private recordIndexInterpolationToGo(
     node: ts.ElementAccessExpression,
@@ -3232,10 +3220,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Whether a memo computation is an arrow whose result is a template literal —
-   * either a concise body (`() => \`…\``) or a block body whose `return` is a
-   * template literal (`() => { const v = …; return \`…\` }`). Used by both
-   * `inferMemoType` (→ `string`) and (indirectly) the SSR-value computation.
+   * Whether a memo is an arrow whose result is a template literal — either a
+   * concise body (`() => \`…\``) or a block body whose `return` is one.
    */
   private isTemplateLiteralMemo(computation: string): boolean {
     const sf = ts.createSourceFile(
@@ -3269,10 +3255,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     signals: { getter: string; initialValue: string; type: TypeInfo }[],
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
   ): string {
-    // A template-literal memo (concise `() => \`…\`` or block-bodied
-    // `() => { …; return \`…\` }`, e.g. the Toggle/Switch `classes` memo) always
-    // produces a string. Decide this first so the class-string `/` in
-    // `ring-ring/50` doesn't trip the arithmetic heuristic below into `int`.
+    // A template-literal memo always produces a string. Decide this first so a
+    // class-string `/` (e.g. `ring-ring/50`) doesn't trip the arithmetic
+    // heuristic below into `int`.
     if (this.isTemplateLiteralMemo(memo.computation)) return 'string'
 
     // Check if computation involves multiplication (*) - likely number

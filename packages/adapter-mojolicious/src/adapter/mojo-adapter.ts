@@ -145,10 +145,8 @@ function parsePureStringLiteral(source: string): string | null {
   if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
     return init.text
   }
-  // `[<string literals>].join(' ')` — a module const that flattens an array of
-  // pure string literals at module load (e.g. Switch's `trackStateClasses`).
-  // Inline the joined string so it lands byte-for-byte like the Hono reference
-  // instead of emitting a `$trackStateClasses` ref to a non-existent binding.
+  // `[<literals>].join(' ')` module consts (e.g. Switch's `trackStateClasses`)
+  // → inline the flattened string byte-for-byte. See `evalStringArrayJoin`.
   return evalStringArrayJoin(source)
 }
 

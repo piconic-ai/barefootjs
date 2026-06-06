@@ -16,15 +16,11 @@ import type { ComponentIR, IRMetadata, IRNode, IRElement, TypeInfo } from './typ
 import { isBooleanAttr } from './html-constants'
 
 /**
- * A `const x = useContext(SomeContext)` consumer in a component body.
- *
- * SSR template adapters (Go / Mojo / Xslate) have no JS runtime context
- * stack the way the Hono adapter does (`provideContextSSR`), so a consumer's
- * value has to be threaded in at the data-construction layer. This records,
- * per component, the local binding name, the `createContext` identifier it
- * reads, and that context's default value — enough for an adapter to (a)
- * expose a struct field / stash var with the default and (b) let an enclosing
- * `<Ctx.Provider value>` overwrite it for descendant child slots.
+ * A `const x = useContext(SomeContext)` consumer in a component body. SSR
+ * template adapters have no JS runtime context stack, so a consumer's value is
+ * threaded in at the data-construction layer: the adapter exposes a field/stash
+ * var defaulted to the context default, which an enclosing `<Ctx.Provider
+ * value>` overwrites for descendant child slots.
  */
 export interface ContextConsumer {
   /** The local const bound to the `useContext` call (e.g. `theme`). */
@@ -154,12 +150,10 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
   for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
   for (const eff of ir.metadata.effects ?? []) scan((eff as { body?: string }).body)
 
-  // Function-scope plain-const initializers (the Switch pattern): the classes
-  // string is assembled in a top-of-body `const trackClasses = \`… ${props.className
-  // ?? ''}\`` rather than a memo, so the `props.className` read only lives here.
-  // Module-level consts can't reference `props` (it's function-scoped), so the
-  // `isModule` filter avoids scanning unrelated module literals. Reads land in a
-  // string context, so the default `string` classification is correct.
+  // Function-scope plain-const initializers (the Switch pattern): a
+  // `const trackClasses = \`… ${props.className ?? ''}\`` holds the only
+  // `props.X` read. Skip module consts — they can't reference function-scoped
+  // `props`. Reads land in string context, so the default `string` type holds.
   for (const c of ir.metadata.localConstants ?? []) {
     if (c.isModule) continue
     scan(c.value)
@@ -213,25 +207,13 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
 }
 
 /**
- * Statically evaluate `[<string literals>].join(<sep?>)` to its joined string.
- *
- * Module-scope class consts are frequently assembled as
- * `const stateClasses = ['[&[data-state=on]]:…', …].join(' ')` so the source
- * stays readable. The Hono reference inlines the flattened string at runtime;
- * the SSR adapters must inline the same byte-for-byte literal instead of
- * emitting a `$stateClasses` / `.StateClasses` reference to a binding that
- * doesn't exist server-side.
- *
- * Returns the joined string, or `null` when the shape doesn't match (non-call,
- * non-`.join`, non-array receiver, any non-string-literal element, or a
- * non-string-literal separator). Comments / whitespace between elements are
- * irrelevant — the TS parser already discarded them. The default separator is
- * `,` to match JS `Array.prototype.join` with no argument.
- *
- * The single source of truth for the Mojo + Xslate adapters' module-const
- * inlining (Go keeps an equivalent private copy). `source` is the const
- * initializer's text; the function parses it with the TS parser so escapes
- * resolve exactly as JS would.
+ * Statically evaluate `[<string literals>].join(<sep?>)` (e.g. a module-scope
+ * `const stateClasses = ['…', …].join(' ')`) to its joined string, so SSR
+ * adapters inline the flattened literal byte-for-byte like the Hono reference
+ * instead of referencing a binding that doesn't exist server-side. Default
+ * separator `,` matches JS `Array.prototype.join`. Returns `null` for any
+ * other shape (non-`.join` call, non-array receiver, non-string-literal element
+ * or separator). Shared by the Mojo + Xslate adapters; Go keeps a private copy.
  */
 export function evalStringArrayJoin(source: string): string | null {
   const sf = ts.createSourceFile(
@@ -316,12 +298,10 @@ export function parseRecordIndexAccess(
   localConstants: readonly NamedConst[],
   propsParams: ReadonlyArray<{ name: string }>,
   /**
-   * Optional resolver for an index key that isn't a bare prop. The Toggle
-   * `classes` memo indexes by a memo-local const (`variantClasses[variant]`
-   * where `const variant = props.variant ?? 'default'`); the caller passes its
-   * block-scoped binding map here so the structural parse stays generic. When
-   * provided and the key isn't a prop, it's resolved to the underlying prop
-   * plus an optional default-key literal. Returns `null` to reject.
+   * Resolves an index key that isn't a bare prop (a memo-local const like
+   * `const variant = props.variant ?? 'default'`) to its underlying prop + an
+   * optional default-key literal; returns `null` to reject. Keeps the parse
+   * generic — the caller owns the block-scoped binding map.
    */
   resolveKey?: (name: string) => { propName: string; defaultLiteral?: string } | null,
 ): RecordIndexAccess | null {
