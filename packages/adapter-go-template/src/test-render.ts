@@ -68,9 +68,22 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     throw new Error('Go Template adapter must implement generateTypes()')
   }
 
-  // Compile child components first
-  const childTemplates: string[] = []
-  const childTypeBlocks: string[] = []
+  // Compile child components first, keeping per-component template defines /
+  // type blocks keyed by component name. A child *file* can export many
+  // components (e.g. `../icon` exports 30+ icons); only the ones the parent
+  // transitively references are emitted into the combined unit. Emitting all
+  // of them concatenates dead components whose own codegen may not compile
+  // (e.g. `ChevronDownIcon`'s `strokePaths['chevron-down']` lowers to an
+  // invalid `{{.StrokePaths.Chevron-down}}` field reference), which would
+  // break the whole template parse even though the parent never uses them.
+  // (#checkbox)
+  interface ChildComponentArtifacts {
+    define: string
+    typeBlock: string | null
+    /** Component names this child component imports from sibling files. */
+    importedNames: string[]
+  }
+  const childArtifacts = new Map<string, ChildComponentArtifacts>()
   if (components) {
     for (const [filename, childSource] of Object.entries(components)) {
       const childResult = compileJSX(childSource, filename, { adapter, outputIR: true })
@@ -80,19 +93,30 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
       }
       const childTemplate = childResult.files.find(f => f.type === 'markedTemplate')
       if (!childTemplate) throw new Error(`No marked template for ${filename}`)
-      childTemplates.push(childTemplate.content)
+      const defineBlocks = splitTemplateDefines(childTemplate.content)
 
       const childIrFiles = childResult.files.filter(f => f.type === 'ir')
       for (const childIrFile of childIrFiles) {
         const childIR = JSON.parse(childIrFile.content) as ComponentIR
-        let childTypes = adapter.generateTypes!(childIR)
-        if (childTypes) {
+        const name = childIR.metadata.componentName
+        // (#checkbox) Register each child's cross-component shape so the
+        // parent's static-child-init codegen can route a non-param attribute
+        // (`<CheckIcon data-slot=.../>`) into the child's rest bag instead of
+        // an invalid hyphenated Go field. No-op on adapters without the hook.
+        registerChildShape(adapter, childIR)
+        let typeBlock: string | null = adapter.generateTypes!(childIR)
+        if (typeBlock) {
           // Strip package declaration and imports — will be merged into main types
-          childTypes = childTypes.replace(/^package \w+\n*/, '')
-          childTypes = childTypes.replace(/import\s*\([^)]*\)\n*/g, '')
-          childTypes = childTypes.replace(/\t"math\/rand"\n/g, '')
-          childTypeBlocks.push(childTypes.trim())
+          typeBlock = typeBlock.replace(/^package \w+\n*/, '')
+          typeBlock = typeBlock.replace(/import\s*\([^)]*\)\n*/g, '')
+          typeBlock = typeBlock.replace(/\t"math\/rand"\n/g, '')
+          typeBlock = typeBlock.trim()
         }
+        childArtifacts.set(name, {
+          define: defineBlocks.get(name) ?? '',
+          typeBlock,
+          importedNames: collectImportedComponentNames(childIR),
+        })
       }
     }
   }
@@ -119,6 +143,37 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     irs.find(i => i.metadata.hasDefaultExport) ??
     irs.find(i => i.metadata.isExported) ??
     irs[0]
+
+  // (#checkbox) Register each in-source sibling's shape too, so a parent
+  // rendering an inline sibling routes non-param attributes into the
+  // sibling's rest bag (same fix as the auto-inferred `../<name>` children).
+  for (const siblingIR of irs) registerChildShape(adapter, siblingIR)
+
+  // (#checkbox) Resolve which child components the combined unit actually
+  // needs: start from the entry component's cross-file imports, then close
+  // transitively over each included child's own imports. Components a child
+  // *file* exports but nobody references are dropped (see comment at the
+  // child-collection loop above).
+  const reachableChildNames = new Set<string>()
+  {
+    const queue = [...collectImportedComponentNames(ir)]
+    while (queue.length > 0) {
+      const name = queue.shift()!
+      if (reachableChildNames.has(name)) continue
+      const artifact = childArtifacts.get(name)
+      if (!artifact) continue // not a compiled child (e.g. an in-source sibling)
+      reachableChildNames.add(name)
+      for (const dep of artifact.importedNames) queue.push(dep)
+    }
+  }
+  const childTemplates: string[] = []
+  const childTypeBlocks: string[] = []
+  for (const name of reachableChildNames) {
+    const artifact = childArtifacts.get(name)
+    if (!artifact) continue
+    if (artifact.define) childTemplates.push(artifact.define)
+    if (artifact.typeBlock) childTypeBlocks.push(artifact.typeBlock)
+  }
 
   // Generate types for the entry-point component first, then append
   // types for every sibling component in the same source file so the
@@ -148,6 +203,18 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   if (childTypeBlocks.length > 0) {
     goTypes += '\n\n' + childTypeBlocks.join('\n\n')
   }
+
+  // Sibling / child type blocks have their own `import (...)` stripped above
+  // (their package decl + imports are merged into the entry component's
+  // single `types.go` block). When a sibling's generated constructor uses a
+  // standard-library symbol the entry component doesn't — e.g. CheckIcon's
+  // `NewCheckIconProps` calls `fmt.Sprint(...)` for a `Record[key]` spread
+  // lookup (#checkbox icon) — that import would be lost, producing
+  // `undefined: fmt`. Re-add any such import to the entry component's import
+  // block so the combined compilation unit resolves the symbol. Only `fmt`
+  // is needed today; extend `MERGED_STDLIB_IMPORTS` if a future sibling pulls
+  // in another stdlib package.
+  goTypes = ensureMergedStdlibImports(goTypes)
 
   const componentName = ir.metadata.componentName
   // Concatenate all templates (child define blocks + parent)
@@ -272,6 +339,118 @@ ${propsInit}
   } finally {
     await rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
+}
+
+/**
+ * Split a marked-template file's content into per-component `{{define "X"}}…
+ * {{end}}` blocks, keyed by component name. A child file that exports multiple
+ * components yields one entry per component so the harness can emit only the
+ * referenced ones (#checkbox). Non-define preamble (e.g. `export type {...}`)
+ * is ignored — it isn't valid Go template text and the entry component carries
+ * its own.
+ */
+function splitTemplateDefines(content: string): Map<string, string> {
+  const out = new Map<string, string>()
+  // Block actions that open a scope closed by `{{end}}`. A `{{define}}` body
+  // can contain nested `{{if}}` / `{{range}}` / `{{with}}` / `{{block}}`, so a
+  // non-greedy `.*?{{end}}` would stop at the first inner `{{end}}`. Track
+  // nesting depth and capture from each `{{define}}` to its matching `{{end}}`.
+  const actionRe = /\{\{[-\s]*(define|if|range|with|block|end)\b/g
+  let m: RegExpExecArray | null
+  let openName: string | null = null
+  let openStart = 0
+  let depth = 0
+  while ((m = actionRe.exec(content)) !== null) {
+    const kw = m[1]
+    if (kw === 'end') {
+      if (openName !== null) {
+        depth--
+        if (depth === 0) {
+          // Extend to the close of this `{{...end...}}` action.
+          const closeIdx = content.indexOf('}}', m.index)
+          const end = closeIdx === -1 ? content.length : closeIdx + 2
+          out.set(openName, content.slice(openStart, end))
+          openName = null
+        }
+      }
+      continue
+    }
+    if (kw === 'define' && openName === null) {
+      const nameMatch = content.slice(m.index).match(/^\{\{[-\s]*define\s+"([^"]+)"/)
+      openName = nameMatch ? nameMatch[1] : null
+      openStart = m.index
+      depth = 1
+      continue
+    }
+    // Any opening action while inside a define deepens the nesting.
+    if (openName !== null) depth++
+  }
+  return out
+}
+
+/**
+ * Component names a component IR imports from sibling source files — i.e.
+ * non-type imports from relative (`./` / `../`) specifiers. Used to compute
+ * the transitive set of child components the combined Go unit needs.
+ */
+function collectImportedComponentNames(ir: ComponentIR): string[] {
+  const names: string[] = []
+  for (const imp of ir.metadata.imports ?? []) {
+    if (imp.isTypeOnly) continue
+    if (!imp.source.startsWith('.')) continue
+    for (const spec of imp.specifiers ?? []) {
+      if (spec.isNamespace) continue
+      // Imported binding name (the local alias is what JSX references, but the
+      // generated `{{define}}`/types are keyed by the exported component name —
+      // which equals the specifier name when un-aliased; aliased component
+      // imports aren't exercised by the UI fixtures).
+      names.push(spec.alias ?? spec.name)
+    }
+  }
+  return names
+}
+
+/**
+ * Register a child/sibling component's cross-component shape on the adapter
+ * when it supports the `registerChildComponentShape` hook (Go template). A
+ * no-op on adapters without it. Lets the parent's static-child-init codegen
+ * route a non-param attribute into the child's rest bag (#checkbox).
+ */
+function registerChildShape(adapter: TemplateAdapter, ir: ComponentIR): void {
+  const hook = (adapter as { registerChildComponentShape?: (ir: ComponentIR) => void })
+    .registerChildComponentShape
+  if (typeof hook === 'function') hook.call(adapter, ir)
+}
+
+/**
+ * Standard-library packages that a merged sibling/child type block may
+ * reference but the entry component's own import block omits. Each entry maps
+ * the import path to a `<pkg>.` usage probe.
+ */
+const MERGED_STDLIB_IMPORTS: Array<{ path: string; usage: RegExp }> = [
+  { path: 'fmt', usage: /\bfmt\./ },
+]
+
+/**
+ * Ensure any standard-library import a merged sibling/child block needs is
+ * present in the entry component's `import (...)` block. Sibling/child blocks
+ * have their own imports stripped during merge, so a symbol they reference
+ * (e.g. `fmt.Sprint`) is otherwise `undefined` in the combined unit.
+ */
+function ensureMergedStdlibImports(goTypes: string): string {
+  const importMatch = goTypes.match(/import\s*\(([^)]*)\)/)
+  if (!importMatch) return goTypes
+  const block = importMatch[1]
+  const additions: string[] = []
+  for (const { path, usage } of MERGED_STDLIB_IMPORTS) {
+    if (!usage.test(goTypes)) continue
+    // Already imported? (quoted path present in the import block)
+    if (block.includes(`"${path}"`)) continue
+    additions.push(`\t"${path}"`)
+  }
+  if (additions.length === 0) return goTypes
+  const newBlock = `import (\n${additions.join('\n')}\n${block.replace(/^\n+/, '')})`
+  return goTypes.replace(/import\s*\([^)]*\)/, newBlock)
 }
 
 /**

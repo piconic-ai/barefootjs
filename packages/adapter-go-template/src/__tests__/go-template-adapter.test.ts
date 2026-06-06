@@ -76,23 +76,15 @@ runAdapterConformanceTests({
     // option fixed on the Hono side. Separate follow-up.
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b: basic interactive `site/ui` primitives. Cross-adapter
-    // parity for the `site/ui` corpus is Phase 3, so these participate only
-    // in Hono SSR conformance + the fixture-hydrate runtime layer for now.
-    // (`label` and `kbd` are static helpers; `toggle` / `switch` /
-    // `checkbox` carry uncontrolled state; `input` is a pass-through
-    // native control.)
-    //
-    // `textarea` now participates: its conditional inline-object spread
-    // (`{...(describedBy ? {...} : {})}`) lowers via
-    // `buildConditionalSpreadInitializer`, and its optional
-    // `rows={rows}` attribute is omitted when nil via the nillable-field
-    // guard in `elementAttrEmitter.emitExpression`
-    // (`{{if ne .Rows nil}}rows="{{.Rows}}"{{end}}`), matching Hono's
-    // nullish-attribute omission.
+    // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity
+    // (label / input / textarea / checkbox now participate):
+    //   toggle / switch — the reactive `classes` memo interpolates
+    //     `Record<T,string>[variant|size]` lookups, which have no SSR
+    //     lowering yet (known limitation).
+    //   kbd — multi-export source (Kbd / KbdGroup); the harness renders the
+    //     last-registered export rather than the pinned Kbd.
     'toggle',
     'switch',
-    'checkbox',
     'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Go template
@@ -874,6 +866,195 @@ function Box({ a, b }: { a?: string; b?: string }) {
       adapter.generate(ir)
       const errs = (adapter as unknown as { errors: { code: string }[] }).errors
       expect(errs.some(e => e.code === 'BF101')).toBe(true)
+    })
+  })
+
+  describe('local-const conditional-spread resolution (#checkbox icon)', () => {
+    // A FUNCTION-scope const holding a `cond ? {…} : {}` ternary, then
+    // spread as a bare identifier (`{...sizeAttrs}`), resolves through the
+    // same conditional-spread lowering as the inline form. CheckIcon's
+    // `const sizeAttrs = size ? {…} : {}` is exactly this shape.
+    test('resolves a bare-identifier spread of a function-scope conditional const', () => {
+      const source = `
+function Box({ flag }: { flag?: boolean }) {
+  const attrs = flag ? { 'data-on': 'yes' } : {}
+  return <div {...attrs} />
+}
+`
+      const { template, types } = compileAndGenerate(source)
+      expect(template).toContain('{{bf_spread_attrs .Spread_0}}')
+      expect(types).toContain('Spread_0: func() map[string]any {')
+      expect(types).toContain('return map[string]any{"data-on": "yes"}')
+      expect(types).toContain('return map[string]any{}')
+    })
+
+    // A const that resolves to another bare identifier must NOT be
+    // forwarded (loop guard) — it falls through to BF101 like any other
+    // unsupported spread identifier.
+    test('does not forward a const that aliases another identifier (loop guard)', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+function Box({ other }: { other?: object }) {
+  const attrs = other
+  return <div {...attrs} />
+}
+`
+      const ir = compileToIR(source, adapter)
+      adapter.generate(ir)
+      const errs = (adapter as unknown as { errors: { code: string }[] }).errors
+      expect(errs.some(e => e.code === 'BF101')).toBe(true)
+    })
+  })
+
+  describe('Record<staticKeys,scalar>[propKey] spread value (#checkbox icon)', () => {
+    // `const sizeMap: Record<IconSize, number> = { sm: 16, ... }` indexed
+    // by a prop inside a conditional-spread object value lowers to an
+    // inline indexed Go map keyed via `fmt.Sprint(in.<Field>)`. This is
+    // CheckIcon's `{ width: sizeMap[size], height: sizeMap[size] }` shape.
+    test('lowers an indexed module-const map to an inline fmt.Sprint-keyed map and adds the fmt import', () => {
+      const source = `
+const sizeMap: Record<string, number> = { sm: 16, md: 20, lg: 24, xl: 32 }
+function Box({ size }: { size?: string }) {
+  const attrs = size ? { width: sizeMap[size] } : {}
+  return <div {...attrs} />
+}
+`
+      const { types } = compileAndGenerate(source)
+      expect(types).toContain(
+        'map[string]any{"sm": 16, "md": 20, "lg": 24, "xl": 32}[fmt.Sprint(in.Size)]',
+      )
+      // The `"fmt"` import is emitted only when this lowering fires.
+      expect(types).toContain('\t"fmt"')
+    })
+
+    test('lowers string-valued record maps too', () => {
+      const source = `
+const labelMap: Record<string, string> = { a: 'Alpha', b: 'Beta' }
+function Box({ k }: { k?: string }) {
+  const attrs = k ? { 'data-label': labelMap[k] } : {}
+  return <div {...attrs} />
+}
+`
+      const { types } = compileAndGenerate(source)
+      expect(types).toContain('map[string]any{"a": "Alpha", "b": "Beta"}[fmt.Sprint(in.K)]')
+    })
+
+    // A non-scalar record value (object / array / call) is out of shape:
+    // the spread object value can't lower, so the whole spread falls back
+    // to BF101 rather than emitting an invalid map.
+    test('refuses a non-scalar record value with BF101 (out-of-shape fallback)', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+const sizeMap: Record<string, object> = { sm: { w: 1 } }
+function Box({ size }: { size?: string }) {
+  const attrs = size ? { width: sizeMap[size] } : {}
+  return <div {...attrs} />
+}
+`
+      const ir = compileToIR(source, adapter)
+      adapter.generate(ir)
+      const errs = (adapter as unknown as { errors: { code: string }[] }).errors
+      expect(errs.some(e => e.code === 'BF101')).toBe(true)
+    })
+  })
+
+  describe('props-object inherited-attribute enumeration (#checkbox)', () => {
+    // A SolidJS props-object component (`function C(props: P)`) that reads
+    // inherited attributes (`props.className` in a memo, `props.id` /
+    // `props.disabled` on the root) must expose Input/Props fields for them,
+    // even though `propsParams` only enumerates `P`'s own members. Without
+    // this the caller's `className: ''` has no field — `unknown field
+    // ClassName in struct literal of type CInput`.
+    test('reads of props.className / props.id / props.disabled become Input fields', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+"use client"
+import { createMemo } from "@barefootjs/client"
+interface P { tone?: string }
+export function Widget(props: P) {
+  const classes = createMemo(() => \`base \${props.className ?? ''}\`)
+  return <button id={props.id} disabled={props.disabled ?? false} class={classes()}>x</button>
+}
+`
+      const ir = compileToIR(source, adapter)
+      const types = adapter.generateTypes(ir)!
+      expect(types).toContain('ClassName string')
+      // `id` is a bare-reference optional → interface{} (nillable, omittable).
+      expect(types).toContain('ID interface{}')
+      expect(types).toContain('Disabled bool')
+    })
+
+    // The className memo's SSR initial value must inline module string consts
+    // (incl. `[...].join(' ')`) and resolve `props.className ?? ''` to the
+    // ClassName field — not render the historical `0` placeholder.
+    test('template-literal className memo inlines consts + props.className field', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+"use client"
+import { createMemo } from "@barefootjs/client"
+const base = 'a b'
+const states = ['c', 'd'].join(' ')
+interface P { tone?: string }
+export function Widget(props: P) {
+  const classes = createMemo(() => \`\${base} \${states} \${props.className ?? ''} tail\`)
+  return <button class={classes()}>x</button>
+}
+`
+      const types = adapter.generateTypes(compileToIR(source, adapter))!
+      expect(types).toContain('Classes: "a b" + " " + "c d" + " " + in.ClassName + " tail"')
+    })
+
+    // A boolean ternary memo (`isChecked = ctrl() ? c() : i()`) renders its
+    // SSR zero as `false`, not the int `0`, so `aria-checked={isChecked()}`
+    // matches Hono's `aria-checked="false"`.
+    test('boolean ternary memo defaults to false, not 0', () => {
+      const adapter = new GoTemplateAdapter()
+      const source = `
+"use client"
+import { createSignal, createMemo } from "@barefootjs/client"
+export function Toggle(props: { checked?: boolean; defaultChecked?: boolean }) {
+  const [internal] = createSignal(props.defaultChecked ?? false)
+  const [controlled] = createSignal<boolean | undefined>(props.checked)
+  const isControlled = createMemo(() => props.checked !== undefined)
+  const isChecked = createMemo(() => isControlled() ? controlled() : internal())
+  return <button aria-checked={isChecked()}>x</button>
+}
+`
+      const types = adapter.generateTypes(compileToIR(source, adapter))!
+      expect(types).toContain('IsChecked bool')
+      expect(types).toContain('IsChecked: false,')
+    })
+  })
+
+  describe('cross-component child rest-bag routing (#checkbox)', () => {
+    // A parent rendering a child with a non-param attribute whose name isn't a
+    // valid Go identifier (`<CheckIcon data-slot="..."/>`) must route it into
+    // the child's rest bag (`Props: map[string]any{...}`), not a hyphenated
+    // top-level field (`Data-slot:`), when the child has a `...props` rest
+    // spread. Requires the child's shape registered first.
+    test('routes a hyphenated non-param child attr into the child rest bag', () => {
+      const adapter = new GoTemplateAdapter()
+      const childSource = `
+"use client"
+export function Leaf({ size, ...props }: { size?: string }) {
+  return <span {...props}>{size}</span>
+}
+`
+      const childIr = compileToIR(childSource, adapter)
+      adapter.registerChildComponentShape(childIr)
+      const parentSource = `
+"use client"
+import { Leaf } from './leaf'
+export function Host() {
+  return <div><Leaf data-slot="indicator" size="sm" /></div>
+}
+`
+      const types = adapter.generateTypes(compileToIR(parentSource, adapter))!
+      // Non-param hyphenated attr lands in the rest bag, not a Data-slot field.
+      expect(types).not.toContain('Data-slot:')
+      expect(types).toContain('Props: map[string]any{"data-slot": "indicator"}')
+      // A declared param (`size`) still binds as a top-level field.
+      expect(types).toContain('Size: "sm"')
     })
   })
 

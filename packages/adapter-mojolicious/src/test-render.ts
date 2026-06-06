@@ -433,6 +433,26 @@ function buildPerlProps(
     entries.push(`${param.name} => undef`)
   }
 
+  // (#checkbox) SolidJS props-object pattern: `function Checkbox(props:
+  // CheckboxProps)` only enumerates `CheckboxProps`'s own members in
+  // `propsParams`; inherited `ButtonHTMLAttributes` members the component
+  // reads as bare template vars (`$id`, `$disabled`, `$className`) are not.
+  // The generated template references them, so the stash must declare them or
+  // Perl strict mode aborts with `Global symbol "$id" requires explicit
+  // package name`. Scan the IR for `props.<name>` accesses and seed any not
+  // already declared (and not supplied by the caller below) as `undef`.
+  // Mirrors the Go adapter's `augmentInheritedPropAccesses`.
+  if (ir.metadata.propsObjectName) {
+    const propsObj = ir.metadata.propsObjectName
+    const declared = new Set(ir.metadata.propsParams.map(p => p.name))
+    for (const name of collectPropsObjectAccesses(ir, propsObj)) {
+      if (declared.has(name)) continue
+      if (props && name in props) continue // emitted by the user-props loop
+      entries.push(`${name} => undef`)
+      declared.add(name)
+    }
+  }
+
   // A `{...props}` rest spread means props that aren't declared named
   // params flow through the rest bag (`bf->spread_attrs($<restPropsName>)`),
   // not their own top-level template var. Route them into the bag hashref so
@@ -522,6 +542,38 @@ function buildPerlProps(
   }
 
   return `{${entries.join(', ')}}`
+}
+
+/**
+ * (#checkbox) Collect `<propsObj>.<name>` accesses across a component's memos,
+ * signal initializers, init statements, and template attribute expressions —
+ * the inherited-attribute reads (`props.className`, `props.id`, `props.disabled`)
+ * a SolidJS props-object component makes but that aren't enumerated in
+ * `propsParams`. Used to declare matching stash variables.
+ */
+function collectPropsObjectAccesses(ir: ComponentIR, propsObj: string): Set<string> {
+  const out = new Set<string>()
+  const re = new RegExp(`(?:^|[^\\w$.])${propsObj}\\.([A-Za-z_$][\\w$]*)`, 'g')
+  const scan = (s: string | undefined): void => {
+    if (!s) return
+    for (const m of s.matchAll(re)) out.add(m[1])
+  }
+  for (const memo of ir.metadata.memos) scan(memo.computation)
+  for (const sig of ir.metadata.signals) scan(sig.initialValue)
+  for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
+  const walk = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    const el = node as { attrs?: Array<{ value?: { kind?: string; expr?: string } }>; children?: unknown[] }
+    for (const attr of el.attrs ?? []) {
+      if (attr.value?.kind === 'expression') scan(attr.value.expr)
+    }
+    for (const child of el.children ?? []) {
+      const c = child as { element?: unknown }
+      walk(c.element ?? child)
+    }
+  }
+  walk(ir.root)
+  return out
 }
 
 /**
