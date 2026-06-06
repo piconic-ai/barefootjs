@@ -285,7 +285,7 @@ export {
   diffStaticBudget,
   formatBudgetDiff,
   buildProfileReport,
-} from './profiler'
+} from "./profiler.ts"
 export type {
   StaticBudget,
   StaticBudgetOptions,
@@ -293,7 +293,7 @@ export type {
   BudgetDiff,
   FanOutChange,
   ProfileReport,
-} from './profiler'
+} from "./profiler.ts"
 
 // HTML constants
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'

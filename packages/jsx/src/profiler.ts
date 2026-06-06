@@ -23,7 +23,7 @@ import {
   traceUpdatePath,
   type ComponentGraph,
   type UpdatePathEntry,
-} from './debug'
+} from "./debug.ts"
 
 // -- Static budget (SR5) ------------------------------------------------------
 
