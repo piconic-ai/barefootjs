@@ -47,17 +47,13 @@ runAdapterConformanceTests({
     'toggle-shared',
     'props-reactivity-comparison',
     // #1467 Phase 2b interactive `site/ui` primitives. `textarea` and
-    // `checkbox` now PASS (conditional inline-object spread, nullish
-    // optional-attribute omission, `Record[propKey]` spread values,
-    // props-object inherited-attr enumeration, and hyphenated child hash keys
-    // were ported from the Mojo adapter in Kolon form). The remaining three
-    // stay skipped: cross-adapter SSR parity for them is a later phase (they
-    // participate in Hono SSR conformance + the fixture-hydrate runtime layer
-    // for now); mojo skips the same three. Confirmed render-mismatch, not a
-    // hard error.
+    // `checkbox` now PASS. `toggle` / `switch` stay skipped: their reactive
+    // `classes` memo interpolates `Record<T,string>[variant|size]` lookups
+    // with no SSR lowering yet (mojo skips the same pair). `kbd` is NOT a
+    // render-mismatch — it's a BF101 refusal (Kolon can't splat the Slot's
+    // `{...props}`), so it's pinned in `expectedDiagnostics` below.
     'toggle',
     'switch',
-    'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
@@ -98,6 +94,10 @@ runAdapterConformanceTests({
     // lowers the same shape; this is a genuine engine divergence, pinned
     // declaratively here.
     'button': [{ code: 'BF101', severity: 'error' }],
+    // `kbd` auto-infers the same `<Slot>` `{...props}` spread as `button`
+    // above — refused with BF101 for the identical Kolon engine reason, not a
+    // render-mismatch (so it's pinned here, not in `skipJsx`).
+    'kbd': [{ code: 'BF101', severity: 'error' }],
     // JS object literal in an attribute value (`style={{ … }}`) has no
     // Kolon form — refused via the same gate as mojo (BF101).
     'style-3-signals': [{ code: 'BF101', severity: 'error' }],

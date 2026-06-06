@@ -35,7 +35,6 @@ runAdapterConformanceTests({
   // `BF104` at build time instead of silently emitting invalid
   // template syntax (#1266).
   skipJsx: [
-    'return-map',
     // #1297 fixed the harness-side IR emission gate (multi-component
     // sources now emit one `ir` file per component, and the harness
     // picks the entry-point IR). The remaining gap is adapter-side:
@@ -76,16 +75,12 @@ runAdapterConformanceTests({
     // option fixed on the Hono side. Separate follow-up.
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity
-    // (label / input / textarea / checkbox now participate):
+    // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity:
     //   toggle / switch — the reactive `classes` memo interpolates
     //     `Record<T,string>[variant|size]` lookups, which have no SSR
     //     lowering yet (known limitation).
-    //   kbd — multi-export source (Kbd / KbdGroup); the harness renders the
-    //     last-registered export rather than the pinned Kbd.
     'toggle',
     'switch',
-    'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
