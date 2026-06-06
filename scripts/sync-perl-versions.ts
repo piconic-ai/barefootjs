@@ -8,8 +8,8 @@
 // For each entry in PACKAGES:
 //   1. Read the bumped version from package.json.
 //   2. Update `our $VERSION` in every Perl module listed under `modules`.
-//   3. Replace {{$NEXT}} in Changes with the versioned entry, then re-insert
-//      {{$NEXT}} at the top so the next release can reuse the same placeholder.
+//   3. Insert the versioned entry immediately after {{$NEXT}} in Changes,
+//      keeping the placeholder in place for the next release cycle.
 
 import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -64,8 +64,8 @@ for (const pkg of PACKAGES) {
     }
   }
 
-  // Replace {{$NEXT}} with the versioned entry, then re-insert {{$NEXT}} at
-  // the top so the placeholder is ready for the next release cycle.
+  // Insert the versioned entry immediately after {{$NEXT}}, keeping the
+  // placeholder in place so it is ready for the next release cycle.
   const changesPath = join(pkgDir, 'Changes');
   const source = readFileSync(changesPath, 'utf8');
   if (!source.includes('{{$NEXT}}')) {

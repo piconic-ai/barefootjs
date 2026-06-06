@@ -9,30 +9,14 @@ on:
     branches: [main]
     paths:
       - 'packages/adapter-perl/**'
-      - 'packages/adapter-xslate/lib/**'
-      - 'packages/adapter-xslate/Makefile.PL'
-      - 'packages/adapter-xslate/MANIFEST'
-      - 'packages/adapter-xslate/cpanfile'
-      - 'packages/adapter-xslate/t/**'
-      - 'packages/adapter-mojolicious/lib/**'
-      - 'packages/adapter-mojolicious/Makefile.PL'
-      - 'packages/adapter-mojolicious/MANIFEST'
-      - 'packages/adapter-mojolicious/cpanfile'
-      - 'packages/adapter-mojolicious/t/**'
+      - 'packages/adapter-xslate/**'
+      - 'packages/adapter-mojolicious/**'
       - '.github/workflows/ci-perl-dist.yml'
   pull_request:
     paths:
       - 'packages/adapter-perl/**'
-      - 'packages/adapter-xslate/lib/**'
-      - 'packages/adapter-xslate/Makefile.PL'
-      - 'packages/adapter-xslate/MANIFEST'
-      - 'packages/adapter-xslate/cpanfile'
-      - 'packages/adapter-xslate/t/**'
-      - 'packages/adapter-mojolicious/lib/**'
-      - 'packages/adapter-mojolicious/Makefile.PL'
-      - 'packages/adapter-mojolicious/MANIFEST'
-      - 'packages/adapter-mojolicious/cpanfile'
-      - 'packages/adapter-mojolicious/t/**'
+      - 'packages/adapter-xslate/**'
+      - 'packages/adapter-mojolicious/**'
       - '.github/workflows/ci-perl-dist.yml'
 
 permissions:
