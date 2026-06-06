@@ -19,7 +19,7 @@ import { builtinModules } from 'node:module'
 // (`from 'node:fs'`) builtins; esbuild preserves whichever the source
 // used. Deno only resolves Node builtins through the `node:` form, so
 // without this the published bundle fails to load under
-// `deno run -A npm:bf`. Node 22 and Bun both accept `node:`, so the
+// `deno x npm:@barefootjs/cli`. Node 22 and Bun both accept `node:`, so the
 // rewrite is a no-op for them — it only unlocks the Deno runtime.
 const nodeProtocolPlugin = {
   name: 'node-protocol',

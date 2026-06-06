@@ -141,7 +141,7 @@ export function PortalRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add portal" />
+          <PackageManagerTabs command="@barefootjs/cli add portal" />
         </Section>
 
         {/* Usage */}

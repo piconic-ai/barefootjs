@@ -113,7 +113,7 @@ export function AspectRatioRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add aspect-ratio" />
+          <PackageManagerTabs command="@barefootjs/cli add aspect-ratio" />
         </Section>
 
         {/* Examples */}

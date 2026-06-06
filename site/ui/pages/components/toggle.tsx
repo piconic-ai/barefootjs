@@ -183,7 +183,7 @@ export function ToggleRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add toggle" />
+          <PackageManagerTabs command="@barefootjs/cli add toggle" />
         </Section>
 
         {/* Usage */}

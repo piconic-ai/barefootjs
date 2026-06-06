@@ -24,53 +24,53 @@ npm install -D @barefootjs/cli
 bun add -d @barefootjs/cli
 ```
 
-Once installed, use `npx bf` (or `bunx bf`) to run commands.
+Once installed, use `npx @barefootjs/cli` (or `bunx @barefootjs/cli`) to run commands.
 
 ## Workflow
 
-1. `npx bf search <query>` — Find components and docs by name/category/tags
-2. `npx bf docs <component>` — Get props, examples, accessibility info
-3. `npx bf guide <topic>` — Read framework docs (signals, compiler constraints, etc.)
-4. `npx bf gen component <name> <comp...>` — Generate skeleton + basic IR test
+1. `npx @barefootjs/cli search <query>` — Find components and docs by name/category/tags
+2. `npx @barefootjs/cli docs <component>` — Get props, examples, accessibility info
+3. `npx @barefootjs/cli guide <topic>` — Read framework docs (signals, compiler constraints, etc.)
+4. `npx @barefootjs/cli gen component <name> <comp...>` — Generate skeleton + basic IR test
 5. Implement the component
 6. Run tests — Verify compilation
-7. `npx bf gen test <name>` — Regenerate richer IR test
+7. `npx @barefootjs/cli gen test <name>` — Regenerate richer IR test
 8. Run tests — Final verification
-9. Create previews and run `npx bf preview <name>` — Visual preview in browser
+9. Create previews and run `npx @barefootjs/cli preview <name>` — Visual preview in browser
 10. Ask the user to check the browser for visual/interaction verification
 
 ## Signal Inspection & Debugging
 
 Use these commands to understand and debug a component's reactive structure **without running any code**. All analysis is static (from IR).
 
-### `npx bf debug graph <component>`
+### `npx @barefootjs/cli debug graph <component>`
 
 Show the signal dependency graph for a component. Use this **before modifying** a stateful component to understand its reactive structure: which signals exist, what memos depend on them, and which DOM nodes are bound.
 
 - Add `--json` for machine-readable output.
-- Example: `npx bf debug graph combobox`
+- Example: `npx @barefootjs/cli debug graph combobox`
 
-### `npx bf debug trace <component> <signal|memo>`
+### `npx @barefootjs/cli debug trace <component> <signal|memo>`
 
 Reverse-lookup: trace the full propagation path from a signal/memo to every DOM binding it affects. Use this to answer "why does this DOM node update?" or to verify that a signal change reaches the expected targets.
 
 - If the signal name is wrong, the CLI lists available signals/memos.
 - Add `--json` for machine-readable output.
-- Example: `npx bf debug trace combobox open`
+- Example: `npx @barefootjs/cli debug trace combobox open`
 
-### `npx bf debug signals <component>`
+### `npx @barefootjs/cli debug signals <component>`
 
 Show a signal initialization trace: every signal, its initial value, and its effect bindings. Useful for verifying that signals are wired correctly in a newly written or modified component.
 
 - Add `--json` for machine-readable output.
-- Example: `npx bf debug signals select`
+- Example: `npx @barefootjs/cli debug signals select`
 
-### `npx bf debug fallbacks <component>`
+### `npx @barefootjs/cli debug fallbacks <component>`
 
 Surface fallback-wrapped expressions emitted by Solid-style wrap-by-default. Use this to find candidates for `createMemo` refactor — places where the compiler couldn't statically prove reactivity and fell back to wrapping.
 
 - Add `--json` for machine-readable output.
-- Example: `npx bf debug fallbacks combobox`
+- Example: `npx @barefootjs/cli debug fallbacks combobox`
 
 ### When to use inspection
 
@@ -113,7 +113,7 @@ export function WithProps() {
 - Add previews for key variants, states, and compositions (e.g., `WithLabel`, `Disabled`, `PreFilled`).
 - Previews that use signals need `"use client"` at the top.
 - Import components via relative path from `../` (e.g., `import { Button } from '../button'`).
-- After creating previews, run `npx bf preview <name>` and ask the user to verify in the browser.
+- After creating previews, run `npx @barefootjs/cli preview <name>` and ask the user to verify in the browser.
 
 ## Rules
 

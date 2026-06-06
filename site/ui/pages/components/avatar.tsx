@@ -121,7 +121,7 @@ export function AvatarRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add avatar" />
+          <PackageManagerTabs command="@barefootjs/cli add avatar" />
         </Section>
 
         {/* Examples */}

@@ -132,7 +132,7 @@ export function DirectionRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add direction" />
+          <PackageManagerTabs command="@barefootjs/cli add direction" />
         </Section>
 
         {/* Usage */}

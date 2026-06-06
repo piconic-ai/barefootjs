@@ -223,7 +223,7 @@ export function TableRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add table" />
+          <PackageManagerTabs command="@barefootjs/cli add table" />
         </Section>
 
         {/* Usage */}

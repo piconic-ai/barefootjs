@@ -103,7 +103,7 @@ export function LabelRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add label" />
+          <PackageManagerTabs command="@barefootjs/cli add label" />
         </Section>
 
         {/* Usage */}

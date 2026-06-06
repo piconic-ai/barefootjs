@@ -242,7 +242,7 @@ export function SelectRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add select" />
+          <PackageManagerTabs command="@barefootjs/cli add select" />
         </Section>
 
         {/* Usage */}

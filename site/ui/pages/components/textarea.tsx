@@ -149,7 +149,7 @@ export function TextareaRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add textarea" />
+          <PackageManagerTabs command="@barefootjs/cli add textarea" />
         </Section>
 
         {/* Usage */}

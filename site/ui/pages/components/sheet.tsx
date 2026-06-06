@@ -282,7 +282,7 @@ export function SheetRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add sheet" />
+          <PackageManagerTabs command="@barefootjs/cli add sheet" />
         </Section>
 
         {/* Usage */}

@@ -221,7 +221,7 @@ export function PaginationRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add pagination" />
+          <PackageManagerTabs command="@barefootjs/cli add pagination" />
         </Section>
 
         {/* Usage */}

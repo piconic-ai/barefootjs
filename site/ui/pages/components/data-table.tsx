@@ -342,7 +342,7 @@ export function DataTableRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add data-table" />
+          <PackageManagerTabs command="@barefootjs/cli add data-table" />
         </Section>
 
         {/* Usage */}

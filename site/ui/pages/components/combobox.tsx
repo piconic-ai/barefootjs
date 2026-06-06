@@ -238,7 +238,7 @@ export function ComboboxRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add combobox" />
+          <PackageManagerTabs command="@barefootjs/cli add combobox" />
         </Section>
 
         {/* Usage */}

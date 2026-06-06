@@ -160,7 +160,7 @@ export function CarouselRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add carousel" />
+          <PackageManagerTabs command="@barefootjs/cli add carousel" />
         </Section>
 
         {/* Usage */}

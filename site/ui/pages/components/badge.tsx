@@ -111,7 +111,7 @@ export function BadgeRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add badge" />
+          <PackageManagerTabs command="@barefootjs/cli add badge" />
         </Section>
 
         {/* Usage */}

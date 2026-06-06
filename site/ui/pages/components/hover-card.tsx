@@ -130,7 +130,7 @@ export function HoverCardRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add hover-card" />
+          <PackageManagerTabs command="@barefootjs/cli add hover-card" />
         </Section>
 
         {/* Usage */}

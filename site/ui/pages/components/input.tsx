@@ -179,7 +179,7 @@ export function InputRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add input" />
+          <PackageManagerTabs command="@barefootjs/cli add input" />
         </Section>
 
         {/* Usage */}

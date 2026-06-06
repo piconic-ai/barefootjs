@@ -267,7 +267,7 @@ export function CommandRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add command" />
+          <PackageManagerTabs command="@barefootjs/cli add command" />
         </Section>
 
         {/* Usage */}

@@ -234,7 +234,7 @@ export function SwitchRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add switch" />
+          <PackageManagerTabs command="@barefootjs/cli add switch" />
         </Section>
 
         {/* Usage */}

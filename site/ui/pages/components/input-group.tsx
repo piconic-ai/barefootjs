@@ -293,7 +293,7 @@ export function InputGroupRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add input-group" />
+          <PackageManagerTabs command="@barefootjs/cli add input-group" />
         </Section>
 
         {/* Usage */}

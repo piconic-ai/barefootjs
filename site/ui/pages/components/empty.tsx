@@ -208,7 +208,7 @@ export function EmptyRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add empty" />
+          <PackageManagerTabs command="@barefootjs/cli add empty" />
         </Section>
 
         {/* Usage */}

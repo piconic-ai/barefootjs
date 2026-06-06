@@ -146,7 +146,7 @@ export function TypographyRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add typography" />
+          <PackageManagerTabs command="@barefootjs/cli add typography" />
         </Section>
 
         {/* Usage */}

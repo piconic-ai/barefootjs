@@ -249,7 +249,7 @@ export function CalendarRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add calendar" />
+          <PackageManagerTabs command="@barefootjs/cli add calendar" />
         </Section>
 
         {/* Usage */}

@@ -81,7 +81,7 @@ describe('detectPackageManager', () => {
     expect(detectPackageManager(tmpDir, EMPTY_ENV, EMPTY_VERSIONS)).toBe('bun')
   })
 
-  test('falls back to deno runtime when env has no UA (e.g. `deno run npm:bf`)', () => {
+  test('falls back to deno runtime when env has no UA (e.g. `deno x npm:@barefootjs/cli`)', () => {
     expect(detectPackageManager(tmpDir, EMPTY_ENV, { deno: '2.0.0' })).toBe('deno')
   })
 
@@ -151,7 +151,7 @@ describe('detectInvokingPackageManager', () => {
   })
 
   // Deno does not set `npm_config_user_agent`, so the runtime version
-  // is the signal that catches `deno run -A npm:bf` in an empty dir.
+  // is the signal that catches `deno x npm:@barefootjs/cli` in an empty dir.
   test('detects deno runtime when UA is absent', () => {
     expect(detectInvokingPackageManager(EMPTY_ENV, { deno: '2.0.0' })).toBe('deno')
   })
@@ -162,37 +162,38 @@ describe('commandsFor', () => {
     const c = commandsFor('npm')
     expect(c.install).toBe('npm install')
     expect(c.run('dev')).toBe('npm run dev')
-    expect(c.exec('bf add button')).toBe('npx bf add button')
+    expect(c.exec('@barefootjs/cli add button')).toBe('npx @barefootjs/cli add button')
   })
 
   test('bun commands', () => {
     const c = commandsFor('bun')
     expect(c.install).toBe('bun install')
     expect(c.run('dev')).toBe('bun run dev')
-    expect(c.exec('bf add button')).toBe('bunx bf add button')
+    expect(c.exec('@barefootjs/cli add button')).toBe('bunx @barefootjs/cli add button')
   })
 
   test('pnpm commands', () => {
     const c = commandsFor('pnpm')
     expect(c.install).toBe('pnpm install')
     expect(c.run('dev')).toBe('pnpm dev')
-    expect(c.exec('bf add button')).toBe('pnpm dlx bf add button')
+    expect(c.exec('@barefootjs/cli add button')).toBe('pnpm dlx @barefootjs/cli add button')
   })
 
   test('yarn commands', () => {
     const c = commandsFor('yarn')
     expect(c.install).toBe('yarn')
     expect(c.run('dev')).toBe('yarn dev')
-    expect(c.exec('bf add button')).toBe('yarn dlx bf add button')
+    expect(c.exec('@barefootjs/cli add button')).toBe('yarn dlx @barefootjs/cli add button')
   })
 
   test('deno commands', () => {
     const c = commandsFor('deno')
     expect(c.install).toBe('deno install')
     expect(c.run('dev')).toBe('deno task dev')
-    // The `npm:` specifier is what makes `deno run -A npm:bf ...` the
-    // Deno equivalent of `bunx bf ...` / `npx bf ...`.
-    expect(c.exec('bf add button')).toBe('deno run -A npm:bf add button')
+    // `deno x` (Deno 2.6+) with the `npm:` specifier is the Deno
+    // equivalent of `bunx ...` / `npx ...`; it defaults to `--allow-all`,
+    // so no `-A` is emitted.
+    expect(c.exec('@barefootjs/cli add button')).toBe('deno x npm:@barefootjs/cli add button')
   })
 
   // The `test` helper is what the various "next steps" / "run tests"

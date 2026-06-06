@@ -162,7 +162,7 @@ export function SeparatorRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add separator" />
+          <PackageManagerTabs command="@barefootjs/cli add separator" />
         </Section>
 
         {/* Usage */}

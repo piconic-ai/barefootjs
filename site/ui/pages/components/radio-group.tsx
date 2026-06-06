@@ -267,7 +267,7 @@ export function RadioGroupRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add radio-group" />
+          <PackageManagerTabs command="@barefootjs/cli add radio-group" />
         </Section>
 
         {/* Usage */}

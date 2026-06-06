@@ -125,7 +125,7 @@ export function AlertRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add alert" />
+          <PackageManagerTabs command="@barefootjs/cli add alert" />
         </Section>
 
         {/* Usage */}
