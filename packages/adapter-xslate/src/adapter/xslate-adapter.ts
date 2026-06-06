@@ -212,24 +212,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
     this.propsObjectName = ir.metadata.propsObjectName ?? null
-    // (#checkbox) Enumerate inherited-attribute accesses for the props-object
-    // pattern (`function Checkbox(props: CheckboxProps)`) before deriving
-    // `nullableOptionalProps`, so a bare optional attribute like `id={props.id}`
-    // gets the Kolon `defined`-guard (Hono-style omission). Shared with the Go /
-    // Mojo adapters (single source of truth in `@barefootjs/jsx`). The harness
-    // separately declares the matching stash vars (Pass-1 IR serialization runs
-    // before `generate`, so this mutation doesn't reach it).
+    // (#checkbox) Enumerate the props-object pattern's inherited attribute
+    // accesses (`props.className`/`id`/`disabled`) into propsParams via the
+    // shared helper, before deriving `nullableOptionalProps` below.
     augmentInheritedPropAccesses(ir)
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
     this.localConstants = ir.metadata.localConstants ?? []
-    // No-destructure-default props → `undef` when the caller omits them → guard
-    // their bare-reference attribute emission with Kolon `defined` so the
-    // attribute drops instead of rendering `attr=""` (Hono-style nullish
-    // omission). Mirrors the Mojo adapter's `nullableOptionalProps`: a prop WITH
-    // a destructure default (`value = ''`) is never `undef`, so it's excluded;
-    // concrete-primitive types (`string`/`number`/`boolean`) are excluded too,
-    // matching the Go adapter's nillable-field scope (only `unknown`/object/array
-    // no-default props guard, e.g. `rows` reported as no-default `unknown`).
+    // Bare references to optional, no-default, non-primitive props (e.g.
+    // textarea's `rows`) are `undef` when omitted → `defined`-guarded in
+    // `emitExpression`. See the `nullableOptionalProps` field docstring.
     this.nullableOptionalProps = new Set(
       ir.metadata.propsParams
         .filter(
@@ -894,17 +885,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
-      // Hono-style nullish-attribute omission (#textarea rows): when the
-      // attribute value is a BARE reference to an optional, no-default prop
-      // (which is `undef` when the caller omits it), guard the attribute with
-      // Kolon `defined` so it DROPS rather than rendering `attr=""`. The guarded
-      // body reuses the exact normal emission, so escaping is unchanged; only
-      // the presence is conditional. The `: if`/`: }` line directives surround
-      // the attribute inline — `normalizeHTML` collapses the resulting
-      // whitespace, exactly like the boolean-attr and hydration-marker patterns.
-      // Scope is deliberately narrow (bare identifiers resolving to an
-      // optional-no-default prop) so member exprs, calls, concrete/defaulted
-      // props, and boolean attrs are unaffected and still emit unconditionally.
+      // Hono-style nullish omission: a bare reference to an optional,
+      // no-default prop (`nullableOptionalProps`) is `defined`-guarded so the
+      // attribute drops instead of rendering `attr=""`. Narrowly scoped to bare
+      // identifiers — member exprs, calls, and concrete/defaulted props are
+      // unaffected.
       const bareId = value.expr.trim()
       // Normalize a props-object access (`props.id`) to its bare prop name
       // (`id`) so the nullable-optional set — keyed by bare name — matches the
@@ -924,11 +909,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
           isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name)
             ? `${name}="<: $bf.bool_str(${perl}) :>"`
             : `${name}="<: ${perl} :>"`
-        // Kolon `:` line directives must each stand alone on their own line
-        // (unlike Mojo's inline `<% if %>` block tags), so wrap the guarded
-        // attribute in leading/trailing newlines. `renderAttributes` joins
-        // attrs with a single space; the surrounding newlines keep `: if` and
-        // `: }` line-isolated while `normalizeHTML` collapses the whitespace.
+        // Kolon `:` line directives must each stand alone on their own line, so
+        // wrap in newlines (`normalizeHTML` collapses the surrounding space).
         return `\n: if (defined ${perl}) {\n${body}\n: }\n`
       }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
