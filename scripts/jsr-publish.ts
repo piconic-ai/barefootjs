@@ -10,7 +10,19 @@
 //
 // What it does for every eligible package (scoped `@barefootjs/*`, not
 // `private`, not in `.changeset/config.json`'s ignore list):
-//   1. Derive a JSR manifest from package.json:
+//   1. Derive a Deno manifest (`deno.json`) from package.json:
+//        - compilerOptions.lib: `["deno.window","dom","dom.iterable",
+//          "dom.asynciterable"]` (Deno's documented "DOM + runtime" recipe).
+//          These are DOM-targeted libraries (`HTMLElement`, `DragEvent`,
+//          `SubmitEvent`, …) and Deno's default publish-time lib has the bare
+//          web globals but NOT the full DOM, so without this `deno publish`'s
+//          type-check fails with TS2304 "Cannot find name" errors. `dom` alone
+//          would drop the runtime globals the sources need (`process` in
+//          jsx/hono/go-template); a `/// <reference lib="dom">` would instead
+//          collide with Deno's own `Event`/`EventTarget` defs. The `deno.window`
+//          base + `dom` layer avoids both. compilerOptions only lives in
+//          `deno.json`, not the JSR-subset `jsr.json` — hence the manifest is
+//          emitted as `deno.json`.
 //        - exports: package.json `exports`, remapped from built `dist/*`
 //          (and the npm `import`/`bun`/`types` conditions) to the `src/*`
 //          TypeScript sources JSR publishes. Entries that only resolve to
@@ -32,7 +44,7 @@
 // Flags:
 //   --dry-run            Generate + print manifests; do not query JSR or publish.
 //   --only a,b           Restrict to these package names (comma-separated).
-//   --keep               Leave generated jsr.json files in place (debugging).
+//   --keep               Leave generated deno.json files in place (debugging).
 //
 // Requires (non-dry-run): the Deno CLI, the `@barefootjs` JSR scope and
 // each package created on jsr.io, and `id-token: write` for OIDC auth.
@@ -191,7 +203,16 @@ function buildManifest(dir: string, pkg: PkgJson) {
     exports: exportsOut,
   }
   if (Object.keys(importsOut).length > 0) manifest.imports = importsOut
-  manifest.publish = { include: ['src', 'README.md', 'LICENSE', 'jsr.json'] }
+  // Type-check under Deno's documented "DOM + runtime" lib set so `deno
+  // publish` resolves the DOM types these libraries export. `deno.window` is
+  // the combinable Deno base — it keeps the runtime globals the published
+  // sources rely on (notably `process`, used in jsx/hono/go-template) while
+  // letting `dom` layer the browser types on top without the duplicate-
+  // identifier clash a bare `dom`-only or `/// <reference lib>` would cause.
+  manifest.compilerOptions = {
+    lib: ['deno.window', 'dom', 'dom.iterable', 'dom.asynciterable'],
+  }
+  manifest.publish = { include: ['src', 'README.md', 'LICENSE', 'deno.json'] }
   return manifest
 }
 
@@ -243,7 +264,7 @@ try {
       continue
     }
 
-    const manifestPath = join(dir, 'jsr.json')
+    const manifestPath = join(dir, 'deno.json')
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
     generated.push(manifestPath)
 
@@ -260,17 +281,12 @@ try {
     }
 
     console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR`)
-    // --no-check: skip Deno's publish-time `tsc` pass. These are
-    //   DOM-targeted libraries (`HTMLElement`, `DragEvent`, `SubmitEvent`,
-    //   `PointerEvent`, …) and Deno's default lib set has the bare web
-    //   globals but NOT the full DOM lib, so the check fails with spurious
-    //   TS2304 "Cannot find name" errors that don't reflect a real problem
-    //   for consumers. The sources are already fully type-checked in CI
-    //   under `lib: ["ES2022","DOM","DOM.Iterable"]`, so re-checking here
-    //   adds no coverage — it only breaks the release.
-    // --allow-slow-types: JSR still extracts the public API for docs/.d.ts
-    //   and warns on slow types; this permits publishing through that warning.
-    const pub = await $`deno publish --no-check --allow-slow-types --allow-dirty`
+    // Type-checking stays ON — the generated `deno.json` carries
+    // `compilerOptions.lib` (Deno's DOM + runtime set) so the DOM types these
+    // libraries export resolve cleanly. --allow-slow-types lets JSR extract the
+    // public API for docs/.d.ts through its (benign) slow-types warning;
+    // --allow-dirty permits the in-tree generated manifest.
+    const pub = await $`deno publish --allow-slow-types --allow-dirty`
       .cwd(dir)
       .nothrow()
     if (pub.exitCode !== 0) {
