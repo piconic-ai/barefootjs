@@ -51,6 +51,7 @@ interface PkgJson {
   version: string
   private?: boolean
   exports?: Record<string, unknown>
+  bin?: unknown
   dependencies?: Record<string, string>
   peerDependencies?: Record<string, string>
 }
@@ -60,8 +61,16 @@ const ignore: string[] = JSON.parse(
 ).ignore ?? []
 
 // ── Discover eligible packages ────────────────────────────────────────
-// JSR requires a scope, so only `@barefootjs/*` packages qualify
-// (`create-barefootjs` is unscoped and stays npm-only).
+// JSR is the home for the *libraries* consumers `import`. The
+// *executables* — the `bf` CLI and the `create-barefootjs` scaffolder —
+// stay npm-only and Deno users invoke them via the `npm:` specifier
+// (`deno run -A npm:bf …` / `deno run -A npm:create-barefootjs`), so
+// they're filtered out here. Eligibility:
+//   - scoped `@barefootjs/*` (JSR requires a scope; `create-barefootjs`
+//     is unscoped anyway),
+//   - not `private`,
+//   - not a `bin` package (executable, → npm),
+//   - not in `.changeset/config.json`'s ignore list.
 const pkgDirs = readdirSync(resolve(repoRoot, 'packages'))
   .map(d => resolve(repoRoot, 'packages', d))
   .filter(d => existsSync(join(d, 'package.json')))
@@ -79,6 +88,7 @@ for (const dir of pkgDirs) {
   versions.set(pkg.name, pkg.version)
   if (pkg.private) continue
   if (!pkg.name.startsWith('@barefootjs/')) continue
+  if (pkg.bin) continue // executables (bf CLI) ship to npm, run via `npm:`
   if (ignore.includes(pkg.name)) continue
   candidates.push({ dir, pkg })
 }

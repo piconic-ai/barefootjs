@@ -10,8 +10,9 @@
 # dynamically from each package.json, so there is nothing to maintain
 # here when a package is added — it is picked up automatically.
 #
-# One-time prerequisites (on jsr.io): create the `@barefootjs` scope and
-# each package, linked to GitHub repo piconic-ai/barefootjs for OIDC.
+# Prerequisite (on jsr.io): the `@barefootjs` scope exists; each package
+# must be created under it and linked to GitHub repo
+# piconic-ai/barefootjs so OIDC publishing is authorized.
 name: Publish to JSR (manual)
 
 on:
