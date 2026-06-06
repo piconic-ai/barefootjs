@@ -260,7 +260,17 @@ try {
     }
 
     console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR`)
-    const pub = await $`deno publish --allow-slow-types --allow-dirty`
+    // --no-check: skip Deno's publish-time `tsc` pass. These are
+    //   DOM-targeted libraries (`HTMLElement`, `DragEvent`, `SubmitEvent`,
+    //   `PointerEvent`, …) and Deno's default lib set has the bare web
+    //   globals but NOT the full DOM lib, so the check fails with spurious
+    //   TS2304 "Cannot find name" errors that don't reflect a real problem
+    //   for consumers. The sources are already fully type-checked in CI
+    //   under `lib: ["ES2022","DOM","DOM.Iterable"]`, so re-checking here
+    //   adds no coverage — it only breaks the release.
+    // --allow-slow-types: JSR still extracts the public API for docs/.d.ts
+    //   and warns on slow types; this permits publishing through that warning.
+    const pub = await $`deno publish --no-check --allow-slow-types --allow-dirty`
       .cwd(dir)
       .nothrow()
     if (pub.exitCode !== 0) {
