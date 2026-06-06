@@ -200,7 +200,9 @@ export async function discoverComponentFiles(
 
   let entries: { name: string; isDirectory(): boolean }[]
   try {
-    entries = await readdir(dir, { withFileTypes: true })
+    entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
+      String(a.name).localeCompare(String(b.name))
+    )
   } catch {
     return results
   }

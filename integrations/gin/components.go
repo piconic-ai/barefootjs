@@ -45,24 +45,6 @@ type AIChatInteractiveProps struct {
 	IsStreaming bool `json:"isStreaming"`
 }
 
-// PortalExampleInput is the user-facing input type.
-type PortalExampleInput struct {
-	ScopeID string // Optional: if empty, random ID is generated
-	BfParent string // Optional: parent scope id
-	BfMount string // Optional: slot id in parent
-}
-
-// PortalExampleProps is the props type for the PortalExample component.
-type PortalExampleProps struct {
-	ScopeID string `json:"scopeID"`
-	BfIsRoot bool `json:"-"`
-	BfIsChild bool `json:"-"`
-	BfParent string `json:"-"`
-	BfMount string `json:"-"`
-	Scripts *bf.ScriptCollector `json:"-"`
-	Open bool `json:"open"`
-}
-
 // ConditionalReturnInput is the user-facing input type.
 type ConditionalReturnInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
@@ -83,38 +65,61 @@ type ConditionalReturnProps struct {
 	Count int `json:"count"`
 }
 
-// Todo represents a todo.
-type Todo struct {
-	ID int `json:"id"`
-	Text string `json:"text"`
-	Done bool `json:"done"`
-	Editing bool `json:"editing"`
-}
-
-// Filter is a string type.
-type Filter = string
-
-// TodoAppInput is the user-facing input type.
-type TodoAppInput struct {
+// CounterInput is the user-facing input type.
+type CounterInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	InitialTodos []Todo
+	Initial int
 }
 
-// TodoAppProps is the props type for the TodoApp component.
-type TodoAppProps struct {
+// CounterProps is the props type for the Counter component.
+type CounterProps struct {
 	ScopeID string `json:"scopeID"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	InitialTodos []Todo `json:"initialTodos"`
-	Todos []Todo `json:"todos"`
-	NewText string `json:"newText"`
-	Filter Filter `json:"filter"`
-	TodoItems []TodoItemProps `json:"-"`
+	Initial int `json:"initial"`
+	Count int `json:"count"`
+	Doubled int `json:"doubled"`
+}
+
+// FormInput is the user-facing input type.
+type FormInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// FormProps is the props type for the Form component.
+type FormProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Accepted bool `json:"accepted"`
+}
+
+// PortalExampleInput is the user-facing input type.
+type PortalExampleInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// PortalExampleProps is the props type for the PortalExample component.
+type PortalExampleProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Open bool `json:"open"`
 }
 
 // ReactiveChildInput is the user-facing input type.
@@ -245,43 +250,38 @@ type TextEscapeProps struct {
 	Count int `json:"count"`
 }
 
-// CounterInput is the user-facing input type.
-type CounterInput struct {
+// Todo represents a todo.
+type Todo struct {
+	ID int `json:"id"`
+	Text string `json:"text"`
+	Done bool `json:"done"`
+	Editing bool `json:"editing"`
+}
+
+// Filter is a string type.
+type Filter = string
+
+// TodoAppInput is the user-facing input type.
+type TodoAppInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Initial int
+	InitialTodos []Todo
 }
 
-// CounterProps is the props type for the Counter component.
-type CounterProps struct {
+// TodoAppProps is the props type for the TodoApp component.
+type TodoAppProps struct {
 	ScopeID string `json:"scopeID"`
 	BfIsRoot bool `json:"-"`
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Initial int `json:"initial"`
-	Count int `json:"count"`
-	Doubled int `json:"doubled"`
-}
-
-// FormInput is the user-facing input type.
-type FormInput struct {
-	ScopeID string // Optional: if empty, random ID is generated
-	BfParent string // Optional: parent scope id
-	BfMount string // Optional: slot id in parent
-}
-
-// FormProps is the props type for the Form component.
-type FormProps struct {
-	ScopeID string `json:"scopeID"`
-	BfIsRoot bool `json:"-"`
-	BfIsChild bool `json:"-"`
-	BfParent string `json:"-"`
-	BfMount string `json:"-"`
-	Scripts *bf.ScriptCollector `json:"-"`
-	Accepted bool `json:"accepted"`
+	InitialTodos []Todo `json:"initialTodos"`
+	Todos []Todo `json:"todos"`
+	NewText string `json:"newText"`
+	Filter Filter `json:"filter"`
+	TodoItems []TodoItemProps `json:"-"`
 }
 
 // TodoAppSSRInput is the user-facing input type.
@@ -393,21 +393,6 @@ func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps
 	}
 }
 
-// NewPortalExampleProps creates PortalExampleProps from PortalExampleInput.
-func NewPortalExampleProps(in PortalExampleInput) PortalExampleProps {
-	scopeID := in.ScopeID
-	if scopeID == "" {
-		scopeID = "PortalExample_" + randomID(6)
-	}
-
-	return PortalExampleProps{
-		ScopeID: scopeID,
-		BfParent: in.BfParent,
-		BfMount: in.BfMount,
-		Open: false,
-	}
-}
-
 // NewConditionalReturnProps creates ConditionalReturnProps from ConditionalReturnInput.
 func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps {
 	scopeID := in.ScopeID
@@ -424,34 +409,50 @@ func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps
 	}
 }
 
-// NewTodoAppProps creates TodoAppProps from TodoAppInput.
-//
-// NOTE: `TodoItems` is populated by the route handler, not by
-// NewTodoAppProps — the SSR template iterates over it
-// dynamically (`.TodoItems`). Build the slice from your source data and
-// assign it before passing the props to your renderer. Example:
-//
-//   props := NewTodoAppProps(TodoAppInput{ /* ... */ })
-//   props.TodoItems = make([]TodoItemProps, len(items))
-//   for i, item := range items {
-//     props.TodoItems[i] = NewTodoItemProps(TodoItemInput{ /* fields */ })
-//     props.TodoItems[i].BfParent = props.ScopeID
-//     props.TodoItems[i].BfMount = "s3"
-//   }
-func NewTodoAppProps(in TodoAppInput) TodoAppProps {
+// NewCounterProps creates CounterProps from CounterInput.
+func NewCounterProps(in CounterInput) CounterProps {
 	scopeID := in.ScopeID
 	if scopeID == "" {
-		scopeID = "TodoApp_" + randomID(6)
+		scopeID = "Counter_" + randomID(6)
 	}
 
-	return TodoAppProps{
+	return CounterProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
-		InitialTodos: in.InitialTodos,
-		Todos: in.InitialTodos,
-		NewText: "",
-		Filter: "all",
+		Initial: in.Initial,
+		Count: in.Initial,
+		Doubled: in.Initial * 2,
+	}
+}
+
+// NewFormProps creates FormProps from FormInput.
+func NewFormProps(in FormInput) FormProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "Form_" + randomID(6)
+	}
+
+	return FormProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Accepted: false,
+	}
+}
+
+// NewPortalExampleProps creates PortalExampleProps from PortalExampleInput.
+func NewPortalExampleProps(in PortalExampleInput) PortalExampleProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "PortalExample_" + randomID(6)
+	}
+
+	return PortalExampleProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Open: false,
 	}
 }
 
@@ -581,35 +582,34 @@ func NewTextEscapeProps(in TextEscapeInput) TextEscapeProps {
 	}
 }
 
-// NewCounterProps creates CounterProps from CounterInput.
-func NewCounterProps(in CounterInput) CounterProps {
+// NewTodoAppProps creates TodoAppProps from TodoAppInput.
+//
+// NOTE: `TodoItems` is populated by the route handler, not by
+// NewTodoAppProps — the SSR template iterates over it
+// dynamically (`.TodoItems`). Build the slice from your source data and
+// assign it before passing the props to your renderer. Example:
+//
+//   props := NewTodoAppProps(TodoAppInput{ /* ... */ })
+//   props.TodoItems = make([]TodoItemProps, len(items))
+//   for i, item := range items {
+//     props.TodoItems[i] = NewTodoItemProps(TodoItemInput{ /* fields */ })
+//     props.TodoItems[i].BfParent = props.ScopeID
+//     props.TodoItems[i].BfMount = "s3"
+//   }
+func NewTodoAppProps(in TodoAppInput) TodoAppProps {
 	scopeID := in.ScopeID
 	if scopeID == "" {
-		scopeID = "Counter_" + randomID(6)
+		scopeID = "TodoApp_" + randomID(6)
 	}
 
-	return CounterProps{
+	return TodoAppProps{
 		ScopeID: scopeID,
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
-		Initial: in.Initial,
-		Count: in.Initial,
-		Doubled: in.Initial * 2,
-	}
-}
-
-// NewFormProps creates FormProps from FormInput.
-func NewFormProps(in FormInput) FormProps {
-	scopeID := in.ScopeID
-	if scopeID == "" {
-		scopeID = "Form_" + randomID(6)
-	}
-
-	return FormProps{
-		ScopeID: scopeID,
-		BfParent: in.BfParent,
-		BfMount: in.BfMount,
-		Accepted: false,
+		InitialTodos: in.InitialTodos,
+		Todos: in.InitialTodos,
+		NewText: "",
+		Filter: "all",
 	}
 }
 
