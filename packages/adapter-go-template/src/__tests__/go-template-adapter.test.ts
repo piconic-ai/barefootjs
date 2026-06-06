@@ -35,24 +35,13 @@ runAdapterConformanceTests({
   // `BF104` at build time instead of silently emitting invalid
   // template syntax (#1266).
   skipJsx: [
-    // #1244 stress catalog (#1326): `children={<span/>}` — the IR
-    // hoists the span with `needsScope: true` so the Hono reference
-    // emits `bf-s` on the inner `<span>`. The Go adapter has no path to
-    // render a hoisted-JSX child handed in through the `children`
-    // attribute, so the child is DROPPED: the parent renders
-    // `<div bf-s="test_s0"></div>` with an empty body (verified — no
-    // compile error, no literal `{{bfScopeAttr}}` text either; that
-    // older literal-survives-in-output failure mode no longer occurs).
-    // Closing the gap needs the inner span re-emitted as its own named
-    // template definition the outer template can pass its struct to, or
-    // the resolved scope id embedded at compile time. Neither lands
-    // here; the Mojo / Xslate siblings already pass by routing the
-    // hoisted JSX through the same nested-children capture.
-    'children-jsx-expression',
-    // #1335: fragment-wrapped form of the same shape. Once the IR
-    // unwraps `<><span/></>` into the bare-element form the Go adapter
-    // hits the identical drop as `children-jsx-expression` above.
-    'fragment-wrapped-children-jsx-expression',
+    // `children-jsx-expression` / `fragment-wrapped-children-jsx-expression`
+    // graduated: `children={<span/>}` hoists the span with `needsScope:
+    // true`, so it lands as a `jsx-children` prop rather than nested
+    // children. The adapter now bakes that fragment into the child slot's
+    // `Children` with the runtime parent scopeID spliced into the root
+    // `bf-s` (`extractScopedHtmlChildren`), matching Hono / Mojo / Xslate.
+    //
     // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
     // sibling `ToggleItem` children inside a keyed `.map`. The Go
     // child-slice init types the loop input as `[]any` rather than
@@ -1214,6 +1203,33 @@ export function Page() {
       const types = adapter.generateTypes(ir)!
       expect(types).not.toContain('Children:')
       expect(types).not.toContain('template.HTML')
+    })
+
+    test('bakes hoisted children={<span/>} with the parent scopeID spliced into bf-s (#1326 / #1335)', () => {
+      // `children` passed as an attribute lands as a `jsx-children` prop and
+      // its span carries `needsScope: true`. The root `bf-s` must resolve to
+      // the *parent* scope at render time, so the bake splices `scopeID`
+      // (matching the client `__BF_PARENT_SCOPE__` placeholder) rather than
+      // emitting a static string or dropping the child.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+export function Host() { return <Box children={<span>x</span>} /> }
+function Box({ children }: { children: any }) { return <div>{children}</div> }
+`)
+      const types = adapter.generateTypes(ir)!
+      expect(types).toContain('Children: template.HTML("<span bf-s=\\"" + scopeID + "\\">x</span>")')
+      expect(types).toContain('"html/template"')
+    })
+
+
+    test('fragment-wrapped hoisted children bake to the same scoped shape (#1335)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+export function Host() { return <Box children={<><span>x</span></>} /> }
+function Box({ children }: { children: any }) { return <div>{children}</div> }
+`)
+      const types = adapter.generateTypes(ir)!
+      expect(types).toContain('Children: template.HTML("<span bf-s=\\"" + scopeID + "\\">x</span>")')
     })
 
     test('drops dynamic children that would emit Go template actions', () => {
