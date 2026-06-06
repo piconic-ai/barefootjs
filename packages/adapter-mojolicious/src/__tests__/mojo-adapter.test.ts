@@ -34,16 +34,12 @@ runAdapterConformanceTests({
     // skips the same pair.)
     'toggle-shared',
     'props-reactivity-comparison',
-    // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity
-    // (label / input / textarea / checkbox now participate):
+    // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity:
     //   toggle / switch — the reactive `classes` memo interpolates
     //     `Record<T,string>[variant|size]` lookups, which have no SSR
     //     lowering yet (known limitation).
-    //   kbd — multi-export source (Kbd / KbdGroup); the harness renders the
-    //     last-registered export rather than the pinned Kbd.
     'toggle',
     'switch',
-    'kbd',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
