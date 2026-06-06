@@ -224,7 +224,7 @@ export function AlertDialogRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add alert-dialog" />
+          <PackageManagerTabs command="@barefootjs/cli add alert-dialog" />
         </Section>
 
         {/* Usage */}

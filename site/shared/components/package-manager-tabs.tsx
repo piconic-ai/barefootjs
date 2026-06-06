@@ -34,17 +34,18 @@ export function PackageManagerTabs(props: PackageManagerTabsProps) {
       if (pm === 'bun') return `bun create ${stripped}`
       if (pm === 'pnpm') return `pnpm create ${stripped}`
       // Deno has no `create` shorthand — it runs the `create-*` package
-      // straight from npm via the `npm:` specifier (e.g.
-      // `create barefootjs@latest` → `deno run -A npm:create-barefootjs`).
-      if (pm === 'deno') return `deno run -A npm:create-${stripped}`
+      // straight from npm via `deno x` + the `npm:` specifier (e.g.
+      // `create barefootjs@latest` → `deno x npm:create-barefootjs`).
+      if (pm === 'deno') return `deno x npm:create-${stripped}`
       return `yarn create ${stripped}`
     }
     if (pm === 'bun') return `bunx --bun ${props.command}`
     if (pm === 'pnpm') return `pnpm dlx ${props.command}`
     if (pm === 'yarn') return `yarn dlx ${props.command}`
-    // `deno run -A npm:<cmd>` is Deno's one-shot-binary form (mirrors
-    // `npx <cmd>`); `-A` grants the access `bf` needs to write files.
-    if (pm === 'deno') return `deno run -A npm:${props.command}`
+    // `deno x npm:<cmd>` (Deno 2.6+) is Deno's one-shot-binary form
+    // (mirrors `npx <cmd>`); `deno x` defaults to `--allow-all`, so it
+    // already has the access the CLI needs to write files.
+    if (pm === 'deno') return `deno x npm:${props.command}`
     return `npx ${props.command}`
   })
 

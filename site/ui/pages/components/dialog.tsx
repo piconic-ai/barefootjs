@@ -298,7 +298,7 @@ export function DialogRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add dialog" />
+          <PackageManagerTabs command="@barefootjs/cli add dialog" />
         </Section>
 
         {/* Usage */}

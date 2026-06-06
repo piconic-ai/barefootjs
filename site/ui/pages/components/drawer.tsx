@@ -280,7 +280,7 @@ export function DrawerRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add drawer" />
+          <PackageManagerTabs command="@barefootjs/cli add drawer" />
         </Section>
 
         {/* Usage */}

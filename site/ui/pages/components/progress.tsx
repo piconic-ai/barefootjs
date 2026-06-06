@@ -223,7 +223,7 @@ export function ProgressRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add progress" />
+          <PackageManagerTabs command="@barefootjs/cli add progress" />
         </Section>
 
         {/* Usage */}

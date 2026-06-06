@@ -33,7 +33,7 @@ import {
 assert.ok(process.versions.deno, 'expected to run under the Deno runtime')
 
 // 2. With no lockfile, the live Deno runtime version makes the invoking
-//    PM resolve to `deno` (the `deno run -A npm:bf` in an empty dir case).
+//    PM resolve to `deno` (the `deno x npm:@barefootjs/cli` in an empty dir case).
 assert.equal(
   detectInvokingPackageManager(),
   'deno',
@@ -57,7 +57,7 @@ try {
 const deno = commandsFor('deno')
 assert.equal(deno.install, 'deno install')
 assert.equal(deno.run('dev'), 'deno task dev')
-assert.equal(deno.exec('bf add button'), 'deno run -A npm:bf add button')
+assert.equal(deno.exec('@barefootjs/cli add button'), 'deno x npm:@barefootjs/cli add button')
 assert.equal(deno.test('Foo.test.tsx'), 'deno task test Foo.test.tsx')
 
 console.log('✓ Deno smoke passed: bf package-manager layer is Deno-native')

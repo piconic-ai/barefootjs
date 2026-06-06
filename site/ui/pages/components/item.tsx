@@ -144,7 +144,7 @@ export function ItemRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add item" />
+          <PackageManagerTabs command="@barefootjs/cli add item" />
         </Section>
 
         {/* Usage */}

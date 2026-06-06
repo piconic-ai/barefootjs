@@ -23,7 +23,7 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
   })
 
   test('shows npm command by default', async ({ page }) => {
-    await expect(page.locator('text=npx bf add checkbox')).toBeVisible()
+    await expect(page.locator('text=npx @barefootjs/cli add checkbox')).toBeVisible()
   })
 
   test('clicking bun tab switches content', async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
     await bunTab.click()
 
     await expect(bunTab).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('text=bunx --bun bf add checkbox')).toBeVisible()
+    await expect(page.locator('text=bunx --bun @barefootjs/cli add checkbox')).toBeVisible()
   })
 
   test('clicking pnpm tab switches content', async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
     await pnpmTab.click()
 
     await expect(pnpmTab).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('text=pnpm dlx bf add checkbox')).toBeVisible()
+    await expect(page.locator('text=pnpm dlx @barefootjs/cli add checkbox')).toBeVisible()
   })
 
   test('clicking yarn tab switches content', async ({ page }) => {
@@ -53,7 +53,7 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
     await yarnTab.click()
 
     await expect(yarnTab).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('text=yarn dlx bf add checkbox')).toBeVisible()
+    await expect(page.locator('text=yarn dlx @barefootjs/cli add checkbox')).toBeVisible()
   })
 
   test('clicking deno tab switches content', async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe('Installation Tabs (PackageManagerTabs)', () => {
     await denoTab.click()
 
     await expect(denoTab).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('text=deno run -A npm:bf add checkbox')).toBeVisible()
+    await expect(page.locator('text=deno x npm:@barefootjs/cli add checkbox')).toBeVisible()
   })
 
   test('switching tabs updates aria-selected correctly', async ({ page }) => {

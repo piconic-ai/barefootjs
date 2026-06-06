@@ -81,7 +81,7 @@ export function SkeletonRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add skeleton" />
+          <PackageManagerTabs command="@barefootjs/cli add skeleton" />
         </Section>
 
         {/* Usage */}

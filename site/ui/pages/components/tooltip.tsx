@@ -185,7 +185,7 @@ export function TooltipRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add tooltip" />
+          <PackageManagerTabs command="@barefootjs/cli add tooltip" />
         </Section>
 
         {/* Usage */}

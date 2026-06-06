@@ -5,7 +5,7 @@ Beautifully designed components built with BarefootJS and UnoCSS.
 ## Installation
 
 ```bash
-bunx bf add button
+bunx @barefootjs/cli add button
 ```
 
 ## Usage

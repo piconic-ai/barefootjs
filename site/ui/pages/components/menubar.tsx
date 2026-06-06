@@ -325,7 +325,7 @@ export function MenubarRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add menubar" />
+          <PackageManagerTabs command="@barefootjs/cli add menubar" />
         </Section>
 
         {/* Usage */}

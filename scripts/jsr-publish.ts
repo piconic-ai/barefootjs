@@ -66,7 +66,7 @@ const ignore: string[] = JSON.parse(
 // JSR is the home for the *libraries* consumers `import`. The
 // *executables* — the `bf` CLI and the `create-barefootjs` scaffolder —
 // stay npm-only and Deno users invoke them via the `npm:` specifier
-// (`deno run -A npm:bf …` / `deno run -A npm:create-barefootjs`), so
+// (`deno x npm:@barefootjs/cli …` / `deno x npm:create-barefootjs`), so
 // they're filtered out here. Eligibility:
 //   - scoped `@barefootjs/*` (JSR requires a scope; `create-barefootjs`
 //     is unscoped anyway),

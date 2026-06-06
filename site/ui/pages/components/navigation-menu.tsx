@@ -176,7 +176,7 @@ export function NavigationMenuRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add navigation-menu" />
+          <PackageManagerTabs command="@barefootjs/cli add navigation-menu" />
         </Section>
 
         {/* Usage */}

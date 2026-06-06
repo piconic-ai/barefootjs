@@ -102,7 +102,7 @@ export function SpinnerRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add spinner" />
+          <PackageManagerTabs command="@barefootjs/cli add spinner" />
         </Section>
 
         {/* Usage */}

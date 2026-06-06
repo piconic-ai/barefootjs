@@ -285,7 +285,7 @@ export function FieldRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add field" />
+          <PackageManagerTabs command="@barefootjs/cli add field" />
         </Section>
 
         {/* Usage */}

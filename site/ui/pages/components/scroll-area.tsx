@@ -133,7 +133,7 @@ export function ScrollAreaRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add scroll-area" />
+          <PackageManagerTabs command="@barefootjs/cli add scroll-area" />
         </Section>
 
         {/* Usage */}

@@ -186,7 +186,7 @@ export function PopoverRefPage() {
 
         {/* Installation */}
         <Section id="installation" title="Installation">
-          <PackageManagerTabs command="bf add popover" />
+          <PackageManagerTabs command="@barefootjs/cli add popover" />
         </Section>
 
         {/* Usage */}

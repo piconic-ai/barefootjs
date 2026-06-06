@@ -4,8 +4,8 @@
 //   1. A lockfile in `dir` — the user has already committed to a tool.
 //   2. The package manager that spawned this CLI, read from
 //      `npm_config_user_agent` (set by npm/bun/pnpm/yarn). Catches the
-//      common `bunx bf init` in an empty directory case where there
-//      is no lockfile yet but the user clearly wants bun.
+//      common `bunx @barefootjs/cli init` in an empty directory case
+//      where there is no lockfile yet but the user clearly wants bun.
 //
 // Falls back to 'npm' when neither signal is available.
 
@@ -13,7 +13,7 @@
 // unchanged under every runtime `bf` may execute on — Node, Bun, and
 // Deno. Deno only resolves builtins through the `node:` specifier, so
 // the prefix is what lets `detectPackageManager` run under
-// `deno run npm:bf ...` without a bundler rewrite.
+// `deno x npm:@barefootjs/cli ...` without a bundler rewrite.
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
@@ -55,12 +55,12 @@ export function detectPackageManager(
 //   - `process.versions.bun` / `process.versions.deno`: present
 //     whenever the bun / Deno runtime is in use (covers local-path and
 //     `npm:`-specifier invocations like `bun ./dist/cli.js`,
-//     `deno run -A npm:bf`, or a `#!/usr/bin/env bun` shebang, where the
-//     UA is not set). pnpm and yarn share node's runtime, so they fall
-//     through to the UA path only.
+//     `deno x npm:@barefootjs/cli`, or a `#!/usr/bin/env bun` shebang,
+//     where the UA is not set). pnpm and yarn share node's runtime, so
+//     they fall through to the UA path only.
 //
-// Deno is unusual: it does not set `npm_config_user_agent` and runs
-// `bf` via `deno run npm:bf`, so the runtime version is the only
+// Deno is unusual: it does not set `npm_config_user_agent` and runs the
+// CLI via `deno x npm:@barefootjs/cli`, so the runtime version is the only
 // reliable signal — checked after the UA so an explicit
 // `pnpm dlx`/`npx` wrapper (which would set the UA) still wins.
 export function detectInvokingPackageManager(
@@ -126,10 +126,11 @@ export function commandsFor(pm: PackageManager): PmCommands {
         // package.json scripts surface as Deno tasks, so `deno task
         // <script>` mirrors `bun run <script>` / `pnpm <script>`.
         run: s => `deno task ${s}`,
-        // One-shot binaries run straight from npm via the `npm:`
-        // specifier; `-A` grants the filesystem/network access `bf`
-        // needs to download and write components.
-        exec: c => `deno run -A npm:${c}`,
+        // One-shot binaries run straight from npm via `deno x` (Deno
+        // 2.6+, the `npx` equivalent) with the `npm:` specifier. `deno x`
+        // defaults to `--allow-all`, so no explicit `-A` is needed for
+        // the filesystem/network access the CLI uses to write components.
+        exec: c => `deno x npm:${c}`,
         // The scaffold's `test` task forwards extra args without a `--`
         // separator (like bun/pnpm/yarn), so the targeted form just
         // appends the path.
