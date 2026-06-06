@@ -14,9 +14,10 @@ WriteMakefile(
     ABSTRACT_FROM    => 'lib/BarefootJS/Backend/Xslate.pm',
     AUTHOR           => 'kobaken <kentafly88@gmail.com>',
     LICENSE          => 'mit',
-    MIN_PERL_VERSION => '5.020',
-    PREREQ_PM        => $runtime,
-    TEST_REQUIRES    => $test,
+    MIN_PERL_VERSION  => '5.020',
+    CONFIGURE_REQUIRES => { 'Module::CPANfile' => 0 },
+    PREREQ_PM         => $runtime,
+    TEST_REQUIRES     => $test,
     META_MERGE       => {
         'meta-spec' => { version => 2 },
         resources   => {

@@ -7,26 +7,37 @@
 //
 // For each entry in PACKAGES:
 //   1. Read the bumped version from package.json.
-//   2. Update `our $VERSION` in the main Perl module.
-//   3. Replace the {{$NEXT}} placeholder in Changes with the new version + date.
+//   2. Update `our $VERSION` in every Perl module listed under `modules`.
+//   3. Replace {{$NEXT}} in Changes with the versioned entry, then re-insert
+//      {{$NEXT}} at the top so the next release can reuse the same placeholder.
 
 import { readFileSync, writeFileSync } from 'fs';
+import { fileURLToPath } from 'url';
 import { join } from 'path';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const PACKAGES = [
   {
     dir: 'packages/adapter-perl',
-    mainModule: 'lib/BarefootJS.pm',
+    modules: [
+      'lib/BarefootJS.pm',
+      'lib/BarefootJS/DevReload.pm',
+    ],
   },
   {
     dir: 'packages/adapter-mojolicious',
-    mainModule: 'lib/Mojolicious/Plugin/BarefootJS.pm',
+    modules: [
+      'lib/Mojolicious/Plugin/BarefootJS.pm',
+      'lib/BarefootJS/Backend/Mojo.pm',
+      'lib/Mojolicious/Plugin/BarefootJS/DevReload.pm',
+    ],
   },
   {
     dir: 'packages/adapter-xslate',
-    mainModule: 'lib/BarefootJS/Backend/Xslate.pm',
+    modules: [
+      'lib/BarefootJS/Backend/Xslate.pm',
+    ],
   },
 ];
 
@@ -37,28 +48,31 @@ for (const pkg of PACKAGES) {
 
   const { version } = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'));
 
-  // Update $VERSION in the main Perl module.
-  const modulePath = join(pkgDir, pkg.mainModule);
-  const moduleSource = readFileSync(modulePath, 'utf8');
-  const updatedModule = moduleSource.replace(
-    /^our \$VERSION = ".+?";/m,
-    `our $VERSION = "${version}";`,
-  );
-  if (updatedModule === moduleSource) {
-    console.warn(`[warn] $VERSION not updated in ${pkg.mainModule} — pattern not found`);
-  } else {
-    writeFileSync(modulePath, updatedModule);
-    console.log(`Updated $VERSION → ${version} in ${pkg.mainModule}`);
+  // Update $VERSION in every Perl module belonging to this dist.
+  for (const mod of pkg.modules) {
+    const modulePath = join(pkgDir, mod);
+    const source = readFileSync(modulePath, 'utf8');
+    const updated = source.replace(
+      /^our \$VERSION = ".+?";/m,
+      `our $VERSION = "${version}";`,
+    );
+    if (updated === source) {
+      console.warn(`[warn] $VERSION not updated in ${mod} — pattern not found`);
+    } else {
+      writeFileSync(modulePath, updated);
+      console.log(`Updated $VERSION → ${version} in ${mod}`);
+    }
   }
 
-  // Replace {{$NEXT}} in Changes with the versioned entry.
+  // Replace {{$NEXT}} with the versioned entry, then re-insert {{$NEXT}} at
+  // the top so the placeholder is ready for the next release cycle.
   const changesPath = join(pkgDir, 'Changes');
-  const changesSource = readFileSync(changesPath, 'utf8');
-  const updatedChanges = changesSource.replace('{{$NEXT}}', `${version} - ${today}`);
-  if (updatedChanges === changesSource) {
-    console.warn(`[warn] {{$NEXT}} not found in ${pkg.dir}/Changes — already replaced?`);
-  } else {
-    writeFileSync(changesPath, updatedChanges);
-    console.log(`Updated Changes → ${version} - ${today} in ${pkg.dir}/Changes`);
+  const source = readFileSync(changesPath, 'utf8');
+  if (!source.includes('{{$NEXT}}')) {
+    console.warn(`[warn] {{$NEXT}} not found in ${pkg.dir}/Changes — skipping`);
+    continue;
   }
+  const updated = source.replace('{{$NEXT}}', `{{$NEXT}}\n\n${version} - ${today}`);
+  writeFileSync(changesPath, updated);
+  console.log(`Updated Changes → ${version} - ${today} in ${pkg.dir}/Changes`);
 }

@@ -8,6 +8,6 @@ on 'test' => sub {
     requires 'Test2::V0';
 };
 
-on 'develop' => sub {
+on 'configure' => sub {
     requires 'Module::CPANfile';
 };
