@@ -44,6 +44,13 @@ export interface CompileOptionsWithAdapter extends CompileOptions {
  *
  * For a single-component file the output is identical to the input order;
  * only repeated sibling imports collapse.
+ *
+ * Matching is whitespace-insensitive (`import {a,b} from 'x'` and
+ * `import {  a , b  }  from  "x"` fold the same): the merge must not silently
+ * depend on the emitter's exact spacing. A named import that failed to match
+ * would fall through to the by-line branch below and re-introduce the very
+ * duplicate-binding SyntaxError this function exists to prevent, so the
+ * patterns tolerate any spacing the generated lines might carry.
  */
 export function mergeTemplateImports(lines: string[]): string {
   const result: string[] = []
@@ -73,8 +80,8 @@ export function mergeTemplateImports(lines: string[]): string {
   for (const raw of lines) {
     const line = raw.trim()
     if (!line) continue
-    const typeMatch = line.match(/^import type \{ ([^}]+) \} from ['"]([^'"]+)['"];?$/)
-    const valueMatch = line.match(/^import \{ ([^}]+) \} from ['"]([^'"]+)['"];?$/)
+    const typeMatch = line.match(/^import\s+type\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?$/)
+    const valueMatch = line.match(/^import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?$/)
     if (valueMatch) {
       fold(valueMatch[2], valueMatch[1], valueIdx, valueNames, (s, n) => `import { ${[...n].join(', ')} } from '${s}'`)
     } else if (typeMatch) {
