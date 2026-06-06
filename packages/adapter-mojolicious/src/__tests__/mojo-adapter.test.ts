@@ -17,41 +17,7 @@ runAdapterConformanceTests({
   name: 'mojo',
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
-  // Dynamic style objects (non-static values) require Perl template
-  // interpolation support for JS object literals, not yet implemented.
-  // Mojo currently emits invalid Perl silently for this shape — the
-  // Go adapter records BF101 via `convertExpressionToGo()` for the
-  // same fixture (now contracted via `expectedDiagnostics`), but the
-  // Mojo adapter's expression gate doesn't yet lift the same
-  // failure into a `CompilerError`, so the fixture stays on `skipJsx`
-  // until that gate is extended (#1266 follow-up).
-  // `logical-or-jsx`, `nullish-coalescing-jsx`, `branch-map` reference
-  // a prop directly inside a conditional branch (`$label`, `$banner`,
-  // `$active`). The Mojo adapter emits these as bare Perl variables
-  // (`% if ($label) { ... }`) without a corresponding
-  // `my $label = ...;` declaration, so Perl rejects the template with
-  // "Global symbol requires explicit package name". Same class of
-  // Perl-scoping divergence that motivates the existing skips —
-  // out of scope for the #971 refactor.
-  // Return-position variants of the same divergence —
-  // `return-logical-or` / `return-nullish-coalescing` reference
-  // `$label` / `$banner` directly; `return-map` iterates over `$items`
-  // without a `my` declaration.
-  //
-  // `static-array-children` / `static-array-from-props` /
-  // `static-array-from-props-with-component` are no longer here —
-  // they're covered by `expectedDiagnostics` below, asserting that
-  // the adapter emits `BF103` / `BF104` at build time instead of
-  // silently emitting invalid Perl / unresolved cross-template
-  // references (#1266).
   skipJsx: [
-    'style-object-dynamic',
-    'logical-or-jsx',
-    'nullish-coalescing-jsx',
-    'branch-map',
-    'return-logical-or',
-    'return-nullish-coalescing',
-    'return-map',
     // #1297 fixed the harness-side IR emission gate. The remaining
     // gap is adapter-side: the Mojo adapter has no SSR context-
     // propagation mechanism, so `<Ctx.Provider value="dark">` doesn't
@@ -122,6 +88,11 @@ runAdapterConformanceTests({
     // surfaces BF101 with a wrap-in-`/* @client */` suggestion, matching
     // the Go adapter's behaviour.
     'style-3-signals': [{ code: 'BF101', severity: 'error' }],
+    // Dynamic JS object literal in `style={{ … }}` — same no-EP-form
+    // refusal as `style-3-signals`; `refuseUnsupportedAttrExpression`
+    // surfaces BF101 (mirrors the xslate + Go adapters). Was a stale
+    // `skipJsx` entry claiming the gate didn't lift to a CompilerError.
+    'style-object-dynamic': [{ code: 'BF101', severity: 'error' }],
     // #1244 stress catalog #12 (#1323): tagged-template-literal call
     // (`cn\`base \${tone()}\``) — same family as #1322 above and refused
     // via the same gate.
