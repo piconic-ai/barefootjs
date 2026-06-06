@@ -40,6 +40,11 @@ export interface ClientJsContext {
    * collide with same-named exports from other modules.
    */
   nonExportedSiblings: Set<string>
+  /**
+   * Profile mode (#1690, SR3). When true, emit IR-aligned `__bfId` args at
+   * reactive creation sites. Off by default → byte-identical output (SR8).
+   */
+  profile: boolean
   signals: SignalInfo[]
   memos: MemoInfo[]
   effects: EffectInfo[]

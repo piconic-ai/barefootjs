@@ -719,6 +719,7 @@ export function compileJSX(
         },
         undefined,
         adapterCaps,
+        options.profile,
       )
       errors.push(...componentIR.errors)
       if (result.code) {
@@ -734,6 +735,7 @@ export function compileJSX(
         options.localImportPrefixes,
         undefined,
         adapterCaps,
+        options.profile,
       )
       errors.push(...componentIR.errors)
       if (clientJs) {

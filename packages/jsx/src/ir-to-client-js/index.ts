@@ -58,6 +58,7 @@ export function generateClientJs(
   localImportPrefixes?: string[],
   scope?: ScopeInfo,
   adapterCapabilities?: AdapterCapabilities,
+  profile?: boolean,
 ): string {
   return generateClientJsWithSourceMap(
     ir,
@@ -66,6 +67,7 @@ export function generateClientJs(
     undefined,
     scope,
     adapterCapabilities,
+    profile,
   ).code
 }
 
@@ -80,8 +82,9 @@ export function generateClientJsWithSourceMap(
   options?: { sourceMaps?: boolean; generatedFileName?: string },
   scope?: ScopeInfo,
   adapterCapabilities?: AdapterCapabilities,
+  profile?: boolean,
 ): ClientJsResult {
-  const ctx = createContext(ir, scope, adapterCapabilities)
+  const ctx = createContext(ir, scope, adapterCapabilities, profile)
   const siblingOffsets = computeLoopSiblingOffsets(ir.root)
   collectElements(ir.root, ctx, siblingOffsets)
 
@@ -154,11 +157,13 @@ function createContext(
   ir: ComponentIR,
   scope?: ScopeInfo,
   adapterCapabilities?: AdapterCapabilities,
+  profile?: boolean,
 ): ClientJsContext {
   return {
     componentName: ir.metadata.componentName,
     fileScope: scope?.fileScope ?? '',
     nonExportedSiblings: scope?.nonExportedSiblings ?? new Set(),
+    profile: profile ?? false,
     signals: ir.metadata.signals,
     memos: ir.metadata.memos,
     effects: ir.metadata.effects,

@@ -1570,6 +1570,14 @@ export interface CompileOptions {
    * starting with `.`.
    */
   rewriteRelativeImport?: (importPath: string) => string
+  /**
+   * Profile mode (#1690, SR3). When true, the client-JS codegen emits
+   * IR-aligned `__bfId` arguments at reactive creation sites
+   * (`createSignal`/`createMemo`/`createEffect`) so a profiling run can join
+   * runtime events to IR nodes. Off by default — the emitted code is then
+   * byte-for-byte unchanged (SR8). Dev/profiling builds only.
+   */
+  profile?: boolean
 }
 
 export interface FileOutput {
