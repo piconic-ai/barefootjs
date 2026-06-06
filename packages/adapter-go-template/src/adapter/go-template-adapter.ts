@@ -466,6 +466,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private moduleStringConsts: Map<string, string> = new Map()
 
   /**
+   * All local constants (module + function-scope) from the IR, retained for
+   * the lifetime of `generate()` so the memo-computation path can resolve
+   * `Record`-index lookups (`variantClasses[variant]`) without re-threading the
+   * full `ir` through every helper. Reset at `generate()` entry.
+   */
+  private localConstants: IRMetadata['localConstants'] = []
+
+  /**
    * Set of prop NAMES whose resolved Go struct-field type is exactly
    * `interface{}` — i.e. nillable. Populated at `generate()` entry from
    * the SAME per-prop Go-type computation `generatePropsStruct` /
@@ -501,6 +509,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.propsObjectName = ir.metadata.propsObjectName
     this.restPropsName = ir.metadata.restPropsName ?? null
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.localConstants = ir.metadata.localConstants ?? []
     // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
     // before computing the nillable set / rendering, so the synthetic params
     // participate in attribute omission and field binding uniformly. Shared
@@ -824,6 +833,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // idempotent. `propsObjectName` is needed by the scan.
     this.propsObjectName = ir.metadata.propsObjectName
     augmentInheritedPropAccesses(ir)
+    // Mirror `generate()`: the `NewXxxProps` initializer computes memo SSR
+    // values, which inline module string consts and resolve `Record`-index
+    // lookups — both need the const tables populated on this standalone entry.
+    this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.localConstants = ir.metadata.localConstants ?? []
     const lines: string[] = []
 
     const componentName = ir.metadata.componentName
@@ -2786,6 +2800,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     while (ts.isParenthesizedExpression(body as ts.Expression)) {
       body = (body as ts.ParenthesizedExpression).expression
     }
+
+    // Block-bodied arrow (the Toggle `classes` memo): collect leading
+    // `const X = props.Y ?? 'lit'` key bindings, then resolve against the
+    // single returned template literal. The bindings let `variantClasses[variant]`
+    // resolve `variant` to prop `variant` with its `'default'` fallback key.
+    const localKeyBindings = new Map<string, { propName: string; defaultLiteral?: string }>()
+    if (ts.isBlock(body)) {
+      let returned: ts.Node | null = null
+      for (const s of body.statements) {
+        if (ts.isVariableStatement(s)) {
+          for (const d of s.declarationList.declarations) {
+            if (!ts.isIdentifier(d.name) || !d.initializer) continue
+            const binding = this.parseLocalKeyBinding(d.initializer)
+            if (binding) localKeyBindings.set(d.name.text, binding)
+          }
+        } else if (ts.isReturnStatement(s) && s.expression) {
+          returned = s.expression
+        } else if (ts.isExpressionStatement(s) || ts.isEmptyStatement(s)) {
+          // ignore
+        } else {
+          return null // unsupported statement shape — bail to existing patterns
+        }
+      }
+      if (!returned) return null
+      body = returned
+      while (ts.isParenthesizedExpression(body as ts.Expression)) {
+        body = (body as ts.ParenthesizedExpression).expression
+      }
+    }
+
     if (!ts.isTemplateExpression(body) && !ts.isNoSubstitutionTemplateLiteral(body)) {
       return null
     }
@@ -2799,7 +2843,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // head + each span
     if (body.head.text) segments.push(escGo(body.head.text))
     for (const span of body.templateSpans) {
-      const resolved = this.resolveTemplateInterpolation(span.expression, propNames)
+      const resolved = this.resolveTemplateInterpolation(span.expression, propNames, localKeyBindings)
       if (resolved === null) return null
       segments.push(resolved)
       if (span.literal.text) segments.push(escGo(span.literal.text))
@@ -2816,6 +2860,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private resolveTemplateInterpolation(
     expr: ts.Expression,
     propNames: Set<string>,
+    localKeyBindings: ReadonlyMap<string, { propName: string; defaultLiteral?: string }> = new Map(),
   ): string | null {
     let node: ts.Expression = expr
     while (ts.isParenthesizedExpression(node)) node = node.expression
@@ -2824,6 +2869,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (ts.isIdentifier(node)) {
       const inlined = this.resolveModuleStringConst(node.text)
       if (inlined !== null) return inlined
+      return null
+    }
+
+    // `recordConst[key]` → inline indexed Go map (the Toggle `classes` memo's
+    // `variantClasses[variant]` / `sizeClasses[size]`).
+    if (ts.isElementAccessExpression(node)) {
+      const indexed = this.recordIndexInterpolationToGo(node, propNames, localKeyBindings)
+      if (indexed !== null) return indexed
       return null
     }
 
@@ -2850,6 +2903,76 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `in.${this.capitalizeFieldName(propName)}`
     }
     return null
+  }
+
+  /**
+   * Parse a memo-local `const X = …` initializer into a `Record`-index key
+   * binding: `props.Y ?? 'lit'` → `{ propName: 'Y', defaultLiteral: 'lit' }`,
+   * or bare `props.Y` → `{ propName: 'Y' }`. Returns null for any other shape
+   * (a literal const, a call, etc.) so it simply isn't registered as a key.
+   */
+  private parseLocalKeyBinding(
+    init: ts.Expression,
+  ): { propName: string; defaultLiteral?: string } | null {
+    let node: ts.Expression = init
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+    ) {
+      const propName = this.propsAccessName(node.left)
+      const right = node.right
+      if (
+        propName &&
+        (ts.isStringLiteral(right) || ts.isNoSubstitutionTemplateLiteral(right))
+      ) {
+        return { propName, defaultLiteral: right.text }
+      }
+      return null
+    }
+    const propName = this.propsAccessName(node)
+    if (propName) return { propName }
+    return null
+  }
+
+  /**
+   * Lower a `recordConst[key]` interpolation of a template-literal memo to an
+   * inline indexed Go map. `recordConst` must be a module-scope
+   * `Record<staticKeys, scalar>` object literal; `key` is either a bare prop or
+   * a memo-local const bound to `props.X ?? 'default'` (resolved via
+   * `localKeyBindings`). When the key carries a `'default'` fallback, the map
+   * also maps the empty key `""` to that default entry's value, so an unset
+   * prop (Go zero value `""`) renders the default instead of an empty string —
+   * matching the Hono reference's `props.X ?? 'default'` runtime evaluation.
+   *
+   * Emits `map[string]string{…}[fmt.Sprint(in.Field)]` when every entry value
+   * is a string (composable with `+` in the surrounding concatenation), else
+   * `map[string]any{…}`. Returns null for any non-record / non-resolvable key
+   * so the caller falls through.
+   */
+  private recordIndexInterpolationToGo(
+    node: ts.ElementAccessExpression,
+    propNames: Set<string>,
+    localKeyBindings: ReadonlyMap<string, { propName: string; defaultLiteral?: string }>,
+  ): string | null {
+    const parsed = parseRecordIndexAccess(
+      node,
+      this.localConstants ?? [],
+      [...propNames].map(name => ({ name })),
+      name => localKeyBindings.get(name) ?? null,
+    )
+    if (!parsed) return null
+    const goVal = (v: { kind: 'number' | 'string'; text: string }) =>
+      v.kind === 'number' ? v.text : JSON.stringify(v.text)
+    const entries = parsed.entries.map(e => `${JSON.stringify(e.key)}: ${goVal(e.value)}`)
+    if (parsed.defaultKey !== undefined) {
+      const def = parsed.entries.find(e => e.key === parsed.defaultKey)
+      if (def) entries.unshift(`"": ${goVal(def.value)}`)
+    }
+    const allString = parsed.entries.every(e => e.value.kind === 'string')
+    const mapType = allString ? 'map[string]string' : 'map[string]any'
+    this.usesFmt = true
+    return `${mapType}{${entries.join(', ')}}[fmt.Sprint(in.${this.capitalizeFieldName(parsed.indexPropName)})]`
   }
 
   /**
@@ -2978,6 +3101,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * Whether a memo computation is an arrow whose result is a template literal —
+   * either a concise body (`() => \`…\``) or a block body whose `return` is a
+   * template literal (`() => { const v = …; return \`…\` }`). Used by both
+   * `inferMemoType` (→ `string`) and (indirectly) the SSR-value computation.
+   */
+  private isTemplateLiteralMemo(computation: string): boolean {
+    const sf = ts.createSourceFile(
+      '__memo.ts', `const __x = (${computation});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isVariableStatement(stmt)) return false
+    let init = stmt.declarationList.declarations[0]?.initializer
+    while (init && ts.isParenthesizedExpression(init)) init = init.expression
+    if (!init || !ts.isArrowFunction(init)) return false
+    let body = init.body as ts.Node
+    while (ts.isParenthesizedExpression(body as ts.Expression)) {
+      body = (body as ts.ParenthesizedExpression).expression
+    }
+    if (ts.isBlock(body)) {
+      const ret = body.statements.find(ts.isReturnStatement)
+      if (!ret || !ret.expression) return false
+      body = ret.expression
+      while (ts.isParenthesizedExpression(body as ts.Expression)) {
+        body = (body as ts.ParenthesizedExpression).expression
+      }
+    }
+    return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
+  }
+
+  /**
    * Infer the Go type for a memo based on its computation and dependencies.
    */
   private inferMemoType(
@@ -2985,6 +3138,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     signals: { getter: string; initialValue: string; type: TypeInfo }[],
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
   ): string {
+    // A template-literal memo (concise `() => \`…\`` or block-bodied
+    // `() => { …; return \`…\` }`, e.g. the Toggle/Switch `classes` memo) always
+    // produces a string. Decide this first so the class-string `/` in
+    // `ring-ring/50` doesn't trip the arithmetic heuristic below into `int`.
+    if (this.isTemplateLiteralMemo(memo.computation)) return 'string'
+
     // Check if computation involves multiplication (*) - likely number
     if (memo.computation.includes('*') || memo.computation.includes('/') ||
         memo.computation.includes('+') || memo.computation.includes('-')) {

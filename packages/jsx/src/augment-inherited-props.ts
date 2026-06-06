@@ -199,6 +199,13 @@ export interface RecordIndexAccess {
   indexPropName: string
   /** The map's entries in source order — each a static key + scalar literal value. */
   entries: RecordIndexEntry[]
+  /**
+   * When the index key is a local const with a `props.X ?? '<lit>'` default
+   * (the Toggle `classes` memo's `const variant = props.variant ?? 'default'`),
+   * the `<lit>` fallback key — so a caller can render the default entry's value
+   * when the prop is unset. Absent when the key is a bare prop with no default.
+   */
+  defaultKey?: string
 }
 
 /**
@@ -223,13 +230,35 @@ export function parseRecordIndexAccess(
   val: ts.Expression,
   localConstants: readonly NamedConst[],
   propsParams: ReadonlyArray<{ name: string }>,
+  /**
+   * Optional resolver for an index key that isn't a bare prop. The Toggle
+   * `classes` memo indexes by a memo-local const (`variantClasses[variant]`
+   * where `const variant = props.variant ?? 'default'`); the caller passes its
+   * block-scoped binding map here so the structural parse stays generic. When
+   * provided and the key isn't a prop, it's resolved to the underlying prop
+   * plus an optional default-key literal. Returns `null` to reject.
+   */
+  resolveKey?: (name: string) => { propName: string; defaultLiteral?: string } | null,
 ): RecordIndexAccess | null {
   if (!ts.isElementAccessExpression(val)) return null
   const obj = val.expression
   const arg = val.argumentExpression
   if (!ts.isIdentifier(obj) || !ts.isIdentifier(arg)) return null
-  // KEY must be a prop.
-  if (!propsParams.some(p => p.name === arg.text)) return null
+  // KEY resolution. A caller-supplied local key wins first — the Toggle memo's
+  // `const variant = props.variant ?? 'default'` shadows the same-named
+  // `variant` prop, and only the local binding carries the `'default'` fallback.
+  // Otherwise the key must be a bare prop (`sizeMap[size]`).
+  let indexPropName: string
+  let defaultKey: string | undefined
+  const resolved = resolveKey?.(arg.text)
+  if (resolved) {
+    indexPropName = resolved.propName
+    defaultKey = resolved.defaultLiteral
+  } else if (propsParams.some(p => p.name === arg.text)) {
+    indexPropName = arg.text
+  } else {
+    return null
+  }
   // IDENT must resolve to a module-scope object-literal const.
   const constInfo = localConstants.find(c => c.name === obj.text && c.isModule)
   if (constInfo?.value === undefined) return null
@@ -268,5 +297,5 @@ export function parseRecordIndexAccess(
       return null
     }
   }
-  return { indexPropName: arg.text, entries }
+  return { indexPropName, entries, defaultKey }
 }

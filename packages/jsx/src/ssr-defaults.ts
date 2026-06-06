@@ -192,12 +192,33 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   if (ts.isNonNullExpression(node)) return evalNode(node.expression, ctx)
 
   // `createMemo(() => count() * 2)` stores the full arrow expression
-  // string. For evaluation, we only care about the body — and only the
-  // expression-bodied form (`() => expr`). Block-bodied arrows
-  // (`() => { ... }`) would need branch tracking we don't attempt.
+  // string. For evaluation, we only care about the body. The
+  // expression-bodied form (`() => expr`) evaluates its body directly; a
+  // block-bodied arrow (`() => { const v = …; return \`…\` }`, the Toggle
+  // `classes` memo) evaluates its leading `const` declarations into a local
+  // binding scope and then its single `return` expression. We don't attempt
+  // branch tracking — any control flow before the `return` leaves it
+  // unresolved.
   if (ts.isArrowFunction(node)) {
-    if (node.parameters.length === 0 && !ts.isBlock(node.body)) {
-      return evalNode(node.body as ts.Expression, ctx)
+    if (node.parameters.length !== 0) return UNRESOLVED
+    if (!ts.isBlock(node.body)) return evalNode(node.body as ts.Expression, ctx)
+    const localBindings: Record<string, EvalResult> = { ...ctx.bindings }
+    const localCtx: EvalContext = { ...ctx, bindings: localBindings }
+    for (const stmt of node.body.statements) {
+      if (ts.isVariableStatement(stmt)) {
+        for (const d of stmt.declarationList.declarations) {
+          if (!ts.isIdentifier(d.name) || !d.initializer) continue
+          const v = evalNode(d.initializer, localCtx)
+          // Leave unresolved locals unbound; only the `return` referencing
+          // one would then surface UNRESOLVED.
+          if (v !== UNRESOLVED) localBindings[d.name.text] = v
+        }
+      } else if (ts.isReturnStatement(stmt)) {
+        return stmt.expression ? evalNode(stmt.expression, localCtx) : UNRESOLVED
+      } else {
+        // Any other statement (a branch, a side-effecting call) — bail.
+        return UNRESOLVED
+      }
     }
     return UNRESOLVED
   }
@@ -259,10 +280,27 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     return arr
   }
 
-  if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
-    // `props.X` / `props?.X` / `props['X']` — read of a binding we know
-    // nothing about, so resolve to `undefined`. Chained access (`a.b.c`)
-    // collapses the same way because the base read is already undefined.
+  if (ts.isElementAccessExpression(node)) {
+    // Index into a resolved object / array with a resolved scalar key — the
+    // Toggle `classes` memo's `variantClasses[variant]` where `variantClasses`
+    // is a seeded module-const object and `variant` resolved to `'default'`.
+    const base = evalNode(node.expression, ctx)
+    if (base === undefined) return undefined // `props['X']` → undefined
+    if (base === UNRESOLVED || base === null || typeof base !== 'object') return UNRESOLVED
+    if (!node.argumentExpression) return UNRESOLVED
+    const key = evalNode(node.argumentExpression, ctx)
+    if (key === UNRESOLVED || key === undefined || key === null) return UNRESOLVED
+    const k = String(key as string | number)
+    // Missing key → JS `undefined` (the `??`/`||` defaulting flows through it).
+    return Object.prototype.hasOwnProperty.call(base, k)
+      ? (base as Record<string, unknown>)[k]
+      : undefined
+  }
+
+  if (ts.isPropertyAccessExpression(node)) {
+    // `props.X` / `props?.X` — read of a binding we know nothing about, so
+    // resolve to `undefined`. Chained access (`a.b.c`) collapses the same way
+    // because the base read is already undefined.
     const baseResult = evalNode(node.expression, ctx)
     if (baseResult === undefined) return undefined
     return UNRESOLVED
