@@ -27,6 +27,7 @@ const ADAPTERS: Adapter[] = [
   { slug: 'chi',         name: 'Chi',         language: 'Go' },
   { slug: 'nethttp',     name: 'net/http',    language: 'Go' },
   { slug: 'mojolicious', name: 'Mojolicious', language: 'Perl' },
+  { slug: 'xslate',      name: 'Text::Xslate', language: 'Perl' },
 ]
 
 function IntegrationsIndex() {
@@ -55,7 +56,7 @@ export function createIntegrationsApp() {
     c.render(<IntegrationsIndex />, {
       title: 'Integrations — Barefoot.js',
       description:
-        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), and Mojolicious (Perl).',
+        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), and Mojolicious and Text::Xslate (Perl).',
     }),
   )
 

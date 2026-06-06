@@ -138,6 +138,19 @@ services:
       - ./packages/adapter-perl/lib:/workspace/packages/adapter-perl/lib
       - ./packages/adapter-mojolicious/lib:/workspace/packages/adapter-mojolicious/lib
 
+  xslate:
+    build:
+      context: .
+      dockerfile: integrations/xslate/Dockerfile.dev
+    working_dir: /workspace/integrations/xslate
+    environment:
+      BASE_PATH: /integrations/xslate
+      PLACK_ENV: development
+    volumes:
+      - ./integrations/xslate:/workspace/integrations/xslate
+      - ./packages/adapter-perl/lib:/workspace/packages/adapter-perl/lib
+      - ./packages/adapter-xslate/lib:/workspace/packages/adapter-xslate/lib
+
   site-core:
     build:
       context: .
