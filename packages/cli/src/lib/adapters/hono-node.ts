@@ -120,7 +120,7 @@ import { BfImportMap, BfDevReload } from '@barefootjs/hono/app'
 import { BfScripts } from '@barefootjs/hono/scripts'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import staticManifest from './dist/components/manifest.json'
+import staticManifest from './dist/components/manifest.json' with { type: 'json' }
 import { isDev } from './env'
 
 declare module 'hono' {
