@@ -34,7 +34,7 @@ import { commandGroups } from './lib/command-groups'
 // Import manifest for dependency-aware preloading
 // This enables BfPreload to automatically preload the full dependency chain
 // Example: If Button depends on Slot, preloading Button will also preload Slot
-import manifest from './dist/components/manifest.json'
+import manifest from './dist/components/manifest.json' with { type: 'json' }
 
 /**
  * Predictable instance ID generator for E2E testing.
