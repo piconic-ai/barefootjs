@@ -13,7 +13,12 @@ import {
   formatStaticBudget,
   formatBudgetDiff,
   buildProfileReport,
+  parseProfilerId,
+  buildIdIndex,
+  joinProfilerEvents,
 } from '../profiler'
+import { buildComponentAnalysis } from '../debug'
+import type { ProfilerEvent } from '@barefootjs/shared'
 
 const memoChainSource = `
   'use client'
@@ -101,6 +106,64 @@ describe('diffStaticBudget (SR6)', () => {
     const diff = diffStaticBudget(a, b)
     expect(diff.regressed).toBe(false)
     expect(formatBudgetDiff(diff)).toContain('no structural reactivity change')
+  })
+})
+
+describe('parseProfilerId (SR4)', () => {
+  test('splits <Component>#<kind>:<rest>', () => {
+    expect(parseProfilerId('Calc#memo:doubled')).toEqual({ component: 'Calc', kind: 'memo', rest: 'doubled' })
+  })
+  test('keeps the full rest for controlled-effect ids', () => {
+    expect(parseProfilerId('Calc#effect:controlled:setCount')).toEqual({
+      component: 'Calc', kind: 'effect', rest: 'controlled:setCount',
+    })
+  })
+  test('returns null for non-profiler strings', () => {
+    expect(parseProfilerId('not-an-id')).toBeNull()
+    expect(parseProfilerId('Calc#memo')).toBeNull()
+  })
+})
+
+describe('buildIdIndex + joinProfilerEvents (SR4 join)', () => {
+  const { graph } = buildComponentAnalysis(memoChainSource, 'Calc.tsx')
+  const index = buildIdIndex(graph)
+
+  const ev = (type: ProfilerEvent['type'], fields: Partial<ProfilerEvent> = {}): ProfilerEvent =>
+    ({ type, seq: 0, turn: null, ...fields })
+
+  test('indexes signals and memos by their compiler id, with source loc', () => {
+    const sig = index.get('Calc#signal:count')
+    expect(sig).toMatchObject({ kind: 'signal', name: 'count' })
+    expect(sig!.loc.line).toBeGreaterThan(0)
+
+    const memo = index.get('Calc#memo:a')
+    expect(memo).toMatchObject({ kind: 'memo', name: 'a' })
+  })
+
+  test('indexes the controlled-signal sync effect under its setter', () => {
+    expect(index.get('Calc#effect:controlled:setCount')).toMatchObject({ kind: 'effect' })
+  })
+
+  test('resolves an event stream to source-mapped nodes', () => {
+    const events = [
+      ev('signalSet', { signal: 'Calc#signal:count' }),
+      ev('effectEnter', { subscriber: 'Calc#memo:a' }),
+    ]
+    const { joined, unattributed } = joinProfilerEvents(events, index)
+    expect(joined[0].signal).toMatchObject({ kind: 'signal', name: 'count' })
+    expect(joined[1].subscriber).toMatchObject({ kind: 'memo', name: 'a' })
+    expect(unattributed).toHaveLength(0)
+  })
+
+  test('surfaces unresolved ids as a coverage gap, never dropping events', () => {
+    const events = [
+      ev('effectEnter', { subscriber: 'Calc#effect:does-not-exist' }),
+      ev('effectExit', { subscriber: 'Calc#effect:does-not-exist', dur: 1 }),
+    ]
+    const { joined, unattributed } = joinProfilerEvents(events, index)
+    expect(joined).toHaveLength(2) // events preserved
+    expect(joined[0].subscriber).toBeUndefined()
+    expect(unattributed).toEqual([{ id: 'Calc#effect:does-not-exist', count: 2 }])
   })
 })
 

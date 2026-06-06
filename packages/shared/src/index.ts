@@ -35,3 +35,9 @@ export {
   BOOLEAN_ATTRS,
 } from './dom-prop.ts'
 export type { DOMPropKind, DOMPropClassification } from './dom-prop.ts'
+
+export type {
+  ProfilerEvent,
+  ProfilerEventType,
+  ProfilerSubscriberKind,
+} from './profiler-events.ts'

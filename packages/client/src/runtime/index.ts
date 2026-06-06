@@ -30,6 +30,13 @@ export {
   type SubscriberKind,
 } from '@barefootjs/client/reactive'
 
+export {
+  createRecordingSink,
+  type ProfilerEvent,
+  type ProfilerEventType,
+  type RecordingSink,
+} from '../profiler-events.ts'
+
 export { splitProps } from '../split-props.ts'
 export { __slot, type SlotMarker } from '../slot.ts'
 export { forwardProps } from '../forward-props.ts'
