@@ -10,7 +10,7 @@
  */
 
 import type { ClientJsContext } from '../types.ts'
-import { toDomEventName, varSlotId, wrapHandlerInBlock } from '../utils.ts'
+import { toDomEventName, varSlotId, wrapHandlerInBlock, wrapHandlerForTurn } from '../utils.ts'
 
 export function emitEventHandlers(
   lines: string[],
@@ -21,7 +21,11 @@ export function emitEventHandlers(
     if (conditionalSlotIds.has(elem.slotId)) continue
     for (const event of elem.events) {
       const eventName = toDomEventName(event.name)
-      const wrappedHandler = wrapHandlerInBlock(event.handler)
+      // Profile mode (#1690, SR3): bracket the handler with turn markers so a
+      // profiling run attributes the reactive work it triggers to this turn.
+      const wrappedHandler = ctx.profile
+        ? wrapHandlerForTurn(event.handler, `${ctx.componentName}#handler:${elem.slotId}:${event.name}`)
+        : wrapHandlerInBlock(event.handler)
       if (elem.slotId === '__scope') {
         lines.push(`  if (__scope) __scope.addEventListener('${eventName}', ${wrappedHandler})`)
       } else {

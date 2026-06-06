@@ -61,6 +61,14 @@ export interface ProfilerEventSink {
   batchBegin(depth: number): void
   /** A batch flush ran `flushed` effects. */
   batchFlush(flushed: number): void
+  /**
+   * A user interaction (one event handler invocation) began. Compiler-emitted
+   * `beginTurn(...)` wraps the handler body so subsequent events in this turn
+   * are attributed to `handlerId`. `loc` is the optional source location.
+   */
+  turnBegin(handlerId: string, loc?: string): void
+  /** The current turn ended (handler returned). */
+  turnEnd(): void
 }
 
 /** A signal's subscriber set, tagged with the signal's id for edge-removal events. */
@@ -78,6 +86,23 @@ let subscriberSeq = 0
  */
 export function setProfilerSink(sink: ProfilerEventSink | null): void {
   profilerSink = sink
+}
+
+/**
+ * Mark the start of a user-interaction turn (#1690, SR3). Compiler-emitted in
+ * profile mode at every event-handler boundary as
+ * `beginTurn(handlerId, loc); try { … } finally { endTurn() }`. Measurement
+ * only — it does not change `set()`'s synchronous semantics; it just stamps a
+ * turn onto the events emitted between begin and end. No-op when profiling is
+ * off.
+ */
+export function beginTurn(handlerId: string, loc?: string): void {
+  if (profilerSink) profilerSink.turnBegin(handlerId, loc)
+}
+
+/** Mark the end of the current interaction turn (#1690, SR3). */
+export function endTurn(): void {
+  if (profilerSink) profilerSink.turnEnd()
 }
 
 type EffectContext = {

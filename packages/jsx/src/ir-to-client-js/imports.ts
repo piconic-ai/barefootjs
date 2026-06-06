@@ -13,6 +13,8 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText',
   'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
+  // Profile mode (#1690, SR3) — turn-boundary markers around event handlers.
+  'beginTurn', 'endTurn',
 ] as const
 
 /** @deprecated Use RUNTIME_IMPORT_CANDIDATES */
