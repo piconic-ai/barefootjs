@@ -7,8 +7,6 @@ on 'test' => sub {
     requires 'Test::Mojo';
 };
 
-# Authoring tools — building the CPAN dist with Minilla (scripts/perl-dist.sh).
 on 'develop' => sub {
-    requires 'Minilla';
-    requires 'Software::License::MIT';
+    requires 'Module::CPANfile';
 };

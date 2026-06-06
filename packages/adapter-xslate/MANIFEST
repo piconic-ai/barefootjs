@@ -1,0 +1,7 @@
+Changes
+cpanfile
+lib/BarefootJS/Backend/Xslate.pm
+LICENSE
+MANIFEST
+Makefile.PL
+t/render.t

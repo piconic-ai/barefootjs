@@ -3,18 +3,27 @@
 # When .changeset/*.md files are present on main → opens a "Version Packages" PR.
 # When that PR is merged (no changeset files remain) → builds and publishes.
 #
-# Uses a hybrid approach:
+# npm / JSR:
 #   - `bun pm pack` to resolve workspace:* protocol references
 #   - `npm publish <tarball> --provenance` for OIDC auth + provenance attestation
+#   - No long-lived NPM_TOKEN needed — uses npm Trusted Publishing (OIDC).
+#   - Requires npm CLI >= 11.5.1 for OIDC support (Node 22 ships npm 10).
+#   Prerequisites (one-time setup on npmjs.com):
+#     For each package (or at org level for @barefootjs):
+#       Package settings → Trusted Publishers → Add GitHub Actions
+#         Repository: piconic-ai/barefootjs
+#         Workflow:   release.yml
 #
-# No long-lived NPM_TOKEN needed — uses npm Trusted Publishing (OIDC).
-# Requires npm CLI >= 11.5.1 for OIDC support (Node 22 ships npm 10).
-#
-# Prerequisites (one-time setup on npmjs.com):
-#   For each package (or at org level for @barefootjs):
-#     Package settings → Trusted Publishers → Add GitHub Actions
-#       Repository: piconic-ai/barefootjs
-#       Workflow:   release.yml
+# CPAN (Perl dists):
+#   - version hook: `scripts/sync-perl-versions.ts` syncs $VERSION + Changes
+#     from package.json after `changeset version` runs.
+#   - publish: Makefile.PL / make dist → cpan-upload for each Perl package
+#     that was bumped in this release. Requires PAUSE_ID and PAUSE_PASSWORD
+#     secrets (PAUSE uses Basic auth — no token available).
+#   Package → npm name mapping:
+#     BarefootJS                   @barefootjs/perl
+#     Mojolicious::Plugin::BarefootJS  @barefootjs/mojolicious
+#     BarefootJS::Backend::Xslate  @barefootjs/xslate
 
 name: Release
 
@@ -59,7 +68,7 @@ jobs:
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
-          version: bunx changeset version
+          version: bunx changeset version && bun scripts/sync-perl-versions.ts
           publish: bun run release:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,3 +81,46 @@ jobs:
       - name: Publish to JSR
         if: steps.changesets.outputs.published == 'true'
         run: bun scripts/jsr-publish.ts
+
+      # Publish Perl dists to CPAN for any Perl package bumped in this release.
+      - name: Setup Perl
+        if: steps.changesets.outputs.published == 'true'
+        uses: shogo82148/actions-setup-perl@a198315ec4e9244f206879ea7b63078003aec8a6 # v1
+        with:
+          perl-version: '5.40'
+
+      - name: Install Perl build tools
+        if: steps.changesets.outputs.published == 'true'
+        run: cpanm --notest Module::CPANfile CPAN::Uploader
+
+      - name: Publish to CPAN
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          PAUSE_ID: ${{ secrets.PAUSE_ID }}
+          PAUSE_PASSWORD: ${{ secrets.PAUSE_PASSWORD }}
+          PUBLISHED: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          published=$(echo "$PUBLISHED" | jq -r '.[].name')
+
+          # Publish core (BarefootJS) first and install locally so backend
+          # dists can resolve their `requires 'BarefootJS'` at build time.
+          if echo "$published" | grep -qx '@barefootjs/perl'; then
+            echo "Publishing packages/adapter-perl to CPAN..."
+            cd packages/adapter-perl
+            perl Makefile.PL && make dist
+            cpan-upload -u "$PAUSE_ID" -p "$PAUSE_PASSWORD" ./*.tar.gz
+            cpanm --notest ./*.tar.gz
+            cd -
+          fi
+
+          # Backend dists (both depend on BarefootJS).
+          for pair in '@barefootjs/mojolicious:packages/adapter-mojolicious' '@barefootjs/xslate:packages/adapter-xslate'; do
+            name="${pair%%:*}"
+            dir="${pair##*:}"
+            echo "$published" | grep -qx "$name" || continue
+            echo "Publishing $dir to CPAN..."
+            cd "$dir"
+            perl Makefile.PL && make dist
+            cpan-upload -u "$PAUSE_ID" -p "$PAUSE_PASSWORD" ./*.tar.gz
+            cd -
+          done

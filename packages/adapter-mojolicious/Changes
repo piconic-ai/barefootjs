@@ -1,6 +1,6 @@
 Revision history for Perl extension Mojolicious-Plugin-BarefootJS
 
-{{$NEXT}}
+0.8.0 - 2026-06-06
 
     - Initial version. Mojolicious integration for the BarefootJS runtime:
       the `bf` helper, BarefootJS::Backend::Mojo, and the DevReload plugin.
