@@ -16,11 +16,15 @@ import type {
   ItemLookup,
 } from './types.ts'
 
-export function buildDynamicLoopDelegationPlan(elem: TopLevelLoop): EventDelegationPlan {
+export function buildDynamicLoopDelegationPlan(
+  elem: TopLevelLoop,
+  profileComponentName?: string,
+): EventDelegationPlan {
   return {
     kind: 'event-delegation',
     containerVar: `_${varSlotId(elem.slotId)}`,
     events: elem.bindings.events,
+    profileComponentName,
     itemLookup: buildKeyedOrIndexLookup({
       // Chain `.filter()` / `.toSorted()` so the index-based lookup walks
       // the same array shape mapArray reconciled into the DOM (#1434).
@@ -35,6 +39,11 @@ export function buildDynamicLoopDelegationPlan(elem: TopLevelLoop): EventDelegat
   }
 }
 
+// NOTE: branch-scoped delegation (a dynamic loop nested inside a conditional
+// branch) does not yet thread `profileComponentName` — `buildBranchLoopPlan`
+// is reached via `branch.loops.map(...)` without `ctx`. Turn markers on this
+// nested path are tracked as a follow-up; top-level + static-array delegation
+// (the common dynamic-list case) carry markers below.
 export function buildBranchLoopDelegationPlan(loop: BranchLoop, cv: string): EventDelegationPlan {
   return {
     kind: 'event-delegation',
@@ -56,11 +65,15 @@ export function buildBranchLoopDelegationPlan(loop: BranchLoop, cv: string): Eve
  * no `data-key` markers, so the lookup walks up to the container's direct
  * child and uses `indexOf` (with optional sibling offset).
  */
-export function buildStaticArrayDelegationPlan(elem: TopLevelLoop): EventDelegationPlan {
+export function buildStaticArrayDelegationPlan(
+  elem: TopLevelLoop,
+  profileComponentName?: string,
+): EventDelegationPlan {
   return {
     kind: 'event-delegation',
     containerVar: `_${varSlotId(elem.slotId)}`,
     events: elem.bindings.events,
+    profileComponentName,
     itemLookup: {
       kind: 'static-index',
       // Static arrays render through the same `.filter()`/`.toSorted()`

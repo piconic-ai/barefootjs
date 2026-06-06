@@ -66,7 +66,7 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLoc
   for (const elem of ctx.loopElements) {
     const plan = buildLoopPlan(elem, { unsafeLocalNames })
     stringifyLoop(lines, plan)
-    emitLoopEventDelegation(lines, elem, plan.kind)
+    emitLoopEventDelegation(lines, elem, plan.kind, ctx.profile ? ctx.componentName : undefined)
   }
 }
 
@@ -74,13 +74,14 @@ function emitLoopEventDelegation(
   lines: string[],
   elem: TopLevelLoop,
   kind: 'plain' | 'component' | 'composite' | 'static',
+  profileComponentName?: string,
 ): void {
   if (kind === 'static') {
     // Event delegation for plain elements in static arrays (#537). Static
     // arrays have no data-key/bf-i markers, so walk up from target to the
     // container's direct child and use indexOf for index lookup.
     if (!elem.childComponent && elem.bindings.events.length > 0) {
-      stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem))
+      stringifyEventDelegation(lines, buildStaticArrayDelegationPlan(elem, profileComponentName))
     }
     return
   }
@@ -99,6 +100,6 @@ function emitLoopEventDelegation(
     && !elem.useElementReconciliation
     && elem.bindings.events.length > 0
   ) {
-    stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem))
+    stringifyEventDelegation(lines, buildDynamicLoopDelegationPlan(elem, profileComponentName))
   }
 }
