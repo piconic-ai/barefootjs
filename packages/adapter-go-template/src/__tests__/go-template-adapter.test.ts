@@ -37,34 +37,38 @@ runAdapterConformanceTests({
   skipJsx: [
     // #1244 stress catalog (#1326): `children={<span/>}` — the IR
     // hoists the span with `needsScope: true` so the Hono reference
-    // emits `bf-s` on the inner `<span>`. The Go adapter renders the
-    // span up front as a compile-time HTML fragment containing the
-    // `{{bfScopeAttr .}}` action, then passes it via `template.HTML`
-    // through the parent's `{{.Children}}` interpolation — but
-    // `template.HTML` is marked-as-safe-output, not recursively
-    // parsed, so the action survives as literal text in the rendered
-    // HTML. Fixing this requires either (a) re-emitting the inner
-    // span as its own named template definition the outer template
-    // can pass its struct to, or (b) embedding the resolved scope ID
-    // at compile time. Neither lands in this PR; the Mojo sibling
-    // case is handled by routing the hoisted JSX through the same
-    // `begin %>…<% end` capture as nested children (see #1326 fix).
+    // emits `bf-s` on the inner `<span>`. The Go adapter has no path to
+    // render a hoisted-JSX child handed in through the `children`
+    // attribute, so the child is DROPPED: the parent renders
+    // `<div bf-s="test_s0"></div>` with an empty body (verified — no
+    // compile error, no literal `{{bfScopeAttr}}` text either; that
+    // older literal-survives-in-output failure mode no longer occurs).
+    // Closing the gap needs the inner span re-emitted as its own named
+    // template definition the outer template can pass its struct to, or
+    // the resolved scope id embedded at compile time. Neither lands
+    // here; the Mojo / Xslate siblings already pass by routing the
+    // hoisted JSX through the same nested-children capture.
     'children-jsx-expression',
-    // #1335: fragment-wrapped form of the same shape. Now that the IR
-    // unwraps `<><span/></>` into the bare-element form, the Go adapter
-    // hits the identical `template.HTML` interpolation gap as
-    // `children-jsx-expression` above.
+    // #1335: fragment-wrapped form of the same shape. Once the IR
+    // unwraps `<><span/></>` into the bare-element form the Go adapter
+    // hits the identical drop as `children-jsx-expression` above.
     'fragment-wrapped-children-jsx-expression',
-    // Shared-component multi-component fixtures (#1466). Boolean
-    // attribute divergence is now collapsed by `normalizeHTML`, so
-    // single-root variants (`conditional-return-*`, `form`, `portal`,
-    // `reactive-props`) participate again. These two still diverge
-    // because the harness's child renderer pins child `bf-s` to a
-    // `test_<sN>` literal rather than `<ChildName>_<id>_<sN>`. Same
-    // class of test-harness scope-id plumbing the `componentName`
-    // option fixed on the Hono side. Separate follow-up.
+    // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
+    // sibling `ToggleItem` children inside a keyed `.map`. The Go
+    // child-slice init types the loop input as `[]any` rather than
+    // `[]ToggleItemInput`, so the generated `NewToggleProps` struct
+    // literal fails to compile (`cannot use []any{…} as
+    // []ToggleItemInput value in struct literal`). Separate follow-up —
+    // needs the loop-child init to emit the typed element slice, plus
+    // per-item `defaultOn` seeding and the `data-key` attribute shape.
+    //
+    // `props-reactivity-comparison` graduated: the Go test-render now
+    // honours the fixture's `componentName` (`PropsReactivityComparison`,
+    // the second export of `ReactiveProps.tsx`) instead of always
+    // rendering the first export, and the generated child constructors
+    // compute the `displayValue = props.value * 10` memo from the
+    // passed prop — so SSR matches Hono byte-for-byte.
     'toggle-shared',
-    'props-reactivity-comparison',
   ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the

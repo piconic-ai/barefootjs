@@ -22,13 +22,32 @@ runAdapterConformanceTests({
     // template reads a stash key that's never seeded. Implemented on Go; the
     // Perl stash-seed path is a follow-up port, so Mojo stays skipped (#1297).
     'context-provider',
-    // Multi-component shared fixtures with per-item loop state. The child
-    // scope-id plumbing is now fixed (children derive `<parentScope>_<sN>`
-    // from `$bf->_scope_id` in `test-render.ts`, which unblocked
-    // `reactive-props`); these two still diverge on additional per-item
-    // loop-state seeding the Mojo harness doesn't yet replicate. (xslate
-    // skips the same pair.)
+    // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
+    // sibling `ToggleItem` children inside a keyed `.map`. Each child's
+    // `on = props.defaultOn ?? false` signal is never seeded into the
+    // loop-child stash, so the rendered child template trips Perl strict
+    // mode (`Global symbol "$on" requires explicit package name`). The
+    // harness child renderer forwards only the explicitly-passed props;
+    // it does not run the `_derive_stash_from_defaults` seeding the
+    // production runtime applies. Plus the loop-child scope id is
+    // `toggle_item_<rand>` (snake-case template name) rather than the
+    // `ToggleItem_*` PascalCase the reference pins, and the `key=` →
+    // `data-key` attribute isn't emitted. Separate follow-up. (xslate
+    // skips this for the same reasons.)
     'toggle-shared',
+    // `props-reactivity-comparison` (the `PropsReactivityComparison`
+    // export of `ReactiveProps.tsx`): componentName selection is now
+    // honoured (the test-render picks the requested export), but the
+    // child `PropsStyleChild` has a `displayValue = props.value * 10`
+    // memo. `extractSsrDefaults` cannot statically evaluate a
+    // prop-derived expression (it yields `null`), and the Perl SSR model
+    // seeds child memos from those *static* defaults — so `$displayValue`
+    // is never declared and the child render aborts under strict mode.
+    // Go matches only because it generates a child constructor that
+    // computes the memo from the passed prop at render time; the Perl
+    // adapters have no equivalent runtime memo-init in the static path
+    // (an opt-in `signal_init` sub would be required). (xslate skips this
+    // for the same reason.)
     'props-reactivity-comparison',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter

@@ -37,13 +37,27 @@ runAdapterConformanceTests({
     // template reads a stash key that's never seeded. Implemented on Go; the
     // Perl stash-seed path is a follow-up port, so Xslate stays skipped (#1297).
     'context-provider',
-    // Multi-component shared-state pairs whose children render inside a keyed
-    // `.map` (loop children, no `_bf_slot`): the test harness derives a
-    // non-deterministic `<child>_<rand>` scope id instead of the canonical
-    // `<ChildName>_*` the reference HTML pins, and per-item loop state isn't
-    // seeded server-side. Harness-level scope-id plumbing; single-component
-    // `reactive-props` passes. (Same pair mojo skips.)
+    // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
+    // sibling `ToggleItem` children inside a keyed `.map`. Three gaps
+    // remain (same as mojo): the loop-child `on = props.defaultOn ??
+    // false` signal isn't seeded server-side (so every item renders OFF
+    // instead of honouring per-item `defaultOn`), the child scope id is
+    // the snake-case `toggle_item_<rand>` rather than the `ToggleItem_*`
+    // PascalCase the reference pins, and `key=` → `data-key` isn't
+    // emitted. Kolon resolves the unseeded vars to nil rather than
+    // aborting, so this surfaces as a render mismatch (not a hard error).
+    // Separate follow-up.
     'toggle-shared',
+    // `props-reactivity-comparison` (the `PropsReactivityComparison`
+    // export of `ReactiveProps.tsx`): componentName selection is now
+    // honoured, but the child `PropsStyleChild`'s `displayValue =
+    // props.value * 10` memo has no static SSR default
+    // (`extractSsrDefaults` → `null` for a prop-derived expression) and
+    // the Perl SSR model seeds child memos from static defaults. Kolon
+    // renders the unseeded `$displayValue` as empty, so `child-computed-
+    // value` is blank where Hono / Go emit `10` (Go computes it in a
+    // generated child constructor — the Perl static path has no
+    // equivalent). (Same reason mojo skips.)
     'props-reactivity-comparison',
     // (`kbd` is not skipped here — it's a BF101 refusal pinned in
     // `expectedDiagnostics` below, not a render-mismatch.)

@@ -59,10 +59,17 @@ export interface RenderOptions {
   props?: Record<string, unknown>
   /** Additional component files (filename → source) */
   components?: Record<string, string>
+  /**
+   * Explicit component to render when `source` declares multiple
+   * exports (e.g. `ReactiveProps.tsx` → `PropsReactivityComparison`).
+   * Mirrors the Hono reference's `componentName`; omitted for
+   * single-export fixtures, which fall back to the default/first export.
+   */
+  componentName?: string
 }
 
 export async function renderGoTemplateComponent(options: RenderOptions): Promise<string> {
-  const { source, adapter, props, components } = options
+  const { source, adapter, props, components, componentName: requestedName } = options
 
   if (!adapter.generateTypes) {
     throw new Error('Go Template adapter must implement generateTypes()')
@@ -139,7 +146,13 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   const irFiles = result.files.filter(f => f.type === 'ir')
   if (irFiles.length === 0) throw new Error('No IR output (set outputIR: true)')
   const irs = irFiles.map(f => JSON.parse(f.content) as ComponentIR)
+  // Explicit `componentName` wins (multi-export sources pin which export
+  // is the render target); otherwise default-export, then first inline-
+  // exported, then first IR. Mirrors the Hono reference's selection so
+  // multi-component fixtures (e.g. `ReactiveProps.tsx`) render the same
+  // export across adapters.
   const ir =
+    (requestedName ? irs.find(i => i.metadata.componentName === requestedName) : undefined) ??
     irs.find(i => i.metadata.hasDefaultExport) ??
     irs.find(i => i.metadata.isExported) ??
     irs[0]
