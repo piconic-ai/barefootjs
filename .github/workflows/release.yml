@@ -43,6 +43,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
@@ -82,23 +85,26 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         run: bun scripts/jsr-publish.ts
 
-      # Publish Perl dists to CPAN for any Perl package bumped in this release.
+  cpan-release:
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
       - name: Setup Perl
-        if: steps.changesets.outputs.published == 'true'
         uses: shogo82148/actions-setup-perl@a198315ec4e9244f206879ea7b63078003aec8a6 # v1
         with:
           perl-version: '5.40'
 
       - name: Install Perl build tools
-        if: steps.changesets.outputs.published == 'true'
         run: cpanm --notest Module::CPANfile CPAN::Uploader
 
       - name: Publish to CPAN
-        if: steps.changesets.outputs.published == 'true'
         env:
           PAUSE_ID: ${{ secrets.PAUSE_ID }}
           PAUSE_PASSWORD: ${{ secrets.PAUSE_PASSWORD }}
-          PUBLISHED: ${{ steps.changesets.outputs.publishedPackages }}
+          PUBLISHED: ${{ needs.release.outputs.publishedPackages }}
         run: |
           published=$(echo "$PUBLISHED" | jq -r '.[].name')
 
