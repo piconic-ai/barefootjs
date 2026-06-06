@@ -48,6 +48,16 @@ for (const pkg of PACKAGES) {
 
   const { version } = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'));
 
+  // Skip if the primary module already reflects the target version — this
+  // package was not bumped in the current release cycle.
+  const primaryPath = join(pkgDir, pkg.modules[0]);
+  const primarySource = readFileSync(primaryPath, 'utf8');
+  const currentVersionMatch = primarySource.match(/^our \$VERSION = "(.+?)";/m);
+  if (currentVersionMatch?.[1] === version) {
+    console.log(`Skipping ${pkg.dir} — already at ${version}`);
+    continue;
+  }
+
   // Update $VERSION in every Perl module belonging to this dist.
   for (const mod of pkg.modules) {
     const modulePath = join(pkgDir, mod);
