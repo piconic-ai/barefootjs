@@ -1,5 +1,19 @@
 # @barefootjs/cli
 
+## 0.9.0
+
+### Minor Changes
+
+- c7a38ec: Support Deno as a package manager. `detectPackageManager` now recognises Deno projects (`deno.lock` / `deno.json` / `deno.jsonc`, or the Deno runtime via `process.versions.deno`), and `commandsFor('deno')` emits the `deno install` / `deno task` / `deno run -A npm:…` shapes. The published CLI bundle now imports Node builtins through the `node:` specifier so it loads under Deno as well as Node and Bun.
+
+### Patch Changes
+
+- 7be78dd: Fix non-deterministic Go type ordering when building under Bun.
+
+  `discoverComponentFiles` relied on the OS `readdir` order, which differs between runtimes: Bun returns APFS hash order while Node.js returns alphabetical order. This caused Go integrations' `components.go` to regenerate with a different type/function ordering on every build even when no source files changed.
+
+  Sort entries in `discoverComponentFiles` by name so the component processing order is always alphabetical, regardless of JS runtime or filesystem.
+
 ## 0.8.0
 
 ## 0.7.0
