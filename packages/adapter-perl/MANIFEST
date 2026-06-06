@@ -1,0 +1,12 @@
+Changes
+cpanfile
+lib/BarefootJS.pm
+lib/BarefootJS/DevReload.pm
+LICENSE
+MANIFEST
+Makefile.PL
+README.md
+t/controller_cycle.t
+t/dev_reload.t
+t/spread_attrs.t
+t/template_primitives.t

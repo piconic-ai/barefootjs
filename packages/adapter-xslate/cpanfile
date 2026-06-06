@@ -7,8 +7,6 @@ on 'test' => sub {
     requires 'Test2::V0';
 };
 
-# Authoring tools — building the CPAN dist with Minilla (scripts/perl-dist.sh).
-on 'develop' => sub {
-    requires 'Minilla';
-    requires 'Software::License::MIT';
+on 'configure' => sub {
+    requires 'Module::CPANfile';
 };

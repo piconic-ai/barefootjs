@@ -74,11 +74,10 @@ test-results/
 .render-temp/
 .playwright-mcp/
 
-# Perl CPAN dist build artifacts (Minilla, via scripts/perl-dist.sh)
+# Perl CPAN dist build artifacts (Makefile.PL / make)
 packages/adapter-*/*.tar.gz
-packages/adapter-*/.build/
 packages/adapter-*/blib/
-packages/adapter-*/Build
+packages/adapter-*/Makefile
 packages/adapter-*/MYMETA.*
 
 # Perl integration runtime libs (assembled by scripts/assemble-deps.ts)

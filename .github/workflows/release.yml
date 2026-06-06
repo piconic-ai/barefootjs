@@ -3,18 +3,26 @@
 # When .changeset/*.md files are present on main → opens a "Version Packages" PR.
 # When that PR is merged (no changeset files remain) → builds and publishes.
 #
-# Uses a hybrid approach:
+# npm / JSR:
 #   - `bun pm pack` to resolve workspace:* protocol references
 #   - `npm publish <tarball> --provenance` for OIDC auth + provenance attestation
+#   - No long-lived NPM_TOKEN needed — uses npm Trusted Publishing (OIDC).
+#   - Requires npm CLI >= 11.5.1 for OIDC support (Node 22 ships npm 10).
+#   Prerequisites (one-time setup on npmjs.com):
+#     For each package (or at org level for @barefootjs):
+#       Package settings → Trusted Publishers → Add GitHub Actions
+#         Repository: piconic-ai/barefootjs
+#         Workflow:   release.yml
 #
-# No long-lived NPM_TOKEN needed — uses npm Trusted Publishing (OIDC).
-# Requires npm CLI >= 11.5.1 for OIDC support (Node 22 ships npm 10).
-#
-# Prerequisites (one-time setup on npmjs.com):
-#   For each package (or at org level for @barefootjs):
-#     Package settings → Trusted Publishers → Add GitHub Actions
-#       Repository: piconic-ai/barefootjs
-#       Workflow:   release.yml
+# CPAN (Perl dists):
+#   - cpan-release job: syncs $VERSION + Changes, commits to main, then
+#     runs Makefile.PL / make dist → cpan-upload for each Perl package
+#     that was bumped in this release. Requires PAUSE_ID and PAUSE_PASSWORD
+#     secrets (PAUSE uses Basic auth — no token available).
+#   Package → npm name mapping:
+#     BarefootJS                   @barefootjs/perl
+#     Mojolicious::Plugin::BarefootJS  @barefootjs/mojolicious
+#     BarefootJS::Backend::Xslate  @barefootjs/xslate
 
 name: Release
 
@@ -34,6 +42,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
@@ -72,3 +83,65 @@ jobs:
       - name: Publish to JSR
         if: steps.changesets.outputs.published == 'true'
         run: bun scripts/jsr-publish.ts
+
+  cpan-release:
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Sync Perl versions and commit
+        run: |
+          bun scripts/sync-perl-versions.ts
+          if ! git diff --quiet; then
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git add packages/adapter-perl packages/adapter-mojolicious packages/adapter-xslate
+            git commit -m "chore: sync Perl \$VERSION and Changes [skip ci]"
+            git push
+          fi
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@a198315ec4e9244f206879ea7b63078003aec8a6 # v1
+        with:
+          perl-version: '5.40'
+
+      - name: Install Perl build tools
+        run: cpanm --notest Module::CPANfile CPAN::Uploader
+
+      - name: Publish to CPAN
+        env:
+          PAUSE_ID: ${{ secrets.PAUSE_ID }}
+          PAUSE_PASSWORD: ${{ secrets.PAUSE_PASSWORD }}
+          PUBLISHED: ${{ needs.release.outputs.publishedPackages }}
+        run: |
+          published=$(echo "$PUBLISHED" | jq -r '.[].name')
+
+          # Publish core (BarefootJS) first and install locally so backend
+          # dists can resolve their `requires 'BarefootJS'` at build time.
+          if echo "$published" | grep -qx '@barefootjs/perl'; then
+            echo "Publishing packages/adapter-perl to CPAN..."
+            cd packages/adapter-perl
+            perl Makefile.PL && make test && make dist
+            cpan-upload -u "$PAUSE_ID" -p "$PAUSE_PASSWORD" ./*.tar.gz
+            cpanm --notest ./*.tar.gz
+            cd -
+          fi
+
+          # Backend dists (both depend on BarefootJS).
+          for pair in '@barefootjs/mojolicious:packages/adapter-mojolicious' '@barefootjs/xslate:packages/adapter-xslate'; do
+            name="${pair%%:*}"
+            dir="${pair##*:}"
+            echo "$published" | grep -qx "$name" || continue
+            echo "Publishing $dir to CPAN..."
+            cd "$dir"
+            perl Makefile.PL && make test && make dist
+            cpan-upload -u "$PAUSE_ID" -p "$PAUSE_PASSWORD" ./*.tar.gz
+            cd -
+          done

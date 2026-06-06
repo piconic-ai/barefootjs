@@ -1,7 +1,0 @@
-name = "BarefootJS"
-license = "MIT"
-
-# Author and license are read from the main module's POD (=head1 AUTHOR /
-# =head1 LICENSE). This dist is assembled into an isolated build dir by
-# scripts/perl-dist.sh, so the npm/TS files in this package never reach the
-# CPAN tarball.

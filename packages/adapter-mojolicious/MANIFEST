@@ -1,0 +1,10 @@
+Changes
+cpanfile
+lib/BarefootJS/Backend/Mojo.pm
+lib/Mojolicious/Plugin/BarefootJS.pm
+lib/Mojolicious/Plugin/BarefootJS/DevReload.pm
+LICENSE
+MANIFEST
+Makefile.PL
+t/dev_reload.t
+t/manifest_defaults.t

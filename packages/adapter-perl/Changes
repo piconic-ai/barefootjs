@@ -2,5 +2,7 @@ Revision history for Perl extension BarefootJS
 
 {{$NEXT}}
 
+0.8.0 - 2026-06-06
+
     - Initial version. Engine- and framework-agnostic server runtime for
       BarefootJS marked templates, driven by a pluggable rendering backend.
