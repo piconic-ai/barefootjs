@@ -188,9 +188,17 @@ export async function renderXslateComponent(options: RenderOptions): Promise<str
     for (const name of reachable) {
       const entry = childTemplates.get(name)
       if (!entry) continue
-      const probe = adapter.generate(entry.ir, { siblingTemplatesRegistered: true })
-      void probe
-      const childErrors = (entry.ir.errors ?? []).filter(e => e.severity === 'error')
+      // The child was first compiled WITHOUT `siblingTemplatesRegistered`, so
+      // `entry.ir.errors` may already carry suppressible BF103s (cross-template
+      // loop references the harness DOES register). Re-generate with siblings
+      // registered and inspect ONLY the errors that pass appends — `generate`
+      // resets its own error list and appends to `ir.errors`, so anything after
+      // the pre-existing count is the authoritative siblings-registered result.
+      const before = entry.ir.errors?.length ?? 0
+      adapter.generate(entry.ir, { siblingTemplatesRegistered: true })
+      const childErrors = (entry.ir.errors ?? [])
+        .slice(before)
+        .filter(e => e.severity === 'error')
       if (childErrors.length > 0) {
         throw new Error(
           `Compilation errors in reachable child ${name}:\n${childErrors.map(e => e.message).join('\n')}`,

@@ -113,13 +113,22 @@ const XSLATE_PRIMITIVE_EMIT_MAP: Record<string, (args: string[]) => string> =
  * shape evolves.
  */
 /**
+ * Escape a string for a Kolon/Perl single-quoted literal: backslash first
+ * (so it doesn't double-escape the quote we add next), then the quote. Used
+ * by every `'…'` hashref key/value emitter below.
+ */
+function escapeKolonSingleQuoted(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
+/**
  * Quote a hashref KEY for Kolon when it isn't a bare-identifier-safe name.
  * Kolon parses `data-slot` as `data - slot` (subtraction) and faults on the
  * undefined `data` symbol, so a hyphenated key (`data-slot`, `aria-label`)
  * must be single-quoted: `'data-slot'`. Bare identifiers pass through unquoted.
  */
 function kolonHashKey(name: string): string {
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${name.replace(/'/g, "\\'")}'`
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${escapeKolonSingleQuoted(name)}'`
 }
 
 function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
@@ -959,13 +968,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // and route through the same conditional-spread lowering. Only
       // function-scope (`!isModule`) consts whose value is NOT itself a bare
       // identifier (loop guard) are considered.
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
+      if (/^[A-Za-z_$][\w$]*$/.test(trimmed)) {
         const localConst = (this.localConstants ?? []).find(
           c => c.name === trimmed && !c.isModule,
         )
         if (localConst?.value !== undefined) {
           const initTrimmed = localConst.value.trim()
-          if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
+          if (!/^[A-Za-z_$][\w$]*$/.test(initTrimmed)) {
             const resolved = this.conditionalSpreadToKolon(initTrimmed)
             if (resolved !== null) {
               return `<: $bf.spread_attrs(${resolved}) | mark_raw :>`
@@ -1273,7 +1282,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         indexed !== null
           ? indexed
           : this.convertExpressionToKolon(prop.initializer.getText(sf))
-      entries.push(`'${key.replace(/'/g, "\\'")}' => ${valPerl}`)
+      entries.push(`'${escapeKolonSingleQuoted(key)}' => ${valPerl}`)
     }
     return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
   }
@@ -1293,8 +1302,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     if (!parsed) return null
     const entries = parsed.entries.map(e => {
       const mapVal =
-        e.value.kind === 'number' ? e.value.text : `'${e.value.text.replace(/'/g, "\\'")}'`
-      return `'${e.key.replace(/'/g, "\\'")}' => ${mapVal}`
+        e.value.kind === 'number' ? e.value.text : `'${escapeKolonSingleQuoted(e.value.text)}'`
+      return `'${escapeKolonSingleQuoted(e.key)}' => ${mapVal}`
     })
     return `{ ${entries.join(', ')} }[$${parsed.indexPropName}]`
   }
