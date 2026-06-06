@@ -93,14 +93,22 @@ export async function renderXslateComponent(options: RenderOptions): Promise<str
   const { source, adapter, props, components } = options
 
   // Compile child components first.
+  //
+  // A child SOURCE FILE may export more components than the parent actually
+  // references (e.g. `../icon` exports ~30 icons + a generic `Icon`, but
+  // `Checkbox` only imports `CheckIcon`). Some of those unreferenced
+  // components legitimately can't lower to Kolon — the generic `Icon` spreads
+  // `{...props}` onto CHILD components (`<GitHubIcon {...props}/>`), which has
+  // no Kolon form (`%{$props}` flatten is Perl-only; same engine divergence as
+  // the `button` fixture). Throwing on those would block a fixture that never
+  // renders them. So defer the per-file error gate: collect every component's
+  // template + IR up front, then (after the parent compile pins the reachable
+  // set) re-generate ONLY the reachable children and throw if any of THOSE
+  // error. Mirrors the Go harness's reachable-children emission (#checkbox).
   const childTemplates: Map<string, { template: string; ir: ComponentIR }> = new Map()
   if (components) {
     for (const [filename, childSource] of Object.entries(components)) {
       const childResult = compileJSX(childSource, filename, { adapter, outputIR: true })
-      const childErrors = childResult.errors.filter(e => e.severity === 'error')
-      if (childErrors.length > 0) {
-        throw new Error(`Compilation errors in ${filename}:\n${childErrors.map(e => e.message).join('\n')}`)
-      }
       const childTemplateFiles = childResult.files.filter(f => f.type === 'markedTemplate')
       if (childTemplateFiles.length === 0) throw new Error(`No marked template for ${filename}`)
       const childIrFiles = childResult.files.filter(f => f.type === 'ir')
@@ -157,6 +165,39 @@ export async function renderXslateComponent(options: RenderOptions): Promise<str
     }
   }
   if (!templateFile) throw new Error('No marked template in compile output')
+
+  // Reachable-children error gate (#checkbox). Now that the entry-point `ir` is
+  // pinned, close transitively over its cross-file component imports and verify
+  // each reachable child lowers without error — re-generating the child IR
+  // through a fresh adapter to attribute errors per component (the aggregate
+  // compile errors aren't component-tagged). A child file may export
+  // unreferenced components that legitimately can't lower (e.g. `../icon`'s
+  // generic `Icon`); those are dropped silently rather than failing a fixture
+  // that never renders them.
+  {
+    const reachable = new Set<string>()
+    const queue = [...collectImportedComponentNames(ir)]
+    while (queue.length > 0) {
+      const name = queue.shift()!
+      if (reachable.has(name)) continue
+      const entry = childTemplates.get(name)
+      if (!entry) continue // in-source sibling or non-compiled import
+      reachable.add(name)
+      queue.push(...collectImportedComponentNames(entry.ir))
+    }
+    for (const name of reachable) {
+      const entry = childTemplates.get(name)
+      if (!entry) continue
+      const probe = adapter.generate(entry.ir, { siblingTemplatesRegistered: true })
+      void probe
+      const childErrors = (entry.ir.errors ?? []).filter(e => e.severity === 'error')
+      if (childErrors.length > 0) {
+        throw new Error(
+          `Compilation errors in reachable child ${name}:\n${childErrors.map(e => e.message).join('\n')}`,
+        )
+      }
+    }
+  }
 
   const componentName = ir.metadata.componentName
 
@@ -243,6 +284,25 @@ print \$html;
   } finally {
     await rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
+}
+
+/**
+ * Component names a component IR imports from sibling source files — i.e.
+ * non-type imports from relative (`./` / `../`) specifiers. Used to compute the
+ * transitive set of child components a fixture actually references (#checkbox).
+ * Mirrors the Go harness helper of the same name.
+ */
+function collectImportedComponentNames(ir: ComponentIR): string[] {
+  const names: string[] = []
+  for (const imp of ir.metadata.imports ?? []) {
+    if (imp.isTypeOnly) continue
+    if (!imp.source.startsWith('.')) continue
+    for (const spec of imp.specifiers ?? []) {
+      if (spec.isNamespace) continue
+      names.push(spec.alias ?? spec.name)
+    }
+  }
+  return names
 }
 
 /**
