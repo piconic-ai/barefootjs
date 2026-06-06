@@ -116,8 +116,7 @@ const XSLATE_PRIMITIVE_EMIT_MAP: Record<string, (args: string[]) => string> =
  * Quote a hashref KEY for Kolon when it isn't a bare-identifier-safe name.
  * Kolon parses `data-slot` as `data - slot` (subtraction) and faults on the
  * undefined `data` symbol, so a hyphenated key (`data-slot`, `aria-label`)
- * must be single-quoted: `'data-slot'`. Mirrors the Mojo adapter's
- * `perlHashKey`. Bare identifiers pass through unquoted.
+ * must be single-quoted: `'data-slot'`. Bare identifiers pass through unquoted.
  */
 function kolonHashKey(name: string): string {
   return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${name.replace(/'/g, "\\'")}'`
@@ -196,8 +195,8 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * Optional, no-default props that are `undef` when the caller omits them.
    * Their bare-reference attribute emission is guarded with Kolon `defined` so
    * the attribute DROPS rather than rendering `attr=""` (Hono-style nullish
-   * omission, e.g. textarea's `rows`). Mirrors the Mojo adapter's set; the
-   * filter excludes destructure-defaulted, rest, and concrete-primitive props.
+   * omission, e.g. textarea's `rows`). The filter excludes destructure-
+   * defaulted, rest, and concrete-primitive props.
    */
   private nullableOptionalProps: Set<string> = new Set()
 
@@ -949,8 +948,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       //   `{...(COND ? { 'aria-describedby': describedBy } : {})}`
       // Emit a Kolon inline ternary of hashrefs — Perl truthiness handles the
       // condition for free, and the falsy `{}` branch OMITS the key
-      // (`spread_attrs` does NOT emit empty hashref entries). Mirrors the Mojo
-      // adapter's `conditionalSpreadToPerl`.
+      // (`spread_attrs` does NOT emit empty hashref entries).
       const ternaryHashref = this.conditionalSpreadToKolon(trimmed)
       if (ternaryHashref !== null) {
         return `<: $bf.spread_attrs(${ternaryHashref}) | mark_raw :>`
@@ -960,7 +958,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // (#checkbox / icon). Resolve the bare identifier to its initializer text
       // and route through the same conditional-spread lowering. Only
       // function-scope (`!isModule`) consts whose value is NOT itself a bare
-      // identifier (loop guard) are considered. Mirrors the Mojo adapter.
+      // identifier (loop guard) are considered.
       if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
         const localConst = (this.localConstants ?? []).find(
           c => c.name === trimmed && !c.isModule,
