@@ -49,6 +49,7 @@ import {
   emitAttrValue,
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
+  evalStringArrayJoin,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
 
@@ -144,7 +145,11 @@ function parsePureStringLiteral(source: string): string | null {
   if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
     return init.text
   }
-  return null
+  // `[<string literals>].join(' ')` — a module const that flattens an array of
+  // pure string literals at module load (e.g. Switch's `trackStateClasses`).
+  // Inline the joined string so it lands byte-for-byte like the Hono reference
+  // instead of emitting a `$trackStateClasses` ref to a non-existent binding.
+  return evalStringArrayJoin(source)
 }
 
 /**

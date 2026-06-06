@@ -35,11 +35,16 @@ runAdapterConformanceTests({
     'toggle-shared',
     'props-reactivity-comparison',
     // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity:
-    //   toggle / switch — the reactive `classes` memo interpolates
+    //   toggle — the reactive `classes` memo interpolates
     //     `Record<T,string>[variant|size]` lookups, which have no SSR
     //     lowering yet (known limitation).
+    //
+    //   `switch` no longer skipped: it assembles classes in function-scope
+    //     plain consts whose `[...].join(' ')` module consts now inline via the
+    //     shared `evalStringArrayJoin` (Go parity), and
+    //     `augmentInheritedPropAccesses` now scans those consts for
+    //     `props.className`. Both fixes live in `@barefootjs/jsx`.
     'toggle',
-    'switch',
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file

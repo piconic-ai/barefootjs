@@ -47,13 +47,15 @@ runAdapterConformanceTests({
     'toggle-shared',
     'props-reactivity-comparison',
     // #1467 Phase 2b interactive `site/ui` primitives. `textarea` and
-    // `checkbox` now PASS. `toggle` / `switch` stay skipped: their reactive
-    // `classes` memo interpolates `Record<T,string>[variant|size]` lookups
-    // with no SSR lowering yet (mojo skips the same pair). `kbd` is NOT a
-    // render-mismatch — it's a BF101 refusal (Kolon can't splat the Slot's
-    // `{...props}`), so it's pinned in `expectedDiagnostics` below.
+    // `checkbox` now PASS. `toggle` stays skipped: its reactive `classes` memo
+    // interpolates `Record<T,string>[variant|size]` lookups with no SSR
+    // lowering yet (mojo skips the same). `switch` no longer skipped — it
+    // assembles classes in function-scope plain consts whose `[...].join(' ')`
+    // module consts now inline via the shared `evalStringArrayJoin`, and
+    // `augmentInheritedPropAccesses` scans those consts for `props.className`.
+    // `kbd` is NOT a render-mismatch — it's a BF101 refusal (Kolon can't splat
+    // the Slot's `{...props}`), so it's pinned in `expectedDiagnostics` below.
     'toggle',
-    'switch',
   ],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering

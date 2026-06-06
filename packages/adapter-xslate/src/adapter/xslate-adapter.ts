@@ -62,6 +62,7 @@ import {
   emitAttrValue,
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
+  evalStringArrayJoin,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
 import ts from 'typescript'
@@ -1604,7 +1605,11 @@ function parsePureStringLiteral(source: string): string | null {
     if (containsUnescaped(body, '`')) return null
     return unescapeStringLiteralBody(body)
   }
-  return null
+  // `[<string literals>].join(' ')` — a module const that flattens an array of
+  // pure string literals at module load (e.g. Switch's `trackStateClasses`).
+  // Inline the joined string byte-for-byte like the Hono reference instead of
+  // emitting a `$trackStateClasses` ref to a binding that doesn't exist.
+  return evalStringArrayJoin(source)
 }
 
 /** Whether `s` contains an unescaped occurrence of `ch`. */

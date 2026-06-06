@@ -69,6 +69,17 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
   for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
   for (const eff of ir.metadata.effects ?? []) scan((eff as { body?: string }).body)
 
+  // Function-scope plain-const initializers (the Switch pattern): the classes
+  // string is assembled in a top-of-body `const trackClasses = \`… ${props.className
+  // ?? ''}\`` rather than a memo, so the `props.className` read only lives here.
+  // Module-level consts can't reference `props` (it's function-scoped), so the
+  // `isModule` filter avoids scanning unrelated module literals. Reads land in a
+  // string context, so the default `string` classification is correct.
+  for (const c of ir.metadata.localConstants ?? []) {
+    if (c.isModule) continue
+    scan(c.value)
+  }
+
   // Template attribute exprs — also note bare-ref / boolean usage.
   const walk = (node: IRNode | undefined): void => {
     if (!node) return
@@ -114,6 +125,59 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
     ir.metadata.propsParams.push({ name, type, optional: true })
     existing.add(name)
   }
+}
+
+/**
+ * Statically evaluate `[<string literals>].join(<sep?>)` to its joined string.
+ *
+ * Module-scope class consts are frequently assembled as
+ * `const stateClasses = ['[&[data-state=on]]:…', …].join(' ')` so the source
+ * stays readable. The Hono reference inlines the flattened string at runtime;
+ * the SSR adapters must inline the same byte-for-byte literal instead of
+ * emitting a `$stateClasses` / `.StateClasses` reference to a binding that
+ * doesn't exist server-side.
+ *
+ * Returns the joined string, or `null` when the shape doesn't match (non-call,
+ * non-`.join`, non-array receiver, any non-string-literal element, or a
+ * non-string-literal separator). Comments / whitespace between elements are
+ * irrelevant — the TS parser already discarded them. The default separator is
+ * `,` to match JS `Array.prototype.join` with no argument.
+ *
+ * The single source of truth for the Mojo + Xslate adapters' module-const
+ * inlining (Go keeps an equivalent private copy). `source` is the const
+ * initializer's text; the function parses it with the TS parser so escapes
+ * resolve exactly as JS would.
+ */
+export function evalStringArrayJoin(source: string): string | null {
+  const sf = ts.createSourceFile(
+    '__join.ts', `const __x = (${source});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  let node = stmt.declarationList.declarations[0]?.initializer
+  while (node && ts.isParenthesizedExpression(node)) node = node.expression
+  if (!node || !ts.isCallExpression(node)) return null
+  const callee = node.expression
+  if (!ts.isPropertyAccessExpression(callee)) return null
+  if (callee.name.text !== 'join') return null
+  let recv: ts.Expression = callee.expression
+  while (ts.isParenthesizedExpression(recv)) recv = recv.expression
+  if (!ts.isArrayLiteralExpression(recv)) return null
+  const parts: string[] = []
+  for (const el of recv.elements) {
+    if (ts.isStringLiteral(el) || ts.isNoSubstitutionTemplateLiteral(el)) {
+      parts.push(el.text)
+    } else {
+      return null
+    }
+  }
+  let sep = ','
+  if (node.arguments.length >= 1) {
+    const arg = node.arguments[0]
+    if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) sep = arg.text
+    else return null
+  }
+  return parts.join(sep)
 }
 
 /** A minimal `{ name }` shape — both adapters pass their own param/const lists. */
