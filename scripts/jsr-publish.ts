@@ -19,10 +19,12 @@
 //          JSR is source-first and can't publish those.
 //        - version: taken live from package.json (the Changesets bump),
 //          so the manifest never drifts.
-//        - imports: workspace `@barefootjs/*` deps → `jsr:` specifiers
-//          at the dependency's current version; other deps → `npm:`
-//          specifiers; the package's own export subpaths → local `src`
-//          (covers internal self-imports like `@barefootjs/client/reactive`).
+//        - imports: workspace `@barefootjs/*` deps that are themselves
+//          published to JSR → `jsr:` specifiers at the dependency's current
+//          version (a scoped sibling published elsewhere, e.g. the Perl
+//          runtime `@barefootjs/perl`, is dropped — never a dangling `jsr:`);
+//          other deps → `npm:` specifiers; the package's own export subpaths
+//          → local `src` (covers self-imports like `@barefootjs/client/reactive`).
 //   2. Skip it if that exact version is already live on JSR (idempotent —
 //      a Changesets release only bumps a subset, the rest no-op).
 //   3. `deno publish` the package (unless `--dry-run`).
@@ -127,20 +129,46 @@ function resolveExportTarget(dir: string, entry: unknown): string | null {
   return null
 }
 
-function buildManifest(dir: string, pkg: PkgJson) {
-  // exports ----------------------------------------------------------------
+// Resolve a package's `exports` map to the `src` TS files JSR would publish,
+// dropping entries with no source sibling.
+function resolveExports(dir: string, pkg: PkgJson): Record<string, string> {
   const exportsIn = pkg.exports ?? { '.': './src/index.ts' }
   const exportsOut: Record<string, string> = {}
   for (const [key, entry] of Object.entries(exportsIn)) {
     const target = resolveExportTarget(dir, entry)
     if (target) exportsOut[key] = target
   }
+  return exportsOut
+}
+
+// ── Which scoped packages actually land on JSR ────────────────────────
+// A `@barefootjs/*` package is JSR-publishable only if it is eligible AND
+// carries at least one resolvable `src` export. A scoped sibling that
+// publishes to a *different* registry — e.g. the Perl runtime
+// `@barefootjs/perl` (`lib/*.pm`, a CPAN dist with no TS exports) — is NOT in
+// this set, so it must never be emitted as a `jsr:` import of a dependent:
+// that would point the manifest at a package that never exists on JSR. The
+// TS sources don't import such siblings anyway — the relationship is a
+// cross-language / release-coordination one expressed elsewhere (the
+// dependent's `cpanfile`, and changesets' `fixed` group), not a code import.
+const jsrExports = new Map<string, Record<string, string>>()
+for (const { dir, pkg } of candidates) jsrExports.set(pkg.name, resolveExports(dir, pkg))
+const jsrPublishable = new Set(
+  [...jsrExports].filter(([, e]) => Object.keys(e).length > 0).map(([name]) => name),
+)
+
+function buildManifest(dir: string, pkg: PkgJson) {
+  // exports ----------------------------------------------------------------
+  const exportsOut = jsrExports.get(pkg.name) ?? resolveExports(dir, pkg)
 
   // imports ----------------------------------------------------------------
   const importsOut: Record<string, string> = {}
   const deps = { ...(pkg.dependencies ?? {}), ...(pkg.peerDependencies ?? {}) }
   for (const [name, range] of Object.entries(deps)) {
     if (name.startsWith('@barefootjs/')) {
+      // Only scoped siblings that are themselves JSR-published get a `jsr:`
+      // specifier; a non-JSR sibling (the Perl runtime) is dropped.
+      if (!jsrPublishable.has(name)) continue
       const v = versions.get(name)
       importsOut[name] = v ? `jsr:${name}@^${v}` : `jsr:${name}`
     } else {
