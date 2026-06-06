@@ -47,11 +47,9 @@ jobs:
         with:
           node-version: '24'
 
-      # Deno drives the JSR publish step below. Floating major tag (other
-      # workflows SHA-pin; pin this to a verified setup-deno commit in a
-      # follow-up).
+      # Deno drives the JSR publish step below.
       - name: Setup Deno
-        uses: denoland/setup-deno@v2
+        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
         with:
           deno-version: v2.x
 
