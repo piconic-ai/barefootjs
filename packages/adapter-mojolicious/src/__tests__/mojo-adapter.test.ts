@@ -26,14 +26,13 @@ runAdapterConformanceTests({
     // never receives a `theme` key. Provider SSR coverage on Mojo
     // waits on that adapter feature; see #1297 follow-up.
     'context-provider',
-    // Multi-component fixtures still diverge because Mojo's child
-    // template emitter pins the child's `bf-s` to the literal
-    // `test_<sN>` (`_scope_id("test_$sid")` in `test-render.ts`)
-    // instead of `<ChildName>_<id>_<sN>` like Hono / CSR. Same family
-    // of test-harness scope-id plumbing the `componentName` option
-    // fixed on the Hono side. Separate follow-up.
+    // Multi-component shared fixtures with per-item loop state. The child
+    // scope-id plumbing is now fixed (children derive `<parentScope>_<sN>`
+    // from `$bf->_scope_id` in `test-render.ts`, which unblocked
+    // `reactive-props`); these two still diverge on additional per-item
+    // loop-state seeding the Mojo harness doesn't yet replicate. (xslate
+    // skips the same pair.)
     'toggle-shared',
-    'reactive-props',
     'props-reactivity-comparison',
     // #1467 Phase 2b `site/ui` primitives still pending cross-adapter parity
     // (label / input / textarea / checkbox now participate):

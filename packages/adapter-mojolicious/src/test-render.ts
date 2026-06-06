@@ -349,7 +349,12 @@ function buildChildRenderers(
     }
     lines.push(`    ${slotIdsPerl}`)
     lines.push(`    my $child_bf = BarefootJS->new($c, {});`)
-    lines.push(`    $child_bf->_scope_id("test_$sid");`)
+    // Child scope id derives from the PARENT's live scope id, not a literal
+    // `test_` prefix — so `<ReactiveProps_test>_s5` matches Hono / CSR (and
+    // survives an explicit `__instanceId`). Mirrors xslate's
+    // `rootChildScopePrefix` (`$bf->_scope_id`); `$bf` is the parent instance
+    // captured by this renderer closure.
+    lines.push(`    $child_bf->_scope_id($bf->_scope_id . "_$sid");`)
     lines.push(`    my $rendered = $child_mt->render($child_tmpl, { %$child_props, bf => $child_bf });`)
     lines.push(`    die $rendered->to_string if ref $rendered;`)
     lines.push(`    chomp $rendered;`)
