@@ -12,8 +12,93 @@
 
 import ts from 'typescript'
 
-import type { ComponentIR, IRNode, IRElement, TypeInfo } from './types'
+import type { ComponentIR, IRMetadata, IRNode, IRElement, TypeInfo } from './types'
 import { isBooleanAttr } from './html-constants'
+
+/**
+ * A `const x = useContext(SomeContext)` consumer in a component body.
+ *
+ * SSR template adapters (Go / Mojo / Xslate) have no JS runtime context
+ * stack the way the Hono adapter does (`provideContextSSR`), so a consumer's
+ * value has to be threaded in at the data-construction layer. This records,
+ * per component, the local binding name, the `createContext` identifier it
+ * reads, and that context's default value — enough for an adapter to (a)
+ * expose a struct field / stash var with the default and (b) let an enclosing
+ * `<Ctx.Provider value>` overwrite it for descendant child slots.
+ */
+export interface ContextConsumer {
+  /** The local const bound to the `useContext` call (e.g. `theme`). */
+  localName: string
+  /** The `createContext` identifier read (e.g. `ThemeContext`). */
+  contextName: string
+  /**
+   * The `createContext(<default>)` argument as a JS literal, or `null` when
+   * absent / not a literal (the consumer then defaults to the empty value).
+   */
+  defaultValue: string | number | boolean | null
+}
+
+/**
+ * Collect every `const x = useContext(Ctx)` consumer in a component, resolving
+ * each `Ctx` to its `createContext(<default>)` default via the component's
+ * module-scope `createContext` constants. Returns `[]` when the component
+ * consumes no context. Single source of truth for the SSR-context adapters.
+ */
+export function collectContextConsumers(metadata: IRMetadata): ContextConsumer[] {
+  const constants = metadata.localConstants ?? []
+  // Map each createContext const name → its default-arg literal value.
+  const contextDefaults = new Map<string, string | number | boolean | null>()
+  for (const c of constants) {
+    if (c.systemConstructKind !== 'createContext' || c.value === undefined) continue
+    contextDefaults.set(c.name, parseCreateContextDefault(c.value))
+  }
+  if (contextDefaults.size === 0) return []
+
+  const consumers: ContextConsumer[] = []
+  for (const c of constants) {
+    if (c.value === undefined) continue
+    const ctxName = parseUseContextArg(c.value)
+    if (ctxName === null || !contextDefaults.has(ctxName)) continue
+    consumers.push({
+      localName: c.name,
+      contextName: ctxName,
+      defaultValue: contextDefaults.get(ctxName) ?? null,
+    })
+  }
+  return consumers
+}
+
+/** Parse `useContext(Ident)` → `Ident`, else `null`. */
+function parseUseContextArg(source: string): string | null {
+  const expr = parseSingleExpression(source)
+  if (!expr || !ts.isCallExpression(expr)) return null
+  if (!ts.isIdentifier(expr.expression) || expr.expression.text !== 'useContext') return null
+  if (expr.arguments.length !== 1) return null
+  const arg = expr.arguments[0]
+  return ts.isIdentifier(arg) ? arg.text : null
+}
+
+/** Parse `createContext(<literal>)` → the default value, else `null`. */
+function parseCreateContextDefault(source: string): string | number | boolean | null {
+  const expr = parseSingleExpression(source)
+  if (!expr || !ts.isCallExpression(expr)) return null
+  if (expr.arguments.length === 0) return null
+  const arg = expr.arguments[0]
+  if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) return arg.text
+  if (ts.isNumericLiteral(arg)) return Number(arg.text)
+  if (arg.kind === ts.SyntaxKind.TrueKeyword) return true
+  if (arg.kind === ts.SyntaxKind.FalseKeyword) return false
+  return null
+}
+
+function parseSingleExpression(source: string): ts.Expression | null {
+  const sf = ts.createSourceFile('__ctx.ts', `(${source})`, ts.ScriptTarget.Latest, false)
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt)) return null
+  let e: ts.Expression = stmt.expression
+  while (ts.isParenthesizedExpression(e)) e = e.expression
+  return e
+}
 
 /**
  * (#checkbox) Enumerate inherited-attribute accesses for the SolidJS

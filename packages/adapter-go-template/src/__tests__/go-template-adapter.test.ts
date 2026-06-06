@@ -35,16 +35,6 @@ runAdapterConformanceTests({
   // `BF104` at build time instead of silently emitting invalid
   // template syntax (#1266).
   skipJsx: [
-    // #1297 fixed the harness-side IR emission gate (multi-component
-    // sources now emit one `ir` file per component, and the harness
-    // picks the entry-point IR). The remaining gap is adapter-side:
-    // the go-template adapter has no SSR context-propagation
-    // mechanism, so `<Ctx.Provider value="dark">` doesn't make
-    // `useContext(Ctx)` resolve to `"dark"` at template-eval time —
-    // the template emits `.Theme` against a struct that has no
-    // `Theme` field. Provider SSR coverage on go-template waits on
-    // that adapter feature; see #1297 follow-up.
-    'context-provider',
     // #1244 stress catalog (#1326): `children={<span/>}` — the IR
     // hoists the span with `needsScope: true` so the Hono reference
     // emits `bf-s` on the inner `<span>`. The Go adapter renders the

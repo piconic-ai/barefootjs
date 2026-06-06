@@ -60,6 +60,8 @@ import {
   emitAttrValue,
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
+  collectContextConsumers,
+  type ContextConsumer,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 
@@ -102,6 +104,14 @@ interface StaticChildInstance {
    *  through the parent's `{{.Children}}` read; those cases stay on
    *  the existing drop path. */
   childrenHtml: string | null
+  /**
+   * (#1297 follow-up) Context values supplied by enclosing `<Ctx.Provider
+   * value>` ancestors: `createContext` identifier → Go value literal. The
+   * static-child init reads these against the child's own context-consumer
+   * fields to wire `<Provider value>` into the child slot's input. Empty when
+   * the child isn't under any provider.
+   */
+  contextBindings?: ReadonlyMap<string, string>
 }
 
 /**
@@ -474,6 +484,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private localConstants: IRMetadata['localConstants'] = []
 
   /**
+   * `useContext(...)` consumers in the component being generated (#1297
+   * follow-up). Each becomes a struct field defaulted to the context's
+   * `createContext` default, which an enclosing `<Ctx.Provider value>`
+   * overwrites for descendant child slots. Reset at `generate()` /
+   * `generateTypes()` entry.
+   */
+  private contextConsumers: ContextConsumer[] = []
+
+  /** Child component name → the contexts it consumes (cross-component, for provider wiring). */
+  private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
+
+  /**
    * Set of prop NAMES whose resolved Go struct-field type is exactly
    * `interface{}` — i.e. nillable. Populated at `generate()` entry from
    * the SAME per-prop Go-type computation `generatePropsStruct` /
@@ -510,6 +532,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.restPropsName = ir.metadata.restPropsName ?? null
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.contextConsumers = collectContextConsumers(ir.metadata)
     // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
     // before computing the nillable set / rendering, so the synthetic params
     // participate in attribute omission and field binding uniformly. Shared
@@ -821,6 +844,39 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const restPropsName = ir.metadata.restPropsName ?? null
     const restBagField = restPropsName ? this.capitalizeFieldName(restPropsName) : null
     this.childComponentShapes.set(name, { paramNames, restBagField })
+    // (#1297 follow-up) Record the contexts this child consumes so a parent
+    // wrapping it in `<Ctx.Provider value>` can set the matching field on the
+    // child's slot input.
+    this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
+  }
+
+  /** Go field name for a `useContext` consumer (the capitalized local binding). */
+  private contextFieldName(c: ContextConsumer): string {
+    return this.capitalizeFieldName(c.localName)
+  }
+
+  /** Go type for a context-consumer field, from its `createContext` default's type. */
+  private contextConsumerGoType(c: ContextConsumer): string {
+    if (typeof c.defaultValue === 'number') return 'int'
+    if (typeof c.defaultValue === 'boolean') return 'bool'
+    return 'string'
+  }
+
+  /** Go literal for a context-consumer's default value (the `createContext` arg). */
+  private contextConsumerGoDefault(c: ContextConsumer): string {
+    if (typeof c.defaultValue === 'number') return String(c.defaultValue)
+    if (typeof c.defaultValue === 'boolean') return String(c.defaultValue)
+    if (typeof c.defaultValue === 'string') return `"${this.escapeGoString(c.defaultValue)}"`
+    return '""'
+  }
+
+  /**
+   * Context-consumer fields that don't collide with an already-emitted prop /
+   * signal / memo field. The template reads them as `{{.Field}}` (the local
+   * `useContext` binding lowered to a root field); the struct must carry them.
+   */
+  private nonCollidingContextConsumers(taken: ReadonlySet<string>): ContextConsumer[] {
+    return this.contextConsumers.filter(c => !taken.has(this.contextFieldName(c)))
   }
 
   generateTypes(ir: ComponentIR): string | null {
@@ -838,6 +894,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // lookups — both need the const tables populated on this standalone entry.
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.contextConsumers = collectContextConsumers(ir.metadata)
     const lines: string[] = []
 
     const componentName = ir.metadata.componentName
@@ -1232,6 +1289,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${nested.name}s []${nested.name}Input`)
     }
 
+    // (#1297 follow-up) `useContext` consumer fields — settable by an enclosing
+    // provider on the parent's side; default applied in NewXxxProps.
+    const takenInput = new Set(ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)))
+    for (const c of this.nonCollidingContextConsumers(takenInput)) {
+      lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)}`)
+    }
+
     // (#1407 follow-up) Input-side bag field for restPropsName spreads.
     // The destructured-rest pattern
     // (`function({a, ...rest}: P) { <el {...rest}/> }`) surfaces
@@ -1362,6 +1426,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Memos that depend on number signals are usually numbers
       const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
+    }
+
+    // (#1297 follow-up) `useContext` consumer fields (skip names already taken
+    // by a prop / signal / memo field).
+    const takenProps = new Set<string>([
+      ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => this.capitalizeFieldName(m.name)),
+    ])
+    for (const c of this.nonCollidingContextConsumers(takenProps)) {
+      const jsonTag = this.toJsonTag(c.localName)
+      lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)} \`json:"${jsonTag}"\``)
     }
 
     // Add array fields for nested components (for template rendering)
@@ -1554,6 +1630,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${fieldName}: ${memoValue},`)
     }
 
+    // (#1297 follow-up) `useContext` consumer fields: default to the
+    // `createContext` default when the caller (a provider) didn't set them.
+    const takenInit = new Set<string>([
+      ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => this.capitalizeFieldName(m.name)),
+    ])
+    for (const c of this.nonCollidingContextConsumers(takenInit)) {
+      const field = this.contextFieldName(c)
+      const def = this.contextConsumerGoDefault(c)
+      const defaulted =
+        c.defaultValue === null || def === '""' || def === '0' || def === 'false'
+          ? `in.${field}`
+          : this.applyGoFallback(`in.${field}`, def)
+      lines.push(`\t\t${field}: ${defaulted},`)
+    }
+
     // Add static child component instances
     const staticChildren = this.collectStaticChildInstances(ir.root)
     for (const child of staticChildren) {
@@ -1563,6 +1656,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // own NewProps (BfParent/BfMount fields).
       lines.push(`\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\tBfMount: "${child.slotId}",`)
+      // (#1297 follow-up) SSR context propagation: if this child is wrapped in
+      // a `<Ctx.Provider value>` and consumes that context, set its
+      // context-consumer field to the provider value so `useContext(Ctx)`
+      // resolves to the provided value at template-eval time (else the child's
+      // own NewProps applies the `createContext` default).
+      if (child.contextBindings) {
+        for (const consumer of this.childContextConsumers.get(child.name) ?? []) {
+          const goVal = child.contextBindings.get(consumer.contextName)
+          if (goVal !== undefined) {
+            lines.push(`\t\t\t${this.contextFieldName(consumer)}: ${goVal},`)
+          }
+        }
+      }
       // (#checkbox) Cross-component shape lookup: an attribute that is NOT a
       // declared param of the child but the child has a `...props` rest bag
       // (`<CheckIcon data-slot=.../>`, where CheckIcon's params are
@@ -1758,7 +1864,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private collectStaticChildInstances(node: IRNode): Array<StaticChildInstance> {
     const result: StaticChildInstance[] = []
-    this.collectStaticChildInstancesRecursive(node, result, false)
+    this.collectStaticChildInstancesRecursive(node, result, false, new Map())
     return result
   }
 
@@ -1799,7 +1905,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private collectStaticChildInstancesRecursive(
     node: IRNode,
     result: StaticChildInstance[],
-    inLoop: boolean
+    inLoop: boolean,
+    providerCtx: ReadonlyMap<string, string>,
   ): void {
     if (node.type === 'component') {
       const comp = node as IRComponent
@@ -1809,7 +1916,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // child components nested inside still get their slot fields.
       if (comp.dynamicTag) {
         for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
         }
         return
       }
@@ -1824,55 +1931,79 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           fieldName: `${comp.name}${suffix}`,
           childrenText: this.extractTextChildren(comp.children),
           childrenHtml: this.extractHtmlChildren(comp.children),
+          contextBindings: providerCtx.size > 0 ? providerCtx : undefined,
         })
       }
       // Recurse into Portal's children to find nested components
       if (comp.name === 'Portal' && comp.children) {
         for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
         }
       }
     } else if (node.type === 'loop') {
       const loop = node as IRLoop
       // Mark children as inside loop
       for (const child of loop.children) {
-        this.collectStaticChildInstancesRecursive(child, result, true)
+        this.collectStaticChildInstancesRecursive(child, result, true, providerCtx)
       }
     } else if (node.type === 'element') {
       const element = node as IRElement
       for (const child of element.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
       }
     } else if (node.type === 'fragment') {
       const fragment = node as IRFragment
       for (const child of fragment.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
       }
     } else if (node.type === 'conditional') {
       const cond = node as IRConditional
-      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop)
+      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop, providerCtx)
       if (cond.whenFalse) {
-        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop)
+        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx)
       }
     } else if (node.type === 'provider') {
-      // Provider is a transparent wrapper at the SSR layer — context
-      // propagation is purely a client-runtime concern. Recurse into
-      // its children so any static <Child/> nested under <Ctx.Provider>
-      // still gets a slot field generated on the parent's props type.
+      // SSR context propagation (#1297 follow-up): record the provider's
+      // value against its context name and extend the active binding map
+      // for descendants. A literal `value="dark"` lowers to a Go literal;
+      // a non-literal value is left unbound (the consumer keeps its default).
       const p = node as IRProvider
+      const childCtx = this.extendProviderContext(providerCtx, p)
       for (const child of p.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, childCtx)
       }
     } else if (node.type === 'async') {
       // Async fallback + children render server-side via the OOS
       // protocol; static child components inside them still need slot
       // fields on the parent struct.
       const a = node as IRAsync
-      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop)
+      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop, providerCtx)
       for (const child of a.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
       }
     }
+  }
+
+  /**
+   * Extend the active provider-context map with one `<Ctx.Provider value>`.
+   * The value is lowered to a Go literal when it's a string / number / boolean
+   * literal; any other shape is skipped (the descendant consumer keeps its
+   * `createContext` default), since a non-literal provider value has no
+   * SSR-template form yet.
+   */
+  private extendProviderContext(
+    current: ReadonlyMap<string, string>,
+    p: IRProvider,
+  ): ReadonlyMap<string, string> {
+    const v = p.valueProp?.value as { kind?: string; value?: unknown } | undefined
+    if (!v || v.kind !== 'literal') return current
+    let goLit: string | null = null
+    if (typeof v.value === 'string') goLit = `"${this.escapeGoString(v.value)}"`
+    else if (typeof v.value === 'number' || typeof v.value === 'boolean') goLit = String(v.value)
+    if (goLit === null) return current
+    const next = new Map(current)
+    next.set(p.contextName, goLit)
+    return next
   }
 
   /**

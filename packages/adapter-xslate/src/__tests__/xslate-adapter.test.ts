@@ -33,10 +33,12 @@ runAdapterConformanceTests({
   // fixtures than mojo. Each entry below was confirmed to fail with
   // skipJsx emptied.
   skipJsx: [
-    // No SSR context propagation: `<Ctx.Provider value="dark">` doesn't make
+    // SSR context propagation: `<Ctx.Provider value="dark">` doesn't make
     // `useContext(Ctx)` resolve at template-eval time (the template reads a
-    // `theme` key that's never seeded). A real adapter feature, not yet
-    // implemented on either Perl backend. (Compiles clean; render-mismatches.)
+    // `theme` key that's never seeded). The Go adapter now implements this
+    // (consumer-side default + provider-side child-slot wiring); the Perl
+    // backends share the stash-seed render path and would port it the same
+    // way as Mojo — deferred, so Xslate stays skipped (#1297 follow-up).
     'context-provider',
     // Multi-component shared-state pairs whose children render inside a keyed
     // `.map` (loop children, no `_bf_slot`): the test harness derives a

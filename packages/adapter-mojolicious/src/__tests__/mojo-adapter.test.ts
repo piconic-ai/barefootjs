@@ -18,13 +18,15 @@ runAdapterConformanceTests({
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
   skipJsx: [
-    // #1297 fixed the harness-side IR emission gate. The remaining
-    // gap is adapter-side: the Mojo adapter has no SSR context-
-    // propagation mechanism, so `<Ctx.Provider value="dark">` doesn't
-    // make `useContext(Ctx)` resolve to `"dark"` at template-eval
-    // time — the template emits `<%= $theme %>` against a hash that
-    // never receives a `theme` key. Provider SSR coverage on Mojo
-    // waits on that adapter feature; see #1297 follow-up.
+    // SSR context propagation: `<Ctx.Provider value="dark">` doesn't make
+    // `useContext(Ctx)` resolve to `"dark"` at template-eval time — the
+    // template emits `<%= $theme %>` against a hash that never receives a
+    // `theme` key. The Go adapter now implements this (consumer-side field
+    // defaulted to the `createContext` default + provider-side child-slot
+    // wiring via `collectContextConsumers`); porting it to the Mojo stash-seed
+    // path (`extractSsrDefaults` would need to seed the consumer var and the
+    // provider would set it through `render_child`) is a follow-up — Mojo
+    // stays skipped for now (#1297 follow-up).
     'context-provider',
     // Multi-component shared fixtures with per-item loop state. The child
     // scope-id plumbing is now fixed (children derive `<parentScope>_<sN>`

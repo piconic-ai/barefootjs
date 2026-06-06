@@ -281,8 +281,8 @@ export type { WrapReason } from './ir-to-client-js/reactivity'
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants'
 
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
-export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin } from './augment-inherited-props'
-export type { RecordIndexAccess, RecordIndexEntry } from './augment-inherited-props'
+export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectContextConsumers } from './augment-inherited-props'
+export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props'
 
 // HTML element attribute types
 export type {
