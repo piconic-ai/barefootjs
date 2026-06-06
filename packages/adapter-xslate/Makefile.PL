@@ -20,10 +20,14 @@ WriteMakefile(
     META_MERGE       => {
         'meta-spec' => { version => 2 },
         resources   => {
+            homepage   => 'https://barefootjs.dev',
             repository => {
                 type => 'git',
                 url  => 'https://github.com/piconic-ai/barefootjs.git',
                 web  => 'https://github.com/piconic-ai/barefootjs',
+            },
+            bugtracker => {
+                web => 'https://github.com/piconic-ai/barefootjs/issues',
             },
         },
     },
