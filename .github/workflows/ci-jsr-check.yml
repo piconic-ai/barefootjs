@@ -74,13 +74,13 @@ jobs:
           # carry a tracking issue link so the exclusion is visible and
           # owned.
           #
-          # - @barefootjs/hono: blocked on adapter-hono Deno-compatibility
-          #   work — Hono's JSX IntrinsicElements indexer collides with
-          #   per-element types (TS2411), and a handful of entries
-          #   reference Bun globals (Bun.spawn, import.meta.dir). Fixing
-          #   these without forking off hono/jsx's real types is a larger
-          #   refactor than this gate's scope. See:
-          #   https://github.com/piconic-ai/barefootjs/labels/known-limitation
+          # - @barefootjs/hono: Hono JSX's `IntrinsicElements` indexer
+          #   (`[k: string]: HTMLBaseAttributes`) collides structurally
+          #   with its per-element types (~30 TS2411), plus the usual
+          #   TS2874/TS7026 JSX-globals plumbing. Fixing these without
+          #   forking off `hono/jsx`'s real types is outside this
+          #   gate's scope.
+          #   Tracking: https://github.com/piconic-ai/barefootjs/issues/1804
           declare -A SKIP=(
             ["@barefootjs/hono"]=1
           )
