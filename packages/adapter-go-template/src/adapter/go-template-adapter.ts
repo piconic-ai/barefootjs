@@ -62,6 +62,7 @@ import {
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   collectContextConsumers,
+  isLowerableObjectRestDestructure,
   type ContextConsumer,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
@@ -468,6 +469,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private inLoop: boolean = false
   private loopParamStack: string[] = []
   private loopVarRefCount: Map<string, number> = new Map()
+  /** Stack of destructure-param binding maps (binding name → Go accessor on the
+   *  range var, e.g. `id` → `$bfItem.Id`, `rest` → `$bfItem`). Innermost last.
+   *  Lets `.map(({ id, ...rest }) => …)` resolve `id` / `rest.flag` instead of
+   *  refusing with BF104. (#1310) */
+  private loopBindingStack: Array<Map<string, string>> = []
   private errors: CompilerError[] = []
   private propsObjectName: string | null = null
   /**
@@ -3885,6 +3891,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Module pure-string const (e.g. `const baseClasses = '...'` used in a
     // className template literal): inline the literal value rather than
     // emit `{{.BaseClasses}}` against a Props field that never exists.
+    // Destructure-param bindings (`.map(({ id, ...rest }) => …)`): resolve the
+    // binding name to its accessor on the range var. Innermost loop wins, and
+    // this runs *before* module-const inlining so a binding whose name collides
+    // with a module string const still resolves to the loop item. (#1310)
+    for (let i = this.loopBindingStack.length - 1; i >= 0; i--) {
+      const acc = this.loopBindingStack[i].get(name)
+      if (acc !== undefined) return acc
+    }
     const inlined = this.resolveModuleStringConst(name)
     if (inlined !== null) return inlined
     const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
@@ -5600,6 +5614,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
+  /**
+   * Map each destructure binding to its Go accessor on the range var: a named
+   * binding → `$<rangeVar>.<Field>`, an object-rest binding → the bare
+   * `$<rangeVar>` so the member emitter renders `rest.flag` → `$<rangeVar>.Flag`.
+   * (#1310)
+   */
+  private buildDestructureBindingMap(loop: IRLoop, rangeVar: string): Map<string, string> {
+    const m = new Map<string, string>()
+    for (const b of loop.paramBindings ?? []) {
+      if (b.rest) {
+        m.set(b.name, `$${rangeVar}`)
+      } else {
+        m.set(b.name, `$${rangeVar}.${this.capitalizeFieldName(b.path.slice(1))}`)
+      }
+    }
+    return m
+  }
+
   renderLoop(loop: IRLoop): string {
     // clientOnly loops: emit SSR markers so client can insert DOM nodes.
     // The marker id disambiguates sibling `.map()` calls under the same parent (#1087).
@@ -5621,7 +5653,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // iff the param is a destructure pattern (array or object); a
     // simple identifier leaves it `undefined`. The structured check is
     // robust to whitespace / formatting variants in the source.
-    if (loop.paramBindings && loop.paramBindings.length > 0) {
+    // A destructure loop param is lowerable only for the object-rest /
+    // simple-field shape (`.map(({ id, title, ...rest }) => …)`, where `rest`
+    // is read via member access): each binding resolves to a field on a named
+    // range var (`$bfItem.Id`, and `rest.flag` → `$bfItem.Flag`). Array-index
+    // / nested / rest-spread shapes (`[a, ...t]`, `{ cells: [h] }`, `{...rest}`)
+    // still need machinery Go's `{{range}}` can't express inline → BF104. (#1310)
+    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
+    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -5645,7 +5685,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // the value. Swap into the Go range's first binding slot so
     // `{{range $k, $_ := .Arr}}` makes `$k` the 0-based index.
     let rangeIndex = index
-    let rangeValue = param
+    // A supported destructure param can't be the Go range var verbatim
+    // (`$bfItemN` is a synthetic single name; bindings resolve against it via
+    // `loopBindingStack`); otherwise the value var is the param itself. The
+    // suffix is the current nesting depth so an inner destructure loop doesn't
+    // shadow an outer one's range var (a binding referenced across levels keeps
+    // resolving against its own item).
+    let rangeValue = supportableDestructure ? `bfItem${this.loopBindingStack.length}` : param
     if (loop.iterationShape === 'keys') {
       rangeIndex = param
       rangeValue = '_'
@@ -5673,7 +5719,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // same index var name don't clobber the outer loop's entry on
     // cleanup.
     const addedLoopVars: string[] = []
-    if (loop.iterationShape === 'keys') {
+    let pushedBindingMap = false
+    if (supportableDestructure) {
+      // Bindings resolve against the synthetic `$bfItem` range var; don't push
+      // a loop param (the param is a pattern, not a name).
+      this.loopBindingStack.push(this.buildDestructureBindingMap(loop, rangeValue))
+      pushedBindingMap = true
+      this.loopParamStack.push('')
+      if (rangeIndex !== '_') {
+        this.loopVarRefCount.set(rangeIndex, (this.loopVarRefCount.get(rangeIndex) ?? 0) + 1)
+        addedLoopVars.push(rangeIndex)
+      }
+    } else if (loop.iterationShape === 'keys') {
       this.loopParamStack.push('')
       this.loopVarRefCount.set(param, (this.loopVarRefCount.get(param) ?? 0) + 1)
       addedLoopVars.push(param)
@@ -5696,6 +5753,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       else this.loopVarRefCount.set(v, rc)
     }
     this.loopParamStack.pop()
+    if (pushedBindingMap) this.loopBindingStack.pop()
     this.inLoop = false
 
     // Apply sort if present: wrap array with bf_sort pipeline. The

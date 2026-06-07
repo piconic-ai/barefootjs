@@ -53,6 +53,7 @@ import {
   evalStringArrayJoin,
   extractArrowBodyExpression,
   collectContextConsumers,
+  isLowerableObjectRestDestructure,
   type ContextConsumer,
   extractSsrDefaults,
 } from '@barefootjs/jsx'
@@ -905,7 +906,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // iff the param is a destructure pattern (array or object); a
     // simple identifier leaves it `undefined`. The structured check is
     // robust to whitespace / formatting variants in the source.
-    if (loop.paramBindings && loop.paramBindings.length > 0) {
+    // A destructure loop param is lowerable for the object-rest / simple-field
+    // shape (`.map(({ id, title, ...rest }) => …)`, `rest` read via member
+    // access): each binding becomes a Perl `my` local off the per-item var, so
+    // the body's `$id` / `$rest->{flag}` resolve natively. Array-index / nested
+    // / rest-spread shapes still can't unpack into scalar `my`s → BF104. (#1310)
+    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
+    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -952,7 +960,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // nested loops; released after the body lines are assembled below.
     const loopBound = loop.iterationShape === 'keys'
       ? [param]
-      : [param, loop.index ?? '_i']
+      : supportableDestructure
+        ? ['bfItem', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
+        : [param, loop.index ?? '_i']
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
     }
@@ -980,7 +990,20 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
     lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
     if (loop.iterationShape !== 'keys') {
-      lines.push(`% my $${param} = ${array}->[${indexVar}];`)
+      if (supportableDestructure) {
+        // Per-item var + one `my` local per binding; `rest` aliases the item
+        // so `$rest->{flag}` resolves (object-rest read via member access).
+        lines.push(`% my $bfItem = ${array}->[${indexVar}];`)
+        for (const b of loop.paramBindings ?? []) {
+          lines.push(
+            b.rest
+              ? `% my $${b.name} = $bfItem;`
+              : `% my $${b.name} = $bfItem->{${b.path.slice(1)}};`,
+          )
+        }
+      } else {
+        lines.push(`% my $${param} = ${array}->[${indexVar}];`)
+      }
     }
 
     // Handle filter().map() pattern by wrapping children in if-condition
