@@ -526,7 +526,10 @@ export function analyzeHotSubscribers(
     }
   })
 
-  subscribers.sort((x, y) => y.totalMs - x.totalMs || y.runs - x.runs)
+  // Rank deterministically (SR7): same scenario ⇒ same order. `runs` is a
+  // structural, timing-independent cost proxy; `totalMs` (wall-clock) is shown
+  // but never sorted on, and the subscriber id is the final stable tiebreak.
+  subscribers.sort((x, y) => y.runs - x.runs || (x.subscriber < y.subscriber ? -1 : x.subscriber > y.subscriber ? 1 : 0))
   if (options.topN !== undefined) subscribers = subscribers.slice(0, options.topN)
 
   // Only subscriber ids matter for this analysis — filter the join's gaps to
