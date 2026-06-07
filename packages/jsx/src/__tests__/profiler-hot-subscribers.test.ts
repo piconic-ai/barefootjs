@@ -136,6 +136,19 @@ describe('analyzeHotSubscribers', () => {
     expect(r.unattributed.map(u => u.id)).toContain(ghost)
   })
 
+  test('caps the formatted list and summarizes the overflow', () => {
+    seq = 0
+    const events: ProfilerEvent[] = []
+    for (let i = 0; i < 30; i++) {
+      events.push(ev('effectEnter', { subscriber: `X#effect:${i}` }))
+      events.push(ev('effectExit', { subscriber: `X#effect:${i}`, dur: 30 - i }))
+    }
+    const out = formatHotSubscribers(analyzeHotSubscribers(events, index), 12)
+    // 12 shown + the "… and N more" summary line.
+    expect(out).toContain('… and 18 more')
+    expect((out.match(/ runs,/g) ?? []).length).toBe(12)
+  })
+
   test('formats a readable report with a hot note', () => {
     seq = 0
     const events: ProfilerEvent[] = [

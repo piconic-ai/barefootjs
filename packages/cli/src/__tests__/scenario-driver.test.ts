@@ -72,6 +72,21 @@ describe('runAutoScenario', () => {
   })
 })
 
+describe('mount resilience', () => {
+  test('a component that throws on mount yields an actionable error, not a raw crash', async () => {
+    const BOOM = `
+      'use client'
+      import { createEffect } from '@barefootjs/client'
+      export function Boom() {
+        const ctx = undefined
+        createEffect(() => { return ctx.state })
+        return <div>x</div>
+      }
+    `
+    await expect(runAutoScenario(BOOM, 'Boom.tsx', 'Boom')).rejects.toThrow(/context provider or composition|--scenario/)
+  })
+})
+
 describe('runFileScenario (composition, #1796)', () => {
   test('compiles a story + its local import, mounts the composition, fires it', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'bf-story-'))

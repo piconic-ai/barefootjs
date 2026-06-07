@@ -536,19 +536,27 @@ export function analyzeHotSubscribers(
   return { kind: 'hot-subscribers', subscribers, unattributed: gaps }
 }
 
-export function formatHotSubscribers(r: HotSubscribersResult): string {
+export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): string {
   const lines: string[] = []
   lines.push('hot subscribers — most run / most time')
   if (r.subscribers.length === 0) {
     lines.push('  (no effect/memo runs recorded)')
   }
-  for (const s of r.subscribers) {
+  // Resolved subscribers carry a source line and are the actionable ones; show
+  // them first, then a capped tail of unresolved noise (loop/binding effects
+  // the analyzer can't yet place), so a big list (e.g. a calendar grid) stays
+  // readable instead of dumping a thousand rows.
+  const shown = r.subscribers.slice(0, limit)
+  for (const s of shown) {
     const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
     const base = s.name ?? s.subscriber
     // Binding names already carry their type (`s1 (attribute)`); don't double up.
     const label = s.kind && !base.endsWith(')') ? `${base} (${s.kind})` : base
     const note = s.hot ? `   ⚠ hot: ${s.runsPerTurn.toFixed(1)} runs/turn` : ''
     lines.push(`  ${label.padEnd(20)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
+  }
+  if (r.subscribers.length > shown.length) {
+    lines.push(`  … and ${r.subscribers.length - shown.length} more`)
   }
   if (r.unattributed.length > 0) {
     lines.push(`  ⚠ coverage: ${r.unattributed.length} unresolved subscriber id(s)`)
