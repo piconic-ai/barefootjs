@@ -82,6 +82,10 @@ type GoRenderCtx = {
 interface NestedComponentInfo extends IRLoopChildComponent {
   isDynamic: boolean
   isPropDerived: boolean
+  /** The enclosing loop's `key` expression (e.g. `item.label`) and map param
+   *  name (`item`), so the loop-child init can stamp `data-key` per item. */
+  loopKey?: string
+  loopParam?: string
 }
 
 interface StaticChildInstance {
@@ -298,6 +302,48 @@ function capitalize(s: string): string {
 }
 
 /**
+ * Lower a keyed-loop `key` expression to the Go field path on the loop's range
+ * variable (always `item` in the generated `for i, item := range …`), e.g.
+ * `item.label` → `item.Label`. Returns null for a non-simple key (computed
+ * expression, whole-element key, mismatched param) so the loop-child init just
+ * skips `data-key` rather than emitting something that won't compile. (#1297)
+ */
+function loopKeyToGoFieldPath(key: string | undefined, param: string | undefined): string | null {
+  if (!key || !param) return null
+  const segs = key.split('.')
+  if (segs[0] !== param) return null
+  const rest = segs.slice(1)
+  if (rest.length === 0) return null
+  if (!rest.every(s => /^[A-Za-z_]\w*$/.test(s))) return null
+  return 'item.' + rest.map(capitalize).join('.')
+}
+
+/**
+ * Collect the component's root scope element node(s) — the elements that become
+ * the rendered root and so carry `data-key` for a keyed loop item. A plain
+ * element root is itself; an `if-statement` (early-return) root contributes the
+ * top element of each branch, since exactly one renders at runtime. (#1297)
+ */
+function collectRootScopeNodes(node: IRNode): Set<IRNode> {
+  const out = new Set<IRNode>()
+  const visit = (n: IRNode | null): void => {
+    if (!n) return
+    if (n.type === 'element') { out.add(n); return }
+    if (n.type === 'if-statement') {
+      const s = n as IRIfStatement
+      visit(s.consequent)
+      visit(s.alternate)
+      return
+    }
+    if (n.type === 'fragment') {
+      for (const c of (n as IRFragment).children) visit(c)
+    }
+  }
+  visit(node)
+  return out
+}
+
+/**
  * Convert a slot ID (e.g., 's6') to a Go struct field suffix (e.g., 'Slot6').
  * Keeps field names human-readable regardless of the internal slot ID format.
  */
@@ -455,6 +501,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Set during type generation when any emit references
    *  `template.HTML(...)`; toggles the `"html/template"` import. */
   private usesHtmlTemplate: boolean = false
+  /** Component root scope element(s) — each carries `data-key` for a keyed loop
+   *  item. A plain element root is one node; an `if-statement` (early-return)
+   *  root contributes the top element of every branch. (#1297) */
+  private rootScopeNodes: Set<IRNode> = new Set()
 
   /** Set during type generation when any emit references
    *  `fmt.Sprint(...)` — e.g. a `Record<staticKeys, scalar>[propKey]`
@@ -581,6 +631,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const isRootComponent = ir.root.type === 'component'
     const isIfStatement = ir.root.type === 'if-statement'
 
+    this.rootScopeNodes = collectRootScopeNodes(ir.root)
     const templateBody = isIfStatement
       ? this.renderIfStatement(ir.root as IRIfStatement, { isRootOfClientComponent: hasInteractivity })
       : this.renderNode(ir.root, { isRootOfClientComponent: hasInteractivity && isRootComponent })
@@ -1358,6 +1409,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Emitted as bf-h / bf-m HTML attributes by `bfHydrationAttrs`.
     lines.push('\tBfParent string `json:"-"`')
     lines.push('\tBfMount string `json:"-"`')
+    // (#1297) Keyed-loop reconciliation key, stamped per item by the parent's
+    // loop init and emitted as `data-key` on this component's scope root.
+    lines.push('\tBfDataKey string `json:"-"`')
 
     // Add Scripts field for dynamic script collection
     lines.push('\tScripts *bf.ScriptCollector `json:"-"`')
@@ -1548,6 +1602,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // mark it as a slot-attached child of this scope.
         lines.push(`\t\t${varName}[i].BfParent = scopeID`)
         lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
+        // (#1297) Stamp the keyed-loop `data-key` per item from the loop's
+        // `key` expression (`item.label` → `item.Label`), matching Hono.
+        const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+        if (keyField) {
+          lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
+          this.usesFmt = true
+        }
         lines.push('\t}')
         lines.push('')
       }
@@ -1843,6 +1904,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             ...loop.childComponent,
             isDynamic: !loop.isStaticArray,
             isPropDerived: !!loop.isPropDerivedArray,
+            loopKey: loop.key ?? undefined,
+            loopParam: loop.param ?? undefined,
           })
         }
       }
@@ -3734,6 +3797,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     let hydrationAttrs = ''
     if (element.needsScope) {
       hydrationAttrs += ` ${this.renderScopeMarker('.ScopeID')}`
+    }
+    // (#1297) A root scope element carries `data-key` for a keyed loop item —
+    // the parent's loop init stamped `.BfDataKey`, so a non-keyed render emits
+    // nothing. Mirrors Hono stamping data-key on each loop item's scope root,
+    // including early-return (if-statement) roots where every branch's top
+    // element qualifies.
+    if (this.rootScopeNodes.has(element) && element.needsScope) {
+      hydrationAttrs += ` {{if .BfDataKey}}data-key="{{.BfDataKey}}"{{end}}`
     }
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`

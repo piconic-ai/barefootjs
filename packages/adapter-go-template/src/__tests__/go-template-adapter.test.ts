@@ -34,31 +34,10 @@ runAdapterConformanceTests({
   // below, asserting that the adapter emits `BF101` / `BF103` /
   // `BF104` at build time instead of silently emitting invalid
   // template syntax (#1266).
-  skipJsx: [
-    // `children-jsx-expression` / `fragment-wrapped-children-jsx-expression`
-    // graduated: `children={<span/>}` hoists the span with `needsScope:
-    // true`, so it lands as a `jsx-children` prop rather than nested
-    // children. The adapter now bakes that fragment into the child slot's
-    // `Children` with the runtime parent scopeID spliced into the root
-    // `bf-s` (`extractScopedHtmlChildren`), matching Hono / Mojo / Xslate.
-    //
-    // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
-    // sibling `ToggleItem` children inside a keyed `.map`. The Go
-    // child-slice init types the loop input as `[]any` rather than
-    // `[]ToggleItemInput`, so the generated `NewToggleProps` struct
-    // literal fails to compile (`cannot use []any{…} as
-    // []ToggleItemInput value in struct literal`). Separate follow-up —
-    // needs the loop-child init to emit the typed element slice, plus
-    // per-item `defaultOn` seeding and the `data-key` attribute shape.
-    //
-    // `props-reactivity-comparison` graduated: the Go test-render now
-    // honours the fixture's `componentName` (`PropsReactivityComparison`,
-    // the second export of `ReactiveProps.tsx`) instead of always
-    // rendering the first export, and the generated child constructors
-    // compute the `displayValue = props.value * 10` memo from the
-    // passed prop — so SSR matches Hono byte-for-byte.
-    'toggle-shared',
-  ],
+  // No JSX-render skips: every shared conformance fixture renders to Hono
+  // parity on real Go. Shapes the adapter intentionally refuses at build time
+  // are pinned in `expectedDiagnostics` below.
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
   // shared fixtures) so adding a new adapter doesn't require touching
@@ -2508,6 +2487,41 @@ import { fixture as arrayToSortedFixture } from '../../../adapter-tests/fixtures
 import { fixture as arrayEntriesFixture } from '../../../adapter-tests/fixtures/methods/array-entries'
 import { fixture as arrayKeysFixture } from '../../../adapter-tests/fixtures/methods/array-keys'
 import { fixture as arrayValuesFixture } from '../../../adapter-tests/fixtures/methods/array-values'
+
+describe('GoTemplateAdapter - keyed loop-child data-key (#1297, toggle-shared)', () => {
+  // A keyed `.map` of a child component stamps each item's `data-key` from the
+  // loop `key` expression, emitted on the child component's scope root —
+  // matching Hono.
+  // `List` is declared first so `compileToIR` (which picks the first IR)
+  // returns the parent that owns the keyed loop.
+  const source = `
+"use client"
+import { createSignal } from "@barefootjs/client"
+type ItemProps = { label: string; defaultOn?: boolean }
+export function List({ items }: { items: ItemProps[] }) {
+  return <ul>{items.map((item) => <Item key={item.label} label={item.label} defaultOn={item.defaultOn} />)}</ul>
+}
+function Item(props: ItemProps) {
+  const [on] = createSignal(props.defaultOn ?? false)
+  return <div className="item">{on() ? props.label : ''}</div>
+}
+`
+  test('Props carries a BfDataKey field', () => {
+    const { types } = compileAndGenerate(source)
+    expect(types).toContain('BfDataKey string `json:"-"`')
+  })
+
+  test('loop-child init stamps BfDataKey from the loop key (item.Label)', () => {
+    const { types } = compileAndGenerate(source)
+    expect(types).toContain('[i].BfDataKey = fmt.Sprint(item.Label)')
+    expect(types).toContain('\t"fmt"')
+  })
+
+  test('child component root emits data-key from BfDataKey', () => {
+    const { template } = compileAndGenerate(source)
+    expect(template).toContain('{{if .BfDataKey}}data-key="{{.BfDataKey}}"{{end}}')
+  })
+})
 
 describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
   const cases = [

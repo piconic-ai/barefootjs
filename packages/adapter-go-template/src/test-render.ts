@@ -259,8 +259,9 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     // template content as Go raw string
     const escapedTemplate = template.replace(/`/g, '` + "`" + `')
 
-    // Build props initialization
-    const propsInit = buildGoPropsInit(componentName, props, ir)
+    // Build props initialization (typed against the generated Input struct so
+    // an array-of-objects prop emits e.g. `[]ToggleItemInput{…}`, not `[]any`).
+    const propsInit = buildGoPropsInit(componentName, props, ir, goTypes)
 
     // Honour `__instanceId` from props for the root scope id so
     // shared-component fixtures (which pin `<ComponentName>_test`) match
@@ -470,9 +471,10 @@ function ensureMergedStdlibImports(goTypes: string): string {
  * Build Go struct field initializers from props.
  */
 function buildGoPropsInit(
-  _componentName: string,
+  componentName: string,
   props?: Record<string, unknown>,
   ir?: ComponentIR,
+  goTypes?: string,
 ): string {
   if (!props) return ''
 
@@ -517,16 +519,25 @@ function buildGoPropsInit(
     } else if (typeof value === 'boolean') {
       lines.push(`\t\t${goField}: ${value},`)
     } else if (Array.isArray(value)) {
-      // Array → Go `[]any` literal. Fixtures that exercise
-      // array-receiver methods (`items.every(...)`, `items.join(' - ')`,
-      // etc. — #1448 method catalog) need the prop value to reach
-      // the rendered template as a real slice so `range .Items` /
-      // `bf_join (.Items) ...` see actual elements; without this
-      // branch the prop was silently dropped, the input-struct
-      // field stayed at its zero value, and the template rendered
-      // empty content alongside the expected wrappers (the bug
-      // surfaced as "expected 'idx: 1' / got 'idx:'" on CI).
-      lines.push(`\t\t${goField}: ${goArrayLiteralFromArray(value)},`)
+      // Array → Go slice literal. Fixtures that exercise array-receiver
+      // methods (`items.every(...)`, `items.join(' - ')`, etc. — #1448
+      // method catalog) need the prop value to reach the rendered template
+      // as a real slice so `range .Items` / `bf_join (.Items) ...` see
+      // actual elements.
+      //
+      // When the Input field is a typed slice (`ToggleItems
+      // []ToggleItemInput`, a loop-child array prop), emit a matching
+      // typed literal (`[]ToggleItemInput{ToggleItemInput{Label: …}, …}`);
+      // a bare `[]any{…}` would fail to compile against the typed field.
+      // Fall back to `[]any` when the field type is `[]any` / unknown.
+      const elemType = goSliceElemType(goTypes, componentName, goField)
+      lines.push(
+        `\t\t${goField}: ${
+          elemType
+            ? goTypedSliceLiteralFromArray(value, elemType)
+            : goArrayLiteralFromArray(value)
+        },`,
+      )
     } else if (value && typeof value === 'object') {
       // Plain object → Go `map[string]any` literal (#1407 follow-up).
       // Used by `jsx-spread-rest-prop` to populate the input-bag
@@ -544,6 +555,66 @@ function buildGoPropsInit(
     lines.push(`\t\t${restBagField}: ${goMapLiteralFromObject(bag)},`)
   }
   return lines.join('\n')
+}
+
+/**
+ * Look up the element type of a typed slice field on the entry component's
+ * `<Component>Input` struct (e.g. `ToggleItems []ToggleItemInput` →
+ * `ToggleItemInput`). Returns null when the field is absent, isn't a slice, or
+ * is an untyped `[]any` / `[]interface{}` (those keep the generic `[]any`
+ * harness literal). (#1297, toggle-shared)
+ */
+function goSliceElemType(
+  goTypes: string | undefined,
+  componentName: string,
+  goField: string,
+): string | null {
+  if (!goTypes) return null
+  const struct = goTypes.match(
+    new RegExp(`type ${componentName}Input struct \\{([\\s\\S]*?)\\n\\}`),
+  )
+  if (!struct) return null
+  const field = struct[1].match(new RegExp(`\\n\\s*${goField}\\s+\\[\\]([\\w.]+)`))
+  if (!field) return null
+  const elem = field[1]
+  if (elem === 'any' || elem === 'interface{}') return null
+  return elem
+}
+
+/**
+ * Emit a typed Go slice literal (`[]Elem{Elem{…}, …}`). Object elements become
+ * keyed struct literals with PascalCase field names; scalar elements (for an
+ * `[]string` / `[]int` field) are emitted bare. (#1297, toggle-shared)
+ */
+function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string): string {
+  const entries = arr.map(v => {
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      return goStructLiteral(v as Record<string, unknown>, elemType)
+    }
+    if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+    if (v === null) return 'nil'
+    return goArrayLiteralFromArray(v as unknown[])
+  })
+  return `[]${elemType}{${entries.join(', ')}}`
+}
+
+/**
+ * Emit a keyed Go struct literal (`Elem{Field: val, …}`) with PascalCase field
+ * names. Only the keys the caller supplied are set, so an omitted optional prop
+ * (e.g. `defaultOn` on the third toggle item) takes the Go zero value. (#1297)
+ */
+function goStructLiteral(obj: Record<string, unknown>, typeName: string): string {
+  const fields: string[] = []
+  for (const [k, v] of Object.entries(obj)) {
+    const goField = k.charAt(0).toUpperCase() + k.slice(1)
+    if (typeof v === 'string') fields.push(`${goField}: "${v.replace(/"/g, '\\"')}"`)
+    else if (typeof v === 'number' || typeof v === 'boolean') fields.push(`${goField}: ${v}`)
+    else if (v === null) fields.push(`${goField}: nil`)
+    else if (Array.isArray(v)) fields.push(`${goField}: ${goArrayLiteralFromArray(v)}`)
+    else if (v && typeof v === 'object') fields.push(`${goField}: ${goMapLiteralFromObject(v as Record<string, unknown>, true)}`)
+  }
+  return `${typeName}{${fields.join(', ')}}`
 }
 
 function goArrayLiteralFromArray(arr: unknown[]): string {
