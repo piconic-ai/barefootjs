@@ -2519,7 +2519,8 @@ function Item(props: ItemProps) {
 
   test('child component root emits data-key from BfDataKey', () => {
     const { template } = compileAndGenerate(source)
-    expect(template).toContain('{{if .BfDataKey}}data-key="{{.BfDataKey}}"{{end}}')
+    // Space is inside the `{{if}}` so a non-keyed render adds nothing.
+    expect(template).toContain('{{if .BfDataKey}} data-key="{{.BfDataKey}}"{{end}}')
   })
 })
 

@@ -2,8 +2,8 @@
 package main
 
 import (
-	"math/rand"
 	"fmt"
+	"math/rand"
 
 	bf "github.com/barefootjs/runtime/bf"
 )

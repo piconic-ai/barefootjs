@@ -166,6 +166,8 @@ export function combineGoTypes(options: {
   const stdlibImports: string[] = [`\t"math/rand"`]
   if (/\bfmt\./.test(usageScan)) stdlibImports.push(`\t"fmt"`)
   if (/\btemplate\.HTML\b/.test(usageScan)) stdlibImports.push(`\t"html/template"`)
+  // gofmt sorts the stdlib group alphabetically by import path.
+  stdlibImports.sort()
 
   // Build final file
   const parts = [

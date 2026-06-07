@@ -3804,7 +3804,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // including early-return (if-statement) roots where every branch's top
     // element qualifies.
     if (this.rootScopeNodes.has(element) && element.needsScope) {
-      hydrationAttrs += ` {{if .BfDataKey}}data-key="{{.BfDataKey}}"{{end}}`
+      hydrationAttrs += `{{if .BfDataKey}} data-key="{{.BfDataKey}}"{{end}}`
     }
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`
