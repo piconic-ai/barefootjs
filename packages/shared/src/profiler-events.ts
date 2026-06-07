@@ -40,6 +40,13 @@ export interface ProfilerEvent {
   seq: number
   /** Handler id of the turn in scope when this fired, or `null` outside a turn. */
   turn: string | null
+  /**
+   * Unique invocation counter for the turn in scope — distinguishes repeated
+   * invocations of the *same* handler (e.g. clicking several list rows, which
+   * share a `turn` id) so per-turn metrics count interactions, not handler ids.
+   * `null` outside a turn.
+   */
+  turnSeq: number | null
   /** Triggering signal id (`signalSet`) or the subscribed-to signal (`subscribe*`). */
   signal?: string
   /** The effect/memo id (`effect*`) or the subscriber side of a subscription. */

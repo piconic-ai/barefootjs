@@ -474,6 +474,7 @@ export function analyzeHotSubscribers(
     runs: number
     mountRuns: number
     totalMs: number
+    /** Distinct turn *invocations* (by `turnSeq`, falling back to id) it ran in. */
     turns: Set<string>
   }
   const byId = new Map<string, Acc>()
@@ -494,7 +495,7 @@ export function analyzeHotSubscribers(
       // Runs outside any turn are the one-time mount/setup baseline — kept
       // separate so they don't dilute the per-interaction `runsPerTurn`.
       if (e.turn === null) a.mountRuns++
-      else a.turns.add(e.turn)
+      else a.turns.add(String(e.turnSeq ?? e.turn))
     } else if (e.type === 'effectExit' && e.dur !== undefined) {
       acc(e.subscriber).totalMs += e.dur
     }
@@ -612,40 +613,49 @@ export function analyzeBatchAdvisor(
   events: readonly ProfilerEvent[],
   index?: IdIndex,
 ): BatchAdvisorResult {
+  // Group by turn *invocation* (`turnSeq`), so several clicks of the same
+  // handler are evaluated separately rather than summed into one inflated turn.
   interface TurnAcc {
+    handlerId: string
     totalRuns: number
     subscribers: Set<string>
   }
-  const byTurn = new Map<string, TurnAcc>()
+  const byInvocation = new Map<string, TurnAcc>()
 
   for (const e of events) {
     if (e.type !== 'effectEnter' || e.turn === null) continue
-    let acc = byTurn.get(e.turn)
+    const key = String(e.turnSeq ?? e.turn)
+    let acc = byInvocation.get(key)
     if (!acc) {
-      acc = { totalRuns: 0, subscribers: new Set() }
-      byTurn.set(e.turn, acc)
+      acc = { handlerId: e.turn, totalRuns: 0, subscribers: new Set() }
+      byInvocation.set(key, acc)
     }
     acc.totalRuns++
     if (e.subscriber !== undefined) acc.subscribers.add(e.subscriber)
   }
 
-  const candidates: BatchCandidate[] = []
-  for (const [turn, acc] of byTurn) {
+  // Collapse invocations to one candidate per handler — the worst (max-savings)
+  // invocation represents the handler's batch opportunity.
+  const byHandler = new Map<string, BatchCandidate>()
+  for (const acc of byInvocation.values()) {
     const distinctSubscribers = acc.subscribers.size
     const savings = acc.totalRuns - distinctSubscribers
-    if (savings > 0) {
-      const node = index?.get(turn)
-      candidates.push({
-        turn,
-        loc: node?.loc,
-        handler: node?.name,
-        totalRuns: acc.totalRuns,
-        distinctSubscribers,
-        savings,
-        safety: 'unverified',
-      })
-    }
+    if (savings <= 0) continue
+    const prev = byHandler.get(acc.handlerId)
+    if (prev && prev.savings >= savings) continue
+    const node = index?.get(acc.handlerId)
+    byHandler.set(acc.handlerId, {
+      turn: acc.handlerId,
+      loc: node?.loc,
+      handler: node?.name,
+      totalRuns: acc.totalRuns,
+      distinctSubscribers,
+      savings,
+      safety: 'unverified',
+    })
   }
+
+  const candidates = [...byHandler.values()]
   candidates.sort((a, b) => b.savings - a.savings || b.totalRuns - a.totalRuns)
 
   return { kind: 'batch-advisor', candidates }
@@ -876,8 +886,16 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     })
   }
 
-  const turnIds = new Set<string>()
-  for (const e of events) if (e.turn !== null) turnIds.add(e.turn)
+  // Count distinct turn *invocations* (turnSeq), not handler ids — N clicks of
+  // one handler are N turns. Handlers exercised (coverage) counts distinct ids.
+  const turnSeqs = new Set<string>()
+  const handlerIds = new Set<string>()
+  for (const e of events) {
+    if (e.turn !== null) {
+      turnSeqs.add(String(e.turnSeq ?? e.turn))
+      handlerIds.add(e.turn)
+    }
+  }
 
   return {
     kind: 'profile',
@@ -885,11 +903,11 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     sourceFile: primary.sourceFile,
     scenario,
     events: events.length,
-    turns: turnIds.size,
+    turns: turnSeqs.size,
     hotSubscribers,
     batchAdvisor,
     coverage: {
-      handlersFired: turnIds.size,
+      handlersFired: handlerIds.size,
       handlersTotal,
       unattributed,
     },

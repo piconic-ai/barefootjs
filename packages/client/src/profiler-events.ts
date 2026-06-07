@@ -40,14 +40,17 @@ export interface RecordingSink {
  */
 export function createRecordingSink(): RecordingSink {
   const events: ProfilerEvent[] = []
-  const turnStack: string[] = []
+  // Each entry is one turn *invocation*: its handler id + a unique instance seq,
+  // so repeated calls of the same handler are distinct turns.
+  const turnStack: { handlerId: string; turnSeq: number }[] = []
   let seq = 0
+  let turnCounter = 0
 
-  const currentTurn = (): string | null =>
-    turnStack.length > 0 ? turnStack[turnStack.length - 1] : null
+  const top = () => (turnStack.length > 0 ? turnStack[turnStack.length - 1] : null)
 
-  const push = (e: Omit<ProfilerEvent, 'seq' | 'turn'>): void => {
-    events.push({ seq: seq++, turn: currentTurn(), ...e })
+  const push = (e: Omit<ProfilerEvent, 'seq' | 'turn' | 'turnSeq'>): void => {
+    const t = top()
+    events.push({ seq: seq++, turn: t?.handlerId ?? null, turnSeq: t?.turnSeq ?? null, ...e })
   }
 
   const sink: ProfilerEventSink = {
@@ -62,9 +65,9 @@ export function createRecordingSink(): RecordingSink {
     batchFlush: (flushed) => push({ type: 'batchFlush', flushed }),
     turnBegin: (handlerId, loc) => {
       // Record before pushing so the marker carries the *parent* turn, then
-      // open the new turn for everything that follows.
+      // open the new turn (a fresh invocation instance) for everything that follows.
       push({ type: 'turnBegin', handlerId, loc })
-      turnStack.push(handlerId)
+      turnStack.push({ handlerId, turnSeq: ++turnCounter })
     },
     turnEnd: () => {
       turnStack.pop()
@@ -79,6 +82,7 @@ export function createRecordingSink(): RecordingSink {
       events.length = 0
       turnStack.length = 0
       seq = 0
+      turnCounter = 0
     },
   }
 }
