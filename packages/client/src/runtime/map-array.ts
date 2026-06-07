@@ -222,6 +222,7 @@ export function mapArray<T>(
   getKey: ((item: T, index: number) => string) | null,
   renderItem: (item: () => T, index: number, existing?: HTMLElement) => HTMLElement,
   markerId?: string,
+  bfId?: string,
 ): void {
   if (!container) return
 
@@ -389,7 +390,7 @@ export function mapArray<T>(
         insertScope(scope, container, anchor)
       }
     }
-  })
+  }, bfId)
 }
 
 // ---------------------------------------------------------------------------
@@ -521,6 +522,7 @@ export function mapArrayAnchored<T>(
   getKey: ((item: T, index: number) => string) | null,
   renderItem: (item: () => T, index: number, existing?: Comment) => DocumentFragment | Comment,
   markerId?: string,
+  bfId?: string,
 ): void {
   if (!container) return
 
@@ -615,5 +617,5 @@ export function mapArrayAnchored<T>(
         placeAnchorScope(scope, container, end, end)
       }
     }
-  })
+  }, bfId)
 }

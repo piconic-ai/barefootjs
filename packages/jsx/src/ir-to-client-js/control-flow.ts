@@ -64,7 +64,10 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
  */
 export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLocalNames: Set<string>): void {
   for (const elem of ctx.loopElements) {
-    const plan = buildLoopPlan(elem, { unsafeLocalNames })
+    const plan = buildLoopPlan(elem, {
+      unsafeLocalNames,
+      profileComponentName: ctx.profile ? ctx.componentName : undefined,
+    })
     stringifyLoop(lines, plan)
     emitLoopEventDelegation(lines, elem, plan.kind, ctx.profile ? ctx.componentName : undefined)
   }

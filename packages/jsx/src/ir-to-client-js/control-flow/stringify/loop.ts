@@ -136,13 +136,14 @@ export function stringifyPlainLoop(
   // `childRefs` need `__el` as a handle to invoke the user's callback inside
   // the factory, so non-empty refs force the multi-line layout the same way
   // reactive effects do (#1244).
+  const loopBfId = plan.profileLoopId ? `, ${JSON.stringify(plan.profileLoopId)}` : ''
   if (reactiveEffects === null && !bodyIsMultiRoot && childRefs.length === 0) {
     // Single-line renderItem (no reactive effects, single root, no refs).
     const unwrapInline = paramUnwrap ? `${paramUnwrap} ` : ''
     const preamble = mapPreambleWrapped ? `${mapPreambleWrapped}; ` : ''
     const cloneExpr = emitTemplateCloneInline(template)
     lines.push(
-      `${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}${preamble}if (__existing) return __existing; ${cloneExpr} }, '${markerId}')`,
+      `${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}${preamble}if (__existing) return __existing; ${cloneExpr} }, '${markerId}'${loopBfId})`,
     )
     return
   }
@@ -163,7 +164,7 @@ export function stringifyPlainLoop(
   }
   emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
   lines.push(`${bodyIndent}return __el`)
-  lines.push(`${topIndent}}, '${markerId}')`)
+  lines.push(`${topIndent}}, '${markerId}'${loopBfId})`)
 }
 
 /**
@@ -212,7 +213,8 @@ function stringifyAnchoredLoop(
     stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__anchor', bodyIsMultiRoot: false })
   }
   lines.push(`${bodyIndent}return __frag ?? __anchor`)
-  lines.push(`${topIndent}}, '${markerId}')`)
+  const loopBfId = plan.profileLoopId ? `, ${JSON.stringify(plan.profileLoopId)}` : ''
+  lines.push(`${topIndent}}, '${markerId}'${loopBfId})`)
 }
 
 export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void {

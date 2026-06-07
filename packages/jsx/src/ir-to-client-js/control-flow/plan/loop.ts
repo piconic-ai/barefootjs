@@ -50,6 +50,13 @@ interface LoopPlanCommon {
 interface DynamicLoopCommon extends LoopPlanCommon {
   /** Loop marker id — passed to mapArray so sibling loops disambiguate (#1087). */
   markerId: string
+  /**
+   * Profile mode (#1690, SR4): the loop's binding id
+   * (`<Component>#binding:<slotId>`), passed to `mapArray` as the `bfId` so its
+   * internal reconcile effect — typically the costliest subscriber in a list —
+   * is attributed to source. Undefined when profiling is off.
+   */
+  profileLoopId?: string
   /** Key function source — `null` when the loop has no explicit key. */
   keyFn: string
   /** renderItem param identifier (after destructure unwrap rename). */
