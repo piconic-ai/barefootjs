@@ -203,4 +203,18 @@ describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
     expect(out).toContain('hot subscribers')
     expect(out).toContain('coverage:')
   })
+
+  test('a zero-turn report directs to the right tool', () => {
+    n = 0
+    // No handler events at all → no turns, no handlers.
+    const noHandlerSrc = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Disp() { const [v] = createSignal(1); return <div>{v()}</div> }
+    `
+    const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: 'Disp#binding:s0' })]
+    const noHandlers = buildProfileReport({ source: noHandlerSrc, filePath: 'Disp.tsx', scenario: 'auto', events })
+    expect(noHandlers.turns).toBe(0)
+    expect(formatProfileReport(noHandlers)).toContain('no event handlers')
+  })
 })

@@ -900,6 +900,17 @@ export function formatProfileReport(r: ProfileReport): string {
   const lines: string[] = []
   lines.push(`${r.componentName} — profile (scenario: ${r.scenario})`)
   lines.push(`  ${r.events} events across ${r.turns} turn(s)`)
+  // No interactions measured: either the component has no handlers (use the
+  // static budget) or its handlers live in composed children the auto scenario
+  // couldn't reach (use a --scenario file). Say so plainly rather than leaving
+  // the user with mount-only, mostly-unresolved noise.
+  if (r.turns === 0) {
+    lines.push(
+      r.coverage.handlersTotal === 0
+        ? '  note: no event handlers — run `bf debug profile <component>` for the static budget.'
+        : '  note: no interactions measured (handlers are likely in composed children) — try `--scenario <story.tsx>`.',
+    )
+  }
   lines.push('')
   lines.push(formatHotSubscribers(r.hotSubscribers))
   lines.push('')
