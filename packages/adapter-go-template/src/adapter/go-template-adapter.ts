@@ -104,6 +104,16 @@ interface StaticChildInstance {
    *  through the parent's `{{.Children}}` read; those cases stay on
    *  the existing drop path. */
   childrenHtml: string | null
+  /** Go string-concat expression for hoisted-JSX children that carry a
+   *  `needsScope` root (`children={<span/>}` — #1326 / #1335). The root's
+   *  `bf-s` resolves to the PARENT scope (mirroring the client
+   *  `__BF_PARENT_SCOPE__` placeholder + Mojo's begin/end capture), so the
+   *  fragment can't bake to a static string — the runtime `scopeID` is
+   *  spliced in (`"<span bf-s=\"" + scopeID + "\">x</span>"`). Null when the
+   *  static `childrenHtml` path already covers the children, or when any
+   *  other template action survives (genuinely dynamic — kept on the drop
+   *  path). */
+  childrenScopedHtmlExpr: string | null
   /**
    * Context values from enclosing `<Ctx.Provider value>` ancestors
    * (`createContext` identifier → Go value literal), wired into this child
@@ -342,6 +352,11 @@ const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
 export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx> {
   name = 'go-template'
   extension = '.tmpl'
+
+  // Sentinel marking a parent-scope `bf-s` slot inside a hoisted-JSX
+  // children bake (see `extractScopedHtmlChildren`). The token can't appear
+  // in real HTML text, so splitting on it is unambiguous.
+  private static readonly SCOPE_SENTINEL = '__BF_SCOPE_SENTINEL__'
   // Template-string target with no component layer: `bf build` emits a static
   // `barefoot-importmap.html` to `{{ template }}` into the page <head> (#1644).
   importMapInjection = 'html-snippet' as const
@@ -1764,6 +1779,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       } else if (child.childrenHtml !== null) {
         this.usesHtmlTemplate = true
         lines.push(`\t\t\tChildren: template.HTML(${JSON.stringify(child.childrenHtml)}),`)
+      } else if (child.childrenScopedHtmlExpr !== null) {
+        // Hoisted-JSX children with a needsScope root (#1326 / #1335): the
+        // root `bf-s` is the runtime parent scopeID, spliced into the bake.
+        this.usesHtmlTemplate = true
+        lines.push(`\t\t\tChildren: template.HTML(${child.childrenScopedHtmlExpr}),`)
       }
       lines.push(`\t\t}),`)
     }
@@ -1890,12 +1910,55 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *     "drop children" fallback. Dynamic / component-bearing children
    *     stay on the drop path until a re-evaluation hook lands.
    */
+  /**
+   * Pull the IR nodes out of a `children={<…/>}` attribute (a `jsx-children`
+   * prop value). Empty when the component takes no such prop. (#1326 / #1335)
+   */
+  private jsxChildrenPropNodes(props: IRProp[]): IRNode[] {
+    for (const p of props) {
+      if (p.value.kind === 'jsx-children') return p.value.children
+    }
+    return []
+  }
+
   private extractHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
     if (children.every(c => c.type === 'text')) return null
     const html = this.renderChildren(children)
     if (html.includes('{{')) return null
     return html
+  }
+
+  /**
+   * Build a Go string-concat expression for hoisted-JSX children whose root
+   * carries `needsScope` (`children={<span/>}` — #1326 / #1335). Such roots
+   * render in the PARENT's scope, so their `bf-s` is the runtime parent
+   * `scopeID`, not a bake-time constant. We render the fragment, swap the
+   * parent-scope hydration marker for a sentinel, and splice `scopeID` back
+   * in. Returns null when the plain static `childrenHtml` path already
+   * applies, or when any other template action survives (genuinely dynamic —
+   * those stay on the drop path).
+   */
+  private extractScopedHtmlChildren(children: IRNode[]): string | null {
+    if (children.length === 0) return null
+    if (children.every(c => c.type === 'text')) return null
+    const html = this.renderChildren(children)
+    // The needsScope marker renders parent-scope hydration attrs; in a
+    // hoisted fragment every needsScope root resolves to the parent scopeID,
+    // so collapse the whole marker to a bare `bf-s` sentinel (the empty
+    // bf-h / bf-m attrs are dropped — same shape the client emits).
+    const marker = this.renderScopeMarker('.ScopeID')
+    const withSentinel = html
+      .split(marker)
+      .join(`bf-s="${GoTemplateAdapter.SCOPE_SENTINEL}"`)
+    // No sentinel → no needsScope root → the static childrenHtml path covers it.
+    if (!withSentinel.includes(GoTemplateAdapter.SCOPE_SENTINEL)) return null
+    // Any surviving action means the fragment is genuinely dynamic.
+    if (withSentinel.includes('{{')) return null
+    return withSentinel
+      .split(GoTemplateAdapter.SCOPE_SENTINEL)
+      .map(seg => JSON.stringify(seg))
+      .join(' + scopeID + ')
   }
 
   private collectStaticChildInstancesRecursive(
@@ -1920,13 +1983,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Skip components inside loops (handled by nestedComponents)
       if (comp.name !== 'Portal' && !inLoop && comp.slotId) {
         const suffix = slotIdToFieldSuffix(comp.slotId)
+        // Children handed in as a `children={<…/>}` attribute (#1326 / #1335)
+        // land as a `jsx-children` prop rather than nested between the tags;
+        // treat them as the child's effective children when no nested ones
+        // exist, so the bake paths below see them.
+        const effectiveChildren = comp.children.length > 0
+          ? comp.children
+          : this.jsxChildrenPropNodes(comp.props)
         result.push({
           name: comp.name,
           slotId: comp.slotId,
           props: comp.props,
           fieldName: `${comp.name}${suffix}`,
-          childrenText: this.extractTextChildren(comp.children),
-          childrenHtml: this.extractHtmlChildren(comp.children),
+          childrenText: this.extractTextChildren(effectiveChildren),
+          childrenHtml: this.extractHtmlChildren(effectiveChildren),
+          childrenScopedHtmlExpr: this.extractScopedHtmlChildren(effectiveChildren),
           contextBindings: providerCtx.size > 0 ? providerCtx : undefined,
         })
       }

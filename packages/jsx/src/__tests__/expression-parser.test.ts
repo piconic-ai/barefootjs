@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody } from '../expression-parser'
+import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, extractArrowBodyExpression } from '../expression-parser'
 import { collectAllTypeRanges, reconstructWithoutTypes } from '../strip-types'
 
 describe('expression-parser', () => {
@@ -1618,5 +1618,34 @@ describe('expression-parser — .flatMap(fn) projection (#1448 Tier C)', () => {
       expect(exprToString(parseExpression(src))).toBe(src)
       expect(stringifyParsedExpr(parseExpression(src))).toBe(src)
     }
+  })
+})
+
+describe('extractArrowBodyExpression', () => {
+  test('extracts the body of a no-arg arrow (the createMemo shape)', () => {
+    expect(extractArrowBodyExpression('() => props.value * 10')).toBe('props.value * 10')
+  })
+
+  test('returns null for a block-bodied arrow', () => {
+    expect(extractArrowBodyExpression('() => { return props.value * 10 }')).toBeNull()
+  })
+
+  test('returns null for a non-arrow source', () => {
+    expect(extractArrowBodyExpression('props.value * 10')).toBeNull()
+  })
+
+  test('handles params with parens/defaults the old regex would mis-split', () => {
+    // `\([^)]*\)` stops at the first `)`, so a default value containing a
+    // call (`f()`) or a nested arrow desyncs the regex; the AST does not.
+    expect(extractArrowBodyExpression('(a = f()) => a + 1')).toBe('a + 1')
+    expect(extractArrowBodyExpression('() => xs.map(x => x + 1)')).toBe('xs.map(x => x + 1)')
+  })
+
+  test('unwraps redundant parentheses around the arrow', () => {
+    expect(extractArrowBodyExpression('(() => props.value)')).toBe('props.value')
+  })
+
+  test('returns null when the source is more than one statement', () => {
+    expect(extractArrowBodyExpression('() => 1; sideEffect()')).toBeNull()
   })
 })

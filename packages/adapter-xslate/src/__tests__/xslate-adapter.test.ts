@@ -12,12 +12,14 @@
  * genuinely differs. Every divergence carries a one-line rationale.
  */
 
+import { describe, test, expect } from 'bun:test'
 import {
   runAdapterConformanceTests,
   TemplatePrimitiveCaseId,
 } from '@barefootjs/adapter-tests'
 import { XslateAdapter } from '../adapter'
 import { renderXslateComponent, XslateNotAvailableError } from '../test-render'
+import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 
 runAdapterConformanceTests({
   name: 'xslate',
@@ -33,10 +35,13 @@ runAdapterConformanceTests({
   // fixtures than mojo. Each entry below was confirmed to fail with
   // skipJsx emptied.
   skipJsx: [
-    // SSR context propagation (`<Ctx.Provider value>` → `useContext`): the
-    // template reads a stash key that's never seeded. Implemented on Go; the
-    // Perl stash-seed path is a follow-up port, so Xslate stays skipped (#1297).
-    'context-provider',
+    // `context-provider` graduated: SSR context propagation now mirrors the
+    // client `provideContext` / `useContext`. `<Ctx.Provider value>` brackets
+    // its children with inline `$bf.provide_context` / `$bf.revoke_context`
+    // (a package-level value stack; both return '' so the `<: … :>` discards
+    // them), and each `useContext` consumer is seeded with
+    // `: my $x = $bf.use_context('Ctx', <default>)`. Renders byte-for-byte
+    // against Hono on real Text::Xslate. (#1297)
     // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
     // sibling `ToggleItem` children inside a keyed `.map`. Three gaps
     // remain (same as mojo): the loop-child `on = props.defaultOn ??
@@ -48,17 +53,11 @@ runAdapterConformanceTests({
     // aborting, so this surfaces as a render mismatch (not a hard error).
     // Separate follow-up.
     'toggle-shared',
-    // `props-reactivity-comparison` (the `PropsReactivityComparison`
-    // export of `ReactiveProps.tsx`): componentName selection is now
-    // honoured, but the child `PropsStyleChild`'s `displayValue =
-    // props.value * 10` memo has no static SSR default
-    // (`extractSsrDefaults` → `null` for a prop-derived expression) and
-    // the Perl SSR model seeds child memos from static defaults. Kolon
-    // renders the unseeded `$displayValue` as empty, so `child-computed-
-    // value` is blank where Hono / Go emit `10` (Go computes it in a
-    // generated child constructor — the Perl static path has no
-    // equivalent). (Same reason mojo skips.)
-    'props-reactivity-comparison',
+    // `props-reactivity-comparison` graduated: the child `PropsStyleChild`'s
+    // `displayValue = props.value * 10` memo has a `null` static SSR default.
+    // The adapter now computes such memos in-template from the seeded prop var
+    // (`: my $displayValue = $value * 10;`) — mirroring Go's generated child
+    // constructor — so `child-computed-value` renders `10` to match Hono. (#1297)
     // (`kbd` is not skipped here — it's a BF101 refusal pinned in
     // `expectedDiagnostics` below, not a render-mismatch.)
   ],
@@ -142,4 +141,86 @@ runAdapterConformanceTests({
     }
     return false
   },
+})
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function compileToIR(source: string): ComponentIR {
+  const result = compileJSX(source.trimStart(), 'test.tsx', {
+    adapter: new XslateAdapter(),
+    outputIR: true,
+  })
+  const irFile = result.files.find(f => f.type === 'ir')
+  if (!irFile) throw new Error('No IR output')
+  return JSON.parse(irFile.content) as ComponentIR
+}
+
+function compileAndGenerate(source: string) {
+  return new XslateAdapter().generate(compileToIR(source))
+}
+
+// =============================================================================
+// Xslate-Specific Tests
+// =============================================================================
+
+describe('XslateAdapter - SSR context propagation (#1297)', () => {
+  // `<Ctx.Provider value>` brackets its children with inline provide/revoke
+  // calls (both return '' so the `<: … :>` discards them); descendant
+  // `useContext` consumers read the value during the same render.
+  test('provider brackets children with provide_context / revoke_context', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const ThemeContext = createContext('light')
+export function ThemeRoot() {
+  return <div><ThemeContext.Provider value="dark"><ThemeLabel /></ThemeContext.Provider></div>
+}
+function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
+`)
+    expect(template).toContain("$bf.provide_context('ThemeContext', 'dark')")
+    expect(template).toContain("$bf.revoke_context('ThemeContext')")
+    expect(template.indexOf('provide_context')).toBeLessThan(template.indexOf('render_child'))
+    expect(template.indexOf('render_child')).toBeLessThan(template.indexOf('revoke_context'))
+  })
+
+  test('consumer seeds its local from use_context with the createContext default', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const ThemeContext = createContext('light')
+export function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
+`)
+    expect(template).toContain(": my $theme = $bf.use_context('ThemeContext', 'light');")
+  })
+})
+
+describe('XslateAdapter - prop-derived memo SSR seeding (#1297)', () => {
+  // A memo whose body can't be statically folded (`props.value * 10`) gets a
+  // `null` SSR default; the adapter computes it in-template from the seeded
+  // prop var so the child renders the value instead of empty.
+  test('seeds a prop-derived memo from the prop var', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function Child(props: { value: number }) {
+  const displayValue = createMemo(() => props.value * 10)
+  return <span>{displayValue()}</span>
+}
+`)
+    expect(template).toContain(': my $displayValue = $value * 10;')
+  })
+
+  test('seeds a memo over a destructured prop', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function Child({ value }: { value: number }) {
+  const displayValue = createMemo(() => value * 10)
+  return <span>{displayValue()}</span>
+}
+`)
+    expect(template).toContain(': my $displayValue = $value * 10;')
+  })
 })

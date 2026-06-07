@@ -141,6 +141,45 @@ sub props_attr ($self) {
 }
 
 # ---------------------------------------------------------------------------
+# Context (SSR mirror of the client `provideContext` / `useContext`)
+# ---------------------------------------------------------------------------
+#
+# A `<Ctx.Provider value>` seeds a value that descendant `useContext(Ctx)`
+# consumers read during the same render. Dynamic scoping mirrors the client:
+# the provider pushes the value before rendering its children and pops it
+# after, and `use_context` reads the innermost active value (or the
+# `createContext` default when none is active).
+#
+# The value stacks live in a package-level store rather than per-instance or
+# on `$c->stash`: a parent template and the child templates it renders via
+# `render_child` are separate bf instances that don't reliably share a
+# controller (the Xslate backend runs with `c => undef`) nor a backend (the
+# Mojo path lazily builds one per instance). SSR rendering is synchronous —
+# nothing awaits between a provider's push and its matching pop — and the
+# push/pop are perfectly balanced, so the per-name stack always unwinds to
+# empty at the end of each provider subtree, keeping concurrent root renders
+# isolated. provide/revoke return '' so they drop cleanly into an inline
+# `<: … :>` (Kolon) or `% … ;` (EP) emit.
+
+my %CONTEXT_STACKS;
+
+sub provide_context ($self, $name, $value) {
+    push @{ $CONTEXT_STACKS{$name} //= [] }, $value;
+    return '';
+}
+
+sub revoke_context ($self, $name) {
+    pop @{ $CONTEXT_STACKS{$name} } if $CONTEXT_STACKS{$name} && @{ $CONTEXT_STACKS{$name} };
+    return '';
+}
+
+sub use_context ($self, $name, $default = undef) {
+    my $stack = $CONTEXT_STACKS{$name};
+    return $default unless $stack && @$stack;
+    return $stack->[-1];
+}
+
+# ---------------------------------------------------------------------------
 # Comment Markers
 # ---------------------------------------------------------------------------
 

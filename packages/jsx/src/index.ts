@@ -244,7 +244,7 @@ export {
 export { ErrorCodes, createError, formatError, generateCodeFrame } from './errors.ts'
 
 // Expression Parser
-export { parseExpression, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, containsHigherOrder } from './expression-parser.ts'
+export { parseExpression, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, containsHigherOrder, extractArrowBodyExpression } from './expression-parser.ts'
 export type { ParsedExpr, ParsedStatement, SortComparator, SortKey, ReduceOp, FlatDepth, FlatMapOp, FlatMapLeaf, SupportLevel, SupportResult, TemplatePart } from './expression-parser.ts'
 export { buildLoopChainExpr } from './loop-chain.ts'
 export type { LoopChainInputs } from './loop-chain.ts'
