@@ -72,14 +72,10 @@ runAdapterConformanceTests({
     // above — refused with BF101 for the identical Kolon engine reason, not a
     // render-mismatch (so it's pinned here, not in `skipJsx`).
     'kbd': [{ code: 'BF101', severity: 'error' }],
-    // JS object literal in an attribute value (`style={{ … }}`) has no
-    // Kolon form — refused via the same gate as mojo (BF101).
-    'style-3-signals': [{ code: 'BF101', severity: 'error' }],
-    // Dynamic `style={{ … }}` object: the Xslate adapter cleanly refuses it
-    // with BF101 (no idiomatic Kolon form). mojo *skips* this fixture because
-    // its EP path emits invalid Perl silently — Xslate's build-time diagnostic
-    // is the stronger contract, so it's pinned here rather than skipped.
-    'style-object-dynamic': [{ code: 'BF101', severity: 'error' }],
+    // `style-3-signals` / `style-object-dynamic` no longer pinned — a
+    // `style={{ … }}` object literal now lowers to a CSS string with dynamic
+    // values interpolated (`background-color:<: $color :>;padding:8px`) via
+    // `tryLowerStyleObject` (#1322).
     // Tagged-template-literal call in a className — same family, same
     // refusal (BF101).
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],

@@ -55,6 +55,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  parseStyleObjectEntries,
   isSupported,
   identifierPath,
   emitParsedExpr,
@@ -1074,9 +1075,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${value.value}"`,
     emitExpression: (value, name) => {
+      // `style={{ … }}` object literal → a CSS string with dynamic values
+      // interpolated, instead of refusing the bare object with BF101 (#1322).
+      if (name === 'style') {
+        const css = this.tryLowerStyleObject(value.expr)
+        if (css !== null) return `style="${css}"`
+      }
       // Refuse shapes that the lowering pipeline can't represent in Kolon —
-      // object literals (`style={{...}}`) and tagged-template-literal call
-      // expressions (`cn\`base \${tone()}\``). Same gate as the Mojo adapter.
+      // tagged-template-literal call expressions (`cn\`base \${tone()}\``).
+      // Same gate as the Mojo adapter.
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
@@ -1175,6 +1182,27 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
     emitJsxChildren: () => '',
+  }
+
+  /**
+   * Lower a `style={{ … }}` object literal to a CSS string with dynamic values
+   * interpolated as Kolon actions, e.g. `{ backgroundColor: color }` →
+   * `background-color:<: $color :>`. Returns null when the shape is unsupported
+   * or any value can't be lowered (caller falls through to BF101). (#1322)
+   */
+  private tryLowerStyleObject(expr: string): string | null {
+    const entries = parseStyleObjectEntries(expr)
+    if (!entries) return null
+    for (const e of entries) {
+      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
+    }
+    return entries
+      .map(e =>
+        e.kind === 'literal'
+          ? `${e.cssKey}:${e.value}`
+          : `${e.cssKey}:<: ${this.convertExpressionToKolon(e.expr)} :>`,
+      )
+      .join(';')
   }
 
   private renderAttributes(element: IRElement): string {
