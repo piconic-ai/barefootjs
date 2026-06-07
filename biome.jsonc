@@ -1,0 +1,73 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  // Biome's only job in this repo (for now) is to ENFORCE the two JSR
+  // import conventions the source was aligned to in PRs #1792 / #1800 /
+  // #1803, so new code can't silently drift back:
+  //   - useImportExtensions   → explicit `.ts` / `.tsx` on relative imports
+  //   - useNodejsImportProtocol → `node:` prefix on Node built-ins
+  // Everything else (formatter, the rest of the recommended ruleset) is
+  // intentionally left off — this is a lint *gate*, not a formatting pass.
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+  // Scope: the TypeScript SOURCES that JSR actually publishes.
+  //   - `packages/*/src/**` only — never config, scripts, or built output.
+  //   - cli / create-barefootjs are npm-only (never published to JSR), so
+  //     the JSR import rules don't apply to them.
+  //   - adapter-tests is `private` + in `.changeset/config.json`'s ignore
+  //     list → never published; its `src` is test scaffolding.
+  //   - `__tests__` and `*.d.ts` are outside JSR's published surface
+  //     (`deno check` only reaches exported entries + their non-test, non
+  //     -`.d.ts` imports — see scripts/jsr-publish.ts), so the convention
+  //     never applied to them and they are not gated here.
+  "files": {
+    "includes": [
+      "packages/*/src/**/*.ts",
+      "packages/*/src/**/*.tsx",
+      "!packages/cli/**",
+      "!packages/create-barefootjs/**",
+      "!packages/adapter-tests/**",
+      "!**/__tests__/**",
+      "!**/*.d.ts"
+    ]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": false,
+      "correctness": {
+        "useImportExtensions": "error"
+      },
+      "style": {
+        "useNodejsImportProtocol": "error"
+      }
+    }
+  },
+  "overrides": [
+    {
+      // Package self-references (`@barefootjs/client/reactive`, resolved
+      // through the package `exports` map / the JSR import map that
+      // jsr-publish.ts generates) are deliberately extension-less and
+      // `deno check` accepts them as-is. Biome's resolver follows the
+      // workspace symlink to the real `src/*.ts` and false-positives,
+      // wanting a `.ts` that would actually BREAK the JSR/exports
+      // resolution. There's no per-specifier opt-out, so disable the
+      // extension rule for just the files carrying such self-imports.
+      // (`useNodejsImportProtocol` stays on.)
+      "includes": [
+        "packages/client/src/index.ts",
+        "packages/client/src/runtime/index.ts",
+        "packages/client/src/runtime/insert.ts",
+        "packages/client/src/runtime/map-array.ts",
+        "packages/client/src/runtime/component.ts",
+        "packages/client/src/runtime/apply-rest-attrs.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useImportExtensions": "off"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+# CI — Lint
+#
+# PR gate for the JSR import conventions the sources were aligned to in
+# PRs #1792 / #1800 / #1803. Biome enforces exactly two rules over the
+# TypeScript sources JSR publishes (see biome.jsonc for the scope and the
+# rationale):
+#   - useImportExtensions    → explicit `.ts` / `.tsx` on relative imports
+#   - useNodejsImportProtocol → `node:` prefix on Node built-ins
+#
+# This is the authoritative gate; the simple-git-hooks pre-commit
+# (`biome check --staged`) is the same check run locally for fast
+# feedback. `deno check` (ci-jsr-check.yml) is the runtime proof these
+# conventions hold; this lint gate is what keeps new code from drifting
+# in the first place.
+name: CI — Lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/*/src/**/*.ts'
+      - 'packages/*/src/**/*.tsx'
+      - 'biome.jsonc'
+      - 'package.json'
+      - '.github/workflows/ci-lint.yml'
+  pull_request:
+    paths:
+      - 'packages/*/src/**/*.ts'
+      - 'packages/*/src/**/*.tsx'
+      - 'biome.jsonc'
+      - 'package.json'
+      - '.github/workflows/ci-lint.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  biome:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        # Git hooks are a local-dev concern; skip their installation in CI.
+        env:
+          SKIP_INSTALL_SIMPLE_GIT_HOOKS: '1'
+        run: bun install
+
+      - name: Biome check (JSR import conventions)
+        run: bunx biome check
