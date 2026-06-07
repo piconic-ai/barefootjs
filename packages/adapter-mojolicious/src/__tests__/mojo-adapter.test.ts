@@ -18,10 +18,12 @@ runAdapterConformanceTests({
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
   skipJsx: [
-    // SSR context propagation (`<Ctx.Provider value>` → `useContext`): the
-    // template reads a stash key that's never seeded. Implemented on Go; the
-    // Perl stash-seed path is a follow-up port, so Mojo stays skipped (#1297).
-    'context-provider',
+    // `context-provider` graduated: SSR context propagation now mirrors the
+    // client `provideContext` / `useContext`. `<Ctx.Provider value>` brackets
+    // its children with `bf->provide_context` / `bf->revoke_context` (a
+    // package-level value stack), and each `useContext` consumer is seeded at
+    // the top of its template with `% my $x = bf->use_context('Ctx', <default>)`.
+    // Renders byte-for-byte against Hono on real Mojolicious. (#1297)
     // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
     // sibling `ToggleItem` children inside a keyed `.map`. Each child's
     // `on = props.defaultOn ?? false` signal is never seeded into the
@@ -395,6 +397,39 @@ function C({ value = '' }: { value?: string }) {
     // exactly like Hono's value="".
     expect(template).toContain('value="<%= $value %>"')
     expect(template).not.toContain('defined $value')
+  })
+})
+
+describe('MojoAdapter - SSR context propagation (#1297)', () => {
+  // `<Ctx.Provider value>` brackets its children with a provide/revoke pair
+  // on the shared package-level context stack; descendant `useContext`
+  // consumers read it during the same render (mirrors the client
+  // `provideContext` / `useContext`).
+  test('provider brackets children with provide_context / revoke_context', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const ThemeContext = createContext('light')
+export function ThemeRoot() {
+  return <div><ThemeContext.Provider value="dark"><ThemeLabel /></ThemeContext.Provider></div>
+}
+function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
+`)
+    expect(template).toContain("bf->provide_context('ThemeContext', 'dark');")
+    expect(template).toContain("bf->revoke_context('ThemeContext');")
+    // The provide precedes the child render, the revoke follows it.
+    expect(template.indexOf('provide_context')).toBeLessThan(template.indexOf('render_child'))
+    expect(template.indexOf('render_child')).toBeLessThan(template.indexOf('revoke_context'))
+  })
+
+  test('consumer seeds its local from use_context with the createContext default', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const ThemeContext = createContext('light')
+export function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
+`)
+    expect(template).toContain("% my $theme = bf->use_context('ThemeContext', 'light');")
   })
 })
 

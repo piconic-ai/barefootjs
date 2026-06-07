@@ -119,11 +119,14 @@ describe('MojoAdapter - Streaming SSR', () => {
     expect(output).toContain('Please wait...')
   })
 
-  test('renderNode dispatches provider type (transparent)', () => {
+  test('renderNode dispatches provider type (brackets children with provide/revoke)', () => {
+    // SSR context propagation (#1297): the provider is no longer transparent —
+    // it pushes its value before the children and pops it after so a
+    // descendant `useContext` consumer reads it during the same render.
     const providerNode = {
       type: 'provider' as const,
       contextName: 'ThemeContext',
-      valueProp: { name: 'value', value: 'dark', dynamic: false },
+      valueProp: { name: 'value', value: { kind: 'literal' as const, value: 'dark' } },
       children: [
         { type: 'text' as const, value: 'child content', loc: { file: '', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } } },
       ],
@@ -131,6 +134,8 @@ describe('MojoAdapter - Streaming SSR', () => {
     }
 
     const output = adapter.renderNode(providerNode)
-    expect(output).toBe('child content')
+    expect(output).toBe(
+      "<% bf->provide_context('ThemeContext', 'dark'); %>child content<% bf->revoke_context('ThemeContext'); %>",
+    )
   })
 })

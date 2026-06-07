@@ -50,6 +50,8 @@ import {
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   evalStringArrayJoin,
+  collectContextConsumers,
+  type ContextConsumer,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
 
@@ -338,7 +340,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       ? ''
       : this.generateScriptRegistrations(ir, options?.scriptBaseName)
 
-    const template = `${scriptReg}${templateBody}\n`
+    // SSR context consumers (`const x = useContext(Ctx)`): seed each local
+    // from the active provider value (or the `createContext` default) so the
+    // body's `$x` resolves. The provider side pushes the value via
+    // `emitProvider`; here the consumer reads it. (#1297)
+    const ctxSeed = this.generateContextConsumerSeed(ir)
+
+    const template = `${scriptReg}${ctxSeed}${templateBody}\n`
 
     // Merge collected errors into IR errors
     if (this.errors.length > 0) {
@@ -480,7 +488,61 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   }
 
   emitProvider(node: IRProvider, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
-    return this.renderChildren(node.children)
+    // SSR context propagation (#1297): push the provider value onto the
+    // shared controller-stash context stack, render the children (descendant
+    // `useContext` consumers read it via `bf->use_context`), then pop. The
+    // push/pop bracket the children in the same render so the value scopes
+    // exactly to the subtree — mirroring the client `provideContext`.
+    const value = this.providerValuePerl(node.valueProp)
+    const children = this.renderChildren(node.children)
+    const name = node.contextName
+    return (
+      `<% bf->provide_context('${name}', ${value}); %>` +
+      children +
+      `<% bf->revoke_context('${name}'); %>`
+    )
+  }
+
+  /** Lower a `<Ctx.Provider value>` value prop to a Perl expression. */
+  private providerValuePerl(valueProp: IRProvider['valueProp']): string {
+    const v = valueProp.value
+    if (v.kind === 'literal') {
+      return typeof v.value === 'string'
+        ? `'${v.value.replace(/[\\']/g, m => `\\${m}`)}'`
+        : String(v.value)
+    }
+    if (v.kind === 'expression') return this.convertExpressionToPerl(v.expr)
+    if (v.kind === 'template') return this.convertTemplateLiteralPartsToPerl(v.parts)
+    // Out-of-shape value (spread / jsx-children) — render as undef rather
+    // than emit invalid Perl; the consumer falls back to its default.
+    return 'undef'
+  }
+
+  /** Perl literal for a context-consumer's `createContext` default. */
+  private contextDefaultPerl(c: ContextConsumer): string {
+    const d = c.defaultValue
+    if (d === null || d === undefined) return 'undef'
+    if (typeof d === 'string') return `'${d.replace(/[\\']/g, m => `\\${m}`)}'`
+    if (typeof d === 'boolean') return d ? '1' : '0'
+    return String(d)
+  }
+
+  /**
+   * Emit one `% my $<local> = bf->use_context(...)` seed line per context
+   * consumer so the template body's bare `$<local>` resolves to the active
+   * provider value (or the `createContext` default). (#1297)
+   */
+  private generateContextConsumerSeed(ir: ComponentIR): string {
+    const consumers = collectContextConsumers(ir.metadata)
+    if (consumers.length === 0) return ''
+    return (
+      consumers
+        .map(
+          c =>
+            `% my $${c.localName} = bf->use_context('${c.contextName}', ${this.contextDefaultPerl(c)});`,
+        )
+        .join('\n') + '\n'
+    )
   }
 
   emitAsync(node: IRAsync, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
