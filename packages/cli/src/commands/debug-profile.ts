@@ -68,20 +68,23 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   // -- Dynamic mode (SR1–SR4): mount the instrumented build and measure -----
   if (flags.scenario) {
-    if (flags.scenario !== 'auto') {
-      console.error(`Error: only --scenario auto is supported (got "${flags.scenario}").`)
-      console.error('  auto = mount the component and fire each interactive element once.')
-      process.exit(1)
-    }
     try {
-      const { runAutoScenario } = await import('../lib/scenario-driver')
-      const { events, fired } = await runAutoScenario(source, resolved.filePath, resolved.componentName)
+      const { runAutoScenario, runFileScenario } = await import('../lib/scenario-driver')
+      const isAuto = flags.scenario === 'auto'
+      const { events, fired, sources } = isAuto
+        ? await runAutoScenario(source, resolved.filePath, resolved.componentName)
+        : await runFileScenario(flags.scenario)
+      // The story (the last source — deps are loaded first) drives
+      // componentName/sourceFile; the rest merge into the id index.
+      const primary = isAuto ? { source, filePath: resolved.filePath } : sources[sources.length - 1]
+      const extraSources = isAuto ? [] : sources.slice(0, -1)
       const report = buildProfileReport({
-        source,
-        filePath: resolved.filePath,
-        componentName: resolved.componentName,
-        scenario: 'auto',
+        source: primary.source,
+        filePath: primary.filePath,
+        componentName: isAuto ? resolved.componentName : undefined,
+        scenario: isAuto ? 'auto' : flags.scenario,
         events,
+        extraSources,
       })
       if (ctx.jsonFlag) {
         console.log(JSON.stringify(report, null, 2))

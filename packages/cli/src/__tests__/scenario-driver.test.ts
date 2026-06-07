@@ -7,7 +7,10 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { runAutoScenario } from '../lib/scenario-driver'
+import { writeFileSync, mkdtempSync, rmSync } from 'fs'
+import { join } from 'path'
+import { tmpdir } from 'os'
+import { runAutoScenario, runFileScenario } from '../lib/scenario-driver'
 
 const COUNTER = `
   'use client'
@@ -66,5 +69,34 @@ describe('runAutoScenario', () => {
     `
     const r = await runAutoScenario(DISPLAY, 'Display.tsx', 'Display')
     expect(r.events.some(e => e.type === 'turnBegin')).toBe(false)
+  })
+})
+
+describe('runFileScenario (composition, #1796)', () => {
+  test('compiles a story + its local import, mounts the composition, fires it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bf-story-'))
+    try {
+      writeFileSync(join(dir, 'toggle.tsx'), `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function Toggle() {
+          const [on, setOn] = createSignal(false)
+          return <button onClick={() => setOn(!on())}>{on() ? 'on' : 'off'}</button>
+        }
+      `)
+      writeFileSync(join(dir, 'story.tsx'), `
+        import { Toggle } from './toggle'
+        export function Story() { return <div><Toggle /></div> }
+      `)
+
+      const r = await runFileScenario(join(dir, 'story.tsx'))
+      // Both files were loaded (dependency first, story last).
+      expect(r.sources.map(s => s.filePath.split('/').pop())).toEqual(['toggle.tsx', 'story.tsx'])
+      // The composed Toggle's handler fired through the Story wrapper.
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^Toggle#handler:s\d+:click$/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
