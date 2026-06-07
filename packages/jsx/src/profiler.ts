@@ -27,7 +27,7 @@ import {
   type EventBinding,
   type UpdatePathEntry,
 } from './debug.ts'
-import { listComponentFunctions } from './analyzer.ts'
+import { listComponentFunctions, createProgramForFile } from './analyzer.ts'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
 // -- Static budget (SR5) ------------------------------------------------------
@@ -80,11 +80,14 @@ export function buildStaticBudget(
   options: StaticBudgetOptions = {},
 ): StaticBudget {
   const threshold = options.fanOutThreshold ?? DEFAULT_FANOUT_THRESHOLD
-  const { graph } = buildComponentAnalysis(source, filePath, componentName)
+  // Build the TS program once and reuse it for both analyses (re-parsing the
+  // file twice is the bulk of the cost on a large source).
+  const program = createProgramForFile(source, filePath)?.program
+  const { graph } = buildComponentAnalysis(source, filePath, componentName, program)
   // `graph` is the authority for reactive-node counts; the summary is consulted
   // only for `loops`, which needs the IR tree walk (`countNodeType`) that the
   // graph doesn't expose.
-  const summary = buildComponentSummary(source, filePath, componentName)
+  const summary = buildComponentSummary(source, filePath, componentName, program)
 
   const subscriptions = graph.signals.reduce((n, s) => n + s.consumers.length, 0)
 
@@ -844,7 +847,10 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
 
   for (const s of allSources) {
     // A source file may declare several components (e.g. a headless set:
-    // Collapsible + CollapsibleTrigger + CollapsibleContent). Index each.
+    // Collapsible + CollapsibleTrigger + CollapsibleContent). Build the TS
+    // program once and reuse it for every component — re-parsing per component
+    // is the dominant cost (a 25-component file like `chart` is ~30s otherwise).
+    const program = createProgramForFile(s.source, s.filePath)?.program
     let componentNames: string[]
     try {
       componentNames = listComponentFunctions(s.source, s.filePath)
@@ -855,13 +861,13 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     for (const name of componentNames) {
       let graph: ComponentGraph
       try {
-        graph = buildComponentAnalysis(s.source, s.filePath, name).graph
+        graph = buildComponentAnalysis(s.source, s.filePath, name, program).graph
       } catch {
         continue
       }
       for (const [k, v] of buildIdIndex(graph)) index.set(k, v)
       try {
-        const summary = buildEventSummary(s.source, s.filePath, name)
+        const summary = buildEventSummary(s.source, s.filePath, name, program)
         handlersTotal += summary.events.length
         for (const [turn, binding] of turnToEventBinding(graph, summary.events)) {
           turnBindings.set(turn, { binding, graph })
