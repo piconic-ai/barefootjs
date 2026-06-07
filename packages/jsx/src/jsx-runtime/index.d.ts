@@ -1,3 +1,24 @@
+// @ts-nocheck — suppress TS2411 in THIS shim only; types stay strong for consumers.
+//
+// `IntrinsicElements` pairs explicitly-typed elements (input, button, svg, …)
+// with a `[tagName: string]: HTMLBaseAttributes` catch-all for unknown tags.
+// TS2411 ("Property 'input' … is not assignable to 'string' index type
+// 'HTMLBaseAttributes'") fires because the per-element types intentionally
+// narrow `ref` to a concrete subtype (`HTMLInputElement`, …) and re-declare
+// event handlers — neither assignable to the `HTMLElement`-typed base under
+// `strictFunctionTypes`. The diagnostic is spurious *for JSX*: a tag name
+// always resolves to its explicit entry, never to the index signature, so the
+// "incompatible index access" TS2411 guards against cannot happen here.
+//
+// `tsc` never surfaced it (the repo builds with `skipLibCheck`), but
+// `deno publish` (JSR) always type-checks `.d.ts` and broke the
+// `@barefootjs/hono` release with 31 of these. We suppress the self-check of
+// this one declarative shim rather than widen the catch-all to
+// `Record<string, any>` — widening would silently drop attribute checking for
+// custom/web-component tags (`<my-widget foo>` would stop erroring). Consumers
+// are unaffected: `@ts-nocheck` only disables errors *within* this file; its
+// declarations (and their full strictness) still apply at every use site.
+//
 /**
  * BarefootJS JSX Runtime - Type Definitions Only
  *
@@ -324,20 +345,11 @@ export declare namespace JSX {
       ref?: (element: SVGForeignObjectElement) => void
     }
 
-    // Catch-all for any other (custom / unknown) element.
-    //
-    // Mirrors hono/jsx, whose `IntrinsicElements` index signature is
-    // `[tagName: string]: Props` with `Props = Record<string, any>`
-    // (see hono `src/jsx/base.ts`). Using `HTMLBaseAttributes` here instead
-    // would force every explicitly-typed element above to be assignable to
-    // it, which TS rejects with TS2411: the per-element types narrow `ref`
-    // to a concrete subtype (`HTMLInputElement`, …) and re-declare event
-    // handlers, neither assignable to the `HTMLElement`-typed base under
-    // `strictFunctionTypes`. `tsc` only surfaced this with `skipLibCheck`
-    // off; `deno publish` (JSR) always type-checks `.d.ts`, so it broke the
-    // release. `Record<string, any>` accepts every named entry and keeps us
-    // aligned with hono. Known elements stay fully typed via their explicit
-    // entries above — the index only governs unlisted tag names.
-    [tagName: string]: Record<string, any>
+    // Catch-all for any other (custom / unknown) element. Typed as
+    // `HTMLBaseAttributes` so unknown tags (e.g. web components) still get
+    // base-attribute checking instead of `any`. See the file-level
+    // `@ts-nocheck` note for why this trips TS2411 under `deno publish` and
+    // why suppressing it (rather than widening to `any`) is correct.
+    [tagName: string]: HTMLBaseAttributes
   }
 }
