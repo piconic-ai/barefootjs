@@ -75,7 +75,15 @@ export function createDevReloader(
 
     const readBuildId = async (): Promise<string> => {
       try {
-        return (await readFile(buildIdPath, 'utf8')).trim()
+        // `readFile(path, 'utf8')` is the obvious call, but Deno's
+        // `node:fs/promises` types resolve that positional-encoding
+        // overload to `NonSharedBuffer` rather than `string`, so `.trim()`
+        // is missing and `deno check` fails (TS2769 + TS2339). Read raw
+        // bytes and decode with `TextDecoder` instead: it defaults to
+        // UTF-8 (same result as before), sidesteps the broken overload
+        // entirely, and is portable across Node/Deno/Workers — matching
+        // the `TextEncoder` used just below.
+        return new TextDecoder().decode(await readFile(buildIdPath)).trim()
       } catch {
         return ''
       }

@@ -70,17 +70,21 @@ jobs:
         run: |
           set -uo pipefail
 
-          # Packages temporarily excluded from the gate. Each entry should
-          # carry a tracking issue link so the exclusion is visible and
-          # owned.
+          # Packages excluded from the gate. The exclusion is documented
+          # inline here rather than via a tracking issue: it's bounded by an
+          # upstream constraint, not pending in-repo work.
           #
-          # - @barefootjs/hono: Hono JSX's `IntrinsicElements` indexer
-          #   (`[k: string]: HTMLBaseAttributes`) collides structurally
-          #   with its per-element types (~30 TS2411), plus the usual
-          #   TS2874/TS7026 JSX-globals plumbing. Fixing these without
-          #   forking off `hono/jsx`'s real types is outside this
-          #   gate's scope.
-          #   Tracking: https://github.com/piconic-ai/barefootjs/issues/1804
+          # - @barefootjs/hono: `deno check` also type-checks `hono/jsx`'s
+          #   own declarations, where the `IntrinsicElements` indexer
+          #   (`[k: string]: HTMLBaseAttributes`) is structurally
+          #   incompatible with its per-element types (~30 TS2411). The JSX
+          #   globals only resolve under an explicit `jsxImportSource`
+          #   recipe that then surfaces that same wall (TS2874/TS7026). We
+          #   won't ship our own JSX type shims to satisfy the checker —
+          #   that would fork @barefootjs/hono off the real `hono/jsx` types
+          #   consumers depend on. Our own checker-facing errors (missing
+          #   `override`, the `readFile` encoding overload) are fixed; what
+          #   remains is upstream's to resolve. npm publish is unaffected.
           declare -A SKIP=(
             ["@barefootjs/hono"]=1
           )

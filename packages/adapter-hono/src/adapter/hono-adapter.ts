@@ -966,7 +966,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     return lines.join('\n')
   }
 
-  renderAsync(node: IRAsync): string {
+  override renderAsync(node: IRAsync): string {
     const fallback = this.renderNode(node.fallback)
     const children = this.renderChildren(node.children)
     // Wrap the streaming body in an ErrorBoundary so a synchronous throw or
