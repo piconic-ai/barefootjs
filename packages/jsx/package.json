@@ -25,7 +25,7 @@
       "types": "./src/jsx-dev-runtime/index.ts"
     }
   },
-  "//publishConfig": "At pack time, swap-publish-config.mjs merges these overrides into the top-level so the published tarball resolves all entry points to dist/ instead of src/. Workspace exports stay at src/ so bun resolves source directly during dev.",
+  "//publishConfig": "At pack time, swap-publish-config.mjs merges these overrides into the top-level so the published tarball resolves entry points to dist/ instead of src/. Exceptions: ./jsx-runtime and ./jsx-dev-runtime are type-only shims with no runtime/build output, so they stay at their src/*.ts (no dist/ sibling exists). Workspace exports stay at src/ so bun resolves source directly during dev.",
   "publishConfig": {
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
