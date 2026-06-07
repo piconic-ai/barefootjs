@@ -16,13 +16,16 @@
 //      (the same single source of truth release + ci-jsr-check use), so the
 //      `exports` linted here are exactly the entries JSR documents.
 //   2. Run `deno doc --lint` on those entries per package, then keep only
-//      diagnostics that point at the package's OWN source files. `deno doc
-//      --lint` walks the entire documentation graph and lints every symbol
-//      reachable from the public API — including third-party / sibling types
-//      the package merely references (e.g. `StandardSchemaV1`, the runtime's
-//      `Reactive`/`Memo`, a dependency's re-exported `.d.ts`). JSR's "docs for
-//      most symbols" score only counts a package's own declared symbols, so
-//      external diagnostics are reported and ignored, not failed on.
+//      `missing-jsdoc` diagnostics that point at the package's OWN source
+//      files. `deno doc --lint` walks the entire documentation graph and lints
+//      every symbol reachable from the public API — including third-party /
+//      sibling types the package merely references (e.g. `StandardSchemaV1`,
+//      the runtime's `Reactive`/`Memo`, a dependency's re-exported `.d.ts`) —
+//      and its slow-types rules (`private-type-ref` etc.) are reported at the
+//      referencing symbol's own location. JSR's "docs for most symbols" score
+//      only counts whether a package's own declared symbols carry JSDoc, so we
+//      gate on exactly that and ignore the rest (slow types are already
+//      covered by `deno check` and JSR's separate "no slow types" check).
 //   3. Tier the result (mirrors ci-jsr-check's deno-check idiom):
 //        ENFORCE — fully-documented packages whose coverage must not
 //                  regress; a lint failure exits non-zero.
@@ -91,12 +94,13 @@ const manifests = readdirSync(packagesDir)
 // runtime's `Reactive`/`Memo`, or a dependency's re-exported `.d.ts`). JSR's
 // "docs for most symbols" score, by contrast, only counts a package's own
 // declared symbols, which is all the author can document. So we pair each
-// `error[rule]` with the file it points at (`--> path:line:col`) and keep
-// only the ones inside the package's own directory.
+// `error[rule]` with the file it points at (`--> path:line:col`), keep only
+// the `missing-jsdoc` rule, and within that only diagnostics inside the
+// package's own directory.
 const ANSI = /\x1b\[[0-9;]*m/g
 interface LintResult {
-  own: string[] // formatted in-package diagnostics (the author can fix these)
-  external: number // diagnostics on referenced third-party / sibling types
+  own: string[] // own undocumented symbols (the author can fix these)
+  external: number // missing-jsdoc on referenced third-party / sibling types
   ranOk: boolean // false when deno doc itself failed to run (e.g. bad import)
   raw: string
 }
@@ -116,10 +120,20 @@ function lint(pkgDir: string, stdout: string, stderr: string, exitCode: number):
     const loc = line.match(/-->\s*(.+?):(\d+):(\d+)\s*$/)
     if (loc && rule) {
       const [, file, ln, col] = loc
-      if (file.startsWith(pkgDir + sep) && !file.includes(`${sep}node_modules${sep}`)) {
-        own.push(`    ${rule}  ${file.slice(pkgDir.length + 1)}:${ln}:${col}`)
-      } else {
-        external++
+      // Only `missing-jsdoc` maps to JSR's "docs for most symbols" score.
+      // The other rules — `private-type-ref`, `missing-return-type`,
+      // `missing-explicit-type` — are slow-types concerns, already covered by
+      // `deno check` and JSR's separate "no slow types" check. Crucially
+      // `private-type-ref` is reported at the *referencing* public symbol's own
+      // location even when the offending private type is a dependency's (e.g.
+      // form's `FieldReturn` referencing the runtime's `Reactive`/`Memo`), so
+      // counting it here would fail a package for a dependency's typing.
+      if (rule === 'missing-jsdoc') {
+        if (file.startsWith(pkgDir + sep) && !file.includes(`${sep}node_modules${sep}`)) {
+          own.push(`    missing-jsdoc  ${file.slice(pkgDir.length + 1)}:${ln}:${col}`)
+        } else {
+          external++
+        }
       }
       rule = null
     }
@@ -169,7 +183,7 @@ try {
     }
 
     if (external > 0) {
-      console.log(`    ${external} diagnostic(s) on referenced external types — ignored (not this package's symbols)`)
+      console.log(`    ${external} undocumented external referenced type(s) — ignored (not this package's symbols)`)
     }
     if (own.length > 0) {
       console.log(own.join('\n'))
