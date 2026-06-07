@@ -314,7 +314,7 @@ print $output;
  */
 function buildChildRenderers(
   childTemplates: Map<string, { template: string; ir: ComponentIR }>,
-  parentIR: ComponentIR,
+  _parentIR: ComponentIR,
   tempDir: string,
 ): string {
   if (childTemplates.size === 0) return ''
@@ -326,20 +326,11 @@ function buildChildRenderers(
     const snakeName = toSnakeCase(componentName)
     const childTemplatePath = resolve(tempDir, `${snakeName}.html.ep`)
 
-    // Compute child scope ID from parent IR
-    const childSlotIds = findChildSlotIds(parentIR, componentName)
-
     lines.push(`{`)
     lines.push(`  open my $child_fh, '<:utf8', '${childTemplatePath}' or die "Cannot open child template: $!";`)
     lines.push(`  my $child_tmpl = do { local $/; <$child_fh> };`)
     lines.push(`  close $child_fh;`)
     lines.push(`  my $child_mt = Mojo::Template->new(vars => 1, auto_escape => 1);`)
-
-    // Track instance counter for multiple-instances support
-    lines.push(`  my $instance_idx = 0;`)
-    const slotIdsPerl = childSlotIds.length > 0
-      ? `my @slot_ids = (${childSlotIds.map(id => `'${id}'`).join(', ')}); my $sid = $slot_ids[$instance_idx] // $slot_ids[-1]; $instance_idx++;`
-      : `my $sid = '${snakeName}';`
 
     lines.push(`  $bf->register_child_renderer('${snakeName}', sub {`)
     lines.push(`    my ($child_props) = @_;`)
@@ -359,14 +350,22 @@ function buildChildRenderers(
       const rest = childIR.metadata.restPropsName
       lines.push(`    $child_props->{${rest}} = {} unless defined $child_props->{${rest}};`)
     }
-    lines.push(`    ${slotIdsPerl}`)
     lines.push(`    my $child_bf = BarefootJS->new($c, {});`)
-    // Child scope id derives from the PARENT's live scope id, not a literal
-    // `test_` prefix — so `<ReactiveProps_test>_s5` matches Hono / CSR (and
-    // survives an explicit `__instanceId`). Mirrors xslate's
-    // `rootChildScopePrefix` (`$bf->_scope_id`); `$bf` is the parent instance
-    // captured by this renderer closure.
-    lines.push(`    $child_bf->_scope_id($bf->_scope_id . "_$sid");`)
+    // JSX `key` (reserved prop) → data-key on the child's scope root, for
+    // keyed-loop reconciliation parity with Hono.
+    lines.push(`    my $data_key = delete $child_props->{key};`)
+    lines.push(`    $child_bf->_data_key($data_key) if defined $data_key;`)
+    // Scope id: a slotted child (`_bf_slot` passed) derives from the PARENT's
+    // live scope id (`<Parent_test>_s5`); a loop child (no slot) gets a fresh
+    // `<ComponentName>_<rand>` id per iteration, matching Hono — the
+    // PascalCase component name is what `normalizeHTML` canonicalises to
+    // `<ComponentName>_*`.
+    lines.push(`    my $slot = delete $child_props->{_bf_slot};`)
+    lines.push(`    if (defined $slot) {`)
+    lines.push(`      $child_bf->_scope_id($bf->_scope_id . "_$slot");`)
+    lines.push(`    } else {`)
+    lines.push(`      $child_bf->_scope_id('${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
+    lines.push(`    }`)
     lines.push(`    my $rendered = $child_mt->render($child_tmpl, { %$child_props, bf => $child_bf });`)
     lines.push(`    die $rendered->to_string if ref $rendered;`)
     lines.push(`    chomp $rendered;`)
@@ -377,27 +376,6 @@ function buildChildRenderers(
   }
 
   return lines.join('\n')
-}
-
-/**
- * Find slot IDs assigned to a child component in the parent IR.
- */
-function findChildSlotIds(parentIR: ComponentIR, childName: string): string[] {
-  const ids: string[] = []
-  function walk(node: import('@barefootjs/jsx').IRNode): void {
-    if (node.type === 'component' && node.name === childName && node.slotId) {
-      ids.push(node.slotId)
-    }
-    if ('children' in node && Array.isArray(node.children)) {
-      for (const child of node.children) walk(child)
-    }
-    if (node.type === 'conditional') {
-      walk(node.whenTrue)
-      walk(node.whenFalse)
-    }
-  }
-  walk(parentIR.root)
-  return ids
 }
 
 /**

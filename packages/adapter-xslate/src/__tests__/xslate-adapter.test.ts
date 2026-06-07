@@ -42,17 +42,13 @@ runAdapterConformanceTests({
     // them), and each `useContext` consumer is seeded with
     // `: my $x = $bf.use_context('Ctx', <default>)`. Renders byte-for-byte
     // against Hono on real Text::Xslate. (#1297)
-    // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
-    // sibling `ToggleItem` children inside a keyed `.map`. Three gaps
-    // remain (same as mojo): the loop-child `on = props.defaultOn ??
-    // false` signal isn't seeded server-side (so every item renders OFF
-    // instead of honouring per-item `defaultOn`), the child scope id is
-    // the snake-case `toggle_item_<rand>` rather than the `ToggleItem_*`
-    // PascalCase the reference pins, and `key=` → `data-key` isn't
-    // emitted. Kolon resolves the unseeded vars to nil rather than
-    // aborting, so this surfaces as a render mismatch (not a hard error).
-    // Separate follow-up.
-    'toggle-shared',
+    // `toggle-shared` graduated (same three fixes as mojo, #1297): (1) the
+    // prop-derived `on = props.defaultOn ?? false` signal is seeded in-template
+    // (`: my $on = $defaultOn // 0;`) so each item honours its own `defaultOn`
+    // instead of all rendering OFF; (2) loop children get a `ToggleItem_<rand>`
+    // scope id (component name, not the snake-case template name); and (3) the
+    // JSX `key` lands as `data-key` on the child scope root. Renders
+    // byte-for-byte against Hono on real Text::Xslate.
     // `props-reactivity-comparison` graduated: the child `PropsStyleChild`'s
     // `displayValue = props.value * 10` memo has a `null` static SSR default.
     // The adapter now computes such memos in-template from the seeded prop var
@@ -222,5 +218,40 @@ export function Child({ value }: { value: number }) {
 }
 `)
     expect(template).toContain(': my $displayValue = $value * 10;')
+  })
+})
+
+describe('XslateAdapter - prop-derived signal SSR seeding + data-key (#1297, toggle-shared)', () => {
+  test('seeds a prop-derived (different-name) signal from the prop var', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Item(props: { defaultOn?: boolean }) {
+  const [on, setOn] = createSignal(props.defaultOn ?? false)
+  return <button>{on() ? 'ON' : 'OFF'}</button>
+}
+`)
+    expect(template).toContain(': my $on = ($defaultOn // 0);')
+  })
+
+  // Kolon can't `: my $x = … $x …`; a same-name signal stays on the existing
+  // (harness/manifest) seeding rather than an in-template seed.
+  test('does NOT in-template-seed a same-name signal', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { x?: number }) {
+  const [x, setX] = createSignal(props.x ?? 7)
+  return <span>{x()}</span>
+}
+`)
+    expect(template).not.toContain(': my $x =')
+  })
+
+  test('emits data_key_attr on the component root', () => {
+    const { template } = compileAndGenerate(`
+export function Item() { return <div class="x">hi</div> }
+`)
+    expect(template).toContain('$bf.data_key_attr()')
   })
 })

@@ -201,6 +201,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   templatePrimitives: TemplatePrimitiveRegistry = MOJO_PRIMITIVE_EMIT_MAP
 
   private componentName: string = ''
+  /** The component's root IR node — its scope root carries `data-key` for a
+   *  keyed loop item (set by `render_child` from the JSX `key` prop). */
+  private rootNode: IRNode | null = null
   private options: Required<MojoAdapterOptions>
   private errors: CompilerError[] = []
   private inLoop: boolean = false
@@ -346,6 +349,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       this.checkImportedLoopChildComponents(ir)
     }
 
+    this.rootNode = ir.root
     const templateBody = ir.root.type === 'if-statement'
       ? this.renderIfStatement(ir.root as IRIfStatement)
       : this.renderNode(ir.root)
@@ -579,14 +583,30 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * tripping Perl strict mode. (#1297)
    */
   private generateDerivedMemoSeed(ir: ComponentIR): string {
-    const memos = ir.metadata.memos
-    if (!memos || memos.length === 0) return ''
+    const memos = ir.metadata.memos ?? []
+    const signals = ir.metadata.signals ?? []
+    if (memos.length === 0 && signals.length === 0) return ''
     const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
-    const available = new Set<string>([
-      ...ir.metadata.propsParams.map(p => p.name),
-      ...ir.metadata.signals.map(s => s.getter),
-    ])
+    // Props seed first; each signal/memo adds its own name as it lands so a
+    // later one can reference an earlier one.
+    const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
     const lines: string[] = []
+
+    // Prop/signal-derived signals (`createSignal(props.defaultOn ?? false)`):
+    // a loop-child render receives no stash seed for the signal, so its `$on`
+    // would trip strict mode; and even when an entry render seeds it, the
+    // static default can't capture the per-call prop. Seed it in-template from
+    // the passed prop — but ONLY when the init lowers cleanly AND references an
+    // in-scope var (i.e. it's genuinely derived). Object/array/constant inits
+    // (`createSignal({…})`, `createSignal([…])`, `createSignal('b')`) keep the
+    // existing ssr-defaults seeding, so the spread / loop fixtures are
+    // untouched.
+    for (const signal of signals) {
+      const perl = this.tryLowerToPerl(signal.initialValue, available)
+      if (perl !== null) lines.push(`% my $${signal.getter} = ${perl};`)
+      available.add(signal.getter)
+    }
+
     for (const memo of memos) {
       const def = ssrDefaults[memo.name]
       const isNull = !def || (typeof def === 'object' && 'value' in def && def.value === null)
@@ -597,13 +617,29 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       const body = extractArrowBodyExpression(memo.computation)
       // Block-bodied arrows / non-expression shapes stay on the null path.
       if (body === null) continue
-      const perl = this.convertExpressionToPerl(body)
-      // Only emit when every `$var` the lowering references is in scope.
-      if (!referencedVarsAreAvailable(perl, available)) continue
-      lines.push(`% my $${memo.name} = ${perl};`)
+      const perl = this.tryLowerToPerl(body, available)
+      if (perl !== null) lines.push(`% my $${memo.name} = ${perl};`)
       available.add(memo.name)
     }
     return lines.length > 0 ? lines.join('\n') + '\n' : ''
+  }
+
+  /**
+   * Lower a signal init / memo body to Perl for an in-template SSR seed, or
+   * `null` when it shouldn't be seeded this way. Returns null — without
+   * recording a BF101 — when the expression isn't a supported shape
+   * (`isSupported` pre-check, so object/array literals don't fail the build),
+   * when the lowering references no in-scope var (a constant — keep the
+   * existing ssr-defaults seeding), or when it references an out-of-scope
+   * binding. (#1297)
+   */
+  private tryLowerToPerl(expr: string, available: ReadonlySet<string>): string | null {
+    const trimmed = expr.trim()
+    if (!trimmed) return null
+    if (!isSupported(parseExpression(trimmed)).supported) return null
+    const perl = this.convertExpressionToPerl(trimmed)
+    if (perl === '' || !/\$[A-Za-z_]\w*/.test(perl)) return null
+    return referencedVarsAreAvailable(perl, available) ? perl : null
   }
 
   emitAsync(node: IRAsync, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
@@ -622,6 +658,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     let hydrationAttrs = ''
     if (element.needsScope) {
       hydrationAttrs += ` ${this.renderScopeMarker('')}`
+    }
+    // The component root carries `data-key` for a keyed loop item — emitted
+    // from the bf instance (`render_child` sets it from the JSX `key` prop),
+    // so a non-keyed render adds nothing. Mirrors Hono stamping data-key on
+    // each loop item's scope root. (#1297)
+    if (element === this.rootNode && element.needsScope) {
+      hydrationAttrs += ` <%== bf->data_key_attr %>`
     }
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`

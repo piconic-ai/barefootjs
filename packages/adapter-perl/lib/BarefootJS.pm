@@ -52,10 +52,11 @@ my %ATTR_DEFAULT = (
 # _scope_id    — addressable scope id
 # _bf_parent / _bf_mount — slot identity when this scope is slot-attached
 # _props       — props serialised into bf-p / the scope comment
+# _data_key    — keyed-loop-item key, emitted as data-key on the scope root
 for my $attr (qw(
     c config backend
     _scripts _script_seen _scope_id _is_child _bf_parent _bf_mount _props
-    _child_renderers
+    _data_key _child_renderers
 )) {
     no strict 'refs';
     *{"BarefootJS::$attr"} = sub {
@@ -129,6 +130,19 @@ sub hydration_attrs ($self) {
         push @parts, q{bf-r=""};
     }
     return join(' ', @parts);
+}
+
+# Emits ` data-key="<key>"` for a keyed loop item, else ''. The client
+# runtime uses data-key for list reconciliation; SSR must match the Hono
+# reference, which stamps it on each loop item's scope root. The value is set
+# by `render_child` from the JSX `key` prop (a reserved prop, never a real
+# template variable).
+sub data_key_attr ($self) {
+    my $k = $self->_data_key;
+    return '' unless defined $k;
+    $k =~ s/&/&amp;/g;
+    $k =~ s/"/&quot;/g;
+    return qq{ data-key="$k"};
 }
 
 sub props_attr ($self) {

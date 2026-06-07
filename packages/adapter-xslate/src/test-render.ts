@@ -367,7 +367,14 @@ function buildChildRenderers(
     }
     lines.push(`    my $slot_id = delete $child_props->{_bf_slot};`)
     lines.push(`    my $child_bf = BarefootJS->new(undef, { backend => $backend });`)
-    lines.push(`    $child_bf->_scope_id($slot_id ? '${rootChildScopePrefix(snakeName)}' . '_' . $slot_id : '${snakeName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
+    // JSX `key` (reserved prop) → data-key on the child scope root, for keyed
+    // loop reconciliation parity with Hono.
+    lines.push(`    my $data_key = delete $child_props->{key};`)
+    lines.push(`    $child_bf->_data_key($data_key) if defined $data_key;`)
+    // A loop child (no slot) gets a fresh `<ComponentName>_<rand>` id per
+    // iteration — the PascalCase name is what `normalizeHTML` canonicalises to
+    // `<ComponentName>_*`; a slotted child derives from the parent scope.
+    lines.push(`    $child_bf->_scope_id($slot_id ? '${rootChildScopePrefix(snakeName)}' . '_' . $slot_id : '${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
     lines.push(`    $child_bf->_is_child(1);`)
     lines.push(`    if ($slot_id) { $child_bf->_bf_parent('${rootChildScopePrefix(snakeName)}'); $child_bf->_bf_mount($slot_id); }`)
     lines.push(`    $child_bf->_scripts($bf->_scripts);`)

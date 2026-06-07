@@ -179,6 +179,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   templatePrimitives: TemplatePrimitiveRegistry = XSLATE_PRIMITIVE_EMIT_MAP
 
   private componentName: string = ''
+  /** Component root IR node — its scope root carries `data-key` for a keyed
+   *  loop item (set by `render_child` from the JSX `key` prop). */
+  private rootNode: IRNode | null = null
   private options: Required<XslateAdapterOptions>
   private errors: CompilerError[] = []
   private inLoop: boolean = false
@@ -282,6 +285,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       this.checkImportedLoopChildComponents(ir)
     }
 
+    this.rootNode = ir.root
     const templateBody = ir.root.type === 'if-statement'
       ? this.renderIfStatement(ir.root as IRIfStatement)
       : this.renderNode(ir.root)
@@ -481,14 +485,32 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * lowering references is already in scope. (#1297)
    */
   private generateDerivedMemoSeed(ir: ComponentIR): string {
-    const memos = ir.metadata.memos
-    if (!memos || memos.length === 0) return ''
+    const memos = ir.metadata.memos ?? []
+    const signals = ir.metadata.signals ?? []
+    if (memos.length === 0 && signals.length === 0) return ''
     const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
-    const available = new Set<string>([
-      ...ir.metadata.propsParams.map(p => p.name),
-      ...ir.metadata.signals.map(s => s.getter),
-    ])
+    // Props seed first; each signal/memo adds its own name as it lands.
+    const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
     const lines: string[] = []
+
+    // Prop/signal-derived signals (`createSignal(props.defaultOn ?? false)`):
+    // a loop-child render gets no stash seed, so its `$on` would render nil;
+    // and the static default can't capture the per-call prop. Seed it
+    // in-template when the init lowers cleanly AND references an in-scope var.
+    // Object/array/constant inits keep the existing ssr-defaults seeding.
+    for (const signal of signals) {
+      const kolon = this.tryLowerToKolon(signal.initialValue, available)
+      // Kolon can't express `: my $x = … $x …` — declaring `my $x` makes the
+      // RHS `$x` an undefined lexical rather than the render var. A same-name
+      // signal (`createSignal(props.x ?? d)`, getter == prop) is just the prop
+      // with a default, which the harness already seeds correctly from the
+      // passed prop — skip the in-template seed for it. (Different-name
+      // prop-derived signals like toggle's `on` from `defaultOn` are unaffected.)
+      const refsSelf = kolon !== null && new RegExp(`\\$${signal.getter}\\b`).test(kolon)
+      if (kolon !== null && !refsSelf) lines.push(`: my $${signal.getter} = ${kolon};`)
+      available.add(signal.getter)
+    }
+
     for (const memo of memos) {
       const def = ssrDefaults[memo.name]
       const isNull = !def || (typeof def === 'object' && 'value' in def && def.value === null)
@@ -498,12 +520,27 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       }
       const body = extractArrowBodyExpression(memo.computation)
       if (body === null) continue
-      const kolon = this.convertExpressionToKolon(body)
-      if (!referencedVarsAreAvailable(kolon, available)) continue
-      lines.push(`: my $${memo.name} = ${kolon};`)
+      const kolon = this.tryLowerToKolon(body, available)
+      if (kolon !== null) lines.push(`: my $${memo.name} = ${kolon};`)
       available.add(memo.name)
     }
     return lines.length > 0 ? lines.join('\n') + '\n' : ''
+  }
+
+  /**
+   * Lower a signal init / memo body to Kolon for an in-template SSR seed, or
+   * `null` when it shouldn't be seeded this way: not a supported shape
+   * (`isSupported` pre-check, so object/array literals don't fail the build),
+   * references no in-scope var (a constant — keep ssr-defaults seeding), or
+   * references an out-of-scope binding. (#1297)
+   */
+  private tryLowerToKolon(expr: string, available: ReadonlySet<string>): string | null {
+    const trimmed = expr.trim()
+    if (!trimmed) return null
+    if (!isSupported(parseExpression(trimmed)).supported) return null
+    const kolon = this.convertExpressionToKolon(trimmed)
+    if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) return null
+    return referencedVarsAreAvailable(kolon, available) ? kolon : null
   }
 
   emitAsync(node: IRAsync, _ctx: XslateRenderCtx, _emit: EmitIRNode<XslateRenderCtx>): string {
@@ -522,6 +559,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     let hydrationAttrs = ''
     if (element.needsScope) {
       hydrationAttrs += ` ${this.renderScopeMarker('')}`
+    }
+    // Component root carries `data-key` for a keyed loop item (set on the bf
+    // instance by render_child from the JSX `key` prop); non-keyed renders add
+    // nothing. Mirrors Hono stamping data-key on each loop item's root. (#1297)
+    if (element === this.rootNode && element.needsScope) {
+      hydrationAttrs += ` <: $bf.data_key_attr() | mark_raw :>`
     }
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`
