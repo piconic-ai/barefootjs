@@ -52,10 +52,11 @@ runAdapterConformanceTests({
       { code: 'BF103', severity: 'error' },
       { code: 'BF104', severity: 'error' },
     ],
-    // Rest-destructure `.map()` callbacks — the loop emitter raises the
-    // generic BF104 destructure refusal regardless of rest-vs-plain
-    // (same surface as mojo).
-    'rest-destructure-object-in-map': [{ code: 'BF104', severity: 'error' }],
+    // Rest-destructure `.map()` callbacks — the object-rest shape read via
+    // member access (`rest-destructure-object-in-map`) now lowers via Kolon
+    // `: my` binding locals (`$rest` aliases the item). The other three stay
+    // refused: rest SPREAD needs a residual object, array-index / nested paths
+    // can't unpack a tuple (same surface as mojo).
     'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],

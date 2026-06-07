@@ -45,15 +45,12 @@ runAdapterConformanceTests({
       { code: 'BF103', severity: 'error' },
       { code: 'BF104', severity: 'error' },
     ],
-    // #1310: rest destructure in .map() callback. Hono / CSR lower
-    // these via the inline residual-object accessor (#1309); the Mojo
-    // adapter's loop emitter raises the generic BF104 destructure
-    // refusal regardless of whether the binding is rest or plain.
-    // Pinning the contract here makes the limitation declarative.
-    'rest-destructure-object-in-map': [{ code: 'BF104', severity: 'error' }],
-    // #1244 catalog: rest spread back onto the root element. Same
-    // refusal shape as the read-only variant above — `paramBindings`
-    // is non-empty so BF104 fires regardless of how `rest` is used.
+    // #1310: rest destructure in .map() callback. The object-rest shape read
+    // via member access (`rest-destructure-object-in-map`) now lowers — each
+    // binding becomes a Perl `my` local off the per-item var (`$rest` aliases
+    // the item so `$rest->{flag}` resolves). The other three stay refused:
+    // rest SPREAD (`{...rest}`) needs a residual hash, and array-index /
+    // nested paths can't unpack into scalar `my`s.
     'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
