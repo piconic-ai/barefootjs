@@ -37,20 +37,12 @@ runAdapterConformanceTests({
     // `data-key` attribute isn't emitted. Separate follow-up. (xslate
     // skips this for the same reasons.)
     'toggle-shared',
-    // `props-reactivity-comparison` (the `PropsReactivityComparison`
-    // export of `ReactiveProps.tsx`): componentName selection is now
-    // honoured (the test-render picks the requested export), but the
-    // child `PropsStyleChild` has a `displayValue = props.value * 10`
-    // memo. `extractSsrDefaults` cannot statically evaluate a
-    // prop-derived expression (it yields `null`), and the Perl SSR model
-    // seeds child memos from those *static* defaults — so `$displayValue`
-    // is never declared and the child render aborts under strict mode.
-    // Go matches only because it generates a child constructor that
-    // computes the memo from the passed prop at render time; the Perl
-    // adapters have no equivalent runtime memo-init in the static path
-    // (an opt-in `signal_init` sub would be required). (xslate skips this
-    // for the same reason.)
-    'props-reactivity-comparison',
+    // `props-reactivity-comparison` graduated: the child `PropsStyleChild`'s
+    // `displayValue = props.value * 10` memo has a `null` static SSR default
+    // (`extractSsrDefaults` can't fold a prop-derived expression). The adapter
+    // now computes such memos in-template from the seeded prop var
+    // (`% my $displayValue = $value * 10;`) — mirroring Go's generated child
+    // constructor — so the child renders `10` to match Hono. (#1297)
   ],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
@@ -430,6 +422,35 @@ const ThemeContext = createContext('light')
 export function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
 `)
     expect(template).toContain("% my $theme = bf->use_context('ThemeContext', 'light');")
+  })
+})
+
+describe('MojoAdapter - prop-derived memo SSR seeding (#1297)', () => {
+  // A memo whose body can't be statically folded (`props.value * 10`) gets a
+  // `null` SSR default; the adapter computes it in-template from the seeded
+  // prop var so the child renders the value instead of empty.
+  test('seeds a prop-derived memo from the prop var', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function Child(props: { value: number }) {
+  const displayValue = createMemo(() => props.value * 10)
+  return <span>{displayValue()}</span>
+}
+`)
+    expect(template).toContain('% my $displayValue = $value * 10;')
+  })
+
+  test('seeds a memo over a destructured prop', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function Child({ value }: { value: number }) {
+  const displayValue = createMemo(() => value * 10)
+  return <span>{displayValue()}</span>
+}
+`)
+    expect(template).toContain('% my $displayValue = $value * 10;')
   })
 })
 

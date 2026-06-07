@@ -63,8 +63,10 @@ import {
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   evalStringArrayJoin,
+  extractArrowBodyExpression,
   collectContextConsumers,
   type ContextConsumer,
+  extractSsrDefaults,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
 import ts from 'typescript'
@@ -139,6 +141,17 @@ function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
   if (!prop) return []
   if (prop.value.kind !== 'jsx-children') return []
   return prop.value.children
+}
+
+/**
+ * True when every `$var` the lowered Kolon expression references is already in
+ * scope — guards in-template memo seeding against an out-of-scope binding. (#1297)
+ */
+function referencedVarsAreAvailable(expr: string, available: ReadonlySet<string>): boolean {
+  for (const m of expr.matchAll(/\$([A-Za-z_]\w*)/g)) {
+    if (!available.has(m[1])) return false
+  }
+  return true
 }
 
 export interface XslateAdapterOptions {
@@ -283,7 +296,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // provider side pushes the value via `emitProvider`. (#1297)
     const ctxSeed = this.generateContextConsumerSeed(ir)
 
-    const template = `${scriptReg}${ctxSeed}${templateBody}\n`
+    // Prop/signal-derived memos with a `null` static SSR default (e.g.
+    // `createMemo(() => props.value * 10)`) are computed in-template from the
+    // already-seeded prop/signal vars — mirroring Go's generated child
+    // constructor. (#1297)
+    const memoSeed = this.generateDerivedMemoSeed(ir)
+
+    const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
 
     // Merge collected errors into IR errors
     if (this.errors.length > 0) {
@@ -451,6 +470,40 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         )
         .join('\n') + '\n'
     )
+  }
+
+  /**
+   * Seed memos whose SSR default is `null` (not statically evaluable) by
+   * computing them in-template from the already-seeded prop / signal vars
+   * (`createMemo(() => props.value * 10)` → `: my $x = $value * 10;`). Without
+   * this the memo's `$x` renders empty — the reason
+   * `props-reactivity-comparison` was skipped. Only emitted when every var the
+   * lowering references is already in scope. (#1297)
+   */
+  private generateDerivedMemoSeed(ir: ComponentIR): string {
+    const memos = ir.metadata.memos
+    if (!memos || memos.length === 0) return ''
+    const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
+    const available = new Set<string>([
+      ...ir.metadata.propsParams.map(p => p.name),
+      ...ir.metadata.signals.map(s => s.getter),
+    ])
+    const lines: string[] = []
+    for (const memo of memos) {
+      const def = ssrDefaults[memo.name]
+      const isNull = !def || (typeof def === 'object' && 'value' in def && def.value === null)
+      if (!isNull) {
+        available.add(memo.name)
+        continue
+      }
+      const body = extractArrowBodyExpression(memo.computation)
+      if (body === null) continue
+      const kolon = this.convertExpressionToKolon(body)
+      if (!referencedVarsAreAvailable(kolon, available)) continue
+      lines.push(`: my $${memo.name} = ${kolon};`)
+      available.add(memo.name)
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : ''
   }
 
   emitAsync(node: IRAsync, _ctx: XslateRenderCtx, _emit: EmitIRNode<XslateRenderCtx>): string {

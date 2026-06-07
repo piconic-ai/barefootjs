@@ -50,8 +50,10 @@ import {
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   evalStringArrayJoin,
+  extractArrowBodyExpression,
   collectContextConsumers,
   type ContextConsumer,
+  extractSsrDefaults,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
 
@@ -161,6 +163,19 @@ function parsePureStringLiteral(source: string): string | null {
  */
 function perlHashKey(name: string): string {
   return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${name.replace(/'/g, "\\'")}'`
+}
+
+/**
+ * True when every `$var` the lowered (Perl / Kolon) expression references is
+ * in the available set — i.e. the template already has that var in scope.
+ * Guards in-template memo seeding from referencing an out-of-scope binding
+ * (which would trip Perl strict mode). (#1297)
+ */
+function referencedVarsAreAvailable(expr: string, available: ReadonlySet<string>): boolean {
+  for (const m of expr.matchAll(/\$([A-Za-z_]\w*)/g)) {
+    if (!available.has(m[1])) return false
+  }
+  return true
 }
 
 export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx> {
@@ -346,7 +361,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // `emitProvider`; here the consumer reads it. (#1297)
     const ctxSeed = this.generateContextConsumerSeed(ir)
 
-    const template = `${scriptReg}${ctxSeed}${templateBody}\n`
+    // Prop/signal-derived memos that aren't statically evaluable (e.g.
+    // `createMemo(() => props.value * 10)`) have a `null` SSR default, so
+    // their `$x` would render empty. Compute them in-template from the
+    // already-seeded prop/signal vars — mirroring Go's generated child
+    // constructor that evaluates the memo from the passed prop. (#1297)
+    const memoSeed = this.generateDerivedMemoSeed(ir)
+
+    const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
 
     // Merge collected errors into IR errors
     if (this.errors.length > 0) {
@@ -543,6 +565,45 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         )
         .join('\n') + '\n'
     )
+  }
+
+  /**
+   * Seed memos whose SSR default is `null` (not statically evaluable) by
+   * computing them in-template from the already-seeded prop / signal vars.
+   * Targets the prop-derived memo shape (`createMemo(() => props.value * 10)`)
+   * that the static `extractSsrDefaults` evaluator can't fold — without this
+   * the memo's `$x` renders empty (the reason `props-reactivity-comparison`
+   * was skipped). Only emitted when the lowered expression references vars the
+   * template already has in scope (props params + signals + prior memos), so a
+   * memo over an out-of-scope binding stays on the null path rather than
+   * tripping Perl strict mode. (#1297)
+   */
+  private generateDerivedMemoSeed(ir: ComponentIR): string {
+    const memos = ir.metadata.memos
+    if (!memos || memos.length === 0) return ''
+    const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
+    const available = new Set<string>([
+      ...ir.metadata.propsParams.map(p => p.name),
+      ...ir.metadata.signals.map(s => s.getter),
+    ])
+    const lines: string[] = []
+    for (const memo of memos) {
+      const def = ssrDefaults[memo.name]
+      const isNull = !def || (typeof def === 'object' && 'value' in def && def.value === null)
+      if (!isNull) {
+        available.add(memo.name)
+        continue
+      }
+      const body = extractArrowBodyExpression(memo.computation)
+      // Block-bodied arrows / non-expression shapes stay on the null path.
+      if (body === null) continue
+      const perl = this.convertExpressionToPerl(body)
+      // Only emit when every `$var` the lowering references is in scope.
+      if (!referencedVarsAreAvailable(perl, available)) continue
+      lines.push(`% my $${memo.name} = ${perl};`)
+      available.add(memo.name)
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : ''
   }
 
   emitAsync(node: IRAsync, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {

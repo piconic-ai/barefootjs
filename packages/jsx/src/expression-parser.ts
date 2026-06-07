@@ -450,6 +450,33 @@ const LOWERED_ARRAY_METHODS = new Set([
 // =============================================================================
 
 /**
+ * Extract the single-expression body of an arrow-function source
+ * (`() => EXPR` → `EXPR`), using the TypeScript parser rather than a regex so
+ * any parameter shape (destructure / defaults / parens) or nested arrow is
+ * handled robustly.
+ *
+ * Returns `null` for a block-bodied arrow (`() => { … }`) or a source that
+ * isn't a bare arrow function — callers (e.g. the SSR memo-seeding path) treat
+ * those as "not a single lowerable expression". This is the AST-backed
+ * replacement for ad-hoc `^\(...\)\s*=>` stripping.
+ */
+export function extractArrowBodyExpression(source: string): string | null {
+  const sf = ts.createSourceFile(
+    '__arrow__.ts',
+    source,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt) || sf.statements.length !== 1) return null
+  let expr: ts.Expression = stmt.expression
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  if (!ts.isArrowFunction(expr)) return null
+  if (ts.isBlock(expr.body)) return null
+  return expr.body.getText(sf).trim()
+}
+
+/**
  * Parse a JavaScript expression string into a ParsedExpr tree.
  */
 export function parseExpression(expr: string): ParsedExpr {
