@@ -11,8 +11,8 @@
     "baseUrl": ".",
     "paths": {
       "@barefootjs/jsx": ["../packages/jsx/src"],
-      "@barefootjs/jsx/jsx-runtime": ["../packages/jsx/src/jsx-runtime/index.d.ts"],
-      "@barefootjs/jsx/jsx-dev-runtime": ["../packages/jsx/src/jsx-dev-runtime/index.d.ts"]
+      "@barefootjs/jsx/jsx-runtime": ["../packages/jsx/src/jsx-runtime/index.ts"],
+      "@barefootjs/jsx/jsx-dev-runtime": ["../packages/jsx/src/jsx-dev-runtime/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

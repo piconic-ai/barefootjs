@@ -19,10 +19,10 @@
       "import": "./src/import-map.ts"
     },
     "./jsx-runtime": {
-      "types": "./src/jsx-runtime/index.d.ts"
+      "types": "./src/jsx-runtime/index.ts"
     },
     "./jsx-dev-runtime": {
-      "types": "./src/jsx-dev-runtime/index.d.ts"
+      "types": "./src/jsx-dev-runtime/index.ts"
     }
   },
   "//publishConfig": "At pack time, swap-publish-config.mjs merges these overrides into the top-level so the published tarball resolves all entry points to dist/ instead of src/. Workspace exports stay at src/ so bun resolves source directly during dev.",
@@ -43,10 +43,10 @@
         "import": "./dist/import-map.js"
       },
       "./jsx-runtime": {
-        "types": "./src/jsx-runtime/index.d.ts"
+        "types": "./src/jsx-runtime/index.ts"
       },
       "./jsx-dev-runtime": {
-        "types": "./src/jsx-dev-runtime/index.d.ts"
+        "types": "./src/jsx-dev-runtime/index.ts"
       }
     }
   },

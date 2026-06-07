@@ -459,16 +459,16 @@ const typeBundle: Record<string, string> = {
   // declarations via `export declare namespace`); a sibling `.d.ts` no
   // longer exists. Monaco parses the file based on the virtual `.d.ts`
   // key, and the source's syntax is valid as a `.d.ts` body.
-  'file:///node_modules/@barefootjs/hono/jsx/jsx-runtime/index.d.ts':
+  'file:///node_modules/@barefootjs/hono/jsx/jsx-runtime/index.ts':
     await Bun.file(resolve(PKG_DIR, 'adapter-hono/src/jsx/jsx-runtime/index.ts')).text(),
-  'file:///node_modules/@barefootjs/jsx/jsx-runtime/index.d.ts':
-    await Bun.file(resolve(PKG_DIR, 'jsx/src/jsx-runtime/index.d.ts')).text(),
+  'file:///node_modules/@barefootjs/jsx/jsx-runtime/index.ts':
+    await Bun.file(resolve(PKG_DIR, 'jsx/src/jsx-runtime/index.ts')).text(),
   'file:///node_modules/@barefootjs/jsx/html-types.d.ts':
     await Bun.file(resolve(PKG_DIR, 'jsx/src/html-types.ts')).text(),
   'file:///node_modules/@barefootjs/client/index.d.ts':
     await Bun.file(clientDtsFile).text(),
   'file:///node_modules/hono/jsx/index.d.ts': HONO_JSX_SHIM,
-  'file:///node_modules/hono/jsx/jsx-runtime/index.d.ts': HONO_JSX_RUNTIME_SHIM,
+  'file:///node_modules/hono/jsx/jsx-runtime/index.ts': HONO_JSX_RUNTIME_SHIM,
 }
 await writePlaygroundAsset('types-bundle.json', new Blob([JSON.stringify(typeBundle)]))
 console.log('Generated: dist/playground/types-bundle.json (+ static copy)')
