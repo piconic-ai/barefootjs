@@ -1,4 +1,5 @@
 ---
+"@barefootjs/jsx": patch
 "@barefootjs/mojolicious": patch
 "@barefootjs/xslate": patch
 ---
@@ -13,3 +14,5 @@ Each adapter now seeds such memos in-template from the already-seeded prop/signa
 - **Xslate**: `: my $displayValue = $value * 10;`
 
 The seed is emitted only when the memo's static default is `null` (statically-foldable memos stay on the existing ssr-defaults path) and when every variable the lowered expression references is already in scope (props params + signals + prior memos), so a memo over an out-of-scope binding stays on the null path rather than tripping Perl strict mode. Verified end-to-end against real Mojolicious and Text::Xslate. Hono reference snapshots unchanged.
+
+The memo body is extracted with a new AST-backed `extractArrowBodyExpression` helper exported from `@barefootjs/jsx` (it parses the `() => …` computation with the TypeScript parser and returns the body node text), replacing a brittle `^\(...\)\s*=>` regex that desynced on parameter defaults containing calls or nested-arrow bodies. Shared by both Perl adapters.

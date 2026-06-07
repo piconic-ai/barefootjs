@@ -50,6 +50,7 @@ import {
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   evalStringArrayJoin,
+  extractArrowBodyExpression,
   collectContextConsumers,
   type ContextConsumer,
   extractSsrDefaults,
@@ -162,19 +163,6 @@ function parsePureStringLiteral(source: string): string | null {
  */
 function perlHashKey(name: string): string {
   return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${name.replace(/'/g, "\\'")}'`
-}
-
-/**
- * Strip a single-expression arrow wrapper (`() => EXPR` / `(a, b) => EXPR`)
- * from a memo computation, returning the bare expression. Returns null for a
- * block-bodied arrow (`() => { … }`) or anything that doesn't match — those
- * stay on the null SSR-default path. (#1297)
- */
-function stripArrowWrapper(computation: string): string | null {
-  const body = computation.replace(/^\s*\([^)]*\)\s*=>\s*/, '').trim()
-  if (body === computation.trim()) return null // no arrow wrapper
-  if (body.startsWith('{')) return null // block body — not a single expr
-  return body
 }
 
 /**
@@ -606,7 +594,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         available.add(memo.name)
         continue
       }
-      const body = stripArrowWrapper(memo.computation)
+      const body = extractArrowBodyExpression(memo.computation)
       // Block-bodied arrows / non-expression shapes stay on the null path.
       if (body === null) continue
       const perl = this.convertExpressionToPerl(body)

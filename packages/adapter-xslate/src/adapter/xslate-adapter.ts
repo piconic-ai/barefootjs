@@ -63,6 +63,7 @@ import {
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   evalStringArrayJoin,
+  extractArrowBodyExpression,
   collectContextConsumers,
   type ContextConsumer,
   extractSsrDefaults,
@@ -140,18 +141,6 @@ function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
   if (!prop) return []
   if (prop.value.kind !== 'jsx-children') return []
   return prop.value.children
-}
-
-/**
- * Strip a single-expression arrow wrapper (`() => EXPR`) from a memo
- * computation. Returns null for a block-bodied arrow or a non-arrow string —
- * those stay on the null SSR-default path. (#1297)
- */
-function stripArrowWrapper(computation: string): string | null {
-  const body = computation.replace(/^\s*\([^)]*\)\s*=>\s*/, '').trim()
-  if (body === computation.trim()) return null
-  if (body.startsWith('{')) return null
-  return body
 }
 
 /**
@@ -507,7 +496,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         available.add(memo.name)
         continue
       }
-      const body = stripArrowWrapper(memo.computation)
+      const body = extractArrowBodyExpression(memo.computation)
       if (body === null) continue
       const kolon = this.convertExpressionToKolon(body)
       if (!referencedVarsAreAvailable(kolon, available)) continue
