@@ -1,0 +1,113 @@
+# CI — JSR type-check
+#
+# Runs `deno check` on every JSR-publishable package's exported entries
+# *before* merge, so the JSR invariants the release-time `deno publish`
+# enforces (explicit `.ts`/`.tsx` extensions on relative imports,
+# `node:` prefix on Node built-ins, `noImplicitOverride`, DOM lib
+# resolution) are caught at PR time rather than after-the-fact when
+# `release.yml` tries to publish.
+#
+# Pipeline mirrors what `release.yml`'s "Publish to JSR" step does, sans
+# the publish:
+#   1. `bun scripts/jsr-publish.ts --dry-run --keep` generates each
+#      eligible package's `deno.json` from its `package.json` (single
+#      source of truth — same as release).
+#   2. For each generated manifest, `deno check` runs against the
+#      `exports`-resolved `src/*.ts` entries — the surface JSR's
+#      publisher type-checks.
+#
+# Why not `deno publish --dry-run`? It additionally requires the
+# `jsr:@barefootjs/*` sibling versions referenced in `imports` to
+# already be live on JSR. That holds on `main` post-release but not on
+# a feature branch that bumps a sibling — `deno check` against the
+# locally generated manifests is the closer fit for PR-time gating.
+name: CI — JSR type-check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/*/src/**'
+      - 'packages/*/package.json'
+      - 'packages/*/tsconfig.json'
+      - 'scripts/jsr-publish.ts'
+      - '.github/workflows/ci-jsr-check.yml'
+  pull_request:
+    paths:
+      - 'packages/*/src/**'
+      - 'packages/*/package.json'
+      - 'packages/*/tsconfig.json'
+      - 'scripts/jsr-publish.ts'
+      - '.github/workflows/ci-jsr-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deno-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
+        with:
+          deno-version: v2.x
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Generate deno.json manifests (dry-run)
+        run: bun scripts/jsr-publish.ts --dry-run --keep
+
+      - name: deno check each JSR-publishable package
+        run: |
+          set -uo pipefail
+
+          # Packages temporarily excluded from the gate. Each entry should
+          # carry a tracking issue link so the exclusion is visible and
+          # owned.
+          #
+          # - @barefootjs/hono: blocked on adapter-hono Deno-compatibility
+          #   work — Hono's JSX IntrinsicElements indexer collides with
+          #   per-element types (TS2411), and a handful of entries
+          #   reference Bun globals (Bun.spawn, import.meta.dir). Fixing
+          #   these without forking off hono/jsx's real types is a larger
+          #   refactor than this gate's scope. See:
+          #   https://github.com/piconic-ai/barefootjs/labels/known-limitation
+          declare -A SKIP=(
+            ["@barefootjs/hono"]=1
+          )
+
+          failed=()
+          skipped=()
+          for manifest in packages/*/deno.json; do
+            pkg_dir=$(dirname "$manifest")
+            pkg_name=$(jq -r '.name' "$manifest")
+            if [ -n "${SKIP[$pkg_name]:-}" ]; then
+              echo "::notice::skipping ${pkg_name} (excluded — see workflow comments)"
+              skipped+=("$pkg_name")
+              continue
+            fi
+            mapfile -t entries < <(jq -r '.exports | if type == "object" then values[] else . end' "$manifest")
+            echo "::group::deno check ${pkg_name} (${#entries[@]} entries)"
+            if ! ( cd "$pkg_dir" && deno check "${entries[@]}" ); then
+              failed+=("$pkg_name")
+            fi
+            echo "::endgroup::"
+          done
+
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "::error::deno check failed for ${#failed[@]} package(s): ${failed[*]}"
+            exit 1
+          fi
+          echo "deno check passed for all gated JSR-publishable packages."
+          if [ "${#skipped[@]}" -gt 0 ]; then
+            echo "Skipped (tracked separately): ${skipped[*]}"
+          fi
