@@ -7,7 +7,7 @@
 
 import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter, ComponentIR } from '@barefootjs/jsx'
-import { GoTemplateAdapter } from './adapter/go-template-adapter'
+import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 
 /**
  * Capitalize a JSON key to its Go struct field name using the same
