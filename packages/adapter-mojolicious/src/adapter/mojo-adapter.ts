@@ -1092,7 +1092,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     return `<%= content %>`
   }
 
-  renderAsync(node: IRAsync): string {
+  override renderAsync(node: IRAsync): string {
     const fallback = this.renderNode(node.fallback)
     const children = this.renderChildren(node.children)
     // Use the BarefootJS.pm streaming helpers for OOS streaming.

@@ -982,7 +982,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     return `<: $children | mark_raw :>`
   }
 
-  renderAsync(node: IRAsync): string {
+  override renderAsync(node: IRAsync): string {
     const fallback = this.renderNode(node.fallback)
     const children = this.renderChildren(node.children)
     // Capture the fallback into a Kolon macro and pass its rendered HTML to

@@ -5782,7 +5782,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `{{block "${slotName}" .}}{{end}}`
   }
 
-  renderAsync(node: IRAsync): string {
+  override renderAsync(node: IRAsync): string {
     const fallback = this.renderNode(node.fallback)
     const children = this.renderChildren(node.children)
     // Go templates use the OOS protocol: render a placeholder with fallback,
