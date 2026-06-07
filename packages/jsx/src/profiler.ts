@@ -325,6 +325,18 @@ export function buildIdIndex(graph: ComponentGraph): IdIndex {
     index.set(`${comp}#effect:${e.loc.line}`, node)
     index.set(`${comp}#effect:${e.label}`, node)
   }
+  // DOM-binding effects (#1690, SR3/SR4): text/attribute/conditional/loop
+  // updates emit `createEffect(…, "<Component>#binding:<slotId>")`. Resolve
+  // each from its `domBinding` (slotId + loc). Event bindings are handlers, not
+  // re-running effects — skip them.
+  for (const b of graph.domBindings) {
+    if (b.type === 'event' || !b.loc) continue
+    index.set(`${comp}#binding:${b.slotId}`, {
+      kind: 'effect',
+      name: `${b.slotId} (${b.type})`,
+      loc: { file: b.loc.file, line: b.loc.start.line },
+    })
+  }
   return index
 }
 
@@ -519,7 +531,9 @@ export function formatHotSubscribers(r: HotSubscribersResult): string {
   }
   for (const s of r.subscribers) {
     const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
-    const label = `${s.name ?? s.subscriber}${s.kind ? ` (${s.kind})` : ''}`
+    const base = s.name ?? s.subscriber
+    // Binding names already carry their type (`s1 (attribute)`); don't double up.
+    const label = s.kind && !base.endsWith(')') ? `${base} (${s.kind})` : base
     const note = s.hot ? `   ⚠ hot: ${s.runsPerTurn.toFixed(1)} runs/turn` : ''
     lines.push(`  ${label.padEnd(20)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
   }

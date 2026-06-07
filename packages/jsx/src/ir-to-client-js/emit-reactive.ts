@@ -11,6 +11,18 @@ import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
 import { createTemplateAwareStringProtector } from './html-template.ts'
 
 /**
+ * Profile mode (#1690, SR3/SR4): the id appended to a DOM-binding effect so the
+ * profiler attributes its re-runs to a source location. Keyed by `slotId` (the
+ * `bf="sN"` marker) — `buildIdIndex` resolves `<Component>#binding:<slotId>`
+ * from `graph.domBindings`, which carry the same slot + loc. Empty when
+ * profiling is off, so the emitted effect is byte-for-byte unchanged (SR8).
+ */
+function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string {
+  if (!ctx.profile || !slotId) return ''
+  return `, ${JSON.stringify(`${ctx.componentName}#binding:${slotId}`)}`
+}
+
+/**
  * Generate JS statements to update a DOM attribute reactively.
  * Centralizes the attribute-type dispatch (value, class, boolean, presence, generic)
  * so that new AttrMeta flags are handled in one place.
@@ -110,6 +122,7 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
         const v = varSlotId(elem.slotId)
         lines.push(`  let __anchor_${v} = _${v}`)
       }
+      const __textSlot = (normalElems[0] ?? conditionalElems[0])?.slotId
       lines.push(`  createEffect(() => {`)
       if (normalElems.length > 0) {
         // Expression is always evaluated for non-conditional elements
@@ -139,7 +152,7 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
           lines.push(`    __bfText(__el_${v}, __val)`)
         }
       }
-      lines.push(`  })`)
+      lines.push(`  }${bindingIdArg(ctx, __textSlot)})`)
       lines.push('')
     }
   }
@@ -151,7 +164,7 @@ export function emitClientOnlyExpressions(lines: string[], ctx: ClientJsContext)
     lines.push(`  // @client: ${elem.slotId}`)
     lines.push(`  createEffect(() => {`)
     lines.push(`    updateClientMarker(__scope, '${elem.slotId}', ${elem.expression})`)
-    lines.push(`  })`)
+    lines.push(`  }${bindingIdArg(ctx, elem.slotId)})`)
     lines.push('')
   }
 }
@@ -178,7 +191,7 @@ export function emitReactiveAttributeUpdates(lines: string[], ctx: ClientJsConte
         }
       }
       lines.push(`    }`)
-      lines.push(`  })`)
+      lines.push(`  }${bindingIdArg(ctx, slotId)})`)
       lines.push('')
     }
   }
@@ -236,7 +249,7 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
       lines.push(`    }`)
     }
 
-    lines.push(`  })`)
+    lines.push(`  }${bindingIdArg(ctx, ctx.reactiveProps[0]?.slotId)})`)
   }
 }
 
@@ -271,6 +284,6 @@ export function emitReactiveChildProps(lines: string[], ctx: ClientJsContext): v
       lines.push(`    }`)
     }
 
-    lines.push(`  })`)
+    lines.push(`  }${bindingIdArg(ctx, ctx.reactiveChildProps[0]?.slotId ?? undefined)})`)
   }
 }
