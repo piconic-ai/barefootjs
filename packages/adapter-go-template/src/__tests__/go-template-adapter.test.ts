@@ -44,10 +44,10 @@ runAdapterConformanceTests({
   // any cross-adapter file — every adapter declares its own
   // refusal set against the canonical fixture corpus.
   expectedDiagnostics: {
-    // JS object literal in attribute position: `convertExpressionToGo`
-    // can't lower into Go template syntax — surfaces as BF101 with an
-    // @client suggestion.
-    'style-object-dynamic': [{ code: 'BF101', severity: 'error' }],
+    // `style-object-dynamic` / `style-3-signals` no longer pinned — a
+    // `style={{ … }}` object literal now lowers to a CSS string with dynamic
+    // values interpolated (`background-color:{{.Color}};padding:8px`) via
+    // `tryLowerStyleObject` (#1322).
     // Sibling-imported child component inside a loop body: the adapter
     // emits `{{template "X" .}}` which only resolves if the user has
     // compiled the sibling file and registered the template on the
@@ -71,11 +71,8 @@ runAdapterConformanceTests({
       { code: 'BF103', severity: 'error' },
       { code: 'BF104', severity: 'error' },
     ],
-    // #1244 stress catalog: same `convertExpressionToGo` refusal shape
-    // as `style-object-dynamic` above — a JS object literal in
-    // attribute position can't lower into Go template syntax, so the
-    // adapter surfaces BF101 instead of emitting invalid template.
-    'style-3-signals': [{ code: 'BF101', severity: 'error' }],
+    // (`style-3-signals` graduated alongside `style-object-dynamic` — see note
+    // above; the `style={{ … }}` object now lowers to a CSS string.)
     // #1244 stress catalog: tagged-template-literal callees
     // (`cn\`base \${tone()}\``) likewise can't lower into Go template
     // syntax — same BF101 refusal.

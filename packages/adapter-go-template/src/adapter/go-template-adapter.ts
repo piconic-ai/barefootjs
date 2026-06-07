@@ -52,6 +52,7 @@ import {
   type SupportResult,
   isBooleanAttr,
   parseExpression,
+  parseStyleObjectEntries,
   isSupported,
   exprToString,
   identifierPath,
@@ -5880,6 +5881,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${value.value}"`,
     emitExpression: (value, name) => {
+      // `style={{ … }}` object literal → a CSS string with dynamic values
+      // interpolated, instead of refusing the bare object with BF101.
+      if (name === 'style') {
+        const css = this.tryLowerStyleObject(value.expr)
+        if (css !== null) return `style="${css}"`
+      }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
         const { condition: goCond, preamble } = this.convertConditionToGo(value.expr)
         return `${preamble}{{if ${goCond}}}${name}{{end}}`
@@ -5972,6 +5979,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
     emitJsxChildren: () => '',
+  }
+
+  /**
+   * Lower a `style={{ … }}` object-literal value to a CSS string with dynamic
+   * values interpolated as Go template actions, e.g.
+   * `{ backgroundColor: color, padding: '8px' }` →
+   * `background-color:{{.Color}};padding:8px`. Returns null when the object
+   * shape is unsupported or any value expression can't be lowered (the caller
+   * then falls through to the generic BF101 path). (#1322)
+   */
+  private tryLowerStyleObject(expr: string): string | null {
+    const entries = parseStyleObjectEntries(expr)
+    if (!entries) return null
+    // Pre-check every dynamic value so an unsupported one bails the whole
+    // object (rather than recording a partial BF101 mid-build).
+    for (const e of entries) {
+      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
+    }
+    return entries
+      .map(e =>
+        e.kind === 'literal'
+          ? `${e.cssKey}:${e.value}`
+          : `${e.cssKey}:{{${this.convertExpressionToGo(e.expr)}}}`,
+      )
+      .join(';')
   }
 
   private renderAttributes(element: IRElement): string {

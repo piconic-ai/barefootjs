@@ -41,6 +41,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  parseStyleObjectEntries,
   isSupported,
   exprToString,
   identifierPath,
@@ -1196,15 +1197,20 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${value.value}"`,
     emitExpression: (value, name) => {
+      // `style={{ … }}` object literal → a CSS string with dynamic values
+      // interpolated, instead of refusing the bare object with BF101 (#1322).
+      if (name === 'style') {
+        const css = this.tryLowerStyleObject(value.expr)
+        if (css !== null) return `style="${css}"`
+      }
       // Refuse shapes that the regex pipeline silently mangles into
-      // invalid Perl (#1322). Object literals (`style={{...}}`) and
-      // tagged-template-literal call expressions (`cn\`base \${tone()}\``)
-      // have no idiomatic Mojo template form; the Go adapter raises
-      // BF101 here via `convertExpressionToGo` + `isSupported`. Lift the
-      // same gate so the user gets a clear diagnostic instead of broken
-      // output. The check runs before `convertExpressionToPerl` so the
-      // regex pipeline never produces template-text fragments for a
-      // shape we've already rejected.
+      // invalid Perl (#1322). Tagged-template-literal call expressions
+      // (`cn\`base \${tone()}\``) have no idiomatic Mojo template form; the Go
+      // adapter raises BF101 here via `convertExpressionToGo` + `isSupported`.
+      // Lift the same gate so the user gets a clear diagnostic instead of
+      // broken output. The check runs before `convertExpressionToPerl` so the
+      // regex pipeline never produces template-text fragments for a shape
+      // we've already rejected.
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
@@ -1353,6 +1359,28 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
     emitJsxChildren: () => '',
+  }
+
+  /**
+   * Lower a `style={{ … }}` object literal to a CSS string with dynamic values
+   * interpolated as EP actions, e.g. `{ backgroundColor: color, padding: '8px' }`
+   * → `background-color:<%= $color %>;padding:8px`. Returns null when the shape
+   * is unsupported or any value can't be lowered (caller then falls through to
+   * the BF101 refusal). (#1322)
+   */
+  private tryLowerStyleObject(expr: string): string | null {
+    const entries = parseStyleObjectEntries(expr)
+    if (!entries) return null
+    for (const e of entries) {
+      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
+    }
+    return entries
+      .map(e =>
+        e.kind === 'literal'
+          ? `${e.cssKey}:${e.value}`
+          : `${e.cssKey}:<%= ${this.convertExpressionToPerl(e.expr)} %>`,
+      )
+      .join(';')
   }
 
   private renderAttributes(element: IRElement): string {

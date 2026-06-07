@@ -57,17 +57,10 @@ runAdapterConformanceTests({
     'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
-    // #1244 stress catalog #11 (#1322): JS object literal in an
-    // attribute value (`style={{ background: bg(), color: fg() }}`) has
-    // no idiomatic Mojo template form. `refuseUnsupportedAttrExpression`
-    // surfaces BF101 with a wrap-in-`/* @client */` suggestion, matching
-    // the Go adapter's behaviour.
-    'style-3-signals': [{ code: 'BF101', severity: 'error' }],
-    // Dynamic JS object literal in `style={{ … }}` — same no-EP-form
-    // refusal as `style-3-signals`; `refuseUnsupportedAttrExpression`
-    // surfaces BF101 (mirrors the xslate + Go adapters). Was a stale
-    // `skipJsx` entry claiming the gate didn't lift to a CompilerError.
-    'style-object-dynamic': [{ code: 'BF101', severity: 'error' }],
+    // `style-3-signals` / `style-object-dynamic` no longer pinned — a
+    // `style={{ … }}` object literal now lowers to a CSS string with dynamic
+    // values interpolated (`background-color:<%= $color %>;padding:8px`) via
+    // `tryLowerStyleObject` (#1322).
     // #1244 stress catalog #12 (#1323): tagged-template-literal call
     // (`cn\`base \${tone()}\``) — same family as #1322 above and refused
     // via the same gate.
