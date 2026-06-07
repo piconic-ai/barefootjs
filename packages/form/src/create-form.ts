@@ -20,6 +20,34 @@ function isPrimitive(v: unknown): boolean {
   return v === null || typeof v !== "object";
 }
 
+/**
+ * Create a signal-based form controller from a Standard Schema.
+ *
+ * Returns a {@link FormReturn} exposing per-field controllers (`field`),
+ * reactive form state (`isDirty`, `isValid`, `errors`, `isSubmitting`), and
+ * actions (`handleSubmit`, `reset`, `setError`). Validation timing is driven
+ * by {@link CreateFormOptions.validateOn} / {@link CreateFormOptions.revalidateOn}.
+ *
+ * @typeParam TSchema - A Standard Schema describing the form's shape.
+ * @param options - Schema, default values, validation timing, and submit handler.
+ * @returns A reactive form controller.
+ *
+ * @example
+ * ```ts
+ * import { z } from "zod";
+ * import { createForm } from "@barefootjs/form";
+ *
+ * const schema = z.object({ email: z.string().email() });
+ * const form = createForm({
+ *   schema,
+ *   defaultValues: { email: "" },
+ *   onSubmit: (data) => console.log(data),
+ * });
+ *
+ * const email = form.field("email");
+ * // <input value={email.value()} onInput={email.handleInput} onBlur={email.handleBlur} />
+ * ```
+ */
 export function createForm<
   TSchema extends StandardSchemaV1<Record<string, unknown>>,
 >(options: CreateFormOptions<TSchema>): FormReturn<TSchema> {
