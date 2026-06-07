@@ -549,10 +549,17 @@ export function analyzeHotSubscribers(
     }
   })
 
-  // Rank deterministically (SR7): same scenario ⇒ same order. `runs` is a
-  // structural, timing-independent cost proxy; `totalMs` (wall-clock) is shown
-  // but never sorted on, and the subscriber id is the final stable tiebreak.
-  subscribers.sort((x, y) => y.runs - x.runs || (x.subscriber < y.subscriber ? -1 : x.subscriber > y.subscriber ? 1 : 0))
+  // Rank by cost — `totalMs` is what the user fixes ("where's the time?"). To
+  // stay reproducible (SR7) despite wall-clock noise, compare at the displayed
+  // 0.1ms precision so same-cost subscribers form a stable cohort, then break
+  // ties by `runs` (the structural leading indicator) and finally the id.
+  const roundMs = (m: number): number => Math.round(m * 10) / 10
+  subscribers.sort(
+    (x, y) =>
+      roundMs(y.totalMs) - roundMs(x.totalMs) ||
+      y.runs - x.runs ||
+      (x.subscriber < y.subscriber ? -1 : x.subscriber > y.subscriber ? 1 : 0),
+  )
   if (options.topN !== undefined) subscribers = subscribers.slice(0, options.topN)
 
   // Only subscriber ids matter for this analysis — filter the join's gaps to
@@ -577,8 +584,12 @@ function fitLabel(s: string, width: number): string {
 function bar(value: number, max: number, width: number): string {
   if (max <= 0 || value <= 0) return ''.padEnd(width)
   const units = Math.min(value / max, 1) * width
-  const full = Math.floor(units)
-  const rem = Math.round((units - full) * 8)
+  let full = Math.floor(units)
+  let rem = Math.round((units - full) * 8)
+  if (rem === 8) {
+    full++ // a fractional part that rounds to 8/8 is a whole extra cell
+    rem = 0
+  }
   return ('█'.repeat(full) + (rem > 0 ? BAR_EIGHTHS[rem] : '')).padEnd(width)
 }
 
@@ -593,9 +604,9 @@ export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): strin
   // the analyzer can't yet place), so a big list (e.g. a calendar grid) stays
   // readable instead of dumping a thousand rows.
   const shown = r.subscribers.slice(0, limit)
-  // Bars are proportional to `runs` — the deterministic ranking metric — so the
-  // chart is stable across runs (unlike wall-clock ms).
-  const maxRuns = shown.reduce((m, s) => Math.max(m, s.runs), 0)
+  // Bars are proportional to `totalMs` — the cost, i.e. where to spend a fix.
+  // `runs` (the leading indicator of that cost) rides alongside as a number.
+  const maxMs = shown.reduce((m, s) => Math.max(m, s.totalMs), 0)
   for (const s of shown) {
     const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
     const base = s.name ?? s.subscriber
@@ -603,7 +614,7 @@ export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): strin
     const label = s.kind && !base.endsWith(')') ? `${base} (${s.kind})` : base
     const note = s.hot ? `  ⚠ ${s.runsPerTurn.toFixed(1)}/turn` : ''
     lines.push(
-      `  ${fitLabel(label, 24)} ${bar(s.runs, maxRuns, 14)} ${String(s.runs).padStart(3)}×  ${s.totalMs.toFixed(1)}ms  (${where})${note}`,
+      `  ${fitLabel(label, 24)} ${bar(s.totalMs, maxMs, 14)} ${s.totalMs.toFixed(1)}ms  ${String(s.runs).padStart(3)}×  (${where})${note}`,
     )
   }
   if (r.subscribers.length > shown.length) {
