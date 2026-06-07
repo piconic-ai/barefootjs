@@ -17,28 +17,10 @@ runAdapterConformanceTests({
   name: 'mojo',
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
-  skipJsx: [
-    // `context-provider` graduated: SSR context propagation now mirrors the
-    // client `provideContext` / `useContext`. `<Ctx.Provider value>` brackets
-    // its children with `bf->provide_context` / `bf->revoke_context` (a
-    // package-level value stack), and each `useContext` consumer is seeded at
-    // the top of its template with `% my $x = bf->use_context('Ctx', <default>)`.
-    // Renders byte-for-byte against Hono on real Mojolicious. (#1297)
-    // `toggle-shared` graduated: a keyed `.map` of sibling `ToggleItem`
-    // children, each with a prop-derived `on = props.defaultOn ?? false`
-    // signal. Three gaps were closed (#1297): (1) prop-derived signals are now
-    // seeded in-template from the passed prop (`% my $on = $defaultOn // 0;`)
-    // so each item honours its own `defaultOn`; (2) loop children get a
-    // `ToggleItem_<rand>` scope id (component name, not the parent slot); and
-    // (3) the JSX `key` lands as `data-key` on the child scope root. Renders
-    // byte-for-byte against Hono on real Mojolicious.
-    // `props-reactivity-comparison` graduated: the child `PropsStyleChild`'s
-    // `displayValue = props.value * 10` memo has a `null` static SSR default
-    // (`extractSsrDefaults` can't fold a prop-derived expression). The adapter
-    // now computes such memos in-template from the seeded prop var
-    // (`% my $displayValue = $value * 10;`) — mirroring Go's generated child
-    // constructor — so the child renders `10` to match Hono. (#1297)
-  ],
+  // No JSX-render skips: every shared conformance fixture renders to Hono
+  // parity on real Mojolicious. Shapes the adapter intentionally refuses at
+  // build time are pinned in `expectedDiagnostics` below.
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't

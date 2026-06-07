@@ -25,38 +25,10 @@ runAdapterConformanceTests({
   name: 'xslate',
   factory: () => new XslateAdapter(),
   render: renderXslateComponent,
-  // Skips here are VERIFIED, not inherited from mojo. Notably, the six
-  // fixtures mojo skips for Perl-EP scoping faults — `logical-or-jsx`,
-  // `nullish-coalescing-jsx`, `branch-map`, `return-logical-or`,
-  // `return-nullish-coalescing`, `return-map` (bare `$label` / `$items`
-  // without a `my` binding) — all PASS on Xslate, because Kolon resolves
-  // `$label` from the per-render vars rather than a Perl lexical, so there
-  // is no undefined-symbol fault. Xslate therefore skips strictly fewer
-  // fixtures than mojo. Each entry below was confirmed to fail with
-  // skipJsx emptied.
-  skipJsx: [
-    // `context-provider` graduated: SSR context propagation now mirrors the
-    // client `provideContext` / `useContext`. `<Ctx.Provider value>` brackets
-    // its children with inline `$bf.provide_context` / `$bf.revoke_context`
-    // (a package-level value stack; both return '' so the `<: … :>` discards
-    // them), and each `useContext` consumer is seeded with
-    // `: my $x = $bf.use_context('Ctx', <default>)`. Renders byte-for-byte
-    // against Hono on real Text::Xslate. (#1297)
-    // `toggle-shared` graduated (same three fixes as mojo, #1297): (1) the
-    // prop-derived `on = props.defaultOn ?? false` signal is seeded in-template
-    // (`: my $on = $defaultOn // 0;`) so each item honours its own `defaultOn`
-    // instead of all rendering OFF; (2) loop children get a `ToggleItem_<rand>`
-    // scope id (component name, not the snake-case template name); and (3) the
-    // JSX `key` lands as `data-key` on the child scope root. Renders
-    // byte-for-byte against Hono on real Text::Xslate.
-    // `props-reactivity-comparison` graduated: the child `PropsStyleChild`'s
-    // `displayValue = props.value * 10` memo has a `null` static SSR default.
-    // The adapter now computes such memos in-template from the seeded prop var
-    // (`: my $displayValue = $value * 10;`) — mirroring Go's generated child
-    // constructor — so `child-computed-value` renders `10` to match Hono. (#1297)
-    // (`kbd` is not skipped here — it's a BF101 refusal pinned in
-    // `expectedDiagnostics` below, not a render-mismatch.)
-  ],
+  // No JSX-render skips: every shared conformance fixture renders to Hono
+  // parity on real Text::Xslate. Shapes the adapter intentionally refuses at
+  // build time are pinned in `expectedDiagnostics` below (e.g. `kbd`, `button`).
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.
