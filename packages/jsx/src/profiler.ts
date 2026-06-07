@@ -262,7 +262,7 @@ export function formatBudgetDiff(d: BudgetDiff): string {
 
 /** An IR node a compiler-assigned profiler id resolves to. */
 export interface ResolvedNode {
-  kind: 'signal' | 'memo' | 'effect'
+  kind: 'signal' | 'memo' | 'effect' | 'handler'
   /** Display name/label of the resolved IR node. */
   name: string
   loc: { file: string; line: number }
@@ -330,12 +330,22 @@ export function buildIdIndex(graph: ComponentGraph): IdIndex {
   // each from its `domBinding` (slotId + loc). Event bindings are handlers, not
   // re-running effects — skip them.
   for (const b of graph.domBindings) {
-    if (b.type === 'event' || !b.loc) continue
-    index.set(`${comp}#binding:${b.slotId}`, {
-      kind: 'effect',
-      name: `${b.slotId} (${b.type})`,
-      loc: { file: b.loc.file, line: b.loc.start.line },
-    })
+    if (!b.loc) continue
+    const loc = { file: b.loc.file, line: b.loc.start.line }
+    if (b.type === 'event') {
+      // Handler turn ids (`<Component>#handler:<slotId>:<eventName>`, SR3). The
+      // event name is embedded in the label (`click handler "s1"`).
+      const eventName = b.label.match(/^(\w+)\s+handler/)?.[1]
+      if (eventName) {
+        index.set(`${comp}#handler:${b.slotId}:${eventName}`, {
+          kind: 'handler',
+          name: `${eventName}@${b.slotId}`,
+          loc,
+        })
+      }
+      continue
+    }
+    index.set(`${comp}#binding:${b.slotId}`, { kind: 'effect', name: `${b.slotId} (${b.type})`, loc })
   }
   return index
 }
@@ -405,7 +415,7 @@ export interface HotSubscriber {
   /** Source-mapped node from the SR4 join; absent ⇒ a coverage gap. */
   loc?: { file: string; line: number }
   name?: string
-  kind?: 'signal' | 'memo' | 'effect'
+  kind?: ResolvedNode['kind']
   /** Total times this subscriber ran (`effectEnter` count), mount included. */
   runs: number
   /** Runs during initial mount (outside any turn) — the unavoidable baseline. */
@@ -550,6 +560,10 @@ export type BatchSafety = 'safe' | 'unsafe' | 'unverified'
 export interface BatchCandidate {
   /** The turn's handler id (`<Component>#handler:<slot>:<event>`). */
   turn: string
+  /** Handler source location, when the id index resolves it. */
+  loc?: { file: string; line: number }
+  /** Friendly handler name (`click@s1`), when resolved. */
+  handler?: string
   /** Total effect runs in the turn. */
   totalRuns: number
   /** Distinct effects that ran (the floor a batched turn would collapse to). */
@@ -583,7 +597,10 @@ export interface BatchAdvisorResult {
  * in a follow-up — an advisory that could change behavior must not be labeled
  * safe (§4.2.3).
  */
-export function analyzeBatchAdvisor(events: readonly ProfilerEvent[]): BatchAdvisorResult {
+export function analyzeBatchAdvisor(
+  events: readonly ProfilerEvent[],
+  index?: IdIndex,
+): BatchAdvisorResult {
   interface TurnAcc {
     totalRuns: number
     subscribers: Set<string>
@@ -606,8 +623,11 @@ export function analyzeBatchAdvisor(events: readonly ProfilerEvent[]): BatchAdvi
     const distinctSubscribers = acc.subscribers.size
     const savings = acc.totalRuns - distinctSubscribers
     if (savings > 0) {
+      const node = index?.get(turn)
       candidates.push({
         turn,
+        loc: node?.loc,
+        handler: node?.name,
         totalRuns: acc.totalRuns,
         distinctSubscribers,
         savings,
@@ -628,7 +648,9 @@ export function formatBatchAdvisor(r: BatchAdvisorResult): string {
   }
   for (const c of r.candidates) {
     const safe = c.safety === 'safe' ? ', safe' : c.safety === 'unsafe' ? ', UNSAFE' : ', safety unverified'
-    lines.push(`  ${c.turn.padEnd(28)} batch candidate ${c.totalRuns}→${c.distinctSubscribers} (saves ${c.savings}${safe})`)
+    const where = c.loc ? `  (${c.loc.file}:${c.loc.line})` : ''
+    const label = (c.handler ?? c.turn).padEnd(20)
+    lines.push(`  ${label} batch candidate ${c.totalRuns}→${c.distinctSubscribers} (saves ${c.savings}${safe})${where}`)
   }
   return lines.join('\n')
 }
@@ -680,7 +702,7 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
   const index = buildIdIndex(graph)
 
   const hotSubscribers = analyzeHotSubscribers(events, index)
-  const batchAdvisor = analyzeBatchAdvisor(events)
+  const batchAdvisor = analyzeBatchAdvisor(events, index)
   const { unattributed } = joinProfilerEvents(events, index)
 
   const turnIds = new Set<string>()

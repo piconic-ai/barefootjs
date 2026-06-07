@@ -7,7 +7,8 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { analyzeBatchAdvisor, formatBatchAdvisor } from '../profiler'
+import { analyzeBatchAdvisor, formatBatchAdvisor, buildIdIndex } from '../profiler'
+import { buildComponentAnalysis } from '../debug'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
 let seq = 0
@@ -64,6 +65,32 @@ describe('analyzeBatchAdvisor', () => {
     const r = analyzeBatchAdvisor(events)
     expect(r.candidates.map(c => c.turn)).toEqual(['t2', 't1'])
     expect(r.candidates[0].savings).toBe(3)
+  })
+
+  test('resolves the handler turn id to source loc when given an id index', () => {
+    seq = 0
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Form() {
+        const [a, setA] = createSignal(0)
+        const [b, setB] = createSignal(0)
+        return <button onClick={() => { setA(1); setB(2) }}>{a() + b()}</button>
+      }
+    `
+    const { graph } = buildComponentAnalysis(src, 'Form.tsx')
+    const index = buildIdIndex(graph)
+    // Find the handler turn id the compiler/runtime would emit for the button.
+    const turn = [...index.keys()].find(k => k.startsWith('Form#handler:'))!
+    expect(turn).toBeDefined()
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'Form#binding:s0', turn }),
+      ev('effectEnter', { subscriber: 'Form#binding:s0', turn }),
+    ]
+    const c = analyzeBatchAdvisor(events, index).candidates[0]
+    expect(c.loc?.file).toBe('Form.tsx')
+    expect(c.loc?.line).toBeGreaterThan(0)
+    expect(formatBatchAdvisor(analyzeBatchAdvisor(events, index))).toMatch(/\(Form\.tsx:\d+\)/)
   })
 
   test('formats candidates and never claims safety in the measured half', () => {
