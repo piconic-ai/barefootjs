@@ -324,7 +324,20 @@ export declare namespace JSX {
       ref?: (element: SVGForeignObjectElement) => void
     }
 
-    // Allow any other elements
-    [tagName: string]: HTMLBaseAttributes
+    // Catch-all for any other (custom / unknown) element.
+    //
+    // Mirrors hono/jsx, whose `IntrinsicElements` index signature is
+    // `[tagName: string]: Props` with `Props = Record<string, any>`
+    // (see hono `src/jsx/base.ts`). Using `HTMLBaseAttributes` here instead
+    // would force every explicitly-typed element above to be assignable to
+    // it, which TS rejects with TS2411: the per-element types narrow `ref`
+    // to a concrete subtype (`HTMLInputElement`, …) and re-declare event
+    // handlers, neither assignable to the `HTMLElement`-typed base under
+    // `strictFunctionTypes`. `tsc` only surfaced this with `skipLibCheck`
+    // off; `deno publish` (JSR) always type-checks `.d.ts`, so it broke the
+    // release. `Record<string, any>` accepts every named entry and keeps us
+    // aligned with hono. Known elements stay fully typed via their explicit
+    // entries above — the index only governs unlisted tag names.
+    [tagName: string]: Record<string, any>
   }
 }
