@@ -11,14 +11,14 @@
  */
 
 import ts from 'typescript'
-import type { Scope, BindingKind, IRMetadata } from './types'
-import { isVisibleIn } from './types'
-import type { AnalyzerContext } from './analyzer-context'
-import { PROPS_PARAM } from './ir-to-client-js/utils'
+import type { Scope, BindingKind, IRMetadata } from './types.ts'
+import { isVisibleIn } from './types.ts'
+import type { AnalyzerContext } from './analyzer-context.ts'
+import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
-} from './adapters/interface'
+} from './adapters/interface.ts'
 
 export interface RelocateEnv {
   /**

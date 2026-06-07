@@ -8,8 +8,8 @@
  * `handlerName(...)` without writing the prop accessor inline.
  */
 
-import type { ClientJsContext } from '../types'
-import { PROPS_PARAM } from '../utils'
+import type { ClientJsContext } from '../types.ts'
+import { PROPS_PARAM } from '../utils.ts'
 
 export function emitPropsEventHandlers(
   lines: string[],

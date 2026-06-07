@@ -19,7 +19,7 @@
  */
 
 import { createSignal, createEffect, createRoot } from '@barefootjs/client/reactive'
-import { hydratedScopes } from './hydration-state'
+import { hydratedScopes } from './hydration-state.ts'
 import {
   BF_KEY,
   BF_LOOP_START,

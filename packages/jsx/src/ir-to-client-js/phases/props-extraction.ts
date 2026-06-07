@@ -17,10 +17,10 @@
  * `_p.X` directly via the late-stage rename.
  */
 
-import type { PropUsage } from '../../types'
-import { propHasPropertyAccess } from '../compute-prop-usage'
-import type { ClientJsContext } from '../types'
-import { inferDefaultValue, PROPS_PARAM } from '../utils'
+import type { PropUsage } from '../../types.ts'
+import { propHasPropertyAccess } from '../compute-prop-usage.ts'
+import type { ClientJsContext } from '../types.ts'
+import { inferDefaultValue, PROPS_PARAM } from '../utils.ts'
 
 export function emitPropsExtraction(
   lines: string[],

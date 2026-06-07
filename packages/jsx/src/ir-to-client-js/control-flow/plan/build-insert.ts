@@ -11,15 +11,15 @@
 import type {
   ConditionalElement,
   BranchSummary,
-} from '../../types'
-import { addCondAttrToTemplate } from '../../html-template'
-import { buildBranchLoopPlan } from './build-branch-loop'
+} from '../../types.ts'
+import { addCondAttrToTemplate } from '../../html-template.ts'
+import { buildBranchLoopPlan } from './build-branch-loop.ts'
 import type {
   InsertPlan,
   InsertArm,
   ArmBody,
   ScopeRef,
-} from './types'
+} from './types.ts'
 
 export interface BuildInsertOptions {
   scope: ScopeRef

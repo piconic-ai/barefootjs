@@ -10,13 +10,13 @@
  * stringifier is a deterministic walk.
  */
 
-import type { LoopChildEvent } from '../../types'
+import type { LoopChildEvent } from '../../types.ts'
 import type {
   AttrMeta,
   IRLoopChildComponent,
   LoopParamBinding,
-} from '../../../types'
-import type { LoopChildRefBinding } from './loop'
+} from '../../../types.ts'
+import type { LoopChildRefBinding } from './loop.ts'
 
 /**
  * Body-entry statements emitted in order at the top of a `mapArray`

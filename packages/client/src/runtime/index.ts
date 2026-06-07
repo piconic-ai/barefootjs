@@ -25,10 +25,10 @@ export {
   type EffectFn,
 } from '@barefootjs/client/reactive'
 
-export { splitProps } from '../split-props'
-export { __slot, type SlotMarker } from '../slot'
-export { forwardProps } from '../forward-props'
-export { unwrap } from '../unwrap'
+export { splitProps } from '../split-props.ts'
+export { __slot, type SlotMarker } from '../slot.ts'
+export { forwardProps } from '../forward-props.ts'
+export { unwrap } from '../unwrap.ts'
 
 // Context API (real DOM-bound implementations; `createContext` is the
 // same pure function re-exported from `../context`).
@@ -38,7 +38,7 @@ export {
   provideContext,
   setCurrentScope,
   type Context,
-} from './context'
+} from './context.ts'
 
 // Portal system
 export {
@@ -50,16 +50,16 @@ export {
   type PortalOptions,
   type Renderable,
   type PortalChildren,
-} from './portal'
+} from './portal.ts'
 
 // List reconciliation
-export { reconcileList, type RenderItemFn } from './list'
-export { reconcileElements, getLoopChildren, getLoopNodes } from './reconcile-elements'
-export { qsaItem, upsertChildItem } from './qsa-item'
-export { mapArray, mapArrayAnchored } from './map-array'
+export { reconcileList, type RenderItemFn } from './list.ts'
+export { reconcileElements, getLoopChildren, getLoopNodes } from './reconcile-elements.ts'
+export { qsaItem, upsertChildItem } from './qsa-item.ts'
+export { mapArray, mapArrayAnchored } from './map-array.ts'
 
 // Template registry
-export { registerTemplate, getTemplate, hasTemplate, type TemplateFn } from './template'
+export { registerTemplate, getTemplate, hasTemplate, type TemplateFn } from './template.ts'
 
 // Component creation
 export {
@@ -70,30 +70,30 @@ export {
   parseHTML,
   escapeAttr,
   escapeText,
-} from './component'
+} from './component.ts'
 
 // Spread props helpers
-export { applyRestAttrs } from './apply-rest-attrs'
-export { spreadAttrs } from './spread-attrs'
-export { styleToCss } from './style'
+export { applyRestAttrs } from './apply-rest-attrs.ts'
+export { spreadAttrs } from './spread-attrs.ts'
+export { styleToCss } from './style.ts'
 
 // Runtime helpers
-export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, cssEscape } from './query'
-export { hydrate, rehydrateAll, flushHydration, getRegisteredDef } from './hydrate'
-export { registerComponent, getComponentInit, initChild, upsertChild } from './registry'
-export { insert, type BranchConfig, type BranchTemplateResult } from './insert'
-export { __bfSlot } from './branch-slot'
-export { __bfText } from './dynamic-text'
-export { updateClientMarker } from './client-marker'
+export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, cssEscape } from './query.ts'
+export { hydrate, rehydrateAll, flushHydration, getRegisteredDef } from './hydrate.ts'
+export { registerComponent, getComponentInit, initChild, upsertChild } from './registry.ts'
+export { insert, type BranchConfig, type BranchTemplateResult } from './insert.ts'
+export { __bfSlot } from './branch-slot.ts'
+export { __bfText } from './dynamic-text.ts'
+export { updateClientMarker } from './client-marker.ts'
 
 // Hydration state
-export { hydratedScopes } from './hydration-state'
+export { hydratedScopes } from './hydration-state.ts'
 
 // CSR entry point
-export { render } from './render'
+export { render } from './render.ts'
 
 // Streaming (Out-of-Order SSR)
-export { __bf_swap, setupStreaming } from './streaming'
+export { __bf_swap, setupStreaming } from './streaming.ts'
 
 // Core types
-export type { InitFn, ComponentDef } from './types'
+export type { InitFn, ComponentDef } from './types.ts'

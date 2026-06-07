@@ -28,9 +28,9 @@
  */
 
 import { BF_LOOP_ITEM, BF_LOOP_START, BF_LOOP_END } from '@barefootjs/shared'
-import { initChild } from './registry'
-import { createComponent } from './component'
-import { findSsrScopeBySlotIn, buildSlotInfo } from './slot-resolver'
+import { initChild } from './registry.ts'
+import { createComponent } from './component.ts'
+import { findSsrScopeBySlotIn, buildSlotInfo } from './slot-resolver.ts'
 
 /** Iterate the elements that belong to an item — primary, in-tree siblings within bounds, then any pre-insertion extras stash. */
 function* itemRootElements(primaryEl: Element): Iterable<Element> {

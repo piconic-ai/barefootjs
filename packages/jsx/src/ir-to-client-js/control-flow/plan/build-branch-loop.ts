@@ -10,17 +10,17 @@
  *     event-delegation plan.
  */
 
-import type { BranchLoop } from '../../types'
-import { buildChainedArrayExpr, varSlotId, wrapLoopParamAsAccessor } from '../../utils'
-import { buildBranchCompositePlan } from './build-composite-loop'
-import { buildBranchLoopDelegationPlan } from './build-event-delegation'
-import { buildReactiveEffectsPlan } from './build-reactive-effects'
-import { destructureLoopParam, loopKeyFn, buildChildRefBindings } from '../shared'
+import type { BranchLoop } from '../../types.ts'
+import { buildChainedArrayExpr, varSlotId, wrapLoopParamAsAccessor } from '../../utils.ts'
+import { buildBranchCompositePlan } from './build-composite-loop.ts'
+import { buildBranchLoopDelegationPlan } from './build-event-delegation.ts'
+import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
+import { destructureLoopParam, loopKeyFn, buildChildRefBindings } from '../shared.ts'
 import type {
   BranchCompositeLoopPlan,
   BranchLoopPlan,
   BranchPlainLoopPlan,
-} from './branch-loop'
+} from './branch-loop.ts'
 
 export function buildBranchLoopPlan(loop: BranchLoop): BranchLoopPlan {
   const containerSlotId = loop.containerSlotId

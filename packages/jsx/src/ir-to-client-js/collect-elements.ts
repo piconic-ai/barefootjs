@@ -2,14 +2,14 @@
  * IR tree traversal → collect elements into ClientJsContext.
  */
 
-import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types'
-import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types'
-import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils'
-import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings } from './reactivity'
-import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template'
-import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling'
-import { walkIR, stopAt } from './walker'
-import { buildLoopChainExpr } from '../loop-chain'
+import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
+import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
+import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
+import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings } from './reactivity.ts'
+import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template.ts'
+import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
+import { walkIR, stopAt } from './walker.ts'
+import { buildLoopChainExpr } from '../loop-chain.ts'
 
 /** Expressions that render nothing (0 DOM nodes) — `&&` / `?:` empty branches. */
 const EMPTY_RENDER_EXPRS = new Set(['null', 'undefined', 'false', "''", '""', '``'])
@@ -340,12 +340,12 @@ export function collectInnerLoops(
         // Per-item bindings for branch-mode callers (child components,
         // events, nested conditionals) — matches the pre-Phase 2
         // `collectBranchInnerLoops` behaviour.
-        let childComponents: import('../types').IRLoopChildComponent[] | undefined
+        let childComponents: import('../types.ts').IRLoopChildComponent[] | undefined
         if (collectBindings) {
           // skipConditionals=true: components inside conditional branches
           // are collected separately via `childConditionals[i].whenTrue.childComponents`
           // (below). Including them here would double-init event handlers.
-          const rawComps: Array<{ name: string; slotId: string | null; props: import('../types').IRProp[]; children: IRNode[] }> = []
+          const rawComps: Array<{ name: string; slotId: string | null; props: import('../types.ts').IRProp[]; children: IRNode[] }> = []
           for (const child of n.children) {
             rawComps.push(...collectConditionalBranchChildComponents(child, true))
           }
@@ -1145,7 +1145,7 @@ function summarizeBranch(
   node: IRNode,
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, IRNode[]>,
-): import('./types').BranchSummary {
+): import('./types.ts').BranchSummary {
   return {
     events: collectConditionalBranchEvents(node),
     refs: collectConditionalBranchRefs(node),
@@ -1214,7 +1214,7 @@ export function collectLoopChildBindings(
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, IRNode[]>,
   loopParam: string,
-  loopParamBindings: readonly import('../types').LoopParamBinding[] | undefined,
+  loopParamBindings: readonly import('../types.ts').LoopParamBinding[] | undefined,
 ): LoopChildBindings {
   const bindings = emptyLoopChildBindings()
   for (const child of children) {
@@ -1232,7 +1232,7 @@ export function collectLoopChildConditionals(
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, IRNode[]>,
   loopParam?: string,
-  loopParamBindings?: readonly import('../types').LoopParamBinding[],
+  loopParamBindings?: readonly import('../types.ts').LoopParamBinding[],
 ): LoopChildConditional[] {
   const conditionals: LoopChildConditional[] = []
 
@@ -1307,7 +1307,7 @@ function summarizeLoopChildBranch(
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, IRNode[]>,
   loopParam?: string,
-  loopParamBindings?: readonly import('../types').LoopParamBinding[],
+  loopParamBindings?: readonly import('../types.ts').LoopParamBinding[],
 ): LoopChildBranchSummary {
   const inner = collectInnerLoops([node], siblingOffsets, loopParam, ctx, branchInnerLoopOptions)
   return {

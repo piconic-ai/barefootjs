@@ -8,22 +8,22 @@
  * consistent Plan.
  */
 
-import type { TopLevelLoop, BranchLoop, LoopChildConditional } from '../../types'
-import type { IRLoopChildComponent } from '../../../types'
+import type { TopLevelLoop, BranchLoop, LoopChildConditional } from '../../types.ts'
+import type { IRLoopChildComponent } from '../../../types.ts'
 import {
   buildChainedArrayExpr,
   varSlotId,
   wrapLoopParamAsAccessor,
-} from '../../utils'
+} from '../../utils.ts'
 import {
   loopKeyFn,
   destructureLoopParam,
   buildDepthLevels,
   buildChildRefBindings,
-} from '../shared'
-import { buildReactiveEffectsPlan } from './build-reactive-effects'
-import { buildInnerLoopsPlan } from './build-inner-loop'
-import type { CompositeLoopPlan } from './types'
+} from '../shared.ts'
+import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
+import { buildInnerLoopsPlan } from './build-inner-loop.ts'
+import type { CompositeLoopPlan } from './types.ts'
 
 /** @internal — prefer `buildLoopPlan`. */
 export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPlan {

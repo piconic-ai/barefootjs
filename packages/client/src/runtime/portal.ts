@@ -8,8 +8,8 @@
  */
 
 import { BF_SCOPE, BF_PORTAL_ID, BF_PORTAL_OWNER, BF_PORTAL_PLACEHOLDER } from '@barefootjs/shared'
-import { parseHTML } from './component'
-import { getPortalScopeId } from './scope'
+import { parseHTML } from './component.ts'
+import { getPortalScopeId } from './scope.ts'
 
 export type Portal = {
   /** The mounted element */

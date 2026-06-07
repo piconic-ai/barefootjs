@@ -9,9 +9,9 @@
  */
 
 import { BF_PORTAL_OWNER, BF_SCOPE } from '@barefootjs/shared'
-import type { Context } from '../context'
+import type { Context } from '../context.ts'
 
-export { createContext, type Context } from '../context'
+export { createContext, type Context } from '../context.ts'
 
 /** Global fallback store for contexts without a DOM scope. */
 const contextStore = new Map<symbol, unknown>()

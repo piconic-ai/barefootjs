@@ -7,8 +7,8 @@
  * `form = createForm({onSubmit: async () => {}})` (#508).
  */
 
-import type { ConstantInfo, FunctionInfo, MemoInfo, ReferencesGraph, SignalInfo } from '../types'
-import { graphDeclarationReferences } from './build-references'
+import type { ConstantInfo, FunctionInfo, MemoInfo, ReferencesGraph, SignalInfo } from '../types.ts'
+import { graphDeclarationReferences } from './build-references.ts'
 
 // =============================================================================
 // Declaration types

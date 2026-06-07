@@ -23,7 +23,7 @@
  * shapes were determined by inline branching on the IR.
  */
 
-import type { PreludeStatements } from '../control-flow/plan/inner-loop'
+import type { PreludeStatements } from '../control-flow/plan/inner-loop.ts'
 
 /** Pre-built `{ name: value, ... }` props object expression. */
 export type PropsExpr = string

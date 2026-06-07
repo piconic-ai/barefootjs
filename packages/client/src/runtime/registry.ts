@@ -6,11 +6,11 @@
  */
 
 import { BF_SCOPE, BF_HOST, BF_PLACEHOLDER } from '@barefootjs/shared'
-import { hydratedScopes } from './hydration-state'
-import { setCurrentScope } from './context'
-import { createComponent } from './component'
-import { findSsrScopeBySlotIn, buildSlotInfo } from './slot-resolver'
-import type { InitFn } from './types'
+import { hydratedScopes } from './hydration-state.ts'
+import { setCurrentScope } from './context.ts'
+import { createComponent } from './component.ts'
+import { findSsrScopeBySlotIn, buildSlotInfo } from './slot-resolver.ts'
+import type { InitFn } from './types.ts'
 
 /**
  * Component registry for parent-child communication.

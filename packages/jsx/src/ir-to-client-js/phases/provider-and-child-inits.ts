@@ -11,9 +11,9 @@
  * `useContext()`.
  */
 
-import type { ClientJsContext } from '../types'
-import { varSlotId } from '../utils'
-import { nameForRegistryRef } from '../component-scope'
+import type { ClientJsContext } from '../types.ts'
+import { varSlotId } from '../utils.ts'
+import { nameForRegistryRef } from '../component-scope.ts'
 
 export function emitProviderAndChildInits(lines: string[], ctx: ClientJsContext): void {
   if (ctx.providerSetups.length > 0) {

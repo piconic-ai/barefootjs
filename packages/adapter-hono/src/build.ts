@@ -1,8 +1,8 @@
 // Hono build config factory for barefoot.config.ts
 
 import type { BuildOptions } from '@barefootjs/jsx'
-import { HonoAdapter } from './adapter'
-import type { HonoAdapterOptions } from './adapter'
+import { HonoAdapter } from './adapter/index.ts'
+import type { HonoAdapterOptions } from './adapter/index.ts'
 
 export interface HonoBuildOptions extends BuildOptions {
   /** Inject Hono script collection wrapper (default: true) */

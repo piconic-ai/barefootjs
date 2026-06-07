@@ -1,5 +1,5 @@
 import { createContext } from '@barefootjs/client/runtime'
-import type { BarChartContextValue, RadialChartContextValue, RadarChartContextValue, PieChartContextValue, AreaChartContextValue, ChartConfig } from './types'
+import type { BarChartContextValue, RadialChartContextValue, RadarChartContextValue, PieChartContextValue, AreaChartContextValue, ChartConfig } from './types.ts'
 
 export const BarChartContext = createContext<BarChartContextValue>()
 

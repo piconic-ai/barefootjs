@@ -6,4 +6,4 @@
  */
 
 export { jsxDEV, Fragment } from 'hono/jsx/jsx-dev-runtime'
-export type { JSX } from '../jsx-runtime'
+export type { JSX } from '../jsx-runtime/index.ts'

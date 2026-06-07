@@ -4,5 +4,5 @@
  * Generates Text::Xslate Kolon template files (.tx) from BarefootJS IR.
  */
 
-export { XslateAdapter, xslateAdapter } from './adapter'
-export type { XslateAdapterOptions } from './adapter'
+export { XslateAdapter, xslateAdapter } from './adapter/index.ts'
+export type { XslateAdapterOptions } from './adapter/index.ts'

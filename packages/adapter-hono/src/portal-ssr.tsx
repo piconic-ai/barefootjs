@@ -26,7 +26,7 @@
 import { useRequestContext } from 'hono/jsx-renderer'
 import { Fragment } from 'hono/jsx'
 import type { Child } from 'hono/jsx'
-import { collectPortal, isPortalsRendered } from './portals'
+import { collectPortal, isPortalsRendered } from './portals.tsx'
 
 let portalCounter = 0
 

@@ -1,8 +1,8 @@
 import { useContext } from '@barefootjs/client/runtime'
 import { createMemo, untrack } from '@barefootjs/client/runtime'
 import { pointToRendererPoint } from '@xyflow/system'
-import { FlowContext } from './context'
-import type { FlowStore, Viewport, NodeBase, EdgeBase, XYPosition } from './types'
+import { FlowContext } from './context.ts'
+import type { FlowStore, Viewport, NodeBase, EdgeBase, XYPosition } from './types.ts'
 import type { Signal, Memo } from '@barefootjs/client/runtime'
 
 /**

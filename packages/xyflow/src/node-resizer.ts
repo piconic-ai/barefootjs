@@ -18,7 +18,7 @@ import type {
   ResizeControlDirection,
 } from '@xyflow/system'
 import type { XYResizerChange, XYResizerChildChange, XYResizerInstance } from '@xyflow/system'
-import type { FlowStore } from './types'
+import type { FlowStore } from './types.ts'
 
 /**
  * Options for initNodeResizer.

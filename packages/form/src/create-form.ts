@@ -1,13 +1,13 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { createSignal, createMemo, untrack } from "@barefootjs/client";
 import type { Signal, Memo } from "@barefootjs/client";
-import { validateSchema, validateField } from "./validate";
+import { validateSchema, validateField } from "./validate.ts";
 import type {
   CreateFormOptions,
   FormReturn,
   FieldReturn,
   ValidateOn,
-} from "./types";
+} from "./types.ts";
 
 interface FieldSignals {
   value: Signal<unknown>;

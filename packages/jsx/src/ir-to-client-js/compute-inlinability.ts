@@ -23,16 +23,16 @@
  * Stage E.4 of issue #1021.
  */
 
-import type { ConstantInfo, IRNode, ReferencesGraph } from '../types'
-import type { ClientJsContext } from './types'
-import { graphFunctionReferences } from './build-references'
-import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers'
-import { isInlinableInTemplate, buildRelocateEnvFromIR } from '../relocate'
-import type { RelocateEnv, RelocateDecision } from '../relocate'
-import { createError, ErrorCodes } from '../errors'
-import { attrValueToString } from './utils'
-import { walkIR, type IRVisitor } from './walker'
-import { buildSignalMemoEnv, csrSubstitute, type CsrEnv, type CsrSubstitution } from './csr-substitute'
+import type { ConstantInfo, IRNode, ReferencesGraph } from '../types.ts'
+import type { ClientJsContext } from './types.ts'
+import { graphFunctionReferences } from './build-references.ts'
+import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers.ts'
+import { isInlinableInTemplate, buildRelocateEnvFromIR } from '../relocate.ts'
+import type { RelocateEnv, RelocateDecision } from '../relocate.ts'
+import { createError, ErrorCodes } from '../errors.ts'
+import { attrValueToString } from './utils.ts'
+import { walkIR, type IRVisitor } from './walker.ts'
+import { buildSignalMemoEnv, csrSubstitute, type CsrEnv, type CsrSubstitution } from './csr-substitute.ts'
 
 /**
  * Build a `RelocateEnv` from a live `ClientJsContext`. The IR-keyed env

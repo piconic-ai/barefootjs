@@ -26,14 +26,14 @@ import type {
   MemoInfo,
   ReferencesGraph,
   SignalInfo,
-} from '../types'
-import { computeDeclarationScopes } from './compute-scope'
-import { graphUsedIdentifiers } from './build-references'
-import { getControlledPropName } from './prop-handling'
-import { type Declaration, providedNames, sortDeclarations } from './declaration-sort'
-import { buildDeclarationEmitLookups, buildDeclarationEmitPlan } from './plan/build-declaration-emit'
-import { stringifyDeclarationEmit } from './stringify/declaration-emit'
-import type { ClientJsContext } from './types'
+} from '../types.ts'
+import { computeDeclarationScopes } from './compute-scope.ts'
+import { graphUsedIdentifiers } from './build-references.ts'
+import { getControlledPropName } from './prop-handling.ts'
+import { type Declaration, providedNames, sortDeclarations } from './declaration-sort.ts'
+import { buildDeclarationEmitLookups, buildDeclarationEmitPlan } from './plan/build-declaration-emit.ts'
+import { stringifyDeclarationEmit } from './stringify/declaration-emit.ts'
+import type { ClientJsContext } from './types.ts'
 
 export interface ControlledSignal {
   signal: SignalInfo

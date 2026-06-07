@@ -6,7 +6,7 @@
  * No external dependencies — VLQ encoding is implemented inline.
  */
 
-import type { SourceLocation } from '../types'
+import type { SourceLocation } from '../types.ts'
 
 // =============================================================================
 // VLQ Base64 Encoding
@@ -217,7 +217,7 @@ export class MappedCodeBuilder {
  */
 export function buildSourceMapFromIR(
   generatedCode: string,
-  ir: import('../types').ComponentIR,
+  ir: import('../types.ts').ComponentIR,
   generatedFileName: string,
 ): SourceMapV3 {
   const gen = new SourceMapGenerator(generatedFileName)
@@ -280,7 +280,7 @@ export function buildSourceMapFromIR(
 }
 
 /** Find the source file path from the IR (first available SourceLocation). */
-function findSourceFile(ir: import('../types').ComponentIR): string | null {
+function findSourceFile(ir: import('../types.ts').ComponentIR): string | null {
   if (ir.root.loc?.file) return ir.root.loc.file
   for (const s of ir.metadata.signals) {
     if (s.loc?.file) return s.loc.file
@@ -307,7 +307,7 @@ function indentOf(line: string): number {
 /** Map event handlers from IR tree to generated code lines. */
 function mapEventHandlers(
   lines: string[],
-  node: import('../types').IRNode,
+  node: import('../types.ts').IRNode,
   gen: SourceMapGenerator,
 ): void {
   if (node.type === 'element') {

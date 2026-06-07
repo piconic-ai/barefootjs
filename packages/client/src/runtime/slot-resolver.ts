@@ -11,7 +11,7 @@
  */
 
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
-import { cssEscape } from './query'
+import { cssEscape } from './query.ts'
 
 /** Resolve the host scope id for a slot lookup. Prefers the explicit
  *  `anchorScope` because the immediate `parent` element may be a freshly-

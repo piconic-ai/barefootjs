@@ -30,7 +30,7 @@
 // `undef`, which Mojo renders as empty string).
 
 import ts from 'typescript'
-import type { IRMetadata } from './types'
+import type { IRMetadata } from './types.ts'
 
 /**
  * A single template-variable default. Keyed in the manifest by the

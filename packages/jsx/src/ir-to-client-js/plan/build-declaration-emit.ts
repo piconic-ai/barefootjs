@@ -8,16 +8,16 @@
  * the branches is easy to review.
  */
 
-import type { ControlledSignal } from '../init-declarations'
-import type { Declaration } from '../declaration-sort'
-import type { ClientJsContext } from '../types'
-import type { ParamInfo, SignalInfo } from '../../types'
-import { inferDefaultValue, PROPS_PARAM } from '../utils'
+import type { ControlledSignal } from '../init-declarations.ts'
+import type { Declaration } from '../declaration-sort.ts'
+import type { ClientJsContext } from '../types.ts'
+import type { ParamInfo, SignalInfo } from '../../types.ts'
+import { inferDefaultValue, PROPS_PARAM } from '../utils.ts'
 import type {
   ControlledSignalEffectPlan,
   DeclarationEmitPlan,
   SignalEmitPlan,
-} from './declaration-emit'
+} from './declaration-emit.ts'
 
 /**
  * Pre-computed lookup tables used while building declaration plans.

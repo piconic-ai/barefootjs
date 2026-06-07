@@ -2,7 +2,7 @@
  * Reactivity detection: reactive expression checking, event/ref collection.
  */
 
-import { type IRNode, type IRElement, type IRProp, type LoopParamBinding, type OriginInfo, pickAttrMetaFromIR, isReactiveOrigin } from '../types'
+import { type IRNode, type IRElement, type IRProp, type LoopParamBinding, type OriginInfo, pickAttrMetaFromIR, isReactiveOrigin } from '../types.ts'
 import type {
   ClientJsContext,
   ConditionalBranchEvent,
@@ -13,10 +13,10 @@ import type {
   LoopChildRef,
   LoopChildReactiveText,
   NestedLoop,
-} from './types'
-import { attrValueToString, freeIdsFromRefs, tokenContainsIdent } from './utils'
-import { expandConstantForReactivity } from './prop-handling'
-import { walkIR, stopAt } from './walker'
+} from './types.ts'
+import { attrValueToString, freeIdsFromRefs, tokenContainsIdent } from './utils.ts'
+import { expandConstantForReactivity } from './prop-handling.ts'
+import { walkIR, stopAt } from './walker.ts'
 
 /**
  * Phase 2 reactivity detection: determines if a code expression needs `createEffect`

@@ -10,15 +10,15 @@
  * `emitBranchLoopEventDelegation` pair.
  */
 
-import { stringifyCompositeLoop } from './composite-loop'
-import { stringifyEventDelegation } from './event-delegation'
-import { stringifyReactiveEffects } from './reactive-effects'
-import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse'
-import { emitLoopChildRefs } from './loop'
+import { stringifyCompositeLoop } from './composite-loop.ts'
+import { stringifyEventDelegation } from './event-delegation.ts'
+import { stringifyReactiveEffects } from './reactive-effects.ts'
+import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse.ts'
+import { emitLoopChildRefs } from './loop.ts'
 import type {
   BranchLoopPlan,
   BranchPlainLoopPlan,
-} from '../plan/branch-loop'
+} from '../plan/branch-loop.ts'
 
 export function stringifyBranchLoop(lines: string[], plan: BranchLoopPlan): void {
   // The container query runs first regardless of kind so the

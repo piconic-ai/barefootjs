@@ -30,12 +30,12 @@
  * after the migration completes.
  */
 
-import { emitComponentAndEventSetup } from '../shared'
-import { stringifyInnerLoops } from './inner-loop'
-import { stringifyReactiveEffects } from './reactive-effects'
-import { emitLoopItemElementSetup } from './template-parse'
-import { emitLoopChildRefs } from './loop'
-import type { CompositeLoopPlan } from '../plan/types'
+import { emitComponentAndEventSetup } from '../shared.ts'
+import { stringifyInnerLoops } from './inner-loop.ts'
+import { stringifyReactiveEffects } from './reactive-effects.ts'
+import { emitLoopItemElementSetup } from './template-parse.ts'
+import { emitLoopChildRefs } from './loop.ts'
+import type { CompositeLoopPlan } from '../plan/types.ts'
 
 export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan): void {
   const {

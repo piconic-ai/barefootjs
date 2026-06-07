@@ -8,20 +8,20 @@
  * `loop-child-arm.ts` — no legacy passthrough remains.
  */
 
-import { varSlotId } from '../../utils'
-import { emitAttrUpdate } from '../../emit-reactive'
+import { varSlotId } from '../../utils.ts'
+import { emitAttrUpdate } from '../../emit-reactive.ts'
 import {
   stringifyBranchChildComponentInits,
   stringifyBranchEventBindings,
   stringifyBranchInnerLoops,
   stringifyLoopChildConditionals,
-} from './loop-child-arm'
-import type { LoopChildArmPlan, LoopChildArmText } from '../plan/loop-child-arm'
+} from './loop-child-arm.ts'
+import type { LoopChildArmPlan, LoopChildArmText } from '../plan/loop-child-arm.ts'
 import type {
   NestedConditionalPlan,
   ReactiveEffectsPlan,
   ReactiveTextEffect,
-} from '../plan/reactive-effects'
+} from '../plan/reactive-effects.ts'
 
 export interface StringifyReactiveEffectsOptions {
   /** Indent prefix for every emitted line. */

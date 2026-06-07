@@ -5,7 +5,7 @@
  * container variable and the per-event item-lookup strategy.
  */
 
-import type { LoopChildEvent, LoopOffset, TopLevelLoop } from '../../types'
+import type { LoopChildEvent, LoopOffset, TopLevelLoop } from '../../types.ts'
 
 /**
  * Plan for a loop's event-delegation block. Covers three legacy emitters:

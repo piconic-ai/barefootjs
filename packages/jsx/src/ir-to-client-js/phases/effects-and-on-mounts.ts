@@ -7,7 +7,7 @@
  * value) still resolves at runtime.
  */
 
-import type { ClientJsContext } from '../types'
+import type { ClientJsContext } from '../types.ts'
 
 export function emitEffectsAndOnMounts(lines: string[], ctx: ClientJsContext): void {
   for (const effect of ctx.effects) {

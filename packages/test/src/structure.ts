@@ -8,7 +8,7 @@
  *   └── {expression}
  */
 
-import type { TestNode } from './test-node'
+import type { TestNode } from './test-node.ts'
 
 export function toStructure(node: TestNode): string {
   const lines: string[] = []

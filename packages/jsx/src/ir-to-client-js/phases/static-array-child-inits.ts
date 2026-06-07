@@ -11,9 +11,9 @@
  * available when array children call `useContext()`.
  */
 
-import { buildStaticArrayChildInitsPlan } from '../plan/build-static-array-child-init'
-import { stringifyStaticArrayChildInits } from '../stringify/static-array-child-init'
-import type { ClientJsContext } from '../types'
+import { buildStaticArrayChildInitsPlan } from '../plan/build-static-array-child-init.ts'
+import { stringifyStaticArrayChildInits } from '../stringify/static-array-child-init.ts'
+import type { ClientJsContext } from '../types.ts'
 
 export function emitStaticArrayChildInits(lines: string[], ctx: ClientJsContext): void {
   const plans = buildStaticArrayChildInitsPlan(ctx)

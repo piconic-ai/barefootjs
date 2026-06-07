@@ -9,8 +9,8 @@
 // via `ref` callbacks.
 
 // Store / context / signal hooks
-export { createFlowStore } from './store'
-export { FlowContext } from './context'
+export { createFlowStore } from './store.ts'
+export { FlowContext } from './context.ts'
 export {
   useFlow,
   useViewport,
@@ -19,22 +19,22 @@ export {
   useNodesInitialized,
   useStore,
   screenToFlowPosition,
-} from './hooks'
+} from './hooks.ts'
 
 // Geometry helpers consumed by the JSX `<SimpleEdge>` component
-export { computeEdgePosition, getEdgePath } from './edge-path'
-export type { EdgePathTuple } from './edge-path'
+export { computeEdgePosition, getEdgePath } from './edge-path.ts'
+export type { EdgePathTuple } from './edge-path.ts'
 
 // Pointer-paced subsystems attached via `<Flow>` / `<Handle>` `ref`
 // callbacks. JSX gives these no leverage — pan/zoom is owned by
 // `XYPanZoom` (D3-zoom-derived), the selection rectangle owns global
 // pointer capture, connection drag uses `elementFromPoint`, and the
 // node resizer needs raw dimension math.
-export { attachFlowSubsystems, clampDragPositionToParent } from './flow-subsystems'
-export { attachConnectionHandler, attachReconnectionHandler } from './connection'
-export { dispatchNodeType } from './node-type-dispatch'
-export type { NodeInitFn } from './node-type-dispatch'
-export { initNodeResizer, ResizeControlVariant } from './node-resizer'
+export { attachFlowSubsystems, clampDragPositionToParent } from './flow-subsystems.ts'
+export { attachConnectionHandler, attachReconnectionHandler } from './connection.ts'
+export { dispatchNodeType } from './node-type-dispatch.ts'
+export type { NodeInitFn } from './node-type-dispatch.ts'
+export { initNodeResizer, ResizeControlVariant } from './node-resizer.ts'
 export type {
   NodeResizerOptions,
   ControlPosition,
@@ -44,9 +44,9 @@ export type {
   OnResizeEnd,
   ShouldResize,
   ResizeControlDirection,
-} from './node-resizer'
-export { setupKeyboardHandlers, setupNodeSelection, setupSelectionRectangle } from './selection'
-export type { SelectionRectOptions } from './selection'
+} from './node-resizer.ts'
+export { setupKeyboardHandlers, setupNodeSelection, setupSelectionRectangle } from './selection.ts'
+export type { SelectionRectOptions } from './selection.ts'
 
 // Stable CSS class names for the registry-side JSX components.
 // Imported (rather than declared as inline literals) so site/ui's
@@ -73,7 +73,7 @@ export {
   BF_FLOW_MINIMAP,
   BF_FLOW_MINIMAP_MASK,
   XYFLOW_VIEWPORT,
-} from './classes'
+} from './classes.ts'
 
 
 // Types
@@ -108,14 +108,14 @@ export type {
   SelectionMode,
   OnReconnect,
   Connection,
-} from './types'
+} from './types.ts'
 // HandleType is consumed by the JSX `<Handle>` component (registry-side)
 // for its `type` prop typing. Re-exported here from `@xyflow/system` so
 // consumers don't need a separate import.
 export type { HandleType } from '@xyflow/system'
 
 // Compat layer (React Flow API shims for desk migration)
-export { useNodesState, useEdgesState, useReactFlow, addEdge, reconnectEdge } from './compat'
+export { useNodesState, useEdgesState, useReactFlow, addEdge, reconnectEdge } from './compat.ts'
 
 // Re-export useful utilities from @xyflow/system
 export {

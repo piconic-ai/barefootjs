@@ -28,12 +28,12 @@
  * preserve it; a follow-up PR can fix it now that the indent is data-driven.
  */
 
-import { emitRefCall, varSlotId } from '../../utils'
-import { emitAttrUpdate } from '../../emit-reactive'
-import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types'
-import { stringifyBranchLoops } from './branch-loop'
-import { emitListenerLine } from './event-listener'
-import { nameForRegistryRef } from '../../component-scope'
+import { emitRefCall, varSlotId } from '../../utils.ts'
+import { emitAttrUpdate } from '../../emit-reactive.ts'
+import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types.ts'
+import { stringifyBranchLoops } from './branch-loop.ts'
+import { emitListenerLine } from './event-listener.ts'
+import { nameForRegistryRef } from '../../component-scope.ts'
 
 export interface StringifyInsertOptions {
   /** Indent on the `insert(` line itself. */

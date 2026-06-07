@@ -4,24 +4,24 @@
  * Generates client-side JavaScript from Pure IR for hydration.
  */
 
-import type { ComponentIR } from '../types'
-import type { ClientJsContext } from './types'
+import type { ComponentIR } from '../types.ts'
+import type { ClientJsContext } from './types.ts'
 import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
-} from '../adapters/interface'
-import { collectElements, computeLoopSiblingOffsets } from './collect-elements'
-import { generateInitFunction } from './generate-init'
-import { buildReferencesGraph, graphUsedIdentifiers } from './build-references'
-import { addConstantPropRefsToSet } from './init-declarations'
-import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template'
-import { PROPS_PARAM } from './utils'
-import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration'
-import { buildEnvFromCtx } from './compute-inlinability'
-import { nameForRegistryRef } from './component-scope'
-import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports'
-import { isInlinableInTemplate } from '../relocate'
-import { buildSourceMapFromIR, type SourceMapV3 } from './source-map'
+} from '../adapters/interface.ts'
+import { collectElements, computeLoopSiblingOffsets } from './collect-elements.ts'
+import { generateInitFunction } from './generate-init.ts'
+import { buildReferencesGraph, graphUsedIdentifiers } from './build-references.ts'
+import { addConstantPropRefsToSet } from './init-declarations.ts'
+import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
+import { PROPS_PARAM } from './utils.ts'
+import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration.ts'
+import { buildEnvFromCtx } from './compute-inlinability.ts'
+import { nameForRegistryRef } from './component-scope.ts'
+import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports } from './imports.ts'
+import { isInlinableInTemplate } from '../relocate.ts'
+import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
 
 export interface ClientJsResult {
   code: string

@@ -1,4 +1,4 @@
-import type { ChartConfig } from './types'
+import type { ChartConfig } from './types.ts'
 
 /**
  * Apply CSS variables from ChartConfig to a container element.

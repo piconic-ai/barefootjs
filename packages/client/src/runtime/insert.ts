@@ -7,9 +7,9 @@
  */
 
 import { createEffect, untrack } from '@barefootjs/client/reactive'
-import { find } from './query'
-import { setParentScopeId, parseHTML } from './component'
-import { commentScopeRegistry, getCommentScopeBoundary } from './scope'
+import { find } from './query.ts'
+import { setParentScopeId, parseHTML } from './component.ts'
+import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
 import { BF_COND, BF_SCOPE, BF_LOOP_ITEM } from '@barefootjs/shared'
 
 /**

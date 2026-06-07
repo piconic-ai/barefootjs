@@ -7,8 +7,8 @@
 
 import { untrack } from '@barefootjs/client'
 import { addEdge as addEdgeUtil, reconnectEdge as reconnectEdgeUtil, pointToRendererPoint } from '@xyflow/system'
-import { useFlow } from './hooks'
-import type { NodeBase, EdgeBase, Viewport, XYPosition } from './types'
+import { useFlow } from './hooks.ts'
+import type { NodeBase, EdgeBase, Viewport, XYPosition } from './types.ts'
 import type { Connection, NodeChange, EdgeChange } from '@xyflow/system'
 
 /**
@@ -143,7 +143,7 @@ export function useReactFlow<
 /**
  * useViewport — reactive viewport getter.
  */
-export { useViewport } from './hooks'
+export { useViewport } from './hooks.ts'
 
 /**
  * addEdge utility — wraps @xyflow/system's addEdge.

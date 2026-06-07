@@ -1,7 +1,7 @@
 import { untrack } from '@barefootjs/client'
 import { getSmoothStepPath, Position, reconnectEdge as reconnectEdgeUtil } from '@xyflow/system'
-import type { FlowStore, NodeBase, EdgeBase, Connection } from './types'
-import { SVG_NS } from './constants'
+import type { FlowStore, NodeBase, EdgeBase, Connection } from './types.ts'
+import { SVG_NS } from './constants.ts'
 
 /**
  * Build a connection object for the given source handle / target handle pair.

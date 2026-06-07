@@ -7,8 +7,8 @@
  */
 
 import ts from 'typescript'
-import { PROPS_PARAM } from './ir-to-client-js/utils'
-import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template'
+import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
+import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
 
 /**
  * Walk an AST node for destructured-prop value references and add

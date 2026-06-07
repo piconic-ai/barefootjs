@@ -9,12 +9,12 @@
  * and the static-array context.
  */
 
-import type { TopLevelLoop, BranchLoop, LoopChildEvent } from '../../types'
-import { buildChainedArrayExpr, varSlotId, substituteLoopBindings } from '../../utils'
+import type { TopLevelLoop, BranchLoop, LoopChildEvent } from '../../types.ts'
+import { buildChainedArrayExpr, varSlotId, substituteLoopBindings } from '../../utils.ts'
 import type {
   EventDelegationPlan,
   ItemLookup,
-} from './types'
+} from './types.ts'
 
 export function buildDynamicLoopDelegationPlan(elem: TopLevelLoop): EventDelegationPlan {
   return {

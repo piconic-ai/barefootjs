@@ -68,7 +68,7 @@ import {
   type ContextConsumer,
   extractSsrDefaults,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
+import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
 
 /**

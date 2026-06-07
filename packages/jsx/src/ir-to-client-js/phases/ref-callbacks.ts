@@ -5,8 +5,8 @@
  * runs the ref callback every time the branch swaps in.
  */
 
-import type { ClientJsContext } from '../types'
-import { emitRefCall, varSlotId } from '../utils'
+import type { ClientJsContext } from '../types.ts'
+import { emitRefCall, varSlotId } from '../utils.ts'
 
 export function emitRefCallbacks(
   lines: string[],

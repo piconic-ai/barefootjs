@@ -27,8 +27,8 @@ import type {
   NodeDragItem,
   XYPosition,
 } from '@xyflow/system'
-import type { FlowStoreOptions, InternalFlowStore, FitViewOptions } from './types'
-import { INFINITE_EXTENT } from './constants'
+import type { FlowStoreOptions, InternalFlowStore, FitViewOptions } from './types.ts'
+import { INFINITE_EXTENT } from './constants.ts'
 
 const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 }
 

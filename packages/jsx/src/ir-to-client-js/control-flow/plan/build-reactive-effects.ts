@@ -22,27 +22,27 @@ import type {
   LoopChildConditional,
   LoopChildReactiveAttr,
   LoopChildReactiveText,
-} from '../../types'
-import type { LoopParamBinding } from '../../../types'
-import { pickAttrMeta } from '../../../types'
-import { wrapLoopParamAsAccessor } from '../../utils'
-import { addCondAttrToTemplate } from '../../html-template'
+} from '../../types.ts'
+import type { LoopParamBinding } from '../../../types.ts'
+import { pickAttrMeta } from '../../../types.ts'
+import { wrapLoopParamAsAccessor } from '../../utils.ts'
+import { addCondAttrToTemplate } from '../../html-template.ts'
 import {
   buildBranchChildComponentInitsPlan,
   buildBranchEventBindingsPlan,
   buildBranchInnerLoopsPlan,
   buildLoopChildConditionalsPlan,
-} from './build-loop-child-arm'
+} from './build-loop-child-arm.ts'
 import type {
   LoopChildArmPlan,
   LoopChildArmText,
-} from './loop-child-arm'
+} from './loop-child-arm.ts'
 import type {
   NestedConditionalPlan,
   ReactiveAttrSlot,
   ReactiveEffectsPlan,
   ReactiveTextEffect,
-} from './reactive-effects'
+} from './reactive-effects.ts'
 
 export interface BuildReactiveEffectsArgs {
   attrs: readonly LoopChildReactiveAttr[]

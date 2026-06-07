@@ -7,7 +7,7 @@
  */
 
 import { classifyDOMProp } from '@barefootjs/shared'
-import { styleToCss } from './style'
+import { styleToCss } from './style.ts'
 
 /**
  * Convert an object to an HTML attribute string.

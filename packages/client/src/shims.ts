@@ -10,10 +10,10 @@
  * slipped past the `MISSING_USE_CLIENT` check. Either way, it's a bug.
  */
 
-import type { Context } from './context'
-import type { Portal, PortalChildren, PortalOptions } from './runtime/portal'
+import type { Context } from './context.ts'
+import type { Portal, PortalChildren, PortalOptions } from './runtime/portal.ts'
 
-export type { Portal, PortalChildren, PortalOptions, Renderable } from './runtime/portal'
+export type { Portal, PortalChildren, PortalOptions, Renderable } from './runtime/portal.ts'
 
 function browserOnly(name: string): never {
   throw new Error(

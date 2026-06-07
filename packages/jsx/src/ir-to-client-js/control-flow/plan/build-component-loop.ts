@@ -11,13 +11,13 @@
  *   - a fully resolved `ReactiveEffectsPlan` for `childConditionals`
  */
 
-import type { TopLevelLoop } from '../../types'
+import type { TopLevelLoop } from '../../types.ts'
 import {
   buildChainedArrayExpr,
   varSlotId,
   wrapLoopParamAsAccessor,
   irChildrenFreeIds,
-} from '../../utils'
+} from '../../utils.ts'
 import {
   loopKeyFn,
   destructureLoopParam,
@@ -25,10 +25,10 @@ import {
   buildCompSelector,
   isTextOnlyConditional,
   buildChildRefBindings,
-} from '../shared'
-import { irChildrenToJsExpr } from '../../html-template'
-import { buildReactiveEffectsPlan } from './build-reactive-effects'
-import type { ComponentLoopPlan, NestedComponentInit } from './types'
+} from '../shared.ts'
+import { irChildrenToJsExpr } from '../../html-template.ts'
+import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
+import type { ComponentLoopPlan, NestedComponentInit } from './types.ts'
 
 /** @internal — prefer `buildLoopPlan`. */
 export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {

@@ -55,7 +55,7 @@ import {
   type ContextConsumer,
   extractSsrDefaults,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result'
+import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 
 /**
  * Mojo adapter's IRNode render context. Mojo's lowering currently

@@ -16,9 +16,9 @@
  * DOM element reference and `$c` is the right selector.
  */
 
-import type { ClientJsContext } from './types'
-import { collectConditionalSlotIds } from './phases/conditional-slot-ids'
-import { varSlotId } from './utils'
+import type { ClientJsContext } from './types.ts'
+import { collectConditionalSlotIds } from './phases/conditional-slot-ids.ts'
+import { varSlotId } from './utils.ts'
 
 /**
  * Generate `const _slotId = find(...)` declarations for all elements

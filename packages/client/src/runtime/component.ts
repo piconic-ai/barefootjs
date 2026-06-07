@@ -5,14 +5,14 @@
  * Used by reconcileList() when rendering components in loops.
  */
 
-import { getTemplate } from './template'
-import { getComponentInit } from './registry'
-import { getRegisteredDef } from './hydrate'
-import { hydratedScopes } from './hydration-state'
+import { getTemplate } from './template.ts'
+import { getComponentInit } from './registry.ts'
+import { getRegisteredDef } from './hydrate.ts'
+import { hydratedScopes } from './hydration-state.ts'
 import { untrack } from '@barefootjs/client/reactive'
-import { setCurrentScope } from './context'
+import { setCurrentScope } from './context.ts'
 import { BF_SCOPE, BF_KEY, BF_HOST, BF_AT, BF_PARENT_SCOPE_PLACEHOLDER, BF_PLACEHOLDER } from '@barefootjs/shared'
-import type { ComponentDef } from './types'
+import type { ComponentDef } from './types.ts'
 
 // Parent scope ID context for renderChild() inside insert() branch templates.
 // When set, renderChild uses the parent's scope ID as prefix instead of a random ID,

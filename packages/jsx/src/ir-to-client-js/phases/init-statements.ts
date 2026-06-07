@@ -11,7 +11,7 @@
  * the orchestrator. Folding it in keeps the phase self-contained.
  */
 
-import type { ClientJsContext } from '../types'
+import type { ClientJsContext } from '../types.ts'
 
 export function emitInitStatements(lines: string[], ctx: ClientJsContext): void {
   if (ctx.initStatements.length === 0) return

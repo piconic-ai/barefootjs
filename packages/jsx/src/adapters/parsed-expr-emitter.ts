@@ -33,7 +33,7 @@
  *     be added in one place.
  */
 
-import type { ParsedExpr, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '../expression-parser'
+import type { ParsedExpr, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '../expression-parser.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 

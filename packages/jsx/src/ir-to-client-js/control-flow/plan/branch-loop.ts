@@ -15,9 +15,9 @@
  * pair.
  */
 
-import type { CompositeLoopPlan, LoopChildRefBinding } from './loop'
-import type { EventDelegationPlan } from './event-delegation'
-import type { ReactiveEffectsPlan } from './reactive-effects'
+import type { CompositeLoopPlan, LoopChildRefBinding } from './loop.ts'
+import type { EventDelegationPlan } from './event-delegation.ts'
+import type { ReactiveEffectsPlan } from './reactive-effects.ts'
 
 export interface BranchPlainLoopPlan {
   kind: 'plain'

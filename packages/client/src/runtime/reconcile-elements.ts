@@ -5,7 +5,7 @@
  * Used when renderItem returns HTMLElement (via createComponent).
  */
 
-import { hydratedScopes } from './hydration-state'
+import { hydratedScopes } from './hydration-state.ts'
 import { BF_SCOPE, BF_SLOT, BF_COND, BF_KEY, BF_LOOP_START, BF_LOOP_END, loopStartMarker, loopEndMarker } from '@barefootjs/shared'
 
 /**

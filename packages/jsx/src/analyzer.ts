@@ -7,9 +7,9 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types'
-import { rewriteBarePropRefs } from './prop-rewrite'
-import { incrementCounter } from './instrumentation'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types.ts'
+import { rewriteBarePropRefs } from './prop-rewrite.ts'
+import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
   type ConditionalReturn,
@@ -19,10 +19,10 @@ import {
   membersToProperties,
   isComponentFunction,
   isArrowComponentFunction,
-} from './analyzer-context'
-import { createError, createWarning, ErrorCodes } from './errors'
-import path from 'path'
-import fs from 'fs'
+} from './analyzer-context.ts'
+import { createError, createWarning, ErrorCodes } from './errors.ts'
+import path from 'node:path'
+import fs from 'node:fs'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -3849,4 +3849,4 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
 // Export
 // =============================================================================
 
-export { type AnalyzerContext } from './analyzer-context'
+export { type AnalyzerContext } from './analyzer-context.ts'

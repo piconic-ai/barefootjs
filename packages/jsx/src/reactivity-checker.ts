@@ -11,7 +11,7 @@
  */
 
 import ts from 'typescript'
-import { incrementCounter } from './instrumentation'
+import { incrementCounter } from './instrumentation.ts'
 
 const REACTIVE_BRAND = '__reactive'
 

@@ -11,18 +11,18 @@
  * every nesting depth.
  */
 
-import { varSlotId, DATA_BF_PH, keyAttrName } from '../../utils'
-import { emitComponentAndEventSetup } from '../shared'
-import { templateRootIsSvg } from './template-parse'
-import { emitListenerLine } from './event-listener'
-import { nameForRegistryRef } from '../../component-scope'
+import { varSlotId, DATA_BF_PH, keyAttrName } from '../../utils.ts'
+import { emitComponentAndEventSetup } from '../shared.ts'
+import { templateRootIsSvg } from './template-parse.ts'
+import { emitListenerLine } from './event-listener.ts'
+import { nameForRegistryRef } from '../../component-scope.ts'
 import type {
   BranchChildComponentInitsPlan,
   BranchEventBindingsPlan,
   BranchInnerLoopsPlan,
   LoopChildArmPlan,
   LoopChildConditionalPlan,
-} from '../plan/loop-child-arm'
+} from '../plan/loop-child-arm.ts'
 
 /**
  * Emit `addEventListener` setup for a loop-cond branch arm. One qsa() per

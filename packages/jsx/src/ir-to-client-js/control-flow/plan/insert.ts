@@ -6,9 +6,9 @@
  * `ArmBody.conditionals`, so one stringifier handles arbitrary depth.
  */
 
-import type { AttrMeta } from '../../../types'
-import type { ScopeRef } from './common'
-import type { BranchLoopPlan } from './branch-loop'
+import type { AttrMeta } from '../../../types.ts'
+import type { ScopeRef } from './common.ts'
+import type { BranchLoopPlan } from './branch-loop.ts'
 
 /**
  * Plan for a single `insert(scope, slotId, () => cond, trueArm, falseArm)`

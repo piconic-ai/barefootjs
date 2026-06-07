@@ -2,7 +2,7 @@
  * Import detection and DOM import management.
  */
 
-import type { ComponentIR, IRNode } from '../types'
+import type { ComponentIR, IRNode } from '../types.ts'
 
 // All exports from @barefootjs/client/runtime that may be used in generated code
 export const RUNTIME_IMPORT_CANDIDATES = [

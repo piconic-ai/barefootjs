@@ -12,8 +12,8 @@
 
 import ts from 'typescript'
 
-import type { ComponentIR, IRMetadata, IRNode, IRElement, TypeInfo } from './types'
-import { isBooleanAttr } from './html-constants'
+import type { ComponentIR, IRMetadata, IRNode, IRElement, TypeInfo } from './types.ts'
+import { isBooleanAttr } from './html-constants.ts'
 
 /**
  * A `const x = useContext(SomeContext)` consumer in a component body. SSR

@@ -5,22 +5,22 @@
  */
 
 // Hono Adapter for JSX compilation
-export { HonoAdapter, honoAdapter } from './adapter'
-export type { HonoAdapterOptions } from './adapter'
+export { HonoAdapter, honoAdapter } from './adapter/index.ts'
+export type { HonoAdapterOptions } from './adapter/index.ts'
 
 // BfScripts is exported from a separate entry point to avoid JSX runtime issues in tests
 // Usage: import { BfScripts } from '@barefootjs/hono/scripts'
-export type { CollectedScript } from './scripts'
+export type { CollectedScript } from './scripts.tsx'
 
 // Portal components for SSR
 // Usage: import { BfPortals, Portal } from '@barefootjs/hono/portals'
-export type { CollectedPortal } from './portals'
-export type { PortalProps } from './portal-ssr'
+export type { CollectedPortal } from './portals.tsx'
+export type { PortalProps } from './portal-ssr.tsx'
 
 // Async streaming boundary
 // Usage: import { BfAsync } from '@barefootjs/hono/async'
-export type { BfAsyncProps } from './async'
+export type { BfAsyncProps } from './async.tsx'
 
 // Dialog context for scopeId sharing
 // Usage: import { DialogContext, useDialogContext } from '@barefootjs/hono/dialog-context'
-export type { DialogContextValue } from './dialog-context'
+export type { DialogContextValue } from './dialog-context.tsx'

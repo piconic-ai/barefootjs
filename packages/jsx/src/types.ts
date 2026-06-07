@@ -4,7 +4,7 @@
  * JSX-independent intermediate representation for multi-backend support.
  */
 
-import type { ParsedExpr, ParsedStatement, SortComparator } from './expression-parser'
+import type { ParsedExpr, ParsedStatement, SortComparator } from './expression-parser.ts'
 
 // =============================================================================
 // Source Location (for Error Reporting)

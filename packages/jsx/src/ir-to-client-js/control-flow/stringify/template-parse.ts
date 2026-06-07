@@ -20,7 +20,7 @@
  * extra level to get the real root.
  */
 
-import { findInterpolationEnd, findTopLevelTemplateLiterals } from '../../../scanner/js-scanner'
+import { findInterpolationEnd, findTopLevelTemplateLiterals } from '../../../scanner/js-scanner.ts'
 
 const SVG_ROOT_TAGS = new Set([
   'svg',

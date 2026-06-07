@@ -22,9 +22,9 @@ import type {
   ParamInfo,
   ConstantInfo,
   FunctionInfo,
-} from './types'
-import { isReactiveType } from './reactivity-checker'
-import { incrementCounter } from './instrumentation'
+} from './types.ts'
+import { isReactiveType } from './reactivity-checker.ts'
+import { incrementCounter } from './instrumentation.ts'
 
 /**
  * Subset of `AnalyzerContext` / `TransformContext` that this resolver reads.
@@ -251,7 +251,7 @@ function collectReactiveBrandRefs(
  * recorded `value`.
  */
 function resolveConstantInitializerRefs(
-  c: import('./types').ConstantInfo,
+  c: import('./types.ts').ConstantInfo,
   env: BindingEnvironment,
   visited: Set<string>
 ): FreeReference[] {
