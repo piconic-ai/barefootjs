@@ -1,4 +1,5 @@
 ---
+"@barefootjs/jsx": patch
 "@barefootjs/go-template": patch
 "@barefootjs/mojolicious": patch
 "@barefootjs/xslate": patch
@@ -17,4 +18,4 @@ Only the object-rest-via-member shape is graduated. The other three rest-destruc
 - `rest-destructure-array-in-map` (`[a, ...t]`) needs index/slice,
 - `rest-destructure-nested-in-map` (`{ cells: [h, ...r] }`) needs nested index paths.
 
-A shared supportability gate (`destructureBindingsSupportable`) checks the IR's `paramBindings` (simple `.field` paths + object-rest, no rest-spread) so unsupported shapes keep the existing diagnostic. Verified against real Go 1.25.6 / Mojolicious 9.35 / Text::Xslate v3.5.9; Hono reference snapshots unchanged.
+A shared IR-level gate (`isLowerableObjectRestDestructure`, exported from `@barefootjs/jsx`) keeps every other shape on the existing BF104 diagnostic. It walks the whole loop subtree (elements, components, conditionals, async, providers, template literals) and refuses when the rest binding is spread or used as a bare value (`String(rest)`, `{rest}`) — those need a residual object — as well as when the loop also has a `.filter()` predicate. The Go adapter suffixes its synthetic range var with the nesting depth (`$bfItem0`, `$bfItem1`) so nested destructure loops don't shadow each other. Verified against real Go 1.25.6 / Mojolicious 9.35 / Text::Xslate v3.5.9; Hono reference snapshots unchanged.
