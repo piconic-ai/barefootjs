@@ -89,7 +89,10 @@ export function buildStaticBudget(
   // graph doesn't expose.
   const summary = buildComponentSummary(source, filePath, componentName, program)
 
-  const subscriptions = graph.signals.reduce((n, s) => n + s.consumers.length, 0)
+  const subscriptions = graph.signals.reduce(
+    (n, s) => n + s.consumers.filter(c => !isEventHandlerConsumer(c)).length,
+    0,
+  )
 
   const fanOut: FanOutEntry[] = graph.signals
     .map(s => {
@@ -116,9 +119,26 @@ export function buildStaticBudget(
 }
 
 /**
+ * An event handler *reads* a signal (e.g. `setCount(count() + 1)`) but runs
+ * outside any reactive scope, so it does not re-run when the signal changes —
+ * it is not a reactive subscriber and must be excluded from fan-out /
+ * subscription counts (cross-checked against the dynamic run, #1690 §4.2.4).
+ */
+function isEventHandlerEntry(kind: string, name: string): boolean {
+  return kind === 'dom' && /^\w+ handler "/.test(name)
+}
+
+/** As above, for the `kind:name` consumer strings on `SignalNode.consumers`. */
+function isEventHandlerConsumer(consumer: string): boolean {
+  const i = consumer.indexOf(':')
+  return i > 0 && isEventHandlerEntry(consumer.slice(0, i), consumer.slice(i + 1))
+}
+
+/**
  * Distinct transitive subscribers of a signal/memo. Walks the same tagged
  * `consumers` tree `traceUpdatePath` builds (`debug.ts`), deduplicating across
- * branches so a diamond dependency counts each subscriber once.
+ * branches so a diamond dependency counts each subscriber once. Event handlers
+ * are excluded — they read but don't react.
  */
 function transitiveSubscriberCount(graph: ComponentGraph, name: string): number {
   const path = traceUpdatePath(graph, name)
@@ -126,7 +146,7 @@ function transitiveSubscriberCount(graph: ComponentGraph, name: string): number 
   const seen = new Set<string>()
   const walk = (entries: UpdatePathEntry[]): void => {
     for (const e of entries) {
-      seen.add(`${e.kind}:${e.name}`)
+      if (!isEventHandlerEntry(e.kind, e.name)) seen.add(`${e.kind}:${e.name}`)
       walk(e.children)
     }
   }
