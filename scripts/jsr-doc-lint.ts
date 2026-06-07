@@ -15,7 +15,14 @@
 //      package.json by invoking `scripts/jsr-publish.ts --dry-run --keep`
 //      (the same single source of truth release + ci-jsr-check use), so the
 //      `exports` linted here are exactly the entries JSR documents.
-//   2. Run `deno doc --lint` on those entries per package.
+//   2. Run `deno doc --lint` on those entries per package, then keep only
+//      diagnostics that point at the package's OWN source files. `deno doc
+//      --lint` walks the entire documentation graph and lints every symbol
+//      reachable from the public API — including third-party / sibling types
+//      the package merely references (e.g. `StandardSchemaV1`, the runtime's
+//      `Reactive`/`Memo`, a dependency's re-exported `.d.ts`). JSR's "docs for
+//      most symbols" score only counts a package's own declared symbols, so
+//      external diagnostics are reported and ignored, not failed on.
 //   3. Tier the result (mirrors ci-jsr-check's deno-check idiom):
 //        ENFORCE — fully-documented packages whose coverage must not
 //                  regress; a lint failure exits non-zero.
@@ -32,7 +39,7 @@
 //
 // Requires the Deno CLI on PATH (`deno doc`).
 
-import { resolve, dirname, join } from 'node:path'
+import { resolve, dirname, join, sep } from 'node:path'
 import { existsSync, readFileSync, rmSync, readdirSync } from 'node:fs'
 import { $ } from 'bun'
 
@@ -77,6 +84,52 @@ const manifests = readdirSync(packagesDir)
   .map(d => join(packagesDir, d, 'deno.json'))
   .filter(existsSync)
 
+// ── Parse `deno doc --lint` diagnostics, scoped to a package's own src ─
+// `deno doc --lint` walks the whole documentation graph and lints every
+// symbol reachable from the public API — including third-party and sibling
+// types the package merely *references* (e.g. `StandardSchemaV1`, the
+// runtime's `Reactive`/`Memo`, or a dependency's re-exported `.d.ts`). JSR's
+// "docs for most symbols" score, by contrast, only counts a package's own
+// declared symbols, which is all the author can document. So we pair each
+// `error[rule]` with the file it points at (`--> path:line:col`) and keep
+// only the ones inside the package's own directory.
+const ANSI = /\x1b\[[0-9;]*m/g
+interface LintResult {
+  own: string[] // formatted in-package diagnostics (the author can fix these)
+  external: number // diagnostics on referenced third-party / sibling types
+  ranOk: boolean // false when deno doc itself failed to run (e.g. bad import)
+  raw: string
+}
+function lint(pkgDir: string, stdout: string, stderr: string, exitCode: number): LintResult {
+  const text = (stderr + stdout).replace(ANSI, '')
+  const own: string[] = []
+  let external = 0
+  let total = 0
+  let rule: string | null = null
+  for (const line of text.split('\n')) {
+    const r = line.match(/error\[([a-z-]+)\]/)
+    if (r) {
+      rule = r[1]
+      total++
+      continue
+    }
+    const loc = line.match(/-->\s*(.+?):(\d+):(\d+)\s*$/)
+    if (loc && rule) {
+      const [, file, ln, col] = loc
+      if (file.startsWith(pkgDir + sep) && !file.includes(`${sep}node_modules${sep}`)) {
+        own.push(`    ${rule}  ${file.slice(pkgDir.length + 1)}:${ln}:${col}`)
+      } else {
+        external++
+      }
+      rule = null
+    }
+  }
+  // exitCode != 0 with zero parsed diagnostics means deno doc never got far
+  // enough to lint (module resolution / parse failure) — surface it rather
+  // than silently passing.
+  return { own, external, ranOk: !(exitCode !== 0 && total === 0), raw: text.trim() }
+}
+
 // ── Lint each package's exported entries ──────────────────────────────
 const failed: string[] = []
 const warned: string[] = []
@@ -101,10 +154,28 @@ try {
       `\n  deno doc --lint  ${m.name} (${entries.length} entr${entries.length === 1 ? 'y' : 'ies'})${enforced ? '  [enforced]' : ''}`,
     )
 
-    const res = await $`deno doc --lint ${entries}`.cwd(pkgDir).nothrow()
-    if (res.exitCode !== 0) {
-      if (enforced) failed.push(m.name)
-      else warned.push(m.name)
+    const res = await $`deno doc --lint ${entries}`.cwd(pkgDir).nothrow().quiet()
+    const { own, external, ranOk, raw } = lint(
+      pkgDir,
+      res.stdout.toString(),
+      res.stderr.toString(),
+      res.exitCode,
+    )
+
+    if (!ranOk) {
+      console.log(`    could not run deno doc --lint:\n${raw}`)
+      ;(enforced ? failed : warned).push(m.name)
+      continue
+    }
+
+    if (external > 0) {
+      console.log(`    ${external} diagnostic(s) on referenced external types — ignored (not this package's symbols)`)
+    }
+    if (own.length > 0) {
+      console.log(own.join('\n'))
+      ;(enforced ? failed : warned).push(m.name)
+    } else {
+      console.log('    ok — all own exported symbols documented')
     }
   }
 } finally {
