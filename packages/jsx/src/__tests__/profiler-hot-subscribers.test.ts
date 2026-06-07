@@ -166,7 +166,7 @@ describe('analyzeHotSubscribers', () => {
     const out = formatHotSubscribers(analyzeHotSubscribers(events, index), 12)
     // 12 shown + the "… and N more" summary line.
     expect(out).toContain('… and 18 more')
-    expect((out.match(/ runs,/g) ?? []).length).toBe(12)
+    expect((out.match(/\d+×/g) ?? []).length).toBe(12)
   })
 
   test('formats a readable report with a hot note', () => {
@@ -178,6 +178,19 @@ describe('analyzeHotSubscribers', () => {
     ]
     const out = formatHotSubscribers(analyzeHotSubscribers(events, index))
     expect(out).toContain('hot subscribers')
-    expect(out).toContain('runs/turn')
+    expect(out).toMatch(/⚠ [\d.]+\/turn/) // hot note
+    expect(out).toContain('█') // proportional bar
+  })
+
+  test('bars are proportional to runs — the busiest is the longest', () => {
+    seq = 0
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'Calc#memo:a' }), // 1 run
+      ev('effectEnter', { subscriber: 'Calc#memo:b' }),
+      ev('effectEnter', { subscriber: 'Calc#memo:b' }), // 2 runs → ranked first, full bar
+    ]
+    const lines = formatHotSubscribers(analyzeHotSubscribers(events, index)).split('\n').filter(l => l.includes('█'))
+    const barLen = (l: string) => (l.match(/█/g) ?? []).length
+    expect(barLen(lines[0])).toBeGreaterThan(barLen(lines[1]))
   })
 })

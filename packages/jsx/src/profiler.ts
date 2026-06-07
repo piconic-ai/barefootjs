@@ -563,6 +563,25 @@ export function analyzeHotSubscribers(
   return { kind: 'hot-subscribers', subscribers, unattributed: gaps }
 }
 
+const BAR_EIGHTHS = ['', '▏', '▎', '▍', '▌', '▋', '▊', '▉']
+
+/** Pad or ellipsize `s` to exactly `width` cells so columns stay aligned. */
+function fitLabel(s: string, width: number): string {
+  return s.length > width ? `${s.slice(0, width - 1)}…` : s.padEnd(width)
+}
+
+/**
+ * A proportional horizontal bar for `value/max`, in eighth-block precision
+ * (mitata-style), left-padded to `width` cells. Empty when value/max ≤ 0.
+ */
+function bar(value: number, max: number, width: number): string {
+  if (max <= 0 || value <= 0) return ''.padEnd(width)
+  const units = Math.min(value / max, 1) * width
+  const full = Math.floor(units)
+  const rem = Math.round((units - full) * 8)
+  return ('█'.repeat(full) + (rem > 0 ? BAR_EIGHTHS[rem] : '')).padEnd(width)
+}
+
 export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): string {
   const lines: string[] = []
   lines.push('hot subscribers — most run / most time')
@@ -574,13 +593,18 @@ export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): strin
   // the analyzer can't yet place), so a big list (e.g. a calendar grid) stays
   // readable instead of dumping a thousand rows.
   const shown = r.subscribers.slice(0, limit)
+  // Bars are proportional to `runs` — the deterministic ranking metric — so the
+  // chart is stable across runs (unlike wall-clock ms).
+  const maxRuns = shown.reduce((m, s) => Math.max(m, s.runs), 0)
   for (const s of shown) {
     const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
     const base = s.name ?? s.subscriber
     // Binding names already carry their type (`s1 (attribute)`); don't double up.
     const label = s.kind && !base.endsWith(')') ? `${base} (${s.kind})` : base
-    const note = s.hot ? `   ⚠ hot: ${s.runsPerTurn.toFixed(1)} runs/turn` : ''
-    lines.push(`  ${label.padEnd(20)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
+    const note = s.hot ? `  ⚠ ${s.runsPerTurn.toFixed(1)}/turn` : ''
+    lines.push(
+      `  ${fitLabel(label, 24)} ${bar(s.runs, maxRuns, 14)} ${String(s.runs).padStart(3)}×  ${s.totalMs.toFixed(1)}ms  (${where})${note}`,
+    )
   }
   if (r.subscribers.length > shown.length) {
     lines.push(`  … and ${r.subscribers.length - shown.length} more`)
@@ -693,11 +717,16 @@ export function formatBatchAdvisor(r: BatchAdvisorResult): string {
   if (r.candidates.length === 0) {
     lines.push('  (no turn would benefit from batching)')
   }
+  const maxSavings = r.candidates.reduce((m, c) => Math.max(m, c.savings), 0)
   for (const c of r.candidates) {
     const safe = c.safety === 'safe' ? ', safe' : c.safety === 'unsafe' ? ', UNSAFE' : ', safety unverified'
     const where = c.loc ? `  (${c.loc.file}:${c.loc.line})` : ''
-    const label = (c.handler ?? c.turn).padEnd(20)
-    lines.push(`  ${label} batch candidate ${c.totalRuns}→${c.distinctSubscribers} (saves ${c.savings}${safe})${where}`)
+    const label = fitLabel(c.handler ?? c.turn, 24)
+    // Bar proportional to savings (deterministic) — the bigger the bar, the more
+    // effect re-runs a `batch()` would collapse.
+    lines.push(
+      `  ${label} ${bar(c.savings, maxSavings, 14)} batch candidate ${c.totalRuns}→${c.distinctSubscribers} (saves ${c.savings}${safe})${where}`,
+    )
   }
   return lines.join('\n')
 }
