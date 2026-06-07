@@ -62,6 +62,7 @@ import {
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   collectContextConsumers,
+  isLowerableObjectRestDestructure,
   type ContextConsumer,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
@@ -3890,14 +3891,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Module pure-string const (e.g. `const baseClasses = '...'` used in a
     // className template literal): inline the literal value rather than
     // emit `{{.BaseClasses}}` against a Props field that never exists.
-    const inlined = this.resolveModuleStringConst(name)
-    if (inlined !== null) return inlined
     // Destructure-param bindings (`.map(({ id, ...rest }) => …)`): resolve the
-    // binding name to its accessor on the range var. Innermost loop wins. (#1310)
+    // binding name to its accessor on the range var. Innermost loop wins, and
+    // this runs *before* module-const inlining so a binding whose name collides
+    // with a module string const still resolves to the loop item. (#1310)
     for (let i = this.loopBindingStack.length - 1; i >= 0; i--) {
       const acc = this.loopBindingStack[i].get(name)
       if (acc !== undefined) return acc
     }
+    const inlined = this.resolveModuleStringConst(name)
+    if (inlined !== null) return inlined
     const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
     if (currentLoopParam && name === currentLoopParam) return '.'
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
@@ -5612,45 +5615,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * True when a destructure loop param is the lowerable object-rest shape:
-   * every binding is either a simple `.field` access or an object-rest, and the
-   * rest binding (if any) is only read via member access — not spread `{...rest}`
-   * (which needs a residual object) and not an array-index / nested path. (#1310)
-   */
-  private destructureBindingsSupportable(loop: IRLoop): boolean {
-    const bindings = loop.paramBindings
-    if (!bindings || bindings.length === 0) return false
-    for (const b of bindings) {
-      if (b.rest) {
-        if (b.rest.kind !== 'object') return false // array-rest → index/slice
-      } else if (!/^\.[A-Za-z_$][\w$]*$/.test(b.path)) {
-        return false // only a single `.field` path (no `[0]` / `.cells[0]`)
-      }
-    }
-    const restNames = bindings.filter(b => b.rest).map(b => b.name)
-    if (restNames.length > 0 && this.loopBodySpreadsAny(loop.children, restNames)) {
-      return false
-    }
-    return true
-  }
-
-  /** True when any element in the subtree spreads one of `names` (`{...rest}`). */
-  private loopBodySpreadsAny(nodes: IRNode[], names: string[]): boolean {
-    for (const n of nodes) {
-      if (n.type === 'element') {
-        const el = n as IRElement
-        for (const a of el.attrs) {
-          if (a.value.kind === 'spread' && names.includes(a.value.expr.trim())) return true
-        }
-        if (this.loopBodySpreadsAny(el.children, names)) return true
-      } else if ('children' in n && Array.isArray((n as { children?: IRNode[] }).children)) {
-        if (this.loopBodySpreadsAny((n as { children: IRNode[] }).children, names)) return true
-      }
-    }
-    return false
-  }
-
-  /**
    * Map each destructure binding to its Go accessor on the range var: a named
    * binding → `$<rangeVar>.<Field>`, an object-rest binding → the bare
    * `$<rangeVar>` so the member emitter renders `rest.flag` → `$<rangeVar>.Flag`.
@@ -5696,7 +5660,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // / nested / rest-spread shapes (`[a, ...t]`, `{ cells: [h] }`, `{...rest}`)
     // still need machinery Go's `{{range}}` can't express inline → BF104. (#1310)
     const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && this.destructureBindingsSupportable(loop)
+    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
     if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
@@ -5722,9 +5686,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `{{range $k, $_ := .Arr}}` makes `$k` the 0-based index.
     let rangeIndex = index
     // A supported destructure param can't be the Go range var verbatim
-    // (`$bfItem` is a synthetic single name; bindings resolve against it via
-    // `loopBindingStack`); otherwise the value var is the param itself.
-    let rangeValue = supportableDestructure ? 'bfItem' : param
+    // (`$bfItemN` is a synthetic single name; bindings resolve against it via
+    // `loopBindingStack`); otherwise the value var is the param itself. The
+    // suffix is the current nesting depth so an inner destructure loop doesn't
+    // shadow an outer one's range var (a binding referenced across levels keeps
+    // resolving against its own item).
+    let rangeValue = supportableDestructure ? `bfItem${this.loopBindingStack.length}` : param
     if (loop.iterationShape === 'keys') {
       rangeIndex = param
       rangeValue = '_'

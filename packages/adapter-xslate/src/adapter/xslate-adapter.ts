@@ -66,6 +66,7 @@ import {
   evalStringArrayJoin,
   extractArrowBodyExpression,
   collectContextConsumers,
+  isLowerableObjectRestDestructure,
   type ContextConsumer,
   extractSsrDefaults,
 } from '@barefootjs/jsx'
@@ -782,44 +783,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   // Loop Rendering
   // ===========================================================================
 
-  /**
-   * True when a destructure loop param is the lowerable object-rest shape:
-   * every binding is a simple `.field` or an object-rest read via member access
-   * (not spread `{...rest}`, not an array-index / nested path). (#1310)
-   */
-  private destructureBindingsSupportable(loop: IRLoop): boolean {
-    const bindings = loop.paramBindings
-    if (!bindings || bindings.length === 0) return false
-    for (const b of bindings) {
-      if (b.rest) {
-        if (b.rest.kind !== 'object') return false
-      } else if (!/^\.[A-Za-z_$][\w$]*$/.test(b.path)) {
-        return false
-      }
-    }
-    const restNames = bindings.filter(b => b.rest).map(b => b.name)
-    if (restNames.length > 0 && this.loopBodySpreadsAny(loop.children, restNames)) {
-      return false
-    }
-    return true
-  }
-
-  /** True when any element in the subtree spreads one of `names` (`{...rest}`). */
-  private loopBodySpreadsAny(nodes: IRNode[], names: string[]): boolean {
-    for (const n of nodes) {
-      if (n.type === 'element') {
-        const el = n as IRElement
-        for (const a of el.attrs) {
-          if (a.value.kind === 'spread' && names.includes(a.value.expr.trim())) return true
-        }
-        if (this.loopBodySpreadsAny(el.children, names)) return true
-      } else if ('children' in n && Array.isArray((n as { children?: IRNode[] }).children)) {
-        if (this.loopBodySpreadsAny((n as { children: IRNode[] }).children, names)) return true
-      }
-    }
-    return false
-  }
-
   renderLoop(loop: IRLoop): string {
     // Client-only loops: skip SSR rendering entirely
     if (loop.clientOnly) return ''
@@ -834,7 +797,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // so the body's `$id` / `$rest.flag` resolve. Array-index / nested /
     // rest-spread shapes still can't unpack a tuple → BF104. (#1310)
     const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && this.destructureBindingsSupportable(loop)
+    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
     if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
