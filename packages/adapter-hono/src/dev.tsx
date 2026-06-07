@@ -75,7 +75,12 @@ export function createDevReloader(
 
     const readBuildId = async (): Promise<string> => {
       try {
-        return (await readFile(buildIdPath, 'utf8')).trim()
+        // Decode the bytes explicitly rather than relying on `readFile`'s
+        // string-encoding overload: Deno's `node:fs/promises` types resolve
+        // the positional-encoding call to `NonSharedBuffer` (no `.trim`),
+        // which breaks `deno check`. `TextDecoder` is portable across Node,
+        // Deno, and Workers and mirrors the `TextEncoder` use just below.
+        return new TextDecoder().decode(await readFile(buildIdPath)).trim()
       } catch {
         return ''
       }
