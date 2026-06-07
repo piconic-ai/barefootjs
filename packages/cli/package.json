@@ -28,10 +28,14 @@
   },
   "dependencies": {
     "esbuild": "^0.25.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/shared": "workspace:*"
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "@happy-dom/global-registrator": "^20.0.11",
+    "happy-dom": "^20.0.11"
   }
 }

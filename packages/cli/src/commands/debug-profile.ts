@@ -1,13 +1,15 @@
 // bf debug profile <component> — reactive performance profiler (#1690).
 //
 // Three modes:
-//   bf debug profile <component>              Static reactivity budget (SR5, no run)
-//   bf debug profile <component> --diff <ref> Compile-diff regression (SR6, no run)
-//   bf debug profile --scenario <file>        Dynamic measured run (SR1–SR4) — not yet implemented
+//   bf debug profile <component>                Static reactivity budget (SR5, no run)
+//   bf debug profile <component> --diff <ref>   Compile-diff regression (SR6, no run)
+//   bf debug profile <component> --scenario auto Dynamic measured run (SR1–SR4): mount
+//                                                the instrumented build, fire each handler,
+//                                                rank hot subscribers + batch candidates
 //
 // The static modes are pure functions of the IR (reuse @barefootjs/jsx's
-// shipped static analysis). The dynamic mode is specified in spec/profiler.md
-// and prints a pointer until the measurement substrate lands.
+// shipped static analysis). The dynamic mode drives the component in happy-dom
+// and joins the recorded event stream to the IR.
 
 import { execFileSync } from 'child_process'
 import { readFileSync } from 'fs'
@@ -43,24 +45,13 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     diffStaticBudget,
     formatBudgetDiff,
     buildProfileReport,
+    formatProfileReport,
   } = await import('@barefootjs/jsx')
-
-  // -- Dynamic mode (SR1–SR4): specified, not yet implemented ---------------
-  if (flags.scenario) {
-    try {
-      buildProfileReport(flags.scenario)
-    } catch (err) {
-      console.error((err as Error).message)
-      process.exit(1)
-    }
-    return
-  }
 
   const componentName = flags.positional[0]
   if (!componentName) {
     console.error('Error: Component name required.')
-    console.error('Usage: bf debug profile <component> [--diff <ref>] [--fanout <n>] [--json]')
-    console.error('       bf debug profile --scenario <file>   (dynamic run — see spec/profiler.md)')
+    console.error('Usage: bf debug profile <component> [--diff <ref>] [--scenario auto] [--fanout <n>] [--json]')
     process.exit(1)
   }
 
@@ -74,6 +65,37 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   }
 
   const source = readFileSync(resolved.filePath, 'utf-8')
+
+  // -- Dynamic mode (SR1–SR4): mount the instrumented build and measure -----
+  if (flags.scenario) {
+    if (flags.scenario !== 'auto') {
+      console.error(`Error: only --scenario auto is supported (got "${flags.scenario}").`)
+      console.error('  auto = mount the component and fire each interactive element once.')
+      process.exit(1)
+    }
+    try {
+      const { runAutoScenario } = await import('../lib/scenario-driver')
+      const { events, fired } = await runAutoScenario(source, resolved.filePath, resolved.componentName)
+      const report = buildProfileReport({
+        source,
+        filePath: resolved.filePath,
+        componentName: resolved.componentName,
+        scenario: 'auto',
+        events,
+      })
+      if (ctx.jsonFlag) {
+        console.log(JSON.stringify(report, null, 2))
+      } else {
+        console.log(formatProfileReport(report))
+        if (fired === 0) console.log('  note: no interactive elements were found to fire.')
+      }
+    } catch (err) {
+      console.error(`Error: ${(err as Error).message}`)
+      process.exit(1)
+    }
+    return
+  }
+
   const head = buildStaticBudget(source, resolved.filePath, resolved.componentName, {
     fanOutThreshold: flags.fanOutThreshold,
   })

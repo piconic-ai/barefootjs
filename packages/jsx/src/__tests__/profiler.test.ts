@@ -13,6 +13,7 @@ import {
   formatStaticBudget,
   formatBudgetDiff,
   buildProfileReport,
+  formatProfileReport,
   parseProfilerId,
   buildIdIndex,
   joinProfilerEvents,
@@ -167,8 +168,39 @@ describe('buildIdIndex + joinProfilerEvents (SR4 join)', () => {
   })
 })
 
-describe('buildProfileReport (dynamic seam, SR1–SR4)', () => {
-  test('points at the spec until the substrate lands', () => {
-    expect(() => buildProfileReport('./scenarios/x.ts')).toThrow(/spec\/profiler\.md/)
+describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
+  const src = `
+    'use client'
+    import { createSignal, createMemo } from '@barefootjs/client'
+    export function Calc() {
+      const [count, setCount] = createSignal(0)
+      const a = createMemo(() => count() * 2)
+      return <button onClick={() => setCount(count() + 1)}>{a()}</button>
+    }
+  `
+  let n = 0
+  const ev = (type: ProfilerEvent['type'], f: Partial<ProfilerEvent> = {}): ProfilerEvent =>
+    ({ type, seq: n++, turn: null, ...f })
+
+  test('assembles hot subscribers, batch advisor, and coverage from a stream', () => {
+    n = 0
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'Calc#memo:a' }), // mount
+      ev('turnBegin', { handlerId: 'Calc#handler:s0:click' }),
+      ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s0:click' }),
+      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 2, turn: 'Calc#handler:s0:click' }),
+      ev('turnEnd', {}),
+    ]
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    expect(r.kind).toBe('profile')
+    expect(r.componentName).toBe('Calc')
+    expect(r.turns).toBe(1)
+    expect(r.hotSubscribers.subscribers[0].name).toBe('a')
+    expect(r.coverage.handlersFired).toBe(1)
+    expect(r.coverage.handlersTotal).toBeGreaterThanOrEqual(1)
+    const out = formatProfileReport(r)
+    expect(out).toContain('Calc — profile')
+    expect(out).toContain('hot subscribers')
+    expect(out).toContain('coverage:')
   })
 })

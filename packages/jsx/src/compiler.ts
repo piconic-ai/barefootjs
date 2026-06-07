@@ -251,6 +251,7 @@ function compileMultipleComponents(
         options.localImportPrefixes,
         undefined,
         multiAdapterCaps,
+        options.profile,
       ) || undefined,
       adapterTypes: adapterOutput.types || undefined,
     })

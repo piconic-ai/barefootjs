@@ -20,6 +20,7 @@
 import {
   buildComponentAnalysis,
   buildComponentSummary,
+  buildEventSummary,
   traceUpdatePath,
   type ComponentGraph,
   type UpdatePathEntry,
@@ -618,24 +619,96 @@ export function formatBatchAdvisor(r: BatchAdvisorResult): string {
   return lines.join('\n')
 }
 
-// -- Dynamic report (SR1–SR4) — placeholder seam ------------------------------
+// -- Dynamic report (SR1–SR4 + analyses, SR7) ---------------------------------
+
+export interface ProfileCoverage {
+  /** Distinct handlers exercised (turns observed). */
+  handlersFired: number
+  /** Handlers the IR knows about (`buildEventSummary`). */
+  handlersTotal: number
+  /** SR4 ids the IR could not resolve — the honest gap. */
+  unattributed: UnattributedId[]
+}
 
 export interface ProfileReport {
   kind: 'profile'
+  componentName: string
+  sourceFile: string
+  /** Scenario label (e.g. `'auto'` or a scenario file name). */
   scenario: string
-  // subscribers, findings, coverage — see spec/profiler.md §6.3.
+  /** Total recorded events. */
+  events: number
+  /** Distinct interaction turns. */
+  turns: number
+  hotSubscribers: HotSubscribersResult
+  batchAdvisor: BatchAdvisorResult
+  coverage: ProfileCoverage
+}
+
+export interface ProfileReportInput {
+  source: string
+  filePath: string
+  componentName?: string
+  scenario: string
+  /** The recorded event log from driving the instrumented component (SR2). */
+  events: readonly ProfilerEvent[]
 }
 
 /**
- * Dynamic, scenario-driven profile (SR1–SR4 + analyses). Not yet implemented —
- * the instrumented runtime, compiler turn markers, and IR join are specified in
- * `spec/profiler.md`. This seam keeps the public surface stable for the CLI
- * while the dynamic half is built.
+ * Assemble a dynamic profile (SR1–SR4 + analyses, SR7) from a recorded event
+ * stream. Pure: the DOM run that *produces* `events` lives in the driver (the
+ * CLI's scenario harness); this joins them to the IR and ranks findings.
+ * Deterministic — same stream + same source ⇒ same report.
  */
-export function buildProfileReport(_scenario: string): ProfileReport {
-  throw new Error(
-    'bf debug profile --scenario is not implemented yet. ' +
-      'The dynamic measurement substrate (SR1–SR4) is specified in spec/profiler.md. ' +
-      'Run `bf debug profile <component>` for the static reactivity budget (SR5).',
-  )
+export function buildProfileReport(input: ProfileReportInput): ProfileReport {
+  const { source, filePath, componentName, scenario, events } = input
+  const { graph } = buildComponentAnalysis(source, filePath, componentName)
+  const index = buildIdIndex(graph)
+
+  const hotSubscribers = analyzeHotSubscribers(events, index)
+  const batchAdvisor = analyzeBatchAdvisor(events)
+  const { unattributed } = joinProfilerEvents(events, index)
+
+  const turnIds = new Set<string>()
+  for (const e of events) if (e.turn !== null) turnIds.add(e.turn)
+
+  let handlersTotal = 0
+  try {
+    handlersTotal = buildEventSummary(source, filePath, componentName).events.length
+  } catch {
+    handlersTotal = 0
+  }
+
+  return {
+    kind: 'profile',
+    componentName: graph.componentName,
+    sourceFile: graph.sourceFile,
+    scenario,
+    events: events.length,
+    turns: turnIds.size,
+    hotSubscribers,
+    batchAdvisor,
+    coverage: {
+      handlersFired: turnIds.size,
+      handlersTotal,
+      unattributed,
+    },
+  }
+}
+
+export function formatProfileReport(r: ProfileReport): string {
+  const lines: string[] = []
+  lines.push(`${r.componentName} — profile (scenario: ${r.scenario})`)
+  lines.push(`  ${r.events} events across ${r.turns} turn(s)`)
+  lines.push('')
+  lines.push(formatHotSubscribers(r.hotSubscribers))
+  lines.push('')
+  lines.push(formatBatchAdvisor(r.batchAdvisor))
+  lines.push('')
+  const c = r.coverage
+  lines.push(`coverage: ${c.handlersFired}/${c.handlersTotal} handlers exercised`)
+  if (c.unattributed.length > 0) {
+    lines.push(`  ⚠ ${c.unattributed.length} unattributed id(s): ${c.unattributed.slice(0, 3).map(u => u.id).join(', ')}`)
+  }
+  return lines.join('\n')
 }

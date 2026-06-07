@@ -59,6 +59,9 @@ export { generateModuleExports, extractFunctionParams, formatParamWithType, find
 
 // Adapters
 export { BaseAdapter } from './adapters/interface.ts'
+// Dependency-free adapter for tooling that only needs client JS (e.g. the
+// profiler scenario driver) — the client output is adapter-independent.
+export { TestAdapter, testAdapter } from './adapters/test-adapter.ts'
 export type {
   TemplateAdapter,
   AdapterOutput,
@@ -277,15 +280,23 @@ export {
 export type { ComponentGraph, ComponentAnalysis, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace, EventBinding, SetterRef, FnSetterResolution, EventSummary, LoopInfo, LoopChildBinding, LoopSummary, WhyUpdateResult, WhyUpdateDep, WhyUpdateSource, FallbackExplanation, ComponentSummary } from './debug.ts'
 export type { WrapReason } from './ir-to-client-js/reactivity.ts'
 
-// Reactive performance profiler — static half (SR5 budget, SR6 compile-diff).
-// Dynamic half (--scenario) is specified in spec/profiler.md (#1690).
+// Reactive performance profiler (#1690). Static half (SR5 budget, SR6 diff) +
+// dynamic half (SR2/SR4 join, SR7 report, v1 analyses).
 export {
   buildStaticBudget,
   formatStaticBudget,
   diffStaticBudget,
   formatBudgetDiff,
   buildProfileReport,
-} from "./profiler.ts"
+  formatProfileReport,
+  buildIdIndex,
+  joinProfilerEvents,
+  parseProfilerId,
+  analyzeHotSubscribers,
+  formatHotSubscribers,
+  analyzeBatchAdvisor,
+  formatBatchAdvisor,
+} from './profiler.ts'
 export type {
   StaticBudget,
   StaticBudgetOptions,
@@ -293,7 +304,20 @@ export type {
   BudgetDiff,
   FanOutChange,
   ProfileReport,
-} from "./profiler.ts"
+  ProfileReportInput,
+  ProfileCoverage,
+  IdIndex,
+  ResolvedNode,
+  JoinResult,
+  JoinedEvent,
+  UnattributedId,
+  HotSubscribersResult,
+  HotSubscriber,
+  HotSubscribersOptions,
+  BatchAdvisorResult,
+  BatchCandidate,
+  BatchSafety,
+} from './profiler.ts'
 
 // HTML constants
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
