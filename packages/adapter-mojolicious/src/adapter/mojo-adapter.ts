@@ -2474,22 +2474,26 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     predicate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string {
-    // Mojo-specific gap: `.find` / `.findIndex` / `.findLast` /
-    // `.findLastIndex` have no Embedded-Perl lowering yet. `isSupported`
-    // accepts them (it's adapter-agnostic), so the refusal lands here
-    // rather than at the support gate. BF101 until a lowering lands.
-    if (method === 'find' || method === 'findIndex' || method === 'findLast' || method === 'findLastIndex') {
-      this.adapter._recordExprBF101(
-        `Mojo adapter has not lowered Array.prototype.${method} yet`,
-      )
-      return "''"
-    }
     const arrayExpr = emit(object)
     const predBody = this.adapter._renderPerlFilterExprPublic(predicate, param)
     const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
     if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
     if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
     if (method === 'some') return `!!(grep { ${grepBody} } @{${arrayExpr}})`
+    // `.find` / `.findIndex` / `.findLast` / `.findLastIndex` → the runtime
+    // helpers (`bf->find` / `find_index` / `find_last` / `find_last_index`),
+    // which call the predicate as a per-element coderef — same shape Xslate
+    // emits via a Kolon lambda. The JS camelCase names map to the snake_case
+    // helpers (like index_of / last_index_of).
+    const findHelper: Record<string, string> = {
+      find: 'find',
+      findIndex: 'find_index',
+      findLast: 'find_last',
+      findLastIndex: 'find_last_index',
+    }
+    if (findHelper[method]) {
+      return `bf->${findHelper[method]}(${arrayExpr}, sub { my $${param} = $_[0]; ${predBody} })`
+    }
     return arrayExpr
   }
 

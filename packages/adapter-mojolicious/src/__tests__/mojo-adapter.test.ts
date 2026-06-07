@@ -109,17 +109,11 @@ runAdapterConformanceTests({
     // `string-trim` no longer pinned — pre-existing `bf_trim`
     // (Go) and new `bf->trim` helper (Mojo) handle the strip
     // (#1448 Tier A ninth PR, closing out Tier A).
-    // #1448 catalog — `.find` / `.findIndex` have no Mojo lowering
-    // yet (no `array-method` IR variant, no emitter), so the
-    // Mojo-specific gate in `convertExpressionToPerl` refuses them
-    // up front. `.join` is NOT pinned here — it's lifted to the
-    // `array-method` IR by the parser and `renderArrayMethod`'s
-    // `case 'join'` emits `join(sep, @{arr})` correctly; the
-    // text-expression form is routed through the same AST path.
-    'array-find':          [{ code: 'BF101', severity: 'error' }],
-    'array-findIndex':     [{ code: 'BF101', severity: 'error' }],
-    'array-findLast':      [{ code: 'BF101', severity: 'error' }],
-    'array-findLastIndex': [{ code: 'BF101', severity: 'error' }],
+    // `.find` / `.findIndex` / `.findLast` / `.findLastIndex` are no longer
+    // pinned — the Mojo `higherOrder` emitter now lowers them to the runtime
+    // `bf->find` / `find_index` / `find_last` / `find_last_index` helpers
+    // (per-element coderef predicate), matching Xslate. `.join` was never
+    // pinned (handled by `renderArrayMethod`'s `case 'join'`).
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
@@ -938,6 +932,29 @@ export { A }`, 'A.tsx', { adapter })
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
     expect(template).toContain('bf->trim($value)')
     expect(template).not.toContain('$bf->trim')
+  })
+
+  test('lowers .find / .findIndex / .findLast / .findLastIndex via runtime helpers', () => {
+    // The runtime `bf->find` / `find_index` / `find_last` / `find_last_index`
+    // call the predicate as a per-element coderef; the camelCase JS names map
+    // to the snake_case helpers (matching Xslate's Kolon-lambda lowering).
+    const cases: Array<[string, string]> = [
+      ['find', 'find'],
+      ['findIndex', 'find_index'],
+      ['findLast', 'find_last'],
+      ['findLastIndex', 'find_last_index'],
+    ]
+    for (const [js, helper] of cases) {
+      const adapter = new MojoAdapter()
+      const result = compileJSX(`function A({ items }: { items: string[] }) {
+  return <div>{items.${js}(x => x === 'b')}</div>
+}
+export { A }`, 'A.tsx', { adapter })
+      expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+      const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+      expect(template).toContain(`bf->${helper}($items, sub { my $x = $_[0]; $x eq 'b' })`)
+      expect(template).not.toContain(`$bf->${helper}`)
+    }
   })
 
   test('lowers .reverse().join(\' \') via bf->reverse + join (#1448 Tier A)', () => {
