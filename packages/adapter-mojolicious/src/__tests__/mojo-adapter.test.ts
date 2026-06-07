@@ -488,6 +488,19 @@ export function Item() { return <div className="x">hi</div> }
 `)
     expect(template).toContain('bf->data_key_attr')
   })
+
+  // An early-return (if-statement) root has no single root element; data-key
+  // must land on each branch's top element so a keyed loop item still stamps it.
+  test('emits data_key_attr on each branch root of an if-statement root', () => {
+    const { template } = compileAndGenerate(`
+export function Item({ on }: { on?: boolean }) {
+  if (on) return <div className="a">A</div>
+  return <div className="b">B</div>
+}
+`)
+    const count = (template.match(/bf->data_key_attr/g) ?? []).length
+    expect(count).toBe(2)
+  })
 })
 
 describe('MojoAdapter - Template Generation', () => {

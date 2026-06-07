@@ -166,6 +166,34 @@ function perlHashKey(name: string): string {
 }
 
 /**
+ * Collect the component's root scope element node(s) — the elements that
+ * become the rendered root and so carry `data-key` for a keyed loop item. A
+ * plain element root is itself; an `if-statement` (early-return) root
+ * contributes the top element of each branch (`consequent` + the `alternate`
+ * chain), since exactly one branch renders at runtime. Non-element branch
+ * tops (fragments / nested shapes) are walked one level so an
+ * `if (…) return <A/>` still resolves to `<A>`. (#1297)
+ */
+function collectRootScopeNodes(node: IRNode): Set<IRNode> {
+  const out = new Set<IRNode>()
+  const visit = (n: IRNode | null): void => {
+    if (!n) return
+    if (n.type === 'element') { out.add(n); return }
+    if (n.type === 'if-statement') {
+      const s = n as IRIfStatement
+      visit(s.consequent)
+      visit(s.alternate)
+      return
+    }
+    if (n.type === 'fragment') {
+      for (const c of (n as IRFragment).children) visit(c)
+    }
+  }
+  visit(node)
+  return out
+}
+
+/**
  * True when every `$var` the lowered (Perl / Kolon) expression references is
  * in the available set — i.e. the template already has that var in scope.
  * Guards in-template memo seeding from referencing an out-of-scope binding
@@ -201,9 +229,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   templatePrimitives: TemplatePrimitiveRegistry = MOJO_PRIMITIVE_EMIT_MAP
 
   private componentName: string = ''
-  /** The component's root IR node — its scope root carries `data-key` for a
-   *  keyed loop item (set by `render_child` from the JSX `key` prop). */
-  private rootNode: IRNode | null = null
+  /** The component's root scope element(s) — each carries `data-key` for a
+   *  keyed loop item (set by the child renderer from the JSX `key` prop). A
+   *  plain element root is a single node; an `if-statement` (early-return) root
+   *  contributes the top element of every branch, since any one of them can be
+   *  the rendered root at runtime. */
+  private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<MojoAdapterOptions>
   private errors: CompilerError[] = []
   private inLoop: boolean = false
@@ -349,7 +380,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       this.checkImportedLoopChildComponents(ir)
     }
 
-    this.rootNode = ir.root
+    this.rootScopeNodes = collectRootScopeNodes(ir.root)
     const templateBody = ir.root.type === 'if-statement'
       ? this.renderIfStatement(ir.root as IRIfStatement)
       : this.renderNode(ir.root)
@@ -659,11 +690,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     if (element.needsScope) {
       hydrationAttrs += ` ${this.renderScopeMarker('')}`
     }
-    // The component root carries `data-key` for a keyed loop item — emitted
-    // from the bf instance (`render_child` sets it from the JSX `key` prop),
-    // so a non-keyed render adds nothing. Mirrors Hono stamping data-key on
-    // each loop item's scope root. (#1297)
-    if (element === this.rootNode && element.needsScope) {
+    // A root scope element carries `data-key` for a keyed loop item — emitted
+    // from the bf instance (the child renderer sets it from the JSX `key`
+    // prop), so a non-keyed render adds nothing. Mirrors Hono stamping
+    // data-key on each loop item's scope root, including early-return
+    // (if-statement) roots where every branch's top element qualifies. (#1297)
+    if (this.rootScopeNodes.has(element) && element.needsScope) {
       hydrationAttrs += ` <%== bf->data_key_attr %>`
     }
     if (element.slotId) {

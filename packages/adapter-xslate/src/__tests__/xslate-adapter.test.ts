@@ -254,4 +254,15 @@ export function Item() { return <div class="x">hi</div> }
 `)
     expect(template).toContain('$bf.data_key_attr()')
   })
+
+  test('emits data_key_attr on each branch root of an if-statement root', () => {
+    const { template } = compileAndGenerate(`
+export function Item({ on }: { on?: boolean }) {
+  if (on) return <div class="a">A</div>
+  return <div class="b">B</div>
+}
+`)
+    const count = (template.match(/\$bf\.data_key_attr\(\)/g) ?? []).length
+    expect(count).toBe(2)
+  })
 })

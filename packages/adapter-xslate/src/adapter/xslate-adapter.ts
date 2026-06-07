@@ -144,6 +144,32 @@ function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
 }
 
 /**
+ * Collect the component's root scope element node(s) — the elements that
+ * become the rendered root and so carry `data-key` for a keyed loop item. A
+ * plain element root is itself; an `if-statement` (early-return) root
+ * contributes the top element of each branch, since exactly one renders at
+ * runtime. (#1297)
+ */
+function collectRootScopeNodes(node: IRNode): Set<IRNode> {
+  const out = new Set<IRNode>()
+  const visit = (n: IRNode | null): void => {
+    if (!n) return
+    if (n.type === 'element') { out.add(n); return }
+    if (n.type === 'if-statement') {
+      const s = n as IRIfStatement
+      visit(s.consequent)
+      visit(s.alternate)
+      return
+    }
+    if (n.type === 'fragment') {
+      for (const c of (n as IRFragment).children) visit(c)
+    }
+  }
+  visit(node)
+  return out
+}
+
+/**
  * True when every `$var` the lowered Kolon expression references is already in
  * scope — guards in-template memo seeding against an out-of-scope binding. (#1297)
  */
@@ -179,9 +205,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   templatePrimitives: TemplatePrimitiveRegistry = XSLATE_PRIMITIVE_EMIT_MAP
 
   private componentName: string = ''
-  /** Component root IR node — its scope root carries `data-key` for a keyed
-   *  loop item (set by `render_child` from the JSX `key` prop). */
-  private rootNode: IRNode | null = null
+  /** Component root scope element(s) — each carries `data-key` for a keyed loop
+   *  item (set by the child renderer from the JSX `key` prop). A plain element
+   *  root is one node; an `if-statement` (early-return) root contributes the
+   *  top element of every branch. */
+  private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<XslateAdapterOptions>
   private errors: CompilerError[] = []
   private inLoop: boolean = false
@@ -285,7 +313,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       this.checkImportedLoopChildComponents(ir)
     }
 
-    this.rootNode = ir.root
+    this.rootScopeNodes = collectRootScopeNodes(ir.root)
     const templateBody = ir.root.type === 'if-statement'
       ? this.renderIfStatement(ir.root as IRIfStatement)
       : this.renderNode(ir.root)
@@ -560,10 +588,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     if (element.needsScope) {
       hydrationAttrs += ` ${this.renderScopeMarker('')}`
     }
-    // Component root carries `data-key` for a keyed loop item (set on the bf
-    // instance by render_child from the JSX `key` prop); non-keyed renders add
-    // nothing. Mirrors Hono stamping data-key on each loop item's root. (#1297)
-    if (element === this.rootNode && element.needsScope) {
+    // A root scope element carries `data-key` for a keyed loop item (set on the
+    // bf instance by the child renderer from the JSX `key` prop); non-keyed
+    // renders add nothing. Mirrors Hono stamping data-key on each loop item's
+    // root, including early-return (if-statement) roots. (#1297)
+    if (this.rootScopeNodes.has(element) && element.needsScope) {
       hydrationAttrs += ` <: $bf.data_key_attr() | mark_raw :>`
     }
     if (element.slotId) {
