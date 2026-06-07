@@ -107,15 +107,33 @@ for (const dir of pkgDirs) {
   candidates.push({ dir, pkg })
 }
 
+// Export keys that are dev-tooling helpers, not consumer-runtime API:
+//   ./build       — the package's barefoot.config.ts build-config factory.
+//                   Consumers run their build under Bun/Node (the `bf`
+//                   CLI ships as an npm executable), so a Deno-shaped
+//                   build entry has no audience, and its node:fs/Buffer
+//                   typings trip Deno's stricter check (e.g. TS2367 on
+//                   `Buffer !== string` comparisons that tsgo lets pass).
+//   ./test-render — IR test-render harness; only ever defined via the
+//                   `bun:` export condition and uses Bun.* globals
+//                   directly. Genuinely Bun-only.
+// Both are intentionally absent from the JSR surface — npm consumers
+// still get them unchanged.
+const JSR_SKIP_EXPORT_KEYS = new Set(['./build', './test-render'])
+
 // ── Resolve a single export entry to a publishable `src` TS file ──────
 function resolveExportTarget(dir: string, entry: unknown): string | null {
   // Gather candidate targets across conditions, most source-like first.
+  // `bun:` is deliberately omitted — an export whose only resolution is
+  // the `bun:` condition is Bun-runtime-specific by its package.json
+  // author's own declaration and has no business on JSR. (Mixed entries
+  // like `{ bun: …, import: … }` still resolve via `import`/`default`.)
   const targets: string[] = []
   if (typeof entry === 'string') {
     targets.push(entry)
   } else if (entry && typeof entry === 'object') {
     const e = entry as Record<string, string>
-    for (const cond of [e.bun, e.import, e.default, e.types]) {
+    for (const cond of [e.import, e.default, e.types]) {
       if (cond) targets.push(cond)
     }
   }
@@ -142,11 +160,13 @@ function resolveExportTarget(dir: string, entry: unknown): string | null {
 }
 
 // Resolve a package's `exports` map to the `src` TS files JSR would publish,
-// dropping entries with no source sibling.
+// dropping entries with no source sibling or that are listed as dev-tooling
+// keys (see `JSR_SKIP_EXPORT_KEYS`).
 function resolveExports(dir: string, pkg: PkgJson): Record<string, string> {
   const exportsIn = pkg.exports ?? { '.': './src/index.ts' }
   const exportsOut: Record<string, string> = {}
   for (const [key, entry] of Object.entries(exportsIn)) {
+    if (JSR_SKIP_EXPORT_KEYS.has(key)) continue
     const target = resolveExportTarget(dir, entry)
     if (target) exportsOut[key] = target
   }
