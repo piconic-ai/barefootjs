@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 
 	bf "github.com/barefootjs/runtime/bf"
@@ -38,6 +39,7 @@ type AIChatInteractiveProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Messages []Message `json:"messages"`
 	Input string `json:"input"`
@@ -60,6 +62,7 @@ type ConditionalReturnProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Variant string `json:"variant"`
 	Count int `json:"count"`
@@ -80,6 +83,7 @@ type CounterProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Initial int `json:"initial"`
 	Count int `json:"count"`
@@ -100,6 +104,7 @@ type FormProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Accepted bool `json:"accepted"`
 }
@@ -118,6 +123,7 @@ type PortalExampleProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Open bool `json:"open"`
 }
@@ -139,6 +145,7 @@ type ReactiveChildProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
@@ -159,6 +166,7 @@ type ReactivePropsProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Count int `json:"count"`
 	Doubled int `json:"doubled"`
@@ -182,6 +190,7 @@ type PropsStyleChildProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
@@ -204,6 +213,7 @@ type DestructuredStyleChildProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value interface{} `json:"value"`
 	Label interface{} `json:"label"`
@@ -224,6 +234,7 @@ type PropsReactivityComparisonProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Count int `json:"count"`
 	PropsStyleChildSlot3 PropsStyleChildProps `json:"-"`
@@ -245,6 +256,7 @@ type TextEscapeProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Label string `json:"label"`
 	Count int `json:"count"`
@@ -276,6 +288,7 @@ type TodoAppProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	InitialTodos []Todo `json:"initialTodos"`
 	Todos []Todo `json:"todos"`
@@ -299,6 +312,7 @@ type TodoAppSSRProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	InitialTodos []Todo `json:"initialTodos"`
 	Todos []Todo `json:"todos"`
@@ -326,6 +340,7 @@ type TodoItemProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Todo Todo `json:"todo"`
 	OnToggle interface{} `json:"onToggle"`
@@ -350,6 +365,7 @@ type ToggleItemProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	Label string `json:"label"`
 	DefaultOn bool `json:"defaultOn"`
@@ -371,6 +387,7 @@ type ToggleProps struct {
 	BfIsChild bool `json:"-"`
 	BfParent string `json:"-"`
 	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
 	ToggleItems []ToggleItemProps `json:"toggleItems"`
 }
@@ -692,6 +709,7 @@ func NewToggleProps(in ToggleInput) ToggleProps {
 		toggleItems[i] = NewToggleItemProps(item)
 		toggleItems[i].BfParent = scopeID
 		toggleItems[i].BfMount = "s0"
+		toggleItems[i].BfDataKey = fmt.Sprint(item.Label)
 	}
 
 	return ToggleProps{
