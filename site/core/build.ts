@@ -462,7 +462,7 @@ const typeBundle: Record<string, string> = {
   'file:///node_modules/@barefootjs/hono/jsx/jsx-runtime/index.d.ts':
     await Bun.file(resolve(PKG_DIR, 'adapter-hono/src/jsx/jsx-runtime/index.ts')).text(),
   'file:///node_modules/@barefootjs/jsx/jsx-runtime/index.d.ts':
-    await Bun.file(resolve(PKG_DIR, 'jsx/src/jsx-runtime/index.d.ts')).text(),
+    await Bun.file(resolve(PKG_DIR, 'jsx/src/jsx-runtime/index.ts')).text(),
   'file:///node_modules/@barefootjs/jsx/html-types.d.ts':
     await Bun.file(resolve(PKG_DIR, 'jsx/src/html-types.ts')).text(),
   'file:///node_modules/@barefootjs/client/index.d.ts':
