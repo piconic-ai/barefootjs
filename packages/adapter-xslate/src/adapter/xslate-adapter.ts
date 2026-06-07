@@ -782,6 +782,44 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   // Loop Rendering
   // ===========================================================================
 
+  /**
+   * True when a destructure loop param is the lowerable object-rest shape:
+   * every binding is a simple `.field` or an object-rest read via member access
+   * (not spread `{...rest}`, not an array-index / nested path). (#1310)
+   */
+  private destructureBindingsSupportable(loop: IRLoop): boolean {
+    const bindings = loop.paramBindings
+    if (!bindings || bindings.length === 0) return false
+    for (const b of bindings) {
+      if (b.rest) {
+        if (b.rest.kind !== 'object') return false
+      } else if (!/^\.[A-Za-z_$][\w$]*$/.test(b.path)) {
+        return false
+      }
+    }
+    const restNames = bindings.filter(b => b.rest).map(b => b.name)
+    if (restNames.length > 0 && this.loopBodySpreadsAny(loop.children, restNames)) {
+      return false
+    }
+    return true
+  }
+
+  /** True when any element in the subtree spreads one of `names` (`{...rest}`). */
+  private loopBodySpreadsAny(nodes: IRNode[], names: string[]): boolean {
+    for (const n of nodes) {
+      if (n.type === 'element') {
+        const el = n as IRElement
+        for (const a of el.attrs) {
+          if (a.value.kind === 'spread' && names.includes(a.value.expr.trim())) return true
+        }
+        if (this.loopBodySpreadsAny(el.children, names)) return true
+      } else if ('children' in n && Array.isArray((n as { children?: IRNode[] }).children)) {
+        if (this.loopBodySpreadsAny((n as { children: IRNode[] }).children, names)) return true
+      }
+    }
+    return false
+  }
+
   renderLoop(loop: IRLoop): string {
     // Client-only loops: skip SSR rendering entirely
     if (loop.clientOnly) return ''
@@ -790,7 +828,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // `({ name, age }) => ...`) lowers to invalid Kolon — Kolon's `for LIST
     // -> $item` binds a single scalar and can't unpack a tuple. Surface this
     // at build time instead of shipping a broken template line.
-    if (loop.paramBindings && loop.paramBindings.length > 0) {
+    // A destructure loop param is lowerable for the object-rest / simple-field
+    // shape (`.map(({ id, title, ...rest }) => …)`, `rest` read via member
+    // access): each binding becomes a Kolon `: my` local off the per-item var,
+    // so the body's `$id` / `$rest.flag` resolve. Array-index / nested /
+    // rest-spread shapes still can't unpack a tuple → BF104. (#1310)
+    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
+    const supportableDestructure = destructure && this.destructureBindingsSupportable(loop)
+    if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -823,16 +868,29 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // For `keys`-shape iterations the callback param IS the index. We iterate
     // the array but bind the loop var to a throwaway and expose the index as
     // `$param`. Kolon's `$~loopvar.index` provides the 0-based index.
-    const loopVar = loop.iterationShape === 'keys' ? '__bf_item' : param
+    const loopVar = loop.iterationShape === 'keys'
+      ? '__bf_item'
+      : supportableDestructure ? 'bfItem' : param
 
     // Index alias: when an explicit `index` param is present (`.map((x, i) =>
     // ...)`) or the iteration is `keys`-shaped, expose it via a `: my` Kolon
-    // local bound to the loop variable's `.index` accessor.
+    // local bound to the loop variable's `.index` accessor. A supported
+    // destructure param adds one `: my` local per binding (`rest` aliases the
+    // item so `$rest.flag` resolves).
     const indexLocalLines: string[] = []
     if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`: my $${param} = $~${loopVar}.index;`)
     } else if (loop.index) {
       indexLocalLines.push(`: my $${loop.index} = $~${loopVar}.index;`)
+    }
+    if (supportableDestructure) {
+      for (const b of loop.paramBindings ?? []) {
+        indexLocalLines.push(
+          b.rest
+            ? `: my $${b.name} = $${loopVar};`
+            : `: my $${b.name} = $${loopVar}${b.path};`,
+        )
+      }
     }
 
     const prevInLoop = this.inLoop
