@@ -39,16 +39,19 @@ export function buildDynamicLoopDelegationPlan(
   }
 }
 
-// NOTE: branch-scoped delegation (a dynamic loop nested inside a conditional
-// branch) does not yet thread `profileComponentName` — `buildBranchLoopPlan`
-// is reached via `branch.loops.map(...)` without `ctx`. Turn markers on this
-// nested path are tracked as a follow-up; top-level + static-array delegation
-// (the common dynamic-list case) carry markers below.
-export function buildBranchLoopDelegationPlan(loop: BranchLoop, cv: string): EventDelegationPlan {
+// Branch-scoped delegation (a dynamic loop nested inside a conditional branch):
+// `profileComponentName` is threaded from `buildInsertPlan` → `buildBranchLoopPlan`
+// so its delegated handlers get turn markers like every other path (#1786).
+export function buildBranchLoopDelegationPlan(
+  loop: BranchLoop,
+  cv: string,
+  profileComponentName?: string,
+): EventDelegationPlan {
   return {
     kind: 'event-delegation',
     containerVar: `__loop_${cv}`,
     events: loop.bindings.events,
+    profileComponentName,
     itemLookup: buildKeyedOrIndexLookup({
       // See note on `buildDynamicLoopDelegationPlan` above (#1434).
       array: buildChainedArrayExpr(loop),

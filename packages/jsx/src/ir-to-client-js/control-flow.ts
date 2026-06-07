@@ -33,8 +33,9 @@ import { stringifyEventDelegation } from './control-flow/stringify/event-delegat
 
 /** Emit insert() calls for server-rendered reactive conditionals with branch configs. */
 export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): void {
+  const profileComponentName = ctx.profile ? ctx.componentName : undefined
   for (const elem of ctx.conditionalElements) {
-    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'dom' })
+    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'dom', profileComponentName })
     stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
     lines.push('')
   }
@@ -42,8 +43,9 @@ export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): v
 
 /** Emit insert() calls for client-only conditionals (not server-rendered). */
 export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext): void {
+  const profileComponentName = ctx.profile ? ctx.componentName : undefined
   for (const elem of ctx.clientOnlyConditionals) {
-    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'raw' })
+    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'raw', profileComponentName })
     lines.push(`  // @client conditional: ${elem.slotId}`)
     stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
     lines.push('')
