@@ -1,5 +1,31 @@
 # @barefootjs/hono
 
+## 0.9.3
+
+### Patch Changes
+
+- 5cee919: Fix the two `deno check` errors in `@barefootjs/hono` that originate in our
+  own code: add the `override` modifier to `HonoAdapter.renderAsync` (TS4114,
+  matching the other adapters), and decode `readFile` output via `TextDecoder`
+  in the dev reloader instead of the positional string-encoding overload,
+  which Deno's `node:fs/promises` types resolve to a buffer without `.trim`
+  (TS2769 + TS2339). `override` is a type-only annotation and the dev-reloader
+  change is behaviorally equivalent.
+- 3fda4d5: `scripts/jsr-publish.ts`: drop dev-tooling-only export keys (`./build`,
+  `./test-render`) and `bun:`-only conditions from the generated JSR
+  manifests.
+
+  These entries are Bun-runtime-shaped (test-render uses `Bun.*` /
+  `import.meta.dir` directly; the per-adapter build helpers are wired
+  for the `bf` CLI which ships as an npm executable) and never load
+  cleanly under Deno's type-checker. They were the residual cause of
+  `deno publish` type-check failures even after #1792 fixed import
+  extensions — JSR was being asked to publish files it had no business
+  type-checking against Deno's runtime.
+
+  The npm-published surface is unchanged — these exports remain
+  available to Bun / Node consumers exactly as before.
+
 ## 0.9.2
 
 ## 0.9.1

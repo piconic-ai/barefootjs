@@ -1,5 +1,42 @@
 # @barefootjs/jsx
 
+## 0.9.3
+
+### Patch Changes
+
+- 79e64d5: Fix Deno/JSR type-checking failures so `deno publish` succeeds for all
+  `@barefootjs/*` libraries.
+
+  - Add explicit `.ts`/`.tsx` extensions to relative imports across each
+    published package's `src/` (Deno's ESM resolver does not implicitly
+    append TypeScript extensions the way Bun/Node bundlers do; without
+    this the publisher fails with `TS2307`).
+  - Switch Node built-in imports in `@barefootjs/jsx` (`path`, `fs`) to
+    the `node:` prefix Deno requires for unambiguous specifier resolution.
+  - Enable `allowImportingTsExtensions: true` (with
+    `emitDeclarationOnly: true` as its prerequisite) in each published
+    package's `tsconfig.json` so TypeScript accepts the now-explicit
+    extensions.
+
+  No consumer-facing API changes — the npm build still emits
+  `.js`/`.d.ts` artifacts identical to before; only the JSR-published
+  TypeScript source surface is affected.
+
+- f00e74d: Compute prop/signal-derived memos at SSR time on the Mojolicious and Text::Xslate adapters, graduating the `props-reactivity-comparison` conformance fixture to Hono parity.
+
+  A memo whose body isn't statically foldable — e.g. `createMemo(() => props.value * 10)` — gets a `null` static SSR default from `extractSsrDefaults` (a bare prop access resolves to `undefined`). The Perl SSR model seeds child memos from those static defaults, so `$displayValue` was never declared and the child rendered empty (Go matches Hono because it generates a child constructor that computes the memo from the passed prop; the Perl static path had no equivalent — the reason both adapters skipped the fixture).
+
+  Each adapter now seeds such memos in-template from the already-seeded prop/signal vars:
+
+  - **Mojo**: `% my $displayValue = $value * 10;`
+  - **Xslate**: `: my $displayValue = $value * 10;`
+
+  The seed is emitted only when the memo's static default is `null` (statically-foldable memos stay on the existing ssr-defaults path) and when every variable the lowered expression references is already in scope (props params + signals + prior memos), so a memo over an out-of-scope binding stays on the null path rather than tripping Perl strict mode. Verified end-to-end against real Mojolicious and Text::Xslate. Hono reference snapshots unchanged.
+
+  The memo body is extracted with a new AST-backed `extractArrowBodyExpression` helper exported from `@barefootjs/jsx` (it parses the `() => …` computation with the TypeScript parser and returns the body node text), replacing a brittle `^\(...\)\s*=>` regex that desynced on parameter defaults containing calls or nested-arrow bodies. Shared by both Perl adapters.
+
+  - @barefootjs/shared@0.9.3
+
 ## 0.9.2
 
 ### Patch Changes
