@@ -25,42 +25,10 @@ runAdapterConformanceTests({
   name: 'xslate',
   factory: () => new XslateAdapter(),
   render: renderXslateComponent,
-  // Skips here are VERIFIED, not inherited from mojo. Notably, the six
-  // fixtures mojo skips for Perl-EP scoping faults — `logical-or-jsx`,
-  // `nullish-coalescing-jsx`, `branch-map`, `return-logical-or`,
-  // `return-nullish-coalescing`, `return-map` (bare `$label` / `$items`
-  // without a `my` binding) — all PASS on Xslate, because Kolon resolves
-  // `$label` from the per-render vars rather than a Perl lexical, so there
-  // is no undefined-symbol fault. Xslate therefore skips strictly fewer
-  // fixtures than mojo. Each entry below was confirmed to fail with
-  // skipJsx emptied.
-  skipJsx: [
-    // `context-provider` graduated: SSR context propagation now mirrors the
-    // client `provideContext` / `useContext`. `<Ctx.Provider value>` brackets
-    // its children with inline `$bf.provide_context` / `$bf.revoke_context`
-    // (a package-level value stack; both return '' so the `<: … :>` discards
-    // them), and each `useContext` consumer is seeded with
-    // `: my $x = $bf.use_context('Ctx', <default>)`. Renders byte-for-byte
-    // against Hono on real Text::Xslate. (#1297)
-    // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
-    // sibling `ToggleItem` children inside a keyed `.map`. Three gaps
-    // remain (same as mojo): the loop-child `on = props.defaultOn ??
-    // false` signal isn't seeded server-side (so every item renders OFF
-    // instead of honouring per-item `defaultOn`), the child scope id is
-    // the snake-case `toggle_item_<rand>` rather than the `ToggleItem_*`
-    // PascalCase the reference pins, and `key=` → `data-key` isn't
-    // emitted. Kolon resolves the unseeded vars to nil rather than
-    // aborting, so this surfaces as a render mismatch (not a hard error).
-    // Separate follow-up.
-    'toggle-shared',
-    // `props-reactivity-comparison` graduated: the child `PropsStyleChild`'s
-    // `displayValue = props.value * 10` memo has a `null` static SSR default.
-    // The adapter now computes such memos in-template from the seeded prop var
-    // (`: my $displayValue = $value * 10;`) — mirroring Go's generated child
-    // constructor — so `child-computed-value` renders `10` to match Hono. (#1297)
-    // (`kbd` is not skipped here — it's a BF101 refusal pinned in
-    // `expectedDiagnostics` below, not a render-mismatch.)
-  ],
+  // No JSX-render skips: every shared conformance fixture renders to Hono
+  // parity on real Text::Xslate. Shapes the adapter intentionally refuses at
+  // build time are pinned in `expectedDiagnostics` below (e.g. `kbd`, `button`).
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.
@@ -222,5 +190,51 @@ export function Child({ value }: { value: number }) {
 }
 `)
     expect(template).toContain(': my $displayValue = $value * 10;')
+  })
+})
+
+describe('XslateAdapter - prop-derived signal SSR seeding + data-key (#1297, toggle-shared)', () => {
+  test('seeds a prop-derived (different-name) signal from the prop var', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Item(props: { defaultOn?: boolean }) {
+  const [on, setOn] = createSignal(props.defaultOn ?? false)
+  return <button>{on() ? 'ON' : 'OFF'}</button>
+}
+`)
+    expect(template).toContain(': my $on = ($defaultOn // 0);')
+  })
+
+  // Kolon can't `: my $x = … $x …`; a same-name signal stays on the existing
+  // (harness/manifest) seeding rather than an in-template seed.
+  test('does NOT in-template-seed a same-name signal', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function C(props: { x?: number }) {
+  const [x, setX] = createSignal(props.x ?? 7)
+  return <span>{x()}</span>
+}
+`)
+    expect(template).not.toContain(': my $x =')
+  })
+
+  test('emits data_key_attr on the component root', () => {
+    const { template } = compileAndGenerate(`
+export function Item() { return <div class="x">hi</div> }
+`)
+    expect(template).toContain('$bf.data_key_attr()')
+  })
+
+  test('emits data_key_attr on each branch root of an if-statement root', () => {
+    const { template } = compileAndGenerate(`
+export function Item({ on }: { on?: boolean }) {
+  if (on) return <div class="a">A</div>
+  return <div class="b">B</div>
+}
+`)
+    const count = (template.match(/\$bf\.data_key_attr\(\)/g) ?? []).length
+    expect(count).toBe(2)
   })
 })

@@ -96,7 +96,10 @@ my $bf = BarefootJS->new(undef, { backend => $backend });
 $bf->_scope_id('Counter_test');
 
 binmode(STDOUT, ':utf8');
-my \$html = \$backend->render_named('counter', \$bf, { count => 3, doubled => 6 });
+# The count signal is seeded in-template from the prop it derives from (#1297),
+# so the host seeds initial (not the count signal value directly); doubled is a
+# memo with a non-null static default and stays a directly-seeded stash var.
+my \$html = \$backend->render_named('counter', \$bf, { initial => 3, doubled => 6 });
 print \$html;
 # The template's register_script calls populated \$bf's script list during
 # render; emit the resulting <script> tags so the test can assert them.

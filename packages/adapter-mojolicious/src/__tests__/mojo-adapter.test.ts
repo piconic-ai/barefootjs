@@ -17,33 +17,10 @@ runAdapterConformanceTests({
   name: 'mojo',
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
-  skipJsx: [
-    // `context-provider` graduated: SSR context propagation now mirrors the
-    // client `provideContext` / `useContext`. `<Ctx.Provider value>` brackets
-    // its children with `bf->provide_context` / `bf->revoke_context` (a
-    // package-level value stack), and each `useContext` consumer is seeded at
-    // the top of its template with `% my $x = bf->use_context('Ctx', <default>)`.
-    // Renders byte-for-byte against Hono on real Mojolicious. (#1297)
-    // `toggle-shared`: the parent maps a `ToggleItemProps[]` prop into
-    // sibling `ToggleItem` children inside a keyed `.map`. Each child's
-    // `on = props.defaultOn ?? false` signal is never seeded into the
-    // loop-child stash, so the rendered child template trips Perl strict
-    // mode (`Global symbol "$on" requires explicit package name`). The
-    // harness child renderer forwards only the explicitly-passed props;
-    // it does not run the `_derive_stash_from_defaults` seeding the
-    // production runtime applies. Plus the loop-child scope id is
-    // `toggle_item_<rand>` (snake-case template name) rather than the
-    // `ToggleItem_*` PascalCase the reference pins, and the `key=` →
-    // `data-key` attribute isn't emitted. Separate follow-up. (xslate
-    // skips this for the same reasons.)
-    'toggle-shared',
-    // `props-reactivity-comparison` graduated: the child `PropsStyleChild`'s
-    // `displayValue = props.value * 10` memo has a `null` static SSR default
-    // (`extractSsrDefaults` can't fold a prop-derived expression). The adapter
-    // now computes such memos in-template from the seeded prop var
-    // (`% my $displayValue = $value * 10;`) — mirroring Go's generated child
-    // constructor — so the child renders `10` to match Hono. (#1297)
-  ],
+  // No JSX-render skips: every shared conformance fixture renders to Hono
+  // parity on real Mojolicious. Shapes the adapter intentionally refuses at
+  // build time are pinned in `expectedDiagnostics` below.
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't
@@ -451,6 +428,60 @@ export function Child({ value }: { value: number }) {
 }
 `)
     expect(template).toContain('% my $displayValue = $value * 10;')
+  })
+})
+
+describe('MojoAdapter - prop-derived signal SSR seeding + data-key (#1297, toggle-shared)', () => {
+  // A prop-derived signal (`createSignal(props.defaultOn ?? false)`) is seeded
+  // in-template from the passed prop, so a loop child honours its own
+  // per-item prop instead of the static default.
+  test('seeds a prop-derived signal from the prop var', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Item(props: { defaultOn?: boolean }) {
+  const [on, setOn] = createSignal(props.defaultOn ?? false)
+  return <button>{on() ? 'ON' : 'OFF'}</button>
+}
+`)
+    expect(template).toContain('% my $on = ($defaultOn // 0);')
+  })
+
+  // An object/array-valued signal can't lower to Perl and must NOT be seeded
+  // in-template (it would record a BF101) — it keeps the existing ssr-defaults
+  // seeding.
+  test('does not in-template-seed an object-valued signal', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Spread() {
+  const [attrs, setAttrs] = createSignal<Record<string, string>>({ id: 'a' })
+  return <div {...attrs()} />
+}
+`)
+    expect(template).not.toContain('my $attrs =')
+  })
+
+  // The component root carries data-key, emitted from the bf instance
+  // (render_child sets it from the JSX key); non-keyed renders add nothing.
+  test('emits data_key_attr on the component root', () => {
+    const { template } = compileAndGenerate(`
+export function Item() { return <div className="x">hi</div> }
+`)
+    expect(template).toContain('bf->data_key_attr')
+  })
+
+  // An early-return (if-statement) root has no single root element; data-key
+  // must land on each branch's top element so a keyed loop item still stamps it.
+  test('emits data_key_attr on each branch root of an if-statement root', () => {
+    const { template } = compileAndGenerate(`
+export function Item({ on }: { on?: boolean }) {
+  if (on) return <div className="a">A</div>
+  return <div className="b">B</div>
+}
+`)
+    const count = (template.match(/bf->data_key_attr/g) ?? []).length
+    expect(count).toBe(2)
   })
 })
 
