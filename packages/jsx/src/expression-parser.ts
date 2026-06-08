@@ -477,6 +477,59 @@ export function extractArrowBodyExpression(source: string): string | null {
 }
 
 /**
+ * A single entry of a JSX `style={{ … }}` object, lowered for SSR. The key is
+ * already CSS-cased (`backgroundColor` → `background-color`); the value is
+ * either a static string literal or a raw JS expression for the adapter to
+ * lower (`color` → its template interpolation).
+ */
+export type StyleObjectEntry =
+  | { cssKey: string; kind: 'literal'; value: string }
+  | { cssKey: string; kind: 'expr'; expr: string }
+
+/** camelCase → kebab-case for CSS property names (`backgroundColor` →
+ *  `background-color`, `WebkitTransform` → `-webkit-transform`). The `ms`
+ *  vendor prefix is lowercase in React style keys (`msTransform`) yet the CSS
+ *  property carries a leading dash (`-ms-transform`), so special-case it the
+ *  same way React's `hyphenateStyleName` does. */
+export function cssKebabCase(name: string): string {
+  return name.replace(/[A-Z]/g, m => '-' + m.toLowerCase()).replace(/^ms-/, '-ms-')
+}
+
+/**
+ * Parse a JSX `style={{ … }}` object-literal source into CSS entries, or
+ * `null` when the shape isn't a plain object of static-keyed properties
+ * (spread, computed key, shorthand, method, getter) — the adapter then keeps
+ * refusing it. A bare `{…}` parses as a block statement, so the source is
+ * wrapped in parens to force expression context. Used by the template adapters
+ * to lower `style={{ backgroundColor: color, padding: '8px' }}` to a CSS
+ * string instead of emitting BF101.
+ */
+export function parseStyleObjectEntries(source: string): StyleObjectEntry[] | null {
+  const sf = ts.createSourceFile('__style__.ts', `(${source})`, ts.ScriptTarget.Latest, true)
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt) || sf.statements.length !== 1) return null
+  let expr: ts.Expression = stmt.expression
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  if (!ts.isObjectLiteralExpression(expr)) return null
+  const entries: StyleObjectEntry[] = []
+  for (const prop of expr.properties) {
+    if (!ts.isPropertyAssignment(prop)) return null // shorthand/spread/method/getter
+    let key: string
+    if (ts.isIdentifier(prop.name)) key = prop.name.text
+    else if (ts.isStringLiteral(prop.name)) key = prop.name.text
+    else return null // computed / numeric key
+    const cssKey = cssKebabCase(key)
+    const init = prop.initializer
+    if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
+      entries.push({ cssKey, kind: 'literal', value: init.text })
+    } else {
+      entries.push({ cssKey, kind: 'expr', expr: init.getText(sf).trim() })
+    }
+  }
+  return entries.length > 0 ? entries : null
+}
+
+/**
  * Parse a JavaScript expression string into a ParsedExpr tree.
  */
 export function parseExpression(expr: string): ParsedExpr {

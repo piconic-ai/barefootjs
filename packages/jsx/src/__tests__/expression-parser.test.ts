@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, extractArrowBodyExpression } from '../expression-parser'
+import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, extractArrowBodyExpression, parseStyleObjectEntries } from '../expression-parser'
 import { collectAllTypeRanges, reconstructWithoutTypes } from '../strip-types'
 
 describe('expression-parser', () => {
@@ -1647,5 +1647,48 @@ describe('extractArrowBodyExpression', () => {
 
   test('returns null when the source is more than one statement', () => {
     expect(extractArrowBodyExpression('() => 1; sideEffect()')).toBeNull()
+  })
+})
+
+describe('parseStyleObjectEntries', () => {
+  test('kebab-cases keys and splits literal vs expression values', () => {
+    expect(parseStyleObjectEntries("{ backgroundColor: color, padding: '8px' }")).toEqual([
+      { cssKey: 'background-color', kind: 'expr', expr: 'color' },
+      { cssKey: 'padding', kind: 'literal', value: '8px' },
+    ])
+  })
+
+  test('handles signal-getter call values as expressions', () => {
+    expect(parseStyleObjectEntries('{ background: bg(), color: fg() }')).toEqual([
+      { cssKey: 'background', kind: 'expr', expr: 'bg()' },
+      { cssKey: 'color', kind: 'expr', expr: 'fg()' },
+    ])
+  })
+
+  test('quoted keys are honoured', () => {
+    expect(parseStyleObjectEntries("{ 'z-index': '1' }")).toEqual([
+      { cssKey: 'z-index', kind: 'literal', value: '1' },
+    ])
+  })
+
+  test('vendor-prefixed keys keep the leading dash', () => {
+    expect(parseStyleObjectEntries("{ WebkitTransform: 'none' }")).toEqual([
+      { cssKey: '-webkit-transform', kind: 'literal', value: 'none' },
+    ])
+    // The `ms` prefix is lowercase in React style keys but the CSS property
+    // carries a leading dash (`-ms-transform`), unlike `Webkit`/`Moz`.
+    expect(parseStyleObjectEntries("{ msTransform: 'none' }")).toEqual([
+      { cssKey: '-ms-transform', kind: 'literal', value: 'none' },
+    ])
+  })
+
+  test('returns null for unsupported shapes (spread / shorthand / computed)', () => {
+    expect(parseStyleObjectEntries('{ ...rest }')).toBeNull()
+    expect(parseStyleObjectEntries('{ color }')).toBeNull()
+    expect(parseStyleObjectEntries('{ [k]: v }')).toBeNull()
+  })
+
+  test('returns null for a non-object source', () => {
+    expect(parseStyleObjectEntries('color')).toBeNull()
   })
 })

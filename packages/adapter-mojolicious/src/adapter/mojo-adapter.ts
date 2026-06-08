@@ -41,6 +41,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  parseStyleObjectEntries,
   isSupported,
   exprToString,
   identifierPath,
@@ -52,6 +53,7 @@ import {
   evalStringArrayJoin,
   extractArrowBodyExpression,
   collectContextConsumers,
+  isLowerableObjectRestDestructure,
   type ContextConsumer,
   extractSsrDefaults,
 } from '@barefootjs/jsx'
@@ -904,7 +906,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // iff the param is a destructure pattern (array or object); a
     // simple identifier leaves it `undefined`. The structured check is
     // robust to whitespace / formatting variants in the source.
-    if (loop.paramBindings && loop.paramBindings.length > 0) {
+    // A destructure loop param is lowerable for the object-rest / simple-field
+    // shape (`.map(({ id, title, ...rest }) => …)`, `rest` read via member
+    // access): each binding becomes a Perl `my` local off the per-item var, so
+    // the body's `$id` / `$rest->{flag}` resolve natively. Array-index / nested
+    // / rest-spread shapes still can't unpack into scalar `my`s → BF104. (#1310)
+    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
+    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -951,7 +960,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // nested loops; released after the body lines are assembled below.
     const loopBound = loop.iterationShape === 'keys'
       ? [param]
-      : [param, loop.index ?? '_i']
+      : supportableDestructure
+        ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
+        : [param, loop.index ?? '_i']
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
     }
@@ -979,7 +990,20 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
     lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
     if (loop.iterationShape !== 'keys') {
-      lines.push(`% my $${param} = ${array}->[${indexVar}];`)
+      if (supportableDestructure) {
+        // Per-item var + one `my` local per binding; `rest` aliases the item
+        // so `$rest->{flag}` resolves (object-rest read via member access).
+        lines.push(`% my $__bf_item = ${array}->[${indexVar}];`)
+        for (const b of loop.paramBindings ?? []) {
+          lines.push(
+            b.rest
+              ? `% my $${b.name} = $__bf_item;`
+              : `% my $${b.name} = $__bf_item->{${b.path.slice(1)}};`,
+          )
+        }
+      } else {
+        lines.push(`% my $${param} = ${array}->[${indexVar}];`)
+      }
     }
 
     // Handle filter().map() pattern by wrapping children in if-condition
@@ -1196,15 +1220,20 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${value.value}"`,
     emitExpression: (value, name) => {
+      // `style={{ … }}` object literal → a CSS string with dynamic values
+      // interpolated, instead of refusing the bare object with BF101 (#1322).
+      if (name === 'style') {
+        const css = this.tryLowerStyleObject(value.expr)
+        if (css !== null) return `style="${css}"`
+      }
       // Refuse shapes that the regex pipeline silently mangles into
-      // invalid Perl (#1322). Object literals (`style={{...}}`) and
-      // tagged-template-literal call expressions (`cn\`base \${tone()}\``)
-      // have no idiomatic Mojo template form; the Go adapter raises
-      // BF101 here via `convertExpressionToGo` + `isSupported`. Lift the
-      // same gate so the user gets a clear diagnostic instead of broken
-      // output. The check runs before `convertExpressionToPerl` so the
-      // regex pipeline never produces template-text fragments for a
-      // shape we've already rejected.
+      // invalid Perl (#1322). Tagged-template-literal call expressions
+      // (`cn\`base \${tone()}\``) have no idiomatic Mojo template form; the Go
+      // adapter raises BF101 here via `convertExpressionToGo` + `isSupported`.
+      // Lift the same gate so the user gets a clear diagnostic instead of
+      // broken output. The check runs before `convertExpressionToPerl` so the
+      // regex pipeline never produces template-text fragments for a shape
+      // we've already rejected.
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
@@ -1353,6 +1382,42 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
     emitJsxChildren: () => '',
+  }
+
+  /**
+   * Lower a `style={{ … }}` object literal to a CSS string with dynamic values
+   * interpolated as EP actions, e.g. `{ backgroundColor: color, padding: '8px' }`
+   * → `background-color:<%= $color %>;padding:8px`. Returns null when the shape
+   * is unsupported or any value can't be lowered (caller then falls through to
+   * the BF101 refusal). (#1322)
+   */
+  private tryLowerStyleObject(expr: string): string | null {
+    const entries = parseStyleObjectEntries(expr)
+    if (!entries) return null
+    for (const e of entries) {
+      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
+    }
+    // The static CSS key + literal value are inlined into a double-quoted
+    // `style="..."` attribute as raw template text, so HTML-attr escape them
+    // (a value like `'"'` would otherwise break the attribute / inject
+    // markup). The dynamic arm's `<%= … %>` is HTML-escaped by Mojo's EP.
+    return entries
+      .map(e =>
+        e.kind === 'literal'
+          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
+          : `${this.escapeAttrText(e.cssKey)}:<%= ${this.convertExpressionToPerl(e.expr)} %>`,
+      )
+      .join(';')
+  }
+
+  /** HTML-attribute escape for static text inlined into a `"..."` attribute. */
+  private escapeAttrText(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
   }
 
   private renderAttributes(element: IRElement): string {

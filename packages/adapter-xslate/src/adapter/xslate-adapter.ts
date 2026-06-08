@@ -55,6 +55,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  parseStyleObjectEntries,
   isSupported,
   identifierPath,
   emitParsedExpr,
@@ -65,6 +66,7 @@ import {
   evalStringArrayJoin,
   extractArrowBodyExpression,
   collectContextConsumers,
+  isLowerableObjectRestDestructure,
   type ContextConsumer,
   extractSsrDefaults,
 } from '@barefootjs/jsx'
@@ -789,7 +791,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // `({ name, age }) => ...`) lowers to invalid Kolon — Kolon's `for LIST
     // -> $item` binds a single scalar and can't unpack a tuple. Surface this
     // at build time instead of shipping a broken template line.
-    if (loop.paramBindings && loop.paramBindings.length > 0) {
+    // A destructure loop param is lowerable for the object-rest / simple-field
+    // shape (`.map(({ id, title, ...rest }) => …)`, `rest` read via member
+    // access): each binding becomes a Kolon `: my` local off the per-item var,
+    // so the body's `$id` / `$rest.flag` resolve. Array-index / nested /
+    // rest-spread shapes still can't unpack a tuple → BF104. (#1310)
+    const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
+    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
@@ -822,16 +831,29 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // For `keys`-shape iterations the callback param IS the index. We iterate
     // the array but bind the loop var to a throwaway and expose the index as
     // `$param`. Kolon's `$~loopvar.index` provides the 0-based index.
-    const loopVar = loop.iterationShape === 'keys' ? '__bf_item' : param
+    const loopVar = loop.iterationShape === 'keys'
+      ? '__bf_item'
+      : supportableDestructure ? '__bf_item' : param
 
     // Index alias: when an explicit `index` param is present (`.map((x, i) =>
     // ...)`) or the iteration is `keys`-shaped, expose it via a `: my` Kolon
-    // local bound to the loop variable's `.index` accessor.
+    // local bound to the loop variable's `.index` accessor. A supported
+    // destructure param adds one `: my` local per binding (`rest` aliases the
+    // item so `$rest.flag` resolves).
     const indexLocalLines: string[] = []
     if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`: my $${param} = $~${loopVar}.index;`)
     } else if (loop.index) {
       indexLocalLines.push(`: my $${loop.index} = $~${loopVar}.index;`)
+    }
+    if (supportableDestructure) {
+      for (const b of loop.paramBindings ?? []) {
+        indexLocalLines.push(
+          b.rest
+            ? `: my $${b.name} = $${loopVar};`
+            : `: my $${b.name} = $${loopVar}${b.path};`,
+        )
+      }
     }
 
     const prevInLoop = this.inLoop
@@ -1074,9 +1096,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private readonly elementAttrEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) => `${name}="${value.value}"`,
     emitExpression: (value, name) => {
+      // `style={{ … }}` object literal → a CSS string with dynamic values
+      // interpolated, instead of refusing the bare object with BF101 (#1322).
+      if (name === 'style') {
+        const css = this.tryLowerStyleObject(value.expr)
+        if (css !== null) return `style="${css}"`
+      }
       // Refuse shapes that the lowering pipeline can't represent in Kolon —
-      // object literals (`style={{...}}`) and tagged-template-literal call
-      // expressions (`cn\`base \${tone()}\``). Same gate as the Mojo adapter.
+      // tagged-template-literal call expressions (`cn\`base \${tone()}\``).
+      // Same gate as the Mojo adapter.
       if (this.refuseUnsupportedAttrExpression(value.expr, name)) {
         return ''
       }
@@ -1175,6 +1203,41 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
     emitJsxChildren: () => '',
+  }
+
+  /**
+   * Lower a `style={{ … }}` object literal to a CSS string with dynamic values
+   * interpolated as Kolon actions, e.g. `{ backgroundColor: color }` →
+   * `background-color:<: $color :>`. Returns null when the shape is unsupported
+   * or any value can't be lowered (caller falls through to BF101). (#1322)
+   */
+  private tryLowerStyleObject(expr: string): string | null {
+    const entries = parseStyleObjectEntries(expr)
+    if (!entries) return null
+    for (const e of entries) {
+      if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
+    }
+    // The static CSS key + literal value are inlined into a double-quoted
+    // `style="..."` attribute as raw template text, so HTML-attr escape them
+    // (a value like `'"'` would otherwise break the attribute / inject
+    // markup). The dynamic arm's `<: … :>` is HTML-escaped by Kolon.
+    return entries
+      .map(e =>
+        e.kind === 'literal'
+          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
+          : `${this.escapeAttrText(e.cssKey)}:<: ${this.convertExpressionToKolon(e.expr)} :>`,
+      )
+      .join(';')
+  }
+
+  /** HTML-attribute escape for static text inlined into a `"..."` attribute. */
+  private escapeAttrText(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
   }
 
   private renderAttributes(element: IRElement): string {

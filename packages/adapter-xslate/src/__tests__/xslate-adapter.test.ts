@@ -52,10 +52,11 @@ runAdapterConformanceTests({
       { code: 'BF103', severity: 'error' },
       { code: 'BF104', severity: 'error' },
     ],
-    // Rest-destructure `.map()` callbacks — the loop emitter raises the
-    // generic BF104 destructure refusal regardless of rest-vs-plain
-    // (same surface as mojo).
-    'rest-destructure-object-in-map': [{ code: 'BF104', severity: 'error' }],
+    // Rest-destructure `.map()` callbacks — the object-rest shape read via
+    // member access (`rest-destructure-object-in-map`) now lowers via Kolon
+    // `: my` binding locals (`$rest` aliases the item). The other three stay
+    // refused: rest SPREAD needs a residual object, array-index / nested paths
+    // can't unpack a tuple (same surface as mojo).
     'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
@@ -72,14 +73,10 @@ runAdapterConformanceTests({
     // above — refused with BF101 for the identical Kolon engine reason, not a
     // render-mismatch (so it's pinned here, not in `skipJsx`).
     'kbd': [{ code: 'BF101', severity: 'error' }],
-    // JS object literal in an attribute value (`style={{ … }}`) has no
-    // Kolon form — refused via the same gate as mojo (BF101).
-    'style-3-signals': [{ code: 'BF101', severity: 'error' }],
-    // Dynamic `style={{ … }}` object: the Xslate adapter cleanly refuses it
-    // with BF101 (no idiomatic Kolon form). mojo *skips* this fixture because
-    // its EP path emits invalid Perl silently — Xslate's build-time diagnostic
-    // is the stronger contract, so it's pinned here rather than skipped.
-    'style-object-dynamic': [{ code: 'BF101', severity: 'error' }],
+    // `style-3-signals` / `style-object-dynamic` no longer pinned — a
+    // `style={{ … }}` object literal now lowers to a CSS string with dynamic
+    // values interpolated (`background-color:<: $color :>;padding:8px`) via
+    // `tryLowerStyleObject` (#1322).
     // Tagged-template-literal call in a className — same family, same
     // refusal (BF101).
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],

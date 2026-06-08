@@ -44,10 +44,10 @@ runAdapterConformanceTests({
   // any cross-adapter file — every adapter declares its own
   // refusal set against the canonical fixture corpus.
   expectedDiagnostics: {
-    // JS object literal in attribute position: `convertExpressionToGo`
-    // can't lower into Go template syntax — surfaces as BF101 with an
-    // @client suggestion.
-    'style-object-dynamic': [{ code: 'BF101', severity: 'error' }],
+    // `style-object-dynamic` / `style-3-signals` no longer pinned — a
+    // `style={{ … }}` object literal now lowers to a CSS string with dynamic
+    // values interpolated (`background-color:{{.Color}};padding:8px`) via
+    // `tryLowerStyleObject` (#1322).
     // Sibling-imported child component inside a loop body: the adapter
     // emits `{{template "X" .}}` which only resolves if the user has
     // compiled the sibling file and registered the template on the
@@ -71,27 +71,20 @@ runAdapterConformanceTests({
       { code: 'BF103', severity: 'error' },
       { code: 'BF104', severity: 'error' },
     ],
-    // #1244 stress catalog: same `convertExpressionToGo` refusal shape
-    // as `style-object-dynamic` above — a JS object literal in
-    // attribute position can't lower into Go template syntax, so the
-    // adapter surfaces BF101 instead of emitting invalid template.
-    'style-3-signals': [{ code: 'BF101', severity: 'error' }],
+    // (`style-3-signals` graduated alongside `style-object-dynamic` — see note
+    // above; the `style={{ … }}` object now lowers to a CSS string.)
     // #1244 stress catalog: tagged-template-literal callees
     // (`cn\`base \${tone()}\``) likewise can't lower into Go template
     // syntax — same BF101 refusal.
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
-    // #1310: rest destructure in .map() callback. Hono / CSR lower
-    // these via the inline residual-object accessor (#1309), but the
-    // Go template adapter has no analogous lowering — `paramBindings`
-    // is non-empty so the generic destructure-refusal at
-    // `go-template-adapter.ts` fires BF104 regardless of whether the
-    // binding is rest or plain. Pinning the contract here makes the
-    // limitation declarative: when the Go adapter grows a native
-    // rest-lowering, dropping these entries flips the contract on.
-    'rest-destructure-object-in-map': [{ code: 'BF104', severity: 'error' }],
-    // #1244 catalog: rest spread back onto the root element. Same
-    // refusal shape as the read-only variant above — `paramBindings`
-    // is non-empty so BF104 fires regardless of how `rest` is used.
+    // #1310: rest destructure in .map() callback. The object-rest shape read
+    // via member access (`rest-destructure-object-in-map`) now lowers — each
+    // binding resolves to a field on a synthetic `$__bf_item0` range var (the
+    // reserved `__bf_item` name, depth-suffixed) and `rest.flag` →
+    // `$__bf_item0.Flag` (`destructureBindingsSupportable`). The
+    // other three stay refused: rest SPREAD (`{...rest}`) needs a residual
+    // object, and array-index / nested paths (`[a, ...t]`, `{ cells: [h] }`)
+    // need index/slice machinery Go's `{{range}}` can't express inline.
     'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
     'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],

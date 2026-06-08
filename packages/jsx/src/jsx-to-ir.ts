@@ -33,7 +33,7 @@ import {
   AttrValueOf,
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation } from './analyzer-context.ts'
-import { parseExpression, isSupported, parseBlockBody, extractSortComparatorFromTS, type ParsedExpr, type ParsedStatement, type SortComparator } from './expression-parser.ts'
+import { parseExpression, isSupported, parseBlockBody, extractSortComparatorFromTS, cssKebabCase, type ParsedExpr, type ParsedStatement, type SortComparator } from './expression-parser.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { containsReactiveExpression } from './reactivity-checker.ts'
 import {
@@ -3804,7 +3804,7 @@ function tryStaticStyleObjectToCss(expr: ts.ObjectLiteralExpression): string | n
     if (!ts.isPropertyAssignment(prop)) return null
     if (!ts.isIdentifier(prop.name) && !ts.isStringLiteral(prop.name)) return null
     if (!ts.isStringLiteral(prop.initializer)) return null
-    const key = prop.name.text.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
+    const key = cssKebabCase(prop.name.text)
     parts.push(`${key}:${prop.initializer.text}`)
   }
   return parts.join(';')
