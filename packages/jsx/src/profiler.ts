@@ -394,11 +394,33 @@ export interface JoinedEvent {
 export interface JoinResult {
   joined: JoinedEvent[]
   /**
-   * Ids referenced by the stream that the IR did not resolve — surfaced, never
+   * Actionable coverage gaps: ids shaped like a compiler profiler id
+   * (`<Component>#<kind>:<rest>`) that the IR did not resolve — surfaced, never
    * dropped (SR4 invariant). A non-empty list is the honest coverage caveat the
-   * analyses print.
+   * analyses print: something the IR *should* have explained but didn't.
    */
   unattributed: UnattributedId[]
+  /**
+   * Non-actionable runtime bookkeeping ids (`s9`, `e3`, `m7`, `r10`) — anonymous
+   * reactive nodes the compiler never named (see `isRuntimeBookkeepingId`).
+   * Kept separate from `unattributed` so the coverage report focuses on real,
+   * fixable gaps instead of internal slot/ref noise, but still surfaced (never
+   * dropped) so the SR4 "account for every id" invariant holds.
+   */
+  diagnostics: UnattributedId[]
+}
+
+/**
+ * True for the reactive runtime's *fallback* ids — the synthetic `s<n>`
+ * (signal), `e<n>` (effect), `m<n>` (memo), and `r<n>` (root) sequences
+ * `reactive.ts` assigns when a node carries no compiler `__bfId`. These name
+ * anonymous internal machinery, never a source location, so they can never be
+ * attributed to an IR node. Treating them as coverage gaps makes a healthy
+ * report look broken (#1840); they belong in the non-actionable diagnostics
+ * bucket instead. Compiler ids always carry a `#`, so they never match.
+ */
+function isRuntimeBookkeepingId(id: string): boolean {
+  return /^[serm]\d+$/.test(id)
 }
 
 /**
@@ -426,11 +448,16 @@ export function joinProfilerEvents(events: readonly ProfilerEvent[], index: IdIn
     })
   }
 
-  const unattributed = [...gaps.entries()]
-    .map(([id, count]) => ({ id, count }))
-    .sort((a, b) => b.count - a.count)
+  const unattributed: UnattributedId[] = []
+  const diagnostics: UnattributedId[] = []
+  for (const [id, count] of gaps.entries()) {
+    ;(isRuntimeBookkeepingId(id) ? diagnostics : unattributed).push({ id, count })
+  }
+  const byCount = (a: UnattributedId, b: UnattributedId): number => b.count - a.count
+  unattributed.sort(byCount)
+  diagnostics.sort(byCount)
 
-  return { joined, unattributed }
+  return { joined, unattributed, diagnostics }
 }
 
 // -- Analysis: hot subscribers (v1, §4.2.1) -----------------------------------
@@ -852,8 +879,14 @@ export interface ProfileCoverage {
   handlersFired: number
   /** Handlers the IR knows about (`buildEventSummary`). */
   handlersTotal: number
-  /** SR4 ids the IR could not resolve — the honest gap. */
+  /** SR4 ids the IR could not resolve — the honest, actionable gap. */
   unattributed: UnattributedId[]
+  /**
+   * Anonymous runtime bookkeeping ids (`s*`/`e*`/`m*`/`r*`) that have no source
+   * node — non-actionable noise, kept out of `unattributed` so the gap list
+   * stays meaningful, but reported here so nothing is silently dropped.
+   */
+  diagnostics: UnattributedId[]
 }
 
 export interface ProfileReport {
@@ -940,7 +973,7 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
 
   const hotSubscribers = analyzeHotSubscribers(events, index)
   const batchAdvisor = analyzeBatchAdvisor(events, index)
-  const { unattributed } = joinProfilerEvents(events, index)
+  const { unattributed, diagnostics } = joinProfilerEvents(events, index)
 
   // Safety oracle (§4.2.3): upgrade each candidate from 'unverified'.
   for (const c of batchAdvisor.candidates) {
@@ -979,6 +1012,7 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
       handlersFired: handlerIds.size,
       handlersTotal,
       unattributed,
+      diagnostics,
     },
   }
 }
@@ -1007,6 +1041,11 @@ export function formatProfileReport(r: ProfileReport): string {
   lines.push(`coverage: ${c.handlersFired}/${c.handlersTotal} handlers exercised`)
   if (c.unattributed.length > 0) {
     lines.push(`  ⚠ ${c.unattributed.length} unattributed id(s): ${c.unattributed.slice(0, 3).map(u => u.id).join(', ')}`)
+  }
+  // Anonymous runtime bookkeeping ids (s*/e*/m*/r*) are noted but flagged
+  // non-actionable, so the report is honest about coverage without crying wolf.
+  if (c.diagnostics.length > 0) {
+    lines.push(`  · ${c.diagnostics.length} anonymous runtime id(s) (non-actionable bookkeeping)`)
   }
   return lines.join('\n')
 }
