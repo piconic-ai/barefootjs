@@ -1,11 +1,8 @@
 name: 'Setup Bun (resilient)'
 description: >
-  Installs a pinned Bun directly from GitHub Releases using curl with HTTP-level
-  retries, so transient GitHub Releases 504s (the CDN that serves the bun binary)
-  retry instead of failing the whole job. Downloads fresh on every run — no
-  cross-run cache is used, so a poisoned cache can never substitute the binary.
-  Has no third-party action dependency. Override the `bun-version` input if a job
-  needs a different version.
+  Installs a pinned Bun from GitHub Releases with curl retries, so transient
+  504s from the release CDN retry instead of failing the job. No third-party
+  action and no cross-run cache (which could be poisoned).
 
 inputs:
   bun-version:
@@ -22,46 +19,14 @@ runs:
         BUN_VERSION: ${{ inputs.bun-version }}
       run: |
         set -euo pipefail
-
+        # All workflows run on ubuntu-latest, so the target is always linux-x64.
         bin="$HOME/.bun/bin"
         mkdir -p "$bin"
-
-        # Map uname output to Bun's release asset naming.
-        os="$(uname -s)"; arch="$(uname -m)"
-        case "$os" in
-          Linux) os_tag="linux" ;;
-          Darwin) os_tag="darwin" ;;
-          *) echo "::error::Unsupported OS for Bun setup: $os"; exit 1 ;;
-        esac
-        case "$arch" in
-          x86_64|amd64) arch_tag="x64" ;;
-          aarch64|arm64) arch_tag="aarch64" ;;
-          *) echo "::error::Unsupported architecture for Bun setup: $arch"; exit 1 ;;
-        esac
-        target="${os_tag}-${arch_tag}"
-
-        # Re-runs of this step on the same runner reuse an already-good binary;
-        # otherwise (the normal case) we download fresh.
-        if [ -x "$bin/bun" ] && [ "$("$bin/bun" --version 2>/dev/null || true)" = "$BUN_VERSION" ]; then
-          echo "Bun $BUN_VERSION already present — skipping download."
-        else
-          url="https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-${target}.zip"
-          tmp="$(mktemp -d)"
-          echo "Downloading $url"
-          # --retry-all-errors retries transient HTTP errors (incl. 504) at the
-          # transport layer — the whole point of this action.
-          curl --fail --location --show-error --silent \
-               --retry 6 --retry-delay 10 --retry-all-errors --retry-connrefused \
-               --connect-timeout 30 \
-               --output "$tmp/bun.zip" "$url"
-          unzip -oq "$tmp/bun.zip" -d "$tmp"
-          mv "$tmp/bun-${target}/bun" "$bin/bun"
-          chmod +x "$bin/bun"
-          rm -rf "$tmp"
-        fi
-
-        # `bunx` is shipped as a symlink to `bun`; recreate it (cache may predate it).
-        ln -sf "$bin/bun" "$bin/bunx"
-
+        url="https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-linux-x64.zip"
+        curl --fail --location --show-error --retry 6 --retry-delay 10 --retry-all-errors \
+             --output /tmp/bun.zip "$url"
+        unzip -oq /tmp/bun.zip -d /tmp
+        install -m755 /tmp/bun-linux-x64/bun "$bin/bun"
+        ln -sf "$bin/bun" "$bin/bunx"   # bunx ships as a symlink to bun
         echo "$bin" >> "$GITHUB_PATH"
-        echo "Bun $("$bin/bun" --version) ready at $bin"
+        "$bin/bun" --version
