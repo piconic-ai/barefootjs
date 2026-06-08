@@ -182,12 +182,13 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
 }
 
 /**
- * Collect the property names a `props.X` access reads off `propsObjectName`
+ * Collect the first-level property name of every `propsObjectName.X` access
  * within `expr` (e.g. `props.initial ?? 0` → `initial`). Used to seed the
  * stash vars a template-stash adapter's bare-scalar signal/memo recompute
- * references. Only direct single-level accesses
- * (`<propsObjectName>.<name>`) are collected — deeper chains
- * (`props.a.b`) don't lower to a bare scalar and are left alone.
+ * references. A deeper chain (`props.a.b`) still contributes its *base*
+ * prop `a`: adapters lower that to `$a->{b}`, so the bare `$a` needs
+ * seeding just the same — the walk stops at the first
+ * `propsObjectName.<name>` match and collects `a` (not `b`).
  */
 function collectPropRefs(
   expr: string | undefined,
@@ -204,9 +205,11 @@ function collectPropRefs(
       n.expression.text === propsObjectName &&
       ts.isIdentifier(n.name)
     ) {
+      // `propsObjectName.<name>` — collect <name> and stop. For a deeper
+      // chain (`props.a.b`) this node is the inner `props.a`, so we collect
+      // the base prop `a` (which lowers to `$a->{b}`); the outer `.b`
+      // access has no further `props.` reference to find.
       out.add(n.name.text)
-      // Don't descend into the matched access; its `.name` isn't a
-      // further reference. (The base identifier has no children to scan.)
       return
     }
     ts.forEachChild(n, visit)
