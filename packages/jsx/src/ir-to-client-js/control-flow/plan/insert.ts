@@ -79,6 +79,8 @@ export interface ArmEventBind {
   eventName: string
   /** Handler source expression (already trimmed). The stringifier wraps it. */
   handler: string
+  /** Profile-mode turn id (#1690, SR3); when set the listener is turn-wrapped. */
+  turnId?: string
 }
 
 export interface ArmRefBind {

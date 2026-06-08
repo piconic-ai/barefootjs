@@ -24,6 +24,8 @@ import type {
 export interface BuildInsertOptions {
   scope: ScopeRef
   eventNameMode: 'dom' | 'raw'
+  /** Owning component name in profile mode (#1690, SR3) — else undefined. */
+  profileComponentName?: string
 }
 
 export function buildInsertPlan(
@@ -56,11 +58,15 @@ function buildArm(
 }
 
 function buildArmBody(branch: BranchSummary, options: BuildInsertOptions): ArmBody {
+  const pc = options.profileComponentName
   return {
     events: branch.events.map(e => ({
       slotId: e.slotId,
       eventName: e.eventName,
       handler: e.handler,
+      // Profile mode (#1690, SR3): turn id so the arm listener is wrapped with
+      // beginTurn/endTurn, matching the top-level/delegation paths.
+      turnId: pc ? `${pc}#handler:${e.slotId}:${e.eventName}` : undefined,
     })),
     refs: branch.refs.map(r => ({
       slotId: r.slotId,
@@ -81,13 +87,13 @@ function buildArmBody(branch: BranchSummary, options: BuildInsertOptions): ArmBo
       expression: t.expression,
     })),
     // Branch-scoped loops, fully Plan-built (Item 2 final migration).
-    loops: branch.loops.map(buildBranchLoopPlan),
+    loops: branch.loops.map(l => buildBranchLoopPlan(l, pc)),
     // Nested conditionals are themselves InsertPlans — built recursively so
     // the same stringifier handles arbitrary depth. Their scope is always
     // `__branchScope` (the parent arm's bindEvents argument), regardless of
     // the outer scope; only the eventNameMode is inherited.
     conditionals: branch.conditionals.map(c =>
-      buildInsertPlan(c, { scope: { kind: 'branchScope' }, eventNameMode: options.eventNameMode }),
+      buildInsertPlan(c, { scope: { kind: 'branchScope' }, eventNameMode: options.eventNameMode, profileComponentName: pc }),
     ),
   }
 }

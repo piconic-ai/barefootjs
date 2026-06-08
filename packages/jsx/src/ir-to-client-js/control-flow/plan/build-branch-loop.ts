@@ -22,7 +22,7 @@ import type {
   BranchPlainLoopPlan,
 } from './branch-loop.ts'
 
-export function buildBranchLoopPlan(loop: BranchLoop): BranchLoopPlan {
+export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: string): BranchLoopPlan {
   const containerSlotId = loop.containerSlotId
   const cv = varSlotId(containerSlotId)
   const containerVar = `__loop_${cv}`
@@ -67,7 +67,7 @@ export function buildBranchLoopPlan(loop: BranchLoop): BranchLoopPlan {
           loopParamBindings: loop.paramBindings,
         })
       : null,
-    eventDelegation: buildBranchLoopDelegationPlan(loop, cv),
+    eventDelegation: buildBranchLoopDelegationPlan(loop, cv, profileComponentName),
     childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings),
     bodyIsMultiRoot: loop.bodyIsMultiRoot ?? false,
   }

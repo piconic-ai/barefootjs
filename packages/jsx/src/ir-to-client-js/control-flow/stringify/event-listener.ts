@@ -13,7 +13,7 @@
  * by `@client` conditionals).
  */
 
-import { toDomEventName, wrapHandlerInBlock } from '../../utils.ts'
+import { toDomEventName, wrapHandlerInBlock, wrapHandlerForTurn } from '../../utils.ts'
 
 export type EventNameMode = 'dom' | 'raw'
 
@@ -31,8 +31,11 @@ export function emitListenerLine(
   eventName: string,
   handler: string,
   mode: EventNameMode = 'dom',
+  turnId?: string,
 ): void {
-  const wrapped = wrapHandlerInBlock(handler)
+  // Profile mode (#1690, SR3): when a turn id is supplied the handler is
+  // bracketed with beginTurn/endTurn instead of the plain block wrap.
+  const wrapped = turnId ? wrapHandlerForTurn(handler, turnId) : wrapHandlerInBlock(handler)
   const name = mode === 'dom' ? toDomEventName(eventName) : eventName
   lines.push(`${indent}if (${elementVar}) ${elementVar}.addEventListener('${name}', ${wrapped})`)
 }

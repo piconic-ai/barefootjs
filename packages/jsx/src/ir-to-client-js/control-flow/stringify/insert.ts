@@ -105,7 +105,7 @@ function emitArmBody(
   for (const [slotId, slotEvents] of eventsBySlot) {
     const v = varSlotId(slotId)
     for (const ev of slotEvents) {
-      emitListenerLine(lines, indent, `_${v}`, ev.eventName, ev.handler, mode)
+      emitListenerLine(lines, indent, `_${v}`, ev.eventName, ev.handler, mode, ev.turnId)
     }
   }
 
