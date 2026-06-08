@@ -30,7 +30,7 @@
  *     <indent>}) }
  */
 
-import { keyAttrName } from '../../utils.ts'
+import { keyAttrName, profileBindingId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { emitMultiRootTemplateCloneLines } from './template-parse.ts'
@@ -44,17 +44,18 @@ export function stringifyInnerLoops(
   lines: string[],
   plan: InnerLoopsPlan,
   indent: string,
+  pc?: string,
 ): void {
   for (const inner of plan) {
     if (inner.emit.mode === 'reactive') {
-      emitReactive(lines, inner, indent)
+      emitReactive(lines, inner, indent, pc)
     } else {
-      emitStatic(lines, inner, indent)
+      emitStatic(lines, inner, indent, pc)
     }
   }
 }
 
-function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string): void {
+function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc: string | undefined): void {
   const uid = inner.uidSuffix
   const emit = inner.emit
   if (emit.mode !== 'reactive') return // narrow
@@ -98,16 +99,17 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string): vo
     )
   }
   if (inner.childLevels.length > 0) {
-    stringifyInnerLoops(lines, inner.childLevels, `${indent}  `)
+    stringifyInnerLoops(lines, inner.childLevels, `${indent}  `, pc)
   }
   for (const text of emit.reactiveTexts) {
+    const bf = profileBindingId(pc, text.slotId)
     if (text.insideConditional) {
       // Re-query $t inside the effect: insert() may swap the text node so a
       // captured reference would silently stop updating.
-      lines.push(`${indent}  createEffect(() => { const [__rt] = $t(__innerEl${uid}, '${text.slotId}'); if (__rt) __rt.textContent = String(${text.wrappedExpression}) })`)
+      lines.push(`${indent}  createEffect(() => { const [__rt] = $t(__innerEl${uid}, '${text.slotId}'); if (__rt) __rt.textContent = String(${text.wrappedExpression}) }${bf})`)
     } else {
       lines.push(`${indent}  { const [__rt] = $t(__innerEl${uid}, '${text.slotId}')`)
-      lines.push(`${indent}  if (__rt) createEffect(() => { __rt.textContent = String(${text.wrappedExpression}) }) }`)
+      lines.push(`${indent}  if (__rt) createEffect(() => { __rt.textContent = String(${text.wrappedExpression}) }${bf}) }`)
     }
   }
   for (const attr of emit.reactiveAttrs) {
@@ -117,7 +119,7 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string): vo
     for (const stmt of emitAttrUpdate(targetVar, attr.attrName, attr.wrappedExpression, attr.meta)) {
       lines.push(`${indent}    ${stmt}`)
     }
-    lines.push(`${indent}  }) }`)
+    lines.push(`${indent}  }${profileBindingId(pc, attr.slotId)}) }`)
   }
   // Imperative ref callbacks fire on every renderItem invocation, which
   // means every mount: SSR hydration, initial CSR creation, and same-key
@@ -128,10 +130,10 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string): vo
     bodyIsMultiRoot: emit.bodyIsMultiRoot,
   })
   lines.push(`${indent}  return __innerEl${uid}`)
-  lines.push(`${indent}}, '${inner.markerId}') }`)
+  lines.push(`${indent}}, '${inner.markerId}'${profileBindingId(pc, inner.slotId)}) }`)
 }
 
-function emitStatic(lines: string[], inner: InnerLoopPlan, indent: string): void {
+function emitStatic(lines: string[], inner: InnerLoopPlan, indent: string, pc: string | undefined): void {
   const uid = inner.uidSuffix
   const emit = inner.emit
   if (emit.mode !== 'static') return
@@ -161,7 +163,7 @@ function emitStatic(lines: string[], inner: InnerLoopPlan, indent: string): void
     inner.outerLoopParamBindings,
   )
   if (inner.childLevels.length > 0) {
-    stringifyInnerLoops(lines, inner.childLevels, `${indent}  `)
+    stringifyInnerLoops(lines, inner.childLevels, `${indent}  `, pc)
   }
   // Imperative ref callbacks for static inner loops — fire once per
   // forEach iteration (#1244). Static arrays don't reactively re-iterate,

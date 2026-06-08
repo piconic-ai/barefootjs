@@ -83,6 +83,13 @@ export interface InnerLoopPlan {
   uidSuffix: string
   /** Loop marker id — passed to mapArray so sibling loops disambiguate (#1087). */
   markerId: string
+  /**
+   * IR slot id for this inner loop (#1690, #1795 Phase 3). The loop node shares
+   * its container element's slot, so this is `containerSlotId`. Used to emit the
+   * `<Component>#binding:<slotId>` profile id on the inner `mapArray`; resolves
+   * via the `loop` `domBinding`. `'?'` when the IR carried no slot.
+   */
+  slotId: string
   /** Container resolution expression — already includes scope / selectors. */
   containerExpr: string
   /** Array expression as wrapped (reactive) or as written in source (static). */

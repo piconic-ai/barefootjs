@@ -70,6 +70,12 @@ export interface BranchPlainLoopPlan {
    * multi-line renderItem with multi-root template clone (#1212).
    */
   bodyIsMultiRoot: boolean
+  /**
+   * Profile-mode loop id (#1690, #1795 Phase 3): `<Component>#binding:<slotId>`
+   * for the branch loop's `mapArray` (the loop node shares its container slot).
+   * Undefined off → byte-identical (SR8).
+   */
+  profileLoopId?: string
 }
 
 export interface BranchCompositeLoopPlan {

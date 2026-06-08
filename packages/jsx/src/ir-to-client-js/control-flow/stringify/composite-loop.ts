@@ -59,6 +59,8 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     topIndent,
     bodyIndent: rawBodyIndent,
     bodyIsMultiRoot,
+    profileComponentName: pc,
+    profileLoopId,
   } = plan
 
   // When wrapping the mapArray in createDisposableEffect (branch case), the
@@ -120,7 +122,7 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   })
   emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings, bodyIsMultiRoot)
   if (innerLoops.length > 0) {
-    stringifyInnerLoops(lines, innerLoops, bodyIndent)
+    stringifyInnerLoops(lines, innerLoops, bodyIndent, pc)
   }
 
   if (reactiveEffects) {
@@ -130,11 +132,12 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
 
   lines.push(`${bodyIndent}return __el`)
+  const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''
   if (branchClearChildren) {
     // Close inner mapArray + createDisposableEffect wrapper.
-    lines.push(`${mapArrayIndent}}, '${markerId}')`)
+    lines.push(`${mapArrayIndent}}, '${markerId}'${loopBfId})`)
     lines.push(`${topIndent}}))`)
   } else {
-    lines.push(`${topIndent}}, '${markerId}')`)
+    lines.push(`${topIndent}}, '${markerId}'${loopBfId})`)
   }
 }

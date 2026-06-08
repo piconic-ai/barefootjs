@@ -57,8 +57,10 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     eventDelegation,
     childRefs,
     bodyIsMultiRoot,
+    profileLoopId,
   } = plan
 
+  const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''
   const unwrapInline = paramUnwrap ? `${paramUnwrap} ` : ''
 
   // Wrap the mapArray() in a disposable effect so the inner createEffect
@@ -73,9 +75,9 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     // Simple case: single-line renderItem (single root, no reactive effects).
     const cloneExpr = emitTemplateCloneInline(template)
     if (mapPreambleWrapped) {
-      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${mapPreambleWrapped}; ${cloneExpr} }, '${markerId}')`)
+      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${mapPreambleWrapped}; ${cloneExpr} }, '${markerId}'${loopBfId})`)
     } else {
-      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${cloneExpr} }, '${markerId}')`)
+      lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}if (__existing) return __existing; ${cloneExpr} }, '${markerId}'${loopBfId})`)
     }
   } else {
     // Multi-line renderItem (reactive effects and/or multi-root and/or refs).
@@ -97,7 +99,7 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     }
     emitLoopChildRefs(lines, childRefs, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
     lines.push(`          return __el`)
-    lines.push(`        }, '${markerId}')`)
+    lines.push(`        }, '${markerId}'${loopBfId})`)
   }
   lines.push(`      }))`)
 

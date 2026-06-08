@@ -278,6 +278,9 @@ export function buildBranchInnerLoopsPlan(
     plan.push({
       uidSuffix: `br_${i}`,
       markerId: inner.markerId,
+      // The loop node shares its container element's slot, so `containerSlotId`
+      // is the IR slot the analyzer's `loop` domBinding uses (#1795 Phase 3).
+      slotId: csl ?? '?',
       containerExpr,
       arrayExpr: wrapOuter(inner.array),
       keyFn: loopKeyFn(inner),

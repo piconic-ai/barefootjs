@@ -69,15 +69,15 @@ export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): L
     return buildPlainLoopPlan(elem, opts.profileComponentName)
   }
   if (elem.isStaticArray) {
-    return buildStaticLoopPlan(elem, opts.unsafeLocalNames)
+    return buildStaticLoopPlan(elem, opts.unsafeLocalNames, opts.profileComponentName)
   }
   const hasInnerStructure = (elem.nestedComponents?.length ?? 0) > 0
     || (elem.innerLoops?.length ?? 0) > 0
   if (elem.useElementReconciliation && hasInnerStructure) {
-    return buildTopLevelCompositePlan(elem)
+    return buildTopLevelCompositePlan(elem, opts.profileComponentName)
   }
   if (elem.childComponent) {
-    return buildComponentLoopPlan(elem)
+    return buildComponentLoopPlan(elem, opts.profileComponentName)
   }
   return buildPlainLoopPlan(elem, opts.profileComponentName)
 }
@@ -117,7 +117,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
 }
 
 /** @internal — prefer `buildLoopPlan`. */
-export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<string>): StaticLoopPlan {
+export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<string>, profileComponentName?: string): StaticLoopPlan {
   // Group reactive attrs by their child slot id, preserving the legacy
   // declaration-order Map-iteration semantics.
   const attrsBySlotMap = new Map<string, LoopChildReactiveAttr[]>()
@@ -142,6 +142,7 @@ export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<st
     param: elem.param,
     indexParam,
     childIndexExpr,
+    profileComponentName,
     attrsBySlot: [...attrsBySlotMap].map(([slotId, attrs]) => [slotId, attrs] as const),
     texts: elem.bindings.reactiveTexts,
     // Static path: forEach binds `param` as the raw value. Passing through

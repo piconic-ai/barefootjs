@@ -48,8 +48,10 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
     keyExpr,
     nestedComps,
     childConditionalEffects,
+    profileLoopId,
   } = plan
 
+  const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''
   lines.push(`  mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
   if (paramUnwrap) lines.push(`    ${paramUnwrap}`)
 
@@ -58,7 +60,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   if (nestedComps.length === 0) {
     lines.push(`    if (__existing) { initChild('${scopedComp}', __existing, ${componentPropsExpr}); return __existing }`)
     lines.push(`    return createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
-    lines.push(`  }, '${markerId}')`)
+    lines.push(`  }, '${markerId}'${loopBfId})`)
     return
   }
 
@@ -79,7 +81,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
     stringifyReactiveEffects(lines, childConditionalEffects, { indent: '    ', elVar: '__csrEl' })
   }
   lines.push(`    return __csrEl`)
-  lines.push(`  }, '${markerId}')`)
+  lines.push(`  }, '${markerId}'${loopBfId})`)
 }
 
 function emitNestedInit(lines: string[], indent: string, parentVar: string, nc: NestedComponentInit): void {

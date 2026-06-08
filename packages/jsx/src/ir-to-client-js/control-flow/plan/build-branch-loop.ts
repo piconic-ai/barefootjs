@@ -30,7 +30,7 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
   if (loop.useElementReconciliation && (loop.nestedComponents?.length || loop.innerLoops?.length)) {
     const composite: BranchCompositeLoopPlan = {
       kind: 'composite',
-      composite: buildBranchCompositePlan(loop, cv),
+      composite: buildBranchCompositePlan(loop, cv, profileComponentName),
       containerSlotId,
       containerVar,
     }
@@ -71,6 +71,7 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
     eventDelegation: buildBranchLoopDelegationPlan(loop, cv, profileComponentName),
     childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings),
     bodyIsMultiRoot: loop.bodyIsMultiRoot ?? false,
+    profileLoopId: profileComponentName ? `${profileComponentName}#binding:${containerSlotId}` : undefined,
   }
   return plan
 }

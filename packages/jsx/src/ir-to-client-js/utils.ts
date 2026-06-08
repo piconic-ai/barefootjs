@@ -51,6 +51,25 @@ export function varSlotId(slotId: string): string {
 }
 
 /**
+ * Profile-mode DOM-binding id suffix (#1690, SR4). Returns the trailing
+ * `, "<Component>#binding:<slotId>"` argument for a binding effect's
+ * `createEffect` / `createDisposableEffect` / `insert` / `mapArray` call when
+ * `componentName` is set (profile on), else `''` so the emitted code stays
+ * byte-identical (SR8). Centralised so every binding emit site — top-level,
+ * conditional branch, loop child, inner loop — uses one id convention.
+ *
+ * A `'?'` slotId (an inner loop whose container element carries no `bf` slot
+ * marker) is NOT emittable: `buildIdIndex` keys on real `domBinding` slotIds, so
+ * `#binding:?` could never resolve and would be a guaranteed coverage gap. The
+ * analyzer likewise emits no `domBinding` for a slot-less loop, so suppressing
+ * the id here keeps both sides silent and consistent.
+ */
+export function profileBindingId(componentName: string | undefined, slotId: string): string {
+  if (!componentName || slotId === '?') return ''
+  return `, ${JSON.stringify(`${componentName}#binding:${slotId}`)}`
+}
+
+/**
  * Convert a `template` variant's parts into a JS template-literal string.
  * Shared by both `attrValueToString` and any consumer that wants to flatten
  * a structured template into JS-level concatenation.

@@ -24,7 +24,7 @@
  * passed in via `topIndent`.
  */
 
-import { emitRefCall, varSlotId } from '../../utils.ts'
+import { emitRefCall, varSlotId, profileBindingId } from '../../utils.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse.ts'
@@ -218,7 +218,7 @@ function stringifyAnchoredLoop(
 }
 
 export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void {
-  const { containerVar, arrayExpr, param, indexParam, childIndexExpr, attrsBySlot, texts, childRefs, csrMaterialize } = plan
+  const { containerVar, arrayExpr, param, indexParam, childIndexExpr, attrsBySlot, texts, childRefs, csrMaterialize, profileComponentName: pc } = plan
   const hasAttrs = attrsBySlot.length > 0
   const hasTexts = texts.length > 0
   const hasRefs = childRefs.length > 0
@@ -300,14 +300,14 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
       for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.expression, attr)) {
         lines.push(`            ${stmt}`)
       }
-      lines.push(`          })`)
+      lines.push(`          }${profileBindingId(pc, slotId)})`)
     }
     lines.push(`        }`)
   }
   for (const text of texts) {
     const vn = `__rt_${varSlotId(text.slotId)}`
     lines.push(`        { const [${vn}] = $t(__iterEl, '${text.slotId}')`)
-    lines.push(`        if (${vn}) createEffect(() => { ${vn}.textContent = String(${text.expression}) }) }`)
+    lines.push(`        if (${vn}) createEffect(() => { ${vn}.textContent = String(${text.expression}) }${profileBindingId(pc, text.slotId)}) }`)
   }
   // Ref callbacks fire on every forEach iteration — initial mount and any
   // future array-change-driven re-iteration (#1244). For static arrays the

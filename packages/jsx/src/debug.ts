@@ -1715,7 +1715,12 @@ function collectDomBindings(
     }
     case 'conditional': {
       const decision = decideWrapFromAstFlags(node)
-      if (decision.wrap && node.slotId) {
+      // A loop-child conditional whose condition reads a loop param is reactive
+      // (the emitter wraps its `insert()` in a per-item effect) even though the
+      // param is neither signal nor memo. Use the resolved `origin.freeRefs`.
+      const loopReactive =
+        loopParams.size > 0 && (node.origin?.freeRefs?.some(r => loopParams.has(r.name)) ?? false)
+      if ((decision.wrap || loopReactive) && node.slotId) {
         const deps = extractReactiveDeps(node.condition, signalGetters, memoNames)
         bindings.push({
           kind: 'dom',
@@ -1723,9 +1728,12 @@ function collectDomBindings(
           slotId: node.slotId,
           deps,
           type: 'conditional',
-          classification: decision.reason === 'proven-reactive' ? 'reactive' : 'fallback',
+          classification:
+            (decision.wrap && decision.reason === 'proven-reactive') || loopReactive
+              ? 'reactive'
+              : 'fallback',
           expression: node.condition,
-          wrapReason: decision.reason,
+          wrapReason: decision.wrap ? decision.reason : 'string-reactive',
           loc: node.loc,
           jsxPreview: `{${truncateExpr(node.condition)} ? ... : ...}`,
         })
@@ -1742,7 +1750,13 @@ function collectDomBindings(
       // (e.g. `getItems().map(...)` with an opaque helper).
       if (node.slotId) {
         const deps = extractReactiveDeps(node.array, signalGetters, memoNames)
-        const isReactive = deps.length > 0 || node.callsReactiveGetters === true
+        // An inner loop whose array reads an outer loop param (`r.tags.map(...)`)
+        // is reactive per item — use the resolved `arrayFreeIdentifiers`.
+        const loopReactive =
+          loopParams.size > 0 &&
+          node.arrayFreeIdentifiers !== undefined &&
+          [...loopParams].some(p => node.arrayFreeIdentifiers!.has(p))
+        const isReactive = deps.length > 0 || node.callsReactiveGetters === true || loopReactive
         const isFallback = !isReactive && node.hasFunctionCalls === true
         if (isReactive || isFallback) {
           // IRLoop has no `.reactive` flag (unlike IRExpression/IRConditional),
@@ -1751,7 +1765,7 @@ function collectDomBindings(
           // getter (`items()` where `items` is a signal) is proven-reactive,
           // not fallback — flip the string evidence before handing the AST
           // flags to the helper.
-          const wrapReason: WrapReason = deps.length > 0
+          const wrapReason: WrapReason = deps.length > 0 || loopReactive
             ? 'string-reactive'
             : node.callsReactiveGetters
               ? 'proven-reactive'

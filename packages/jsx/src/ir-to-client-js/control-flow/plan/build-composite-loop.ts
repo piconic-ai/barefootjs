@@ -26,7 +26,7 @@ import { buildInnerLoopsPlan } from './build-inner-loop.ts'
 import type { CompositeLoopPlan } from './types.ts'
 
 /** @internal — prefer `buildLoopPlan`. */
-export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPlan {
+export function buildTopLevelCompositePlan(elem: TopLevelLoop, profileComponentName?: string): CompositeLoopPlan {
   const nestedComps = elem.nestedComponents!
   const depthLevels = buildDepthLevels(elem.innerLoops ?? [], nestedComps, elem.bindings.events)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
@@ -63,16 +63,19 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop): CompositeLoopPla
           conditionals: elem.bindings.conditionals,
           loopParam: elem.param,
           loopParamBindings: elem.paramBindings,
+          profileComponentName,
         })
       : null,
     branchClearChildren: false,
     topIndent: '  ',
     bodyIndent: '    ',
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,
+    profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
+    profileComponentName,
   }
 }
 
-export function buildBranchCompositePlan(loop: BranchLoop, cv: string): CompositeLoopPlan {
+export function buildBranchCompositePlan(loop: BranchLoop, cv: string, profileComponentName?: string): CompositeLoopPlan {
   const nestedComps = loop.nestedComponents!
   const innerLoops = loop.innerLoops ?? []
   const childEvents = loop.bindings.events
@@ -114,12 +117,15 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string): Composit
           conditionals: loop.bindings.conditionals,
           loopParam: loop.param,
           loopParamBindings: loop.paramBindings,
+          profileComponentName,
         })
       : null,
     branchClearChildren: true,
     topIndent: '      ',
     bodyIndent: '        ',
     bodyIsMultiRoot: loop.bodyIsMultiRoot ?? false,
+    profileLoopId: profileComponentName ? `${profileComponentName}#binding:${loop.containerSlotId}` : undefined,
+    profileComponentName,
   }
 }
 
