@@ -21,6 +21,7 @@ import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { buildIdIndex } from '../profiler'
 import { buildComponentAnalysis } from '../debug'
+import { profileBindingId } from '../ir-to-client-js/utils'
 
 const adapter = new TestAdapter()
 
@@ -134,5 +135,19 @@ describe('nested loop binding ids (#1795 Phase 3)', () => {
   test('component loop attributes its mapArray', () => {
     const emitted = assertNoCoverageGap(componentLoopSource, 'CompLoop')
     expect(emitted).toContain('CompLoop#binding:s1')
+  })
+
+  test('a slot-less inner loop ("?") emits no id — never an unresolvable #binding:?', () => {
+    // An inner loop whose container element has no `bf` slot yields slotId '?'.
+    // buildIdIndex keys on real domBinding slots, so `#binding:?` could never
+    // resolve; the helper must suppress it (the analyzer emits no binding for a
+    // slot-less loop either, so both sides stay silent). Guards the single
+    // chokepoint every loop/binding emit site routes through.
+    expect(profileBindingId('Comp', '?')).toBe('')
+    expect(profileBindingId('Comp', 's3')).toBe(', "Comp#binding:s3"')
+    expect(profileBindingId(undefined, 's3')).toBe('')
+    // The nested case is the only matrix shape with an inner loop; confirm it
+    // never emits a `:?` id end-to-end.
+    expect(clientJs(nestedSource, 'Nested', true)).not.toContain('#binding:?')
   })
 })
