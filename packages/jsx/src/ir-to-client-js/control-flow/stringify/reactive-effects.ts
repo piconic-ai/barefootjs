@@ -50,6 +50,14 @@ export function stringifyReactiveEffects(
   const { indent, elVar, bodyIsMultiRoot } = opts
   const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
 
+  // Profile mode (#1690, SR4, #1795 Phase 2): a loop-child binding effect's id,
+  // resolved from its text/attribute `domBinding` (slot + loc). Empty when off
+  // → byte-identical (SR8).
+  const bindingBfId = (slotId: string): string =>
+    plan.profileComponentName
+      ? `, ${JSON.stringify(`${plan.profileComponentName}#binding:${slotId}`)}`
+      : ''
+
   // 1. Reactive attribute effects (one qsa per slot, then per-attr createEffect).
   for (const slot of plan.attrSlots) {
     const varName = `__ra_${varSlotId(slot.slotId)}`
@@ -60,14 +68,14 @@ export function stringifyReactiveEffects(
       for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta)) {
         lines.push(`${indent}    ${stmt}`)
       }
-      lines.push(`${indent}  })`)
+      lines.push(`${indent}  }${bindingBfId(slot.slotId)})`)
     }
     lines.push(`${indent}} }`)
   }
 
   // 2. Outer text effects (slots NOT inside any conditional branch).
   for (const text of plan.outerTexts) {
-    emitOuterText(lines, indent, elVar, text)
+    emitOuterText(lines, indent, elVar, text, bindingBfId(text.slotId))
   }
 
   // 3. Reactive conditionals — each emits an insert(...) over `elVar` whose
@@ -82,10 +90,11 @@ function emitOuterText(
   indent: string,
   elVar: string,
   text: ReactiveTextEffect,
+  bfId: string = '',
 ): void {
   const varName = `__rt_${varSlotId(text.slotId)}`
   lines.push(`${indent}{ const [${varName}] = $t(${elVar}, '${text.slotId}')`)
-  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }) }`)
+  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }${bfId}) }`)
 }
 
 function emitOuterConditional(

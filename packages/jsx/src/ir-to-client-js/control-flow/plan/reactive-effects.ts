@@ -62,4 +62,11 @@ export interface ReactiveEffectsPlan {
   /** Text effects scoped to the outer renderItem (not inside any conditional). */
   outerTexts: readonly ReactiveTextEffect[]
   conditionals: readonly NestedConditionalPlan[]
+  /**
+   * Owning component name in profile mode (#1690, SR4, #1795 Phase 2). When
+   * set, each loop-child attribute / outer-text `createEffect` carries a
+   * `<Component>#binding:<slotId>` id so the profiler attributes its per-item
+   * re-runs to source. Undefined off → byte-identical (SR8).
+   */
+  profileComponentName?: string
 }
