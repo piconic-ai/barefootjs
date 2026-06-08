@@ -44,7 +44,7 @@ export function stringifyBranchEventBindings(
     // nearest bf-s and miss descendants in that case.
     lines.push(`${indent}{ const _${v} = qsa(__branchScope, '[bf="${slot.slotId}"]')`)
     for (const ev of slot.listeners) {
-      emitListenerLine(lines, `${indent}  `, `_${v}`, ev.eventName, ev.wrappedHandler)
+      emitListenerLine(lines, `${indent}  `, `_${v}`, ev.eventName, ev.wrappedHandler, 'dom', ev.turnId)
     }
     lines.push(`${indent}}`)
   }

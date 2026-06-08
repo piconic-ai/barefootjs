@@ -20,6 +20,8 @@ export interface BranchEventListener {
   eventName: string
   /** Already wrapped via wrapLoopParamAsAccessor at build time. */
   wrappedHandler: string
+  /** Profile-mode turn id (#1690, SR3); when set the listener is turn-wrapped. */
+  turnId?: string
 }
 
 /** Listeners grouped by slot (one qsa() lookup per slot). */

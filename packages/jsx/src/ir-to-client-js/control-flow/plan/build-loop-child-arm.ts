@@ -76,6 +76,8 @@ export interface BuildBranchEventBindingsArgs {
   events: readonly ConditionalBranchEvent[] | undefined
   /** Loop-param wrap closure. Identity (`x => x`) when no loop param applies. */
   wrap: (expr: string) => string
+  /** Owning component name in profile mode (#1690, SR3) — else undefined. */
+  profileComponentName?: string
 }
 
 /**
@@ -87,7 +89,7 @@ export interface BuildBranchEventBindingsArgs {
 export function buildBranchEventBindingsPlan(
   args: BuildBranchEventBindingsArgs,
 ): BranchEventBindingsPlan {
-  const { events, wrap } = args
+  const { events, wrap, profileComponentName: pc } = args
   if (!events || events.length === 0) return []
 
   const eventsBySlot = new Map<string, BranchEventListener[]>()
@@ -100,6 +102,9 @@ export function buildBranchEventBindingsPlan(
     bucket.push({
       eventName: ev.eventName,
       wrappedHandler: wrap(ev.handler),
+      // Profile mode (#1690, SR3): turn id so the arm listener is wrapped with
+      // beginTurn/endTurn, matching every other handler path.
+      turnId: pc ? `${pc}#handler:${ev.slotId}:${ev.eventName}` : undefined,
     })
   }
 

@@ -49,3 +49,35 @@ describe('branch handler turn markers', () => {
     expect(on).toMatch(/beginTurn\("Panel#handler:s\d+:click"\); try \{ \(\(\) => setOpen\(false\)\)\(__bfEvt\)/)
   })
 })
+
+const loopCondSource = `
+  'use client'
+  import { createSignal } from '@barefootjs/client'
+  export function List() {
+    const [items, setItems] = createSignal([{ id: 1, on: true }])
+    return (
+      <ul>
+        {items().map(it => (
+          <li key={it.id}>
+            {it.on ? <button onClick={() => setItems(items().filter(x => x.id !== it.id))}>x</button> : <span>off</span>}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+`
+
+describe('loop-cond arm handler turn markers (#1786)', () => {
+  const compile = (profile: boolean) =>
+    compileJSX(loopCondSource, 'List.tsx', { adapter, profile }).files.find(f => f.type === 'clientJs')!.content
+
+  test('profile off: no turn markers (SR8)', () => {
+    expect(compile(false)).not.toContain('beginTurn')
+  })
+
+  test('profile on: a handler inside a loop-item conditional arm is turn-wrapped', () => {
+    const on = compile(true)
+    // The arm listener emitted inside bindEvents (addEventListener) is wrapped.
+    expect(on).toMatch(/addEventListener\('click', \(\.\.\.__bfa\) => \{ beginTurn\("List#handler:s\d+:click"\)/)
+  })
+})

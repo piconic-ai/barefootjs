@@ -50,13 +50,15 @@ export interface BuildReactiveEffectsArgs {
   conditionals: readonly LoopChildConditional[] | undefined
   loopParam: string
   loopParamBindings?: readonly LoopParamBinding[]
+  /** Owning component name in profile mode (#1690, SR3) — else undefined. */
+  profileComponentName?: string
 }
 
 /** Build a fully-resolved `ReactiveEffectsPlan` from the IR slice. */
 export function buildReactiveEffectsPlan(
   args: BuildReactiveEffectsArgs,
 ): ReactiveEffectsPlan {
-  const { attrs, texts, conditionals, loopParam, loopParamBindings } = args
+  const { attrs, texts, conditionals, loopParam, loopParamBindings, profileComponentName } = args
   const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings)
 
   // 1. Group attrs by slot, preserving declaration order (Map insertion order
@@ -131,8 +133,8 @@ export function buildReactiveEffectsPlan(
         wrappedCondition: wrap(cond.condition),
         whenTrueTemplateHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
         whenFalseTemplateHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
-        whenTrueArm: buildOuterArm(cond.whenTrue, trueTexts, wrap, loopParam, loopParamBindings),
-        whenFalseArm: buildOuterArm(cond.whenFalse, falseTexts, wrap, loopParam, loopParamBindings),
+        whenTrueArm: buildOuterArm(cond.whenTrue, trueTexts, wrap, loopParam, loopParamBindings, profileComponentName),
+        whenFalseArm: buildOuterArm(cond.whenFalse, falseTexts, wrap, loopParam, loopParamBindings, profileComponentName),
       })
     }
   }
@@ -150,11 +152,13 @@ function buildOuterArm(
   wrap: (expr: string) => string,
   loopParam: string,
   loopParamBindings: readonly LoopParamBinding[] | undefined,
+  profileComponentName?: string,
 ): LoopChildArmPlan {
   return {
     events: buildBranchEventBindingsPlan({
       events: branch.events,
       wrap,
+      profileComponentName,
     }),
     childComponents: buildBranchChildComponentInitsPlan({
       components: branch.childComponents,
@@ -182,12 +186,13 @@ function buildOuterArm(
  * Convenience: build a ReactiveEffectsPlan directly from a `TopLevelLoop`,
  * pulling the same IR slice the legacy emitter consumed.
  */
-export function buildLoopReactiveEffectsPlan(elem: TopLevelLoop): ReactiveEffectsPlan {
+export function buildLoopReactiveEffectsPlan(elem: TopLevelLoop, profileComponentName?: string): ReactiveEffectsPlan {
   return buildReactiveEffectsPlan({
     attrs: elem.bindings.reactiveAttrs,
     texts: elem.bindings.reactiveTexts,
     conditionals: elem.bindings.conditionals,
     loopParam: elem.param,
     loopParamBindings: elem.paramBindings,
+    profileComponentName,
   })
 }

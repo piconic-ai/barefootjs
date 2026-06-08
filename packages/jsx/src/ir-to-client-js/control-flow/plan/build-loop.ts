@@ -102,7 +102,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
     indexParam: elem.index || '__idx',
     mapPreambleWrapped: elem.mapPreamble ? wrap(elem.mapPreamble) : '',
     template: elem.template,
-    reactiveEffects: hasReactive ? buildLoopReactiveEffectsPlan(elem) : null,
+    reactiveEffects: hasReactive ? buildLoopReactiveEffectsPlan(elem, profileComponentName) : null,
     childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,
     anchored: elem.bodyIsItemConditional ?? false,
