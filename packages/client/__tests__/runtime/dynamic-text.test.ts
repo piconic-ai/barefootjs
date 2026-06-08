@@ -1,5 +1,11 @@
-import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach, afterEach } from 'bun:test'
 import { __bfText } from '../../src/runtime/dynamic-text'
+import {
+  createSignal,
+  createEffect,
+  setProfilerSink,
+  type ProfilerEventSink,
+} from '../../src/reactive'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 beforeAll(() => {
@@ -122,5 +128,90 @@ describe('__bfText', () => {
 
   test('is a no-op when the anchor is null', () => {
     expect(__bfText(null, 'x')).toBeNull()
+  })
+})
+
+/**
+ * Output fingerprint (#1690, §4.2.2). A text binding wrapped in `createEffect`
+ * reports whether the slot actually changed; a re-run that writes the same text
+ * is a *wasted* re-run the profiler can flag. Verified end-to-end here: the
+ * runtime sink sees one `effectOutput` per run, with the right `changed` flag.
+ */
+describe('__bfText output fingerprint (profiler)', () => {
+  let host: HTMLElement
+  let anchor: Text
+
+  const outputs = (events: [string, ...unknown[]][], id: string): boolean[] =>
+    events.filter(e => e[0] === 'effectOutput' && e[1] === id).map(e => e[2] as boolean)
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    host = document.createElement('div')
+    host.appendChild(document.createComment('bf:s0'))
+    anchor = document.createTextNode('')
+    host.appendChild(anchor)
+    host.appendChild(document.createComment('/'))
+    document.body.appendChild(host)
+  })
+
+  afterEach(() => setProfilerSink(null))
+
+  test('reports changed on a new value and unchanged on an identical re-write', () => {
+    const events: [string, ...unknown[]][] = []
+    const sink = {
+      signalSet: () => {}, subscribeAdd: () => {}, subscribeRemove: () => {},
+      effectCreate: (id: string) => events.push(['effectCreate', id]),
+      effectEnter: () => {}, effectExit: () => {},
+      effectOutput: (id: string, changed: boolean) => events.push(['effectOutput', id, changed]),
+      effectDispose: () => {}, batchBegin: () => {}, batchFlush: () => {},
+      turnBegin: () => {}, turnEnd: () => {},
+    } satisfies ProfilerEventSink
+    setProfilerSink(sink)
+
+    // A price label that formats only the dollars of a cents signal: changing
+    // cents within the same dollar re-runs the binding but renders identical text.
+    const [cents, setCents] = createSignal(500)
+    let current: Node | null = anchor
+    createEffect(() => {
+      current = __bfText(current, `$${Math.floor(cents() / 100)}`)
+    })
+    const id = events.find(e => e[0] === 'effectCreate')![1] as string
+
+    setCents(550) // still "$5" → wasted
+    setCents(640) // "$6" → real change
+    setCents(660) // still "$6" → wasted
+
+    expect(host.textContent).toBe('$6')
+    // mount(true), 550(false), 640(true), 660(false)
+    expect(outputs(events, id)).toEqual([true, false, true, false])
+  })
+
+  test('clearing a stale element counts as changed even when the written text is unchanged', () => {
+    const events: [string, ...unknown[]][] = []
+    const sink = {
+      signalSet: () => {}, subscribeAdd: () => {}, subscribeRemove: () => {},
+      effectCreate: (id: string) => events.push(['effectCreate', id]),
+      effectEnter: () => {}, effectExit: () => {},
+      effectOutput: (id: string, changed: boolean) => events.push(['effectOutput', id, changed]),
+      effectDispose: () => {}, batchBegin: () => {}, batchFlush: () => {},
+      turnBegin: () => {}, turnEnd: () => {},
+    } satisfies ProfilerEventSink
+    setProfilerSink(sink)
+
+    // A stale element left by a previous Node-valued run sits in the slot; the
+    // fresh text anchor already holds the empty string we're about to write, so
+    // the text is unchanged — but removing the stale element IS a DOM change, so
+    // the run must report `changed`, not be misclassified as wasted (§4.2.2).
+    const stale = document.createElement('span')
+    stale.textContent = 'old'
+    host.insertBefore(stale, host.lastChild) // between the anchor and the <!--/--> end
+
+    createEffect(() => {
+      __bfText(anchor, '') // anchor.nodeValue is already '' → text unchanged
+    })
+    const id = events.find(e => e[0] === 'effectCreate')![1] as string
+
+    expect(host.querySelector('span')).toBeNull() // stale element removed
+    expect(outputs(events, id)).toEqual([true]) // DOM changed via cleanup, not wasted
   })
 })

@@ -60,6 +60,7 @@ export function createRecordingSink(): RecordingSink {
     effectCreate: (id, kind) => push({ type: 'effectCreate', subscriber: id, kind }),
     effectEnter: (id) => push({ type: 'effectEnter', subscriber: id }),
     effectExit: (id, dur) => push({ type: 'effectExit', subscriber: id, dur }),
+    effectOutput: (id, changed) => push({ type: 'effectOutput', subscriber: id, changed }),
     effectDispose: (id) => push({ type: 'effectDispose', subscriber: id }),
     batchBegin: (depth) => push({ type: 'batchBegin', depth }),
     batchFlush: (flushed) => push({ type: 'batchFlush', flushed }),

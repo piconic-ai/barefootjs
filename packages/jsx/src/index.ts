@@ -296,6 +296,8 @@ export {
   parseProfilerId,
   analyzeHotSubscribers,
   formatHotSubscribers,
+  analyzeWastedReReruns,
+  formatWastedReReruns,
   analyzeBatchAdvisor,
   formatBatchAdvisor,
 } from './profiler.ts'
@@ -316,6 +318,9 @@ export type {
   HotSubscribersResult,
   HotSubscriber,
   HotSubscribersOptions,
+  WastedReRunsResult,
+  WastedSubscriber,
+  WastedReRunsOptions,
   BatchAdvisorResult,
   BatchCandidate,
   BatchSafety,

@@ -257,15 +257,22 @@ Most runs / most total time, joined to IR source loc.
 - **Fix hint:** if the subscriber reads signals it doesn't gate on, suggest a
   finer signal/memo split (links to 4.2.2).
 
-#### 4.2.2 Wasted re-runs (v1)
+#### 4.2.2 Wasted re-runs (v1) — *implemented*
 
 Effect re-ran but output/DOM identical ⇒ finer signal/memo split candidate.
+`analyzeWastedReReruns` (`packages/jsx/src/profiler.ts`) over the SR2 stream's
+`effectOutput` fingerprints, joined to IR loc via the SR4 id index.
 
-- **Input:** SR2 enter/exit + a cheap output fingerprint (DOM mutation count, or
-  the written memo value via `Object.is` against prior).
+- **Input:** SR2 `effectOutput` fingerprint events. The runtime emits one per
+  fingerprintable run (`reactive.ts` → `__bfReportOutput`, aggregated and flushed
+  at run exit, dev-only/SR8): memos compare the recomputed value via `Object.is`;
+  text bindings compare the written string in `__bfText` (DOM identity). A run
+  with no fingerprint emits no event and isn't counted. Attribute/class binding
+  fingerprints reuse the same `__bfReportOutput` seam and are follow-up work.
 - **Metric:** `wasted = runsWithIdenticalOutput / totalRuns`.
 - **Finding:** effects with high `wasted`, e.g. `priceLabel: 150/180 produced
-  identical DOM`.
+  identical DOM`; ranked by removable cost (absolute wasted runs), then ratio.
+  `--wasted-pct <n>` sets the flag threshold (default 50%).
 - **Fix hint:** name the unrelated signal in the effect's `deps`
   (`EffectNode.deps`) that triggered the no-op run; suggest splitting it out of
   the reactive read or memoizing the sub-expression.
@@ -430,5 +437,8 @@ Consistent with `graphToJSON` (`loc` simplified to `{file,line}`):
   `"<Component>#…"` prefix is chosen to allow this later).
 - **Wasted-run fingerprint cost.** DOM-mutation counting vs memo-value `Object.is`
   — the latter is free for memos, the former needs a MutationObserver scoped to
-  the component root. v1 starts with memo-value identity, adds DOM fingerprinting
-  behind a flag.
+  the component root. *Resolved (v1):* memo-value identity ships free; text
+  bindings fingerprint synchronously by comparing the written string in
+  `__bfText` (no MutationObserver) — both feed `__bfReportOutput`. Attribute/class
+  bindings extend the same seam as follow-up; a component-root MutationObserver is
+  unnecessary given the synchronous per-write compare.

@@ -220,9 +220,11 @@ describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
     n = 0
     const events: ProfilerEvent[] = [
       ev('effectEnter', { subscriber: 'Calc#memo:a' }), // mount
+      ev('effectOutput', { subscriber: 'Calc#memo:a', changed: true }), // mount: real output
       ev('turnBegin', { handlerId: 'Calc#handler:s0:click' }),
       ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s0:click' }),
       ev('effectExit', { subscriber: 'Calc#memo:a', dur: 2, turn: 'Calc#handler:s0:click' }),
+      ev('effectOutput', { subscriber: 'Calc#memo:a', changed: false, turn: 'Calc#handler:s0:click' }), // wasted
       ev('turnEnd', {}),
     ]
     const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
@@ -230,11 +232,14 @@ describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
     expect(r.componentName).toBe('Calc')
     expect(r.turns).toBe(1)
     expect(r.hotSubscribers.subscribers[0].name).toBe('a')
+    expect(r.wastedReReruns.subscribers[0].name).toBe('a')
+    expect(r.wastedReReruns.subscribers[0].wastedRuns).toBe(1)
     expect(r.coverage.handlersFired).toBe(1)
     expect(r.coverage.handlersTotal).toBeGreaterThanOrEqual(1)
     const out = formatProfileReport(r)
     expect(out).toContain('Calc — profile')
     expect(out).toContain('hot subscribers')
+    expect(out).toContain('wasted re-runs')
     expect(out).toContain('coverage:')
   })
 

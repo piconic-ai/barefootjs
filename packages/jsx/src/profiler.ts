@@ -12,9 +12,9 @@
  *   - `traceUpdatePath`        → transitive dependents (fan-out + chain depth)
  *
  * The dynamic half (SR1–SR4: instrumented runtime, turn markers, IR join,
- * Hot-subscribers / Wasted-re-runs / Batch-advisor analyses) is specified in
- * `spec/profiler.md` and not yet implemented — `buildProfileReport` is the
- * placeholder seam where it will land.
+ * Hot-subscribers / Wasted-re-runs / Batch-advisor analyses) is assembled by
+ * `buildProfileReport` from a recorded SR2 event stream — see those analyses
+ * below and `spec/profiler.md`.
  */
 
 import ts from 'typescript'
@@ -663,6 +663,156 @@ export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): strin
   return lines.join('\n')
 }
 
+// -- Analysis: wasted re-runs (v1, §4.2.2) ------------------------------------
+
+export interface WastedSubscriber {
+  /** The compiler-assigned subscriber id (effect/memo/binding). */
+  subscriber: string
+  /** Source-mapped node from the SR4 join; absent ⇒ a coverage gap. */
+  loc?: { file: string; line: number }
+  name?: string
+  kind?: ResolvedNode['kind']
+  /** Runs that emitted an output fingerprint (`effectOutput` count). */
+  totalRuns: number
+  /** Fingerprinted runs whose output was identical to the previous run. */
+  wastedRuns: number
+  /** `wastedRuns / totalRuns` — the share of recompute that produced no change. */
+  wastedRatio: number
+  /** True when `wastedRatio` meets the configured threshold. */
+  wasted: boolean
+}
+
+export interface WastedReRunsResult {
+  kind: 'wasted-re-runs'
+  /** Subscribers with ≥1 wasted run, ranked by `wastedRuns` then `wastedRatio`. */
+  subscribers: WastedSubscriber[]
+  /** SR4 coverage gaps — fingerprinted subscriber ids the IR could not resolve. */
+  unattributed: UnattributedId[]
+}
+
+export interface WastedReRunsOptions {
+  /**
+   * `wastedRatio` at/above which a subscriber is flagged `wasted`. A fraction in
+   * `[0,1]` (e.g. `0.5` = half its runs produced identical output). Default 0.5.
+   */
+  wastedRatio?: number
+  /** Keep only the top-N by `wastedRuns` (after ranking). Default: all. */
+  topN?: number
+}
+
+const DEFAULT_WASTED_RATIO = 0.5
+
+/**
+ * Wasted re-runs (§4.2.2): effects/memos that re-ran but produced output
+ * identical to their previous run — the computation happened, the DOM/value did
+ * not change, so the re-run was removable. The complement to hot subscribers:
+ * hot says *where the cost is*, wasted says *how much of it is removable*.
+ *
+ * Pure over the SR2 stream's `effectOutput` fingerprints (memo-value `Object.is`
+ * + instrumented DOM writes) joined to IR source loc — same scenario ⇒ same
+ * ranking. A high ratio means the subscriber reads at a coarser grain than its
+ * output needs; the fix is a finer signal/memo split.
+ */
+export function analyzeWastedReReruns(
+  events: readonly ProfilerEvent[],
+  index: IdIndex,
+  options: WastedReRunsOptions = {},
+): WastedReRunsResult {
+  const threshold = options.wastedRatio ?? DEFAULT_WASTED_RATIO
+
+  interface Acc {
+    total: number
+    wasted: number
+  }
+  const byId = new Map<string, Acc>()
+
+  for (const e of events) {
+    if (e.type !== 'effectOutput' || e.subscriber === undefined || e.changed === undefined) continue
+    let a = byId.get(e.subscriber)
+    if (!a) {
+      a = { total: 0, wasted: 0 }
+      byId.set(e.subscriber, a)
+    }
+    a.total++
+    if (!e.changed) a.wasted++
+  }
+
+  const { unattributed } = joinProfilerEvents(events, index)
+  const nodeFor = new Map<string, ResolvedNode>()
+  for (const [id] of byId) {
+    const node = index.get(id)
+    if (node) nodeFor.set(id, node)
+  }
+
+  let subscribers: WastedSubscriber[] = [...byId.entries()]
+    .map(([subscriber, a]) => {
+      const node = nodeFor.get(subscriber)
+      const wastedRatio = a.total > 0 ? a.wasted / a.total : 0
+      return {
+        subscriber,
+        loc: node?.loc,
+        name: node?.name,
+        kind: node?.kind,
+        totalRuns: a.total,
+        wastedRuns: a.wasted,
+        wastedRatio,
+        wasted: wastedRatio >= threshold,
+      }
+    })
+    // Only subscribers that actually wasted work are findings.
+    .filter(s => s.wastedRuns > 0)
+
+  // Rank by *removable* cost first — absolute wasted runs is what a finer split
+  // would eliminate; ratio (the severity) and id break ties, keeping the order
+  // deterministic across runs (SR7).
+  subscribers.sort(
+    (x, y) =>
+      y.wastedRuns - x.wastedRuns ||
+      y.wastedRatio - x.wastedRatio ||
+      (x.subscriber < y.subscriber ? -1 : x.subscriber > y.subscriber ? 1 : 0),
+  )
+  if (options.topN !== undefined) subscribers = subscribers.slice(0, options.topN)
+
+  // Only fingerprinted subscriber ids matter — filter the join's gaps to ids
+  // that actually appeared as a fingerprinted subscriber.
+  const subscriberIds = new Set(byId.keys())
+  const gaps = unattributed.filter(u => subscriberIds.has(u.id))
+
+  return { kind: 'wasted-re-runs', subscribers, unattributed: gaps }
+}
+
+/** The noun for a subscriber's identical output, keyed by kind (memo vs DOM). */
+function wastedOutputNoun(kind?: ResolvedNode['kind']): string {
+  return kind === 'memo' ? 'identical value' : 'identical DOM'
+}
+
+export function formatWastedReReruns(r: WastedReRunsResult, limit = 12): string {
+  const lines: string[] = []
+  lines.push('wasted re-runs — re-ran but produced identical output')
+  if (r.subscribers.length === 0) {
+    lines.push('  (no wasted re-runs recorded)')
+  }
+  const shown = r.subscribers.slice(0, limit)
+  const maxWasted = shown.reduce((m, s) => Math.max(m, s.wastedRuns), 0)
+  for (const s of shown) {
+    const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
+    const base = s.name ?? s.subscriber
+    const label = s.kind && !base.endsWith(')') ? `${base} (${s.kind})` : base
+    const pct = Math.round(s.wastedRatio * 100)
+    const note = s.wasted ? '  ⚠ split so it doesn’t re-run on unrelated changes' : ''
+    lines.push(
+      `  ${fitLabel(label, 24)} ${bar(s.wastedRuns, maxWasted, 14)} wasted: ${s.wastedRuns}/${s.totalRuns} produced ${wastedOutputNoun(s.kind)} (${pct}%)  (${where})${note}`,
+    )
+  }
+  if (r.subscribers.length > shown.length) {
+    lines.push(`  … and ${r.subscribers.length - shown.length} more`)
+  }
+  if (r.unattributed.length > 0) {
+    lines.push(`  ⚠ coverage: ${r.unattributed.length} unresolved subscriber id(s)`)
+  }
+  return lines.join('\n')
+}
+
 // -- Analysis: batch advisor (v1, §4.2.3) -------------------------------------
 
 export type BatchSafety = 'safe' | 'unsafe' | 'unverified'
@@ -910,6 +1060,7 @@ export interface ProfileReport {
   /** Distinct interaction turns. */
   turns: number
   hotSubscribers: HotSubscribersResult
+  wastedReReruns: WastedReRunsResult
   batchAdvisor: BatchAdvisorResult
   coverage: ProfileCoverage
 }
@@ -931,6 +1082,11 @@ export interface ProfileReportInput {
   topN?: number
   /** Drop hot subscribers below this `totalMs` floor (`--hot-ms`). Default: all. */
   minMs?: number
+  /**
+   * `wastedRatio` threshold (`--wasted-pct`) for the wasted-re-runs analysis, a
+   * fraction in `[0,1]`. Default 0.5.
+   */
+  wastedRatio?: number
 }
 
 /**
@@ -989,6 +1145,7 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     topN: input.topN,
     minMs: input.minMs,
   })
+  const wastedReReruns = analyzeWastedReReruns(events, index, { wastedRatio: input.wastedRatio })
   const batchAdvisor = analyzeBatchAdvisor(events, index)
   const { unattributed, diagnostics } = joinProfilerEvents(events, index)
 
@@ -1024,6 +1181,7 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     events: events.length,
     turns: turnSeqs.size,
     hotSubscribers,
+    wastedReReruns,
     batchAdvisor,
     coverage: {
       handlersFired: handlerIds.size,
@@ -1051,6 +1209,8 @@ export function formatProfileReport(r: ProfileReport): string {
   }
   lines.push('')
   lines.push(formatHotSubscribers(r.hotSubscribers))
+  lines.push('')
+  lines.push(formatWastedReReruns(r.wastedReReruns))
   lines.push('')
   lines.push(formatBatchAdvisor(r.batchAdvisor))
   lines.push('')
