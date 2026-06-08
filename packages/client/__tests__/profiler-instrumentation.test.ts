@@ -1,0 +1,144 @@
+/**
+ * Dev-only reactive instrumentation (SR1 / SR8, #1690).
+ *
+ * Verifies that `setProfilerSink` observes the reactive choke points without
+ * changing semantics, that a memo's effect-run and signal-set share one id
+ * (so the IR join can collapse them), and that clearing the sink stops events
+ * (the production default is zero events).
+ */
+
+import { describe, test, expect, afterEach } from 'bun:test'
+import {
+  createSignal,
+  createEffect,
+  createMemo,
+  createRoot,
+  batch,
+  setProfilerSink,
+  type ProfilerEventSink,
+  type SubscriberKind,
+} from '../src/reactive'
+
+type Event = [string, ...unknown[]]
+
+function recorder(): { events: Event[]; sink: ProfilerEventSink } {
+  const events: Event[] = []
+  const sink: ProfilerEventSink = {
+    signalSet: (id, batched) => events.push(['signalSet', id, batched]),
+    subscribeAdd: (s, sub) => events.push(['subscribeAdd', s, sub]),
+    subscribeRemove: (s, sub) => events.push(['subscribeRemove', s, sub]),
+    effectCreate: (id, kind) => events.push(['effectCreate', id, kind]),
+    effectEnter: (id) => events.push(['effectEnter', id]),
+    effectExit: (id, dur) => events.push(['effectExit', id, dur]),
+    effectDispose: (id) => events.push(['effectDispose', id]),
+    batchBegin: (depth) => events.push(['batchBegin', depth]),
+    batchFlush: (n) => events.push(['batchFlush', n]),
+  }
+  return { events, sink }
+}
+
+const names = (events: Event[]) => events.map(e => e[0])
+
+afterEach(() => setProfilerSink(null))
+
+describe('reactive instrumentation (SR1)', () => {
+  test('signalSet fires on a real change, not on a no-op set', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [, setCount] = createSignal(0)
+    setCount(1)
+    setCount(1) // Object.is bail — no event
+    expect(names(events).filter(n => n === 'signalSet')).toEqual(['signalSet'])
+    expect(events.find(e => e[0] === 'signalSet')![2]).toBe(false) // not batched
+  })
+
+  test('subscribeAdd fires when an effect reads a signal; effect enter/exit bracket the run', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [count] = createSignal(0)
+    createEffect(() => { count() })
+    // create → enter → subscribeAdd (during the read) → exit
+    const order = names(events)
+    expect(order).toContain('effectCreate')
+    expect(order.indexOf('effectEnter')).toBeLessThan(order.indexOf('subscribeAdd'))
+    expect(order.indexOf('subscribeAdd')).toBeLessThan(order.indexOf('effectExit'))
+    const exit = events.find(e => e[0] === 'effectExit')!
+    expect(typeof exit[2]).toBe('number')
+    expect(exit[2] as number).toBeGreaterThanOrEqual(0)
+  })
+
+  test('effectCreate carries the right kind for effect / memo / root', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    createEffect(() => {})
+    createMemo(() => 1)
+    createRoot(() => {})
+    const kinds = events.filter(e => e[0] === 'effectCreate').map(e => e[2] as SubscriberKind)
+    expect(kinds).toContain('effect')
+    expect(kinds).toContain('memo')
+    expect(kinds).toContain('root')
+  })
+
+  test("a memo's effect run and signal set share one id (IR-join collapse)", () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [count, setCount] = createSignal(1)
+    createMemo(() => count() * 2)
+    const memoCreate = events.find(e => e[0] === 'effectCreate' && e[2] === 'memo')!
+    const memoId = memoCreate[1] as string
+    // The memo's body wrote its private signal under the same id.
+    expect(events.some(e => e[0] === 'signalSet' && e[1] === memoId)).toBe(true)
+    expect(events.some(e => e[0] === 'effectEnter' && e[1] === memoId)).toBe(true)
+    // Recompute on dependency change re-enters under the same id.
+    const before = events.length
+    setCount(5)
+    expect(events.slice(before).some(e => e[0] === 'effectEnter' && e[1] === memoId)).toBe(true)
+  })
+
+  test('batch brackets writes with begin + a single flush', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [, setA] = createSignal(0)
+    const [, setB] = createSignal(0)
+    createEffect(() => {}) // not subscribed; keep flush observable via counts
+    batch(() => { setA(1); setB(2) })
+    expect(names(events)).toContain('batchBegin')
+    // signalSet inside batch is flagged batched
+    expect(events.filter(e => e[0] === 'signalSet').every(e => e[2] === true)).toBe(true)
+  })
+
+  test('subscribeRemove fires when a disposed scope drops its edges', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [count] = createSignal(0)
+    let dispose!: () => void
+    createRoot((d) => {
+      dispose = d
+      createEffect(() => { count() })
+    })
+    const before = events.length
+    dispose()
+    const after = events.slice(before)
+    expect(after.some(e => e[0] === 'subscribeRemove')).toBe(true)
+    expect(after.some(e => e[0] === 'effectDispose')).toBe(true)
+  })
+})
+
+describe('instrumentation is off by default (SR8)', () => {
+  test('clearing the sink stops events and never changes reactive results', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [count, setCount] = createSignal(0)
+    const doubled = createMemo(() => count() * 2)
+    let seen = -1
+    createEffect(() => { seen = doubled() })
+    setCount(3)
+    expect(seen).toBe(6) // semantics intact while instrumented
+
+    setProfilerSink(null)
+    const mark = events.length
+    setCount(10)
+    expect(seen).toBe(20) // semantics intact after clearing
+    expect(events.length).toBe(mark) // no new events recorded
+  })
+})

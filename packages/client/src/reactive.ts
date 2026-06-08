@@ -23,14 +23,73 @@ export type CleanupFn = () => void
 export type EffectFn = () => void | CleanupFn
 export type Memo<T> = Reactive<() => T>
 
+// -- Dev-only instrumentation (SR1 / SR8, #1690) ------------------------------
+//
+// A single, gated sink the reactive choke points call when profiling is on.
+// When `profilerSink` is null (the production default) every choke point is a
+// single null-check branch with no allocation — see `spec/profiler.md` SR8.
+// The sink, its state, and the identity bookkeeping all live in this module
+// because `reactive.ts` is published as one physical entry
+// (`@barefootjs/client/reactive`); splitting the sink into a sibling file
+// would bundle a second copy into this entry and break the live binding.
+
+export type SubscriberKind = 'effect' | 'memo' | 'root'
+
+/**
+ * Reactive measurement hooks. Every method is a measurement-only notification —
+ * implementations MUST NOT mutate reactive state or throw (a throw would change
+ * `set()`'s synchronous semantics). Ids are stable handles; `''` means the
+ * node was created while profiling was off. The compiler will later emit
+ * IR-aligned ids (SR3); until then ids are runtime-assigned counters.
+ */
+export interface ProfilerEventSink {
+  /** A signal's value changed (post `Object.is` bail). `batched` = inside `batch()`. */
+  signalSet(signalId: string, batched: boolean): void
+  /** A subscriber began reading a signal (dependency edge added). */
+  subscribeAdd(signalId: string, subscriberId: string): void
+  /** A subscriber stopped reading a signal (edge removed on re-run / dispose). */
+  subscribeRemove(signalId: string, subscriberId: string): void
+  /** An effect / memo / root scope was created. */
+  effectCreate(subscriberId: string, kind: SubscriberKind): void
+  /** An effect/memo body is about to run. */
+  effectEnter(subscriberId: string): void
+  /** An effect/memo body finished. `durationMs` is wall time. */
+  effectExit(subscriberId: string, durationMs: number): void
+  /** An effect / memo / root scope was disposed. */
+  effectDispose(subscriberId: string): void
+  /** A `batch()` block opened at the given (post-increment) depth. */
+  batchBegin(depth: number): void
+  /** A batch flush ran `flushed` effects. */
+  batchFlush(flushed: number): void
+}
+
+/** A signal's subscriber set, tagged with the signal's id for edge-removal events. */
+type SubscriberSet = Set<EffectContext> & { __bfSignalId?: string }
+
+let profilerSink: ProfilerEventSink | null = null
+let signalSeq = 0
+let subscriberSeq = 0
+
+/**
+ * Install (or clear) the dev-only reactive measurement sink. Pass `null` to
+ * disable. Calling this before a scenario runs lets `bf debug profile` collect
+ * the event stream; production code never calls it, so the sink stays null and
+ * the choke points stay free. See `spec/profiler.md`.
+ */
+export function setProfilerSink(sink: ProfilerEventSink | null): void {
+  profilerSink = sink
+}
+
 type EffectContext = {
   fn: EffectFn
   cleanup: CleanupFn | null
-  dependencies: Set<Set<EffectContext>>
+  dependencies: Set<SubscriberSet>
   owner: EffectContext | null   // Parent scope for hierarchical disposal
   children: EffectContext[]     // Owned child effects/roots
   disposed: boolean
   runCount: number              // Per-effect re-entry counter for circular dependency detection
+  id: string                    // Dev instrumentation id ('' when profiling is off)
+  kind: SubscriberKind          // effect | memo | root
 }
 
 let Owner: EffectContext | null = null
@@ -52,14 +111,19 @@ const PendingEffects = new Set<EffectContext>()
  * setCount(5)          // Update to 5
  * setCount(n => n + 1) // Update with function (becomes 6)
  */
-export function createSignal<T>(initialValue: T): Signal<T> {
+export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
   let value = initialValue
-  const subscribers = new Set<EffectContext>()
+  const subscribers: SubscriberSet = new Set<EffectContext>()
+  // Tag the subscriber set so edge-removal events (which only see the set) can
+  // name the signal. Resolved once per creation; '' when profiling is off.
+  const id = __bfId ?? (profilerSink ? `s${++signalSeq}` : '')
+  subscribers.__bfSignalId = id
 
   const get = () => {
     if (Listener) {
       subscribers.add(Listener)
       Listener.dependencies.add(subscribers)
+      if (profilerSink) profilerSink.subscribeAdd(id, Listener.id)
     }
     return value
   }
@@ -74,6 +138,8 @@ export function createSignal<T>(initialValue: T): Signal<T> {
     }
 
     value = newValue
+
+    if (profilerSink) profilerSink.signalSet(id, BatchDepth > 0)
 
     if (BatchDepth > 0) {
       for (const effect of subscribers) {
@@ -102,7 +168,7 @@ export function createSignal<T>(initialValue: T): Signal<T> {
  * })
  * setCount(1)  // Logs "count changed: 1"
  */
-export function createEffect(fn: EffectFn): void {
+export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: SubscriberKind = 'effect'): void {
   // Note: Nested effects are now allowed. runEffect() properly saves/restores
   // prevEffect, so nested effects correctly track their own dependencies.
   // This enables synchronous component initialization in reconcileList.
@@ -115,7 +181,11 @@ export function createEffect(fn: EffectFn): void {
     children: [],
     disposed: false,
     runCount: 0,
+    id: __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
+    kind: __bfKind,
   }
+
+  if (profilerSink) profilerSink.effectCreate(effect.id, effect.kind)
 
   // Register with parent owner for hierarchical disposal
   if (Owner) Owner.children.push(effect)
@@ -139,6 +209,7 @@ function runEffect(effect: EffectContext): void {
 
   for (const dep of effect.dependencies) {
     dep.delete(effect)
+    if (profilerSink) profilerSink.subscribeRemove(dep.__bfSignalId ?? '', effect.id)
   }
   effect.dependencies.clear()
 
@@ -146,6 +217,9 @@ function runEffect(effect: EffectContext): void {
   const prevListener = Listener
   Owner = effect
   Listener = effect
+
+  const start = profilerSink ? performance.now() : 0
+  if (profilerSink) profilerSink.effectEnter(effect.id)
 
   try {
     const result = effect.fn()
@@ -156,6 +230,7 @@ function runEffect(effect: EffectContext): void {
     Owner = prevOwner
     Listener = prevListener
     effect.runCount--
+    if (profilerSink) profilerSink.effectExit(effect.id, performance.now() - start)
   }
 }
 
@@ -181,8 +256,11 @@ function disposeSubtree(effect: EffectContext): void {
 
   for (const dep of effect.dependencies) {
     dep.delete(effect)
+    if (profilerSink) profilerSink.subscribeRemove(dep.__bfSignalId ?? '', effect.id)
   }
   effect.dependencies.clear()
+
+  if (profilerSink) profilerSink.effectDispose(effect.id)
 
   effect.owner = null
 }
@@ -226,7 +304,11 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
     children: [],
     disposed: false,
     runCount: 0,
+    id: profilerSink ? `r${++subscriberSeq}` : '',
+    kind: 'root',
   }
+
+  if (profilerSink) profilerSink.effectCreate(root.id, 'root')
 
   if (Owner) Owner.children.push(root)
 
@@ -249,7 +331,7 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
  *
  * @returns A dispose function that stops the effect and removes it from all signal dependencies.
  */
-export function createDisposableEffect(fn: EffectFn): () => void {
+export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => void {
   let disposed = false
 
   const effect: EffectContext = {
@@ -263,7 +345,11 @@ export function createDisposableEffect(fn: EffectFn): () => void {
     children: [],
     disposed: false,
     runCount: 0,
+    id: __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
+    kind: 'effect',
   }
+
+  if (profilerSink) profilerSink.effectCreate(effect.id, effect.kind)
 
   if (Owner) Owner.children.push(effect)
 
@@ -342,6 +428,7 @@ export function untrack<T>(fn: () => T): T {
  */
 export function batch<T>(fn: () => T): T {
   BatchDepth++
+  if (profilerSink) profilerSink.batchBegin(BatchDepth)
   try {
     return fn()
   } finally {
@@ -356,6 +443,7 @@ function flushEffects(): void {
   while (PendingEffects.size > 0) {
     const effects = [...PendingEffects]
     PendingEffects.clear()
+    if (profilerSink) profilerSink.batchFlush(effects.length)
     for (const effect of effects) {
       runEffect(effect)
     }
@@ -398,13 +486,17 @@ export function onMount(fn: () => void): void {
  * setCount(5)
  * doubled()    // 10
  */
-export function createMemo<T>(fn: () => T): Memo<T> {
-  const [value, setValue] = createSignal<T>(undefined as T)
+export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
+  // A memo is an effect that writes a private signal. Share one id across both
+  // so the profiler's IR join can collapse the effect-run + signal-set pair
+  // back into a single memo node (spec/profiler.md SR1).
+  const id = __bfId ?? (profilerSink ? `m${++subscriberSeq}` : '')
+  const [value, setValue] = createSignal<T>(undefined as T, id)
 
   createEffect(() => {
     const result = fn()
     setValue(() => result)
-  })
+  }, id, 'memo')
 
   return value
 }

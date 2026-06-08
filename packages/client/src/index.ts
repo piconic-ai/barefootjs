@@ -11,11 +11,14 @@ export {
   onMount,
   untrack,
   batch,
+  setProfilerSink,
   type Reactive,
   type Signal,
   type Memo,
   type CleanupFn,
   type EffectFn,
+  type ProfilerEventSink,
+  type SubscriberKind,
 } from '@barefootjs/client/reactive'
 
 export { splitProps } from './split-props.ts'
