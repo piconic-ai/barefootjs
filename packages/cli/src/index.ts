@@ -50,6 +50,7 @@ Debug:
   debug summary <component>                   Show hydration and size summary
   debug fallbacks <component>                 Show wrap-by-default fallback bindings (#937)
   debug signals <component>                   Show signal initialization trace
+  debug profile <component> [--diff <ref>]    Reactive perf budget; --diff flags regressions (#1690)
 
 Options:
   --json                                      Output in JSON format
@@ -166,8 +167,11 @@ switch (command) {
     } else if (sub === 'summary') {
       const { run } = await import('./commands/debug-summary')
       await run(rest, ctx)
+    } else if (sub === 'profile') {
+      const { run } = await import('./commands/debug-profile')
+      await run(rest, ctx)
     } else {
-      console.error('Usage: bf debug <graph|trace|fallbacks|signals|events|loops|why-update|summary> ...')
+      console.error('Usage: bf debug <graph|trace|fallbacks|signals|events|loops|why-update|summary|profile> ...')
       process.exit(1)
     }
     break

@@ -279,6 +279,24 @@ export {
 export type { ComponentGraph, ComponentAnalysis, SignalNode, MemoNode, EffectNode, DomBinding, UpdatePath, SignalTrace, EventBinding, SetterRef, FnSetterResolution, EventSummary, LoopInfo, LoopChildBinding, LoopSummary, WhyUpdateResult, WhyUpdateDep, WhyUpdateSource, FallbackExplanation, ComponentSummary } from './debug.ts'
 export type { WrapReason } from './ir-to-client-js/reactivity.ts'
 
+// Reactive performance profiler — static half (SR5 budget, SR6 compile-diff).
+// Dynamic half (--scenario) is specified in spec/profiler.md (#1690).
+export {
+  buildStaticBudget,
+  formatStaticBudget,
+  diffStaticBudget,
+  formatBudgetDiff,
+  buildProfileReport,
+} from "./profiler.ts"
+export type {
+  StaticBudget,
+  StaticBudgetOptions,
+  FanOutEntry,
+  BudgetDiff,
+  FanOutChange,
+  ProfileReport,
+} from "./profiler.ts"
+
 // HTML constants
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 
