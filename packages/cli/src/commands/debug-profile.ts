@@ -35,25 +35,47 @@ interface ProfileFlags {
  * Parse `debug profile` flags. Unknown `--flags` are rejected (rather than
  * silently swallowed into `positional`, where they would be mistaken for the
  * component name — e.g. `bf debug profile --hot-ms 10 foo` reading the flag as
- * the component). A numeric flag with a non-numeric/absent value is also an
- * error, so an agent gets an actionable message instead of a silent NaN.
+ * the component). Every value-taking flag validates its argument so an agent
+ * gets an actionable message instead of silent surprising behavior:
+ *
+ * - a missing value, or a value that is itself a flag, is rejected — so
+ *   `--scenario --fanout 8` can't make `scenario='--fanout'` and silently drop
+ *   `--fanout`;
+ * - numeric flags enforce sensible ranges — `--top`/`--fanout` are positive
+ *   integers (a negative `--top` would slice from the end, a negative
+ *   `--fanout` would mark everything hot), `--hot-ms` is a non-negative number.
  */
 function parseFlags(args: string[]): ProfileFlags {
   const flags: ProfileFlags = { positional: [] }
-  const num = (raw: string | undefined, name: string): number => {
-    const n = Number(raw)
-    if (raw === undefined || raw === '' || Number.isNaN(n)) {
-      fail(`${name} requires a number (got ${raw === undefined ? 'nothing' : `"${raw}"`}).`)
+  // Consume the next token as a flag value, rejecting a missing value or one
+  // that is itself a flag (a common typo that would otherwise be swallowed).
+  const value = (args: string[], i: number, name: string): string => {
+    const raw = args[i]
+    if (raw === undefined || raw.startsWith('-')) {
+      fail(`${name} requires a value${raw === undefined ? '' : ` (got the flag "${raw}")`}.`)
     }
+    return raw
+  }
+  const num = (
+    args: string[],
+    i: number,
+    name: string,
+    opts: { integer?: boolean; min?: number },
+  ): number => {
+    const raw = value(args, i, name)
+    const n = Number(raw)
+    if (Number.isNaN(n)) fail(`${name} requires a number (got "${raw}").`)
+    if (opts.integer && !Number.isInteger(n)) fail(`${name} must be a whole number (got "${raw}").`)
+    if (opts.min !== undefined && n < opts.min) fail(`${name} must be ≥ ${opts.min} (got "${raw}").`)
     return n
   }
   for (let i = 0; i < args.length; i++) {
     const a = args[i]
-    if (a === '--scenario') flags.scenario = args[++i]
-    else if (a === '--diff') flags.diff = args[++i]
-    else if (a === '--fanout') flags.fanOutThreshold = num(args[++i], '--fanout')
-    else if (a === '--top') flags.topN = num(args[++i], '--top')
-    else if (a === '--hot-ms') flags.minMs = num(args[++i], '--hot-ms')
+    if (a === '--scenario') flags.scenario = value(args, ++i, '--scenario')
+    else if (a === '--diff') flags.diff = value(args, ++i, '--diff')
+    else if (a === '--fanout') flags.fanOutThreshold = num(args, ++i, '--fanout', { integer: true, min: 1 })
+    else if (a === '--top') flags.topN = num(args, ++i, '--top', { integer: true, min: 1 })
+    else if (a === '--hot-ms') flags.minMs = num(args, ++i, '--hot-ms', { min: 0 })
     else if (a.startsWith('-')) fail(`Unknown flag "${a}".`)
     else flags.positional.push(a)
   }
