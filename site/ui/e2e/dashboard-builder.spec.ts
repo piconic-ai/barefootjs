@@ -174,13 +174,24 @@ test.describe('Dashboard Builder Block', () => {
       await s.locator('.add-chart-btn').click()
 
       const newChart = s.locator('.chart-widget').last()
-      const before = await newChart.locator('.chart-selected-label').textContent()
+      const label = newChart.locator('.chart-selected-label')
+      const firstBar = newChart.locator('.chart-bar').first()
 
-      // Clicking a bar selects it and updates the label
-      await newChart.locator('.chart-bar').first().click()
+      // No bar is selected initially, so the label shows the default 'Total'.
+      await expect(label).toHaveText('Total')
 
-      const after = await newChart.locator('.chart-selected-label').textContent()
-      expect(after).not.toBe(before)
+      // The widget mounts dynamically, so its first click can race hydration.
+      // Re-click until the bar reports selected (aria-pressed guards against
+      // toggling an already-selected bar back off).
+      await expect(async () => {
+        if ((await firstBar.getAttribute('aria-pressed')) !== 'true') {
+          await firstBar.click()
+        }
+        await expect(firstBar).toHaveAttribute('aria-pressed', 'true')
+      }).toPass()
+
+      // Selecting a bar swaps the label away from the 'Total' default.
+      await expect(label).not.toHaveText('Total')
     })
   })
 
