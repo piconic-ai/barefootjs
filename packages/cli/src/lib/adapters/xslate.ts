@@ -370,6 +370,16 @@ function perlPrereqs(): string[] {
     )
   }
   try {
+    // The dev/start scripts invoke `plackup` (shipped with Plack) to run
+    // the PSGI app, so a missing Plack surfaces as a bare "command not
+    // found" rather than a module error — check it explicitly.
+    execSync('perl -MPlack -e1', { stdio: 'ignore' })
+  } catch {
+    warnings.push(
+      'Plack not installed (provides `plackup`). Run `cpanm --installdeps .` before starting the dev server.',
+    )
+  }
+  try {
     execSync('perl -MStarman -e1', { stdio: 'ignore' })
   } catch {
     warnings.push(
