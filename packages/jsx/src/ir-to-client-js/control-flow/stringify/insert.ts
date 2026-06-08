@@ -51,11 +51,17 @@ export function stringifyInsert(
   const scopeVar = scopeRefToVar(plan.scope)
   const armIndent = leadingIndent + '  '
 
+  // Profile mode (#1690, SR4): give the conditional's `insert()` effect an id
+  // so the profiler attributes its re-runs to source (resolved from the
+  // `conditional` domBinding). Empty when off → byte-identical (SR8).
+  const condBfId = plan.profileComponentName
+    ? `, ${JSON.stringify(`${plan.profileComponentName}#binding:${plan.slotId}`)}`
+    : ''
   lines.push(`${leadingIndent}insert(${scopeVar}, '${plan.slotId}', () => ${plan.condition}, {`)
-  emitArm(lines, plan.arms[0], plan.eventNameMode, armIndent, bodyIndent)
+  emitArm(lines, plan.arms[0], plan.eventNameMode, armIndent, bodyIndent, plan.profileComponentName)
   lines.push(`${leadingIndent}}, {`)
-  emitArm(lines, plan.arms[1], plan.eventNameMode, armIndent, bodyIndent)
-  lines.push(`${leadingIndent}})`)
+  emitArm(lines, plan.arms[1], plan.eventNameMode, armIndent, bodyIndent, plan.profileComponentName)
+  lines.push(`${leadingIndent}}${condBfId})`)
 }
 
 function emitArm(
@@ -64,6 +70,7 @@ function emitArm(
   mode: 'dom' | 'raw',
   armIndent: string,
   bodyIndent: string,
+  profileComponentName?: string,
 ): void {
   // `__slots` accumulates live `Node` returns captured by `__bfSlot` so
   // the `insert()` runtime can splice them into the parsed fragment
@@ -72,7 +79,7 @@ function emitArm(
   // wrappers around Child-position interpolations under this var name.
   lines.push(`${armIndent}template: () => { const __slots = []; return { html: \`${arm.templateHtml}\`, slots: __slots } },`)
   lines.push(`${armIndent}bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  emitArmBody(lines, arm.body, mode, bodyIndent)
+  emitArmBody(lines, arm.body, mode, bodyIndent, profileComponentName)
   lines.push(`${armIndent}}`)
 }
 
@@ -81,7 +88,12 @@ function emitArmBody(
   body: ArmBody,
   mode: 'dom' | 'raw',
   indent: string,
+  profileComponentName?: string,
 ): void {
+  // Profile mode (#1690, SR4): a branch binding effect's id, resolved from its
+  // text/attribute `domBinding`. Empty when off → byte-identical (SR8).
+  const bindingBfId = (slotId: string): string =>
+    profileComponentName ? `, ${JSON.stringify(`${profileComponentName}#binding:${slotId}`)}` : ''
   // 1. Combine event-bearing slots and ref slots into a single `$()` query.
   //    Order: events-first, then refs (matches legacy emitter).
   const allSlotIds = new Set<string>()
@@ -156,7 +168,7 @@ function emitArmBody(
       for (const stmt of emitAttrUpdate(elVar, attr.attrName, attr.expression, attr)) {
         lines.push(`${indent}    ${stmt}`)
       }
-      lines.push(`${indent}  }))`)
+      lines.push(`${indent}  }${bindingBfId(slotId)}))`)
     }
     lines.push(`${indent}} }`)
   }
@@ -172,7 +184,7 @@ function emitArmBody(
     lines.push(`${indent}__disposers.push(createDisposableEffect(() => {`)
     lines.push(`${indent}  const __val = ${te.expression}`)
     lines.push(`${indent}  __anchor_${v} = __bfText(__anchor_${v}, __val)`)
-    lines.push(`${indent}}))`)
+    lines.push(`${indent}}${bindingBfId(te.slotId)}))`)
   }
 
   // Branch loops, now fully Plan-built. The stringifier writes its own

@@ -38,6 +38,7 @@ export function buildInsertPlan(
     slotId: elem.slotId,
     condition: elem.condition,
     eventNameMode: options.eventNameMode,
+    profileComponentName: options.profileComponentName,
     arms: [
       buildArm(elem.whenTrueHtml, elem.slotId, elem.whenTrue, options),
       buildArm(elem.whenFalseHtml, elem.slotId, elem.whenFalse, options),
