@@ -14,6 +14,8 @@ import {
   createMemo,
   createRoot,
   batch,
+  beginTurn,
+  endTurn,
   setProfilerSink,
   type ProfilerEventSink,
   type SubscriberKind,
@@ -33,6 +35,8 @@ function recorder(): { events: Event[]; sink: ProfilerEventSink } {
     effectDispose: (id) => events.push(['effectDispose', id]),
     batchBegin: (depth) => events.push(['batchBegin', depth]),
     batchFlush: (n) => events.push(['batchFlush', n]),
+    turnBegin: (id, loc) => events.push(['turnBegin', id, loc]),
+    turnEnd: () => events.push(['turnEnd']),
   }
   return { events, sink }
 }
@@ -121,6 +125,26 @@ describe('reactive instrumentation (SR1)', () => {
     const after = events.slice(before)
     expect(after.some(e => e[0] === 'subscribeRemove')).toBe(true)
     expect(after.some(e => e[0] === 'effectDispose')).toBe(true)
+  })
+})
+
+describe('turn boundaries (SR3)', () => {
+  test('beginTurn/endTurn notify the sink and group a turn around the work', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [, setCount] = createSignal(0)
+    // What the compiler-emitted handler wrapper does at runtime.
+    beginTurn('Counter#handler:s0:click', 'Counter.tsx:7')
+    setCount(1)
+    endTurn()
+    expect(events[0]).toEqual(['turnBegin', 'Counter#handler:s0:click', 'Counter.tsx:7'])
+    expect(events.some(e => e[0] === 'signalSet')).toBe(true)
+    expect(events[events.length - 1]).toEqual(['turnEnd'])
+  })
+
+  test('beginTurn/endTurn are no-ops when profiling is off', () => {
+    setProfilerSink(null)
+    expect(() => { beginTurn('x'); endTurn() }).not.toThrow()
   })
 })
 

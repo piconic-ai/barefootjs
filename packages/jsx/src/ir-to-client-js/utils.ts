@@ -242,6 +242,24 @@ export function wrapHandlerInBlock(handler: string): string {
 }
 
 /**
+ * Profile mode (#1690, SR3): wrap an event handler so a profiling run can
+ * attribute the reactive work it triggers to one turn. The original handler
+ * expression (arrow or identifier) is invoked verbatim with the forwarded
+ * args, bracketed by `beginTurn`/`endTurn`:
+ *
+ *   (...__bfa) => { beginTurn("Comp#handler:slot:click"); try { return (HANDLER)(...__bfa) } finally { endTurn() } }
+ *
+ * Measurement-only: the handler's behavior and the synchronous `set()`
+ * semantics are unchanged — the markers just stamp a turn id onto the events
+ * emitted while it runs. Used at every handler emit site in profile mode so
+ * no path is left unattributed.
+ */
+export function wrapHandlerForTurn(handler: string, handlerId: string, loc?: string): string {
+  const idArg = loc ? `${JSON.stringify(handlerId)}, ${JSON.stringify(loc)}` : JSON.stringify(handlerId)
+  return `(...__bfa) => { beginTurn(${idArg}); try { return (${handler.trim()})(...__bfa) } finally { endTurn() } }`
+}
+
+/**
  * Emit a ref-binding call `(callback)(elementVar)`, optionally guarded so the
  * call no-ops when the callback is undefined.
  *

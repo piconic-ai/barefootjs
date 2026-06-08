@@ -12,6 +12,8 @@ export {
   untrack,
   batch,
   setProfilerSink,
+  beginTurn,
+  endTurn,
   type Reactive,
   type Signal,
   type Memo,
