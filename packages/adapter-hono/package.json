@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/hono",
-  "version": "0.9.6",
+  "version": "0.10.0",
   "description": "Hono integration for BarefootJS",
   "type": "module",
   "main": "./src/index.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/perl",
-  "version": "0.9.6",
+  "version": "0.10.0",
   "description": "BarefootJS engine-agnostic Perl runtime (BarefootJS.pm) — pluggable rendering backend; the shared basis for Mojolicious and other Perl framework integrations",
   "type": "module",
   "files": [
