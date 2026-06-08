@@ -79,8 +79,9 @@ runAdapterConformanceTests({
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
     // #1310: rest destructure in .map() callback. The object-rest shape read
     // via member access (`rest-destructure-object-in-map`) now lowers — each
-    // binding resolves to a field on a synthetic `$bfItem` range var and
-    // `rest.flag` → `$bfItem.Flag` (`destructureBindingsSupportable`). The
+    // binding resolves to a field on a synthetic `$__bf_item0` range var (the
+    // reserved `__bf_item` name, depth-suffixed) and `rest.flag` →
+    // `$__bf_item0.Flag` (`destructureBindingsSupportable`). The
     // other three stay refused: rest SPREAD (`{...rest}`) needs a residual
     // object, and array-index / nested paths (`[a, ...t]`, `{ cells: [h] }`)
     // need index/slice machinery Go's `{{range}}` can't express inline.

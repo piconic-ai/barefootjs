@@ -29,6 +29,14 @@ export function isLowerableObjectRestDestructure(loop: IRLoop): boolean {
   const bindings = loop.paramBindings
   if (!bindings || bindings.length === 0) return false
   if (loop.filterPredicate) return false
+  // The SSR adapters emit a synthetic per-item loop variable in the reserved
+  // `__bf_item` namespace (depth-suffixed on Go). A user destructure binding —
+  // or the `index` param — in that namespace would collide with / shadow the
+  // synthetic var (duplicate `my $__bf_item …` locals, ambiguous accessors), so
+  // refuse the lowering (→ BF104) rather than emit broken template locals.
+  for (const name of [...bindings.map(b => b.name), loop.index]) {
+    if (name && name.startsWith('__bf_')) return false
+  }
   for (const b of bindings) {
     if (b.rest) {
       if (b.rest.kind !== 'object') return false
@@ -38,7 +46,7 @@ export function isLowerableObjectRestDestructure(loop: IRLoop): boolean {
   }
   const restNames = bindings.filter(b => b.rest).map(b => b.name)
   if (restNames.length === 0) return true
-  return !restNamesMisused(loop.children, restNames)
+  return !restNamesMisused(loop, restNames)
 }
 
 /**
@@ -48,8 +56,14 @@ export function isLowerableObjectRestDestructure(loop: IRLoop): boolean {
  * (`{...rest}` → expr `"rest"`) and bare value uses are caught by the same
  * regex; a property of an unrelated object (`foo.rest`) is excluded by the
  * lookbehind.
+ *
+ * The scan covers the gated loop's own non-children expression fields too
+ * (`array` / `key` / `mapPreamble` / `flatMapCallback` body) — a bare rest use
+ * can surface there (e.g. `.map(({ ...rest }) => { const x = rest; … })`
+ * lifts `const x = rest` into `mapPreamble`), plus intrinsic element event
+ * handlers (`onClick={() => fn(rest)}`).
  */
-function restNamesMisused(nodes: IRNode[], names: string[]): boolean {
+function restNamesMisused(loop: IRLoop, names: string[]): boolean {
   const valueUse = names.map(
     n => new RegExp(`(?<![\\w.$])${escapeRe(n)}(?!\\s*\\??\\.)(?![\\w$])`),
   )
@@ -82,6 +96,20 @@ function restNamesMisused(nodes: IRNode[], names: string[]): boolean {
       check(p.templateKey)
     }
   }
+  const visitLoop = (l: IRLoop): void => {
+    if (misused) return
+    check(l.array)
+    check(l.templateArray)
+    check(l.key)
+    check(l.mapPreamble)
+    check(l.templateMapPreamble)
+    if (l.flatMapCallback) {
+      check(l.flatMapCallback.body)
+      check(l.flatMapCallback.templateBody)
+      l.flatMapCallback.fragments.forEach(f => visit(f.ir))
+    }
+    l.children.forEach(visit)
+  }
   const visit = (node: IRNode): void => {
     if (misused) return
     switch (node.type) {
@@ -107,6 +135,7 @@ function restNamesMisused(nodes: IRNode[], names: string[]): boolean {
         break
       case 'element':
         node.attrs.forEach(a => attr(a.value))
+        node.events.forEach(e => check(e.handler))
         node.children.forEach(visit)
         break
       case 'component':
@@ -125,16 +154,14 @@ function restNamesMisused(nodes: IRNode[], names: string[]): boolean {
         node.children.forEach(visit)
         break
       case 'loop':
-        check(node.array)
-        check(node.key)
-        node.children.forEach(visit)
+        visitLoop(node)
         break
       case 'text':
       case 'slot':
         break
     }
   }
-  nodes.forEach(visit)
+  visitLoop(loop)
   return misused
 }
 
