@@ -275,7 +275,12 @@ export function buildComponentGraph(source: string, filePath: string, componentN
     errors: [],
   }
 
-  return buildGraphFromIR(componentIR)
+  const graph = buildGraphFromIR(componentIR)
+  // `findSourceFile` extracts the path from signal/memo/effect metadata; for
+  // components with no reactive state it returns '' because there are no
+  // located nodes. Fall back to the caller-supplied filePath so callers
+  // always get a non-empty sourceFile. (#1690 Bug A)
+  return graph.sourceFile ? graph : { ...graph, sourceFile: filePath }
 }
 
 /**

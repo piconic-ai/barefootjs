@@ -321,6 +321,25 @@ export type {
   BatchSafety,
 } from './profiler.ts'
 
+// Reactive profile — findings layer (#1690 dogfood: Bug A/C/D fixes, batch-candidate dedup,
+// fallback-heavy detection, multi-component table, SR6 compile-diff).
+export {
+  buildReactiveProfile,
+  buildProfileFromGraph,
+  diffProfiles,
+  formatSingleProfile,
+  formatProfileTable,
+  formatProfileDiff,
+  profileToJSON,
+} from './debug-profile.ts'
+export type {
+  ComponentProfile,
+  ComponentProfileMetrics,
+  ProfileFinding,
+  ProfileDiff,
+  ProfileDiffEntry,
+} from './debug-profile.ts'
+
 // HTML constants
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 
