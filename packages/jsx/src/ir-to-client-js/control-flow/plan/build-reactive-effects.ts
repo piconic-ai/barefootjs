@@ -143,6 +143,7 @@ export function buildReactiveEffectsPlan(
     attrSlots,
     outerTexts,
     conditionals: conditionalPlans,
+    profileComponentName,
   }
 }
 

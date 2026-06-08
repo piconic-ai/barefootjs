@@ -1610,7 +1610,25 @@ function collectDomBindings(
   signalGetters: Set<string>,
   memoNames: Set<string>,
   parentTag?: string,
+  // Loop-param names in scope (#1690, #1795 Phase 2). Inside a `map(it => …)`
+  // body the emitter rewrites every `it.x` read into a reactive accessor and
+  // wraps the binding in `createEffect`, yet `it` is neither a signal nor a
+  // memo — so without this context loop-child text / attribute bindings are
+  // invisible to the graph. When a binding expression references one of these
+  // names it is treated as reactive (matching the emitter's gate), giving the
+  // profiler a `domBinding` (slotId + loc) to resolve `<Comp>#binding:<slotId>`.
+  loopParams: Set<string> = new Set(),
 ): void {
+  // Does a loop-child binding read a loop param (or index)? Use the analyzer's
+  // lexer-resolved metadata, NOT a raw-string regex — so a param name that only
+  // appears inside a string literal (index `i` vs `'i'`) is not mistaken for a
+  // reactive read. Text expressions carry `origin.freeRefs` (a `render-item`
+  // kind == map-callback param); attributes carry `freeIdentifiers` (bare
+  // identifier set). This matches the emitter's actual loop-param gate.
+  const exprReadsLoopParam = (n: IRExpression): boolean =>
+    loopParams.size > 0 && (n.origin?.freeRefs?.some(r => loopParams.has(r.name)) ?? false)
+  const attrReadsLoopParam = (free: ReadonlySet<string> | undefined): boolean =>
+    loopParams.size > 0 && free !== undefined && [...loopParams].some(p => free.has(p))
   switch (node.type) {
     case 'element': {
       // Dynamic attribute bindings (style, class, aria-*, data-*, etc.)
@@ -1621,10 +1639,14 @@ function collectDomBindings(
       // deps list is the statically-proven-reactive case.
       for (const attr of node.attrs) {
         if (attr.value.kind !== 'expression' && attr.value.kind !== 'template' && attr.value.kind !== 'spread') continue
+        // `key` is consumed by the loop's keyFn, never emitted as an attribute
+        // effect — skip it inside loops so a `key={it.id}` read isn't mistaken
+        // for a reactive binding (matches `collectLoopChildBindings`).
+        if (attr.name === 'key' && loopParams.size > 0) continue
         const expr = attrValueToString(attr.value)
         if (!expr) continue
         const deps = extractReactiveDeps(expr, signalGetters, memoNames)
-        const isReactive = deps.length > 0
+        const isReactive = deps.length > 0 || attrReadsLoopParam(attr.freeIdentifiers)
         const wrapReason = inferWrapReasonForAttrLike(isReactive, false, attr)
         if (wrapReason) {
           bindings.push({
@@ -1659,7 +1681,7 @@ function collectDomBindings(
       }
       // Recurse — pass element tag as parent context for text bindings
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag)
+        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, loopParams)
       }
       break
     }
@@ -1667,7 +1689,8 @@ function collectDomBindings(
       // Widened to match emitter gate in collect-elements.ts:
       // `node.reactive || node.callsReactiveGetters || node.hasFunctionCalls`.
       const decision = decideWrapFromAstFlags(node)
-      if (decision.wrap && node.slotId) {
+      const loopReactive = exprReadsLoopParam(node)
+      if ((decision.wrap || loopReactive) && node.slotId) {
         const deps = extractReactiveDeps(node.expr, signalGetters, memoNames)
         const preview = parentTag
           ? `<${parentTag}>{${truncateExpr(node.expr)}}</${parentTag}>`
@@ -1678,9 +1701,12 @@ function collectDomBindings(
           slotId: node.slotId,
           deps,
           type: 'text',
-          classification: decision.reason === 'proven-reactive' ? 'reactive' : 'fallback',
+          classification:
+            (decision.wrap && decision.reason === 'proven-reactive') || loopReactive
+              ? 'reactive'
+              : 'fallback',
           expression: node.expr,
-          wrapReason: decision.reason,
+          wrapReason: decision.wrap ? decision.reason : 'string-reactive',
           loc: node.loc,
           jsxPreview: preview,
         })
@@ -1704,8 +1730,8 @@ function collectDomBindings(
           jsxPreview: `{${truncateExpr(node.condition)} ? ... : ...}`,
         })
       }
-      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag)
-      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag)
+      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, loopParams)
+      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, loopParams)
       break
     }
     case 'loop': {
@@ -1744,8 +1770,12 @@ function collectDomBindings(
           })
         }
       }
+      // Loop-param names enter scope for the children (#1690, #1795 Phase 2).
+      const childLoopParams = new Set(loopParams)
+      for (const p of extractLoopParamNames(node.param, node)) childLoopParams.add(p)
+      if (node.index) childLoopParams.add(node.index)
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childLoopParams)
       }
       break
     }
@@ -1778,21 +1808,21 @@ function collectDomBindings(
         }
       }
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, loopParams)
       }
       break
     }
     case 'fragment':
     case 'provider': {
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, loopParams)
       }
       break
     }
     case 'if-statement': {
-      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag)
+      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, loopParams)
       if (node.alternate) {
-        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag)
+        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, loopParams)
       }
       break
     }
