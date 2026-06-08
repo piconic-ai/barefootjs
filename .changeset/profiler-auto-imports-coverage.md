@@ -1,6 +1,6 @@
 ---
 "@barefootjs/cli": patch
-"@barefootjs/jsx": patch
+"@barefootjs/jsx": minor
 ---
 
 `bf debug profile --scenario auto` now attributes imported child components and quiets runtime-bookkeeping coverage noise (#1840).
