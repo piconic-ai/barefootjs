@@ -140,15 +140,23 @@ function loadWithLocalImports(entryPath: string, seedSource?: string): SourceFil
     }
     out.push({ source, filePath: resolved })
   }
-  // The entry is always included from its seed (or disk). Its filePath may be
-  // synthetic (in-memory tests, stdin) and need not exist on disk; only its
-  // local imports are resolved against the filesystem — missing ones are
-  // skipped so a partial/standalone component still profiles.
+  // Resolve the entry on disk. With no seed AND no on-disk file there is
+  // nothing to load — return empty so `runFileScenario` still surfaces its
+  // specific "Cannot read scenario file" error for a missing story path
+  // (the auto path always supplies `seedSource`, so it is unaffected).
   const entryResolved = resolveLocalFile(entryPath)
+  if (seedSource === undefined && !entryResolved) return out
+  // The entry is included from its seed (or disk). Its `filePath` may be
+  // synthetic (in-memory tests, stdin) and need not exist on disk. Resolve its
+  // local imports against the *resolved* file's directory (so a directory spec
+  // that maps to `…/index.tsx` resolves siblings correctly), falling back to the
+  // entry spec's dir when synthetic; missing imports are skipped so a
+  // partial/standalone component still profiles.
   if (entryResolved) visited.add(entryResolved)
-  const entrySource = seedSource ?? (entryResolved ? readFileSync(entryResolved, 'utf-8') : '')
+  const entrySource = seedSource ?? readFileSync(entryResolved!, 'utf-8')
+  const entryDir = dirname(entryResolved ?? entryPath)
   for (const m of entrySource.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
-    visitImport(join(dirname(entryPath), m[1]))
+    visitImport(join(entryDir, m[1]))
   }
   out.push({ source: entrySource, filePath: entryResolved ?? entryPath })
   return out
