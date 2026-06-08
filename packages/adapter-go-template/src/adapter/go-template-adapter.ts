@@ -470,7 +470,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private loopParamStack: string[] = []
   private loopVarRefCount: Map<string, number> = new Map()
   /** Stack of destructure-param binding maps (binding name → Go accessor on the
-   *  range var, e.g. `id` → `$bfItem.Id`, `rest` → `$bfItem`). Innermost last.
+   *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`). Innermost last.
    *  Lets `.map(({ id, ...rest }) => …)` resolve `id` / `rest.flag` instead of
    *  refusing with BF104. (#1310) */
   private loopBindingStack: Array<Map<string, string>> = []
@@ -5656,7 +5656,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // A destructure loop param is lowerable only for the object-rest /
     // simple-field shape (`.map(({ id, title, ...rest }) => …)`, where `rest`
     // is read via member access): each binding resolves to a field on a named
-    // range var (`$bfItem.Id`, and `rest.flag` → `$bfItem.Flag`). Array-index
+    // range var (`$__bf_item0.Id`, and `rest.flag` → `$__bf_item0.Flag`). Array-index
     // / nested / rest-spread shapes (`[a, ...t]`, `{ cells: [h] }`, `{...rest}`)
     // still need machinery Go's `{{range}}` can't express inline → BF104. (#1310)
     const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
@@ -5686,12 +5686,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `{{range $k, $_ := .Arr}}` makes `$k` the 0-based index.
     let rangeIndex = index
     // A supported destructure param can't be the Go range var verbatim
-    // (`$bfItemN` is a synthetic single name; bindings resolve against it via
+    // (`$__bf_itemN` is a synthetic single name; bindings resolve against it via
     // `loopBindingStack`); otherwise the value var is the param itself. The
-    // suffix is the current nesting depth so an inner destructure loop doesn't
-    // shadow an outer one's range var (a binding referenced across levels keeps
-    // resolving against its own item).
-    let rangeValue = supportableDestructure ? `bfItem${this.loopBindingStack.length}` : param
+    // reserved `__bf_item` prefix avoids colliding with a user binding, and the
+    // nesting-depth suffix keeps an inner destructure loop from shadowing an
+    // outer one's range var (a binding referenced across levels keeps resolving
+    // against its own item).
+    let rangeValue = supportableDestructure ? `__bf_item${this.loopBindingStack.length}` : param
     if (loop.iterationShape === 'keys') {
       rangeIndex = param
       rangeValue = '_'
@@ -5721,7 +5722,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const addedLoopVars: string[] = []
     let pushedBindingMap = false
     if (supportableDestructure) {
-      // Bindings resolve against the synthetic `$bfItem` range var; don't push
+      // Bindings resolve against the synthetic `$__bf_item` range var; don't push
       // a loop param (the param is a pattern, not a name).
       this.loopBindingStack.push(this.buildDestructureBindingMap(loop, rangeValue))
       pushedBindingMap = true
@@ -6055,11 +6056,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const e of entries) {
       if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
     }
+    // The static CSS key + literal value are inlined into a double-quoted
+    // `style="..."` attribute, so HTML-attr escape them (a value like `'"'`
+    // would otherwise terminate the attribute / inject markup). The dynamic
+    // arm's `{{…}}` action is escaped by `html/template`'s attribute context.
     return entries
       .map(e =>
         e.kind === 'literal'
-          ? `${e.cssKey}:${e.value}`
-          : `${e.cssKey}:{{${this.convertExpressionToGo(e.expr)}}}`,
+          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
+          : `${this.escapeAttrText(e.cssKey)}:{{${this.convertExpressionToGo(e.expr)}}}`,
       )
       .join(';')
   }

@@ -487,9 +487,12 @@ export type StyleObjectEntry =
   | { cssKey: string; kind: 'expr'; expr: string }
 
 /** camelCase → kebab-case for CSS property names (`backgroundColor` →
- *  `background-color`, `WebkitTransform` → `-webkit-transform`). */
-function cssKebabCase(name: string): string {
-  return name.replace(/[A-Z]/g, m => '-' + m.toLowerCase())
+ *  `background-color`, `WebkitTransform` → `-webkit-transform`). The `ms`
+ *  vendor prefix is lowercase in React style keys (`msTransform`) yet the CSS
+ *  property carries a leading dash (`-ms-transform`), so special-case it the
+ *  same way React's `hyphenateStyleName` does. */
+export function cssKebabCase(name: string): string {
+  return name.replace(/[A-Z]/g, m => '-' + m.toLowerCase()).replace(/^ms-/, '-ms-')
 }
 
 /**

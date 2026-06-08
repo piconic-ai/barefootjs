@@ -1675,6 +1675,11 @@ describe('parseStyleObjectEntries', () => {
     expect(parseStyleObjectEntries("{ WebkitTransform: 'none' }")).toEqual([
       { cssKey: '-webkit-transform', kind: 'literal', value: 'none' },
     ])
+    // The `ms` prefix is lowercase in React style keys but the CSS property
+    // carries a leading dash (`-ms-transform`), unlike `Webkit`/`Moz`.
+    expect(parseStyleObjectEntries("{ msTransform: 'none' }")).toEqual([
+      { cssKey: '-ms-transform', kind: 'literal', value: 'none' },
+    ])
   })
 
   test('returns null for unsupported shapes (spread / shorthand / computed)', () => {

@@ -833,7 +833,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // `$param`. Kolon's `$~loopvar.index` provides the 0-based index.
     const loopVar = loop.iterationShape === 'keys'
       ? '__bf_item'
-      : supportableDestructure ? 'bfItem' : param
+      : supportableDestructure ? '__bf_item' : param
 
     // Index alias: when an explicit `index` param is present (`.map((x, i) =>
     // ...)`) or the iteration is `keys`-shaped, expose it via a `: my` Kolon
@@ -1217,13 +1217,27 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     for (const e of entries) {
       if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
     }
+    // The static CSS key + literal value are inlined into a double-quoted
+    // `style="..."` attribute as raw template text, so HTML-attr escape them
+    // (a value like `'"'` would otherwise break the attribute / inject
+    // markup). The dynamic arm's `<: … :>` is HTML-escaped by Kolon.
     return entries
       .map(e =>
         e.kind === 'literal'
-          ? `${e.cssKey}:${e.value}`
-          : `${e.cssKey}:<: ${this.convertExpressionToKolon(e.expr)} :>`,
+          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
+          : `${this.escapeAttrText(e.cssKey)}:<: ${this.convertExpressionToKolon(e.expr)} :>`,
       )
       .join(';')
+  }
+
+  /** HTML-attribute escape for static text inlined into a `"..."` attribute. */
+  private escapeAttrText(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
   }
 
   private renderAttributes(element: IRElement): string {

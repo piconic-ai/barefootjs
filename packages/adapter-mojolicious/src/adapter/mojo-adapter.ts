@@ -961,7 +961,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     const loopBound = loop.iterationShape === 'keys'
       ? [param]
       : supportableDestructure
-        ? ['bfItem', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
+        ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
         : [param, loop.index ?? '_i']
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
@@ -993,12 +993,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (supportableDestructure) {
         // Per-item var + one `my` local per binding; `rest` aliases the item
         // so `$rest->{flag}` resolves (object-rest read via member access).
-        lines.push(`% my $bfItem = ${array}->[${indexVar}];`)
+        lines.push(`% my $__bf_item = ${array}->[${indexVar}];`)
         for (const b of loop.paramBindings ?? []) {
           lines.push(
             b.rest
-              ? `% my $${b.name} = $bfItem;`
-              : `% my $${b.name} = $bfItem->{${b.path.slice(1)}};`,
+              ? `% my $${b.name} = $__bf_item;`
+              : `% my $${b.name} = $__bf_item->{${b.path.slice(1)}};`,
           )
         }
       } else {
@@ -1397,13 +1397,27 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     for (const e of entries) {
       if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
     }
+    // The static CSS key + literal value are inlined into a double-quoted
+    // `style="..."` attribute as raw template text, so HTML-attr escape them
+    // (a value like `'"'` would otherwise break the attribute / inject
+    // markup). The dynamic arm's `<%= … %>` is HTML-escaped by Mojo's EP.
     return entries
       .map(e =>
         e.kind === 'literal'
-          ? `${e.cssKey}:${e.value}`
-          : `${e.cssKey}:<%= ${this.convertExpressionToPerl(e.expr)} %>`,
+          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
+          : `${this.escapeAttrText(e.cssKey)}:<%= ${this.convertExpressionToPerl(e.expr)} %>`,
       )
       .join(';')
+  }
+
+  /** HTML-attribute escape for static text inlined into a `"..."` attribute. */
+  private escapeAttrText(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
   }
 
   private renderAttributes(element: IRElement): string {
