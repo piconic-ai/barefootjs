@@ -27,7 +27,8 @@ export type Memo<T> = Reactive<() => T>
 //
 // A single, gated sink the reactive choke points call when profiling is on.
 // When `profilerSink` is null (the production default) every choke point is a
-// single null-check branch with no allocation — see `spec/profiler.md` SR8.
+// single null-check branch with no allocation, and the sink + id params
+// dead-code-eliminate from prod builds since they are never set (#1690).
 // The sink, its state, and the identity bookkeeping all live in this module
 // because `reactive.ts` is published as one physical entry
 // (`@barefootjs/client/reactive`); splitting the sink into a sibling file
@@ -96,7 +97,7 @@ let subscriberSeq = 0
  * Install (or clear) the dev-only reactive measurement sink. Pass `null` to
  * disable. Calling this before a scenario runs lets `bf debug profile` collect
  * the event stream; production code never calls it, so the sink stays null and
- * the choke points stay free. See `spec/profiler.md`.
+ * the choke points stay free (dev-only instrumentation, #1690).
  */
 export function setProfilerSink(sink: ProfilerEventSink | null): void {
   profilerSink = sink
@@ -564,7 +565,7 @@ export function onMount(fn: () => void): void {
 export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
   // A memo is an effect that writes a private signal. Share one id across both
   // so the profiler's IR join can collapse the effect-run + signal-set pair
-  // back into a single memo node (spec/profiler.md SR1).
+  // back into a single memo node (#1690).
   const id = __bfId ?? (profilerSink ? `m${++subscriberSeq}` : '')
   const [value, setValue] = createSignal<T>(undefined as T, id)
 

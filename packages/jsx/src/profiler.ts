@@ -1,8 +1,10 @@
 /**
  * Reactive performance profiler — static half (SR5 / SR6).
  *
- * See `spec/profiler.md` and issue #1690. This module implements the
- * **run-free** parts of `bf debug profile`: the static reactivity budget
+ * Background: issue #1690. User-facing docs live in `bf debug profile --help`
+ * (the design doc that used to live in `spec/profiler.md` was removed to avoid
+ * drift — the CLI help is the single source of truth). This module implements
+ * the **run-free** parts of `bf debug profile`: the static reactivity budget
  * (SR5) and the compile-diff regression (SR6). Both are pure functions of
  * the IR — no instrumented run is required — so they reuse the static
  * analysis already shipped in `debug.ts`:
@@ -14,7 +16,7 @@
  * The dynamic half (SR1–SR4: instrumented runtime, turn markers, IR join,
  * Hot-subscribers / Wasted-re-runs / Batch-advisor analyses) is assembled by
  * `buildProfileReport` from a recorded SR2 event stream — see those analyses
- * below and `spec/profiler.md`.
+ * below.
  */
 
 import ts from 'typescript'
