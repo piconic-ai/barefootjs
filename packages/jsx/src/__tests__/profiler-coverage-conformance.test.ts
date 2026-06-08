@@ -10,7 +10,7 @@
  * into a NEW emit path is not a type error; the effect would silently re-run as
  * a bare runtime id and never show attributed in `bf debug profile`.
  *
- * `coverageGaps()` computes the bidirectional invariant for one component:
+ * `computeGaps()` computes the bidirectional invariant for one component:
  *
  *   (a) coverage   — every reactive entity the analyzer reports (DOM bindings,
  *       event handlers, signals, memos) is emitted with a matching id. A new
@@ -21,8 +21,8 @@
  *
  * The MATRIX exercises every reactive emit path. If you add a new emit shape,
  * add a representative component to it and thread `profileComponentName` until
- * `coverageGaps()` is empty — that is the contract. The `guard self-test` block
- * proves `coverageGaps()` actually detects a dropped id and a bogus id, so the
+ * `computeGaps()` is empty — that is the contract. The `guard self-test` block
+ * proves `computeGaps()` actually detects a dropped id and a bogus id, so the
  * detector itself cannot rot silently.
  */
 
@@ -308,10 +308,10 @@ describe('profiler coverage conformance (#1690 SR4)', () => {
   }
 
   // The detector must itself be proven to fail on broken input — otherwise a
-  // bug in `coverageGaps` would make the whole matrix a no-op that passes on
+  // bug in `computeGaps` would make the whole matrix a no-op that passes on
   // anything. We feed it a real build with one tampering and assert the gap is
   // reported, for each of the two failure modes.
-  describe('guard self-test — coverageGaps detects tampering', () => {
+  describe('guard self-test — computeGaps detects tampering', () => {
     const name = 'Nested'
     const source = MATRIX.find(m => m.name === name)!.source
 
