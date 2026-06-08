@@ -52,6 +52,8 @@ export interface SignalEmitPlan {
    * cell #8.
    */
   branchCondition?: string
+  /** Profile-mode IR-aligned id, appended as the `createSignal` 2nd arg (#1690). */
+  bfId?: string
 }
 
 export interface ControlledSignalEffectPlan {
@@ -59,6 +61,8 @@ export interface ControlledSignalEffectPlan {
   setter: string
   /** Fully-resolved accessor expression read inside the effect. */
   accessorExpr: string
+  /** Profile-mode IR-aligned id, appended as the `createEffect` 2nd arg (#1690). */
+  bfId?: string
 }
 
 export interface MemoEmitPlan {
@@ -66,6 +70,8 @@ export interface MemoEmitPlan {
   name: string
   /** Source expression passed to `createMemo(...)`. */
   computationExpr: string
+  /** Profile-mode IR-aligned id, appended as the `createMemo` 2nd arg (#1690). */
+  bfId?: string
 }
 
 export interface FunctionEmitPlan {

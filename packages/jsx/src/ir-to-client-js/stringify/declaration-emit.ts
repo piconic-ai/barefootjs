@@ -59,7 +59,13 @@ function emitConstant(lines: string[], plan: ConstantEmitPlan): void {
   }
 }
 
+/** Profile-mode trailing `__bfId` argument (`, "Comp#signal:x"`), or '' when off. */
+function bfIdArg(bfId: string | undefined): string {
+  return bfId ? `, ${JSON.stringify(bfId)}` : ''
+}
+
 function emitSignal(lines: string[], plan: SignalEmitPlan): void {
+  const id = bfIdArg(plan.bfId)
   if (plan.branchCondition) {
     // #1414 cell #8: signal declared inside an early-return `if`-block.
     // Hoist as `let` so closures and event handlers hoisted to outer
@@ -70,12 +76,12 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
     if (plan.setter) {
       lines.push(`  let ${plan.getter}, ${plan.setter}`)
       lines.push(`  if (${plan.branchCondition}) {`)
-      lines.push(`    ;[${plan.getter}, ${plan.setter}] = createSignal(${plan.initialValueExpr})`)
+      lines.push(`    ;[${plan.getter}, ${plan.setter}] = createSignal(${plan.initialValueExpr}${id})`)
       lines.push(`  }`)
     } else {
       lines.push(`  let ${plan.getter}`)
       lines.push(`  if (${plan.branchCondition}) {`)
-      lines.push(`    ;[${plan.getter}] = createSignal(${plan.initialValueExpr})`)
+      lines.push(`    ;[${plan.getter}] = createSignal(${plan.initialValueExpr}${id})`)
       lines.push(`  }`)
     }
     // Controlled effects don't apply to branch-conditioned signals — a
@@ -84,9 +90,9 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
     return
   }
   if (plan.setter) {
-    lines.push(`  const [${plan.getter}, ${plan.setter}] = createSignal(${plan.initialValueExpr})`)
+    lines.push(`  const [${plan.getter}, ${plan.setter}] = createSignal(${plan.initialValueExpr}${id})`)
   } else {
-    lines.push(`  const [${plan.getter}] = createSignal(${plan.initialValueExpr})`)
+    lines.push(`  const [${plan.getter}] = createSignal(${plan.initialValueExpr}${id})`)
   }
   if (plan.controlledEffect) {
     emitControlledEffect(lines, plan.controlledEffect)
@@ -97,11 +103,11 @@ function emitControlledEffect(lines: string[], plan: ControlledSignalEffectPlan)
   lines.push(`  createEffect(() => {`)
   lines.push(`    const __val = ${plan.accessorExpr}`)
   lines.push(`    if (__val !== undefined) ${plan.setter}(__val)`)
-  lines.push(`  })`)
+  lines.push(`  }${bfIdArg(plan.bfId)})`)
 }
 
 function emitMemo(lines: string[], plan: MemoEmitPlan): void {
-  lines.push(`  const ${plan.name} = createMemo(${plan.computationExpr})`)
+  lines.push(`  const ${plan.name} = createMemo(${plan.computationExpr}${bfIdArg(plan.bfId)})`)
 }
 
 function emitFunction(lines: string[], plan: FunctionEmitPlan): void {

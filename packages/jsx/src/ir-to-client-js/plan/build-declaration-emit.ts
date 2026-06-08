@@ -62,6 +62,7 @@ export function buildDeclarationEmitPlan(
         kind: 'memo',
         name: decl.info.name,
         computationExpr: decl.info.computation,
+        bfId: ctx.profile ? `${ctx.componentName}#memo:${decl.info.name}` : undefined,
       }
     case 'function': {
       const fn = decl.info
@@ -84,13 +85,18 @@ function buildSignalPlan(
   ctx: ClientJsContext,
   lookups: DeclarationEmitLookups,
 ): SignalEmitPlan {
+  const controlledEffect = buildControlledSignalEffect(signal, lookups)
+  if (controlledEffect && ctx.profile) {
+    controlledEffect.bfId = `${ctx.componentName}#effect:controlled:${signal.setter}`
+  }
   return {
     kind: 'signal',
     getter: signal.getter,
     setter: signal.setter,
     initialValueExpr: resolveSignalInitialValue(signal, ctx, lookups),
-    controlledEffect: buildControlledSignalEffect(signal, lookups),
+    controlledEffect,
     branchCondition: signal.branchCondition,
+    bfId: ctx.profile ? `${ctx.componentName}#signal:${signal.getter}` : undefined,
   }
 }
 
