@@ -323,6 +323,14 @@ describe('adapter registry', () => {
     expect(cpanfile).toMatch(/^requires 'Text::Xslate'/m)
     expect(cpanfile).toMatch(/^requires 'Starman'/m)
     expect(Object.keys(xslate.files).filter(f => f.endsWith('.pm'))).toEqual([])
+    // Plain PSGI has no plugin to auto-seed the SSR stash (the Mojo
+    // adapter's plugin does), so app.psgi must read each component's
+    // `ssrDefaults` from the build manifest and bind them as render vars —
+    // otherwise `<: $count :>` / `my $count = ($initial // 0)` reference
+    // unbound variables.
+    expect(xslate.files['app.psgi']).toContain('dist/templates/manifest.json')
+    expect(xslate.files['app.psgi']).toContain('ssrDefaults')
+    expect(xslate.files['app.psgi']).toMatch(/sub ssr_defaults/)
     // Config targets the xslate build factory.
     expect(xslate.files['barefoot.config.ts']).toContain("from '@barefootjs/xslate/build'")
     // Starter Counter is self-contained (native buttons, no registry fetch).

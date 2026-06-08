@@ -58,6 +58,30 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.count).toEqual({ value: 99 })
   })
 
+  test('seeds a bare-props prop a signal initializer reads (`props.initial`)', () => {
+    // The #1297 prop-derived seeding lowers `createSignal(props.initial ?? 0)`
+    // to a *bare scalar* recompute in the template (`my $count = ($initial
+    // // 0)`), so `$initial` must be a stash var or Perl strict aborts with
+    // `Global symbol "$initial" requires explicit package name`. The
+    // bare-props-arg form previously skipped all props; this regression
+    // guards that the referenced prop is now seeded (as undef → the
+    // recompute's `?? 0` supplies the real fallback).
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      function Counter(props: { initial?: number }) {
+        const [count, setCount] = createSignal(props.initial ?? 0)
+        const doubled = createMemo(() => count() * 2)
+        return <p>{count()}{doubled()}</p>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.count).toEqual({ value: 0 })
+    expect(defaults?.doubled).toEqual({ value: 0 })
+    expect(defaults?.initial).toEqual({ propName: 'initial', value: null })
+  })
+
   test('memo derived from a signal evaluates through the chain', () => {
     const metadata = metadataFor(`
       'use client'
