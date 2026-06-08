@@ -149,7 +149,69 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     bindings[memo.name] = value
   }
 
+  // Bare-props-arg form (`function Foo(props: Props)`): a signal / memo
+  // whose initializer reads `props.X` is lowered by template-stash
+  // adapters to a *bare scalar* recompute (`my $count = ($initial // 0)`,
+  // the #1297 prop-derived seeding) — not a `$props->{X}` hash read. That
+  // bare `$initial` has to exist in the stash or Perl's strict mode aborts
+  // the render with `Global symbol "$initial" requires explicit package
+  // name`. The top block skips bare-props props on the assumption they're
+  // only ever read via `$props->{X}`, which the prop-derived seeding
+  // violates — so seed every prop a signal / memo initializer references.
+  // Value is `null` (→ undef): the recompute's own `?? <literal>` supplies
+  // the real fallback, and a caller-passed prop still wins via `propName`.
+  if (metadata.propsObjectName !== null) {
+    const referenced = new Set<string>()
+    for (const sig of metadata.signals) {
+      if (!sig.getter || sig.isModule) continue
+      collectPropRefs(sig.initialValue, metadata.propsObjectName, referenced)
+    }
+    for (const memo of metadata.memos) {
+      if (memo.isModule) continue
+      collectPropRefs(memo.computation, metadata.propsObjectName, referenced)
+    }
+    for (const name of referenced) {
+      // Don't clobber a signal / memo (or already-seeded prop) of the same
+      // name — those carry a resolved value the recompute relies on.
+      if (name in out) continue
+      out[name] = { propName: name, value: null }
+    }
+  }
+
   return Object.keys(out).length === 0 ? undefined : out
+}
+
+/**
+ * Collect the property names a `props.X` access reads off `propsObjectName`
+ * within `expr` (e.g. `props.initial ?? 0` → `initial`). Used to seed the
+ * stash vars a template-stash adapter's bare-scalar signal/memo recompute
+ * references. Only direct single-level accesses
+ * (`<propsObjectName>.<name>`) are collected — deeper chains
+ * (`props.a.b`) don't lower to a bare scalar and are left alone.
+ */
+function collectPropRefs(
+  expr: string | undefined,
+  propsObjectName: string,
+  out: Set<string>,
+): void {
+  if (!expr || !expr.trim()) return
+  const node = parseExpression(expr)
+  if (!node) return
+  const visit = (n: ts.Node): void => {
+    if (
+      ts.isPropertyAccessExpression(n) &&
+      ts.isIdentifier(n.expression) &&
+      n.expression.text === propsObjectName &&
+      ts.isIdentifier(n.name)
+    ) {
+      out.add(n.name.text)
+      // Don't descend into the matched access; its `.name` isn't a
+      // further reference. (The base identifier has no children to scan.)
+      return
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(node)
 }
 
 function resultToJsonable(v: EvalResult): unknown {

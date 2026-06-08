@@ -79,12 +79,46 @@ my $backend = BarefootJS::Backend::Xslate->new(
     xslate_options => { cache => $DEV ? 0 : 1 },
 );
 
+# Load the build manifest (\`bf build\` writes dist/templates/manifest.json).
+# It carries each component's \`ssrDefaults\` — the static fallback for every
+# template variable (signals, memos, and the props they read). A plain PSGI
+# app has no plugin to seed those automatically (unlike the Mojolicious
+# integration), so we read them here and bind them as render vars. Without
+# this, \`<: \$count :>\` / \`<: my \$count = (\$initial // 0) :>\` reference
+# unbound variables.
+sub load_manifest () {
+    open my $fh, '<:raw', 'dist/templates/manifest.json' or return {};
+    local $/;
+    my $json = <$fh>;
+    close $fh;
+    my $m = eval { $J->decode($json) };
+    return (ref $m eq 'HASH') ? $m : {};
+}
+# Cache the manifest in production; re-read each request in dev so a
+# \`bf build --watch\` rebuild surfaces new defaults without a restart.
+my $MANIFEST = $DEV ? undef : load_manifest();
+sub manifest () { return $DEV ? load_manifest() : $MANIFEST }
+
+# Build the SSR stash for a component from its manifest \`ssrDefaults\`.
+sub ssr_defaults ($component) {
+    my $entry = manifest()->{$component} or return ();
+    my $defaults = $entry->{ssrDefaults} or return ();
+    my %stash;
+    for my $name (keys %$defaults) {
+        my $d = $defaults->{$name};
+        $stash{$name} = ref($d) eq 'HASH' ? $d->{value} : $d;
+    }
+    return %stash;
+}
+
 sub rand_suffix () { return substr(sprintf('%f', rand()) =~ s/^0\\.//r, 0, 6) }
 
 # Render a top-level component template and wrap it in the page layout.
-sub render_component ($component, %stash) {
+# Manifest defaults seed the stash; any caller-supplied \`%override\` wins.
+sub render_component ($component, %override) {
     my $bf = BarefootJS->new(undef, { backend => $backend });
     $bf->_scope_id($component . '_' . rand_suffix());
+    my %stash = (ssr_defaults($component), %override);
     my $body = $backend->render_named($component, $bf, \\%stash);
     return layout(body => $body, scripts => $bf->scripts);
 }
