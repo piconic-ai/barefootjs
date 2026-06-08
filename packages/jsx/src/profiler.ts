@@ -500,6 +500,13 @@ export interface HotSubscribersOptions {
   hotRunsPerTurn?: number
   /** Keep only the top-N by `totalMs` (after ranking). Default: all. */
   topN?: number
+  /**
+   * Drop subscribers whose `totalMs` is below this threshold (after ranking,
+   * before `topN`). Noise filter for `--hot-ms`: a component with a long tail of
+   * sub-millisecond effects (e.g. a calendar grid) collapses to the few that
+   * actually cost. Default: keep all.
+   */
+  minMs?: number
 }
 
 const DEFAULT_HOT_RUNS_PER_TURN = 2
@@ -587,6 +594,9 @@ export function analyzeHotSubscribers(
       y.runs - x.runs ||
       (x.subscriber < y.subscriber ? -1 : x.subscriber > y.subscriber ? 1 : 0),
   )
+  // `minMs` is a noise floor applied at the displayed 0.1ms precision so a
+  // subscriber on the line is filtered consistently with how it would render.
+  if (options.minMs !== undefined) subscribers = subscribers.filter(s => roundMs(s.totalMs) >= options.minMs!)
   if (options.topN !== undefined) subscribers = subscribers.slice(0, options.topN)
 
   // Only subscriber ids matter for this analysis — filter the join's gaps to
@@ -917,6 +927,10 @@ export interface ProfileReportInput {
    * from those components resolve too.
    */
   extraSources?: readonly { source: string; filePath: string }[]
+  /** Keep only the top-N hot subscribers by `totalMs` (`--top`). Default: all. */
+  topN?: number
+  /** Drop hot subscribers below this `totalMs` floor (`--hot-ms`). Default: all. */
+  minMs?: number
 }
 
 /**
@@ -971,7 +985,10 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     }
   }
 
-  const hotSubscribers = analyzeHotSubscribers(events, index)
+  const hotSubscribers = analyzeHotSubscribers(events, index, {
+    topN: input.topN,
+    minMs: input.minMs,
+  })
   const batchAdvisor = analyzeBatchAdvisor(events, index)
   const { unattributed, diagnostics } = joinProfilerEvents(events, index)
 

@@ -17,23 +17,53 @@ import path from 'path'
 import type { CliContext } from '../context'
 import { resolveComponentSource } from '../lib/resolve-source'
 
+const USAGE =
+  'Usage: bf debug profile <component> [--diff <ref>] [--scenario auto|<file>] [--fanout <n>] [--top <n>] [--hot-ms <n>] [--json]'
+
 interface ProfileFlags {
   scenario?: string
   diff?: string
   fanOutThreshold?: number
+  /** `--top <n>`: keep only the N hottest subscribers (dynamic mode). */
+  topN?: number
+  /** `--hot-ms <n>`: drop subscribers below this totalMs floor (dynamic mode). */
+  minMs?: number
   positional: string[]
 }
 
+/**
+ * Parse `debug profile` flags. Unknown `--flags` are rejected (rather than
+ * silently swallowed into `positional`, where they would be mistaken for the
+ * component name — e.g. `bf debug profile --hot-ms 10 foo` reading the flag as
+ * the component). A numeric flag with a non-numeric/absent value is also an
+ * error, so an agent gets an actionable message instead of a silent NaN.
+ */
 function parseFlags(args: string[]): ProfileFlags {
   const flags: ProfileFlags = { positional: [] }
+  const num = (raw: string | undefined, name: string): number => {
+    const n = Number(raw)
+    if (raw === undefined || raw === '' || Number.isNaN(n)) {
+      fail(`${name} requires a number (got ${raw === undefined ? 'nothing' : `"${raw}"`}).`)
+    }
+    return n
+  }
   for (let i = 0; i < args.length; i++) {
     const a = args[i]
     if (a === '--scenario') flags.scenario = args[++i]
     else if (a === '--diff') flags.diff = args[++i]
-    else if (a === '--fanout') flags.fanOutThreshold = Number(args[++i])
+    else if (a === '--fanout') flags.fanOutThreshold = num(args[++i], '--fanout')
+    else if (a === '--top') flags.topN = num(args[++i], '--top')
+    else if (a === '--hot-ms') flags.minMs = num(args[++i], '--hot-ms')
+    else if (a.startsWith('-')) fail(`Unknown flag "${a}".`)
     else flags.positional.push(a)
   }
   return flags
+}
+
+function fail(message: string): never {
+  console.error(`Error: ${message}`)
+  console.error(USAGE)
+  process.exit(1)
 }
 
 export async function run(args: string[], ctx: CliContext): Promise<void> {
@@ -51,7 +81,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const componentName = flags.positional[0]
   if (!componentName) {
     console.error('Error: Component name required.')
-    console.error('Usage: bf debug profile <component> [--diff <ref>] [--scenario auto] [--fanout <n>] [--json]')
+    console.error(USAGE)
     process.exit(1)
   }
 
@@ -88,6 +118,8 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
         scenario: isAuto ? 'auto' : flags.scenario,
         events,
         extraSources,
+        topN: flags.topN,
+        minMs: flags.minMs,
       })
       if (ctx.jsonFlag) {
         console.log(JSON.stringify(report, null, 2))
