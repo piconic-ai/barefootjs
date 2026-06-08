@@ -182,7 +182,8 @@ export function insert(
   id: string,
   conditionFn: () => boolean,
   whenTrue: BranchConfig,
-  whenFalse: BranchConfig
+  whenFalse: BranchConfig,
+  bfId?: string
 ): void {
   if (!scope) return
 
@@ -325,7 +326,7 @@ export function insert(
 
     // Auto-focus elements with autofocus attribute (for dynamically created elements)
     autoFocusConditionalElement(region, id)
-  })
+  }, bfId)
 }
 
 

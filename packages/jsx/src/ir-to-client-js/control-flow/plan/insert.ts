@@ -29,6 +29,12 @@ export interface InsertPlan {
    * keeps the original event name (used by `@client` conditionals).
    */
   eventNameMode: 'dom' | 'raw'
+  /**
+   * Owning component name in profile mode (#1690, SR4). When set, the
+   * conditional's `insert()` effect and its branch binding effects carry a
+   * `<Component>#binding:<slotId>` id so the profiler attributes them.
+   */
+  profileComponentName?: string
 }
 
 /** A single branch arm of an insert(). */
