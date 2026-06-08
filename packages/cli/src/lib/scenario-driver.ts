@@ -227,7 +227,21 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
     }
   }
 
-  const runtimePath = import.meta.resolve('@barefootjs/client/runtime')
+  // The dynamic profiler imports the real client runtime. In-tree, that package
+  // resolves to its built `dist/` (unlike `@barefootjs/jsx`, which exports src),
+  // so a fresh checkout that ran `bun install` but not `bun run build` fails here
+  // with an opaque "Cannot find module" — turn it into an actionable message.
+  let runtimePath: string
+  try {
+    runtimePath = import.meta.resolve('@barefootjs/client/runtime')
+  } catch {
+    throw new Error(
+      "The client runtime (@barefootjs/client/runtime) isn't built — the dynamic " +
+        'profiler needs it. Build the client package first (e.g. `bun run build`, or ' +
+        '`bun run --filter @barefootjs/client build`), then re-run with --scenario. ' +
+        'The static budget (`bf debug profile <component>`) needs no build.',
+    )
+  }
   // Concatenating multiple compiled chunks duplicates their runtime imports
   // (`import { createComponent, hydrate, … }`). Collect the union of imported
   // names, strip every per-chunk runtime import, and prepend a single one.

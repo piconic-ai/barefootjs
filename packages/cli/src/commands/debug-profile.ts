@@ -17,23 +17,75 @@ import path from 'path'
 import type { CliContext } from '../context'
 import { resolveComponentSource } from '../lib/resolve-source'
 
+const USAGE =
+  'Usage: bf debug profile <component> [--diff <ref>] [--scenario auto|<file>] [--fanout <n>] [--top <n>] [--hot-ms <n>] [--json]'
+
 interface ProfileFlags {
   scenario?: string
   diff?: string
   fanOutThreshold?: number
+  /** `--top <n>`: keep only the N hottest subscribers (dynamic mode). */
+  topN?: number
+  /** `--hot-ms <n>`: drop subscribers below this totalMs floor (dynamic mode). */
+  minMs?: number
   positional: string[]
 }
 
+/**
+ * Parse `debug profile` flags. Unknown `--flags` are rejected (rather than
+ * silently swallowed into `positional`, where they would be mistaken for the
+ * component name — e.g. `bf debug profile --hot-ms 10 foo` reading the flag as
+ * the component). Every value-taking flag validates its argument so an agent
+ * gets an actionable message instead of silent surprising behavior:
+ *
+ * - a missing value, or a value that is itself a flag, is rejected — so
+ *   `--scenario --fanout 8` can't make `scenario='--fanout'` and silently drop
+ *   `--fanout`;
+ * - numeric flags enforce sensible ranges — `--top`/`--fanout` are positive
+ *   integers (a negative `--top` would slice from the end, a negative
+ *   `--fanout` would mark everything hot), `--hot-ms` is a non-negative number.
+ */
 function parseFlags(args: string[]): ProfileFlags {
   const flags: ProfileFlags = { positional: [] }
+  // Consume the next token as a flag value, rejecting a missing value or one
+  // that is itself a flag (a common typo that would otherwise be swallowed).
+  const value = (args: string[], i: number, name: string): string => {
+    const raw = args[i]
+    if (raw === undefined || raw.startsWith('-')) {
+      fail(`${name} requires a value${raw === undefined ? '' : ` (got the flag "${raw}")`}.`)
+    }
+    return raw
+  }
+  const num = (
+    args: string[],
+    i: number,
+    name: string,
+    opts: { integer?: boolean; min?: number },
+  ): number => {
+    const raw = value(args, i, name)
+    const n = Number(raw)
+    if (Number.isNaN(n)) fail(`${name} requires a number (got "${raw}").`)
+    if (opts.integer && !Number.isInteger(n)) fail(`${name} must be a whole number (got "${raw}").`)
+    if (opts.min !== undefined && n < opts.min) fail(`${name} must be ≥ ${opts.min} (got "${raw}").`)
+    return n
+  }
   for (let i = 0; i < args.length; i++) {
     const a = args[i]
-    if (a === '--scenario') flags.scenario = args[++i]
-    else if (a === '--diff') flags.diff = args[++i]
-    else if (a === '--fanout') flags.fanOutThreshold = Number(args[++i])
+    if (a === '--scenario') flags.scenario = value(args, ++i, '--scenario')
+    else if (a === '--diff') flags.diff = value(args, ++i, '--diff')
+    else if (a === '--fanout') flags.fanOutThreshold = num(args, ++i, '--fanout', { integer: true, min: 1 })
+    else if (a === '--top') flags.topN = num(args, ++i, '--top', { integer: true, min: 1 })
+    else if (a === '--hot-ms') flags.minMs = num(args, ++i, '--hot-ms', { min: 0 })
+    else if (a.startsWith('-')) fail(`Unknown flag "${a}".`)
     else flags.positional.push(a)
   }
   return flags
+}
+
+function fail(message: string): never {
+  console.error(`Error: ${message}`)
+  console.error(USAGE)
+  process.exit(1)
 }
 
 export async function run(args: string[], ctx: CliContext): Promise<void> {
@@ -51,7 +103,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const componentName = flags.positional[0]
   if (!componentName) {
     console.error('Error: Component name required.')
-    console.error('Usage: bf debug profile <component> [--diff <ref>] [--scenario auto] [--fanout <n>] [--json]')
+    console.error(USAGE)
     process.exit(1)
   }
 
@@ -88,6 +140,8 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
         scenario: isAuto ? 'auto' : flags.scenario,
         events,
         extraSources,
+        topN: flags.topN,
+        minMs: flags.minMs,
       })
       if (ctx.jsonFlag) {
         console.log(JSON.stringify(report, null, 2))

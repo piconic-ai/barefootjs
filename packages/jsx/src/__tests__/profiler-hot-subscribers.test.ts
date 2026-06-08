@@ -125,6 +125,36 @@ describe('analyzeHotSubscribers', () => {
     expect(r.subscribers[0].subscriber).toBe('Calc#memo:a') // 99ms > 1ms
   })
 
+  test('minMs drops sub-threshold subscribers (--hot-ms noise floor)', () => {
+    seq = 0
+    // One costly subscriber and a long tail of cheap ones — `--hot-ms` keeps
+    // only what is worth a fix.
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'Calc#memo:a' }),
+      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 5 }),
+      ev('effectEnter', { subscriber: 'Calc#memo:b' }),
+      ev('effectExit', { subscriber: 'Calc#memo:b', dur: 0.04 }), // rounds to 0.0ms
+    ]
+    const r = analyzeHotSubscribers(events, index, { minMs: 1 })
+    expect(r.subscribers).toHaveLength(1)
+    expect(r.subscribers[0].subscriber).toBe('Calc#memo:a')
+  })
+
+  test('minMs and topN compose (filter floor, then cap)', () => {
+    seq = 0
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'Calc#memo:a' }),
+      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 10 }),
+      ev('effectEnter', { subscriber: 'Calc#memo:b' }),
+      ev('effectExit', { subscriber: 'Calc#memo:b', dur: 5 }),
+      ev('effectEnter', { subscriber: 'Calc#memo:c' }),
+      ev('effectExit', { subscriber: 'Calc#memo:c', dur: 0.01 }), // below floor
+    ]
+    const r = analyzeHotSubscribers(events, index, { minMs: 1, topN: 1 })
+    expect(r.subscribers).toHaveLength(1)
+    expect(r.subscribers[0].subscriber).toBe('Calc#memo:a')
+  })
+
   test('same-cost subscribers tiebreak by runs then id — stable across timing noise', () => {
     seq = 0
     // Both round to the same displayed 0.1ms cost; runs (equal) then id decide.
