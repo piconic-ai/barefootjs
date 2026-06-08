@@ -17,12 +17,14 @@
  * placeholder seam where it will land.
  */
 
+import ts from 'typescript'
 import {
   buildComponentAnalysis,
   buildComponentSummary,
   buildEventSummary,
   traceUpdatePath,
   type ComponentGraph,
+  type EventBinding,
   type UpdatePathEntry,
 } from './debug.ts'
 import type { ProfilerEvent } from '@barefootjs/shared'
@@ -655,6 +657,109 @@ export function formatBatchAdvisor(r: BatchAdvisorResult): string {
   return lines.join('\n')
 }
 
+// -- Batch safety oracle (§4.2.3 / SR4) ---------------------------------------
+
+/** Memos transitively dependent on any of `written` (so stale under batch). */
+function downstreamMemos(graph: ComponentGraph, written: Set<string>): Set<string> {
+  const byName = new Map(graph.memos.map(m => [m.name, m]))
+  const result = new Set<string>()
+  const dependsOnWritten = (memoName: string, seen: Set<string>): boolean => {
+    if (seen.has(memoName)) return false
+    seen.add(memoName)
+    const m = byName.get(memoName)
+    if (!m) return false
+    for (const dep of m.deps) {
+      if (written.has(dep)) return true
+      if (byName.has(dep) && dependsOnWritten(dep, seen)) return true
+    }
+    return false
+  }
+  for (const m of graph.memos) if (dependsOnWritten(m.name, new Set())) result.add(m.name)
+  return result
+}
+
+/**
+ * The **post-write-derived-read** oracle (§4.2.3). Wrapping a handler in
+ * `batch()` defers effect flush; since a memo is a push-effect that writes a
+ * private signal (`reactive.ts`), a memo read *after* a write to one of its
+ * dependencies returns a **stale** value under batch. So a wrap is safe iff no
+ * such read happens.
+ *
+ * Conservative by construction — only `'safe'` when provably so:
+ * - indirect setters (`via` a helper) ⇒ `'unverified'` (helper body unseen);
+ * - a downstream-memo getter called after the first write ⇒ `'unsafe'`;
+ * - a bare unknown-function call after a write ⇒ `'unverified'` (it could read a
+ *   memo we can't see). Signal reads are fine — `set()` updates the value
+ *   synchronously; only memo recomputation is deferred.
+ *
+ * Known gap: a memo read reached through an object-method call's closure is not
+ * traced (only lexically-visible `memo()` getters and bare helper calls are).
+ */
+export function assessBatchSafety(args: {
+  handler: string
+  setterNames: readonly string[]
+  hasIndirectSetters: boolean
+  writtenSignals: readonly string[]
+  graph: ComponentGraph
+}): BatchSafety {
+  if (args.hasIndirectSetters || args.setterNames.length === 0) return 'unverified'
+
+  const D = downstreamMemos(args.graph, new Set(args.writtenSignals))
+  const setters = new Set(args.setterNames)
+  const memoNames = new Set(args.graph.memos.map(m => m.name))
+  const signalGetters = new Set(args.graph.signals.map(s => s.name))
+
+  let sf: ts.SourceFile
+  try {
+    sf = ts.createSourceFile('__h.ts', `const __h = ${args.handler}`, ts.ScriptTarget.Latest, true)
+  } catch {
+    return 'unverified'
+  }
+
+  type Call = { pos: number; kind: 'write' | 'memoRead' | 'risky' }
+  const calls: Call[] = []
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const name = node.expression.text
+      if (setters.has(name)) calls.push({ pos: node.getStart(sf), kind: 'write' })
+      else if (D.has(name) && node.arguments.length === 0) calls.push({ pos: node.getStart(sf), kind: 'memoRead' })
+      else if (!signalGetters.has(name) && !memoNames.has(name)) calls.push({ pos: node.getStart(sf), kind: 'risky' })
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  calls.sort((a, b) => a.pos - b.pos)
+
+  let seenWrite = false
+  let risky = false
+  for (const c of calls) {
+    if (c.kind === 'write') seenWrite = true
+    else if (seenWrite && c.kind === 'memoRead') return 'unsafe'
+    else if (seenWrite && c.kind === 'risky') risky = true
+  }
+  if (!seenWrite) return 'unverified'
+  return risky ? 'unverified' : 'safe'
+}
+
+/**
+ * Pair each turn handler id (`<Component>#handler:<slotId>:<event>`) with its
+ * `EventBinding`, matching the event `domBinding`'s slotId to the binding by
+ * source line (the binding itself has no slotId). Used to feed the safety
+ * oracle a candidate's handler body + setter calls.
+ */
+function turnToEventBinding(graph: ComponentGraph, events: EventBinding[]): Map<string, EventBinding> {
+  const byLine = new Map<number, EventBinding>()
+  for (const e of events) if (e.loc) byLine.set(e.loc.start.line, e)
+  const out = new Map<string, EventBinding>()
+  for (const b of graph.domBindings) {
+    if (b.type !== 'event' || !b.loc) continue
+    const eventName = b.label.match(/^(\w+)\s+handler/)?.[1]
+    const binding = byLine.get(b.loc.start.line)
+    if (eventName && binding) out.set(`${graph.componentName}#handler:${b.slotId}:${eventName}`, binding)
+  }
+  return out
+}
+
 // -- Dynamic report (SR1–SR4 + analyses, SR7) ---------------------------------
 
 export interface ProfileCoverage {
@@ -704,6 +809,31 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
   const hotSubscribers = analyzeHotSubscribers(events, index)
   const batchAdvisor = analyzeBatchAdvisor(events, index)
   const { unattributed } = joinProfilerEvents(events, index)
+
+  // Safety oracle (§4.2.3): upgrade each batch candidate from 'unverified' to
+  // 'safe'/'unsafe' by static analysis of its handler body.
+  if (batchAdvisor.candidates.length > 0) {
+    let summary: ReturnType<typeof buildEventSummary> | null = null
+    try {
+      summary = buildEventSummary(source, filePath, componentName)
+    } catch {
+      summary = null
+    }
+    if (summary) {
+      const turnBindings = turnToEventBinding(graph, summary.events)
+      for (const c of batchAdvisor.candidates) {
+        const binding = turnBindings.get(c.turn)
+        if (!binding) continue
+        c.safety = assessBatchSafety({
+          handler: binding.handler,
+          setterNames: binding.setterCalls.map(s => s.setter),
+          hasIndirectSetters: binding.setterCalls.some(s => s.via && s.via.length > 0),
+          writtenSignals: binding.setterCalls.map(s => s.signal).filter((s): s is string => s !== null),
+          graph,
+        })
+      }
+    }
+  }
 
   const turnIds = new Set<string>()
   for (const e of events) if (e.turn !== null) turnIds.add(e.turn)

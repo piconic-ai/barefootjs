@@ -7,9 +7,41 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { analyzeBatchAdvisor, formatBatchAdvisor, buildIdIndex } from '../profiler'
+import { analyzeBatchAdvisor, formatBatchAdvisor, buildIdIndex, assessBatchSafety } from '../profiler'
 import { buildComponentAnalysis } from '../debug'
 import type { ProfilerEvent } from '@barefootjs/shared'
+
+const SAFETY_SRC = `
+  'use client'
+  import { createSignal, createMemo } from '@barefootjs/client'
+  export function C() {
+    const [a, setA] = createSignal(0)
+    const [b, setB] = createSignal(0)
+    const sum = createMemo(() => a() + b())
+    return <div></div>
+  }
+`
+const safetyGraph = buildComponentAnalysis(SAFETY_SRC, 'C.tsx').graph
+
+describe('assessBatchSafety (post-write-derived-read oracle, §4.2.3)', () => {
+  const base = { hasIndirectSetters: false, graph: safetyGraph }
+
+  test('writes only, no derived read → safe', () => {
+    expect(assessBatchSafety({ ...base, handler: '() => { setA(1); setB(2) }', setterNames: ['setA', 'setB'], writtenSignals: ['a', 'b'] })).toBe('safe')
+  })
+  test('reads a downstream memo after a write → unsafe', () => {
+    expect(assessBatchSafety({ ...base, handler: '() => { setA(1); console.log(sum()) }', setterNames: ['setA'], writtenSignals: ['a'] })).toBe('unsafe')
+  })
+  test('reads the memo before the write → safe', () => {
+    expect(assessBatchSafety({ ...base, handler: '() => { const x = sum(); setA(x) }', setterNames: ['setA'], writtenSignals: ['a'] })).toBe('safe')
+  })
+  test('indirect setters (via a helper) → unverified', () => {
+    expect(assessBatchSafety({ ...base, handler: '() => doStuff()', hasIndirectSetters: true, setterNames: ['setA'], writtenSignals: ['a'] })).toBe('unverified')
+  })
+  test('an unknown call after a write → unverified (could read a memo)', () => {
+    expect(assessBatchSafety({ ...base, handler: '() => { setA(1); maybeReads() }', setterNames: ['setA'], writtenSignals: ['a'] })).toBe('unverified')
+  })
+})
 
 let seq = 0
 const ev = (type: ProfilerEvent['type'], f: Partial<ProfilerEvent> = {}): ProfilerEvent =>
