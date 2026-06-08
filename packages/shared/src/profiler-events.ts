@@ -23,6 +23,7 @@ export type ProfilerEventType =
   | 'effectCreate'
   | 'effectEnter'
   | 'effectExit'
+  | 'effectOutput'
   | 'effectDispose'
   | 'batchBegin'
   | 'batchFlush'
@@ -53,6 +54,15 @@ export interface ProfilerEvent {
   subscriber?: string
   /** Effect run duration in ms (`effectExit` only). */
   dur?: number
+  /**
+   * Output fingerprint for the run (`effectOutput` only): `true` when the run
+   * produced new output (a memo value that differs by `Object.is`, or a DOM
+   * write that changed the node), `false` when the run recomputed but produced
+   * output identical to its previous run — a *wasted* re-run (§4.2.2). Emitted
+   * only for runs whose output is fingerprintable; a run with no `effectOutput`
+   * event simply isn't counted by the wasted-re-runs analysis.
+   */
+  changed?: boolean
   /** Subscriber kind (`effectCreate` only). */
   kind?: ProfilerSubscriberKind
   /** Whether the set happened inside a `batch()` (`signalSet` only). */

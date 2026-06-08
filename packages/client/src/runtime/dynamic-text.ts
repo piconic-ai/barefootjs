@@ -10,12 +10,19 @@
  * returned by `createComponent`. Stringifying it produced
  * `"[object HTMLElement]"` (and clobbered the server-rendered subtree).
  *
+ * Profiler note (#1690, §4.2.2): each write reports an output fingerprint via
+ * `__bfReportOutput` — `false` when the slot already held the same text/node, so
+ * the wasted-re-runs analysis can flag a text binding that re-ran without
+ * changing the DOM. Dev-only: `__bfReportOutput` is a no-op when profiling is off.
+ *
  * `__bfText` mirrors `__bfSlot` (the branch-template equivalent): when the
  * value is a `Node`, it replaces the slot region with that node by identity;
  * otherwise it behaves exactly like the previous text assignment. It returns
  * the node that now occupies the slot so the caller can track it across
  * reactive re-runs (the previous node is detached once replaced).
  */
+
+import { __bfReportOutput } from '@barefootjs/client/reactive'
 
 const END_MARKER = '/'
 
@@ -49,8 +56,12 @@ export function __bfText(current: Node | null, value: unknown): Node | null {
   if (value != null && (value as { __isSlot?: boolean }).__isSlot) return current
 
   if (typeof Node !== 'undefined' && value instanceof Node) {
-    if (value === current) return current
+    if (value === current) {
+      __bfReportOutput(false) // same node already in the slot — nothing changed
+      return current
+    }
     const start = current.previousSibling
+    __bfReportOutput(true)
     if (start && start.nodeType === Node.COMMENT_NODE) {
       clearSlotRegion(start)
       start.parentNode?.insertBefore(value, start.nextSibling)
@@ -63,6 +74,7 @@ export function __bfText(current: Node | null, value: unknown): Node | null {
 
   const text = String(value ?? '')
   if (current.nodeType === Node.TEXT_NODE) {
+    __bfReportOutput(current.nodeValue !== text)
     current.nodeValue = text
     // The conditional-slot path re-resolves the anchor via `$t()` on every
     // run, which can hand back a freshly created text node sitting *before* a
@@ -76,6 +88,7 @@ export function __bfText(current: Node | null, value: unknown): Node | null {
 
   // Switching back from a Node value to text: drop the element and restore a
   // text node in the slot region.
+  __bfReportOutput(true)
   const start = current.previousSibling
   const textNode = (current.ownerDocument ?? document).createTextNode(text)
   if (start && start.nodeType === Node.COMMENT_NODE) {

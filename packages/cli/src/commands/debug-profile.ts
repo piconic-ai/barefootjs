@@ -18,7 +18,7 @@ import type { CliContext } from '../context'
 import { resolveComponentSource } from '../lib/resolve-source'
 
 const USAGE =
-  'Usage: bf debug profile <component> [--diff <ref>] [--scenario auto|<file>] [--fanout <n>] [--top <n>] [--hot-ms <n>] [--json]'
+  'Usage: bf debug profile <component> [--diff <ref>] [--scenario auto|<file>] [--fanout <n>] [--top <n>] [--hot-ms <n>] [--wasted-pct <n>] [--json]'
 
 interface ProfileFlags {
   scenario?: string
@@ -28,6 +28,8 @@ interface ProfileFlags {
   topN?: number
   /** `--hot-ms <n>`: drop subscribers below this totalMs floor (dynamic mode). */
   minMs?: number
+  /** `--wasted-pct <n>`: flag a subscriber whose runs are ≥ n% identical output. */
+  wastedPct?: number
   positional: string[]
 }
 
@@ -76,6 +78,7 @@ function parseFlags(args: string[]): ProfileFlags {
     else if (a === '--fanout') flags.fanOutThreshold = num(args, ++i, '--fanout', { integer: true, min: 1 })
     else if (a === '--top') flags.topN = num(args, ++i, '--top', { integer: true, min: 1 })
     else if (a === '--hot-ms') flags.minMs = num(args, ++i, '--hot-ms', { min: 0 })
+    else if (a === '--wasted-pct') flags.wastedPct = num(args, ++i, '--wasted-pct', { min: 0 })
     else if (a.startsWith('-')) fail(`Unknown flag "${a}".`)
     else flags.positional.push(a)
   }
@@ -142,6 +145,8 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
         extraSources,
         topN: flags.topN,
         minMs: flags.minMs,
+        // `--wasted-pct` is a percentage on the CLI; the analysis takes a [0,1] fraction.
+        wastedRatio: flags.wastedPct !== undefined ? flags.wastedPct / 100 : undefined,
       })
       if (ctx.jsonFlag) {
         console.log(JSON.stringify(report, null, 2))

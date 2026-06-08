@@ -14,6 +14,7 @@ export {
   setProfilerSink,
   beginTurn,
   endTurn,
+  __bfReportOutput,
   type Reactive,
   type Signal,
   type Memo,

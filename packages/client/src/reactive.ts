@@ -55,6 +55,16 @@ export interface ProfilerEventSink {
   effectEnter(subscriberId: string): void
   /** An effect/memo body finished. `durationMs` is wall time. */
   effectExit(subscriberId: string, durationMs: number): void
+  /**
+   * An effect/memo run produced an output fingerprint (#1690, §4.2.2).
+   * `changed` is `true` when the run produced new output (a memo value that
+   * differs by `Object.is`, or a DOM write that changed the node) and `false`
+   * when it recomputed but produced output identical to its previous run — a
+   * *wasted* re-run. Emitted at most once per run, only for runs whose output
+   * is fingerprintable (memo recompute / instrumented DOM write); a run that
+   * reports no output emits no event and isn't counted as wasted.
+   */
+  effectOutput(subscriberId: string, changed: boolean): void
   /** An effect / memo / root scope was disposed. */
   effectDispose(subscriberId: string): void
   /** A `batch()` block opened at the given (post-increment) depth. */
@@ -105,6 +115,23 @@ export function endTurn(): void {
   if (profilerSink) profilerSink.turnEnd()
 }
 
+/**
+ * Report the current run's output fingerprint (#1690, §4.2.2). Called from the
+ * places that produce an effect's observable output — a memo recompute (the
+ * written value's `Object.is` identity) and instrumented DOM writes (whether the
+ * node actually changed). Accumulated onto the running effect (`Owner`) and
+ * flushed as one `effectOutput` event at run exit, so several writes in one run
+ * collapse to a single "did this run change anything" verdict.
+ *
+ * No-op when profiling is off or called outside a run — the wasted-re-runs
+ * analysis is the only consumer and it lives behind the dev-only sink (SR8).
+ */
+export function __bfReportOutput(changed: boolean): void {
+  if (!profilerSink || !Owner) return
+  Owner.outputReported = true
+  if (changed) Owner.outputChanged = true
+}
+
 type EffectContext = {
   fn: EffectFn
   cleanup: CleanupFn | null
@@ -115,6 +142,12 @@ type EffectContext = {
   runCount: number              // Per-effect re-entry counter for circular dependency detection
   id: string                    // Dev instrumentation id ('' when profiling is off)
   kind: SubscriberKind          // effect | memo | root
+  // Per-run output fingerprint accumulator (SR1, §4.2.2). Reset at the start of
+  // every run; set by `__bfReportOutput` (memo recompute / DOM write) during the
+  // body; flushed as one `effectOutput` event at exit. Dev-only — untouched when
+  // profiling is off.
+  outputReported: boolean
+  outputChanged: boolean
 }
 
 let Owner: EffectContext | null = null
@@ -208,6 +241,8 @@ export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: Subscriber
     runCount: 0,
     id: __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
     kind: __bfKind,
+    outputReported: false,
+    outputChanged: false,
   }
 
   if (profilerSink) profilerSink.effectCreate(effect.id, effect.kind)
@@ -243,6 +278,10 @@ function runEffect(effect: EffectContext): void {
   Owner = effect
   Listener = effect
 
+  // Fresh output fingerprint for this run (§4.2.2); `__bfReportOutput` fills it.
+  effect.outputReported = false
+  effect.outputChanged = false
+
   const start = profilerSink ? performance.now() : 0
   if (profilerSink) profilerSink.effectEnter(effect.id)
 
@@ -255,7 +294,10 @@ function runEffect(effect: EffectContext): void {
     Owner = prevOwner
     Listener = prevListener
     effect.runCount--
-    if (profilerSink) profilerSink.effectExit(effect.id, performance.now() - start)
+    if (profilerSink) {
+      profilerSink.effectExit(effect.id, performance.now() - start)
+      if (effect.outputReported) profilerSink.effectOutput(effect.id, effect.outputChanged)
+    }
   }
 }
 
@@ -331,6 +373,8 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
     runCount: 0,
     id: profilerSink ? `r${++subscriberSeq}` : '',
     kind: 'root',
+    outputReported: false,
+    outputChanged: false,
   }
 
   if (profilerSink) profilerSink.effectCreate(root.id, 'root')
@@ -372,6 +416,8 @@ export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => voi
     runCount: 0,
     id: __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
     kind: 'effect',
+    outputReported: false,
+    outputChanged: false,
   }
 
   if (profilerSink) profilerSink.effectCreate(effect.id, effect.kind)
@@ -518,8 +564,19 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
   const id = __bfId ?? (profilerSink ? `m${++subscriberSeq}` : '')
   const [value, setValue] = createSignal<T>(undefined as T, id)
 
+  // Memo output fingerprint (§4.2.2): a recompute that yields an `Object.is`-equal
+  // value is a wasted re-run. Tracked here (not via the private signal's bail)
+  // so the first run reads as a genuine output, never as "unchanged".
+  let prev: T
+  let hasPrev = false
+
   createEffect(() => {
     const result = fn()
+    if (profilerSink) {
+      __bfReportOutput(!hasPrev || !Object.is(prev, result))
+      prev = result
+      hasPrev = true
+    }
     setValue(() => result)
   }, id, 'memo')
 

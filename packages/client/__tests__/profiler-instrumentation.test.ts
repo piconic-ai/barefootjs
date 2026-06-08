@@ -17,6 +17,7 @@ import {
   beginTurn,
   endTurn,
   setProfilerSink,
+  __bfReportOutput,
   type ProfilerEventSink,
   type SubscriberKind,
 } from '../src/reactive'
@@ -32,6 +33,7 @@ function recorder(): { events: Event[]; sink: ProfilerEventSink } {
     effectCreate: (id, kind) => events.push(['effectCreate', id, kind]),
     effectEnter: (id) => events.push(['effectEnter', id]),
     effectExit: (id, dur) => events.push(['effectExit', id, dur]),
+    effectOutput: (id, changed) => events.push(['effectOutput', id, changed]),
     effectDispose: (id) => events.push(['effectDispose', id]),
     batchBegin: (depth) => events.push(['batchBegin', depth]),
     batchFlush: (n) => events.push(['batchFlush', n]),
@@ -145,6 +147,74 @@ describe('turn boundaries (SR3)', () => {
   test('beginTurn/endTurn are no-ops when profiling is off', () => {
     setProfilerSink(null)
     expect(() => { beginTurn('x'); endTurn() }).not.toThrow()
+  })
+})
+
+describe('output fingerprint (SR1, §4.2.2)', () => {
+  // The effectOutput change flags for one subscriber id, in order.
+  const outputs = (events: Event[], id: string): boolean[] =>
+    events.filter(e => e[0] === 'effectOutput' && e[1] === id).map(e => e[2] as boolean)
+
+  test('a memo emits effectOutput: changed on a new value, unchanged on an Object.is-equal recompute', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [count, setCount] = createSignal(0)
+    const parity = createMemo(() => count() % 2)
+    const memoId = events.find(e => e[0] === 'effectCreate' && e[2] === 'memo')![1] as string
+
+    expect(parity()).toBe(0)
+    setCount(2) // recomputes to 0 — same value → wasted run
+    expect(parity()).toBe(0)
+    setCount(3) // recomputes to 1 — new value → real output
+    expect(parity()).toBe(1)
+
+    // mount(true), set2(false, identical), set3(true).
+    expect(outputs(events, memoId)).toEqual([true, false, true])
+  })
+
+  test('effectOutput rides right after effectExit for the same run', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [n, setN] = createSignal(1)
+    createMemo(() => n() * 0) // always 0 → every recompute after mount is wasted
+    setN(2)
+    // For the memo's recompute: …effectEnter, effectExit, effectOutput…
+    const memoId = events.find(e => e[0] === 'effectCreate' && e[2] === 'memo')![1] as string
+    const idxExit = events.findLastIndex(e => e[0] === 'effectExit' && e[1] === memoId)
+    expect(events[idxExit + 1]).toEqual(['effectOutput', memoId, false])
+  })
+
+  test('__bfReportOutput attributes to the running effect and ORs several writes per run', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    let runs = 0
+    const [tick, setTick] = createSignal(0)
+    createEffect(() => {
+      tick()
+      // Two writes in one run: one unchanged, one changed → the run is "changed".
+      __bfReportOutput(false)
+      __bfReportOutput(runs > 0) // mount: false+false → unchanged; after: false+true → changed
+      runs++
+    })
+    const id = events.find(e => e[0] === 'effectCreate')![1] as string
+    setTick(1)
+    expect(outputs(events, id)).toEqual([false, true])
+  })
+
+  test('__bfReportOutput is a no-op outside any run', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    __bfReportOutput(true)
+    expect(events.some(e => e[0] === 'effectOutput')).toBe(false)
+  })
+
+  test('a plain effect that reports no output emits no effectOutput', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [v, setV] = createSignal(0)
+    createEffect(() => { v() }) // never calls __bfReportOutput
+    setV(1)
+    expect(events.some(e => e[0] === 'effectOutput')).toBe(false)
   })
 })
 

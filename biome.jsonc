@@ -59,7 +59,8 @@
         "packages/client/src/runtime/insert.ts",
         "packages/client/src/runtime/map-array.ts",
         "packages/client/src/runtime/component.ts",
-        "packages/client/src/runtime/apply-rest-attrs.ts"
+        "packages/client/src/runtime/apply-rest-attrs.ts",
+        "packages/client/src/runtime/dynamic-text.ts"
       ],
       "linter": {
         "rules": {
