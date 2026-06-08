@@ -2,26 +2,20 @@ name: 'Setup Bun (resilient)'
 description: >
   Installs a pinned Bun directly from GitHub Releases using curl with HTTP-level
   retries, so transient GitHub Releases 504s (the CDN that serves the bun binary)
-  retry instead of failing the whole job. The download is also cached across runs
-  via actions/cache so most runs skip the network entirely. Uses only first-party
-  GitHub actions (no third-party action dependency). Override the `bun-version`
-  input if a job needs a different version.
+  retry instead of failing the whole job. Downloads fresh on every run — no
+  cross-run cache is used, so a poisoned cache can never substitute the binary.
+  Has no third-party action dependency. Override the `bun-version` input if a job
+  needs a different version.
 
 inputs:
   bun-version:
-    description: 'Bun version to install (no leading "v"). Pinned default for cache reuse.'
+    description: 'Bun version to install (no leading "v").'
     required: false
     default: '1.3.14'
 
 runs:
   using: 'composite'
   steps:
-    - name: Cache Bun
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-      with:
-        path: ~/.bun
-        key: bun-${{ inputs.bun-version }}-${{ runner.os }}-${{ runner.arch }}
-
     - name: Install Bun (with retry)
       shell: bash
       env:
@@ -46,8 +40,10 @@ runs:
         esac
         target="${os_tag}-${arch_tag}"
 
+        # Re-runs of this step on the same runner reuse an already-good binary;
+        # otherwise (the normal case) we download fresh.
         if [ -x "$bin/bun" ] && [ "$("$bin/bun" --version 2>/dev/null || true)" = "$BUN_VERSION" ]; then
-          echo "Bun $BUN_VERSION restored from cache — skipping download."
+          echo "Bun $BUN_VERSION already present — skipping download."
         else
           url="https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-${target}.zip"
           tmp="$(mktemp -d)"
