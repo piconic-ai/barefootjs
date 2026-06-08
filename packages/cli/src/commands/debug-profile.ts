@@ -74,10 +74,13 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
       const { events, fired, sources } = isAuto
         ? await runAutoScenario(source, resolved.filePath, resolved.componentName)
         : await runFileScenario(flags.scenario)
-      // The story (the last source — deps are loaded first) drives
-      // componentName/sourceFile; the rest merge into the id index.
+      // Both modes load the entry/story last (its local imports are loaded
+      // first), so the entry drives componentName/sourceFile and its imported
+      // children merge into the id index. Auto mode must pass those imports too
+      // (#1840): a compound component like DatePicker imports Calendar, whose
+      // `Calendar#binding:*` subscribers otherwise resolve to `((unresolved))`.
       const primary = isAuto ? { source, filePath: resolved.filePath } : sources[sources.length - 1]
-      const extraSources = isAuto ? [] : sources.slice(0, -1)
+      const extraSources = sources.slice(0, -1)
       const report = buildProfileReport({
         source: primary.source,
         filePath: primary.filePath,

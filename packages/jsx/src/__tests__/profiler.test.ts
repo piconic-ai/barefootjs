@@ -184,6 +184,22 @@ describe('buildIdIndex + joinProfilerEvents (SR4 join)', () => {
     expect(joined[0].subscriber).toBeUndefined()
     expect(unattributed).toEqual([{ id: 'Calc#effect:does-not-exist', count: 2 }])
   })
+
+  test('routes anonymous runtime ids to diagnostics, not the actionable gap list (#1840)', () => {
+    const events = [
+      // Compiler id the IR can't place → actionable gap.
+      ev('effectEnter', { subscriber: 'Calc#effect:does-not-exist' }),
+      // Anonymous runtime bookkeeping ids (no compiler __bfId) → non-actionable.
+      ev('signalSet', { signal: 's9' }),
+      ev('signalSet', { signal: 's10' }),
+      ev('effectEnter', { subscriber: 'r10' }),
+      ev('effectEnter', { subscriber: 'e3' }),
+    ]
+    const { joined, unattributed, diagnostics } = joinProfilerEvents(events, index)
+    expect(joined).toHaveLength(5) // nothing dropped
+    expect(unattributed.map(u => u.id)).toEqual(['Calc#effect:does-not-exist'])
+    expect(diagnostics.map(u => u.id).sort()).toEqual(['e3', 'r10', 's10', 's9'])
+  })
 })
 
 describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
