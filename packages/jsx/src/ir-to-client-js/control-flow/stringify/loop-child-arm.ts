@@ -11,7 +11,7 @@
  * every nesting depth.
  */
 
-import { varSlotId, DATA_BF_PH, keyAttrName } from '../../utils.ts'
+import { varSlotId, DATA_BF_PH, keyAttrName, profileBindingId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
 import { templateRootIsSvg } from './template-parse.ts'
 import { emitListenerLine } from './event-listener.ts'
@@ -80,6 +80,7 @@ export function stringifyBranchInnerLoops(
   lines: string[],
   plan: BranchInnerLoopsPlan,
   indent: string,
+  pc?: string,
 ): void {
   for (const inner of plan) {
     const uid = inner.uidSuffix
@@ -110,20 +111,21 @@ export function stringifyBranchInnerLoops(
       )
     }
     for (const text of inner.reactiveTexts) {
+      const bf = profileBindingId(pc, text.slotId)
       if (text.insideConditional) {
         // Re-query $t inside the effect: insert() may swap the text node so a
         // captured reference would silently stop updating.
-        lines.push(`${indent}  createEffect(() => { const [__rt] = $t(__bel${uid}, '${text.slotId}'); if (__rt) __rt.textContent = String(${text.wrappedExpression}) })`)
+        lines.push(`${indent}  createEffect(() => { const [__rt] = $t(__bel${uid}, '${text.slotId}'); if (__rt) __rt.textContent = String(${text.wrappedExpression}) }${bf})`)
       } else {
         lines.push(`${indent}  { const [__rt] = $t(__bel${uid}, '${text.slotId}')`)
-        lines.push(`${indent}  if (__rt) createEffect(() => { __rt.textContent = String(${text.wrappedExpression}) }) }`)
+        lines.push(`${indent}  if (__rt) createEffect(() => { __rt.textContent = String(${text.wrappedExpression}) }${bf}) }`)
       }
     }
     if (inner.nestedConditionals.length > 0) {
-      stringifyLoopChildConditionals(lines, inner.nestedConditionals, `${indent}  `)
+      stringifyLoopChildConditionals(lines, inner.nestedConditionals, `${indent}  `, pc)
     }
     lines.push(`${indent}  return __bel${uid}`)
-    lines.push(`${indent}}, '${inner.markerId}') }`)
+    lines.push(`${indent}}, '${inner.markerId}'${profileBindingId(pc, inner.slotId)}) }`)
   }
 }
 
@@ -138,9 +140,10 @@ export function stringifyLoopChildConditionals(
   lines: string[],
   conditionals: readonly LoopChildConditionalPlan[],
   indent: string,
+  pc?: string,
 ): void {
   for (const cond of conditionals) {
-    stringifyLoopChildConditional(lines, cond, indent)
+    stringifyLoopChildConditional(lines, cond, indent, pc)
   }
 }
 
@@ -148,6 +151,7 @@ function stringifyLoopChildConditional(
   lines: string[],
   cond: LoopChildConditionalPlan,
   indent: string,
+  pc: string | undefined,
 ): void {
   const armIndent = `${indent}    `
   // Body-form arrows wire `__bfSlot` captures into the runtime so live
@@ -157,28 +161,29 @@ function stringifyLoopChildConditional(
   lines.push(`${indent}insert(${cond.scopeVar}, '${cond.slotId}', () => ${cond.wrappedCondition}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent)
+  stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent, pc)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenFalseTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  stringifyLoopChildArm(lines, cond.whenFalseArm, armIndent)
+  stringifyLoopChildArm(lines, cond.whenFalseArm, armIndent, pc)
   lines.push(`${indent}  }`)
-  lines.push(`${indent}})`)
+  lines.push(`${indent}}${profileBindingId(pc, cond.slotId)})`)
 }
 
 function stringifyLoopChildArm(
   lines: string[],
   arm: LoopChildArmPlan,
   armIndent: string,
+  pc: string | undefined,
 ): void {
   stringifyBranchEventBindings(lines, arm.events, armIndent)
   stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
-  stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent)
-  stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent)
+  stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent, pc)
+  stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent, pc)
   for (const text of arm.texts) {
     const varName = `__rt_${varSlotId(text.slotId)}`
     lines.push(`${armIndent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)
-    lines.push(`${armIndent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }) }`)
+    lines.push(`${armIndent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)}) }`)
   }
 }

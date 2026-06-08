@@ -92,6 +92,12 @@ export interface BranchInnerLoop {
   uidSuffix: string
   /** Loop marker id — passed to mapArray so sibling loops disambiguate (#1087). */
   markerId: string
+  /**
+   * IR slot id for the inner loop (#1690, #1795 Phase 3). Used to emit the
+   * `<Component>#binding:<slotId>` profile id on the inner `mapArray`; resolves
+   * via the `loop` `domBinding`. `'?'` when the IR carried no slot.
+   */
+  slotId: string
   /** Container resolution expression — already includes scope and selectors. */
   containerExpr: string
   /** Wrapped array expression (`wrapOuter(inner.array)`). */

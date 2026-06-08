@@ -8,7 +8,7 @@
  * `loop-child-arm.ts` — no legacy passthrough remains.
  */
 
-import { varSlotId } from '../../utils.ts'
+import { varSlotId, profileBindingId } from '../../utils.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import {
   stringifyBranchChildComponentInits,
@@ -49,14 +49,8 @@ export function stringifyReactiveEffects(
 ): void {
   const { indent, elVar, bodyIsMultiRoot } = opts
   const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
-
-  // Profile mode (#1690, SR4, #1795 Phase 2): a loop-child binding effect's id,
-  // resolved from its text/attribute `domBinding` (slot + loc). Empty when off
-  // → byte-identical (SR8).
-  const bindingBfId = (slotId: string): string =>
-    plan.profileComponentName
-      ? `, ${JSON.stringify(`${plan.profileComponentName}#binding:${slotId}`)}`
-      : ''
+  const pc = plan.profileComponentName
+  const bindingBfId = (slotId: string): string => profileBindingId(pc, slotId)
 
   // 1. Reactive attribute effects (one qsa per slot, then per-attr createEffect).
   for (const slot of plan.attrSlots) {
@@ -81,7 +75,7 @@ export function stringifyReactiveEffects(
   // 3. Reactive conditionals — each emits an insert(...) over `elVar` whose
   //    arm bodies dispatch through the per-arm stringifiers.
   for (const cond of plan.conditionals) {
-    emitOuterConditional(lines, indent, elVar, cond)
+    emitOuterConditional(lines, indent, elVar, cond, pc)
   }
 }
 
@@ -102,6 +96,7 @@ function emitOuterConditional(
   indent: string,
   elVar: string,
   cond: NestedConditionalPlan,
+  pc: string | undefined,
 ): void {
   const armIndent = `${indent}    `
 
@@ -110,28 +105,28 @@ function emitOuterConditional(
   lines.push(`${indent}insert(${elVar}, '${cond.slotId}', () => ${cond.wrappedCondition}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  emitArmBody(lines, cond.whenTrueArm, armIndent)
+  emitArmBody(lines, cond.whenTrueArm, armIndent, pc)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenFalseTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  emitArmBody(lines, cond.whenFalseArm, armIndent)
+  emitArmBody(lines, cond.whenFalseArm, armIndent, pc)
   lines.push(`${indent}  }`)
-  lines.push(`${indent}})`)
+  lines.push(`${indent}}${profileBindingId(pc, cond.slotId)})`)
 }
 
-function emitArmBody(lines: string[], arm: LoopChildArmPlan, armIndent: string): void {
+function emitArmBody(lines: string[], arm: LoopChildArmPlan, armIndent: string, pc: string | undefined): void {
   stringifyBranchEventBindings(lines, arm.events, armIndent)
   stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
-  stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent)
-  stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent)
+  stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent, pc)
+  stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent, pc)
   for (const text of arm.texts) {
-    emitArmText(lines, armIndent, text)
+    emitArmText(lines, armIndent, text, pc)
   }
 }
 
-function emitArmText(lines: string[], indent: string, text: LoopChildArmText): void {
+function emitArmText(lines: string[], indent: string, text: LoopChildArmText, pc: string | undefined): void {
   const varName = `__rt_${varSlotId(text.slotId)}`
   lines.push(`${indent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)
-  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }) }`)
+  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)}) }`)
 }

@@ -141,6 +141,11 @@ interface ComponentLoopVariant extends DynamicLoopCommon {
   nestedComps: NestedComponentInit[]
   /** Reactive-effects plan for `childConditionals` inside the loop body. */
   childConditionalEffects: ReactiveEffectsPlan | null
+  /**
+   * Profile-mode loop id (#1690, #1795 Phase 3) for the component loop's
+   * `mapArray`. Undefined off → byte-identical (SR8).
+   */
+  profileLoopId?: string
 }
 
 /**
@@ -184,6 +189,16 @@ interface CompositeLoopVariant extends DynamicLoopCommon {
    * `qsa(__el, ...)` → `qsaItem(__el, ...)` for reactive lookups (#1212).
    */
   bodyIsMultiRoot: boolean
+  /**
+   * Profile-mode loop id (#1690, #1795 Phase 3): `<Component>#binding:<slotId>`
+   * for the composite `mapArray`. Undefined off → byte-identical (SR8).
+   */
+  profileLoopId?: string
+  /**
+   * Owning component name in profile mode — threaded to `stringifyInnerLoops`
+   * so per-item inner-loop / text / attribute effects carry binding ids.
+   */
+  profileComponentName?: string
 }
 
 /**
@@ -208,6 +223,12 @@ interface StaticLoopVariant extends LoopPlanCommon {
    * Null for the SSR-then-hydrate-only common case.
    */
   csrMaterialize: StaticLoopMaterializePlan | null
+  /**
+   * Owning component name in profile mode (#1690, #1795 Phase 3). When set,
+   * each static-loop child attribute / text `createEffect` carries a
+   * `<Component>#binding:<slotId>` id. Undefined off → byte-identical (SR8).
+   */
+  profileComponentName?: string
 }
 
 /**

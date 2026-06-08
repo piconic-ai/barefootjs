@@ -131,6 +131,8 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
     plan.push({
       uidSuffix,
       markerId: inner.markerId,
+      // The loop node shares its container element's slot (#1795 Phase 3).
+      slotId: inner.containerSlotId ?? '?',
       containerExpr,
       arrayExpr,
       arraySrc: inner.array,

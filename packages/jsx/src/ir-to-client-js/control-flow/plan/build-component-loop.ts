@@ -31,7 +31,7 @@ import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
 import type { ComponentLoopPlan, NestedComponentInit } from './types.ts'
 
 /** @internal — prefer `buildLoopPlan`. */
-export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {
+export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?: string): ComponentLoopPlan {
   const { name } = elem.childComponent!
   const propsExpr = buildComponentPropsExpr(elem.childComponent!, elem.param)
   const keyExpr = wrapLoopParamAsAccessor(elem.key || '__idx', elem.param, elem.paramBindings)
@@ -77,6 +77,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {
     // by the type so the structural invariant (every variant has a
     // `childRefs`) is preserved; populated as empty.
     childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
+    profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
     childConditionalEffects: hasChildConds
       ? buildReactiveEffectsPlan({
           attrs: [],
@@ -84,6 +85,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop): ComponentLoopPlan {
           conditionals: elem.bindings.conditionals,
           loopParam: elem.param,
           loopParamBindings: elem.paramBindings,
+          profileComponentName,
         })
       : null,
   }
