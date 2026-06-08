@@ -110,17 +110,37 @@ describe('analyzeHotSubscribers', () => {
     expect(r.subscribers[0].hot).toBe(false)
   })
 
-  test('ranks hottest-by-time first and honors topN', () => {
+  test('ranks deterministically by runs (not wall-clock) and honors topN', () => {
     seq = 0
+    // `b` runs more than `a`; ranking must not depend on the (wall-clock) dur.
     const events: ProfilerEvent[] = [
       ev('effectEnter', { subscriber: 'Calc#memo:a' }),
-      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 1 }),
-      ev('effectEnter', { subscriber: 'Calc#signal:count' }), // not a real subscriber id but indexed
-      ev('effectExit', { subscriber: 'Calc#signal:count', dur: 99 }),
+      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 99 }), // high ms, low runs
+      ev('effectEnter', { subscriber: 'Calc#memo:b' }),
+      ev('effectEnter', { subscriber: 'Calc#memo:b' }),
+      ev('effectExit', { subscriber: 'Calc#memo:b', dur: 1 }), // low ms, more runs
     ]
     const r = analyzeHotSubscribers(events, index, { topN: 1 })
     expect(r.subscribers).toHaveLength(1)
-    expect(r.subscribers[0].totalMs).toBe(99)
+    expect(r.subscribers[0].subscriber).toBe('Calc#memo:b') // 2 runs > 1 run
+  })
+
+  test('ties break on subscriber id, so the order is stable across runs (SR7)', () => {
+    seq = 0
+    // Two subscribers, equal runs, different (noisy) dur — id breaks the tie.
+    const mk = (durA: number, durB: number): ProfilerEvent[] => {
+      seq = 0
+      return [
+        ev('effectEnter', { subscriber: 'Calc#memo:b' }),
+        ev('effectExit', { subscriber: 'Calc#memo:b', dur: durB }),
+        ev('effectEnter', { subscriber: 'Calc#memo:a' }),
+        ev('effectExit', { subscriber: 'Calc#memo:a', dur: durA }),
+      ]
+    }
+    const order1 = analyzeHotSubscribers(mk(0.05, 0.04), index).subscribers.map(s => s.subscriber)
+    const order2 = analyzeHotSubscribers(mk(0.04, 0.05), index).subscribers.map(s => s.subscriber)
+    expect(order1).toEqual(order2) // timing flip does not change rank
+    expect(order1).toEqual(['Calc#memo:a', 'Calc#memo:b']) // id-sorted
   })
 
   test('unresolved subscriber ids surface as coverage gaps, events not dropped', () => {
@@ -134,6 +154,19 @@ describe('analyzeHotSubscribers', () => {
     expect(r.subscribers[0].loc).toBeUndefined()
     expect(r.subscribers[0].runs).toBe(1)
     expect(r.unattributed.map(u => u.id)).toContain(ghost)
+  })
+
+  test('caps the formatted list and summarizes the overflow', () => {
+    seq = 0
+    const events: ProfilerEvent[] = []
+    for (let i = 0; i < 30; i++) {
+      events.push(ev('effectEnter', { subscriber: `X#effect:${i}` }))
+      events.push(ev('effectExit', { subscriber: `X#effect:${i}`, dur: 30 - i }))
+    }
+    const out = formatHotSubscribers(analyzeHotSubscribers(events, index), 12)
+    // 12 shown + the "… and N more" summary line.
+    expect(out).toContain('… and 18 more')
+    expect((out.match(/ runs,/g) ?? []).length).toBe(12)
   })
 
   test('formats a readable report with a hot note', () => {

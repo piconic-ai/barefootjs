@@ -45,6 +45,23 @@ describe('createRecordingSink', () => {
     expect(rec.events.find(e => e.type === 'signalSet')!.turn).toBeNull()
   })
 
+  test('repeated invocations of the same handler are distinct turns (turnSeq)', () => {
+    const rec = createRecordingSink()
+    setProfilerSink(rec.sink)
+    createRoot(() => {
+      const [, setN] = createSignal(0, 'C#signal:n')
+      for (let i = 0; i < 3; i++) {
+        beginTurn('C#handler:s0:click') // same handler id each time
+        setN(i + 1)
+        endTurn()
+      }
+    })
+    const sets = rec.events.filter(e => e.type === 'signalSet')
+    // Same handler id, but three distinct invocation counters.
+    expect(new Set(sets.map(e => e.turn))).toEqual(new Set(['C#handler:s0:click']))
+    expect(new Set(sets.map(e => e.turnSeq)).size).toBe(3)
+  })
+
   test('reset clears the log and the turn stack', () => {
     const rec = createRecordingSink()
     setProfilerSink(rec.sink)

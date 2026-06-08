@@ -27,7 +27,7 @@ import {
   type EventBinding,
   type UpdatePathEntry,
 } from './debug.ts'
-import { listComponentFunctions } from './analyzer.ts'
+import { listComponentFunctions, createProgramForFile } from './analyzer.ts'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
 // -- Static budget (SR5) ------------------------------------------------------
@@ -80,13 +80,19 @@ export function buildStaticBudget(
   options: StaticBudgetOptions = {},
 ): StaticBudget {
   const threshold = options.fanOutThreshold ?? DEFAULT_FANOUT_THRESHOLD
-  const { graph } = buildComponentAnalysis(source, filePath, componentName)
+  // Build the TS program once and reuse it for both analyses (re-parsing the
+  // file twice is the bulk of the cost on a large source).
+  const program = createProgramForFile(source, filePath)?.program
+  const { graph } = buildComponentAnalysis(source, filePath, componentName, program)
   // `graph` is the authority for reactive-node counts; the summary is consulted
   // only for `loops`, which needs the IR tree walk (`countNodeType`) that the
   // graph doesn't expose.
-  const summary = buildComponentSummary(source, filePath, componentName)
+  const summary = buildComponentSummary(source, filePath, componentName, program)
 
-  const subscriptions = graph.signals.reduce((n, s) => n + s.consumers.length, 0)
+  const subscriptions = graph.signals.reduce(
+    (n, s) => n + s.consumers.filter(c => !isEventHandlerConsumer(c)).length,
+    0,
+  )
 
   const fanOut: FanOutEntry[] = graph.signals
     .map(s => {
@@ -113,9 +119,26 @@ export function buildStaticBudget(
 }
 
 /**
+ * An event handler *reads* a signal (e.g. `setCount(count() + 1)`) but runs
+ * outside any reactive scope, so it does not re-run when the signal changes —
+ * it is not a reactive subscriber and must be excluded from fan-out /
+ * subscription counts (cross-checked against the dynamic run, #1690 §4.2.4).
+ */
+function isEventHandlerEntry(kind: string, name: string): boolean {
+  return kind === 'dom' && /^\w+ handler "/.test(name)
+}
+
+/** As above, for the `kind:name` consumer strings on `SignalNode.consumers`. */
+function isEventHandlerConsumer(consumer: string): boolean {
+  const i = consumer.indexOf(':')
+  return i > 0 && isEventHandlerEntry(consumer.slice(0, i), consumer.slice(i + 1))
+}
+
+/**
  * Distinct transitive subscribers of a signal/memo. Walks the same tagged
  * `consumers` tree `traceUpdatePath` builds (`debug.ts`), deduplicating across
- * branches so a diamond dependency counts each subscriber once.
+ * branches so a diamond dependency counts each subscriber once. Event handlers
+ * are excluded — they read but don't react.
  */
 function transitiveSubscriberCount(graph: ComponentGraph, name: string): number {
   const path = traceUpdatePath(graph, name)
@@ -123,7 +146,7 @@ function transitiveSubscriberCount(graph: ComponentGraph, name: string): number 
   const seen = new Set<string>()
   const walk = (entries: UpdatePathEntry[]): void => {
     for (const e of entries) {
-      seen.add(`${e.kind}:${e.name}`)
+      if (!isEventHandlerEntry(e.kind, e.name)) seen.add(`${e.kind}:${e.name}`)
       walk(e.children)
     }
   }
@@ -474,6 +497,7 @@ export function analyzeHotSubscribers(
     runs: number
     mountRuns: number
     totalMs: number
+    /** Distinct turn *invocations* (by `turnSeq`, falling back to id) it ran in. */
     turns: Set<string>
   }
   const byId = new Map<string, Acc>()
@@ -494,7 +518,7 @@ export function analyzeHotSubscribers(
       // Runs outside any turn are the one-time mount/setup baseline — kept
       // separate so they don't dilute the per-interaction `runsPerTurn`.
       if (e.turn === null) a.mountRuns++
-      else a.turns.add(e.turn)
+      else a.turns.add(String(e.turnSeq ?? e.turn))
     } else if (e.type === 'effectExit' && e.dur !== undefined) {
       acc(e.subscriber).totalMs += e.dur
     }
@@ -525,7 +549,10 @@ export function analyzeHotSubscribers(
     }
   })
 
-  subscribers.sort((x, y) => y.totalMs - x.totalMs || y.runs - x.runs)
+  // Rank deterministically (SR7): same scenario ⇒ same order. `runs` is a
+  // structural, timing-independent cost proxy; `totalMs` (wall-clock) is shown
+  // but never sorted on, and the subscriber id is the final stable tiebreak.
+  subscribers.sort((x, y) => y.runs - x.runs || (x.subscriber < y.subscriber ? -1 : x.subscriber > y.subscriber ? 1 : 0))
   if (options.topN !== undefined) subscribers = subscribers.slice(0, options.topN)
 
   // Only subscriber ids matter for this analysis — filter the join's gaps to
@@ -536,19 +563,27 @@ export function analyzeHotSubscribers(
   return { kind: 'hot-subscribers', subscribers, unattributed: gaps }
 }
 
-export function formatHotSubscribers(r: HotSubscribersResult): string {
+export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): string {
   const lines: string[] = []
   lines.push('hot subscribers — most run / most time')
   if (r.subscribers.length === 0) {
     lines.push('  (no effect/memo runs recorded)')
   }
-  for (const s of r.subscribers) {
+  // Resolved subscribers carry a source line and are the actionable ones; show
+  // them first, then a capped tail of unresolved noise (loop/binding effects
+  // the analyzer can't yet place), so a big list (e.g. a calendar grid) stays
+  // readable instead of dumping a thousand rows.
+  const shown = r.subscribers.slice(0, limit)
+  for (const s of shown) {
     const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
     const base = s.name ?? s.subscriber
     // Binding names already carry their type (`s1 (attribute)`); don't double up.
     const label = s.kind && !base.endsWith(')') ? `${base} (${s.kind})` : base
     const note = s.hot ? `   ⚠ hot: ${s.runsPerTurn.toFixed(1)} runs/turn` : ''
     lines.push(`  ${label.padEnd(20)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
+  }
+  if (r.subscribers.length > shown.length) {
+    lines.push(`  … and ${r.subscribers.length - shown.length} more`)
   }
   if (r.unattributed.length > 0) {
     lines.push(`  ⚠ coverage: ${r.unattributed.length} unresolved subscriber id(s)`)
@@ -604,40 +639,49 @@ export function analyzeBatchAdvisor(
   events: readonly ProfilerEvent[],
   index?: IdIndex,
 ): BatchAdvisorResult {
+  // Group by turn *invocation* (`turnSeq`), so several clicks of the same
+  // handler are evaluated separately rather than summed into one inflated turn.
   interface TurnAcc {
+    handlerId: string
     totalRuns: number
     subscribers: Set<string>
   }
-  const byTurn = new Map<string, TurnAcc>()
+  const byInvocation = new Map<string, TurnAcc>()
 
   for (const e of events) {
     if (e.type !== 'effectEnter' || e.turn === null) continue
-    let acc = byTurn.get(e.turn)
+    const key = String(e.turnSeq ?? e.turn)
+    let acc = byInvocation.get(key)
     if (!acc) {
-      acc = { totalRuns: 0, subscribers: new Set() }
-      byTurn.set(e.turn, acc)
+      acc = { handlerId: e.turn, totalRuns: 0, subscribers: new Set() }
+      byInvocation.set(key, acc)
     }
     acc.totalRuns++
     if (e.subscriber !== undefined) acc.subscribers.add(e.subscriber)
   }
 
-  const candidates: BatchCandidate[] = []
-  for (const [turn, acc] of byTurn) {
+  // Collapse invocations to one candidate per handler — the worst (max-savings)
+  // invocation represents the handler's batch opportunity.
+  const byHandler = new Map<string, BatchCandidate>()
+  for (const acc of byInvocation.values()) {
     const distinctSubscribers = acc.subscribers.size
     const savings = acc.totalRuns - distinctSubscribers
-    if (savings > 0) {
-      const node = index?.get(turn)
-      candidates.push({
-        turn,
-        loc: node?.loc,
-        handler: node?.name,
-        totalRuns: acc.totalRuns,
-        distinctSubscribers,
-        savings,
-        safety: 'unverified',
-      })
-    }
+    if (savings <= 0) continue
+    const prev = byHandler.get(acc.handlerId)
+    if (prev && prev.savings >= savings) continue
+    const node = index?.get(acc.handlerId)
+    byHandler.set(acc.handlerId, {
+      turn: acc.handlerId,
+      loc: node?.loc,
+      handler: node?.name,
+      totalRuns: acc.totalRuns,
+      distinctSubscribers,
+      savings,
+      safety: 'unverified',
+    })
   }
+
+  const candidates = [...byHandler.values()]
   candidates.sort((a, b) => b.savings - a.savings || b.totalRuns - a.totalRuns)
 
   return { kind: 'batch-advisor', candidates }
@@ -823,7 +867,10 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
 
   for (const s of allSources) {
     // A source file may declare several components (e.g. a headless set:
-    // Collapsible + CollapsibleTrigger + CollapsibleContent). Index each.
+    // Collapsible + CollapsibleTrigger + CollapsibleContent). Build the TS
+    // program once and reuse it for every component — re-parsing per component
+    // is the dominant cost (a 25-component file like `chart` is ~30s otherwise).
+    const program = createProgramForFile(s.source, s.filePath)?.program
     let componentNames: string[]
     try {
       componentNames = listComponentFunctions(s.source, s.filePath)
@@ -834,13 +881,13 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     for (const name of componentNames) {
       let graph: ComponentGraph
       try {
-        graph = buildComponentAnalysis(s.source, s.filePath, name).graph
+        graph = buildComponentAnalysis(s.source, s.filePath, name, program).graph
       } catch {
         continue
       }
       for (const [k, v] of buildIdIndex(graph)) index.set(k, v)
       try {
-        const summary = buildEventSummary(s.source, s.filePath, name)
+        const summary = buildEventSummary(s.source, s.filePath, name, program)
         handlersTotal += summary.events.length
         for (const [turn, binding] of turnToEventBinding(graph, summary.events)) {
           turnBindings.set(turn, { binding, graph })
@@ -868,8 +915,16 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     })
   }
 
-  const turnIds = new Set<string>()
-  for (const e of events) if (e.turn !== null) turnIds.add(e.turn)
+  // Count distinct turn *invocations* (turnSeq), not handler ids — N clicks of
+  // one handler are N turns. Handlers exercised (coverage) counts distinct ids.
+  const turnSeqs = new Set<string>()
+  const handlerIds = new Set<string>()
+  for (const e of events) {
+    if (e.turn !== null) {
+      turnSeqs.add(String(e.turnSeq ?? e.turn))
+      handlerIds.add(e.turn)
+    }
+  }
 
   return {
     kind: 'profile',
@@ -877,11 +932,11 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     sourceFile: primary.sourceFile,
     scenario,
     events: events.length,
-    turns: turnIds.size,
+    turns: turnSeqs.size,
     hotSubscribers,
     batchAdvisor,
     coverage: {
-      handlersFired: turnIds.size,
+      handlersFired: handlerIds.size,
       handlersTotal,
       unattributed,
     },
@@ -892,6 +947,17 @@ export function formatProfileReport(r: ProfileReport): string {
   const lines: string[] = []
   lines.push(`${r.componentName} — profile (scenario: ${r.scenario})`)
   lines.push(`  ${r.events} events across ${r.turns} turn(s)`)
+  // No interactions measured: either the component has no handlers (use the
+  // static budget) or its handlers live in composed children the auto scenario
+  // couldn't reach (use a --scenario file). Say so plainly rather than leaving
+  // the user with mount-only, mostly-unresolved noise.
+  if (r.turns === 0) {
+    lines.push(
+      r.coverage.handlersTotal === 0
+        ? '  note: no event handlers — run `bf debug profile <component>` for the static budget.'
+        : '  note: no interactions measured (handlers are likely in composed children) — try `--scenario <story.tsx>`.',
+    )
+  }
   lines.push('')
   lines.push(formatHotSubscribers(r.hotSubscribers))
   lines.push('')

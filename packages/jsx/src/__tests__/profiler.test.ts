@@ -57,6 +57,24 @@ describe('buildStaticBudget (SR5)', () => {
     expect(b.memoChainDepth).toBe(0)
   })
 
+  test('excludes event handlers from fan-out and subscriptions (they read, do not react)', () => {
+    // `count` is read by the text binding (reactive) AND the onClick handler
+    // (not reactive — runs outside any effect). Only the binding counts.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function C() {
+        const [count, setCount] = createSignal(0)
+        return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+      }
+    `
+    const b = buildStaticBudget(src, 'C.tsx', 'C')
+    const fan = b.fanOut.find(f => f.signal === 'count')!.subscribers
+    // The text binding subscribes; the handler does not.
+    expect(fan).toBe(1)
+    expect(b.subscriptions).toBe(1)
+  })
+
   test('measures the longest memo chain', () => {
     const b = buildStaticBudget(memoChainSource, 'Calc.tsx', 'Calc')
     expect(b.memos).toBe(3)
@@ -202,5 +220,19 @@ describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
     expect(out).toContain('Calc — profile')
     expect(out).toContain('hot subscribers')
     expect(out).toContain('coverage:')
+  })
+
+  test('a zero-turn report directs to the right tool', () => {
+    n = 0
+    // No handler events at all → no turns, no handlers.
+    const noHandlerSrc = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Disp() { const [v] = createSignal(1); return <div>{v()}</div> }
+    `
+    const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: 'Disp#binding:s0' })]
+    const noHandlers = buildProfileReport({ source: noHandlerSrc, filePath: 'Disp.tsx', scenario: 'auto', events })
+    expect(noHandlers.turns).toBe(0)
+    expect(formatProfileReport(noHandlers)).toContain('no event handlers')
   })
 })

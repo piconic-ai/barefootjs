@@ -235,8 +235,20 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
     const rec = rt.createRecordingSink()
     rt.setProfilerSink(rec.sink)
     try {
-      const el = rt.createComponent(name, {})
-      document.body.appendChild(el)
+      let el: HTMLElement
+      try {
+        el = rt.createComponent(name, {})
+        document.body.appendChild(el)
+      } catch (err) {
+        // A bare mount of a component that depends on a context provider (or
+        // other composition) throws while its init runs. Turn that into an
+        // actionable message instead of a raw stack.
+        throw new Error(
+          `Mounting "${name}" standalone failed: ${(err as Error).message}. ` +
+            'It likely needs a context provider or composition — profile it with ' +
+            '`--scenario <story.tsx>` that renders it the way it is used.',
+        )
+      }
       const fired = fireHandlers(el, handlers)
       return { events: rec.events, rootTag: el.tagName.toLowerCase(), fired, sources }
     } finally {

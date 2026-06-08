@@ -5,6 +5,7 @@
  * paths, and component reactive structure — all without running any code.
  */
 
+import type ts from 'typescript'
 import type {
   ComponentIR,
   IRNode,
@@ -381,8 +382,8 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
  * Callers that need the raw IR tree (events, loops, why-update) use this
  * instead of `buildComponentGraph` to avoid a redundant analysis round.
  */
-export function buildComponentAnalysis(source: string, filePath: string, componentName?: string): ComponentAnalysis {
-  const ctx = analyzeComponent(source, filePath, componentName)
+export function buildComponentAnalysis(source: string, filePath: string, componentName?: string, program?: ts.Program): ComponentAnalysis {
+  const ctx = analyzeComponent(source, filePath, componentName, program)
   const emptyIR: ComponentIR = {
     version: '0.1',
     metadata: buildMetadata(ctx),
@@ -411,8 +412,8 @@ export function buildComponentAnalysis(source: string, filePath: string, compone
  * Build a complete event summary for a component, including setter resolution
  * and downstream update paths.
  */
-export function buildEventSummary(source: string, filePath: string, componentName?: string): EventSummary {
-  const { graph, ir } = buildComponentAnalysis(source, filePath, componentName)
+export function buildEventSummary(source: string, filePath: string, componentName?: string, program?: ts.Program): EventSummary {
+  const { graph, ir } = buildComponentAnalysis(source, filePath, componentName, program)
   const setterToSignal = new Map<string, string>()
   for (const s of ir.metadata.signals) {
     if (s.setter) setterToSignal.set(s.setter, s.getter)
@@ -1473,8 +1474,8 @@ export function formatFallbackExplanations(
 // Component Summary (hydration/size overview)
 // =============================================================================
 
-export function buildComponentSummary(source: string, filePath: string, componentName?: string): ComponentSummary {
-  const { graph, ir } = buildComponentAnalysis(source, filePath, componentName)
+export function buildComponentSummary(source: string, filePath: string, componentName?: string, program?: ts.Program): ComponentSummary {
+  const { graph, ir } = buildComponentAnalysis(source, filePath, componentName, program)
   const meta = ir.metadata
   const clientNeeds = analyzeClientNeeds(ir)
   const hasReactiveState = meta.signals.length > 0 || meta.memos.length > 0 || meta.effects.length > 0
