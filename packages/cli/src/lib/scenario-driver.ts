@@ -9,10 +9,16 @@
 // happy-dom + the client runtime are imported lazily, so the static modes
 // (`bf debug profile <component>` / `--diff`) carry no DOM dependency.
 
-import { writeFileSync, mkdtempSync, rmSync } from 'fs'
-import { join } from 'path'
+import { writeFileSync, mkdtempSync, rmSync, readFileSync, existsSync, statSync } from 'fs'
+import { join, dirname } from 'path'
 import { tmpdir } from 'os'
 import type { ProfilerEvent } from '@barefootjs/shared'
+
+/** One compiled source in the scenario (a story file or one of its imports). */
+export interface SourceFile {
+  source: string
+  filePath: string
+}
 
 export interface ScenarioResult {
   events: ProfilerEvent[]
@@ -20,6 +26,12 @@ export interface ScenarioResult {
   rootTag: string
   /** Interactive elements the auto scenario fired. */
   fired: number
+  /**
+   * Every source compiled for this run (story + its local imports). The report
+   * builds a merged id index over these so events from composed sub-components
+   * resolve.
+   */
+  sources: SourceFile[]
 }
 
 /** Component names the compiled client JS registers, in emission order. */
@@ -96,72 +108,129 @@ function fireHandlers(root: HTMLElement, handlers: HandlerSlot[]): number {
   return fired
 }
 
+/** Resolve a relative import specifier to a `.tsx`/`.ts`/`index` file, or null. */
+function resolveLocalFile(spec: string): string | null {
+  for (const cand of [spec, `${spec}.tsx`, `${spec}.ts`, join(spec, 'index.tsx'), join(spec, 'index.ts')]) {
+    if (existsSync(cand) && statSync(cand).isFile()) return cand
+  }
+  return null
+}
+
 /**
- * Compile `source` in profile mode, mount it in happy-dom, fire every
- * interactive element once, and return the recorded event stream (SR2).
+ * Load a scenario "story" file and its local (relative) imports into a flat,
+ * dependency-first source list — so a story composing a headless component
+ * (`<Collapsible><CollapsibleTrigger/>…`) brings every piece it needs.
  */
-export async function runAutoScenario(
-  source: string,
-  filePath: string,
-  componentName?: string,
-): Promise<ScenarioResult> {
-  // 1. DOM — lazy so static modes don't pay for it.
+function loadStory(storyPath: string): SourceFile[] {
+  const out: SourceFile[] = []
+  const visited = new Set<string>()
+  const visit = (p: string): void => {
+    const resolved = resolveLocalFile(p)
+    if (!resolved || visited.has(resolved)) return
+    visited.add(resolved)
+    const source = readFileSync(resolved, 'utf-8')
+    // Visit local imports first so their components register before the story's.
+    for (const m of source.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
+      visit(join(dirname(resolved), m[1]))
+    }
+    out.push({ source, filePath: resolved })
+  }
+  visit(storyPath)
+  return out
+}
+
+/**
+ * Mount a set of compiled sources in happy-dom, fire every IR-known handler,
+ * and record the event stream (SR2). The last source's primary component is the
+ * mount root (the others register so composition resolves). Shared by the
+ * `auto` and scenario-file modes.
+ */
+async function runScenario(sources: SourceFile[], mountName?: string): Promise<ScenarioResult> {
   const { GlobalRegistrator } = await import('@happy-dom/global-registrator')
   if (typeof (globalThis as { window?: unknown }).window === 'undefined') {
     GlobalRegistrator.register()
   }
 
-  // 2. Instrumented client JS (adapter-independent — testAdapter is enough).
-  const { compileJSX, testAdapter } = await import('@barefootjs/jsx')
-  const out = compileJSX(source, filePath, { adapter: testAdapter, profile: true })
-  const clientJs = out.files.find((f: { type: string }) => f.type === 'clientJs')?.content as
-    | string
-    | undefined
-  if (!clientJs) {
+  const jsx = await import('@barefootjs/jsx')
+  const { compileJSX, testAdapter } = jsx
+
+  // Compile each source in profile mode; concatenate (deps first) so every
+  // hydrate(...) registration is present before mount.
+  const clientChunks: string[] = []
+  let rootClientJs = ''
+  for (const s of sources) {
+    const out = compileJSX(s.source, s.filePath, { adapter: testAdapter, profile: true })
+    const js = out.files.find((f: { type: string }) => f.type === 'clientJs')?.content as string | undefined
+    if (js) {
+      clientChunks.push(js)
+      rootClientJs = js
+    }
+  }
+  if (clientChunks.length === 0) {
     throw new Error(
-      'No client JS emitted — the component is stateless (no signals/handlers), so there is nothing to profile dynamically. Use the static budget instead.',
+      'No client JS emitted — nothing reactive to profile. Use the static budget instead.',
     )
   }
 
-  // 3. Rewrite the runtime import to an absolute URL so the temp module (which
-  //    sits outside any node_modules) resolves it, and so the sink we install
-  //    is the *same* physical reactive module the component imports. Use the
-  //    bundler's resolver (`import.meta.resolve`) — Node's `createRequire`
-  //    doesn't see workspace links here.
+  // Merge handler slots from every component in every source (a file may hold
+  // several, e.g. a headless set) so all interactions fire.
+  const handlers: HandlerSlot[] = []
+  for (const s of sources) {
+    let names: string[] = []
+    try {
+      names = jsx.listComponentFunctions(s.source, s.filePath)
+    } catch {
+      names = []
+    }
+    for (const name of names.length > 0 ? names : [undefined]) {
+      try {
+        const { graph } = jsx.buildComponentAnalysis(s.source, s.filePath, name)
+        for (const b of graph.domBindings) {
+          if (b.type === 'event') {
+            handlers.push({ slotId: b.slotId, eventName: b.label.match(/^(\w+)\s+handler/)?.[1] ?? 'click' })
+          }
+        }
+      } catch {
+        /* skip a component the analyzer can't read */
+      }
+    }
+  }
+
   const runtimePath = import.meta.resolve('@barefootjs/client/runtime')
-  const rewritten = clientJs
-    .replace(/from\s+['"]@barefootjs\/client\/runtime['"]/g, `from ${JSON.stringify(runtimePath)}`)
+  // Concatenating multiple compiled chunks duplicates their runtime imports
+  // (`import { createComponent, hydrate, … }`). Collect the union of imported
+  // names, strip every per-chunk runtime import, and prepend a single one.
+  const RUNTIME_IMPORT = /^import\s*\{([^}]*)\}\s*from\s*['"]@barefootjs\/client\/runtime['"];?\s*$/gm
+  const names = new Set<string>()
+  for (const chunk of clientChunks) {
+    for (const m of chunk.matchAll(RUNTIME_IMPORT)) {
+      for (const n of m[1].split(',')) {
+        const t = n.trim()
+        if (t) names.add(t)
+      }
+    }
+  }
+  const body = clientChunks
+    .join('\n')
+    .replace(RUNTIME_IMPORT, '')
+    .replace(/^import\s+['"]@barefootjs\/client\/runtime['"];?\s*$/gm, '')
     .replace(/^import '\/\* @bf-child:\w+ \*\/'\n/gm, '')
+  const rewritten = `import { ${[...names].join(', ')} } from ${JSON.stringify(runtimePath)}\n${body}`
 
   const dir = mkdtempSync(join(tmpdir(), 'bf-profile-'))
   const file = join(dir, 'component.mjs')
   writeFileSync(file, rewritten)
 
   try {
-    await import(file) // registers the component via hydrate(...)
+    await import(file)
     const rt = (await import(runtimePath)) as {
       createRecordingSink: () => { sink: unknown; events: ProfilerEvent[] }
       setProfilerSink: (s: unknown) => void
       createComponent: (name: string, props: Record<string, unknown>) => HTMLElement
     }
 
-    const name = pickMountName(componentName, registeredNames(clientJs))
+    const name = pickMountName(mountName, registeredNames(rootClientJs))
     if (!name) throw new Error('Could not determine the component name to mount (none registered).')
-
-    // Handler slots the IR knows about (slotId + event), so the auto scenario
-    // fires real interactions — list items, branch handlers — not just buttons.
-    let handlers: HandlerSlot[] = []
-    try {
-      const { graph } = (await import('@barefootjs/jsx')).buildComponentAnalysis(source, filePath, name)
-      handlers = graph.domBindings
-        .filter((b: { type: string }) => b.type === 'event')
-        .map((b: { slotId: string; label: string }) => ({
-          slotId: b.slotId,
-          eventName: b.label.match(/^(\w+)\s+handler/)?.[1] ?? 'click',
-        }))
-    } catch {
-      handlers = []
-    }
 
     const rec = rt.createRecordingSink()
     rt.setProfilerSink(rec.sink)
@@ -169,11 +238,35 @@ export async function runAutoScenario(
       const el = rt.createComponent(name, {})
       document.body.appendChild(el)
       const fired = fireHandlers(el, handlers)
-      return { events: rec.events, rootTag: el.tagName.toLowerCase(), fired }
+      return { events: rec.events, rootTag: el.tagName.toLowerCase(), fired, sources }
     } finally {
       rt.setProfilerSink(null)
     }
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+}
+
+/**
+ * Auto scenario: compile one component in profile mode, mount it, and fire its
+ * handlers. Zero-config — no scenario file needed.
+ */
+export async function runAutoScenario(
+  source: string,
+  filePath: string,
+  componentName?: string,
+): Promise<ScenarioResult> {
+  return runScenario([{ source, filePath }], componentName)
+}
+
+/**
+ * Scenario-file mode: `<file>` is a story `.tsx` that composes the target
+ * (importing it + its sub-components). The driver compiles the story and every
+ * local import, mounts the story, and fires all handlers — so headless/compound
+ * components (whose handlers live in user-composed children) get exercised.
+ */
+export async function runFileScenario(storyPath: string): Promise<ScenarioResult> {
+  const sources = loadStory(storyPath)
+  if (sources.length === 0) throw new Error(`Cannot read scenario file: ${storyPath}`)
+  return runScenario(sources)
 }

@@ -27,6 +27,7 @@ import {
   type EventBinding,
   type UpdatePathEntry,
 } from './debug.ts'
+import { listComponentFunctions } from './analyzer.ts'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
 // -- Static budget (SR5) ------------------------------------------------------
@@ -793,6 +794,12 @@ export interface ProfileReportInput {
   scenario: string
   /** The recorded event log from driving the instrumented component (SR2). */
   events: readonly ProfilerEvent[]
+  /**
+   * Other sources compiled for the same run — the composed sub-components of a
+   * scenario-file story. Their graphs are merged into the id index so events
+   * from those components resolve too.
+   */
+  extraSources?: readonly { source: string; filePath: string }[]
 }
 
 /**
@@ -803,52 +810,71 @@ export interface ProfileReportInput {
  */
 export function buildProfileReport(input: ProfileReportInput): ProfileReport {
   const { source, filePath, componentName, scenario, events } = input
-  const { graph } = buildComponentAnalysis(source, filePath, componentName)
-  const index = buildIdIndex(graph)
+
+  const primary = buildComponentAnalysis(source, filePath, componentName).graph
+  // All sources contributing to the merged index (primary first).
+  const allSources = [{ source, filePath }, ...(input.extraSources ?? [])]
+
+  const index: IdIndex = new Map()
+  // turn id → the handler binding + the component graph that owns it (so the
+  // safety oracle reasons over the right component's memos).
+  const turnBindings = new Map<string, { binding: EventBinding; graph: ComponentGraph }>()
+  let handlersTotal = 0
+
+  for (const s of allSources) {
+    // A source file may declare several components (e.g. a headless set:
+    // Collapsible + CollapsibleTrigger + CollapsibleContent). Index each.
+    let componentNames: string[]
+    try {
+      componentNames = listComponentFunctions(s.source, s.filePath)
+    } catch {
+      componentNames = []
+    }
+    if (componentNames.length === 0) componentNames = [undefined as unknown as string]
+    for (const name of componentNames) {
+      let graph: ComponentGraph
+      try {
+        graph = buildComponentAnalysis(s.source, s.filePath, name).graph
+      } catch {
+        continue
+      }
+      for (const [k, v] of buildIdIndex(graph)) index.set(k, v)
+      try {
+        const summary = buildEventSummary(s.source, s.filePath, name)
+        handlersTotal += summary.events.length
+        for (const [turn, binding] of turnToEventBinding(graph, summary.events)) {
+          turnBindings.set(turn, { binding, graph })
+        }
+      } catch {
+        /* a component the analyzer can't summarize contributes no handlers */
+      }
+    }
+  }
 
   const hotSubscribers = analyzeHotSubscribers(events, index)
   const batchAdvisor = analyzeBatchAdvisor(events, index)
   const { unattributed } = joinProfilerEvents(events, index)
 
-  // Safety oracle (§4.2.3): upgrade each batch candidate from 'unverified' to
-  // 'safe'/'unsafe' by static analysis of its handler body.
-  if (batchAdvisor.candidates.length > 0) {
-    let summary: ReturnType<typeof buildEventSummary> | null = null
-    try {
-      summary = buildEventSummary(source, filePath, componentName)
-    } catch {
-      summary = null
-    }
-    if (summary) {
-      const turnBindings = turnToEventBinding(graph, summary.events)
-      for (const c of batchAdvisor.candidates) {
-        const binding = turnBindings.get(c.turn)
-        if (!binding) continue
-        c.safety = assessBatchSafety({
-          handler: binding.handler,
-          setterNames: binding.setterCalls.map(s => s.setter),
-          hasIndirectSetters: binding.setterCalls.some(s => s.via && s.via.length > 0),
-          writtenSignals: binding.setterCalls.map(s => s.signal).filter((s): s is string => s !== null),
-          graph,
-        })
-      }
-    }
+  // Safety oracle (§4.2.3): upgrade each candidate from 'unverified'.
+  for (const c of batchAdvisor.candidates) {
+    const hit = turnBindings.get(c.turn)
+    if (!hit) continue
+    c.safety = assessBatchSafety({
+      handler: hit.binding.handler,
+      setterNames: hit.binding.setterCalls.map(s => s.setter),
+      hasIndirectSetters: hit.binding.setterCalls.some(s => s.via && s.via.length > 0),
+      writtenSignals: hit.binding.setterCalls.map(s => s.signal).filter((s): s is string => s !== null),
+      graph: hit.graph,
+    })
   }
 
   const turnIds = new Set<string>()
   for (const e of events) if (e.turn !== null) turnIds.add(e.turn)
 
-  let handlersTotal = 0
-  try {
-    handlersTotal = buildEventSummary(source, filePath, componentName).events.length
-  } catch {
-    handlersTotal = 0
-  }
-
   return {
     kind: 'profile',
-    componentName: graph.componentName,
-    sourceFile: graph.sourceFile,
+    componentName: primary.componentName,
+    sourceFile: primary.sourceFile,
     scenario,
     events: events.length,
     turns: turnIds.size,
