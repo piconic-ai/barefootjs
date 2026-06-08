@@ -138,6 +138,11 @@ sub render_component ($component, %opts) {
 
 sub layout (%a) {
     my $heading_html = $a{heading} ? "<h1>$a{heading}</h1>" : '';
+    # Subpages link back to the example list ($BASE/); the list page itself
+    # passes back => '' to suppress the link (the header breadcrumb already
+    # navigates up to /integrations).
+    my $back_href    = $a{back} // "$BASE/";
+    my $back_html    = $back_href ne '' ? qq{<p><a href="$back_href">&larr; Back</a></p>} : '';
     my $dev_snippet  = $DEV ? BarefootJS::DevReload->snippet("$BASE/_bf/reload") : '';
     return <<"HTML";
 <!DOCTYPE html>
@@ -168,7 +173,7 @@ sub layout (%a) {
     </header>
     $heading_html
     <div id="app">$a{body}</div>
-    <p><a href="$BASE/">&larr; Back</a></p>
+    $back_html
     $a{scripts}
     $dev_snippet
 </body>
@@ -359,6 +364,7 @@ sub home_page () {
     return layout(
         title   => 'BarefootJS + Text::Xslate Example',
         heading => 'BarefootJS + Text::Xslate Example',
+        back    => '',
         scripts => '',
         body    => <<"HTML",
 <p>This example renders the same shared JSX components with Text::Xslate (Kolon)
