@@ -185,8 +185,9 @@ $r->get('/styles/*asset' => sub ($c) {
 
 $r->get('/' => sub ($c) {
     $c->stash(
-        title   => 'BarefootJS + Mojolicious Example',
-        heading => 'BarefootJS + Mojolicious Example',
+        title     => 'BarefootJS + Mojolicious Example',
+        heading   => 'BarefootJS + Mojolicious Example',
+        back_href => '',
     );
     $c->render(template => 'home', layout => 'default');
 });
@@ -439,7 +440,13 @@ __DATA__
     <h1><%= $heading %></h1>
     % }
     <div id="app"><%= content %></div>
-    <p><a href="<%= $bp %>/">← Back</a></p>
+    % # Subpages link back to the example list ($bp/); the list page itself
+    % # passes back_href => '' to suppress the link (the header breadcrumb
+    % # already navigates up to /integrations).
+    % my $back_href = stash('back_href') // "$bp/";
+    % if ($back_href ne '') {
+    <p><a href="<%= $back_href %>">← Back</a></p>
+    % }
     <%== bf->scripts %>
     <%== bf_dev_snippet %>
 </body>
