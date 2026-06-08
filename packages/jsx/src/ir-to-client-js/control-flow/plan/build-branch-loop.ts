@@ -65,6 +65,7 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
           conditionals: loop.bindings.conditionals,
           loopParam: loop.param,
           loopParamBindings: loop.paramBindings,
+          profileComponentName,
         })
       : null,
     eventDelegation: buildBranchLoopDelegationPlan(loop, cv, profileComponentName),
