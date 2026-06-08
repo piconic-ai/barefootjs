@@ -23,7 +23,8 @@ import {
   traceUpdatePath,
   type ComponentGraph,
   type UpdatePathEntry,
-} from "./debug.ts"
+} from './debug.ts'
+import type { ProfilerEvent } from '@barefootjs/shared'
 
 // -- Static budget (SR5) ------------------------------------------------------
 
@@ -254,6 +255,133 @@ export function formatBudgetDiff(d: BudgetDiff): string {
   if (lines.length === 1) lines.push('  no structural reactivity change')
   else lines.push(d.regressed ? '  ⚠ reactivity regressed' : '  ✓ no regression')
   return lines.join('\n')
+}
+
+// -- SR4 IR join --------------------------------------------------------------
+
+/** An IR node a compiler-assigned profiler id resolves to. */
+export interface ResolvedNode {
+  kind: 'signal' | 'memo' | 'effect'
+  /** Display name/label of the resolved IR node. */
+  name: string
+  loc: { file: string; line: number }
+}
+
+/** id (`<Component>#<kind>:<rest>`) → resolved IR node. */
+export type IdIndex = Map<string, ResolvedNode>
+
+export interface ParsedProfilerId {
+  component: string
+  kind: string
+  /** Everything after `<kind>:` — a name, a line, or `controlled:<setter>`. */
+  rest: string
+}
+
+/**
+ * Parse a compiler-assigned profiler id `<Component>#<kind>:<rest>` (SR1/SR3).
+ * Returns `null` for anything that isn't shaped like one, so a stray id in the
+ * event stream is surfaced as a coverage gap rather than mis-parsed.
+ */
+export function parseProfilerId(id: string): ParsedProfilerId | null {
+  const hash = id.indexOf('#')
+  if (hash < 0) return null
+  const colon = id.indexOf(':', hash)
+  if (colon < 0) return null
+  const component = id.slice(0, hash)
+  const kind = id.slice(hash + 1, colon)
+  const rest = id.slice(colon + 1)
+  if (!component || !kind || !rest) return null
+  return { component, kind, rest }
+}
+
+/**
+ * Build the id→IR-node index that the SR4 join keys on. Every graph node
+ * already carries `loc`, so this turns a raw runtime id into a source-mapped
+ * node. Effects are registered under both their source line and their label
+ * (the two shapes `effects-and-on-mounts.ts` emits), and controlled-signal
+ * sync effects under `effect:controlled:<setter>`, mirroring the compiler's
+ * id namespace (`build-declaration-emit.ts`).
+ */
+export function buildIdIndex(graph: ComponentGraph): IdIndex {
+  const comp = graph.componentName
+  const index: IdIndex = new Map()
+
+  for (const s of graph.signals) {
+    index.set(`${comp}#signal:${s.name}`, { kind: 'signal', name: s.name, loc: s.loc })
+    if (s.setter) {
+      index.set(`${comp}#effect:controlled:${s.setter}`, {
+        kind: 'effect',
+        name: `controlled:${s.setter}`,
+        loc: s.loc,
+      })
+    }
+  }
+  for (const m of graph.memos) {
+    index.set(`${comp}#memo:${m.name}`, { kind: 'memo', name: m.name, loc: m.loc })
+  }
+  for (const e of graph.effects) {
+    const node: ResolvedNode = { kind: 'effect', name: e.label, loc: e.loc }
+    index.set(`${comp}#effect:${e.loc.line}`, node)
+    index.set(`${comp}#effect:${e.label}`, node)
+  }
+  return index
+}
+
+/** A profiler id that no IR node could be found for (SR4 coverage gap). */
+export interface UnattributedId {
+  id: string
+  /** Distinct events that referenced this id. */
+  count: number
+}
+
+export interface JoinedEvent {
+  event: ProfilerEvent
+  /** Resolved node for `event.subscriber` (effect/memo), if any. */
+  subscriber?: ResolvedNode
+  /** Resolved node for `event.signal`, if any. */
+  signal?: ResolvedNode
+}
+
+export interface JoinResult {
+  joined: JoinedEvent[]
+  /**
+   * Ids referenced by the stream that the IR did not resolve — surfaced, never
+   * dropped (SR4 invariant). A non-empty list is the honest coverage caveat the
+   * analyses print.
+   */
+  unattributed: UnattributedId[]
+}
+
+/**
+ * Join a recorded event stream (SR2) to a component's IR (SR4). Each event's
+ * `subscriber` / `signal` id is resolved to its source-mapped node; ids with no
+ * match are collected as coverage gaps. This is the seam that turns a raw
+ * measurement into an explained, fixable finding.
+ */
+export function joinProfilerEvents(events: readonly ProfilerEvent[], index: IdIndex): JoinResult {
+  const joined: JoinedEvent[] = []
+  const gaps = new Map<string, number>()
+
+  const resolve = (id: string | undefined): ResolvedNode | undefined => {
+    if (id === undefined) return undefined
+    const node = index.get(id)
+    if (!node) gaps.set(id, (gaps.get(id) ?? 0) + 1)
+    return node
+  }
+
+  for (const event of events) {
+    joined.push({
+      event,
+      subscriber: resolve(event.subscriber),
+      signal: resolve(event.signal),
+    })
+  }
+
+  const unattributed = [...gaps.entries()]
+    .map(([id, count]) => ({ id, count }))
+    .sort((a, b) => b.count - a.count)
+
+  return { joined, unattributed }
 }
 
 // -- Dynamic report (SR1–SR4) — placeholder seam ------------------------------
