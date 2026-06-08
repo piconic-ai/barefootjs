@@ -45,14 +45,55 @@ function pickMountName(requested: string | undefined, registered: string[]): str
   return registered[0]
 }
 
-/** Unique interactive descendants (root included) to exercise in the auto scenario. */
-function collectClickables(root: HTMLElement): HTMLElement[] {
-  const set = new Set<HTMLElement>()
-  const SELECTOR = 'button, a, [role="button"], [onclick]'
-  if (root.matches(SELECTOR)) set.add(root)
-  for (const el of Array.from(root.querySelectorAll<HTMLElement>(SELECTOR))) set.add(el)
-  // Fall back to the root itself so a wrapper component still gets one event.
-  return set.size > 0 ? [...set] : [root]
+/** A handler the IR knows about: which slot it's on and which event fires it. */
+interface HandlerSlot {
+  slotId: string
+  eventName: string
+}
+
+/** Build a bubbling DOM event of the right class for `eventName`. */
+function makeEvent(eventName: string): Event {
+  if (/^(click|dblclick|mouse|pointer|contextmenu)/.test(eventName)) {
+    return new window.MouseEvent(eventName, { bubbles: true, cancelable: true })
+  }
+  if (/^key/.test(eventName)) {
+    return new window.KeyboardEvent(eventName, { bubbles: true, cancelable: true })
+  }
+  return new window.Event(eventName, { bubbles: true, cancelable: true })
+}
+
+/**
+ * Fire every handler the IR knows about (`graph.domBindings` of type `event`)
+ * on its `[bf="<slotId>"]` element(s) — including list items (delegated) and
+ * branch handlers — so coverage reflects real interactions, not just buttons.
+ * Falls back to clicking buttons/links when no handler slots resolve.
+ */
+function fireHandlers(root: HTMLElement, handlers: HandlerSlot[]): number {
+  let fired = 0
+  const seen = new Set<HTMLElement>()
+  for (const h of handlers) {
+    const targets: HTMLElement[] = []
+    if (root.matches(`[bf="${h.slotId}"]`)) targets.push(root)
+    for (const el of Array.from(root.querySelectorAll<HTMLElement>(`[bf="${h.slotId}"]`))) targets.push(el)
+    for (const el of targets) {
+      el.dispatchEvent(makeEvent(h.eventName))
+      seen.add(el)
+      fired++
+    }
+  }
+  if (fired === 0) {
+    // No IR-resolved targets in the live DOM (e.g. wrapper component) — fall
+    // back to the generic clickable sweep.
+    const SELECTOR = 'button, a, [role="button"], [onclick]'
+    const set = new Set<HTMLElement>()
+    if (root.matches(SELECTOR)) set.add(root)
+    for (const el of Array.from(root.querySelectorAll<HTMLElement>(SELECTOR))) set.add(el)
+    for (const el of (set.size > 0 ? [...set] : [root])) {
+      el.dispatchEvent(makeEvent('click'))
+      fired++
+    }
+  }
+  return fired
 }
 
 /**
@@ -107,16 +148,28 @@ export async function runAutoScenario(
     const name = pickMountName(componentName, registeredNames(clientJs))
     if (!name) throw new Error('Could not determine the component name to mount (none registered).')
 
+    // Handler slots the IR knows about (slotId + event), so the auto scenario
+    // fires real interactions — list items, branch handlers — not just buttons.
+    let handlers: HandlerSlot[] = []
+    try {
+      const { graph } = (await import('@barefootjs/jsx')).buildComponentAnalysis(source, filePath, name)
+      handlers = graph.domBindings
+        .filter((b: { type: string }) => b.type === 'event')
+        .map((b: { slotId: string; label: string }) => ({
+          slotId: b.slotId,
+          eventName: b.label.match(/^(\w+)\s+handler/)?.[1] ?? 'click',
+        }))
+    } catch {
+      handlers = []
+    }
+
     const rec = rt.createRecordingSink()
     rt.setProfilerSink(rec.sink)
     try {
       const el = rt.createComponent(name, {})
       document.body.appendChild(el)
-      const targets = collectClickables(el)
-      for (const t of targets) {
-        t.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }))
-      }
-      return { events: rec.events, rootTag: el.tagName.toLowerCase(), fired: targets.length }
+      const fired = fireHandlers(el, handlers)
+      return { events: rec.events, rootTag: el.tagName.toLowerCase(), fired }
     } finally {
       rt.setProfilerSink(null)
     }

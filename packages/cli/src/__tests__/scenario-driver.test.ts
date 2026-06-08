@@ -36,6 +36,28 @@ describe('runAutoScenario', () => {
     expect(r.events.some(e => e.type === 'effectEnter' && e.subscriber === 'Counter#memo:doubled')).toBe(true)
   })
 
+  test('fires list-item (delegated) handlers, not just buttons (#1796)', async () => {
+    const LIST = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function List() {
+        const [items, setItems] = createSignal([{ id: 1 }, { id: 2 }])
+        return (
+          <ul>
+            {items().map(it => (
+              <li key={it.id} onClick={() => setItems(items().filter(x => x.id !== it.id))}>row</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const r = await runAutoScenario(LIST, 'List.tsx', 'List')
+    // The delegated li handler fired (a turn opened) even though there's no button.
+    const turn = r.events.find(e => e.type === 'turnBegin')
+    expect(turn?.handlerId).toMatch(/^List#handler:s\d+:click$/)
+    expect(r.fired).toBeGreaterThanOrEqual(2) // one per rendered row
+  })
+
   test('a component with no handler records no interaction turns', async () => {
     const DISPLAY = `
       'use client'
