@@ -1,9 +1,10 @@
 /**
- * Reactive performance profiler — static half (SR5 budget, SR6 compile-diff).
+ * Reactive performance profiler tests (#1690).
  *
- * Covers the run-free parts of `bf debug profile` (#1690). The dynamic half
- * (--scenario / SR1–SR4) is specified in spec/profiler.md and not exercised
- * here; `buildProfileReport` is asserted to throw its pointer-to-spec error.
+ * Covers the run-free static analysis (SR5 budget, SR6 compile-diff), the SR4
+ * id parse/join, and `buildProfileReport` — the dynamic report assembled from a
+ * recorded SR2 event stream (the stream itself is produced by the CLI scenario
+ * driver, tested separately).
  */
 
 import { describe, test, expect } from 'bun:test'

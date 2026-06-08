@@ -50,7 +50,7 @@ Debug:
   debug summary <component>                   Show hydration and size summary
   debug fallbacks <component>                 Show wrap-by-default fallback bindings (#937)
   debug signals <component>                   Show signal initialization trace
-  debug profile <component> [--diff <ref>]    Reactive perf budget; --diff flags regressions (#1690)
+  debug profile <component> [--scenario auto] [--diff <ref>]  Reactive perf profiler (run \`bf debug profile --help\` for the guide)
 
 Options:
   --json                                      Output in JSON format

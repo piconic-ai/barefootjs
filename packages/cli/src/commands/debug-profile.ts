@@ -20,6 +20,85 @@ import { resolveComponentSource } from '../lib/resolve-source'
 const USAGE =
   'Usage: bf debug profile <component> [--diff <ref>] [--scenario auto|<file>] [--fanout <n>] [--top <n>] [--hot-ms <n>] [--wasted-pct <n>] [--json]'
 
+// Full, self-contained guide (shown by `bf debug profile --help`). This is the
+// single source of truth for the profiler's UX — there is no separate spec doc
+// to drift from. Keep it practical: what each mode measures, how to read the
+// output, and what to do about a finding.
+const HELP = `bf debug profile — reactive performance profiler
+
+Find and fix wasted reactive work: re-runs that produce nothing, fan-out that
+fires too widely, multi-write turns that could batch. Every finding is mapped
+back to a source line so you (or an agent) can act on it.
+
+USAGE
+  ${USAGE.replace('Usage: ', '')}
+
+THREE MODES
+  bf debug profile <component>
+      Static reactivity budget — no run required. Pure function of the IR, so
+      it works the moment a component compiles. Predicts hot spots before you
+      measure: signal/memo/effect/loop counts, total subscriptions, the longest
+      memo→memo chain, and per-signal fan-out (flagged ⚠ high past --fanout).
+
+  bf debug profile <component> --diff <ref>
+      Compile-diff regression — compiles the component at <ref> (any git ref)
+      and at the working tree, then prints the structural delta (+effects,
+      fan-out 3→9, memo chain deepened, …). Exits non-zero when a metric grew,
+      so it is CI-able. No run required.
+
+  bf debug profile <component> --scenario auto
+  bf debug profile <component> --scenario <story.tsx>
+      Dynamic measured run. Mounts the instrumented build in a headless DOM,
+      fires interactions, and records the reactive event stream, then joins it
+      back to the IR. 'auto' fires every handler the IR knows about once (zero
+      config). A story file is a .tsx that composes the component the way it is
+      really used — needed for compound/headless components whose handlers live
+      in user-composed children.
+
+READING A DYNAMIC RUN
+  hot subscribers   Effects/memos ranked by total time (the bar) with run count.
+                    'N/turn' flags re-run pressure within one interaction — a
+                    split / batch candidate. The fix: stop the effect re-running
+                    on signals it doesn't actually depend on.
+  wasted re-runs    Effects/memos that re-ran but produced identical output —
+                    pure waste. The fix: a finer signal/memo split, or memoize
+                    the sub-expression.
+  batch advisor     Turns that re-ran shared effects once per write. 'safe' means
+                    a batch() wrap is statically proven behavior-preserving;
+                    'safety unverified' means a wrap would help but couldn't be
+                    proven safe. The fix: wrap the handler body in batch().
+  coverage          Handlers exercised vs the IR total, plus any ids that
+                    couldn't be mapped to source — the honest scope caveat.
+
+FLAGS
+  --diff <ref>        Compile-diff against a git ref (mode selector).
+  --scenario <s>      'auto' or a path to a story .tsx (mode selector).
+  --fanout <n>        Static fan-out threshold for the ⚠ high flag (int ≥ 1, default 8).
+  --top <n>           Keep only the N hottest subscribers in the dynamic table
+                      (int ≥ 1; --json is never truncated).
+  --hot-ms <n>        Drop subscribers below this total-ms floor — a noise filter
+                      for grid components with a long cheap tail (number ≥ 0).
+  --wasted-pct <n>    Flag a subscriber whose runs are ≥ n% identical output
+                      (0–100, default 50).
+  --json              Machine-readable output (every mode). Stable schema with
+                      deterministic tie-breaking; structural findings reproduce
+                      run-to-run (wall-clock-timed ranks can shift near rounding
+                      boundaries).
+
+EXAMPLES
+  bf debug profile calendar                       # static budget, no run
+  bf debug profile calendar --scenario auto       # measure every handler once
+  bf debug profile calendar --scenario auto --top 5 --hot-ms 1
+  bf debug profile checkout --scenario ./stories/checkout.tsx --json
+  bf debug profile checkout --diff origin/main    # regression gate (CI)
+
+NOTES
+  • Instrumentation is dev-only and is stripped from production builds.
+  • The dynamic modes need the client runtime built (e.g. \`bun run build\`); the
+    static budget and --diff need no build.
+  • Composes with \`bf debug graph/trace/why-update\`: those say *where to look*,
+    profile says *what it cost and what to change*, citing the same source lines.`
+
 interface ProfileFlags {
   scenario?: string
   diff?: string
@@ -62,13 +141,14 @@ function parseFlags(args: string[]): ProfileFlags {
     args: string[],
     i: number,
     name: string,
-    opts: { integer?: boolean; min?: number },
+    opts: { integer?: boolean; min?: number; max?: number },
   ): number => {
     const raw = value(args, i, name)
     const n = Number(raw)
     if (Number.isNaN(n)) fail(`${name} requires a number (got "${raw}").`)
     if (opts.integer && !Number.isInteger(n)) fail(`${name} must be a whole number (got "${raw}").`)
     if (opts.min !== undefined && n < opts.min) fail(`${name} must be ≥ ${opts.min} (got "${raw}").`)
+    if (opts.max !== undefined && n > opts.max) fail(`${name} must be ≤ ${opts.max} (got "${raw}").`)
     return n
   }
   for (let i = 0; i < args.length; i++) {
@@ -78,7 +158,7 @@ function parseFlags(args: string[]): ProfileFlags {
     else if (a === '--fanout') flags.fanOutThreshold = num(args, ++i, '--fanout', { integer: true, min: 1 })
     else if (a === '--top') flags.topN = num(args, ++i, '--top', { integer: true, min: 1 })
     else if (a === '--hot-ms') flags.minMs = num(args, ++i, '--hot-ms', { min: 0 })
-    else if (a === '--wasted-pct') flags.wastedPct = num(args, ++i, '--wasted-pct', { min: 0 })
+    else if (a === '--wasted-pct') flags.wastedPct = num(args, ++i, '--wasted-pct', { min: 0, max: 100 })
     else if (a.startsWith('-')) fail(`Unknown flag "${a}".`)
     else flags.positional.push(a)
   }
@@ -92,6 +172,13 @@ function fail(message: string): never {
 }
 
 export async function run(args: string[], ctx: CliContext): Promise<void> {
+  // `--help`/`-h` prints the full guide and exits 0 — handled before parseFlags
+  // so it isn't rejected as an unknown flag.
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(HELP)
+    return
+  }
+
   const flags = parseFlags(args)
 
   const {
