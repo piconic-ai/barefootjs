@@ -20,6 +20,7 @@
 import {
   buildComponentAnalysis,
   buildComponentSummary,
+  buildEventSummary,
   traceUpdatePath,
   type ComponentGraph,
   type UpdatePathEntry,
@@ -393,13 +394,19 @@ export interface HotSubscriber {
   loc?: { file: string; line: number }
   name?: string
   kind?: 'signal' | 'memo' | 'effect'
-  /** Number of times this subscriber ran (`effectEnter` count). */
+  /** Total times this subscriber ran (`effectEnter` count), mount included. */
   runs: number
+  /** Runs during initial mount (outside any turn) — the unavoidable baseline. */
+  mountRuns: number
   /** Total run time in ms (Σ `effectExit.dur`). */
   totalMs: number
-  /** Distinct turns in which it ran at least once. */
+  /** Distinct *interaction* turns it ran in (mount excluded). */
   turns: number
-  /** `runs / turns` — average runs per active turn (re-run pressure). */
+  /**
+   * Interaction runs per active turn — `(runs − mountRuns) / turns`, the
+   * re-run-pressure signal. Mount is excluded so a click that re-runs an effect
+   * 5× reads as `5.0`, not diluted by the one-time mount run.
+   */
   runsPerTurn: number
   /** True when `runsPerTurn` meets the configured threshold. */
   hot: boolean
@@ -440,6 +447,7 @@ export function analyzeHotSubscribers(
 
   interface Acc {
     runs: number
+    mountRuns: number
     totalMs: number
     turns: Set<string>
   }
@@ -447,7 +455,7 @@ export function analyzeHotSubscribers(
   const acc = (id: string): Acc => {
     let a = byId.get(id)
     if (!a) {
-      a = { runs: 0, totalMs: 0, turns: new Set() }
+      a = { runs: 0, mountRuns: 0, totalMs: 0, turns: new Set() }
       byId.set(id, a)
     }
     return a
@@ -458,9 +466,10 @@ export function analyzeHotSubscribers(
     if (e.type === 'effectEnter') {
       const a = acc(e.subscriber)
       a.runs++
-      // `turn` is the handler in scope; '' keys the no-turn bucket so a
-      // subscriber that only runs outside any turn still has turns ≥ 1.
-      a.turns.add(e.turn ?? '')
+      // Runs outside any turn are the one-time mount/setup baseline — kept
+      // separate so they don't dilute the per-interaction `runsPerTurn`.
+      if (e.turn === null) a.mountRuns++
+      else a.turns.add(e.turn)
     } else if (e.type === 'effectExit' && e.dur !== undefined) {
       acc(e.subscriber).totalMs += e.dur
     }
@@ -475,13 +484,15 @@ export function analyzeHotSubscribers(
   let subscribers: HotSubscriber[] = [...byId.entries()].map(([subscriber, a]) => {
     const node = nodeFor.get(subscriber)
     const turns = a.turns.size
-    const runsPerTurn = turns > 0 ? a.runs / turns : a.runs
+    const interactionRuns = a.runs - a.mountRuns
+    const runsPerTurn = turns > 0 ? interactionRuns / turns : 0
     return {
       subscriber,
       loc: node?.loc,
       name: node?.name,
       kind: node?.kind,
       runs: a.runs,
+      mountRuns: a.mountRuns,
       totalMs: a.totalMs,
       turns,
       runsPerTurn,
@@ -508,9 +519,9 @@ export function formatHotSubscribers(r: HotSubscribersResult): string {
   }
   for (const s of r.subscribers) {
     const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
-    const label = s.name ?? s.subscriber
+    const label = `${s.name ?? s.subscriber}${s.kind ? ` (${s.kind})` : ''}`
     const note = s.hot ? `   ⚠ hot: ${s.runsPerTurn.toFixed(1)} runs/turn` : ''
-    lines.push(`  ${label.padEnd(16)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
+    lines.push(`  ${label.padEnd(20)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
   }
   if (r.unattributed.length > 0) {
     lines.push(`  ⚠ coverage: ${r.unattributed.length} unresolved subscriber id(s)`)
@@ -608,24 +619,96 @@ export function formatBatchAdvisor(r: BatchAdvisorResult): string {
   return lines.join('\n')
 }
 
-// -- Dynamic report (SR1–SR4) — placeholder seam ------------------------------
+// -- Dynamic report (SR1–SR4 + analyses, SR7) ---------------------------------
+
+export interface ProfileCoverage {
+  /** Distinct handlers exercised (turns observed). */
+  handlersFired: number
+  /** Handlers the IR knows about (`buildEventSummary`). */
+  handlersTotal: number
+  /** SR4 ids the IR could not resolve — the honest gap. */
+  unattributed: UnattributedId[]
+}
 
 export interface ProfileReport {
   kind: 'profile'
+  componentName: string
+  sourceFile: string
+  /** Scenario label (e.g. `'auto'` or a scenario file name). */
   scenario: string
-  // subscribers, findings, coverage — see spec/profiler.md §6.3.
+  /** Total recorded events. */
+  events: number
+  /** Distinct interaction turns. */
+  turns: number
+  hotSubscribers: HotSubscribersResult
+  batchAdvisor: BatchAdvisorResult
+  coverage: ProfileCoverage
+}
+
+export interface ProfileReportInput {
+  source: string
+  filePath: string
+  componentName?: string
+  scenario: string
+  /** The recorded event log from driving the instrumented component (SR2). */
+  events: readonly ProfilerEvent[]
 }
 
 /**
- * Dynamic, scenario-driven profile (SR1–SR4 + analyses). Not yet implemented —
- * the instrumented runtime, compiler turn markers, and IR join are specified in
- * `spec/profiler.md`. This seam keeps the public surface stable for the CLI
- * while the dynamic half is built.
+ * Assemble a dynamic profile (SR1–SR4 + analyses, SR7) from a recorded event
+ * stream. Pure: the DOM run that *produces* `events` lives in the driver (the
+ * CLI's scenario harness); this joins them to the IR and ranks findings.
+ * Deterministic — same stream + same source ⇒ same report.
  */
-export function buildProfileReport(_scenario: string): ProfileReport {
-  throw new Error(
-    'bf debug profile --scenario is not implemented yet. ' +
-      'The dynamic measurement substrate (SR1–SR4) is specified in spec/profiler.md. ' +
-      'Run `bf debug profile <component>` for the static reactivity budget (SR5).',
-  )
+export function buildProfileReport(input: ProfileReportInput): ProfileReport {
+  const { source, filePath, componentName, scenario, events } = input
+  const { graph } = buildComponentAnalysis(source, filePath, componentName)
+  const index = buildIdIndex(graph)
+
+  const hotSubscribers = analyzeHotSubscribers(events, index)
+  const batchAdvisor = analyzeBatchAdvisor(events)
+  const { unattributed } = joinProfilerEvents(events, index)
+
+  const turnIds = new Set<string>()
+  for (const e of events) if (e.turn !== null) turnIds.add(e.turn)
+
+  let handlersTotal = 0
+  try {
+    handlersTotal = buildEventSummary(source, filePath, componentName).events.length
+  } catch {
+    handlersTotal = 0
+  }
+
+  return {
+    kind: 'profile',
+    componentName: graph.componentName,
+    sourceFile: graph.sourceFile,
+    scenario,
+    events: events.length,
+    turns: turnIds.size,
+    hotSubscribers,
+    batchAdvisor,
+    coverage: {
+      handlersFired: turnIds.size,
+      handlersTotal,
+      unattributed,
+    },
+  }
+}
+
+export function formatProfileReport(r: ProfileReport): string {
+  const lines: string[] = []
+  lines.push(`${r.componentName} — profile (scenario: ${r.scenario})`)
+  lines.push(`  ${r.events} events across ${r.turns} turn(s)`)
+  lines.push('')
+  lines.push(formatHotSubscribers(r.hotSubscribers))
+  lines.push('')
+  lines.push(formatBatchAdvisor(r.batchAdvisor))
+  lines.push('')
+  const c = r.coverage
+  lines.push(`coverage: ${c.handlersFired}/${c.handlersTotal} handlers exercised`)
+  if (c.unattributed.length > 0) {
+    lines.push(`  ⚠ ${c.unattributed.length} unattributed id(s): ${c.unattributed.slice(0, 3).map(u => u.id).join(', ')}`)
+  }
+  return lines.join('\n')
 }
