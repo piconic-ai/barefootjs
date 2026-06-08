@@ -61,6 +61,41 @@ describe('runAutoScenario', () => {
     expect(r.fired).toBeGreaterThanOrEqual(2) // one per rendered row
   })
 
+  test('reaches a separately-imported child component handler (#1796)', async () => {
+    // The compound case: the target file has no handler of its own; the toggle
+    // lives in a child component imported from a sibling file. Auto mode must
+    // load the import graph (like a story) so the child registers, the mount
+    // wires it, and its handler fires — instead of silently reading 0/0.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-compound-'))
+    try {
+      writeFileSync(join(dir, 'trigger.tsx'), `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function Trigger() {
+          const [n, setN] = createSignal(0)
+          return <button onClick={() => setN(n() + 1)}>{n()}</button>
+        }
+      `)
+      const panelPath = join(dir, 'panel.tsx')
+      const panelSrc = `
+        'use client'
+        import { Trigger } from './trigger'
+        export function Panel() { return <div><Trigger /></div> }
+      `
+      writeFileSync(panelPath, panelSrc)
+
+      const r = await runAutoScenario(panelSrc, panelPath, 'Panel')
+      // The child source was pulled in (dependency first, target last).
+      expect(r.sources.map(s => s.filePath.split('/').pop())).toEqual(['trigger.tsx', 'panel.tsx'])
+      // The child's handler fired and opened a real turn — not 0/0.
+      expect(r.fired).toBeGreaterThanOrEqual(1)
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^Trigger#handler:s\d+:click$/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   test('a component with no handler records no interaction turns', async () => {
     const DISPLAY = `
       'use client'
@@ -110,6 +145,40 @@ describe('runFileScenario (composition, #1796)', () => {
       // The composed Toggle's handler fired through the Story wrapper.
       const turn = r.events.find(e => e.type === 'turnBegin')
       expect(turn?.handlerId).toMatch(/^Toggle#handler:s\d+:click$/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('a missing scenario file throws the specific "Cannot read" error', async () => {
+    // `loadWithLocalImports` must return [] for an unresolvable entry so the
+    // file path surfaces this error rather than the generic "No client JS".
+    await expect(runFileScenario('/nope/does-not-exist.tsx')).rejects.toThrow(/Cannot read scenario file/)
+  })
+
+  test('a directory entry (→ index.tsx) resolves imports from the index file dir', async () => {
+    // The entry spec is a directory; it maps to `<dir>/index.tsx`. Its relative
+    // imports must resolve from the index file's directory, not the spec's.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-index-'))
+    try {
+      writeFileSync(join(dir, 'knob.tsx'), `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function Knob() {
+          const [n, setN] = createSignal(0)
+          return <button onClick={() => setN(n() + 1)}>{n()}</button>
+        }
+      `)
+      writeFileSync(join(dir, 'index.tsx'), `
+        import { Knob } from './knob'
+        export function Root() { return <section><Knob /></section> }
+      `)
+
+      // Pass the directory as the scenario "file" — resolveLocalFile maps it to index.tsx.
+      const r = await runFileScenario(dir)
+      expect(r.sources.map(s => s.filePath.split('/').pop())).toEqual(['knob.tsx', 'index.tsx'])
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^Knob#handler:s\d+:click$/)
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
