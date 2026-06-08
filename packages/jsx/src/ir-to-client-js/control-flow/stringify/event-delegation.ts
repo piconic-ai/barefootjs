@@ -48,8 +48,20 @@ const NON_BUBBLING_EVENTS = new Set([
   'pointerenter', 'pointerleave',
 ])
 
+/**
+ * Profile mode (#1690, SR3): bracket a delegated handler call with turn
+ * markers so a profiling run attributes the reactive work it triggers to one
+ * turn. `call` is the inline invocation (e.g. `(handler)(__bfEvt)`); the
+ * wrapper keeps it a single statement so it drops into every lookup shape.
+ */
+function withTurn(call: string, componentName: string | undefined, childSlotId: string, eventName: string): string {
+  if (!componentName) return call
+  const id = JSON.stringify(`${componentName}#handler:${childSlotId}:${eventName}`)
+  return `beginTurn(${id}); try { ${call} } finally { endTurn() }`
+}
+
 export function stringifyEventDelegation(lines: string[], plan: EventDelegationPlan): void {
-  const { containerVar, events, itemLookup } = plan
+  const { containerVar, events, itemLookup, profileComponentName } = plan
   const eventsByName = new Map<string, LoopChildEvent[]>()
   for (const ev of events) {
     if (!eventsByName.has(ev.eventName)) eventsByName.set(ev.eventName, [])
@@ -70,7 +82,7 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
       const childVar = varSlotId(ev.childSlotId)
       lines.push(`    const ${childVar}El = target.closest('[bf="${ev.childSlotId}"]')`)
       lines.push(`    if (${childVar}El) {`)
-      const handlerCall = `(${ev.handler.trim()})(__bfEvt)`
+      const handlerCall = withTurn(`(${ev.handler.trim()})(__bfEvt)`, profileComponentName, ev.childSlotId, ev.eventName)
       switch (itemLookup.kind) {
         case 'keyed':
           emitKeyedLookup(lines, ev, handlerCall, itemLookup)

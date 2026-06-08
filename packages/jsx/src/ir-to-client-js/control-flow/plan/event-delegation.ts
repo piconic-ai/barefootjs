@@ -26,6 +26,13 @@ export interface EventDelegationPlan {
   containerVar: string
   events: LoopChildEvent[]
   itemLookup: ItemLookup
+  /**
+   * Profile mode (#1690, SR3): the owning component name. When set, the
+   * stringifier brackets each delegated handler call with `beginTurn`/`endTurn`
+   * (id `<Component>#handler:<childSlotId>:<eventName>`). Undefined when
+   * profiling is off, so the emitted dispatcher is unchanged (SR8).
+   */
+  profileComponentName?: string
 }
 
 /**
