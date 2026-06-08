@@ -1,5 +1,5 @@
 package Mojolicious::Plugin::BarefootJS;
-our $VERSION = "0.9.6";
+our $VERSION = "0.10.0";
 use Mojo::Base 'Mojolicious::Plugin', -signatures;
 
 use Mojo::File qw(path);
