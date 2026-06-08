@@ -50,6 +50,8 @@ import type {
 export interface BuildLoopPlanOptions {
   /** Local names whose CSR-time substitution forces the static-array self-heal path (#1247). */
   unsafeLocalNames: Set<string>
+  /** Owning component name when compiling in profile mode (#1690) — else undefined. */
+  profileComponentName?: string
 }
 
 /**
@@ -64,7 +66,7 @@ export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): L
   // array's per-item conditional still toggles reactively instead of freezing
   // in the SSR-time `forEach` (which has no conditional handling at all).
   if (elem.bodyIsItemConditional) {
-    return buildPlainLoopPlan(elem)
+    return buildPlainLoopPlan(elem, opts.profileComponentName)
   }
   if (elem.isStaticArray) {
     return buildStaticLoopPlan(elem, opts.unsafeLocalNames)
@@ -77,11 +79,11 @@ export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): L
   if (elem.childComponent) {
     return buildComponentLoopPlan(elem)
   }
-  return buildPlainLoopPlan(elem)
+  return buildPlainLoopPlan(elem, opts.profileComponentName)
 }
 
 /** @internal — prefer `buildLoopPlan`. Exported for the branch-loop wrapper only. */
-export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
+export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: string): PlainLoopPlan {
   const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
   const hasReactive = elem.bindings.reactiveAttrs.length > 0
@@ -92,6 +94,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop): PlainLoopPlan {
     kind: 'plain',
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
+    profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
     arrayExpr: buildChainedArrayExpr(elem),
     keyFn: loopKeyFn(elem),
     paramHead,

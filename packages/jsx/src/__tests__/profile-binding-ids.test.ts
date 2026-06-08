@@ -28,6 +28,35 @@ function clientJs(profile: boolean): string {
     .files.find(f => f.type === 'clientJs')!.content
 }
 
+const loopSource = `
+  'use client'
+  import { createSignal } from '@barefootjs/client'
+  export function List() {
+    const [items] = createSignal([{ id: 1, t: 'a' }, { id: 2, t: 'b' }])
+    return <ul>{items().map(it => <li key={it.id}>{it.t}</li>)}</ul>
+  }
+`
+
+describe('loop-effect id (mapArray bfId)', () => {
+  test('profile on: mapArray carries the loop binding id; off: it does not', () => {
+    const on = compileJSX(loopSource, 'List.tsx', { adapter, profile: true })
+      .files.find(f => f.type === 'clientJs')!.content
+    const off = compileJSX(loopSource, 'List.tsx', { adapter, profile: false })
+      .files.find(f => f.type === 'clientJs')!.content
+    expect(on).toMatch(/mapArray\(.*List#binding:s\d+/s)
+    expect(off).not.toContain('#binding:')
+  })
+
+  test('buildIdIndex resolves the loop binding to source loc', () => {
+    const { graph } = buildComponentAnalysis(loopSource, 'List.tsx')
+    const index = buildIdIndex(graph)
+    const loopBinding = graph.domBindings.find(b => b.type === 'loop')!
+    const node = index.get(`List#binding:${loopBinding.slotId}`)
+    expect(node?.kind).toBe('effect')
+    expect(node?.loc.file).toBe('List.tsx')
+  })
+})
+
 describe('binding-effect ids', () => {
   test('profile off: binding effects carry no id (SR8)', () => {
     expect(clientJs(false)).not.toContain('#binding:')
