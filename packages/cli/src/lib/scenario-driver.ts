@@ -117,26 +117,49 @@ function resolveLocalFile(spec: string): string | null {
 }
 
 /**
- * Load a scenario "story" file and its local (relative) imports into a flat,
- * dependency-first source list — so a story composing a headless component
- * (`<Collapsible><CollapsibleTrigger/>…`) brings every piece it needs.
+ * Walk a file's transitive local (relative) imports into a flat,
+ * dependency-first source list — so a component (or story) that composes
+ * separately-registered children (`<Collapsible><CollapsibleTrigger/>…`)
+ * brings every piece it needs: each child registers via `hydrate(...)` before
+ * the root mounts, and its handlers enter the discovery set.
+ *
+ * `seedSource` lets the caller supply already-read content for the entry file
+ * (the `bf debug profile <component>` path reads it before resolving), avoiding
+ * a redundant disk read and honouring any in-memory override.
  */
-function loadStory(storyPath: string): SourceFile[] {
+function loadWithLocalImports(entryPath: string, seedSource?: string): SourceFile[] {
   const out: SourceFile[] = []
   const visited = new Set<string>()
-  const visit = (p: string): void => {
+  const visitImport = (p: string): void => {
     const resolved = resolveLocalFile(p)
     if (!resolved || visited.has(resolved)) return
     visited.add(resolved)
     const source = readFileSync(resolved, 'utf-8')
-    // Visit local imports first so their components register before the story's.
     for (const m of source.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
-      visit(join(dirname(resolved), m[1]))
+      visitImport(join(dirname(resolved), m[1]))
     }
     out.push({ source, filePath: resolved })
   }
-  visit(storyPath)
+  // The entry is always included from its seed (or disk). Its filePath may be
+  // synthetic (in-memory tests, stdin) and need not exist on disk; only its
+  // local imports are resolved against the filesystem — missing ones are
+  // skipped so a partial/standalone component still profiles.
+  const entryResolved = resolveLocalFile(entryPath)
+  if (entryResolved) visited.add(entryResolved)
+  const entrySource = seedSource ?? (entryResolved ? readFileSync(entryResolved, 'utf-8') : '')
+  for (const m of entrySource.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
+    visitImport(join(dirname(entryPath), m[1]))
+  }
+  out.push({ source: entrySource, filePath: entryResolved ?? entryPath })
   return out
+}
+
+/**
+ * Load a scenario "story" file and its local imports (see
+ * `loadWithLocalImports`).
+ */
+function loadStory(storyPath: string): SourceFile[] {
+  return loadWithLocalImports(storyPath)
 }
 
 /**
@@ -268,7 +291,15 @@ export async function runAutoScenario(
   filePath: string,
   componentName?: string,
 ): Promise<ScenarioResult> {
-  return runScenario([{ source, filePath }], componentName)
+  // Pull in the target's local child-component imports (#1796): a compound
+  // component (`<Collapsible><CollapsibleTrigger/>…`) keeps its toggle handler
+  // in a separately-registered child. Without the child's source compiled, the
+  // child never registers, the mount can't wire it, and handler discovery reads
+  // 0/0 even though the composition has handlers. Loading the import graph
+  // (dependency-first, root last) registers every child and surfaces their
+  // handlers — matching what `--scenario <story.tsx>` does, with no story file.
+  const sources = loadWithLocalImports(filePath, source)
+  return runScenario(sources, componentName)
 }
 
 /**
