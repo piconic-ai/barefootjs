@@ -81,35 +81,44 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const cssLibrary = CSS_LIBRARIES[cssId]
 
   // Pre-flight: confirm the UI registry is reachable BEFORE writing
-  // anything to disk. The runnable starter requires the registry's
-  // Button component, and a vanilla fallback would force the user
-  // through a painful migration to UnoCSS + barefootjs UI later.
-  // Better to fail fast and have them retry online with no partial
-  // state to clean up.
-  // Surface the host the scaffold is reaching out to so the spinner
-  // reads like a concrete action ("Fetching starter components from
-  // ui.barefootjs.dev...") rather than a vague "checking a registry".
-  const registryHost = new URL(DEFAULT_REGISTRY_URL).host
-  const probeSpinner = startSpinner({
-    text: `Fetching starter components from ${registryHost}...`,
-  })
-  try {
-    await probeRegistry(DEFAULT_REGISTRY_URL)
-    probeSpinner.stop()
-  } catch (err) {
-    probeSpinner.fail(`Cannot reach ${registryHost} (BarefootJS UI registry)`)
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error(`  ${msg}`)
-    console.error(``)
-    console.error(`Project init pulls the starter's Button component from`)
-    console.error(`${DEFAULT_REGISTRY_URL} (which the renderer wires through UnoCSS).`)
-    console.error(``)
-    console.error(`Things to try:`)
-    console.error(`  1. Open ${DEFAULT_REGISTRY_URL}button.json in a browser to`)
-    console.error(`     confirm ${registryHost} is reachable from this network.`)
-    console.error(`  2. If you're behind a corporate proxy, set HTTPS_PROXY.`)
-    console.error(`  3. Re-run the create-barefootjs command once you're connected.`)
-    process.exit(1)
+  // anything to disk. The runnable starter pulls the registry's Button
+  // component, and a vanilla fallback would force the user through a
+  // painful migration to UnoCSS + barefootjs UI later. Better to fail
+  // fast and have them retry online with no partial state to clean up.
+  //
+  // Skip the probe entirely for adapters that bundle no registry
+  // components (`bundledRegistryComponents: []`, e.g. the xslate
+  // scaffold ships a self-contained Counter): there's nothing to fetch,
+  // so reaching out — and failing offline with a Button-specific error —
+  // would be both pointless and misleading. Mirror scaffoldApp's
+  // `?? ['button']` default so the two stay in lockstep.
+  const bundledComponents = adapter.bundledRegistryComponents ?? ['button']
+  if (bundledComponents.length > 0) {
+    // Surface the host the scaffold is reaching out to so the spinner
+    // reads like a concrete action ("Fetching starter components from
+    // ui.barefootjs.dev...") rather than a vague "checking a registry".
+    const registryHost = new URL(DEFAULT_REGISTRY_URL).host
+    const probeSpinner = startSpinner({
+      text: `Fetching starter components from ${registryHost}...`,
+    })
+    try {
+      await probeRegistry(DEFAULT_REGISTRY_URL)
+      probeSpinner.stop()
+    } catch (err) {
+      probeSpinner.fail(`Cannot reach ${registryHost} (BarefootJS UI registry)`)
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`  ${msg}`)
+      console.error(``)
+      console.error(`Project init pulls the starter's Button component from`)
+      console.error(`${DEFAULT_REGISTRY_URL} (which the renderer wires through UnoCSS).`)
+      console.error(``)
+      console.error(`Things to try:`)
+      console.error(`  1. Open ${DEFAULT_REGISTRY_URL}button.json in a browser to`)
+      console.error(`     confirm ${registryHost} is reachable from this network.`)
+      console.error(`  2. If you're behind a corporate proxy, set HTTPS_PROXY.`)
+      console.error(`  3. Re-run the create-barefootjs command once you're connected.`)
+      process.exit(1)
+    }
   }
 
   const warnings = adapter.prereqWarnings()

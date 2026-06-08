@@ -12,6 +12,7 @@ import { HONO_ADAPTER } from './adapters/hono'
 import { HONO_NODE_ADAPTER } from './adapters/hono-node'
 import { MOJO_ADAPTER } from './adapters/mojo'
 import { NETHTTP_ADAPTER } from './adapters/nethttp'
+import { XSLATE_ADAPTER } from './adapters/xslate'
 import type { PackageManager } from './pm'
 
 /**
@@ -113,6 +114,7 @@ export const ADAPTERS: Record<string, AdapterTemplate> = {
   chi: CHI_ADAPTER,
   nethttp: NETHTTP_ADAPTER,
   mojo: MOJO_ADAPTER,
+  xslate: XSLATE_ADAPTER,
   csr: CSR_ADAPTER,
 }
 
