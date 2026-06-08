@@ -1,5 +1,11 @@
 # @barefootjs/test
 
+## 0.10.0
+
+### Patch Changes
+
+- @barefootjs/jsx@0.10.0
+
 ## 0.9.6
 
 ### Patch Changes
