@@ -110,24 +110,24 @@ describe('analyzeHotSubscribers', () => {
     expect(r.subscribers[0].hot).toBe(false)
   })
 
-  test('ranks deterministically by runs (not wall-clock) and honors topN', () => {
+  test('ranks by cost (totalMs) — the most expensive first — and honors topN', () => {
     seq = 0
-    // `b` runs more than `a`; ranking must not depend on the (wall-clock) dur.
+    // `a` costs more time though it runs fewer times; cost is what to fix.
     const events: ProfilerEvent[] = [
       ev('effectEnter', { subscriber: 'Calc#memo:a' }),
-      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 99 }), // high ms, low runs
+      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 99 }), // expensive, 1 run
       ev('effectEnter', { subscriber: 'Calc#memo:b' }),
       ev('effectEnter', { subscriber: 'Calc#memo:b' }),
-      ev('effectExit', { subscriber: 'Calc#memo:b', dur: 1 }), // low ms, more runs
+      ev('effectExit', { subscriber: 'Calc#memo:b', dur: 1 }), // cheap, 2 runs
     ]
     const r = analyzeHotSubscribers(events, index, { topN: 1 })
     expect(r.subscribers).toHaveLength(1)
-    expect(r.subscribers[0].subscriber).toBe('Calc#memo:b') // 2 runs > 1 run
+    expect(r.subscribers[0].subscriber).toBe('Calc#memo:a') // 99ms > 1ms
   })
 
-  test('ties break on subscriber id, so the order is stable across runs (SR7)', () => {
+  test('same-cost subscribers tiebreak by runs then id — stable across timing noise', () => {
     seq = 0
-    // Two subscribers, equal runs, different (noisy) dur — id breaks the tie.
+    // Both round to the same displayed 0.1ms cost; runs (equal) then id decide.
     const mk = (durA: number, durB: number): ProfilerEvent[] => {
       seq = 0
       return [
@@ -137,9 +137,10 @@ describe('analyzeHotSubscribers', () => {
         ev('effectExit', { subscriber: 'Calc#memo:a', dur: durA }),
       ]
     }
-    const order1 = analyzeHotSubscribers(mk(0.05, 0.04), index).subscribers.map(s => s.subscriber)
-    const order2 = analyzeHotSubscribers(mk(0.04, 0.05), index).subscribers.map(s => s.subscriber)
-    expect(order1).toEqual(order2) // timing flip does not change rank
+    // 0.41 and 0.44 both round to 0.4ms → same cohort → id breaks the tie.
+    const order1 = analyzeHotSubscribers(mk(0.41, 0.44), index).subscribers.map(s => s.subscriber)
+    const order2 = analyzeHotSubscribers(mk(0.44, 0.41), index).subscribers.map(s => s.subscriber)
+    expect(order1).toEqual(order2) // timing flip within a cost bucket does not change rank
     expect(order1).toEqual(['Calc#memo:a', 'Calc#memo:b']) // id-sorted
   })
 
@@ -166,7 +167,7 @@ describe('analyzeHotSubscribers', () => {
     const out = formatHotSubscribers(analyzeHotSubscribers(events, index), 12)
     // 12 shown + the "… and N more" summary line.
     expect(out).toContain('… and 18 more')
-    expect((out.match(/ runs,/g) ?? []).length).toBe(12)
+    expect((out.match(/\d+×/g) ?? []).length).toBe(12)
   })
 
   test('formats a readable report with a hot note', () => {
@@ -178,6 +179,20 @@ describe('analyzeHotSubscribers', () => {
     ]
     const out = formatHotSubscribers(analyzeHotSubscribers(events, index))
     expect(out).toContain('hot subscribers')
-    expect(out).toContain('runs/turn')
+    expect(out).toMatch(/⚠ [\d.]+\/turn/) // hot note
+    expect(out).toContain('█') // proportional bar
+  })
+
+  test('bars are proportional to cost (totalMs) — the costliest is the longest', () => {
+    seq = 0
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'Calc#memo:a' }),
+      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 8 }), // costly → ranked first, full bar
+      ev('effectEnter', { subscriber: 'Calc#memo:b' }),
+      ev('effectExit', { subscriber: 'Calc#memo:b', dur: 1 }), // cheap → short bar
+    ]
+    const lines = formatHotSubscribers(analyzeHotSubscribers(events, index)).split('\n').filter(l => l.includes('█'))
+    const barLen = (l: string) => (l.match(/█/g) ?? []).length
+    expect(barLen(lines[0])).toBeGreaterThan(barLen(lines[1]))
   })
 })
