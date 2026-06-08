@@ -10,7 +10,7 @@ describe('adapter registry', () => {
     expect(DEFAULT_ADAPTER).toBe('hono')
   })
 
-  test.each(['hono', 'hono-node', 'echo', 'gin', 'chi', 'nethttp', 'mojo', 'csr'])(
+  test.each(['hono', 'hono-node', 'echo', 'gin', 'chi', 'nethttp', 'mojo', 'xslate', 'csr'])(
     '%s adapter is registered',
     id => {
       expect(ADAPTERS[id]).toBeDefined()
@@ -243,6 +243,12 @@ describe('adapter registry', () => {
         /href="\/static\/styles\.css"/,
         /href="\/static\/uno\.css"/,
       ]],
+      // xslate embeds the layout inline in app.psgi (a Perl heredoc).
+      ['xslate', 'app.psgi', [
+        /href="\/static\/tokens\.css"/,
+        /href="\/static\/styles\.css"/,
+        /href="\/static\/uno\.css"/,
+      ]],
       ['csr', 'pages/index.html', [
         /href="\/static\/tokens\.css"/,
         /href="\/static\/styles\.css"/,
@@ -283,14 +289,45 @@ describe('adapter registry', () => {
     expect(echo.files['go.mod']).toMatch(/replace github\.com\/barefootjs\/runtime\/bf => \.\/bf-runtime/)
   })
 
-  test('mojo bundles the vendored Perl plugin', () => {
+  test('mojo declares its BarefootJS Perl deps via cpanfile (not vendored lib/)', () => {
     const mojo = ADAPTERS.mojo
-    expect(mojo.files['lib/BarefootJS.pm']).toMatch(/^package BarefootJS;/m)
-    // The Mojo rendering backend the runtime lazily requires must be bundled
-    // too, otherwise `BarefootJS->new($c)` dies at request time.
-    expect(mojo.files['lib/BarefootJS/Backend/Mojo.pm']).toMatch(/^package BarefootJS::Backend::Mojo;/m)
-    expect(mojo.files['lib/Mojolicious/Plugin/BarefootJS.pm']).toMatch(/^package Mojolicious::Plugin::BarefootJS;/m)
-    expect(mojo.files['cpanfile']).toMatch(/^requires 'Mojolicious'/m)
+    // The Perl modules ship on CPAN now, so the scaffold pulls them via
+    // `cpanm --installdeps .` rather than vendoring `.pm` copies under lib/.
+    // `Mojolicious::Plugin::BarefootJS` ships the plugin, the dev-reload
+    // plugin, and `BarefootJS::Backend::Mojo`; `BarefootJS` is the core
+    // runtime. Both are declared explicitly alongside Mojolicious.
+    const cpanfile = mojo.files['cpanfile']
+    expect(cpanfile).toMatch(/^requires 'BarefootJS'/m)
+    expect(cpanfile).toMatch(/^requires 'Mojolicious::Plugin::BarefootJS'/m)
+    expect(cpanfile).toMatch(/^requires 'Mojolicious'/m)
+    // Nothing vendored: the scaffold ships no .pm files, and app.pl no
+    // longer prepends a local lib/ dir to @INC.
+    const vendored = Object.keys(mojo.files).filter(f => f.endsWith('.pm'))
+    expect(vendored).toEqual([])
+    expect(mojo.files['app.pl']).not.toContain("use lib 'lib'")
+  })
+
+  test('xslate scaffolds a Plack/PSGI app rendering via Text::Xslate', () => {
+    const xslate = ADAPTERS.xslate
+    // Plain Plack/PSGI entry — no web framework. Renders the runtime via
+    // BarefootJS::Backend::Xslate.
+    expect(xslate.files['app.psgi']).toMatch(/use Plack::Builder/)
+    expect(xslate.files['app.psgi']).toContain('BarefootJS::Backend::Xslate')
+    // Dev-reload SSE endpoint, gated to dev, with the snippet in <body>.
+    expect(xslate.files['app.psgi']).toContain('/_bf/reload')
+    expect(xslate.files['app.psgi']).toContain('BarefootJS::DevReload->snippet')
+    // CPAN deps declared (not vendored): the Xslate backend, Text::Xslate,
+    // and Plack/Starman for serving.
+    const cpanfile = xslate.files['cpanfile']
+    expect(cpanfile).toMatch(/^requires 'BarefootJS::Backend::Xslate'/m)
+    expect(cpanfile).toMatch(/^requires 'Text::Xslate'/m)
+    expect(cpanfile).toMatch(/^requires 'Starman'/m)
+    expect(Object.keys(xslate.files).filter(f => f.endsWith('.pm'))).toEqual([])
+    // Config targets the xslate build factory.
+    expect(xslate.files['barefoot.config.ts']).toContain("from '@barefootjs/xslate/build'")
+    // Starter Counter is self-contained (native buttons, no registry fetch).
+    expect(xslate.bundledRegistryComponents).toEqual([])
+    expect(xslate.files['components/Counter.tsx']).toContain('<button')
   })
 
   test('csr scaffolds a static HTML page + node:http server (no Bun runtime)', () => {
@@ -400,7 +437,7 @@ describe('adapter registry', () => {
   // for the Hono target; the contract extends to every adapter
   // since each one carries its own outDir + dev-state directories.
   // See onboarding round 5 / PR #1450.
-  test.each(['hono', 'hono-node', 'csr', 'mojo', 'echo'])(
+  test.each(['hono', 'hono-node', 'csr', 'mojo', 'xslate', 'echo'])(
     '%s adapter ships a .gitignore that covers the shared base',
     (id) => {
       const gitignore = ADAPTERS[id].files['.gitignore']
@@ -431,7 +468,7 @@ describe('adapter registry', () => {
     expect(gitignore).not.toMatch(/^public\/?\s*$/m)
   })
 
-  test.each(['hono-node', 'csr', 'mojo', 'echo'])(
+  test.each(['hono-node', 'csr', 'mojo', 'xslate', 'echo'])(
     '%s adapter .gitignore ignores `dist/` as the build output root',
     (id) => {
       expect(ADAPTERS[id].files['.gitignore']!).toMatch(/^dist\/?\s*$/m)

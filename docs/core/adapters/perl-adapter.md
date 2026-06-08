@@ -101,6 +101,12 @@ The generated `.html.ep` templates call the runtime through the `bf` helper
 npm install @barefootjs/xslate
 ```
 
+Scaffold a runnable starter (a plain Plack/PSGI app served by Starman):
+
+```
+npm create barefootjs@latest -- --adapter xslate
+```
+
 ```typescript
 import { createConfig } from '@barefootjs/xslate/build'
 

@@ -1,9 +1,11 @@
 // Mojolicious (Perl) adapter starter.
 //
-// Scaffolds a Mojolicious::Lite app with the BarefootJS Perl plugin
-// vendored under `./lib`. The plugin sources are inlined into the CLI
-// bundle by `scripts/embed-runtimes.mjs` so the scaffold runs without
-// depending on a CPAN release of the plugin.
+// Scaffolds a Mojolicious::Lite app that pulls the BarefootJS Perl
+// runtime + Mojolicious integration from CPAN (declared in `cpanfile`,
+// installed via `cpanm --installdeps .`). The `Mojolicious::Plugin::BarefootJS`
+// distribution ships the plugin, the dev-reload plugin, and the
+// `BarefootJS::Backend::Mojo` rendering backend; `BarefootJS` ships the
+// engine-agnostic core runtime — so nothing is vendored into the project.
 
 import { execSync } from 'node:child_process'
 import type { AdapterTemplate } from '../templates'
@@ -18,12 +20,6 @@ import {
   UNO_CSS_PLACEHOLDER,
   unoConfigTs,
 } from './shared'
-import {
-  barefootBackendMojoPmSource,
-  barefootDevReloadPmSource,
-  barefootPluginPmSource,
-  barefootPmSource,
-} from './runtimes.generated'
 
 const MOJO_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/mojolicious/build'
 
@@ -44,10 +40,9 @@ export default createConfig({
 
 const MOJO_APP_PL = `#!/usr/bin/env perl
 use Mojolicious::Lite -signatures;
-use lib 'lib';
 
-# Load the BarefootJS plugin (vendored under ./lib so the app runs
-# without a CPAN release of the plugin yet).
+# Load the BarefootJS plugin (installed from CPAN — see cpanfile).
+# Provides the \`bf\` helper + manifest-driven child rendering.
 plugin 'BarefootJS';
 
 # Dev-only browser auto-reload over SSE. The plugin polls
@@ -116,8 +111,18 @@ __DATA__
 </html>
 `
 
+// The BarefootJS Perl modules are published to CPAN, so the scaffold
+// declares them as ordinary dependencies rather than vendoring copies
+// under ./lib. `Mojolicious::Plugin::BarefootJS` ships the plugin, the
+// dev-reload plugin, and `BarefootJS::Backend::Mojo`; it pulls in
+// `BarefootJS` (the engine-agnostic core) and `Mojolicious`
+// transitively. Both are listed explicitly so `cpanm --installdeps .`
+// resolves a known-good set even if a transitive pin drifts.
 const MOJO_CPANFILE = `# Required Perl deps. Install with: cpanm --installdeps .
-requires 'Mojolicious', '>= 9.34';
+requires 'perl', '5.020';
+requires 'BarefootJS', '0.9.6';
+requires 'Mojolicious::Plugin::BarefootJS', '0.9.6';
+requires 'Mojolicious', '9.0';
 `
 
 const MOJO_TSCONFIG = `{
@@ -139,7 +144,7 @@ const MOJO_TSCONFIG = `{
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", "lib"]
+  "exclude": ["node_modules", "dist"]
 }
 `
 
@@ -164,10 +169,6 @@ export const MOJO_ADAPTER: AdapterTemplate = {
   files: {
     'app.pl': MOJO_APP_PL,
     'cpanfile': MOJO_CPANFILE,
-    'lib/BarefootJS.pm': barefootPmSource,
-    'lib/BarefootJS/Backend/Mojo.pm': barefootBackendMojoPmSource,
-    'lib/Mojolicious/Plugin/BarefootJS.pm': barefootPluginPmSource,
-    'lib/Mojolicious/Plugin/BarefootJS/DevReload.pm': barefootDevReloadPmSource,
     'barefoot.config.ts': MOJO_BAREFOOT_CONFIG_TS,
     'tsconfig.json': MOJO_TSCONFIG,
     'uno.config.ts': unoConfigTs([

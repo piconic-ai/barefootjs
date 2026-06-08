@@ -21,18 +21,16 @@ const repoRoot = resolve(cliPkg, '../..')
 
 // We deliberately don't embed the upstream `go.mod` files — the
 // scaffold rewrites them to relax the Go version pin. Adapter source
-// files (Go / Perl) are embedded as-is.
+// files (Go) are embedded as-is.
+//
+// The Perl adapters (Mojolicious / Text::Xslate) are NOT embedded: their
+// runtime modules ship on CPAN (BarefootJS, Mojolicious::Plugin::BarefootJS,
+// BarefootJS::Backend::Xslate), so those scaffolds declare CPAN
+// dependencies in a `cpanfile` instead of vendoring `.pm` copies.
 const sources = {
   bfGoSource: 'packages/adapter-go-template/runtime/bf.go',
   streamingGoSource: 'packages/adapter-go-template/runtime/streaming.go',
   bfdevGoSource: 'packages/adapter-go-template/runtime/bfdev/bfdev.go',
-  // The engine-agnostic core runtime now lives in @barefootjs/perl; the
-  // Mojo-specific backend + plugin stay in @barefootjs/mojolicious.
-  barefootPmSource: 'packages/adapter-perl/lib/BarefootJS.pm',
-  barefootBackendMojoPmSource: 'packages/adapter-mojolicious/lib/BarefootJS/Backend/Mojo.pm',
-  barefootPluginPmSource: 'packages/adapter-mojolicious/lib/Mojolicious/Plugin/BarefootJS.pm',
-  barefootDevReloadPmSource:
-    'packages/adapter-mojolicious/lib/Mojolicious/Plugin/BarefootJS/DevReload.pm',
 }
 
 // Pre-flight: surface a clear error when a source file is missing

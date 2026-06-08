@@ -10,8 +10,8 @@
 //     (Mojolicious's built-in dispatcher does not honour URL prefixes,
 //     so the explicit routes are load-bearing — without them every
 //     stylesheet and client bundle 404s in the browser).
-//   - `lib/BarefootJS.pm` is vendored, `cpanfile` lists Mojolicious,
-//     and `app.pl` uses `register_components_from_manifest` so the
+//   - the `cpanfile` declares the BarefootJS Perl deps + Mojolicious
+//     (installed from CPAN, not vendored under `lib/`), and the plugin's
 //     manifest-driven child rendering works without per-component wire-up.
 //
 //   BAREFOOT_CREATE_INTEGRATION=1 bun test src/__tests__/scaffold.test.ts
@@ -143,24 +143,24 @@ describe.skipIf(!INTEGRATION)(
     // -------------------------------------------------------------------------
 
     describe('mojo wiring', () => {
-      test('lib/BarefootJS.pm is vendored', () => {
-        expect(existsSync(path.join(projectDir, 'lib', 'BarefootJS.pm'))).toBe(true)
+      test('does not vendor BarefootJS .pm copies under lib/', () => {
+        // The Perl modules ship on CPAN now, so the scaffold pulls them
+        // via `cpanm --installdeps .` instead of vendoring copies. A
+        // stray lib/ would shadow the installed dist (app.pl no longer
+        // adds it to @INC anyway).
+        expect(existsSync(path.join(projectDir, 'lib', 'BarefootJS.pm'))).toBe(false)
       })
 
-      test('lib/Mojolicious/Plugin/BarefootJS/DevReload.pm is vendored', () => {
-        // The dev-reload plugin lives under a nested namespace so
-        // `plugin 'BarefootJS::DevReload'` resolves to its file. A
-        // missing vendor copy would crash app.pl at boot.
-        expect(
-          existsSync(
-            path.join(projectDir, 'lib', 'Mojolicious', 'Plugin', 'BarefootJS', 'DevReload.pm'),
-          ),
-        ).toBe(true)
-      })
-
-      test('cpanfile lists Mojolicious', () => {
+      test('cpanfile declares the BarefootJS Perl deps + Mojolicious', () => {
+        // `Mojolicious::Plugin::BarefootJS` (the plugin + dev-reload
+        // plugin + BarefootJS::Backend::Mojo) and `BarefootJS` (core)
+        // are declared so `cpanm --installdeps .` installs everything
+        // `plugin 'BarefootJS'` / `plugin 'BarefootJS::DevReload'` need
+        // at boot.
         const cp = readFileSync(path.join(projectDir, 'cpanfile'), 'utf-8')
-        expect(cp).toMatch(/Mojolicious/)
+        expect(cp).toMatch(/^requires 'BarefootJS'/m)
+        expect(cp).toMatch(/^requires 'Mojolicious::Plugin::BarefootJS'/m)
+        expect(cp).toMatch(/^requires 'Mojolicious'/m)
       })
 
       test('plugin auto-loads manifest — no per-route register_components_from_manifest call', () => {
