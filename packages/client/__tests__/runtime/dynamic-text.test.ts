@@ -185,4 +185,33 @@ describe('__bfText output fingerprint (profiler)', () => {
     // mount(true), 550(false), 640(true), 660(false)
     expect(outputs(events, id)).toEqual([true, false, true, false])
   })
+
+  test('clearing a stale element counts as changed even when the written text is unchanged', () => {
+    const events: [string, ...unknown[]][] = []
+    const sink = {
+      signalSet: () => {}, subscribeAdd: () => {}, subscribeRemove: () => {},
+      effectCreate: (id: string) => events.push(['effectCreate', id]),
+      effectEnter: () => {}, effectExit: () => {},
+      effectOutput: (id: string, changed: boolean) => events.push(['effectOutput', id, changed]),
+      effectDispose: () => {}, batchBegin: () => {}, batchFlush: () => {},
+      turnBegin: () => {}, turnEnd: () => {},
+    } satisfies ProfilerEventSink
+    setProfilerSink(sink)
+
+    // A stale element left by a previous Node-valued run sits in the slot; the
+    // fresh text anchor already holds the empty string we're about to write, so
+    // the text is unchanged — but removing the stale element IS a DOM change, so
+    // the run must report `changed`, not be misclassified as wasted (§4.2.2).
+    const stale = document.createElement('span')
+    stale.textContent = 'old'
+    host.insertBefore(stale, host.lastChild) // between the anchor and the <!--/--> end
+
+    createEffect(() => {
+      __bfText(anchor, '') // anchor.nodeValue is already '' → text unchanged
+    })
+    const id = events.find(e => e[0] === 'effectCreate')![1] as string
+
+    expect(host.querySelector('span')).toBeNull() // stale element removed
+    expect(outputs(events, id)).toEqual([true]) // DOM changed via cleanup, not wasted
+  })
 })

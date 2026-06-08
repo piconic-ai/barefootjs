@@ -63,8 +63,12 @@ export interface ProfilerEventSink {
    * *wasted* re-run. Emitted at most once per run, only for runs whose output
    * is fingerprintable (memo recompute / instrumented DOM write); a run that
    * reports no output emits no event and isn't counted as wasted.
+   *
+   * Optional: it was added after the initial sink contract, so a pre-existing
+   * custom sink that omits it stays valid (the call site guards with `?.`). A
+   * sink without it simply opts out of the wasted-re-runs analysis.
    */
-  effectOutput(subscriberId: string, changed: boolean): void
+  effectOutput?(subscriberId: string, changed: boolean): void
   /** An effect / memo / root scope was disposed. */
   effectDispose(subscriberId: string): void
   /** A `batch()` block opened at the given (post-increment) depth. */
@@ -296,7 +300,7 @@ function runEffect(effect: EffectContext): void {
     effect.runCount--
     if (profilerSink) {
       profilerSink.effectExit(effect.id, performance.now() - start)
-      if (effect.outputReported) profilerSink.effectOutput(effect.id, effect.outputChanged)
+      if (effect.outputReported) profilerSink.effectOutput?.(effect.id, effect.outputChanged)
     }
   }
 }
