@@ -384,6 +384,140 @@ export function joinProfilerEvents(events: readonly ProfilerEvent[], index: IdIn
   return { joined, unattributed }
 }
 
+// -- Analysis: hot subscribers (v1, §4.2.1) -----------------------------------
+
+export interface HotSubscriber {
+  /** The compiler-assigned subscriber id (effect/memo). */
+  subscriber: string
+  /** Source-mapped node from the SR4 join; absent ⇒ a coverage gap. */
+  loc?: { file: string; line: number }
+  name?: string
+  kind?: 'signal' | 'memo' | 'effect'
+  /** Number of times this subscriber ran (`effectEnter` count). */
+  runs: number
+  /** Total run time in ms (Σ `effectExit.dur`). */
+  totalMs: number
+  /** Distinct turns in which it ran at least once. */
+  turns: number
+  /** `runs / turns` — average runs per active turn (re-run pressure). */
+  runsPerTurn: number
+  /** True when `runsPerTurn` meets the configured threshold. */
+  hot: boolean
+}
+
+export interface HotSubscribersResult {
+  kind: 'hot-subscribers'
+  /** Ranked by `totalMs` descending, then `runs` descending. */
+  subscribers: HotSubscriber[]
+  /** SR4 coverage gaps — subscriber ids the IR could not resolve. */
+  unattributed: UnattributedId[]
+}
+
+export interface HotSubscribersOptions {
+  /** `runsPerTurn` at/above which a subscriber is flagged `hot`. Default 2. */
+  hotRunsPerTurn?: number
+  /** Keep only the top-N by `totalMs` (after ranking). Default: all. */
+  topN?: number
+}
+
+const DEFAULT_HOT_RUNS_PER_TURN = 2
+
+/**
+ * Hot subscribers (§4.2.1): which effects/memos ran most and cost most, joined
+ * to IR source loc. Pure over the SR2 stream + SR4 index — same scenario ⇒ same
+ * ranking (timings vary, ranks/structure do not).
+ *
+ * `runsPerTurn` is the re-run-pressure signal: an effect that runs many times
+ * within a single turn is a batch / over-subscription candidate (links to the
+ * batch advisor and wasted-re-runs analyses).
+ */
+export function analyzeHotSubscribers(
+  events: readonly ProfilerEvent[],
+  index: IdIndex,
+  options: HotSubscribersOptions = {},
+): HotSubscribersResult {
+  const threshold = options.hotRunsPerTurn ?? DEFAULT_HOT_RUNS_PER_TURN
+
+  interface Acc {
+    runs: number
+    totalMs: number
+    turns: Set<string>
+  }
+  const byId = new Map<string, Acc>()
+  const acc = (id: string): Acc => {
+    let a = byId.get(id)
+    if (!a) {
+      a = { runs: 0, totalMs: 0, turns: new Set() }
+      byId.set(id, a)
+    }
+    return a
+  }
+
+  for (const e of events) {
+    if (e.subscriber === undefined) continue
+    if (e.type === 'effectEnter') {
+      const a = acc(e.subscriber)
+      a.runs++
+      // `turn` is the handler in scope; '' keys the no-turn bucket so a
+      // subscriber that only runs outside any turn still has turns ≥ 1.
+      a.turns.add(e.turn ?? '')
+    } else if (e.type === 'effectExit' && e.dur !== undefined) {
+      acc(e.subscriber).totalMs += e.dur
+    }
+  }
+
+  const { joined, unattributed } = joinProfilerEvents(events, index)
+  const nodeFor = new Map<string, JoinedEvent['subscriber']>()
+  for (const j of joined) {
+    if (j.event.subscriber !== undefined && j.subscriber) nodeFor.set(j.event.subscriber, j.subscriber)
+  }
+
+  let subscribers: HotSubscriber[] = [...byId.entries()].map(([subscriber, a]) => {
+    const node = nodeFor.get(subscriber)
+    const turns = a.turns.size
+    const runsPerTurn = turns > 0 ? a.runs / turns : a.runs
+    return {
+      subscriber,
+      loc: node?.loc,
+      name: node?.name,
+      kind: node?.kind,
+      runs: a.runs,
+      totalMs: a.totalMs,
+      turns,
+      runsPerTurn,
+      hot: runsPerTurn >= threshold,
+    }
+  })
+
+  subscribers.sort((x, y) => y.totalMs - x.totalMs || y.runs - x.runs)
+  if (options.topN !== undefined) subscribers = subscribers.slice(0, options.topN)
+
+  // Only subscriber ids matter for this analysis — filter the join's gaps to
+  // ids that actually appeared as a subscriber.
+  const subscriberIds = new Set(byId.keys())
+  const gaps = unattributed.filter(u => subscriberIds.has(u.id))
+
+  return { kind: 'hot-subscribers', subscribers, unattributed: gaps }
+}
+
+export function formatHotSubscribers(r: HotSubscribersResult): string {
+  const lines: string[] = []
+  lines.push('hot subscribers — most run / most time')
+  if (r.subscribers.length === 0) {
+    lines.push('  (no effect/memo runs recorded)')
+  }
+  for (const s of r.subscribers) {
+    const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
+    const label = s.name ?? s.subscriber
+    const note = s.hot ? `   ⚠ hot: ${s.runsPerTurn.toFixed(1)} runs/turn` : ''
+    lines.push(`  ${label.padEnd(16)} ${s.runs} runs, ${s.totalMs.toFixed(1)}ms  (${where})${note}`)
+  }
+  if (r.unattributed.length > 0) {
+    lines.push(`  ⚠ coverage: ${r.unattributed.length} unresolved subscriber id(s)`)
+  }
+  return lines.join('\n')
+}
+
 // -- Dynamic report (SR1–SR4) — placeholder seam ------------------------------
 
 export interface ProfileReport {
