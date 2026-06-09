@@ -103,6 +103,30 @@ describe('buildStaticBudget (SR5)', () => {
     expect(cold.fanOut.every(f => f.hot === false)).toBe(true)
   })
 
+  test('splits fan-out into direct vs via-memo and keys `hot` off direct', () => {
+    // count → a → b → c → {effect, text}: exactly ONE direct subscriber (memo
+    // a); the rest are reached only through memo barriers.
+    const b = buildStaticBudget(memoChainSource, 'Calc.tsx', 'Calc')
+    const count = b.fanOut.find(f => f.signal === 'count')!
+    expect(count.direct).toBe(1)
+    expect(count.subscribers).toBeGreaterThanOrEqual(4)
+    // The transitive total clears a threshold of 3, but direct (1) does not — so
+    // the signal is NOT hot. `hot` tracks real per-write pressure, not the total.
+    const mid = buildStaticBudget(memoChainSource, 'Calc.tsx', 'Calc', { fanOutThreshold: 3 })
+    const c = mid.fanOut.find(f => f.signal === 'count')!
+    expect(c.subscribers).toBeGreaterThanOrEqual(3)
+    expect(c.hot).toBe(false)
+  })
+
+  test('formats the direct/via-memo split only when a memo barrier routes', () => {
+    // Memo chain → the split is shown.
+    const withMemo = formatStaticBudget(buildStaticBudget(memoChainSource, 'Calc.tsx', 'Calc'))
+    expect(withMemo).toMatch(/count\s+→ \d+ subscribers \(1 direct · \d+ via memo\)/)
+    // Counter reads its signal directly (no memo) → no parenthetical.
+    const direct = formatStaticBudget(buildStaticBudget(counterSource, 'Counter.tsx', 'Counter'))
+    expect(direct).not.toContain('via memo')
+  })
+
   test('formats a human-readable budget', () => {
     const out = formatStaticBudget(buildStaticBudget(memoChainSource, 'Calc.tsx', 'Calc'))
     expect(out).toContain('static reactivity budget')
@@ -173,6 +197,40 @@ describe('diffStaticBudget (SR6)', () => {
     const diff = diffStaticBudget(a, b)
     expect(diff.regressed).toBe(false)
     expect(formatBudgetDiff(diff)).toContain('no structural reactivity change')
+  })
+
+  test('a memo barrier that lowers direct fan-out is not a fan-out regression', () => {
+    // Before: `count` is read directly by an effect AND a text binding (direct 2).
+    const before = `
+      'use client'
+      import { createSignal, createEffect } from '@barefootjs/client'
+      export function R() {
+        const [count, setCount] = createSignal(0)
+        createEffect(() => console.log(count()))
+        return <button>{count()}</button>
+      }
+    `
+    // After: both reads go through a memo, so `count`'s direct fan-out drops to 1
+    // (the memo) even though a memo was added and the transitive total rose.
+    const after = `
+      'use client'
+      import { createSignal, createMemo, createEffect } from '@barefootjs/client'
+      export function R() {
+        const [count, setCount] = createSignal(0)
+        const m = createMemo(() => count())
+        createEffect(() => console.log(m()))
+        return <button>{m()}</button>
+      }
+    `
+    const base = buildStaticBudget(before, 'R.tsx', 'R')
+    const head = buildStaticBudget(after, 'R.tsx', 'R')
+    expect(base.fanOut.find(f => f.signal === 'count')!.direct).toBe(2)
+    expect(head.fanOut.find(f => f.signal === 'count')!.direct).toBe(1)
+    // The fan-out delta reads the refactor as the improvement it is: direct
+    // fan-out shrank, so the recorded change is a decrease, not growth.
+    const diff = diffStaticBudget(base, head)
+    const ch = diff.fanOut.find(f => f.signal === 'count')!
+    expect(ch.after).toBeLessThan(ch.before)
   })
 
   test('carries a "diff" kind discriminator (#1849 B2)', () => {
