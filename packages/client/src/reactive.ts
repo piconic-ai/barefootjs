@@ -267,6 +267,14 @@ function runEffect(effect: EffectContext): void {
     throw new Error(`Circular dependency detected: effect re-entered itself ${MAX_EFFECT_RUNS} times.`)
   }
 
+  // `effectEnter` is emitted *before* cleanup so the whole run — cleanup
+  // included — is bracketed by enter/exit. A `set()` performed inside a cleanup
+  // is then recorded at effect-stack depth > 0 (a cascade write) rather than
+  // depth 0 (a direct handler write), which keeps the batch advisor's write
+  // gate sound (#1865). Dev-only: in production `profilerSink` is null and this
+  // is a no-op, so the run is byte-identical to the un-instrumented path.
+  if (profilerSink) profilerSink.effectEnter(effect.id)
+
   if (effect.cleanup) {
     effect.cleanup()
     effect.cleanup = null
@@ -287,8 +295,9 @@ function runEffect(effect: EffectContext): void {
   effect.outputReported = false
   effect.outputChanged = false
 
+  // `start` stays here (after cleanup) so the reported duration measures the
+  // effect body only, unchanged by moving `effectEnter` above.
   const start = profilerSink ? performance.now() : 0
-  if (profilerSink) profilerSink.effectEnter(effect.id)
 
   try {
     const result = effect.fn()

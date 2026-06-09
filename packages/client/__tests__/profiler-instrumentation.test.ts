@@ -73,6 +73,34 @@ describe('reactive instrumentation (SR1)', () => {
     expect(exit[2] as number).toBeGreaterThanOrEqual(0)
   })
 
+  test('a set() inside an effect cleanup is bracketed by the run (depth > 0, #1865)', () => {
+    const { events, sink } = recorder()
+    setProfilerSink(sink)
+    const [dep, setDep] = createSignal(0)
+    const [, setOther] = createSignal(0)
+    // The effect reads `dep` (so it re-runs when dep changes) and returns a
+    // cleanup that writes `other`. On the re-run, cleanup() fires before the
+    // body — and must be recorded *inside* the effect's enter/exit so the batch
+    // advisor doesn't mistake it for a direct (depth-0) handler write.
+    createEffect(() => {
+      dep()
+      return () => { setOther(v => v + 1) }
+    })
+    const before = events.length
+    setDep(1)
+    // `re` opens with setDep's own `signalSet` (for `dep`, at depth 0), then the
+    // effect's re-run. The cleanup's write to `other` must land *inside* that
+    // re-run's enter/exit — strictly between them — not at depth 0 alongside the
+    // setDep write.
+    const re = events.slice(before)
+    const enter = re.findIndex(e => e[0] === 'effectEnter')
+    const exit = re.findIndex(e => e[0] === 'effectExit')
+    const cleanupSetInside = re.some((e, i) => e[0] === 'signalSet' && i > enter && i < exit)
+    expect(enter).toBeGreaterThanOrEqual(0)
+    expect(exit).toBeGreaterThan(enter)
+    expect(cleanupSetInside).toBe(true)
+  })
+
   test('effectCreate carries the right kind for effect / memo / root', () => {
     const { events, sink } = recorder()
     setProfilerSink(sink)
