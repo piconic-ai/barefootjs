@@ -187,6 +187,38 @@ describe('analyzeHotSubscribers', () => {
     expect(r.unattributed.map(u => u.id)).toContain(ghost)
   })
 
+  test('an uninstrumented `e<n>` id stays in the table, labelled with candidates (#1849 B6)', () => {
+    seq = 0
+    // `e1` is the runtime fallback id for a createEffect with no compiler
+    // __bfId (one inside a ref callback — accordion/tabs/toast). Its cost is
+    // real, so it must NOT be hidden; instead it is marked `uninstrumented` and
+    // carries candidate source lines so the reader can jump to the likely call.
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'e1' }),
+      ev('effectExit', { subscriber: 'e1', dur: 5 }),
+      ev('effectEnter', { subscriber: 'Calc#memo:a' }),
+      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 2 }),
+    ]
+    const candidates = [
+      { file: 'collapsible/index.tsx', line: 82 },
+      { file: 'collapsible/index.tsx', line: 126 },
+    ]
+    const r = analyzeHotSubscribers(events, index, { uninstrumentedCandidates: candidates })
+    const e1 = r.subscribers.find(s => s.subscriber === 'e1')
+    expect(e1).toBeDefined() // kept, not filtered
+    expect(e1!.resolution).toBe('uninstrumented')
+    expect(e1!.candidates).toEqual(candidates)
+    // A real compiler id is unaffected — no uninstrumented marker.
+    const memo = r.subscribers.find(s => s.subscriber === 'Calc#memo:a')!
+    expect(memo.resolution).toBeUndefined()
+
+    // The formatter relabels the location and lists the candidate lines (the
+    // `e1` id still names the row in the label column).
+    const out = formatHotSubscribers(r)
+    expect(out).toContain('(uninstrumented — createEffect in non-JSX scope)')
+    expect(out).toContain('candidates: collapsible/index.tsx:82, :126')
+  })
+
   test('caps the formatted list and summarizes the overflow', () => {
     seq = 0
     const events: ProfilerEvent[] = []

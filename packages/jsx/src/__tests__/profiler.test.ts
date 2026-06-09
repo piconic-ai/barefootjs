@@ -18,6 +18,7 @@ import {
   parseProfilerId,
   buildIdIndex,
   joinProfilerEvents,
+  findUninstrumentedEffects,
 } from '../profiler'
 import { buildComponentAnalysis } from '../debug'
 import type { ProfilerEvent } from '@barefootjs/shared'
@@ -343,5 +344,48 @@ describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
     // With a cap the table truncates — what JSON mode deliberately avoids.
     const capped = buildProfileReport({ source: manySrc, filePath: 'Many.tsx', scenario: 'auto', events, topN: 2 })
     expect(capped.hotSubscribers.subscribers).toHaveLength(2)
+  })
+})
+
+describe('findUninstrumentedEffects (#1849 B6)', () => {
+  let seq = 0
+  const ev = (type: ProfilerEvent['type'], f: Partial<ProfilerEvent> = {}): ProfilerEvent =>
+    ({ type, seq: seq++, turn: null, ...f })
+
+  const refEffectSrc = `
+    'use client'
+    import { createSignal, createEffect } from '@barefootjs/client'
+    export function C() {
+      const [open, setOpen] = createSignal(false)
+      createEffect(() => console.log(open()))          // line 6 — top-level (instrumented)
+      const handleMount = (el) => {
+        createEffect(() => { el.dataset.state = open() ? 'open' : 'closed' })  // line 8 — nested
+      }
+      return <button ref={handleMount} onClick={() => setOpen(v => !v)}>{open()}</button>
+    }
+  `
+
+  test('returns createEffect sites the compiler did not instrument', () => {
+    // The top-level effect is on line 6 (instrumented); the ref-callback effect
+    // on line 8 is not. Subtracting the instrumented line yields the nested one.
+    const all = findUninstrumentedEffects(refEffectSrc, 'C.tsx', new Set())
+    expect(all.map(c => c.line)).toEqual([6, 8])
+    const candidates = findUninstrumentedEffects(refEffectSrc, 'C.tsx', new Set([6]))
+    expect(candidates).toEqual([{ file: 'C.tsx', line: 8 }])
+  })
+
+  test('buildProfileReport attaches candidates to an uninstrumented e<n> id', () => {
+    seq = 0
+    // Drive the nested effect under a runtime fallback id `e1` (no __bfId).
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'e1' }),
+      ev('effectExit', { subscriber: 'e1', dur: 3 }),
+    ]
+    const r = buildProfileReport({ source: refEffectSrc, filePath: 'C.tsx', scenario: 'auto', events })
+    const e1 = r.hotSubscribers.subscribers.find(s => s.subscriber === 'e1')!
+    expect(e1.resolution).toBe('uninstrumented')
+    // Only the uninstrumented (line 8) call is a candidate; the instrumented
+    // top-level effect (line 6) is excluded.
+    expect(e1.candidates).toEqual([{ file: 'C.tsx', line: 8 }])
   })
 })

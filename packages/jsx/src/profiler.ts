@@ -503,6 +503,40 @@ export function joinProfilerEvents(events: readonly ProfilerEvent[], index: IdIn
 
 // -- Analysis: hot subscribers (v1, §4.2.1) -----------------------------------
 
+/** A likely source `createEffect(...)` call site for an uninstrumented id. */
+export interface EffectCandidate {
+  file: string
+  line: number
+}
+
+/**
+ * Static scan for `createEffect(...)` call sites in `source` whose line is NOT
+ * in `instrumentedLines` — i.e. effects the compiler did not assign a `__bfId`
+ * (a `createEffect` nested in a ref callback / helper rather than at the
+ * component's top-level reactive init). These are the likely sources behind an
+ * anonymous runtime `e<n>` id the IR join can't resolve (#1849 B6). A specific
+ * `e<n>` can't be mapped to a specific call site, so these are surfaced as
+ * *candidates* ("possible sources"), not definitive attribution.
+ */
+export function findUninstrumentedEffects(
+  source: string,
+  filePath: string,
+  instrumentedLines: ReadonlySet<number>,
+): EffectCandidate[] {
+  const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const out: EffectCandidate[] = []
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'createEffect') {
+      const line = sf.getLineAndCharacterOfPosition(node.expression.getStart(sf)).line + 1
+      if (!instrumentedLines.has(line)) out.push({ file: filePath, line })
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  out.sort((a, b) => a.line - b.line)
+  return out
+}
+
 export interface HotSubscriber {
   /** The compiler-assigned subscriber id (effect/memo). */
   subscriber: string
@@ -526,6 +560,21 @@ export interface HotSubscriber {
   runsPerTurn: number
   /** True when `runsPerTurn` meets the configured threshold. */
   hot: boolean
+  /**
+   * Why an `e<n>`-style runtime id has no `loc`: the compiler never assigned it
+   * a `__bfId` (a `createEffect` outside the top-level reactive init — e.g.
+   * inside a ref callback). Set only for those ids so the reader understands the
+   * missing location is expected, not a broken profiler (#1849 B6). The cost is
+   * still surfaced — the row is kept, not hidden.
+   */
+  resolution?: 'uninstrumented'
+  /** Human note paired with `resolution`. */
+  resolutionNote?: string
+  /**
+   * Likely source `createEffect` call sites for an `uninstrumented` id, from a
+   * static scan — possible sources, not a definitive attribution.
+   */
+  candidates?: EffectCandidate[]
 }
 
 export interface HotSubscribersResult {
@@ -548,6 +597,13 @@ export interface HotSubscribersOptions {
    * actually cost. Default: keep all.
    */
   minMs?: number
+  /**
+   * Candidate `createEffect` call sites for uninstrumented `e<n>` ids (#1849 B6).
+   * Attached to each such subscriber so the reader can jump to the likely source
+   * without opening the file. Computed by the caller (it needs the component
+   * source); the analysis is otherwise source-free.
+   */
+  uninstrumentedCandidates?: readonly EffectCandidate[]
 }
 
 const DEFAULT_HOT_RUNS_PER_TURN = 2
@@ -610,6 +666,12 @@ export function analyzeHotSubscribers(
     const turns = a.turns.size
     const interactionRuns = a.runs - a.mountRuns
     const runsPerTurn = turns > 0 ? interactionRuns / turns : 0
+    // An anonymous runtime `e<n>` id with no resolved node is a `createEffect`
+    // the compiler never assigned a `__bfId` (one nested in a ref callback /
+    // helper). Keep it in the table — its cost is real — but label *why* it has
+    // no location and surface candidate source lines so the reader needn't hunt
+    // for it (#1849 B6). Other bookkeeping ids (`s*`/`m*`/`r*`) stay plain.
+    const uninstrumented = !node && /^e\d+$/.test(subscriber)
     return {
       subscriber,
       loc: node?.loc,
@@ -621,6 +683,13 @@ export function analyzeHotSubscribers(
       turns,
       runsPerTurn,
       hot: runsPerTurn >= threshold,
+      ...(uninstrumented
+        ? {
+            resolution: 'uninstrumented' as const,
+            resolutionNote: 'createEffect in non-JSX function scope (not attributed by compiler)',
+            candidates: [...(options.uninstrumentedCandidates ?? [])],
+          }
+        : {}),
     }
   })
 
@@ -671,6 +740,25 @@ function bar(value: number, max: number, width: number): string {
   return ('█'.repeat(full) + (rem > 0 ? BAR_EIGHTHS[rem] : '')).padEnd(width)
 }
 
+/**
+ * Render candidate `createEffect` sites grouped per file, e.g.
+ * `collapsible/index.tsx:82, :126, :184` (multiple files joined by `; `).
+ */
+function formatEffectCandidates(candidates: readonly EffectCandidate[]): string {
+  const byFile = new Map<string, number[]>()
+  for (const c of candidates) {
+    const arr = byFile.get(c.file) ?? []
+    arr.push(c.line)
+    byFile.set(c.file, arr)
+  }
+  const groups: string[] = []
+  for (const [file, ls] of byFile) {
+    const sorted = [...new Set(ls)].sort((a, b) => a - b)
+    groups.push(`${file}:${sorted[0]}${sorted.slice(1).map(l => `, :${l}`).join('')}`)
+  }
+  return groups.join('; ')
+}
+
 export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): string {
   const lines: string[] = []
   lines.push('hot subscribers — most run / most time')
@@ -686,7 +774,14 @@ export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): strin
   // `runs` (the leading indicator of that cost) rides alongside as a number.
   const maxMs = shown.reduce((m, s) => Math.max(m, s.totalMs), 0)
   for (const s of shown) {
-    const where = s.loc ? `${s.loc.file}:${s.loc.line}` : '(unresolved)'
+    // An uninstrumented `e<n>` id has no loc by design (the compiler never named
+    // it); say so explicitly instead of the bare `(unresolved)` that reads like
+    // a broken profiler (#1849 B6).
+    const where = s.loc
+      ? `${s.loc.file}:${s.loc.line}`
+      : s.resolution === 'uninstrumented'
+        ? '(uninstrumented — createEffect in non-JSX scope)'
+        : '(unresolved)'
     const base = s.name ?? s.subscriber
     // Binding names already carry their type (`s1 (attribute)`); don't double up.
     const label = s.kind && !base.endsWith(')') ? `${base} (${s.kind})` : base
@@ -694,6 +789,11 @@ export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): strin
     lines.push(
       `  ${fitLabel(label, 24)} ${bar(s.totalMs, maxMs, 14)} ${s.totalMs.toFixed(1)}ms  ${String(s.runs).padStart(3)}×  (${where})${note}`,
     )
+    // Candidate source lines for an uninstrumented id — the reader jumps there
+    // without opening the file. Possible sources, not a definitive mapping.
+    if (s.candidates && s.candidates.length > 0) {
+      lines.push(`${' '.repeat(26)}candidates: ${formatEffectCandidates(s.candidates)}`)
+    }
   }
   if (r.subscribers.length > shown.length) {
     lines.push(`  … and ${r.subscribers.length - shown.length} more`)
@@ -1148,6 +1248,10 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
   // safety oracle reasons over the right component's memos).
   const turnBindings = new Map<string, { binding: EventBinding; graph: ComponentGraph }>()
   let handlersTotal = 0
+  // Per-file lines of the `createEffect` calls the compiler instrumented (top
+  // level, carry a `__bfId`). Subtracted from a source scan to find the
+  // uninstrumented ones behind anonymous `e<n>` ids (#1849 B6).
+  const instrumentedEffectLines = new Map<string, Set<number>>()
 
   for (const s of allSources) {
     // A source file may declare several components (e.g. a headless set:
@@ -1170,6 +1274,11 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
         continue
       }
       for (const [k, v] of buildIdIndex(graph)) index.set(k, v)
+      for (const e of graph.effects) {
+        const set = instrumentedEffectLines.get(e.loc.file) ?? new Set<number>()
+        set.add(e.loc.line)
+        instrumentedEffectLines.set(e.loc.file, set)
+      }
       try {
         const summary = buildEventSummary(s.source, s.filePath, name, program)
         handlersTotal += summary.events.length
@@ -1182,9 +1291,20 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     }
   }
 
+  // Candidate sites for uninstrumented `createEffect` ids, across every source
+  // in the run (a compound scenario spans several files), so an `e<n>` row can
+  // cite where to look (#1849 B6).
+  const uninstrumentedCandidates: EffectCandidate[] = []
+  for (const s of allSources) {
+    uninstrumentedCandidates.push(
+      ...findUninstrumentedEffects(s.source, s.filePath, instrumentedEffectLines.get(s.filePath) ?? new Set()),
+    )
+  }
+
   const hotSubscribers = analyzeHotSubscribers(events, index, {
     topN: input.topN,
     minMs: input.minMs,
+    uninstrumentedCandidates,
   })
   const wastedReReruns = analyzeWastedReReruns(events, index, { wastedRatio: input.wastedRatio })
   const batchAdvisor = analyzeBatchAdvisor(events, index)
