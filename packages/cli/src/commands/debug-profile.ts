@@ -181,6 +181,14 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   const flags = parseFlags(args)
 
+  // `--scenario` (measure a run) and `--diff` (compare two compiles) are
+  // mutually exclusive modes. The dynamic block returns before the diff check,
+  // so combining them silently ran the scenario and dropped `--diff` (#1849 B4).
+  // Reject it instead of returning the wrong output without warning.
+  if (flags.scenario && flags.diff) {
+    fail('--scenario and --diff cannot be combined: --scenario measures a run, --diff compares two compiles. Pick one.')
+  }
+
   const {
     buildStaticBudget,
     formatStaticBudget,
