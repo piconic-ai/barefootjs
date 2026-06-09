@@ -9,6 +9,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import {
+  PROFILE_SCHEMA_VERSION,
   buildStaticBudget,
   diffStaticBudget,
   formatStaticBudget,
@@ -179,6 +180,73 @@ describe('buildStaticBudget (SR5)', () => {
     expect(b.subscriptions).toBe(0)
     expect(b.crossComponentOnly).toBe(false)
   })
+
+  test('exposes the handlers --scenario auto would fire, name + loc (#1841 A1)', () => {
+    // Two handlers on distinct elements/events. The static list is the coverage
+    // gap an agent can read before any run.
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Form() {
+        const [q, setQ] = createSignal('')
+        return (
+          <div>
+            <input onInput={(e) => setQ(e.currentTarget.value)} />
+            <button onClick={() => setQ('')}>Clear</button>
+          </div>
+        )
+      }
+    `
+    const b = buildStaticBudget(src, 'Form.tsx', 'Form')
+    expect(b.handlers.length).toBe(2)
+    // `name` is `<event>@<slotId>` — the slotId joins to dynamic coverage.
+    expect(b.handlers.every(h => /^\w+@\w+$/.test(h.name))).toBe(true)
+    const events = b.handlers.map(h => h.name.split('@')[0]).sort()
+    expect(events).toEqual(['click', 'input'])
+    // Each handler carries a source location.
+    for (const h of b.handlers) {
+      expect(h.loc.file).toContain('Form.tsx')
+      expect(h.loc.line).toBeGreaterThan(0)
+    }
+  })
+
+  test('handlers is empty when the component binds none', () => {
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Display() {
+        const [n] = createSignal(0)
+        return <div>{n()}</div>
+      }
+    `
+    const b = buildStaticBudget(src, 'Display.tsx', 'Display')
+    expect(b.handlers).toEqual([])
+  })
+
+  test('renders a handlers section in text output when present, omits it otherwise', () => {
+    const withHandler = formatStaticBudget(buildStaticBudget(counterSource, 'Counter.tsx', 'Counter'))
+    expect(withHandler).toMatch(/handlers \(1\):/)
+    expect(withHandler).toMatch(/click@\w+\s+Counter\.tsx:\d+/)
+
+    const noHandler = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Display() {
+        const [n] = createSignal(0)
+        return <div>{n()}</div>
+      }
+    `
+    expect(formatStaticBudget(buildStaticBudget(noHandler, 'Display.tsx', 'Display'))).not.toContain('handlers (')
+  })
+})
+
+describe('schemaVersion (#1841)', () => {
+  test('every JSON mode carries the schema version', () => {
+    const budget = buildStaticBudget(counterSource, 'Counter.tsx', 'Counter')
+    expect(budget.schemaVersion).toBe(PROFILE_SCHEMA_VERSION)
+    const diff = diffStaticBudget(budget, buildStaticBudget(memoChainSource, 'Calc.tsx', 'Calc'))
+    expect(diff.schemaVersion).toBe(PROFILE_SCHEMA_VERSION)
+  })
 })
 
 describe('diffStaticBudget (SR6)', () => {
@@ -345,6 +413,7 @@ describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
     ]
     const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
     expect(r.kind).toBe('profile')
+    expect(r.schemaVersion).toBe(PROFILE_SCHEMA_VERSION)
     expect(r.componentName).toBe('Calc')
     expect(r.turns).toBe(1)
     expect(r.hotSubscribers.subscribers[0].name).toBe('a')
