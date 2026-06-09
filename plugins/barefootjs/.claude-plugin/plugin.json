@@ -1,6 +1,6 @@
 {
   "name": "barefootjs",
-  "version": "0.1.2",
-  "description": "Build, inspect, and debug UI components using @barefootjs/cli. Covers component discovery, scaffolding, signal inspection, and previews.",
+  "version": "0.2.0",
+  "description": "Build, inspect, and debug UI components using @barefootjs/cli (>= 0.11.0). Covers component discovery, scaffolding, signal inspection, reactive performance profiling, and previews.",
   "homepage": "https://github.com/piconic-ai/barefootjs"
 }

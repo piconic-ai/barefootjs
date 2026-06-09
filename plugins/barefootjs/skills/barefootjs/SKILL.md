@@ -26,6 +26,8 @@ bun add -d @barefootjs/cli
 
 Once installed, use `npx @barefootjs/cli` (or `bunx @barefootjs/cli`) to run commands.
 
+> **Version requirement:** `debug profile` (below) requires **`@barefootjs/cli` >= 0.11.0** — the release that introduced the reactive profiler. The other commands work on earlier versions. Check with `npx @barefootjs/cli --version`.
+
 ## Workflow
 
 1. `npx @barefootjs/cli search <query>` — Find components and docs by name/category/tags
@@ -41,7 +43,7 @@ Once installed, use `npx @barefootjs/cli` (or `bunx @barefootjs/cli`) to run com
 
 ## Signal Inspection & Debugging
 
-Use these commands to understand and debug a component's reactive structure **without running any code**. All analysis is static (from IR).
+Use these commands to understand and debug a component's reactive structure. Most analysis is **static** (from the IR) and runs no code; the one exception is `debug profile --scenario`, which mounts and measures a real run.
 
 ### `npx @barefootjs/cli debug graph <component>`
 
@@ -72,12 +74,25 @@ Surface fallback-wrapped expressions emitted by Solid-style wrap-by-default. Use
 - Add `--json` for machine-readable output.
 - Example: `npx @barefootjs/cli debug fallbacks combobox`
 
+### `npx @barefootjs/cli debug profile <component>`
+
+Reactive performance profiler — find wasted reactive work (re-runs that produce nothing, fan-out that fires too widely, multi-write turns that could `batch()`). Every finding maps back to a source line. **Requires `@barefootjs/cli` >= 0.11.0.** Three modes:
+
+- `debug profile <component>` — **static reactivity budget** (no run): signal/memo/effect/loop counts, total subscriptions, the longest memo→memo chain, and per-signal fan-out (flagged `⚠ high`). A pure function of the IR, so it works the moment a component compiles. Predicts hot spots before you measure.
+- `debug profile <component> --diff <ref>` — **compile-diff regression** (no run): compiles the component at a git ref and at the working tree, prints the structural delta (`+effects`, `fan-out 3→9`, deepened memo chain, …), and exits non-zero when a metric grew — so it is CI-able.
+- `debug profile <component> --scenario auto` — **dynamic measured run**: mounts the instrumented build in a headless DOM, fires every handler once, and ranks hot subscribers / wasted re-runs / `batch()` candidates / coverage. Unlike the other inspection commands this one runs code, so it needs the client runtime built (`bun run build`). For a compound/headless component whose handlers live in composed children, pass a story `.tsx` instead of `auto`.
+
+- Add `--json` for machine-readable output (every mode).
+- Composes with `debug graph`/`trace`: those say *where to look*, `profile` says *what it cost and what to change*, citing the same source lines.
+- Example: `npx @barefootjs/cli debug profile calendar` (static budget) · `... calendar --scenario auto` (measured) · `... calendar --diff origin/main` (CI gate)
+
 ### When to use inspection
 
 - **Before editing a stateful component** — run `debug graph` to map the reactive graph.
 - **Unexpected re-renders or missing updates** — run `debug trace` to trace propagation.
 - **After implementing a new component** — run `debug signals` to verify signal wiring.
-- **Reviewing a PR** — run `debug graph --json` to diff the dependency graph before/after.
+- **Reviewing a PR** — run `debug graph --json` to diff the dependency graph before/after, or `debug profile --diff <ref>` to gate on reactive-budget regressions.
+- **Performance review / wasted re-renders** — run `debug profile` for the static budget, then `debug profile --scenario auto` to measure actual hot subscribers and `batch()` candidates.
 
 ## Previews
 
