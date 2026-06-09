@@ -26,6 +26,8 @@ bun add -d @barefootjs/cli
 
 Once installed, use `npx @barefootjs/cli` (or `bunx @barefootjs/cli`) to run commands.
 
+> **Version requirement:** `debug profile` (below) requires **`@barefootjs/cli` >= 0.11.0** — the release that introduced the reactive profiler. The other commands work on earlier versions. Check with `npx @barefootjs/cli --version`.
+
 ## Workflow
 
 1. `npx @barefootjs/cli search <query>` — Find components and docs by name/category/tags
@@ -74,7 +76,7 @@ Surface fallback-wrapped expressions emitted by Solid-style wrap-by-default. Use
 
 ### `npx @barefootjs/cli debug profile <component>`
 
-Reactive performance profiler — find wasted reactive work (re-runs that produce nothing, fan-out that fires too widely, multi-write turns that could `batch()`). Every finding maps back to a source line. Three modes:
+Reactive performance profiler — find wasted reactive work (re-runs that produce nothing, fan-out that fires too widely, multi-write turns that could `batch()`). Every finding maps back to a source line. **Requires `@barefootjs/cli` >= 0.11.0.** Three modes:
 
 - `debug profile <component>` — **static reactivity budget** (no run): signal/memo/effect/loop counts, total subscriptions, the longest memo→memo chain, and per-signal fan-out (flagged `⚠ high`). A pure function of the IR, so it works the moment a component compiles. Predicts hot spots before you measure.
 - `debug profile <component> --diff <ref>` — **compile-diff regression** (no run): compiles the component at a git ref and at the working tree, prints the structural delta (`+effects`, `fan-out 3→9`, deepened memo chain, …), and exits non-zero when a metric grew — so it is CI-able.
