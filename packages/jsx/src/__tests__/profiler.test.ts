@@ -315,6 +315,23 @@ describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
     expect(formatProfileReport(noHandlers)).toContain('no event handlers')
   })
 
+  test('coverage.diagnostics is a compact summary, not a full id array (#1849 B7)', () => {
+    n = 0
+    // A long tail of anonymous runtime bookkeeping ids (loop-generated binding
+    // ids on a grid component). JSON consumers get a count + a small sample
+    // instead of hundreds of `{id,count}` objects.
+    const events: ProfilerEvent[] = []
+    for (let i = 0; i < 50; i++) {
+      events.push(ev('signalSet', { signal: `s${i}` }))
+    }
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    expect(r.coverage.diagnostics.count).toBe(50)
+    expect(r.coverage.diagnostics.sample.length).toBeLessThanOrEqual(3)
+    expect(Array.isArray(r.coverage.diagnostics.sample)).toBe(true)
+    // The text report still summarizes by count.
+    expect(formatProfileReport(r)).toContain('50 anonymous runtime id(s)')
+  })
+
   test('omitting topN keeps the full subscriber list (the JSON path, #1849 B1)', () => {
     n = 0
     // Five distinct subscribers — more than a small `--top`. The CLI passes

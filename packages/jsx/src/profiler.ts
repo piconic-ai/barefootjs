@@ -1175,6 +1175,21 @@ function turnToEventBinding(graph: ComponentGraph, events: EventBinding[]): Map<
 
 // -- Dynamic report (SR1–SR4 + analyses, SR7) ---------------------------------
 
+/**
+ * Compact rollup of the non-actionable runtime bookkeeping ids — a count plus a
+ * small sample. The full per-id list could run to hundreds of entries for a
+ * loop-heavy component (a calendar's 6-week grid emits ~90 binding ids × mount
+ * + interaction ≈ 180), drowning a JSON consumer in noise it can't act on
+ * (#1849 B7). The text report only ever printed the count, so the array carried
+ * no information the summary doesn't.
+ */
+export interface DiagnosticsSummary {
+  /** Total distinct anonymous runtime bookkeeping ids encountered. */
+  count: number
+  /** A few example ids (hottest first) for a sanity check — not exhaustive. */
+  sample: string[]
+}
+
 export interface ProfileCoverage {
   /** Distinct handlers exercised (turns observed). */
   handlersFired: number
@@ -1185,9 +1200,9 @@ export interface ProfileCoverage {
   /**
    * Anonymous runtime bookkeeping ids (`s*`/`e*`/`m*`/`r*`) that have no source
    * node — non-actionable noise, kept out of `unattributed` so the gap list
-   * stays meaningful, but reported here so nothing is silently dropped.
+   * stays meaningful, but summarized here so nothing is silently dropped.
    */
-  diagnostics: UnattributedId[]
+  diagnostics: DiagnosticsSummary
 }
 
 export interface ProfileReport {
@@ -1348,7 +1363,10 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
       handlersFired: handlerIds.size,
       handlersTotal,
       unattributed,
-      diagnostics,
+      // Roll the (potentially hundreds of) bookkeeping ids up to a count + a
+      // small sample so JSON consumers aren't flooded (#1849 B7). `diagnostics`
+      // is already sorted hottest-first by `joinProfilerEvents`.
+      diagnostics: { count: diagnostics.length, sample: diagnostics.slice(0, 3).map(d => d.id) },
     },
   }
 }
@@ -1382,8 +1400,8 @@ export function formatProfileReport(r: ProfileReport): string {
   }
   // Anonymous runtime bookkeeping ids (s*/e*/m*/r*) are noted but flagged
   // non-actionable, so the report is honest about coverage without crying wolf.
-  if (c.diagnostics.length > 0) {
-    lines.push(`  · ${c.diagnostics.length} anonymous runtime id(s) (non-actionable bookkeeping)`)
+  if (c.diagnostics.count > 0) {
+    lines.push(`  · ${c.diagnostics.count} anonymous runtime id(s) (non-actionable bookkeeping)`)
   }
   return lines.join('\n')
 }
