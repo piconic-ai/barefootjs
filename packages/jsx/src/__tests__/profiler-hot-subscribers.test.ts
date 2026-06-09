@@ -217,6 +217,9 @@ describe('analyzeHotSubscribers', () => {
     const out = formatHotSubscribers(r)
     expect(out).toContain('(uninstrumented — createEffect in non-JSX scope)')
     expect(out).toContain('candidates: collapsible/index.tsx:82, :126')
+    // Exactly one pair of parens around the label — the `where` string and the
+    // row formatter must not both add them (regression: `((uninstrumented …))`).
+    expect(out).not.toContain('((')
   })
 
   test('caps the formatted list and summarizes the overflow', () => {
