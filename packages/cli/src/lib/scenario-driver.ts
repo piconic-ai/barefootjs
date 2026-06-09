@@ -34,6 +34,18 @@ export interface ScenarioResult {
   sources: SourceFile[]
 }
 
+/**
+ * True when a dynamic-import error is bun failing to resolve `@barefootjs/
+ * client` (without `/runtime`) — the signature of a transitive external
+ * @barefootjs package whose compiled dist imports the client runtime directly
+ * (e.g. the cached `@barefootjs/xyflow` npm build). The import-rewriting pass
+ * only fixes `@barefootjs/client/runtime` in *this* component's chunks, not
+ * inside external bundles, so those fail at `import(file)` (#1849 B3).
+ */
+export function isExternalClientImportError(message: string): boolean {
+  return /Cannot find (?:module|package) ['"]@barefootjs\/client['"]/.test(message)
+}
+
 /** Component names the compiled client JS registers, in emission order. */
 function registeredNames(clientJs: string): string[] {
   const names: string[] = []
@@ -267,7 +279,27 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
   writeFileSync(file, rewritten)
 
   try {
-    await import(file)
+    try {
+      await import(file)
+    } catch (err) {
+      // A transitive external @barefootjs package (e.g. the cached `@barefootjs/
+      // xyflow` npm build) imports `@barefootjs/client` directly in its compiled
+      // dist. The import-rewriting pass above only rewrites `@barefootjs/client/
+      // runtime` in *this* component's chunks, not inside external bundles, so
+      // bun fails to resolve `@barefootjs/client` from the package's cache dir.
+      // Surface an actionable message instead of the raw module-resolution stack
+      // (#1849 B3).
+      if (isExternalClientImportError((err as Error).message)) {
+        throw new Error(
+          `"${mountName ?? 'component'}" depends on an external @barefootjs package whose ` +
+            'compiled output imports `@barefootjs/client` directly — the dynamic scenario ' +
+            "runner cannot resolve that from the package's cache directory. Profile it with a " +
+            'pre-bundled `--scenario <story.tsx>`, or use the static budget ' +
+            '(`bf debug profile <component>`), which needs no run.',
+        )
+      }
+      throw err
+    }
     const rt = (await import(runtimePath)) as {
       createRecordingSink: () => { sink: unknown; events: ProfilerEvent[] }
       setProfilerSink: (s: unknown) => void
