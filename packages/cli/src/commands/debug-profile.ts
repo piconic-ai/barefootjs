@@ -230,7 +230,12 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
         scenario: isAuto ? 'auto' : flags.scenario,
         events,
         extraSources,
-        topN: flags.topN,
+        // `--top` is a *display* cap on the dynamic table, not a data filter.
+        // In JSON mode the help promises the full list ("--json is never
+        // truncated"), so skip the slice — applying it here would truncate the
+        // serialized `hotSubscribers.subscribers` too (#1849 B1). Text mode
+        // still passes it so the rendered table honors `--top`.
+        topN: ctx.jsonFlag ? undefined : flags.topN,
         minMs: flags.minMs,
         // `--wasted-pct` is a percentage on the CLI; the analysis takes a [0,1] fraction.
         wastedRatio: flags.wastedPct !== undefined ? flags.wastedPct / 100 : undefined,

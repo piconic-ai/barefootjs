@@ -303,4 +303,35 @@ describe('buildProfileReport (dynamic, SR1–SR4 + analyses)', () => {
     expect(noHandlers.turns).toBe(0)
     expect(formatProfileReport(noHandlers)).toContain('no event handlers')
   })
+
+  test('omitting topN keeps the full subscriber list (the JSON path, #1849 B1)', () => {
+    n = 0
+    // Five distinct subscribers — more than a small `--top`. The CLI passes
+    // `topN: undefined` in JSON mode so the serialized list is never truncated;
+    // pinning the contract here guards that the data layer returns everything
+    // when no cap is requested.
+    const manySrc = `
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      export function Many() {
+        const [count, setCount] = createSignal(0)
+        const a = createMemo(() => count() + 1)
+        const b = createMemo(() => count() + 2)
+        const c = createMemo(() => count() + 3)
+        const d = createMemo(() => count() + 4)
+        const e = createMemo(() => count() + 5)
+        return <button onClick={() => setCount(count() + 1)}>{a()}{b()}{c()}{d()}{e()}</button>
+      }
+    `
+    const events: ProfilerEvent[] = []
+    for (const name of ['a', 'b', 'c', 'd', 'e']) {
+      events.push(ev('effectEnter', { subscriber: `Many#memo:${name}` }))
+      events.push(ev('effectExit', { subscriber: `Many#memo:${name}`, dur: 1 }))
+    }
+    const full = buildProfileReport({ source: manySrc, filePath: 'Many.tsx', scenario: 'auto', events })
+    expect(full.hotSubscribers.subscribers).toHaveLength(5)
+    // With a cap the table truncates — what JSON mode deliberately avoids.
+    const capped = buildProfileReport({ source: manySrc, filePath: 'Many.tsx', scenario: 'auto', events, topN: 2 })
+    expect(capped.hotSubscribers.subscribers).toHaveLength(2)
+  })
 })
