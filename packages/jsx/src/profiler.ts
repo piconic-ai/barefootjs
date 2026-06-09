@@ -39,7 +39,17 @@ export interface FanOutEntry {
   signal: string
   /** Distinct transitive subscribers (memos + effects + DOM bindings). */
   subscribers: number
-  /** True when `subscribers` exceeds the configured threshold. */
+  /**
+   * Distinct subscribers that read the signal *directly* (not through a memo).
+   * This is the real per-write re-run pressure: a direct write re-runs exactly
+   * these. The remaining `subscribers − direct` sit behind a memo barrier and
+   * only re-run when that memo's value actually changes — so adding a memo
+   * barrier *lowers* `direct` while it can *raise* `subscribers` (more nodes
+   * become statically attributable). Read `direct`, not `subscribers`, to judge
+   * cost.
+   */
+  direct: number
+  /** True when *direct* fan-out (not the transitive total) meets the threshold. */
   hot: boolean
   loc: { file: string; line: number }
 }
@@ -107,8 +117,10 @@ export function buildStaticBudget(
 
   const fanOut: FanOutEntry[] = graph.signals
     .map(s => {
-      const subscribers = transitiveSubscriberCount(graph, s.name)
-      return { signal: s.name, subscribers, hot: subscribers >= threshold, loc: s.loc }
+      const { direct, total } = subscriberCounts(graph, s.name)
+      // `hot` keys off *direct* fan-out — a signal driving 12 nodes through one
+      // memo (direct 1) isn't hot; one driving 12 nodes directly is.
+      return { signal: s.name, subscribers: total, direct, hot: direct >= threshold, loc: s.loc }
     })
     .sort((a, b) => b.subscribers - a.subscribers)
 
@@ -161,23 +173,35 @@ function isEventHandlerConsumer(consumer: string): boolean {
 }
 
 /**
- * Distinct transitive subscribers of a signal/memo. Walks the same tagged
- * `consumers` tree `traceUpdatePath` builds (`debug.ts`), deduplicating across
- * branches so a diamond dependency counts each subscriber once. Event handlers
- * are excluded — they read but don't react.
+ * Subscriber counts for a signal/memo: `direct` (read it without a memo in
+ * between — the top level of the dependent tree) and `total` (every distinct
+ * transitive subscriber). Walks the same tagged `consumers` tree
+ * `traceUpdatePath` builds (`debug.ts`), deduplicating across branches so a
+ * diamond dependency counts each subscriber once. Event handlers are excluded —
+ * they read but don't react. `total − direct` are the nodes reached only
+ * through a memo barrier.
  */
-function transitiveSubscriberCount(graph: ComponentGraph, name: string): number {
+function subscriberCounts(graph: ComponentGraph, name: string): { direct: number; total: number } {
   const path = traceUpdatePath(graph, name)
-  if (!path) return 0
+  if (!path) return { direct: 0, total: 0 }
   const seen = new Set<string>()
-  const walk = (entries: UpdatePathEntry[]): void => {
+  const directSeen = new Set<string>()
+  const walk = (entries: UpdatePathEntry[], depth: number): void => {
     for (const e of entries) {
-      if (!isEventHandlerEntry(e.kind, e.name)) seen.add(`${e.kind}:${e.name}`)
-      walk(e.children)
+      if (!isEventHandlerEntry(e.kind, e.name)) {
+        seen.add(`${e.kind}:${e.name}`)
+        if (depth === 0) directSeen.add(`${e.kind}:${e.name}`)
+      }
+      walk(e.children, depth + 1)
     }
   }
-  walk(path.dependents)
-  return seen.size
+  walk(path.dependents, 0)
+  return { direct: directSeen.size, total: seen.size }
+}
+
+/** Distinct transitive subscribers — the `total` of {@link subscriberCounts}. */
+function transitiveSubscriberCount(graph: ComponentGraph, name: string): number {
+  return subscriberCounts(graph, name).total
 }
 
 /**
@@ -223,7 +247,11 @@ export function formatStaticBudget(b: StaticBudget): string {
   if (shown.length > 0) {
     lines.push('  fan-out (top):')
     for (const f of shown) {
-      lines.push(`    ${f.signal.padEnd(12)} → ${f.subscribers} subscribers${f.hot ? '   ⚠ high' : ''}`)
+      // Show the direct/indirect split only when a memo barrier routes some of
+      // the subscribers — otherwise the bare count is already the direct count.
+      const indirect = f.subscribers - f.direct
+      const detail = indirect > 0 ? ` (${f.direct} direct · ${indirect} via memo)` : ''
+      lines.push(`    ${f.signal.padEnd(12)} → ${f.subscribers} subscribers${detail}${f.hot ? '   ⚠ high' : ''}`)
     }
   }
   if (b.crossComponentOnly) {
@@ -260,7 +288,7 @@ export interface BudgetDiff {
   loops: number
   subscriptions: number
   memoChainDepth: number
-  /** Signals whose fan-out changed (added/removed signals included as 0↔n). */
+  /** Signals whose *direct* fan-out changed (added/removed signals as 0↔n). */
   fanOut: FanOutChange[]
   /** True when any tracked metric regressed (grew) past zero. */
   regressed: boolean
@@ -272,8 +300,12 @@ export interface BudgetDiff {
  * `regressed` is true (or gate on a specific metric threshold).
  */
 export function diffStaticBudget(base: StaticBudget, head: StaticBudget): BudgetDiff {
-  const baseFan = new Map(base.fanOut.map(f => [f.signal, f.subscribers]))
-  const headFan = new Map(head.fanOut.map(f => [f.signal, f.subscribers]))
+  // Track *direct* fan-out: a refactor that routes subscribers through a new
+  // memo lowers direct fan-out (less re-run pressure) even as it can raise the
+  // transitive total, so a direct-fan-out delta reads such a change as the
+  // improvement it is instead of a false regression.
+  const baseFan = new Map(base.fanOut.map(f => [f.signal, f.direct]))
+  const headFan = new Map(head.fanOut.map(f => [f.signal, f.direct]))
   const signals = new Set([...baseFan.keys(), ...headFan.keys()])
 
   const fanOut: FanOutChange[] = []
@@ -318,7 +350,7 @@ export function formatBudgetDiff(d: BudgetDiff): string {
     lines.push(`  memo chain ${d.memoChainDepth > 0 ? 'deepened' : 'shortened'} by ${Math.abs(d.memoChainDepth)}`)
   }
   for (const f of d.fanOut) {
-    lines.push(`  signal \`${f.signal}\` fan-out ${f.before}→${f.after}`)
+    lines.push(`  signal \`${f.signal}\` direct fan-out ${f.before}→${f.after}`)
   }
   if (lines.length === 1) lines.push('  no structural reactivity change')
   else lines.push(d.regressed ? '  ⚠ reactivity regressed' : '  ✓ no regression')
