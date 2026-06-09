@@ -246,6 +246,13 @@ export interface FanOutChange {
 }
 
 export interface BudgetDiff {
+  /**
+   * Discriminator so a JSON consumer can tell the three `bf debug profile`
+   * modes apart (`static-budget` / `profile` / `diff`). Without it an all-zero
+   * diff (no structural change) was indistinguishable from a pure-static
+   * component with no reactive state (#1849 B2).
+   */
+  kind: 'diff'
   componentName: string
   signals: number
   memos: number
@@ -278,6 +285,7 @@ export function diffStaticBudget(base: StaticBudget, head: StaticBudget): Budget
   fanOut.sort((a, b) => (b.after - b.before) - (a.after - a.before))
 
   const d: Omit<BudgetDiff, 'regressed'> = {
+    kind: 'diff',
     componentName: head.componentName,
     signals: head.signals - base.signals,
     memos: head.memos - base.memos,
