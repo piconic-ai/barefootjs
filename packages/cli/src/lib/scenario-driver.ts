@@ -35,31 +35,40 @@ export interface ScenarioResult {
 }
 
 /**
- * True when a dynamic-import error is bun failing to resolve `@barefootjs/
- * client` from inside a transitive external @barefootjs package whose compiled
- * dist imports the client runtime directly (e.g. the cached `@barefootjs/xyflow`
- * or `@barefootjs/chart` npm builds). The import-rewriting pass only fixes
- * `@barefootjs/client/runtime` in *this* component's chunks, not inside external
- * bundles, so those fail at `import(file)` (#1849 B3).
+ * The compiled client JS of an external published `@barefootjs/*` runtime
+ * package the auto runner can't profile (e.g. `@barefootjs/chart`,
+ * `@barefootjs/xyflow`), or null when there is none.
  *
- * Two shapes reach here:
- *   - bare `@barefootjs/client` — our own chunks never import the package root
- *     (only `@barefootjs/client/runtime`, rewritten to an absolute path), so a
- *     bare-root failure is the external signature outright.
- *   - a subpath like `@barefootjs/client/runtime` — this only counts when the
- *     failing importer is a third-party bundle (bun cache / node_modules). Our
- *     chunks are rewritten and the "isn't built" guard fires before `import()`,
- *     so an external importer is the only way a subpath failure lands here
- *     (the `chart` component surfaces exactly this).
+ * Such a package ships a prebuilt dist that imports `@barefootjs/client`
+ * directly. The driver's import-rewriting pass only fixes *this* component's own
+ * `@barefootjs/client/runtime` imports, not the ones buried in an external
+ * bundle, so a dynamic run can't resolve the client runtime from the package's
+ * cache directory and bun throws an opaque module-resolution stack (#1849 B3).
+ *
+ * We detect the condition *before* the run, from our own deterministic compiler
+ * output: any `@barefootjs/*` import the compiler leaves in the emitted client JS
+ * other than the handled `@barefootjs/client[/...]` and `@barefootjs/jsx[/...]`
+ * families is an un-rewritable external runtime package. Reading the import graph
+ * we generate — rather than classifying bun's resolution *error message* — keeps
+ * this stable across bun versions and importer-path formatting, which the old
+ * message-matching heuristic was fragile to.
+ *
+ * `@barefootjs/client[/...]` is excluded because `/runtime` is rewritten to an
+ * absolute path before the run and the package root is never emitted; `@barefootjs/
+ * jsx[/...]` because it is a compile-time-only dependency the compiler transforms
+ * away (it never reaches the runtime import).
  */
-export function isExternalClientImportError(message: string): boolean {
-  const m = /Cannot find (?:module|package) ['"]@barefootjs\/client(\/[^'"]*)?['"](?:\s+from\s+['"]([^'"]+)['"])?/.exec(
-    message,
-  )
-  if (!m) return false
-  const [, subpath, importer] = m
-  if (!subpath) return true
-  return importer != null && /[\\/](?:\.bun[\\/]install[\\/]cache|node_modules)[\\/]/.test(importer)
+export function externalRuntimeImport(clientJs: string | string[]): string | null {
+  const chunks = Array.isArray(clientJs) ? clientJs : [clientJs]
+  for (const chunk of chunks) {
+    for (const m of chunk.matchAll(/import[^;\n]*from\s*['"](@barefootjs\/[^'"]+)['"]/g)) {
+      const spec = m[1]
+      if (spec === '@barefootjs/client' || spec.startsWith('@barefootjs/client/')) continue
+      if (spec === '@barefootjs/jsx' || spec.startsWith('@barefootjs/jsx/')) continue
+      return spec
+    }
+  }
+  return null
 }
 
 /** Component names the compiled client JS registers, in emission order. */
@@ -231,6 +240,23 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
     )
   }
 
+  // Bail out before the run if any chunk still imports an external published
+  // `@barefootjs/*` runtime package: its prebuilt dist imports `@barefootjs/
+  // client` directly and the import-rewriting pass below can't reach inside it,
+  // so the dynamic run would fail with an opaque module-resolution stack from
+  // the package's cache directory. Surface an actionable message instead, named
+  // for the actual package (#1849 B3).
+  const external = externalRuntimeImport(clientChunks)
+  if (external) {
+    throw new Error(
+      `"${mountName ?? 'component'}" imports the external package ${external}, whose compiled ` +
+        'output imports `@barefootjs/client` directly — the dynamic scenario runner cannot ' +
+        "resolve that from the package's cache directory. Profile it with a pre-bundled " +
+        '`--scenario <story.tsx>`, or use the static budget (`bf debug profile <component>`), ' +
+        'which needs no run.',
+    )
+  }
+
   // Merge handler slots from every component in every source (a file may hold
   // several, e.g. a headless set) so all interactions fire.
   const handlers: HandlerSlot[] = []
@@ -295,27 +321,9 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
   writeFileSync(file, rewritten)
 
   try {
-    try {
-      await import(file)
-    } catch (err) {
-      // A transitive external @barefootjs package (e.g. the cached `@barefootjs/
-      // xyflow` npm build) imports `@barefootjs/client` directly in its compiled
-      // dist. The import-rewriting pass above only rewrites `@barefootjs/client/
-      // runtime` in *this* component's chunks, not inside external bundles, so
-      // bun fails to resolve `@barefootjs/client` from the package's cache dir.
-      // Surface an actionable message instead of the raw module-resolution stack
-      // (#1849 B3).
-      if (isExternalClientImportError((err as Error).message)) {
-        throw new Error(
-          `"${mountName ?? 'component'}" depends on an external @barefootjs package whose ` +
-            'compiled output imports `@barefootjs/client` directly — the dynamic scenario ' +
-            "runner cannot resolve that from the package's cache directory. Profile it with a " +
-            'pre-bundled `--scenario <story.tsx>`, or use the static budget ' +
-            '(`bf debug profile <component>`), which needs no run.',
-        )
-      }
-      throw err
-    }
+    // External-package imports are caught pre-flight (see `externalRuntimeImport`
+    // above), so a failure here is a genuine run error worth surfacing as-is.
+    await import(file)
     const rt = (await import(runtimePath)) as {
       createRecordingSink: () => { sink: unknown; events: ProfilerEvent[] }
       setProfilerSink: (s: unknown) => void

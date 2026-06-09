@@ -1,43 +1,54 @@
-// `isExternalClientImportError` classifies the one failure mode the auto
-// scenario can't fix: a transitive external @barefootjs package whose compiled
-// dist imports `@barefootjs/client` directly (#1849 B3). When it matches, the
-// driver swaps bun's raw module-resolution stack for an actionable message
-// pointing at `--scenario <story.tsx>`.
+// `externalRuntimeImport` detects — before the dynamic run, from the driver's
+// own compiled client JS — the one failure mode the auto scenario can't fix: a
+// component that imports an external published `@barefootjs/*` runtime package
+// whose prebuilt dist imports `@barefootjs/client` directly (#1849 B3). When it
+// matches, the driver swaps bun's raw module-resolution stack for an actionable
+// message pointing at `--scenario <story.tsx>`. Reading our own import graph
+// (rather than classifying bun's error message) keeps detection stable across
+// bun versions and importer-path formatting.
 
 import { describe, test, expect } from 'bun:test'
-import { isExternalClientImportError } from '../lib/scenario-driver'
+import { externalRuntimeImport } from '../lib/scenario-driver'
 
-describe('isExternalClientImportError', () => {
-  test('matches the cached-package failure from the issue (xyflow)', () => {
-    // The verbatim message `bf debug profile xyflow --scenario auto` surfaced.
-    const msg =
-      "Cannot find module '@barefootjs/client' from " +
-      "'/root/.bun/install/cache/@barefootjs/xyflow@0.10.1@@@1/dist/index.js'"
-    expect(isExternalClientImportError(msg)).toBe(true)
+describe('externalRuntimeImport', () => {
+  test('flags an external runtime package (xyflow) and names it', () => {
+    const js =
+      "import { hydrate } from '@barefootjs/client/runtime';\n" +
+      "import { ReactFlow } from '@barefootjs/xyflow';\n"
+    expect(externalRuntimeImport(js)).toBe('@barefootjs/xyflow')
   })
 
-  test('matches the "Cannot find package" phrasing too', () => {
-    expect(isExternalClientImportError("Cannot find package '@barefootjs/client' from x")).toBe(true)
+  test('flags chart too', () => {
+    const js =
+      "import { createSignal } from '@barefootjs/client/runtime'\n" +
+      "import { LineChart } from '@barefootjs/chart'\n"
+    expect(externalRuntimeImport(js)).toBe('@barefootjs/chart')
   })
 
-  test('matches a /runtime sub-path failure from an external package bundle (chart)', () => {
-    // The verbatim message `bf debug profile chart --scenario auto` surfaced: a
-    // cached @barefootjs package whose dist imports `@barefootjs/client/runtime`
-    // directly. The subpath only counts because the importer is a cache bundle.
-    const msg =
-      "Cannot find module '@barefootjs/client/runtime' from " +
-      "'/root/.bun/install/cache/@barefootjs/chart@0.10.1@@@1/dist/index.js'"
-    expect(isExternalClientImportError(msg)).toBe(true)
+  test('scans across multiple chunks', () => {
+    const chunks = [
+      "import { hydrate } from '@barefootjs/client/runtime'\n",
+      "import { BarChart } from '@barefootjs/chart'\n",
+    ]
+    expect(externalRuntimeImport(chunks)).toBe('@barefootjs/chart')
   })
 
-  test('does NOT match a bare /runtime sub-path with no external importer', () => {
-    // Without a third-party `from` path this is the in-tree rewrite / "isn't
-    // built" case, handled by its own guard — not the external-package case.
-    expect(isExternalClientImportError("Cannot find module '@barefootjs/client/runtime'")).toBe(false)
+  test('does NOT flag the handled @barefootjs/client[/...] family', () => {
+    const js =
+      "import { createSignal, hydrate } from '@barefootjs/client/runtime'\n" +
+      "import { something } from '@barefootjs/client'\n"
+    expect(externalRuntimeImport(js)).toBeNull()
   })
 
-  test('does NOT match unrelated resolution failures', () => {
-    expect(isExternalClientImportError("Cannot find module './component.mjs'")).toBe(false)
-    expect(isExternalClientImportError('some other error')).toBe(false)
+  test('does NOT flag the compile-time @barefootjs/jsx family', () => {
+    const js =
+      "import { jsx } from '@barefootjs/jsx/jsx-runtime'\n" +
+      "import { Fragment } from '@barefootjs/jsx'\n"
+    expect(externalRuntimeImport(js)).toBeNull()
+  })
+
+  test('returns null when nothing reactive imports an external package', () => {
+    expect(externalRuntimeImport("import { hydrate } from '@barefootjs/client/runtime'\n")).toBeNull()
+    expect(externalRuntimeImport('const x = 1\n')).toBeNull()
   })
 })

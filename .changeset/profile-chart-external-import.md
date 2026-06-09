@@ -2,12 +2,18 @@
 "@barefootjs/cli": patch
 ---
 
-fix(profile): actionable error for external `@barefootjs/client/runtime` imports (#1849 B3 follow-up)
+fix(profile): detect external `@barefootjs/*` runtime imports before the run (#1849 B3 follow-up)
 
 `bf debug profile chart --scenario auto` leaked a raw `Cannot find module
-'@barefootjs/client/runtime'` stack. The B3 classifier only matched a bare
-`@barefootjs/client` import, but the cached `@barefootjs/chart` dist imports the
-`/runtime` subpath. `isExternalClientImportError` now also matches the subpath
-when the failing importer is a third-party bundle (bun cache / node_modules), so
-these surface the same actionable "use `--scenario <story.tsx>` or the static
-budget" message as xyflow instead of a raw module-resolution stack.
+'@barefootjs/client/runtime'` stack: the cached `@barefootjs/chart` /
+`@barefootjs/xyflow` dists import the client runtime directly, which the
+import-rewriting pass can't reach inside an external bundle.
+
+Detection now happens *pre-flight* against the driver's own compiled client JS
+(`externalRuntimeImport`): any `@barefootjs/*` import the compiler leaves in the
+emitted client JS other than the handled `@barefootjs/client[/...]` /
+`@barefootjs/jsx[/...]` families is an un-rewritable external runtime package, so
+the run is skipped with an actionable message that names the offending package
+and points at `--scenario <story.tsx>` or the static budget. This replaces the
+previous error-message classifier, which matched bun's resolution stack text and
+was fragile to bun version and importer-path formatting.
