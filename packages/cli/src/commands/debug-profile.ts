@@ -214,6 +214,12 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     process.exit(1)
   }
 
+  // A preview-only component (index.preview.tsx, no index.tsx) was resolved —
+  // note it on stderr so it never pollutes --json stdout (#1849 B5).
+  if (resolved.isPreview) {
+    console.error(`Note: "${componentName}" has no index.tsx — profiling its preview (index.preview.tsx).`)
+  }
+
   const source = readFileSync(resolved.filePath, 'utf-8')
 
   // -- Dynamic mode (SR1–SR4): mount the instrumented build and measure -----

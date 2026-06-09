@@ -16,6 +16,12 @@ import type { CliContext } from '../context'
 export interface ResolvedSource {
   filePath: string
   componentName?: string
+  /**
+   * True when the only entry on disk was `index.preview.tsx` (no `index.tsx`) —
+   * a preview-only component dir like `settings-form` (#1849 B5). Callers should
+   * note that they resolved a preview rather than a real component entry.
+   */
+  isPreview?: boolean
 }
 
 /**
@@ -87,6 +93,16 @@ export function resolveComponentSource(
       searched,
     )
     if (monoHit) return { filePath: monoHit }
+
+    // Preview-only entry: the dir exists with `index.preview.tsx` but no
+    // `index.tsx` (e.g. `settings-form`). Fall back to the preview so the
+    // command works instead of erroring with "Cannot find component" (#1849 B5);
+    // `isPreview` lets the caller note it resolved a preview, not a real entry.
+    const monoPreview = tryCandidate(
+      path.join(ctx.root, 'ui/components/ui', nameOrPath, 'index.preview.tsx'),
+      searched,
+    )
+    if (monoPreview) return { filePath: monoPreview, isPreview: true }
   }
 
   // 3. paths.components from barefoot.config.ts (registry-item layout)
