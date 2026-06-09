@@ -42,6 +42,10 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Backstop so a hung step (e.g. a stalled JSR/npm publish) can't keep the
+    # job — and with it the `release-main` concurrency slot — open for the
+    # default 6h, blocking every queued release run behind it.
+    timeout-minutes: 30
     outputs:
       published: ${{ steps.changesets.outputs.published }}
       publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
@@ -80,12 +84,19 @@ jobs:
       # publish so version-PR runs don't touch JSR.
       - name: Publish to JSR
         if: steps.changesets.outputs.published == 'true'
+        # Tighter cap on the known hang point: a JSR publish that stalls (e.g.
+        # waiting on auth/network) fails the step instead of running for hours.
+        # npm has already published by this step, and jsr-publish.ts self-skips
+        # versions already live, so a re-run safely finishes the JSR mirror.
+        timeout-minutes: 10
         run: bun scripts/jsr-publish.ts
 
   cpan-release:
     needs: release
     if: needs.release.outputs.published == 'true'
     runs-on: ubuntu-latest
+    # Same backstop: a stalled CPAN upload shouldn't hold the run open for 6h.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
