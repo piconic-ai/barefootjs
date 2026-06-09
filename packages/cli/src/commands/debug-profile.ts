@@ -273,11 +273,15 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   // -- Compile-diff regression (SR6) ----------------------------------------
   if (flags.diff) {
-    const baseSource = readFileAtRef(resolved.filePath, flags.diff)
-    if (baseSource === null) {
-      console.error(`Error: Cannot read "${resolved.filePath}" at ref "${flags.diff}".`)
+    const baseRead = readFileAtRef(resolved.filePath, flags.diff)
+    if ('error' in baseRead) {
+      // Fold git's own message into ours (it was already suppressed from
+      // leaking to stderr) so the failure is explained in one line (#1849 B8).
+      const detail = baseRead.error ? ` (${baseRead.error})` : ''
+      console.error(`Error: Cannot read "${resolved.filePath}" at ref "${flags.diff}".${detail}`)
       process.exit(1)
     }
+    const baseSource = baseRead.content
     const base = buildStaticBudget(baseSource, resolved.filePath, resolved.componentName, {
       fanOutThreshold: flags.fanOutThreshold,
     })
@@ -302,20 +306,33 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
 /**
  * Read a file's contents at a git ref via `git show <ref>:<relpath>`. Returns
- * null when the ref or path can't be resolved (e.g. file didn't exist there).
+ * `{ content }` on success, or `{ error }` (git's own stderr, trimmed) when the
+ * ref or path can't be resolved. Git's stderr is captured rather than inherited
+ * so its raw "fatal: invalid object name …" never leaks ahead of the CLI's own
+ * message (#1849 B8) — the caller folds `error` into a single line instead.
  */
-function readFileAtRef(filePath: string, ref: string): string | null {
+function readFileAtRef(filePath: string, ref: string): { content: string } | { error: string } {
+  // `stdio: pipe` on stderr keeps git's diagnostics out of the process stderr;
+  // on failure the captured text is available as `err.stderr`.
+  const capture = { stdio: ['ignore', 'pipe', 'pipe'] as const, encoding: 'utf-8' as const }
+  const gitError = (err: unknown): { error: string } => {
+    const stderr = (err as { stderr?: string | Buffer }).stderr
+    const msg = stderr ? String(stderr).trim() : (err as Error).message
+    return { error: msg }
+  }
+  let root: string
   try {
-    const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      ...capture,
       cwd: path.dirname(filePath),
-      encoding: 'utf-8',
     }).trim()
-    const rel = path.relative(root, path.resolve(filePath))
-    return execFileSync('git', ['show', `${ref}:${rel}`], {
-      cwd: root,
-      encoding: 'utf-8',
-    })
-  } catch {
-    return null
+  } catch (err) {
+    return gitError(err)
+  }
+  const rel = path.relative(root, path.resolve(filePath))
+  try {
+    return { content: execFileSync('git', ['show', `${ref}:${rel}`], { ...capture, cwd: root }) }
+  } catch (err) {
+    return gitError(err)
   }
 }
