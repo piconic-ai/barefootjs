@@ -311,6 +311,7 @@ export type {
   ProfileReport,
   ProfileReportInput,
   ProfileCoverage,
+  DiagnosticsSummary,
   EffectCandidate,
   IdIndex,
   ResolvedNode,
