@@ -44,8 +44,12 @@ describe('assessBatchSafety (post-write-derived-read oracle, §4.2.3)', () => {
 })
 
 let seq = 0
+// `turn`/`turnSeq` are both always present on a real SR2 event (`number | null`).
+// Default them here so fixtures match the wire contract; per-turn helpers below
+// stamp a concrete `turn`, and grouping falls back to `turn` when `turnSeq` is
+// null, so distinct turn ids stay distinct.
 const ev = (type: ProfilerEvent['type'], f: Partial<ProfilerEvent> = {}): ProfilerEvent =>
-  ({ type, seq: seq++, turn: null, ...f })
+  ({ type, seq: seq++, turn: null, turnSeq: null, ...f })
 
 // A signal write the handler makes directly (depth 0). The recording sink only
 // stamps the turn while one is open, so `turn` is always set for these.
