@@ -57,6 +57,49 @@ describe('loop-effect id (mapArray bfId)', () => {
   })
 })
 
+// A prop-derived local const forwarded into a child component — the
+// Slot-composed-button shape (#1863). `classes` reads props (`variant`,
+// `className`) and is used both on a host element and as a child-component
+// prop; the emitter inlines it, sees the prop reads, and wraps both in a
+// `createEffect` emitting `#binding:<slot>`. The analyzer must follow the const
+// indirection so those ids resolve instead of surfacing as `(unresolved)`.
+const slotForwardSource = `
+  'use client'
+  import { Slot } from './slot'
+  export function Btn({ className = '', variant = 'default', asChild = false, ...props }) {
+    const classes = \`base \${variant} \${className}\`
+    if (asChild) return <Slot className={classes} {...props} />
+    return <button className={classes} {...props} />
+  }
+`
+
+describe('prop-derived local const binding ids (Slot composition, #1863)', () => {
+  test('buildIdIndex resolves both the host-element and child-prop #binding ids', () => {
+    const { graph } = buildComponentAnalysis(slotForwardSource, 'Btn.tsx')
+    const index = buildIdIndex(graph)
+    const bindingKeys = [...index.keys()].filter(k => k.startsWith('Btn#binding:'))
+    // Both the `<button class={classes}>` host attr and the `<Slot
+    // className={classes}>` child prop must resolve.
+    expect(bindingKeys.length).toBe(2)
+    for (const key of bindingKeys) {
+      const node = index.get(key)!
+      expect(node.kind).toBe('effect')
+      expect(node.loc.file).toBe('Btn.tsx')
+      expect(node.loc.line).toBeGreaterThan(0)
+    }
+  })
+
+  test('every emitted #binding id resolves — no unattributed gap', () => {
+    const on = compileJSX(slotForwardSource, 'Btn.tsx', { adapter, profile: true })
+      .files.find(f => f.type === 'clientJs')!.content
+    const emitted = [...new Set([...on.matchAll(/"(Btn#binding:s\d+)"/g)].map(m => m[1]))]
+    expect(emitted.length).toBeGreaterThan(0)
+    const { graph } = buildComponentAnalysis(slotForwardSource, 'Btn.tsx')
+    const index = buildIdIndex(graph)
+    for (const id of emitted) expect(index.has(id)).toBe(true)
+  })
+})
+
 describe('binding-effect ids', () => {
   test('profile off: binding effects carry no id (SR8)', () => {
     expect(clientJs(false)).not.toContain('#binding:')

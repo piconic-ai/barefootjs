@@ -313,8 +313,45 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   // here closes that emit↔analyzer gap.
   const destructuredPropNames = new Set(meta.propsParams.map(p => p.name).filter(n => n !== 'children'))
   const propsObjectName = meta.propsObjectName
+
+  // A binding often reads a prop *indirectly* through a local const:
+  // `const classes = `…${variant}…${size}…${className}``, then
+  // `<button class={classes}>` / `<Slot className={classes}>`. The emitter
+  // inlines `classes`, sees the prop reads, and wraps the binding in a
+  // `createEffect` (emitting `#binding:<slot>`) — but the expression's only free
+  // identifier is the local `classes`, so the direct prop check above misses it
+  // and the id resolves to `(unresolved)` (the Slot-composed-button case, #1863).
+  // Precompute every local const whose value transitively derives from a prop,
+  // so reading such a const counts as reading a prop. Module-level consts can't
+  // reach component props, so they fall out naturally.
+  const constByName = new Map(meta.localConstants.map(c => [c.name, c]))
+  const propDerivedConsts = new Set<string>()
+  {
+    const onStack = new Set<string>()
+    const derivesFromProp = (name: string): boolean => {
+      if (propDerivedConsts.has(name)) return true
+      const c = constByName.get(name)
+      if (!c?.freeIdentifiers || onStack.has(name)) return false
+      onStack.add(name)
+      let derived = false
+      for (const free of c.freeIdentifiers) {
+        if (destructuredPropNames.has(free) || free === propsObjectName || derivesFromProp(free)) {
+          derived = true
+          break
+        }
+      }
+      onStack.delete(name)
+      if (derived) propDerivedConsts.add(name)
+      return derived
+    }
+    for (const c of meta.localConstants) derivesFromProp(c.name)
+  }
+
   const exprReadsProp = (expr: string, freeIds?: ReadonlySet<string>): boolean => {
     for (const name of destructuredPropNames) {
+      if (freeIds ? freeIds.has(name) : tokenContainsIdent(expr, name)) return true
+    }
+    for (const name of propDerivedConsts) {
       if (freeIds ? freeIds.has(name) : tokenContainsIdent(expr, name)) return true
     }
     return propsObjectName ? exprReadsPropMember(expr, propsObjectName) : false
@@ -1838,7 +1875,13 @@ function collectDomBindings(
         const propValue = attrValueToString(prop.value) ?? ''
         if (!propValue) continue
         const deps = extractReactiveDeps(propValue, signalGetters, memoNames)
-        const hasPropsRef = propValue.includes('props.')
+        // Mirror the element-attr gate: a child prop is wrapped (and emits
+        // `#binding:<slot>`) when it reads a prop directly or via a prop-derived
+        // local const (`<Slot className={classes}>`). The previous
+        // `includes('props.')` check missed both destructured props and the
+        // local-const indirection, leaving the forwarded binding `(unresolved)`
+        // (#1863).
+        const hasPropsRef = readsProp(propValue, prop.freeIdentifiers)
         const isReactive = deps.length > 0 || hasPropsRef
         const wrapReason = inferWrapReasonForAttrLike(deps.length > 0, hasPropsRef, prop)
         if (wrapReason) {
