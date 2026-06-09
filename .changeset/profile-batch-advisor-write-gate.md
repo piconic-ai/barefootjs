@@ -1,5 +1,5 @@
 ---
-"@barefootjs/jsx": patch
+"@barefootjs/jsx": minor
 ---
 
 fix(profile): stop the dynamic batch advisor flagging single-write turns

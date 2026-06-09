@@ -47,17 +47,37 @@ let seq = 0
 const ev = (type: ProfilerEvent['type'], f: Partial<ProfilerEvent> = {}): ProfilerEvent =>
   ({ type, seq: seq++, turn: null, ...f })
 
+// A signal write the handler makes directly (depth 0). The recording sink only
+// stamps the turn while one is open, so `turn` is always set for these.
+const set = (signal: string, turn: string): ProfilerEvent => ev('signalSet', { signal, turn })
+
+// One effect run, modeled the way the real sink records it: an `effectEnter`
+// bracketed by its `effectExit`. Pairing them is what returns the effect-stack
+// depth to 0 between runs, so a later `set()` in the same turn is still seen as
+// a direct (depth-0) handler write. `nested` events (e.g. a memo writing its
+// private signal) are emitted *between* the enter/exit, i.e. at depth > 0.
+const run = (
+  subscriber: string,
+  turn: string,
+  nested: ProfilerEvent[] = [],
+): ProfilerEvent[] => [
+  ev('effectEnter', { subscriber, turn }),
+  ...nested,
+  ev('effectExit', { subscriber, turn, dur: 0 }),
+]
+
 describe('analyzeBatchAdvisor', () => {
   test('savings = totalRuns - distinctSubscribers for a multi-write turn', () => {
     seq = 0
-    // Turn t1: two writes (a, b) each re-run effects e1 and e2 → 4 runs, 2 distinct.
+    // Turn t1: write a, its cascade re-runs e1+e2, then (depth back to 0) write
+    // b re-runs e1+e2 again → 4 runs, 2 distinct, 2 handler writes.
     const events: ProfilerEvent[] = [
-      ev('signalSet', { signal: 'C#signal:a', turn: 't1' }),
-      ev('signalSet', { signal: 'C#signal:b', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'C#effect:e2', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'C#effect:e2', turn: 't1' }),
+      set('C#signal:a', 't1'),
+      ...run('C#effect:e1', 't1'),
+      ...run('C#effect:e2', 't1'),
+      set('C#signal:b', 't1'),
+      ...run('C#effect:e1', 't1'),
+      ...run('C#effect:e2', 't1'),
     ]
     const r = analyzeBatchAdvisor(events)
     expect(r.candidates).toHaveLength(1)
@@ -68,15 +88,18 @@ describe('analyzeBatchAdvisor', () => {
 
   test('a single-write turn is never a candidate, however wide it fans out', () => {
     seq = 0
-    // One `set()` repaints a 4-cell loop: one binding id, four runs. `batch()`
-    // would collapse nothing (there is only one write), so this is not a
-    // candidate — the pre-#1690 model wrongly read it as "saves 3".
+    // One `set()` recomputes a memo (which writes its own private signal — a
+    // nested, depth-1 set that must NOT count as a handler write) and then
+    // repaints a 4-cell loop: one binding id, four runs. `batch()` would
+    // collapse nothing (one handler write), so this is not a candidate — the
+    // pre-#1690 model wrongly read it as "saves 4".
     const events: ProfilerEvent[] = [
-      ev('signalSet', { signal: 'Grid#signal:selected', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'Grid#binding:s9', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'Grid#binding:s9', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'Grid#binding:s9', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'Grid#binding:s9', turn: 't1' }),
+      set('Grid#signal:selected', 't1'),
+      ...run('Grid#memo:rows', 't1', [set('Grid#memo:rows', 't1')]),
+      ...run('Grid#binding:s9', 't1'),
+      ...run('Grid#binding:s9', 't1'),
+      ...run('Grid#binding:s9', 't1'),
+      ...run('Grid#binding:s9', 't1'),
     ]
     expect(analyzeBatchAdvisor(events).candidates).toHaveLength(0)
   })
@@ -84,10 +107,10 @@ describe('analyzeBatchAdvisor', () => {
   test('a turn where every effect runs once is not a candidate', () => {
     seq = 0
     const events: ProfilerEvent[] = [
-      ev('signalSet', { signal: 'C#signal:a', turn: 't1' }),
-      ev('signalSet', { signal: 'C#signal:b', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'C#effect:e2', turn: 't1' }),
+      set('C#signal:a', 't1'),
+      ...run('C#effect:e1', 't1'),
+      set('C#signal:b', 't1'),
+      ...run('C#effect:e2', 't1'),
     ]
     expect(analyzeBatchAdvisor(events).candidates).toHaveLength(0)
   })
@@ -98,7 +121,9 @@ describe('analyzeBatchAdvisor', () => {
       ev('signalSet', { signal: 'C#signal:a' }), // turn null
       ev('signalSet', { signal: 'C#signal:b' }),
       ev('effectEnter', { subscriber: 'C#effect:e1' }), // turn null
+      ev('effectExit', { subscriber: 'C#effect:e1' }),
       ev('effectEnter', { subscriber: 'C#effect:e1' }),
+      ev('effectExit', { subscriber: 'C#effect:e1' }),
     ]
     expect(analyzeBatchAdvisor(events).candidates).toHaveLength(0)
   })
@@ -106,18 +131,18 @@ describe('analyzeBatchAdvisor', () => {
   test('ranks turns by savings descending', () => {
     seq = 0
     const events: ProfilerEvent[] = [
-      // t1 saves 1 (two writes, e1 runs twice)
-      ev('signalSet', { signal: 'C#signal:a', turn: 't1' }),
-      ev('signalSet', { signal: 'C#signal:b', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
+      // t1 saves 1 (two writes, e1 runs once per write)
+      set('C#signal:a', 't1'),
+      ...run('C#effect:e1', 't1'),
+      set('C#signal:b', 't1'),
+      ...run('C#effect:e1', 't1'),
       // t2 saves 3 (two writes, e1 runs four times)
-      ev('signalSet', { signal: 'C#signal:a', turn: 't2' }),
-      ev('signalSet', { signal: 'C#signal:b', turn: 't2' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't2' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't2' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't2' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't2' }),
+      set('C#signal:a', 't2'),
+      ...run('C#effect:e1', 't2'),
+      ...run('C#effect:e1', 't2'),
+      set('C#signal:b', 't2'),
+      ...run('C#effect:e1', 't2'),
+      ...run('C#effect:e1', 't2'),
     ]
     const r = analyzeBatchAdvisor(events)
     expect(r.candidates.map(c => c.turn)).toEqual(['t2', 't1'])
@@ -141,10 +166,10 @@ describe('analyzeBatchAdvisor', () => {
     const turn = [...index.keys()].find(k => k.startsWith('Form#handler:'))!
     expect(turn).toBeDefined()
     const events: ProfilerEvent[] = [
-      ev('signalSet', { signal: 'Form#signal:a', turn }),
-      ev('signalSet', { signal: 'Form#signal:b', turn }),
-      ev('effectEnter', { subscriber: 'Form#binding:s0', turn }),
-      ev('effectEnter', { subscriber: 'Form#binding:s0', turn }),
+      set('Form#signal:a', turn),
+      ...run('Form#binding:s0', turn),
+      set('Form#signal:b', turn),
+      ...run('Form#binding:s0', turn),
     ]
     const c = analyzeBatchAdvisor(events, index).candidates[0]
     expect(c.loc?.file).toBe('Form.tsx')
@@ -154,11 +179,12 @@ describe('analyzeBatchAdvisor', () => {
 
   test('formats candidates and never claims safety in the measured half', () => {
     seq = 0
+    const turn = 'Checkout#handler:s0:submit'
     const events: ProfilerEvent[] = [
-      ev('signalSet', { signal: 'Checkout#signal:a', turn: 'Checkout#handler:s0:submit' }),
-      ev('signalSet', { signal: 'Checkout#signal:b', turn: 'Checkout#handler:s0:submit' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 'Checkout#handler:s0:submit' }),
-      ev('effectEnter', { subscriber: 'C#effect:e1', turn: 'Checkout#handler:s0:submit' }),
+      set('Checkout#signal:a', turn),
+      ...run('C#effect:e1', turn),
+      set('Checkout#signal:b', turn),
+      ...run('C#effect:e1', turn),
     ]
     const out = formatBatchAdvisor(analyzeBatchAdvisor(events))
     expect(out).toContain('batch candidate 2→1')
