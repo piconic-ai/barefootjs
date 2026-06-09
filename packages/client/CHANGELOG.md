@@ -1,5 +1,146 @@
 # @barefootjs/client
 
+## 0.11.0
+
+### Minor Changes
+
+- c26b408: Attribute conditional-branch DOM-binding effects in the profiler (#1690, #1795 Phase 1).
+
+  A conditional's `insert()` effect and the attribute / text binding effects
+  emitted inside its branch `bindEvents` now carry a
+  `<Component>#binding:<slotId>` id in profile mode, and `buildIdIndex` resolves
+  them from the graph's `domBindings` (conditional / attribute / text slot + loc):
+
+  - **`insert()` runtime** — takes an optional trailing `bfId` and forwards it to
+    the internal conditional re-eval `createEffect`, so a conditional's re-runs are
+    attributed to its source line instead of showing as a bare runtime id.
+  - **branch attribute effects** — `createDisposableEffect(…, "<Comp>#binding:<slotId>")`
+    for `class={…}` / reactive attrs written inside a branch swap.
+  - **branch text effects** — the `__bfText` re-splice effect carries the id too.
+
+  `profileComponentName` is threaded through `buildInsertPlan` → `InsertPlan` →
+  `stringifyInsert`, including recursively into nested conditionals. Previously
+  these branch-scoped re-runs surfaced in the hot-subscribers list as
+  unattributed runtime ids and inflated the coverage gap, even though a toggled
+  conditional is often the _most_ re-run subscriber.
+
+  Off by default the emitted effects are byte-for-byte unchanged (SR8). Loop-child
+  text/attribute binding effects remain a follow-up (#1795 Phase 2).
+
+- 271350a: Attribute the loop reconcile effect in the profiler (#1690, #1795).
+
+  `mapArray` / `mapArrayAnchored` gain an optional `bfId` forwarded to their
+  internal reconcile `createEffect`, and the loop emitter passes
+  `<Component>#binding:<slotId>` for it in profile mode. `buildIdIndex` already
+  resolves that id from the graph's `loop` domBinding (slot + loc).
+
+  Dogfooding a list component showed the loop's reconcile effect is typically the
+  **single costliest subscriber** (it re-renders the list on every change) yet was
+  unattributed — it dominated the hot list as a bare `e1`. Now it reads
+  `s7 (loop)  3 runs, 4.8ms  (TodoApp.tsx:29)`. Off by default the `mapArray`
+  call is byte-for-byte unchanged (SR8). Per-item loop-child text effects remain
+  a follow-up under #1795.
+
+- b5067dc: Add dev-only reactive instrumentation hooks for `bf debug profile` (#1690, SR1).
+
+  The runtime gains a single, gated measurement sink installed via
+  `setProfilerSink(sink | null)`. When a sink is set, the reactive choke points in
+  `reactive.ts` emit events — `signalSet`, `subscribeAdd`/`subscribeRemove`,
+  `effectCreate`/`effectEnter`/`effectExit`/`effectDispose`, and
+  `batchBegin`/`batchFlush` — carrying node ids, timing, and batch state. A memo's
+  effect-run and its private signal-set share one id so the profiler can collapse
+  them into a single node.
+
+  The sink is null by default (production), so every choke point stays a single
+  null-check branch with no allocation and no behavior change — reactive
+  semantics are unaffected (SR8). The `ProfilerEventSink` / `SubscriberKind` types
+  and `setProfilerSink` are exported from `@barefootjs/client`.
+
+- 9877323: Add profile-mode turn-boundary markers around event handlers (#1690, SR3).
+
+  The runtime gains `beginTurn(handlerId, loc?)` / `endTurn()` (and the matching
+  `turnBegin`/`turnEnd` sink hooks). In profile mode the client-JS codegen wraps
+  each event handler so the reactive work it triggers is attributed to one turn:
+
+  ```js
+  _el.addEventListener("click", (...__bfa) => {
+    beginTurn("Counter#handler:s0:click");
+    try {
+      return HANDLER(...__bfa);
+    } finally {
+      endTurn();
+    }
+  });
+  ```
+
+  A single `wrapHandlerForTurn` helper produces the wrapper, and `beginTurn`/
+  `endTurn` are registered as runtime imports so the import line is auto-wired.
+
+  Measurement-only: the handler's behavior and `set()`'s synchronous semantics
+  are unchanged. Off by default the emitted code carries no markers and no turn
+  import (SR8). This PR wraps the top-level handler path; the delegation / branch
+  / loop-child handler paths are wrapped in a follow-up.
+
+- 07b95ad: Add the SR2 event collector and SR4 IR join for `bf debug profile` (#1690).
+
+  - **`@barefootjs/shared`**: `ProfilerEvent` / `ProfilerEventType` — the
+    normalized event wire contract shared by the runtime producer and the jsx
+    consumer. It lives in `shared` (built first, depended on by both) so the
+    jsx↔client peer relationship stays free of a build-order cycle.
+  - **`@barefootjs/client`**: `createRecordingSink()` (SR2) — turns the raw
+    `ProfilerEventSink` callbacks (SR1) into a flat, ordered, **turn-stamped**
+    event log. It tracks the `beginTurn`/`endTurn` stack (SR3) and stamps every
+    event with the handler id in scope, so per-turn metrics need no microtask
+    guesswork.
+  - **`@barefootjs/jsx`**: `buildIdIndex(graph)` + `joinProfilerEvents(events,
+index)` (SR4) — resolve each event's compiler-assigned id to its source-mapped
+    IR node (signals/memos/effects, including controlled-signal sync effects).
+    Unresolved ids are surfaced as coverage gaps, never dropped (SR4 invariant).
+
+  These are the substrate the v1 analyses (hot subscribers / wasted re-runs /
+  batch advisor) consume next. Dev-only; no effect on production builds (SR8).
+
+- 7079ca0: Count turn _invocations_, not handler ids, in profiler metrics (#1690).
+
+  Dogfooding a list whose rows share one `onClick` revealed that firing the same
+  handler N times (clicking N rows) collapsed into a single "turn" — because
+  events were keyed by the handler-id string. That inflated `runsPerTurn` and
+  batch-advisor savings (N interactions summed into one turn).
+
+  `ProfilerEvent` now carries `turnSeq` (a unique per-invocation counter the
+  recording sink stamps at each `beginTurn`). The analyses count distinct turns by
+  `turnSeq`: hot-subscribers `runsPerTurn` divides by real invocations, the batch
+  advisor evaluates each invocation separately (reporting the worst per handler),
+  and `report.turns` reflects interactions while `coverage.handlersFired` still
+  counts distinct handlers. A 3-row list now reads `turns: 3, handlers: 1/1`
+  (was `turns: 1`).
+
+- 1919a0c: Add the wasted-re-runs analysis — v1 (#1690, §4.2.2).
+
+  A reactive effect/memo that re-ran but produced output identical to its
+  previous run did removable work — the complement to hot subscribers (where the
+  cost is, vs. how much of it is removable).
+
+  - **Fingerprint (SR1, dev-only/SR8):** new optional `effectOutput(id, changed)`
+    sink method on the SR2 stream. The runtime aggregates a per-run output verdict
+    via `__bfReportOutput` (flushed once at run exit): memos compare the recomputed
+    value by `Object.is`; text bindings (`__bfText`) compare the written string —
+    and a stale-element cleanup counts as a real DOM change. A run with no
+    fingerprint emits no event and isn't counted. `effectOutput` is optional on the
+    exported `ProfilerEventSink`, so a pre-existing custom sink stays valid.
+  - **Analysis (SR2 + SR4):** `analyzeWastedReReruns` / `formatWastedReReruns`,
+    `wasted = wastedRuns / totalRuns`, joined to IR source loc and ranked by
+    removable cost then ratio (deterministic). Surfaced in `buildProfileReport` /
+    `formatProfileReport` (text + `--json`) behind the new `--wasted-pct` flag
+    (default 50%).
+
+### Patch Changes
+
+- Updated dependencies [07b95ad]
+- Updated dependencies [7079ca0]
+- Updated dependencies [1919a0c]
+  - @barefootjs/shared@0.11.0
+
 ## 0.10.1
 
 ### Patch Changes
