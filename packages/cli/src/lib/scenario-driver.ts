@@ -36,14 +36,30 @@ export interface ScenarioResult {
 
 /**
  * True when a dynamic-import error is bun failing to resolve `@barefootjs/
- * client` (without `/runtime`) — the signature of a transitive external
- * @barefootjs package whose compiled dist imports the client runtime directly
- * (e.g. the cached `@barefootjs/xyflow` npm build). The import-rewriting pass
- * only fixes `@barefootjs/client/runtime` in *this* component's chunks, not
- * inside external bundles, so those fail at `import(file)` (#1849 B3).
+ * client` from inside a transitive external @barefootjs package whose compiled
+ * dist imports the client runtime directly (e.g. the cached `@barefootjs/xyflow`
+ * or `@barefootjs/chart` npm builds). The import-rewriting pass only fixes
+ * `@barefootjs/client/runtime` in *this* component's chunks, not inside external
+ * bundles, so those fail at `import(file)` (#1849 B3).
+ *
+ * Two shapes reach here:
+ *   - bare `@barefootjs/client` — our own chunks never import the package root
+ *     (only `@barefootjs/client/runtime`, rewritten to an absolute path), so a
+ *     bare-root failure is the external signature outright.
+ *   - a subpath like `@barefootjs/client/runtime` — this only counts when the
+ *     failing importer is a third-party bundle (bun cache / node_modules). Our
+ *     chunks are rewritten and the "isn't built" guard fires before `import()`,
+ *     so an external importer is the only way a subpath failure lands here
+ *     (the `chart` component surfaces exactly this).
  */
 export function isExternalClientImportError(message: string): boolean {
-  return /Cannot find (?:module|package) ['"]@barefootjs\/client['"]/.test(message)
+  const m = /Cannot find (?:module|package) ['"]@barefootjs\/client(\/[^'"]*)?['"](?:\s+from\s+['"]([^'"]+)['"])?/.exec(
+    message,
+  )
+  if (!m) return false
+  const [, subpath, importer] = m
+  if (!subpath) return true
+  return importer != null && /[\\/](?:\.bun[\\/]install[\\/]cache|node_modules)[\\/]/.test(importer)
 }
 
 /** Component names the compiled client JS registers, in emission order. */

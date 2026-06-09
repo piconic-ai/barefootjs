@@ -20,9 +20,19 @@ describe('isExternalClientImportError', () => {
     expect(isExternalClientImportError("Cannot find package '@barefootjs/client' from x")).toBe(true)
   })
 
-  test('does NOT match the runtime sub-path (that import is rewritten in-tree)', () => {
-    // `@barefootjs/client/runtime` is handled by the rewrite pass + its own
-    // "isn't built" guard — it must not be mistaken for the external-package case.
+  test('matches a /runtime sub-path failure from an external package bundle (chart)', () => {
+    // The verbatim message `bf debug profile chart --scenario auto` surfaced: a
+    // cached @barefootjs package whose dist imports `@barefootjs/client/runtime`
+    // directly. The subpath only counts because the importer is a cache bundle.
+    const msg =
+      "Cannot find module '@barefootjs/client/runtime' from " +
+      "'/root/.bun/install/cache/@barefootjs/chart@0.10.1@@@1/dist/index.js'"
+    expect(isExternalClientImportError(msg)).toBe(true)
+  })
+
+  test('does NOT match a bare /runtime sub-path with no external importer', () => {
+    // Without a third-party `from` path this is the in-tree rewrite / "isn't
+    // built" case, handled by its own guard — not the external-package case.
     expect(isExternalClientImportError("Cannot find module '@barefootjs/client/runtime'")).toBe(false)
   })
 
