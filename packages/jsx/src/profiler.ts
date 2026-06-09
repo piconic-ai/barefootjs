@@ -60,6 +60,15 @@ export interface StaticBudget {
   memoChainLongest: string[]
   /** Per-signal fan-out, descending, hottest first. */
   fanOut: FanOutEntry[]
+  /**
+   * True when the component declares reactive state (signals/memos) but nothing
+   * in *this* component subscribes to it — every consumer is in a composed child
+   * (a compound component like `Select`/`Combobox`), or the state is only read
+   * from event handlers. The single-component static budget can't see across the
+   * composition boundary, so its `subscriptions`/fan-out read 0 and would
+   * otherwise look misleadingly "free". `--scenario` measures across components.
+   */
+  crossComponentOnly: boolean
 }
 
 export interface StaticBudgetOptions {
@@ -105,6 +114,20 @@ export function buildStaticBudget(
 
   const { depth, chain } = longestMemoChain(graph)
 
+  // Reactive state exists, yet nothing in *this* component observes it. The
+  // check spans signals AND memos: a memo with an in-component consumer (e.g.
+  // memo → DOM binding, with the memo reading a prop rather than a signal) is a
+  // real subscriber even though `subscriptions`/signal-`fanOut` — both
+  // signal-derived — read 0. So a node is "observed in-component" iff it has a
+  // non-empty transitive dependent tree; if none of the signals or memos do, the
+  // consumers live across a composition boundary (compound component) — flag it
+  // so the 0s don't read as "free".
+  const hasReactiveState = graph.signals.length > 0 || graph.memos.length > 0
+  const observedInComponent =
+    graph.signals.some(s => transitiveSubscriberCount(graph, s.name) > 0) ||
+    graph.memos.some(m => transitiveSubscriberCount(graph, m.name) > 0)
+  const crossComponentOnly = hasReactiveState && !observedInComponent
+
   return {
     componentName: summary.componentName,
     sourceFile: summary.sourceFile,
@@ -117,6 +140,7 @@ export function buildStaticBudget(
     memoChainDepth: depth,
     memoChainLongest: chain,
     fanOut,
+    crossComponentOnly,
   }
 }
 
@@ -201,6 +225,13 @@ export function formatStaticBudget(b: StaticBudget): string {
     for (const f of shown) {
       lines.push(`    ${f.signal.padEnd(12)} → ${f.subscribers} subscribers${f.hot ? '   ⚠ high' : ''}`)
     }
+  }
+  if (b.crossComponentOnly) {
+    lines.push(
+      `  ⓘ compound: ${b.signals} signal(s) / ${b.memos} memo(s) but 0 in-component subscriptions —`,
+    )
+    lines.push('    consumers are likely in composed child components (or it is read only from handlers);')
+    lines.push('    run with --scenario to measure across the composition boundary.')
   }
   lines.push('  note: run with --scenario to measure actual cost; static budget is predictive only.')
   return lines.join('\n')

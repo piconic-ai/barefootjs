@@ -108,6 +108,52 @@ describe('buildStaticBudget (SR5)', () => {
     expect(out).toContain('memo-chain depth: 3')
     expect(out).toContain('predictive only')
   })
+
+  test('flags a compound component whose consumers live in composed children', () => {
+    // Reactive state exists but nothing in *this* component reads it — the
+    // signal/memo only drive composed child components (the Select/Combobox
+    // shape). The single-component budget can't see across that boundary.
+    const compound = `
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      import { Ctx } from './ctx'
+      export function Picker(props: { value?: string }) {
+        const [internal, setInternal] = createSignal('')
+        const isControlled = createMemo(() => props.value !== undefined)
+        return <Ctx value={{ internal, setInternal, isControlled }}>{props.children}</Ctx>
+      }
+    `
+    const b = buildStaticBudget(compound, 'Picker.tsx', 'Picker')
+    expect(b.signals).toBeGreaterThan(0)
+    expect(b.subscriptions).toBe(0)
+    expect(b.crossComponentOnly).toBe(true)
+    expect(formatStaticBudget(b)).toContain('compound')
+  })
+
+  test('does not flag a self-contained component as compound', () => {
+    const b = buildStaticBudget(counterSource, 'Counter.tsx', 'Counter')
+    expect(b.crossComponentOnly).toBe(false)
+    expect(formatStaticBudget(b)).not.toContain('compound')
+  })
+
+  test('a memo-only component whose memo is consumed in-component is not compound', () => {
+    // No signals, so signal `subscriptions`/fan-out are 0 — but the memo IS
+    // consumed by an in-component DOM binding, so this is self-contained, not a
+    // compound component. The flag must span memo consumers, not just signals.
+    const src = `
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      export function Label(props: { x?: number }) {
+        const label = createMemo(() => (props.x ?? 0) + 1)
+        return <div>{label()}</div>
+      }
+    `
+    const b = buildStaticBudget(src, 'Label.tsx', 'Label')
+    expect(b.memos).toBe(1)
+    expect(b.signals).toBe(0)
+    expect(b.subscriptions).toBe(0)
+    expect(b.crossComponentOnly).toBe(false)
+  })
 })
 
 describe('diffStaticBudget (SR6)', () => {
