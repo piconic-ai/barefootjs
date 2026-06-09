@@ -1,5 +1,645 @@
 # @barefootjs/jsx
 
+## 0.11.0
+
+### Minor Changes
+
+- 42974e4: feat: `bf debug profile` — static reactive profiler, v1 (#1690 SR5 + SR6)
+
+  Implements `bf debug profile` and companion library support.
+
+  **Command surface:**
+
+  - `bf debug profile <component>` — static reactive budget for a single component
+  - `bf debug profile --scenario auto` — ranked table for all reactive components in `ui/components/ui/`
+  - `bf debug profile --scenario <path.tsx>` — profile a specific file
+  - `bf debug profile <component> --diff` — compare current IR vs git HEAD (SR6 compile-diff)
+  - `--json` flag throughout
+
+  **Static analyses (SR5):**
+
+  - Max signal fan-out and hot-signal identification
+  - Max memo chain depth
+  - Total subscription count (Σ deps across memos, effects, DOM bindings)
+  - Batch candidates (handlers that set ≥2 distinct signals — `batch()` opportunities)
+  - Findings: `high-fan-out`, `deep-memo-chain`, `batch-candidate`, `fallback-heavy`
+
+  **SR6 (compile-diff):**
+
+  - `diffProfiles(before, after)` — surfaces regressions in fan-out, chain depth, fallbacks, subscriptions; improvements in the same metrics; neutral structural count changes.
+
+  **Bug fixes bundled in this PR:**
+
+  - **Bug A (debug.ts):** `buildComponentGraph` now falls back to the caller-supplied `filePath` when `findSourceFile` returns empty for non-reactive components. Previously `bf debug graph Button` showed `Button ()` (empty path); now correctly shows `Button (/path/to/button/index.tsx)`.
+
+  - **Bug C (debug-profile.ts):** Batch-candidate findings from handlers wired to multiple JSX locations (e.g. Calendar dual-month navigation) were reported once per JSX site. Deduplicated by `(kind, file, line, signals-set)` so each logically unique handler appears once.
+
+  - **Bug D (debug-profile.ts):** `batchCandidateCount` in metrics and the batch-candidate findings list used independent counting, causing the table column to disagree with the findings section. Both now use the same deduplicated set.
+
+  **Known limitation (Bug B — batch-candidate precision):** Static analysis resolves setter calls by regex without control flow awareness. Handlers that set one of two signals based on a condition (`if (isControlled()) { setA() } else { setB() }`) are reported as batch candidates even though only one setter fires per interaction. This is a known false positive documented in tests. A fix requires AST-level control flow analysis (v2 scope). The finding message now includes `(static; verify setters are not in separate if/else branches)` to help users self-triage.
+
+- c4de967: fix(profile): stop the dynamic batch advisor flagging single-write turns
+
+  `bf debug profile <component> --scenario` measures a run and advises wrapping
+  _multi-write_ handlers in `batch()`. It inferred "multi-write" from repeated
+  effect runs (`savings = totalRuns − distinctSubscribers`), which over-counted
+  two ways:
+
+  - a single `set()` that fans out to a loop re-runs one binding id once per item
+    (e.g. a 42-cell calendar grid → one id, hundreds of runs), and
+  - a memo recompute writes its own private signal (a memo is an effect that
+    writes a signal sharing its id), so each cascade step looked like another
+    write.
+
+  Together these produced confident false positives like Calendar's day-click
+  reported as `batch candidate 558→9 (saves 549)` and Slider's pointer drag as
+  `5→4` — turns that each make exactly one handler write, where `batch()` saves
+  nothing.
+
+  The advisor now counts only `signalSet`s made directly in the handler body
+  (effect-nesting depth 0, tracked via `effectEnter`/`effectExit`) and requires a
+  turn to make ≥ 2 such writes before it is a candidate. Genuine multi-write turns
+  still surface. `BatchCandidate` gains a `writes` field, and `savings` is
+  documented as an upper bound (a loop's per-item runs share one id and are not
+  collapsed by a batch).
+
+- 4ccc227: Add `bf debug profile` — reactive performance profiler (#1690), static half.
+
+  New CLI subcommand `bf debug profile <component>` prints a per-component static
+  reactivity budget (no run required): signal/memo/effect/loop counts, total
+  subscriptions, the longest memo→memo chain, and per-signal fan-out with a `hot`
+  threshold. `--diff <ref>` compiles the component at a git ref and flags
+  structural reactivity regressions (CI-able, exits non-zero on growth). Human
+  table and `--json` output, consistent with the `bf debug *` family.
+
+  `@barefootjs/jsx` gains the supporting static-analysis API: `buildStaticBudget`,
+  `diffStaticBudget`, `formatStaticBudget`, `formatBudgetDiff`, and the
+  `buildProfileReport` seam for the dynamic (scenario-driven) half specified in
+  `spec/profiler.md`.
+
+- ce2ea33: `bf debug profile --scenario auto` now attributes imported child components and quiets runtime-bookkeeping coverage noise (#1840).
+
+  Two related attribution/coverage fixes:
+
+  - **Imported child sources reach the id index.** Auto mode loaded a target's
+    local imports to drive the run, but did not pass them into
+    `buildProfileReport`, so events from composed children (e.g. `DatePicker`
+    importing `Calendar`) resolved to `((unresolved))`. Auto mode now forwards
+    those imported sources the same way the `--scenario <story.tsx>` path does,
+    so `Calendar#binding:*` subscribers map back to their source location.
+
+  - **Anonymous runtime ids no longer masquerade as coverage gaps.** The reactive
+    runtime assigns fallback `s<n>`/`e<n>`/`m<n>`/`r<n>` ids to nodes with no
+    compiler `__bfId`. These can never map to a source node, so reporting them as
+    `coverage.unattributed` made healthy reports look broken. `joinProfilerEvents`
+    now routes them to a separate non-actionable `diagnostics` bucket (surfaced,
+    never dropped), leaving `unattributed` for actionable gaps only.
+
+- ca59e22: Add the batch-advisor analysis — measured half (#1690, §4.2.3).
+
+  `analyzeBatchAdvisor(events)` groups the SR2 stream by turn and, per turn,
+  measures effect `totalRuns` vs `distinctSubscribers`; `savings = totalRuns −
+distinctSubscribers` is the runs a `batch()` wrap would collapse. Turns with
+  `savings > 0` are reported, ranked by savings. This is the cost BarefootJS's
+  explicit-batching model uniquely incurs (`set()` notifies synchronously).
+
+  Measured half only: every candidate is `safety: 'unverified'`. The static
+  post-write-derived-read oracle that proves a `batch()` wrap is behavior-
+  preserving (and the handler-loc join for the finding's source location) lands
+  in a follow-up (#1790) — an advisory that could change behavior is never
+  labeled `'safe'` (§4.2.3). `formatBatchAdvisor` renders the report.
+
+- 54aaa91: Attribute DOM-binding effects in the profiler (#1690, closes #1795).
+
+  Top-level reactive bindings — text (`{total()}`), attribute (`class={…}`,
+  `data-state`), client-only markers, and component/child prop syncs — now emit
+  `createEffect(…, "<Component>#binding:<slotId>")` in profile mode, and
+  `buildIdIndex` resolves those ids from the graph's `domBindings` (slot + loc).
+
+  Previously these showed in the hot-subscribers list as bare, unresolved runtime
+  ids (`e1`, `e2`) and inflated the coverage gap — yet they are often the _most_
+  re-run subscribers. Now every binding re-run is attributed to a source line, so
+  `bf debug profile <component> --scenario auto` reports zero coverage gaps for a
+  typical component (e.g. `switch`: both attribute syncs map to `index.tsx:146`
+  and `:151`). Off by default the emitted effects are byte-for-byte unchanged
+  (SR8). Loop/branch-scoped binding effects remain a follow-up under #1795.
+
+- aafbccc: Wire `bf debug profile <component> --scenario auto` — the dynamic run (#1690).
+
+  The CLI now mounts a component's instrumented build in happy-dom, fires each
+  interactive element once, and prints the joined report (hot subscribers + batch
+  advisor + coverage). `buildProfileReport(input)` becomes a real pure function
+  (graph + SR4 join + analyses → ranked findings) and `formatProfileReport`
+  renders it; `@barefootjs/jsx` now also exports the analysis functions and the
+  dependency-free `testAdapter` for tooling.
+
+  Also fixes a real bug found while dogfooding: the **multi-component** compile
+  path did not thread `options.profile` to `generateClientJs`, so profile-mode
+  ids were silently dropped for any file exporting more than one component. Now
+  threaded — single- and multi-component files both emit ids (profile-off output
+  is unchanged).
+
+  happy-dom is a CLI devDependency, imported lazily so the static modes
+  (`bf debug profile <component>` / `--diff`) carry no DOM cost.
+
+- c26b408: Attribute conditional-branch DOM-binding effects in the profiler (#1690, #1795 Phase 1).
+
+  A conditional's `insert()` effect and the attribute / text binding effects
+  emitted inside its branch `bindEvents` now carry a
+  `<Component>#binding:<slotId>` id in profile mode, and `buildIdIndex` resolves
+  them from the graph's `domBindings` (conditional / attribute / text slot + loc):
+
+  - **`insert()` runtime** — takes an optional trailing `bfId` and forwards it to
+    the internal conditional re-eval `createEffect`, so a conditional's re-runs are
+    attributed to its source line instead of showing as a bare runtime id.
+  - **branch attribute effects** — `createDisposableEffect(…, "<Comp>#binding:<slotId>")`
+    for `class={…}` / reactive attrs written inside a branch swap.
+  - **branch text effects** — the `__bfText` re-splice effect carries the id too.
+
+  `profileComponentName` is threaded through `buildInsertPlan` → `InsertPlan` →
+  `stringifyInsert`, including recursively into nested conditionals. Previously
+  these branch-scoped re-runs surfaced in the hot-subscribers list as
+  unattributed runtime ids and inflated the coverage gap, even though a toggled
+  conditional is often the _most_ re-run subscriber.
+
+  Off by default the emitted effects are byte-for-byte unchanged (SR8). Loop-child
+  text/attribute binding effects remain a follow-up (#1795 Phase 2).
+
+- 0488005: Add the hot-subscribers analysis (#1690, §4.2.1) — the first v1 profiler insight.
+
+  `analyzeHotSubscribers(events, index, options)` consumes the SR2 event stream
+  and the SR4 id index and ranks effects/memos by total run time, each joined to
+  its IR source loc:
+
+  - `runs` (`effectEnter` count), `totalMs` (Σ `effectExit.dur`),
+  - `runsPerTurn` — average runs per active turn, the re-run-pressure signal that
+    flags batch / over-subscription candidates,
+  - `hot` when `runsPerTurn` meets a configurable threshold (default 2),
+  - `topN` to keep only the costliest.
+
+  Pure and deterministic: the same stream yields the same ranking (timings vary,
+  ranks/structure do not). Unresolved subscriber ids are surfaced as coverage
+  gaps, never dropped. `formatHotSubscribers` renders the human report.
+
+- e29bf9f: Attribute loop-child DOM-binding effects in the profiler (#1690, #1795 Phase 2).
+
+  Inside a `{items().map(it => …)}` body the emitter wraps every loop-param read
+  (`{it.t}`, `class={it.n > 0 ? …}`) in a per-item `createEffect`. In profile
+  mode each of those loop-child attribute / outer-text effects now carries a
+  `<Component>#binding:<slotId>` id, so the profiler attributes their re-runs to a
+  source line instead of bare runtime ids:
+
+  - **analyzer** — `collectDomBindings` now threads loop-param context, so a
+    binding that reads a loop param (or index) registers as a reactive
+    `domBinding` with its slot + loc. Detection uses the analyzer's lexer-resolved
+    metadata (`origin.freeRefs` for text, `freeIdentifiers` for attributes), not a
+    raw-string scan, so a param name appearing only inside a string literal
+    (`i` vs `'i'`) is not mistaken for a read. `key={…}` is skipped (it is the
+    loop's keyFn, never an effect). `buildIdIndex` then resolves every loop-child
+    text/attribute slot to `<Component>#binding:<slotId>`.
+  - **emit** — `ReactiveEffectsPlan` carries `profileComponentName`;
+    `stringifyReactiveEffects` emits the id on each loop-child attribute and
+    outer-text `createEffect`.
+
+  Previously loop-child re-runs (often the hottest subscribers in a list view)
+  surfaced unattributed and inflated the coverage gap. Off by default the emitted
+  effects are byte-for-byte unchanged (SR8). Loop-child _conditional-branch_ texts
+  remain a follow-up.
+
+- 4e5d724: Attribute deeply-nested loop binding effects in the profiler (#1690, closes #1795).
+
+  Phases 1–2 attributed top-level, conditional-branch, and direct loop-child
+  binding effects. Phase 3 closes the remaining nested emit paths so every binding
+  effect a loop produces carries a `<Component>#binding:<slotId>` id and every
+  emitted id resolves via `buildIdIndex` — `bf debug profile` now reports zero
+  coverage gap for nested list/conditional structures:
+
+  - **analyzer** (`collectDomBindings`) — loop-param awareness now extends to the
+    `conditional` case (`origin.freeRefs`) and the inner-`loop` case
+    (`arrayFreeIdentifiers`), so a loop-child conditional (`{r.on ? …}`) and an
+    inner loop reading the outer param (`{r.tags.map(…)}`) register as reactive
+    `domBindings` with slot + loc.
+  - **emit** — `profileComponentName` is threaded through the remaining loop
+    stringifiers, each emitting the id via a shared `profileBindingId` helper:
+    loop-child conditional `insert()` + branch text (`reactive-effects` /
+    `loop-child-arm`), inner / nested loop `mapArray` + child text/attr
+    (`inner-loop`), branch-scoped loop `mapArray` (`branch-loop`), static-array
+    loop child effects (`loop`), composite and component loop `mapArray`
+    (`composite-loop` / `component-loop`).
+
+  Off by default the emitted effects are byte-for-byte unchanged (SR8). The one
+  remaining residual is a child component's reactive _children_ text inside a
+  component loop (`<Row>{it.label}</Row>`), which is a component-children binding
+  rather than a DOM binding and is not yet resolved by the analyzer.
+
+- e4a63f1: Batch-advisor safety oracle — post-write-derived-read (#1690, §4.2.3, closes #1790).
+
+  `assessBatchSafety` upgrades a batch candidate from `'unverified'` to `'safe'`
+  or `'unsafe'` by static analysis of the handler body, and `buildProfileReport`
+  applies it per candidate (pairing the turn id to its `EventBinding` by source
+  line). A `batch()` wrap defers effect flush; since a memo is a push-effect that
+  writes a private signal, a memo read _after_ a write to one of its dependencies
+  returns a stale value under batch. So the wrap is safe iff no such read happens.
+
+  Conservative by construction — only `'safe'` when provably so: indirect setters
+  (`via` a helper) or an unknown call after a write yield `'unverified'`; a
+  downstream-memo getter read after the first write yields `'unsafe'`; signal
+  reads are fine (`set()` updates the value synchronously). The report now reads
+  `click@s0 batch candidate 4→2 (saves 2, safe) (Form.tsx:10)`.
+
+- 3038728: Add scenario-file support to `bf debug profile` (#1690, #1796).
+
+  `bf debug profile <component> --scenario <story.tsx>` now compiles a "story"
+  file and its local relative imports, mounts the composition, and fires every
+  handler — so a component composed from sub-components (the common case) is
+  profiled as it's actually used, not as a bare mount.
+
+  - driver: `loadStory` resolves the story's relative imports (dependency-first);
+    `runScenario` compiles each in profile mode, dedupes the concatenated runtime
+    imports into one, mounts the story, and fires all IR-known handlers across
+    every component in every source.
+  - jsx: `buildProfileReport` accepts `extraSources` and enumerates every
+    component per source (`listComponentFunctions`), merging their id indexes and
+    handler bindings — so events from composed sub-components resolve and the
+    safety oracle reasons over the right component's graph.
+
+  Verified end-to-end: a story composing `Switch` reports `1/1` coverage with its
+  memos, attribute bindings, and controlled-signal effect source-mapped. Fully
+  headless components whose handlers/bindings are wired through context remain
+  limited by analyzer binding-coverage (the same gap as #1795), tracked on #1796.
+
+- 650b672: Add profile-mode `__bfId` emission to client-JS codegen (#1690, SR3).
+
+  A new `CompileOptions.profile` flag makes the client-JS generator append
+  IR-aligned id arguments at reactive creation sites — `createSignal(init,
+"Comp#signal:x")`, `createMemo(expr, "Comp#memo:y")`, `createEffect(body,
+"Comp#effect:line")`, including controlled-signal sync effects. The runtime
+  (`@barefootjs/client`) already accepts these ids, so a profiling run can join
+  its event stream to IR nodes.
+
+  Off by default: when `profile` is unset the emitted code is byte-for-byte
+  unchanged (SR8). Ids are threaded purely through the declaration-emit plan and
+  the effects phase; the stringifiers stay `ctx`-free.
+
+- 9877323: Add profile-mode turn-boundary markers around event handlers (#1690, SR3).
+
+  The runtime gains `beginTurn(handlerId, loc?)` / `endTurn()` (and the matching
+  `turnBegin`/`turnEnd` sink hooks). In profile mode the client-JS codegen wraps
+  each event handler so the reactive work it triggers is attributed to one turn:
+
+  ```js
+  _el.addEventListener("click", (...__bfa) => {
+    beginTurn("Counter#handler:s0:click");
+    try {
+      return HANDLER(...__bfa);
+    } finally {
+      endTurn();
+    }
+  });
+  ```
+
+  A single `wrapHandlerForTurn` helper produces the wrapper, and `beginTurn`/
+  `endTurn` are registered as runtime imports so the import line is auto-wired.
+
+  Measurement-only: the handler's behavior and `set()`'s synchronous semantics
+  are unchanged. Off by default the emitted code carries no markers and no turn
+  import (SR8). This PR wraps the top-level handler path; the delegation / branch
+  / loop-child handler paths are wrapped in a follow-up.
+
+- a76e460: Extend profile-mode turn markers (#1690, SR3) to the loop event-delegation path.
+
+  A dynamic list delegates child events to one container listener. In profile
+  mode each delegated handler call is now bracketed with `beginTurn`/`endTurn`
+  (id `<Component>#handler:<childSlotId>:<eventName>`), so the reactive work a
+  list-row interaction triggers is attributed to one turn — the same id namespace
+  as direct handlers. The marker is a single-statement `beginTurn(id); try { … }
+finally { endTurn() }` wrap, dropped into every item-lookup shape.
+
+  Threaded via `EventDelegationPlan.profileComponentName`, set by the top-level
+  and static-array delegation builders (which have `ctx`). Off by default the
+  dispatcher is byte-for-byte unchanged (SR8). Branch-scoped delegation (a loop
+  nested inside a conditional branch) does not yet carry markers — tracked as a
+  follow-up.
+
+- 07b95ad: Add the SR2 event collector and SR4 IR join for `bf debug profile` (#1690).
+
+  - **`@barefootjs/shared`**: `ProfilerEvent` / `ProfilerEventType` — the
+    normalized event wire contract shared by the runtime producer and the jsx
+    consumer. It lives in `shared` (built first, depended on by both) so the
+    jsx↔client peer relationship stays free of a build-order cycle.
+  - **`@barefootjs/client`**: `createRecordingSink()` (SR2) — turns the raw
+    `ProfilerEventSink` callbacks (SR1) into a flat, ordered, **turn-stamped**
+    event log. It tracks the `beginTurn`/`endTurn` stack (SR3) and stamps every
+    event with the handler id in scope, so per-turn metrics need no microtask
+    guesswork.
+  - **`@barefootjs/jsx`**: `buildIdIndex(graph)` + `joinProfilerEvents(events,
+index)` (SR4) — resolve each event's compiler-assigned id to its source-mapped
+    IR node (signals/memos/effects, including controlled-signal sync effects).
+    Unresolved ids are surfaced as coverage gaps, never dropped (SR4 invariant).
+
+  These are the substrate the v1 analyses (hot subscribers / wasted re-runs /
+  batch advisor) consume next. Dev-only; no effect on production builds (SR8).
+
+- 3f99394: Visualize the profiler report with proportional bars (#1690).
+
+  `bf debug profile --scenario` now renders mitata-style horizontal bars in the
+  human report: hot subscribers get a bar proportional to their run count, and
+  batch candidates a bar proportional to the runs a `batch()` would save. Bars are
+  keyed on the deterministic metrics (`runs` / `savings`), so the chart is stable
+  across runs (SR7); long names are ellipsized to keep columns aligned. `--json`
+  output is unchanged.
+
+      hot subscribers — most run / most time
+        s1 (attribute)       ██████████████   2×  0.4ms  (switch/index.tsx:146)
+        isControlled (memo)  ███████          1×  0.1ms  (switch/index.tsx:90)
+
+- 1919a0c: Add the wasted-re-runs analysis — v1 (#1690, §4.2.2).
+
+  A reactive effect/memo that re-ran but produced output identical to its
+  previous run did removable work — the complement to hot subscribers (where the
+  cost is, vs. how much of it is removable).
+
+  - **Fingerprint (SR1, dev-only/SR8):** new optional `effectOutput(id, changed)`
+    sink method on the SR2 stream. The runtime aggregates a per-run output verdict
+    via `__bfReportOutput` (flushed once at run exit): memos compare the recomputed
+    value by `Object.is`; text bindings (`__bfText`) compare the written string —
+    and a stale-element cleanup counts as a real DOM change. A run with no
+    fingerprint emits no event and isn't counted. `effectOutput` is optional on the
+    exported `ProfilerEventSink`, so a pre-existing custom sink stays valid.
+  - **Analysis (SR2 + SR4):** `analyzeWastedReReruns` / `formatWastedReReruns`,
+    `wasted = wastedRuns / totalRuns`, joined to IR source loc and ranked by
+    removable cost then ratio (deterministic). Surfaced in `buildProfileReport` /
+    `formatProfileReport` (text + `--json`) behind the new `--wasted-pct` flag
+    (default 50%).
+
+### Patch Changes
+
+- 0187b4c: fix(profile): add `kind: "diff"` discriminator to compile-diff JSON (#1849 B2)
+
+  `BudgetDiff` now carries a `kind: "diff"` field so JSON consumers can distinguish a zero-delta diff ("no change") from a pure-static component with no reactive state.
+
+- cafd0b4: fix(profile): label & locate uninstrumented `createEffect` in the hot table (#1849 B6)
+
+  A `createEffect` nested in a ref callback (accordion/collapsible/sidebar/tabs/toast) gets no compiler `__bfId`, so the runtime assigns a fallback id like `e1` that surfaced as a bare `(unresolved)` hot row — reading like a broken profiler.
+
+  The row is now kept (its cost is real, not hidden) and:
+
+  - relabelled `(uninstrumented — createEffect in non-JSX scope)` so the missing location is understood as expected;
+  - annotated with candidate source lines from a static scan (`createEffect` call sites minus the compiler-instrumented ones), e.g. `candidates: collapsible/index.tsx:82, :126, :184`.
+
+  JSON gains `resolution: "uninstrumented"`, `resolutionNote`, and `candidates: [{ file, line }]` on those subscribers. New exports: `findUninstrumentedEffects`, `EffectCandidate`.
+
+- 719a8fe: fix(profile): de-dup parens, gate the uninstrumented-effect scan, align candidate loc (#1849 B6 review)
+
+  Follow-up to the B6 hot-subscribers work:
+
+  - The hot-subscribers report no longer renders doubled parentheses (`((unresolved))` / `((uninstrumented — …))`) — the location is wrapped exactly once.
+  - `buildProfileReport` skips the per-source `createEffect` candidate scan entirely unless a runtime fallback `e<n>` id is present, so the common fully-instrumented case does no extra work.
+  - Candidate call-site line numbers are computed from the call node's start to match the compiler's effect locations exactly.
+
+- a901c73: fix(profile): summarize `coverage.diagnostics` in JSON (#1849 B7)
+
+  The JSON `coverage.diagnostics` field is now a compact `{ count, sample }` summary instead of a per-id array that could run to hundreds of non-actionable entries for loop-heavy components. The text report is unchanged (it only ever printed the count).
+
+  Note: `ProfileReport.coverage.diagnostics` is now an object rather than an array.
+
+- c15d550: fix(profile): attribute prop-derived-const bindings forwarded into child components (#1863)
+
+  `bf debug profile button --scenario auto` (and `badge`/`avatar`/`kbd`) surfaced
+  `Button#binding:s0`/`s1` as `(unresolved)` hot rows plus a coverage warning, even
+  though those `createEffect`s have a real source location.
+
+  Root cause: the binding reads a prop _indirectly_ through a local const —
+  `const classes = `…${variant}…${className}``, then `<button class={classes}>`/`<Slot className={classes}>`. The emitter inlines `classes`, sees the prop reads,
+and wraps both in a `createEffect`emitting`#binding:<slot>`; but the analyzer's
+prop check only inspected direct references, so the expression's lone free
+identifier `classes`matched nothing and the id never made it into`buildIdIndex`.
+
+  `buildGraphFromIR` now precomputes the local consts whose value transitively
+  derives from a prop and treats reading one as reading a prop. The `component`
+  case of `collectDomBindings` also switches from the naive `includes('props.')`
+  check to the shared prop predicate, so a prop (or prop-derived const) forwarded
+  into a child component (`<Slot className={classes}>`) is tracked too. Both
+  `#binding:<slot>` ids now resolve to their JSX source line in the hot table
+  instead of `(unresolved)`.
+
+- 67d6847: Extend profile-mode turn markers to conditional-branch handlers (#1690, #1786).
+
+  `profileComponentName` is now threaded through `buildInsertPlan` so the two
+  remaining handler paths get `beginTurn`/`endTurn` like the top-level and
+  top-level-loop paths:
+
+  - **branch-arm direct listeners** — `emitListenerLine` takes an optional turn id
+    and wraps via `wrapHandlerForTurn`; arm events carry it (`ArmEventBind.turnId`).
+  - **branch-scoped loop delegation** — `buildBranchLoopDelegationPlan` now sets
+    `EventDelegationPlan.profileComponentName`, so a loop nested inside a
+    conditional wraps its delegated handlers too.
+
+  Off by default the emitted code carries no markers (SR8). With three handler
+  sites — top-level, branch-arm, branch-loop — a profile build now emits exactly
+  three `beginTurn`s. The loop-cond arm path (`BranchEventBindingsPlan`) remains a
+  minor follow-up under #1786.
+
+- c30e089: Profiler CLI ergonomics: robust flags + actionable build hint (#1690).
+
+  Dogfooding `bf debug profile` surfaced three agent-facing rough edges:
+
+  - **Flags leaked into the component name.** Unknown / mis-typed flags were
+    pushed onto the positional list, so `bf debug profile --hot-ms 10 foo` read
+    `--hot-ms` as the component and failed with `Cannot find component
+"--hot-ms"`. `parseFlags` now rejects unknown `--flags` and validates numeric
+    ones with an actionable message + usage, instead of silently mis-parsing.
+  - **`--top` / `--hot-ms` are now wired.** `--top <n>` caps the hot-subscriber
+    list (the `--json` set is unchanged); `--hot-ms <n>` drops sub-threshold
+    subscribers so a grid component's long tail collapses to what is worth a fix.
+    Threaded through `buildProfileReport` → `analyzeHotSubscribers` (new
+    `minMs` option).
+  - **Opaque "Cannot find module" on a fresh checkout.** The dynamic profiler
+    imports the built client runtime (`@barefootjs/client/runtime`), so a checkout
+    that ran `bun install` but not `bun run build` failed here with a raw module
+    error. The scenario driver now catches it and points at `bun run build`,
+    noting the static budget needs no build.
+
+- 5caa4d9: Profiler: flag compound components in the static budget (#1844 follow-up).
+
+  A compound component like `Select` / `Combobox` declares signals/memos but its
+  consumers live in composed child components, so the single-component static
+  budget reads `subscriptions: 0` with empty fan-out — which looks misleadingly
+  "free". `buildStaticBudget` now sets a `crossComponentOnly` flag (and
+  `formatStaticBudget` prints a `ⓘ compound:` note) when a component has reactive
+  state but no in-component subscriber, pointing the user at `--scenario` to
+  measure across the composition boundary. Self-contained components are
+  unaffected.
+
+- 1955cea: Rank hot subscribers deterministically (#1690, SR7).
+
+  Dogfooding revealed the hot-subscribers list was ordered by `totalMs`
+  (wall-clock), so the same scenario produced different rankings run to run — a
+  component with many similarly-costed effects (e.g. `calendar`) reordered on
+  every run, violating SR7 ("same scenario ⇒ same ranked findings; timings vary,
+  ranks do not"). The structure (which subscribers, their run counts) was already
+  deterministic; only the timing-based sort wasn't.
+
+  The list now sorts by `runs` (a structural, timing-independent cost proxy) with
+  the subscriber id as a stable final tiebreak; `totalMs` is still shown but never
+  sorted on. `calendar`'s ranking is now identical across runs.
+
+- f6d497d: Profiler dogfooding fixes: resilient mount + capped report (#1690).
+
+  Sweeping `--scenario auto` across the UI library surfaced two rough edges:
+
+  - **Crash on context-dependent components.** A bare mount of a component whose
+    init reads a context provider (e.g. `sidebar`'s `ctx.state`) threw an
+    uncaught `TypeError`, aborting `bf debug profile`. The driver now catches the
+    mount failure and reports an actionable message ("…needs a context provider
+    or composition — profile it with `--scenario <story.tsx>`").
+  - **Unreadable hot list.** A grid component (e.g. `calendar`) produced 1000+
+    subscribers, dumping a thousand rows. `formatHotSubscribers` now shows the top
+    N (default 12) and summarizes the rest as "… and N more", keeping the report
+    scannable (the full set remains in `--json`).
+
+- 7d8cb6b: Refine the hot-subscribers per-turn metric and add end-to-end profiling proof
+  (#1690).
+
+  Running the full substrate end-to-end (real `reactive.ts` instrumentation +
+  `createRecordingSink` + SR4 join + analyses) surfaced that `runsPerTurn`
+  conflated the one-time mount run (`turn=null`) with interaction turns — an
+  effect a click re-runs 5× read as a diluted `3.0`. Hot subscribers now split
+  `mountRuns` out and compute `runsPerTurn = (runs − mountRuns) / interactionTurns`,
+  matching the batch advisor's mount-excluding turn handling, and the report
+  shows each subscriber's `kind` (memo vs effect).
+
+  Adds `profiler-e2e.test.ts`: drives a mirrored Cart graph (exact compiler ids)
+  through the live runtime and asserts the joined story — an unbatched 3-write
+  click re-runs `total` 5×/turn; a `batch()` collapses 14 effect runs to 5.
+
+- 23efcea: Exclude event handlers from static fan-out and subscription counts (#1690, SR5).
+
+  Cross-checking the static budget against a dynamic run revealed the static
+  fan-out over-counted: a signal read inside an event handler (e.g.
+  `setCount(count() + 1)`) listed that handler as a "subscriber", but a handler
+  runs outside any reactive scope and does **not** re-run when the signal changes.
+  For a `count` read by one handler the static fan-out reported 8 while the run
+  showed 7 actual subscribers. Fan-out and `subscriptions` now exclude event
+  handlers, so the static prediction matches the measured reactive fan-out.
+
+- 570e5bb: Resolve handler turn ids to source loc in the batch advisor (#1690, #1790).
+
+  `buildIdIndex` now also registers handler turn ids
+  (`<Component>#handler:<slotId>:<eventName>`) from the graph's `event`
+  domBindings, and `analyzeBatchAdvisor(events, index?)` uses them so a candidate
+  carries the handler's `loc` + friendly name. The report now reads
+
+      click@s1   batch candidate 14→5 (saves 9, safety unverified)  (Cart.tsx:14)
+
+  instead of citing the raw turn id. This is the handler-loc half of #1790; the
+  post-write-derived-read safety oracle (upgrading `unverified` → `safe`/`unsafe`)
+  is still tracked there.
+
+- 526f165: Complete profile-mode turn markers on the loop-cond arm path (#1690, closes #1786).
+
+  The last uncovered handler path — a conditional inside a loop item whose arm
+  holds an event handler (`items.map(it => it.on ? <button onClick/> : …)`) —
+  now gets `beginTurn`/`endTurn` like every other path. `profileComponentName` is
+  threaded through `buildReactiveEffectsPlan` / `buildLoopReactiveEffectsPlan` →
+  `buildOuterArm` → `buildBranchEventBindingsPlan`, which tags each arm listener
+  with its turn id; `stringifyBranchEventBindings` passes it to `emitListenerLine`
+  (already turn-aware). Off by default the emitted code is byte-for-byte unchanged
+  (SR8); with this, all CSR handler emit paths are covered (#1244 risk-A).
+
+- 271350a: Attribute the loop reconcile effect in the profiler (#1690, #1795).
+
+  `mapArray` / `mapArrayAnchored` gain an optional `bfId` forwarded to their
+  internal reconcile `createEffect`, and the loop emitter passes
+  `<Component>#binding:<slotId>` for it in profile mode. `buildIdIndex` already
+  resolves that id from the graph's `loop` domBinding (slot + loc).
+
+  Dogfooding a list component showed the loop's reconcile effect is typically the
+  **single costliest subscriber** (it re-renders the list on every change) yet was
+  unattributed — it dominated the hot list as a bare `e1`. Now it reads
+  `s7 (loop)  3 runs, 4.8ms  (TodoApp.tsx:29)`. Off by default the `mapArray`
+  call is byte-for-byte unchanged (SR8). Per-item loop-child text effects remain
+  a follow-up under #1795.
+
+- 0e41034: Reuse the TS program across components when profiling multi-component files (#1690).
+
+  Dogfooding timing surfaced that a profile of a file declaring many components
+  (e.g. `chart`, ~25) took ~30s, because `buildProfileReport` re-built a fresh
+  TypeScript program (the dominant cost) for every component. It now builds the
+  program once per source via `createProgramForFile` and threads it through
+  `buildComponentAnalysis` / `buildEventSummary` — `chart` drops 30s → ~2.9s.
+  `buildStaticBudget` likewise shares one program between its graph + summary
+  passes. The per-file analysis functions gain an optional `program` parameter.
+
+- bea6488: Profiler: resolve `#binding:<slot>` ids for prop-driven attributes (#1844 follow-up).
+
+  The compiler wraps a prop-driven attribute (`id={props.id}`,
+  `` class={`…${props.className}`} ``) in a `createEffect` and emits a
+  `<Component>#binding:<slot>` profiler id for it — but the debug-side graph
+  collector (`collectDomBindings`) only tracked signal/memo dependencies, so those
+  bindings were absent from `graph.domBindings` and `buildIdIndex` had no node for
+  them. The effect then showed as `(unresolved)` in `bf debug profile` even though
+  the id was prefixed with the component's own name (e.g. `Slider#binding:s2`,
+  `Accordion#binding:s0`, and imported children like `CheckIcon#binding:s0`).
+
+  `collectDomBindings` now detects prop references on attribute expressions,
+  mirroring the emitter's `needsEffectWrapper` prop gate exactly (prop names as
+  lexer-aware bare identifiers plus the `<propsObject>.x` member pattern, both
+  excluding `children`). Such bindings carry no signal/memo `deps`, so fan-out and
+  subscription counts are unchanged — only the previously-missing source
+  attribution is added. A `PropAttr` shape is added to the SR4 coverage-conformance
+  matrix so the emit↔analyzer symmetry is guarded against regression.
+
+- 7079ca0: Count turn _invocations_, not handler ids, in profiler metrics (#1690).
+
+  Dogfooding a list whose rows share one `onClick` revealed that firing the same
+  handler N times (clicking N rows) collapsed into a single "turn" — because
+  events were keyed by the handler-id string. That inflated `runsPerTurn` and
+  batch-advisor savings (N interactions summed into one turn).
+
+  `ProfilerEvent` now carries `turnSeq` (a unique per-invocation counter the
+  recording sink stamps at each `beginTurn`). The analyses count distinct turns by
+  `turnSeq`: hot-subscribers `runsPerTurn` divides by real invocations, the batch
+  advisor evaluates each invocation separately (reporting the worst per handler),
+  and `report.turns` reflects interactions while `coverage.handlersFired` still
+  counts distinct handlers. A 3-row list now reads `turns: 3, handlers: 1/1`
+  (was `turns: 1`).
+
+- eb9d66a: Lower the object-rest `.map()` destructure param read via member access on all three SSR adapters, graduating the `rest-destructure-object-in-map` conformance fixture (previously pinned to BF104).
+
+  `tasks().map(({ id, title, ...rest }) => <li>{title}:{rest.flag}</li>)` now resolves each binding against a per-item loop variable instead of refusing the destructure pattern:
+
+  - **Go**: `{{range $_, $__bf_item0 := …}}` with `$__bf_item0.Title` / `$__bf_item0.Flag` (the `rest` binding maps to the bare range var so the member emitter renders `rest.flag` → `$__bf_item0.Flag`).
+  - **Mojo**: a per-binding Perl `my` local off the item (`my $rest = $__bf_item;` so `$rest->{flag}` resolves).
+  - **Xslate**: the equivalent Kolon `: my` binding locals.
+
+  The synthetic per-item variable uses a reserved `__bf_item` name (depth-suffixed on Go) to avoid colliding with a user binding of the same name.
+
+  Only the object-rest-via-member shape is graduated. The other three rest-destructure fixtures stay refused (BF104), because they need machinery the SSR `range`/`for` can't express inline:
+
+  - `rest-destructure-object-spread-in-map` (`{...rest}`) needs a residual object excluding the consumed keys,
+  - `rest-destructure-array-in-map` (`[a, ...t]`) needs index/slice,
+  - `rest-destructure-nested-in-map` (`{ cells: [h, ...r] }`) needs nested index paths.
+
+  A shared IR-level gate (`isLowerableObjectRestDestructure`, exported from `@barefootjs/jsx`) keeps every other shape on the existing BF104 diagnostic. It walks the whole loop subtree (elements, components, conditionals, async, providers, template literals) and refuses when the rest binding is spread or used as a bare value (`String(rest)`, `{rest}`) — those need a residual object — as well as when the loop also has a `.filter()` predicate. The Go adapter suffixes its synthetic range var with the nesting depth (`$__bf_item0`, `$__bf_item1`) so nested destructure loops don't shadow each other. Verified against real Go 1.25.6 / Mojolicious 9.35 / Text::Xslate v3.5.9; Hono reference snapshots unchanged.
+
+- 207802f: Lower JSX `style={{ … }}` object literals to a CSS string on all three SSR adapters, graduating the `style-object-dynamic` and `style-3-signals` conformance fixtures (previously pinned to BF101 because a bare object literal in attribute position had no template form).
+
+  A new shared `parseStyleObjectEntries` helper (`@barefootjs/jsx`) parses the object literal (wrapping in parens to force expression context, since a bare `{…}` parses as a block), kebab-cases each key (`backgroundColor` → `background-color`), and classifies each value as a static string literal or a JS expression. Each adapter assembles the CSS string with its own interpolation for dynamic values:
+
+  - **Go**: `background-color:{{.Color}};padding:8px`
+  - **Mojo**: `background-color:<%= $color %>;padding:8px`
+  - **Xslate**: `background-color:<: $color :>;padding:8px`
+
+  Each value expression is pre-checked with `isSupported`, so an unsupported value (or an unsupported object shape — spread, shorthand, computed key) keeps the existing BF101 refusal rather than emitting partial output.
+
+  Static CSS key/value segments are HTML-attribute escaped before being inlined into the `style="…"` attribute (a value like `'"'` would otherwise break the attribute quoting / inject markup); dynamic values are escaped by each engine's own attribute context. The shared `cssKebabCase` also special-cases the `ms` vendor prefix (`msTransform` → `-ms-transform`) and is now reused by the compile-time static-style serializer so both paths agree. Verified against real Go 1.25.6 / Mojolicious 9.35 / Text::Xslate v3.5.9; Hono reference snapshots unchanged.
+
+- Updated dependencies [07b95ad]
+- Updated dependencies [7079ca0]
+- Updated dependencies [1919a0c]
+  - @barefootjs/shared@0.11.0
+
 ## 0.10.1
 
 ### Patch Changes

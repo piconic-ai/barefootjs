@@ -1,5 +1,253 @@
 # @barefootjs/cli
 
+## 0.11.0
+
+### Minor Changes
+
+- 42974e4: feat: `bf debug profile` — static reactive profiler, v1 (#1690 SR5 + SR6)
+
+  Implements `bf debug profile` and companion library support.
+
+  **Command surface:**
+
+  - `bf debug profile <component>` — static reactive budget for a single component
+  - `bf debug profile --scenario auto` — ranked table for all reactive components in `ui/components/ui/`
+  - `bf debug profile --scenario <path.tsx>` — profile a specific file
+  - `bf debug profile <component> --diff` — compare current IR vs git HEAD (SR6 compile-diff)
+  - `--json` flag throughout
+
+  **Static analyses (SR5):**
+
+  - Max signal fan-out and hot-signal identification
+  - Max memo chain depth
+  - Total subscription count (Σ deps across memos, effects, DOM bindings)
+  - Batch candidates (handlers that set ≥2 distinct signals — `batch()` opportunities)
+  - Findings: `high-fan-out`, `deep-memo-chain`, `batch-candidate`, `fallback-heavy`
+
+  **SR6 (compile-diff):**
+
+  - `diffProfiles(before, after)` — surfaces regressions in fan-out, chain depth, fallbacks, subscriptions; improvements in the same metrics; neutral structural count changes.
+
+  **Bug fixes bundled in this PR:**
+
+  - **Bug A (debug.ts):** `buildComponentGraph` now falls back to the caller-supplied `filePath` when `findSourceFile` returns empty for non-reactive components. Previously `bf debug graph Button` showed `Button ()` (empty path); now correctly shows `Button (/path/to/button/index.tsx)`.
+
+  - **Bug C (debug-profile.ts):** Batch-candidate findings from handlers wired to multiple JSX locations (e.g. Calendar dual-month navigation) were reported once per JSX site. Deduplicated by `(kind, file, line, signals-set)` so each logically unique handler appears once.
+
+  - **Bug D (debug-profile.ts):** `batchCandidateCount` in metrics and the batch-candidate findings list used independent counting, causing the table column to disagree with the findings section. Both now use the same deduplicated set.
+
+  **Known limitation (Bug B — batch-candidate precision):** Static analysis resolves setter calls by regex without control flow awareness. Handlers that set one of two signals based on a condition (`if (isControlled()) { setA() } else { setB() }`) are reported as batch candidates even though only one setter fires per interaction. This is a known false positive documented in tests. A fix requires AST-level control flow analysis (v2 scope). The finding message now includes `(static; verify setters are not in separate if/else branches)` to help users self-triage.
+
+- 4ccc227: Add `bf debug profile` — reactive performance profiler (#1690), static half.
+
+  New CLI subcommand `bf debug profile <component>` prints a per-component static
+  reactivity budget (no run required): signal/memo/effect/loop counts, total
+  subscriptions, the longest memo→memo chain, and per-signal fan-out with a `hot`
+  threshold. `--diff <ref>` compiles the component at a git ref and flags
+  structural reactivity regressions (CI-able, exits non-zero on growth). Human
+  table and `--json` output, consistent with the `bf debug *` family.
+
+  `@barefootjs/jsx` gains the supporting static-analysis API: `buildStaticBudget`,
+  `diffStaticBudget`, `formatStaticBudget`, `formatBudgetDiff`, and the
+  `buildProfileReport` seam for the dynamic (scenario-driven) half specified in
+  `spec/profiler.md`.
+
+- 8058e18: `bf debug profile <component> --scenario auto` now reaches compound / child-component handlers (#1690, closes #1796).
+
+  Auto mode previously compiled only the target's own file. For a compound
+  component whose interactive handler lives in a separately-registered child
+  (`<Collapsible><CollapsibleTrigger/>…`), the child was never compiled, so it
+  never registered, the mount couldn't wire it, and handler discovery read
+  `0 turns, 0/0 handlers` even though the composition has handlers.
+
+  Auto mode now walks the target's local (relative) import graph — the same
+  dependency-first resolution the `--scenario <story.tsx>` path already used —
+  so every child component registers via `hydrate(...)` before the root mounts,
+  its handlers enter the discovery set, and the toggle/click fires through the
+  composition. No story file required.
+
+- aafbccc: Wire `bf debug profile <component> --scenario auto` — the dynamic run (#1690).
+
+  The CLI now mounts a component's instrumented build in happy-dom, fires each
+  interactive element once, and prints the joined report (hot subscribers + batch
+  advisor + coverage). `buildProfileReport(input)` becomes a real pure function
+  (graph + SR4 join + analyses → ranked findings) and `formatProfileReport`
+  renders it; `@barefootjs/jsx` now also exports the analysis functions and the
+  dependency-free `testAdapter` for tooling.
+
+  Also fixes a real bug found while dogfooding: the **multi-component** compile
+  path did not thread `options.profile` to `generateClientJs`, so profile-mode
+  ids were silently dropped for any file exporting more than one component. Now
+  threaded — single- and multi-component files both emit ids (profile-off output
+  is unchanged).
+
+  happy-dom is a CLI devDependency, imported lazily so the static modes
+  (`bf debug profile <component>` / `--diff`) carry no DOM cost.
+
+- 3038728: Add scenario-file support to `bf debug profile` (#1690, #1796).
+
+  `bf debug profile <component> --scenario <story.tsx>` now compiles a "story"
+  file and its local relative imports, mounts the composition, and fires every
+  handler — so a component composed from sub-components (the common case) is
+  profiled as it's actually used, not as a bare mount.
+
+  - driver: `loadStory` resolves the story's relative imports (dependency-first);
+    `runScenario` compiles each in profile mode, dedupes the concatenated runtime
+    imports into one, mounts the story, and fires all IR-known handlers across
+    every component in every source.
+  - jsx: `buildProfileReport` accepts `extraSources` and enumerates every
+    component per source (`listComponentFunctions`), merging their id indexes and
+    handler bindings — so events from composed sub-components resolve and the
+    safety oracle reasons over the right component's graph.
+
+  Verified end-to-end: a story composing `Switch` reports `1/1` coverage with its
+  memos, attribute bindings, and controlled-signal effect source-mapped. Fully
+  headless components whose handlers/bindings are wired through context remain
+  limited by analyzer binding-coverage (the same gap as #1795), tracked on #1796.
+
+### Patch Changes
+
+- dd3213a: fix(profile): never truncate `hotSubscribers` in `--json` mode (#1849 B1)
+
+  `--top N` is a display cap on the dynamic hot-subscribers table; `--json` is documented as never truncated. The profile command now skips the slice in JSON mode so the serialized subscriber list is complete.
+
+- 5c54182: fix(profile): actionable error for external `@barefootjs/client` imports under `--scenario auto` (#1849 B3)
+
+  When a component depends on an external `@barefootjs` package whose compiled output imports `@barefootjs/client` directly (e.g. the cached `@barefootjs/xyflow` build), `--scenario auto` now explains the failure and points at a pre-bundled `--scenario <story.tsx>` or the static budget, instead of surfacing a raw module-resolution stack.
+
+- fa239fe: fix(profile): reject `--scenario` combined with `--diff` (#1849 B4)
+
+  `--scenario` (measure a run) and `--diff` (compare two compiles) are mutually exclusive modes. Combining them previously ran the scenario and silently dropped `--diff`; it now errors up front with an explanatory message.
+
+- 5d6a7ab: fix(profile): resolve preview-only components via `index.preview.tsx` (#1849 B5)
+
+  A monorepo component directory that ships only `index.preview.tsx` (no `index.tsx`, e.g. `settings-form`) now resolves to the preview — noted on stderr, never polluting `--json` stdout — instead of erroring with "Cannot find component". `index.tsx` still wins when both exist.
+
+- de14a0a: fix(profile): stop git stderr leaking on a bad `--diff` ref (#1849 B8)
+
+  `readFileAtRef` now captures git's stderr (`stdio: pipe`) and folds its message into a single CLI error line, instead of letting git's raw `fatal: invalid object name …` leak ahead of the CLI's own message.
+
+- 0faeb51: fix(profile): detect external `@barefootjs/*` runtime imports before the run (#1849 B3 follow-up)
+
+  `bf debug profile chart --scenario auto` leaked a raw `Cannot find module
+'@barefootjs/client/runtime'` stack: the cached `@barefootjs/chart` /
+  `@barefootjs/xyflow` dists import the client runtime directly, which the
+  import-rewriting pass can't reach inside an external bundle.
+
+  Detection now happens _pre-flight_ against the driver's own compiled client JS
+  (`externalRuntimeImport`): any `@barefootjs/*` import the compiler leaves in the
+  emitted client JS other than the handled `@barefootjs/client[/...]` /
+  `@barefootjs/jsx[/...]` families is an un-rewritable external runtime package, so
+  the run is skipped with an actionable message that names the offending package
+  and points at `--scenario <story.tsx>` or the static budget. This replaces the
+  previous error-message classifier, which matched bun's resolution stack text and
+  was fragile to bun version and importer-path formatting.
+
+- e9f724d: Auto-scenario fires every IR-known handler, not just buttons (#1690, #1796).
+
+  `bf debug profile --scenario auto` now drives interactions from the component
+  graph: for each `event` domBinding it dispatches the right event
+  (`MouseEvent`/`KeyboardEvent`/`Event`) on each `[bf="<slotId>"]` element —
+  including **delegated list-item handlers** and branch handlers — falling back to
+  the button/link sweep only when nothing resolves.
+
+  A list component whose only interaction is `<li onClick>` now reports
+  `coverage: N/N` and measures the row toggle, where before it read `0` turns.
+
+- ce2ea33: `bf debug profile --scenario auto` now attributes imported child components and quiets runtime-bookkeeping coverage noise (#1840).
+
+  Two related attribution/coverage fixes:
+
+  - **Imported child sources reach the id index.** Auto mode loaded a target's
+    local imports to drive the run, but did not pass them into
+    `buildProfileReport`, so events from composed children (e.g. `DatePicker`
+    importing `Calendar`) resolved to `((unresolved))`. Auto mode now forwards
+    those imported sources the same way the `--scenario <story.tsx>` path does,
+    so `Calendar#binding:*` subscribers map back to their source location.
+
+  - **Anonymous runtime ids no longer masquerade as coverage gaps.** The reactive
+    runtime assigns fallback `s<n>`/`e<n>`/`m<n>`/`r<n>` ids to nodes with no
+    compiler `__bfId`. These can never map to a source node, so reporting them as
+    `coverage.unattributed` made healthy reports look broken. `joinProfilerEvents`
+    now routes them to a separate non-actionable `diagnostics` bucket (surfaced,
+    never dropped), leaving `unattributed` for actionable gaps only.
+
+- c30e089: Profiler CLI ergonomics: robust flags + actionable build hint (#1690).
+
+  Dogfooding `bf debug profile` surfaced three agent-facing rough edges:
+
+  - **Flags leaked into the component name.** Unknown / mis-typed flags were
+    pushed onto the positional list, so `bf debug profile --hot-ms 10 foo` read
+    `--hot-ms` as the component and failed with `Cannot find component
+"--hot-ms"`. `parseFlags` now rejects unknown `--flags` and validates numeric
+    ones with an actionable message + usage, instead of silently mis-parsing.
+  - **`--top` / `--hot-ms` are now wired.** `--top <n>` caps the hot-subscriber
+    list (the `--json` set is unchanged); `--hot-ms <n>` drops sub-threshold
+    subscribers so a grid component's long tail collapses to what is worth a fix.
+    Threaded through `buildProfileReport` → `analyzeHotSubscribers` (new
+    `minMs` option).
+  - **Opaque "Cannot find module" on a fresh checkout.** The dynamic profiler
+    imports the built client runtime (`@barefootjs/client/runtime`), so a checkout
+    that ran `bun install` but not `bun run build` failed here with a raw module
+    error. The scenario driver now catches it and points at `bun run build`,
+    noting the static budget needs no build.
+
+- f6d497d: Profiler dogfooding fixes: resilient mount + capped report (#1690).
+
+  Sweeping `--scenario auto` across the UI library surfaced two rough edges:
+
+  - **Crash on context-dependent components.** A bare mount of a component whose
+    init reads a context provider (e.g. `sidebar`'s `ctx.state`) threw an
+    uncaught `TypeError`, aborting `bf debug profile`. The driver now catches the
+    mount failure and reports an actionable message ("…needs a context provider
+    or composition — profile it with `--scenario <story.tsx>`").
+  - **Unreadable hot list.** A grid component (e.g. `calendar`) produced 1000+
+    subscribers, dumping a thousand rows. `formatHotSubscribers` now shows the top
+    N (default 12) and summarizes the rest as "… and N more", keeping the report
+    scannable (the full set remains in `--json`).
+
+- e743370: Profiler onboarding: a thorough `bf debug profile --help`, and remove the
+  standalone spec doc (#1690).
+
+  The design doc at `spec/profiler.md` had started to drift from the shipped
+  behavior, so it is removed and the CLI help becomes the single source of truth.
+  `bf debug profile --help` (and `-h`) now prints a self-contained guide: the
+  three modes (static budget / `--diff` regression / `--scenario` measured run),
+  how to read each section of a dynamic run (hot subscribers, wasted re-runs,
+  batch advisor, coverage), every flag with its default, examples, and the
+  build/dev-only notes. The top-level `bf --help` line now surfaces `--scenario`
+  and points at the dedicated help. In-code comments that referenced the removed
+  spec file were updated to stand on their own (pointing at issue #1690).
+
+- 1919a0c: Add the wasted-re-runs analysis — v1 (#1690, §4.2.2).
+
+  A reactive effect/memo that re-ran but produced output identical to its
+  previous run did removable work — the complement to hot subscribers (where the
+  cost is, vs. how much of it is removable).
+
+  - **Fingerprint (SR1, dev-only/SR8):** new optional `effectOutput(id, changed)`
+    sink method on the SR2 stream. The runtime aggregates a per-run output verdict
+    via `__bfReportOutput` (flushed once at run exit): memos compare the recomputed
+    value by `Object.is`; text bindings (`__bfText`) compare the written string —
+    and a stale-element cleanup counts as a real DOM change. A run with no
+    fingerprint emits no event and isn't counted. `effectOutput` is optional on the
+    exported `ProfilerEventSink`, so a pre-existing custom sink stays valid.
+  - **Analysis (SR2 + SR4):** `analyzeWastedReReruns` / `formatWastedReReruns`,
+    `wasted = wastedRuns / totalRuns`, joined to IR source loc and ranked by
+    removable cost then ratio (deterministic). Surfaced in `buildProfileReport` /
+    `formatProfileReport` (text + `--json`) behind the new `--wasted-pct` flag
+    (default 50%).
+
+- Updated dependencies [c26b408]
+- Updated dependencies [271350a]
+- Updated dependencies [b5067dc]
+- Updated dependencies [9877323]
+- Updated dependencies [07b95ad]
+- Updated dependencies [7079ca0]
+- Updated dependencies [1919a0c]
+  - @barefootjs/client@0.11.0
+  - @barefootjs/shared@0.11.0
+
 ## 0.10.1
 
 ### Patch Changes

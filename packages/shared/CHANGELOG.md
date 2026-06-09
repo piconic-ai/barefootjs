@@ -1,5 +1,62 @@
 # @barefootjs/shared
 
+## 0.11.0
+
+### Minor Changes
+
+- 07b95ad: Add the SR2 event collector and SR4 IR join for `bf debug profile` (#1690).
+
+  - **`@barefootjs/shared`**: `ProfilerEvent` / `ProfilerEventType` — the
+    normalized event wire contract shared by the runtime producer and the jsx
+    consumer. It lives in `shared` (built first, depended on by both) so the
+    jsx↔client peer relationship stays free of a build-order cycle.
+  - **`@barefootjs/client`**: `createRecordingSink()` (SR2) — turns the raw
+    `ProfilerEventSink` callbacks (SR1) into a flat, ordered, **turn-stamped**
+    event log. It tracks the `beginTurn`/`endTurn` stack (SR3) and stamps every
+    event with the handler id in scope, so per-turn metrics need no microtask
+    guesswork.
+  - **`@barefootjs/jsx`**: `buildIdIndex(graph)` + `joinProfilerEvents(events,
+index)` (SR4) — resolve each event's compiler-assigned id to its source-mapped
+    IR node (signals/memos/effects, including controlled-signal sync effects).
+    Unresolved ids are surfaced as coverage gaps, never dropped (SR4 invariant).
+
+  These are the substrate the v1 analyses (hot subscribers / wasted re-runs /
+  batch advisor) consume next. Dev-only; no effect on production builds (SR8).
+
+- 7079ca0: Count turn _invocations_, not handler ids, in profiler metrics (#1690).
+
+  Dogfooding a list whose rows share one `onClick` revealed that firing the same
+  handler N times (clicking N rows) collapsed into a single "turn" — because
+  events were keyed by the handler-id string. That inflated `runsPerTurn` and
+  batch-advisor savings (N interactions summed into one turn).
+
+  `ProfilerEvent` now carries `turnSeq` (a unique per-invocation counter the
+  recording sink stamps at each `beginTurn`). The analyses count distinct turns by
+  `turnSeq`: hot-subscribers `runsPerTurn` divides by real invocations, the batch
+  advisor evaluates each invocation separately (reporting the worst per handler),
+  and `report.turns` reflects interactions while `coverage.handlersFired` still
+  counts distinct handlers. A 3-row list now reads `turns: 3, handlers: 1/1`
+  (was `turns: 1`).
+
+- 1919a0c: Add the wasted-re-runs analysis — v1 (#1690, §4.2.2).
+
+  A reactive effect/memo that re-ran but produced output identical to its
+  previous run did removable work — the complement to hot subscribers (where the
+  cost is, vs. how much of it is removable).
+
+  - **Fingerprint (SR1, dev-only/SR8):** new optional `effectOutput(id, changed)`
+    sink method on the SR2 stream. The runtime aggregates a per-run output verdict
+    via `__bfReportOutput` (flushed once at run exit): memos compare the recomputed
+    value by `Object.is`; text bindings (`__bfText`) compare the written string —
+    and a stale-element cleanup counts as a real DOM change. A run with no
+    fingerprint emits no event and isn't counted. `effectOutput` is optional on the
+    exported `ProfilerEventSink`, so a pre-existing custom sink stays valid.
+  - **Analysis (SR2 + SR4):** `analyzeWastedReReruns` / `formatWastedReReruns`,
+    `wasted = wastedRuns / totalRuns`, joined to IR source loc and ranked by
+    removable cost then ratio (deterministic). Surfaced in `buildProfileReport` /
+    `formatProfileReport` (text + `--json`) behind the new `--wasted-pct` flag
+    (default 50%).
+
 ## 0.10.1
 
 ## 0.10.0

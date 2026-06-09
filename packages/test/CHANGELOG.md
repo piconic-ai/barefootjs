@@ -1,5 +1,50 @@
 # @barefootjs/test
 
+## 0.11.0
+
+### Patch Changes
+
+- Updated dependencies [42974e4]
+- Updated dependencies [0187b4c]
+- Updated dependencies [cafd0b4]
+- Updated dependencies [719a8fe]
+- Updated dependencies [a901c73]
+- Updated dependencies [c4de967]
+- Updated dependencies [c15d550]
+- Updated dependencies [4ccc227]
+- Updated dependencies [ce2ea33]
+- Updated dependencies [ca59e22]
+- Updated dependencies [54aaa91]
+- Updated dependencies [67d6847]
+- Updated dependencies [c30e089]
+- Updated dependencies [aafbccc]
+- Updated dependencies [5caa4d9]
+- Updated dependencies [c26b408]
+- Updated dependencies [1955cea]
+- Updated dependencies [f6d497d]
+- Updated dependencies [7d8cb6b]
+- Updated dependencies [23efcea]
+- Updated dependencies [570e5bb]
+- Updated dependencies [0488005]
+- Updated dependencies [e29bf9f]
+- Updated dependencies [526f165]
+- Updated dependencies [271350a]
+- Updated dependencies [4e5d724]
+- Updated dependencies [0e41034]
+- Updated dependencies [bea6488]
+- Updated dependencies [e4a63f1]
+- Updated dependencies [3038728]
+- Updated dependencies [650b672]
+- Updated dependencies [9877323]
+- Updated dependencies [a76e460]
+- Updated dependencies [07b95ad]
+- Updated dependencies [7079ca0]
+- Updated dependencies [3f99394]
+- Updated dependencies [1919a0c]
+- Updated dependencies [eb9d66a]
+- Updated dependencies [207802f]
+  - @barefootjs/jsx@0.11.0
+
 ## 0.10.1
 
 ### Patch Changes
