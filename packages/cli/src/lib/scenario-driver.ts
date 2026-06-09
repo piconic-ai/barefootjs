@@ -57,11 +57,16 @@ export interface ScenarioResult {
  * absolute path before the run and the package root is never emitted; `@barefootjs/
  * jsx[/...]` because it is a compile-time-only dependency the compiler transforms
  * away (it never reaches the runtime import).
+ *
+ * Both import forms the compiler can emit are matched: a named/default `import …
+ * from '<pkg>'` and a bare side-effect `import '<pkg>'` (see
+ * `collectExternalImports` in `@barefootjs/jsx`), so a side-effect-only external
+ * import can't slip past pre-flight detection.
  */
 export function externalRuntimeImport(clientJs: string | string[]): string | null {
   const chunks = Array.isArray(clientJs) ? clientJs : [clientJs]
   for (const chunk of chunks) {
-    for (const m of chunk.matchAll(/import[^;\n]*from\s*['"](@barefootjs\/[^'"]+)['"]/g)) {
+    for (const m of chunk.matchAll(/import\s+(?:[^'"\n]*from\s*)?['"](@barefootjs\/[^'"]+)['"]/g)) {
       const spec = m[1]
       if (spec === '@barefootjs/client' || spec.startsWith('@barefootjs/client/')) continue
       if (spec === '@barefootjs/jsx' || spec.startsWith('@barefootjs/jsx/')) continue

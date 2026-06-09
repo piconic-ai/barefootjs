@@ -25,6 +25,15 @@ describe('externalRuntimeImport', () => {
     expect(externalRuntimeImport(js)).toBe('@barefootjs/chart')
   })
 
+  test('flags a bare side-effect import (`import \'@barefootjs/<pkg>\'`)', () => {
+    // The compiler emits side-effect imports without a `from` clause (see
+    // `collectExternalImports`); they must not slip past detection.
+    const js =
+      "import { hydrate } from '@barefootjs/client/runtime'\n" +
+      "import '@barefootjs/chart'\n"
+    expect(externalRuntimeImport(js)).toBe('@barefootjs/chart')
+  })
+
   test('scans across multiple chunks', () => {
     const chunks = [
       "import { hydrate } from '@barefootjs/client/runtime'\n",
