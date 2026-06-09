@@ -173,6 +173,16 @@ describe('diffStaticBudget (SR6)', () => {
     expect(diff.regressed).toBe(false)
     expect(formatBudgetDiff(diff)).toContain('no structural reactivity change')
   })
+
+  test('carries a "diff" kind discriminator (#1849 B2)', () => {
+    // The three JSON modes must be distinguishable: a zero-delta diff
+    // (signals: 0 = "no change") must not look like a static budget
+    // (signals: 0 = "no signals"). `kind` is the discriminator.
+    const a = buildStaticBudget(memoChainSource, 'Calc.tsx', 'Calc')
+    const diff = diffStaticBudget(a, a)
+    expect(diff.kind).toBe('diff')
+    expect(diff.signals).toBe(0)
+  })
 })
 
 describe('parseProfilerId (SR4)', () => {
