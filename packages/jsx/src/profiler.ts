@@ -465,6 +465,19 @@ function isRuntimeBookkeepingId(id: string): boolean {
 }
 
 /**
+ * A runtime *fallback effect* id (`e1`, `e2`, …) — the subset of bookkeeping
+ * ids the runtime assigns to a `createEffect` the compiler never named (one in
+ * a ref callback / helper, not top-level reactive init). Narrower than
+ * {@link isRuntimeBookkeepingId} on purpose: only these surface as
+ * `uninstrumented` hot rows with candidate sites (#1849 B6), so the hot-table
+ * label and the candidate-scan gate share this one definition rather than each
+ * re-spelling `^e\d+$`.
+ */
+function isFallbackEffectId(id: string): boolean {
+  return /^e\d+$/.test(id)
+}
+
+/**
  * Join a recorded event stream (SR2) to a component's IR (SR4). Each event's
  * `subscriber` / `signal` id is resolved to its source-mapped node; ids with no
  * match are collected as coverage gaps. This is the seam that turns a raw
@@ -527,7 +540,10 @@ export function findUninstrumentedEffects(
   const out: EffectCandidate[] = []
   const visit = (node: ts.Node): void => {
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'createEffect') {
-      const line = sf.getLineAndCharacterOfPosition(node.expression.getStart(sf)).line + 1
+      // Use the call node's start (not the callee identifier's) to match the
+      // compiler's `EffectInfo.loc`, which is `getSourceLocation(node)` over the
+      // CallExpression — so an instrumented effect's line never mismatches here.
+      const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
       if (!instrumentedLines.has(line)) out.push({ file: filePath, line })
     }
     ts.forEachChild(node, visit)
@@ -671,7 +687,7 @@ export function analyzeHotSubscribers(
     // helper). Keep it in the table — its cost is real — but label *why* it has
     // no location and surface candidate source lines so the reader needn't hunt
     // for it (#1849 B6). Other bookkeeping ids (`s*`/`m*`/`r*`) stay plain.
-    const uninstrumented = !node && /^e\d+$/.test(subscriber)
+    const uninstrumented = !node && isFallbackEffectId(subscriber)
     return {
       subscriber,
       loc: node?.loc,
@@ -775,13 +791,14 @@ export function formatHotSubscribers(r: HotSubscribersResult, limit = 12): strin
   const maxMs = shown.reduce((m, s) => Math.max(m, s.totalMs), 0)
   for (const s of shown) {
     // An uninstrumented `e<n>` id has no loc by design (the compiler never named
-    // it); say so explicitly instead of the bare `(unresolved)` that reads like
-    // a broken profiler (#1849 B6).
+    // it); say so explicitly instead of the bare `unresolved` that reads like
+    // a broken profiler (#1849 B6). These strings carry no parens of their own —
+    // the row formatter wraps `where` in a single `(…)` below.
     const where = s.loc
       ? `${s.loc.file}:${s.loc.line}`
       : s.resolution === 'uninstrumented'
-        ? '(uninstrumented — createEffect in non-JSX scope)'
-        : '(unresolved)'
+        ? 'uninstrumented — createEffect in non-JSX scope'
+        : 'unresolved'
     const base = s.name ?? s.subscriber
     // Binding names already carry their type (`s1 (attribute)`); don't double up.
     const label = s.kind && !base.endsWith(')') ? `${base} (${s.kind})` : base
@@ -1308,12 +1325,20 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
 
   // Candidate sites for uninstrumented `createEffect` ids, across every source
   // in the run (a compound scenario spans several files), so an `e<n>` row can
-  // cite where to look (#1849 B6).
+  // cite where to look (#1849 B6). The per-file AST scan is only ever consumed
+  // when a runtime fallback `e<n>` id is in the stream, so skip it entirely in
+  // the common case (every effect compiler-instrumented) where it would be
+  // wasted work.
+  const hasFallbackEffectId = events.some(
+    e => e.subscriber !== undefined && isFallbackEffectId(e.subscriber),
+  )
   const uninstrumentedCandidates: EffectCandidate[] = []
-  for (const s of allSources) {
-    uninstrumentedCandidates.push(
-      ...findUninstrumentedEffects(s.source, s.filePath, instrumentedEffectLines.get(s.filePath) ?? new Set()),
-    )
+  if (hasFallbackEffectId) {
+    for (const s of allSources) {
+      uninstrumentedCandidates.push(
+        ...findUninstrumentedEffects(s.source, s.filePath, instrumentedEffectLines.get(s.filePath) ?? new Set()),
+      )
+    }
   }
 
   const hotSubscribers = analyzeHotSubscribers(events, index, {
