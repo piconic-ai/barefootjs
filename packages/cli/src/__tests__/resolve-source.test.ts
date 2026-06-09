@@ -127,6 +127,39 @@ describe('resolveComponentSource', () => {
     }
   })
 
+  test('falls back to index.preview.tsx for a preview-only monorepo entry (#1849 B5)', () => {
+    // `settings-form` ships only index.preview.tsx (no index.tsx). The resolver
+    // must resolve it to the preview and flag `isPreview` so the caller can note
+    // it, rather than erroring with "Cannot find component".
+    const projectDir = mktmp()
+    const compDir = path.join(projectDir, 'ui/components/ui/settings-form')
+    mkdirSync(compDir, { recursive: true })
+    writeFileSync(path.join(compDir, 'index.preview.tsx'), 'export function Default() { return null }')
+    try {
+      const r = resolveComponentSource('settings-form', ctxFor(projectDir))
+      expect(r).not.toBeNull()
+      expect(r!.filePath).toBe(path.join(compDir, 'index.preview.tsx'))
+      expect(r!.isPreview).toBe(true)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
+  test('prefers index.tsx over index.preview.tsx when both exist', () => {
+    const projectDir = mktmp()
+    const compDir = path.join(projectDir, 'ui/components/ui/dialog')
+    mkdirSync(compDir, { recursive: true })
+    writeFileSync(path.join(compDir, 'index.tsx'), 'export {}')
+    writeFileSync(path.join(compDir, 'index.preview.tsx'), 'export {}')
+    try {
+      const r = resolveComponentSource('dialog', ctxFor(projectDir))
+      expect(r!.filePath).toBe(path.join(compDir, 'index.tsx'))
+      expect(r!.isPreview).toBeUndefined()
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+    }
+  })
+
   test('returns null and populates `searched` with every candidate it tried', () => {
     // Drives the "Looked in:" error transcript surfaced by the debug
     // commands when the user types an unknown component name.
