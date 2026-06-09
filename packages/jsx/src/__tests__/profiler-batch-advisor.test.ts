@@ -50,8 +50,10 @@ const ev = (type: ProfilerEvent['type'], f: Partial<ProfilerEvent> = {}): Profil
 describe('analyzeBatchAdvisor', () => {
   test('savings = totalRuns - distinctSubscribers for a multi-write turn', () => {
     seq = 0
-    // Turn t1: two writes each re-run effects e1 and e2 → 4 runs, 2 distinct.
+    // Turn t1: two writes (a, b) each re-run effects e1 and e2 → 4 runs, 2 distinct.
     const events: ProfilerEvent[] = [
+      ev('signalSet', { signal: 'C#signal:a', turn: 't1' }),
+      ev('signalSet', { signal: 'C#signal:b', turn: 't1' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
       ev('effectEnter', { subscriber: 'C#effect:e2', turn: 't1' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
@@ -60,13 +62,30 @@ describe('analyzeBatchAdvisor', () => {
     const r = analyzeBatchAdvisor(events)
     expect(r.candidates).toHaveLength(1)
     expect(r.candidates[0]).toMatchObject({
-      turn: 't1', totalRuns: 4, distinctSubscribers: 2, savings: 2, safety: 'unverified',
+      turn: 't1', totalRuns: 4, distinctSubscribers: 2, writes: 2, savings: 2, safety: 'unverified',
     })
+  })
+
+  test('a single-write turn is never a candidate, however wide it fans out', () => {
+    seq = 0
+    // One `set()` repaints a 4-cell loop: one binding id, four runs. `batch()`
+    // would collapse nothing (there is only one write), so this is not a
+    // candidate — the pre-#1690 model wrongly read it as "saves 3".
+    const events: ProfilerEvent[] = [
+      ev('signalSet', { signal: 'Grid#signal:selected', turn: 't1' }),
+      ev('effectEnter', { subscriber: 'Grid#binding:s9', turn: 't1' }),
+      ev('effectEnter', { subscriber: 'Grid#binding:s9', turn: 't1' }),
+      ev('effectEnter', { subscriber: 'Grid#binding:s9', turn: 't1' }),
+      ev('effectEnter', { subscriber: 'Grid#binding:s9', turn: 't1' }),
+    ]
+    expect(analyzeBatchAdvisor(events).candidates).toHaveLength(0)
   })
 
   test('a turn where every effect runs once is not a candidate', () => {
     seq = 0
     const events: ProfilerEvent[] = [
+      ev('signalSet', { signal: 'C#signal:a', turn: 't1' }),
+      ev('signalSet', { signal: 'C#signal:b', turn: 't1' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
       ev('effectEnter', { subscriber: 'C#effect:e2', turn: 't1' }),
     ]
@@ -76,6 +95,8 @@ describe('analyzeBatchAdvisor', () => {
   test('runs outside any turn are ignored', () => {
     seq = 0
     const events: ProfilerEvent[] = [
+      ev('signalSet', { signal: 'C#signal:a' }), // turn null
+      ev('signalSet', { signal: 'C#signal:b' }),
       ev('effectEnter', { subscriber: 'C#effect:e1' }), // turn null
       ev('effectEnter', { subscriber: 'C#effect:e1' }),
     ]
@@ -85,10 +106,14 @@ describe('analyzeBatchAdvisor', () => {
   test('ranks turns by savings descending', () => {
     seq = 0
     const events: ProfilerEvent[] = [
-      // t1 saves 1
+      // t1 saves 1 (two writes, e1 runs twice)
+      ev('signalSet', { signal: 'C#signal:a', turn: 't1' }),
+      ev('signalSet', { signal: 'C#signal:b', turn: 't1' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't1' }),
-      // t2 saves 3
+      // t2 saves 3 (two writes, e1 runs four times)
+      ev('signalSet', { signal: 'C#signal:a', turn: 't2' }),
+      ev('signalSet', { signal: 'C#signal:b', turn: 't2' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't2' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't2' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 't2' }),
@@ -116,6 +141,8 @@ describe('analyzeBatchAdvisor', () => {
     const turn = [...index.keys()].find(k => k.startsWith('Form#handler:'))!
     expect(turn).toBeDefined()
     const events: ProfilerEvent[] = [
+      ev('signalSet', { signal: 'Form#signal:a', turn }),
+      ev('signalSet', { signal: 'Form#signal:b', turn }),
       ev('effectEnter', { subscriber: 'Form#binding:s0', turn }),
       ev('effectEnter', { subscriber: 'Form#binding:s0', turn }),
     ]
@@ -128,6 +155,8 @@ describe('analyzeBatchAdvisor', () => {
   test('formats candidates and never claims safety in the measured half', () => {
     seq = 0
     const events: ProfilerEvent[] = [
+      ev('signalSet', { signal: 'Checkout#signal:a', turn: 'Checkout#handler:s0:submit' }),
+      ev('signalSet', { signal: 'Checkout#signal:b', turn: 'Checkout#handler:s0:submit' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 'Checkout#handler:s0:submit' }),
       ev('effectEnter', { subscriber: 'C#effect:e1', turn: 'Checkout#handler:s0:submit' }),
     ]

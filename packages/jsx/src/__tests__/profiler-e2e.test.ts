@@ -95,6 +95,7 @@ describe('profiler end-to-end (real substrate)', () => {
     const cand = batch.candidates.find(c => c.turn === 'Cart#handler:s1:click')!
     expect(cand).toBeDefined()
     // 3 unbatched writes cascade the memo chain: 14 effect runs, 5 distinct.
+    expect(cand.writes).toBe(3)
     expect(cand.totalRuns).toBe(14)
     expect(cand.distinctSubscribers).toBe(5)
     expect(cand.savings).toBe(9)

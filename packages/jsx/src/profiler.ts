@@ -986,7 +986,20 @@ export interface BatchCandidate {
   totalRuns: number
   /** Distinct effects that ran (the floor a batched turn would collapse to). */
   distinctSubscribers: number
-  /** `totalRuns − distinctSubscribers` — runs a `batch()` wrap would remove. */
+  /**
+   * Signal writes (`set()` calls) the turn performed. A `batch()` wrap can only
+   * collapse re-runs when there are *several* writes notifying the same effect,
+   * so this is always ≥ 2 for a candidate — a single-write turn benefits not at
+   * all and is never surfaced (see {@link analyzeBatchAdvisor}).
+   */
+  writes: number
+  /**
+   * Upper bound on the runs a `batch()` wrap would remove (`totalRuns −
+   * distinctSubscribers`). It is an upper bound, not an exact count: distinct
+   * effects are counted by *id*, so a loop binding whose single id maps to many
+   * per-item DOM instances reads as one "distinct subscriber" even though each
+   * instance must still run once under a batch. Treat it as "up to N".
+   */
   savings: number
   /**
    * Whether wrapping the handler in `batch()` is provably behavior-preserving.
@@ -1008,7 +1021,22 @@ export interface BatchAdvisorResult {
  * notifies synchronously — so a turn that writes several signals re-runs shared
  * effects once per write. Per turn this measures `totalRuns` (effect runs) vs
  * `distinctSubscribers` (unique effects); `savings = totalRuns −
- * distinctSubscribers` is what a `batch()` wrap would collapse.
+ * distinctSubscribers` is an upper bound on what a `batch()` wrap would collapse.
+ *
+ * A candidate must be a genuine **multi-write** turn (`writes ≥ 2`). `batch()`
+ * only fuses the notifications of *several* writes; it does nothing to a single
+ * write, even one that fans out widely. A loop binding re-running once per item
+ * from one `set()` (e.g. a 42-cell calendar grid: one id, 42 runs) is *not* a
+ * batch opportunity — without the write gate its 42 runs collapse to "saves 41"
+ * against a single distinct id, a confident false positive.
+ *
+ * `writes` counts only `signalSet`s made *directly in the handler body* —
+ * `effectEnter`/`effectExit` track effect-nesting depth, and a write is a
+ * genuine handler write only at depth 0. This excludes the writes a memo makes
+ * to its own private signal when it recomputes (a memo is an effect that writes
+ * a signal sharing its id), and any other downstream cascade write, since those
+ * fire *inside* the effects the direct writes triggered and are not something a
+ * `batch()` around the handler could fuse.
  *
  * Measured half only: every candidate is reported `safety: 'unverified'`. The
  * static safety oracle that upgrades a candidate to `'safe'`/`'unsafe'` lands
@@ -1024,26 +1052,53 @@ export function analyzeBatchAdvisor(
   interface TurnAcc {
     handlerId: string
     totalRuns: number
+    writes: number
+    /** Effect-nesting depth in this turn: a `signalSet` is a direct handler
+     *  write only at depth 0; deeper sets are memo/cascade recomputes. */
+    depth: number
     subscribers: Set<string>
   }
   const byInvocation = new Map<string, TurnAcc>()
 
-  for (const e of events) {
-    if (e.type !== 'effectEnter' || e.turn === null) continue
+  const get = (e: ProfilerEvent): TurnAcc | undefined => {
+    if (e.turn === null) return undefined
     const key = String(e.turnSeq ?? e.turn)
     let acc = byInvocation.get(key)
     if (!acc) {
-      acc = { handlerId: e.turn, totalRuns: 0, subscribers: new Set() }
+      acc = { handlerId: e.turn, totalRuns: 0, writes: 0, depth: 0, subscribers: new Set() }
       byInvocation.set(key, acc)
     }
-    acc.totalRuns++
-    if (e.subscriber !== undefined) acc.subscribers.add(e.subscriber)
+    return acc
+  }
+
+  for (const e of events) {
+    // `signalSet` at depth 0 is a write the handler made itself — the ground
+    // truth for whether batching can fuse anything. `effectEnter`/`effectExit`
+    // bracket the runs those writes (plus loop fan-out and memo recomputes)
+    // produced; a set fired while one of those runs is on the stack (depth > 0)
+    // is a downstream cascade write, not a handler write.
+    if (e.type === 'signalSet') {
+      const acc = get(e)
+      if (acc && acc.depth === 0) acc.writes++
+    } else if (e.type === 'effectEnter') {
+      const acc = get(e)
+      if (!acc) continue
+      acc.totalRuns++
+      acc.depth++
+      if (e.subscriber !== undefined) acc.subscribers.add(e.subscriber)
+    } else if (e.type === 'effectExit') {
+      const acc = get(e)
+      if (acc && acc.depth > 0) acc.depth--
+    }
   }
 
   // Collapse invocations to one candidate per handler — the worst (max-savings)
   // invocation represents the handler's batch opportunity.
   const byHandler = new Map<string, BatchCandidate>()
   for (const acc of byInvocation.values()) {
+    // A turn that writes at most one signal cannot benefit from `batch()`, no
+    // matter how many effect runs that single write fanned out to (#1690).
+    if (acc.writes < 2) continue
     const distinctSubscribers = acc.subscribers.size
     const savings = acc.totalRuns - distinctSubscribers
     if (savings <= 0) continue
@@ -1056,6 +1111,7 @@ export function analyzeBatchAdvisor(
       handler: node?.name,
       totalRuns: acc.totalRuns,
       distinctSubscribers,
+      writes: acc.writes,
       savings,
       safety: 'unverified',
     })
