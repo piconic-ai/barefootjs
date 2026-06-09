@@ -116,6 +116,21 @@ const MATRIX: ReadonlyArray<{ name: string; desc: string; source: string }> = [
       }`,
   },
   {
+    name: 'PropAttr',
+    desc: 'prop-driven attribute bindings (with and without a co-located handler)',
+    source: `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function PropAttr(props: { id?: string; disabled?: boolean; className?: string }) {
+        const [n, setN] = createSignal(0)
+        return (
+          <div id={props.id} class={\`base \${props.className ?? ''}\`}>
+            <button onClick={() => setN(n() + 1)} class={\`btn \${props.className ?? ''}\`}>{n()}</button>
+          </div>
+        )
+      }`,
+  },
+  {
     name: 'SignalMemoEffect',
     desc: 'signal + memo + user effect + keyboard handler',
     source: `

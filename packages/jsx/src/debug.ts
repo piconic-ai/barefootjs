@@ -5,7 +5,7 @@
  * paths, and component reactive structure — all without running any code.
  */
 
-import type ts from 'typescript'
+import ts from 'typescript'
 import type {
   ComponentIR,
   IRNode,
@@ -28,6 +28,7 @@ import { buildMetadata } from './compiler.ts'
 import { analyzeClientNeeds } from './ir-to-client-js/index.ts'
 import type { WrapReason } from './ir-to-client-js/reactivity.ts'
 import { decideWrapFromAstFlags } from './ir-to-client-js/reactivity.ts'
+import { tokenContainsIdent } from './ir-to-client-js/utils.ts'
 
 // =============================================================================
 // Types
@@ -292,9 +293,36 @@ export function buildGraphFromIR(ir: ComponentIR): ComponentGraph {
   const memoNames = new Set(meta.memos.map(m => m.name))
   const signalSetters = new Map(meta.signals.filter(s => s.setter).map(s => [s.setter!, s.getter]))
 
+  // Does an attribute expression read a component prop? Mirrors the emitter's
+  // `needsEffectWrapper` prop gate (`reactivity.ts`):
+  //   - any individual destructured prop name (`{ className }` → `class={className}`),
+  //   - or a `<propsObject>.x` member access (`class={props.className}`),
+  // both excluding `children` (server-rendered, never wrapped). Detection is
+  // structural, not a raw-string regex: destructured names use the IR's
+  // lexer-resolved `freeIdentifiers` (falling back to the lexer-aware
+  // `tokenContainsIdent`), and the props-object case parses the expression and
+  // walks for a real `props.member` access — so a `props.` inside a string
+  // literal / comment can't false-match, and bare `props` (`id={props}`) or
+  // `props.children` are correctly NOT treated as reactive (matching the
+  // emitter, which only wraps `<propsObject>.<non-children>`).
+  //
+  // Prop-driven attribute bindings are wrapped in a `createEffect` by the
+  // emitter (and so emit a `#binding:<slot>` profiler id), but the debug-side
+  // collector only tracked signal/memo deps before — so those ids resolved to
+  // `(unresolved)` in `bf debug profile` (#1844 follow-up). Detecting prop reads
+  // here closes that emit↔analyzer gap.
+  const destructuredPropNames = new Set(meta.propsParams.map(p => p.name).filter(n => n !== 'children'))
+  const propsObjectName = meta.propsObjectName
+  const exprReadsProp = (expr: string, freeIds?: ReadonlySet<string>): boolean => {
+    for (const name of destructuredPropNames) {
+      if (freeIds ? freeIds.has(name) : tokenContainsIdent(expr, name)) return true
+    }
+    return propsObjectName ? exprReadsPropMember(expr, propsObjectName) : false
+  }
+
   // Collect DOM bindings from IR tree
   const domBindings: DomBinding[] = []
-  collectDomBindings(ir.root, domBindings, signalGetters, memoNames)
+  collectDomBindings(ir.root, domBindings, signalGetters, memoNames, undefined, new Set(), exprReadsProp)
 
   // Build consumer lists for signals
   const signalConsumers = new Map<string, string[]>()
@@ -1618,6 +1646,11 @@ function collectDomBindings(
   // names it is treated as reactive (matching the emitter's gate), giving the
   // profiler a `domBinding` (slotId + loc) to resolve `<Comp>#binding:<slotId>`.
   loopParams: Set<string> = new Set(),
+  // Predicate: does an attribute expression read a component prop? Mirrors the
+  // emitter's `needsEffectWrapper` prop detection so a prop-driven attribute
+  // (wrapped in `createEffect` at codegen, hence emitting `#binding:<slot>`) is
+  // tracked here too — otherwise its profiler id resolves to `(unresolved)`.
+  readsProp: (expr: string, freeIds?: ReadonlySet<string>) => boolean = () => false,
 ): void {
   // Does a loop-child binding read a loop param (or index)? Use the analyzer's
   // lexer-resolved metadata, NOT a raw-string regex — so a param name that only
@@ -1647,7 +1680,11 @@ function collectDomBindings(
         if (!expr) continue
         const deps = extractReactiveDeps(expr, signalGetters, memoNames)
         const isReactive = deps.length > 0 || attrReadsLoopParam(attr.freeIdentifiers)
-        const wrapReason = inferWrapReasonForAttrLike(isReactive, false, attr)
+        // A prop-driven attribute (`id={props.id}`, `class={`…${props.x}`}`) is
+        // wrapped in a `createEffect` by the emitter even with no signal/memo
+        // dep — match that gate so its `#binding:<slot>` id resolves.
+        const hasPropsRef = readsProp(expr, attr.freeIdentifiers)
+        const wrapReason = inferWrapReasonForAttrLike(isReactive, hasPropsRef, attr)
         if (wrapReason) {
           bindings.push({
             kind: 'dom',
@@ -1655,7 +1692,7 @@ function collectDomBindings(
             slotId: node.slotId ?? '?',
             deps,
             type: 'attribute',
-            classification: isReactive ? 'reactive' : 'fallback',
+            classification: isReactive || hasPropsRef ? 'reactive' : 'fallback',
             expression: expr,
             wrapReason,
             loc: attr.loc,
@@ -1681,7 +1718,7 @@ function collectDomBindings(
       }
       // Recurse — pass element tag as parent context for text bindings
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, loopParams)
+        collectDomBindings(child, bindings, signalGetters, memoNames, node.tag, loopParams, readsProp)
       }
       break
     }
@@ -1738,8 +1775,8 @@ function collectDomBindings(
           jsxPreview: `{${truncateExpr(node.condition)} ? ... : ...}`,
         })
       }
-      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, loopParams)
-      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, loopParams)
+      collectDomBindings(node.whenTrue, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
+      collectDomBindings(node.whenFalse, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
       break
     }
     case 'loop': {
@@ -1789,7 +1826,7 @@ function collectDomBindings(
       for (const p of extractLoopParamNames(node.param, node)) childLoopParams.add(p)
       if (node.index) childLoopParams.add(node.index)
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childLoopParams)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, childLoopParams, readsProp)
       }
       break
     }
@@ -1822,21 +1859,21 @@ function collectDomBindings(
         }
       }
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, loopParams)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
       }
       break
     }
     case 'fragment':
     case 'provider': {
       for (const child of node.children) {
-        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, loopParams)
+        collectDomBindings(child, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
       }
       break
     }
     case 'if-statement': {
-      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, loopParams)
+      collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
       if (node.alternate) {
-        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, loopParams)
+        collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
       }
       break
     }
@@ -1846,6 +1883,40 @@ function collectDomBindings(
 function truncateExpr(expr: string, max: number = 40): string {
   const s = expr.replace(/\s+/g, ' ').trim()
   return s.length > max ? s.slice(0, max - 1) + '…' : s
+}
+
+/**
+ * True when `expr` contains a genuine `<propsObject>.<member>` property access
+ * with `member !== 'children'` — the emitter's prop gate for the props object
+ * (`needsEffectWrapper`, `reactivity.ts`). Parses the expression rather than
+ * regex-matching the raw string, so a `props.` inside a string literal/comment
+ * doesn't false-match, and bare `props` / `props.children` are excluded. Parse
+ * failures (e.g. an attribute expression carrying JSX) fall back to `false` —
+ * conservative: we never invent a binding the emitter wouldn't wrap.
+ */
+function exprReadsPropMember(expr: string, propsObjectName: string): boolean {
+  let sf: ts.SourceFile
+  try {
+    sf = ts.createSourceFile('__attr.tsx', `(${expr})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  } catch {
+    return false
+  }
+  let found = false
+  const visit = (n: ts.Node): void => {
+    if (found) return
+    if (
+      ts.isPropertyAccessExpression(n) &&
+      ts.isIdentifier(n.expression) &&
+      n.expression.text === propsObjectName &&
+      n.name.text !== 'children'
+    ) {
+      found = true
+      return
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(sf)
+  return found
 }
 
 /** Convert an `AttrValue` to a flat string for reactive dep extraction. */
