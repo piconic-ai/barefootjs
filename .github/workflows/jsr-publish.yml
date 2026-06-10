@@ -55,13 +55,15 @@ jobs:
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
 
-      # Deno drives the JSR publish. (No Node/bun install needed: the script
-      # only reads package.json + src and shells out to `deno publish`, which
-      # resolves deps from JSR/npm via the generated manifest's specifiers.)
+      # Deno drives the JSR publish.
       - name: Setup Deno
         uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
         with:
           deno-version: v2.x
+
+      # deno publish type-checks each package's src; packages that import an
+      # npm dep directly (e.g. jsx → `typescript`) need it in node_modules.
+      - run: bun install
 
       - name: Publish to JSR
         # Tighter cap on the known hang point: a JSR publish that stalls (e.g.
