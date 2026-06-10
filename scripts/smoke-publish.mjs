@@ -263,6 +263,15 @@ smoke('bf search button (local)', 'npx --no-install bf search button')
 smoke('bf build', 'npx --no-install bf build', { expect: 'Build complete' })
 smoke('bf debug graph Counter', 'npx --no-install bf debug graph Counter', { expect: 'count' })
 smoke('bf debug trace Counter count', 'npx --no-install bf debug trace Counter count', { expect: 'count' })
+// The dynamic profiler lazily imports happy-dom, whose CJS deps hit the
+// bundle's `require` shim — broken ESM interop only surfaces from the
+// published bundle, not `bun test` over src (#1871: "Dynamic require of
+// node:events is not supported").
+smoke(
+  'bf debug profile Counter --scenario auto',
+  'npx --no-install bf debug profile Counter --scenario auto',
+  { expect: 'profile (scenario: auto)' },
+)
 
 // — generators
 // `bf init` now scaffolds `components/Counter.test.tsx` alongside

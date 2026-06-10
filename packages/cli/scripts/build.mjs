@@ -76,7 +76,15 @@ await build({
   // Rewrite bare Node builtins to the `node:` specifier so the bundle
   // loads under Deno as well as Node/Bun.
   plugins: [nodeProtocolPlugin],
-  // Source index.ts carries the shebang; esbuild preserves it. No banner needed.
+  // Bundled CJS deps (happy-dom's ws, via `bf debug profile --scenario`)
+  // call `require('node:events')` etc. at runtime. In ESM output esbuild
+  // routes those through a `__require` shim that throws "Dynamic require
+  // of … is not supported" unless a real `require` exists in module scope
+  // — so define one via `createRequire`. Deno also supports this (#1871).
+  // esbuild keeps the entry's shebang above the banner.
+  banner: {
+    js: "import { createRequire as __bfCreateRequire } from 'node:module';\nconst require = __bfCreateRequire(import.meta.url);",
+  },
   legalComments: 'none',
   logLevel: 'info',
 })
