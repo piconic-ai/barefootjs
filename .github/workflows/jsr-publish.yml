@@ -61,12 +61,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      # Populate node_modules. `deno publish` type-checks each package's src,
-      # and sources that import an npm dependency directly (e.g. jsx imports
-      # `typescript`) resolve it through node_modules — without it Deno fails
-      # with "Could not find \"<pkg>\" in a node_modules folder". The original
-      # inline JSR step inherited the release job's install; the standalone
-      # workflow must do it itself.
+      # deno publish type-checks each package's src; packages that import an
+      # npm dep directly (e.g. jsx → `typescript`) need it in node_modules.
       - run: bun install
 
       - name: Publish to JSR
