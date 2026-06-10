@@ -10,7 +10,7 @@
 // (`bf debug profile <component>` / `--diff`) carry no DOM dependency.
 
 import { writeFileSync, mkdtempSync, rmSync, readFileSync, existsSync, statSync } from 'fs'
-import { join, dirname } from 'path'
+import { join, dirname, resolve } from 'path'
 import { tmpdir } from 'os'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
@@ -159,6 +159,43 @@ function resolveLocalFile(spec: string): string | null {
 }
 
 /**
+ * Rewrite the relative imports a compiled chunk still carries before it is
+ * written to the temp file (#1873). The compiler preserves imports of plain
+ * (non-component) local modules verbatim — `import { x } from '../lib/helper'`
+ * — and those specifiers would otherwise resolve against the temp directory
+ * and fail with a raw "Cannot find module".
+ *
+ * - An import of a file whose compiled client JS is already concatenated into
+ *   this run is dropped: chunks share one module scope, so its declarations
+ *   are already visible (this covers the `./x.client.js` rewrites of
+ *   cross-file signal imports too).
+ * - An import of a plain local module is rewritten to the absolute path of
+ *   the original source file, which bun imports directly (`.ts` included).
+ * - An unresolvable specifier throws an actionable error instead of letting
+ *   the run die in bun's module resolver.
+ */
+function rewriteLocalImports(js: string, chunkPath: string, inlined: Set<string>): string {
+  const chunkDir = dirname(chunkPath)
+  return js.replace(
+    /^(import\s+(?:[^'"\n]*from\s*)?)['"](\.[^'"]+)['"];?\s*$/gm,
+    (_line, head: string, spec: string) => {
+      // A `.client.js` specifier is the compiled output of a sibling client
+      // file — resolve it through that file's source.
+      const resolved = resolveLocalFile(join(chunkDir, spec.replace(/\.client\.js$/, '')))
+      if (!resolved) {
+        throw new Error(
+          `"${spec}" (imported by ${chunkPath}) does not resolve to a local file, so the ` +
+            'dynamic scenario runner cannot load it. Check the import path, or use the ' +
+            'static budget (`bf debug profile <component>`), which needs no run.',
+        )
+      }
+      const abs = resolve(resolved)
+      return inlined.has(abs) ? '' : `${head}${JSON.stringify(abs)}`
+    },
+  )
+}
+
+/**
  * Walk a file's transitive local (relative) imports into a flat,
  * dependency-first source list — so a component (or story) that composes
  * separately-registered children (`<Collapsible><CollapsibleTrigger/>…`)
@@ -228,14 +265,18 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
   const { compileJSX, testAdapter } = jsx
 
   // Compile each source in profile mode; concatenate (deps first) so every
-  // hydrate(...) registration is present before mount.
-  const clientChunks: string[] = []
+  // hydrate(...) registration is present before mount. Track which source
+  // files produced a chunk so `rewriteLocalImports` can tell an
+  // already-inlined client file from a plain helper module.
+  const clientChunks: { js: string; filePath: string }[] = []
+  const inlined = new Set<string>()
   let rootClientJs = ''
   for (const s of sources) {
     const out = compileJSX(s.source, s.filePath, { adapter: testAdapter, profile: true })
     const js = out.files.find((f: { type: string }) => f.type === 'clientJs')?.content as string | undefined
     if (js) {
-      clientChunks.push(js)
+      clientChunks.push({ js, filePath: s.filePath })
+      inlined.add(resolve(s.filePath))
       rootClientJs = js
     }
   }
@@ -251,7 +292,7 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
   // so the dynamic run would fail with an opaque module-resolution stack from
   // the package's cache directory. Surface an actionable message instead, named
   // for the actual package (#1849 B3).
-  const external = externalRuntimeImport(clientChunks)
+  const external = externalRuntimeImport(clientChunks.map(c => c.js))
   if (external) {
     throw new Error(
       `"${mountName ?? 'component'}" imports the external package ${external}, whose compiled ` +
@@ -307,7 +348,7 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
   const RUNTIME_IMPORT = /^import\s*\{([^}]*)\}\s*from\s*['"]@barefootjs\/client\/runtime['"];?\s*$/gm
   const names = new Set<string>()
   for (const chunk of clientChunks) {
-    for (const m of chunk.matchAll(RUNTIME_IMPORT)) {
+    for (const m of chunk.js.matchAll(RUNTIME_IMPORT)) {
       for (const n of m[1].split(',')) {
         const t = n.trim()
         if (t) names.add(t)
@@ -315,6 +356,7 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
     }
   }
   const body = clientChunks
+    .map(c => rewriteLocalImports(c.js, c.filePath, inlined))
     .join('\n')
     .replace(RUNTIME_IMPORT, '')
     .replace(/^import\s+['"]@barefootjs\/client\/runtime['"];?\s*$/gm, '')
