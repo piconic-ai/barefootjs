@@ -55,13 +55,19 @@ jobs:
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
 
-      # Deno drives the JSR publish. (No Node/bun install needed: the script
-      # only reads package.json + src and shells out to `deno publish`, which
-      # resolves deps from JSR/npm via the generated manifest's specifiers.)
+      # Deno drives the JSR publish.
       - name: Setup Deno
         uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
         with:
           deno-version: v2.x
+
+      # Populate node_modules. `deno publish` type-checks each package's src,
+      # and sources that import an npm dependency directly (e.g. jsx imports
+      # `typescript`) resolve it through node_modules — without it Deno fails
+      # with "Could not find \"<pkg>\" in a node_modules folder". The original
+      # inline JSR step inherited the release job's install; the standalone
+      # workflow must do it itself.
+      - run: bun install
 
       - name: Publish to JSR
         # Tighter cap on the known hang point: a JSR publish that stalls (e.g.
