@@ -1,5 +1,12 @@
 # create-barefootjs
 
+## 0.12.0
+
+### Patch Changes
+
+- Updated dependencies [003b57e]
+  - @barefootjs/cli@0.12.0
+
 ## 0.11.0
 
 ### Patch Changes
