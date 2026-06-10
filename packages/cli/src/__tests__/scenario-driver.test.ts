@@ -192,6 +192,35 @@ describe('runAutoScenario', () => {
     }
   })
 
+  test('an import-shaped line inside a template literal is not treated as an import (#1873)', async () => {
+    // A code-sample component embeds `import … from './…'` text in a template
+    // literal. The emitted client JS carries that literal verbatim, with the
+    // line at column 0 — a line-anchored regex would resolve it as a real
+    // import (and fail); the top-level AST walk must ignore it.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-snippet-'))
+    try {
+      const compPath = join(dir, 'CodeSample.tsx')
+      const compSrc = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function CodeSample() {
+          const [n, setN] = createSignal(0)
+          const snippet = \`
+import { x } from './not-on-disk'
+\`
+          return <button onClick={() => setN(n() + 1)}>{snippet + n()}</button>
+        }
+      `
+      writeFileSync(compPath, compSrc)
+
+      const r = await runAutoScenario(compSrc, compPath, 'CodeSample')
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^CodeSample#handler:s\d+:click$/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   test('a component with no handler records no interaction turns', async () => {
     const DISPLAY = `
       'use client'

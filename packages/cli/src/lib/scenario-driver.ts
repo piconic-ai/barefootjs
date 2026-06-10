@@ -12,6 +12,7 @@
 import { writeFileSync, mkdtempSync, rmSync, readFileSync, existsSync, statSync } from 'fs'
 import { join, dirname, resolve } from 'path'
 import { tmpdir } from 'os'
+import ts from 'typescript'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
 /** One compiled source in the scenario (a story file or one of its imports). */
@@ -176,23 +177,43 @@ function resolveLocalFile(spec: string): string | null {
  */
 function rewriteLocalImports(js: string, chunkPath: string, inlined: Set<string>): string {
   const chunkDir = dirname(chunkPath)
-  return js.replace(
-    /^(import\s+(?:[^'"\n]*from\s*)?)['"](\.[^'"]+)['"];?\s*$/gm,
-    (_line, head: string, spec: string) => {
-      // A `.client.js` specifier is the compiled output of a sibling client
-      // file — resolve it through that file's source.
-      const resolved = resolveLocalFile(join(chunkDir, spec.replace(/\.client\.js$/, '')))
-      if (!resolved) {
-        throw new Error(
-          `"${spec}" (imported by ${chunkPath}) does not resolve to a local file, so the ` +
-            'dynamic scenario runner cannot load it. Check the import path, or use the ' +
-            'static budget (`bf debug profile <component>`), which needs no run.',
-        )
-      }
-      const abs = resolve(resolved)
-      return inlined.has(abs) ? '' : `${head}${JSON.stringify(abs)}`
-    },
-  )
+  // Walk top-level statements of the chunk (a `ts.createSourceFile` parse, no
+  // type checking) instead of regex-matching lines: emitted code carries user
+  // template literals verbatim, and an import-shaped line inside one must not
+  // be rewritten. Off the build hot path, so the extra parse is fine.
+  const sf = ts.createSourceFile('chunk.mjs', js, ts.ScriptTarget.Latest, false, ts.ScriptKind.JS)
+  const edits: { start: number; end: number; text: string }[] = []
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    const spec = stmt.moduleSpecifier.text
+    if (!spec.startsWith('.')) continue
+    // A `.client.js` specifier is the compiled output of a sibling client
+    // file — resolve it through that file's source.
+    const resolved = resolveLocalFile(join(chunkDir, spec.replace(/\.client\.js$/, '')))
+    if (!resolved) {
+      throw new Error(
+        `"${spec}" (imported by ${chunkPath}) does not resolve to a local file, so the ` +
+          'dynamic scenario runner cannot load it. Check the import path, or use the ' +
+          'static budget (`bf debug profile <component>`), which needs no run.',
+      )
+    }
+    const abs = resolve(resolved)
+    if (inlined.has(abs)) {
+      // Its compiled client JS is already concatenated into this run — drop
+      // the whole statement; the declarations share the joined module scope.
+      edits.push({ start: stmt.getStart(sf), end: stmt.getEnd(), text: '' })
+    } else {
+      edits.push({
+        start: stmt.moduleSpecifier.getStart(sf),
+        end: stmt.moduleSpecifier.getEnd(),
+        text: JSON.stringify(abs),
+      })
+    }
+  }
+  let out = js
+  for (const e of edits.reverse()) out = out.slice(0, e.start) + e.text + out.slice(e.end)
+  return out
 }
 
 /**
