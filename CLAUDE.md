@@ -16,6 +16,13 @@ This project primarily uses TypeScript with Go template adapters. Use `bun` inst
 
 See `spec/compiler.md` for the full pipeline architecture, IR schema, transformation rules, adapter interface, and error codes.
 
+## Code Conventions
+
+- **Never parse imports (or any JS/TS syntax) with regex or string matching.** Regexes false-match inside string/template literals and comments, and miss multi-line clauses, trailing commas, and `import type`. Use the established structural patterns instead:
+  - **Source files (.tsx/.ts)**: the IR's parsed metadata (`ir.metadata.imports`, built by the analyzer's TS AST walk — see `collectImport` in `packages/jsx/src/analyzer.ts`).
+  - **Compiled client JS**: a TS AST walk over top-level statements (`ts.isImportDeclaration` + span-based splicing). Precedents: `packages/cli/src/lib/resolve-imports.ts` (migrated from regex to AST for exactly this reason — see `shapeFromDecl`) and `packages/jsx/src/combine-client-js.ts`.
+  - Do not add a second parsing library (e.g. es-module-lexer) — `typescript` is already a direct dependency and the AST walk is the repo-wide idiom.
+
 ## Testing
 
 See `spec/testing.md` for full testing specification with APIs, patterns, and examples.
