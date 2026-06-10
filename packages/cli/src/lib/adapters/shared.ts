@@ -2,6 +2,18 @@
 // the design-token CSS variables, the entry stylesheet, and the UnoCSS
 // config the registry components depend on.
 
+// Sentinel lines wrapping the stylesheet `<link>` block (plus its
+// explanatory comment) in every adapter's <head> markup. `processCssHead`
+// (lib/css.ts) rewrites these at scaffold time: under `--css unocss` the
+// marker lines are dropped but the links stay; under `--css none` the
+// whole region — comment, links, and markers — is removed so the bare
+// scaffold ships a <head> with no stylesheet references at all. The
+// tokens are deliberately not valid JSX/HTML: they only ever exist inside
+// the adapter template strings and are always stripped before a file is
+// written, so they never reach disk or a compiler.
+export const CSS_LINKS_BEGIN = '@@BF_CSS_LINKS_BEGIN@@'
+export const CSS_LINKS_END = '@@BF_CSS_LINKS_END@@'
+
 // Starter Counter (Hono / CSR): uses the registry-fetched <Button> from
 // `components/ui/button/`. `bf init` adds it via `addFromRegistry`
 // during scaffolding, so the file is on disk before the user runs
@@ -80,6 +92,84 @@ describe('Counter', () => {
 
   test('contains child components', () => {
     expect(result.find({ componentName: 'Button' })).not.toBeNull()
+  })
+
+  test('toStructure() shows expected tree', () => {
+    const structure = result.toStructure()
+    expect(structure.length).toBeGreaterThan(0)
+    expect(structure).toContain('div')
+  })
+})
+`
+
+// Bare starter Counter for `--css none`: same reactive shape as
+// SHARED_COUNTER_TSX but with no dependency on the registry <Button> (and
+// therefore no UnoCSS utility classes). Native <button> elements keep the
+// "bring your own CSS" scaffold self-contained — nothing is fetched from
+// the UI registry, and the app builds and hydrates with zero stylesheets.
+// The `counter*` classNames are left as plain hooks the user can target
+// once they add their own CSS.
+export const SHARED_COUNTER_BARE_TSX = `'use client'
+
+import { createSignal, createMemo } from '@barefootjs/client'
+
+interface CounterProps {
+  initial?: number
+}
+
+export function Counter(props: CounterProps) {
+  const [count, setCount] = createSignal(props.initial ?? 0)
+  const doubled = createMemo(() => count() * 2)
+
+  return (
+    <div className="counter">
+      <p className="counter-value">count: {count()}</p>
+      <p className="counter-doubled">doubled: {doubled()}</p>
+      <div className="counter-buttons">
+        <button type="button" onClick={() => setCount(n => n + 1)}>+1</button>
+        <button type="button" onClick={() => setCount(n => n - 1)}>-1</button>
+        <button type="button" onClick={() => setCount(0)}>Reset</button>
+      </div>
+    </div>
+  )
+}
+`
+
+// Starter IR test paired with SHARED_COUNTER_BARE_TSX. Mirrors
+// SHARED_COUNTER_TEST_TSX but drops the "contains child components"
+// assertion — the bare Counter renders native <button> elements rather
+// than the registry <Button>, so there is no child component to find.
+export const SHARED_COUNTER_BARE_TEST_TSX = `import { describe, test, expect } from '{{__TEST_RUNNER_IMPORT__}}'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+import { renderToTest } from '@barefootjs/test'
+
+const CounterSource = readFileSync(resolve(__dirname, 'Counter.tsx'), 'utf-8')
+
+describe('Counter', () => {
+  const result = renderToTest(CounterSource, 'Counter.tsx')
+
+  test('has no compiler errors', () => {
+    expect(result.errors).toEqual([])
+  })
+
+  test('componentName is Counter', () => {
+    expect(result.componentName).toBe('Counter')
+  })
+
+  test('has expected signals', () => {
+    expect(result.signals).toContain('count')
+  })
+
+  test('renders as <div>', () => {
+    expect(result.root.tag).toBe('div')
+  })
+
+  test('has event handlers', () => {
+    const all = result.findAll({})
+    expect(
+      all.some(n => n.events.includes('click') || n.props['onClick'] != null),
+    ).toBe(true)
   })
 
   test('toStructure() shows expected tree', () => {

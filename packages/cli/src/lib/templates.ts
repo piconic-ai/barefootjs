@@ -86,19 +86,33 @@ export interface AdapterTemplate {
   bundledRegistryComponents?: string[]
 }
 
-// CSS library options offered by `bf init`. The library is
-// currently a presentational choice — the Hono adapter wires UnoCSS
-// directly, and additional libraries (Tailwind, etc.) will eventually
-// contribute their own files/scripts/deps once an adapter supports
-// more than one. The registry exists so `--css` and the interactive
-// selector have a real surface to pivot on.
+// CSS library options offered by `bf init`. Two paths today:
+//   - `unocss` (default): wires UnoCSS + the barefootjs UI registry — the
+//     adapter templates are authored for this path (uno.config.ts, the
+//     uno.css/tokens.css/styles.css sheets, the registry <Button> the
+//     starter Counter uses).
+//   - `none`: bring your own CSS. No UnoCSS config/deps/scripts, no
+//     registry fetch, no stylesheets — just the JSX→template+signal
+//     compiler output and a self-contained Counter. `usesUnoUi: false`
+//     drives the scaffold transforms in lib/css.ts.
+// Additional libraries (Tailwind, etc.) can slot in here once an adapter
+// grows first-class support for them.
 export interface CssLibraryTemplate {
   /** Human-readable name shown in CLI output. */
   label: string
+  /**
+   * Whether this option pulls in UnoCSS + the barefootjs UI registry.
+   * Defaults to `true`. When `false`, `bf init` skips the registry probe
+   * and Button fetch, omits the UnoCSS config/deps/sheets, strips
+   * `unocss` from the package.json scripts, and ships the bare starter
+   * Counter.
+   */
+  usesUnoUi?: boolean
 }
 
 export const CSS_LIBRARIES: Record<string, CssLibraryTemplate> = {
-  unocss: { label: 'UnoCSS' },
+  unocss: { label: 'UnoCSS', usesUnoUi: true },
+  none: { label: 'None (bring your own CSS)', usesUnoUi: false },
 }
 
 export const DEFAULT_CSS_LIBRARY = 'unocss'

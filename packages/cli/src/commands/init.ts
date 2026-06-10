@@ -26,6 +26,12 @@ import {
 import { detectPackageManager, commandsFor, testRunnerFor, type PackageManager } from '../lib/pm'
 import { select, SelectCancelled } from '../lib/select'
 import { startSpinner } from '../lib/spinner'
+import { processCssHead, stripUnocssFromScript, stripUnoGitignore } from '../lib/css'
+import {
+  SHARED_COUNTER_BARE_TSX,
+  SHARED_COUNTER_BARE_TEST_TSX,
+  UNOCSS_DEV_DEPENDENCIES,
+} from '../lib/adapters/shared'
 
 interface InitFlags {
   name?: string
@@ -79,6 +85,11 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   const adapter = ADAPTERS[adapterId]
   const cssId = await resolveCssLibrary(flags.css)
   const cssLibrary = CSS_LIBRARIES[cssId]
+  // `--css none` opts out of UnoCSS + the barefootjs UI registry: no
+  // registry probe/fetch, no UnoCSS config/deps/sheets, a bare starter
+  // Counter, and `unocss` stripped from the package.json scripts. Drives
+  // both the probe gating below and the scaffold transforms.
+  const usesUno = cssLibrary.usesUnoUi !== false
 
   // Pre-flight: confirm the UI registry is reachable BEFORE writing
   // anything to disk. The runnable starter pulls the registry's Button
@@ -92,7 +103,9 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   // so reaching out — and failing offline with a Button-specific error —
   // would be both pointless and misleading. Mirror scaffoldApp's
   // `?? ['button']` default so the two stay in lockstep.
-  const bundledComponents = adapter.bundledRegistryComponents ?? ['button']
+  // Under `--css none` nothing is pulled from the registry, so skip the
+  // probe entirely (an offline `none` scaffold should still succeed).
+  const bundledComponents = usesUno ? (adapter.bundledRegistryComponents ?? ['button']) : []
   if (bundledComponents.length > 0) {
     // Surface the host the scaffold is reaching out to so the spinner
     // reads like a concrete action ("Fetching starter components from
@@ -128,7 +141,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     text: `Creating ${adapter.label.split(' ')[0]} + ${cssLibrary.label} project...`,
   })
   try {
-    await scaffoldApp(projectDir, adapter, flags, ctx)
+    await scaffoldApp(projectDir, adapter, flags, usesUno, ctx)
   } catch (err) {
     buildSpinner.fail('Failed to create project files')
     throw err
@@ -219,6 +232,7 @@ async function scaffoldApp(
   projectDir: string,
   adapter: AdapterTemplate,
   flags: InitFlags,
+  usesUno: boolean,
   _ctx: CliContext,
 ): Promise<number> {
   // The single source of truth is `barefoot.config.ts` (written below via
@@ -266,14 +280,40 @@ async function scaffoldApp(
   // `vitest` everywhere else); same substitution mechanism as
   // `{{__PROJECT_NAME__}}` (wrangler worker name) and
   // `{{__PM_TYPES_ENTRY__}}` (tsconfig `types` array entry).
+  // Files the UnoCSS path ships but `--css none` drops: the UnoCSS
+  // config and the three stylesheets (tokens/styles/uno). Matched by
+  // basename so it holds whether an adapter serves them from `public/`
+  // or `static/`.
+  const UNO_ONLY_FILES = new Set(['uno.config.ts', 'uno.css', 'tokens.css', 'styles.css'])
+
   for (const [relPath, contents] of Object.entries(adapter.files)) {
+    // `--css none`: skip the UnoCSS-only assets entirely.
+    if (!usesUno && UNO_ONLY_FILES.has(path.basename(relPath))) continue
+
     const target = path.join(projectDir, relPath)
     if (existsSync(target)) continue
     mkdirSync(path.dirname(target), { recursive: true })
-    const resolved = contents
+
+    // `--css none`: swap the registry-<Button> starter Counter (and its
+    // IR test) for the dependency-free native-<button> variant so the
+    // bare scaffold builds with nothing fetched from the registry.
+    let source = contents
+    if (!usesUno && relPath === 'components/Counter.tsx') source = SHARED_COUNTER_BARE_TSX
+    if (!usesUno && relPath === 'components/Counter.test.tsx') source = SHARED_COUNTER_BARE_TEST_TSX
+
+    let resolved = source
       .replace(/\{\{__PROJECT_NAME__\}\}/g, pkgName)
       .replace(/\{\{__PM_TYPES_ENTRY__\}\}/g, pmTypesEntry)
       .replace(/\{\{__TEST_RUNNER_IMPORT__\}\}/g, runner.importSource)
+    // Rewrite the <head> stylesheet block: keep the links under UnoCSS,
+    // drop the whole region (markers + comment + links) under `none`.
+    resolved = processCssHead(resolved, usesUno)
+    // `--css none`: the bare scaffold never emits `uno.css`, so prune the
+    // now-dead `# UnoCSS output` block from the generated `.gitignore`.
+    if (!usesUno && path.basename(relPath) === '.gitignore') {
+      resolved = stripUnoGitignore(resolved)
+    }
+
     writeFileSync(target, resolved)
     created++
   }
@@ -297,7 +337,11 @@ async function scaffoldApp(
   // tsconfig's bun-types entry both see the same value.)
   const resolvedAdapterScripts: Record<string, string> = {}
   for (const [k, v] of Object.entries(adapter.scripts)) {
-    resolvedAdapterScripts[k] = typeof v === 'function' ? v(pm) : v
+    const rendered = typeof v === 'function' ? v(pm) : v
+    // `--css none`: strip every `unocss` touch-point out of the scripts
+    // (the dedicated `unocss --watch` concurrently pane, the `&& unocss`
+    // build/deploy links) so they reference only `bf build` + the server.
+    resolvedAdapterScripts[k] = usesUno ? rendered : stripUnocssFromScript(rendered)
   }
 
   // PM-specific devDependencies sourced from the runner config. The
@@ -309,14 +353,25 @@ async function scaffoldApp(
   // otherwise emit, so the same generated file runs under any PM.
   const pmDevDeps: Record<string, string> = runner.devDeps
 
+  // `--css none`: drop the UnoCSS toolchain from devDependencies — the
+  // bare scaffold never runs `unocss`.
+  const adapterDevDeps: Record<string, string> = { ...adapter.devDependencies }
+  if (!usesUno) {
+    for (const key of Object.keys(UNOCSS_DEV_DEPENDENCIES)) delete adapterDevDeps[key]
+  }
+
   const pkgJson = {
     name: pkgName,
     private: true,
     type: 'module',
     scripts: {
       ...resolvedAdapterScripts,
-      watch:
-        'concurrently -k -n build,uno -c blue,magenta "bf build --watch" "unocss --watch"',
+      // The cross-adapter rebuild watcher. Under `--css none` there's no
+      // `unocss --watch` pane to run alongside `bf build --watch`, so it
+      // collapses to a bare build watch (no `concurrently` wrapper).
+      watch: usesUno
+        ? 'concurrently -k -n build,uno -c blue,magenta "bf build --watch" "unocss --watch"'
+        : 'bf build --watch',
       // `test` is wired to the runner that matches the user's package
       // manager — `bun test` for bun, `vitest run` for npm / pnpm /
       // yarn. The matching `bf gen component` / `bf gen test` output
@@ -326,7 +381,7 @@ async function scaffoldApp(
       test: runner.scriptValue,
     },
     dependencies: { ...adapter.dependencies },
-    devDependencies: { ...adapter.devDependencies, ...pmDevDeps },
+    devDependencies: { ...adapterDevDeps, ...pmDevDeps },
   }
   if (!existsSync(pkgJsonPath)) {
     writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')
@@ -344,7 +399,9 @@ async function scaffoldApp(
   // half-scaffolded project that points at a missing import.
   // `silent: true` so the per-file summary doesn't fight the
   // surrounding spinner for the same line.
-  const bundledComponents = adapter.bundledRegistryComponents ?? ['button']
+  // `--css none` pulls nothing from the registry — the bare Counter uses
+  // native <button> elements, so there's no <Button> to fetch.
+  const bundledComponents = usesUno ? (adapter.bundledRegistryComponents ?? ['button']) : []
   if (bundledComponents.length > 0) {
     await addFromRegistry(
       bundledComponents,
