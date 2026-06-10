@@ -1,0 +1,72 @@
+# JSR publish — one implementation, two entry points.
+#
+# This workflow is the single home for the JSR-mirror step. It runs
+# `bun scripts/jsr-publish.ts`, which derives a deno.json per eligible
+# `@barefootjs/*` package and `deno publish`es it, self-skipping any version
+# already live on JSR — so every run is idempotent.
+#
+# Triggers (no duplicated logic between them):
+#   - workflow_call:     release.yml invokes this right after a real npm
+#                        publish, keeping the two registries in lock-step.
+#   - workflow_dispatch: manual re-run. The JSR API occasionally stalls (the
+#                        publish hangs after printing "Publishing …"); when the
+#                        step timeout trips, npm has already shipped, so this
+#                        lets you finish the JSR mirror WITHOUT re-running the
+#                        whole release pipeline (a plain job re-run would find
+#                        npm already published, emit no "New tag:" lines, and
+#                        Changesets would report published=false → the JSR step
+#                        would be skipped, never actually mirroring).
+#
+#                        No inputs by design: the script publishes whatever
+#                        versions the checked-out package.json files declare,
+#                        so dispatch this against the REF of the release you're
+#                        mirroring — e.g. the `@barefootjs/<pkg>@<version>` tag,
+#                        not a moved-on `main` — to avoid mirroring the wrong
+#                        version and breaking lock-step with npm.
+#
+# Needs `id-token: write` for JSR's OIDC auth and Deno to drive the publish.
+
+name: Publish to JSR
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+# Serialize JSR publishes so a manual re-run can't race the release-driven
+# call. cancel-in-progress: false → the second run queues rather than
+# clobbering an in-flight publish (the script is idempotent either way).
+concurrency:
+  group: jsr-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  jsr:
+    runs-on: ubuntu-latest
+    # Backstop for the whole job; the publish step below carries the tighter,
+    # meaningful cap on the known hang point.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      # Deno drives the JSR publish. (No Node/bun install needed: the script
+      # only reads package.json + src and shells out to `deno publish`, which
+      # resolves deps from JSR/npm via the generated manifest's specifiers.)
+      - name: Setup Deno
+        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
+        with:
+          deno-version: v2.x
+
+      - name: Publish to JSR
+        # Tighter cap on the known hang point: a JSR publish that stalls (e.g.
+        # waiting on auth/network) fails the step instead of running for the
+        # full job timeout. jsr-publish.ts self-skips versions already live,
+        # so a re-run safely finishes the mirror.
+        timeout-minutes: 10
+        run: bun scripts/jsr-publish.ts
