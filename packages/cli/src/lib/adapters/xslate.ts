@@ -14,6 +14,8 @@ import type { AdapterTemplate } from '../templates'
 import {
   buildGitignore,
   COMPONENTS_MANIFEST_SEED,
+  CSS_LINKS_BEGIN,
+  CSS_LINKS_END,
   STYLES_CSS,
   TOKENS_CSS,
   UNOCSS_DEV_DEPENDENCIES,
@@ -134,11 +136,13 @@ sub layout (%a) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BarefootJS app</title>
+    ${CSS_LINKS_BEGIN}
     <!-- Link all three sheets so the browser fetches them in parallel.
          tokens first so its CSS variables exist before any rule uses them. -->
     <link rel="stylesheet" href="/static/tokens.css">
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/uno.css">
+    ${CSS_LINKS_END}
 </head>
 <body>
     <main>$a{body}</main>

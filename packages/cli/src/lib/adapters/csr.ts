@@ -14,6 +14,8 @@
 import type { AdapterTemplate } from '../templates'
 import {
   buildGitignore,
+  CSS_LINKS_BEGIN,
+  CSS_LINKS_END,
   SHARED_COUNTER_TSX,
   SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
@@ -145,6 +147,7 @@ const CSR_INDEX_HTML = `<!DOCTYPE html>
   <script type="importmap">
     { "imports": { "@barefootjs/client/runtime": "/static/components/barefoot.js" } }
   </script>
+  ${CSS_LINKS_BEGIN}
   <!-- Link all three sheets so the browser fetches them in parallel —
        chaining via styles.css @import would defer tokens/uno to a
        second round-trip and flash unstyled DOM. tokens first so its
@@ -152,6 +155,7 @@ const CSR_INDEX_HTML = `<!DOCTYPE html>
   <link rel="stylesheet" href="/static/tokens.css">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="/static/uno.css">
+  ${CSS_LINKS_END}
 </head>
 <body>
   <main>

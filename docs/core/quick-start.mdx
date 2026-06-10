@@ -18,6 +18,11 @@ Scaffold a BarefootJS app, run it locally, and tour the generated project. About
 
 Press Enter at the prompts to accept the defaults (Hono on Cloudflare Workers, UnoCSS).
 
+The CSS prompt has two options:
+
+- **UnoCSS** (default) — wires up UnoCSS and pulls a starter `<Button>` from the BarefootJS UI registry. The rest of this guide follows this path.
+- **None (bring your own CSS)** — no UnoCSS, no UI components, no stylesheets. You get just the JSX→template+signals compiler output and a dependency-free starter `Counter` built from native `<button>` elements. Pick this when you want to wire up your own styling. Pass `--css none` to select it non-interactively.
+
 ## 2. Install and run
 
 ```bash

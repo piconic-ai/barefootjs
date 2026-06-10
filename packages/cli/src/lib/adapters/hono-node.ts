@@ -12,6 +12,8 @@ import type { AdapterTemplate } from '../templates'
 import {
   buildGitignore,
   COMPONENTS_MANIFEST_SEED,
+  CSS_LINKS_BEGIN,
+  CSS_LINKS_END,
   SHARED_COUNTER_TSX,
   SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
@@ -158,6 +160,7 @@ export function createRenderer({ componentsBase }: CreateRendererOptions) {
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>{title ?? 'BarefootJS app'}</title>
+          ${CSS_LINKS_BEGIN}
           {/* Link all three sheets so the browser fetches them in
               parallel — chaining via styles.css @import would defer
               tokens/uno to a second round-trip and flash unstyled
@@ -166,6 +169,7 @@ export function createRenderer({ componentsBase }: CreateRendererOptions) {
           <link rel="stylesheet" href="/static/tokens.css" />
           <link rel="stylesheet" href="/static/styles.css" />
           <link rel="stylesheet" href="/static/uno.css" />
+          ${CSS_LINKS_END}
           <BfImportMap base={componentsBase} />
         </head>
         <body>

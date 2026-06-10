@@ -12,6 +12,8 @@ import { commandsFor } from '../pm'
 import {
   buildGitignore,
   COMPONENTS_MANIFEST_SEED,
+  CSS_LINKS_BEGIN,
+  CSS_LINKS_END,
   SHARED_COUNTER_TSX,
   SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
@@ -60,6 +62,7 @@ export const renderer = jsxRenderer(({ children, title }) => (
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>{title ?? 'BarefootJS app'}</title>
+      ${CSS_LINKS_BEGIN}
       {/* Link all three sheets so the browser fetches them in
           parallel — chaining via styles.css @import would defer
           tokens/uno to a second round-trip and flash unstyled DOM.
@@ -68,6 +71,7 @@ export const renderer = jsxRenderer(({ children, title }) => (
       <link rel="stylesheet" href="/tokens.css" />
       <link rel="stylesheet" href="/styles.css" />
       <link rel="stylesheet" href="/uno.css" />
+      ${CSS_LINKS_END}
       <BfImportMap base={componentsBase} />
     </head>
     <body>

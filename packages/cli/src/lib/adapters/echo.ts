@@ -18,6 +18,8 @@ import { execSync } from 'node:child_process'
 import type { AdapterTemplate } from '../templates'
 import {
   buildGitignore,
+  CSS_LINKS_BEGIN,
+  CSS_LINKS_END,
   SHARED_COUNTER_TSX,
   SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
@@ -139,6 +141,7 @@ func defaultLayout(ctx *bf.RenderContext) string {
 \t<meta charset="utf-8" />
 \t<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 \t<title>%s</title>
+\t${CSS_LINKS_BEGIN}
 \t<!-- Link all three sheets so the browser fetches them in parallel —
 \t     chaining via styles.css @import would defer tokens/uno to a
 \t     second round-trip and flash unstyled DOM. tokens first so its
@@ -146,6 +149,7 @@ func defaultLayout(ctx *bf.RenderContext) string {
 \t<link rel="stylesheet" href="/static/tokens.css" />
 \t<link rel="stylesheet" href="/static/styles.css" />
 \t<link rel="stylesheet" href="/static/uno.css" />
+\t${CSS_LINKS_END}
 </head>
 <body>
 \t<main>%s</main>

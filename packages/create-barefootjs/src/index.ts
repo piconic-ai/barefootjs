@@ -59,7 +59,9 @@ Options:
 
 Forwarded to \`bf init\`:
   --adapter <name>    Adapter to use (default: hono)
-  --css <name>        CSS library to use (default: unocss)
+  --css <name>        CSS setup to use: "unocss" (default) or "none"
+                      ("none" = bring your own CSS: no UnoCSS, no UI
+                      components, just the compiler output)
 
 After scaffolding:
   cd <project-name>
