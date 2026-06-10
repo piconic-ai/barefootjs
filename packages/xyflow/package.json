@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/xyflow",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Signal-based xyflow wrapper for BarefootJS",
   "type": "module",
   "main": "./dist/index.js",

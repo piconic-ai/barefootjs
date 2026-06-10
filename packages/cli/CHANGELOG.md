@@ -1,5 +1,16 @@
 # @barefootjs/cli
 
+## 0.13.0
+
+### Minor Changes
+
+- 361082e: Add a `--css none` (bring your own CSS) option to `bf init` / `create-barefootjs`. Selecting it (via the interactive prompt or `--css none`) opts out of the UnoCSS + UI-registry layer across every adapter: no registry probe/fetch, no `uno.config.ts` or stylesheets, no `unocss` in the package.json scripts/devDeps, and a dependency-free starter `Counter` built from native `<button>` elements. The default `unocss` path is unchanged.
+
+### Patch Changes
+
+- @barefootjs/client@0.13.0
+- @barefootjs/shared@0.13.0
+
 ## 0.12.0
 
 ### Patch Changes
