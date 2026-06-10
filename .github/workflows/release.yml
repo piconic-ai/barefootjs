@@ -60,12 +60,6 @@ jobs:
         with:
           node-version: '24'
 
-      # Deno drives the JSR publish step below.
-      - name: Setup Deno
-        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
-        with:
-          deno-version: v2.x
-
       - run: bun install
 
       - name: Changesets — version or publish
@@ -77,19 +71,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Mirror whatever Changesets just published to npm onto JSR. The
-      # script self-skips packages whose version is already live on JSR,
-      # so an unconditional run only ever publishes the freshly-bumped
-      # set — keeping the two registries in lock-step. Gated on a real
-      # publish so version-PR runs don't touch JSR.
-      - name: Publish to JSR
-        if: steps.changesets.outputs.published == 'true'
-        # Tighter cap on the known hang point: a JSR publish that stalls (e.g.
-        # waiting on auth/network) fails the step instead of running for hours.
-        # npm has already published by this step, and jsr-publish.ts self-skips
-        # versions already live, so a re-run safely finishes the JSR mirror.
-        timeout-minutes: 10
-        run: bun scripts/jsr-publish.ts
+  # Mirror whatever Changesets just published to npm onto JSR. Delegates to
+  # the reusable jsr-publish.yml so the release-driven path and the manual
+  # workflow_dispatch re-run share one implementation. The script self-skips
+  # versions already live on JSR, so an unconditional run only publishes the
+  # freshly-bumped set — keeping the two registries in lock-step. Gated on a
+  # real publish so version-PR runs don't touch JSR.
+  jsr-release:
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/jsr-publish.yml
 
   cpan-release:
     needs: release
