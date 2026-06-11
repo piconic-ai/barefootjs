@@ -1143,61 +1143,43 @@ func isTruthy(v any) bool {
 // Higher-order Array Methods
 // =============================================================================
 
-// Every returns true if all items have the specified field set to true.
-// Mirrors JavaScript's Array.prototype.every(item => item.field).
+// fieldValue projects item.field for the higher-order predicate
+// helpers. The field name arrives in JS casing; structs resolve via
+// the capitalized Go convention (FieldByName inside getFieldValue),
+// maps via getFieldValue's case-variant lookup — the same dual
+// support Sort/Reduce gained in #1487, extended here so JSON-decoded
+// data (map items) participates instead of being silently skipped.
+// nil-safe: missing fields and nil items project to nil.
+func fieldValue(item any, field string) any {
+	return getFieldValue(item, capitalize(field))
+}
+
+// Every returns true if every item's field is truthy under JS
+// `Boolean(item.field)` semantics. Mirrors JavaScript's
+// Array.prototype.every(item => item.field) — including being
+// vacuously true for an empty receiver.
 func Every(items any, field string) bool {
 	v := reflect.ValueOf(items)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return false
 	}
-
-	capitalizedField := capitalize(field)
 	for i := 0; i < v.Len(); i++ {
-		item := v.Index(i)
-		if item.Kind() == reflect.Interface {
-			item = item.Elem()
-		}
-		if item.Kind() == reflect.Ptr {
-			item = item.Elem()
-		}
-		if item.Kind() != reflect.Struct {
-			continue
-		}
-
-		fieldVal := item.FieldByName(capitalizedField)
-		if !fieldVal.IsValid() {
-			return false
-		}
-		if fieldVal.Kind() == reflect.Bool && !fieldVal.Bool() {
+		if !isTruthy(fieldValue(v.Index(i).Interface(), field)) {
 			return false
 		}
 	}
 	return true
 }
 
-// Some returns true if at least one item has the specified field set to true.
-// Mirrors JavaScript's Array.prototype.some(item => item.field).
+// Some returns true if at least one item's field is truthy. Mirrors
+// JavaScript's Array.prototype.some(item => item.field).
 func Some(items any, field string) bool {
 	v := reflect.ValueOf(items)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return false
 	}
-
-	capitalizedField := capitalize(field)
 	for i := 0; i < v.Len(); i++ {
-		item := v.Index(i)
-		if item.Kind() == reflect.Interface {
-			item = item.Elem()
-		}
-		if item.Kind() == reflect.Ptr {
-			item = item.Elem()
-		}
-		if item.Kind() != reflect.Struct {
-			continue
-		}
-
-		fieldVal := item.FieldByName(capitalizedField)
-		if fieldVal.IsValid() && fieldVal.Kind() == reflect.Bool && fieldVal.Bool() {
+		if isTruthy(fieldValue(v.Index(i).Interface(), field)) {
 			return true
 		}
 	}
@@ -1212,30 +1194,11 @@ func Filter(items any, field string, value any) []any {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return nil
 	}
-
-	capitalizedField := capitalize(field)
 	var result []any
-
 	for i := 0; i < v.Len(); i++ {
-		item := v.Index(i)
-		if item.Kind() == reflect.Interface {
-			item = item.Elem()
-		}
-		if item.Kind() == reflect.Ptr {
-			item = item.Elem()
-		}
-		if item.Kind() != reflect.Struct {
-			continue
-		}
-
-		fieldVal := item.FieldByName(capitalizedField)
-		if !fieldVal.IsValid() {
-			continue
-		}
-
-		// Compare field value with target value
-		if reflect.DeepEqual(fieldVal.Interface(), value) {
-			result = append(result, v.Index(i).Interface())
+		item := v.Index(i).Interface()
+		if reflect.DeepEqual(fieldValue(item, field), value) {
+			result = append(result, item)
 		}
 	}
 	return result
@@ -1248,27 +1211,10 @@ func Find(items any, field string, value any) any {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return nil
 	}
-
-	capitalizedField := capitalize(field)
 	for i := 0; i < v.Len(); i++ {
-		item := v.Index(i)
-		if item.Kind() == reflect.Interface {
-			item = item.Elem()
-		}
-		if item.Kind() == reflect.Ptr {
-			item = item.Elem()
-		}
-		if item.Kind() != reflect.Struct {
-			continue
-		}
-
-		fieldVal := item.FieldByName(capitalizedField)
-		if !fieldVal.IsValid() {
-			continue
-		}
-
-		if reflect.DeepEqual(fieldVal.Interface(), value) {
-			return v.Index(i).Interface()
+		item := v.Index(i).Interface()
+		if reflect.DeepEqual(fieldValue(item, field), value) {
+			return item
 		}
 	}
 	return nil
@@ -1281,26 +1227,8 @@ func FindIndex(items any, field string, value any) int {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return -1
 	}
-
-	capitalizedField := capitalize(field)
 	for i := 0; i < v.Len(); i++ {
-		item := v.Index(i)
-		if item.Kind() == reflect.Interface {
-			item = item.Elem()
-		}
-		if item.Kind() == reflect.Ptr {
-			item = item.Elem()
-		}
-		if item.Kind() != reflect.Struct {
-			continue
-		}
-
-		fieldVal := item.FieldByName(capitalizedField)
-		if !fieldVal.IsValid() {
-			continue
-		}
-
-		if reflect.DeepEqual(fieldVal.Interface(), value) {
+		if reflect.DeepEqual(fieldValue(v.Index(i).Interface(), field), value) {
 			return i
 		}
 	}
@@ -1314,33 +1242,10 @@ func FindLast(items any, field string, value any) any {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return nil
 	}
-
-	capitalizedField := capitalize(field)
 	for i := v.Len() - 1; i >= 0; i-- {
-		item := v.Index(i)
-		if item.Kind() == reflect.Interface {
-			if item.IsNil() {
-				continue
-			}
-			item = item.Elem()
-		}
-		if item.Kind() == reflect.Ptr {
-			if item.IsNil() {
-				continue
-			}
-			item = item.Elem()
-		}
-		if item.Kind() != reflect.Struct {
-			continue
-		}
-
-		fieldVal := item.FieldByName(capitalizedField)
-		if !fieldVal.IsValid() {
-			continue
-		}
-
-		if reflect.DeepEqual(fieldVal.Interface(), value) {
-			return v.Index(i).Interface()
+		item := v.Index(i).Interface()
+		if reflect.DeepEqual(fieldValue(item, field), value) {
+			return item
 		}
 	}
 	return nil
@@ -1353,32 +1258,8 @@ func FindLastIndex(items any, field string, value any) int {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return -1
 	}
-
-	capitalizedField := capitalize(field)
 	for i := v.Len() - 1; i >= 0; i-- {
-		item := v.Index(i)
-		if item.Kind() == reflect.Interface {
-			if item.IsNil() {
-				continue
-			}
-			item = item.Elem()
-		}
-		if item.Kind() == reflect.Ptr {
-			if item.IsNil() {
-				continue
-			}
-			item = item.Elem()
-		}
-		if item.Kind() != reflect.Struct {
-			continue
-		}
-
-		fieldVal := item.FieldByName(capitalizedField)
-		if !fieldVal.IsValid() {
-			continue
-		}
-
-		if reflect.DeepEqual(fieldVal.Interface(), value) {
+		if reflect.DeepEqual(fieldValue(v.Index(i).Interface(), field), value) {
 			return i
 		}
 	}
