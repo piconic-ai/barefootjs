@@ -92,7 +92,8 @@ app.get('/blog/:page', async (c) => {
 | Concern | Mechanism |
 |---|---|
 | Insert new HTML into a region | `replaceChildren` on the `[bf-outlet]` element |
-| Re-hydrate freshly inserted scopes | `window.__bf_hydrate` → `rehydrateAll()` (the same walk the streaming `__bf_swap` primitive uses) |
+| Load a navigated-to island's JS | import the response's `<script type="module" src>` (BfScripts) not already loaded — so a new island's `hydrate(name, def)` runs before re-hydration |
+| Re-hydrate freshly inserted scopes | `window.__bf_hydrate_within(outlet)` → `rehydrateScope(outlet)` (subtree-scoped, O(outlet)) |
 | Single-component fragment SSR | `renderToHtml(<Component/>)` from `@barefootjs/hono` |
 
 ## Limitations & next steps

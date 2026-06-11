@@ -48,6 +48,17 @@ export interface RouterOptions {
    * rather than leaked. Pass `() => {}` to opt out.
    */
   dispose?: (outlet: Element) => void
+  /**
+   * Loads an island JS module the navigation introduced — the response's
+   * `<script type="module" src>` tags (BfScripts) carry exactly which
+   * modules the swapped-in islands need. Importing a module runs it, which
+   * registers its `hydrate(name, def)` so the subsequent re-hydration can
+   * init the island. Defaults to `(src) => import(src)`; already-loaded
+   * modules (the initial page's, plus ones loaded on earlier navigations)
+   * are skipped. Without this, an island whose module wasn't on the first
+   * page would never hydrate after navigation.
+   */
+  loadModule?: (src: string) => Promise<unknown>
   /** Predicate deciding whether a clicked anchor is handled by the router. */
   shouldIntercept?: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
   /** Reset scroll to the top after a swap (default: true). */
@@ -76,6 +87,9 @@ interface RouterState {
   outletSelector: string
   rehydrate: (outlet: Element) => void | Promise<void>
   dispose: (outlet: Element) => void
+  loadModule: (src: string) => Promise<unknown>
+  /** Absolute URLs of module scripts already loaded (deduped across navs). */
+  loadedModules: Set<string>
   shouldIntercept: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
   scrollToTop: boolean
   inflight: AbortController | null
@@ -98,6 +112,9 @@ export function startRouter(options: RouterOptions = {}): Router {
     outletSelector: options.outlet ?? `[${BF_OUTLET}]`,
     rehydrate: options.rehydrate ?? defaultRehydrate,
     dispose: options.dispose ?? defaultDispose,
+    loadModule: options.loadModule ?? ((src) => import(src)),
+    // Seed with the modules already on the page so we never re-import them.
+    loadedModules: collectModuleScripts(document),
     shouldIntercept: options.shouldIntercept ?? defaultShouldIntercept,
     scrollToTop: options.scrollToTop ?? true,
     inflight: null,
@@ -183,6 +200,12 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     current.replaceChildren(...content.nodes)
     if (content.title !== null) document.title = content.title
 
+    // Load any island modules this response introduced (registers their
+    // defs) before hydrating — otherwise a newly-arrived island has no def
+    // and the re-hydration walk silently skips it.
+    await loadNewModules(state, content.moduleSrcs)
+    if (controller.signal.aborted) return
+
     if (mode === 'push') {
       window.history.pushState({ bfRouter: true }, '', finalUrl)
     } else if (mode === 'replace') {
@@ -257,6 +280,39 @@ function defaultShouldIntercept(anchor: HTMLAnchorElement): boolean {
 interface OutletContent {
   nodes: Node[]
   title: string | null
+  /** `<script type="module" src>` URLs found anywhere in the response. */
+  moduleSrcs: string[]
+}
+
+/** Absolute URLs of every `<script type="module" src>` under `root`. */
+function collectModuleScripts(root: ParentNode): Set<string> {
+  const out = new Set<string>()
+  for (const s of root.querySelectorAll('script[type="module"][src]')) {
+    const src = s.getAttribute('src')
+    if (!src) continue
+    try {
+      out.add(new URL(src, window.location.href).href)
+    } catch {
+      /* skip un-resolvable src */
+    }
+  }
+  return out
+}
+
+/** Import the modules in `srcs` not already loaded; records them as loaded. */
+async function loadNewModules(state: RouterState, srcs: string[]): Promise<void> {
+  const fresh = srcs.filter((s) => !state.loadedModules.has(s))
+  await Promise.all(
+    fresh.map(async (src) => {
+      state.loadedModules.add(src) // mark first so a concurrent nav won't re-import
+      try {
+        await state.loadModule(src)
+      } catch {
+        // A failed import leaves the island un-hydrated; the page still
+        // shows the swapped SSR HTML. Leave it marked to avoid retry storms.
+      }
+    }),
+  )
 }
 
 /**
@@ -274,6 +330,9 @@ function extractOutlet(html: string, selector: string): OutletContent | null {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   const outlet = doc.querySelector(selector)
   const title = doc.querySelector('title')?.textContent ?? null
+  // Island module scripts sit at body-end (BfScripts), outside the outlet —
+  // collect from the whole response, not just the swapped subtree.
+  const moduleSrcs = [...collectModuleScripts(doc)]
 
   let source: ParentNode | null = outlet
   if (!source) {
@@ -284,7 +343,7 @@ function extractOutlet(html: string, selector: string): OutletContent | null {
   }
 
   const nodes = Array.from(source.childNodes).map((n) => document.importNode(n, true))
-  return { nodes, title }
+  return { nodes, title, moduleSrcs }
 }
 
 interface ClientSeams {

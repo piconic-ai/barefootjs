@@ -155,3 +155,55 @@ test('does not intercept external links or modified clicks', async () => {
 
   expect(fetchCalls).toHaveLength(0)
 })
+
+test('module-aware swap: a navigated-to island loads its module then hydrates (deduped)', async () => {
+  // A prior test's cross-origin anchor click can move the happy-dom
+  // location; reset it so relative module URLs resolve predictably.
+  ;(window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM?.setURL?.(
+    'https://example.test/blog/1',
+  )
+
+  // Faithful stand-in for the client runtime: an island only hydrates once
+  // its module (which would call hydrate(name, def)) has loaded and
+  // registered the def. `rehydrate` inits [bf-s] elements whose def exists.
+  const registry = new Map<string, (el: Element) => void>()
+  const hydrated: string[] = []
+  const rehydrate = (outlet: Element) => {
+    for (const el of outlet.querySelectorAll('[bf-s]')) {
+      const name = el.getAttribute('bf-s')!.split('_')[0]
+      const init = registry.get(name)
+      if (init) {
+        init(el)
+        hydrated.push(name)
+      }
+    }
+  }
+  const imported: string[] = []
+  const loadModule = async (src: string) => {
+    imported.push(src)
+    if (src.endsWith('/counter.js')) registry.set('Counter', (el) => (el.textContent = 'hydrated'))
+  }
+
+  // Response carries a Counter island + its module script (BfScripts).
+  const page = () => `<!doctype html><html><head><title>P2</title></head><body>
+      <header id="hdr">SHELL</header>
+      <main bf-outlet><div bf-s="Counter_1">SSR</div></main>
+      <script type="module" src="/static/counter.js"></script>
+    </body></html>`
+  mockFetch(page)
+
+  const router = startRouter({ rehydrate, loadModule })
+  stop = router.stop
+
+  // First navigation: the new module loads, then the island hydrates.
+  clickLink('next')
+  await flush()
+  expect(imported).toEqual(['https://example.test/static/counter.js'])
+  expect(hydrated).toEqual(['Counter']) // hydrated only because the def loaded first
+  expect(document.querySelector('[bf-s="Counter_1"]')!.textContent).toBe('hydrated')
+
+  // Second navigation to a page referencing the same module → not re-imported.
+  await router.navigate('/blog/3')
+  await flush()
+  expect(imported).toEqual(['https://example.test/static/counter.js']) // still just once
+})
