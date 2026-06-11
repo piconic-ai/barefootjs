@@ -216,8 +216,15 @@ export function resolveSiblingModuleMap(
   return Object.keys(out).length > 0 ? out : undefined
 }
 
-/** Alias prefix `site/ui` sources use to import `ui/components/ui/<name>` roots. */
+/** Alias prefixes `site/ui` sources use to import `ui/components/ui/<name>` roots. */
 const UI_ALIAS_PREFIX = '@ui/components/ui/'
+/**
+ * Second alias shape (#1467 Phase 2e): `@/*` maps to `site/ui/dist/*`,
+ * whose `components/ui/<name>` entries are the built copies of the same
+ * `ui/components/ui/<name>` sources — so for compile/SSR purposes the
+ * specifier resolves to the identical sibling source as the `@ui` form.
+ */
+const SITE_DIST_ALIAS_PREFIX = '@/components/ui/'
 
 /**
  * Value-import specifiers of a .tsx source, via a TS AST walk over the
@@ -246,21 +253,25 @@ function valueImportSpecifiers(source: string): string[] {
 
 /**
  * Resolve an import specifier to the `ui/components/ui/<name>` sibling it
- * targets, or `undefined` for non-sibling imports. Two shapes resolve:
+ * targets, or `undefined` for non-sibling imports. Three shapes resolve:
  *
  *   - `../<name>` — the relative shape ui siblings use among themselves;
  *     only meaningful when the importer itself lives under the ui root
  *     (from a demo source `../<name>` would point at `site/ui/<name>`).
  *     Single path segment only — `../../../types` never matches.
  *   - `@ui/components/ui/<name>` — the site-wide alias demo sources use.
+ *   - `@/components/ui/<name>` — the site-dist alias some demo sources
+ *     use instead; same sibling source (see `SITE_DIST_ALIAS_PREFIX`).
  */
 function uiSiblingBasename(
   specifier: string,
   importerIsUiComponent: boolean,
 ): string | undefined {
-  if (specifier.startsWith(UI_ALIAS_PREFIX)) {
-    const base = specifier.slice(UI_ALIAS_PREFIX.length)
-    return /^[a-zA-Z0-9_-]+$/.test(base) ? base : undefined
+  for (const prefix of [UI_ALIAS_PREFIX, SITE_DIST_ALIAS_PREFIX]) {
+    if (specifier.startsWith(prefix)) {
+      const base = specifier.slice(prefix.length)
+      return /^[a-zA-Z0-9_-]+$/.test(base) ? base : undefined
+    }
   }
   if (!importerIsUiComponent) return undefined
   const m = /^\.\.\/([a-zA-Z0-9_-]+)$/.exec(specifier)

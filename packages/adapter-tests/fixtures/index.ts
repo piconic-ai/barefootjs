@@ -60,6 +60,16 @@ import { fixture as select } from './select'
 import { fixture as dropdownMenu } from './dropdown-menu'
 import { fixture as combobox } from './combobox'
 import { fixture as command } from './command'
+// #1467 Phase 2e (complex): `pagination` (one signal fanned across
+// seven href="#" links whose handlers must preventDefault) and
+// `data-table` (keyed-loop reorder on sort — the corpus's first keyed
+// reconciliation probe). `calendar` (current-month grid is a function
+// of the wall clock — non-deterministic frozen HTML) and `carousel`
+// (embla-carousel arrives via a browser dynamic import the host page
+// can't resolve without a vendor-serving story) are deferred; see the
+// #1467 Phase 2e comment.
+import { fixture as pagination } from './pagination'
+import { fixture as dataTable } from './data-table'
 // #1694: text-content HTML-escaping (parallel to the #1692 attribute fix).
 import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
@@ -274,6 +284,8 @@ export const jsxFixtures: JSXFixture[] = [
   dropdownMenu,
   combobox,
   command,
+  pagination,
+  dataTable,
   textEscape,
   // Priority 1: Core reactivity
   signalWithFallback,

@@ -71,6 +71,10 @@ runAdapterConformanceTests({
     'dropdown-menu',
     'combobox',
     'command',
+    // `pagination` / `data-table` (#1467 Phase 2e): same Phase 3 bucket
+    // (constructor emission / template parse on the composed shapes).
+    'pagination',
+    'data-table',
   ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
@@ -190,6 +194,9 @@ runAdapterConformanceTests({
     // the IR still declares (s6). See hono-adapter.test for the
     // contract.
     'todo-app',
+    // #1467 Phase 2e: same `/* @client */` keyed-map elision for the
+    // DataTablePreviewDemo sort memo.
+    'data-table',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {

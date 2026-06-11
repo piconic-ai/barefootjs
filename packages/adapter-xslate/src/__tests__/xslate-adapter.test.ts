@@ -46,7 +46,9 @@ runAdapterConformanceTests({
   //     stringification, escaping, empty-attr emission). `tooltip` is
   //     intentionally NOT listed — Xslate renders it to full Hono
   //     parity.
-  skipJsx: ['accordion', 'tabs', 'dialog', 'popover'],
+  //   - `pagination` (#1467 Phase 2e): compiles clean, renders with the
+  //     same divergence families as above.
+  skipJsx: ['accordion', 'tabs', 'dialog', 'popover', 'pagination'],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.
@@ -109,6 +111,10 @@ runAdapterConformanceTests({
     'dropdown-menu': [{ code: 'BF101', severity: 'error' }],
     'combobox': [{ code: 'BF101', severity: 'error' }],
     'command': [{ code: 'BF101', severity: 'error' }],
+    // #1467 Phase 2e: the data-table demo source's `/* @client */`
+    // comparator sort has no Kolon lowering — refused at the
+    // demo-source compile, same gate as mojo.
+    'data-table': [{ code: 'BF101', severity: 'error' }],
     // `style-3-signals` / `style-object-dynamic` no longer pinned — a
     // `style={{ … }}` object literal now lowers to a CSS string with dynamic
     // values interpolated (`background-color:<: $color :>;padding:8px`) via
@@ -134,6 +140,8 @@ runAdapterConformanceTests({
     'client-only',
     'client-only-loop-with-sibling-cond',
     'todo-app',
+    // #1467 Phase 2e: same `/* @client */` keyed-map elision (data-table).
+    'data-table',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof XslateNotAvailableError) {

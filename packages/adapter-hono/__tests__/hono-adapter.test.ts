@@ -25,5 +25,9 @@ runAdapterConformanceTests({
     // the gap here until the marker checker learns about
     // client-only loops.
     'todo-app',
+    // #1467 Phase 2e: DataTablePreviewDemo's keyed `.map` over the
+    // `/* @client */`-sorted memo elides its slot id from the SSR
+    // template the same way TodoApp's does.
+    'data-table',
   ]),
 })

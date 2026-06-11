@@ -34,7 +34,10 @@ runAdapterConformanceTests({
   // "$open" requires explicit package name`), the adapter's known
   // Perl-scoping limitation surfacing at render time. Same #1897
   // bucket.
-  skipJsx: ['tabs', 'tooltip'],
+  // `pagination` (#1467 Phase 2e): compiles clean but the EP render
+  // dies in perl (exit 2) on the composed link shape — same #1897
+  // bucket as `tabs`/`tooltip`.
+  skipJsx: ['tabs', 'tooltip', 'pagination'],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't
@@ -100,6 +103,10 @@ runAdapterConformanceTests({
     'dropdown-menu': [{ code: 'BF101', severity: 'error' }],
     'combobox': [{ code: 'BF101', severity: 'error' }],
     'command': [{ code: 'BF101', severity: 'error' }],
+    // #1467 Phase 2e: the data-table demo source's `/* @client */`
+    // comparator sort has no EP lowering — refused at the demo-source
+    // compile, same gate.
+    'data-table': [{ code: 'BF101', severity: 'error' }],
     // #1443: `[a, b].filter(Boolean).join(' ')` (the registry Slot's
     // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.
     // No BF101 expected — pinned positively via the
@@ -173,6 +180,8 @@ runAdapterConformanceTests({
     // intentionally elide a slot id from the SSR template that the IR
     // still declares (s6). See hono-adapter.test for the contract.
     'todo-app',
+    // #1467 Phase 2e: same `/* @client */` keyed-map elision (data-table).
+    'data-table',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof PerlNotAvailableError) {
