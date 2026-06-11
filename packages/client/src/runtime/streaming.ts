@@ -14,7 +14,7 @@
  */
 
 import { BF_ASYNC, BF_ASYNC_RESOLVE } from '@barefootjs/shared'
-import { rehydrateAll } from './hydrate.ts'
+import { rehydrateAll, rehydrateScope, disposeScope } from './hydrate.ts'
 
 /**
  * Swap a streaming fallback placeholder with its resolved content.
@@ -52,7 +52,11 @@ export function __bf_swap(id: string): void {
  * Makes `__bf_swap` available as `window.__bf_swap` so that inline
  * `<script>__bf_swap("a0")</script>` tags in streaming chunks can call it.
  *
- * Also exposes `window.__bf_hydrate` for manual re-hydration triggers.
+ * Also exposes re-hydration / disposal seams for an out-of-tree client
+ * router (`@barefootjs/router`):
+ *   - `window.__bf_hydrate`        — re-hydrate the whole document
+ *   - `window.__bf_hydrate_within` — re-hydrate only a swapped subtree
+ *   - `window.__bf_dispose_within` — dispose the islands in a subtree
  *
  * Call this once, early in the page (before any streaming chunks arrive).
  */
@@ -62,4 +66,6 @@ export function setupStreaming(): void {
   const w = window as unknown as Record<string, unknown>
   w.__bf_swap = __bf_swap
   w.__bf_hydrate = rehydrateAll
+  w.__bf_hydrate_within = rehydrateScope
+  w.__bf_dispose_within = disposeScope
 }

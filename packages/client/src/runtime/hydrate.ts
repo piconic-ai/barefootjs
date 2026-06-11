@@ -43,6 +43,7 @@ import { hydratedScopes } from './hydration-state.ts'
 import { registerComponent } from './registry.ts'
 import { registerTemplate } from './template.ts'
 import { BF_SCOPE, BF_PROPS, BF_HOST, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
+import { createRoot } from '@barefootjs/client/reactive'
 import type { ComponentDef } from './types.ts'
 
 /**
@@ -186,6 +187,59 @@ export function flushHydration(): void {
 }
 
 /**
+ * Re-hydrate only the scopes inside `root` (and `root` itself), in
+ * document order. Unlike `rehydrateAll()` — which schedules a walk over
+ * the *whole document* — this is a synchronous, subtree-scoped walk: its
+ * cost is O(scopes in `root`), not O(document).
+ *
+ * Intended for a client router that has just swapped a content region:
+ * the component registry is already populated from the initial load, so
+ * no deferral is needed; only the freshly inserted islands need to init.
+ */
+export function rehydrateScope(root: Element): void {
+  if (typeof document === 'undefined') return
+  // The TreeWalker visits descendants only, so handle the root itself first.
+  hydrateElementScope(root)
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT)
+  while (walker.nextNode()) {
+    const node = walker.currentNode
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      hydrateElementScope(node as Element)
+    } else if (node.nodeType === Node.COMMENT_NODE) {
+      hydrateCommentScope(node as Comment)
+    }
+  }
+}
+
+/**
+ * Dispose every hydrated scope inside `root` (and `root` itself): runs
+ * each scope's `createRoot` dispose fn, tearing down its effects, memos,
+ * and `onCleanup` callbacks. Used by a client router before it removes a
+ * content region, so the outgoing islands release timers/listeners/
+ * subscriptions instead of leaking.
+ *
+ * Also clears the `hydratedScopes` mark so the same element could be
+ * re-hydrated if it is ever re-inserted.
+ */
+export function disposeScope(root: Element): void {
+  if (typeof document === 'undefined') return
+  disposeOneScope(root)
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
+  while (walker.nextNode()) {
+    disposeOneScope(walker.currentNode as Element)
+  }
+}
+
+function disposeOneScope(el: Element): void {
+  const dispose = scopeDisposers.get(el)
+  if (dispose) {
+    scopeDisposers.delete(el)
+    hydratedScopes.delete(el)
+    dispose()
+  }
+}
+
+/**
  * Single document-order walk visiting element scopes (`[bf-s]`) and
  * comment scopes (`<!--bf-scope:Name_xxx-->`) interleaved by their
  * actual DOM position. The parent's init — whichever scope shape it
@@ -232,10 +286,29 @@ function parseProps(json: string | null, where: string): Record<string, unknown>
   }
 }
 
+/**
+ * Per-scope disposal registry. Each scope's `init` runs inside a
+ * `createRoot`, so all the effects/memos it (and its `initChild`-mounted
+ * descendants) create are owned by one root. `disposeScope(root)` calls
+ * the stored dispose fn to tear them down — enabling a client router to
+ * release the islands leaving the page precisely, instead of leaking
+ * timers/listeners or relying on GC (see `disposeScope`).
+ *
+ * Keyed by the scope element; a `WeakMap` so detached scopes are
+ * reclaimed even if `disposeScope` is never called.
+ */
+const scopeDisposers = new WeakMap<Element, () => void>()
+
 function runInit(scope: Element, def: ComponentDef, props: Record<string, unknown>): void {
   const prevScope = setCurrentScope(scope)
   try {
-    def.init(scope, props)
+    // Wrap in createRoot so the scope's reactive graph has an owner that
+    // can be disposed later. This is additive: nothing disposes the root
+    // unless `disposeScope` is called, so existing lifetimes are unchanged.
+    createRoot((dispose) => {
+      scopeDisposers.set(scope, dispose)
+      def.init(scope, props)
+    })
   } finally {
     setCurrentScope(prevScope)
   }
