@@ -34,6 +34,11 @@ type vectorFile struct {
 // is not allowed to silently fall behind the catalogue.
 var vectorBindings = map[string]func(args []any) any{
 	"add": func(args []any) any { return Add(args[0], args[1]) },
+	"sub": func(args []any) any { return Sub(args[0], args[1]) },
+	"mul": func(args []any) any { return Mul(args[0], args[1]) },
+	"div": func(args []any) any { return Div(args[0], args[1]) },
+	"mod": func(args []any) any { return Mod(args[0], args[1]) },
+	"neg": func(args []any) any { return Neg(args[0]) },
 }
 
 func TestHelperVectors(t *testing.T) {

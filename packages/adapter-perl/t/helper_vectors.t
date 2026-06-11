@@ -31,6 +31,11 @@ my $doc = do {
 # not silently fall behind the catalogue.
 my %bindings = (
     add => sub { $_[0] + $_[1] },
+    sub => sub { $_[0] - $_[1] },
+    mul => sub { $_[0] * $_[1] },
+    div => sub { $_[0] / $_[1] },
+    mod => sub { $_[0] % $_[1] },
+    neg => sub { -$_[0] },
 );
 
 for my $case (@{ $doc->{cases} }) {

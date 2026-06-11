@@ -74,6 +74,218 @@
       ],
       "expect": 9007199254740992,
       "note": "upper edge of the safe-integer domain (2^53)"
+    },
+    {
+      "fn": "sub",
+      "args": [
+        5,
+        3
+      ],
+      "expect": 2,
+      "note": "int - int"
+    },
+    {
+      "fn": "sub",
+      "args": [
+        3,
+        5
+      ],
+      "expect": -2,
+      "note": "negative result"
+    },
+    {
+      "fn": "sub",
+      "args": [
+        0.3,
+        0.1
+      ],
+      "expect": 0.19999999999999998,
+      "note": "IEEE-754 double rounding"
+    },
+    {
+      "fn": "sub",
+      "args": [
+        1.5,
+        0.25
+      ],
+      "expect": 1.25,
+      "note": "float operands"
+    },
+    {
+      "fn": "sub",
+      "args": [
+        0,
+        0
+      ],
+      "expect": 0,
+      "note": "zero identity"
+    },
+    {
+      "fn": "mul",
+      "args": [
+        3,
+        4
+      ],
+      "expect": 12,
+      "note": "int * int"
+    },
+    {
+      "fn": "mul",
+      "args": [
+        -3,
+        4
+      ],
+      "expect": -12,
+      "note": "negative operand"
+    },
+    {
+      "fn": "mul",
+      "args": [
+        0.1,
+        0.2
+      ],
+      "expect": 0.020000000000000004,
+      "note": "IEEE-754 double rounding"
+    },
+    {
+      "fn": "mul",
+      "args": [
+        1.5,
+        2
+      ],
+      "expect": 3,
+      "note": "float * int with integral result value"
+    },
+    {
+      "fn": "mul",
+      "args": [
+        0,
+        5
+      ],
+      "expect": 0,
+      "note": "zero annihilator"
+    },
+    {
+      "fn": "div",
+      "args": [
+        7,
+        2
+      ],
+      "expect": 3.5,
+      "note": "integer operands divide as doubles (3.5)"
+    },
+    {
+      "fn": "div",
+      "args": [
+        10,
+        5
+      ],
+      "expect": 2,
+      "note": "exact integer quotient"
+    },
+    {
+      "fn": "div",
+      "args": [
+        1,
+        3
+      ],
+      "expect": 0.3333333333333333,
+      "note": "repeating fraction at double precision"
+    },
+    {
+      "fn": "div",
+      "args": [
+        -9,
+        3
+      ],
+      "expect": -3,
+      "note": "negative dividend"
+    },
+    {
+      "fn": "div",
+      "args": [
+        0.3,
+        0.1
+      ],
+      "expect": 2.9999999999999996,
+      "note": "IEEE-754 double rounding (not exactly 3)"
+    },
+    {
+      "fn": "div",
+      "args": [
+        0,
+        7
+      ],
+      "expect": 0,
+      "note": "zero dividend"
+    },
+    {
+      "fn": "mod",
+      "args": [
+        7,
+        3
+      ],
+      "expect": 1,
+      "note": "basic remainder"
+    },
+    {
+      "fn": "mod",
+      "args": [
+        10,
+        5
+      ],
+      "expect": 0,
+      "note": "zero remainder"
+    },
+    {
+      "fn": "mod",
+      "args": [
+        9,
+        4
+      ],
+      "expect": 1,
+      "note": "remainder of one"
+    },
+    {
+      "fn": "mod",
+      "args": [
+        0,
+        3
+      ],
+      "expect": 0,
+      "note": "zero dividend"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        5
+      ],
+      "expect": -5,
+      "note": "positive int"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        -3
+      ],
+      "expect": 3,
+      "note": "negative int negates back"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        1.5
+      ],
+      "expect": -1.5,
+      "note": "float"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        0
+      ],
+      "expect": 0,
+      "note": "zero (sign of float zero not observable in JSON)"
     }
   ]
 }
