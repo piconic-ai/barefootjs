@@ -2358,6 +2358,187 @@
         1
       ],
       "note": "self leaf appends the element itself"
+    },
+    {
+      "fn": "add",
+      "args": [
+        9007199254740991,
+        2
+      ],
+      "expect": 9007199254740992,
+      "note": "beyond the safe-integer edge rounds as a double"
+    },
+    {
+      "fn": "div",
+      "args": [
+        7,
+        0
+      ],
+      "expect": {
+        "$num": "Infinity"
+      },
+      "note": "zero divisor yields Infinity"
+    },
+    {
+      "fn": "mod",
+      "args": [
+        -7,
+        3
+      ],
+      "expect": -1,
+      "note": "remainder keeps the dividend sign"
+    },
+    {
+      "fn": "mod",
+      "args": [
+        7.5,
+        2
+      ],
+      "expect": 1.5,
+      "note": "float remainder"
+    },
+    {
+      "fn": "number",
+      "args": [
+        ""
+      ],
+      "expect": 0,
+      "note": "empty string coerces to 0"
+    },
+    {
+      "fn": "number",
+      "args": [
+        null
+      ],
+      "expect": 0,
+      "note": "null coerces to 0"
+    },
+    {
+      "fn": "number",
+      "args": [
+        " 8 "
+      ],
+      "expect": 8,
+      "note": "surrounding whitespace is trimmed"
+    },
+    {
+      "fn": "string",
+      "args": [
+        null
+      ],
+      "expect": "null",
+      "note": "null renders as the string \"null\""
+    },
+    {
+      "fn": "string",
+      "args": [
+        true
+      ],
+      "expect": "true",
+      "note": "true renders as the string \"true\""
+    },
+    {
+      "fn": "string",
+      "args": [
+        0.30000000000000004
+      ],
+      "expect": "0.30000000000000004",
+      "note": "17-significant-digit double round-trips"
+    },
+    {
+      "fn": "round",
+      "args": [
+        -1.5
+      ],
+      "expect": -1,
+      "note": "negative half rounds toward +Infinity"
+    },
+    {
+      "fn": "round",
+      "args": [
+        -2.5
+      ],
+      "expect": -2,
+      "note": "negative half rounds toward +Infinity (away tie)"
+    },
+    {
+      "fn": "includes",
+      "args": [
+        [
+          1,
+          2
+        ],
+        "2"
+      ],
+      "expect": false,
+      "note": "cross-type probe is strict-equality false"
+    },
+    {
+      "fn": "filter_truthy",
+      "args": [
+        [
+          "0",
+          "x"
+        ]
+      ],
+      "expect": [
+        "0",
+        "x"
+      ],
+      "note": "the string \"0\" is truthy"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [
+          "B",
+          "a"
+        ],
+        "self",
+        "",
+        "string",
+        "asc"
+      ],
+      "expect": [
+        "a",
+        "B"
+      ],
+      "note": "localeCompare orders case-insensitively (ICU collation)"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [
+          "10",
+          "9"
+        ],
+        "self",
+        "",
+        "auto",
+        "asc"
+      ],
+      "expect": [
+        "10",
+        "9"
+      ],
+      "note": "relational compare on numeric strings is lexical"
+    },
+    {
+      "fn": "reduce",
+      "args": [
+        [
+          "5",
+          "6"
+        ],
+        "+",
+        "self",
+        "",
+        "numeric",
+        "0",
+        "left"
+      ],
+      "expect": "056",
+      "note": "numeric-string items concatenate under JS +"
     }
   ]
 }

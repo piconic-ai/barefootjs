@@ -108,8 +108,12 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
     const proj = (x: unknown) => (keyKind === 'field' ? (x as Record<string, unknown>)[key] : x)
     const arr = direction === 'right' ? [...items].reverse() : items
     if (type === 'string') return arr.reduce<string>((acc, x) => acc + String(proj(x)), init)
-    return arr.reduce<number>(
-      (acc, x) => (op === '*' ? acc * Number(proj(x)) : acc + Number(proj(x))),
+    // Faithful JS `acc + x` / `acc * x`: `+` string-concatenates once
+    // an operand is a string (the spec's numeric-string rule); the
+    // seed is the compile-time numeric literal, hence Number(init).
+    return arr.reduce<unknown>(
+      (acc, x) =>
+        op === '*' ? (acc as number) * (proj(x) as number) : (acc as never) + (proj(x) as never),
       Number(init),
     )
   },
@@ -434,5 +438,38 @@ export const cases: HelperCase[] = [
     fn: 'flat_map_tuple',
     args: [[{ a: 1 }], 'self', '', 'field', 'a'],
     note: 'self leaf appends the element itself',
+  },
+
+  // ----- Divergence-region cases (JS-normative expects). Backends
+  // that deliberately diverge pin their own value in their harness's
+  // divergence declarations (spec: "Adapter status model").
+  { fn: 'add', args: [9007199254740991, 2], note: 'beyond the safe-integer edge rounds as a double' },
+  { fn: 'div', args: [7, 0], note: 'zero divisor yields Infinity' },
+  { fn: 'mod', args: [-7, 3], note: 'remainder keeps the dividend sign' },
+  { fn: 'mod', args: [7.5, 2], note: 'float remainder' },
+  { fn: 'number', args: [''], note: 'empty string coerces to 0' },
+  { fn: 'number', args: [null], note: 'null coerces to 0' },
+  { fn: 'number', args: [' 8 '], note: 'surrounding whitespace is trimmed' },
+  { fn: 'string', args: [null], note: 'null renders as the string "null"' },
+  { fn: 'string', args: [true], note: 'true renders as the string "true"' },
+  { fn: 'string', args: [0.30000000000000004], note: '17-significant-digit double round-trips' },
+  { fn: 'round', args: [-1.5], note: 'negative half rounds toward +Infinity' },
+  { fn: 'round', args: [-2.5], note: 'negative half rounds toward +Infinity (away tie)' },
+  { fn: 'includes', args: [[1, 2], '2'], note: 'cross-type probe is strict-equality false' },
+  { fn: 'filter_truthy', args: [['0', 'x']], note: 'the string "0" is truthy' },
+  {
+    fn: 'sort',
+    args: [['B', 'a'], 'self', '', 'string', 'asc'],
+    note: 'localeCompare orders case-insensitively (ICU collation)',
+  },
+  {
+    fn: 'sort',
+    args: [['10', '9'], 'self', '', 'auto', 'asc'],
+    note: 'relational compare on numeric strings is lexical',
+  },
+  {
+    fn: 'reduce',
+    args: [['5', '6'], '+', 'self', '', 'numeric', '0', 'left'],
+    note: 'numeric-string items concatenate under JS +',
   },
 ]

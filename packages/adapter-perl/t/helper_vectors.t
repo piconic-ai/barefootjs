@@ -156,15 +156,132 @@ sub _field_eq_pred {
         : sub { my $v = $get->($_[0]); defined $v && $v eq $value };
 }
 
+# Per-backend status declarations (spec/template-helpers.md "Adapter
+# status model"). This file is the single source of truth for the
+# Perl backends' divergences — the spec stays backend-neutral.
+#
+# %DIVERGENCES pins a deliberate divergence from the JS-normative
+# expect, keyed by `fn/note`. Forms:
+#   { expect => <value>, reason => ... }  assert the pinned value
+#   { nan    => 1,       reason => ... }  assert a real NaN result
+#   { dies   => 1,       reason => ... }  assert the call dies
+# A pinned case that starts matching JS fails as stale; a key that
+# matches no vector case fails as dead.
+my %DIVERGENCES = (
+    'add/beyond the safe-integer edge rounds as a double' => {
+        expect => 9007199254740993,
+        reason => 'Perl IV arithmetic is 64-bit exact, not double-rounded',
+    },
+    'div/zero divisor yields Infinity' => {
+        dies   => 1,
+        reason => 'Perl native / dies on a zero divisor',
+    },
+    'mod/remainder keeps the dividend sign' => {
+        expect => 2,
+        reason => 'Perl native % takes the divisor sign',
+    },
+    'mod/float remainder' => {
+        expect => 1,
+        reason => 'Perl native % truncates operands to integers',
+    },
+    'number/empty string coerces to 0' => {
+        nan    => 1,
+        reason => 'deliberate: empty input must not silently zero downstream arithmetic',
+    },
+    'number/null coerces to 0' => {
+        nan    => 1,
+        reason => 'deliberate: unset props must not silently zero downstream arithmetic',
+    },
+    'string/null renders as the string "null"' => {
+        expect => '',
+        reason => 'deliberate: an unset prop must not surface a literal "null" in HTML',
+    },
+    'string/true renders as the string "true"' => {
+        expect => '1',
+        reason => 'Perl has no boolean type; template data carries 1/0',
+    },
+    'string/17-significant-digit double round-trips' => {
+        expect => '0.3',
+        reason => 'Perl stringifies doubles via %.15g',
+    },
+    'includes/cross-type probe is strict-equality false' => {
+        expect => 1,
+        reason => 'bf->includes scans with eq (string equality), so 2 eq "2" matches',
+    },
+    'filter_truthy/the string "0" is truthy' => {
+        expect => ['x'],
+        reason => 'Perl truthiness treats the string "0" as false',
+    },
+    'sort/localeCompare orders case-insensitively (ICU collation)' => {
+        expect => ['B', 'a'],
+        reason => 'cmp is byte order, not ICU collation',
+    },
+    'sort/relational compare on numeric strings is lexical' => {
+        expect => ['9', '10'],
+        reason => 'the "auto" compare goes numeric when both keys look_like_number',
+    },
+    'reduce/numeric-string items concatenate under JS +' => {
+        expect => 11,
+        reason => 'numeric folds parse numeric strings instead of concatenating',
+    },
+);
+
+# Helper ids not implemented on this backend yet — skipped visibly.
+# Empty for the Perl backends; the mechanism exists so a bootstrapping
+# backend can land its harness first and burn the list down.
+my %UNSUPPORTED = ();
+
+my %seen_declarations;
 for my $case (@{ $doc->{cases} }) {
     my ($fn, $note) = @{$case}{qw(fn note)};
+    my $key = "$fn/$note";
+    if (my $why = $UNSUPPORTED{$fn}) {
+        SKIP: { skip "unsupported on this backend: $why", 1 }
+        next;
+    }
     my $bind = $bindings{$fn};
     if (!$bind) {
         fail("no Perl binding for helper '$fn' — add it to %bindings in $0");
         next;
     }
     my @args = map { normalize_arg($_) } @{ $case->{args} };
-    vector_ok($bind->(@args), $case->{expect}, "$fn: $note");
+    my $got  = eval { $bind->(@args) };
+    my $err  = $@;
+
+    if (my $d = $DIVERGENCES{$key}) {
+        $seen_declarations{$key} = 1;
+        my $label = "$key (declared divergence: $d->{reason})";
+        if ($d->{dies}) {
+            ok($err, $label) or diag("expected the call to die, got: " . explain_value($got));
+            next;
+        }
+        if ($err) {
+            fail($label);
+            diag("died unexpectedly: $err");
+            next;
+        }
+        if (_match($got, $case->{expect})) {
+            fail("stale divergence declaration for '$key' — the backend now matches JS; remove it");
+            next;
+        }
+        my $want_ok = $d->{nan} ? (looks_like_number($got // '') && $got != $got)
+                                : _match_plain($got, $d->{expect});
+        ok($want_ok, $label)
+            or diag('got ' . explain_value($got) . ', pinned ' . explain_value($d->{nan} ? 'NaN' : $d->{expect}));
+        next;
+    }
+
+    if ($err) {
+        fail("$key died: $err");
+        next;
+    }
+    ok(_match($got, $case->{expect}), "$key")
+        or diag('got ' . explain_value($got) . ', want ' . explain_value($case->{expect}));
+}
+
+for my $key (keys %DIVERGENCES) {
+    fail("divergence declaration '$key' matches no vector case — renamed note?")
+        unless $seen_declarations{$key};
 }
 
 done_testing;
@@ -185,28 +302,59 @@ sub normalize_arg {
     return JSON::PP::is_bool($v) ? ($v ? 1 : 0) : $v;
 }
 
-sub vector_ok {
-    my ($got, $expect, $label) = @_;
-    if (!defined $expect) {
-        return is($got, undef, $label);
-    }
-    # Reserved non-finite sentinel (spec/template-helpers.md):
-    # {"$num": "NaN" | "Infinity" | "-Infinity"}. NaN is the only value
-    # for which `$x != $x` holds.
+# _match: boolean form of the spec's value-compat comparison against a
+# JSON-decoded expect — sentinel hashes, booleans by truthiness,
+# numbers numerically, arrays/hashes recursively.
+sub _match {
+    my ($got, $expect) = @_;
+    return !defined $got if !defined $expect;
     if (ref $expect eq 'HASH' && exists $expect->{'$num'}) {
         my $kind = $expect->{'$num'};
-        return ok($got != $got, "$label (NaN)") if $kind eq 'NaN';
+        return 0 unless defined $got && looks_like_number($got);
+        return $got != $got ? 1 : 0 if $kind eq 'NaN';
         my $inf = 9**9**9;
-        return cmp_ok($got, '==', $kind eq 'Infinity' ? $inf : -$inf, $label);
+        return $got == ($kind eq 'Infinity' ? $inf : -$inf) ? 1 : 0;
     }
     if (JSON::PP::is_bool($expect)) {
-        return is(!!$got, !!$expect, $label);
+        return (!!$got eq !!$expect) ? 1 : 0;
     }
-    if (ref $expect) {
-        return is_deeply($got, $expect, $label);
+    if (ref $expect eq 'ARRAY') {
+        return 0 unless ref $got eq 'ARRAY' && @$got == @$expect;
+        _match($got->[$_], $expect->[$_]) or return 0 for 0 .. $#$expect;
+        return 1;
     }
-    if (looks_like_number($expect)) {
-        return cmp_ok($got, '==', $expect, $label);
+    if (ref $expect eq 'HASH') {
+        return 0 unless ref $got eq 'HASH' && keys %$got == keys %$expect;
+        for my $k (keys %$expect) {
+            return 0 unless exists $got->{$k};
+            _match($got->{$k}, $expect->{$k}) or return 0;
+        }
+        return 1;
     }
-    return is($got, $expect, $label);
+    return 0 if !defined $got || ref $got;
+    return ($got == $expect ? 1 : 0) if looks_like_number($expect) && looks_like_number($got);
+    return ($got eq $expect) ? 1 : 0;
+}
+
+# _match_plain: like _match but against a plain Perl value from a
+# divergence declaration (no JSON boolean / sentinel forms).
+sub _match_plain {
+    my ($got, $expect) = @_;
+    return !defined $got if !defined $expect;
+    if (ref $expect eq 'ARRAY') {
+        return 0 unless ref $got eq 'ARRAY' && @$got == @$expect;
+        _match_plain($got->[$_], $expect->[$_]) or return 0 for 0 .. $#$expect;
+        return 1;
+    }
+    return 0 if !defined $got || ref $got;
+    return ($got == $expect ? 1 : 0) if looks_like_number($expect) && looks_like_number($got);
+    return ($got eq $expect) ? 1 : 0;
+}
+
+sub explain_value {
+    my ($v) = @_;
+    return 'undef' unless defined $v;
+    return JSON::PP->new->canonical->allow_nonref->allow_blessed->convert_blessed->encode($v)
+        if ref $v;
+    return "'$v'";
 }
