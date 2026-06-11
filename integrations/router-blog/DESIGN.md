@@ -86,16 +86,21 @@ By build time it has computed, per component:
   `packages/adapter-hono/src/adapter/hono-adapter.ts:552-555`), so a
   manifest must key by component **name**, and persistent-island identity
   across routes needs a compiler-stable id (see §10).
-- **A per-component client-JS module + dependency graph + props types** —
-  each `bf build` manifest entry carries the component's `clientJs` path,
-  the siblings it reaches (`stubDeps`, populated at build), and even
-  `props: {name,type,optional}[]` (`ManifestEntry`,
-  `packages/adapter-hono/src/preload.tsx:39-44`; written at
-  `packages/cli/src/lib/build.ts:947-953`). `BfScripts` already walks
-  `stubDeps` transitively (post-order DFS,
-  `packages/adapter-hono/src/scripts.tsx:189-227`) and `BfPreload` emits
-  manifest-based `modulepreload` (`preload.tsx:131-150`). The modules a
-  route's islands need — and their prop shapes — are already enumerable.
+- **A per-component client-JS module + per-island signal/prop map** —
+  verified by running `bf build` on `integrations/hono`, every manifest
+  entry carries `clientJs` (the island's module path) and **`ssrDefaults`:
+  the island's reactive bindings with initial values and which are
+  props** — e.g. `Counter → {count:0, doubled:0, initial:<prop>}`,
+  `TodoApp → {todos, newText, filter, initialTodos:<prop>}`. So each
+  island's module URL *and its signal/prop surface* are already in the
+  manifest (great for §6's data patches and for typed prefetch). The
+  cross-component **dependency** story is two-track: child islands are
+  often *combined* into the parent bundle at build (observed: "Combined:
+  TodoApp.client.js"), and genuine stub-rewritten refs emit `stubDeps`,
+  which `BfScripts` walks transitively (post-order DFS,
+  `packages/adapter-hono/src/scripts.tsx:189-227`) and `BfPreload`
+  turns into `modulepreload` (`preload.tsx:131-150`). Either way the
+  module set a route needs is build-time-derivable.
 - **The signal dependency graph** — the analyzer brands reactive getters
   and tracks which signals feed which DOM nodes (`spec/compiler.md`,
   "Reactivity Classification"; `bf debug graph`). This is what enables
@@ -221,10 +226,12 @@ Everything above rests on two small, high-value runtime additions — the
 
 ## 6. Beyond Next/TanStack: signal-level data patches
 
-The IR records every component's `signals` / `memos` / `effects` and prop
-shapes (`IRMetadata`, `packages/jsx/src/types.ts:1312-1354`; manifest
-`props:{name,type,optional}[]`), and the analyzer knows which signals feed
-which nodes (`bf debug graph` / `debug why-update`). For a navigation that
+The IR records every component's `signals` / `memos` / `effects`
+(`IRMetadata`, `packages/jsx/src/types.ts:1312-1354`), and the manifest
+already ships each island's reactive surface as `ssrDefaults`
+(signal names + initial values + prop bindings — verified above). The
+analyzer knows which signals feed which nodes (`bf debug graph` /
+`debug why-update`). For a navigation that
 only changes *data* (a re-sorted list, a filtered table, a counter) rather
 than structure, the compiler can emit a **data patch** the router applies
 by **setting those signals directly — no DOM swap, no fragment, no
