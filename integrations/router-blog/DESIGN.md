@@ -210,7 +210,9 @@ With the outlet derived, this becomes adapter-provided, not app-authored.
 ### 5.5 The two `@barefootjs/client` changes that unlock it — **implemented (P0)**
 
 Everything above rested on two small, high-value runtime additions. Both
-are now done on the router branch (PR #1889):
+are now done as an **independent `@barefootjs/client` PR (#1893)** — a
+general runtime improvement, not router-specific — which the router (#1889)
+and this exploration stack on:
 
 1. **Subtree-scoped hydrate — done.** `rehydrateScope(root)` walks only
    `root` (synchronous, O(scopes in `root`)), beside the existing
@@ -286,10 +288,10 @@ at realistic shell sizes.
 
 ## 9. Phased plan
 
-- **P0 — `@barefootjs/client` — ✅ done (PR #1889).** Subtree-scoped
-  `rehydrateScope(root)` + scope→dispose registry (`disposeScope`, via
-  `createRoot`). Fixes the leak, enables targeted hydrate; router defaults
-  wired to both seams.
+- **P0 — `@barefootjs/client` — ✅ done as an independent PR (#1893).**
+  Subtree-scoped `rehydrateScope(root)` + scope→dispose registry
+  (`disposeScope`, via `createRoot`). A general runtime capability; the
+  router (#1889) consumes it. Fixes the leak, enables targeted hydrate.
 - **P1 — `@barefootjs/router`:** consume an outlet element + island id list
   (✅ outlet element today); prefetch from a provided module list; snapshot
   cache; asset-version gate.
