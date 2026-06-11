@@ -142,3 +142,75 @@ Rules:
 - Go's int-preserving return (`Add(1, 2)` → `int 3`) is value-equal
   and allowed under value-compat; the round-trip through `float64`
   keeps it within double semantics.
+
+### sub / mul
+
+JS numeric subtraction / multiplication: `a - b`, `a * b`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native JS `-` / `*` |
+| Go template | `bf_sub` / `bf_mul` → `bf.Sub` / `bf.Mul` |
+| Mojolicious / Xslate | native Perl `-` / `*` |
+
+Same rules as `add`: numeric operands, double semantics (including
+rounding artifacts like `0.3 - 0.1` → `0.19999999999999998`),
+int-preserving Go returns allowed under value-compat.
+
+### div
+
+JS numeric division: `a / b`. Always double division — `7 / 2` is
+`3.5` even for integer operands.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native JS `/` |
+| Go template | `bf_div` → `bf.Div` |
+| Mojolicious / Xslate | native Perl `/` |
+
+Rules:
+
+- Domain: **divisor ≠ 0**. JS yields `±Infinity` / `NaN` for a zero
+  divisor; Go's `bf.Div` deliberately returns `0` so a template render
+  degrades instead of emitting `+Inf`, and Perl `/` dies. Zero-divisor
+  behavior is adapter-defined, documented here, and excluded from the
+  vectors.
+- Double semantics for the quotient (`1 / 3` →
+  `0.3333333333333333`).
+
+### mod
+
+JS remainder: `a % b`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native JS `%` |
+| Go template | `bf_mod` → `bf.Mod` |
+| Mojolicious / Xslate | native Perl `%` |
+
+Rules:
+
+- Domain: **non-negative integer operands with divisor > 0**. Outside
+  that the backends genuinely disagree and behavior is
+  adapter-defined:
+  - Negative operands: JS remainder takes the **dividend's** sign
+    (`-7 % 3` → `-1`); Perl's `%` takes the **divisor's** sign
+    (`-7 % 3` → `2`); Go's `%` matches JS.
+  - Float operands: JS `%` is a float remainder (`7.5 % 2` → `1.5`);
+    Go `bf.Mod` and Perl integer-context `%` truncate to integers.
+  - Zero divisor: JS yields `NaN`; Go returns `0`; Perl dies.
+- Within the domain, the result is the common integer remainder.
+
+### neg
+
+JS unary minus: `-a`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native JS unary `-` |
+| Go template | `bf_neg` → `bf.Neg` |
+| Mojolicious / Xslate | native Perl unary `-` |
+
+Numeric operand, double semantics. (`-0` is value-equal to `0` under
+the vectors' numeric comparison; JSON cannot carry the sign of a
+floating-point zero.)
