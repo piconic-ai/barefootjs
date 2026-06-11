@@ -256,9 +256,18 @@ function topoSort(cands: Candidate[]): Candidate[] {
 }
 
 // ── Has this exact version already been published to JSR? ─────────────
+// jsr.io/<pkg>/meta.json is served through a CDN whose edge caches are
+// eventually consistent — the same version can read as present on one fetch
+// and absent on the next (observed: a version skipped as "already on JSR" in
+// one run, then reported missing in the next). Since we use this as the source
+// of truth for both skip and post-publish verification, bypass the cache: a
+// unique query string forces a fresh origin read, plus no-store on our side.
 async function jsrHasVersion(name: string, version: string): Promise<boolean> {
   try {
-    const res = await fetch(`https://jsr.io/${name}/meta.json`)
+    const res = await fetch(`https://jsr.io/${name}/meta.json?_=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'cache-control': 'no-cache', pragma: 'no-cache' },
+    })
     if (!res.ok) return false
     const meta = (await res.json()) as { versions?: Record<string, unknown> }
     return Boolean(meta.versions && version in meta.versions)
