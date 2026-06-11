@@ -92,16 +92,24 @@ By build time it has computed, per component:
 - **A per-component client-JS module + per-island signal/prop map** —
   verified by running `bf build` on `integrations/hono`, every manifest
   entry carries `clientJs` (the island's module path) and **`ssrDefaults`:
-  the island's reactive bindings with initial values and which are
-  props** — e.g. `Counter → {count:0, doubled:0, initial:<prop>}`,
-  `TodoApp → {todos, newText, filter, initialTodos:<prop>}`. So each
-  island's module URL *and its signal/prop surface* are already in the
-  manifest (great for §6's data patches and for typed prefetch). The
-  cross-component **dependency** story is two-track: child islands are
-  often *combined* into the parent bundle at build (observed: "Combined:
-  TodoApp.client.js"), and genuine stub-rewritten refs emit `stubDeps`,
-  which `BfScripts` walks transitively (post-order DFS,
-  `packages/adapter-hono/src/scripts.tsx:189-227`) and `BfPreload`
+  the island's reactive binding *names*, their compile-time **default**
+  values, and which are props** — e.g. `Counter → {count:0, doubled:0,
+  initial:<prop>}`, `TodoApp → {todos, newText, filter,
+  initialTodos:<prop>}`. Note `ssrDefaults` is a *static, per-component*
+  shape (build-time defaults; a prop's real value is `null` until render)
+  and is consumed by the **DSL SSR adapters** (Go/Perl/Xslate) to seed
+  template vars — **the JS client runtime does not read it**. The actual
+  **per-instance initial values** for JS hydration live in the **`bf-p`**
+  attribute (`BF_PROPS`) emitted on each root client scope and read by
+  `parseProps(el.getAttribute('bf-p'))` (`hydrate.ts`). So the manifest
+  gives the islands' module URLs *and their signal/prop **surface***
+  (names + which are props — what §6's data patches and typed prefetch
+  need); the *values* ride at runtime (`bf-p` initially, a patch on
+  navigation). The cross-component **dependency** story is two-track:
+  child islands are often *combined* into the parent bundle at build
+  (observed: "Combined: TodoApp.client.js"), and genuine stub-rewritten
+  refs emit `stubDeps`, which `BfScripts` walks transitively (post-order
+  DFS, `packages/adapter-hono/src/scripts.tsx:189-227`) and `BfPreload`
   turns into `modulepreload` (`preload.tsx:131-150`). Either way the
   module set a route needs is build-time-derivable.
 - **The signal dependency graph** — the analyzer brands reactive getters
@@ -237,11 +245,11 @@ after dispose.
 ## 6. Signal-level data patches
 
 The IR records every component's `signals` / `memos` / `effects`
-(`IRMetadata`, `packages/jsx/src/types.ts:1312-1354`), and the manifest
-already ships each island's reactive surface as `ssrDefaults`
-(signal names + initial values + prop bindings — verified above). The
-analyzer knows which signals feed which nodes (`bf debug graph` /
-`debug why-update`). For a navigation that
+(`IRMetadata`, `packages/jsx/src/types.ts:1312-1354`), and the manifest's
+`ssrDefaults` names each island's reactive bindings and which are props
+(its *shape* — see §4; the per-instance values themselves live in `bf-p`
+at runtime, not the manifest). The analyzer knows which signals feed
+which nodes (`bf debug graph` / `debug why-update`). For a navigation that
 only changes *data* (a re-sorted list, a filtered table, a counter) rather
 than structure, the compiler can emit a **data patch** the router applies
 by **setting those signals directly — no DOM swap, no fragment, no
