@@ -273,6 +273,18 @@ const generated: string[] = []
 let published = 0
 let skipped = 0
 const errors: string[] = []
+const pending: string[] = []
+
+// `deno publish` uploads in seconds, then polls JSR until the server-side
+// publishing task (module-graph + slow-types doc generation) finishes — but on
+// these slow-typed packages that task can run far past any CI cap while the
+// version itself still goes live (confirmed on jsr.io). So we don't wait on
+// Deno's never-returning poll: cap it at the upload window, then treat JSR as
+// the source of truth and poll jsrHasVersion until the version appears.
+// Background: jsr-io/jsr#642, fedify-dev/fedify#468.
+const DENO_PUBLISH_TIMEOUT_S = 240 // generous: type-check + upload take seconds
+const VERIFY_TIMEOUT_MS = 6 * 60_000
+const VERIFY_INTERVAL_MS = 15_000
 
 try {
   for (const { dir, pkg } of selected) {
@@ -306,14 +318,47 @@ try {
     // libraries export resolve cleanly. --allow-slow-types lets JSR extract the
     // public API for docs/.d.ts through its (benign) slow-types warning;
     // --allow-dirty permits the in-tree generated manifest.
-    const pub = await $`deno publish --allow-slow-types --allow-dirty`
+    // `timeout` cuts Deno's post-upload poll short (see DENO_PUBLISH_TIMEOUT_S
+    // note above); the verify loop below is what actually confirms success.
+    const pub = await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-slow-types --allow-dirty`
       .cwd(dir)
       .nothrow()
-    if (pub.exitCode !== 0) {
-      errors.push(`${pkg.name}@${pkg.version}`)
+    // 124 (TERM) / 137 (KILL) mean our timeout fired while Deno was still
+    // polling — expected, not a failure. Any other non-zero is a genuine
+    // publish error (type error, auth, unresolvable dep, …).
+    const cutShort = pub.exitCode === 124 || pub.exitCode === 137
+    if (pub.exitCode !== 0 && !cutShort) {
+      errors.push(`${pkg.name}@${pkg.version} (deno exit ${pub.exitCode})`)
       continue
     }
-    published++
+
+    // JSR is the source of truth: poll until the version is live, regardless of
+    // whether Deno returned cleanly or we cut its hung poll short.
+    let live = await jsrHasVersion(pkg.name, pkg.version)
+    const deadline = Date.now() + VERIFY_TIMEOUT_MS
+    while (!live && Date.now() < deadline) {
+      await Bun.sleep(VERIFY_INTERVAL_MS)
+      live = await jsrHasVersion(pkg.name, pkg.version)
+    }
+    if (live) {
+      console.log(`  ok    ${pkg.name}@${pkg.version} live on JSR${cutShort ? ' (deno poll cut short)' : ''}`)
+      published++
+      continue
+    }
+    if (cutShort) {
+      // We cut Deno's poll short and JSR is still finishing server-side —
+      // the expected pending case. Stop here rather than publish a dependent
+      // before this dep is resolvable; a re-dispatch skips the now-live
+      // packages and continues from here.
+      console.log(`  pend  ${pkg.name}@${pkg.version} submitted; not live within ${VERIFY_TIMEOUT_MS / 60_000}m — stopping, re-dispatch to continue`)
+      pending.push(`${pkg.name}@${pkg.version}`)
+      break
+    }
+    // Deno exited 0 — it observed the publishing task complete — yet the
+    // version never appeared in meta.json. That's a registry propagation
+    // problem or a lookup bug, not routine slowness; surface it as an error
+    // instead of masking it as pending.
+    errors.push(`${pkg.name}@${pkg.version} (deno exited 0 but version not on JSR after ${VERIFY_TIMEOUT_MS / 60_000}m)`)
   }
 } finally {
   if (!keep) for (const f of generated) rmSync(f, { force: true })
@@ -322,7 +367,14 @@ try {
 if (dryRun) {
   console.log(`\n  Dry run: ${selected.length} package(s) would be considered`)
 } else {
-  console.log(`\n  Done: ${published} published, ${skipped} skipped`)
+  console.log(`\n  Done: ${published} published, ${skipped} skipped${pending.length ? `, ${pending.length} pending` : ''}`)
+}
+
+if (pending.length > 0) {
+  // Not a failure — the upload is submitted and JSR is finishing it
+  // server-side. Surface it clearly and exit 0 so a re-dispatch can continue.
+  console.warn(`\n  ${pending.length} pending (submitted, server-side processing — re-dispatch to continue):`)
+  for (const p of pending) console.warn(`    - ${p}`)
 }
 
 if (errors.length > 0) {
