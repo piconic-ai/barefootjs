@@ -46,6 +46,19 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   pad_start: (s: string, target: number, pad?: string) => s.padStart(target, pad),
   pad_end: (s: string, target: number, pad?: string) => s.padEnd(target, pad),
   split: (s: string, sep: string, limit?: number) => s.split(sep, limit),
+  len: (v: string | unknown[]) => v.length,
+  at: (a: unknown[], i: number) => a.at(i),
+  includes: (recv: string | unknown[], x: never) => recv.includes(x),
+  index_of: (a: unknown[], x: unknown) => a.indexOf(x),
+  last_index_of: (a: unknown[], x: unknown) => a.lastIndexOf(x),
+  concat: (a: unknown[], b: unknown[]) => a.concat(b),
+  slice: (a: unknown[], start: number, end?: number) => a.slice(start, end),
+  reverse: (a: unknown[]) => [...a].reverse(),
+  // Depth -1 is the compiled Infinity sentinel (spec entry).
+  flat: (a: unknown[], depth: number) => a.flat(depth === -1 ? Infinity : depth),
+  join: (a: unknown[], sep: string) => a.join(sep),
+  arr: (...elements: unknown[]) => elements,
+  filter_truthy: (a: unknown[]) => a.filter(Boolean),
 }
 
 export const cases: HelperCase[] = [
@@ -185,4 +198,61 @@ export const cases: HelperCase[] = [
   { fn: 'split', args: ['', ','], note: 'empty receiver yields one empty field' },
   { fn: 'split', args: ['', ''], note: 'empty receiver with empty separator yields []' },
   { fn: 'split', args: ['a,b,c', ',', 0], note: 'zero limit yields []' },
+
+  { fn: 'len', args: [[10, 20, 30]], note: 'array element count' },
+  { fn: 'len', args: [[]], note: 'empty array' },
+  { fn: 'len', args: ['hello'], note: 'ASCII string character count' },
+  { fn: 'len', args: [''], note: 'empty string' },
+
+  { fn: 'at', args: [[10, 20, 30], 1], note: 'positive index' },
+  { fn: 'at', args: [[10, 20, 30], -1], note: 'negative index counts from the end' },
+  { fn: 'at', args: [[10, 20, 30], 5], note: 'out of range yields undefined ≡ null' },
+  { fn: 'at', args: [[10, 20, 30], -5], note: 'negative out of range yields undefined ≡ null' },
+  { fn: 'at', args: [[], 0], note: 'empty array yields undefined ≡ null' },
+
+  { fn: 'includes', args: [[1, 2, 3], 2], note: 'array contains number' },
+  { fn: 'includes', args: [[1, 2, 3], 5], note: 'array missing number' },
+  { fn: 'includes', args: [['a', 'b'], 'a'], note: 'array contains string' },
+  { fn: 'includes', args: ['hello', 'ell'], note: 'string receiver does substring test' },
+  { fn: 'includes', args: ['hello', 'z'], note: 'string receiver, absent substring' },
+
+  { fn: 'index_of', args: [[1, 2, 1], 1], note: 'first match wins' },
+  { fn: 'index_of', args: [['a', 'b'], 'b'], note: 'string element' },
+  { fn: 'index_of', args: [[1, 2, 3], 9], note: 'not found is -1' },
+  { fn: 'last_index_of', args: [[1, 2, 1], 1], note: 'last match wins' },
+  { fn: 'last_index_of', args: [[1, 2, 3], 9], note: 'not found is -1' },
+
+  { fn: 'concat', args: [[1, 2], [3]], note: 'order preserved, receiver first' },
+  { fn: 'concat', args: [[], [1]], note: 'empty receiver' },
+  { fn: 'concat', args: [['a'], []], note: 'empty argument' },
+
+  { fn: 'slice', args: [[1, 2, 3, 4], 1], note: 'start only runs to the end' },
+  { fn: 'slice', args: [[1, 2, 3, 4], 1, 3], note: 'start and end' },
+  { fn: 'slice', args: [[1, 2, 3, 4], -2], note: 'negative start counts from the end' },
+  { fn: 'slice', args: [[1, 2, 3, 4], 0, -1], note: 'negative end drops the tail' },
+  { fn: 'slice', args: [[1, 2, 3, 4], 2, 1], note: 'start past end yields []' },
+  { fn: 'slice', args: [[1, 2, 3, 4], 0, 99], note: 'end clamps to length' },
+
+  { fn: 'reverse', args: [[1, 2, 3]], note: 'basic reversal' },
+  { fn: 'reverse', args: [[]], note: 'empty array' },
+  { fn: 'reverse', args: [['only']], note: 'single element' },
+
+  { fn: 'flat', args: [[[1, 2], [3]], 1], note: 'one level' },
+  { fn: 'flat', args: [[1, [2, [3]]], 1], note: 'deeper nesting survives depth 1' },
+  { fn: 'flat', args: [[1, [2, [3, [4]]]], -1], note: 'depth -1 is the Infinity sentinel' },
+  { fn: 'flat', args: [[1, [2]], 0], note: 'depth 0 is a shallow copy' },
+
+  { fn: 'join', args: [[1, 2, 3], ','], note: 'numeric elements stringify' },
+  { fn: 'join', args: [['a', 'b'], ' - '], note: 'multi-char separator' },
+  { fn: 'join', args: [[], ','], note: 'empty array joins to empty string' },
+  { fn: 'join', args: [[1, null, 2], ','], note: 'null elements render as empty' },
+  { fn: 'join', args: [['solo'], ','], note: 'single element has no separator' },
+
+  { fn: 'arr', args: [1, 'x'], note: 'variadic elements in order' },
+  { fn: 'arr', args: [], note: 'empty literal' },
+  { fn: 'arr', args: [5], note: 'single element' },
+
+  { fn: 'filter_truthy', args: [[0, 1, '', 2, null, 'a']], note: 'drops the JS falsy set' },
+  { fn: 'filter_truthy', args: [['x', 'y']], note: 'all truthy passes through' },
+  { fn: 'filter_truthy', args: [[0, '', null]], note: 'all falsy yields []' },
 ]

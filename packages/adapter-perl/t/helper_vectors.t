@@ -75,6 +75,23 @@ my %bindings = (
     pad_start   => sub { $bf->pad_start(@_) },
     pad_end     => sub { $bf->pad_end(@_) },
     split       => sub { $bf->split(@_) },
+
+    len           => sub { $bf->length($_[0]) },
+    at            => sub { $bf->at(@_) },
+    includes      => sub { $bf->includes(@_) },
+    index_of      => sub { $bf->index_of(@_) },
+    last_index_of => sub { $bf->last_index_of(@_) },
+    concat        => sub { $bf->concat(@_) },
+    # The Mojo emit always passes three value args (`undef` for an
+    # absent end) — mirror that exact shape.
+    slice   => sub { $bf->slice($_[0], $_[1], $_[2]) },
+    reverse => sub { $bf->reverse($_[0]) },
+    flat    => sub { $bf->flat(@_) },
+    join    => sub { $bf->join(@_) },
+    # Array literals are native arrayrefs on the Perl backends.
+    arr => sub { [@_] },
+    # Mirrors the Mojo inline `[grep { $_ } @{...}]` for filter(Boolean).
+    filter_truthy => sub { [grep { $_ } @{ $_[0] }] },
 );
 
 for my $case (@{ $doc->{cases} }) {
