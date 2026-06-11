@@ -46,9 +46,9 @@ permissions:
 jobs:
   jsr:
     runs-on: ubuntu-latest
-    # Backstop for the whole job; the publish step below carries the tighter,
-    # meaningful cap on the known hang point.
-    timeout-minutes: 20
+    # Backstop for the whole job; the publish step below carries the
+    # meaningful cap.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
@@ -66,13 +66,9 @@ jobs:
       - run: bun install
 
       - name: Publish to JSR
-        # JSR completes the publish server-side, but `deno publish` then polls
-        # the publishing task and can outlast a tight cap (the version still
-        # lands — confirmed live on jsr.io — so each run advances at least one
-        # package). A modest cap gives Deno room to observe completion and move
-        # on to the next package, without burning excessive minutes when a
-        # single package's server-side processing is genuinely slow.
-        # jsr-publish.ts self-skips versions already live, so a re-run safely
-        # continues the mirror.
-        timeout-minutes: 15
+        # jsr-publish.ts now bounds each `deno publish` itself (it caps Deno's
+        # never-returning post-upload poll and confirms success against JSR
+        # directly), so this is only an outer backstop. It self-skips versions
+        # already live, so a re-run safely continues the mirror.
+        timeout-minutes: 30
         run: bun scripts/jsr-publish.ts
