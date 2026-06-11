@@ -1,9 +1,12 @@
 # IR-driven router — design exploration
 
-Where the partial-navigation router (PR #1889) should go to match or beat
-Next.js / TanStack Start on navigation performance, by moving the work
-BarefootJS uniquely can move: **out of the runtime and into the compiler /
-IR**, and by **auto-wiring** what htmx-style routers make you wire by hand.
+Where the partial-navigation router (PR #1889) should go for strong
+navigation performance, by playing to what BarefootJS is built around:
+**moving work out of the runtime and into the compiler / IR**, and
+**auto-wiring** what htmx-style routers make you wire by hand. Next.js,
+TanStack Start, Inertia, Turbo and htmx are the references we learn from
+throughout — the aim is to do well by a different mechanism that suits
+BarefootJS, with respect for the prior art.
 
 This is exploration, stacked on the reference app (PR #1891, not for merge).
 
@@ -11,10 +14,10 @@ This is exploration, stacked on the reference app (PR #1891, not for merge).
 
 ## 1. Thesis
 
-A BarefootJS navigation is structurally cheaper than a Next/TanStack one:
-there is **no virtual DOM diff** and **no per-render RSC/flight
-serialization** — the page is server-rendered HTML plus fine-grained
-signal islands. A navigation is therefore just:
+A BarefootJS navigation has a small, fixed shape, because of how the
+compiler emits the page: there is **no virtual DOM diff** and **no
+per-render serialization step** — the page is server-rendered HTML plus
+fine-grained signal islands. A navigation is therefore just:
 
 > swap the server HTML for the changed region **+** hydrate the few islands
 > inside it **+** dispose the few islands leaving.
@@ -229,7 +232,7 @@ are now done on the router branch (PR #1889):
 cover subtree-only hydration, effect teardown on dispose, and re-hydration
 after dispose.
 
-## 6. Beyond Next/TanStack: signal-level data patches
+## 6. Signal-level data patches
 
 The IR records every component's `signals` / `memos` / `effects`
 (`IRMetadata`, `packages/jsx/src/types.ts:1312-1354`), and the manifest
@@ -240,10 +243,11 @@ analyzer knows which signals feed which nodes (`bf debug graph` /
 only changes *data* (a re-sorted list, a filtered table, a counter) rather
 than structure, the compiler can emit a **data patch** the router applies
 by **setting those signals directly — no DOM swap, no fragment, no
-hydration walk at all.** This is Inertia's `only:` partial-props idea, but the set of
-signals to patch is IR-derived, not hand-declared. It's the one move that
-is *structurally impossible* for a VDOM framework to match: there is no
-reconcile pass to pay for. This is the "それ以上" (beyond) lever.
+hydration walk at all.** This is Inertia's `only:` partial-props idea,
+gratefully borrowed, with the set of signals to patch IR-derived rather
+than hand-declared. It fits naturally here because the signal model has no
+reconcile pass in the first place — this is the most distinctive lever the
+IR opens up.
 
 ## 7. CLI integration
 
@@ -260,19 +264,25 @@ reconcile pass to pay for. This is the "それ以上" (beyond) lever.
 - Dev server already streams a build id for reload; the router consumes the
   manifest in dev unchanged.
 
-## 8. Performance framing vs Next / TanStack
+## 8. How this model differs
 
-| | Next / TanStack | BarefootJS IR-router |
+A factual contrast of mechanisms (not a scoreboard) — VDOM-SSR frameworks
+and BarefootJS make different trade-offs:
+
+| | VDOM-SSR (Next / TanStack) | BarefootJS IR-router |
 |---|---|---|
 | Initial JS | framework + route components, full-tree hydrate | islands only, island-granular hydrate |
-| Nav payload | RSC/flight or loader JSON | outlet fragment, or **signal patch** (§6) |
-| Nav client work | deserialize + VDOM reconcile | swap + **O(islands)** hydrate, no diff |
+| Nav payload | RSC/flight or loader JSON | outlet fragment, or signal patch (§6) |
+| Nav client work | deserialize + VDOM reconcile | swap + O(islands) hydrate, no diff |
 | Hydrate scope | route subtree (framework-managed) | exact island ids (compiler-managed) |
-| Prefetch | route-level, framework heuristic | exact module set from manifest |
+| Prefetch | route-level | exact module set from manifest |
 | Disposal | framework-managed | compiler-emitted registry |
 
-The bench quantifies the row that matters: O(outlet) vs O(document) is
-100–900× at realistic shell sizes.
+Those frameworks buy a lot with the VDOM (rich client interactivity,
+mature ecosystems); BarefootJS trades it away for a smaller, compiler-known
+update unit. The bench quantifies the row this design leans on: an
+outlet-scoped hydrate is O(outlet) vs the current O(document) — 100–900×
+at realistic shell sizes.
 
 ## 9. Phased plan
 
