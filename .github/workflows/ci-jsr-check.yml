@@ -1,11 +1,12 @@
-# CI — JSR type-check
+# CI — JSR type-check + doc-coverage
 #
 # Runs `deno check` on every JSR-publishable package's exported entries
 # *before* merge, so the JSR invariants the release-time `deno publish`
 # enforces (explicit `.ts`/`.tsx` extensions on relative imports,
 # `node:` prefix on Node built-ins, `noImplicitOverride`, DOM lib
 # resolution) are caught at PR time rather than after-the-fact when
-# `release.yml` tries to publish.
+# `release.yml` tries to publish. It then runs `deno doc --lint` to gate
+# the JSR score's "has docs for most symbols" factor the same way.
 #
 # Pipeline mirrors what `release.yml`'s "Publish to JSR" step does, sans
 # the publish:
@@ -15,6 +16,10 @@
 #   2. For each generated manifest, `deno check` runs against the
 #      `exports`-resolved `src/*.ts` entries — the surface JSR's
 #      publisher type-checks.
+#   3. `bun scripts/jsr-doc-lint.ts` runs `deno doc --lint` over the same
+#      entries to measure documentation coverage (JSR's "docs for most
+#      symbols" score factor), failing on any regression in the enforced
+#      set. Same script developers run locally via `bun run jsr:doc-lint`.
 #
 # Why not `deno publish --dry-run`? It additionally requires the
 # `jsr:@barefootjs/*` sibling versions referenced in `imports` to
@@ -31,6 +36,7 @@ on:
       - 'packages/*/package.json'
       - 'packages/*/tsconfig.json'
       - 'scripts/jsr-publish.ts'
+      - 'scripts/jsr-doc-lint.ts'
       - '.github/workflows/ci-jsr-check.yml'
   pull_request:
     paths:
@@ -38,6 +44,7 @@ on:
       - 'packages/*/package.json'
       - 'packages/*/tsconfig.json'
       - 'scripts/jsr-publish.ts'
+      - 'scripts/jsr-doc-lint.ts'
       - '.github/workflows/ci-jsr-check.yml'
 
 permissions:
@@ -113,3 +120,12 @@ jobs:
           if [ "${#skipped[@]}" -gt 0 ]; then
             echo "Skipped (tracked separately): ${skipped[*]}"
           fi
+
+      # `deno doc --lint` is the same documentation signal JSR's score uses
+      # for its "has docs for most symbols" check — it flags exported symbols
+      # missing a JSDoc comment (and missing return / explicit types). The
+      # script regenerates the manifests itself, tiers packages into
+      # ENFORCE (fail) vs warn-only, and is the same entrypoint developers run
+      # locally (`bun run jsr:doc-lint`) — see scripts/jsr-doc-lint.ts.
+      - name: deno doc --lint (JSR "docs for most symbols" score)
+        run: bun scripts/jsr-doc-lint.ts

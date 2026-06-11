@@ -28,6 +28,7 @@
     "meta:extract": "bun run packages/cli/src/index.ts meta extract",
     "bf": "bun run packages/cli/src/index.ts",
     "lint": "biome check",
+    "jsr:doc-lint": "bun scripts/jsr-doc-lint.ts",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
