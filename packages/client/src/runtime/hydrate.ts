@@ -43,6 +43,7 @@ import { hydratedScopes } from './hydration-state.ts'
 import { registerComponent } from './registry.ts'
 import { registerTemplate } from './template.ts'
 import { BF_SCOPE, BF_PROPS, BF_HOST, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
+import { createRoot } from '@barefootjs/client/reactive'
 import type { ComponentDef } from './types.ts'
 
 /**
@@ -186,6 +187,98 @@ export function flushHydration(): void {
 }
 
 /**
+ * Re-hydrate only the scopes inside `root` (and `root` itself), in
+ * document order. Unlike `rehydrateAll()` — which schedules a walk over
+ * the *whole document* — this is a synchronous, subtree-scoped walk: its
+ * cost is O(scopes in `root`), not O(document).
+ *
+ * Intended for a client router that has just swapped a content region:
+ * the component registry is already populated from the initial load, so
+ * no deferral is needed; only the freshly inserted islands need to init.
+ */
+export function rehydrateScope(root: Element): void {
+  if (typeof document === 'undefined') return
+  // The TreeWalker visits descendants only, so handle the root itself first.
+  hydrateElementScope(root)
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT)
+  while (walker.nextNode()) {
+    const node = walker.currentNode
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      hydrateElementScope(node as Element)
+    } else if (node.nodeType === Node.COMMENT_NODE) {
+      hydrateCommentScope(node as Comment)
+    }
+  }
+}
+
+/**
+ * Dispose every hydrated scope inside `root` (and `root` itself): runs
+ * each scope's `createRoot` dispose fn, tearing down its effects, memos,
+ * and `onCleanup` callbacks. Used by a client router before it removes a
+ * content region, so the outgoing islands release timers/listeners/
+ * subscriptions instead of leaking.
+ *
+ * Also resets the per-scope hydration marks so the *same* DOM nodes could
+ * be re-hydrated if they are ever re-inserted:
+ *   - element scopes: their `hydratedScopes` entry (via `disposeOneScope`),
+ *   - `bf-h` child scopes: their `hydratedScopes` entry (they have no own
+ *     disposer — their reactive graph is owned by an ancestor root being
+ *     disposed here),
+ *   - comment scopes: the `__bfInitialized` flag on the `<!--bf-scope:-->`
+ *     anchor (otherwise `hydrateCommentScope` short-circuits on the stale
+ *     flag and never re-initializes the scope).
+ */
+export function disposeScope(root: Element): void {
+  if (typeof document === 'undefined') return
+  disposeOneScope(root)
+  clearChildScopeMark(root)
+  const walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT,
+  )
+  while (walker.nextNode()) {
+    const node = walker.currentNode
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      disposeOneScope(node as Element)
+      clearChildScopeMark(node as Element)
+    } else if (node.nodeType === Node.COMMENT_NODE) {
+      clearCommentScopeFlag(node as Comment)
+    }
+  }
+}
+
+function disposeOneScope(el: Element): void {
+  const dispose = scopeDisposers.get(el)
+  if (dispose) {
+    scopeDisposers.delete(el)
+    hydratedScopes.delete(el)
+    dispose()
+  }
+}
+
+/**
+ * `bf-h` child scopes are initialized via `initChild` (not the walker), so
+ * they carry a `hydratedScopes` mark but no own disposer — their effects
+ * belong to an ancestor root that `disposeScope` is tearing down. Clear the
+ * mark so the same node can re-init if re-inserted.
+ */
+function clearChildScopeMark(el: Element): void {
+  if (el.hasAttribute(BF_HOST)) hydratedScopes.delete(el)
+}
+
+/**
+ * Comment-rooted scopes flag their init on the `<!--bf-scope:-->` comment
+ * node (`__bfInitialized`); the proxy element's `hydratedScopes` entry and
+ * disposer are cleared by `disposeOneScope`, but the comment flag must be
+ * reset here or re-hydration short-circuits.
+ */
+function clearCommentScopeFlag(comment: Comment): void {
+  if (!comment.nodeValue?.startsWith(BF_SCOPE_COMMENT_PREFIX)) return
+  const flagged = comment as unknown as { __bfInitialized?: boolean }
+  if (flagged.__bfInitialized) flagged.__bfInitialized = false
+}
+
+/**
  * Single document-order walk visiting element scopes (`[bf-s]`) and
  * comment scopes (`<!--bf-scope:Name_xxx-->`) interleaved by their
  * actual DOM position. The parent's init — whichever scope shape it
@@ -232,10 +325,29 @@ function parseProps(json: string | null, where: string): Record<string, unknown>
   }
 }
 
+/**
+ * Per-scope disposal registry. Each scope's `init` runs inside a
+ * `createRoot`, so all the effects/memos it (and its `initChild`-mounted
+ * descendants) create are owned by one root. `disposeScope(root)` calls
+ * the stored dispose fn to tear them down — enabling a client router to
+ * release the islands leaving the page precisely, instead of leaking
+ * timers/listeners or relying on GC (see `disposeScope`).
+ *
+ * Keyed by the scope element; a `WeakMap` so detached scopes are
+ * reclaimed even if `disposeScope` is never called.
+ */
+const scopeDisposers = new WeakMap<Element, () => void>()
+
 function runInit(scope: Element, def: ComponentDef, props: Record<string, unknown>): void {
   const prevScope = setCurrentScope(scope)
   try {
-    def.init(scope, props)
+    // Wrap in createRoot so the scope's reactive graph has an owner that
+    // can be disposed later. This is additive: nothing disposes the root
+    // unless `disposeScope` is called, so existing lifetimes are unchanged.
+    createRoot((dispose) => {
+      scopeDisposers.set(scope, dispose)
+      def.init(scope, props)
+    })
   } finally {
     setCurrentScope(prevScope)
   }

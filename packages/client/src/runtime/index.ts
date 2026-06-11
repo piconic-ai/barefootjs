@@ -92,7 +92,7 @@ export { styleToCss } from './style.ts'
 
 // Runtime helpers
 export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, cssEscape } from './query.ts'
-export { hydrate, rehydrateAll, flushHydration, getRegisteredDef } from './hydrate.ts'
+export { hydrate, rehydrateAll, rehydrateScope, disposeScope, flushHydration, getRegisteredDef } from './hydrate.ts'
 export { registerComponent, getComponentInit, initChild, upsertChild } from './registry.ts'
 export { insert, type BranchConfig, type BranchTemplateResult } from './insert.ts'
 export { __bfSlot } from './branch-slot.ts'

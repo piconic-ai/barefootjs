@@ -57,6 +57,7 @@
         "packages/client/src/index.ts",
         "packages/client/src/runtime/index.ts",
         "packages/client/src/runtime/insert.ts",
+        "packages/client/src/runtime/hydrate.ts",
         "packages/client/src/runtime/map-array.ts",
         "packages/client/src/runtime/component.ts",
         "packages/client/src/runtime/apply-rest-attrs.ts",
