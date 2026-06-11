@@ -345,12 +345,20 @@ try {
       published++
       continue
     }
-    // Upload submitted but JSR is still finishing server-side. Stop here rather
-    // than publish a dependent before this dep is resolvable — a re-dispatch
-    // skips the now-live packages and continues from here.
-    console.log(`  pend  ${pkg.name}@${pkg.version} submitted; not live within ${VERIFY_TIMEOUT_MS / 60_000}m — stopping, re-dispatch to continue`)
-    pending.push(`${pkg.name}@${pkg.version}`)
-    break
+    if (cutShort) {
+      // We cut Deno's poll short and JSR is still finishing server-side —
+      // the expected pending case. Stop here rather than publish a dependent
+      // before this dep is resolvable; a re-dispatch skips the now-live
+      // packages and continues from here.
+      console.log(`  pend  ${pkg.name}@${pkg.version} submitted; not live within ${VERIFY_TIMEOUT_MS / 60_000}m — stopping, re-dispatch to continue`)
+      pending.push(`${pkg.name}@${pkg.version}`)
+      break
+    }
+    // Deno exited 0 — it observed the publishing task complete — yet the
+    // version never appeared in meta.json. That's a registry propagation
+    // problem or a lookup bug, not routine slowness; surface it as an error
+    // instead of masking it as pending.
+    errors.push(`${pkg.name}@${pkg.version} (deno exited 0 but version not on JSR after ${VERIFY_TIMEOUT_MS / 60_000}m)`)
   }
 } finally {
   if (!keep) for (const f of generated) rmSync(f, { force: true })
