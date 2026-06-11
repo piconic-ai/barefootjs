@@ -66,14 +66,13 @@ jobs:
       - run: bun install
 
       - name: Publish to JSR
-        # Tighter cap on the known hang point: a JSR publish that stalls (e.g.
-        # waiting on auth/network) fails the step instead of running for the
-        # full job timeout. jsr-publish.ts self-skips versions already live,
-        # so a re-run safely finishes the mirror.
-        # TEMPORARY: JSR_DEBUG streams Deno's debug log to pinpoint where the
-        # publish stalls (suspected provenance/Sigstore step). Remove once the
-        # hang is diagnosed.
-        env:
-          JSR_DEBUG: '1'
-        timeout-minutes: 10
+        # JSR completes the publish server-side, but `deno publish` then polls
+        # the publishing task and can outlast a tight cap (the version still
+        # lands — confirmed live on jsr.io — so each run advances at least one
+        # package). A modest cap gives Deno room to observe completion and move
+        # on to the next package, without burning excessive minutes when a
+        # single package's server-side processing is genuinely slow.
+        # jsr-publish.ts self-skips versions already live, so a re-run safely
+        # continues the mirror.
+        timeout-minutes: 15
         run: bun scripts/jsr-publish.ts
