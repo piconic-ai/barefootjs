@@ -33,18 +33,19 @@ export interface RouterOptions {
    */
   outlet?: string
   /**
-   * Called after the outlet is swapped to re-hydrate the new islands.
-   * Defaults to `window.__bf_hydrate()` (set by the client runtime's
-   * `setupStreaming`), falling back to a dynamic import of
-   * `@barefootjs/client/runtime`'s `rehydrateAll`.
+   * Called with the (post-swap) outlet element to re-hydrate the new
+   * islands. Defaults to `window.__bf_hydrate_within(outlet)` — the
+   * client runtime's **subtree-scoped** walk (O(outlet), not O(document))
+   * — falling back to the whole-document `window.__bf_hydrate()`, then to
+   * a dynamic import of `@barefootjs/client/runtime`'s `rehydrateAll`.
    */
-  rehydrate?: () => void | Promise<void>
+  rehydrate?: (outlet: Element) => void | Promise<void>
   /**
-   * Called with the current outlet element **before** it is replaced,
-   * so consumers can dispose reactive scopes owned by the outgoing
-   * islands. Optional: local-state islands are reclaimed by GC once
-   * their DOM is detached. Precise disposal (a `createRoot`-keyed
-   * scope registry in the client runtime) is the planned next step.
+   * Called with the current outlet element **before** it is replaced, to
+   * dispose the reactive scopes of the outgoing islands. Defaults to
+   * `window.__bf_dispose_within(outlet)` — the client runtime's precise
+   * per-scope disposal — so timers/listeners/subscriptions are released
+   * rather than leaked. Pass `() => {}` to opt out.
    */
   dispose?: (outlet: Element) => void
   /** Predicate deciding whether a clicked anchor is handled by the router. */
@@ -73,8 +74,8 @@ export interface Router {
 
 interface RouterState {
   outletSelector: string
-  rehydrate: () => void | Promise<void>
-  dispose?: (outlet: Element) => void
+  rehydrate: (outlet: Element) => void | Promise<void>
+  dispose: (outlet: Element) => void
   shouldIntercept: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
   scrollToTop: boolean
   inflight: AbortController | null
@@ -96,7 +97,7 @@ export function startRouter(options: RouterOptions = {}): Router {
   const state: RouterState = {
     outletSelector: options.outlet ?? `[${BF_OUTLET}]`,
     rehydrate: options.rehydrate ?? defaultRehydrate,
-    dispose: options.dispose,
+    dispose: options.dispose ?? defaultDispose,
     shouldIntercept: options.shouldIntercept ?? defaultShouldIntercept,
     scrollToTop: options.scrollToTop ?? true,
     inflight: null,
@@ -177,8 +178,8 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
       return
     }
 
-    // Tear down outgoing islands (best-effort) then swap only the outlet.
-    state.dispose?.(current)
+    // Dispose the outgoing islands, then swap only the outlet.
+    state.dispose(current)
     current.replaceChildren(...content.nodes)
     if (content.title !== null) document.title = content.title
 
@@ -190,8 +191,8 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
 
     if (state.scrollToTop) window.scrollTo(0, 0)
 
-    // Re-hydrate the freshly inserted islands.
-    await state.rehydrate()
+    // Re-hydrate the freshly inserted islands (subtree-scoped).
+    await state.rehydrate(current)
   } finally {
     // Only clear if we're still the current navigation — a newer one may
     // have replaced `inflight` already.
@@ -286,22 +287,44 @@ function extractOutlet(html: string, selector: string): OutletContent | null {
   return { nodes, title }
 }
 
-async function defaultRehydrate(): Promise<void> {
-  const w = window as unknown as { __bf_hydrate?: () => void }
+interface ClientSeams {
+  __bf_hydrate_within?: (root: Element) => void
+  __bf_dispose_within?: (root: Element) => void
+  __bf_hydrate?: () => void
+}
+
+async function defaultRehydrate(outlet: Element): Promise<void> {
+  const w = window as unknown as ClientSeams
+  // Prefer the subtree-scoped walk — O(outlet), not O(document).
+  if (typeof w.__bf_hydrate_within === 'function') {
+    w.__bf_hydrate_within(outlet)
+    return
+  }
   if (typeof w.__bf_hydrate === 'function') {
     w.__bf_hydrate()
     return
   }
-  // Fall back to the runtime's named export. Variable specifier keeps the
+  // Fall back to the runtime's named exports. Variable specifier keeps the
   // client an optional peer (no static type/bundle dependency); the browser
   // resolves the bare specifier through the page's import map.
   try {
     const spec = '@barefootjs/client/runtime'
-    const mod = (await import(spec)) as { rehydrateAll?: () => void }
-    mod.rehydrateAll?.()
+    const mod = (await import(spec)) as {
+      rehydrateScope?: (root: Element) => void
+      rehydrateAll?: () => void
+    }
+    if (mod.rehydrateScope) mod.rehydrateScope(outlet)
+    else mod.rehydrateAll?.()
   } catch {
     // No client runtime on the page (static shell) — nothing to hydrate.
   }
+}
+
+function defaultDispose(outlet: Element): void {
+  const w = window as unknown as ClientSeams
+  // Precise per-scope disposal when the client runtime exposes it; otherwise
+  // a no-op (detached local-state islands are reclaimed by GC).
+  w.__bf_dispose_within?.(outlet)
 }
 
 function hardNavigate(url: string): void {
