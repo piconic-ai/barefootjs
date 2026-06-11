@@ -99,6 +99,16 @@ runAdapterConformanceTests({
     // the BF101 fires at child compile, before the perl-availability
     // check, so this pin is what keeps perl-equipped CI green too.)
     'radio-group': [{ code: 'BF101', severity: 'error' }],
+    // #1467 Phase 2d: same Kolon expression gate — every selection/menu
+    // primitive (and the command demo source itself) emits BF101 at
+    // compile time, so the contract is pinned here rather than letting
+    // the partially-degraded render drift against Hono (unlike
+    // `accordion`/`tabs` above, where the *render-level* divergences
+    // were the more durable signal).
+    'select': [{ code: 'BF101', severity: 'error' }],
+    'dropdown-menu': [{ code: 'BF101', severity: 'error' }],
+    'combobox': [{ code: 'BF101', severity: 'error' }],
+    'command': [{ code: 'BF101', severity: 'error' }],
     // `style-3-signals` / `style-object-dynamic` no longer pinned — a
     // `style={{ … }}` object literal now lowers to a CSS string with dynamic
     // values interpolated (`background-color:<: $color :>;padding:8px`) via

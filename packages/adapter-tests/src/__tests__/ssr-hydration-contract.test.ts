@@ -129,6 +129,12 @@ const statelessFixtures = new Set([
   // `tabs` note above.)
   'dialog',
   'popover',
+  // #1467 Phase 2d: same multi-export divergence for the select and
+  // combobox demo files. (`dropdown-menu` / `command` pass — their
+  // sibling demos' marker ids all exist in the pinned export's HTML —
+  // and are intentionally NOT listed, matching the `tabs` note above.)
+  'select',
+  'combobox',
 ])
 
 describe('SSR-Hydration Contract', () => {

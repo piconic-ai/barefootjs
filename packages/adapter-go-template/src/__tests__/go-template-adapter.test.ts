@@ -56,7 +56,22 @@ runAdapterConformanceTests({
   // emission (`in.Props undefined` for DialogHeader/Title/…), popover
   // renders but diverges from Hono, and tooltip's generated template
   // fails Go's template parse (`unexpected "{" in command`).
-  skipJsx: ['radio-group', 'accordion', 'tabs', 'dialog', 'popover', 'tooltip'],
+  // `select` / `dropdown-menu` / `combobox` / `command` (#1467 Phase
+  // 2d): same Phase 3 bucket again — destructure-with-rest constructor
+  // emission (`in.Props undefined`) and generated-template parse
+  // failures (`unexpected "{" in command`).
+  skipJsx: [
+    'radio-group',
+    'accordion',
+    'tabs',
+    'dialog',
+    'popover',
+    'tooltip',
+    'select',
+    'dropdown-menu',
+    'combobox',
+    'command',
+  ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
   // shared fixtures) so adding a new adapter doesn't require touching

@@ -93,6 +93,13 @@ runAdapterConformanceTests({
     // object-literal-with-arrow-members context value — same BF101 gate.
     'dialog': [{ code: 'BF101', severity: 'error' }],
     'popover': [{ code: 'BF101', severity: 'error' }],
+    // #1467 Phase 2d: the selection/menu primitives (and the command
+    // demo source itself) all carry expression shapes the EP gate
+    // refuses — context-provider object literals and function props.
+    'select': [{ code: 'BF101', severity: 'error' }],
+    'dropdown-menu': [{ code: 'BF101', severity: 'error' }],
+    'combobox': [{ code: 'BF101', severity: 'error' }],
+    'command': [{ code: 'BF101', severity: 'error' }],
     // #1443: `[a, b].filter(Boolean).join(' ')` (the registry Slot's
     // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.
     // No BF101 expected — pinned positively via the
