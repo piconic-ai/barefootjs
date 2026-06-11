@@ -10,6 +10,7 @@
 
 import { writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import ts from 'typescript'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { compileJSX, combineParentChildClientJs } from '@barefootjs/jsx'
@@ -123,6 +124,46 @@ async function compileClientJs(root: FixtureSourceRoot, basename: string): Promi
   return file.content
 }
 
+/**
+ * Remove top-level import declarations whose specifier names one of the
+ * fixture's inlined siblings (`@ui/components/ui/<name>` / `../<name>`)
+ * from combined client JS. TS AST walk over top-level statements with
+ * span-based splicing — the repo-wide idiom for editing compiled client
+ * JS (see `combine-client-js.ts`); a regex would false-match import-like
+ * text inside string literals. The extra parse is fine here: snapshot
+ * generation is off the build hot path.
+ */
+function stripInlinedSiblingImports(clientJs: string, spec: SharedFixtureSpec): string {
+  const siblingSpecifiers = new Set(
+    [...resolveSiblingSpecifiers(spec).values()].flat(),
+  )
+  if (siblingSpecifiers.size === 0) return clientJs
+  const sourceFile = ts.createSourceFile(
+    'combined.js',
+    clientJs,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ false,
+    ts.ScriptKind.JS,
+  )
+  const dropSpans: Array<[number, number]> = []
+  for (const stmt of sourceFile.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    if (!siblingSpecifiers.has(stmt.moduleSpecifier.text)) continue
+    // Include the trailing newline so the splice doesn't leave blanks.
+    const end = stmt.getEnd()
+    dropSpans.push([stmt.getStart(sourceFile), clientJs[end] === '\n' ? end + 1 : end])
+  }
+  if (dropSpans.length === 0) return clientJs
+  let out = ''
+  let cursor = 0
+  for (const [start, end] of dropSpans) {
+    out += clientJs.slice(cursor, start)
+    cursor = end
+  }
+  return out + clientJs.slice(cursor)
+}
+
 export async function generateSharedComponentSnapshot(
   spec: SharedFixtureSpec,
 ): Promise<{ htmlBytes: number; clientJsBytes: number }> {
@@ -180,6 +221,16 @@ export async function generateSharedComponentSnapshot(
     }
     const combined = combineParentChildClientJs(files)
     clientJs = combined.get(sourceBasename) ?? files.get(sourceBasename)!
+    // The compiler sometimes keeps a *value* import for a sibling
+    // alongside its `@bf-child` placeholder (command-demo's
+    // `import { Command } from '@ui/components/ui/command'`). After
+    // combining, the inlined bundle declares the same identifier
+    // (`export function Command…`), so the leftover import is both a
+    // duplicate declaration and an unresolvable bare specifier in the
+    // fixture-hydrate browser page. Drop imports whose specifier is one
+    // of this fixture's sibling specifiers — the inlined code provides
+    // those bindings.
+    clientJs = stripInlinedSiblingImports(clientJs, spec)
   }
 
   const htmlOut = resolve(SNAPSHOT_DIR, `${spec.id}.html`)

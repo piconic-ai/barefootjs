@@ -51,6 +51,15 @@ import { fixture as tabs } from './tabs'
 import { fixture as dialog } from './dialog'
 import { fixture as popover } from './popover'
 import { fixture as tooltip } from './tooltip'
+// #1467 Phase 2d (selection/menu composites): `select` (portal listbox
+// selection round trip), `dropdown-menu` (checkbox items toggling
+// without closing), `combobox` (typed filtering via the hidden
+// attribute + empty-state effect), `command` (always-open palette,
+// search fan-out to item/group/empty visibility effects).
+import { fixture as select } from './select'
+import { fixture as dropdownMenu } from './dropdown-menu'
+import { fixture as combobox } from './combobox'
+import { fixture as command } from './command'
 // #1694: text-content HTML-escaping (parallel to the #1692 attribute fix).
 import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
@@ -261,6 +270,10 @@ export const jsxFixtures: JSXFixture[] = [
   dialog,
   popover,
   tooltip,
+  select,
+  dropdownMenu,
+  combobox,
+  command,
   textEscape,
   // Priority 1: Core reactivity
   signalWithFallback,

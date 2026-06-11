@@ -148,6 +148,13 @@ describe('CSR Conformance Tests', () => {
     'dialog',
     'popover',
     'tooltip',
+    // #1467 Phase 2d: same multi-export demo-source limitation —
+    // `__lastComponent` renders the last demo export instead of the
+    // pinned basic demo.
+    'select',
+    'dropdown-menu',
+    'combobox',
+    'command',
   ])
 
   for (const fixture of jsxFixtures) {
