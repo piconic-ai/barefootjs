@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/helper-vectors/generate.ts",
+  "spec": "spec/template-helpers.md",
+  "cases": [
+    {
+      "fn": "add",
+      "args": [
+        1,
+        2
+      ],
+      "expect": 3,
+      "note": "int + int"
+    },
+    {
+      "fn": "add",
+      "args": [
+        10,
+        -5
+      ],
+      "expect": 5,
+      "note": "negative operand"
+    },
+    {
+      "fn": "add",
+      "args": [
+        0,
+        0
+      ],
+      "expect": 0,
+      "note": "zero identity"
+    },
+    {
+      "fn": "add",
+      "args": [
+        1.5,
+        2.5
+      ],
+      "expect": 4,
+      "note": "float + float with integral result value"
+    },
+    {
+      "fn": "add",
+      "args": [
+        1,
+        2.5
+      ],
+      "expect": 3.5,
+      "note": "mixed int/float operands"
+    },
+    {
+      "fn": "add",
+      "args": [
+        0.1,
+        0.2
+      ],
+      "expect": 0.30000000000000004,
+      "note": "IEEE-754 double rounding"
+    },
+    {
+      "fn": "add",
+      "args": [
+        -1.5,
+        -2.25
+      ],
+      "expect": -3.75,
+      "note": "negative floats"
+    },
+    {
+      "fn": "add",
+      "args": [
+        9007199254740991,
+        1
+      ],
+      "expect": 9007199254740992,
+      "note": "upper edge of the safe-integer domain (2^53)"
+    }
+  ]
+}
