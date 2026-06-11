@@ -135,6 +135,9 @@ const statelessFixtures = new Set([
   // and are intentionally NOT listed, matching the `tabs` note above.)
   'select',
   'combobox',
+  // #1467 Phase 2e: same multi-export divergence (`pagination` passes
+  // and is intentionally NOT listed).
+  'data-table',
 ])
 
 describe('SSR-Hydration Contract', () => {
