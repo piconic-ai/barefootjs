@@ -141,6 +141,13 @@ describe('CSR Conformance Tests', () => {
     // pinned first demo.
     'accordion',
     'tabs',
+    // #1467 Phase 2c overlay: same multi-export demo-source limitation —
+    // `__lastComponent` renders `DialogLongContentDemo` /
+    // `PopoverFormDemo` / `TooltipIconDemo` instead of the pinned basic
+    // demos.
+    'dialog',
+    'popover',
+    'tooltip',
   ])
 
   for (const fixture of jsxFixtures) {

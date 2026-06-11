@@ -158,6 +158,12 @@ async function runStep(page: Page, step: InteractionStep): Promise<void> {
     case 'expectValue':
       await expect(page.locator(step.selector).first()).toHaveValue(step.value)
       return
+    case 'hover':
+      await page.locator(step.selector).first().hover({ position: step.position })
+      return
+    case 'press':
+      await page.locator(step.selector).first().press(step.key)
+      return
     default:
       return assertNever(step)
   }

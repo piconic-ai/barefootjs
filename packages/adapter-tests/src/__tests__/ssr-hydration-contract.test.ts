@@ -123,6 +123,12 @@ const statelessFixtures = new Set([
   // test because its sibling demos' marker ids happen to all exist in
   // the pinned export's HTML, so it is intentionally NOT listed.)
   'accordion',
+  // #1467 Phase 2c overlay: same multi-export divergence for the dialog
+  // and popover demo files. (`tooltip` passes — its sibling demos reuse
+  // the same marker ids — and is intentionally NOT listed, matching the
+  // `tabs` note above.)
+  'dialog',
+  'popover',
 ])
 
 describe('SSR-Hydration Contract', () => {
