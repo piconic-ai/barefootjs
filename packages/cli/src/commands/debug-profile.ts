@@ -39,6 +39,8 @@ THREE MODES
       it works the moment a component compiles. Predicts hot spots before you
       measure: signal/memo/effect/loop counts, total subscriptions, the longest
       memo→memo chain, and per-signal fan-out (flagged ⚠ high past --fanout).
+      Also lists the handlers --scenario auto would fire (name + source line),
+      so you can read the coverage gap statically before any run.
 
   bf debug profile <component> --diff <ref>
       Compile-diff regression — compiles the component at <ref> (any git ref)
@@ -80,10 +82,11 @@ FLAGS
                       for grid components with a long cheap tail (number ≥ 0).
   --wasted-pct <n>    Flag a subscriber whose runs are ≥ n% identical output
                       (0–100, default 50).
-  --json              Machine-readable output (every mode). Stable schema with
-                      deterministic tie-breaking; structural findings reproduce
-                      run-to-run (wall-clock-timed ranks can shift near rounding
-                      boundaries).
+  --json              Machine-readable output (every mode). Carries a top-level
+                      \`schemaVersion\` an agent can branch on; same major version
+                      is additive-only. Stable schema with deterministic
+                      tie-breaking; structural findings reproduce run-to-run
+                      (wall-clock-timed ranks can shift near rounding boundaries).
 
 EXAMPLES
   bf debug profile calendar                       # static budget, no run

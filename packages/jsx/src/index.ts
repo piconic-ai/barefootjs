@@ -285,6 +285,7 @@ export type { WrapReason } from './ir-to-client-js/reactivity.ts'
 // Reactive performance profiler (#1690). Static half (SR5 budget, SR6 diff) +
 // dynamic half (SR2/SR4 join, SR7 report, v1 analyses).
 export {
+  PROFILE_SCHEMA_VERSION,
   buildStaticBudget,
   formatStaticBudget,
   diffStaticBudget,
@@ -306,6 +307,7 @@ export type {
   StaticBudget,
   StaticBudgetOptions,
   FanOutEntry,
+  BudgetHandler,
   BudgetDiff,
   FanOutChange,
   ProfileReport,

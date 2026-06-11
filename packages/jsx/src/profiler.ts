@@ -32,7 +32,29 @@ import {
 import { listComponentFunctions, createProgramForFile } from './analyzer.ts'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
+/**
+ * Schema version for the machine-readable `bf debug profile --json` output
+ * (#1841). Bumped when the shape of `StaticBudget` / `ProfileReport` /
+ * `BudgetDiff` changes in a way a consumer must notice. An agent can branch on
+ * this before trusting any other field — the contract is "same major version =
+ * additive only".
+ */
+export const PROFILE_SCHEMA_VERSION = 1
+
 // -- Static budget (SR5) ------------------------------------------------------
+
+/** An event handler the IR knows about — the unit `--scenario auto` fires. */
+export interface BudgetHandler {
+  /**
+   * `<eventName>@<slotId>` (e.g. `click@s1`). The slotId is the stable join
+   * key: it is the element marker `--scenario auto` dispatches against and the
+   * id the coverage report counts, so an agent can map a handler listed here to
+   * its dynamic coverage without running first.
+   */
+  name: string
+  /** Source location of the handler binding (1-indexed line). */
+  loc: { file: string; line: number }
+}
 
 export interface FanOutEntry {
   /** Signal name (the reactive source whose change fans out). */
@@ -55,6 +77,8 @@ export interface FanOutEntry {
 }
 
 export interface StaticBudget {
+  /** Machine-readable output contract version (#1841). See `PROFILE_SCHEMA_VERSION`. */
+  schemaVersion: number
   componentName: string
   sourceFile: string
   kind: 'static-budget'
@@ -70,6 +94,14 @@ export interface StaticBudget {
   memoChainLongest: string[]
   /** Per-signal fan-out, descending, hottest first. */
   fanOut: FanOutEntry[]
+  /**
+   * Event handlers the IR knows about — the exact set `--scenario auto` would
+   * fire — as name + source location (#1841). Exposed statically so an agent
+   * can predict the coverage gap and reference handler names *before* any run.
+   * Empty when this component binds no handlers (they may live in composed
+   * children — see `crossComponentOnly`).
+   */
+  handlers: BudgetHandler[]
   /**
    * True when the component declares reactive state (signals/memos) but nothing
    * in *this* component subscribes to it — every consumer is in a composed child
@@ -124,6 +156,22 @@ export function buildStaticBudget(
     })
     .sort((a, b) => b.subscribers - a.subscribers)
 
+  // Event handlers, in source order — the same `graph.domBindings` event slots
+  // the auto scenario fires (scenario-driver discovers handlers from here), so
+  // the static list and the dynamic coverage share one identity (slotId).
+  const handlers: BudgetHandler[] = graph.domBindings
+    .filter(b => b.type === 'event')
+    // Event bindings always carry `loc` (IREvent.loc is required), and coverage's
+    // turn→binding join keys on it too — so skip any loc-less binding rather than
+    // emit an invalid (line 0) location that a consumer would have to special-case.
+    .flatMap(b => {
+      if (!b.loc) return []
+      // Label is `<event> handler "<slot>"` — the same parse the scenario driver
+      // and coverage join use. Fall back to a neutral `event` if it ever drifts.
+      const eventName = b.label.match(/^(\w+)\s+handler/)?.[1] ?? 'event'
+      return [{ name: `${eventName}@${b.slotId}`, loc: { file: b.loc.file, line: b.loc.start.line } }]
+    })
+
   const { depth, chain } = longestMemoChain(graph)
 
   // Reactive state exists, yet nothing in *this* component observes it. The
@@ -141,6 +189,7 @@ export function buildStaticBudget(
   const crossComponentOnly = hasReactiveState && !observedInComponent
 
   return {
+    schemaVersion: PROFILE_SCHEMA_VERSION,
     componentName: summary.componentName,
     sourceFile: summary.sourceFile,
     kind: 'static-budget',
@@ -152,6 +201,7 @@ export function buildStaticBudget(
     memoChainDepth: depth,
     memoChainLongest: chain,
     fanOut,
+    handlers,
     crossComponentOnly,
   }
 }
@@ -254,6 +304,13 @@ export function formatStaticBudget(b: StaticBudget): string {
       lines.push(`    ${f.signal.padEnd(12)} → ${f.subscribers} subscribers${detail}${f.hot ? '   ⚠ high' : ''}`)
     }
   }
+  if (b.handlers.length > 0) {
+    lines.push(`  handlers (${b.handlers.length}):`)
+    for (const h of b.handlers) {
+      const file = h.loc.file.split('/').pop() ?? h.loc.file
+      lines.push(`    ${h.name.padEnd(16)} ${file}:${h.loc.line}`)
+    }
+  }
   if (b.crossComponentOnly) {
     lines.push(
       `  ⓘ compound: ${b.signals} signal(s) / ${b.memos} memo(s) but 0 in-component subscriptions —`,
@@ -281,6 +338,8 @@ export interface BudgetDiff {
    * component with no reactive state (#1849 B2).
    */
   kind: 'diff'
+  /** Machine-readable output contract version (#1841). See `PROFILE_SCHEMA_VERSION`. */
+  schemaVersion: number
   componentName: string
   signals: number
   memos: number
@@ -318,6 +377,7 @@ export function diffStaticBudget(base: StaticBudget, head: StaticBudget): Budget
 
   const d: Omit<BudgetDiff, 'regressed'> = {
     kind: 'diff',
+    schemaVersion: PROFILE_SCHEMA_VERSION,
     componentName: head.componentName,
     signals: head.signals - base.signals,
     memos: head.memos - base.memos,
@@ -1312,6 +1372,8 @@ export interface ProfileCoverage {
 
 export interface ProfileReport {
   kind: 'profile'
+  /** Machine-readable output contract version (#1841). See `PROFILE_SCHEMA_VERSION`. */
+  schemaVersion: number
   componentName: string
   sourceFile: string
   /** Scenario label (e.g. `'auto'` or a scenario file name). */
@@ -1464,6 +1526,7 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
 
   return {
     kind: 'profile',
+    schemaVersion: PROFILE_SCHEMA_VERSION,
     componentName: primary.componentName,
     sourceFile: primary.sourceFile,
     scenario,
