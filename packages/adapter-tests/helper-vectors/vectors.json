@@ -1689,6 +1689,675 @@
       ],
       "expect": [],
       "note": "all falsy yields []"
+    },
+    {
+      "fn": "every",
+      "args": [
+        [
+          {
+            "done": true
+          },
+          {
+            "done": true
+          }
+        ],
+        "done"
+      ],
+      "expect": true,
+      "note": "all truthy fields"
+    },
+    {
+      "fn": "every",
+      "args": [
+        [
+          {
+            "done": true
+          },
+          {
+            "done": false
+          }
+        ],
+        "done"
+      ],
+      "expect": false,
+      "note": "one falsy field fails"
+    },
+    {
+      "fn": "every",
+      "args": [
+        [],
+        "done"
+      ],
+      "expect": true,
+      "note": "empty receiver is vacuously true"
+    },
+    {
+      "fn": "some",
+      "args": [
+        [
+          {
+            "done": false
+          },
+          {
+            "done": true
+          }
+        ],
+        "done"
+      ],
+      "expect": true,
+      "note": "one truthy field passes"
+    },
+    {
+      "fn": "some",
+      "args": [
+        [
+          {
+            "done": false
+          }
+        ],
+        "done"
+      ],
+      "expect": false,
+      "note": "no truthy field fails"
+    },
+    {
+      "fn": "some",
+      "args": [
+        [],
+        "done"
+      ],
+      "expect": false,
+      "note": "empty receiver is false"
+    },
+    {
+      "fn": "filter",
+      "args": [
+        [
+          {
+            "s": "a",
+            "n": 1
+          },
+          {
+            "s": "b",
+            "n": 2
+          },
+          {
+            "s": "a",
+            "n": 3
+          }
+        ],
+        "s",
+        "a"
+      ],
+      "expect": [
+        {
+          "s": "a",
+          "n": 1
+        },
+        {
+          "s": "a",
+          "n": 3
+        }
+      ],
+      "note": "string field equality keeps matching items"
+    },
+    {
+      "fn": "filter",
+      "args": [
+        [
+          {
+            "s": "a",
+            "n": 1
+          },
+          {
+            "s": "b",
+            "n": 2
+          }
+        ],
+        "n",
+        2
+      ],
+      "expect": [
+        {
+          "s": "b",
+          "n": 2
+        }
+      ],
+      "note": "numeric field equality"
+    },
+    {
+      "fn": "filter",
+      "args": [
+        [
+          {
+            "s": "a"
+          }
+        ],
+        "s",
+        "z"
+      ],
+      "expect": [],
+      "note": "no match yields []"
+    },
+    {
+      "fn": "find",
+      "args": [
+        [
+          {
+            "id": 1,
+            "v": "x"
+          },
+          {
+            "id": 2,
+            "v": "y"
+          }
+        ],
+        "id",
+        2
+      ],
+      "expect": {
+        "id": 2,
+        "v": "y"
+      },
+      "note": "returns the first matching element"
+    },
+    {
+      "fn": "find",
+      "args": [
+        [
+          {
+            "id": 1
+          }
+        ],
+        "id",
+        9
+      ],
+      "expect": null,
+      "note": "no match yields undefined ≡ null"
+    },
+    {
+      "fn": "find_index",
+      "args": [
+        [
+          {
+            "id": 1
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 2
+          }
+        ],
+        "id",
+        2
+      ],
+      "expect": 1,
+      "note": "first matching index"
+    },
+    {
+      "fn": "find_index",
+      "args": [
+        [
+          {
+            "id": 1
+          }
+        ],
+        "id",
+        9
+      ],
+      "expect": -1,
+      "note": "no match is -1"
+    },
+    {
+      "fn": "find_last",
+      "args": [
+        [
+          {
+            "id": 2,
+            "v": "first"
+          },
+          {
+            "id": 2,
+            "v": "last"
+          }
+        ],
+        "id",
+        2
+      ],
+      "expect": {
+        "id": 2,
+        "v": "last"
+      },
+      "note": "returns the last matching element"
+    },
+    {
+      "fn": "find_last_index",
+      "args": [
+        [
+          {
+            "id": 1
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 2
+          }
+        ],
+        "id",
+        2
+      ],
+      "expect": 2,
+      "note": "last matching index"
+    },
+    {
+      "fn": "find_last_index",
+      "args": [
+        [
+          {
+            "id": 1
+          }
+        ],
+        "id",
+        9
+      ],
+      "expect": -1,
+      "note": "no match is -1"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [
+          3,
+          1,
+          2
+        ],
+        "self",
+        "",
+        "numeric",
+        "asc"
+      ],
+      "expect": [
+        1,
+        2,
+        3
+      ],
+      "note": "numeric self ascending"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [
+          3,
+          1,
+          2
+        ],
+        "self",
+        "",
+        "numeric",
+        "desc"
+      ],
+      "expect": [
+        3,
+        2,
+        1
+      ],
+      "note": "numeric self descending"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [
+          {
+            "p": 30
+          },
+          {
+            "p": 10
+          },
+          {
+            "p": 20
+          }
+        ],
+        "field",
+        "p",
+        "numeric",
+        "asc"
+      ],
+      "expect": [
+        {
+          "p": 10
+        },
+        {
+          "p": 20
+        },
+        {
+          "p": 30
+        }
+      ],
+      "note": "numeric field key"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [
+          "banana",
+          "apple",
+          "cherry"
+        ],
+        "self",
+        "",
+        "string",
+        "asc"
+      ],
+      "expect": [
+        "apple",
+        "banana",
+        "cherry"
+      ],
+      "note": "string compare on same-case ASCII"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [
+          {
+            "p": 2.5
+          },
+          {
+            "p": 1.5
+          }
+        ],
+        "field",
+        "p",
+        "auto",
+        "asc"
+      ],
+      "expect": [
+        {
+          "p": 1.5
+        },
+        {
+          "p": 2.5
+        }
+      ],
+      "note": "auto compare with real numbers"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [
+          {
+            "a": 1,
+            "b": 2
+          },
+          {
+            "a": 1,
+            "b": 1
+          },
+          {
+            "a": 0,
+            "b": 9
+          }
+        ],
+        "field",
+        "a",
+        "numeric",
+        "asc",
+        "field",
+        "b",
+        "numeric",
+        "asc"
+      ],
+      "expect": [
+        {
+          "a": 0,
+          "b": 9
+        },
+        {
+          "a": 1,
+          "b": 1
+        },
+        {
+          "a": 1,
+          "b": 2
+        }
+      ],
+      "note": "multi-key tie-break"
+    },
+    {
+      "fn": "sort",
+      "args": [
+        [],
+        "self",
+        "",
+        "numeric",
+        "asc"
+      ],
+      "expect": [],
+      "note": "empty receiver"
+    },
+    {
+      "fn": "reduce",
+      "args": [
+        [
+          1,
+          2,
+          3
+        ],
+        "+",
+        "self",
+        "",
+        "numeric",
+        "0",
+        "left"
+      ],
+      "expect": 6,
+      "note": "sum fold"
+    },
+    {
+      "fn": "reduce",
+      "args": [
+        [
+          2,
+          3,
+          4
+        ],
+        "*",
+        "self",
+        "",
+        "numeric",
+        "1",
+        "left"
+      ],
+      "expect": 24,
+      "note": "product fold"
+    },
+    {
+      "fn": "reduce",
+      "args": [
+        [
+          {
+            "d": 5
+          },
+          {
+            "d": 7
+          }
+        ],
+        "+",
+        "field",
+        "d",
+        "numeric",
+        "10",
+        "left"
+      ],
+      "expect": 22,
+      "note": "field projection with non-zero init"
+    },
+    {
+      "fn": "reduce",
+      "args": [
+        [
+          "a",
+          "b",
+          "c"
+        ],
+        "+",
+        "self",
+        "",
+        "string",
+        "x",
+        "left"
+      ],
+      "expect": "xabc",
+      "note": "string concatenation seeds with init"
+    },
+    {
+      "fn": "reduce",
+      "args": [
+        [
+          "a",
+          "b",
+          "c"
+        ],
+        "+",
+        "self",
+        "",
+        "string",
+        "x",
+        "right"
+      ],
+      "expect": "xcba",
+      "note": "reduceRight is observable for string concat"
+    },
+    {
+      "fn": "reduce",
+      "args": [
+        [],
+        "+",
+        "self",
+        "",
+        "numeric",
+        "5",
+        "left"
+      ],
+      "expect": 5,
+      "note": "empty receiver returns the init"
+    },
+    {
+      "fn": "flat_map",
+      "args": [
+        [
+          [
+            1,
+            2
+          ],
+          [
+            3
+          ]
+        ],
+        "self",
+        ""
+      ],
+      "expect": [
+        1,
+        2,
+        3
+      ],
+      "note": "self projection spreads one level"
+    },
+    {
+      "fn": "flat_map",
+      "args": [
+        [
+          {
+            "t": [
+              1,
+              2
+            ]
+          },
+          {
+            "t": [
+              3
+            ]
+          }
+        ],
+        "field",
+        "t"
+      ],
+      "expect": [
+        1,
+        2,
+        3
+      ],
+      "note": "array-valued field spreads one level"
+    },
+    {
+      "fn": "flat_map",
+      "args": [
+        [
+          {
+            "t": 1
+          },
+          {
+            "t": 2
+          }
+        ],
+        "field",
+        "t"
+      ],
+      "expect": [
+        1,
+        2
+      ],
+      "note": "scalar field values are kept as-is"
+    },
+    {
+      "fn": "flat_map_tuple",
+      "args": [
+        [
+          {
+            "a": 1,
+            "b": 2
+          },
+          {
+            "a": 3,
+            "b": 4
+          }
+        ],
+        "field",
+        "a",
+        "field",
+        "b"
+      ],
+      "expect": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "note": "tuple leaves append in order per item"
+    },
+    {
+      "fn": "flat_map_tuple",
+      "args": [
+        [
+          {
+            "a": 1
+          }
+        ],
+        "self",
+        "",
+        "field",
+        "a"
+      ],
+      "expect": [
+        {
+          "a": 1
+        },
+        1
+      ],
+      "note": "self leaf appends the element itself"
     }
   ]
 }

@@ -604,3 +604,123 @@ vectors.
 Not in the catalogue: `bf_first` / `bf_last` / `bf_contains` exist in
 the Go FuncMap as conveniences but are never emitted by the compiler;
 they are Go-internal and carry no cross-backend contract.
+
+### Higher-order predicates: canonical projection form
+
+JS closures can't ride in JSON, so the higher-order entries use the
+**compiled projection catalogue** as their canonical argument form —
+the same shapes the JSX parser accepts (anything else refuses with
+BF101 upstream):
+
+- `filter` / `find` / `find_index` / `find_last` / `find_last_index`:
+  `(items, field, value)` ≡ `i => i.field === value`.
+- `every` / `some`: `(items, field)` ≡ `i => i.field` (truthiness).
+
+Field names appear in JS casing (`"done"`, `"price"`). Go resolves
+struct fields via the capitalized convention and map keys via
+case-variant lookup (#1487 — extended to the predicate helpers
+together with this entry, so JSON-decoded `map` items participate
+instead of being silently skipped).
+
+Equality in the predicate follows the `includes` contract: strict on
+JS/Go, `eq`/`==` chosen by operand string-typing on Perl — vectors
+keep field values and probes the same primitive type.
+
+### every / some
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.every` / `.some` |
+| Go template | `bf_every` / `bf_some` |
+| Mojolicious | inline `!(grep { !(...) })` / `!!(grep { ... })` |
+| Xslate | `$bf.every` / `$bf.some` (Kolon lambda) |
+
+`every([])` is vacuously `true`; `some([])` is `false` (JS parity).
+Field truthiness is JS `Boolean(x)` — the Perl `"0"` divergence from
+`filter_truthy` applies; vectors use boolean fields.
+
+### filter / find / find_index / find_last / find_last_index
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native methods |
+| Go template | `bf_filter` / `bf_find` / `bf_find_index` / `bf_find_last` / `bf_find_last_index` |
+| Mojolicious | `filter` inlines to `[grep {...}]`; the find family calls `bf->find` etc. with a closure |
+| Xslate | `$bf.filter` / `$bf.find` / … (Kolon lambda) |
+
+`find`/`find_last` yield the matching element or `undefined` ≡
+`null`; the index forms yield `-1` when absent; `filter` with no
+matches yields `[]`.
+
+### sort
+
+JS `Array.prototype.sort(cmp)` / `.toSorted(cmp)` for the accepted
+comparator catalogue (`a.f - b.f`, `a - b`, `localeCompare`,
+relational ternary, each `||`-chainable for multi-key tie-breaks).
+Canonical args: `(items, kind, name, compareType, direction, …)` —
+one 4-tuple per key, `kind` ∈ `self`/`field`, `compareType` ∈
+`numeric`/`string`/`auto`, `direction` ∈ `asc`/`desc`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.sort(cmp)` |
+| Go template | `bf_sort` (variadic 4-tuples) |
+| Mojolicious / Xslate | `bf->sort($recv, { keys => [...] })` |
+
+Rules:
+
+- Non-mutating on the template backends; stable.
+- **Documented divergence** (`string`): JS `localeCompare` is
+  ICU-collated (case-insensitive-ish: `"a" < "B"`); Go
+  `strings.Compare` and Perl `cmp` are byte order. Vectors use
+  same-case ASCII keys.
+- **Documented divergence** (`auto`): both template backends compare
+  numerically when both keys `looks_like_number`; JS relational `>`
+  compares numeric *strings* lexically. Vectors use real numbers or
+  non-numeric strings.
+
+### reduce
+
+JS `reduce((acc, x) => acc <op> x[.field], init)` /
+`reduceRight(...)`. Canonical args:
+`(items, op, key_kind, key, type, init, direction)` with `op` ∈
+`+`/`*`, `type` ∈ `numeric`/`string`, `init` as a string (the
+compiler emits the decoded seed), `direction` ∈ `left`/`right`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.reduce` / `.reduceRight` |
+| Go template | `bf_reduce` |
+| Mojolicious / Xslate | `bf->reduce($recv, { op => …, … })` |
+
+Rules:
+
+- Empty receiver returns the init unchanged.
+- `direction` is only observable for string concatenation (numeric
+  folds commute).
+- **Documented divergences** (mirroring `sort`'s `auto` caveat):
+  numeric-*string* keys fold numerically on the template backends but
+  string-concatenate in JS; float stringification differences apply
+  to string folds of inexact sums. Vectors use genuine numbers /
+  plain strings.
+
+### flat_map / flat_map_tuple
+
+JS `Array.prototype.flatMap(fn)` for the projection catalogue:
+`i => i` / `i => i.field` (canonical `(items, kind, name)`), and the
+array-literal tuple form `i => [i.a, i.b]` (canonical
+`(items, kind1, name1, kind2, name2, …)`).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.flatMap` |
+| Go template | `bf_flat_map` / `bf_flat_map_tuple` |
+| Mojolicious / Xslate | `bf->flat_map` / `bf->flat_map_tuple` (pair arrayrefs) |
+
+Rules:
+
+- `flatMap` = map + `flat(1)`: a projected array value spreads one
+  level for the scalar form; the tuple form appends each leaf
+  verbatim (the `flat(1)` only removes the literal wrapper).
+- A `field` projection of a non-object element yields `undefined` ≡
+  `null` (matches `getFieldValue` returning nil).

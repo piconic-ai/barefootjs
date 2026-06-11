@@ -92,7 +92,69 @@ my %bindings = (
     arr => sub { [@_] },
     # Mirrors the Mojo inline `[grep { $_ } @{...}]` for filter(Boolean).
     filter_truthy => sub { [grep { $_ } @{ $_[0] }] },
+
+    # Higher-order entries arrive in the canonical projection form
+    # (spec: items + field [+ value]); the closures below rebuild the
+    # predicate the adapters compile (`i => i.field === value`,
+    # `i => i.field`), choosing eq vs == by the probe's string-typing
+    # the same way the Mojo emitter does.
+    every  => sub { $bf->every($_[0],  _truthy_pred($_[1])) },
+    some   => sub { $bf->some($_[0],   _truthy_pred($_[1])) },
+    filter => sub { $bf->filter($_[0], _field_eq_pred($_[1], $_[2])) },
+    find   => sub { $bf->find($_[0],   _field_eq_pred($_[1], $_[2])) },
+    find_index      => sub { $bf->find_index($_[0],      _field_eq_pred($_[1], $_[2])) },
+    find_last       => sub { $bf->find_last($_[0],       _field_eq_pred($_[1], $_[2])) },
+    find_last_index => sub { $bf->find_last_index($_[0], _field_eq_pred($_[1], $_[2])) },
+
+    sort => sub {
+        my ($recv, @spec) = @_;
+        my @keys;
+        while (@spec >= 4) {
+            my ($kind, $name, $ct, $dir) = splice(@spec, 0, 4);
+            push @keys, {
+                key_kind     => $kind,
+                key          => $name,
+                compare_type => $ct,
+                direction    => $dir,
+            };
+        }
+        return $bf->sort($recv, { keys => \@keys });
+    },
+    reduce => sub {
+        my ($recv, $op, $key_kind, $key, $type, $init, $direction) = @_;
+        return $bf->reduce($recv, {
+            op        => $op,
+            key_kind  => $key_kind,
+            key       => $key,
+            type      => $type,
+            init      => $init,
+            direction => $direction,
+        });
+    },
+    flat_map       => sub { $bf->flat_map(@_) },
+    flat_map_tuple => sub {
+        my ($recv, @flat) = @_;
+        my @specs;
+        while (@flat >= 2) {
+            my ($kind, $name) = splice(@flat, 0, 2);
+            push @specs, [$kind, $name];
+        }
+        return $bf->flat_map_tuple($recv, @specs);
+    },
 );
+
+sub _truthy_pred {
+    my ($field) = @_;
+    return sub { ref $_[0] eq 'HASH' ? $_[0]{$field} : undef };
+}
+
+sub _field_eq_pred {
+    my ($field, $value) = @_;
+    my $get = sub { ref $_[0] eq 'HASH' ? $_[0]{$field} : undef };
+    return looks_like_number($value)
+        ? sub { my $v = $get->($_[0]); defined $v && $v == $value }
+        : sub { my $v = $get->($_[0]); defined $v && $v eq $value };
+}
 
 for my $case (@{ $doc->{cases} }) {
     my ($fn, $note) = @{$case}{qw(fn note)};

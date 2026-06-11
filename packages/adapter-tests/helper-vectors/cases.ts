@@ -59,6 +59,70 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   join: (a: unknown[], sep: string) => a.join(sep),
   arr: (...elements: unknown[]) => elements,
   filter_truthy: (a: unknown[]) => a.filter(Boolean),
+
+  // Higher-order entries use the compiled projection catalogue as the
+  // canonical argument form (spec: "canonical projection form") — the
+  // references run the REAL JS array methods over predicates built
+  // from those projections.
+  every: (a: Record<string, unknown>[], field: string) => a.every((i) => i[field]),
+  some: (a: Record<string, unknown>[], field: string) => a.some((i) => i[field]),
+  filter: (a: Record<string, unknown>[], field: string, value: unknown) =>
+    a.filter((i) => i[field] === value),
+  find: (a: Record<string, unknown>[], field: string, value: unknown) =>
+    a.find((i) => i[field] === value),
+  find_index: (a: Record<string, unknown>[], field: string, value: unknown) =>
+    a.findIndex((i) => i[field] === value),
+  find_last: (a: Record<string, unknown>[], field: string, value: unknown) =>
+    a.findLast((i) => i[field] === value),
+  find_last_index: (a: Record<string, unknown>[], field: string, value: unknown) =>
+    a.findLastIndex((i) => i[field] === value),
+  sort: (items: unknown[], ...spec: string[]) => {
+    const keys: Array<{ kind: string; name: string; type: string; dir: string }> = []
+    for (let i = 0; i + 3 < spec.length; i += 4) {
+      keys.push({ kind: spec[i], name: spec[i + 1], type: spec[i + 2], dir: spec[i + 3] })
+    }
+    const proj = (x: unknown, k: (typeof keys)[number]) =>
+      k.kind === 'field' ? (x as Record<string, unknown>)[k.name] : x
+    return [...items].sort((a, b) => {
+      for (const k of keys) {
+        const ka = proj(a, k)
+        const kb = proj(b, k)
+        let c: number
+        if (k.type === 'string') c = String(ka).localeCompare(String(kb))
+        else if (k.type === 'auto') c = (ka as never) > (kb as never) ? 1 : (ka as never) < (kb as never) ? -1 : 0
+        else c = Number(ka) - Number(kb)
+        if (c !== 0) return k.dir === 'desc' ? -c : c
+      }
+      return 0
+    })
+  },
+  reduce: (
+    items: unknown[],
+    op: string,
+    keyKind: string,
+    key: string,
+    type: string,
+    init: string,
+    direction: string,
+  ) => {
+    const proj = (x: unknown) => (keyKind === 'field' ? (x as Record<string, unknown>)[key] : x)
+    const arr = direction === 'right' ? [...items].reverse() : items
+    if (type === 'string') return arr.reduce<string>((acc, x) => acc + String(proj(x)), init)
+    return arr.reduce<number>(
+      (acc, x) => (op === '*' ? acc * Number(proj(x)) : acc + Number(proj(x))),
+      Number(init),
+    )
+  },
+  flat_map: (items: unknown[], keyKind: string, key: string) =>
+    items.flatMap((x) => (keyKind === 'field' ? (x as Record<string, unknown>)[key] : x)),
+  flat_map_tuple: (items: unknown[], ...specs: string[]) =>
+    items.flatMap((x) => {
+      const leaves: unknown[] = []
+      for (let i = 0; i + 1 < specs.length; i += 2) {
+        leaves.push(specs[i] === 'field' ? (x as Record<string, unknown>)[specs[i + 1]] : x)
+      }
+      return leaves
+    }),
 }
 
 export const cases: HelperCase[] = [
@@ -255,4 +319,120 @@ export const cases: HelperCase[] = [
   { fn: 'filter_truthy', args: [[0, 1, '', 2, null, 'a']], note: 'drops the JS falsy set' },
   { fn: 'filter_truthy', args: [['x', 'y']], note: 'all truthy passes through' },
   { fn: 'filter_truthy', args: [[0, '', null]], note: 'all falsy yields []' },
+
+  { fn: 'every', args: [[{ done: true }, { done: true }], 'done'], note: 'all truthy fields' },
+  { fn: 'every', args: [[{ done: true }, { done: false }], 'done'], note: 'one falsy field fails' },
+  { fn: 'every', args: [[], 'done'], note: 'empty receiver is vacuously true' },
+  { fn: 'some', args: [[{ done: false }, { done: true }], 'done'], note: 'one truthy field passes' },
+  { fn: 'some', args: [[{ done: false }], 'done'], note: 'no truthy field fails' },
+  { fn: 'some', args: [[], 'done'], note: 'empty receiver is false' },
+
+  {
+    fn: 'filter',
+    args: [[{ s: 'a', n: 1 }, { s: 'b', n: 2 }, { s: 'a', n: 3 }], 's', 'a'],
+    note: 'string field equality keeps matching items',
+  },
+  {
+    fn: 'filter',
+    args: [[{ s: 'a', n: 1 }, { s: 'b', n: 2 }], 'n', 2],
+    note: 'numeric field equality',
+  },
+  { fn: 'filter', args: [[{ s: 'a' }], 's', 'z'], note: 'no match yields []' },
+
+  {
+    fn: 'find',
+    args: [[{ id: 1, v: 'x' }, { id: 2, v: 'y' }], 'id', 2],
+    note: 'returns the first matching element',
+  },
+  { fn: 'find', args: [[{ id: 1 }], 'id', 9], note: 'no match yields undefined ≡ null' },
+  {
+    fn: 'find_index',
+    args: [[{ id: 1 }, { id: 2 }, { id: 2 }], 'id', 2],
+    note: 'first matching index',
+  },
+  { fn: 'find_index', args: [[{ id: 1 }], 'id', 9], note: 'no match is -1' },
+  {
+    fn: 'find_last',
+    args: [[{ id: 2, v: 'first' }, { id: 2, v: 'last' }], 'id', 2],
+    note: 'returns the last matching element',
+  },
+  {
+    fn: 'find_last_index',
+    args: [[{ id: 1 }, { id: 2 }, { id: 2 }], 'id', 2],
+    note: 'last matching index',
+  },
+  { fn: 'find_last_index', args: [[{ id: 1 }], 'id', 9], note: 'no match is -1' },
+
+  { fn: 'sort', args: [[3, 1, 2], 'self', '', 'numeric', 'asc'], note: 'numeric self ascending' },
+  { fn: 'sort', args: [[3, 1, 2], 'self', '', 'numeric', 'desc'], note: 'numeric self descending' },
+  {
+    fn: 'sort',
+    args: [[{ p: 30 }, { p: 10 }, { p: 20 }], 'field', 'p', 'numeric', 'asc'],
+    note: 'numeric field key',
+  },
+  {
+    fn: 'sort',
+    args: [['banana', 'apple', 'cherry'], 'self', '', 'string', 'asc'],
+    note: 'string compare on same-case ASCII',
+  },
+  {
+    fn: 'sort',
+    args: [[{ p: 2.5 }, { p: 1.5 }], 'field', 'p', 'auto', 'asc'],
+    note: 'auto compare with real numbers',
+  },
+  {
+    fn: 'sort',
+    args: [
+      [{ a: 1, b: 2 }, { a: 1, b: 1 }, { a: 0, b: 9 }],
+      'field', 'a', 'numeric', 'asc',
+      'field', 'b', 'numeric', 'asc',
+    ],
+    note: 'multi-key tie-break',
+  },
+  { fn: 'sort', args: [[], 'self', '', 'numeric', 'asc'], note: 'empty receiver' },
+
+  { fn: 'reduce', args: [[1, 2, 3], '+', 'self', '', 'numeric', '0', 'left'], note: 'sum fold' },
+  { fn: 'reduce', args: [[2, 3, 4], '*', 'self', '', 'numeric', '1', 'left'], note: 'product fold' },
+  {
+    fn: 'reduce',
+    args: [[{ d: 5 }, { d: 7 }], '+', 'field', 'd', 'numeric', '10', 'left'],
+    note: 'field projection with non-zero init',
+  },
+  {
+    fn: 'reduce',
+    args: [['a', 'b', 'c'], '+', 'self', '', 'string', 'x', 'left'],
+    note: 'string concatenation seeds with init',
+  },
+  {
+    fn: 'reduce',
+    args: [['a', 'b', 'c'], '+', 'self', '', 'string', 'x', 'right'],
+    note: 'reduceRight is observable for string concat',
+  },
+  {
+    fn: 'reduce',
+    args: [[], '+', 'self', '', 'numeric', '5', 'left'],
+    note: 'empty receiver returns the init',
+  },
+
+  { fn: 'flat_map', args: [[[1, 2], [3]], 'self', ''], note: 'self projection spreads one level' },
+  {
+    fn: 'flat_map',
+    args: [[{ t: [1, 2] }, { t: [3] }], 'field', 't'],
+    note: 'array-valued field spreads one level',
+  },
+  {
+    fn: 'flat_map',
+    args: [[{ t: 1 }, { t: 2 }], 'field', 't'],
+    note: 'scalar field values are kept as-is',
+  },
+  {
+    fn: 'flat_map_tuple',
+    args: [[{ a: 1, b: 2 }, { a: 3, b: 4 }], 'field', 'a', 'field', 'b'],
+    note: 'tuple leaves append in order per item',
+  },
+  {
+    fn: 'flat_map_tuple',
+    args: [[{ a: 1 }], 'self', '', 'field', 'a'],
+    note: 'self leaf appends the element itself',
+  },
 ]

@@ -106,6 +106,32 @@ var vectorBindings = map[string]func(args []any) any{
 	"join":          func(args []any) any { return Join(args[0], args[1].(string)) },
 	"arr":           func(args []any) any { return Arr(args...) },
 	"filter_truthy": func(args []any) any { return FilterTruthy(args[0]) },
+	"every":         func(args []any) any { return Every(args[0], args[1].(string)) },
+	"some":          func(args []any) any { return Some(args[0], args[1].(string)) },
+	"filter":        func(args []any) any { return Filter(args[0], args[1].(string), args[2]) },
+	"find":          func(args []any) any { return Find(args[0], args[1].(string), args[2]) },
+	"find_index":    func(args []any) any { return FindIndex(args[0], args[1].(string), args[2]) },
+	"find_last":     func(args []any) any { return FindLast(args[0], args[1].(string), args[2]) },
+	"find_last_index": func(args []any) any {
+		return FindLastIndex(args[0], args[1].(string), args[2])
+	},
+	"sort": func(args []any) any { return Sort(args[0], toStringSlice(args[1:])...) },
+	"reduce": func(args []any) any {
+		return Reduce(args[0], args[1].(string), args[2].(string), args[3].(string),
+			args[4].(string), args[5].(string), args[6].(string))
+	},
+	"flat_map": func(args []any) any { return FlatMap(args[0], args[1].(string), args[2].(string)) },
+	"flat_map_tuple": func(args []any) any {
+		return FlatMapTuple(args[0], toStringSlice(args[1:])...)
+	},
+}
+
+func toStringSlice(args []any) []string {
+	out := make([]string, len(args))
+	for i, a := range args {
+		out[i] = a.(string)
+	}
+	return out
 }
 
 func TestHelperVectors(t *testing.T) {
