@@ -134,57 +134,69 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     return
   }
 
-  // Supersede any in-flight navigation.
+  // Supersede any in-flight navigation. `inflight` stays pointed at this
+  // controller for the whole navigation (including the `res.text()` phase
+  // and the swap) so a newer navigation aborts it — and so the abort
+  // checks after each `await` below let the latest navigation win.
   state.inflight?.abort()
   const controller = new AbortController()
   state.inflight = controller
 
-  let res: Response
   try {
-    res = await fetch(target.href, {
-      headers: { [BF_NAVIGATE_HEADER]: '1', Accept: 'text/html' },
-      credentials: 'same-origin',
-      signal: controller.signal,
-    })
-  } catch {
+    let res: Response
+    try {
+      res = await fetch(target.href, {
+        headers: { [BF_NAVIGATE_HEADER]: '1', Accept: 'text/html' },
+        credentials: 'same-origin',
+        signal: controller.signal,
+      })
+    } catch {
+      if (controller.signal.aborted) return
+      hardNavigate(target.href)
+      return
+    }
     if (controller.signal.aborted) return
-    hardNavigate(target.href)
-    return
+
+    if (!res.ok) {
+      hardNavigate(target.href)
+      return
+    }
+    // Honour server redirects (trailing slash, auth bounce, …).
+    const finalUrl = res.redirected && res.url ? res.url : target.href
+
+    const html = await res.text()
+    // A newer navigation may have started while the body streamed in —
+    // bail before swapping so we never overwrite it with stale content.
+    if (controller.signal.aborted) return
+
+    const content = extractOutlet(html, state.outletSelector)
+    const current = document.querySelector(state.outletSelector)
+    if (!content || !current) {
+      // Target isn't part of this shell — fall back to a full load.
+      hardNavigate(finalUrl)
+      return
+    }
+
+    // Tear down outgoing islands (best-effort) then swap only the outlet.
+    state.dispose?.(current)
+    current.replaceChildren(...content.nodes)
+    if (content.title !== null) document.title = content.title
+
+    if (mode === 'push') {
+      window.history.pushState({ bfRouter: true }, '', finalUrl)
+    } else if (mode === 'replace') {
+      window.history.replaceState({ bfRouter: true }, '', finalUrl)
+    }
+
+    if (state.scrollToTop) window.scrollTo(0, 0)
+
+    // Re-hydrate the freshly inserted islands.
+    await state.rehydrate()
+  } finally {
+    // Only clear if we're still the current navigation — a newer one may
+    // have replaced `inflight` already.
+    if (state.inflight === controller) state.inflight = null
   }
-  if (controller.signal.aborted) return
-  if (state.inflight === controller) state.inflight = null
-
-  if (!res.ok) {
-    hardNavigate(target.href)
-    return
-  }
-  // Honour server redirects (trailing slash, auth bounce, …).
-  const finalUrl = res.redirected && res.url ? res.url : target.href
-
-  const html = await res.text()
-  const content = extractOutlet(html, state.outletSelector)
-  const current = document.querySelector(state.outletSelector)
-  if (!content || !current) {
-    // Target isn't part of this shell — fall back to a full load.
-    hardNavigate(finalUrl)
-    return
-  }
-
-  // Tear down outgoing islands (best-effort) then swap only the outlet.
-  state.dispose?.(current)
-  current.replaceChildren(...content.nodes)
-  if (content.title !== null) document.title = content.title
-
-  if (mode === 'push') {
-    window.history.pushState({ bfRouter: true }, '', finalUrl)
-  } else if (mode === 'replace') {
-    window.history.replaceState({ bfRouter: true }, '', finalUrl)
-  }
-
-  if (state.scrollToTop) window.scrollTo(0, 0)
-
-  // Re-hydrate the freshly inserted islands.
-  await state.rehydrate()
 }
 
 // ── internals ──────────────────────────────────────────────────────────────

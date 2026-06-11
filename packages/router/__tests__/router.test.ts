@@ -104,6 +104,41 @@ test('accepts a bare fragment response (server-optimized payload)', async () => 
   expect(document.querySelector('[bf-outlet]')!.textContent).toContain('fragment body')
 })
 
+test('rapid navigation: the latest target wins even if an earlier response resolves last', async () => {
+  // /slow's body resolves AFTER /fast's, modelling a slow first request the
+  // user navigates away from. The stale /slow swap must not land.
+  ;(globalThis as { fetch: unknown }).fetch = mock((url: unknown) => {
+    const href = String(url)
+    const slow = href.includes('/slow')
+    const body = slow
+      ? `<main bf-outlet><p>SLOW body</p></main>`
+      : `<main bf-outlet><p>FAST body</p></main>`
+    return Promise.resolve({
+      ok: true,
+      redirected: false,
+      url: href,
+      // Slow response's text() resolves on a later turn than the fast one.
+      text: () => new Promise<string>((r) => setTimeout(() => r(body), slow ? 40 : 0)),
+    } as unknown as Response)
+  })
+
+  const pushSpy = spyOn(window.history, 'pushState')
+  const router = startRouter({ rehydrate: () => {} })
+  stop = router.stop
+
+  // Kick off the slow navigation, then immediately supersede it.
+  const p1 = router.navigate('/slow')
+  const p2 = router.navigate('/fast')
+  await Promise.all([p1, p2])
+  await flush()
+
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('FAST body')
+  expect(document.querySelector('[bf-outlet]')!.textContent).not.toContain('SLOW body')
+  // The last committed history entry is the winner, not the stale /slow one.
+  const lastPush = pushSpy.mock.calls.at(-1)
+  expect(String(lastPush?.[2])).toContain('/fast')
+})
+
 test('does not intercept external links or modified clicks', async () => {
   const router = startRouter({ rehydrate: () => {} })
   stop = router.stop
