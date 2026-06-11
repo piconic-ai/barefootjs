@@ -26,10 +26,11 @@ export interface VectorFile {
 
 /**
  * Vectors are plain JSON: finite numbers, strings, booleans, null, and
- * arrays/objects thereof. NaN / ±Infinity / undefined have no JSON
- * encoding — per the spec, a sentinel scheme lands together with the
- * first catalogue entry that needs one, so until then refuse loudly
- * instead of letting JSON.stringify silently emit `null`.
+ * arrays/objects thereof. Per the spec, a non-finite number in an
+ * EXPECT value is encoded as the reserved sentinel
+ * `{"$num": "NaN" | "Infinity" | "-Infinity"}`; `undefined` is never
+ * encodable. Args must stay finite (refused loudly) until a
+ * composition case needs otherwise.
  */
 function assertEncodable(value: unknown, context: string): void {
   if (value === undefined) throw new Error(`${context}: undefined is not encodable in vectors.json`)
@@ -43,6 +44,23 @@ function assertEncodable(value: unknown, context: string): void {
   }
 }
 
+function encodeExpect(value: unknown, context: string): unknown {
+  if (value === undefined) throw new Error(`${context}: undefined is not encodable in vectors.json`)
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    return { $num: Number.isNaN(value) ? 'NaN' : value > 0 ? 'Infinity' : '-Infinity' }
+  }
+  if (Array.isArray(value)) {
+    return value.map((v, i) => encodeExpect(v, `${context}[${i}]`))
+  }
+  if (value !== null && typeof value === 'object') {
+    if ('$num' in value) throw new Error(`${context}: the "$num" key is reserved for the sentinel`)
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, encodeExpect(v, `${context}.${k}`)]),
+    )
+  }
+  return value
+}
+
 export function buildVectors(): VectorFile {
   return {
     version: 1,
@@ -53,8 +71,10 @@ export function buildVectors(): VectorFile {
       if (!ref) throw new Error(`no JS reference implementation for helper "${c.fn}" in cases.ts`)
       const context = `${c.fn}(${JSON.stringify(c.args)})`
       assertEncodable(c.args, context)
-      const expect = (ref as (...args: unknown[]) => unknown)(...c.args)
-      assertEncodable(expect, `${context} → expect`)
+      const expect = encodeExpect(
+        (ref as (...args: unknown[]) => unknown)(...c.args),
+        `${context} → expect`,
+      )
       return { fn: c.fn, args: c.args, expect, note: c.note }
     }),
   }

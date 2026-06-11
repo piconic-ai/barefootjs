@@ -6,6 +6,24 @@ use File::Spec;
 use JSON::PP ();
 use Scalar::Util qw(looks_like_number);
 
+use lib "$FindBin::Bin/../lib";
+use BarefootJS;
+
+# Pure-Perl backend (core JSON::PP only) so this test runs with zero
+# Mojo present — same pattern as t/template_primitives.t.
+{
+    package PureBackend;
+    use JSON::PP ();
+    my $J = JSON::PP->new->canonical->allow_nonref;
+    sub new          { bless {}, shift }
+    sub encode_json  { $J->encode($_[1]) }
+    sub mark_raw     { $_[1] }
+    sub materialize  { ref($_[1]) eq 'CODE' ? $_[1]->() : $_[1] }
+    sub render_named { '' }
+}
+
+my $bf = bless { c => undef, config => {}, backend => PureBackend->new }, 'BarefootJS';
+
 # Golden helper vectors generated from the JS reference implementations
 # (spec/template-helpers.md in the monorepo). The file is not shipped in
 # the CPAN dist — packages/adapter-tests only exists in a monorepo
@@ -36,6 +54,13 @@ my %bindings = (
     div => sub { $_[0] / $_[1] },
     mod => sub { $_[0] % $_[1] },
     neg => sub { -$_[0] },
+
+    string => sub { $bf->string($_[0]) },
+    json   => sub { $bf->json($_[0]) },
+    number => sub { $bf->number($_[0]) },
+    floor  => sub { $bf->floor($_[0]) },
+    ceil   => sub { $bf->ceil($_[0]) },
+    round  => sub { $bf->round($_[0]) },
 );
 
 for my $case (@{ $doc->{cases} }) {
@@ -45,7 +70,8 @@ for my $case (@{ $doc->{cases} }) {
         fail("no Perl binding for helper '$fn' — add it to %bindings in $0");
         next;
     }
-    vector_ok($bind->(@{ $case->{args} }), $case->{expect}, "$fn: $note");
+    my @args = map { normalize_arg($_) } @{ $case->{args} };
+    vector_ok($bind->(@args), $case->{expect}, "$fn: $note");
 }
 
 done_testing;
@@ -55,10 +81,30 @@ done_testing;
 # by truthiness, everything else structurally. Arrays currently go
 # through is_deeply (string compare per element) — refine to a
 # recursive numeric walk when the first float-array vector lands.
+# Production Perl template data has no boolean type — the adapters pass
+# 1/0 where JS has true/false — so JSON::PP boolean objects in vector
+# ARGS are lowered to 1/0 before reaching a binding. Expects keep their
+# boolean identity (vector_ok compares those by truthiness).
+sub normalize_arg {
+    my ($v) = @_;
+    return [ map { normalize_arg($_) } @$v ] if ref $v eq 'ARRAY';
+    return { map { $_ => normalize_arg($v->{$_}) } keys %$v } if ref $v eq 'HASH';
+    return JSON::PP::is_bool($v) ? ($v ? 1 : 0) : $v;
+}
+
 sub vector_ok {
     my ($got, $expect, $label) = @_;
     if (!defined $expect) {
         return is($got, undef, $label);
+    }
+    # Reserved non-finite sentinel (spec/template-helpers.md):
+    # {"$num": "NaN" | "Infinity" | "-Infinity"}. NaN is the only value
+    # for which `$x != $x` holds.
+    if (ref $expect eq 'HASH' && exists $expect->{'$num'}) {
+        my $kind = $expect->{'$num'};
+        return ok($got != $got, "$label (NaN)") if $kind eq 'NaN';
+        my $inf = 9**9**9;
+        return cmp_ok($got, '==', $kind eq 'Infinity' ? $inf : -$inf, $label);
     }
     if (JSON::PP::is_bool($expect)) {
         return is(!!$got, !!$expect, $label);
