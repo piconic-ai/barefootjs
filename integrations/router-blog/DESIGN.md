@@ -204,25 +204,30 @@ just the outlet fragment under `X-Barefoot-Navigate` (the prototype already
 does this by hand in the example; §"Optional payload optimization" post).
 With the outlet derived, this becomes adapter-provided, not app-authored.
 
-### 5.5 The two `@barefootjs/client` changes that unlock it
+### 5.5 The two `@barefootjs/client` changes that unlock it — **implemented (P0)**
 
-Everything above rests on two small, high-value runtime additions — the
-"P0" of any implementation:
+Everything above rested on two small, high-value runtime additions. Both
+are now done on the router branch (PR #1889):
 
-1. **Subtree-scoped hydrate.** Add `hydrate(root: Element)` /
-   `rehydrate(root)` that walks only `root` instead of the whole document.
-   Today `walkAllInDocumentOrder()` is hard-wired to
-   `document.createTreeWalker(document, …)` with no subtree entry point
-   (`packages/client/src/runtime/hydrate.ts:201-217`). The reference app's
-   `hydrateOutlet` already scopes to `[bf-outlet]` and the bench shows
-   it's the flat-cost path; the gap is that the *real* `rehydrateAll()`
-   walks the whole document.
-2. **Scope→dispose registry.** Wrap each scope's `init` in `createRoot`
-   (`createRoot`/`disposeEffect` already exist in
-   `packages/client/src/reactive.ts`) and key the returned dispose fn by
-   scope element. Then disposal is automatic and precise — fixing the leak
-   the stress test found **by construction**, for the router *and* for
-   conditionals/loops generally.
+1. **Subtree-scoped hydrate — done.** `rehydrateScope(root)` walks only
+   `root` (synchronous, O(scopes in `root`)), beside the existing
+   whole-document `rehydrateAll()`
+   (`packages/client/src/runtime/hydrate.ts`). The router's default
+   `rehydrate` now calls it on the swapped outlet via
+   `window.__bf_hydrate_within`.
+2. **Scope→dispose registry — done.** Each scope's `init` now runs inside
+   `createRoot`, and `disposeScope(root)` tears down the reactive graphs of
+   the scopes inside `root`. The change is additive — nothing disposes a
+   root unless `disposeScope` is called, so existing lifetimes are
+   unchanged (full client suite 360 + adapter CSR conformance 722 stay
+   green). The router's default `dispose` now releases outgoing islands
+   precisely via `window.__bf_dispose_within`, fixing the stress-measured
+   leak **by construction** — for the router *and* for conditionals/loops
+   generally.
+
+3 new unit tests (`packages/client/__tests__/runtime/scoped-hydrate.test.ts`)
+cover subtree-only hydration, effect teardown on dispose, and re-hydration
+after dispose.
 
 ## 6. Beyond Next/TanStack: signal-level data patches
 
@@ -271,12 +276,13 @@ The bench quantifies the row that matters: O(outlet) vs O(document) is
 
 ## 9. Phased plan
 
-- **P0 — `@barefootjs/client`:** subtree-scoped `hydrate(root)` + scope→
-  dispose registry (createRoot). Fixes the leak, enables targeted hydrate.
-  Small, self-contained, valuable on its own.
-- **P1 — `@barefootjs/router`:** consume an outlet element + island id list;
-  targeted hydrate + precise dispose; prefetch from a provided module list;
-  snapshot cache; asset-version gate.
+- **P0 — `@barefootjs/client` — ✅ done (PR #1889).** Subtree-scoped
+  `rehydrateScope(root)` + scope→dispose registry (`disposeScope`, via
+  `createRoot`). Fixes the leak, enables targeted hydrate; router defaults
+  wired to both seams.
+- **P1 — `@barefootjs/router`:** consume an outlet element + island id list
+  (✅ outlet element today); prefetch from a provided module list; snapshot
+  cache; asset-version gate.
 - **P2 — compiler / CLI:** emit `routes.manifest.json`; derive the outlet
   from the layout slot; derive persistent islands; `bf routes`.
 - **P3 — beyond:** signal-level data patches (§6) for data-only navigations.
