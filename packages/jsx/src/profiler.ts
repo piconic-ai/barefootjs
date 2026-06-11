@@ -161,14 +161,15 @@ export function buildStaticBudget(
   // the static list and the dynamic coverage share one identity (slotId).
   const handlers: BudgetHandler[] = graph.domBindings
     .filter(b => b.type === 'event')
-    .map(b => {
+    // Event bindings always carry `loc` (IREvent.loc is required), and coverage's
+    // turn→binding join keys on it too — so skip any loc-less binding rather than
+    // emit an invalid (line 0) location that a consumer would have to special-case.
+    .flatMap(b => {
+      if (!b.loc) return []
       // Label is `<event> handler "<slot>"` — the same parse the scenario driver
       // and coverage join use. Fall back to a neutral `event` if it ever drifts.
       const eventName = b.label.match(/^(\w+)\s+handler/)?.[1] ?? 'event'
-      return {
-        name: `${eventName}@${b.slotId}`,
-        loc: { file: b.loc?.file ?? summary.sourceFile, line: b.loc?.start.line ?? 0 },
-      }
+      return [{ name: `${eventName}@${b.slotId}`, loc: { file: b.loc.file, line: b.loc.start.line } }]
     })
 
   const { depth, chain } = longestMemoChain(graph)
