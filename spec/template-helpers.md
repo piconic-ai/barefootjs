@@ -75,8 +75,11 @@ committed, and consumed by one thin harness per backend.
   as `{"$num": "NaN" | "Infinity" | "-Infinity"}` (the `$num` key is
   reserved; helper data must not use it). Arguments must stay finite —
   the generator refuses non-finite `args`; composition cases (e.g.
-  `floor(number("x"))`) can lift that later if needed. `undefined` is
-  never representable.
+  `floor(number("x"))`) can lift that later if needed.
+- A JS `undefined` **expect** encodes as `null`: the template
+  backends have a single absent value (Go `nil` / Perl `undef`), so
+  `undefined` ≡ `null` under value-compat (e.g. `at(arr, 99)`).
+  `undefined` arguments stay unrepresentable.
 - Each case carries a human-readable `note` naming the spec rule it
   pins.
 
@@ -446,3 +449,158 @@ Rules:
   `[]`; a negative limit keeps everything.
 - The no-separator form (`s.split()`) lowers separately
   (whole-string single element) and is not part of the vectors.
+
+### len
+
+JS `.length` — both array element count and string character count
+(the parser can't always disambiguate the receiver).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.length` |
+| Go template | `bf_len` (also plain `len` in some positions) |
+| Mojolicious | `scalar(@{...})` for known arrays; `bf->length` otherwise |
+| Xslate | `$bf.length` |
+
+String length is bytes on Go, characters on Perl, UTF-16 units in JS
+— identical for ASCII; non-ASCII is out of contract (vectors stay
+ASCII).
+
+### at
+
+JS `Array.prototype.at(i)` — supports negative indices; out-of-range
+yields `undefined` (≡ `null` in vectors).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.at` |
+| Go template | `bf_at` |
+| Mojolicious / Xslate | `bf->at` |
+
+### includes
+
+JS `Array.prototype.includes(x)` AND `String.prototype.includes(sub)`
+— one canonical id; the backends dispatch on the receiver type at
+runtime.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.includes` |
+| Go template | `bf_includes` (reflect.Kind dispatch) |
+| Mojolicious / Xslate | `bf->includes` (`ref()` dispatch) |
+
+Rules:
+
+- Array search is strict-equality in JS and Go (`DeepEqual`);
+  **documented divergence**: Perl scans with `eq` (string equality),
+  so cross-type probes (`[1].includes("1")`: JS `false`, Perl `true`)
+  diverge. Domain: needle and elements of the same primitive type.
+- String receiver does a substring test.
+
+### index_of / last_index_of
+
+JS `Array.prototype.indexOf(x)` / `.lastIndexOf(x)` → first/last
+position or `-1`. Same equality contract (and Perl `eq` divergence
+domain) as `includes`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native methods |
+| Go template | `bf_index_of` / `bf_last_index_of` |
+| Mojolicious / Xslate | `bf->index_of` / `bf->last_index_of` |
+
+### concat
+
+JS `Array.prototype.concat(other)` — binary form only (variadic
+`.concat(a, b)` is refused upstream).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.concat` |
+| Go template | `bf_concat` |
+| Mojolicious / Xslate | `bf->concat` |
+
+### slice
+
+JS `Array.prototype.slice(start, end?)` with full negative-index
+clamping (`slice(-2)`, `slice(0, -1)`, `start >= end` → `[]`).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.slice` |
+| Go template | `bf_slice` |
+| Mojolicious / Xslate | `bf->slice` |
+
+### reverse
+
+JS `Array.prototype.reverse()` / `.toReversed()` — non-mutating on
+the template backends (SSR renders a snapshot, so the JS
+mutate-vs-copy distinction has no template-level meaning).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native methods |
+| Go template | `bf_reverse` |
+| Mojolicious / Xslate | `bf->reverse` |
+
+### flat
+
+JS `Array.prototype.flat(depth?)`. Canonical args use the compiled
+representation: depth `-1` is the `Infinity` sentinel (flatten
+fully); the no-arg JS form lowers as depth `1`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.flat` |
+| Go template | `bf_flat` |
+| Mojolicious / Xslate | `bf->flat` |
+
+### join
+
+JS `Array.prototype.join(sep)`. `null`/`undefined` elements render as
+empty (`[1, null, 2].join(",")` → `"1,,2"`); the separator defaults
+to `","` at the lowering site (canonical vectors always pass it
+explicitly).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.join` |
+| Go template | `bf_join` |
+| Mojolicious | native `join($sep, @{...})` |
+| Xslate | `$bf.join` |
+
+Number elements stringify per the `string` entry — Perl's `%.15g`
+divergence applies; vectors keep elements within 15 significant
+digits.
+
+### arr
+
+Array-literal lowering `[a, b, …]` (#1443) — template languages
+without array-literal syntax route through a variadic constructor.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `[a, b]` |
+| Go template | `bf_arr a b` |
+| Mojolicious / Xslate | native `[$a, $b]` |
+
+### filter_truthy
+
+JS `arr.filter(Boolean)` (#1443 class-merge pattern) — keep elements
+that are truthy under JS `Boolean(x)`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.filter(Boolean)` |
+| Go template | `bf_filter_truthy` |
+| Mojolicious | inline `[grep { $_ } @{...}]` |
+| Xslate | Kolon lambda filter |
+
+**Documented divergence**: Perl truthiness drops the string `"0"`
+(falsy in Perl, truthy in JS). The intended domain is class-string
+merging where `"0"` is not a meaningful class name; excluded from
+vectors.
+
+Not in the catalogue: `bf_first` / `bf_last` / `bf_contains` exist in
+the Go FuncMap as conveniences but are never emitted by the compiler;
+they are Go-internal and carry no cross-backend contract.

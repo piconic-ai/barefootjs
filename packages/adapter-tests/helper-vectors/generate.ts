@@ -45,7 +45,10 @@ function assertEncodable(value: unknown, context: string): void {
 }
 
 function encodeExpect(value: unknown, context: string): unknown {
-  if (value === undefined) throw new Error(`${context}: undefined is not encodable in vectors.json`)
+  // JS distinguishes undefined from null; the template backends have a
+  // single absent value (Go nil / Perl undef). Per the spec, an
+  // undefined EXPECT encodes as null (value-compat).
+  if (value === undefined) return null
   if (typeof value === 'number' && !Number.isFinite(value)) {
     return { $num: Number.isNaN(value) ? 'NaN' : value > 0 ? 'Infinity' : '-Infinity' }
   }

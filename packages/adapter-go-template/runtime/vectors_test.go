@@ -89,6 +89,23 @@ var vectorBindings = map[string]func(args []any) any{
 		}
 		return Split(args[0].(string), args[1].(string))
 	},
+	"len":           func(args []any) any { return Len(args[0]) },
+	"at":            func(args []any) any { return At(args[0], args[1].(int)) },
+	"includes":      func(args []any) any { return Includes(args[0], args[1]) },
+	"index_of":      func(args []any) any { return IndexOf(args[0], args[1]) },
+	"last_index_of": func(args []any) any { return LastIndexOf(args[0], args[1]) },
+	"concat":        func(args []any) any { return Concat(args[0], args[1]) },
+	"slice": func(args []any) any {
+		if len(args) > 2 {
+			return Slice(args[0], args[1].(int), args[2].(int))
+		}
+		return Slice(args[0], args[1].(int))
+	},
+	"reverse":       func(args []any) any { return Reverse(args[0]) },
+	"flat":          func(args []any) any { return Flat(args[0], args[1].(int)) },
+	"join":          func(args []any) any { return Join(args[0], args[1].(string)) },
+	"arr":           func(args []any) any { return Arr(args...) },
+	"filter_truthy": func(args []any) any { return FilterTruthy(args[0]) },
 }
 
 func TestHelperVectors(t *testing.T) {
