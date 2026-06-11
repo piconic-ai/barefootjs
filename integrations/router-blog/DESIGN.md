@@ -261,16 +261,40 @@ IR opens up.
 
 ## 7. CLI integration
 
-- `bf build` → emit `routes.manifest.json` (the §5.1 rollup) alongside the
-  existing `manifest.json` (`packages/cli/src/lib/build.ts:947-953`). The
-  build config already exposes a `postBuild(ctx)` hook
-  (`BuildConfig`, `build.ts:41-74`) — the natural emission point, no
-  pipeline surgery.
-- `bf routes` → inspect derived outlets / islands / module sets per route,
-  a new file in `packages/cli/src/commands/` dispatched from
-  `packages/cli/src/index.ts` exactly like the existing `debug` / `gen`
-  subcommands. Sibling to `bf docs` and `bf debug graph`, so
-  auto-derivation is verifiable.
+**Rollup core — prototyped & validated (`routes-manifest.ts`).** The §5.1
+rollup is a pure transform of the existing `manifest.json`, not new
+analysis. `routes-manifest.ts` builds it and runs against the real `bf
+build` output of `integrations/hono` (11 components): for every island it
+derives the **module** (`clientJs`), the transitive **module set**
+(`stubDeps`), and the **signal/prop surface** (`ssrDefaults`). Example:
+
+```
+component          island modules props          signals
+Counter            yes    1       initial        count,doubled
+TodoApp            yes    1       initialTodos   todos,newText,filter
+TodoItem           yes    1       -              -
+```
+
+**Finding (ssrDefaults is a partial surface).** `ssrDefaults` only seeds
+props *referenced by a signal/memo initializer*, so a purely-presentational
+child island (`TodoItem`) shows an empty surface even though it takes props
+via child JSX. The module/prefetch story is complete for every island; the
+**data-patch surface (§6) is complete for stateful islands but partial for
+presentational children** — patching those needs the IR directly (the
+analyzer has the bindings) rather than the manifest alone.
+
+**Remaining P2 work:**
+
+- `bf build` → write `routes.manifest.json` alongside `manifest.json`
+  (`build.ts:947-953`) via the existing `postBuild(ctx)` hook
+  (`BuildConfig`, `build.ts:41-74`) — promote `routes-manifest.ts`'s
+  `buildRoutesManifest()` into the build, no pipeline surgery.
+- `bf routes` → an inspector over the rollup, a new file in
+  `packages/cli/src/commands/` dispatched from `packages/cli/src/index.ts`
+  like the existing `debug` / `gen` subcommands (sibling to `bf docs` /
+  `bf debug graph`).
+- **Outlet derivation** stays future work (the layout-slot analysis of
+  §5.2) — the rollup above is island/module-keyed and orthogonal to it.
 - Dev server already streams a build id for reload; the router consumes the
   manifest in dev unchanged.
 
@@ -303,9 +327,12 @@ at realistic shell sizes.
 - **P1 — `@barefootjs/router`:** consume an outlet element + island id list
   (✅ outlet element today); prefetch from a provided module list; snapshot
   cache; asset-version gate.
-- **P2 — compiler / CLI:** emit `routes.manifest.json`; derive the outlet
-  from the layout slot; derive persistent islands; `bf routes`.
-- **P3 — beyond:** signal-level data patches (§6) for data-only navigations.
+- **P2 — compiler / CLI — 🚧 in progress.** Rollup core prototyped &
+  validated on real `bf build` output (`routes-manifest.ts`, §7).
+  Remaining: emit `routes.manifest.json` from the build (`postBuild`),
+  add the `bf routes` inspector, then outlet/persistent-island derivation
+  from the layout slot (§5.2).
+- **P3 — signal-level data patches (§6)** for data-only navigations.
 
 ## 10. Open questions
 

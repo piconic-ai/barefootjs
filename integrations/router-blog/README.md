@@ -59,3 +59,13 @@ throughput. Findings are written up in [`STRESS.md`](./STRESS.md) — last
 run **8 pass / 0 fail**, with the disposal-leak gap measured and
 documented. Both scripts exit non-zero if behaviour drifts from the
 claims, so the docs can't silently rot.
+
+## Design artifacts
+
+- `bun run bench` — runtime-cost microbench (O(document) vs O(outlet)).
+- `bun run routes-manifest` — P2 prototype: builds the [DESIGN.md](./DESIGN.md)
+  §5.1 island/module rollup from a real `bf build` manifest (defaults to
+  `../hono/dist/components/manifest.json`; run `bf build` in
+  `integrations/hono` first). Proves the rollup is a pure transform of
+  existing build output.
+- [`DESIGN.md`](./DESIGN.md) — the IR-driven router design exploration.

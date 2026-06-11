@@ -9,7 +9,8 @@
     "serve": "bun run server.ts",
     "capture": "bun run capture.ts",
     "stress": "bun run stress.ts",
-    "bench": "bun run bench.ts"
+    "bench": "bun run bench.ts",
+    "routes-manifest": "bun run routes-manifest.ts"
   },
   "dependencies": {
     "@barefootjs/router": "workspace:*",
