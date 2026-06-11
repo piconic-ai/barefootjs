@@ -8,5 +8,6 @@ Makefile.PL
 README.md
 t/controller_cycle.t
 t/dev_reload.t
+t/helper_vectors.t
 t/spread_attrs.t
 t/template_primitives.t

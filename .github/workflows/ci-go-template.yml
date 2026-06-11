@@ -51,6 +51,11 @@ jobs:
       - name: Pre-warm Go build cache
         run: cd packages/adapter-go-template/runtime && GOTOOLCHAIN=local go build ./...
 
+      - name: Run Go runtime unit tests
+        # Includes the golden-vector conformance harness (vectors_test.go,
+        # see spec/template-helpers.md).
+        run: cd packages/adapter-go-template/runtime && GOTOOLCHAIN=local go test ./...
+
       - name: Run unit tests
         run: bun test packages/adapter-go-template
 
