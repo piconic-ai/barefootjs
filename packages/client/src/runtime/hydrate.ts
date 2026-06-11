@@ -218,15 +218,32 @@ export function rehydrateScope(root: Element): void {
  * content region, so the outgoing islands release timers/listeners/
  * subscriptions instead of leaking.
  *
- * Also clears the `hydratedScopes` mark so the same element could be
- * re-hydrated if it is ever re-inserted.
+ * Also resets the per-scope hydration marks so the *same* DOM nodes could
+ * be re-hydrated if they are ever re-inserted:
+ *   - element scopes: their `hydratedScopes` entry (via `disposeOneScope`),
+ *   - `bf-h` child scopes: their `hydratedScopes` entry (they have no own
+ *     disposer — their reactive graph is owned by an ancestor root being
+ *     disposed here),
+ *   - comment scopes: the `__bfInitialized` flag on the `<!--bf-scope:-->`
+ *     anchor (otherwise `hydrateCommentScope` short-circuits on the stale
+ *     flag and never re-initializes the scope).
  */
 export function disposeScope(root: Element): void {
   if (typeof document === 'undefined') return
   disposeOneScope(root)
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT)
+  clearChildScopeMark(root)
+  const walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT,
+  )
   while (walker.nextNode()) {
-    disposeOneScope(walker.currentNode as Element)
+    const node = walker.currentNode
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      disposeOneScope(node as Element)
+      clearChildScopeMark(node as Element)
+    } else if (node.nodeType === Node.COMMENT_NODE) {
+      clearCommentScopeFlag(node as Comment)
+    }
   }
 }
 
@@ -237,6 +254,28 @@ function disposeOneScope(el: Element): void {
     hydratedScopes.delete(el)
     dispose()
   }
+}
+
+/**
+ * `bf-h` child scopes are initialized via `initChild` (not the walker), so
+ * they carry a `hydratedScopes` mark but no own disposer — their effects
+ * belong to an ancestor root that `disposeScope` is tearing down. Clear the
+ * mark so the same node can re-init if re-inserted.
+ */
+function clearChildScopeMark(el: Element): void {
+  if (el.hasAttribute(BF_HOST)) hydratedScopes.delete(el)
+}
+
+/**
+ * Comment-rooted scopes flag their init on the `<!--bf-scope:-->` comment
+ * node (`__bfInitialized`); the proxy element's `hydratedScopes` entry and
+ * disposer are cleared by `disposeOneScope`, but the comment flag must be
+ * reset here or re-hydration short-circuits.
+ */
+function clearCommentScopeFlag(comment: Comment): void {
+  if (!comment.nodeValue?.startsWith(BF_SCOPE_COMMENT_PREFIX)) return
+  const flagged = comment as unknown as { __bfInitialized?: boolean }
+  if (flagged.__bfInitialized) flagged.__bfInitialized = false
 }
 
 /**

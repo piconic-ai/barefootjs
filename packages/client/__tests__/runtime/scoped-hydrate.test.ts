@@ -95,3 +95,30 @@ test('disposeScope allows the same element to be re-hydrated later', () => {
   rehydrateScope(root)
   expect(inits).toBe(2)
 })
+
+test('disposeScope resets comment-scope flags so the same nodes re-hydrate', () => {
+  let inits = 0
+  hydrate('SCmtScope', {
+    name: 'SCmtScope',
+    comment: true,
+    init: () => {
+      inits += 1
+    },
+  })
+  flushHydration()
+
+  // A comment-rooted scope: <!--bf-scope:Name_id--> + a proxy element.
+  const root = mount('<div id="c"><!--bf-scope:SCmtScope_1--><div class="proxy"></div></div>')
+  rehydrateScope(root)
+  expect(inits).toBe(1)
+
+  // A second walk without disposal must not re-init.
+  rehydrateScope(root)
+  expect(inits).toBe(1)
+
+  // disposeScope must clear the comment's __bfInitialized flag (not just the
+  // proxy element's mark) so re-hydration re-runs init.
+  disposeScope(root)
+  rehydrateScope(root)
+  expect(inits).toBe(2)
+})
