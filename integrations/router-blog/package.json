@@ -8,7 +8,8 @@
     "start": "bun run build && bun run server.ts",
     "serve": "bun run server.ts",
     "capture": "bun run capture.ts",
-    "stress": "bun run stress.ts"
+    "stress": "bun run stress.ts",
+    "bench": "bun run bench.ts"
   },
   "dependencies": {
     "@barefootjs/router": "workspace:*",
