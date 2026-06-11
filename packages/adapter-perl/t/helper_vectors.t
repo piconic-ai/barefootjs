@@ -61,6 +61,20 @@ my %bindings = (
     floor  => sub { $bf->floor($_[0]) },
     ceil   => sub { $bf->ceil($_[0]) },
     round  => sub { $bf->round($_[0]) },
+
+    # The Mojo renderer emits native lc()/uc(); Xslate emits $bf.lc /
+    # $bf.uc. The helper methods wrap CORE::lc/uc, so binding them
+    # covers both shapes at value level.
+    lower       => sub { $bf->lc($_[0]) },
+    upper       => sub { $bf->uc($_[0]) },
+    trim        => sub { $bf->trim($_[0]) },
+    starts_with => sub { $bf->starts_with(@_) },
+    ends_with   => sub { $bf->ends_with(@_) },
+    replace     => sub { $bf->replace(@_) },
+    repeat      => sub { $bf->repeat(@_) },
+    pad_start   => sub { $bf->pad_start(@_) },
+    pad_end     => sub { $bf->pad_end(@_) },
+    split       => sub { $bf->split(@_) },
 );
 
 for my $case (@{ $doc->{cases} }) {

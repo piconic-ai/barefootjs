@@ -54,6 +54,41 @@ var vectorBindings = map[string]func(args []any) any{
 	"floor":  func(args []any) any { return Floor(args[0]) },
 	"ceil":   func(args []any) any { return Ceil(args[0]) },
 	"round":  func(args []any) any { return Round(args[0]) },
+	"lower":  func(args []any) any { return Lower(args[0].(string)) },
+	"upper":  func(args []any) any { return Upper(args[0].(string)) },
+	"trim":   func(args []any) any { return Trim(args[0].(string)) },
+	"starts_with": func(args []any) any {
+		if len(args) > 2 {
+			return StartsWith(args[0].(string), args[1].(string), args[2].(int))
+		}
+		return StartsWith(args[0].(string), args[1].(string))
+	},
+	"ends_with": func(args []any) any {
+		if len(args) > 2 {
+			return EndsWith(args[0].(string), args[1].(string), args[2].(int))
+		}
+		return EndsWith(args[0].(string), args[1].(string))
+	},
+	"replace": func(args []any) any { return Replace(args[0].(string), args[1].(string), args[2].(string)) },
+	"repeat":  func(args []any) any { return Repeat(args[0].(string), args[1].(int)) },
+	"pad_start": func(args []any) any {
+		if len(args) > 2 {
+			return PadStart(args[0].(string), args[1].(int), args[2].(string))
+		}
+		return PadStart(args[0].(string), args[1].(int))
+	},
+	"pad_end": func(args []any) any {
+		if len(args) > 2 {
+			return PadEnd(args[0].(string), args[1].(int), args[2].(string))
+		}
+		return PadEnd(args[0].(string), args[1].(int))
+	},
+	"split": func(args []any) any {
+		if len(args) > 2 {
+			return Split(args[0].(string), args[1].(string), args[2].(int))
+		}
+		return Split(args[0].(string), args[1].(string))
+	},
 }
 
 func TestHelperVectors(t *testing.T) {
