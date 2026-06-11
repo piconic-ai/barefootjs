@@ -7,7 +7,8 @@
     "build": "bun build ./client/entry.ts --outdir ./public --format esm --minify",
     "start": "bun run build && bun run server.ts",
     "serve": "bun run server.ts",
-    "capture": "bun run capture.ts"
+    "capture": "bun run capture.ts",
+    "stress": "bun run stress.ts"
   },
   "dependencies": {
     "@barefootjs/router": "workspace:*",

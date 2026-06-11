@@ -1,41 +1,39 @@
 # Router blog — `@barefootjs/router` reference
 
-A tiny blog that uses [`@barefootjs/router`](../../packages/router) for
-**automatic partial navigation**: clicking a post swaps only the content
-region and leaves the page shell mounted.
+A small blog that uses [`@barefootjs/router`](../../packages/router) for
+**automatic partial navigation**: clicking a post (or a tag) swaps only
+the content region and leaves the page shell mounted. Built to demonstrate
+and **stress-test** the router prototype.
 
-> **Reference implementation — not for merge.** This app exists to
-> demonstrate and screenshot the router prototype (PR stacked on it).
+> **Reference implementation — not for merge.** PR stacked on the router PR.
 
 ## What it shows
 
 | Screenshot | Demonstrates |
 |---|---|
-| ![home](./screenshots/01-home.png) | First load. Shell shows `uptime 1.2s · partial navs 0`. |
-| ![post](./screenshots/02-post.png) | After clicking a post: body swapped, **`uptime 2.5s` (kept climbing) · partial navs 1**. |
-| ![next](./screenshots/03-next-post.png) | After paging forward: new body, **`uptime 3.5s` · partial navs 2**. |
+| ![home](./screenshots/01-home.png) | First load: post list + tag filter. Shell shows `uptime · partial navs · live islands`. |
+| ![post](./screenshots/02-post.png) | After opening a post: body swapped, **uptime kept climbing**, `partial navs 1`, `live islands 2` (the ♥ like + ⏱ timer are outlet islands). |
+| ![light](./screenshots/03-next-post-light.png) | Theme toggled in the shell, then paged forward: **the theme persists** and `partial navs 2` — the shell was never reloaded. |
 
-The header is the proof. Its uptime clock starts **once** on first load —
-if these navigations were full page reloads it would reset to `0.0s`
-every time. It doesn't: the shell is never torn down, only the
-`<main bf-outlet>` region is replaced, and the partial-nav counter (a
-`MutationObserver` on the outlet) ticks up on each swap.
+The header is the proof. Its uptime clock and theme start/sticky **once** —
+a full reload would reset them. Only the `<main bf-outlet>` region is
+replaced; the partial-nav counter (a `MutationObserver` on the outlet)
+ticks up on each swap.
 
 ## How it works
 
 - **Server** (`server.ts`): plain Hono returning **HTML strings** — no
-  JSX, no JSON envelope, no route manifest. Each route hands a `body` to
-  `respond()`, which returns the full page normally, or just the
-  `<main bf-outlet>` fragment when the router's `X-Barefoot-Navigate`
-  header is present (payload optimization; `Vary` is set).
-- **Client** (`client/entry.ts`): boots a plain-JS shell island (uptime
-  clock + nav counter) and calls `startRouter()`. Bundled to
-  `public/entry.js` with `bun build`.
-
-The shell island is plain JS on purpose — it keeps the reference
-self-contained and underlines that the router is framework-agnostic. In
-a full BarefootJS app it would be a compiled `"use client"` island; the
-router treats both identically.
+  JSX, no JSON envelope, no route manifest. 10 posts, tag filtering via
+  `?tag=`, and a `?delay=` knob (for the rapid-fire race test). Each route
+  hands a `body` to `respond()`, which returns the full page normally, or
+  just the `<main bf-outlet>` fragment when the router's
+  `X-Barefoot-Navigate` header is present (`Vary` set).
+- **Client** (`client/entry.ts`): shell islands (uptime, nav counter,
+  live-island gauge, theme toggle) + an outlet hydrate/dispose contract
+  wired through `window.__bf_hydrate` (the router's rehydrate seam) and
+  the router's `dispose` hook. This stands in for the BarefootJS client
+  runtime — in a full app the islands would be compiled `"use client"`
+  components; the router treats both identically.
 
 ## Run it
 
@@ -45,15 +43,19 @@ cd integrations/router-blog
 bun run start        # build client bundle + serve on http://localhost:8787
 ```
 
-## Regenerate the screenshots
+## Stress test & screenshots
 
-Needs a Chromium that Playwright can launch:
+Both need a Chromium that Playwright can launch (`CHROME_PATH`):
 
 ```sh
-bun run serve &                     # in one shell
-CHROME_PATH=/path/to/chrome bun run capture   # asserts behaviour + writes screenshots/
+bun run serve &                              # in one shell
+CHROME_PATH=/path/to/chrome bun run stress   # design smoke test → prints a report
+CHROME_PATH=/path/to/chrome bun run capture  # asserts behaviour + writes screenshots/
 ```
 
-`capture.ts` fails if the content doesn't swap, the title doesn't update,
-the uptime resets, or the nav counter doesn't reach 2 — so the
-screenshots can't silently drift from the claims above.
+`stress.ts` drives the router through outlet swap, re-hydration,
+disposal/leak, the rapid-fire race, back/forward, query-string nav, and
+throughput. Findings are written up in [`STRESS.md`](./STRESS.md) — last
+run **8 pass / 0 fail**, with the disposal-leak gap measured and
+documented. Both scripts exit non-zero if behaviour drifts from the
+claims, so the docs can't silently rot.

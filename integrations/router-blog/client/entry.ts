@@ -1,35 +1,124 @@
 /**
- * Client entry for the router-blog reference app.
+ * Client entry for the router-blog reference app (stress edition).
  *
- * Two responsibilities:
- *   1. Boot a tiny "shell island" that lives OUTSIDE `[bf-outlet]`. Its
- *      state (a ticking uptime clock + a partial-navigation counter)
- *      must survive every navigation — that's the visible proof that the
- *      shell is never torn down.
- *   2. Start the BarefootJS router so same-origin links partial-update.
+ * Three pieces:
+ *   1. Shell islands (OUTSIDE the outlet): a ticking uptime clock, a
+ *      partial-navigation counter, a live-island gauge, and a theme
+ *      toggle — all must survive every navigation.
+ *   2. An outlet hydrate/dispose contract that stands in for the
+ *      BarefootJS client runtime: `window.__bf_hydrate` (the seam the
+ *      router calls by default) inits any un-hydrated `[data-island]`
+ *      inside the outlet and registers a teardown; the router's
+ *      `dispose` hook tears down the outgoing ones. This mirrors the
+ *      planned per-scope `createRoot`/dispose registry in
+ *      `@barefootjs/client`.
+ *   3. `startRouter({ dispose })`.
  *
- * The shell island here is plain JS on purpose: it keeps the reference
- * self-contained and underlines that the router is framework-agnostic.
- * In a full BarefootJS app this would be a compiled `"use client"`
- * island — the router treats both identically.
+ * A small `window.__bf` bag exposes counters so the stress harness can
+ * measure re-hydration, disposal, and leaks from the page.
  */
-import { startRouter } from '@barefootjs/router'
+import { startRouter, navigate } from '@barefootjs/router'
+
+interface Bf {
+  live: number // currently-hydrated outlet islands
+  hydrated: number // cumulative islands hydrated
+  disposed: number // cumulative islands disposed
+  ticks: Record<string, number> // per-island timer fire counts (leak gauge)
+  disposeEnabled: boolean
+  registry: Map<Element, () => void>
+}
+
+declare global {
+  interface Window {
+    __bf: Bf
+    __bf_hydrate?: () => void
+    // Exposed only so the stress harness can drive deterministic
+    // rapid-fire navigations from the page.
+    __bfNavigate?: (url: string) => Promise<void>
+  }
+}
+
+const bf: Bf = {
+  live: 0,
+  hydrated: 0,
+  disposed: 0,
+  ticks: {},
+  disposeEnabled: true,
+  registry: new Map(),
+}
+window.__bf = bf
+
+const liveEl = () => document.getElementById('shell-live')
+function paintLive(): void {
+  const el = liveEl()
+  if (el) el.textContent = String(bf.live)
+}
+
+/** Init one outlet island, returning its teardown. */
+function initIsland(el: HTMLElement): () => void {
+  const id = el.dataset.id ?? ''
+  bf.ticks[id] ??= 0
+
+  if (el.dataset.island === 'like') {
+    let n = 0
+    const v = el.querySelector('.v')!
+    const onClick = () => {
+      n += 1
+      v.textContent = String(n)
+    }
+    el.addEventListener('click', onClick)
+    return () => el.removeEventListener('click', onClick)
+  }
+
+  // 'timer': ticks every 100ms. If not torn down it keeps firing forever
+  // (and keeps incrementing bf.ticks[id]) — the leak gauge.
+  const start = Date.now()
+  const v = el.querySelector('.v')!
+  const handle = setInterval(() => {
+    bf.ticks[id] += 1
+    v.textContent = ((Date.now() - start) / 1000).toFixed(1)
+  }, 100)
+  return () => clearInterval(handle)
+}
+
+/** Hydrate any un-hydrated islands in the outlet. The router's default
+ *  rehydrate seam (`window.__bf_hydrate`) calls this after a swap. */
+function hydrateOutlet(): void {
+  const outlet = document.querySelector('[bf-outlet]')
+  if (!outlet) return
+  for (const el of outlet.querySelectorAll<HTMLElement>('[data-island]')) {
+    if (bf.registry.has(el)) continue
+    bf.registry.set(el, initIsland(el))
+    bf.live += 1
+    bf.hydrated += 1
+  }
+  paintLive()
+}
+
+/** Tear down islands inside the outgoing outlet before it is swapped. */
+function disposeOutlet(outlet: Element): void {
+  if (!bf.disposeEnabled) return
+  for (const [el, teardown] of bf.registry) {
+    if (outlet.contains(el)) {
+      teardown()
+      bf.registry.delete(el)
+      bf.live -= 1
+      bf.disposed += 1
+    }
+  }
+  paintLive()
+}
 
 function bootShell(): void {
   const uptimeEl = document.getElementById('shell-uptime')
   const navEl = document.getElementById('shell-navs')
   const outlet = document.querySelector('[bf-outlet]')
 
-  // Uptime clock — started once, on first load. A full page reload would
-  // reset it to zero; a partial swap leaves it running.
   const start = Date.now()
   setInterval(() => {
     if (uptimeEl) uptimeEl.textContent = `${((Date.now() - start) / 1000).toFixed(1)}s`
   }, 100)
 
-  // Count partial navigations by watching the outlet's children change.
-  // Decoupled from the router internals — any swap of the content region
-  // ticks this up, a full reload never would.
   let navs = 0
   if (outlet) {
     new MutationObserver(() => {
@@ -37,7 +126,19 @@ function bootShell(): void {
       if (navEl) navEl.textContent = String(navs)
     }).observe(outlet, { childList: true })
   }
+
+  const toggle = document.getElementById('theme-toggle')
+  toggle?.addEventListener('click', () => {
+    const root = document.documentElement
+    const light = root.dataset.theme === 'light'
+    root.dataset.theme = light ? 'dark' : 'light'
+    toggle.textContent = light ? '🌙 dark' : '☀️ light'
+  })
 }
 
+window.__bf_hydrate = hydrateOutlet
+
 bootShell()
-startRouter()
+hydrateOutlet() // hydrate the first-load outlet
+startRouter({ dispose: disposeOutlet })
+window.__bfNavigate = navigate
