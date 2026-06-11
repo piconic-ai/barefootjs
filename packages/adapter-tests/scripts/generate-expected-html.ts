@@ -12,6 +12,7 @@ import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import { normalizeHTML } from '../src/jsx-runner'
 import { indentHTML } from '../src/indent-html'
 import { generateAllSharedComponentSnapshots } from '../src/snapshot-generator'
+import { loadAllSharedSpecs } from '../fixtures/_helpers'
 import { jsxFixtures } from '../fixtures'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -52,7 +53,22 @@ async function main() {
   let failed = 0
   let skipped = 0
 
+  // Shared-component / demo-corpus fixtures keep their expected output in
+  // `__snapshots__/<id>.{html,client.js}`, not as an inline `expectedHtml:`
+  // string — the regeneration pass at the bottom of this script is their
+  // single source of truth. Skip them in the inline loop: re-rendering them
+  // here was always a no-op for the .ts file (no inline block to replace),
+  // and the loop renders WITHOUT `componentModules`/`componentName`, an
+  // inline child path that breaks for demo fixtures whose root and a
+  // sibling import the same icon module under different specifiers
+  // (`select` / `dropdown-menu`: "CheckIcon has already been declared").
+  const snapshotBackedIds = new Set((await loadAllSharedSpecs()).map(s => s.id))
+
   for (const fixture of jsxFixtures) {
+    if (snapshotBackedIds.has(fixture.id)) {
+      skipped++
+      continue
+    }
     if (SKIP_AUTO_UPDATE.has(fixture.id)) {
       console.log(`⚠ Skipped (hand-curated): ${fixture.id}`)
       skipped++
