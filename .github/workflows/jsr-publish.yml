@@ -70,5 +70,10 @@ jobs:
         # waiting on auth/network) fails the step instead of running for the
         # full job timeout. jsr-publish.ts self-skips versions already live,
         # so a re-run safely finishes the mirror.
+        # TEMPORARY: JSR_DEBUG streams Deno's debug log to pinpoint where the
+        # publish stalls (suspected provenance/Sigstore step). Remove once the
+        # hang is diagnosed.
+        env:
+          JSR_DEBUG: '1'
         timeout-minutes: 10
         run: bun scripts/jsr-publish.ts

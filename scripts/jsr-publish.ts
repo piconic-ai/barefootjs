@@ -306,7 +306,10 @@ try {
     // libraries export resolve cleanly. --allow-slow-types lets JSR extract the
     // public API for docs/.d.ts through its (benign) slow-types warning;
     // --allow-dirty permits the in-tree generated manifest.
-    const pub = await $`deno publish --allow-slow-types --allow-dirty`
+    // JSR_DEBUG streams Deno's debug log so a stalled publish reveals the step
+    // it's stuck on (e.g. provenance / Sigstore vs the JSR publishing task).
+    const debug = process.env.JSR_DEBUG ? ['--log-level=debug'] : []
+    const pub = await $`deno publish --allow-slow-types --allow-dirty ${debug}`
       .cwd(dir)
       .nothrow()
     if (pub.exitCode !== 0) {
