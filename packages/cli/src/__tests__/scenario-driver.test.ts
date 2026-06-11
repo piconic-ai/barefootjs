@@ -96,6 +96,197 @@ describe('runAutoScenario', () => {
     }
   })
 
+  test('profiles a component that imports a sibling plain helper module (#1873)', async () => {
+    // A plain .ts helper emits no clientJs, so its compiled chunk is discarded
+    // — but the `import { shout } from './repro-helper'` line survives in the
+    // component's chunk and used to resolve (and fail) against the temp dir.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-helper-'))
+    try {
+      writeFileSync(join(dir, 'repro-helper.ts'), `
+        export function shout(s: string): string { return s.toUpperCase() }
+      `)
+      const compPath = join(dir, 'ProfileRepro.tsx')
+      const compSrc = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { shout } from './repro-helper'
+        export function ProfileRepro() {
+          const [code, setCode] = createSignal('hi')
+          return (
+            <div>
+              <span>{shout(code())}</span>
+              <button onClick={() => setCode('bye')}>change</button>
+            </div>
+          )
+        }
+      `
+      writeFileSync(compPath, compSrc)
+
+      const r = await runAutoScenario(compSrc, compPath, 'ProfileRepro')
+      expect(r.rootTag).toBe('div')
+      expect(r.fired).toBeGreaterThanOrEqual(1)
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^ProfileRepro#handler:s\d+:click$/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('profiles a component whose helper lives above the component dir (#1873)', async () => {
+    // `../src/lib/helper`-style imports resolved against $TMPDIR before the
+    // rewrite; the helper itself has a transitive relative import to cover
+    // resolution from the helper's own directory.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-helper-up-'))
+    try {
+      const libDir = join(dir, 'src', 'lib')
+      const compDir = join(dir, 'components')
+      const { mkdirSync } = await import('fs')
+      mkdirSync(libDir, { recursive: true })
+      mkdirSync(compDir, { recursive: true })
+      writeFileSync(join(libDir, 'words.ts'), `
+        export const WORD = 'tick'
+      `)
+      writeFileSync(join(libDir, 'helper.ts'), `
+        import { WORD } from './words'
+        export function label(n: number): string { return WORD + ':' + n }
+      `)
+      const compPath = join(compDir, 'Timeline.tsx')
+      const compSrc = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { label } from '../src/lib/helper'
+        export function Timeline() {
+          const [n, setN] = createSignal(0)
+          return <button onClick={() => setN(n() + 1)}>{label(n())}</button>
+        }
+      `
+      writeFileSync(compPath, compSrc)
+
+      const r = await runAutoScenario(compSrc, compPath, 'Timeline')
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^Timeline#handler:s\d+:click$/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('an unresolvable local import yields an actionable error, not a raw module stack (#1873)', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bf-helper-missing-'))
+    try {
+      const compPath = join(dir, 'Broken.tsx')
+      const compSrc = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        import { gone } from './does-not-exist'
+        export function Broken() {
+          const [n, setN] = createSignal(0)
+          return <button onClick={() => setN(n() + 1)}>{gone(n())}</button>
+        }
+      `
+      writeFileSync(compPath, compSrc)
+      await expect(runAutoScenario(compSrc, compPath, 'Broken')).rejects.toThrow(
+        /does not resolve to a local file|static budget/,
+      )
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('an import-shaped line inside a template literal is not treated as an import (#1873)', async () => {
+    // A code-sample component embeds `import … from './…'` text in a template
+    // literal. The emitted client JS carries that literal verbatim, with the
+    // line at column 0 — a line-anchored regex would resolve it as a real
+    // import (and fail); the top-level AST walk must ignore it.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-snippet-'))
+    try {
+      const compPath = join(dir, 'CodeSample.tsx')
+      const compSrc = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function CodeSample() {
+          const [n, setN] = createSignal(0)
+          const snippet = \`
+import { x } from './not-on-disk'
+\`
+          return <button onClick={() => setN(n() + 1)}>{snippet + n()}</button>
+        }
+      `
+      writeFileSync(compPath, compSrc)
+
+      const r = await runAutoScenario(compSrc, compPath, 'CodeSample')
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^CodeSample#handler:s\d+:click$/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('drops the import of a sibling client-signal file whose chunk is already inlined (#1873)', async () => {
+    // Cross-file @client signal: the consumer's emitted JS imports
+    // `./state.client.js`, whose compiled chunk is concatenated into the same
+    // run — the import must be dropped, not rewritten, and the shared signal
+    // must still drive the consumer's handler.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-state-'))
+    try {
+      writeFileSync(join(dir, 'state.tsx'), `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        /* @client */
+        export const [count, setCount] = createSignal(0)
+      `)
+      const compPath = join(dir, 'Counter.tsx')
+      const compSrc = `
+        'use client'
+        import { count, setCount } from './state'
+        export function Counter() {
+          return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+        }
+      `
+      writeFileSync(compPath, compSrc)
+
+      const r = await runAutoScenario(compSrc, compPath, 'Counter')
+      expect(r.sources.map(s => s.filePath.split('/').pop())).toEqual(['state.tsx', 'Counter.tsx'])
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^Counter#handler:s\d+:click$/)
+      // The click went through the shared signal's setter.
+      expect(r.events.some(e => e.type === 'signalSet' && e.turn === turn!.handlerId)).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('an aliased import of an inlined client-signal file gets a binding shim (#1873)', async () => {
+    // `import { setCount as update }` — dropping the statement alone would
+    // leave `update` undefined in the joined scope while the chunk's handler
+    // calls it. The rewrite must emit `var update = setCount` in its place.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-state-alias-'))
+    try {
+      writeFileSync(join(dir, 'state.tsx'), `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        /* @client */
+        export const [count, setCount] = createSignal(0)
+      `)
+      const compPath = join(dir, 'Aliased.tsx')
+      const compSrc = `
+        'use client'
+        import { count, setCount as update } from './state'
+        export function Aliased() {
+          return <button onClick={() => update(count() + 1)}>{count()}</button>
+        }
+      `
+      writeFileSync(compPath, compSrc)
+
+      const r = await runAutoScenario(compSrc, compPath, 'Aliased')
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^Aliased#handler:s\d+:click$/)
+      // The aliased setter resolved and the set landed inside the turn.
+      expect(r.events.some(e => e.type === 'signalSet' && e.turn === turn!.handlerId)).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   test('a component with no handler records no interaction turns', async () => {
     const DISPLAY = `
       'use client'

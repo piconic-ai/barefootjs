@@ -10,8 +10,9 @@
 // (`bf debug profile <component>` / `--diff`) carry no DOM dependency.
 
 import { writeFileSync, mkdtempSync, rmSync, readFileSync, existsSync, statSync } from 'fs'
-import { join, dirname } from 'path'
+import { join, dirname, resolve } from 'path'
 import { tmpdir } from 'os'
+import ts from 'typescript'
 import type { ProfilerEvent } from '@barefootjs/shared'
 
 /** One compiled source in the scenario (a story file or one of its imports). */
@@ -159,6 +160,83 @@ function resolveLocalFile(spec: string): string | null {
 }
 
 /**
+ * Rewrite the relative imports a compiled chunk still carries before it is
+ * written to the temp file (#1873). The compiler preserves imports of plain
+ * (non-component) local modules verbatim — `import { x } from '../lib/helper'`
+ * — and those specifiers would otherwise resolve against the temp directory
+ * and fail with a raw "Cannot find module".
+ *
+ * - An import of a file whose compiled client JS is already concatenated into
+ *   this run is dropped: chunks share one module scope, so its declarations
+ *   are already visible (this covers the `./x.client.js` rewrites of
+ *   cross-file signal imports too).
+ * - An import of a plain local module is rewritten to the absolute path of
+ *   the original source file, which bun imports directly (`.ts` included).
+ * - An unresolvable specifier throws an actionable error instead of letting
+ *   the run die in bun's module resolver.
+ */
+function rewriteLocalImports(js: string, chunkPath: string, inlined: Set<string>): string {
+  const chunkDir = dirname(chunkPath)
+  // Walk top-level statements of the chunk (a `ts.createSourceFile` parse, no
+  // type checking) instead of regex-matching lines: emitted code carries user
+  // template literals verbatim, and an import-shaped line inside one must not
+  // be rewritten. Off the build hot path, so the extra parse is fine.
+  const sf = ts.createSourceFile('chunk.mjs', js, ts.ScriptTarget.Latest, false, ts.ScriptKind.JS)
+  const edits: { start: number; end: number; text: string }[] = []
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    const spec = stmt.moduleSpecifier.text
+    if (!spec.startsWith('.')) continue
+    // A `.client.js` specifier is the compiled output of a sibling client
+    // file — resolve it through that file's source.
+    const resolved = resolveLocalFile(join(chunkDir, spec.replace(/\.client\.js$/, '')))
+    if (!resolved) {
+      throw new Error(
+        `"${spec}" (imported by ${chunkPath}) does not resolve to a local file, so the ` +
+          'dynamic scenario runner cannot load it. Check the import path, or use the ' +
+          'static budget (`bf debug profile <component>`), which needs no run.',
+      )
+    }
+    const abs = resolve(resolved)
+    if (inlined.has(abs)) {
+      // Its compiled client JS is already concatenated into this run, so the
+      // exported declarations share the joined module scope. Drop the
+      // statement — but an aliased binding (`import { setCount as update }`)
+      // needs a shim, because the joined scope declares the exported name,
+      // not the alias. `var` (not `const`) so two chunks aliasing the same
+      // local name don't turn into a redeclaration SyntaxError, matching the
+      // `var x = x ?? …` idiom of emitted module-level code.
+      const clause = stmt.importClause
+      if (clause && (clause.name || (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings)))) {
+        throw new Error(
+          `"${spec}" (imported by ${chunkPath}) uses a default or namespace import of a ` +
+            'sibling client file, which the dynamic scenario runner cannot bind after ' +
+            'inlining that file into the run. Import its exports by name, or use the ' +
+            'static budget (`bf debug profile <component>`), which needs no run.',
+        )
+      }
+      const shims: string[] = []
+      if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+        for (const el of clause.namedBindings.elements) {
+          if (el.propertyName) shims.push(`var ${el.name.text} = ${el.propertyName.text}`)
+        }
+      }
+      edits.push({ start: stmt.getStart(sf), end: stmt.getEnd(), text: shims.join('\n') })
+    } else {
+      edits.push({
+        start: stmt.moduleSpecifier.getStart(sf),
+        end: stmt.moduleSpecifier.getEnd(),
+        text: JSON.stringify(abs),
+      })
+    }
+  }
+  let out = js
+  for (const e of edits.reverse()) out = out.slice(0, e.start) + e.text + out.slice(e.end)
+  return out
+}
+
+/**
  * Walk a file's transitive local (relative) imports into a flat,
  * dependency-first source list — so a component (or story) that composes
  * separately-registered children (`<Collapsible><CollapsibleTrigger/>…`)
@@ -228,14 +306,18 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
   const { compileJSX, testAdapter } = jsx
 
   // Compile each source in profile mode; concatenate (deps first) so every
-  // hydrate(...) registration is present before mount.
-  const clientChunks: string[] = []
+  // hydrate(...) registration is present before mount. Track which source
+  // files produced a chunk so `rewriteLocalImports` can tell an
+  // already-inlined client file from a plain helper module.
+  const clientChunks: { js: string; filePath: string }[] = []
+  const inlined = new Set<string>()
   let rootClientJs = ''
   for (const s of sources) {
     const out = compileJSX(s.source, s.filePath, { adapter: testAdapter, profile: true })
     const js = out.files.find((f: { type: string }) => f.type === 'clientJs')?.content as string | undefined
     if (js) {
-      clientChunks.push(js)
+      clientChunks.push({ js, filePath: s.filePath })
+      inlined.add(resolve(s.filePath))
       rootClientJs = js
     }
   }
@@ -251,7 +333,7 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
   // so the dynamic run would fail with an opaque module-resolution stack from
   // the package's cache directory. Surface an actionable message instead, named
   // for the actual package (#1849 B3).
-  const external = externalRuntimeImport(clientChunks)
+  const external = externalRuntimeImport(clientChunks.map(c => c.js))
   if (external) {
     throw new Error(
       `"${mountName ?? 'component'}" imports the external package ${external}, whose compiled ` +
@@ -307,7 +389,7 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
   const RUNTIME_IMPORT = /^import\s*\{([^}]*)\}\s*from\s*['"]@barefootjs\/client\/runtime['"];?\s*$/gm
   const names = new Set<string>()
   for (const chunk of clientChunks) {
-    for (const m of chunk.matchAll(RUNTIME_IMPORT)) {
+    for (const m of chunk.js.matchAll(RUNTIME_IMPORT)) {
       for (const n of m[1].split(',')) {
         const t = n.trim()
         if (t) names.add(t)
@@ -315,6 +397,7 @@ async function runScenario(sources: SourceFile[], mountName?: string): Promise<S
     }
   }
   const body = clientChunks
+    .map(c => rewriteLocalImports(c.js, c.filePath, inlined))
     .join('\n')
     .replace(RUNTIME_IMPORT, '')
     .replace(/^import\s+['"]@barefootjs\/client\/runtime['"];?\s*$/gm, '')
