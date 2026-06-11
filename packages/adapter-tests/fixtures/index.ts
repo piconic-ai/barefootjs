@@ -37,6 +37,12 @@ import { fixture as kbd } from './kbd'
 // RadioGroupItem with context propagation, which the single-root `ui`
 // fixture model can't express.
 import { fixture as radioGroup } from './radio-group'
+// #1467 Phase 2c (disclosure): composed demo-root fixtures. `accordion`
+// pairs context/effect-driven children with reactive-prop attribute
+// bindings (and nests siblings: accordion → icon); `tabs` is the
+// pure-prop contrast — no context, parent memos drive every binding.
+import { fixture as accordion } from './accordion'
+import { fixture as tabs } from './tabs'
 // #1694: text-content HTML-escaping (parallel to the #1692 attribute fix).
 import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
@@ -242,6 +248,8 @@ export const jsxFixtures: JSXFixture[] = [
   label,
   kbd,
   radioGroup,
+  accordion,
+  tabs,
   textEscape,
   // Priority 1: Core reactivity
   signalWithFallback,

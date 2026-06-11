@@ -135,6 +135,12 @@ describe('CSR Conformance Tests', () => {
     // conformance keeps the pinned export honest (`componentName`), and
     // the fixture-hydrate layer drives the real composed hydration.
     'radio-group',
+    // #1467 Phase 2c: same multi-export demo-source limitation as
+    // `radio-group` above — the CSR harness's `__lastComponent` renders
+    // `AccordionMultipleOpenDemo` / `TabsDisabledDemo` instead of the
+    // pinned first demo.
+    'accordion',
+    'tabs',
   ])
 
   for (const fixture of jsxFixtures) {

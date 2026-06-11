@@ -117,6 +117,12 @@ const statelessFixtures = new Set([
   // divergence as `conditional-return-button` above. The frozen pair is
   // still exercised end-to-end by the fixture-hydrate runner.
   'radio-group',
+  // #1467 Phase 2c: same multi-export demo-source divergence —
+  // `accordion-demo.tsx`'s other exports wire markers the pinned
+  // `AccordionSingleOpenDemo` HTML doesn't carry. (`tabs` passes this
+  // test because its sibling demos' marker ids happen to all exist in
+  // the pinned export's HTML, so it is intentionally NOT listed.)
+  'accordion',
 ])
 
 describe('SSR-Hydration Contract', () => {

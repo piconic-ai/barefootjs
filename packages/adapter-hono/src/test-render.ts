@@ -143,11 +143,10 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
     childModuleWrites.push({ path: tempPath, content: readFileSync(modPath, 'utf8') })
   }
 
-  let parentCode = templateFile.content
   // Resolve each child import: re-anchor to a pre-compiled module's temp
   // copy (`moduleTempPaths`), strip it (inlined via `components`), or
-  // leave it. Both maps key on the import specifier; match the parent's
-  // import path with or without a `.tsx` extension (`./badge` ↔
+  // leave it. Both maps key on the import specifier; match the importing
+  // module's path with or without a `.tsx` extension (`./badge` ↔
   // `./badge.tsx`).
   //
   // Assumes one import statement per line — the marked-template adapter
@@ -155,7 +154,8 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
   // per-line scan is sufficient. A multi-line import would not match
   // here; the unrewritten `../slot` then fails loudly at module
   // resolution rather than rendering wrong output.
-  if (componentKeys.size > 0 || moduleTempPaths.size > 0) {
+  const rewriteChildImports = (code: string): string => {
+    if (componentKeys.size === 0 && moduleTempPaths.size === 0) return code
     const matchKey = (importPath: string, keys: Iterable<string>): string | undefined => {
       for (const key of keys) {
         const keyWithoutExt = key.replace(/\.tsx?$/, '')
@@ -163,7 +163,7 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
       }
       return undefined
     }
-    parentCode = parentCode
+    return code
       .split('\n')
       .map(line => {
         const importMatch = line.match(/^(\s*import\s+.*from\s+['"])(.+?)(['"].*)$/)
@@ -176,6 +176,18 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
       })
       .filter((line): line is string => line !== null)
       .join('\n')
+  }
+
+  const parentCode = rewriteChildImports(templateFile.content)
+  // Pre-compiled child modules may themselves import other pre-compiled
+  // siblings (#1467 Phase 2c: the demo root's `accordion` sibling imports
+  // `../icon`). Their committed copies keep the source specifier, which
+  // doesn't resolve from the temp dir — re-anchor through the same map so
+  // nested sibling imports land on their own temp copies. `moduleTempPaths`
+  // is fully populated before any content is rewritten, so ordering
+  // between siblings doesn't matter.
+  for (const write of childModuleWrites) {
+    write.content = rewriteChildImports(write.content)
   }
 
   // Combine: JSX pragma + child compiled functions + parent compiled code
