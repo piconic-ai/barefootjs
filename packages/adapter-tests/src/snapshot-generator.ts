@@ -21,8 +21,9 @@ import {
   loadAllSharedSpecs,
   resolveSiblingBasenames,
   resolveSiblingComponents,
+  resolveSiblingSpecifiers,
   sharedFixtureInstanceId,
-  siblingImportKey,
+  siblingSourceRoot,
   sourceFileBasename,
   uiChildModulePath,
   type FixtureSourceRoot,
@@ -73,26 +74,30 @@ async function withSeededMathRandom<T>(seed: number, fn: () => Promise<T>): Prom
 }
 
 /**
- * Pre-compile a UI fixture's siblings to committed, export-intact SSR
- * modules (#1467 Phase 2a) and return the import-specifier → path map
- * the Hono render re-anchors to. Writing the export-intact marked
+ * Pre-compile a UI/demo fixture's siblings to committed, export-intact
+ * SSR modules (#1467 Phase 2a) and return the import-specifier → path
+ * map the Hono render re-anchors to. Writing the export-intact marked
  * template (with a jsx pragma) as a real module is what lets SSR load
  * children through the module system instead of inlining + stripping
  * their exports. Deterministic: the marked template is a pure function
  * of the child source (the `Math.random()` scope-id fallback lives in
  * the emitted string, evaluated only at render time).
+ *
+ * A sibling reachable through several specifiers (demo root alias +
+ * another sibling's `../<name>` relative) registers the same module
+ * under each of them — one file write, several map keys.
  */
 async function writeUiChildModules(
   spec: SharedFixtureSpec,
 ): Promise<Record<string, string> | undefined> {
   const root = fixtureSourceRoot(spec)
-  if (root !== 'ui') return undefined
-  const bases = resolveSiblingBasenames(spec)
-  if (bases.length === 0) return undefined
+  if (root === 'shared') return undefined
+  const entries = resolveSiblingSpecifiers(spec)
+  if (entries.size === 0) return undefined
 
   const map: Record<string, string> = {}
-  for (const base of bases) {
-    const childSource = await Bun.file(componentPath(root, base)).text()
+  for (const [base, specifiers] of entries) {
+    const childSource = await Bun.file(componentPath(siblingSourceRoot(root), base)).text()
     const compiled = compileJSX(childSource, `${base}.tsx`, { adapter: new HonoAdapter() })
     const tmpl = compiled.files.find(f => f.type === 'markedTemplate')
     if (!tmpl) {
@@ -102,7 +107,7 @@ async function writeUiChildModules(
     const moduleContent = `/** @jsxImportSource hono/jsx */\n${tmpl.content.trimEnd()}\n`
     const modPath = uiChildModulePath(spec.id, base)
     writeFileSync(modPath, moduleContent)
-    map[siblingImportKey('ui', base)] = modPath
+    for (const specifier of specifiers) map[specifier] = modPath
   }
   return map
 }
@@ -171,7 +176,7 @@ export async function generateSharedComponentSnapshot(
     const files = new Map<string, string>()
     files.set(sourceBasename, await compileClientJs(root, sourceBasename))
     for (const extra of extras) {
-      files.set(extra, await compileClientJs(root, extra))
+      files.set(extra, await compileClientJs(siblingSourceRoot(root), extra))
     }
     const combined = combineParentChildClientJs(files)
     clientJs = combined.get(sourceBasename) ?? files.get(sourceBasename)!

@@ -127,6 +127,14 @@ describe('CSR Conformance Tests', () => {
     // object`; the real-browser fixture-hydrate layer exercises the spread
     // for real (and the typed value survives hydration there).
     'input',
+    // #1467 demo corpus: `radio-group-demo.tsx` exports three sibling
+    // demos and the CSR harness evaluates `__lastComponent` — the last
+    // `hydrate()` registration (`RadioGroupCardDemo`) — rather than the
+    // pinned `RadioGroupBasicDemo`. Same multi-export-source harness
+    // limitation that CSR-skips `kbd` / `reactive-props`; Hono SSR
+    // conformance keeps the pinned export honest (`componentName`), and
+    // the fixture-hydrate layer drives the real composed hydration.
+    'radio-group',
   ])
 
   for (const fixture of jsxFixtures) {

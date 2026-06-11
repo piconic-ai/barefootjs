@@ -32,6 +32,11 @@ import { fixture as input } from './input'
 import { fixture as textarea } from './textarea'
 import { fixture as label } from './label'
 import { fixture as kbd } from './kbd'
+// #1467 Phase 2b deferral: `radio-group` — first fixture on the `demo`
+// source root (`site/ui/components/<name>.tsx`), composing RadioGroup +
+// RadioGroupItem with context propagation, which the single-root `ui`
+// fixture model can't express.
+import { fixture as radioGroup } from './radio-group'
 // #1694: text-content HTML-escaping (parallel to the #1692 attribute fix).
 import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
@@ -236,6 +241,7 @@ export const jsxFixtures: JSXFixture[] = [
   textarea,
   label,
   kbd,
+  radioGroup,
   textEscape,
   // Priority 1: Core reactivity
   signalWithFallback,

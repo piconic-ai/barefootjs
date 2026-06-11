@@ -109,6 +109,14 @@ const statelessFixtures = new Set([
   'array-entries',
   'array-keys',
   'array-values',
+  // Demo corpus (#1467): demo sources export several sibling demos from
+  // one file, and `compileClientJs` here compiles the whole source. The
+  // expectedHtml renders only the pinned `componentName`
+  // (`RadioGroupBasicDemo`), so the other exports' slot refs (e.g. the
+  // form demo's `s8`) have no markers in it — same one-side-renders-less
+  // divergence as `conditional-return-button` above. The frozen pair is
+  // still exercised end-to-end by the fixture-hydrate runner.
+  'radio-group',
 ])
 
 describe('SSR-Hydration Contract', () => {
