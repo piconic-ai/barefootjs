@@ -1,0 +1,63 @@
+{
+  "name": "@barefootjs/router",
+  "version": "0.11.0",
+  "description": "Automatic partial-navigation client router for BarefootJS — swaps only the content outlet and re-hydrates the islands inside it",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external @barefootjs/shared --external @barefootjs/client",
+    "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
+    "test": "bun test",
+    "clean": "rm -rf dist",
+    "prepack": "node ../../scripts/swap-publish-config.mjs pack",
+    "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
+  },
+  "keywords": [
+    "barefoot",
+    "router",
+    "spa",
+    "partial-navigation",
+    "islands"
+  ],
+  "author": "kobaken <kentafly88@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/piconic-ai/barefootjs",
+    "directory": "packages/router"
+  },
+  "dependencies": {
+    "@barefootjs/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "@barefootjs/client": ">=0.11.0"
+  },
+  "peerDependenciesMeta": {
+    "@barefootjs/client": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.0.11",
+    "typescript": "^5.0.0"
+  }
+}

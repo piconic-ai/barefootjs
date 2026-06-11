@@ -169,6 +169,31 @@ export const BF_ASYNC = 'bf-async'
 export const BF_ASYNC_RESOLVE = 'bf-async-resolve'
 
 // ---------------------------------------------------------------------------
+// Partial navigation (client router)
+// ---------------------------------------------------------------------------
+
+/**
+ * Swappable content region for partial navigation: `<main bf-outlet>`.
+ *
+ * The client router (`@barefootjs/router`) swaps only the element
+ * matching this marker on same-origin link navigation, leaving the
+ * surrounding shell (header, sidebar, pagination nav) mounted with its
+ * island state intact. Authored once on the content region today; the
+ * long-term goal is for the compiler to derive the outlet boundary
+ * from the component tree and emit this marker automatically.
+ */
+export const BF_OUTLET = 'bf-outlet'
+
+/**
+ * Request header set by the client router on partial-navigation fetches.
+ *
+ * Lets a cooperating backend return just the outlet fragment instead of
+ * the full document (payload optimization). The router works without it:
+ * when the response is a full page it extracts `[bf-outlet]` client-side.
+ */
+export const BF_NAVIGATE_HEADER = 'X-Barefoot-Navigate'
+
+// ---------------------------------------------------------------------------
 // Hoisted-children scope placeholder (#1320)
 // ---------------------------------------------------------------------------
 
