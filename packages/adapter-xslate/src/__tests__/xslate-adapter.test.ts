@@ -41,7 +41,12 @@ runAdapterConformanceTests({
   //     undefined `id` prop emits `id=""` where Hono omits it. (The
   //     sibling compile also raises the same provider-object BF101 as
   //     mojo, but the render-level divergences are the durable signal.)
-  skipJsx: ['accordion', 'tabs'],
+  //   - `dialog` / `popover` (#1467 Phase 2c overlay): render, but with
+  //     the same divergence families as above (ARIA/data boolean
+  //     stringification, escaping, empty-attr emission). `tooltip` is
+  //     intentionally NOT listed — Xslate renders it to full Hono
+  //     parity.
+  skipJsx: ['accordion', 'tabs', 'dialog', 'popover'],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.

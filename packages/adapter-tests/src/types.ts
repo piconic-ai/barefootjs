@@ -41,6 +41,20 @@ export interface ExpectedDiagnostic {
  * - `expectValue` — Playwright `toHaveValue`. Asserts the form
  *   control's *value property* (not the `value` HTML attribute, which
  *   only reflects the initial value after user typing).
+ * - `hover` — Playwright `locator.hover()`: real mouse movement onto the
+ *   first match, firing mouseenter/mouseleave on the elements the
+ *   pointer crosses (#1467 Phase 2c, tooltips). To *un*-hover, hover a
+ *   different element — Playwright has no unhover. `position` (offsets
+ *   from the element's top-left) pins an exact pointer target: the
+ *   un-hover idiom is `{ selector: 'html', position: { x: 1, y: 1 } }`,
+ *   parking the pointer in the body margin where no content sits —
+ *   hovering a container's *centre* can land back inside the very
+ *   element being un-hovered on a CSS-less host page.
+ * - `press` — Playwright `locator.press(key)` with a key name like
+ *   `'Escape'`. Dispatches trusted keydown/keyup on the first match —
+ *   use `body` as the selector for document-level key handlers
+ *   (overlay ESC-to-close), since the handler is on `document` and the
+ *   event bubbles from wherever focus is.
  */
 export type InteractionStep =
   | { type: 'click'; selector: string }
@@ -56,6 +70,8 @@ export type InteractionStep =
   | { type: 'expectHidden'; selector: string }
   | { type: 'fill'; selector: string; value: string }
   | { type: 'expectValue'; selector: string; value: string }
+  | { type: 'hover'; selector: string; position?: { x: number; y: number } }
+  | { type: 'press'; selector: string; key: string }
 
 /**
  * A JSX fixture defines a component source and optional props for rendering.

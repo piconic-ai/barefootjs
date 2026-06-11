@@ -43,6 +43,14 @@ import { fixture as radioGroup } from './radio-group'
 // pure-prop contrast — no context, parent memos drive every binding.
 import { fixture as accordion } from './accordion'
 import { fixture as tabs } from './tabs'
+// #1467 Phase 2c (overlay): portal-mounted surfaces. `dialog` (modal:
+// ESC + close-button paths, context across the portal boundary),
+// `popover` (trigger-anchored positioning via getBoundingClientRect),
+// `tooltip` (hover-driven signal -> template attribute bindings; first
+// user of the `hover` interaction step).
+import { fixture as dialog } from './dialog'
+import { fixture as popover } from './popover'
+import { fixture as tooltip } from './tooltip'
 // #1694: text-content HTML-escaping (parallel to the #1692 attribute fix).
 import { fixture as textEscape } from './text-escape'
 // Priority 1: Core reactivity
@@ -250,6 +258,9 @@ export const jsxFixtures: JSXFixture[] = [
   radioGroup,
   accordion,
   tabs,
+  dialog,
+  popover,
+  tooltip,
   textEscape,
   // Priority 1: Core reactivity
   signalWithFallback,

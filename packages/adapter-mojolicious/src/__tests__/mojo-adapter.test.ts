@@ -28,7 +28,13 @@ runAdapterConformanceTests({
   // follow-up; see https://github.com/piconic-ai/barefootjs/issues/1897.
   // Hono SSR conformance + the real-browser fixture-hydrate layer keep
   // the fixture fully covered.
-  skipJsx: ['tabs'],
+  // `tooltip` (#1467 Phase 2c overlay): compiles, and `render_child`
+  // even passes the JSX children through — but the child template
+  // references its props as undeclared Perl lexicals (`Global symbol
+  // "$open" requires explicit package name`), the adapter's known
+  // Perl-scoping limitation surfacing at render time. Same #1897
+  // bucket.
+  skipJsx: ['tabs', 'tooltip'],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't
@@ -83,6 +89,10 @@ runAdapterConformanceTests({
     // above (`{ open: () => props.open ?? false, ... }`) — refused via
     // the identical `isSupported` gate.
     'accordion': [{ code: 'BF101', severity: 'error' }],
+    // #1467 Phase 2c overlay: Dialog and Popover provide the same
+    // object-literal-with-arrow-members context value — same BF101 gate.
+    'dialog': [{ code: 'BF101', severity: 'error' }],
+    'popover': [{ code: 'BF101', severity: 'error' }],
     // #1443: `[a, b].filter(Boolean).join(' ')` (the registry Slot's
     // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.
     // No BF101 expected — pinned positively via the
