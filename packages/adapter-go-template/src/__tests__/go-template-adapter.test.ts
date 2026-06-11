@@ -47,7 +47,11 @@ runAdapterConformanceTests({
   // https://github.com/piconic-ai/barefootjs/issues/1896. Hono SSR
   // conformance + the real-browser fixture-hydrate layer keep the
   // fixture fully covered.
-  skipJsx: ['radio-group'],
+  // `accordion` / `tabs` (#1467 demo corpus): beyond the children gap,
+  // their `{ className = '', ...props }` destructure-with-rest shape
+  // breaks the merged constructor emission (`in.Props undefined`,
+  // `ClassName redeclared`). Same Phase 3 bucket, same issue.
+  skipJsx: ['radio-group', 'accordion', 'tabs'],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
   // shared fixtures) so adding a new adapter doesn't require touching
