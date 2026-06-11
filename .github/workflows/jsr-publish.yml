@@ -70,5 +70,5 @@ jobs:
         # never-returning post-upload poll and confirms success against JSR
         # directly), so this is only an outer backstop. It self-skips versions
         # already live, so a re-run safely continues the mirror.
-        timeout-minutes: 30
-        run: bun scripts/jsr-publish.ts
+        timeout-minutes: 25
+        run: bun scripts/jsr-publish.ts --only @barefootjs/test

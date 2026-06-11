@@ -292,7 +292,7 @@ const pending: string[] = []
 // the source of truth and poll jsrHasVersion until the version appears.
 // Background: jsr-io/jsr#642, fedify-dev/fedify#468.
 const DENO_PUBLISH_TIMEOUT_S = 240 // generous: type-check + upload take seconds
-const VERIFY_TIMEOUT_MS = 6 * 60_000
+const VERIFY_TIMEOUT_MS = 18 * 60_000 // EXPERIMENT: extended to measure real time-to-live
 const VERIFY_INTERVAL_MS = 15_000
 
 try {
@@ -322,20 +322,16 @@ try {
     }
 
     console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR`)
-    // Type-checking stays ON — the generated `deno.json` carries
-    // `compilerOptions.lib` (Deno's DOM + runtime set) so the DOM types these
-    // libraries export resolve cleanly. --allow-slow-types lets JSR extract the
-    // public API for docs/.d.ts through its (benign) slow-types warning;
-    // --allow-dirty permits the in-tree generated manifest.
-    // `timeout` cuts Deno's post-upload poll short (see DENO_PUBLISH_TIMEOUT_S
-    // note above); the verify loop below is what actually confirms success.
-    const pub = await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-slow-types --allow-dirty`
+    // EXPERIMENT (exp/jsr-noflag-timing): --allow-slow-types intentionally
+    // DROPPED to test whether the flag forces JSR's slow full-inference path.
+    // Timestamps added to measure real time-to-live. Not for main.
+    const t0 = Date.now()
+    const pub = await $`timeout --kill-after=10s ${DENO_PUBLISH_TIMEOUT_S} deno publish --allow-dirty`
       .cwd(dir)
       .nothrow()
-    // 124 (TERM) / 137 (KILL) mean our timeout fired while Deno was still
-    // polling — expected, not a failure. Any other non-zero is a genuine
-    // publish error (type error, auth, unresolvable dep, …).
+    const denoSecs = ((Date.now() - t0) / 1000).toFixed(0)
     const cutShort = pub.exitCode === 124 || pub.exitCode === 137
+    console.log(`  [exp] deno exit=${pub.exitCode} after ${denoSecs}s (cutShort=${cutShort})`)
     if (pub.exitCode !== 0 && !cutShort) {
       errors.push(`${pkg.name}@${pkg.version} (deno exit ${pub.exitCode})`)
       continue
@@ -348,9 +344,10 @@ try {
     while (!live && Date.now() < deadline) {
       await Bun.sleep(VERIFY_INTERVAL_MS)
       live = await jsrHasVersion(pkg.name, pkg.version)
+      console.log(`  [exp] verify ${pkg.name}: live=${live} at +${((Date.now() - t0) / 1000).toFixed(0)}s`)
     }
     if (live) {
-      console.log(`  ok    ${pkg.name}@${pkg.version} live on JSR${cutShort ? ' (deno poll cut short)' : ''}`)
+      console.log(`  ok    ${pkg.name}@${pkg.version} live on JSR after ${((Date.now() - t0) / 1000).toFixed(0)}s${cutShort ? ' (deno poll cut short)' : ''}`)
       published++
       continue
     }
