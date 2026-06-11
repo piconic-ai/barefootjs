@@ -310,3 +310,139 @@ Rules:
   **Documented divergence**: Go's `math.Round` rounds half away from
   zero (`-1.5` → `-2`); negative-half cases are excluded from
   vectors. Positive halves agree on all backends.
+
+### lower / upper
+
+JS `String.prototype.toLowerCase()` / `.toUpperCase()`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.toLowerCase()` / `.toUpperCase()` |
+| Go template | `bf_lower` / `bf_upper` |
+| Mojolicious | native `lc(...)` / `uc(...)` |
+| Xslate | `$bf.lc` / `$bf.uc` |
+
+Vectors stay ASCII: full-Unicode case mapping (locale-special casings
+like Turkish dotless-i, ß expansion) is untested across backends and
+currently out of contract.
+
+### trim
+
+JS `String.prototype.trim()`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.trim()` |
+| Go template | `bf_trim` (`strings.TrimSpace`) |
+| Mojolicious / Xslate | `bf->trim` (`s/^\s+|\s+$//gu`) |
+
+Vectors use ASCII whitespace (space, tab, CR/LF). The exact Unicode
+whitespace sets differ slightly per backend (JS WhiteSpace vs Go
+`unicode.IsSpace` vs Perl `\s` under `/u`) — out of contract.
+
+### starts_with / ends_with
+
+JS `String.prototype.startsWith(prefix, position?)` /
+`.endsWith(suffix, endPosition?)` → boolean.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native methods |
+| Go template | `bf_starts_with` / `bf_ends_with` |
+| Mojolicious / Xslate | `bf->starts_with` / `bf->ends_with` |
+
+Rules:
+
+- Empty prefix/suffix is always `true`.
+- The optional second argument re-anchors the test (`"abc".startsWith
+  ("b", 1)` → `true`; `"abc".endsWith("b", 2)` → `true`), clamped to
+  `[0, length]`.
+- Perl returns `1`/`0`; harnesses compare booleans by truthiness
+  (value-compat).
+- Index positions are byte/character based per backend — identical
+  for ASCII; astral-plane input is out of contract (JS counts UTF-16
+  units).
+
+### replace
+
+JS `String.prototype.replace(pattern, replacement)` — **string-pattern
+form, first occurrence only** (the regex form is refused upstream at
+the parser, BF101).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.replace` |
+| Go template | `bf_replace` (`strings.Replace`, n=1) |
+| Mojolicious / Xslate | `bf->replace` (index/substr splice) |
+
+Rules:
+
+- The pattern matches literally (no regex metacharacters) on every
+  backend.
+- An empty pattern inserts the replacement at the front
+  (`"abc".replace("", "X")` → `"Xabc"`).
+- **Documented divergence**: the template backends treat the
+  replacement literally; JS interprets `$&`/`$1`-style patterns in
+  the replacement string. `$`-containing replacements are excluded.
+
+### repeat
+
+JS `String.prototype.repeat(n)`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.repeat` |
+| Go template | `bf_repeat` |
+| Mojolicious / Xslate | `bf->repeat` (`x` operator) |
+
+Rules:
+
+- Domain: integer count ≥ 0. **Documented divergence**: JS throws
+  RangeError on a negative count; the template backends clamp to `""`
+  so SSR degrades instead of crashing. Excluded from vectors.
+- `repeat(s, 0)` → `""`.
+
+### pad_start / pad_end
+
+JS `String.prototype.padStart(target, pad?)` / `.padEnd(target,
+pad?)`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native methods |
+| Go template | `bf_pad_start` / `bf_pad_end` |
+| Mojolicious / Xslate | `bf->pad_start` / `bf->pad_end` |
+
+Rules:
+
+- The pad string defaults to a single space; it repeats and truncates
+  to exactly fill the gap.
+- An empty pad string, or a receiver already ≥ `target`, returns the
+  receiver unchanged.
+- Length is measured in characters/runes on the template backends —
+  matches JS UTF-16 units except for astral-plane input (documented,
+  out of contract).
+
+### split
+
+JS `String.prototype.split(separator, limit?)` → array of strings
+(string-separator form; the regex form is refused upstream).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `.split` |
+| Go template | `bf_split` |
+| Mojolicious / Xslate | `bf->split` (quotemeta + `-1` limit) |
+
+Rules:
+
+- The separator matches literally; trailing empty fields are kept
+  (`"a,".split(",")` → `["a", ""]`).
+- Empty separator splits into individual characters; `"".split("")`
+  → `[]`.
+- `"".split(",")` → `[""]` (Perl special-cases this — bare Perl
+  `split` would return an empty list).
+- `limit` caps the pieces (`split(",", 2)` → first two); `limit 0` →
+  `[]`; a negative limit keeps everything.
+- The no-separator form (`s.split()`) lowers separately
+  (whole-string single element) and is not part of the vectors.

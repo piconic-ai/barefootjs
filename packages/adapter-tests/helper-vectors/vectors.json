@@ -597,6 +597,475 @@
       ],
       "expect": 7,
       "note": "numeric-string operand routes through number coercion"
+    },
+    {
+      "fn": "lower",
+      "args": [
+        "HeLLo"
+      ],
+      "expect": "hello",
+      "note": "mixed case"
+    },
+    {
+      "fn": "lower",
+      "args": [
+        "ABC123"
+      ],
+      "expect": "abc123",
+      "note": "digits pass through"
+    },
+    {
+      "fn": "lower",
+      "args": [
+        ""
+      ],
+      "expect": "",
+      "note": "empty string"
+    },
+    {
+      "fn": "upper",
+      "args": [
+        "HeLLo"
+      ],
+      "expect": "HELLO",
+      "note": "mixed case"
+    },
+    {
+      "fn": "upper",
+      "args": [
+        "abc-def"
+      ],
+      "expect": "ABC-DEF",
+      "note": "punctuation passes through"
+    },
+    {
+      "fn": "trim",
+      "args": [
+        "  hi  "
+      ],
+      "expect": "hi",
+      "note": "surrounding spaces"
+    },
+    {
+      "fn": "trim",
+      "args": [
+        "\t\nx\r\n "
+      ],
+      "expect": "x",
+      "note": "ASCII whitespace mix"
+    },
+    {
+      "fn": "trim",
+      "args": [
+        "no trim needed"
+      ],
+      "expect": "no trim needed",
+      "note": "inner spaces preserved"
+    },
+    {
+      "fn": "trim",
+      "args": [
+        "   "
+      ],
+      "expect": "",
+      "note": "all-whitespace collapses to empty"
+    },
+    {
+      "fn": "trim",
+      "args": [
+        ""
+      ],
+      "expect": "",
+      "note": "empty string"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "hello",
+        "he"
+      ],
+      "expect": true,
+      "note": "matching prefix"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "hello",
+        "lo"
+      ],
+      "expect": false,
+      "note": "non-prefix substring"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "hello",
+        ""
+      ],
+      "expect": true,
+      "note": "empty prefix is always true"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "abc",
+        "b",
+        1
+      ],
+      "expect": true,
+      "note": "position re-anchors the test"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "abc",
+        "a",
+        1
+      ],
+      "expect": false,
+      "note": "position moves past the match"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "abc",
+        "",
+        5
+      ],
+      "expect": true,
+      "note": "position beyond length clamps"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "hello",
+        "lo"
+      ],
+      "expect": true,
+      "note": "matching suffix"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "hello",
+        "he"
+      ],
+      "expect": false,
+      "note": "non-suffix substring"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "hello",
+        ""
+      ],
+      "expect": true,
+      "note": "empty suffix is always true"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "abc",
+        "b",
+        2
+      ],
+      "expect": true,
+      "note": "endPosition shortens the receiver"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "abc",
+        "c",
+        2
+      ],
+      "expect": false,
+      "note": "endPosition excludes the real suffix"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "abc",
+        "abcd"
+      ],
+      "expect": false,
+      "note": "suffix longer than receiver"
+    },
+    {
+      "fn": "replace",
+      "args": [
+        "a-b-a",
+        "a",
+        "X"
+      ],
+      "expect": "X-b-a",
+      "note": "first occurrence only"
+    },
+    {
+      "fn": "replace",
+      "args": [
+        "abc",
+        "z",
+        "X"
+      ],
+      "expect": "abc",
+      "note": "pattern not found leaves receiver unchanged"
+    },
+    {
+      "fn": "replace",
+      "args": [
+        "abc",
+        "",
+        "X"
+      ],
+      "expect": "Xabc",
+      "note": "empty pattern inserts at the front"
+    },
+    {
+      "fn": "replace",
+      "args": [
+        "a.b.c",
+        ".",
+        "-"
+      ],
+      "expect": "a-b.c",
+      "note": "pattern is literal, not regex"
+    },
+    {
+      "fn": "replace",
+      "args": [
+        "abc",
+        "b",
+        ""
+      ],
+      "expect": "ac",
+      "note": "empty replacement deletes"
+    },
+    {
+      "fn": "repeat",
+      "args": [
+        "ab",
+        3
+      ],
+      "expect": "ababab",
+      "note": "basic repetition"
+    },
+    {
+      "fn": "repeat",
+      "args": [
+        "x",
+        0
+      ],
+      "expect": "",
+      "note": "zero count is empty"
+    },
+    {
+      "fn": "repeat",
+      "args": [
+        "",
+        5
+      ],
+      "expect": "",
+      "note": "empty receiver stays empty"
+    },
+    {
+      "fn": "repeat",
+      "args": [
+        "-",
+        1
+      ],
+      "expect": "-",
+      "note": "single repetition"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "5",
+        3,
+        "0"
+      ],
+      "expect": "005",
+      "note": "zero-padding numbers"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "hi",
+        4
+      ],
+      "expect": "  hi",
+      "note": "pad defaults to a single space"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "a",
+        4,
+        "xyz"
+      ],
+      "expect": "xyza",
+      "note": "pad truncates to fill exactly"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "abc",
+        2,
+        "0"
+      ],
+      "expect": "abc",
+      "note": "target below length returns receiver"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "ab",
+        5,
+        ""
+      ],
+      "expect": "ab",
+      "note": "empty pad returns receiver unchanged"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "a",
+        6,
+        "12"
+      ],
+      "expect": "12121a",
+      "note": "pad repeats then truncates"
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "5",
+        3,
+        "0"
+      ],
+      "expect": "500",
+      "note": "right-padding numbers"
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "hi",
+        4
+      ],
+      "expect": "hi  ",
+      "note": "pad defaults to a single space"
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "a",
+        4,
+        "xyz"
+      ],
+      "expect": "axyz",
+      "note": "pad truncates to fill exactly"
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "abc",
+        2,
+        "0"
+      ],
+      "expect": "abc",
+      "note": "target below length returns receiver"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "a,b,c",
+        ","
+      ],
+      "expect": [
+        "a",
+        "b",
+        "c"
+      ],
+      "note": "basic comma split"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "a,",
+        ","
+      ],
+      "expect": [
+        "a",
+        ""
+      ],
+      "note": "trailing empty field is kept"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "abc",
+        ""
+      ],
+      "expect": [
+        "a",
+        "b",
+        "c"
+      ],
+      "note": "empty separator splits into characters"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "a,b,c",
+        ",",
+        2
+      ],
+      "expect": [
+        "a",
+        "b"
+      ],
+      "note": "limit caps the pieces"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "abc",
+        "-"
+      ],
+      "expect": [
+        "abc"
+      ],
+      "note": "separator not found yields whole string"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "",
+        ","
+      ],
+      "expect": [
+        ""
+      ],
+      "note": "empty receiver yields one empty field"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "",
+        ""
+      ],
+      "expect": [],
+      "note": "empty receiver with empty separator yields []"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "a,b,c",
+        ",",
+        0
+      ],
+      "expect": [],
+      "note": "zero limit yields []"
     }
   ]
 }
