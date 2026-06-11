@@ -8,6 +8,7 @@
 import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter, ComponentIR } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
+import { deduplicateGoTypes } from './build.ts'
 
 /**
  * Capitalize a JSON key to its Go struct field name using the same
@@ -105,6 +106,10 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     importedNames: string[]
   }
   const childArtifacts = new Map<string, ChildComponentArtifacts>()
+  // Import specifiers the harness holds child sources for — recognised as
+  // sibling imports alongside relative ones (see
+  // `collectImportedComponentNames`).
+  const childSpecifiers = new Set(Object.keys(components ?? {}))
   if (components) {
     for (const [filename, childSource] of Object.entries(components)) {
       const childResult = compileJSX(childSource, filename, { adapter, outputIR: true })
@@ -136,7 +141,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
         childArtifacts.set(name, {
           define: defineBlocks.get(name) ?? '',
           typeBlock,
-          importedNames: collectImportedComponentNames(childIR),
+          importedNames: collectImportedComponentNames(childIR, childSpecifiers),
         })
       }
     }
@@ -183,7 +188,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   // child-collection loop above).
   const reachableChildNames = new Set<string>()
   {
-    const queue = [...collectImportedComponentNames(ir)]
+    const queue = [...collectImportedComponentNames(ir, childSpecifiers)]
     while (queue.length > 0) {
       const name = queue.shift()!
       if (reachableChildNames.has(name)) continue
@@ -226,9 +231,16 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     goTypes += '\n\n' + siblingTypes.trim()
   }
 
-  // Append child type definitions
+  // Append child type definitions. A multi-component child file (e.g.
+  // `radio-group` exporting RadioGroup + RadioGroupItem) emits its
+  // module-scope shared types (the context-value struct) once per
+  // component IR — deduplicate across the child blocks with the same
+  // helper `bf build` uses, or the merged unit fails with
+  // `redeclared in this block`. Scoped to the child blocks (not the
+  // whole `goTypes`): the dedup helper re-inserts types at the top of
+  // its input, which must not jump above the entry's `package` clause.
   if (childTypeBlocks.length > 0) {
-    goTypes += '\n\n' + childTypeBlocks.join('\n\n')
+    goTypes += '\n\n' + deduplicateGoTypes(childTypeBlocks.join('\n\n'))
   }
 
   // Sibling / child type blocks have their own `import (...)` stripped above
@@ -418,14 +430,23 @@ function splitTemplateDefines(content: string): Map<string, string> {
 
 /**
  * Component names a component IR imports from sibling source files — i.e.
- * non-type imports from relative (`./` / `../`) specifiers. Used to compute
- * the transitive set of child components the combined Go unit needs.
+ * non-type imports from relative (`./` / `../`) specifiers, plus any
+ * specifier the harness was explicitly handed a child source for
+ * (`childSpecifiers`, the `components` map keys). The latter is how
+ * demo-corpus roots reach their children: they import primitives through
+ * the `@ui/components/ui/<name>` alias (#1467), which the relative-only
+ * test would silently drop — emitting a parent that references
+ * `New<Child>Props` without the child's type block. Used to compute the
+ * transitive set of child components the combined Go unit needs.
  */
-function collectImportedComponentNames(ir: ComponentIR): string[] {
+function collectImportedComponentNames(
+  ir: ComponentIR,
+  childSpecifiers?: ReadonlySet<string>,
+): string[] {
   const names: string[] = []
   for (const imp of ir.metadata.imports ?? []) {
     if (imp.isTypeOnly) continue
-    if (!imp.source.startsWith('.')) continue
+    if (!imp.source.startsWith('.') && !childSpecifiers?.has(imp.source)) continue
     for (const spec of imp.specifiers ?? []) {
       if (spec.isNamespace) continue
       // Imported binding name (the local alias is what JSX references, but the
