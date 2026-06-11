@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -39,6 +40,20 @@ var vectorBindings = map[string]func(args []any) any{
 	"div": func(args []any) any { return Div(args[0], args[1]) },
 	"mod": func(args []any) any { return Mod(args[0], args[1]) },
 	"neg": func(args []any) any { return Neg(args[0]) },
+	"string": func(args []any) any { return String(args[0]) },
+	"json": func(args []any) any {
+		s, err := JSON(args[0])
+		if err != nil {
+			// Surface the error as the compared value so the mismatch
+			// message shows what went wrong.
+			return err
+		}
+		return s
+	},
+	"number": func(args []any) any { return Number(args[0]) },
+	"floor":  func(args []any) any { return Floor(args[0]) },
+	"ceil":   func(args []any) any { return Ceil(args[0]) },
+	"round":  func(args []any) any { return Round(args[0]) },
 }
 
 func TestHelperVectors(t *testing.T) {
@@ -122,6 +137,20 @@ func normalizeVectorValue(v any) any {
 		}
 		return x
 	case map[string]any:
+		// Reserved non-finite sentinel (spec/template-helpers.md):
+		// {"$num": "NaN" | "Infinity" | "-Infinity"}.
+		if len(x) == 1 {
+			if s, ok := x["$num"].(string); ok {
+				switch s {
+				case "NaN":
+					return math.NaN()
+				case "Infinity":
+					return math.Inf(1)
+				case "-Infinity":
+					return math.Inf(-1)
+				}
+			}
+		}
 		for k := range x {
 			x[k] = normalizeVectorValue(x[k])
 		}
@@ -138,7 +167,14 @@ func vectorEqual(got, expect any) bool {
 		return got == nil
 	}
 	if isNumericValue(expect) {
-		return isNumericValue(got) && toFloat64(got) == toFloat64(expect)
+		if !isNumericValue(got) {
+			return false
+		}
+		ef, gf := toFloat64(expect), toFloat64(got)
+		if math.IsNaN(ef) {
+			return math.IsNaN(gf)
+		}
+		return gf == ef
 	}
 	switch e := expect.(type) {
 	case string:

@@ -286,6 +286,317 @@
       ],
       "expect": 0,
       "note": "zero (sign of float zero not observable in JSON)"
+    },
+    {
+      "fn": "string",
+      "args": [
+        42
+      ],
+      "expect": "42",
+      "note": "integer"
+    },
+    {
+      "fn": "string",
+      "args": [
+        3.14
+      ],
+      "expect": "3.14",
+      "note": "float within 15 significant digits"
+    },
+    {
+      "fn": "string",
+      "args": [
+        -7
+      ],
+      "expect": "-7",
+      "note": "negative integer"
+    },
+    {
+      "fn": "string",
+      "args": [
+        "hi"
+      ],
+      "expect": "hi",
+      "note": "string passthrough"
+    },
+    {
+      "fn": "string",
+      "args": [
+        ""
+      ],
+      "expect": "",
+      "note": "empty string passthrough"
+    },
+    {
+      "fn": "string",
+      "args": [
+        0.5
+      ],
+      "expect": "0.5",
+      "note": "fraction below one"
+    },
+    {
+      "fn": "json",
+      "args": [
+        42
+      ],
+      "expect": "42",
+      "note": "top-level number"
+    },
+    {
+      "fn": "json",
+      "args": [
+        "hi"
+      ],
+      "expect": "\"hi\"",
+      "note": "top-level string is quoted"
+    },
+    {
+      "fn": "json",
+      "args": [
+        null
+      ],
+      "expect": "null",
+      "note": "null serializes as \"null\""
+    },
+    {
+      "fn": "json",
+      "args": [
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      "expect": "[1,2,3]",
+      "note": "array of ints"
+    },
+    {
+      "fn": "json",
+      "args": [
+        [
+          1.5,
+          "x"
+        ]
+      ],
+      "expect": "[1.5,\"x\"]",
+      "note": "mixed array"
+    },
+    {
+      "fn": "json",
+      "args": [
+        {
+          "a": 1
+        }
+      ],
+      "expect": "{\"a\":1}",
+      "note": "single-key object"
+    },
+    {
+      "fn": "json",
+      "args": [
+        {
+          "a": 1,
+          "b": "two"
+        }
+      ],
+      "expect": "{\"a\":1,\"b\":\"two\"}",
+      "note": "object with alphabetical insertion order"
+    },
+    {
+      "fn": "json",
+      "args": [
+        {
+          "a": [
+            1,
+            {
+              "b": "x"
+            }
+          ]
+        }
+      ],
+      "expect": "{\"a\":[1,{\"b\":\"x\"}]}",
+      "note": "nested array/object"
+    },
+    {
+      "fn": "number",
+      "args": [
+        42
+      ],
+      "expect": 42,
+      "note": "integer passthrough"
+    },
+    {
+      "fn": "number",
+      "args": [
+        3.14
+      ],
+      "expect": 3.14,
+      "note": "float passthrough"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "3.14"
+      ],
+      "expect": 3.14,
+      "note": "numeric string"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "42"
+      ],
+      "expect": 42,
+      "note": "integer string"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "1e3"
+      ],
+      "expect": 1000,
+      "note": "exponent notation string"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "-0.5"
+      ],
+      "expect": -0.5,
+      "note": "negative fraction string"
+    },
+    {
+      "fn": "number",
+      "args": [
+        true
+      ],
+      "expect": 1,
+      "note": "true coerces to 1"
+    },
+    {
+      "fn": "number",
+      "args": [
+        false
+      ],
+      "expect": 0,
+      "note": "false coerces to 0"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "not a num"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "non-numeric string is NaN (sentinel)"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "NaN"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "the literal string \"NaN\" parses to NaN on all backends"
+    },
+    {
+      "fn": "floor",
+      "args": [
+        3.7
+      ],
+      "expect": 3,
+      "note": "positive truncation"
+    },
+    {
+      "fn": "floor",
+      "args": [
+        -3.7
+      ],
+      "expect": -4,
+      "note": "negative rounds away from zero"
+    },
+    {
+      "fn": "floor",
+      "args": [
+        5
+      ],
+      "expect": 5,
+      "note": "integral passthrough"
+    },
+    {
+      "fn": "floor",
+      "args": [
+        "2.9"
+      ],
+      "expect": 2,
+      "note": "numeric-string operand routes through number coercion"
+    },
+    {
+      "fn": "ceil",
+      "args": [
+        3.2
+      ],
+      "expect": 4,
+      "note": "positive rounds up"
+    },
+    {
+      "fn": "ceil",
+      "args": [
+        -3.2
+      ],
+      "expect": -3,
+      "note": "negative rounds toward zero"
+    },
+    {
+      "fn": "ceil",
+      "args": [
+        5
+      ],
+      "expect": 5,
+      "note": "integral passthrough"
+    },
+    {
+      "fn": "round",
+      "args": [
+        2.5
+      ],
+      "expect": 3,
+      "note": "positive half rounds up on all backends"
+    },
+    {
+      "fn": "round",
+      "args": [
+        2.4
+      ],
+      "expect": 2,
+      "note": "below half rounds down"
+    },
+    {
+      "fn": "round",
+      "args": [
+        -2.4
+      ],
+      "expect": -2,
+      "note": "negative below half rounds toward zero"
+    },
+    {
+      "fn": "round",
+      "args": [
+        7
+      ],
+      "expect": 7,
+      "note": "integral passthrough"
+    },
+    {
+      "fn": "round",
+      "args": [
+        "6.6"
+      ],
+      "expect": 7,
+      "note": "numeric-string operand routes through number coercion"
     }
   ]
 }

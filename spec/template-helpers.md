@@ -70,11 +70,13 @@ committed, and consumed by one thin harness per backend.
 - `fn` is the **canonical helper id** from this catalogue (no `bf_`
   prefix, no host-language casing).
 - `args` / `expect` are plain JSON values: finite numbers, strings,
-  booleans, `null`, and arrays/objects thereof. `NaN`, `±Infinity`,
-  and `undefined` are not representable in JSON; the generator
-  **refuses** cases producing them. A sentinel encoding will be added
-  together with the first catalogue entry that needs one (e.g.
-  `number`).
+  booleans, `null`, and arrays/objects thereof.
+- **Non-finite sentinel**: a non-finite number in `expect` is encoded
+  as `{"$num": "NaN" | "Infinity" | "-Infinity"}` (the `$num` key is
+  reserved; helper data must not use it). Arguments must stay finite —
+  the generator refuses non-finite `args`; composition cases (e.g.
+  `floor(number("x"))`) can lift that later if needed. `undefined` is
+  never representable.
 - Each case carries a human-readable `note` naming the spec rule it
   pins.
 
@@ -214,3 +216,97 @@ JS unary minus: `-a`.
 Numeric operand, double semantics. (`-0` is value-equal to `0` under
 the vectors' numeric comparison; JSON cannot carry the sign of a
 floating-point zero.)
+
+### string
+
+JS `String(v)`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `String(v)` |
+| Go template | `bf_string` → `bf.String` |
+| Mojolicious / Xslate | `bf->string` |
+
+Rules:
+
+- Numbers stringify in shortest round-trip form (`String(3.14)` →
+  `"3.14"`); Go's `%v` matches JS. **Documented divergence**: Perl
+  stringifies via `%.15g`, so doubles needing 16–17 significant
+  digits differ (`String(0.1 + 0.2)`: JS `"0.30000000000000004"`,
+  Perl `"0.3"`). Vectors stay within 15 significant digits.
+- **Documented divergence**: `null`/`undefined` render as `""` on the
+  template backends (deliberate SSR ergonomics — an unset prop must
+  not surface as literal `"null"`/`"undefined"`), while JS
+  `String(null)` is `"null"`. Excluded from vectors.
+- **Documented divergence**: booleans — JS `String(true)` is
+  `"true"`; Perl has no boolean type (template data carries `1`/`0`),
+  so the Perl backends render `"1"`/`""`. Excluded from vectors.
+
+### json
+
+JS `JSON.stringify(v)` (single-argument form; no `replacer`/`space`).
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `JSON.stringify` |
+| Go template | `bf_json` → `bf.JSON` |
+| Mojolicious / Xslate | `bf->json` (backend JSON encoder) |
+
+Rules:
+
+- Value-compat, **not order-compat** (#1187): object key order is
+  backend-defined (Go maps and JSON::PP-canonical sort
+  alphabetically; JS preserves insertion order). Vectors use objects
+  whose insertion order IS alphabetical so the serialized strings
+  compare equal.
+- `json(null)` → `"null"` on all backends.
+- **Documented divergence**: booleans inside the value — Perl
+  template data has no boolean type, so `true` round-trips as `1` on
+  the Perl backends. Excluded from vectors.
+- Top-level `NaN`/`±Infinity` serialize as `"null"` (JS behavior; Go
+  carves this out explicitly). Nested non-finite values error on Go —
+  adapter-defined, excluded.
+
+### number
+
+JS `Number(v)`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `Number(v)` |
+| Go template | `bf_number` → `bf.Number` |
+| Mojolicious / Xslate | `bf->number` |
+
+Rules:
+
+- Numeric input passes through; trimmed numeric strings parse
+  (`"3.14"`, `"1e3"`, `"NaN"` → `NaN`); booleans coerce to `1`/`0`;
+  non-numeric strings yield `NaN` (the first sentinel-encoded
+  vectors).
+- **Documented divergence**: JS `Number("")` and `Number(null)` are
+  `0`; both template backends deliberately return `NaN` so silently
+  zeroed empty input doesn't mis-shape downstream arithmetic.
+  Excluded from vectors.
+- **Documented divergence**: JS trims surrounding whitespace
+  (`Number(" 8 ")` → `8`); Go's `strconv.ParseFloat` does not (→
+  `NaN`). Domain is pre-trimmed strings; whitespace cases excluded.
+
+### floor / ceil / round
+
+JS `Math.floor(v)` / `Math.ceil(v)` / `Math.round(v)`.
+
+| Backend | Lowering |
+|---------|----------|
+| Hono / CSR | native `Math.*` |
+| Go template | `bf_floor` / `bf_ceil` / `bf_round` |
+| Mojolicious / Xslate | `bf->floor` / `bf->ceil` / `bf->round` |
+
+Rules:
+
+- The operand routes through `number` coercion first (numeric strings
+  accepted); results follow double semantics.
+- `round` rounds half toward **+Infinity** in JS (`Math.round(-1.5)`
+  → `-1`). Perl's `floor(n + 0.5)` matches JS exactly.
+  **Documented divergence**: Go's `math.Round` rounds half away from
+  zero (`-1.5` → `-2`); negative-half cases are excluded from
+  vectors. Positive halves agree on all backends.
