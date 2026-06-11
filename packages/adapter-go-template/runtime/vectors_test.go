@@ -3,7 +3,6 @@ package bf
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"math"
 	"os"
 	"strconv"
@@ -134,6 +133,75 @@ func toStringSlice(args []any) []string {
 	return out
 }
 
+// vectorDivergence pins one deliberate divergence of THIS backend
+// from the JS-normative expect (spec/template-helpers.md "Adapter
+// status model"). The harness asserts the pinned value, so the
+// divergence itself is regression-tested; if the backend later
+// matches JS, the stale declaration fails so it gets removed.
+type vectorDivergence struct {
+	expect any
+	reason string
+}
+
+// Keyed by the case key `fn + "/" + note`. This table is the single
+// source of truth for the Go backend's divergences — the spec stays
+// backend-neutral.
+var vectorDivergences = map[string]vectorDivergence{
+	"div/zero divisor yields Infinity": {
+		expect: 0,
+		reason: "bf.Div degrades to 0 so a template render survives instead of emitting +Inf",
+	},
+	"mod/float remainder": {
+		expect: 1,
+		reason: "bf.Mod truncates operands to integers",
+	},
+	"number/empty string coerces to 0": {
+		expect: math.NaN(),
+		reason: "deliberate: empty input must not silently zero downstream arithmetic",
+	},
+	"number/null coerces to 0": {
+		expect: math.NaN(),
+		reason: "deliberate: unset props must not silently zero downstream arithmetic",
+	},
+	"number/surrounding whitespace is trimmed": {
+		expect: math.NaN(),
+		reason: "strconv.ParseFloat does not trim whitespace",
+	},
+	"string/null renders as the string \"null\"": {
+		expect: "",
+		reason: "deliberate: an unset prop must not surface a literal \"null\" in HTML",
+	},
+	"round/negative half rounds toward +Infinity": {
+		expect: -2.0,
+		reason: "math.Round is half-away-from-zero",
+	},
+	"round/negative half rounds toward +Infinity (away tie)": {
+		expect: -3.0,
+		reason: "math.Round is half-away-from-zero",
+	},
+	"sort/localeCompare orders case-insensitively (ICU collation)": {
+		expect: []any{"B", "a"},
+		reason: "strings.Compare is byte order, not ICU collation",
+	},
+	"sort/relational compare on numeric strings is lexical": {
+		expect: []any{"9", "10"},
+		reason: "the \"auto\" compare goes numeric when both keys parse as numbers",
+	},
+	"reduce/numeric-string items concatenate under JS +": {
+		expect: 11.0,
+		reason: "numeric folds parse numeric strings (toFloat64WithOK) instead of concatenating",
+	},
+}
+
+// vectorUnsupported marks helper ids this backend has not implemented
+// yet (skipped visibly with the reason). Empty for Go — the binding
+// table is complete; the mechanism exists so a bootstrapping backend
+// can land its harness first and burn the list down. Note the Go
+// FuncMap also carries bf_first/bf_last/bf_contains, which the
+// compiler never emits — they are Go-internal conveniences outside
+// the catalogue, not entries for this list.
+var vectorUnsupported = map[string]string{}
+
 func TestHelperVectors(t *testing.T) {
 	data, err := os.ReadFile(vectorsPath)
 	if os.IsNotExist(err) {
@@ -151,8 +219,13 @@ func TestHelperVectors(t *testing.T) {
 		t.Fatal("vectors.json contains no cases")
 	}
 
+	declared := make(map[string]bool, len(vectorDivergences))
 	for i, c := range file.Cases {
-		t.Run(fmt.Sprintf("%s/%s", c.Fn, c.Note), func(t *testing.T) {
+		key := c.Fn + "/" + c.Note
+		t.Run(key, func(t *testing.T) {
+			if reason, ok := vectorUnsupported[c.Fn]; ok {
+				t.Skipf("unsupported on this backend: %s", reason)
+			}
 			bind, ok := vectorBindings[c.Fn]
 			if !ok {
 				t.Fatalf("no Go binding for helper %q — add it to vectorBindings", c.Fn)
@@ -170,10 +243,28 @@ func TestHelperVectors(t *testing.T) {
 				t.Fatalf("case %d: decode expect: %v", i, err)
 			}
 			got := bind(args)
+			if d, ok := vectorDivergences[key]; ok {
+				declared[key] = true
+				if vectorEqual(got, expect) {
+					t.Errorf("stale divergence declaration for %q — the backend now matches JS (%v); remove it", key, got)
+					return
+				}
+				if !vectorEqual(got, d.expect) {
+					t.Errorf("divergence drift for %q: got %v (%T), pinned %v (%s)", key, got, got, d.expect, d.reason)
+				}
+				return
+			}
 			if !vectorEqual(got, expect) {
 				t.Errorf("%s(%s) = %v (%T), want %v (%T)", c.Fn, string(mustJoinRaw(c.Args)), got, got, expect, expect)
 			}
 		})
+	}
+	// A declaration referencing a case that no longer exists is dead —
+	// likely a renamed note. Fail so the key gets re-pointed.
+	for key := range vectorDivergences {
+		if !declared[key] {
+			t.Errorf("divergence declaration %q matches no vector case — renamed note?", key)
+		}
 	}
 }
 

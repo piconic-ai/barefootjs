@@ -1,726 +1,323 @@
 # Template Helper Conformance Spec
 
-Language-independent specification for the **pure value helpers** that
-adapters use to lower JavaScript expressions into template languages —
-the functions registered as `bf_*` in the Go adapter's
-`runtime/bf.go` FuncMap, implemented as `BarefootJS.pm` methods in the
-Perl adapters, or lowered to native host operators where the host
-language already has JS-compatible semantics.
+Language-independent, **JS-normative** specification for the pure
+value helpers that adapters use to lower JavaScript expressions into
+template languages (arithmetic, string, array, coercion, and the
+accepted higher-order projection catalogue).
 
-The goal is that a template expression compiled from JSX produces the
-**same value** on every backend as the JS reference (Hono/CSR) path.
-This spec, together with the golden vectors described below, is the
-contract a new language adapter (Python, Ruby, …) implements against:
-write the helpers idiomatically, pass the vectors, done. No FFI, no
-shared binary — each backend stays pure host-language.
+The goal: a template expression compiled from JSX produces the same
+value on every backend as the JS reference path. This spec plus the
+golden vectors are the contract a new language adapter (Python,
+Ruby, …) implements against — write the helpers idiomatically, pass
+the vectors, done. No FFI, no shared binary.
+
+**This document is backend-neutral.** It never records which adapter
+lowers an operation how, nor which adapter diverges where. Per-backend
+status — supported / divergent / unsupported — lives in each backend's
+harness as machine-checked declarations (see "Adapter status model"),
+so adding an adapter never edits this file.
 
 ## Scope
 
-In scope: helpers that are **pure functions of their arguments** —
-arithmetic, string, array, and coercion operations (`add`, `slice`,
-`pad_start`, `number`, …).
+In scope: helpers that are pure functions of their arguments.
 
 Out of scope: helpers coupled to render state (`bfScripts`,
-`bfPropsAttr`, `bfHydrationAttrs`, `bfPortalHTML`, context, streaming).
-Those are covered by the adapter conformance fixtures in
-`packages/adapter-tests/fixtures/`, which exercise full IR → HTML
-rendering per adapter.
+`bfPropsAttr`, hydration markers, context, streaming, spread-attrs) —
+covered by the adapter conformance fixtures in
+`packages/adapter-tests/fixtures/`.
 
 ## Reference semantics
 
 **JavaScript is normative.** Every catalogue entry has a JS reference
-implementation in `packages/adapter-tests/helper-vectors/cases.ts`.
-Expected values in the golden vectors are **computed by executing that
-reference**, not transcribed by hand — JS parity is mechanical.
+implementation in `packages/adapter-tests/helper-vectors/cases.ts`;
+expected values are **computed by executing it**, never transcribed.
 
-### Compatibility contract
+Compatibility contract:
 
-- **Value-compat, not type-compat.** Backends may use a different
-  runtime type as long as the value is equal. Example: Go's `bf.Add`
-  returns `int` when both operands are int-like; JS has only `number`.
-  Harnesses compare numbers numerically, never by type or by printed
-  representation.
-- **Numbers are IEEE-754 doubles.** Arithmetic follows double
-  semantics, including rounding (`0.1 + 0.2` →
-  `0.30000000000000004`).
-- **Integer domain is the JS safe range** (|n| ≤ 2^53 − 1, with exact
-  results up to 2^53). Outside that range behavior is
-  **adapter-defined**: Perl lowers arithmetic to native ops whose IV
-  arithmetic is 64-bit exact, while JS and Go (which round-trips
-  through `float64`) lose precision identically. Vectors never test
-  outside the safe range.
-- Divergences a backend cannot reasonably avoid are documented per
-  catalogue entry and excluded from the vectors.
+- **Value-compat, not type-compat.** A backend may return a
+  differently-typed value as long as it is value-equal (e.g. an
+  integer-typed `3` for JS number `3`; truthy `1`/`0` for booleans).
+  Harnesses compare numbers numerically, booleans by truthiness.
+- **Numbers are IEEE-754 doubles**, including rounding artifacts
+  (`0.1 + 0.2` → `0.30000000000000004`) and safe-integer behavior
+  (exact up to 2^53).
+- Inputs on which JS itself throws (e.g. a negative `repeat` count)
+  are out of vector scope; backend behavior there is undefined by
+  this spec.
+- A backend that deliberately diverges from a rule pins its actual
+  value in its own divergence declaration — the spec text stays
+  JS-only.
 
 ## Golden vectors
 
 `packages/adapter-tests/helper-vectors/vectors.json` — generated,
-committed, and consumed by one thin harness per backend.
+committed, consumed by one thin harness per backend.
 
 ```json
-{
-  "version": 1,
-  "cases": [
-    { "fn": "add", "args": [0.1, 0.2], "expect": 0.30000000000000004,
-      "note": "IEEE-754 double rounding" }
-  ]
-}
+{ "fn": "add", "args": [0.1, 0.2], "expect": 0.30000000000000004,
+  "note": "IEEE-754 double rounding" }
 ```
 
-- `fn` is the **canonical helper id** from this catalogue (no `bf_`
-  prefix, no host-language casing).
-- `args` / `expect` are plain JSON values: finite numbers, strings,
-  booleans, `null`, and arrays/objects thereof.
-- **Non-finite sentinel**: a non-finite number in `expect` is encoded
-  as `{"$num": "NaN" | "Infinity" | "-Infinity"}` (the `$num` key is
-  reserved; helper data must not use it). Arguments must stay finite —
-  the generator refuses non-finite `args`; composition cases (e.g.
-  `floor(number("x"))`) can lift that later if needed.
-- A JS `undefined` **expect** encodes as `null`: the template
-  backends have a single absent value (Go `nil` / Perl `undef`), so
-  `undefined` ≡ `null` under value-compat (e.g. `at(arr, 99)`).
-  `undefined` arguments stay unrepresentable.
-- Each case carries a human-readable `note` naming the spec rule it
-  pins.
+- `fn` is the canonical helper id (no `bf_` prefix, no host casing).
+- **Case key**: `fn + "/" + note`, unique across the file (enforced
+  by the freshness test). Harness declarations reference this key, so
+  treat notes as stable identifiers — renaming one re-keys its
+  declarations (the harnesses fail loudly on unknown keys).
+- `args` / `expect` are plain JSON. Non-finite numbers in `expect`
+  use the reserved sentinel `{"$num": "NaN" | "Infinity" |
+  "-Infinity"}`; a JS `undefined` expect encodes as `null` (backends
+  have a single absent value). Args must stay finite.
 
-### Regenerating
+Regenerate with `cd packages/adapter-tests && bun run
+generate:helper-vectors`; the freshness test in
+`src/__tests__/helper-vectors.test.ts` fails CI when `vectors.json`
+drifts from `cases.ts`.
 
-```sh
-cd packages/adapter-tests && bun run generate:helper-vectors
-```
+## Adapter status model
 
-A freshness test (`src/__tests__/helper-vectors.test.ts`, run by
-`ci.yml`'s `bun test packages/adapter-tests`) fails when
-`vectors.json` is out of date with `cases.ts`.
+Each backend ships one harness file (currently:
+`packages/adapter-go-template/runtime/vectors_test.go`,
+`packages/adapter-perl/t/helper_vectors.t`; the JS reference is the
+generator itself). A harness declares its backend's status in three
+machine-checked tables — this is the **only** place per-backend
+status is recorded:
 
-### Harnesses
-
-| Backend | Harness | CI |
-|---------|---------|----|
-| JS (reference) | `helper-vectors/generate.ts` computes `expect` by executing the reference | `ci.yml` (freshness test) |
-| Go `html/template` | `packages/adapter-go-template/runtime/vectors_test.go` | `ci-go-template.yml` (`go test`) |
-| Perl (Mojolicious / Xslate) | `packages/adapter-perl/t/helper_vectors.t` | `ci-perl-dist.yml` (`make test`) |
-
-Harnesses **fail loudly on an unknown `fn`** — adding a case for a
-helper without binding it in every harness is a CI failure, so the
-backends cannot silently fall behind the catalogue. The Go and Perl
-harnesses skip when `vectors.json` is absent (published Go module /
-CPAN dist consumers don't receive the monorepo file).
-
-Each harness binds a canonical id to **the exact code shape the
-compiled templates execute**: where an adapter lowers an operation to
-a native host operator instead of a helper function (see the lowering
-tables below), the harness binds the native operator, so the vectors
-test what production templates actually run.
+1. **Bindings** — canonical id → the code shape compiled templates
+   execute on this backend (a helper function, or the native operator
+   the adapter emits). A vector whose `fn` has no binding **fails**:
+   a backend cannot silently fall behind the catalogue.
+2. **Divergence declarations** — case key → the backend's actual
+   value plus a reason. A declared case asserts the *pinned* value,
+   so the divergence itself is regression-tested; if the backend
+   later starts matching JS, the stale declaration fails so it gets
+   removed. Divergences are visible, enumerable per backend, and
+   never rot as prose.
+3. **Unsupported list** — helper id → reason, skipped visibly. Empty
+   for mature backends; lets a bootstrapping adapter land its harness
+   first and burn the list down.
 
 ## Adding a catalogue entry
 
-1. Add the entry to the catalogue below: semantics, lowering per
-   adapter, edge-case rules, documented divergences.
-2. Add the JS reference implementation and cases to
-   `helper-vectors/cases.ts` — cover each edge-case rule with at least
-   one vector.
-3. Regenerate `vectors.json`.
-4. Bind the id in `vectors_test.go` (Go) and `helper_vectors.t`
-   (Perl). Run both harnesses; fix implementations (or document a
-   divergence and drop the case) until green.
+1. Add the entry below: JS semantics, edge rules, vector-domain
+   notes (backend-neutral only).
+2. Add the JS reference implementation and cases to `cases.ts` — at
+   least one vector per rule. Regenerate `vectors.json`.
+3. Bind the id in every harness. Where a backend genuinely diverges,
+   add a divergence declaration with its measured value and reason
+   instead of bending the vector.
+4. All harnesses green = done.
 
 ## Catalogue
 
-### add
+Entries state JS semantics and the vector domain. Domain notes
+explain why a region is untested (host-language variance), without
+naming backends.
 
-JS numeric addition: `a + b`.
+### add / sub / mul
 
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native JS `+` |
-| Go template | `{{bf_add a b}}` → `bf.Add` |
-| Mojolicious / Xslate | native Perl `+` |
-
-Rules:
-
-- Operands are **numbers**. String-operand `+` (JS concatenation) is
-  not part of this entry; template-side string building is lowered
-  through interpolation, and feeding strings to `add` is
-  adapter-defined.
-- IEEE-754 double semantics for the result value (see contract above).
-- Go's int-preserving return (`Add(1, 2)` → `int 3`) is value-equal
-  and allowed under value-compat; the round-trip through `float64`
-  keeps it within double semantics.
-
-### sub / mul
-
-JS numeric subtraction / multiplication: `a - b`, `a * b`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native JS `-` / `*` |
-| Go template | `bf_sub` / `bf_mul` → `bf.Sub` / `bf.Mul` |
-| Mojolicious / Xslate | native Perl `-` / `*` |
-
-Same rules as `add`: numeric operands, double semantics (including
-rounding artifacts like `0.3 - 0.1` → `0.19999999999999998`),
-int-preserving Go returns allowed under value-compat.
+JS numeric `+` / `-` / `*` on number operands; double semantics.
+String-operand `+` (concatenation) lowers through interpolation and
+is not part of `add`. Beyond the safe-integer range, double rounding
+applies (`9007199254740991 + 2` → `9007199254740992`); backends with
+64-bit-exact integer arithmetic pin their divergence.
 
 ### div
 
-JS numeric division: `a / b`. Always double division — `7 / 2` is
-`3.5` even for integer operands.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native JS `/` |
-| Go template | `bf_div` → `bf.Div` |
-| Mojolicious / Xslate | native Perl `/` |
-
-Rules:
-
-- Domain: **divisor ≠ 0**. JS yields `±Infinity` / `NaN` for a zero
-  divisor; Go's `bf.Div` deliberately returns `0` so a template render
-  degrades instead of emitting `+Inf`, and Perl `/` dies. Zero-divisor
-  behavior is adapter-defined, documented here, and excluded from the
-  vectors.
-- Double semantics for the quotient (`1 / 3` →
-  `0.3333333333333333`).
+JS `/`: always double division (`7 / 2` → `3.5`); a zero divisor
+yields `±Infinity` / `NaN`.
 
 ### mod
 
-JS remainder: `a % b`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native JS `%` |
-| Go template | `bf_mod` → `bf.Mod` |
-| Mojolicious / Xslate | native Perl `%` |
-
-Rules:
-
-- Domain: **non-negative integer operands with divisor > 0**. Outside
-  that the backends genuinely disagree and behavior is
-  adapter-defined:
-  - Negative operands: JS remainder takes the **dividend's** sign
-    (`-7 % 3` → `-1`); Perl's `%` takes the **divisor's** sign
-    (`-7 % 3` → `2`); Go's `%` matches JS.
-  - Float operands: JS `%` is a float remainder (`7.5 % 2` → `1.5`);
-    Go `bf.Mod` and Perl integer-context `%` truncate to integers.
-  - Zero divisor: JS yields `NaN`; Go returns `0`; Perl dies.
-- Within the domain, the result is the common integer remainder.
+JS `%`: remainder with the **dividend's** sign (`-7 % 3` → `-1`),
+defined on floats (`7.5 % 2` → `1.5`).
 
 ### neg
 
-JS unary minus: `-a`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native JS unary `-` |
-| Go template | `bf_neg` → `bf.Neg` |
-| Mojolicious / Xslate | native Perl unary `-` |
-
-Numeric operand, double semantics. (`-0` is value-equal to `0` under
-the vectors' numeric comparison; JSON cannot carry the sign of a
-floating-point zero.)
+JS unary `-`. (`-0` is value-equal to `0`; JSON cannot carry float
+zero sign.)
 
 ### string
 
-JS `String(v)`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `String(v)` |
-| Go template | `bf_string` → `bf.String` |
-| Mojolicious / Xslate | `bf->string` |
-
-Rules:
-
-- Numbers stringify in shortest round-trip form (`String(3.14)` →
-  `"3.14"`); Go's `%v` matches JS. **Documented divergence**: Perl
-  stringifies via `%.15g`, so doubles needing 16–17 significant
-  digits differ (`String(0.1 + 0.2)`: JS `"0.30000000000000004"`,
-  Perl `"0.3"`). Vectors stay within 15 significant digits.
-- **Documented divergence**: `null`/`undefined` render as `""` on the
-  template backends (deliberate SSR ergonomics — an unset prop must
-  not surface as literal `"null"`/`"undefined"`), while JS
-  `String(null)` is `"null"`. Excluded from vectors.
-- **Documented divergence**: booleans — JS `String(true)` is
-  `"true"`; Perl has no boolean type (template data carries `1`/`0`),
-  so the Perl backends render `"1"`/`""`. Excluded from vectors.
+JS `String(v)`: numbers in shortest round-trip form (including 16–17
+significant-digit doubles), `String(null)` → `"null"`,
+`String(true)` → `"true"`.
 
 ### json
 
-JS `JSON.stringify(v)` (single-argument form; no `replacer`/`space`).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `JSON.stringify` |
-| Go template | `bf_json` → `bf.JSON` |
-| Mojolicious / Xslate | `bf->json` (backend JSON encoder) |
-
-Rules:
-
-- Value-compat, **not order-compat** (#1187): object key order is
-  backend-defined (Go maps and JSON::PP-canonical sort
-  alphabetically; JS preserves insertion order). Vectors use objects
-  whose insertion order IS alphabetical so the serialized strings
-  compare equal.
-- `json(null)` → `"null"` on all backends.
-- **Documented divergence**: booleans inside the value — Perl
-  template data has no boolean type, so `true` round-trips as `1` on
-  the Perl backends. Excluded from vectors.
-- Top-level `NaN`/`±Infinity` serialize as `"null"` (JS behavior; Go
-  carves this out explicitly). Nested non-finite values error on Go —
-  adapter-defined, excluded.
+JS `JSON.stringify(v)`, single-argument form. Object key **order** is
+not part of the contract (value-compat); vectors use objects whose
+insertion order is alphabetical so serialized strings compare equal.
+Vectors avoid booleans inside the value (hosts without a boolean type
+cannot round-trip them) and non-finite numbers below the top level.
 
 ### number
 
-JS `Number(v)`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `Number(v)` |
-| Go template | `bf_number` → `bf.Number` |
-| Mojolicious / Xslate | `bf->number` |
-
-Rules:
-
-- Numeric input passes through; trimmed numeric strings parse
-  (`"3.14"`, `"1e3"`, `"NaN"` → `NaN`); booleans coerce to `1`/`0`;
-  non-numeric strings yield `NaN` (the first sentinel-encoded
-  vectors).
-- **Documented divergence**: JS `Number("")` and `Number(null)` are
-  `0`; both template backends deliberately return `NaN` so silently
-  zeroed empty input doesn't mis-shape downstream arithmetic.
-  Excluded from vectors.
-- **Documented divergence**: JS trims surrounding whitespace
-  (`Number(" 8 ")` → `8`); Go's `strconv.ParseFloat` does not (→
-  `NaN`). Domain is pre-trimmed strings; whitespace cases excluded.
+JS `Number(v)`: numeric passthrough; string parsing with surrounding
+whitespace trimmed (`" 8 "` → `8`); `""` and `null` → `0`; booleans
+→ `1`/`0`; non-numeric strings (and the literal `"NaN"`) → `NaN`.
 
 ### floor / ceil / round
 
-JS `Math.floor(v)` / `Math.ceil(v)` / `Math.round(v)`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `Math.*` |
-| Go template | `bf_floor` / `bf_ceil` / `bf_round` |
-| Mojolicious / Xslate | `bf->floor` / `bf->ceil` / `bf->round` |
-
-Rules:
-
-- The operand routes through `number` coercion first (numeric strings
-  accepted); results follow double semantics.
-- `round` rounds half toward **+Infinity** in JS (`Math.round(-1.5)`
-  → `-1`). Perl's `floor(n + 0.5)` matches JS exactly.
-  **Documented divergence**: Go's `math.Round` rounds half away from
-  zero (`-1.5` → `-2`); negative-half cases are excluded from
-  vectors. Positive halves agree on all backends.
+JS `Math.floor` / `Math.ceil` / `Math.round` after `Number` coercion
+of the operand. `round` rounds half toward **+Infinity**
+(`Math.round(-1.5)` → `-1`).
 
 ### lower / upper
 
-JS `String.prototype.toLowerCase()` / `.toUpperCase()`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.toLowerCase()` / `.toUpperCase()` |
-| Go template | `bf_lower` / `bf_upper` |
-| Mojolicious | native `lc(...)` / `uc(...)` |
-| Xslate | `$bf.lc` / `$bf.uc` |
-
-Vectors stay ASCII: full-Unicode case mapping (locale-special casings
-like Turkish dotless-i, ß expansion) is untested across backends and
-currently out of contract.
+JS `.toLowerCase()` / `.toUpperCase()`. Vectors stay ASCII: full
+Unicode case mapping differs across host libraries and is out of
+contract.
 
 ### trim
 
-JS `String.prototype.trim()`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.trim()` |
-| Go template | `bf_trim` (`strings.TrimSpace`) |
-| Mojolicious / Xslate | `bf->trim` (`s/^\s+|\s+$//gu`) |
-
-Vectors use ASCII whitespace (space, tab, CR/LF). The exact Unicode
-whitespace sets differ slightly per backend (JS WhiteSpace vs Go
-`unicode.IsSpace` vs Perl `\s` under `/u`) — out of contract.
+JS `.trim()`. Vectors use ASCII whitespace; exact Unicode whitespace
+sets vary across hosts.
 
 ### starts_with / ends_with
 
-JS `String.prototype.startsWith(prefix, position?)` /
-`.endsWith(suffix, endPosition?)` → boolean.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native methods |
-| Go template | `bf_starts_with` / `bf_ends_with` |
-| Mojolicious / Xslate | `bf->starts_with` / `bf->ends_with` |
-
-Rules:
-
-- Empty prefix/suffix is always `true`.
-- The optional second argument re-anchors the test (`"abc".startsWith
-  ("b", 1)` → `true`; `"abc".endsWith("b", 2)` → `true`), clamped to
-  `[0, length]`.
-- Perl returns `1`/`0`; harnesses compare booleans by truthiness
-  (value-compat).
-- Index positions are byte/character based per backend — identical
-  for ASCII; astral-plane input is out of contract (JS counts UTF-16
-  units).
+JS `.startsWith(prefix, position?)` / `.endsWith(suffix,
+endPosition?)` → boolean. Empty search string is always `true`; the
+optional position re-anchors, clamped to `[0, length]`. Vectors stay
+ASCII (index units differ across hosts on astral planes).
 
 ### replace
 
-JS `String.prototype.replace(pattern, replacement)` — **string-pattern
-form, first occurrence only** (the regex form is refused upstream at
-the parser, BF101).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.replace` |
-| Go template | `bf_replace` (`strings.Replace`, n=1) |
-| Mojolicious / Xslate | `bf->replace` (index/substr splice) |
-
-Rules:
-
-- The pattern matches literally (no regex metacharacters) on every
-  backend.
-- An empty pattern inserts the replacement at the front
-  (`"abc".replace("", "X")` → `"Xabc"`).
-- **Documented divergence**: the template backends treat the
-  replacement literally; JS interprets `$&`/`$1`-style patterns in
-  the replacement string. `$`-containing replacements are excluded.
+JS `.replace(pattern, replacement)`, string-pattern form, first
+occurrence; empty pattern inserts at the front. Vectors avoid
+`$`-containing replacements (JS interprets replacement patterns;
+template lowerings treat the replacement literally).
 
 ### repeat
 
-JS `String.prototype.repeat(n)`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.repeat` |
-| Go template | `bf_repeat` |
-| Mojolicious / Xslate | `bf->repeat` (`x` operator) |
-
-Rules:
-
-- Domain: integer count ≥ 0. **Documented divergence**: JS throws
-  RangeError on a negative count; the template backends clamp to `""`
-  so SSR degrades instead of crashing. Excluded from vectors.
-- `repeat(s, 0)` → `""`.
+JS `.repeat(n)` for integer `n ≥ 0` (`0` → `""`). Negative counts
+throw in JS — out of scope.
 
 ### pad_start / pad_end
 
-JS `String.prototype.padStart(target, pad?)` / `.padEnd(target,
-pad?)`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native methods |
-| Go template | `bf_pad_start` / `bf_pad_end` |
-| Mojolicious / Xslate | `bf->pad_start` / `bf->pad_end` |
-
-Rules:
-
-- The pad string defaults to a single space; it repeats and truncates
-  to exactly fill the gap.
-- An empty pad string, or a receiver already ≥ `target`, returns the
-  receiver unchanged.
-- Length is measured in characters/runes on the template backends —
-  matches JS UTF-16 units except for astral-plane input (documented,
-  out of contract).
+JS `.padStart(target, pad?)` / `.padEnd(...)`: pad defaults to one
+space, repeats and truncates to fill; empty pad or target ≤ length
+returns the receiver. ASCII domain (length units).
 
 ### split
 
-JS `String.prototype.split(separator, limit?)` → array of strings
-(string-separator form; the regex form is refused upstream).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.split` |
-| Go template | `bf_split` |
-| Mojolicious / Xslate | `bf->split` (quotemeta + `-1` limit) |
-
-Rules:
-
-- The separator matches literally; trailing empty fields are kept
-  (`"a,".split(",")` → `["a", ""]`).
-- Empty separator splits into individual characters; `"".split("")`
-  → `[]`.
-- `"".split(",")` → `[""]` (Perl special-cases this — bare Perl
-  `split` would return an empty list).
-- `limit` caps the pieces (`split(",", 2)` → first two); `limit 0` →
-  `[]`; a negative limit keeps everything.
-- The no-separator form (`s.split()`) lowers separately
-  (whole-string single element) and is not part of the vectors.
+JS `.split(separator, limit?)`, string-separator form: literal
+matching, trailing empty fields kept (`"a,".split(",")` →
+`["a",""]`), empty separator → characters (`"".split("")` → `[]`),
+`"".split(",")` → `[""]`, `limit 0` → `[]`. The no-separator form
+lowers separately and is not in the vectors.
 
 ### len
 
-JS `.length` — both array element count and string character count
-(the parser can't always disambiguate the receiver).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.length` |
-| Go template | `bf_len` (also plain `len` in some positions) |
-| Mojolicious | `scalar(@{...})` for known arrays; `bf->length` otherwise |
-| Xslate | `$bf.length` |
-
-String length is bytes on Go, characters on Perl, UTF-16 units in JS
-— identical for ASCII; non-ASCII is out of contract (vectors stay
-ASCII).
+JS `.length` for arrays (element count) and strings (ASCII domain —
+length units differ across hosts otherwise).
 
 ### at
 
-JS `Array.prototype.at(i)` — supports negative indices; out-of-range
-yields `undefined` (≡ `null` in vectors).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.at` |
-| Go template | `bf_at` |
-| Mojolicious / Xslate | `bf->at` |
+JS `.at(i)`: negative indices count from the end; out of range →
+`undefined` ≡ `null`.
 
 ### includes
 
-JS `Array.prototype.includes(x)` AND `String.prototype.includes(sub)`
-— one canonical id; the backends dispatch on the receiver type at
-runtime.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.includes` |
-| Go template | `bf_includes` (reflect.Kind dispatch) |
-| Mojolicious / Xslate | `bf->includes` (`ref()` dispatch) |
-
-Rules:
-
-- Array search is strict-equality in JS and Go (`DeepEqual`);
-  **documented divergence**: Perl scans with `eq` (string equality),
-  so cross-type probes (`[1].includes("1")`: JS `false`, Perl `true`)
-  diverge. Domain: needle and elements of the same primitive type.
-- String receiver does a substring test.
+JS `.includes(x)` on arrays (strict equality) and strings (substring
+test) — one canonical id, receiver-dispatched. Vector domain keeps
+needle and elements the same primitive type; cross-type probes are
+strict-`false` in JS and backends with string-based equality pin
+their divergence.
 
 ### index_of / last_index_of
 
-JS `Array.prototype.indexOf(x)` / `.lastIndexOf(x)` → first/last
-position or `-1`. Same equality contract (and Perl `eq` divergence
-domain) as `includes`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native methods |
-| Go template | `bf_index_of` / `bf_last_index_of` |
-| Mojolicious / Xslate | `bf->index_of` / `bf->last_index_of` |
+JS `.indexOf(x)` / `.lastIndexOf(x)` → position or `-1`. Same
+equality contract as `includes`.
 
 ### concat
 
-JS `Array.prototype.concat(other)` — binary form only (variadic
-`.concat(a, b)` is refused upstream).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.concat` |
-| Go template | `bf_concat` |
-| Mojolicious / Xslate | `bf->concat` |
+JS `.concat(other)`, binary form (variadic refused upstream).
 
 ### slice
 
-JS `Array.prototype.slice(start, end?)` with full negative-index
-clamping (`slice(-2)`, `slice(0, -1)`, `start >= end` → `[]`).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.slice` |
-| Go template | `bf_slice` |
-| Mojolicious / Xslate | `bf->slice` |
+JS `.slice(start, end?)` with negative-index clamping; `start >= end`
+→ `[]`.
 
 ### reverse
 
-JS `Array.prototype.reverse()` / `.toReversed()` — non-mutating on
-the template backends (SSR renders a snapshot, so the JS
-mutate-vs-copy distinction has no template-level meaning).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native methods |
-| Go template | `bf_reverse` |
-| Mojolicious / Xslate | `bf->reverse` |
+JS `.reverse()` / `.toReversed()` — non-mutating result (SSR renders
+a snapshot; the mutate-vs-copy distinction has no template meaning).
 
 ### flat
 
-JS `Array.prototype.flat(depth?)`. Canonical args use the compiled
-representation: depth `-1` is the `Infinity` sentinel (flatten
-fully); the no-arg JS form lowers as depth `1`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.flat` |
-| Go template | `bf_flat` |
-| Mojolicious / Xslate | `bf->flat` |
+JS `.flat(depth)`; canonical depth `-1` is the compiled `Infinity`
+sentinel, `0` a shallow copy.
 
 ### join
 
-JS `Array.prototype.join(sep)`. `null`/`undefined` elements render as
-empty (`[1, null, 2].join(",")` → `"1,,2"`); the separator defaults
-to `","` at the lowering site (canonical vectors always pass it
-explicitly).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.join` |
-| Go template | `bf_join` |
-| Mojolicious | native `join($sep, @{...})` |
-| Xslate | `$bf.join` |
-
-Number elements stringify per the `string` entry — Perl's `%.15g`
-divergence applies; vectors keep elements within 15 significant
-digits.
+JS `.join(sep)`: `null`/`undefined` elements render empty
+(`[1,null,2].join(",")` → `"1,,2"`). Number elements stringify per
+the `string` entry.
 
 ### arr
 
-Array-literal lowering `[a, b, …]` (#1443) — template languages
-without array-literal syntax route through a variadic constructor.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `[a, b]` |
-| Go template | `bf_arr a b` |
-| Mojolicious / Xslate | native `[$a, $b]` |
+Array-literal lowering `[a, b, …]` — variadic construction in order.
 
 ### filter_truthy
 
-JS `arr.filter(Boolean)` (#1443 class-merge pattern) — keep elements
-that are truthy under JS `Boolean(x)`.
+JS `arr.filter(Boolean)`: keeps elements truthy under `Boolean(x)` —
+note the string `"0"` is truthy in JS.
 
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.filter(Boolean)` |
-| Go template | `bf_filter_truthy` |
-| Mojolicious | inline `[grep { $_ } @{...}]` |
-| Xslate | Kolon lambda filter |
+### Higher-order: canonical projection form
 
-**Documented divergence**: Perl truthiness drops the string `"0"`
-(falsy in Perl, truthy in JS). The intended domain is class-string
-merging where `"0"` is not a meaningful class name; excluded from
-vectors.
-
-Not in the catalogue: `bf_first` / `bf_last` / `bf_contains` exist in
-the Go FuncMap as conveniences but are never emitted by the compiler;
-they are Go-internal and carry no cross-backend contract.
-
-### Higher-order predicates: canonical projection form
-
-JS closures can't ride in JSON, so the higher-order entries use the
-**compiled projection catalogue** as their canonical argument form —
-the same shapes the JSX parser accepts (anything else refuses with
+Closures can't ride in JSON, so higher-order entries use the compiled
+projection catalogue as canonical args (anything else refuses with
 BF101 upstream):
 
 - `filter` / `find` / `find_index` / `find_last` / `find_last_index`:
   `(items, field, value)` ≡ `i => i.field === value`.
 - `every` / `some`: `(items, field)` ≡ `i => i.field` (truthiness).
 
-Field names appear in JS casing (`"done"`, `"price"`). Go resolves
-struct fields via the capitalized convention and map keys via
-case-variant lookup (#1487 — extended to the predicate helpers
-together with this entry, so JSON-decoded `map` items participate
-instead of being silently skipped).
-
-Equality in the predicate follows the `includes` contract: strict on
-JS/Go, `eq`/`==` chosen by operand string-typing on Perl — vectors
-keep field values and probes the same primitive type.
+Field names are in JS casing; items are objects. Equality follows the
+`includes` contract.
 
 ### every / some
 
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.every` / `.some` |
-| Go template | `bf_every` / `bf_some` |
-| Mojolicious | inline `!(grep { !(...) })` / `!!(grep { ... })` |
-| Xslate | `$bf.every` / `$bf.some` (Kolon lambda) |
-
-`every([])` is vacuously `true`; `some([])` is `false` (JS parity).
-Field truthiness is JS `Boolean(x)` — the Perl `"0"` divergence from
-`filter_truthy` applies; vectors use boolean fields.
+JS `.every` / `.some` over the field-truthiness projection.
+`every([])` is vacuously `true`; `some([])` is `false`.
 
 ### filter / find / find_index / find_last / find_last_index
 
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native methods |
-| Go template | `bf_filter` / `bf_find` / `bf_find_index` / `bf_find_last` / `bf_find_last_index` |
-| Mojolicious | `filter` inlines to `[grep {...}]`; the find family calls `bf->find` etc. with a closure |
-| Xslate | `$bf.filter` / `$bf.find` / … (Kolon lambda) |
-
-`find`/`find_last` yield the matching element or `undefined` ≡
-`null`; the index forms yield `-1` when absent; `filter` with no
-matches yields `[]`.
+JS semantics over the field-equality projection: `find`/`find_last`
+yield the element or `undefined` ≡ `null`; index forms yield `-1`;
+`filter` with no matches yields `[]`.
 
 ### sort
 
-JS `Array.prototype.sort(cmp)` / `.toSorted(cmp)` for the accepted
-comparator catalogue (`a.f - b.f`, `a - b`, `localeCompare`,
-relational ternary, each `||`-chainable for multi-key tie-breaks).
-Canonical args: `(items, kind, name, compareType, direction, …)` —
-one 4-tuple per key, `kind` ∈ `self`/`field`, `compareType` ∈
-`numeric`/`string`/`auto`, `direction` ∈ `asc`/`desc`.
+JS `.sort(cmp)` / `.toSorted(cmp)` for the accepted comparator
+catalogue (`a.f - b.f`, `a - b`, `localeCompare`, relational ternary,
+`||`-chained multi-key). Canonical args: `(items, kind, name,
+compareType, direction, …)` — one 4-tuple per key; `kind` ∈
+`self`/`field`, `compareType` ∈ `numeric`/`string`/`auto`,
+`direction` ∈ `asc`/`desc`. Non-mutating, stable.
 
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.sort(cmp)` |
-| Go template | `bf_sort` (variadic 4-tuples) |
-| Mojolicious / Xslate | `bf->sort($recv, { keys => [...] })` |
-
-Rules:
-
-- Non-mutating on the template backends; stable.
-- **Documented divergence** (`string`): JS `localeCompare` is
-  ICU-collated (case-insensitive-ish: `"a" < "B"`); Go
-  `strings.Compare` and Perl `cmp` are byte order. Vectors use
-  same-case ASCII keys.
-- **Documented divergence** (`auto`): both template backends compare
-  numerically when both keys `looks_like_number`; JS relational `>`
-  compares numeric *strings* lexically. Vectors use real numbers or
-  non-numeric strings.
+JS comparison semantics per `compareType`: `numeric` subtracts as
+numbers; `string` is `localeCompare` (ICU collation — e.g. `"a"`
+orders before `"B"`); `auto` is the relational operator — numeric for
+numbers, **lexical for numeric strings** (`"10" < "9"`).
 
 ### reduce
 
-JS `reduce((acc, x) => acc <op> x[.field], init)` /
-`reduceRight(...)`. Canonical args:
-`(items, op, key_kind, key, type, init, direction)` with `op` ∈
-`+`/`*`, `type` ∈ `numeric`/`string`, `init` as a string (the
-compiler emits the decoded seed), `direction` ∈ `left`/`right`.
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.reduce` / `.reduceRight` |
-| Go template | `bf_reduce` |
-| Mojolicious / Xslate | `bf->reduce($recv, { op => …, … })` |
-
-Rules:
-
-- Empty receiver returns the init unchanged.
-- `direction` is only observable for string concatenation (numeric
-  folds commute).
-- **Documented divergences** (mirroring `sort`'s `auto` caveat):
-  numeric-*string* keys fold numerically on the template backends but
-  string-concatenate in JS; float stringification differences apply
-  to string folds of inexact sums. Vectors use genuine numbers /
-  plain strings.
+JS `.reduce((acc, x) => acc <op> x[.field], init)` /
+`.reduceRight(...)`. Canonical args: `(items, op, key_kind, key,
+type, init, direction)`; `op` ∈ `+`/`*`; `type` ∈
+`numeric`/`string`; `init` as a string (the compiler emits the
+decoded seed); `direction` ∈ `left`/`right`. Empty receiver returns
+the init. JS `+` semantics apply: numeric-**string** items
+concatenate (`0 + "5" + "6"` → `"056"`); `direction` is observable
+only for string concatenation.
 
 ### flat_map / flat_map_tuple
 
-JS `Array.prototype.flatMap(fn)` for the projection catalogue:
-`i => i` / `i => i.field` (canonical `(items, kind, name)`), and the
-array-literal tuple form `i => [i.a, i.b]` (canonical
-`(items, kind1, name1, kind2, name2, …)`).
-
-| Backend | Lowering |
-|---------|----------|
-| Hono / CSR | native `.flatMap` |
-| Go template | `bf_flat_map` / `bf_flat_map_tuple` |
-| Mojolicious / Xslate | `bf->flat_map` / `bf->flat_map_tuple` (pair arrayrefs) |
-
-Rules:
-
-- `flatMap` = map + `flat(1)`: a projected array value spreads one
-  level for the scalar form; the tuple form appends each leaf
-  verbatim (the `flat(1)` only removes the literal wrapper).
-- A `field` projection of a non-object element yields `undefined` ≡
-  `null` (matches `getFieldValue` returning nil).
+JS `.flatMap(fn)` for `i => i` / `i => i.field` (canonical `(items,
+kind, name)`) and the array-literal tuple form `i => [i.a, i.b]`
+(canonical `(items, kind1, name1, …)`). flatMap = map + `flat(1)`:
+the scalar form spreads an array-valued projection one level; the
+tuple form appends each leaf verbatim (only the literal wrapper
+flattens). A `field` projection of a non-object yields `undefined` ≡
+`null`.

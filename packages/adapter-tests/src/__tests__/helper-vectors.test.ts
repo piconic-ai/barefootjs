@@ -22,4 +22,13 @@ describe('helper golden vectors', () => {
       expect(reference).toHaveProperty(c.fn)
     }
   })
+
+  test('case keys (fn/note) are unique — harness declarations reference them', () => {
+    const seen = new Set<string>()
+    for (const c of buildVectors().cases) {
+      const key = `${c.fn}/${c.note}`
+      expect(seen.has(key)).toBe(false)
+      seen.add(key)
+    }
+  })
 })
