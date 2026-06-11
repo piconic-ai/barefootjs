@@ -221,6 +221,72 @@ import { x } from './not-on-disk'
     }
   })
 
+  test('drops the import of a sibling client-signal file whose chunk is already inlined (#1873)', async () => {
+    // Cross-file @client signal: the consumer's emitted JS imports
+    // `./state.client.js`, whose compiled chunk is concatenated into the same
+    // run — the import must be dropped, not rewritten, and the shared signal
+    // must still drive the consumer's handler.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-state-'))
+    try {
+      writeFileSync(join(dir, 'state.tsx'), `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        /* @client */
+        export const [count, setCount] = createSignal(0)
+      `)
+      const compPath = join(dir, 'Counter.tsx')
+      const compSrc = `
+        'use client'
+        import { count, setCount } from './state'
+        export function Counter() {
+          return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+        }
+      `
+      writeFileSync(compPath, compSrc)
+
+      const r = await runAutoScenario(compSrc, compPath, 'Counter')
+      expect(r.sources.map(s => s.filePath.split('/').pop())).toEqual(['state.tsx', 'Counter.tsx'])
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^Counter#handler:s\d+:click$/)
+      // The click went through the shared signal's setter.
+      expect(r.events.some(e => e.type === 'signalSet' && e.turn === turn!.handlerId)).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('an aliased import of an inlined client-signal file gets a binding shim (#1873)', async () => {
+    // `import { setCount as update }` — dropping the statement alone would
+    // leave `update` undefined in the joined scope while the chunk's handler
+    // calls it. The rewrite must emit `var update = setCount` in its place.
+    const dir = mkdtempSync(join(tmpdir(), 'bf-state-alias-'))
+    try {
+      writeFileSync(join(dir, 'state.tsx'), `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        /* @client */
+        export const [count, setCount] = createSignal(0)
+      `)
+      const compPath = join(dir, 'Aliased.tsx')
+      const compSrc = `
+        'use client'
+        import { count, setCount as update } from './state'
+        export function Aliased() {
+          return <button onClick={() => update(count() + 1)}>{count()}</button>
+        }
+      `
+      writeFileSync(compPath, compSrc)
+
+      const r = await runAutoScenario(compSrc, compPath, 'Aliased')
+      const turn = r.events.find(e => e.type === 'turnBegin')
+      expect(turn?.handlerId).toMatch(/^Aliased#handler:s\d+:click$/)
+      // The aliased setter resolved and the set landed inside the turn.
+      expect(r.events.some(e => e.type === 'signalSet' && e.turn === turn!.handlerId)).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   test('a component with no handler records no interaction turns', async () => {
     const DISPLAY = `
       'use client'

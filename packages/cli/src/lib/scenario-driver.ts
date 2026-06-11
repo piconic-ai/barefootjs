@@ -200,9 +200,29 @@ function rewriteLocalImports(js: string, chunkPath: string, inlined: Set<string>
     }
     const abs = resolve(resolved)
     if (inlined.has(abs)) {
-      // Its compiled client JS is already concatenated into this run — drop
-      // the whole statement; the declarations share the joined module scope.
-      edits.push({ start: stmt.getStart(sf), end: stmt.getEnd(), text: '' })
+      // Its compiled client JS is already concatenated into this run, so the
+      // exported declarations share the joined module scope. Drop the
+      // statement — but an aliased binding (`import { setCount as update }`)
+      // needs a shim, because the joined scope declares the exported name,
+      // not the alias. `var` (not `const`) so two chunks aliasing the same
+      // local name don't turn into a redeclaration SyntaxError, matching the
+      // `var x = x ?? …` idiom of emitted module-level code.
+      const clause = stmt.importClause
+      if (clause && (clause.name || (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings)))) {
+        throw new Error(
+          `"${spec}" (imported by ${chunkPath}) uses a default or namespace import of a ` +
+            'sibling client file, which the dynamic scenario runner cannot bind after ' +
+            'inlining that file into the run. Import its exports by name, or use the ' +
+            'static budget (`bf debug profile <component>`), which needs no run.',
+        )
+      }
+      const shims: string[] = []
+      if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+        for (const el of clause.namedBindings.elements) {
+          if (el.propertyName) shims.push(`var ${el.name.text} = ${el.propertyName.text}`)
+        }
+      }
+      edits.push({ start: stmt.getStart(sf), end: stmt.getEnd(), text: shims.join('\n') })
     } else {
       edits.push({
         start: stmt.moduleSpecifier.getStart(sf),
