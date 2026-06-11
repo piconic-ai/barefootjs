@@ -62,6 +62,14 @@ runAdapterConformanceTests({
     // (`cn\`base \${tone()}\``) — same family as #1322 above and refused
     // via the same gate.
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
+    // #1467 demo corpus: the composed RadioGroup sibling builds its
+    // context-provider value as an object literal carrying arrow-function
+    // members (`{ value: currentValue, onValueChange: (v) => {…} }`),
+    // which has no EP lowering — refused via the same `isSupported`
+    // expression gate as `tagged-template-classname` above. Hono / Go
+    // render the fixture to parity; the real composed hydration runs in
+    // the fixture-hydrate layer.
+    'radio-group': [{ code: 'BF101', severity: 'error' }],
     // #1443: `[a, b].filter(Boolean).join(' ')` (the registry Slot's
     // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.
     // No BF101 expected — pinned positively via the

@@ -73,6 +73,14 @@ runAdapterConformanceTests({
     // above — refused with BF101 for the identical Kolon engine reason, not a
     // render-mismatch (so it's pinned here, not in `skipJsx`).
     'kbd': [{ code: 'BF101', severity: 'error' }],
+    // #1467 demo corpus: the composed RadioGroup sibling builds its
+    // context-provider value as an object literal carrying arrow-function
+    // members (`{ value: currentValue, onValueChange: (v) => {…} }`),
+    // which has no Kolon lowering — same `isSupported` expression gate as
+    // mojo's pin for this fixture. (Locally-green-without-perl caveat:
+    // the BF101 fires at child compile, before the perl-availability
+    // check, so this pin is what keeps perl-equipped CI green too.)
+    'radio-group': [{ code: 'BF101', severity: 'error' }],
     // `style-3-signals` / `style-object-dynamic` no longer pinned — a
     // `style={{ … }}` object literal now lowers to a CSS string with dynamic
     // values interpolated (`background-color:<: $color :>;padding:8px`) via

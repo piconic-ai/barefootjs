@@ -24,6 +24,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 import {
   createFixture,
   type InteractionStep,
@@ -46,10 +47,21 @@ export const SHARED_COMPONENTS_DIR = resolve(
  * fixture's `sourceRoot` to absorb that difference.
  */
 export const UI_COMPONENTS_DIR = resolve(HERE, '../../../ui/components/ui')
+/**
+ * Third source root (#1467 Phase 2b follow-up / Phase 2c): composed demo
+ * components under `site/ui/components/<name>.tsx`. These are the only
+ * sources that compose multiple `site/ui` primitives with JSX children +
+ * context propagation (`<RadioGroup><RadioGroupItem/></RadioGroup>`),
+ * which the single-root `ui` fixture model can't express. Demo sources
+ * import their primitives through the site-wide `@ui/components/ui/<name>`
+ * alias rather than the `../<name>` relative shape ui siblings use, so
+ * sibling inference resolves both shapes (see `uiSiblingBasename`).
+ */
+export const DEMO_COMPONENTS_DIR = resolve(HERE, '../../../site/ui/components')
 export const SNAPSHOT_DIR = resolve(HERE, '__snapshots__')
 
 /** Which source-root layout a fixture's component is loaded from. */
-export type FixtureSourceRoot = 'shared' | 'ui'
+export type FixtureSourceRoot = 'shared' | 'ui' | 'demo'
 
 export interface SharedFixtureSpec {
   /** Fixture id; also the `__snapshots__/<id>.{html,client.js}` basename. */
@@ -58,8 +70,12 @@ export interface SharedFixtureSpec {
    * Source-root layout (#1467 Phase 2a). `'shared'` (default) resolves
    * `integrations/shared/components/<sourceFile>.tsx`; `'ui'` resolves
    * `ui/components/ui/<sourceFile>/index.tsx` and auto-infers sibling
-   * `../<name>` imports. `defineUiFixture` sets this for you, so fixture
-   * files using that helper never need to spell it out.
+   * `../<name>` imports; `'demo'` resolves
+   * `site/ui/components/<sourceFile>.tsx` and additionally infers the
+   * `@ui/components/ui/<name>` alias imports demo sources compose
+   * primitives with. `defineUiFixture` / `defineDemoFixture` set this
+   * for you, so fixture files using those helpers never need to spell
+   * it out.
    */
   sourceRoot?: FixtureSourceRoot
   /**
@@ -116,9 +132,23 @@ export function componentPath(
   root: FixtureSourceRoot,
   basename: string,
 ): string {
-  return root === 'ui'
-    ? resolve(UI_COMPONENTS_DIR, basename, 'index.tsx')
-    : resolve(SHARED_COMPONENTS_DIR, `${basename}.tsx`)
+  switch (root) {
+    case 'ui':
+      return resolve(UI_COMPONENTS_DIR, basename, 'index.tsx')
+    case 'demo':
+      return resolve(DEMO_COMPONENTS_DIR, `${basename}.tsx`)
+    case 'shared':
+      return resolve(SHARED_COMPONENTS_DIR, `${basename}.tsx`)
+  }
+}
+
+/**
+ * Source root a fixture's *siblings* are loaded from. Demo fixtures
+ * compose `site/ui` primitives, so their sibling graph lives entirely
+ * under the `ui` root; `shared` fixtures keep their flat layout.
+ */
+export function siblingSourceRoot(root: FixtureSourceRoot): FixtureSourceRoot {
+  return root === 'shared' ? 'shared' : 'ui'
 }
 
 /** Absolute path to a fixture's root component source. */
@@ -127,14 +157,26 @@ export function componentSourcePath(spec: SharedFixtureSpec): string {
 }
 
 /**
- * The relative-import specifier a parent uses to reference a sibling,
+ * The import specifier a fixture's *root* uses to reference a sibling,
  * used as the `components` map key so `renderHonoComponent`'s
  * import-strip filter recognises the line and inlines the child for SSR.
  * Shared: `./<name>.tsx` (matches `import Child from './Child'`). UI:
- * `../<name>` (matches `import { Slot } from '../slot'`).
+ * `../<name>` (matches `import { Slot } from '../slot'`). Demo:
+ * `@ui/components/ui/<name>` (the site-wide alias).
+ *
+ * Only the `additionalComponents` escape hatch still needs this guess —
+ * auto-inferred siblings carry the specifier they were actually
+ * imported by (see `resolveSiblingSpecifiers`).
  */
 export function siblingImportKey(root: FixtureSourceRoot, basename: string): string {
-  return root === 'ui' ? `../${basename}` : `./${basename}.tsx`
+  switch (root) {
+    case 'ui':
+      return `../${basename}`
+    case 'demo':
+      return `${UI_ALIAS_PREFIX}${basename}`
+    case 'shared':
+      return `./${basename}.tsx`
+  }
 }
 
 /**
@@ -150,74 +192,166 @@ export function uiChildModulePath(id: string, basename: string): string {
 }
 
 /**
- * Map of import specifier → committed pre-compiled module path for a UI
- * fixture's siblings, or `undefined` when not a UI fixture / no siblings
- * / the modules haven't been generated yet. Existence-tolerant like the
- * `expectedHtml` read: pre-snapshot the fixture simply has no module map
- * (and the runner skips it for lack of `expectedHtml` anyway).
+ * Map of import specifier → committed pre-compiled module path for a
+ * UI/demo fixture's siblings, or `undefined` when shared-rooted / no
+ * siblings / the modules haven't been generated yet. Existence-tolerant
+ * like the `expectedHtml` read: pre-snapshot the fixture simply has no
+ * module map (and the runner skips it for lack of `expectedHtml` anyway).
+ *
+ * A sibling reachable through several specifiers (e.g. the demo root's
+ * `@ui/components/ui/icon` alias AND another sibling's `../icon`
+ * relative) registers its module under every one of them, so each
+ * importer's line is re-anchored regardless of which shape it used.
  */
 export function resolveSiblingModuleMap(
   spec: SharedFixtureSpec,
 ): Record<string, string> | undefined {
-  if (fixtureSourceRoot(spec) !== 'ui') return undefined
+  if (fixtureSourceRoot(spec) === 'shared') return undefined
   const out: Record<string, string> = {}
-  for (const base of resolveSiblingBasenames(spec)) {
+  for (const [base, specifiers] of resolveSiblingSpecifiers(spec)) {
     const modPath = uiChildModulePath(spec.id, base)
-    if (existsSync(modPath)) out[siblingImportKey('ui', base)] = modPath
+    if (!existsSync(modPath)) continue
+    for (const specifier of specifiers) out[specifier] = modPath
   }
   return Object.keys(out).length > 0 ? out : undefined
 }
 
-// `import { X } from '../<name>'` — value imports of a single-segment
-// sibling under the UI root. Excludes `import type` (erased, no runtime
-// dep) and deeper paths like `../../../types` (the char class stops at
-// the first `/`, so `../../../types` never matches).
-const UI_SIBLING_IMPORT_RE =
-  /^[ \t]*import\s+(?!type\b)[^;\n]*?\sfrom\s+['"]\.\.\/([a-zA-Z0-9_-]+)['"]/gm
+/** Alias prefix `site/ui` sources use to import `ui/components/ui/<name>` roots. */
+const UI_ALIAS_PREFIX = '@ui/components/ui/'
 
-function inferUiSiblingImports(source: string): string[] {
-  return [...source.matchAll(UI_SIBLING_IMPORT_RE)].map(m => m[1])
+/**
+ * Value-import specifiers of a .tsx source, via a TS AST walk over the
+ * top-level statements (the repo-wide idiom — regex import-matching
+ * false-positives inside literals/comments and misses multi-line
+ * clauses, which demo sources actually use). `import type` is erased at
+ * runtime and carries no hydration dependency, so type-only clauses are
+ * excluded.
+ */
+function valueImportSpecifiers(source: string): string[] {
+  const sf = ts.createSourceFile(
+    'module.tsx',
+    source,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ false,
+    ts.ScriptKind.TSX,
+  )
+  const out: string[] = []
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (stmt.importClause?.isTypeOnly) continue
+    if (ts.isStringLiteral(stmt.moduleSpecifier)) out.push(stmt.moduleSpecifier.text)
+  }
+  return out
 }
 
 /**
- * Transitive closure of sibling components a fixture's root depends on.
- * For `ui` fixtures this is auto-inferred from `../<name>` imports
- * (root + each discovered sibling, breadth-first), unioned with any
- * explicit `additionalComponents`. For `shared` fixtures it is the
- * explicit list verbatim. Sorted for deterministic ordering.
+ * Resolve an import specifier to the `ui/components/ui/<name>` sibling it
+ * targets, or `undefined` for non-sibling imports. Two shapes resolve:
+ *
+ *   - `../<name>` — the relative shape ui siblings use among themselves;
+ *     only meaningful when the importer itself lives under the ui root
+ *     (from a demo source `../<name>` would point at `site/ui/<name>`).
+ *     Single path segment only — `../../../types` never matches.
+ *   - `@ui/components/ui/<name>` — the site-wide alias demo sources use.
+ */
+function uiSiblingBasename(
+  specifier: string,
+  importerIsUiComponent: boolean,
+): string | undefined {
+  if (specifier.startsWith(UI_ALIAS_PREFIX)) {
+    const base = specifier.slice(UI_ALIAS_PREFIX.length)
+    return /^[a-zA-Z0-9_-]+$/.test(base) ? base : undefined
+  }
+  if (!importerIsUiComponent) return undefined
+  const m = /^\.\.\/([a-zA-Z0-9_-]+)$/.exec(specifier)
+  return m ? m[1] : undefined
+}
+
+/**
+ * Transitive sibling graph of a fixture: ui-component basename → every
+ * import specifier the fixture's module graph references it by, both
+ * sorted for deterministic ordering.
+ *
+ * For `ui`/`demo` fixtures the graph is auto-inferred breadth-first from
+ * the root's value imports and each discovered sibling's own, unioned
+ * with the explicit `additionalComponents` escape hatch (keyed by the
+ * root-shaped `siblingImportKey`). For `shared` fixtures it is the
+ * explicit list verbatim (the flat layout has no reliable import shape
+ * to infer).
+ */
+export function resolveSiblingSpecifiers(
+  spec: SharedFixtureSpec,
+): Map<string, string[]> {
+  const root = fixtureSourceRoot(spec)
+  const found = new Map<string, Set<string>>()
+  const queue: string[] = []
+  const add = (base: string, specifier: string): void => {
+    // A ui root importing itself can't happen via `../<name>`/alias, but
+    // guard against an explicit-list entry naming the root.
+    if (root === 'ui' && base === sourceFileBasename(spec)) return
+    let specifiers = found.get(base)
+    if (!specifiers) {
+      specifiers = new Set()
+      found.set(base, specifiers)
+      queue.push(base)
+    }
+    specifiers.add(specifier)
+  }
+
+  for (const base of spec.additionalComponents ?? []) {
+    if (root === 'shared') {
+      found.set(base, new Set([siblingImportKey(root, base)]))
+    } else {
+      add(base, siblingImportKey(root, base))
+    }
+  }
+  if (root !== 'shared') {
+    const scan = (source: string, importerIsUiComponent: boolean): void => {
+      for (const specifier of valueImportSpecifiers(source)) {
+        const base = uiSiblingBasename(specifier, importerIsUiComponent)
+        if (base) add(base, specifier)
+      }
+    }
+    scan(readFileSync(componentSourcePath(spec), 'utf8'), root === 'ui')
+    while (queue.length > 0) {
+      scan(readFileSync(componentPath('ui', queue.pop()!), 'utf8'), true)
+    }
+  }
+
+  return new Map(
+    [...found]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([base, specifiers]) => [base, [...specifiers].sort()]),
+  )
+}
+
+/**
+ * Transitive closure of sibling components a fixture's root depends on,
+ * sorted. See `resolveSiblingSpecifiers` for the inference rules.
  */
 export function resolveSiblingBasenames(spec: SharedFixtureSpec): string[] {
-  const explicit = spec.additionalComponents ?? []
-  if (fixtureSourceRoot(spec) !== 'ui') return [...explicit]
-
-  const root = sourceFileBasename(spec)
-  const seen = new Set<string>()
-  const result: string[] = []
-  const stack: string[] = [...explicit]
-  stack.push(...inferUiSiblingImports(readFileSync(componentSourcePath(spec), 'utf8')))
-  while (stack.length > 0) {
-    const name = stack.pop()!
-    if (name === root || seen.has(name)) continue
-    seen.add(name)
-    result.push(name)
-    stack.push(...inferUiSiblingImports(readFileSync(componentPath('ui', name), 'utf8')))
-  }
-  return result.sort()
+  return [...resolveSiblingSpecifiers(spec).keys()]
 }
 
 /**
  * `components` map (import-key → source) for the renderer and fixture,
- * or `undefined` when the root has no siblings.
+ * or `undefined` when the root has no siblings. Each sibling appears
+ * exactly once — keyed by its first (sorted) specifier — because the CSR
+ * harness compiles every map entry and a duplicate would register the
+ * same component's client JS twice.
  */
 export function resolveSiblingComponents(
   spec: SharedFixtureSpec,
 ): Record<string, string> | undefined {
   const root = fixtureSourceRoot(spec)
-  const basenames = resolveSiblingBasenames(spec)
-  if (basenames.length === 0) return undefined
+  const entries = resolveSiblingSpecifiers(spec)
+  if (entries.size === 0) return undefined
   const out: Record<string, string> = {}
-  for (const base of basenames) {
-    out[siblingImportKey(root, base)] = readFileSync(componentPath(root, base), 'utf8')
+  for (const [base, specifiers] of entries) {
+    out[specifiers[0]] = readFileSync(
+      componentPath(siblingSourceRoot(root), base),
+      'utf8',
+    )
   }
   return out
 }
@@ -294,6 +428,22 @@ export function defineSharedFixture(spec: SharedFixtureSpec): JSXFixture {
  */
 export function defineUiFixture(spec: SharedFixtureSpec): JSXFixture {
   spec.sourceRoot = 'ui'
+  return defineFixture(spec)
+}
+
+/**
+ * Define a fixture sourced from the composed demo corpus
+ * (`site/ui/components/<name>.tsx`) — #1467 Phase 2c. Pins
+ * `sourceRoot: 'demo'` the same way `defineUiFixture` pins `'ui'` (the
+ * snapshot generator reads the mutated `spec` export). Demo sources are
+ * the corpus shape for components whose interactive surface only exists
+ * composed (`<RadioGroup><RadioGroupItem/></RadioGroup>`, tabs, dialog…):
+ * sibling primitives are auto-inferred from the root's
+ * `@ui/components/ui/<name>` alias imports plus each sibling's own
+ * transitive `../<name>` relative imports.
+ */
+export function defineDemoFixture(spec: SharedFixtureSpec): JSXFixture {
+  spec.sourceRoot = 'demo'
   return defineFixture(spec)
 }
 
