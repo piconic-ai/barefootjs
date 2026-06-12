@@ -75,6 +75,14 @@ export interface RenderOptions {
   /** Additional component files (filename → source) */
   components?: Record<string, string>
   /**
+   * Pre-compiled child SSR modules (import specifier → path) — consumed
+   * by the Hono renderer; here only the KEYS matter (#1896): they carry
+   * EVERY specifier a sibling is reachable by (`@ui/components/ui/icon`
+   * and `../icon`), whereas `components` keys carry one per sibling, so
+   * the sibling-import recognition uses both.
+   */
+  componentModules?: Record<string, string>
+  /**
    * Explicit component to render when `source` declares multiple
    * exports (e.g. `ReactiveProps.tsx` → `PropsReactivityComparison`).
    * Mirrors the Hono reference's `componentName`; omitted for
@@ -84,7 +92,7 @@ export interface RenderOptions {
 }
 
 export async function renderGoTemplateComponent(options: RenderOptions): Promise<string> {
-  const { source, adapter, props, components, componentName: requestedName } = options
+  const { source, adapter, props, components, componentModules, componentName: requestedName } = options
 
   if (!adapter.generateTypes) {
     throw new Error('Go Template adapter must implement generateTypes()')
@@ -109,8 +117,19 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   // Import specifiers the harness holds child sources for — recognised as
   // sibling imports alongside relative ones (see
   // `collectImportedComponentNames`).
-  const childSpecifiers = new Set(Object.keys(components ?? {}))
+  const childSpecifiers = new Set([
+    ...Object.keys(components ?? {}),
+    ...Object.keys(componentModules ?? {}),
+  ])
   if (components) {
+    // Two passes (#1896): a child file may itself render a component from a
+    // *sibling* child file (data-table's `checkbox` renders `<CheckIcon
+    // data-slot=.../>` from `icon`). `generateTypes` routes such non-param
+    // attributes through the target's registered shape, so EVERY child's
+    // shape must be registered before ANY child's types are generated —
+    // otherwise processing order decides whether the attribute lands in
+    // the rest bag or becomes an invalid hyphenated Go field.
+    const compiledChildIrs: Array<{ ir: ComponentIR; defines: Map<string, string> }> = []
     for (const [filename, childSource] of Object.entries(components)) {
       const childResult = compileJSX(childSource, filename, { adapter, outputIR: true })
       const childErrors = childResult.errors.filter(e => e.severity === 'error')
@@ -124,26 +143,29 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
       const childIrFiles = childResult.files.filter(f => f.type === 'ir')
       for (const childIrFile of childIrFiles) {
         const childIR = JSON.parse(childIrFile.content) as ComponentIR
-        const name = childIR.metadata.componentName
         // (#checkbox) Register each child's cross-component shape so the
         // parent's static-child-init codegen can route a non-param attribute
         // (`<CheckIcon data-slot=.../>`) into the child's rest bag instead of
         // an invalid hyphenated Go field. No-op on adapters without the hook.
         registerChildShape(adapter, childIR)
-        let typeBlock: string | null = adapter.generateTypes!(childIR)
-        if (typeBlock) {
-          // Strip package declaration and imports — will be merged into main types
-          typeBlock = typeBlock.replace(/^package \w+\n*/, '')
-          typeBlock = typeBlock.replace(/import\s*\([^)]*\)\n*/g, '')
-          typeBlock = typeBlock.replace(/\t"math\/rand"\n/g, '')
-          typeBlock = typeBlock.trim()
-        }
-        childArtifacts.set(name, {
-          define: defineBlocks.get(name) ?? '',
-          typeBlock,
-          importedNames: collectImportedComponentNames(childIR, childSpecifiers),
-        })
+        compiledChildIrs.push({ ir: childIR, defines: defineBlocks })
       }
+    }
+    for (const { ir: childIR, defines } of compiledChildIrs) {
+      const name = childIR.metadata.componentName
+      let typeBlock: string | null = adapter.generateTypes!(childIR)
+      if (typeBlock) {
+        // Strip package declaration and imports — will be merged into main types
+        typeBlock = typeBlock.replace(/^package \w+\n*/, '')
+        typeBlock = typeBlock.replace(/import\s*\([^)]*\)\n*/g, '')
+        typeBlock = typeBlock.replace(/\t"math\/rand"\n/g, '')
+        typeBlock = typeBlock.trim()
+      }
+      childArtifacts.set(name, {
+        define: defines.get(name) ?? '',
+        typeBlock,
+        importedNames: collectImportedComponentNames(childIR, childSpecifiers),
+      })
     }
   }
 
@@ -188,7 +210,13 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   // child-collection loop above).
   const reachableChildNames = new Set<string>()
   {
-    const queue = [...collectImportedComponentNames(ir, childSpecifiers)]
+    // Seed from EVERY component of the parent source, not just the entry:
+    // the siblings' type blocks are merged into the unit too, and their
+    // constructors reference their own child components' Props types
+    // (#1896 — dropdown-menu-demo's profile sibling uses SettingsIcon,
+    // which the entry export never imports... the import list is per-file,
+    // but per-IR metadata can differ after analysis; union them all).
+    const queue = irs.flatMap(i => collectImportedComponentNames(i, childSpecifiers))
     while (queue.length > 0) {
       const name = queue.shift()!
       if (reachableChildNames.has(name)) continue
@@ -220,7 +248,8 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
   // Remove "math/rand" import from types (randomID is defined in main.go)
   goTypes = goTypes.replace(/\t"math\/rand"\n/, '')
 
-  // Append sibling-component type definitions (multi-component source).
+  // Collect sibling-component type definitions (multi-component source).
+  const siblingTypeBlocks: string[] = []
   for (const siblingIR of irs) {
     if (siblingIR === ir) continue
     let siblingTypes = adapter.generateTypes(siblingIR)
@@ -228,19 +257,27 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     siblingTypes = siblingTypes.replace(/^package \w+\n*/, '')
     siblingTypes = siblingTypes.replace(/import\s*\([^)]*\)\n*/g, '')
     siblingTypes = siblingTypes.replace(/\t"math\/rand"\n/g, '')
-    goTypes += '\n\n' + siblingTypes.trim()
+    siblingTypeBlocks.push(siblingTypes.trim())
   }
 
-  // Append child type definitions. A multi-component child file (e.g.
-  // `radio-group` exporting RadioGroup + RadioGroupItem) emits its
-  // module-scope shared types (the context-value struct) once per
-  // component IR — deduplicate across the child blocks with the same
-  // helper `bf build` uses, or the merged unit fails with
-  // `redeclared in this block`. Scoped to the child blocks (not the
-  // whole `goTypes`): the dedup helper re-inserts types at the top of
-  // its input, which must not jump above the entry's `package` clause.
-  if (childTypeBlocks.length > 0) {
-    goTypes += '\n\n' + deduplicateGoTypes(childTypeBlocks.join('\n\n'))
+  // Merge entry + sibling + child type blocks through the same
+  // `deduplicateGoTypes` helper `bf build` uses. Duplicates arise in two
+  // ways (#1896): a multi-component file emits its module-scope shared
+  // types (a context-value struct, a data `type Payment = …`) once per
+  // component IR — both across the entry source's own sibling exports
+  // (data-table-demo's `Payment redeclared`) and across a child file's
+  // components (radio-group's context value). The dedup helper re-inserts
+  // type definitions at the top of its input, so the entry's
+  // `package main` + import header is split off first and re-prepended.
+  if (siblingTypeBlocks.length > 0 || childTypeBlocks.length > 0) {
+    const headerMatch = goTypes.match(/^package main\n+import \([\s\S]*?\)\n+/)
+    const header = headerMatch ? headerMatch[0] : ''
+    const body = goTypes.slice(header.length)
+    goTypes =
+      header +
+      deduplicateGoTypes(
+        [body, ...siblingTypeBlocks, ...childTypeBlocks].join('\n\n'),
+      )
   }
 
   // Sibling / child type blocks have their own `import (...)` stripped above
@@ -334,7 +371,11 @@ func randomID(n int) string {
 }
 
 func main() {
-	tmpl := template.Must(template.New("").Funcs(bfTestFuncMap()).Parse(tmplContent))
+	// Two-step Funcs: bf_tmpl (children defines, #1896) needs a closure
+	// over the same template set the defines are parsed into.
+	root := template.New("").Funcs(bfTestFuncMap())
+	root = root.Funcs(bf.TemplateFuncMap(root))
+	tmpl := template.Must(root.Parse(tmplContent))
 	props := New${componentName}Props(${componentName}Input{
 		ScopeID: ${JSON.stringify(rootScopeId)},
 ${propsInit}
@@ -372,7 +413,23 @@ ${propsInit}
 
     const exitCode = await proc.exited
     if (exitCode !== 0) {
-      throw new Error(`go run failed (exit ${exitCode}):\n${stderr}`)
+      // Append the offending `types.go` lines (with two lines of context)
+      // for each `./types.go:NN` the compiler reported — the temp dir is
+      // deleted in `finally`, so without this the merged unit that
+      // actually failed is unrecoverable (#1896 debugging aid).
+      const typeLines = goTypes.split('\n')
+      const context: string[] = []
+      const seen = new Set<number>()
+      for (const m of stderr.matchAll(/\.\/types\.go:(\d+)/g)) {
+        const n = Number(m[1])
+        for (let i = Math.max(1, n - 2); i <= Math.min(typeLines.length, n + 2); i++) {
+          if (seen.has(i)) continue
+          seen.add(i)
+          context.push(`${i === n ? '>' : ' '} types.go:${i}: ${typeLines[i - 1]}`)
+        }
+      }
+      const detail = context.length > 0 ? `\n${context.join('\n')}` : ''
+      throw new Error(`go run failed (exit ${exitCode}):\n${stderr}${detail}`)
     }
 
     return stdout
@@ -478,6 +535,10 @@ function registerChildShape(adapter: TemplateAdapter, ir: ComponentIR): void {
  */
 const MERGED_STDLIB_IMPORTS: Array<{ path: string; usage: RegExp }> = [
   { path: 'fmt', usage: /\bfmt\./ },
+  // A child whose constructor bakes static JSX children references
+  // `template.HTML(...)` (#1896 — the `command` demo's Kbd child); the
+  // entry component may not use html/template itself.
+  { path: 'html/template', usage: /\btemplate\.HTML\(/ },
 ]
 
 /**

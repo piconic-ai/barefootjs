@@ -388,13 +388,45 @@ function buildUnsupportedSuggestion(support: SupportResult): string {
   return `${support.reason}\n\n${GO_REMEDIATION_OPTIONS}`
 }
 
+/**
+ * Parenthesize a compound Go template argument (`or .Checked false`) so a
+ * primitive call reads it as ONE argument — unwrapped, the parser splits
+ * it into three and `bf_string` fails with "want 1 got 3" (#1896,
+ * DropdownMenuCheckboxItem's `String(props.checked ?? false)`).
+ */
+function wrapGoArg(arg: string): string {
+  if (!/\s/.test(arg)) return arg
+  if (arg.startsWith('(') && arg.endsWith(')')) return arg
+  return `(${arg})`
+}
+
+/**
+ * Make an equality comparison string-tolerant when exactly one side is a
+ * Go string literal (#1896): JS `sorted === 'asc'` is loosely false for
+ * `sorted = false`, but Go's template `eq` ERRORS on bool-vs-string
+ * (`incompatible types for comparison` — DataTableColumnHeader's
+ * `'asc' | 'desc' | false` union prop). Routing the non-literal side
+ * through `bf_string` preserves JS comparison semantics for every
+ * concrete type while keeping same-kind comparisons untouched.
+ */
+function stringTolerantEqOperands(l: string, r: string): [string, string] {
+  const isStrLit = (x: string) => /^"(?:[^"\\]|\\.)*"$/.test(x)
+  if (isStrLit(l) === isStrLit(r)) return [l, r]
+  // Keep `wrapGoArg`'s parentheses: a compound operand must reach
+  // `bf_string` as ONE argument — `(bf_string (or .Placement "top"))`,
+  // not `(bf_string or .Placement "top")` (which the template parser
+  // reads as three arguments and fails at runtime).
+  const wrap = (x: string) => (isStrLit(x) ? x : `(bf_string ${wrapGoArg(x)})`)
+  return [wrap(l), wrap(r)]
+}
+
 const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
-  'JSON.stringify': { arity: 1, emit: (args) => `bf_json ${args[0]}` },
-  'String':         { arity: 1, emit: (args) => `bf_string ${args[0]}` },
-  'Number':         { arity: 1, emit: (args) => `bf_number ${args[0]}` },
-  'Math.floor':     { arity: 1, emit: (args) => `bf_floor ${args[0]}` },
-  'Math.ceil':      { arity: 1, emit: (args) => `bf_ceil ${args[0]}` },
-  'Math.round':     { arity: 1, emit: (args) => `bf_round ${args[0]}` },
+  'JSON.stringify': { arity: 1, emit: (args) => `bf_json ${wrapGoArg(args[0])}` },
+  'String':         { arity: 1, emit: (args) => `bf_string ${wrapGoArg(args[0])}` },
+  'Number':         { arity: 1, emit: (args) => `bf_number ${wrapGoArg(args[0])}` },
+  'Math.floor':     { arity: 1, emit: (args) => `bf_floor ${wrapGoArg(args[0])}` },
+  'Math.ceil':      { arity: 1, emit: (args) => `bf_ceil ${wrapGoArg(args[0])}` },
+  'Math.round':     { arity: 1, emit: (args) => `bf_round ${wrapGoArg(args[0])}` },
 }
 
 export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx> {
@@ -467,6 +499,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private componentName: string = ''
   private options: Required<GoTemplateAdapterOptions>
   private inLoop: boolean = false
+  /**
+   * Companion `{{define "<Component>__children_<slot>"}}` blocks queued
+   * while rendering the template body (#1896): JSX children passed to an
+   * imported child component that contain template actions (nested
+   * components, dynamic text) can't be baked to a static `Children`
+   * string — they render through a per-call-site define executed via
+   * `bf_tmpl` with the PARENT's data, and the result is injected into
+   * the child props with `bf_with_children`. Flushed after the main
+   * define in `generate()`.
+   */
+  private pendingChildrenDefines: Array<{ name: string; content: string }> = []
   private loopParamStack: string[] = []
   private loopVarRefCount: Map<string, number> = new Map()
   /** Stack of destructure-param binding maps (binding name → Go accessor on the
@@ -475,6 +518,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *  refusing with BF104. (#1310) */
   private loopBindingStack: Array<Map<string, string>> = []
   private errors: CompilerError[] = []
+  /** The current IR's memos, stashed like `localConstants` so nested memo
+   *  resolution (a ternary memo whose condition is another memo, #1896)
+   *  can recurse without threading the list through every signature. */
+  private currentMemos: Array<{ name: string; computation: string; deps: string[] }> = []
   private propsObjectName: string | null = null
   /**
    * Component-scoped rest binding identifier (`function({ a, ...rest }: P)`
@@ -598,10 +645,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.componentName = ir.metadata.componentName
     this.errors = []
     this.templateVarCounter = 0
+    this.pendingChildrenDefines = []
     this.propsObjectName = ir.metadata.propsObjectName
     this.restPropsName = ir.metadata.restPropsName ?? null
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.currentMemos = ir.metadata.memos ?? []
     this.contextConsumers = collectContextConsumers(ir.metadata)
     // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
     // before computing the nillable set / rendering, so the synthetic params
@@ -648,7 +697,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ? ''
       : this.generateScriptRegistrations(ir, options?.scriptBaseName)
 
-    const template = `{{define "${this.componentName}"}}\n${scriptRegistrations}${templateBody}\n{{end}}\n`
+    let template = `{{define "${this.componentName}"}}\n${scriptRegistrations}${templateBody}\n{{end}}\n`
+    // Flush the companion children defines (#1896) — they execute with
+    // the parent's data via `bf_tmpl`, so they belong to this
+    // component's template output.
+    for (const d of this.pendingChildrenDefines) {
+      template += `{{define "${d.name}"}}${d.content}{{end}}\n`
+    }
     const types = this.generateTypes(ir)
 
     // Merge collected errors into IR errors
@@ -958,12 +1013,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // round-tripped IR, so this must be applied here too; the method is
     // idempotent. `propsObjectName` is needed by the scan.
     this.propsObjectName = ir.metadata.propsObjectName
+    // Mirror `generate()` for the rest binding too (#1896):
+    // `classifySpreadBagSource` decides whether a `{...props}` slot is an
+    // Input-side bag by comparing against `this.restPropsName`. Without
+    // this line the stash holds whichever component `generate()` ran
+    // LAST — in a multi-component file (`tabs/index.tsx`) that is a
+    // different component, so the Input struct dropped its `Props`
+    // bag field while `NewXxxProps` (which reads the per-IR metadata)
+    // still emitted `Spread_N: in.Props` — `in.Props undefined`.
+    this.restPropsName = ir.metadata.restPropsName ?? null
     augmentInheritedPropAccesses(ir)
     // Mirror `generate()`: the `NewXxxProps` initializer computes memo SSR
     // values, which inline module string consts and resolve `Record`-index
     // lookups — both need the const tables populated on this standalone entry.
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.currentMemos = ir.metadata.memos ?? []
     this.contextConsumers = collectContextConsumers(ir.metadata)
     const lines: string[] = []
 
@@ -1048,7 +1113,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.generatePropsStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
 
     // Generate NewXxxProps function
-    this.generateNewPropsFunction(lines, ir, componentName, nestedComponents, spreadSlots)
+    this.generateNewPropsFunction(lines, ir, componentName, nestedComponents, spreadSlots, propTypeOverrides)
 
     // Imports come at the top, but `usesHtmlTemplate` is only known
     // after the body has been generated. Compose package + imports +
@@ -1492,9 +1557,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
 
-    // Add memos to Props (they are computed values needed for SSR)
+    // Add memos to Props (they are computed values needed for SSR).
+    // Skip a memo whose name collides with an already-emitted prop field
+    // (#1896): `const className = createMemo(() => props.className ?? '')`
+    // — common in site/ui (AccordionContent, PaginationLink) — would
+    // otherwise redeclare `ClassName`. Both readers (the memo usage and
+    // the inherited `props.className` access) lower to the same `.Field`,
+    // so the prop field carries the value; the memo's `?? fallback` is
+    // folded into the prop's initializer in `generateNewPropsFunction`.
     for (const memo of ir.metadata.memos) {
       const fieldName = this.capitalizeFieldName(memo.name)
+      if (propFieldNames.has(fieldName)) continue
       const jsonTag = this.toJsonTag(memo.name)
       // Memos that depend on number signals are usually numbers
       const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
@@ -1557,7 +1630,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
     componentName: string,
     nestedComponents: NestedComponentInfo[],
-    spreadSlots: SpreadSlotInfo[]
+    spreadSlots: SpreadSlotInfo[],
+    propTypeOverrides: Map<string, string>,
   ): void {
     const inputTypeName = `${componentName}Input`
     const propsTypeName = `${componentName}Props`
@@ -1654,6 +1728,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // doesn't silently shadow the JSX-side default. The same logic
     // applies for signal-side fallbacks (`createSignal(props.X ?? N)`)
     // via the hoisted variable from `propFallbackVars` (#1423).
+    // (#1896) A memo that shadows a prop of the same name
+    // (`const className = createMemo(() => props.className ?? '')`)
+    // shares the prop's struct field (see `generatePropsStruct`). Fold
+    // the memo's `?? fallback` into the prop's own initializer so the
+    // SSR value matches the memo semantics when the caller omits it.
+    const memoFallbacks = new Map<string, { goFallback: string; goType: string }>()
+    for (const memo of ir.metadata.memos) {
+      const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
+      const m = this.extractPropFallback(stripped)
+      if (!m) continue
+      if (this.capitalizeFieldName(m.propName) !== this.capitalizeFieldName(memo.name)) continue
+      // `applyGoFallback` emits a string-typed zero-value check; folding
+      // onto a prop whose Input field resolved to `interface{}` (e.g. a
+      // string-literal-union type the resolver can't narrow —
+      // PaginationLink's `size`) would not compile. Such props keep the
+      // plain `in.<Field>` assignment.
+      const param = ir.metadata.propsParams.find(
+        p => this.capitalizeFieldName(p.name) === this.capitalizeFieldName(memo.name),
+      )
+      if (!param) continue
+      const goType = this.resolvePropGoType(param, propTypeOverrides)
+      if (goType !== 'string' && goType !== 'interface{}') continue
+      memoFallbacks.set(this.capitalizeFieldName(memo.name), { goFallback: m.goFallback, goType })
+    }
+
     const propFieldNames = new Set<string>()
     for (const param of ir.metadata.propsParams) {
       const fieldName = this.capitalizeFieldName(param.name)
@@ -1662,9 +1761,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (hoisted) {
         lines.push(`\t\t${fieldName}: ${hoisted.varName},`)
       } else {
-        const fallback = this.goPropDefault(param.defaultValue)
-        if (fallback !== null) {
-          lines.push(`\t\t${fieldName}: ${this.applyGoFallback(`in.${fieldName}`, fallback)},`)
+        const paramDefault = this.goPropDefault(param.defaultValue)
+        const memoFold = memoFallbacks.get(fieldName)
+        if (paramDefault !== null) {
+          lines.push(`\t\t${fieldName}: ${this.applyGoFallback(`in.${fieldName}`, paramDefault)},`)
+        } else if (memoFold !== undefined && memoFold.goType === 'string') {
+          lines.push(`\t\t${fieldName}: ${this.applyGoFallback(`in.${fieldName}`, memoFold.goFallback)},`)
+        } else if (memoFold !== undefined) {
+          // interface{} field (#1896, PaginationLink's `size ?? 'icon'`):
+          // applyGoFallback's string zero-check doesn't compile here, so
+          // emit a nil/empty-tolerant wrapper instead.
+          lines.push(
+            `\t\t${fieldName}: func() interface{} { v := interface{}(in.${fieldName}); if v == nil || v == "" { return ${memoFold.goFallback} }; return v }(),`,
+          )
         } else {
           lines.push(`\t\t${fieldName}: in.${fieldName},`)
         }
@@ -1698,10 +1807,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${nested.name}s: ${varName},`)
     }
 
-    // Add memo initial values (computed from signal initial values)
+    // Add memo initial values (computed from signal initial values).
+    // Prop-shadowing memos were folded into the prop field above (#1896).
     const memoPropsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
     for (const memo of ir.metadata.memos) {
       const fieldName = this.capitalizeFieldName(memo.name)
+      if (propFieldNames.has(fieldName)) continue
       // (#checkbox) Pass the memo's inferred Go type so an unresolved
       // computation falls back to that type's zero value (`false` for a
       // boolean memo like `isChecked`), not the int `0`.
@@ -1768,6 +1879,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
           return
         }
+        // A hyphenated attribute (`aria-label`) can't be a Go struct
+        // field, and with no rest bag on the child there is nowhere to
+        // route it — the child has no `{...props}` spread, so the Hono
+        // reference drops it on the child's root too. Skip rather than
+        // emit invalid Go (#1896, data-table's selection sibling).
+        if (jsxName.includes('-')) return
         lines.push(`\t\t\t${this.capitalizeFieldName(jsxName)}: ${goValue},`)
       }
       // Add prop values
@@ -1935,6 +2052,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (cond.whenFalse) {
         this.collectNestedComponents(cond.whenFalse, result)
       }
+    } else if (node.type === 'if-statement') {
+      const stmt = node as IRIfStatement
+      this.collectNestedComponents(stmt.consequent, result)
+      if (stmt.alternate) {
+        this.collectNestedComponents(stmt.alternate, result)
+      }
+    } else if (node.type === 'component') {
+      // (#1896) JSX children passed to an imported component render via
+      // a companion define with the PARENT's data, so a keyed loop
+      // nested inside them (DataTablePreviewDemo's `sortedData().map(…)`
+      // inside `<TableBody>`) needs its `<Name>s` slice on THIS
+      // component's props like any other nested loop.
+      const comp = node as IRComponent
+      for (const child of comp.children) {
+        this.collectNestedComponents(child, result)
+      }
     }
   }
 
@@ -2070,6 +2203,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           childrenScopedHtmlExpr: this.extractScopedHtmlChildren(effectiveChildren),
           contextBindings: providerCtx.size > 0 ? providerCtx : undefined,
         })
+        // (#1896) Action-bearing JSX children render through a companion
+        // define with the PARENT's data (see `queueDynamicChildrenDefine`),
+        // so component instances nested inside them need their own
+        // `<Name>SlotN` fields + constructor inits on THIS component's
+        // props. Statically-baked children never contain components
+        // (any nested component renders a `{{template}}` action, which
+        // the bake extractors reject), so recursing is a no-op for them.
+        for (const child of effectiveChildren) {
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
+        }
       }
       // Recurse into Portal's children to find nested components
       if (comp.name === 'Portal' && comp.children) {
@@ -2098,6 +2241,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop, providerCtx)
       if (cond.whenFalse) {
         this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx)
+      }
+    } else if (node.type === 'if-statement') {
+      // (#1896) An early-return if-statement root (AccordionTrigger's
+      // asChild split) keeps its subtrees in consequent/alternate — the
+      // non-asChild branch's ChevronDownIcon needs its slot field like
+      // any other static child.
+      const stmt = node as IRIfStatement
+      this.collectStaticChildInstancesRecursive(stmt.consequent, result, inLoop, providerCtx)
+      if (stmt.alternate) {
+        this.collectStaticChildInstancesRecursive(stmt.alternate, result, inLoop, providerCtx)
       }
     } else if (node.type === 'provider') {
       // SSR context propagation: record the provider's value against its
@@ -2974,8 +3127,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         }
         const lines: string[] = []
         lines.push('func() string {')
-        lines.push(`\t\t\tk, _ := in.${fieldName}.(string)`)
-        lines.push('\t\t\tswitch k {')
+        // `fmt.Sprint` is type-tolerant: the key field is `interface{}`
+        // when the analyzer typed the prop, but a `string` when the
+        // shared inherited-prop augmentation synthesised it (#1896) — a
+        // `.(string)` assertion compiles for the former only.
+        this.usesFmt = true
+        lines.push(`\t\t\tswitch fmt.Sprint(in.${fieldName}) {`)
         for (const [k, v] of caseEntries) {
           lines.push(`\t\t\tcase ${JSON.stringify(k)}: return ${JSON.stringify(v)}`)
         }
@@ -2999,6 +3156,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     memos: { name: string; computation: string; deps: string[] }[],
     propsParams: { name: string }[]
   ): string | null {
+    // `getter() === 'lit'` / `!==` as a child-instance prop value
+    // (#1896 — accordion's `open={openItem() === 'item-1'}`): resolves
+    // to a Go bool when the signal's initial value is a string literal.
+    const cmpMatch = expr.match(
+      /^(\w+)\(\)\s*([!=]==?)\s*(?:'([^']*)'|(-?\d+(?:\.\d+)?))\s*$/,
+    )
+    if (cmpMatch) {
+      const [, depName, op, strLit, numLit] = cmpMatch
+      const signal = signals.find(sg => sg.getter === depName)
+      const init = signal?.initialValue.trim()
+      const initMatch = init !== undefined
+        ? /^(?:'([^'\\]*)'|(-?\d+(?:\.\d+)?))$/.exec(init)
+        : null
+      if (initMatch) {
+        const initVal = initMatch[1] ?? initMatch[2]
+        const litVal = strLit ?? numLit
+        // Same-kind comparison only (string vs string, number vs number).
+        const sameKind = (initMatch[1] !== undefined) === (strLit !== undefined)
+        if (sameKind) {
+          const equal = initVal === litVal
+          return String(op.startsWith('!') ? !equal : equal)
+        }
+      }
+    }
+
     // Match signal/memo getter calls like count(), doubled()
     const getterMatch = expr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\(\)$/)
     if (getterMatch) {
@@ -3010,10 +3192,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return this.convertInitialValue(signal.initialValue, signal.type, propsParams)
       }
 
-      // Check if it's a memo
+      // Check if it's a memo. Use the pattern-matching core: when no
+      // pattern applies, return null so the caller OMITS the field and
+      // Go's typed zero value applies (#1896).
       const memo = memos.find(m => m.name === getterName)
       if (memo) {
-        return this.computeMemoInitialValue(memo, signals, propsParams)
+        return this.computeMemoInitialValueOrNull(memo, signals, propsParams)
       }
     }
 
@@ -3256,6 +3440,47 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `string`, else the historical `0`).
     goType?: string,
   ): string {
+    const resolved = this.computeMemoInitialValueOrNull(
+      memo, signals, propsParams, propFallbackVars,
+    )
+    if (resolved !== null) return resolved
+    // Default: zero value for the memo's Go type (#checkbox). A boolean memo
+    // (`isChecked`) renders `false`, a string memo `""`; reference types
+    // (map / slice / interface / pointer) take `nil` — `0` is not
+    // assignable to them and broke the struct literal for a
+    // block-bodied string-building memo whose type inferred to
+    // `map[string]any` (#1896, select-demo's `summary`). Other types
+    // keep the historical int `0`.
+    if (goType === 'bool') return 'false'
+    if (goType === 'string') return '""'
+    if (
+      goType !== undefined &&
+      (goType.startsWith('map[') ||
+        goType.startsWith('[]') ||
+        goType.startsWith('*') ||
+        goType.includes('interface{}') ||
+        goType === 'any')
+    ) {
+      return 'nil'
+    }
+    return '0'
+  }
+
+  /**
+   * Pattern-matching core of `computeMemoInitialValue`: returns the
+   * memo's SSR initial value as a Go expression, or `null` when no
+   * pattern applies. Callers that have a typed field to fill use the
+   * zero-value-defaulting wrapper above; callers that can simply OMIT
+   * the field (a child-instance prop init — Go's zero values then apply
+   * with the right type for free) use this directly (#1896,
+   * data-table's `Checked: 0` into a bool field).
+   */
+  private computeMemoInitialValueOrNull(
+    memo: { name: string; computation: string; deps: string[] },
+    signals: { getter: string; initialValue: string }[],
+    propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar> = GoTemplateAdapter.EMPTY_PROP_FALLBACK_VARS,
+  ): string | null {
     const computation = memo.computation
     // Helper to pick the hoisted var (if any) or fall back to `in.X`.
     const propRef = (propName: string): string => {
@@ -3273,6 +3498,71 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // isn't representable, so the existing patterns below still apply.
     const tmplMemo = this.computeTemplateLiteralMemoInitialValue(computation, propsParams)
     if (tmplMemo !== null) return tmplMemo
+
+    // Pattern: () => getter() === 'lit' / !== 'lit' — a selection memo
+    // (#1896, tabs' `isAccountSelected = createMemo(() => activeTab() ===
+    // 'account')`). Resolves to a Go bool when the signal's initial value
+    // is itself a string literal.
+    const eqMatch = computation.match(
+      /^\(\)\s*=>\s*(\w+)\(\)\s*([!=]==?)\s*'([^']*)'\s*$/,
+    )
+    if (eqMatch) {
+      const [, depName, op, lit] = eqMatch
+      const signal = signals.find(sg => sg.getter === depName)
+      const initLit = signal ? /^'([^'\\]*)'$/.exec(signal.initialValue.trim()) : null
+      if (initLit) {
+        const equal = initLit[1] === lit
+        return String(op.startsWith('!') ? !equal : equal)
+      }
+    }
+
+    // Pattern: () => props.X ?? false — a boolean passthrough memo
+    // (#1896, SelectItem's `isDisabled`). Go's bool zero value IS the
+    // `?? false` fallback, so the raw input field carries the memo
+    // semantics exactly.
+    const boolPassthrough = computation.match(
+      /^\(\)\s*=>\s*props\.(\w+)\s*\?\?\s*false\s*$/,
+    )
+    if (boolPassthrough) {
+      return propRef(boolPassthrough[1])
+    }
+
+    // Pattern: () => cond() ? A : B where each branch is a module string
+    // const or a string literal, and `cond` is a signal/memo this
+    // resolver can already evaluate (#1896, SelectItem's
+    // `stateClasses`). Emits a Go conditional so the SSR value tracks
+    // the caller's input rather than a baked branch.
+    const ternMatch = computation.match(
+      /^\(\)\s*=>\s*(\w+)\(\)\s*\?\s*([\w$]+|'[^']*')\s*:\s*([\w$]+|'[^']*')\s*$/,
+    )
+    if (ternMatch) {
+      const [, condName, whenTrue, whenFalse] = ternMatch
+      const resolveBranch = (b: string): string | null => {
+        const lit = /^'([^']*)'$/.exec(b)
+        if (lit) return JSON.stringify(lit[1])
+        const constVal = this.moduleStringConsts.get(b)
+        return constVal !== undefined ? JSON.stringify(constVal) : null
+      }
+      const t = resolveBranch(whenTrue)
+      const f = resolveBranch(whenFalse)
+      if (t !== null && f !== null) {
+        let condGo: string | null = null
+        const condSignal = signals.find(sg => sg.getter === condName)
+        if (condSignal) {
+          condGo = this.getSignalInitialValueAsGo(condSignal.initialValue, propsParams, propFallbackVars)
+        } else {
+          const condMemo = (this.currentMemos ?? []).find(m => m.name === condName)
+          if (condMemo) {
+            condGo = this.computeMemoInitialValueOrNull(condMemo, signals, propsParams, propFallbackVars)
+          }
+        }
+        if (condGo === 'true') return t
+        if (condGo === 'false') return f
+        if (condGo !== null) {
+          return `func() string { if ${condGo} { return ${t} }; return ${f} }()`
+        }
+      }
+    }
 
     // Pattern: () => dep() * N or () => dep() + N etc.
     const arithmeticMatch = computation.match(/\(\)\s*=>\s*(\w+)\(\)\s*([*+\-/])\s*(\d+)/)
@@ -3352,12 +3642,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    // Default: zero value for the memo's Go type (#checkbox). A boolean memo
-    // (`isChecked`) renders `false`, a string memo `""`; otherwise the
-    // historical int `0`.
-    if (goType === 'bool') return 'false'
-    if (goType === 'string') return '""'
-    return '0'
+    return null
   }
 
   /**
@@ -3888,6 +4173,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   // ===========================================================================
 
   identifier(name: string): string {
+    // `undefined` / `null` inside a larger expression tree (a ternary
+    // branch like `props.isActive ? 'page' : undefined`, #1896
+    // pagination) renders as the empty string — the top-level
+    // `convertExpressionToGo` short-circuit doesn't see nested ones.
+    if (name === 'undefined' || name === 'null') return '""'
     // Module pure-string const (e.g. `const baseClasses = '...'` used in a
     // className template literal): inline the literal value rather than
     // emit `{{.BaseClasses}}` against a Props field that never exists.
@@ -3948,13 +4238,60 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private collectModuleStringConsts(constants: IRMetadata['localConstants']): Map<string, string> {
     const map = new Map<string, string>()
-    for (const c of constants ?? []) {
-      if (!c.isModule) continue
-      if (c.value === undefined) continue
-      const literal = this.parsePureStringLiteral(c.value)
-      if (literal !== null) map.set(c.name, literal)
+    const candidates = (constants ?? []).filter(
+      c => c.isModule && c.value !== undefined,
+    )
+    // Fixed-point: a module string const may be COMPOSED of other module
+    // string consts via a template literal (#1896 — radio-group's
+    // `itemClasses = \`\${itemBaseClasses} \${itemFocusClasses} …\``).
+    // Each pass resolves the consts whose dependencies resolved in an
+    // earlier pass; terminates when a pass adds nothing.
+    let progressed = true
+    while (progressed) {
+      progressed = false
+      for (const c of candidates) {
+        if (map.has(c.name)) continue
+        const literal =
+          this.parsePureStringLiteral(c.value!) ??
+          this.evalTemplateOfStringConsts(c.value!, map)
+        if (literal !== null) {
+          map.set(c.name, literal)
+          progressed = true
+        }
+      }
     }
     return map
+  }
+
+  /**
+   * Evaluate a template literal whose every interpolation is a bare
+   * identifier already present in `resolved` (a module string const) to
+   * its flat string value, else `null`. Companion to
+   * `parsePureStringLiteral` for the composed-const shape (#1896).
+   */
+  private evalTemplateOfStringConsts(
+    source: string,
+    resolved: ReadonlyMap<string, string>,
+  ): string | null {
+    const sf = ts.createSourceFile(
+      '__const.ts',
+      `const __x = (${source});`,
+      ts.ScriptTarget.Latest,
+      /*setParentNodes*/ false,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isVariableStatement(stmt)) return null
+    let init = stmt.declarationList.declarations[0]?.initializer
+    while (init && ts.isParenthesizedExpression(init)) init = init.expression
+    if (!init || !ts.isTemplateExpression(init)) return null
+    let out = init.head.text
+    for (const span of init.templateSpans) {
+      if (!ts.isIdentifier(span.expression)) return null
+      const value = resolved.get(span.expression.text)
+      if (value === undefined) return null
+      out += value + span.literal.text
+    }
+    return out
   }
 
   /**
@@ -4122,6 +4459,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return this.rootFieldRef(property)
     }
 
+    // Static property access on a module object-literal const
+    // (`variantClasses.ghost` in a class template literal, #1896
+    // pagination) resolves at compile time — same lookup as the
+    // bracket-index form in `resolveStaticRecordLiteralIndex`, reached
+    // here when the access is nested inside a larger ParsedExpr tree.
+    if (object.kind === 'identifier') {
+      const staticValue = this.resolveStaticRecordLiteralIndex(
+        `${object.name}.${property}`,
+      )
+      if (staticValue !== null) return staticValue
+    }
+
     // Inside a loop, the loop param variable refers to the current item
     // (dot). e.g. `msg.role` inside `{{range $_, $msg := .Messages}}` → `.Role`
     const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
@@ -4139,11 +4488,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const r = emit(right)
     switch (op) {
       case '===':
-      case '==':
-        return `eq ${l} ${r}`
+      case '==': {
+        const [el, er] = stringTolerantEqOperands(l, r)
+        return `eq ${el} ${er}`
+      }
       case '!==':
-      case '!=':
-        return `ne ${l} ${r}`
+      case '!=': {
+        const [el, er] = stringTolerantEqOperands(l, r)
+        return `ne ${el} ${er}`
+      }
       case '>':
         return `gt ${l} ${r}`
       case '<':
@@ -4212,7 +4565,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (part.type === 'string') {
         result += part.value
       } else {
-        result += `{{${emit(part.expr)}}}`
+        // A nested ternary emits a complete `{{if …}}…{{end}}` action
+        // chain (see `conditional` above) — wrapping it again produces
+        // `{{{{if …}}` and a template parse error (#1896, the tooltip
+        // open/closed class ternary with module-const branches). Same
+        // guard as `renderExpression`.
+        const e = emit(part.expr)
+        result += e.startsWith('{{') ? e : `{{${e}}}`
       }
     }
     return result
@@ -5266,6 +5625,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return '""'
     }
 
+    // `IDENT['key']` over a module object-literal const with a STRING
+    // LITERAL key is a fully static lookup — resolve it at compile time
+    // (#1896). The generic member lowering below would otherwise
+    // capitalize the bracket access into a field reference and emit an
+    // invalid hyphenated path (`strokePaths['chevron-down']` →
+    // `.StrokePaths.Chevron-down`, a template parse error).
+    const staticIndexed = this.resolveStaticRecordLiteralIndex(trimmed)
+    if (staticIndexed !== null) {
+      return staticIndexed
+    }
+
+    // A bare identifier bound to a literal const inlines at compile time
+    // (#1896 — pagination's `Page {currentPage()} of {totalPages}`:
+    // `totalPages` is a function-scope `const totalPages = 5`, not a
+    // prop, so the generic lowering would reference a nonexistent
+    // `.TotalPages` field). Only pure numeric / single-quoted-string
+    // initializers qualify; anything else may be runtime-dependent.
+    if (/^[A-Za-z_$][\w$]*$/.test(trimmed)) {
+      const litConst = (this.localConstants ?? []).find(c => c.name === trimmed)
+      if (litConst?.value !== undefined) {
+        const v = litConst.value.trim()
+        if (/^-?\d+(\.\d+)?$/.test(v)) return v
+        const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
+        if (strLit) return JSON.stringify(strLit[1])
+      }
+    }
+
     const parsed = parseExpression(trimmed)
     const support = isSupported(parsed)
 
@@ -5285,6 +5671,62 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     return this.renderParsedExpr(parsed)
+  }
+
+  /**
+   * Resolve `IDENT['key']` / `IDENT["key"]` where `IDENT` is a
+   * module-scope object-literal const and the key is a string literal —
+   * a compile-time-static lookup (the icon registry's
+   * `strokePaths['chevron-down']`, #1896). Returns the looked-up value
+   * as a Go literal (quoted string / bare number) usable inside a
+   * template action, or `null` for any other shape so the caller falls
+   * through to the generic lowering. The prop-keyed variant of the same
+   * pattern lives in `parseRecordIndexAccess` (shared with Mojo); this
+   * helper covers the literal-key case that parse rejects.
+   */
+  private resolveStaticRecordLiteralIndex(jsExpr: string): string | null {
+    const m =
+      /^([A-Za-z_$][\w$]*)\[\s*(?:'([^']*)'|"([^"]*)")\s*\]$/.exec(jsExpr) ??
+      // Property-access form of the same static lookup
+      // (`variantClasses.ghost`, #1896 pagination) — only when the base
+      // resolves to a module object-literal const below, so ordinary
+      // props/locals never match.
+      /^([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)$/.exec(jsExpr)
+    if (!m) return null
+    const key = m[2] ?? m[3]
+    const constInfo = (this.localConstants ?? []).find(
+      c => c.name === m[1] && c.isModule,
+    )
+    if (constInfo?.value === undefined) return null
+    const sf = ts.createSourceFile(
+      '__rec.ts',
+      `(${constInfo.value})`,
+      ts.ScriptTarget.Latest,
+      /* setParentNodes */ true,
+    )
+    if (sf.statements.length !== 1) return null
+    const stmt = sf.statements[0]
+    if (!ts.isExpressionStatement(stmt)) return null
+    let parsed: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(parsed)) parsed = parsed.expression
+    if (!ts.isObjectLiteralExpression(parsed)) return null
+    for (const prop of parsed.properties) {
+      if (!ts.isPropertyAssignment(prop)) continue
+      const name = prop.name
+      const propKey =
+        ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)
+          ? name.text
+          : null
+      if (propKey !== key) continue
+      let v: ts.Expression = prop.initializer
+      while (ts.isParenthesizedExpression(v)) v = v.expression
+      if (ts.isNumericLiteral(v)) return v.text
+      if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) {
+        return JSON.stringify(v.text)
+      }
+      return null
+    }
+    return null
   }
 
   /**
@@ -5539,11 +5981,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         let result: string
         switch (expr.op) {
           case '===':
-          case '==':
-            result = `eq ${left} ${right}`; break
+          case '==': {
+            const [el, er] = stringTolerantEqOperands(left, right)
+            result = `eq ${el} ${er}`; break
+          }
           case '!==':
-          case '!=':
-            result = `ne ${left} ${right}`; break
+          case '!=': {
+            const [el, er] = stringTolerantEqOperands(left, right)
+            result = `ne ${el} ${er}`; break
+          }
           case '>':
             result = `gt ${left} ${right}`; break
           case '<':
@@ -5831,6 +6277,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return null
   }
 
+  /**
+   * When `comp`'s JSX children contain template actions (nested
+   * components, dynamic text) — i.e. none of the static bake paths in
+   * `collectStaticChildInstances` apply — render them into a companion
+   * define and return its name; `renderComponent` then routes the child
+   * call through `bf_with_children` + `bf_tmpl` (#1896). Returns null
+   * for childless or statically-bakeable children, which keep the
+   * constructor-baked `Children` value.
+   */
+  private queueDynamicChildrenDefine(comp: IRComponent): string | null {
+    const effectiveChildren = comp.children.length > 0
+      ? comp.children
+      : this.jsxChildrenPropNodes(comp.props)
+    if (effectiveChildren.length === 0) return null
+    if (this.extractTextChildren(effectiveChildren) !== null) return null
+    if (this.extractHtmlChildren(effectiveChildren) !== null) return null
+    if (this.extractScopedHtmlChildren(effectiveChildren) !== null) return null
+    const name = `${this.componentName}__children_${comp.slotId}`
+    if (!this.pendingChildrenDefines.some(d => d.name === name)) {
+      this.pendingChildrenDefines.push({
+        name,
+        content: this.renderChildren(effectiveChildren),
+      })
+    }
+    return name
+  }
+
   renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean }): string {
     // Handle Portal component specially - collect content for body end
     if (comp.name === 'Portal') {
@@ -5857,7 +6330,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     } else if (comp.slotId) {
       // Static children with slotId: use unique field name based on slotId
       const suffix = slotIdToFieldSuffix(comp.slotId)
-      templateCall = `{{template "${comp.name}" .${comp.name}${suffix}}}`
+      const childrenDefine = this.queueDynamicChildrenDefine(comp)
+      templateCall = childrenDefine
+        ? `{{template "${comp.name}" (bf_with_children .${comp.name}${suffix} (bf_tmpl "${childrenDefine}" .))}}`
+        : `{{template "${comp.name}" .${comp.name}${suffix}}}`
     } else {
       // Static children without slotId: fallback to .ComponentName
       templateCall = `{{template "${comp.name}" .${comp.name}}}`
@@ -5948,10 +6424,38 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
         const { condition: goCond, preamble } = this.convertConditionToGo(value.expr)
-        return `${preamble}{{if ${goCond}}}${name}{{end}}`
+        // ARIA attributes are string-valued ("true"/"false"), not HTML5
+        // presence booleans — Hono renders the truthy presence form as
+        // `aria-x="true"` (#1896, SelectItem's
+        // `aria-disabled={isDisabled() || undefined}`).
+        const body = name.startsWith('aria-') ? `${name}="true"` : name
+        return `${preamble}{{if ${goCond}}}${body}{{end}}`
       }
       const parsed = parseExpression(value.expr.trim())
-      if (parsed.kind === 'conditional' || parsed.kind === 'template-literal') {
+      if (parsed.kind === 'conditional') {
+        // A ternary whose falsy branch is `undefined` / `null` OMITS the
+        // attribute entirely on Hono (`aria-current={props.isActive ?
+        // 'page' : undefined}`, #1896 pagination) — wrap the whole
+        // attribute in the condition instead of rendering `attr=""`.
+        const undef = (e: ParsedExpr): boolean =>
+          (e.kind === 'identifier' && (e.name === 'undefined' || e.name === 'null')) ||
+          (e.kind === 'literal' && (e.value === null || e.value === undefined))
+        const test = parsed.test
+        if (undef(parsed.alternate) && !undef(parsed.consequent)) {
+          const { condition: goCond, preamble } = this.convertConditionToGo(
+            // Re-render the test from its source span via the parsed tree.
+            this.renderParsedExpr(test).startsWith('{{')
+              ? value.expr
+              : value.expr.slice(0, value.expr.indexOf('?')).trim(),
+          )
+          const valueExpr = this.renderParsedExpr(parsed.consequent)
+          const body = `${name}="{{${valueExpr}}}"`
+          return `${preamble}{{if ${goCond}}}${body}{{end}}`
+        }
+        // Inline Go template syntax with embedded `{{...}}` actions.
+        return `${name}="${this.renderParsedExpr(parsed)}"`
+      }
+      if (parsed.kind === 'template-literal') {
         // Inline Go template syntax with embedded `{{...}}` actions.
         return `${name}="${this.renderParsedExpr(parsed)}"`
       }
@@ -6127,7 +6631,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       const inner = s.slice(open + 2, close).trim()
       if (inner) {
-        out += `{{${this.convertExpressionToGo(inner)}}}`
+        // Same double-wrap guard as `renderExpression` / `templateLiteral`
+        // (#1896): a ternary lowers to a complete action chain.
+        const goExpr = this.convertExpressionToGo(inner)
+        out += goExpr.startsWith('{{') ? goExpr : `{{${goExpr}}}`
       } else {
         out += s.slice(open, close + 1)
       }
@@ -6174,7 +6681,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // case matches; consumers shouldn't rely on a default fallback
         // here (the JSX-side `variant = 'default'` default already
         // shows up via the per-prop fallback in `NewXxxProps`).
-        const keyExpr = this.convertExpressionToGo(part.key)
+        const rawKeyExpr = this.convertExpressionToGo(part.key)
+        // A compound key (`props.placement ?? 'top'` → `or .Placement
+        // "top"`) must be parenthesized inside `eq` — unwrapped, Go's
+        // template parser reads `eq or .Placement "top" "left"` as four
+        // arguments with a zero-arg `or` (#1896, tooltip placement).
+        const keyExpr = /\s/.test(rawKeyExpr) ? `(${rawKeyExpr})` : rawKeyExpr
         const caseEntries = Object.entries(part.cases)
         if (caseEntries.length === 0) continue
         const branches = caseEntries.map(([k, v], i) => {

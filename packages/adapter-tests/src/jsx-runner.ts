@@ -213,6 +213,11 @@ export function normalizeHTML(html: string): string {
     .replace(/&#0*60;|&#[xX]0*3[cC];/g, '&lt;')
     .replace(/&#0*62;|&#[xX]0*3[eE];/g, '&gt;')
     .replace(/&#0*39;|&#[xX]0*27;/g, '&#39;')
+    // Raw apostrophes too (#1896 / #1897): Hono escapes `'` in text nodes
+    // as `&#39;`, Go's html/template (and Xslate) leave it raw — both
+    // decode to the same DOM text, so canonicalise to the entity form on
+    // both sides like the numeric references above.
+    .replace(/'/g, '&#39;')
     // Normalize void element self-closing: <br/> or <br /> → <br>
     .replace(new RegExp(`<(${VOID_ELEMENTS})(\\s[^>]*?)?\\s*/>`, 'g'), '<$1$2>')
     // Remove trailing whitespace before >

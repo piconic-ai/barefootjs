@@ -164,7 +164,31 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
     if (!node) return
     const el = node as unknown as IRElement
     for (const attr of el.attrs ?? []) {
-      const v = attr.value as { kind?: string; expr?: string; presenceOrUndefined?: boolean }
+      const v = attr.value as {
+        kind?: string
+        expr?: string
+        presenceOrUndefined?: boolean
+        parts?: Array<
+          | { type: 'string'; value: string }
+          | { type: 'ternary'; condition: string; whenTrue: string; whenFalse: string }
+          | { type: 'lookup'; key: string }
+        >
+      }
+      // Template-literal attr values (`className={\`… \${props.className ??
+      // ''}\`}`) carry their `props.X` reads inside the parts structure,
+      // not a flat expr string (#1896 — TabsContent's template referenced
+      // `.ClassName` while the Props struct never declared it). Scan every
+      // textual field of every part shape.
+      if (v?.parts) {
+        for (const part of v.parts) {
+          if (part.type === 'string') scan(part.value)
+          else if (part.type === 'ternary') {
+            scan(part.condition)
+            scan(part.whenTrue)
+            scan(part.whenFalse)
+          } else if (part.type === 'lookup') scan(part.key)
+        }
+      }
       if (v?.kind === 'expression' && typeof v.expr === 'string') {
         scan(v.expr)
         const expr = v.expr.trim()
@@ -186,6 +210,20 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
       const c = child as { element?: IRNode }
       walk((c.element ?? child) as IRNode)
     }
+    // Conditional / if-statement nodes keep their subtrees in branch
+    // fields, not `children` (#1896 — DialogTrigger's asChild
+    // if-statement hid the button branch's `id={props.id}` from this
+    // scan, so the template referenced `.ID` without a Props field).
+    const branchy = node as unknown as {
+      whenTrue?: IRNode
+      whenFalse?: IRNode
+      consequent?: IRNode
+      alternate?: IRNode
+    }
+    walk(branchy.whenTrue)
+    walk(branchy.whenFalse)
+    walk(branchy.consequent)
+    walk(branchy.alternate)
   }
   walk(ir.root)
 

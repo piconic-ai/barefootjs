@@ -35,47 +35,20 @@ runAdapterConformanceTests({
   // `BF104` at build time instead of silently emitting invalid
   // template syntax (#1266).
   // JSX-render skips: every other shared conformance fixture renders to
-  // Hono parity on real Go. Shapes the adapter intentionally refuses at
+  // Hono parity on real Go — including the composed `site/ui` demo
+  // corpus (#1467 / #1896): JSX children passed to imported components
+  // now render through per-call-site companion defines executed via
+  // `bf_tmpl` + `bf_with_children` (see the bf runtime's
+  // `TemplateFuncMap`). Shapes the adapter intentionally refuses at
   // build time are pinned in `expectedDiagnostics` below.
   //
-  // `radio-group` (#1467 demo corpus): the adapter drops JSX children
-  // passed to an *imported* child component — the generated constructor
-  // builds `RadioGroupSlot3` without children, so the radiogroup
-  // container renders empty (silently) instead of Hono's inline items.
-  // Cross-adapter parity for the composed `site/ui` demo corpus is the
-  // #1467 Phase 3 follow-up; see
-  // https://github.com/piconic-ai/barefootjs/issues/1896. Hono SSR
-  // conformance + the real-browser fixture-hydrate layer keep the
-  // fixture fully covered.
-  // `accordion` / `tabs` (#1467 demo corpus): beyond the children gap,
-  // their `{ className = '', ...props }` destructure-with-rest shape
-  // breaks the merged constructor emission (`in.Props undefined`,
-  // `ClassName redeclared`). Same Phase 3 bucket, same issue.
-  // `dialog` / `popover` / `tooltip` (#1467 Phase 2c overlay): same
-  // Phase 3 bucket — dialog hits the destructure-with-rest constructor
-  // emission (`in.Props undefined` for DialogHeader/Title/…), popover
-  // renders but diverges from Hono, and tooltip's generated template
-  // fails Go's template parse (`unexpected "{" in command`).
-  // `select` / `dropdown-menu` / `combobox` / `command` (#1467 Phase
-  // 2d): same Phase 3 bucket again — destructure-with-rest constructor
-  // emission (`in.Props undefined`) and generated-template parse
-  // failures (`unexpected "{" in command`).
-  skipJsx: [
-    'radio-group',
-    'accordion',
-    'tabs',
-    'dialog',
-    'popover',
-    'tooltip',
-    'select',
-    'dropdown-menu',
-    'combobox',
-    'command',
-    // `pagination` / `data-table` (#1467 Phase 2e): same Phase 3 bucket
-    // (constructor emission / template parse on the composed shapes).
-    'pagination',
-    'data-table',
-  ],
+  // `data-table` is the one remaining #1896 gap: its table body is a
+  // keyed `.map` over a `/* @client */`-sorted MEMO whose data is a
+  // module-const object array — a memo-derived dynamic loop of imported
+  // components, which the nested-component slice constructor can't bake
+  // yet (`item.ID` is on the loop datum, not the child's Input). Full
+  // coverage remains at the Hono SSR + fixture-hydrate layers.
+  skipJsx: ['data-table'],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
   // shared fixtures) so adding a new adapter doesn't require touching
@@ -2157,11 +2130,31 @@ export function V({ variant }: { variant: 'a' | 'b' }) {
       // The ClassName field MUST be set on the SlotInput literal.
       expect(goCode).toContain('ClassName:')
       // The IIFE shape: a self-invoking func that switches on the
-      // variant key and returns the matching case.
+      // variant key and returns the matching case. The switch key goes
+      // through `fmt.Sprint` (not a `.(string)` assertion) so it
+      // compiles for both `interface{}`-typed fields and the `string`
+      // fields the shared inherited-prop augmentation synthesises
+      // (#1896).
       expect(goCode).toContain('func() string {')
-      expect(goCode).toContain('in.Variant.(string)')
+      expect(goCode).toContain('switch fmt.Sprint(in.Variant)')
       expect(goCode).toContain('case "a": return "class-a"')
       expect(goCode).toContain('case "b": return "class-b"')
+    })
+
+    test('string-tolerant eq keeps a compound operand grouped (#1903 review)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+export function T(props: { placement?: 'top' | 'left' }) {
+  return <div data-side={(props.placement ?? 'top') === 'left' ? 'l' : 'o'}>x</div>
+}
+`, adapter)
+      const out = adapter.generate(ir)
+      // The non-literal side routes through bf_string as ONE argument:
+      // `(bf_string (or .Placement "top"))`. Stripping the inner parens
+      // would hand the parser three arguments and fail at runtime with
+      // `bf_string: want 1 got 3`.
+      expect(out.template).toContain('eq (bf_string (or .Placement "top")) "left"')
+      expect(out.template).not.toContain('bf_string or ')
     })
 
     test('intermediate-const composition (Button shape) carries through', () => {
