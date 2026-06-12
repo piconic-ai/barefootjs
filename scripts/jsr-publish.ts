@@ -52,6 +52,7 @@
 import { resolve, join } from 'node:path'
 import { existsSync, readdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { $ } from 'bun'
+import ts from 'typescript'
 
 const repoRoot = resolve(import.meta.dir, '..')
 const argv = process.argv.slice(2)
@@ -229,9 +230,39 @@ function buildManifest(dir: string, pkg: PkgJson) {
   // sources rely on (notably `process`, used in jsx/hono/go-template) while
   // letting `dom` layer the browser types on top without the duplicate-
   // identifier clash a bare `dom`-only or `/// <reference lib>` would cause.
-  manifest.compilerOptions = {
+  const compilerOptions: Record<string, unknown> = {
     lib: ['deno.window', 'dom', 'dom.iterable', 'dom.asynciterable'],
   }
+  // JSX-bearing packages (adapter-hono's `.tsx` sources) author against the
+  // package tsconfig's `jsx`/`jsxImportSource`, with matching per-file
+  // `// @jsxImportSource` pragmas that must stay line comments for esbuild
+  // (see adapter-hono/src/scripts.tsx). Deno ≤2.8.2 honored those pragmas
+  // during `deno publish` type-checking; 2.8.3 ignores them and falls back
+  // to the classic React transform — TS2874/TS7026 on every tag. Mirror the
+  // tsconfig's JSX settings into the manifest, which every Deno version
+  // respects regardless of pragma handling.
+  const tsconfigPath = join(dir, 'tsconfig.json')
+  if (existsSync(tsconfigPath)) {
+    // tsconfig is JSONC — parse with the TS helper, not JSON.parse.
+    const { config, error } = ts.parseConfigFileTextToJson(
+      tsconfigPath,
+      readFileSync(tsconfigPath, 'utf8'),
+    )
+    if (error) {
+      // Don't fail the whole mirror over it, but don't drop the JSX settings
+      // silently either — without them a .tsx-bearing package resurfaces as
+      // opaque TS2874/TS7026 publish errors.
+      console.warn(
+        `  warn  ${pkg.name}: tsconfig.json parse failed (${ts.flattenDiagnosticMessageText(error.messageText, ' ')}) — JSX settings not mirrored into deno.json`,
+      )
+    }
+    const tsOpts = (config?.compilerOptions ?? {}) as Record<string, unknown>
+    if (tsOpts.jsx) {
+      compilerOptions.jsx = tsOpts.jsx
+      if (tsOpts.jsxImportSource) compilerOptions.jsxImportSource = tsOpts.jsxImportSource
+    }
+  }
+  manifest.compilerOptions = compilerOptions
   manifest.publish = { include: ['src', 'README.md', 'LICENSE', 'deno.json'] }
   return manifest
 }
