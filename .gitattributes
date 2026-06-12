@@ -1,0 +1,9 @@
+# Frozen fixture-hydrate snapshots (#1467): every file under
+# `__snapshots__/` is machine-written — by
+# `packages/adapter-tests/scripts/snapshot.ts` locally and by the
+# update-fixtures workflow in CI — from the fixture spec + component
+# sources. Mark them generated so PR diffs collapse them by default and
+# they stay out of language stats. Intentionally NOT `-diff`/binary:
+# when the compiler changes, the snapshot diff is the review signal
+# (expected output change vs regression), so it must stay expandable.
+packages/adapter-tests/fixtures/__snapshots__/** linguist-generated=true
