@@ -351,6 +351,10 @@ function buildChildRenderers(
       lines.push(`    $child_props->{${rest}} = {} unless defined $child_props->{${rest}};`)
     }
     lines.push(`    my $child_bf = BarefootJS->new($c, {});`)
+    // (#1897) Nested `render_child` calls (a child template rendering
+    // another imported component) resolve against THIS instance's
+    // registry — share the parent's so they don't fail.
+    lines.push(`    $child_bf->_child_renderers($bf->_child_renderers);`)
     // JSX `key` (reserved prop) → data-key on the child's scope root, for
     // keyed-loop reconciliation parity with Hono.
     lines.push(`    my $data_key = delete $child_props->{key};`)

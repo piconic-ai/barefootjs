@@ -377,6 +377,12 @@ function buildChildRenderers(
     lines.push(`    $child_bf->_scope_id($slot_id ? '${rootChildScopePrefix(snakeName)}' . '_' . $slot_id : '${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
     lines.push(`    $child_bf->_is_child(1);`)
     lines.push(`    if ($slot_id) { $child_bf->_bf_parent('${rootChildScopePrefix(snakeName)}'); $child_bf->_bf_mount($slot_id); }`)
+    // (#1897) A child template may itself call `$bf.render_child(...)`
+    // (AccordionTrigger renders ChevronDownIcon) — inside that template
+    // `$bf` is THIS fresh child instance, whose renderer registry starts
+    // empty, so the nested call silently rendered ''. Share the parent's
+    // registry so nested child renders resolve.
+    lines.push(`    $child_bf->_child_renderers($bf->_child_renderers);`)
     lines.push(`    $child_bf->_scripts($bf->_scripts);`)
     lines.push(`    $child_bf->_script_seen($bf->_script_seen);`)
     // Seed template vars: static ssrDefaults first, caller's props win.

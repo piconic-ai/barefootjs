@@ -26,29 +26,23 @@ runAdapterConformanceTests({
   factory: () => new XslateAdapter(),
   render: renderXslateComponent,
   // JSX-render skips: every other shared conformance fixture renders to
-  // Hono parity on real Text::Xslate. Shapes the adapter intentionally
-  // refuses at build time are pinned in `expectedDiagnostics` below
-  // (e.g. `kbd`, `button`).
+  // Hono parity on real Text::Xslate — `dialog` / `popover` / `tooltip`
+  // joined after #1903's shared-helper fixes (inherited-prop scanning of
+  // template parts + branch walks) and the nested child-renderer
+  // registry propagation below. Shapes the adapter intentionally
+  // refuses at build time are pinned in `expectedDiagnostics`.
   //
-  // #1467 demo corpus (cross-adapter parity is the Phase 3 follow-up —
-  // see https://github.com/piconic-ai/barefootjs/issues/1897; both stay
-  // fully covered at the Hono SSR + fixture-hydrate layers):
-  //   - `tabs`: renders, but prop-driven ARIA booleans stringify as
-  //     Perl `1`/`0` vs Hono's `true`/`false`, and text nodes skip the
-  //     `&#39;` entity escaping.
-  //   - `accordion`: renders, but the nested sibling's ChevronDownIcon
-  //     SVG (accordion -> ../icon) is missing from the trigger, and an
-  //     undefined `id` prop emits `id=""` where Hono omits it. (The
-  //     sibling compile also raises the same provider-object BF101 as
-  //     mojo, but the render-level divergences are the durable signal.)
-  //   - `dialog` / `popover` (#1467 Phase 2c overlay): render, but with
-  //     the same divergence families as above (ARIA/data boolean
-  //     stringification, escaping, empty-attr emission). `tooltip` is
-  //     intentionally NOT listed — Xslate renders it to full Hono
-  //     parity.
-  //   - `pagination` (#1467 Phase 2e): compiles clean, renders with the
-  //     same divergence families as above.
-  skipJsx: ['accordion', 'tabs', 'dialog', 'popover', 'pagination'],
+  // #1467 demo corpus — remaining #1897 gaps:
+  //   - `tabs`: prop-driven ARIA booleans stringify as Perl `1`/`0` vs
+  //     Hono's `true`/`false`.
+  //   - `accordion`: the trigger's nested ChevronDownIcon renders empty
+  //     (the Kolon render of the icon template silently yields '' —
+  //     unlike the registry gap, the renderer IS registered), and the
+  //     composed module-const class strings resolve empty.
+  //   - `pagination`: composed module-const class strings
+  //     (`${buttonBaseClasses} ${variantClasses.ghost} …`) resolve
+  //     empty on the Kolon side.
+  skipJsx: ['accordion', 'tabs', 'pagination'],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.
