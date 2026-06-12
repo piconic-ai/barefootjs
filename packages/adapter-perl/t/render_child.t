@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 use utf8;
-use experimental 'signatures';
 
 use Test2::V0;
 
@@ -19,11 +18,11 @@ use BarefootJS;
 }
 sub new_bf { BarefootJS->new(undef, { backend => StubBackend->new }) }
 
-# render_child renderer-invocation contract (#1897):
-#   - the INVOKING instance is passed as a second argument so nested
-#     renders can chain scope/slot identity off the caller;
-#   - signature-style renderers (`sub ($props) { ... }`) that enforce
-#     1-arg arity keep working via the arity fallback.
+# render_child renderer-invocation contract (#1897): the renderer is
+# invoked with ($props_hashref, $invoking_bf) so nested renders can chain
+# scope/slot identity off the caller. Renderers unpack @_ rather than
+# enforcing arity with a one-arg subroutine signature (see
+# register_child_renderer's doc).
 
 subtest 'renderer receives the invoking instance' => sub {
     my $bf = new_bf();
@@ -48,24 +47,13 @@ subtest 'renderer receives the invoking instance' => sub {
     ref_is $seen_caller, $child, 'nested call passes the nested instance';
 };
 
-subtest 'signature-style 1-arg renderers keep working (arity fallback)' => sub {
-    my $bf = new_bf();
-
-    $bf->register_child_renderer('strict', sub ($props) {
-        return "got:$props->{value}";
-    });
-
-    is $bf->render_child('strict', value => 42), 'got:42',
-        'sub ($props) renderer is called with one argument';
-};
-
-subtest 'renderer exceptions other than arity are rethrown' => sub {
+subtest 'renderer exceptions propagate' => sub {
     my $bf = new_bf();
     $bf->register_child_renderer('boom', sub {
         die "renderer exploded\n";
     });
     like dies { $bf->render_child('boom') }, qr/renderer exploded/,
-        'real renderer errors propagate (no silent 1-arg retry)';
+        'renderer errors propagate to the caller';
 };
 
 done_testing;
