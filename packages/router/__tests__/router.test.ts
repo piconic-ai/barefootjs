@@ -302,3 +302,62 @@ test('non-primary press (e.g. right-click) does not prefetch', async () => {
   await flush()
   expect(fetchCalls).toHaveLength(0)
 })
+
+/** Mock fetch returning a full page whose outlet says "body <N>" per call. */
+function mockCountingFetch(): () => number {
+  let call = 0
+  ;(globalThis as { fetch: unknown }).fetch = mock(async (url: unknown) => {
+    const n = ++call
+    return {
+      ok: true,
+      redirected: false,
+      url: String(url),
+      text: async () =>
+        `<!doctype html><html><head><title>P</title></head><body>
+          <main bf-outlet><p id="content">body ${n}</p></main>
+        </body></html>`,
+    } as unknown as Response
+  })
+  return () => call
+}
+
+test('aging cache entry serves instantly and refreshes in the background (SWR)', async () => {
+  const calls = mockCountingFetch()
+  // cacheFreshMs:0 → the entry is in its "aging" window immediately.
+  const router = startRouter({ rehydrate: () => {}, cacheFreshMs: 0, cacheStaleMs: 60_000 })
+  stop = router.stop
+
+  await router.navigate('/p')
+  await flush()
+  expect(calls()).toBe(1)
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('body 1')
+
+  // Re-navigate: aging → serve the CACHED page instantly (still body 1) AND
+  // kick a background refresh (a second fetch).
+  await router.navigate('/p')
+  await flush()
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('body 1') // served cached
+  expect(calls()).toBe(2) // background refresh fired
+
+  // The background refresh updated the cache → the next nav shows the new body.
+  await router.navigate('/p')
+  await flush()
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('body 2')
+})
+
+test('a stale cache entry is refetched fresh, never served stale', async () => {
+  const calls = mockCountingFetch()
+  // cacheStaleMs:0 → entries are immediately too old to serve.
+  const router = startRouter({ rehydrate: () => {}, cacheStaleMs: 0 })
+  stop = router.stop
+
+  await router.navigate('/p')
+  await flush()
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('body 1')
+
+  // Past staleAt → fetch fresh and show the new body (never the stale one).
+  await router.navigate('/p')
+  await flush()
+  expect(calls()).toBe(2)
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('body 2')
+})

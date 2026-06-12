@@ -95,13 +95,24 @@ mouse/touch/pen, which fires before `click`), the router
 **prefetches** the link's page into an in-memory snapshot cache and
 `modulepreload`s its island modules (fetch + compile, not execute). The
 click then reuses the cached page with no network wait, and `import()`s
-the already-preloaded modules. The cache (TTL'd, bounded) also makes
-back/forward instant. Disable with `startRouter({ prefetch: false })`.
+the already-preloaded modules. The cache also makes back/forward instant.
+Disable with `startRouter({ prefetch: false })`.
+
+**Cache lifecycle** (LRU-bounded, with three states per entry):
+
+- **fresh** (`< cacheFreshMs`, default 15s): served as-is, no refetch.
+- **aging** (`cacheFreshMs`…`cacheStaleMs`, default 15–60s): served
+  *instantly* and refreshed in the background for next time
+  (stale-while-revalidate; single-flight per URL). The refresh threshold is
+  **jittered per entry (±30%)** so a batch of prefetches doesn't all
+  revalidate at the same instant.
+- **stale** (`> cacheStaleMs`, default 60s): too old to serve — refetched
+  fresh, so a navigation never shows content past `cacheStaleMs`.
 
 Prefetch is **best-effort, like Next.js**: a failed prefetch is not cached,
 so it never poisons the URL — the next prefetch or the click retries fresh
 (and a click whose load ultimately fails falls back to a full navigation).
-Re-hovering the same link does not re-fetch (deduped by the cache).
+Re-hovering a fresh link does not re-fetch (deduped by the cache).
 
 ## Limitations & next steps
 

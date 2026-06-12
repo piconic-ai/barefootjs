@@ -77,6 +77,16 @@ export interface RouterOptions {
   prefetch?: boolean
   /** Hover dwell (ms) before a prefetch fires, to skip quick sweeps (default 65). */
   prefetchDelay?: number
+  /**
+   * How long (ms) a cached page is served without refetch. Between this and
+   * `cacheStaleMs` the cache is in its "aging" window: the page is still
+   * served instantly, but a background refresh updates it for next time
+   * (stale-while-revalidate). The refresh threshold is jittered per entry so
+   * a batch of prefetches doesn't all revalidate at once. Default: 15000.
+   */
+  cacheFreshMs?: number
+  /** ms after which a cached page is too old to serve and is refetched fresh. Default: 60000. */
+  cacheStaleMs?: number
 }
 
 export interface NavigateOptions {
@@ -106,7 +116,12 @@ interface PageSnapshot {
 
 interface CacheEntry {
   snap: Promise<PageSnapshot | null>
-  ts: number
+  /** Past this (jittered), the next access serves the page AND refreshes it. */
+  refreshAt: number
+  /** Past this, the page is too old to serve — refetch fresh instead. */
+  staleAt: number
+  /** A background refresh is in flight (single-flight guard). */
+  refreshing: boolean
 }
 
 interface RouterState {
@@ -118,6 +133,10 @@ interface RouterState {
   loadedModules: Set<string>
   prefetchEnabled: boolean
   prefetchDelay: number
+  /** ms a cached page is served without refetch (fresh window). */
+  cacheFreshMs: number
+  /** ms after which a cached page is too old to serve (refetch fresh). */
+  cacheStaleMs: number
   /** Recently fetched / prefetched pages, keyed by absolute URL. */
   cache: Map<string, CacheEntry>
   /** Module srcs already `modulepreload`-ed on hover. */
@@ -149,6 +168,8 @@ export function startRouter(options: RouterOptions = {}): Router {
     loadedModules: collectModuleScripts(document),
     prefetchEnabled: options.prefetch ?? true,
     prefetchDelay: options.prefetchDelay ?? 65,
+    cacheFreshMs: options.cacheFreshMs ?? 15_000,
+    cacheStaleMs: options.cacheStaleMs ?? 60_000,
     cache: new Map(),
     preloaded: new Set(),
     shouldIntercept: options.shouldIntercept ?? defaultShouldIntercept,
@@ -258,20 +279,12 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
 
 // ── prefetch + snapshot cache ────────────────────────────────────────────
 
-const PREFETCH_TTL = 30_000 // ms a cached page stays fresh
-const CACHE_CAP = 30 // max cached pages (oldest evicted)
+const CACHE_CAP = 30 // max cached pages (least-recently-used evicted)
+const REFRESH_JITTER = 0.3 // ±30% on the per-entry refresh threshold
 
-/**
- * Return a page snapshot for `url`, reusing a fresh cached/prefetched one
- * or fetching now (and caching the in-flight promise so a concurrent
- * prefetch + navigate share one request). Returns `null` on a non-OK /
- * failed response so the caller can hard-navigate.
- */
-function loadPage(state: RouterState, url: string): Promise<PageSnapshot | null> {
-  const hit = state.cache.get(url)
-  if (hit && Date.now() - hit.ts < PREFETCH_TTL) return hit.snap
-
-  const snap = (async (): Promise<PageSnapshot | null> => {
+/** Fetch a page snapshot; resolves to `null` on a non-OK / failed response. */
+function fetchSnapshot(url: string): Promise<PageSnapshot | null> {
+  return (async () => {
     try {
       const res = await fetch(url, { headers: { Accept: 'text/html' }, credentials: 'same-origin' })
       if (!res.ok) return null
@@ -282,20 +295,69 @@ function loadPage(state: RouterState, url: string): Promise<PageSnapshot | null>
       return null
     }
   })()
+}
 
-  state.cache.set(url, { snap, ts: Date.now() })
-  // Don't cache failures (Next.js behavior): a prefetch is best-effort, so a
-  // failed load must not poison the URL — evict it once it resolves to null
-  // so the next prefetch/click retries fresh. (Success stays cached, TTL'd.)
+/** Store `snap` under `url` with a jittered refresh window; bound the cache. */
+function storeEntry(state: RouterState, url: string, snap: Promise<PageSnapshot | null>): void {
+  const now = Date.now()
+  // Jitter the refresh threshold so a batch of prefetches doesn't all
+  // revalidate at the same instant (avoids a self-inflicted stampede).
+  const jitter = 1 + (Math.random() * 2 - 1) * REFRESH_JITTER // 0.7 … 1.3
+  state.cache.set(url, {
+    snap,
+    refreshAt: now + state.cacheFreshMs * jitter,
+    staleAt: now + state.cacheStaleMs,
+    refreshing: false,
+  })
+  // Don't cache failures (Next.js behavior): evict once it resolves to null
+  // so the next prefetch/click retries fresh instead of being stuck.
   void snap.then((result) => {
     if (result === null && state.cache.get(url)?.snap === snap) state.cache.delete(url)
   })
-  // Bound the cache: evict the oldest entries (Map keeps insertion order).
+  // Bound the cache (LRU: a hit re-inserts, so the first key is least-recent).
   while (state.cache.size > CACHE_CAP) {
-    const oldest = state.cache.keys().next().value
-    if (oldest === undefined) break
-    state.cache.delete(oldest)
+    const lru = state.cache.keys().next().value
+    if (lru === undefined) break
+    state.cache.delete(lru)
   }
+}
+
+/**
+ * Return a page snapshot for `url`. Cache states:
+ *   - **fresh** (`now < refreshAt`): serve the cached page, no refetch.
+ *   - **aging** (`refreshAt ≤ now < staleAt`): serve the cached page
+ *     instantly *and* refresh it in the background for next time
+ *     (stale-while-revalidate; single-flight per URL).
+ *   - **stale / miss** (`now ≥ staleAt` or absent): fetch fresh and return
+ *     that — never serve content past `staleAt`.
+ *
+ * Concurrent prefetch + navigate for the same URL share one request (the
+ * cached in-flight promise). Returns `null` on failure so the caller can
+ * hard-navigate.
+ */
+function loadPage(state: RouterState, url: string): Promise<PageSnapshot | null> {
+  const hit = state.cache.get(url)
+  const now = Date.now()
+
+  if (hit && now < hit.staleAt) {
+    if (now >= hit.refreshAt && !hit.refreshing) {
+      // Aging → refresh in the background (single-flight), keep serving cached.
+      hit.refreshing = true
+      const fresh = fetchSnapshot(url)
+      void fresh.then((result) => {
+        if (result !== null) storeEntry(state, url, fresh) // swap in the fresh window
+        else if (state.cache.get(url) === hit) hit.refreshing = false // failed → keep old, allow retry
+      })
+    }
+    // LRU bump: move this entry to the most-recent position.
+    state.cache.delete(url)
+    state.cache.set(url, hit)
+    return hit.snap
+  }
+
+  // Miss or past staleAt → fetch fresh (and cache it).
+  const snap = fetchSnapshot(url)
+  storeEntry(state, url, snap)
   return snap
 }
 
@@ -311,8 +373,9 @@ function prefetch(url: string): void {
   }
   if (target.origin !== window.location.origin) return
   if (target.href === window.location.href) return // current page
-  if (state.cache.has(target.href)) return // already warm / in-flight
 
+  // loadPage handles dedup (a fresh entry returns without refetching) and the
+  // aging refresh, so re-hovering never re-fetches a fresh page.
   void loadPage(state, target.href).then((snap) => {
     if (snap) preloadModules(state, snap.html)
   })
