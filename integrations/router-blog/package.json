@@ -8,6 +8,7 @@
     "start": "bun run build && bun run server.ts",
     "serve": "bun run server.ts",
     "capture": "bun run capture.ts",
+    "capture-prefetch": "bun run capture-prefetch.ts",
     "stress": "bun run stress.ts",
     "bench": "bun run bench.ts",
     "routes-manifest": "bun run routes-manifest.ts"

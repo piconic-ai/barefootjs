@@ -124,6 +124,14 @@ function bootShell(): void {
     new MutationObserver(() => {
       navs += 1
       if (navEl) navEl.textContent = String(navs)
+      // Did this click reuse a prefetched page? It's a cache hit when no
+      // navigation fetch fired for the clicked URL (the swap runs before
+      // pushState, so we can't read location here — track the click instead).
+      const lastNav = document.getElementById('shell-lastnav')
+      if (lastNav && pendingNav) {
+        lastNav.textContent = pendingNav.fetched ? 'network' : '⚡ cache'
+        pendingNav = null
+      }
     }).observe(outlet, { childList: true })
   }
 
@@ -134,6 +142,53 @@ function bootShell(): void {
     root.dataset.theme = light ? 'dark' : 'light'
     toggle.textContent = light ? '🌙 dark' : '☀️ light'
   })
+}
+
+// ── prefetch visualization (demo instrumentation, not part of the router) ──
+//
+// Wrap fetch to spot the router's hover-prefetch fetches (a fetch that isn't
+// the navigation the user just clicked). Mark prefetched links with a badge
+// and surface a live count, so the prefetch — normally invisible — is
+// observable in screenshots.
+const prefetched = new Set<string>()
+let pendingNav: { href: string; fetched: boolean } | null = null
+document.addEventListener(
+  'click',
+  (e) => {
+    const a = (e.target as Element)?.closest?.('a') as HTMLAnchorElement | null
+    if (a) pendingNav = { href: new URL(a.href, location.href).href, fetched: false }
+  },
+  true,
+)
+const origFetch = window.fetch.bind(window)
+window.fetch = ((input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+  try {
+    const raw = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input)
+    const abs = new URL(raw, location.href).href
+    if (pendingNav && pendingNav.href === abs) {
+      // The clicked navigation had to hit the network → not a cache hit.
+      pendingNav.fetched = true
+    } else if (!prefetched.has(abs)) {
+      // A fetch with no matching click is a hover prefetch.
+      prefetched.add(abs)
+      markPrefetchedLinks(abs)
+      const counter = document.getElementById('shell-prefetched')
+      if (counter) counter.textContent = String(prefetched.size)
+    }
+  } catch {
+    /* ignore */
+  }
+  return origFetch(input, init)
+}) as typeof fetch
+
+function markPrefetchedLinks(abs: string): void {
+  for (const a of document.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+    try {
+      if (new URL(a.href, location.href).href === abs) a.dataset.prefetched = '1'
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 window.__bf_hydrate = hydrateOutlet

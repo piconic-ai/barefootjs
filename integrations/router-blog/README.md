@@ -48,8 +48,9 @@ Both need a Chromium that Playwright can launch (`CHROME_PATH`):
 
 ```sh
 bun run serve &                              # in one shell
-CHROME_PATH=/path/to/chrome bun run stress   # design smoke test → prints a report
-CHROME_PATH=/path/to/chrome bun run capture  # asserts behaviour + writes screenshots/
+CHROME_PATH=/path/to/chrome bun run stress           # design smoke test → prints a report
+CHROME_PATH=/path/to/chrome bun run capture          # asserts behaviour + writes screenshots/
+CHROME_PATH=/path/to/chrome bun run capture-prefetch # visualizes hover prefetch (⚡ ready / ⚡ cache)
 ```
 
 `stress.ts` drives the router through outlet swap, re-hydration,

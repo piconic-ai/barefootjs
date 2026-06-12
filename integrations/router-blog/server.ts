@@ -44,6 +44,8 @@ function shell(page: Page): string {
     <div class="shell-island">
       <span class="chip">⏱ uptime <b id="shell-uptime">0.0s</b></span>
       <span class="chip">🔀 partial navs <b id="shell-navs">0</b></span>
+      <span class="chip">🔮 prefetched <b id="shell-prefetched">0</b></span>
+      <span class="chip">📥 last nav <b id="shell-lastnav">—</b></span>
       <span class="chip">🧩 live islands <b id="shell-live">0</b></span>
       <button id="theme-toggle" class="toggle" type="button">🌙 dark</button>
     </div>
@@ -174,6 +176,11 @@ const STYLES = `
   .card p { margin: 8px 0 10px; color: #c9d1d9; }
   html[data-theme="light"] .card p { color: #424a53; }
   .read { color: #58a6ff; font-weight: 600; font-size: 14px; }
+  /* prefetch visualization: hovered (prefetched) links get a "ready" badge */
+  .card-link[data-prefetched] { border-radius: 12px; box-shadow: inset 0 0 0 1px #f2cc60aa; }
+  .card-link[data-prefetched] .read::after { content: ' ⚡ ready'; color: #f2cc60; }
+  .pager-link[data-prefetched]::after { content: ' ⚡'; color: #f2cc60; }
+  #shell-lastnav { color: #f2cc60; }
   .islands { display: flex; gap: 12px; align-items: center; margin: 4px 0 22px; }
   .island { font-size: 14px; }
   .island.like { cursor: pointer; background: #161b22; border: 1px solid #30363d; color: #f778ba; border-radius: 8px; padding: 6px 12px; }
