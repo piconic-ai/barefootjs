@@ -291,8 +291,18 @@ sub render_child ($self, $name, @args) {
     # registered on the root may be called from a nested child render
     # (AccordionTrigger -> ChevronDownIcon), and the grandchild's scope /
     # slot identity must chain off the CALLER's scope id, not the
-    # registrant's. Renderers that destructure only `($props)` ignore it.
-    return $renderer->(\%props, $self);
+    # registrant's. Renderers that destructure `@_` ignore the extra
+    # argument; a SIGNATURE-style renderer (`sub ($props) { ... }`)
+    # enforces arity and would die, so fall back to the historical 1-arg
+    # call for exactly that failure. The arity check fires before the
+    # sub body runs, so the retry cannot double-execute side effects;
+    # any other exception is rethrown untouched.
+    my $html = eval { $renderer->(\%props, $self) };
+    if (my $err = $@) {
+        die $err unless $err =~ /^Too many arguments for /;
+        $html = $renderer->(\%props);
+    }
+    return $html;
 }
 
 # ---------------------------------------------------------------------------

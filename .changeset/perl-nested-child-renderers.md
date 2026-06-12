@@ -1,6 +1,7 @@
 ---
 "@barefootjs/xslate": patch
 "@barefootjs/mojolicious": patch
+"@barefootjs/perl": patch
 ---
 
 Nested `render_child` calls now resolve and carry correct slot identity. Two fixes (#1897):
