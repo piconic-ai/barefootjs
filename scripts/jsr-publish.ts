@@ -86,7 +86,12 @@ const ignore: string[] = JSON.parse(
 //   - not `private`,
 //   - not a `bin` package (executable, → npm),
 //   - not in `.changeset/config.json`'s ignore list.
+// `readdirSync` order is filesystem-dependent — observed differing across CI
+// runners and checkouts — and it used to decide publish order via topoSort's
+// tie-breaking, so which packages a stalled run stranded varied run to run.
+// Sort for a deterministic traversal.
 const pkgDirs = readdirSync(resolve(repoRoot, 'packages'))
+  .sort()
   .map(d => resolve(repoRoot, 'packages', d))
   .filter(d => existsSync(join(d, 'package.json')))
 
@@ -314,6 +319,11 @@ let published = 0
 let skipped = 0
 const errors: string[] = []
 const pending: string[] = []
+// Packages whose version is NOT yet resolvable on JSR (still propagating, or
+// their publish failed). Dependents of these are deferred — their publish-time
+// type-check would just fail on the unresolvable `jsr:` dep — but unrelated
+// packages keep going.
+const unresolved = new Set<string>()
 
 // `deno publish` uploads in seconds, then polls JSR until the server-side
 // publishing task (module-graph + slow-types doc generation) finishes — but on
@@ -352,6 +362,19 @@ try {
       continue
     }
 
+    // Defer (transitively) behind any workspace dep that isn't resolvable on
+    // JSR yet; a re-dispatch picks these up once the dep is live.
+    const blockedOn = Object.keys({
+      ...(pkg.dependencies ?? {}),
+      ...(pkg.peerDependencies ?? {}),
+    }).filter(d => unresolved.has(d))
+    if (blockedOn.length > 0) {
+      console.log(`  defer ${pkg.name}@${pkg.version} (dependency not yet on JSR: ${blockedOn.join(', ')})`)
+      unresolved.add(pkg.name)
+      pending.push(`${pkg.name}@${pkg.version} (blocked on ${blockedOn.join(', ')})`)
+      continue
+    }
+
     console.log(`\n  publish  ${pkg.name}@${pkg.version} → JSR`)
     // Type-checking stays ON — the generated `deno.json` carries
     // `compilerOptions.lib` (Deno's DOM + runtime set) so the DOM types these
@@ -369,6 +392,7 @@ try {
     const cutShort = pub.exitCode === 124 || pub.exitCode === 137
     if (pub.exitCode !== 0 && !cutShort) {
       errors.push(`${pkg.name}@${pkg.version} (deno exit ${pub.exitCode})`)
+      unresolved.add(pkg.name) // dependents would fail on the missing jsr: dep — defer them
       continue
     }
 
@@ -387,18 +411,25 @@ try {
     }
     if (cutShort) {
       // We cut Deno's poll short and JSR is still finishing server-side —
-      // the expected pending case. Stop here rather than publish a dependent
-      // before this dep is resolvable; a re-dispatch skips the now-live
-      // packages and continues from here.
-      console.log(`  pend  ${pkg.name}@${pkg.version} submitted; not live within ${VERIFY_TIMEOUT_MS / 60_000}m — stopping, re-dispatch to continue`)
+      // the expected pending case. Defer this package's dependents (their
+      // type-check can't resolve the `jsr:` dep yet) but keep going with
+      // unrelated packages; a re-dispatch skips the now-live ones and picks
+      // the pending set up. (This used to `break` the whole run, which let a
+      // single slow package strand everything sorted after it — hono sat 3
+      // releases behind that way.)
+      console.log(`  pend  ${pkg.name}@${pkg.version} submitted; not live within ${VERIFY_TIMEOUT_MS / 60_000}m — deferring dependents, re-dispatch to continue`)
+      unresolved.add(pkg.name)
       pending.push(`${pkg.name}@${pkg.version}`)
-      break
+      continue
     }
-    // Deno exited 0 — it observed the publishing task complete — yet the
-    // version never appeared in meta.json. That's a registry propagation
-    // problem or a lookup bug, not routine slowness; surface it as an error
-    // instead of masking it as pending.
-    errors.push(`${pkg.name}@${pkg.version} (deno exited 0 but version not on JSR after ${VERIFY_TIMEOUT_MS / 60_000}m)`)
+    // Deno exited 0 — it observed the server-side publishing task complete —
+    // so the version IS published; meta.json is just propagating through the
+    // CDN slower than our verify window (observed past 6m on real runs, e.g.
+    // client@0.13.0, which this path used to misreport as an error). Count it
+    // published; dependents are safe to follow since the registry itself has
+    // the version.
+    console.log(`  ok    ${pkg.name}@${pkg.version} published (per deno); meta.json still propagating`)
+    published++
   }
 } finally {
   if (!keep) for (const f of generated) rmSync(f, { force: true })
@@ -411,9 +442,10 @@ if (dryRun) {
 }
 
 if (pending.length > 0) {
-  // Not a failure — the upload is submitted and JSR is finishing it
-  // server-side. Surface it clearly and exit 0 so a re-dispatch can continue.
-  console.warn(`\n  ${pending.length} pending (submitted, server-side processing — re-dispatch to continue):`)
+  // Not a failure — these are submitted and processing server-side, or
+  // deferred behind one that is. Surface clearly and exit 0 so a re-dispatch
+  // can continue.
+  console.warn(`\n  ${pending.length} pending (re-dispatch to continue):`)
   for (const p of pending) console.warn(`    - ${p}`)
 }
 
