@@ -333,7 +333,10 @@ function buildChildRenderers(
     lines.push(`  my $child_mt = Mojo::Template->new(vars => 1, auto_escape => 1);`)
 
     lines.push(`  $bf->register_child_renderer('${snakeName}', sub {`)
-    lines.push(`    my ($child_props) = @_;`)
+    // `$caller_bf` is the instance whose template invoked render_child
+    // (#1897) — nested children chain their scope identity off it.
+    lines.push(`    my ($child_props, $caller_bf) = @_;`)
+    lines.push(`    my $host_scope = (defined $caller_bf ? $caller_bf->_scope_id : $bf->_scope_id);`)
     // (#1652) A child that destructures a rest-spread bag
     // (`function NativeSelect({ children, ...props })`) emits a
     // template referencing `$<restPropsName>`
@@ -351,6 +354,10 @@ function buildChildRenderers(
       lines.push(`    $child_props->{${rest}} = {} unless defined $child_props->{${rest}};`)
     }
     lines.push(`    my $child_bf = BarefootJS->new($c, {});`)
+    // (#1897) Nested `render_child` calls (a child template rendering
+    // another imported component) resolve against THIS instance's
+    // registry — share the parent's so they don't fail.
+    lines.push(`    $child_bf->_child_renderers($bf->_child_renderers);`)
     // JSX `key` (reserved prop) → data-key on the child's scope root, for
     // keyed-loop reconciliation parity with Hono.
     lines.push(`    my $data_key = delete $child_props->{key};`)
@@ -362,7 +369,7 @@ function buildChildRenderers(
     // `<ComponentName>_*`.
     lines.push(`    my $slot = delete $child_props->{_bf_slot};`)
     lines.push(`    if (defined $slot) {`)
-    lines.push(`      $child_bf->_scope_id($bf->_scope_id . "_$slot");`)
+    lines.push(`      $child_bf->_scope_id($host_scope . "_$slot");`)
     lines.push(`    } else {`)
     lines.push(`      $child_bf->_scope_id('${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
     lines.push(`    }`)
