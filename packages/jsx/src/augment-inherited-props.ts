@@ -245,15 +245,6 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
 }
 
 /**
- * Statically evaluate `[<string literals>].join(<sep?>)` (e.g. a module-scope
- * `const stateClasses = ['…', …].join(' ')`) to its joined string, so SSR
- * adapters inline the flattened literal byte-for-byte like the Hono reference
- * instead of referencing a binding that doesn't exist server-side. Default
- * separator `,` matches JS `Array.prototype.join`. Returns `null` for any
- * other shape (non-`.join` call, non-array receiver, non-string-literal element
- * or separator). Shared by the Mojo + Xslate adapters; Go keeps a private copy.
- */
-/**
  * Parse a const initializer to its static string value: a string literal,
  * a no-substitution template literal, or a `[<string literals>].join(sep)`
  * call. Returns `null` for anything else. The TS parser resolves escapes
@@ -381,6 +372,17 @@ export function lookupStaticRecordLiteral(
   return null
 }
 
+/**
+ * Statically evaluate `[<string literals>].join(<sep?>)` (e.g. a module-scope
+ * `const stateClasses = ['…', …].join(' ')`) to its joined string, so SSR
+ * adapters inline the flattened literal byte-for-byte like the Hono reference
+ * instead of referencing a binding that doesn't exist server-side. Default
+ * separator `,` matches JS `Array.prototype.join`. Returns `null` for any
+ * other shape (non-`.join` call, non-array receiver, non-string-literal element
+ * or separator). Shared by the Go, Mojo, and Xslate adapters (all three
+ * resolve module consts through `collectModuleStringConsts` above, which
+ * folds these joins during its fixed-point pass).
+ */
 export function evalStringArrayJoin(source: string): string | null {
   const sf = ts.createSourceFile(
     '__join.ts', `const __x = (${source});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,

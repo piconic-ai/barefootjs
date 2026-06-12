@@ -55,6 +55,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  exprToString,
   parseStyleObjectEntries,
   isSupported,
   identifierPath,
@@ -1660,13 +1661,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
       (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
     if (!isUndef) return null
-    // Re-derive the source spans textually: condition is everything
-    // before the first top-level `?`, consequent between it and the
-    // final `:`. The parse above guarantees the top-level shape.
-    const q = expr.indexOf('?')
-    const c = expr.lastIndexOf(':')
-    if (q === -1 || c === -1 || c < q) return null
-    return { condition: expr.slice(0, q).trim(), consequent: expr.slice(q + 1, c).trim() }
+    // Serialise the parsed sub-expressions back to JS source rather than
+    // slicing `expr` text — `indexOf('?')` / `lastIndexOf(':')` would
+    // mis-split when the consequent itself contains `?` / `:` inside a
+    // string or nested ternary (`cond ? 'a:b' : undefined`).
+    return {
+      condition: exprToString(parsed.test),
+      consequent: exprToString(parsed.consequent),
+    }
   }
 
   isBooleanTypedPropRef(expr: string): boolean {
