@@ -244,10 +244,18 @@ function buildManifest(dir: string, pkg: PkgJson) {
   const tsconfigPath = join(dir, 'tsconfig.json')
   if (existsSync(tsconfigPath)) {
     // tsconfig is JSONC — parse with the TS helper, not JSON.parse.
-    const { config } = ts.parseConfigFileTextToJson(
+    const { config, error } = ts.parseConfigFileTextToJson(
       tsconfigPath,
       readFileSync(tsconfigPath, 'utf8'),
     )
+    if (error) {
+      // Don't fail the whole mirror over it, but don't drop the JSX settings
+      // silently either — without them a .tsx-bearing package resurfaces as
+      // opaque TS2874/TS7026 publish errors.
+      console.warn(
+        `  warn  ${pkg.name}: tsconfig.json parse failed (${ts.flattenDiagnosticMessageText(error.messageText, ' ')}) — JSX settings not mirrored into deno.json`,
+      )
+    }
     const tsOpts = (config?.compilerOptions ?? {}) as Record<string, unknown>
     if (tsOpts.jsx) {
       compilerOptions.jsx = tsOpts.jsx
