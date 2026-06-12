@@ -412,7 +412,11 @@ function wrapGoArg(arg: string): string {
 function stringTolerantEqOperands(l: string, r: string): [string, string] {
   const isStrLit = (x: string) => /^"(?:[^"\\]|\\.)*"$/.test(x)
   if (isStrLit(l) === isStrLit(r)) return [l, r]
-  const wrap = (x: string) => (isStrLit(x) ? x : `(bf_string ${wrapGoArg(x).replace(/^\((.*)\)$/, '$1')})`)
+  // Keep `wrapGoArg`'s parentheses: a compound operand must reach
+  // `bf_string` as ONE argument — `(bf_string (or .Placement "top"))`,
+  // not `(bf_string or .Placement "top")` (which the template parser
+  // reads as three arguments and fails at runtime).
+  const wrap = (x: string) => (isStrLit(x) ? x : `(bf_string ${wrapGoArg(x)})`)
   return [wrap(l), wrap(r)]
 }
 

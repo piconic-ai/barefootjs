@@ -2141,6 +2141,22 @@ export function V({ variant }: { variant: 'a' | 'b' }) {
       expect(goCode).toContain('case "b": return "class-b"')
     })
 
+    test('string-tolerant eq keeps a compound operand grouped (#1903 review)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+export function T(props: { placement?: 'top' | 'left' }) {
+  return <div data-side={(props.placement ?? 'top') === 'left' ? 'l' : 'o'}>x</div>
+}
+`, adapter)
+      const out = adapter.generate(ir)
+      // The non-literal side routes through bf_string as ONE argument:
+      // `(bf_string (or .Placement "top"))`. Stripping the inner parens
+      // would hand the parser three arguments and fail at runtime with
+      // `bf_string: want 1 got 3`.
+      expect(out.template).toContain('eq (bf_string (or .Placement "top")) "left"')
+      expect(out.template).not.toContain('bf_string or ')
+    })
+
     test('intermediate-const composition (Button shape) carries through', () => {
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
