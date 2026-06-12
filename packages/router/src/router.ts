@@ -69,8 +69,9 @@ export interface RouterOptions {
   /** Reset scroll to the top after a swap (default: true). */
   scrollToTop?: boolean
   /**
-   * Prefetch a link's page on hover / focus / touchstart and cache it, so
-   * the click reuses it with no network wait. Also `modulepreload`s the
+   * Prefetch a link's page on hover (dwell), focus, or primary press
+   * (`pointerdown` — mouse/touch/pen, fires before `click`) and cache it,
+   * so the click reuses it with no network wait. Also `modulepreload`s the
    * page's island modules (fetch + compile, not execute). Default: `true`.
    */
   prefetch?: boolean
@@ -162,7 +163,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     document.addEventListener('mouseover', onPointerOver)
     document.addEventListener('mouseout', onPointerOut)
     document.addEventListener('focusin', onFocusIn)
-    document.addEventListener('touchstart', onTouchStart, { passive: true })
+    document.addEventListener('pointerdown', onPointerDown)
   }
   // Anchor the entry so a later back-navigation lands here.
   window.history.replaceState({ bfRouter: true }, '', window.location.href)
@@ -173,7 +174,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     document.removeEventListener('mouseover', onPointerOver)
     document.removeEventListener('mouseout', onPointerOut)
     document.removeEventListener('focusin', onFocusIn)
-    document.removeEventListener('touchstart', onTouchStart)
+    document.removeEventListener('pointerdown', onPointerDown)
     clearHoverTimer()
     state.inflight?.abort()
     if (active === state) active = null
@@ -372,9 +373,13 @@ function onFocusIn(event: FocusEvent): void {
   if (anchor) prefetch(anchor.href) // keyboard focus is intentional — no dwell
 }
 
-function onTouchStart(event: Event): void {
+function onPointerDown(event: MouseEvent): void {
+  // A primary press (mouse / touch / pen) is near-certain intent and fires
+  // tens of ms before `click`, so prefetch immediately — no dwell. Covers
+  // touch (no separate touchstart needed).
+  if (event.button !== 0) return
   const anchor = prefetchableAnchor(event)
-  if (anchor) prefetch(anchor.href) // touch → click is fast — prefetch eagerly
+  if (anchor) prefetch(anchor.href)
 }
 
 // ── internals ──────────────────────────────────────────────────────────────

@@ -270,3 +270,35 @@ test('a failed prefetch does not poison the cache — the click retries (Next.js
   expect(call).toBeGreaterThanOrEqual(2)
   expect(document.querySelector('[bf-outlet]')!.textContent).toContain('page 2 body')
 })
+
+function press(id: string, init: MouseEventInit = {}): void {
+  document
+    .getElementById(id)!
+    .dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0, ...init }))
+}
+
+test('primary press (pointerdown) prefetches immediately, no dwell; click reuses it', async () => {
+  ;(window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM?.setURL?.(
+    'https://example.test/blog/1',
+  )
+  const router = startRouter({ rehydrate: () => {} })
+  stop = router.stop
+
+  press('next')
+  await flush() // no dwell — press prefetches right away
+  expect(fetchCalls).toHaveLength(1)
+
+  clickLink('next')
+  await flush()
+  expect(fetchCalls).toHaveLength(1) // click reused the press-prefetched page
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('page 2 body')
+})
+
+test('non-primary press (e.g. right-click) does not prefetch', async () => {
+  const router = startRouter({ rehydrate: () => {} })
+  stop = router.stop
+
+  press('next', { button: 2 }) // secondary button
+  await flush()
+  expect(fetchCalls).toHaveLength(0)
+})

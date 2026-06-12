@@ -90,7 +90,8 @@ a backend returns one, but the router never asks for it.)
 
 ## Prefetch & cache
 
-On hover (after a short dwell), focus, or touchstart, the router
+On hover (after a short dwell), focus, or primary press (`pointerdown` —
+mouse/touch/pen, which fires before `click`), the router
 **prefetches** the link's page into an in-memory snapshot cache and
 `modulepreload`s its island modules (fetch + compile, not execute). The
 click then reuses the cached page with no network wait, and `import()`s
