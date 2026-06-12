@@ -24,10 +24,9 @@ ticks up on each swap.
 
 - **Server** (`server.ts`): plain Hono returning **HTML strings** — no
   JSX, no JSON envelope, no route manifest. 10 posts, tag filtering via
-  `?tag=`, and a `?delay=` knob (for the rapid-fire race test). Each route
-  hands a `body` to `respond()`, which returns the full page normally, or
-  just the `<main bf-outlet>` fragment when the router's
-  `X-Barefoot-Navigate` header is present (`Vary` set).
+  `?tag=`, and a `?delay=` knob (for the rapid-fire race test). Every route
+  returns the **full page**; the router extracts `[bf-outlet]` client-side
+  (no content-negotiation header — see the "no fragment negotiation" post).
 - **Client** (`client/entry.ts`): shell islands (uptime, nav counter,
   live-island gauge, theme toggle) + an outlet hydrate/dispose contract
   wired through `window.__bf_hydrate` (the router's rehydrate seam) and

@@ -11,12 +11,12 @@
  *   - a `?delay=<ms>` knob to force slow responses for the rapid-fire race
  *
  * Each route hands a `body`/`title` to `respond()`, which returns the
- * full page normally, or just the `<main bf-outlet>` fragment when the
- * router's `X-Barefoot-Navigate` header is present.
+ * full page; the router extracts `[bf-outlet]` client-side (no server
+ * content-negotiation).
  */
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { BF_OUTLET, BF_NAVIGATE_HEADER } from '@barefootjs/shared'
+import { BF_OUTLET } from '@barefootjs/shared'
 import { posts, postIndex, allTags } from './posts.ts'
 
 const app = new Hono()
@@ -58,10 +58,9 @@ async function respond(c: Context, page: Page): Promise<Response> {
   const delay = Number(c.req.query('delay') ?? 0)
   if (delay > 0) await new Promise((r) => setTimeout(r, Math.min(delay, 3000)))
 
-  if (c.req.header(BF_NAVIGATE_HEADER)) {
-    c.header('Vary', BF_NAVIGATE_HEADER)
-    return c.html(`<title>${esc(page.title)}</title><main ${BF_OUTLET}>${page.body}</main>`)
-  }
+  // Always return the full page. The router extracts [bf-outlet] client-side
+  // — no content-negotiation header (it would only shave compressible shell
+  // markup while hurting cache efficiency).
   return c.html(shell(page))
 }
 

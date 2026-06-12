@@ -50,10 +50,13 @@ Two costs scale with the **whole document**, not with what changed:
    (`packages/client/src/runtime/hydrate.ts`). The "outlet-only walk"
    column is what an IR-scoped walk would cost — flat, ~0.01ms, **~950×
    cheaper at 4k nodes**.
-2. **The zero-cooperation path parses the whole response** with `DOMParser`
-   to find `[bf-outlet]` (`packages/router/src/router.ts` `extractOutlet`).
-   "fragment parse" is the cost when the response is just the outlet —
-   flat, **~700× cheaper at 4k nodes**.
+2. **The router parses the whole response** with `DOMParser` to find
+   `[bf-outlet]` (`packages/router/src/router.ts` `extractOutlet`). The
+   "fragment parse" column is what parsing **only the outlet** would cost —
+   flat, **~700× cheaper at 4k nodes**. (This is a *client-side* win the
+   router could capture by extracting the outlet substring on the known
+   marker — it does **not** argue for a server fragment, which §5.4
+   explains is net-negative for caching.)
 
 A third cost isn't in the table because it's structural:
 
@@ -191,11 +194,12 @@ closing the gap the first design discussion flagged.
 
 The runtime stops scanning and starts looking up:
 
-- **Prefetch** (hover / viewport): fetch the outlet fragment **and**
-  `import()` the `modules` the target lists. By click time, both HTML and
-  island JS are warm → navigation feels instant (Turbo 8 / Inertia 2
-  prefetch, but the module list is exact, not guessed).
-- **Swap**: replace the outlet (fragment response by default; §5.4).
+- **Prefetch** (hover / viewport): fetch the page **and** `import()` the
+  island modules the response carries (its `<script type="module">` tags).
+  By click time both HTML and island JS are warm → navigation feels
+  instant (Turbo 8 / Inertia 2 prefetch).
+- **Swap**: replace the outlet, extracted from the full page client-side
+  (§5.4 — no server fragment negotiation).
 - **Targeted hydrate**: hydrate **only the listed island scope ids in the
   new subtree** — the flat-cost path the bench measured, not
   `rehydrateAll()` over the document.
@@ -207,13 +211,17 @@ The runtime stops scanning and starts looking up:
 The router is *generated/configured by the manifest*, not hand-written —
 this is the CLI-integrated, auto-wired end state.
 
-### 5.4 Server — fragment by default, derived
+### 5.4 Server — plain full pages (no fragment negotiation)
 
-The outlet is compiler-known, so the adapter can offer a one-liner
-`bfPartial(c, Component, props)` that returns the full page normally and
-just the outlet fragment under `X-Barefoot-Navigate` (the prototype already
-does this by hand in the example; §"Optional payload optimization" post).
-With the outlet derived, this becomes adapter-provided, not app-authored.
+The server just returns full pages; the router extracts `[bf-outlet]`
+client-side. Server-side fragment content-negotiation was considered and
+**dropped**: returning only the outlet shaves highly-compressible shell
+markup (gzip already handles it) while *hurting* cache efficiency
+(`Vary`-fragmented per URL) and forcing every fragment to re-include its
+island `<script type="module">` tags and `<title>` (or navigated-to
+islands go inert). The cost that matters is the round-trip — addressed by
+prefetch (§5.3), not by shrinking the payload. This also keeps the
+"any backend, zero cooperation" property pure.
 
 ### 5.5 The two `@barefootjs/client` changes that unlock it — **implemented (P0)**
 
@@ -306,7 +314,7 @@ and BarefootJS make different trade-offs:
 | | VDOM-SSR (Next / TanStack) | BarefootJS IR-router |
 |---|---|---|
 | Initial JS | framework + route components, full-tree hydrate | islands only, island-granular hydrate |
-| Nav payload | RSC/flight or loader JSON | outlet fragment, or signal patch (§6) |
+| Nav payload | RSC/flight or loader JSON | full HTML page (outlet extracted client-side), or signal patch (§6) |
 | Nav client work | deserialize + VDOM reconcile | swap + O(islands) hydrate, no diff |
 | Hydrate scope | route subtree (framework-managed) | exact island ids (compiler-managed) |
 | Prefetch | route-level | exact module set from manifest |

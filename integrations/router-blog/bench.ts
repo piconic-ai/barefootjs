@@ -101,6 +101,8 @@ Reading:
   hydration walk cost is O(document) today but could be O(outlet) if the
   router knew which subtree to hydrate (it does, at compile time).
 - "full parse" vs "fragment parse": parsing the whole response client-side
-  is pure waste when only the outlet changed. A fragment response (or an
-  IR-known outlet) avoids it.
+  costs more than parsing just the outlet. This is a CLIENT-side win — the
+  router could extract the outlet substring on the known marker instead of
+  DOMParsing the whole document. It is NOT an argument for a server
+  fragment (that hurts cache efficiency; see DESIGN.md §5.4).
 `)

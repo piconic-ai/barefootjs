@@ -28,8 +28,8 @@ export const posts: Post[] = [
     excerpt: 'The server just returns HTML. The router pulls the outlet out of the response on the client.',
     body: [
       'There is no special protocol to implement. This blog is a plain Hono server returning HTML strings.',
-      'On navigation the router sends an X-Barefoot-Navigate header so a backend can return just the fragment — but it is optional.',
-      'That is why the same approach works against Go, Perl, or any other backend the adapters target.',
+      'The router sends no content-negotiation header: it just fetches the page and pulls the outlet out of the response on the client.',
+      'That is why the same approach works against Go, Perl, or any other backend the adapters target — the server stays a plain HTML server.',
     ],
   },
   {
@@ -105,15 +105,15 @@ export const posts: Post[] = [
     ],
   },
   {
-    slug: 'payload-optimization',
-    title: 'Optional payload optimization',
+    slug: 'no-fragment-negotiation',
+    title: 'Why there is no fragment negotiation',
     date: '2026-06-18',
     tags: ['backend', 'perf'],
-    excerpt: 'A cooperating backend returns just the outlet fragment; everyone else returns the full page.',
+    excerpt: 'Returning just the outlet fragment was considered and dropped — it shaves compressible markup but hurts caching.',
     body: [
-      'When the router asks with X-Barefoot-Navigate, this server returns only the outlet fragment and a title — fewer bytes over the wire.',
-      'Drop the header handling and the router still works by extracting the outlet from a full-page response.',
-      'Two response shapes, one client. Vary is set so caches do not cross the streams.',
+      'A "smaller" fragment response only removes the shell markup, which gzip already compresses to almost nothing — while making the same URL return two different bodies, so it needs a Vary header that fragments the cache.',
+      'It would also force every fragment to re-include its island <script type="module"> tags and <title>, or navigated-to islands go inert.',
+      'The cost that actually matters is the round-trip, not the byte count — so the effort goes into prefetch, and the server stays a plain, cacheable HTML server.',
     ],
   },
   {
