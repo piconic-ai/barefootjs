@@ -105,6 +105,12 @@ func FuncMap() template.FuncMap {
 		// Portal HTML rendering (parses and executes template string)
 		"bfPortalHTML": PortalHTML,
 
+		// JSX children passed to an imported child component (#1896):
+		// the parent renders the children fragment via a companion
+		// define (executed through bf_tmpl from TemplateFuncMap) and
+		// injects the result into the child's Children field.
+		"bf_with_children": WithChildren,
+
 		// Scope comment for fragment roots
 		"bfScopeComment": ScopeComment,
 
@@ -1640,6 +1646,67 @@ func ScopeComment(props interface{}) (template.HTML, error) {
 		propsJSON = "|" + string(pJSON)
 	}
 	return template.HTML("<!--bf-scope:" + scopeID + hostSegment + propsJSON + "-->"), nil
+}
+
+// TemplateFuncMap returns the helpers that need access to the executing
+// template set itself, closed over the *template.Template the component
+// defines are parsed into. Register it alongside FuncMap BEFORE parsing:
+//
+//	t := template.New("")
+//	t.Funcs(bf.FuncMap()).Funcs(bf.TemplateFuncMap(t))
+//	template.Must(t.Parse(src))
+//
+// bf_tmpl executes a named define from the same set and returns its
+// output — used for the per-call-site children defines the Go adapter
+// emits when JSX children passed to an imported component contain
+// template actions (nested components, dynamic text) and therefore
+// cannot be baked to a static HTML string (#1896). Reentrant execution
+// of an html/template set from inside a FuncMap function is safe: the
+// escape analysis over every define completes before the outer
+// Execute begins evaluating.
+func TemplateFuncMap(t *template.Template) template.FuncMap {
+	return template.FuncMap{
+		"bf_tmpl": func(name string, data interface{}) (template.HTML, error) {
+			var buf bytes.Buffer
+			if err := t.ExecuteTemplate(&buf, name, data); err != nil {
+				return "", err
+			}
+			return template.HTML(buf.String()), nil
+		},
+	}
+}
+
+// WithChildren returns a shallow copy of a component Props struct with its
+// Children field replaced by the given pre-rendered fragment (#1896). The
+// props value stays by-value semantics: callers' originals are untouched.
+// A props type without a Children field passes through unchanged — the
+// child template then simply has no children to render, matching the
+// pre-#1896 behaviour.
+func WithChildren(props interface{}, children template.HTML) (interface{}, error) {
+	v := reflect.ValueOf(props)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return props, nil
+	}
+	field := v.FieldByName("Children")
+	if !field.IsValid() {
+		return props, nil
+	}
+	copyPtr := reflect.New(v.Type())
+	copyPtr.Elem().Set(v)
+	target := copyPtr.Elem().FieldByName("Children")
+	switch {
+	case target.Kind() == reflect.Interface:
+		target.Set(reflect.ValueOf(children))
+	case target.Kind() == reflect.String:
+		// Covers both `string` and `template.HTML`-typed fields.
+		target.SetString(string(children))
+	default:
+		return props, fmt.Errorf("bf_with_children: unsupported Children field type %s", target.Type())
+	}
+	return copyPtr.Elem().Interface(), nil
 }
 
 // PortalHTML parses and executes a template string with the provided data.
