@@ -358,7 +358,10 @@ function buildChildRenderers(
     lines.push(`{`)
     lines.push(`  my $defaults = ${defaultsPerl};`)
     lines.push(`  $bf->register_child_renderer('${snakeName}', sub {`)
-    lines.push(`    my ($child_props) = @_;`)
+    // `$caller_bf` is the instance whose template invoked render_child
+    // (#1897) — nested children chain their scope/slot identity off it.
+    lines.push(`    my ($child_props, $caller_bf) = @_;`)
+    lines.push(`    my $host_scope = (defined $caller_bf ? $caller_bf->_scope_id : $bf->_scope_id);`)
     // A child that destructures a rest bag references `$<rest>` in its
     // template; seed it with an empty hashref when the caller didn't pass
     // one so Kolon's var lookup doesn't fault.
@@ -374,9 +377,9 @@ function buildChildRenderers(
     // A loop child (no slot) gets a fresh `<ComponentName>_<rand>` id per
     // iteration — the PascalCase name is what `normalizeHTML` canonicalises to
     // `<ComponentName>_*`; a slotted child derives from the parent scope.
-    lines.push(`    $child_bf->_scope_id($slot_id ? '${rootChildScopePrefix(snakeName)}' . '_' . $slot_id : '${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
+    lines.push(`    $child_bf->_scope_id($slot_id ? $host_scope . '_' . $slot_id : '${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
     lines.push(`    $child_bf->_is_child(1);`)
-    lines.push(`    if ($slot_id) { $child_bf->_bf_parent('${rootChildScopePrefix(snakeName)}'); $child_bf->_bf_mount($slot_id); }`)
+    lines.push(`    if ($slot_id) { $child_bf->_bf_parent($host_scope); $child_bf->_bf_mount($slot_id); }`)
     // (#1897) A child template may itself call `$bf.render_child(...)`
     // (AccordionTrigger renders ChevronDownIcon) — inside that template
     // `$bf` is THIS fresh child instance, whose renderer registry starts
@@ -398,22 +401,6 @@ function buildChildRenderers(
   return lines.join('\n')
 }
 
-/**
- * The parent scope prefix child scope ids derive from. The harness pins
- * the root scope id to `test` (or `__instanceId`); children read the live
- * parent scope at render time, but the test renderer doesn't have the
- * parent `$bf` in lexical scope inside `buildChildRenderers`, so we use
- * the same `$bf->_scope_id` value the script set. Emitted as the literal
- * `$bf->_scope_id` lookup so an explicit `__instanceId` still flows
- * through.
- */
-function rootChildScopePrefix(_snakeName: string): string {
-  // Resolve the parent scope dynamically in Perl rather than baking the
-  // literal here — keeps the child id correct under an explicit
-  // __instanceId. The single quotes in the caller string-concat are
-  // closed around this Perl fragment.
-  return `' . $bf->_scope_id . '`
-}
 
 /** Serialise an ssrDefaults map to a Perl hashref literal. */
 function ssrDefaultsToPerl(defaults: Record<string, unknown>): string {

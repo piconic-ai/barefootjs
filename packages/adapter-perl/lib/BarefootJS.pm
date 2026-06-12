@@ -287,7 +287,12 @@ sub render_child ($self, $name, @args) {
     # touch children when present" behaviour.
     $props{children} = $self->backend->materialize($props{children})
         if exists $props{children};
-    return $renderer->(\%props);
+    # Pass the INVOKING instance as a second argument (#1897): a renderer
+    # registered on the root may be called from a nested child render
+    # (AccordionTrigger -> ChevronDownIcon), and the grandchild's scope /
+    # slot identity must chain off the CALLER's scope id, not the
+    # registrant's. Renderers that destructure only `($props)` ignore it.
+    return $renderer->(\%props, $self);
 }
 
 # ---------------------------------------------------------------------------
@@ -345,7 +350,13 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
         my $signal_init = $signal_inits->{$slot_key};
         my $manifest_defaults = $manifest->{$entry_name}{ssrDefaults};
         $self->register_child_renderer($slot_key, sub {
-            my ($props) = @_;
+            # `$caller` is the instance whose template invoked
+            # `render_child` (#1897) — for a nested render that is a child
+            # instance, and the grandchild's scope/slot identity must chain
+            # off ITS scope id (`root_s0_s0`), not the registrant's.
+            my ($props, $caller) = @_;
+            my $host = $caller // $parent;
+            my $host_scope = $host->_scope_id // $parent_scope;
             # Child shares the parent's backend so nested renders go
             # through the same engine + controller (and inherit any
             # injected json_encoder). The controller is fetched via the weak
@@ -358,16 +369,19 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
             my $data_key = delete $props->{key};
             $child_bf->_data_key($data_key) if defined $data_key;
             $child_bf->_scope_id(
-                $slot_id ? $parent_scope . '_' . $slot_id
+                $slot_id ? $host_scope . '_' . $slot_id
                          : $template_name . '_' . substr(rand() =~ s/^0\.//r, 0, 6)
             );
             $child_bf->_is_child(1);
             # (#1249) Slot identity: host scope + slot id. Emitted as
             # bf-h / bf-m attributes by hydration_attrs.
             if ($slot_id) {
-                $child_bf->_bf_parent($parent_scope);
+                $child_bf->_bf_parent($host_scope);
                 $child_bf->_bf_mount($slot_id);
             }
+            # Share the root registry so the child's own template can
+            # render further imported components (#1897).
+            $child_bf->_child_renderers($parent->_child_renderers);
             $child_bf->_scripts($parent->_scripts);
             $child_bf->_script_seen($parent->_script_seen);
 
