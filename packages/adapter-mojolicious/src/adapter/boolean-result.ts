@@ -112,6 +112,11 @@ const ARIA_BOOLEAN_ATTRS = new Set([
   'aria-multiselectable',
   'aria-readonly',
   'aria-required',
+  // true | false | undefined (absent) — selection / disclosure state
+  // (#1897: tabs' `aria-selected={props.selected ?? false}` rendered the
+  // Perl-native `1`/`0` without this).
+  'aria-selected',
+  'aria-expanded',
   // Tri-state (true | false | mixed). The `bool_str` helper only
   // maps Perl truthy / falsy to true / false — a fixture that wants
   // the literal `"mixed"` would bind a string-valued JSX attr

@@ -25,24 +25,18 @@ runAdapterConformanceTests({
   name: 'xslate',
   factory: () => new XslateAdapter(),
   render: renderXslateComponent,
-  // JSX-render skips: every other shared conformance fixture renders to
-  // Hono parity on real Text::Xslate — `dialog` / `popover` / `tooltip`
-  // joined after #1903's shared-helper fixes (inherited-prop scanning of
-  // template parts + branch walks) and the nested child-renderer
-  // registry propagation below. Shapes the adapter intentionally
-  // refuses at build time are pinned in `expectedDiagnostics`.
-  //
-  // #1467 demo corpus — remaining #1897 gaps:
-  //   - `tabs`: prop-driven ARIA booleans stringify as Perl `1`/`0` vs
-  //     Hono's `true`/`false`.
-  //   - `accordion`: the trigger's nested ChevronDownIcon renders empty
-  //     (the Kolon render of the icon template silently yields '' —
-  //     unlike the registry gap, the renderer IS registered), and the
-  //     composed module-const class strings resolve empty.
-  //   - `pagination`: composed module-const class strings
-  //     (`${buttonBaseClasses} ${variantClasses.ghost} …`) resolve
-  //     empty on the Kolon side.
-  skipJsx: ['accordion', 'tabs', 'pagination'],
+  // No JSX-render skips: every shared conformance fixture — including
+  // the composed `site/ui` demo corpus (#1467 / #1897) — renders to
+  // Hono parity on real Text::Xslate. The last three (`tabs`,
+  // `accordion`, `pagination`) came off via: shared module-const
+  // resolution (composed template-literal consts), compile-time
+  // record-property lookup (`variantClasses.ghost`), ARIA
+  // `aria-selected`/`aria-expanded` + boolean-TYPED prop routing
+  // through `bool_str`, `attr={cond ? v : undefined}` omission, and
+  // literal-const inlining (`totalPages`). Shapes the adapter
+  // intentionally refuses at build time stay pinned in
+  // `expectedDiagnostics` below.
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.

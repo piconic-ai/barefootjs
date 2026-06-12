@@ -17,27 +17,18 @@ runAdapterConformanceTests({
   name: 'mojo',
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
-  // JSX-render skips: every other shared conformance fixture renders to
-  // Hono parity on real Mojolicious. Shapes the adapter intentionally
-  // refuses at build time are pinned in `expectedDiagnostics` below.
-  //
-  // `tabs` (#1467 demo corpus): compiles clean but fails at render time
-  // inside `BarefootJS::render_child` (Mojo::Template exception) for the
-  // composed `{{template}}`-equivalent child call. Cross-adapter parity
-  // for the composed `site/ui` demo corpus is the #1467 Phase 3
-  // follow-up; see https://github.com/piconic-ai/barefootjs/issues/1897.
-  // Hono SSR conformance + the real-browser fixture-hydrate layer keep
-  // the fixture fully covered.
-  // `tooltip` (#1467 Phase 2c overlay): compiles, and `render_child`
-  // even passes the JSX children through — but the child template
-  // references its props as undeclared Perl lexicals (`Global symbol
-  // "$open" requires explicit package name`), the adapter's known
-  // Perl-scoping limitation surfacing at render time. Same #1897
-  // bucket.
-  // `pagination` (#1467 Phase 2e): compiles clean but the EP render
-  // dies in perl (exit 2) on the composed link shape — same #1897
-  // bucket as `tabs`/`tooltip`.
-  skipJsx: ['tabs', 'tooltip', 'pagination'],
+  // No JSX-render skips: every shared conformance fixture — including
+  // the renderable members of the composed `site/ui` demo corpus
+  // (#1467 / #1897) — renders to Hono parity on real Mojolicious.
+  // `tabs` / `tooltip` / `pagination` came off via the harness's
+  // child-defaults seeding (declared props, inherited accesses, signal
+  // initials, memo ssrDefaults — closing the strict-vars `Global
+  // symbol "$id"` gap), boolean-typed prop routing through
+  // `bf->bool_str`, `attr={cond ? v : undefined}` omission, and
+  // literal-const inlining. The remaining demo fixtures are pinned in
+  // `expectedDiagnostics` below — they need the context-provider
+  // object-literal lowering, an adapter feature tracked in #1897.
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't

@@ -5,7 +5,7 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileJSX, extractSsrDefaults } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, augmentInheritedPropAccesses } from '@barefootjs/jsx'
 import type { ComponentIR } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -332,6 +332,7 @@ function buildChildRenderers(
     lines.push(`  close $child_fh;`)
     lines.push(`  my $child_mt = Mojo::Template->new(vars => 1, auto_escape => 1);`)
 
+    lines.push(`  my $defaults_${snakeName} = ${buildChildDefaultsPerl(childIR)};`)
     lines.push(`  $bf->register_child_renderer('${snakeName}', sub {`)
     // `$caller_bf` is the instance whose template invoked render_child
     // (#1897) — nested children chain their scope identity off it.
@@ -352,6 +353,20 @@ function buildChildRenderers(
     if (childIR.metadata.restPropsName) {
       const rest = childIR.metadata.restPropsName
       lines.push(`    $child_props->{${rest}} = {} unless defined $child_props->{${rest}};`)
+      // (#1897) Route non-param props into the rest bag (JSX rest
+      // semantics): a caller prop the child didn't destructure belongs
+      // in the bag, not as a top-level stash var. Mirrors the Xslate
+      // harness and the production isRestProps branch.
+      const paramNames = (childIR.metadata.propsParams ?? []).map(p => p.name)
+      const keepList = [...new Set([...paramNames, rest, 'children', 'key', '_bf_slot'])]
+        .map(n => `'${n.replace(/[\\']/g, m => `\\${m}`)}'`)
+        .join(', ')
+      lines.push(`    {`)
+      lines.push(`      my %keep = map { $_ => 1 } (${keepList});`)
+      lines.push(`      for my $k (grep { !$keep{$_} } keys %$child_props) {`)
+      lines.push(`        $child_props->{${rest}}{$k} = delete $child_props->{$k};`)
+      lines.push(`      }`)
+      lines.push(`    }`)
     }
     lines.push(`    my $child_bf = BarefootJS->new($c, {});`)
     // (#1897) Nested `render_child` calls (a child template rendering
@@ -373,7 +388,9 @@ function buildChildRenderers(
     lines.push(`    } else {`)
     lines.push(`      $child_bf->_scope_id('${componentName}_' . substr(rand() =~ s/^0\\.//r, 0, 6));`)
     lines.push(`    }`)
-    lines.push(`    my $rendered = $child_mt->render($child_tmpl, { %$child_props, bf => $child_bf });`)
+    // Seed statically-derived defaults under the caller's props (#1897)
+    // so undeclared optional props / signals don't abort strict vars.
+    lines.push(`    my $rendered = $child_mt->render($child_tmpl, { %$defaults_${snakeName}, %$child_props, bf => $child_bf });`)
     lines.push(`    die $rendered->to_string if ref $rendered;`)
     lines.push(`    chomp $rendered;`)
     lines.push(`    return $rendered;`)
@@ -398,6 +415,59 @@ function toSnakeCase(name: string): string {
 /**
  * Build a Perl hash literal from props.
  */
+/**
+ * Statically-derived default template vars for a CHILD component
+ * (#1897): every declared prop (its JSX default or `undef`), inherited
+ * `props.<x>` accesses, signal initial values, and memo ssrDefaults.
+ * Without these, a child template referencing an optional prop the
+ * caller didn't pass (`$id`, `$className`) or its own signal (`$open`)
+ * aborts under Mojo::Template's strict vars. Caller-passed props win at
+ * merge time (`{ %$defaults, %$child_props }`). Mirrors the root-side
+ * seeding in `buildPerlProps` and the production plugin's
+ * `ssrDefaults` consumption.
+ */
+function buildChildDefaultsPerl(ir: ComponentIR): string {
+  // Surface inherited `props.<x>` reads hidden inside template-literal
+  // attr parts / conditional branches as propsParams (idempotent; the
+  // same shared pass the adapters apply — without it TabsContent's
+  // `${props.className ?? ''}` class read never seeds `$className`).
+  augmentInheritedPropAccesses(ir)
+  const entries: string[] = []
+  const declared = new Set<string>()
+  for (const param of ir.metadata.propsParams) {
+    declared.add(param.name)
+    if (param.defaultValue) {
+      const perlValue = jsToPerlValue(param.defaultValue)
+      if (perlValue !== null) {
+        entries.push(`${param.name} => ${perlValue}`)
+        continue
+      }
+    }
+    entries.push(`${param.name} => undef`)
+  }
+  if (ir.metadata.propsObjectName) {
+    for (const name of collectPropsObjectAccesses(ir, ir.metadata.propsObjectName)) {
+      if (declared.has(name)) continue
+      declared.add(name)
+      entries.push(`${name} => undef`)
+    }
+  }
+  for (const signal of ir.metadata.signals) {
+    const value = evaluateSignalInit(signal.initialValue.trim(), undefined)
+    entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
+  }
+  const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
+  for (const memo of ir.metadata.memos) {
+    const entry = ssrDefaults[memo.name]
+    const value =
+      entry && typeof entry === 'object' && 'value' in entry ? entry.value : undefined
+    entries.push(
+      `${memo.name} => ${value !== undefined && value !== null ? toPerlLiteral(value) : 'undef'}`,
+    )
+  }
+  return `{${entries.join(', ')}}`
+}
+
 function buildPerlProps(
   _componentName: string,
   props: Record<string, unknown> | undefined,
