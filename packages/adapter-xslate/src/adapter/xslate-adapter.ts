@@ -55,6 +55,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  exprToString,
   parseStyleObjectEntries,
   isSupported,
   identifierPath,
@@ -64,11 +65,13 @@ import {
   augmentInheritedPropAccesses,
   parseRecordIndexAccess,
   evalStringArrayJoin,
+  collectModuleStringConsts,
   extractArrowBodyExpression,
   collectContextConsumers,
   isLowerableObjectRestDestructure,
   type ContextConsumer,
   extractSsrDefaults,
+  lookupStaticRecordLiteral
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
@@ -223,6 +226,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    */
   private propsObjectName: string | null = null
   private propsParams: { name: string }[] = []
+  private booleanTypedProps: Set<string> = new Set()
   /**
    * Names (signal getters + props) whose value is a string, so `===`/`!==`
    * against them lowers to Perl `eq`/`ne` rather than numeric `==`/`!=`.
@@ -274,6 +278,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // shared helper, before deriving `nullableOptionalProps` below.
     augmentInheritedPropAccesses(ir)
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    // Props whose declared TS type is boolean — a bare binding of one
+    // (`data-active={props.isActive}`) must stringify as JS
+    // `String(boolean)` ("true"/"false"), not Perl's native `1`/`''`
+    // (#1897, pagination's data-active).
+    this.booleanTypedProps = new Set(
+      ir.metadata.propsParams
+        .filter(prop => prop.type?.primitive === 'boolean' || prop.type?.raw === 'boolean')
+        .map(prop => prop.name),
+    )
     this.localConstants = ir.metadata.localConstants ?? []
     // Bare references to optional, no-default, non-primitive props (e.g.
     // textarea's `rows`) are `undef` when omitted → `defined`-guarded in
@@ -1129,7 +1142,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       ) {
         const perl = this.convertExpressionToKolon(value.expr)
         const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name)
+          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
             ? `${name}="<: $bf.bool_str(${perl}) :>"`
             : `${name}="<: ${perl} :>"`
         // Kolon `:` line directives must each stand alone on their own line, so
@@ -1140,10 +1153,23 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         // Boolean attributes: render conditionally (present or absent).
         return `<: ${this.convertExpressionToKolon(value.expr)} ? '${name}' : '' :>`
       }
+      // `attr={cond ? value : undefined}` OMITS the attribute on the
+      // falsy branch (Hono drops undefined-valued attributes) — wrap the
+      // whole attribute in the condition instead of rendering `attr=""`
+      // (#1897, pagination's `aria-current={props.isActive ? 'page' :
+      // undefined}`). Same parity rule the Go adapter applies.
+      {
+        const m = this.parseUndefinedAlternateTernary(value.expr)
+        if (m) {
+          const cond = this.convertExpressionToKolon(m.condition)
+          const val = this.convertExpressionToKolon(m.consequent)
+          return `\n: if (${cond}) {\n${name}="<: ${val} :>"\n: }\n`
+        }
+      }
       // Boolean-result handling: route boolean-shaped values through
       // `$bf.bool_str` so the wire bytes match JS `String(boolean)`.
       const perl = this.convertExpressionToKolon(value.expr)
-      if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name)) {
+      if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)) {
         return `${name}="<: $bf.bool_str(${perl}) :>"`
       }
       return `${name}="<: ${perl} :>"`
@@ -1608,6 +1634,76 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * normal `$name` stash lowering). Loop-bound names shadow module consts, so
    * never inline inside a loop body. Returns `'<escaped>'`.
    */
+  /**
+   * Resolve `IDENT.key` over a module object-literal const to its Kolon
+   * literal (`variantClasses.ghost` in a class template literal —
+   * #1897). Same compile-time inlining family as
+   * `_resolveModuleStringConst`; returns `null` for any non-static shape.
+   */
+  /**
+   * Whether `expr` is a bare reference to a boolean-TYPED prop
+   * (`props.isActive` / destructured `isActive`) — used to route the
+   * binding through `bool_str` even though the expression itself is
+   * structurally opaque (#1897).
+   */
+  /**
+   * Parse `cond ? value : undefined` (or `: null`), returning the
+   * condition/consequent source spans, else `null`. Used for the
+   * attribute-omission rule (#1897).
+   */
+  parseUndefinedAlternateTernary(
+    expr: string,
+  ): { condition: string; consequent: string } | null {
+    const parsed = parseExpression(expr.trim())
+    if (parsed?.kind !== 'conditional') return null
+    const alt = parsed.alternate
+    const isUndef =
+      (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
+      (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
+    if (!isUndef) return null
+    // Serialise the parsed sub-expressions back to JS source rather than
+    // slicing `expr` text — `indexOf('?')` / `lastIndexOf(':')` would
+    // mis-split when the consequent itself contains `?` / `:` inside a
+    // string or nested ternary (`cond ? 'a:b' : undefined`).
+    return {
+      condition: exprToString(parsed.test),
+      consequent: exprToString(parsed.consequent),
+    }
+  }
+
+  isBooleanTypedPropRef(expr: string): boolean {
+    let bare = expr.trim()
+    if (this.propsObjectName && bare.startsWith(`${this.propsObjectName}.`)) {
+      bare = bare.slice(this.propsObjectName.length + 1)
+    }
+    if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
+    return this.booleanTypedProps.has(bare)
+  }
+
+  /**
+   * Inline a const (any scope) whose initializer is a pure numeric or
+   * single-quoted string literal (`const totalPages = 5`, #1897
+   * pagination) — function-scope consts never reach the per-render
+   * stash, so a bare `$totalPages` renders empty.
+   */
+  _resolveLiteralConst(name: string): string | null {
+    const c = (this.localConstants ?? []).find(lc => lc.name === name)
+    if (c?.value === undefined) return null
+    const v = c.value.trim()
+    if (/^-?\d+(\.\d+)?$/.test(v)) return v
+    const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
+    if (strLit) return `'${strLit[1].replace(/[\\']/g, m => `\\${m}`)}'`
+    return null
+  }
+
+  _resolveStaticRecordLiteral(objectName: string, key: string): string | null {
+    const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants)
+    if (!hit) return null
+    return hit.kind === 'number'
+      ? hit.text
+      : `'${hit.text.replace(/[\\']/g, m => `\\${m}`)}'`
+  }
+
   _resolveModuleStringConst(name: string): string | null {
     // A loop body may bind `my $<param>` that shadows a module const of the
     // same name; never inline inside one (conservative — drop to `$name`).
@@ -1881,21 +1977,6 @@ function unescapeStringLiteralBody(s: string): string {
   })
 }
 
-/**
- * Build the module pure-string-const map from the IR's localConstants. A const
- * qualifies only when module-scope (`isModule`) and its initializer parses to a
- * single pure string literal.
- */
-function collectModuleStringConsts(constants: IRMetadata['localConstants'] | undefined): Map<string, string> {
-  const map = new Map<string, string>()
-  for (const c of constants ?? []) {
-    if (!c.isModule) continue
-    if (c.value === undefined) continue
-    const literal = parsePureStringLiteral(c.value)
-    if (literal !== null) map.set(c.name, literal)
-  }
-  return map
-}
 
 /** True when `type` is the `string` primitive. */
 function isStringTypeInfo(type: TypeInfo | undefined): boolean {
@@ -2088,10 +2169,17 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
   constructor(private readonly adapter: XslateAdapter) {}
 
   identifier(name: string): string {
+    // `undefined` / `null` nested inside a larger expression tree —
+    // Kolon `nil` (#1897).
+    if (name === 'undefined' || name === 'null') return 'nil'
     // Inline a module-scope pure-string const (`const x = 'literal'`) — it
     // never reaches the per-render stash, so a bare `$x` would render empty.
     const inlined = this.adapter._resolveModuleStringConst(name)
     if (inlined !== null) return inlined
+    // Same for a literal const of any scope (`const totalPages = 5`,
+    // #1897 pagination's `Page {currentPage()} of {totalPages}`).
+    const literalConst = this.adapter._resolveLiteralConst(name)
+    if (literalConst !== null) return literalConst
     return `$${name}`
   }
 
@@ -2107,6 +2195,14 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
     // (props arrive as individual top-level vars, not a `$props` hashref).
     if (object.kind === 'identifier' && object.name === 'props') {
       return `$${property}`
+    }
+    // Static property access on a module object-literal const
+    // (`variantClasses.ghost`, #1897) resolves at compile time — the
+    // generic dot lowering below would reference a Kolon var that
+    // doesn't exist server-side and silently render ''.
+    if (object.kind === 'identifier') {
+      const staticValue = this.adapter._resolveStaticRecordLiteral(object.name, property)
+      if (staticValue !== null) return staticValue
     }
     const obj = emit(object)
     // `.length` → `$bf.length` (array count or string char count, JS-compat);

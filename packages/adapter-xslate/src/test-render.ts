@@ -367,6 +367,20 @@ function buildChildRenderers(
     // one so Kolon's var lookup doesn't fault.
     if (restPropsName) {
       lines.push(`    $child_props->{${restPropsName}} = {} unless defined $child_props->{${restPropsName}};`)
+      // (#1897) Route non-param props into the rest bag, mirroring the
+      // production runtime's `_derive_stash_from_defaults` isRestProps
+      // branch and JSX rest semantics: a caller prop the child didn't
+      // destructure (`href` on PaginationPrevious's `{...props}` anchor)
+      // belongs in the bag, not as a top-level stash var the template
+      // never reads.
+      const paramNames = (childIR.metadata.propsParams ?? []).map(p => p.name)
+      const keep = JSON.stringify([...new Set([...paramNames, restPropsName, 'children', 'key', '_bf_slot'])])
+      lines.push(`    {`)
+      lines.push(`      my %keep = map { $_ => 1 } @{ ${perlArrayLiteral(keep)} };`)
+      lines.push(`      for my $k (grep { !$keep{$_} } keys %$child_props) {`)
+      lines.push(`        $child_props->{${restPropsName}}{$k} = delete $child_props->{$k};`)
+      lines.push(`      }`)
+      lines.push(`    }`)
     }
     lines.push(`    my $slot_id = delete $child_props->{_bf_slot};`)
     lines.push(`    my $child_bf = BarefootJS->new(undef, { backend => $backend });`)
@@ -401,6 +415,13 @@ function buildChildRenderers(
   return lines.join('\n')
 }
 
+
+
+/** Render a JSON string-array as a Perl arrayref literal (['a','b']). */
+function perlArrayLiteral(jsonArray: string): string {
+  const names = JSON.parse(jsonArray) as string[]
+  return `[${names.map(n => `'${n.replace(/[\\']/g, m => `\\${m}`)}'`).join(', ')}]`
+}
 
 /** Serialise an ssrDefaults map to a Perl hashref literal. */
 function ssrDefaultsToPerl(defaults: Record<string, unknown>): string {

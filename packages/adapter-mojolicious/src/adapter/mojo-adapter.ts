@@ -56,6 +56,8 @@ import {
   isLowerableObjectRestDestructure,
   type ContextConsumer,
   extractSsrDefaults,
+  collectModuleStringConsts,
+  lookupStaticRecordLiteral
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 
@@ -249,6 +251,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   private propsObjectName: string | null = null
   private propsParams: { name: string }[] = []
+  private booleanTypedProps: Set<string> = new Set()
   /**
    * Names (signal getters + props) whose value is a string, so `===`/`!==`
    * against them lowers to Perl `eq`/`ne` rather than numeric `==`/`!=`.
@@ -322,6 +325,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // serialization happens before `generate`, so this mutation doesn't reach it).
     augmentInheritedPropAccesses(ir)
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    // Props whose declared TS type is boolean — a bare binding of one
+    // (`data-active={props.isActive}`) must stringify as JS
+    // `String(boolean)` ("true"/"false"), not Perl's native `1`/`''`
+    // (#1897, pagination's data-active).
+    this.booleanTypedProps = new Set(
+      ir.metadata.propsParams
+        .filter(prop => prop.type?.primitive === 'boolean' || prop.type?.raw === 'boolean')
+        .map(prop => prop.name),
+    )
     // No-destructure-default props → `undef` when the caller omits them
     // → guard their bare-reference attribute emission with Perl `defined`
     // so the attribute drops instead of rendering `attr=""` (Hono-style
@@ -361,7 +373,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     for (const p of ir.metadata.propsParams) {
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
-    this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
+    this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
     this.loopBoundNames.clear()
     this.errors = []
@@ -430,25 +442,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
   }
 
-  /**
-   * Build the module pure-string-const map from the IR's localConstants.
-   * A const qualifies only when it is module-scope (`isModule`) and its
-   * initializer parses to a single string literal (`ts.StringLiteral` or
-   * `ts.NoSubstitutionTemplateLiteral`). Template literals with `${}`,
-   * numeric/object initializers, `Record<T,string>` maps, memos, and
-   * signals are all excluded — only a pure compile-time string can be
-   * inlined byte-for-byte.
-   */
-  private collectModuleStringConsts(constants: IRMetadata['localConstants']): Map<string, string> {
-    const map = new Map<string, string>()
-    for (const c of constants ?? []) {
-      if (!c.isModule) continue
-      if (c.value === undefined) continue
-      const literal = parsePureStringLiteral(c.value)
-      if (literal !== null) map.set(c.name, literal)
-    }
-    return map
-  }
 
   /**
    * Resolve an identifier to its inlined Perl single-quoted string literal
@@ -456,6 +449,78 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * falls back to its normal `$name` stash lowering). Returns the Perl
    * literal form `'<escaped>'` ready to drop into an expression.
    */
+  /**
+   * Resolve `IDENT.key` over a module object-literal const to its Perl
+   * literal (`variantClasses.ghost` in a class template literal —
+   * #1897). Same compile-time inlining family as
+   * `resolveModuleStringConst`; returns `null` for any non-static shape.
+   */
+  /**
+   * Whether `expr` is a bare reference to a boolean-TYPED prop
+   * (`props.isActive` / destructured `isActive`) — used to route the
+   * binding through `bool_str` even though the expression itself is
+   * structurally opaque (#1897).
+   */
+  isBooleanTypedPropRef(expr: string): boolean {
+    let bare = expr.trim()
+    if (this.propsObjectName && bare.startsWith(`${this.propsObjectName}.`)) {
+      bare = bare.slice(this.propsObjectName.length + 1)
+    }
+    if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
+    return this.booleanTypedProps.has(bare)
+  }
+
+  /**
+   * Parse `cond ? value : undefined` (or `: null`), returning the
+   * condition/consequent source spans, else `null`. Used for the
+   * attribute-omission rule (#1897); mirrors the Xslate adapter.
+   */
+  parseUndefinedAlternateTernary(
+    expr: string,
+  ): { condition: string; consequent: string } | null {
+    const parsed = parseExpression(expr.trim())
+    if (parsed?.kind !== 'conditional') return null
+    const alt = parsed.alternate
+    const isUndef =
+      (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||
+      (alt.kind === 'literal' && (alt.value === null || alt.value === undefined))
+    if (!isUndef) return null
+    // Serialise the parsed sub-expressions back to JS source rather than
+    // slicing `expr` text — `indexOf('?')` / `lastIndexOf(':')` would
+    // mis-split when the consequent itself contains `?` / `:` inside a
+    // string or nested ternary (`cond ? 'a:b' : undefined`).
+    return {
+      condition: exprToString(parsed.test),
+      consequent: exprToString(parsed.consequent),
+    }
+  }
+
+  /**
+   * Inline a const (any scope) whose initializer is a pure numeric or
+   * quoted string literal (`const totalPages = 5`, #1897 pagination) —
+   * function-scope consts never reach the per-render stash, so a bare
+   * `$totalPages` faults under strict mode.
+   */
+  resolveLiteralConst(name: string): string | null {
+    if (this.loopBoundNames?.has?.(name)) return null
+    const c = (this.localConstants ?? []).find(lc => lc.name === name)
+    if (c?.value === undefined) return null
+    const v = c.value.trim()
+    if (/^-?\d+(\.\d+)?$/.test(v)) return v
+    const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
+    if (strLit) return `'${strLit[1].replace(/[\\']/g, m => `\\${m}`)}'`
+    return null
+  }
+
+  resolveStaticRecordLiteral(objectName: string, key: string): string | null {
+    if (this.loopBoundNames?.has?.(objectName)) return null
+    const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants)
+    if (!hit) return null
+    return hit.kind === 'number'
+      ? hit.text
+      : `'${hit.text.replace(/[\\']/g, m => `\\${m}`)}'`
+  }
+
   resolveModuleStringConst(name: string): string | null {
     // A loop body introduces `my $<param>` / `my $<index>` bindings that
     // shadow a module const of the same name — never inline inside one.
@@ -1267,7 +1332,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       ) {
         const perl = this.convertExpressionToPerl(value.expr)
         const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name)
+          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
             ? `${name}="<%= bf->bool_str(${perl}) %>"`
             : `${name}="<%= ${perl} %>"`
         return `<% if (defined ${perl}) { %>${body}<% } %>`
@@ -1294,8 +1359,21 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // Hono's / Go's `attr="false"` / `attr="true"`. Routing through
       // the `bf->bool_str` Perl helper realigns the wire bytes with
       // JS `String(boolean)` semantics.
+      // `attr={cond ? value : undefined}` OMITS the attribute on the
+      // falsy branch (Hono drops undefined-valued attributes) — wrap the
+      // whole attribute in the condition instead of rendering `attr=""`
+      // (#1897, pagination's `aria-current={props.isActive ? 'page' :
+      // undefined}`). Same parity rule as the Go / Xslate adapters.
+      {
+        const m = this.parseUndefinedAlternateTernary(value.expr)
+        if (m) {
+          const cond = this.convertExpressionToPerl(m.condition)
+          const val = this.convertExpressionToPerl(m.consequent)
+          return `<% if (${cond}) { %>${name}="<%= ${val} %>"<% } %>`
+        }
+      }
       const perl = this.convertExpressionToPerl(value.expr)
-      if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name)) {
+      if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)) {
         return `${name}="<%= bf->bool_str(${perl}) %>"`
       }
       return `${name}="<%= ${perl} %>"`
@@ -2431,11 +2509,19 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
   constructor(private readonly adapter: MojoAdapter) {}
 
   identifier(name: string): string {
+    // `undefined` / `null` nested inside a larger expression tree
+    // (#1897, pagination's `props.isActive ? 'page' : undefined`) — the
+    // top-level short-circuits don't see them.
+    if (name === 'undefined' || name === 'null') return 'undef'
     // Module pure-string const (e.g. `const baseClasses = '...'` used in a
     // className template literal): inline the literal value rather than emit
     // `$baseClasses` against a stash variable that is never bound.
     const inlined = this.adapter.resolveModuleStringConst(name)
     if (inlined !== null) return inlined
+    // Same for a literal const of any scope (`const totalPages = 5`,
+    // #1897 pagination's `Page {currentPage()} of {totalPages}`).
+    const literalConst = this.adapter.resolveLiteralConst(name)
+    if (literalConst !== null) return literalConst
     return `$${name}`
   }
 
@@ -2452,6 +2538,14 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     // `$props` hashref).
     if (object.kind === 'identifier' && object.name === 'props') {
       return `$${property}`
+    }
+    // Static property access on a module object-literal const
+    // (`variantClasses.ghost`, #1897) resolves at compile time — the
+    // generic hash lowering below would dereference a Perl var that
+    // doesn't exist server-side.
+    if (object.kind === 'identifier') {
+      const staticValue = this.adapter.resolveStaticRecordLiteral(object.name, property)
+      if (staticValue !== null) return staticValue
     }
     const obj = emit(object)
     if (property === 'length') return `scalar(@{${obj}})`

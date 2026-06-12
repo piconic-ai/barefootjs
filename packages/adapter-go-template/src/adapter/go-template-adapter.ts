@@ -64,6 +64,7 @@ import {
   collectContextConsumers,
   isLowerableObjectRestDestructure,
   type ContextConsumer,
+  collectModuleStringConsts as collectModuleStringConstsShared
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 
@@ -4237,96 +4238,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * pure compile-time string can be safely inlined byte-for-byte.
    */
   private collectModuleStringConsts(constants: IRMetadata['localConstants']): Map<string, string> {
-    const map = new Map<string, string>()
-    const candidates = (constants ?? []).filter(
-      c => c.isModule && c.value !== undefined,
-    )
-    // Fixed-point: a module string const may be COMPOSED of other module
-    // string consts via a template literal (#1896 — radio-group's
-    // `itemClasses = \`\${itemBaseClasses} \${itemFocusClasses} …\``).
-    // Each pass resolves the consts whose dependencies resolved in an
-    // earlier pass; terminates when a pass adds nothing.
-    let progressed = true
-    while (progressed) {
-      progressed = false
-      for (const c of candidates) {
-        if (map.has(c.name)) continue
-        const literal =
-          this.parsePureStringLiteral(c.value!) ??
-          this.evalTemplateOfStringConsts(c.value!, map)
-        if (literal !== null) {
-          map.set(c.name, literal)
-          progressed = true
-        }
-      }
-    }
-    return map
+    // Single source of truth shared with the Mojo / Xslate adapters
+    // (fixed-point resolution incl. composed template-literal consts and
+    // `[...].join(sep)` — #1896 / #1897).
+    return collectModuleStringConstsShared(constants)
   }
 
-  /**
-   * Evaluate a template literal whose every interpolation is a bare
-   * identifier already present in `resolved` (a module string const) to
-   * its flat string value, else `null`. Companion to
-   * `parsePureStringLiteral` for the composed-const shape (#1896).
-   */
-  private evalTemplateOfStringConsts(
-    source: string,
-    resolved: ReadonlyMap<string, string>,
-  ): string | null {
-    const sf = ts.createSourceFile(
-      '__const.ts',
-      `const __x = (${source});`,
-      ts.ScriptTarget.Latest,
-      /*setParentNodes*/ false,
-    )
-    const stmt = sf.statements[0]
-    if (!stmt || !ts.isVariableStatement(stmt)) return null
-    let init = stmt.declarationList.declarations[0]?.initializer
-    while (init && ts.isParenthesizedExpression(init)) init = init.expression
-    if (!init || !ts.isTemplateExpression(init)) return null
-    let out = init.head.text
-    for (const span of init.templateSpans) {
-      if (!ts.isIdentifier(span.expression)) return null
-      const value = resolved.get(span.expression.text)
-      if (value === undefined) return null
-      out += value + span.literal.text
-    }
-    return out
-  }
 
-  /**
-   * Parse a const initializer's source text. Returns the unescaped string
-   * value when the whole initializer is a single string literal (or a
-   * no-substitution template literal), else `null`. Uses the TS parser so
-   * escapes/quotes are resolved exactly as JS would, matching the value
-   * the Hono reference inlines at runtime.
-   */
-  private parsePureStringLiteral(source: string): string | null {
-    const sf = ts.createSourceFile(
-      '__const.ts',
-      `const __x = (${source});`,
-      ts.ScriptTarget.Latest,
-      /*setParentNodes*/ false,
-    )
-    const stmt = sf.statements[0]
-    if (!stmt || !ts.isVariableStatement(stmt)) return null
-    const decl = stmt.declarationList.declarations[0]
-    let init = decl?.initializer
-    while (init && ts.isParenthesizedExpression(init)) init = init.expression
-    if (!init) return null
-    if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
-      return init.text
-    }
-    // (#checkbox) `[...string literals].join(SEP)` — a const that flattens an
-    // array of pure string literals to a single string at module load (e.g.
-    // Checkbox's `stateClasses = [...].join(' ')`). Evaluate it statically so
-    // the const inlines byte-for-byte like the Hono reference. Only fires when
-    // every array element is a string/no-substitution-template literal and the
-    // separator is a string-literal argument (or omitted → default `,`).
-    const joined = this.evalStringArrayJoin(init)
-    if (joined !== null) return joined
-    return null
-  }
 
   /**
    * (#checkbox) Statically evaluate `[<string literals>].join(<sep?>)`.
@@ -4335,31 +4253,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * non-string-literal separator). Comments/whitespace between elements are
    * irrelevant — the TS parser already discarded them.
    */
-  private evalStringArrayJoin(node: ts.Expression): string | null {
-    if (!ts.isCallExpression(node)) return null
-    const callee = node.expression
-    if (!ts.isPropertyAccessExpression(callee)) return null
-    if (callee.name.text !== 'join') return null
-    let recv: ts.Expression = callee.expression
-    while (ts.isParenthesizedExpression(recv)) recv = recv.expression
-    if (!ts.isArrayLiteralExpression(recv)) return null
-    const parts: string[] = []
-    for (const el of recv.elements) {
-      if (ts.isStringLiteral(el) || ts.isNoSubstitutionTemplateLiteral(el)) {
-        parts.push(el.text)
-      } else {
-        return null
-      }
-    }
-    let sep = ','
-    if (node.arguments.length >= 1) {
-      const arg = node.arguments[0]
-      if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) sep = arg.text
-      else return null
-    }
-    return parts.join(sep)
-  }
-
   /**
    * Resolve an identifier to its inlined Go string literal when it names a
    * module pure-string const. Returns the Go template literal form

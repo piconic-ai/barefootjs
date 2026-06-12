@@ -354,7 +354,7 @@ export type {
 export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
-export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectContextConsumers } from './augment-inherited-props.ts'
+export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, collectContextConsumers } from './augment-inherited-props.ts'
 export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props.ts'
 
 // HTML element attribute types

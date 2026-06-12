@@ -245,13 +245,143 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
 }
 
 /**
+ * Parse a const initializer to its static string value: a string literal,
+ * a no-substitution template literal, or a `[<string literals>].join(sep)`
+ * call. Returns `null` for anything else. The TS parser resolves escapes
+ * and quoting exactly as JS would, matching the value the Hono reference
+ * inlines at runtime. Shared by the Go, Mojo, and Xslate adapters.
+ */
+export function parseStaticStringConst(source: string): string | null {
+  const sf = ts.createSourceFile(
+    '__const.ts', `const __x = (${source});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  let init = stmt.declarationList.declarations[0]?.initializer
+  while (init && ts.isParenthesizedExpression(init)) init = init.expression
+  if (!init) return null
+  if (ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init)) {
+    return init.text
+  }
+  return evalStringArrayJoin(source)
+}
+
+/**
+ * Statically evaluate a template literal whose every interpolation is a
+ * bare identifier present in `resolved` to its flat string, else `null`.
+ * Companion to `parseStaticStringConst` for COMPOSED module consts
+ * (#1896 / #1897 — radio-group's
+ * `itemClasses = \`\${itemBaseClasses} \${itemFocusClasses} …\``).
+ */
+export function evalTemplateOfStringConsts(
+  source: string,
+  resolved: ReadonlyMap<string, string>,
+): string | null {
+  const sf = ts.createSourceFile(
+    '__const.ts', `const __x = (${source});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  let init = stmt.declarationList.declarations[0]?.initializer
+  while (init && ts.isParenthesizedExpression(init)) init = init.expression
+  if (!init || !ts.isTemplateExpression(init)) return null
+  let out = init.head.text
+  for (const span of init.templateSpans) {
+    if (!ts.isIdentifier(span.expression)) return null
+    const value = resolved.get(span.expression.text)
+    if (value === undefined) return null
+    out += value + span.literal.text
+  }
+  return out
+}
+
+/**
+ * Build the module string-const map from the IR's localConstants —
+ * the SINGLE SOURCE OF TRUTH for all three SSR template adapters.
+ * A const qualifies when module-scope and statically resolvable as:
+ *   - a pure string / no-substitution-template literal,
+ *   - `[<string literals>].join(sep)`,
+ *   - a template literal COMPOSED of other qualifying module consts
+ *     (resolved to a fixed point, so composition order doesn't matter).
+ */
+export function collectModuleStringConsts(
+  constants: IRMetadata['localConstants'] | undefined,
+): Map<string, string> {
+  const map = new Map<string, string>()
+  const candidates = (constants ?? []).filter(
+    c => c.isModule && c.value !== undefined,
+  )
+  let progressed = true
+  while (progressed) {
+    progressed = false
+    for (const c of candidates) {
+      if (map.has(c.name)) continue
+      const literal =
+        parseStaticStringConst(c.value!) ??
+        evalTemplateOfStringConsts(c.value!, map)
+      if (literal !== null) {
+        map.set(c.name, literal)
+        progressed = true
+      }
+    }
+  }
+  return map
+}
+
+/**
+ * Resolve `IDENT.key` / `IDENT['key']` where `IDENT` is a module-scope
+ * object-literal const and the key/value are static literals — a fully
+ * compile-time lookup (the icon registry's `strokePaths['chevron-down']`,
+ * pagination's `variantClasses.ghost`; #1896 / #1897). Returns the
+ * looked-up scalar, or `null` for any other shape so callers fall back
+ * to their generic lowering. Shared by all three SSR template adapters;
+ * the prop-KEYED variant of the pattern lives in `parseRecordIndexAccess`.
+ */
+export function lookupStaticRecordLiteral(
+  objectName: string,
+  key: string,
+  constants: IRMetadata['localConstants'] | undefined,
+): { kind: 'string' | 'number'; text: string } | null {
+  const constInfo = (constants ?? []).find(c => c.name === objectName && c.isModule)
+  if (constInfo?.value === undefined) return null
+  const sf = ts.createSourceFile(
+    '__rec.ts', `(${constInfo.value})`, ts.ScriptTarget.Latest, /*setParentNodes*/ true,
+  )
+  if (sf.statements.length !== 1) return null
+  const stmt = sf.statements[0]
+  if (!ts.isExpressionStatement(stmt)) return null
+  let parsed: ts.Expression = stmt.expression
+  while (ts.isParenthesizedExpression(parsed)) parsed = parsed.expression
+  if (!ts.isObjectLiteralExpression(parsed)) return null
+  for (const prop of parsed.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue
+    const name = prop.name
+    const propKey =
+      ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)
+        ? name.text
+        : null
+    if (propKey !== key) continue
+    let v: ts.Expression = prop.initializer
+    while (ts.isParenthesizedExpression(v)) v = v.expression
+    if (ts.isNumericLiteral(v)) return { kind: 'number', text: v.text }
+    if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) {
+      return { kind: 'string', text: v.text }
+    }
+    return null
+  }
+  return null
+}
+
+/**
  * Statically evaluate `[<string literals>].join(<sep?>)` (e.g. a module-scope
  * `const stateClasses = ['…', …].join(' ')`) to its joined string, so SSR
  * adapters inline the flattened literal byte-for-byte like the Hono reference
  * instead of referencing a binding that doesn't exist server-side. Default
  * separator `,` matches JS `Array.prototype.join`. Returns `null` for any
  * other shape (non-`.join` call, non-array receiver, non-string-literal element
- * or separator). Shared by the Mojo + Xslate adapters; Go keeps a private copy.
+ * or separator). Shared by the Go, Mojo, and Xslate adapters (all three
+ * resolve module consts through `collectModuleStringConsts` above, which
+ * folds these joins during its fixed-point pass).
  */
 export function evalStringArrayJoin(source: string): string | null {
   const sf = ts.createSourceFile(
