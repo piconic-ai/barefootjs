@@ -56,6 +56,7 @@ import {
   isBooleanAttr,
   parseExpression,
   exprToString,
+  parseProviderObjectLiteral,
   parseStyleObjectEntries,
   isSupported,
   identifierPath,
@@ -70,7 +71,6 @@ import {
   collectContextConsumers,
   isLowerableObjectRestDestructure,
   type ContextConsumer,
-  extractSsrDefaults,
   lookupStaticRecordLiteral
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
@@ -486,10 +486,43 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         ? `'${v.value.replace(/[\\']/g, m => `\\${m}`)}'`
         : String(v.value)
     }
-    if (v.kind === 'expression') return this.convertExpressionToKolon(v.expr)
+    if (v.kind === 'expression') {
+      const hashref = this.providerObjectLiteralKolon(v.expr)
+      if (hashref !== null) return hashref
+      return this.convertExpressionToKolon(v.expr)
+    }
     if (v.kind === 'template') return this.convertTemplateLiteralPartsToKolon(v.parts)
     // Out-of-shape value (spread / jsx-children) — nil; consumer defaults.
     return 'nil'
+  }
+
+  /**
+   * Lower an object-literal provider value (`value={{ open: () => props.open
+   * ?? false, onOpenChange: … }}`) to a Kolon hashref literal (#1897). The
+   * SSR lowering is a per-member snapshot of what a consumer would READ
+   * during the same render:
+   *
+   * - zero-param expression-body arrows are getters — lower the body (the
+   *   value is fixed for the render, so the call-time indirection drops out)
+   * - `on[A-Z]`-named members and function-shaped values are client-only
+   *   behavior SSR never invokes — lower to `nil`
+   * - anything else lowers through the normal expression pipeline (so an
+   *   unsupported getter body still refuses loudly with BF101)
+   *
+   * Keys keep their JS names verbatim so a consumer-side `ctx.open` access
+   * maps onto the same key. Returns `null` when the expression is not a
+   * plain object literal (spread / computed key) — the caller falls back to
+   * the whole-expression path, which refuses those shapes with BF101.
+   */
+  private providerObjectLiteralKolon(expr: string): string | null {
+    const members = parseProviderObjectLiteral(expr.trim())
+    if (members === null) return null
+    const entries = members.map(m => {
+      if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `'${m.name}' => nil`
+      const src = m.kind === 'getter' ? m.body : m.expr
+      return `'${m.name}' => ${this.convertExpressionToKolon(src)}`
+    })
+    return `{ ${entries.join(', ')} }`
   }
 
   /** Kolon literal for a context-consumer's `createContext` default. */
@@ -531,7 +564,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     const memos = ir.metadata.memos ?? []
     const signals = ir.metadata.signals ?? []
     if (memos.length === 0 && signals.length === 0) return ''
-    const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
     // Props seed first; each signal/memo adds its own name as it lands.
     const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
     const lines: string[] = []
@@ -555,16 +587,22 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     }
 
     for (const memo of memos) {
-      const def = ssrDefaults[memo.name]
-      const isNull = !def || (typeof def === 'object' && 'value' in def && def.value === null)
-      if (!isNull) {
-        available.add(memo.name)
-        continue
-      }
+      // Seed every memo whose body lowers cleanly — not just the ones whose
+      // static SSR default is null. A statically-foldable prop-derived memo
+      // (`createMemo(() => props.disabled ?? false)` → default `false`)
+      // still depends on the per-call prop: the static stash seed bakes in
+      // the absent-prop fold, so a caller passing `disabled => 1` would
+      // render the default branch (#1897, select's disabled item). The
+      // in-template recomputation reads the prop lexical already in scope;
+      // block-bodied arrows / out-of-scope references fall back to the
+      // static ssr-defaults seed. Same self-reference guard as the signal
+      // loop above — Kolon's `my` shadows the render var on the RHS.
       const body = extractArrowBodyExpression(memo.computation)
-      if (body === null) continue
-      const kolon = this.tryLowerToKolon(body, available)
-      if (kolon !== null) lines.push(`: my $${memo.name} = ${kolon};`)
+      if (body !== null) {
+        const kolon = this.tryLowerToKolon(body, available)
+        const refsSelf = kolon !== null && new RegExp(`\\$${memo.name}\\b`).test(kolon)
+        if (kolon !== null && !refsSelf) lines.push(`: my $${memo.name} = ${kolon};`)
+      }
       available.add(memo.name)
     }
     return lines.length > 0 ? lines.join('\n') + '\n' : ''
@@ -972,8 +1010,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   renderComponent(comp: IRComponent): string {
     const propParts: string[] = []
     for (const p of comp.props) {
-      // Skip callback props (onXxx) — event handlers are client-only for SSR.
-      if (p.name.match(/^on[A-Z]/) && p.value.kind === 'expression') continue
+      // Skip callback props (onXxx) and `ref` — both are client-only for
+      // SSR (Hono renders neither; the client JS wires them at hydration).
+      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
       // Spread props: enumerate the analyzer's props params into hashref
       // entries (the propsObject case) — Kolon can't flatten a hashref into
       // the entry list. Other spread shapes are refused with BF101.
@@ -1149,9 +1188,23 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         // wrap in newlines (`normalizeHTML` collapses the surrounding space).
         return `\n: if (defined ${perl}) {\n${body}\n: }\n`
       }
-      if (isBooleanAttr(name) || value.presenceOrUndefined) {
+      if (isBooleanAttr(name)) {
         // Boolean attributes: render conditionally (present or absent).
         return `<: ${this.convertExpressionToKolon(value.expr)} ? '${name}' : '' :>`
+      }
+      if (value.presenceOrUndefined) {
+        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
+        // renders the attr with its stringified value when truthy and
+        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
+        // → `aria-disabled="true"`), so bare presence would diverge.
+        // Route through `bool_str` when the name/shape witnesses a
+        // boolean value, same as the unconditional path below (#1897).
+        const perl = this.convertExpressionToKolon(value.expr)
+        const body =
+          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+            ? `${name}="<: $bf.bool_str(${perl}) :>"`
+            : `${name}="<: ${perl} :>"`
+        return `\n: if (${perl}) {\n${body}\n: }\n`
       }
       // `attr={cond ? value : undefined}` OMITS the attribute on the
       // falsy branch (Hono drops undefined-valued attributes) — wrap the

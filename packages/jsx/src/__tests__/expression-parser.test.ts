@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, extractArrowBodyExpression, parseStyleObjectEntries } from '../expression-parser'
+import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral } from '../expression-parser'
 import { collectAllTypeRanges, reconstructWithoutTypes } from '../strip-types'
 
 describe('expression-parser', () => {
@@ -1647,6 +1647,69 @@ describe('extractArrowBodyExpression', () => {
 
   test('returns null when the source is more than one statement', () => {
     expect(extractArrowBodyExpression('() => 1; sideEffect()')).toBeNull()
+  })
+})
+
+describe('parseProviderObjectLiteral', () => {
+  test('classifies the composed-corpus provider shape (accordion/dialog)', () => {
+    const members = parseProviderObjectLiteral(
+      `{ open: () => props.open ?? false, onOpenChange: props.onOpenChange ?? (() => {}) }`,
+    )
+    expect(members).toEqual([
+      { name: 'open', kind: 'getter', body: 'props.open ?? false' },
+      { name: 'onOpenChange', kind: 'function' },
+    ])
+  })
+
+  test('shorthand members lower as identifier expressions (command)', () => {
+    const members = parseProviderObjectLiteral(
+      `{ search, onSearchChange: setSearch, filter: filterFn() }`,
+    )
+    expect(members).toEqual([
+      { name: 'search', kind: 'expression', expr: 'search' },
+      { name: 'onSearchChange', kind: 'expression', expr: 'setSearch' },
+      { name: 'filter', kind: 'expression', expr: 'filterFn()' },
+    ])
+  })
+
+  test('parameterised and block-bodied arrows are functions, not getters', () => {
+    const members = parseProviderObjectLiteral(
+      `{ registerItem: (el) => items.add(el), onSelect: (value) => { setValue(value) }, value: () => { return v } }`,
+    )
+    expect(members).toEqual([
+      { name: 'registerItem', kind: 'function' },
+      { name: 'onSelect', kind: 'function' },
+      { name: 'value', kind: 'function' },
+    ])
+  })
+
+  test('?? / || fallback chains with a function operand are functions', () => {
+    const members = parseProviderObjectLiteral(`{ a: f ?? (() => {}), b: g || fallbackFn }`)
+    expect(members).toEqual([
+      { name: 'a', kind: 'function' },
+      // `g || fallbackFn` — neither side is a function literal, so it
+      // stays an expression (the parser can't see identifier types).
+      { name: 'b', kind: 'expression', expr: 'g || fallbackFn' },
+    ])
+  })
+
+  test('string-literal keys keep their text', () => {
+    expect(parseProviderObjectLiteral(`{ 'data-x': 1 }`)).toEqual([
+      { name: 'data-x', kind: 'expression', expr: '1' },
+    ])
+  })
+
+  test('returns null for spread entries, computed keys, and non-objects', () => {
+    expect(parseProviderObjectLiteral(`{ ...rest }`)).toBeNull()
+    expect(parseProviderObjectLiteral(`{ [key]: 1 }`)).toBeNull()
+    expect(parseProviderObjectLiteral(`someValue`)).toBeNull()
+    expect(parseProviderObjectLiteral(`[1, 2]`)).toBeNull()
+  })
+
+  test('unwraps parentheses around the literal and member values', () => {
+    expect(parseProviderObjectLiteral(`({ v: (() => (x)) })`)).toEqual([
+      { name: 'v', kind: 'getter', body: '(x)' },
+    ])
   })
 })
 

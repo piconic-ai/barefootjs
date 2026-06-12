@@ -81,27 +81,19 @@ runAdapterConformanceTests({
     // above — refused with BF101 for the identical Kolon engine reason, not a
     // render-mismatch (so it's pinned here, not in `skipJsx`).
     'kbd': [{ code: 'BF101', severity: 'error' }],
-    // #1467 demo corpus: the composed RadioGroup sibling builds its
-    // context-provider value as an object literal carrying arrow-function
-    // members (`{ value: currentValue, onValueChange: (v) => {…} }`),
-    // which has no Kolon lowering — same `isSupported` expression gate as
-    // mojo's pin for this fixture. (Locally-green-without-perl caveat:
-    // the BF101 fires at child compile, before the perl-availability
-    // check, so this pin is what keeps perl-equipped CI green too.)
-    'radio-group': [{ code: 'BF101', severity: 'error' }],
-    // #1467 Phase 2d: same Kolon expression gate — every selection/menu
-    // primitive (and the command demo source itself) emits BF101 at
-    // compile time, so the contract is pinned here rather than letting
-    // the partially-degraded render drift against Hono (unlike
-    // `accordion`/`tabs` above, where the *render-level* divergences
-    // were the more durable signal).
-    'select': [{ code: 'BF101', severity: 'error' }],
-    'dropdown-menu': [{ code: 'BF101', severity: 'error' }],
-    'combobox': [{ code: 'BF101', severity: 'error' }],
-    'command': [{ code: 'BF101', severity: 'error' }],
+    // #1467 demo-corpus context providers (`radio-group`, `select`,
+    // `dropdown-menu`, `combobox`, `command`) are no longer pinned — an
+    // object-literal provider value (`{ value: currentValue,
+    // onValueChange: (v) => {…} }`) lowers to a Kolon hashref via
+    // `parseProviderObjectLiteral` (#1897): getter members snapshot
+    // their body's SSR value, handler / function-shaped members lower
+    // to `nil`. The command demo's `ref={(el) => {…}}` function prop on
+    // an imported component is skipped at SSR like `on*` handlers.
+    //
     // #1467 Phase 2e: the data-table demo source's `/* @client */`
-    // comparator sort has no Kolon lowering — refused at the
-    // demo-source compile, same gate as mojo.
+    // comparator sort (`selected()[index]` signal-call indexing) has no
+    // Kolon lowering — refused at the demo-source compile, same gate as
+    // mojo.
     'data-table': [{ code: 'BF101', severity: 'error' }],
     // `style-3-signals` / `style-object-dynamic` no longer pinned — a
     // `style={{ … }}` object literal now lowers to a CSS string with dynamic

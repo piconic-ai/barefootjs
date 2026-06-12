@@ -477,6 +477,94 @@ export function extractArrowBodyExpression(source: string): string | null {
 }
 
 /**
+ * One member of a context-provider object-literal value
+ * (`<Ctx.Provider value={{ open: () => …, onOpenChange: … }}>`), classified
+ * for SSR lowering:
+ *
+ * - `getter` — a ZERO-parameter arrow with an expression body. At SSR time
+ *   the provider value is fixed for the render, so the getter is equivalent
+ *   to its body's value snapshot (`open: () => props.open ?? false` reads as
+ *   `props.open ?? false`). Arrows with parameters are NOT getters — their
+ *   body references the parameter, which has no SSR value.
+ * - `function` — any other function shape (parameterised / block-bodied
+ *   arrow, function expression, or a `??` / `||` chain with a function
+ *   operand). These are behavior, not data: SSR never invokes them, so
+ *   adapters lower them to their nil value (`undef` / `nil`).
+ * - `expression` — everything else; lowers through the adapter's normal
+ *   expression pipeline (so signal getters, props, memo calls keep their
+ *   existing SSR seeding semantics).
+ */
+export type ProviderObjectMember =
+  | { name: string; kind: 'getter'; body: string }
+  | { name: string; kind: 'function' }
+  | { name: string; kind: 'expression'; expr: string }
+
+/**
+ * Structurally parse a `<Ctx.Provider value={{ … }}>` object literal into
+ * per-member SSR lowering classifications (see `ProviderObjectMember`).
+ *
+ * Returns `null` when the source is not a plain object literal, or when it
+ * contains a shape with no per-member story (spread entry, computed key,
+ * get/set accessor) — callers fall back to their existing whole-expression
+ * path (typically a BF101 refusal). Shorthand members (`{ search }`) yield
+ * an `expression` member with the identifier as the expression.
+ */
+export function parseProviderObjectLiteral(source: string): ProviderObjectMember[] | null {
+  const sf = ts.createSourceFile(
+    '__provider__.ts',
+    `const __x = (${source});`,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  let init = stmt.declarationList.declarations[0]?.initializer
+  while (init && ts.isParenthesizedExpression(init)) init = init.expression
+  if (!init || !ts.isObjectLiteralExpression(init)) return null
+
+  const isFunctionShaped = (e: ts.Expression): boolean => {
+    let v: ts.Expression = e
+    while (ts.isParenthesizedExpression(v)) v = v.expression
+    if (ts.isArrowFunction(v) || ts.isFunctionExpression(v)) return true
+    // `props.onX ?? (() => {})` — a fallback chain with a function operand
+    // is function-typed regardless of which side wins at runtime.
+    if (
+      ts.isBinaryExpression(v) &&
+      (v.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+        v.operatorToken.kind === ts.SyntaxKind.BarBarToken)
+    ) {
+      return isFunctionShaped(v.left) || isFunctionShaped(v.right)
+    }
+    return false
+  }
+
+  const members: ProviderObjectMember[] = []
+  for (const prop of init.properties) {
+    if (ts.isShorthandPropertyAssignment(prop)) {
+      members.push({ name: prop.name.text, kind: 'expression', expr: prop.name.text })
+      continue
+    }
+    if (!ts.isPropertyAssignment(prop)) return null // spread / accessor / method
+    const name = ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name)
+      ? prop.name.text
+      : null
+    if (name === null) return null // computed key
+    let v: ts.Expression = prop.initializer
+    while (ts.isParenthesizedExpression(v)) v = v.expression
+    if (ts.isArrowFunction(v) && v.parameters.length === 0 && !ts.isBlock(v.body)) {
+      members.push({ name, kind: 'getter', body: v.body.getText(sf).trim() })
+      continue
+    }
+    if (isFunctionShaped(v)) {
+      members.push({ name, kind: 'function' })
+      continue
+    }
+    members.push({ name, kind: 'expression', expr: v.getText(sf).trim() })
+  }
+  return members
+}
+
+/**
  * A single entry of a JSX `style={{ … }}` object, lowered for SSR. The key is
  * already CSS-cased (`backgroundColor` → `background-color`); the value is
  * either a static string literal or a raw JS expression for the adapter to
