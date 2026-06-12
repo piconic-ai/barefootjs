@@ -56,7 +56,7 @@ async function main() {
     let liveSeen = new Set<number>()
     const slugs = [
       'any-backend', 'islands-stay-alive', 'reuses-the-runtime', 'disposal-is-the-hard-part',
-      'history-back-forward', 'rapid-fire', 'query-string-nav', 'payload-optimization', 'where-this-goes',
+      'history-back-forward', 'rapid-fire', 'query-string-nav', 'no-fragment-negotiation', 'where-this-goes',
     ]
     for (const slug of slugs) {
       await nav(page, `/posts/${slug}`)
@@ -219,7 +219,7 @@ async function main() {
     record(
       'leak probe — disposal OFF',
       'info',
-      `without a dispose hook the left-page timer KEEPS firing ${before}→${after}, and live islands climbed ${liveBefore}→${liveAfter} (leak). This is why precise per-scope disposal is the prototype's next step.`,
+      `without a dispose hook the left-page timer KEEPS firing ${before}→${after}, and live islands climbed ${liveBefore}→${liveAfter} (leak). The router's default dispose avoids this via the client runtime's precise per-scope disposal (now in @barefootjs/client, #1893).`,
     )
     await page.evaluate(() => { window.__bf.disposeEnabled = true })
   }
