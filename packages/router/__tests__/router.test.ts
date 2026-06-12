@@ -208,3 +208,33 @@ test('module-aware swap: a navigated-to island loads its module then hydrates (d
   await flush()
   expect(imported).toEqual(['https://example.test/static/counter.js']) // still just once
 })
+
+function hover(id: string): void {
+  document.getElementById(id)!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+}
+
+test('hover prefetches the page so the click reuses it (no second fetch)', async () => {
+  ;(window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM?.setURL?.(
+    'https://example.test/blog/1',
+  )
+  const router = startRouter({ rehydrate: () => {}, prefetchDelay: 5 })
+  stop = router.stop
+
+  hover('next')
+  await new Promise((r) => setTimeout(r, 25)) // past the prefetch dwell
+  expect(fetchCalls).toHaveLength(1) // prefetched on hover
+
+  clickLink('next')
+  await flush()
+  expect(fetchCalls).toHaveLength(1) // click reused the cache — no new fetch
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('page 2 body')
+})
+
+test('prefetch: false disables hover prefetching', async () => {
+  const router = startRouter({ rehydrate: () => {}, prefetch: false })
+  stop = router.stop
+
+  hover('next')
+  await new Promise((r) => setTimeout(r, 25))
+  expect(fetchCalls).toHaveLength(0)
+})

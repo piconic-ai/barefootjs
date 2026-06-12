@@ -68,6 +68,14 @@ export interface RouterOptions {
   shouldIntercept?: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
   /** Reset scroll to the top after a swap (default: true). */
   scrollToTop?: boolean
+  /**
+   * Prefetch a link's page on hover / focus / touchstart and cache it, so
+   * the click reuses it with no network wait. Also `modulepreload`s the
+   * page's island modules (fetch + compile, not execute). Default: `true`.
+   */
+  prefetch?: boolean
+  /** Hover dwell (ms) before a prefetch fires, to skip quick sweeps (default 65). */
+  prefetchDelay?: number
 }
 
 export interface NavigateOptions {
@@ -86,6 +94,18 @@ export interface Router {
   stop(): void
   /** Programmatically navigate (same logic as a link click). */
   navigate: (url: string, options?: NavigateOptions) => Promise<void>
+  /** Warm a URL's page (and its island modules) into the cache. */
+  prefetch: (url: string) => void
+}
+
+interface PageSnapshot {
+  html: string
+  finalUrl: string
+}
+
+interface CacheEntry {
+  snap: Promise<PageSnapshot | null>
+  ts: number
 }
 
 interface RouterState {
@@ -95,6 +115,12 @@ interface RouterState {
   loadModule: (src: string) => Promise<unknown>
   /** Absolute URLs of module scripts already loaded (deduped across navs). */
   loadedModules: Set<string>
+  prefetchEnabled: boolean
+  prefetchDelay: number
+  /** Recently fetched / prefetched pages, keyed by absolute URL. */
+  cache: Map<string, CacheEntry>
+  /** Module srcs already `modulepreload`-ed on hover. */
+  preloaded: Set<string>
   shouldIntercept: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
   scrollToTop: boolean
   inflight: AbortController | null
@@ -107,7 +133,7 @@ let active: RouterState | null = null
 
 export function startRouter(options: RouterOptions = {}): Router {
   if (typeof document === 'undefined' || typeof window === 'undefined') {
-    return { stop() {}, navigate: async () => {} }
+    return { stop() {}, navigate: async () => {}, prefetch() {} }
   }
 
   // One router at a time — replacing is idempotent.
@@ -120,6 +146,10 @@ export function startRouter(options: RouterOptions = {}): Router {
     loadModule: options.loadModule ?? ((src) => import(src)),
     // Seed with the modules already on the page so we never re-import them.
     loadedModules: collectModuleScripts(document),
+    prefetchEnabled: options.prefetch ?? true,
+    prefetchDelay: options.prefetchDelay ?? 65,
+    cache: new Map(),
+    preloaded: new Set(),
     shouldIntercept: options.shouldIntercept ?? defaultShouldIntercept,
     scrollToTop: options.scrollToTop ?? true,
     inflight: null,
@@ -128,18 +158,29 @@ export function startRouter(options: RouterOptions = {}): Router {
 
   document.addEventListener('click', onClick)
   window.addEventListener('popstate', onPopState)
+  if (state.prefetchEnabled) {
+    document.addEventListener('mouseover', onPointerOver)
+    document.addEventListener('mouseout', onPointerOut)
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('touchstart', onTouchStart, { passive: true })
+  }
   // Anchor the entry so a later back-navigation lands here.
   window.history.replaceState({ bfRouter: true }, '', window.location.href)
 
   state.stop = () => {
     document.removeEventListener('click', onClick)
     window.removeEventListener('popstate', onPopState)
+    document.removeEventListener('mouseover', onPointerOver)
+    document.removeEventListener('mouseout', onPointerOut)
+    document.removeEventListener('focusin', onFocusIn)
+    document.removeEventListener('touchstart', onTouchStart)
+    clearHoverTimer()
     state.inflight?.abort()
     if (active === state) active = null
   }
 
   active = state
-  return { stop: state.stop, navigate }
+  return { stop: state.stop, navigate, prefetch: (url) => prefetch(url) }
 }
 
 export async function navigate(url: string, options: NavigateOptions = {}): Promise<void> {
@@ -157,42 +198,28 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     return
   }
 
-  // Supersede any in-flight navigation. `inflight` stays pointed at this
-  // controller for the whole navigation (including the `res.text()` phase
-  // and the swap) so a newer navigation aborts it — and so the abort
-  // checks after each `await` below let the latest navigation win.
+  // Supersede any in-flight navigation. `inflight` acts as a "still the
+  // current navigation" flag: a newer navigation aborts it, and the abort
+  // checks after each `await` below let the latest navigation win. (The
+  // underlying page fetch lives in the shared cache and isn't cancelled —
+  // a superseded fetch just populates the cache for free.)
   state.inflight?.abort()
   const controller = new AbortController()
   state.inflight = controller
 
   try {
-    let res: Response
-    try {
-      res = await fetch(target.href, {
-        headers: { Accept: 'text/html' },
-        credentials: 'same-origin',
-        signal: controller.signal,
-      })
-    } catch {
-      if (controller.signal.aborted) return
+    // Reuse a prefetched/cached page, or fetch now (and cache it).
+    const snap = await loadPage(state, target.href)
+    // A newer navigation may have started while the page loaded — bail
+    // before swapping so we never overwrite it with stale content.
+    if (controller.signal.aborted) return
+    if (!snap) {
       hardNavigate(target.href)
       return
     }
-    if (controller.signal.aborted) return
+    const finalUrl = snap.finalUrl
 
-    if (!res.ok) {
-      hardNavigate(target.href)
-      return
-    }
-    // Honour server redirects (trailing slash, auth bounce, …).
-    const finalUrl = res.redirected && res.url ? res.url : target.href
-
-    const html = await res.text()
-    // A newer navigation may have started while the body streamed in —
-    // bail before swapping so we never overwrite it with stale content.
-    if (controller.signal.aborted) return
-
-    const content = extractOutlet(html, state.outletSelector)
+    const content = extractOutlet(snap.html, state.outletSelector)
     const current = document.querySelector(state.outletSelector)
     if (!content || !current) {
       // Target isn't part of this shell — fall back to a full load.
@@ -226,6 +253,122 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     // have replaced `inflight` already.
     if (state.inflight === controller) state.inflight = null
   }
+}
+
+// ── prefetch + snapshot cache ────────────────────────────────────────────
+
+const PREFETCH_TTL = 30_000 // ms a cached page stays fresh
+const CACHE_CAP = 30 // max cached pages (oldest evicted)
+
+/**
+ * Return a page snapshot for `url`, reusing a fresh cached/prefetched one
+ * or fetching now (and caching the in-flight promise so a concurrent
+ * prefetch + navigate share one request). Returns `null` on a non-OK /
+ * failed response so the caller can hard-navigate.
+ */
+function loadPage(state: RouterState, url: string): Promise<PageSnapshot | null> {
+  const hit = state.cache.get(url)
+  if (hit && Date.now() - hit.ts < PREFETCH_TTL) return hit.snap
+
+  const snap = (async (): Promise<PageSnapshot | null> => {
+    try {
+      const res = await fetch(url, { headers: { Accept: 'text/html' }, credentials: 'same-origin' })
+      if (!res.ok) return null
+      const finalUrl = res.redirected && res.url ? res.url : url
+      const html = await res.text()
+      return { html, finalUrl }
+    } catch {
+      return null
+    }
+  })()
+
+  state.cache.set(url, { snap, ts: Date.now() })
+  // Bound the cache: evict the oldest entries (Map keeps insertion order).
+  while (state.cache.size > CACHE_CAP) {
+    const oldest = state.cache.keys().next().value
+    if (oldest === undefined) break
+    state.cache.delete(oldest)
+  }
+  return snap
+}
+
+/** Warm a URL's page (cache) and `modulepreload` its island modules. */
+function prefetch(url: string): void {
+  const state = active
+  if (!state) return
+  let target: URL
+  try {
+    target = new URL(url, window.location.href)
+  } catch {
+    return
+  }
+  if (target.origin !== window.location.origin) return
+  if (target.href === window.location.href) return // current page
+  if (state.cache.has(target.href)) return // already warm / in-flight
+
+  void loadPage(state, target.href).then((snap) => {
+    if (snap) preloadModules(state, snap.html)
+  })
+}
+
+/**
+ * `modulepreload` the island modules a prefetched page carries: fetch +
+ * compile (no execute), so the click's `import()` runs instantly without
+ * a network wait — and without triggering hydration during the hover.
+ */
+function preloadModules(state: RouterState, html: string): void {
+  for (const src of extractOutlet(html, state.outletSelector)?.moduleSrcs ?? []) {
+    if (state.loadedModules.has(src) || state.preloaded.has(src)) continue
+    state.preloaded.add(src)
+    const link = document.createElement('link')
+    link.rel = 'modulepreload'
+    link.href = src
+    document.head.appendChild(link)
+  }
+}
+
+let hoverTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearHoverTimer(): void {
+  if (hoverTimer !== null) {
+    clearTimeout(hoverTimer)
+    hoverTimer = null
+  }
+}
+
+/** Anchor under an event target that the router would intercept, else null. */
+function prefetchableAnchor(event: Event): HTMLAnchorElement | null {
+  const state = active
+  if (!state) return null
+  const anchor = (event.target as Element | null)?.closest?.('a') as HTMLAnchorElement | null
+  if (!anchor || !anchor.getAttribute('href')) return null
+  if (!state.shouldIntercept(anchor, event as MouseEvent)) return null
+  return anchor
+}
+
+function onPointerOver(event: MouseEvent): void {
+  const anchor = prefetchableAnchor(event)
+  if (!anchor) return
+  clearHoverTimer()
+  const href = anchor.href
+  hoverTimer = setTimeout(() => {
+    hoverTimer = null
+    prefetch(href)
+  }, active?.prefetchDelay ?? 65)
+}
+
+function onPointerOut(): void {
+  clearHoverTimer()
+}
+
+function onFocusIn(event: FocusEvent): void {
+  const anchor = prefetchableAnchor(event)
+  if (anchor) prefetch(anchor.href) // keyboard focus is intentional — no dwell
+}
+
+function onTouchStart(event: Event): void {
+  const anchor = prefetchableAnchor(event)
+  if (anchor) prefetch(anchor.href) // touch → click is fast — prefetch eagerly
 }
 
 // ── internals ──────────────────────────────────────────────────────────────

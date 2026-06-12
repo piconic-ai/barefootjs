@@ -88,19 +88,21 @@ a backend returns one, but the router never asks for it.)
 | Re-hydrate freshly inserted scopes | `window.__bf_hydrate_within(outlet)` → `rehydrateScope(outlet)` (subtree-scoped, O(outlet)) |
 | Single-component fragment SSR | `renderToHtml(<Component/>)` from `@barefootjs/hono` |
 
+## Prefetch & cache
+
+On hover (after a short dwell), focus, or touchstart, the router
+**prefetches** the link's page into an in-memory snapshot cache and
+`modulepreload`s its island modules (fetch + compile, not execute). The
+click then reuses the cached page with no network wait, and `import()`s
+the already-preloaded modules. The cache (TTL'd, bounded) also makes
+back/forward instant. Disable with `startRouter({ prefetch: false })`.
+
 ## Limitations & next steps
 
-- **Disposal is GC-based.** Outgoing islands with only local signal
-  state are reclaimed when their DOM detaches. Islands subscribed to
-  shared/module signals need explicit disposal — pass a `dispose`
-  callback for now. Precise per-scope disposal (wrapping each scope's
-  `init` in `createRoot` and keying the dispose fn by scope element in
-  `@barefootjs/client`) is the planned follow-up.
 - **No morph / persistent islands yet.** The outlet is fully replaced;
   an island present on both pages is re-created. A `data-bf-permanent`
   carry-over and idiomorph-style morphing are future work.
-- **No snapshot cache / prefetch yet.** Back/forward and hover-prefetch
-  (the perceived-speed wins) are not implemented.
+- **No scroll restoration on back/forward.** The router resets to top.
 - **Outlet is authored, not compiler-derived yet.** Marking `bf-outlet`
   by hand is the v0 contract; auto-derivation from the scope tree is the
   intended end state.
