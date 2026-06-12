@@ -184,15 +184,6 @@ export const BF_ASYNC_RESOLVE = 'bf-async-resolve'
  */
 export const BF_OUTLET = 'bf-outlet'
 
-/**
- * Request header set by the client router on partial-navigation fetches.
- *
- * Lets a cooperating backend return just the outlet fragment instead of
- * the full document (payload optimization). The router works without it:
- * when the response is a full page it extracts `[bf-outlet]` client-side.
- */
-export const BF_NAVIGATE_HEADER = 'X-Barefoot-Navigate'
-
 // ---------------------------------------------------------------------------
 // Hoisted-children scope placeholder (#1320)
 // ---------------------------------------------------------------------------

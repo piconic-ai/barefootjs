@@ -17,14 +17,19 @@
  *     surfaced as `window.__bf_hydrate`) re-scans freshly inserted
  *     `bf-s` scopes after the swap.
  *
- * Backend cooperation is **optional**: with no server change the router
- * fetches the full page and extracts `[bf-outlet]` client-side. A
- * backend that honours the `X-Barefoot-Navigate` request header may
- * return just the outlet fragment to cut payload — both shapes are
- * accepted.
+ * Backend-agnostic by design: the router fetches the full page and
+ * extracts `[bf-outlet]` client-side, so **no server cooperation is
+ * required** (works against any backend). It deliberately does *not* do
+ * server-side fragment content-negotiation: returning just the outlet
+ * would shave only highly-compressible shell markup (gzip already
+ * handles it) while costing `Vary`-fragmented caching and the burden of
+ * re-including island scripts + `<title>` in every fragment. The real
+ * navigation cost is the round-trip, addressed by prefetch, not by
+ * shrinking the payload. (`extractOutlet` still tolerates a bare-fragment
+ * response, but the router never asks for one.)
  */
 
-import { BF_OUTLET, BF_NAVIGATE_HEADER } from '@barefootjs/shared'
+import { BF_OUTLET } from '@barefootjs/shared'
 
 export interface RouterOptions {
   /**
@@ -164,7 +169,7 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     let res: Response
     try {
       res = await fetch(target.href, {
-        headers: { [BF_NAVIGATE_HEADER]: '1', Accept: 'text/html' },
+        headers: { Accept: 'text/html' },
         credentials: 'same-origin',
         signal: controller.signal,
       })
@@ -316,12 +321,12 @@ async function loadNewModules(state: RouterState, srcs: string[]): Promise<void>
 }
 
 /**
- * Extract the outlet content from a navigation response. Accepts both
- * shapes:
- *   - **Full document** (no server cooperation): parse and pull the
+ * Extract the outlet content from a navigation response. The router
+ * always fetches the full page, but this stays tolerant of both shapes:
+ *   - **Full document** (the normal case): parse and pull the
  *     `[bf-outlet]` subtree's children.
- *   - **Bare fragment** (server honoured `X-Barefoot-Navigate`): the
- *     parsed body *is* the outlet content.
+ *   - **Bare fragment** (if a backend chooses to return just the region):
+ *     the parsed body *is* the outlet content.
  *
  * Returns `null` when a full document arrives without the outlet marker
  * — that page belongs to a different shell, so the caller hard-navigates.

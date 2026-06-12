@@ -87,13 +87,14 @@ test('link click swaps only the outlet, preserves the shell, updates history + t
   expect(pushSpy).toHaveBeenCalledTimes(1)
   expect(String(pushSpy.mock.calls[0][2])).toContain('/blog/2')
 
-  // Re-hydration fired once; fetch carried the partial-nav header.
+  // Re-hydration fired once; the router fetched the full page (no special
+  // content-negotiation header — it extracts the outlet client-side).
   expect(rehydrate).toHaveBeenCalledTimes(1)
   expect(fetchCalls).toHaveLength(1)
-  expect(fetchCalls[0].headers['X-Barefoot-Navigate']).toBe('1')
+  expect(fetchCalls[0].headers['X-Barefoot-Navigate']).toBeUndefined()
 })
 
-test('accepts a bare fragment response (server-optimized payload)', async () => {
+test('tolerates a bare fragment response (if a backend returns one)', async () => {
   mockFetch(() => `<article id="content">fragment body</article>`)
   const router = startRouter({ rehydrate: () => {} })
   stop = router.stop

@@ -64,28 +64,20 @@ await navigate('/blog/3')
 Opt a link out with `data-bf-router="false"`, `target`, `download`, or
 `rel="external"`.
 
-## Backend cooperation is optional
+## No backend cooperation needed
 
-With **no server change** the router fetches the full page and extracts
-`[bf-outlet]` client-side (zero backend gimmick — works against any
-backend, including Go/Perl adapters).
+The router **always fetches the full page** and extracts `[bf-outlet]`
+client-side — zero backend gimmick, works against any backend (including
+the Go/Perl adapters). There is **no content-negotiation header**.
 
-To cut payload, a backend may return **just the outlet fragment** when it
-sees the `X-Barefoot-Navigate` request header. Both response shapes are
-accepted. Example with Hono:
-
-```ts
-import { BF_NAVIGATE_HEADER } from '@barefootjs/router'
-
-app.get('/blog/:page', async (c) => {
-  const props = await loadPage(c.req.param('page'))
-  if (c.req.header(BF_NAVIGATE_HEADER)) {
-    c.header('Vary', BF_NAVIGATE_HEADER)
-    return c.html(await renderToHtml(<PostBody {...props} />)) // fragment only
-  }
-  return c.render(<Page {...props} />)                          // full shell
-})
-```
+Returning just the outlet fragment from the server was considered and
+**deliberately dropped**: it would shave only highly-compressible shell
+markup (gzip already handles that) while *hurting* cache efficiency
+(`Vary`-fragmented per URL) and forcing every fragment to re-include its
+island `<script type="module">` tags and `<title>`. The navigation cost
+that matters is the round-trip — addressed by prefetch, not by shrinking
+the payload. (`extractOutlet` still tolerates a bare-fragment response if
+a backend returns one, but the router never asks for it.)
 
 ## How it reuses the runtime
 
