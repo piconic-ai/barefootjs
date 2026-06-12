@@ -12,6 +12,14 @@ on:
       # Shared-component fixture sources (fixture-hydrate corpus inputs).
       # Editing a `*.tsx` here regenerates the `__snapshots__/<id>.{html,client.js}` pair.
       - 'integrations/shared/components/**'
+      # #1467 Phase 2 source roots: `ui` fixtures lift from
+      # `ui/components/ui/<name>/index.tsx` and `demo` fixtures from
+      # `site/ui/components/<name>.tsx` (sibling graphs live under the ui
+      # root). Editing either must regenerate the frozen snapshots — the
+      # Hono SSR conformance comparison would otherwise go red with no
+      # auto-fix run to repair it.
+      - 'ui/components/ui/**'
+      - 'site/ui/components/**'
       # Fixture spec files (adding a new fixture, changing its props, or
       # adjusting `componentName` / `sourceFile` / `additionalComponents`
       # changes the snapshot output).
