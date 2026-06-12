@@ -283,6 +283,12 @@ function loadPage(state: RouterState, url: string): Promise<PageSnapshot | null>
   })()
 
   state.cache.set(url, { snap, ts: Date.now() })
+  // Don't cache failures (Next.js behavior): a prefetch is best-effort, so a
+  // failed load must not poison the URL — evict it once it resolves to null
+  // so the next prefetch/click retries fresh. (Success stays cached, TTL'd.)
+  void snap.then((result) => {
+    if (result === null && state.cache.get(url)?.snap === snap) state.cache.delete(url)
+  })
   // Bound the cache: evict the oldest entries (Map keeps insertion order).
   while (state.cache.size > CACHE_CAP) {
     const oldest = state.cache.keys().next().value

@@ -238,3 +238,35 @@ test('prefetch: false disables hover prefetching', async () => {
   await new Promise((r) => setTimeout(r, 25))
   expect(fetchCalls).toHaveLength(0)
 })
+
+test('a failed prefetch does not poison the cache — the click retries (Next.js behavior)', async () => {
+  ;(window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM?.setURL?.(
+    'https://example.test/blog/1',
+  )
+  // First request (the hover prefetch) fails; the second (the click) succeeds.
+  let call = 0
+  ;(globalThis as { fetch: unknown }).fetch = mock(async (url: unknown) => {
+    call += 1
+    if (call === 1) throw new Error('network down') // prefetch fails
+    return {
+      ok: true,
+      redirected: false,
+      url: String(url),
+      text: async () => fullPage2(),
+    } as unknown as Response
+  })
+
+  const router = startRouter({ rehydrate: () => {}, prefetchDelay: 5 })
+  stop = router.stop
+
+  hover('next')
+  await new Promise((r) => setTimeout(r, 25)) // prefetch fires and fails
+  await flush() // let the failed entry evict itself
+
+  clickLink('next')
+  await flush()
+
+  // The failed prefetch didn't poison the URL: the click retried and swapped.
+  expect(call).toBeGreaterThanOrEqual(2)
+  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('page 2 body')
+})

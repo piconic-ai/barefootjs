@@ -97,6 +97,11 @@ click then reuses the cached page with no network wait, and `import()`s
 the already-preloaded modules. The cache (TTL'd, bounded) also makes
 back/forward instant. Disable with `startRouter({ prefetch: false })`.
 
+Prefetch is **best-effort, like Next.js**: a failed prefetch is not cached,
+so it never poisons the URL — the next prefetch or the click retries fresh
+(and a click whose load ultimately fails falls back to a full navigation).
+Re-hovering the same link does not re-fetch (deduped by the cache).
+
 ## Limitations & next steps
 
 - **No morph / persistent islands yet.** The outlet is fully replaced;
