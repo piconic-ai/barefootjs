@@ -1,8 +1,8 @@
 /**
  * Partial-navigation router: a same-origin link click must swap **only**
  * the `[bf-outlet]` region, leave the shell mounted, update history +
- * title, and trigger re-hydration. Covers both response shapes (full
- * document and bare fragment) and the non-intercept cases.
+ * title, and trigger re-hydration. Covers the full-page response shape
+ * and the non-intercept cases.
  */
 import { describe, test, expect, beforeAll, beforeEach, afterEach, mock, spyOn } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -93,22 +93,10 @@ test('link click swaps only the outlet, preserves the shell, updates history + t
   expect(pushSpy).toHaveBeenCalledTimes(1)
   expect(String(pushSpy.mock.calls[0][2])).toContain('/blog/2')
 
-  // Re-hydration fired once; the router fetched the full page (no special
-  // content-negotiation header — it extracts the outlet client-side).
+  // Re-hydration fired once; the router fetched the full page and extracts
+  // the outlet client-side (no server-side content negotiation).
   expect(rehydrate).toHaveBeenCalledTimes(1)
   expect(fetchCalls).toHaveLength(1)
-  expect(fetchCalls[0].headers['X-Barefoot-Navigate']).toBeUndefined()
-})
-
-test('tolerates a bare fragment response (if a backend returns one)', async () => {
-  mockFetch(() => `<article id="content">fragment body</article>`)
-  const router = startRouter({ rehydrate: () => {} })
-  stop = router.stop
-
-  clickLink('next')
-  await flush()
-
-  expect(document.querySelector('[bf-outlet]')!.textContent).toContain('fragment body')
 })
 
 test('rapid navigation: the latest target wins even if an earlier response resolves last', async () => {

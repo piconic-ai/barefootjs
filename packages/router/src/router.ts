@@ -1,5 +1,5 @@
 /**
- * BarefootJS - Automatic partial-navigation client router
+ * BarefootJS — automatic partial-navigation client router (alpha).
  *
  * Turbo-Drive-style navigation scoped to a single content **outlet**.
  * On a same-origin link click the router fetches the target URL, swaps
@@ -12,147 +12,29 @@
  * long-term goal is for the compiler to derive the outlet boundary from
  * the component tree and emit `bf-outlet` automatically.
  *
- * Reuses what already ships in `@barefootjs/client`:
- *   - the streaming swap primitive's re-hydration walk (`rehydrateAll`,
- *     surfaced as `window.__bf_hydrate`) re-scans freshly inserted
- *     `bf-s` scopes after the swap.
- *
  * Backend-agnostic by design: the router fetches the full page and
  * extracts `[bf-outlet]` client-side, so **no server cooperation is
- * required** (works against any backend). It deliberately does *not* do
- * server-side fragment content-negotiation: returning just the outlet
- * would shave only highly-compressible shell markup (gzip already
- * handles it) while costing `Vary`-fragmented caching and the burden of
- * re-including island scripts + `<title>` in every fragment. The real
- * navigation cost is the round-trip, addressed by prefetch, not by
- * shrinking the payload. (`extractOutlet` still tolerates a bare-fragment
- * response, but the router never asks for one.)
+ * required** — it works against any backend. The navigation cost is the
+ * round-trip, addressed by prefetch, not by shrinking the payload.
+ *
+ * This module is the controller; the moving parts live alongside it:
+ *   - `types.ts`         — shared interfaces
+ *   - `seams.ts`         — `window.*` bridges to the optional client runtime
+ *   - `cache.ts`         — snapshot cache (stale-while-revalidate)
+ *   - `outlet.ts`        — read the response: extract outlet + island modules
+ *   - `search-params.ts` — the `searchParams()` environment signal
  */
 
 import { BF_OUTLET } from '@barefootjs/shared'
-
-export interface RouterOptions {
-  /**
-   * CSS selector for the swappable content region.
-   * Defaults to `[bf-outlet]`.
-   */
-  outlet?: string
-  /**
-   * Called with the (post-swap) outlet element to re-hydrate the new
-   * islands. Defaults to `window.__bf_hydrate_within(outlet)` — the
-   * client runtime's **subtree-scoped** walk (O(outlet), not O(document))
-   * — falling back to the whole-document `window.__bf_hydrate()`, then to
-   * a dynamic import of `@barefootjs/client/runtime`'s `rehydrateAll`.
-   */
-  rehydrate?: (outlet: Element) => void | Promise<void>
-  /**
-   * Called with the current outlet element **before** it is replaced, to
-   * dispose the reactive scopes of the outgoing islands. Defaults to
-   * `window.__bf_dispose_within(outlet)` — the client runtime's precise
-   * per-scope disposal — so timers/listeners/subscriptions are released
-   * rather than leaked. Pass `() => {}` to opt out.
-   */
-  dispose?: (outlet: Element) => void
-  /**
-   * Loads an island JS module the navigation introduced — the response's
-   * `<script type="module" src>` tags (BfScripts) carry exactly which
-   * modules the swapped-in islands need. Importing a module runs it, which
-   * registers its `hydrate(name, def)` so the subsequent re-hydration can
-   * init the island. Defaults to `(src) => import(src)`; already-loaded
-   * modules (the initial page's, plus ones loaded on earlier navigations)
-   * are skipped. Without this, an island whose module wasn't on the first
-   * page would never hydrate after navigation.
-   */
-  loadModule?: (src: string) => Promise<unknown>
-  /** Predicate deciding whether a clicked anchor is handled by the router. */
-  shouldIntercept?: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
-  /** Reset scroll to the top after a swap (default: true). */
-  scrollToTop?: boolean
-  /**
-   * Prefetch a link's page on hover (dwell), focus, or primary press
-   * (`pointerdown` — mouse/touch/pen, fires before `click`) and cache it,
-   * so the click reuses it with no network wait. Also `modulepreload`s the
-   * page's island modules (fetch + compile, not execute). Default: `true`.
-   */
-  prefetch?: boolean
-  /** Hover dwell (ms) before a prefetch fires, to skip quick sweeps (default 65). */
-  prefetchDelay?: number
-  /**
-   * How long (ms) a cached page is served without refetch. Between this and
-   * `cacheStaleMs` the cache is in its "aging" window: the page is still
-   * served instantly, but a background refresh updates it for next time
-   * (stale-while-revalidate). The refresh threshold is jittered per entry so
-   * a batch of prefetches doesn't all revalidate at once. Default: 15000.
-   */
-  cacheFreshMs?: number
-  /** ms after which a cached page is too old to serve and is refetched fresh. Default: 60000. */
-  cacheStaleMs?: number
-  /** Max cached pages; least-recently-used evicted past this. Default: 30. */
-  cacheCap?: number
-}
-
-export interface NavigateOptions {
-  /**
-   * How to record the navigation in `history`.
-   * - `'push'` (default): new entry.
-   * - `'replace'`: replace the current entry.
-   * - `false`: don't touch history (used for `popstate`, where the
-   *   browser has already moved).
-   */
-  history?: 'push' | 'replace' | false
-}
-
-export interface Router {
-  /** Tear down listeners and abort any in-flight navigation. */
-  stop(): void
-  /** Programmatically navigate (same logic as a link click). */
-  navigate: (url: string, options?: NavigateOptions) => Promise<void>
-  /** Warm a URL's page (and its island modules) into the cache. */
-  prefetch: (url: string) => void
-}
-
-interface PageSnapshot {
-  html: string
-  finalUrl: string
-}
-
-interface CacheEntry {
-  snap: Promise<PageSnapshot | null>
-  /** Past this (jittered), the next access serves the page AND refreshes it. */
-  refreshAt: number
-  /** Past this, the page is too old to serve — refetch fresh instead. */
-  staleAt: number
-  /** A background refresh is in flight (single-flight guard). */
-  refreshing: boolean
-}
-
-interface RouterState {
-  outletSelector: string
-  rehydrate: (outlet: Element) => void | Promise<void>
-  dispose: (outlet: Element) => void
-  loadModule: (src: string) => Promise<unknown>
-  /** Absolute URLs of module scripts already loaded (deduped across navs). */
-  loadedModules: Set<string>
-  prefetchEnabled: boolean
-  prefetchDelay: number
-  /** ms a cached page is served without refetch (fresh window). */
-  cacheFreshMs: number
-  /** ms after which a cached page is too old to serve (refetch fresh). */
-  cacheStaleMs: number
-  /** Max cached pages (least-recently-used evicted). */
-  cacheCap: number
-  /** Recently fetched / prefetched pages, keyed by absolute URL. */
-  cache: Map<string, CacheEntry>
-  /** Module srcs already `modulepreload`-ed on hover. */
-  preloaded: Set<string>
-  shouldIntercept: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
-  scrollToTop: boolean
-  /** Pathname of the currently-displayed outlet (to tell a query-only
-   *  navigation from a structural one). */
-  currentPath: string
-  inflight: AbortController | null
-  stop: () => void
-}
+import { loadPage } from './cache.ts'
+import { collectModuleScripts, extractOutlet, loadNewModules } from './outlet.ts'
+import {
+  defaultDispose,
+  defaultRehydrate,
+  hardNavigate,
+  setSearchSeam,
+} from './seams.ts'
+import type { NavigateOptions, Router, RouterOptions, RouterState } from './types.ts'
 
 let active: RouterState | null = null
 
@@ -306,101 +188,7 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
   }
 }
 
-/**
- * Drive the `searchParams()` signal if `@barefootjs/router/signals` is loaded
- * (it sets `window.__bf_set_search`). Returns `true` when the seam exists, so
- * the caller knows searchParams is in use. Keeps the router core free of a
- * hard `@barefootjs/client` dependency.
- */
-function setSearchSeam(search: string): boolean {
-  const w = window as unknown as { __bf_set_search?: (s: string) => void }
-  if (typeof w.__bf_set_search !== 'function') return false
-  w.__bf_set_search(search)
-  return true
-}
-
-// ── prefetch + snapshot cache ────────────────────────────────────────────
-
-const REFRESH_JITTER = 0.3 // ±30% on the per-entry refresh threshold
-
-/** Fetch a page snapshot; resolves to `null` on a non-OK / failed response. */
-function fetchSnapshot(url: string): Promise<PageSnapshot | null> {
-  return (async () => {
-    try {
-      const res = await fetch(url, { headers: { Accept: 'text/html' }, credentials: 'same-origin' })
-      if (!res.ok) return null
-      const finalUrl = res.redirected && res.url ? res.url : url
-      const html = await res.text()
-      return { html, finalUrl }
-    } catch {
-      return null
-    }
-  })()
-}
-
-/** Store `snap` under `url` with a jittered refresh window; bound the cache. */
-function storeEntry(state: RouterState, url: string, snap: Promise<PageSnapshot | null>): void {
-  const now = Date.now()
-  // Jitter the refresh threshold so a batch of prefetches doesn't all
-  // revalidate at the same instant (avoids a self-inflicted stampede).
-  const jitter = 1 + (Math.random() * 2 - 1) * REFRESH_JITTER // 0.7 … 1.3
-  state.cache.set(url, {
-    snap,
-    refreshAt: now + state.cacheFreshMs * jitter,
-    staleAt: now + state.cacheStaleMs,
-    refreshing: false,
-  })
-  // Don't cache failures (Next.js behavior): evict once it resolves to null
-  // so the next prefetch/click retries fresh instead of being stuck.
-  void snap.then((result) => {
-    if (result === null && state.cache.get(url)?.snap === snap) state.cache.delete(url)
-  })
-  // Bound the cache (LRU: a hit re-inserts, so the first key is least-recent).
-  while (state.cache.size > state.cacheCap) {
-    const lru = state.cache.keys().next().value
-    if (lru === undefined) break
-    state.cache.delete(lru)
-  }
-}
-
-/**
- * Return a page snapshot for `url`. Cache states:
- *   - **fresh** (`now < refreshAt`): serve the cached page, no refetch.
- *   - **aging** (`refreshAt ≤ now < staleAt`): serve the cached page
- *     instantly *and* refresh it in the background for next time
- *     (stale-while-revalidate; single-flight per URL).
- *   - **stale / miss** (`now ≥ staleAt` or absent): fetch fresh and return
- *     that — never serve content past `staleAt`.
- *
- * Concurrent prefetch + navigate for the same URL share one request (the
- * cached in-flight promise). Returns `null` on failure so the caller can
- * hard-navigate.
- */
-function loadPage(state: RouterState, url: string): Promise<PageSnapshot | null> {
-  const hit = state.cache.get(url)
-  const now = Date.now()
-
-  if (hit && now < hit.staleAt) {
-    if (now >= hit.refreshAt && !hit.refreshing) {
-      // Aging → refresh in the background (single-flight), keep serving cached.
-      hit.refreshing = true
-      const fresh = fetchSnapshot(url)
-      void fresh.then((result) => {
-        if (result !== null) storeEntry(state, url, fresh) // swap in the fresh window
-        else if (state.cache.get(url) === hit) hit.refreshing = false // failed → keep old, allow retry
-      })
-    }
-    // LRU bump: move this entry to the most-recent position.
-    state.cache.delete(url)
-    state.cache.set(url, hit)
-    return hit.snap
-  }
-
-  // Miss or past staleAt → fetch fresh (and cache it).
-  const snap = fetchSnapshot(url)
-  storeEntry(state, url, snap)
-  return snap
-}
+// ── prefetch ─────────────────────────────────────────────────────────────
 
 /** Warm a URL's page (cache) and `modulepreload` its island modules. */
 function prefetch(url: string): void {
@@ -486,7 +274,7 @@ function onPointerDown(event: MouseEvent): void {
   if (anchor) prefetch(anchor.href)
 }
 
-// ── internals ──────────────────────────────────────────────────────────────
+// ── event handlers ───────────────────────────────────────────────────────
 
 function onClick(event: MouseEvent): void {
   if (!active) return
@@ -543,122 +331,4 @@ function defaultShouldIntercept(anchor: HTMLAnchorElement): boolean {
   }
 
   return true
-}
-
-interface OutletContent {
-  nodes: Node[]
-  title: string | null
-  /** `<script type="module" src>` URLs found anywhere in the response. */
-  moduleSrcs: string[]
-}
-
-/** Absolute URLs of every **same-origin** `<script type="module" src>` under
- *  `root`. Cross-origin module srcs are deliberately excluded — the router
- *  only manages the app's own island modules; the browser owns the rest. */
-function collectModuleScripts(root: ParentNode): Set<string> {
-  const out = new Set<string>()
-  for (const s of root.querySelectorAll('script[type="module"][src]')) {
-    const src = s.getAttribute('src')
-    if (!src) continue
-    try {
-      const url = new URL(src, window.location.href)
-      if (url.origin === window.location.origin) out.add(url.href)
-    } catch {
-      /* skip un-resolvable src */
-    }
-  }
-  return out
-}
-
-/** Import the modules in `srcs` not already loaded; records them as loaded. */
-async function loadNewModules(state: RouterState, srcs: string[]): Promise<void> {
-  const fresh = srcs.filter((s) => !state.loadedModules.has(s))
-  await Promise.all(
-    fresh.map(async (src) => {
-      state.loadedModules.add(src) // mark first so a concurrent nav won't re-import
-      try {
-        await state.loadModule(src)
-      } catch {
-        // Un-mark on failure so a later navigation retries (a transient
-        // module-load failure shouldn't leave the island inert forever). Not
-        // a retry storm: loadNewModules only runs once per navigation.
-        state.loadedModules.delete(src)
-      }
-    }),
-  )
-}
-
-/**
- * Extract the outlet content from a navigation response. The router
- * always fetches the full page, but this stays tolerant of both shapes:
- *   - **Full document** (the normal case): parse and pull the
- *     `[bf-outlet]` subtree's children.
- *   - **Bare fragment** (if a backend chooses to return just the region):
- *     the parsed body *is* the outlet content.
- *
- * Returns `null` when a full document arrives without the outlet marker
- * — that page belongs to a different shell, so the caller hard-navigates.
- */
-function extractOutlet(html: string, selector: string): OutletContent | null {
-  const doc = new DOMParser().parseFromString(html, 'text/html')
-  const outlet = doc.querySelector(selector)
-  const title = doc.querySelector('title')?.textContent ?? null
-  // Island module scripts sit at body-end (BfScripts), outside the outlet —
-  // collect from the whole response, not just the swapped subtree.
-  const moduleSrcs = [...collectModuleScripts(doc)]
-
-  let source: ParentNode | null = outlet
-  if (!source) {
-    const looksLikeFullDocument = /<html[\s>]/i.test(html) || /^\s*<!doctype/i.test(html)
-    if (looksLikeFullDocument) return null // full page, no outlet → can't partial
-    if (!doc.body || doc.body.childNodes.length === 0) return null
-    source = doc.body
-  }
-
-  const nodes = Array.from(source.childNodes).map((n) => document.importNode(n, true))
-  return { nodes, title, moduleSrcs }
-}
-
-interface ClientSeams {
-  __bf_hydrate_within?: (root: Element) => void
-  __bf_dispose_within?: (root: Element) => void
-  __bf_hydrate?: () => void
-}
-
-async function defaultRehydrate(outlet: Element): Promise<void> {
-  const w = window as unknown as ClientSeams
-  // Prefer the subtree-scoped walk — O(outlet), not O(document).
-  if (typeof w.__bf_hydrate_within === 'function') {
-    w.__bf_hydrate_within(outlet)
-    return
-  }
-  if (typeof w.__bf_hydrate === 'function') {
-    w.__bf_hydrate()
-    return
-  }
-  // Fall back to the runtime's named exports. Variable specifier keeps the
-  // client an optional peer (no static type/bundle dependency); the browser
-  // resolves the bare specifier through the page's import map.
-  try {
-    const spec = '@barefootjs/client/runtime'
-    const mod = (await import(spec)) as {
-      rehydrateScope?: (root: Element) => void
-      rehydrateAll?: () => void
-    }
-    if (mod.rehydrateScope) mod.rehydrateScope(outlet)
-    else mod.rehydrateAll?.()
-  } catch {
-    // No client runtime on the page (static shell) — nothing to hydrate.
-  }
-}
-
-function defaultDispose(outlet: Element): void {
-  const w = window as unknown as ClientSeams
-  // Precise per-scope disposal when the client runtime exposes it; otherwise
-  // a no-op (detached local-state islands are reclaimed by GC).
-  w.__bf_dispose_within?.(outlet)
-}
-
-function hardNavigate(url: string): void {
-  window.location.assign(url)
 }

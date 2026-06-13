@@ -8,8 +8,9 @@ sidebar, pagination nav) stays mounted with its signal state intact.
 Think Turbo Drive / Turbo Frames, but the swap + re-hydration reuse
 BarefootJS's existing runtime instead of a separate framework.
 
-> **Prototype.** This is a minimal first cut: outlet-scoped swap,
-> history, title, re-hydration. See [Limitations](#limitations--next-steps).
+> **Alpha.** The core is in place — outlet-scoped swap, history, title,
+> re-hydration, prefetch + cache, and reactive search params. The API may
+> still shift before 1.0. See [Limitations](#limitations--next-steps).
 
 ## Why "automatic"
 
@@ -76,8 +77,7 @@ markup (gzip already handles that) while *hurting* cache efficiency
 (`Vary`-fragmented per URL) and forcing every fragment to re-include its
 island `<script type="module">` tags and `<title>`. The navigation cost
 that matters is the round-trip — addressed by prefetch, not by shrinking
-the payload. (`extractOutlet` still tolerates a bare-fragment response if
-a backend returns one, but the router never asks for it.)
+the payload.
 
 ## How it reuses the runtime
 
