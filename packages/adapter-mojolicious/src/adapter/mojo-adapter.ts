@@ -1906,6 +1906,35 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         return n
       })()
       const indexed = this.recordIndexAccessToPerl(initNode)
+      if (
+        indexed === null &&
+        ts.isElementAccessExpression(initNode) &&
+        initNode.argumentExpression &&
+        !ts.isNumericLiteral(initNode.argumentExpression) &&
+        !ts.isStringLiteral(initNode.argumentExpression)
+      ) {
+        // Variable-index record access (`sizeMap[size]`) that the
+        // static-inline path couldn't resolve — a non-scalar record
+        // value, or a non-const receiver. Since #1897 made variable
+        // indices parseable (`index-access`), the generic value lowering
+        // would now emit `$sizeMap->{$size}` against an UNBOUND module
+        // const instead of refusing. Record BF101 and bail so the whole
+        // spread surfaces the out-of-shape diagnostic, matching the
+        // pre-#1897 behaviour (the refusal then was a side effect of the
+        // value lowering). (A bound receiver — a signal getter like
+        // `selected()[index]` — is an attribute value, not a spread
+        // member, and never reaches here.)
+        this.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Spread object value '${initNode.getText(sf)}' indexes a record map whose values aren't scalar literals — it can't lower to an inline Perl hashref.`,
+          loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+          suggestion: {
+            message: 'Index a record whose values are number/string literals, or move the spread into a `\'use client\'` component so hydration computes it.',
+          },
+        })
+        return null
+      }
       const valPerl =
         indexed !== null
           ? indexed
@@ -2148,6 +2177,13 @@ function renderArrayMethod(
       const recv = emit(object)
       return `bf->trim(${recv})`
     }
+    case 'toFixed': {
+      // `.toFixed(digits?)` — Number → fixed-decimal string. `bf->to_fixed`
+      // mirrors JS rounding + zero-padding (default 0 digits). #1897.
+      const recv = emit(object)
+      const digits = args.length >= 1 ? emit(args[0]) : '0'
+      return `bf->to_fixed(${recv}, ${digits})`
+    }
     case 'split': {
       // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
       // ARRAY ref via `bf->split`. With no separator the helper returns
@@ -2376,6 +2412,25 @@ function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string) => boo
 }
 
 /**
+ * Lower `arr[index]` to a Perl deref. Perl distinguishes array
+ * (`->[$i]`) from hash (`->{$k}`) access, which JS's single `[]` does
+ * not — so we pick by the index expression's type: a string-typed key
+ * derefs the hash, anything else (the common loop-index / arithmetic
+ * case, e.g. `selected()[index]`) derefs the array. #1897.
+ */
+function emitIndexAccessPerl(
+  object: ParsedExpr,
+  index: ParsedExpr,
+  emit: (e: ParsedExpr) => string,
+  isStringName: (n: string) => boolean,
+): string {
+  const i = emit(index)
+  return isStringTypedOperand(index, isStringName)
+    ? `${emit(object)}->{${i}}`
+    : `${emit(object)}->[${i}]`
+}
+
+/**
  * Lowering for the predicate body of a filter / every / some / find,
  * plus the same shape used by `renderBlockBodyCondition` for complex
  * block-body filters. Identifiers resolve against:
@@ -2424,6 +2479,10 @@ class MojoFilterEmitter implements ParsedExprEmitter {
       return `scalar(@{${emit(object)}})`
     }
     return `${emit(object)}->{${property}}`
+  }
+
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return emitIndexAccessPerl(object, index, emit, this.isStringName)
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -2610,6 +2669,10 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     const obj = emit(object)
     if (property === 'length') return `scalar(@{${obj}})`
     return `${obj}->{${property}}`
+  }
+
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return emitIndexAccessPerl(object, index, emit, n => this.adapter._isStringValueName(n))
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
