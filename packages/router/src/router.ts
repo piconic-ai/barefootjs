@@ -87,6 +87,8 @@ export interface RouterOptions {
   cacheFreshMs?: number
   /** ms after which a cached page is too old to serve and is refetched fresh. Default: 60000. */
   cacheStaleMs?: number
+  /** Max cached pages; least-recently-used evicted past this. Default: 30. */
+  cacheCap?: number
 }
 
 export interface NavigateOptions {
@@ -137,6 +139,8 @@ interface RouterState {
   cacheFreshMs: number
   /** ms after which a cached page is too old to serve (refetch fresh). */
   cacheStaleMs: number
+  /** Max cached pages (least-recently-used evicted). */
+  cacheCap: number
   /** Recently fetched / prefetched pages, keyed by absolute URL. */
   cache: Map<string, CacheEntry>
   /** Module srcs already `modulepreload`-ed on hover. */
@@ -173,6 +177,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     prefetchDelay: options.prefetchDelay ?? 65,
     cacheFreshMs: options.cacheFreshMs ?? 15_000,
     cacheStaleMs: options.cacheStaleMs ?? 60_000,
+    cacheCap: options.cacheCap ?? 30,
     cache: new Map(),
     preloaded: new Set(),
     shouldIntercept: options.shouldIntercept ?? defaultShouldIntercept,
@@ -316,7 +321,6 @@ function setSearchSeam(search: string): boolean {
 
 // ── prefetch + snapshot cache ────────────────────────────────────────────
 
-const CACHE_CAP = 30 // max cached pages (least-recently-used evicted)
 const REFRESH_JITTER = 0.3 // ±30% on the per-entry refresh threshold
 
 /** Fetch a page snapshot; resolves to `null` on a non-OK / failed response. */
@@ -352,7 +356,7 @@ function storeEntry(state: RouterState, url: string, snap: Promise<PageSnapshot 
     if (result === null && state.cache.get(url)?.snap === snap) state.cache.delete(url)
   })
   // Bound the cache (LRU: a hit re-inserts, so the first key is least-recent).
-  while (state.cache.size > CACHE_CAP) {
+  while (state.cache.size > state.cacheCap) {
     const lru = state.cache.keys().next().value
     if (lru === undefined) break
     state.cache.delete(lru)
@@ -548,14 +552,17 @@ interface OutletContent {
   moduleSrcs: string[]
 }
 
-/** Absolute URLs of every `<script type="module" src>` under `root`. */
+/** Absolute URLs of every **same-origin** `<script type="module" src>` under
+ *  `root`. Cross-origin module srcs are deliberately excluded — the router
+ *  only manages the app's own island modules; the browser owns the rest. */
 function collectModuleScripts(root: ParentNode): Set<string> {
   const out = new Set<string>()
   for (const s of root.querySelectorAll('script[type="module"][src]')) {
     const src = s.getAttribute('src')
     if (!src) continue
     try {
-      out.add(new URL(src, window.location.href).href)
+      const url = new URL(src, window.location.href)
+      if (url.origin === window.location.origin) out.add(url.href)
     } catch {
       /* skip un-resolvable src */
     }
@@ -572,8 +579,10 @@ async function loadNewModules(state: RouterState, srcs: string[]): Promise<void>
       try {
         await state.loadModule(src)
       } catch {
-        // A failed import leaves the island un-hydrated; the page still
-        // shows the swapped SSR HTML. Leave it marked to avoid retry storms.
+        // Un-mark on failure so a later navigation retries (a transient
+        // module-load failure shouldn't leave the island inert forever). Not
+        // a retry storm: loadNewModules only runs once per navigation.
+        state.loadedModules.delete(src)
       }
     }),
   )

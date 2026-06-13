@@ -414,3 +414,58 @@ test('a pathname change swaps even when searchParams is in use', async () => {
   expect(fetchCalls).toHaveLength(1) // swapped
   expect(rehydrate).toHaveBeenCalledTimes(1)
 })
+
+test('popstate query-only (same route) does not swap when searchParams is in use', async () => {
+  setURL('https://example.test/list')
+  ;(window as unknown as { __bf_set_search: (s: string) => void }).__bf_set_search = () => {}
+  const rehydrate = mock(() => {})
+  const router = startRouter({ rehydrate }) // currentPath = /list
+  stop = router.stop
+
+  // Back/forward to a query-only URL on the same route.
+  setURL('https://example.test/list?sort=date')
+  window.dispatchEvent(new Event('popstate'))
+  await flush()
+
+  expect(fetchCalls).toHaveLength(0) // no swap
+  expect(rehydrate).not.toHaveBeenCalled()
+})
+
+test('popstate to a different route swaps the outlet', async () => {
+  setURL('https://example.test/list')
+  const rehydrate = mock(() => {})
+  const router = startRouter({ rehydrate }) // currentPath = /list
+  stop = router.stop
+
+  setURL('https://example.test/other')
+  window.dispatchEvent(new Event('popstate'))
+  await flush()
+
+  expect(fetchCalls).toHaveLength(1) // pathname changed → swapped
+  expect(rehydrate).toHaveBeenCalledTimes(1)
+})
+
+test('cache eviction is LRU: a re-accessed page survives over an older one', async () => {
+  setURL('https://example.test/start')
+  const router = startRouter({ rehydrate: () => {}, cacheCap: 2 })
+  stop = router.stop
+
+  await router.navigate('/a') // cache [a]            fetch 1
+  await flush()
+  await router.navigate('/b') // cache [a,b]          fetch 2
+  await flush()
+  await router.navigate('/a') // hit a → bump [b,a]   (no fetch)
+  await flush()
+  await router.navigate('/c') // [b,a,c] > cap 2 → evict LRU b → [a,c]   fetch 3
+  await flush()
+  const after3 = fetchCalls.length
+  expect(after3).toBe(3)
+
+  await router.navigate('/a') // a survived the bump → cache hit, no fetch
+  await flush()
+  expect(fetchCalls).toHaveLength(after3)
+
+  await router.navigate('/b') // b was evicted → refetch
+  await flush()
+  expect(fetchCalls).toHaveLength(after3 + 1)
+})

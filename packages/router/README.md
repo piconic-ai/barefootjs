@@ -109,6 +109,12 @@ Disable with `startRouter({ prefetch: false })`.
 - **stale** (`> cacheStaleMs`, default 60s): too old to serve — refetched
   fresh, so a navigation never shows content past `cacheStaleMs`.
 
+The cap (`cacheCap`, default 30) evicts least-recently-used (a cache hit
+re-inserts), so a page reached again via back/forward survives. Only
+**same-origin** island modules are imported on a swap (the browser owns
+cross-origin scripts); a module load that fails is retried on a later
+navigation rather than leaving the island inert.
+
 Prefetch is **best-effort, like Next.js**: a failed prefetch is not cached,
 so it never poisons the URL — the next prefetch or the click retries fresh
 (and a click whose load ultimately fails falls back to a full navigation).
