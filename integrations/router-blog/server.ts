@@ -46,6 +46,7 @@ function shell(page: Page): string {
       <span class="chip">🔀 partial navs <b id="shell-navs">0</b></span>
       <span class="chip">🔮 prefetched <b id="shell-prefetched">0</b></span>
       <span class="chip">📥 last nav <b id="shell-lastnav">—</b></span>
+      <span class="chip">🔃 list updates <b id="shell-updates">0</b></span>
       <span class="chip">🧩 live islands <b id="shell-live">0</b></span>
       <button id="theme-toggle" class="toggle" type="button">🌙 dark</button>
     </div>
@@ -66,34 +67,63 @@ async function respond(c: Context, page: Page): Promise<Response> {
   return c.html(shell(page))
 }
 
-function tagBar(active?: string): string {
-  const chip = (label: string, href: string, on: boolean) =>
-    `<a class="tag${on ? ' on' : ''}" href="${href}">${esc(label)}</a>`
-  return `<div class="tags">
-    ${chip('all', '/', !active)}
-    ${allTags.map((t) => chip(`#${t}`, `/?tag=${encodeURIComponent(t)}`, t === active)).join('')}
+/** Build a `/?…` href with the given params (drops empty ones). */
+function qs(params: Record<string, string | undefined>): string {
+  const sp = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) if (v) sp.set(k, v)
+  const s = sp.toString()
+  return s ? `/?${s}` : '/'
+}
+
+type SortKey = 'date' | 'title' | 'tag'
+function sortPosts(list: typeof posts, sort: SortKey): typeof posts {
+  const c = [...list]
+  if (sort === 'title') c.sort((a, b) => a.title.localeCompare(b.title))
+  else if (sort === 'tag')
+    c.sort((a, b) => (a.tags[0] ?? '').localeCompare(b.tags[0] ?? '') || b.date.localeCompare(a.date))
+  else c.sort((a, b) => b.date.localeCompare(a.date)) // date desc
+  return c
+}
+
+function sortBar(sort: SortKey, tag?: string): string {
+  const keys: SortKey[] = ['date', 'title', 'tag']
+  return `<div class="controls"><span class="ctl-label">sort:</span>
+    ${keys.map((k) => `<a class="sort${k === sort ? ' on' : ''}" href="${qs({ sort: k, tag })}">${k}</a>`).join(' ')}
   </div>`
 }
 
-function postCard(slug: string): string {
-  const p = posts.find((x) => x.slug === slug)!
-  return `<article class="card">
-    <a class="card-link" href="/posts/${p.slug}">
-      <h2>${esc(p.title)}</h2>
-      <div class="meta">${esc(p.date)} · ${p.tags.map((t) => `#${esc(t)}`).join(' ')}</div>
-      <p>${esc(p.excerpt)}</p>
-      <span class="read">Read →</span>
-    </a>
-  </article>`
+function tagBar(sort: SortKey, active?: string): string {
+  const chip = (label: string, href: string, on: boolean) =>
+    `<a class="tag${on ? ' on' : ''}" href="${href}">${esc(label)}</a>`
+  return `<div class="tags"><span class="ctl-label">tag:</span>
+    ${chip('all', qs({ sort }), !active)}
+    ${allTags.map((t) => chip(`#${t}`, qs({ tag: t, sort }), t === active)).join('')}
+  </div>`
 }
 
-function indexBody(tag?: string): string {
-  const list = tag ? posts.filter((p) => p.tags.includes(tag)) : posts
+function listItem(p: (typeof posts)[number]): string {
+  return `<li data-id="${p.slug}" data-tags="${p.tags.join(' ')}" data-title="${esc(p.title)}" data-date="${p.date}" data-tag0="${esc(p.tags[0] ?? '')}">
+    <button class="pin" type="button" aria-label="pin">☆</button>
+    <a class="item-link" href="/posts/${p.slug}">${esc(p.title)}</a>
+    <span class="item-meta">${esc(p.date)} · ${p.tags.map((t) => `#${esc(t)}`).join(' ')}</span>
+  </li>`
+}
+
+/** The index: a sortable + filterable list that updates via the
+ *  `searchParams()` signal — sort/tag links change the URL but the router
+ *  does NOT swap the outlet; the island re-orders/filters in place. */
+function indexBody(sort: SortKey, tag?: string): string {
+  const filtered = tag ? posts.filter((p) => p.tags.includes(tag)) : posts
+  const sorted = sortPosts(filtered, sort)
   return `<div class="content" data-page="index">
-    <h1 class="page-title">${tag ? `Posts tagged #${esc(tag)}` : 'Latest posts'}</h1>
-    <p class="lede">Click a post or a tag. Only this region swaps — the header above keeps its state.</p>
-    ${tagBar(tag)}
-    <div class="cards">${list.map((p) => postCard(p.slug)).join('') || '<p class="empty">No posts.</p>'}</div>
+    <h1 class="page-title">Latest posts</h1>
+    <p class="lede">Sort / filter below — the list updates reactively from <code>searchParams()</code>, <b>with no outlet swap</b>. Watch <b>partial navs</b> stay put while <b>list updates</b> climbs. Pin a post (☆) and re-sort: its state survives.</p>
+    ${sortBar(sort, tag)}
+    ${tagBar(sort, tag)}
+    <div class="status" id="list-status"></div>
+    <div data-island="sortable" data-id="index-list">
+      <ol class="sortable-list">${sorted.map(listItem).join('')}</ol>
+    </div>
   </div>`
 }
 
@@ -122,8 +152,9 @@ function postBody(slug: string): string {
 
 app.get('/', (c) => {
   const tag = c.req.query('tag')
+  const sort = (c.req.query('sort') ?? 'date') as SortKey
   const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
-  return respond(c, { title, body: indexBody(tag) })
+  return respond(c, { title, body: indexBody(sort, tag) })
 })
 
 app.get('/posts/:slug', (c) => {
@@ -162,11 +193,24 @@ const STYLES = `
   html[data-theme="light"] .lede, html[data-theme="light"] .meta { color: #57606a; }
   .meta { font-size: 13px; margin-bottom: 12px; }
   .lede { margin: 0 0 18px; }
-  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
-  .tag, .tag-inline { text-decoration: none; font-size: 13px; color: #9aa7b4; }
-  .tag { border: 1px solid #30363d; border-radius: 999px; padding: 4px 11px; }
-  .tag.on { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .ctl-label { font-size: 13px; color: #6e7681; }
+  .tag, .tag-inline, .sort { text-decoration: none; font-size: 13px; color: #9aa7b4; }
+  .tag, .sort { border: 1px solid #30363d; border-radius: 999px; padding: 4px 11px; }
+  .tag.on, .sort.on { background: #1f6feb; border-color: #1f6feb; color: #fff; }
   .tag-inline { color: #58a6ff; }
+  .status { font-size: 13px; color: #8b949e; margin-bottom: 12px; min-height: 1.2em; font-variant-numeric: tabular-nums; }
+  .sortable-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .sortable-list li { display: flex; align-items: center; gap: 10px; border: 1px solid #30363d; border-radius: 10px; background: #161b22; padding: 10px 14px; transition: border-color .15s; }
+  .sortable-list li[hidden] { display: none; }
+  html[data-theme="light"] .sortable-list li { background: #fff; border-color: #d0d7de; }
+  .sortable-list li.pinned { border-color: #f2cc60; box-shadow: inset 3px 0 0 #f2cc60; }
+  .pin { cursor: pointer; background: none; border: none; font-size: 16px; color: #f2cc60; padding: 0; line-height: 1; }
+  .item-link { color: #e6edf3; text-decoration: none; font-weight: 600; font-size: 15px; }
+  html[data-theme="light"] .item-link { color: #1f2328; }
+  .item-link:hover { color: #58a6ff; }
+  .item-meta { margin-left: auto; font-size: 12px; color: #6e7681; }
   .cards { display: grid; gap: 14px; }
   .card { border: 1px solid #30363d; border-radius: 12px; background: #161b22; transition: border-color .15s, transform .15s; }
   html[data-theme="light"] .card { background: #fff; border-color: #d0d7de; }

@@ -122,20 +122,29 @@ async function main() {
     )
   }
 
-  // ── 4. Query-string navigation (tag filter) ──────────────────────────
+  // ── 4. Query-string nav (?tag=) — reactive filter, NO outlet swap ─────
   {
     await nav(page, '/')
     await settle(page)
-    const uptimeBefore = await page.locator('#shell-uptime').textContent()
+    const navsBefore = await page.locator('#shell-navs').textContent()
+    const updBefore = Number(await page.locator('#shell-updates').textContent())
     await nav(page, '/?tag=design')
     await settle(page)
-    const heading = (await title(page)) ?? ''
     const url = new URL(page.url())
-    const uptimeAfter = await page.locator('#shell-uptime').textContent()
+    const navsAfter = await page.locator('#shell-navs').textContent()
+    const updAfter = Number(await page.locator('#shell-updates').textContent())
+    const shown = await page.locator('.sortable-list li:not([hidden])').count()
+    // Every visible item is tagged design, the URL updated, the outlet was NOT
+    // swapped (partial-nav counter unchanged), and the island re-ran.
+    const allDesign = await page.evaluate(() =>
+      [...document.querySelectorAll('.sortable-list li:not([hidden])')].every((li) =>
+        ((li as HTMLElement).dataset.tags ?? '').split(' ').includes('design'),
+      ),
+    )
     record(
-      'query-string nav (?tag=design)',
-      /tagged #design/.test(heading) && url.search === '?tag=design' && uptimeBefore !== uptimeAfter,
-      `heading="${heading}", search="${url.search}", shell uptime kept running (${uptimeBefore}→${uptimeAfter})`,
+      'query-string nav (?tag=design) — reactive, no swap',
+      url.search === '?tag=design' && navsBefore === navsAfter && updAfter > updBefore && allDesign,
+      `${shown} items, all #design=${allDesign}; partial navs ${navsBefore}→${navsAfter} (no swap); list updates ${updBefore}→${updAfter}`,
     )
   }
 

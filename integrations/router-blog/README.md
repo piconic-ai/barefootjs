@@ -14,6 +14,7 @@ and **stress-test** the router prototype.
 | ![home](./screenshots/01-home.png) | First load: post list + tag filter. Shell shows `uptime · partial navs · live islands`. |
 | ![post](./screenshots/02-post.png) | After opening a post: body swapped, **uptime kept climbing**, `partial navs 1`, `live islands 2` (the ♥ like + ⏱ timer are outlet islands). |
 | ![light](./screenshots/03-next-post-light.png) | Theme toggled in the shell, then paged forward: **the theme persists** and `partial navs 2` — the shell was never reloaded. |
+| ![sort](./screenshots/sort-02-by-title.png) | **`searchParams()` (§6):** clicking `?sort=` / `?tag=` re-orders/filters the list reactively — **`partial navs` stays 0 (no outlet swap)** while `list updates` climbs. A pinned post keeps its state across a re-sort. |
 
 The header is the proof. Its uptime clock and theme start/sticky **once** —
 a full reload would reset them. Only the `<main bf-outlet>` region is
@@ -62,6 +63,9 @@ claims, so the docs can't silently rot.
 
 ## Design artifacts
 
+- `bun run capture-sort` — §6 showcase: `?sort=` / `?tag=` update the list
+  reactively via `searchParams()` with **zero outlet swap** (uses the real
+  `@barefootjs/client` reactivity + `@barefootjs/router/signals`).
 - `bun run bench` — runtime-cost microbench (O(document) vs O(outlet)).
 - `bun run routes-manifest` — P2 prototype: builds the [DESIGN.md](./DESIGN.md)
   §5.1 island/module rollup from a real `bf build` manifest (defaults to

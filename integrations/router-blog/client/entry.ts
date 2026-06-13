@@ -18,6 +18,11 @@
  * measure re-hydration, disposal, and leaks from the page.
  */
 import { startRouter, navigate } from '@barefootjs/router'
+// Importing the signals module installs the `__bf_set_search` seam, so the
+// router turns same-route query navigations (?sort= / ?tag=) into reactive
+// signal updates instead of outlet swaps.
+import { searchParams } from '@barefootjs/router/signals'
+import { createEffect, createRoot } from '@barefootjs/client/reactive'
 
 interface Bf {
   live: number // currently-hydrated outlet islands
@@ -70,6 +75,8 @@ function initIsland(el: HTMLElement): () => void {
     return () => el.removeEventListener('click', onClick)
   }
 
+  if (el.dataset.island === 'sortable') return initSortable(el)
+
   // 'timer': ticks every 100ms. If not torn down it keeps firing forever
   // (and keeps incrementing bf.ticks[id]) — the leak gauge.
   const start = Date.now()
@@ -79,6 +86,83 @@ function initIsland(el: HTMLElement): () => void {
     v.textContent = ((Date.now() - start) / 1000).toFixed(1)
   }, 100)
   return () => clearInterval(handle)
+}
+
+/**
+ * The "sortable" island: a list that re-orders / filters reactively from the
+ * URL via `searchParams()` — no outlet swap, no re-hydration. This is the
+ * §6 "URL-bearing data state" showcase, built with the REAL reactive runtime.
+ */
+function initSortable(el: HTMLElement): () => void {
+  const list = el.querySelector<HTMLOListElement>('.sortable-list')!
+  const items = [...list.querySelectorAll<HTMLLIElement>('li')]
+  const status = document.getElementById('list-status')
+  const updatesEl = document.getElementById('shell-updates')
+  let updates = 0
+
+  // Pin toggle = plain per-item state; it survives re-ordering (DOM move).
+  const onPin = (e: Event) => {
+    const btn = (e.target as Element).closest<HTMLButtonElement>('.pin')
+    if (!btn) return
+    const li = btn.closest('li')!
+    const pinned = li.classList.toggle('pinned')
+    btn.textContent = pinned ? '★' : '☆'
+  }
+  list.addEventListener('click', onPin)
+
+  const cmp = (sort: string) => (a: HTMLLIElement, b: HTMLLIElement) => {
+    if (sort === 'title') return (a.dataset.title ?? '').localeCompare(b.dataset.title ?? '')
+    if (sort === 'tag')
+      return (
+        (a.dataset.tag0 ?? '').localeCompare(b.dataset.tag0 ?? '') ||
+        (b.dataset.date ?? '').localeCompare(a.dataset.date ?? '')
+      )
+    return (b.dataset.date ?? '').localeCompare(a.dataset.date ?? '') // date desc
+  }
+
+  const dispose = createRoot((d) => {
+    createEffect(() => {
+      const sp = searchParams() // tracked → re-runs when the URL query changes
+      const sort = sp.get('sort') ?? 'date'
+      const tag = sp.get('tag')
+      const visible = items.filter(
+        (li) => !tag || (li.dataset.tags ?? '').split(' ').includes(tag),
+      )
+      visible.sort(cmp(sort))
+      for (const li of items) li.hidden = !visible.includes(li)
+      for (const li of visible) list.appendChild(li) // move into sorted order
+      // The controls are static SSR HTML outside the island, so on a query
+      // nav (no swap) we keep their active highlight AND their hrefs (which
+      // carry the *other* dimension) in sync with the live params.
+      const href = (params: Record<string, string | undefined>) => {
+        const u = new URLSearchParams()
+        for (const [k, val] of Object.entries(params)) if (val) u.set(k, val)
+        const s = u.toString()
+        return s ? `/?${s}` : '/'
+      }
+      for (const a of document.querySelectorAll<HTMLAnchorElement>('.controls a.sort')) {
+        const k = a.textContent?.trim() ?? ''
+        a.classList.toggle('on', k === sort)
+        a.setAttribute('href', href({ sort: k, tag: tag ?? undefined }))
+      }
+      for (const a of document.querySelectorAll<HTMLAnchorElement>('.tags a.tag')) {
+        const label = a.textContent?.trim() ?? ''
+        const t = label === 'all' ? undefined : label.replace(/^#/, '')
+        a.classList.toggle('on', tag ? label === `#${tag}` : label === 'all')
+        a.setAttribute('href', href({ sort, tag: t }))
+      }
+      updates += 1
+      if (status)
+        status.textContent = `${visible.length} / ${items.length} shown · sort: ${sort}${tag ? ` · #${tag}` : ''}`
+      if (updatesEl) updatesEl.textContent = String(updates)
+    })
+    return d
+  })
+
+  return () => {
+    list.removeEventListener('click', onPin)
+    dispose()
+  }
 }
 
 /** Hydrate any un-hydrated islands in the outlet. The router's default
