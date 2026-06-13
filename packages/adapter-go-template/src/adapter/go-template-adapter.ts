@@ -4379,9 +4379,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     // Go's `index` builtin: `index $arr $i`. Both operands render
     // through the same emitter so a loop-variable / arithmetic index
-    // lowers correctly. #1897 (`selected()[index]`). (data-table's
-    // broader keyed-loop SSR stays tracked under #1896.)
-    return `index ${emit(object)} ${emit(index)}`
+    // lowers correctly. A multi-token operand (`bf_add $i 1`) must be
+    // parenthesised or Go parses it as extra `index` arguments. #1897
+    // (`selected()[index]`). (data-table's broader keyed-loop SSR stays
+    // tracked under #1896.)
+    return `index ${wrapIfMultiToken(emit(object))} ${wrapIfMultiToken(emit(index))}`
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
@@ -4663,7 +4665,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Default 0 digits when the argument is omitted. #1897.
         const recv = emit(object)
         const digits = args.length >= 1 ? emit(args[0]) : '0'
-        return `bf_to_fixed ${wrapIfMultiToken(recv)} ${digits}`
+        return `bf_to_fixed ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(digits)}`
       }
       case 'split': {
         // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
@@ -5876,12 +5878,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'index-access': {
-        // Go's `index` builtin: `index $arr $i`. #1897.
+        // Go's `index` builtin: `index $arr $i`. A multi-token operand
+        // (`bf_add $i 1`) must be parenthesised or Go parses it as extra
+        // `index` arguments. #1897.
         const obj = this.renderConditionExpr(expr.object)
         const idx = this.renderConditionExpr(expr.index)
         return {
           preamble: obj.preamble + idx.preamble,
-          expr: `index ${obj.expr} ${idx.expr}`,
+          expr: `index ${wrapIfMultiToken(obj.expr)} ${wrapIfMultiToken(idx.expr)}`,
         }
       }
 

@@ -858,7 +858,9 @@ sub trim ($self, $recv) {
 # argument.
 sub to_fixed ($self, $value, $digits = 0) {
     my $n = $self->number($value);
-    return $n if _is_nan($n);
+    # JS `(NaN).toFixed(d)` is the STRING "NaN"; returning the numeric NaN
+    # would stringify per-platform ("nan"/"NaN"/...) and diverge.
+    return 'NaN' if _is_nan($n);
     $digits = 0 if !defined $digits || $digits < 0;
     my $factor  = 10 ** $digits;
     my $rounded = POSIX::floor($n * $factor + 0.5);
