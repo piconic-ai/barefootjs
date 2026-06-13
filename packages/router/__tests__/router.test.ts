@@ -54,7 +54,13 @@ beforeEach(() => {
 afterEach(() => {
   stop?.()
   stop = undefined
+  // Some tests install the searchParams seam — don't leak it across tests.
+  delete (window as unknown as { __bf_set_search?: unknown }).__bf_set_search
 })
+
+function setURL(href: string): void {
+  ;(window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM?.setURL?.(href)
+}
 
 function clickLink(id: string, init: MouseEventInit = {}): void {
   document
@@ -360,4 +366,51 @@ test('a stale cache entry is refetched fresh, never served stale', async () => {
   await flush()
   expect(calls()).toBe(2)
   expect(document.querySelector('[bf-outlet]')!.textContent).toContain('body 2')
+})
+
+test('query-only navigation updates searchParams without swapping (when in use)', async () => {
+  setURL('https://example.test/list')
+  const searches: string[] = []
+  ;(window as unknown as { __bf_set_search: (s: string) => void }).__bf_set_search = (s) =>
+    searches.push(s)
+  const rehydrate = mock(() => {})
+  const pushSpy = spyOn(window.history, 'pushState')
+  const router = startRouter({ rehydrate })
+  stop = router.stop
+
+  await router.navigate('/list?sort=price') // same path, query-only
+  await flush()
+
+  expect(fetchCalls).toHaveLength(0) // no fetch → no swap
+  expect(rehydrate).not.toHaveBeenCalled() // no re-hydration
+  expect(searches).toEqual(['?sort=price']) // searchParams signal updated
+  expect(String(pushSpy.mock.calls.at(-1)?.[2])).toContain('sort=price') // URL updated
+})
+
+test('query-only navigation swaps when searchParams is not in use (legacy)', async () => {
+  setURL('https://example.test/list')
+  // no __bf_set_search seam → query change has no island consumer → swap.
+  const rehydrate = mock(() => {})
+  const router = startRouter({ rehydrate })
+  stop = router.stop
+
+  await router.navigate('/list?sort=price')
+  await flush()
+
+  expect(fetchCalls).toHaveLength(1) // swapped (fetched)
+  expect(rehydrate).toHaveBeenCalledTimes(1)
+})
+
+test('a pathname change swaps even when searchParams is in use', async () => {
+  setURL('https://example.test/list')
+  ;(window as unknown as { __bf_set_search: (s: string) => void }).__bf_set_search = () => {}
+  const rehydrate = mock(() => {})
+  const router = startRouter({ rehydrate })
+  stop = router.stop
+
+  await router.navigate('/other?x=1') // different pathname → structural
+  await flush()
+
+  expect(fetchCalls).toHaveLength(1) // swapped
+  expect(rehydrate).toHaveBeenCalledTimes(1)
 })

@@ -114,6 +114,34 @@ so it never poisons the URL — the next prefetch or the click retries fresh
 (and a click whose load ultimately fails falls back to a full navigation).
 Re-hovering a fresh link does not re-fetch (deduped by the cache).
 
+## Reactive search params (URL-bearing data state)
+
+`@barefootjs/router/signals` exports `searchParams()` — a reactive read of
+the URL query. An island reads it inside a memo/effect and updates
+fine-grained when the query changes, **with no outlet swap and no
+re-hydration**. This turns a URL-bearing, data-only change
+(sort/filter/paginate/search) into a plain reactive update:
+
+```ts
+import { searchParams } from '@barefootjs/router/signals'
+
+const sorted = createMemo(() => sortBy(items(), searchParams().get('sort')))
+// a link to `?sort=price` re-runs `sorted`; the list reconciles fine-grained.
+```
+
+When `@barefootjs/router/signals` is loaded, a **same-route query-only**
+navigation (link click or back/forward) updates the `searchParams()` signal
+and the URL **without swapping the outlet**. A **pathname** change still
+swaps (it's structural). If the signals module isn't loaded, query changes
+swap as usual (legacy) — so it's opt-in by importing it.
+
+The accessor is branded `Reactive<…>`, so the *existing* compiler
+reactivity analysis wires the island's DOM updates — no new compiler
+feature. It's a pure-runtime primitive: server and client read the same
+source (request URL ↔ `location`), so they agree across hydration. (It's
+the first of an intended "environment signal" family; an adapter-side SSR
+impl that reads the request is a follow-up.)
+
 ## Limitations & next steps
 
 - **No morph / persistent islands yet.** The outlet is fully replaced;

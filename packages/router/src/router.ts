@@ -143,6 +143,9 @@ interface RouterState {
   preloaded: Set<string>
   shouldIntercept: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
   scrollToTop: boolean
+  /** Pathname of the currently-displayed outlet (to tell a query-only
+   *  navigation from a structural one). */
+  currentPath: string
   inflight: AbortController | null
   stop: () => void
 }
@@ -174,6 +177,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     preloaded: new Set(),
     shouldIntercept: options.shouldIntercept ?? defaultShouldIntercept,
     scrollToTop: options.scrollToTop ?? true,
+    currentPath: window.location.pathname,
     inflight: null,
     stop: () => {},
   }
@@ -217,6 +221,20 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
   // Different origin → hand back to the browser.
   if (target.origin !== window.location.origin) {
     hardNavigate(url)
+    return
+  }
+
+  // Same-route, query-only change → if an island consumes `searchParams()`
+  // (the `@barefootjs/router/signals` module set the seam), update the signal
+  // and the URL but DON'T swap: islands react fine-grained. If searchParams
+  // isn't in use, fall through to a normal swap (legacy behavior).
+  if (
+    target.pathname === window.location.pathname &&
+    target.search !== window.location.search &&
+    setSearchSeam(target.search)
+  ) {
+    if (mode === 'push') window.history.pushState({ bfRouter: true }, '', target.href)
+    else if (mode === 'replace') window.history.replaceState({ bfRouter: true }, '', target.href)
     return
   }
 
@@ -266,6 +284,12 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
       window.history.replaceState({ bfRouter: true }, '', finalUrl)
     }
 
+    // Record the displayed route and sync the searchParams signal so islands
+    // on the freshly-swapped page see the correct query.
+    const committed = new URL(finalUrl, window.location.href)
+    state.currentPath = committed.pathname
+    setSearchSeam(committed.search)
+
     if (state.scrollToTop) window.scrollTo(0, 0)
 
     // Re-hydrate the freshly inserted islands (subtree-scoped).
@@ -275,6 +299,19 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     // have replaced `inflight` already.
     if (state.inflight === controller) state.inflight = null
   }
+}
+
+/**
+ * Drive the `searchParams()` signal if `@barefootjs/router/signals` is loaded
+ * (it sets `window.__bf_set_search`). Returns `true` when the seam exists, so
+ * the caller knows searchParams is in use. Keeps the router core free of a
+ * hard `@barefootjs/client` dependency.
+ */
+function setSearchSeam(search: string): boolean {
+  const w = window as unknown as { __bf_set_search?: (s: string) => void }
+  if (typeof w.__bf_set_search !== 'function') return false
+  w.__bf_set_search(search)
+  return true
 }
 
 // ── prefetch + snapshot cache ────────────────────────────────────────────
@@ -465,7 +502,12 @@ function onClick(event: MouseEvent): void {
 
 function onPopState(): void {
   if (!active) return
-  // The browser already changed the URL — swap without touching history.
+  // A query-only back/forward on the same route doesn't need a swap — the
+  // searchParams module (if loaded) self-syncs on popstate and islands react.
+  // A pathname change does: swap without touching history.
+  if (window.location.pathname === active.currentPath && setSearchSeam(window.location.search)) {
+    return
+  }
   void navigate(window.location.href, { history: false })
 }
 
