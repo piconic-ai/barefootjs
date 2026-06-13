@@ -36,7 +36,17 @@ runAdapterConformanceTests({
   // literal-const inlining (`totalPages`). Shapes the adapter
   // intentionally refuses at build time stay pinned in
   // `expectedDiagnostics` below.
-  skipJsx: [],
+  //
+  // `data-table` is the one JSX-render skip (#1897): it compiles clean
+  // (`selected()[index]` → shared `index-access` parser kind,
+  // `.toFixed(2)` → `$bf.to_fixed`, `/* @client */`-guarded `sortedData`
+  // memo SSR-folded to the unsorted early-return) and renders
+  // structurally BYTE-IDENTICAL to Hono on real Text::Xslate. The sole
+  // divergence is the scope-ID of imported components inside the keyed
+  // `.map` (a hydration-scope concern tracked with #1896, not an
+  // expression gap), so it's pinned in `skipJsx` rather than
+  // `expectedDiagnostics` (no BF101 fires anymore).
+  skipJsx: ['data-table'],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.
@@ -90,11 +100,11 @@ runAdapterConformanceTests({
     // to `nil`. The command demo's `ref={(el) => {…}}` function prop on
     // an imported component is skipped at SSR like `on*` handlers.
     //
-    // #1467 Phase 2e: the data-table demo source's `/* @client */`
-    // comparator sort (`selected()[index]` signal-call indexing) has no
-    // Kolon lowering — refused at the demo-source compile, same gate as
-    // mojo.
-    'data-table': [{ code: 'BF101', severity: 'error' }],
+    // #1467 Phase 2e: `data-table` is no longer pinned here — it
+    // compiles clean now (`selected()[index]` → `index-access`,
+    // `.toFixed(2)` → `$bf.to_fixed`, `/* @client */` memo SSR-folded)
+    // and is pinned in `skipJsx` above on the keyed-loop scope-ID
+    // divergence alone (#1896), not a BF101.
     // `style-3-signals` / `style-object-dynamic` no longer pinned — a
     // `style={{ … }}` object literal now lowers to a CSS string with dynamic
     // values interpolated (`background-color:<: $color :>;padding:8px`) via

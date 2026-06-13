@@ -99,6 +99,31 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.doubled).toEqual({ value: 10 })
   })
 
+  test('block-body memo with an early-return guard folds to the default-state branch (#1897)', () => {
+    // The data-table `sortedData` shape: a `/* @client */`-guarded sort
+    // whose early return yields the unsorted module-const array when the
+    // sort-key signal is at its initial (null) value. The SSR default is
+    // that early-return array, not `null` — the `if (!key)` guard is
+    // taken because `sortKey()` resolves to its seeded `null` initial.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      const rows = [{ id: 'a' }, { id: 'b' }]
+      function Table() {
+        const [sortKey, setSortKey] = createSignal<string | null>(null)
+        const sorted = createMemo(() => {
+          const key = sortKey()
+          if (!key) return rows
+          return /* @client */ [...rows].sort((a, b) => a.id < b.id ? -1 : 1)
+        })
+        return <ul>{sorted().map(r => <li>{r.id}</li>)}</ul>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.sorted).toEqual({ value: [{ id: 'a' }, { id: 'b' }] })
+  })
+
   test('non-evaluable initials yield null (caller falls back at render time)', () => {
     const metadata = metadataFor(`
       'use client'

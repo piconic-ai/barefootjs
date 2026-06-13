@@ -848,6 +848,23 @@ sub trim ($self, $recv) {
     return $s;
 }
 
+# `Number.prototype.toFixed(digits)` (#1897) — fixed-decimal string with
+# zero-padding. JS rounds the scaled integer half toward +Infinity (the
+# spec's "pick the larger n" tie-break), so `(2.5).toFixed(0)` is "3";
+# bare `sprintf("%.*f")` would round half-to-even ("2"), diverging. Scale
+# by 10**digits, round with `floor(x + 0.5)` (the same tie-break the
+# `round` helper uses), then format the exact multiple. A negative
+# `digits` clamps to 0, mirroring how the adapters default an omitted
+# argument.
+sub to_fixed ($self, $value, $digits = 0) {
+    my $n = $self->number($value);
+    return $n if _is_nan($n);
+    $digits = 0 if !defined $digits || $digits < 0;
+    my $factor  = 10 ** $digits;
+    my $rounded = POSIX::floor($n * $factor + 0.5);
+    return sprintf('%.*f', $digits, $rounded / $factor);
+}
+
 # `String.prototype.split(sep)` (#1448 Tier B) — string → ARRAY ref.
 #
 # Two JS-parity wrinkles drive the helper (a bare `split` emit would

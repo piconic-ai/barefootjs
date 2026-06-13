@@ -1617,6 +1617,31 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         return n
       })()
       const indexed = this.recordIndexAccessToKolon(initNode)
+      if (
+        indexed === null &&
+        ts.isElementAccessExpression(initNode) &&
+        initNode.argumentExpression &&
+        !ts.isNumericLiteral(initNode.argumentExpression) &&
+        !ts.isStringLiteral(initNode.argumentExpression)
+      ) {
+        // Variable-index record access (`sizeMap[size]`) the static-inline
+        // path couldn't resolve (non-scalar value / non-const receiver).
+        // Since #1897 made variable indices parseable (`index-access`),
+        // the generic value lowering would emit `$sizeMap[$size]` against
+        // an UNBOUND module const instead of refusing — record BF101 and
+        // bail so the spread surfaces the out-of-shape diagnostic,
+        // matching pre-#1897 behaviour. (Mirrors the Mojo adapter.)
+        this.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Spread object value '${initNode.getText(sf)}' indexes a record map whose values aren't scalar literals — it can't lower to an inline Kolon hashref.`,
+          loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+          suggestion: {
+            message: 'Index a record whose values are number/string literals, or move the spread into a `\'use client\'` component so hydration computes it.',
+          },
+        })
+        return null
+      }
       const valPerl =
         indexed !== null
           ? indexed
@@ -1880,6 +1905,13 @@ function renderArrayMethod(
       const recv = emit(object)
       return `$bf.trim(${recv})`
     }
+    case 'toFixed': {
+      // `.toFixed(digits?)` — `$bf.to_fixed` mirrors JS rounding +
+      // zero-padding (default 0 digits). #1897.
+      const recv = emit(object)
+      const digits = args.length >= 1 ? emit(args[0]) : '0'
+      return `$bf.to_fixed(${recv}, ${digits})`
+    }
     case 'split': {
       const recv = emit(object)
       if (args.length === 0) {
@@ -2113,6 +2145,13 @@ class XslateFilterEmitter implements ParsedExprEmitter {
     return `${emit(object)}.${property}`
   }
 
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    // Kolon's `[]` postfix is polymorphic (array index or hash key),
+    // mirroring JS — no array/hash split is needed (unlike Perl's
+    // `->[]` vs `->{}`). #1897 (data-table's `selected()[index]`).
+    return `${emit(object)}[${emit(index)}]`
+  }
+
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
     // Signal getter calls: filter() → $filter
     if (callee.kind === 'identifier' && args.length === 0) {
@@ -2273,6 +2312,12 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
     if (property === 'length') return `$bf.length(${obj})`
     // Kolon dot access works for hash refs.
     return `${obj}.${property}`
+  }
+
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    // Kolon's `[]` postfix is polymorphic (array index or hash key),
+    // mirroring JS. #1897 (data-table's `selected()[index]`).
+    return `${emit(object)}[${emit(index)}]`
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
