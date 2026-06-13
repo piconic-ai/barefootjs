@@ -1,5 +1,11 @@
 # @barefootjs/hono
 
+## 0.15.0
+
+### Patch Changes
+
+- 19af08a: `test-render` re-anchors imports _inside_ pre-compiled child modules too: a `componentModules` child that itself imports another pre-compiled sibling (e.g. a demo root's `accordion` sibling importing `../icon`) previously kept its source specifier in the temp copy and failed module resolution at render time.
+
 ## 0.14.0
 
 ## 0.13.0
