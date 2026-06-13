@@ -1,0 +1,26 @@
+{
+  "name": "barefootjs-router-blog-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./client/entry.ts --outdir ./public --format esm --minify",
+    "start": "bun run build && bun run server.ts",
+    "serve": "bun run server.ts",
+    "capture": "bun run capture.ts",
+    "capture-prefetch": "bun run capture-prefetch.ts",
+    "stress": "bun run stress.ts",
+    "bench": "bun run bench.ts",
+    "routes-manifest": "bun run routes-manifest.ts",
+    "capture-sort": "bun run capture-sort.ts"
+  },
+  "dependencies": {
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/router": "workspace:*",
+    "@barefootjs/shared": "workspace:*",
+    "hono": "^4"
+  },
+  "devDependencies": {
+    "bun-types": "^1.1.0"
+  }
+}
