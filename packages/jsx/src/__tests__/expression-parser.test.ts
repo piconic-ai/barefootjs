@@ -1699,6 +1699,13 @@ describe('parseProviderObjectLiteral', () => {
     ])
   })
 
+  test('method members classify as functions, like block-bodied arrows', () => {
+    expect(parseProviderObjectLiteral(`{ open() { return v }, count: 1 }`)).toEqual([
+      { name: 'open', kind: 'function' },
+      { name: 'count', kind: 'expression', expr: '1' },
+    ])
+  })
+
   test('returns null for spread entries, computed keys, and non-objects', () => {
     expect(parseProviderObjectLiteral(`{ ...rest }`)).toBeNull()
     expect(parseProviderObjectLiteral(`{ [key]: 1 }`)).toBeNull()

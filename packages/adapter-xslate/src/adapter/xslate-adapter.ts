@@ -518,9 +518,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     const members = parseProviderObjectLiteral(expr.trim())
     if (members === null) return null
     const entries = members.map(m => {
-      if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `'${m.name}' => nil`
+      // String-literal JS keys can carry `'` / `\` — escape for the
+      // single-quoted Kolon key string.
+      const key = `'${m.name.replace(/[\\']/g, c => `\\${c}`)}'`
+      if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `${key} => nil`
       const src = m.kind === 'getter' ? m.body : m.expr
-      return `'${m.name}' => ${this.convertExpressionToKolon(src)}`
+      return `${key} => ${this.convertExpressionToKolon(src)}`
     })
     return `{ ${entries.join(', ')} }`
   }
@@ -1071,6 +1074,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
 
   private childrenCaptureCounter = 0
 
+  /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
+   *  presence-folded attrs in one template don't collide. */
+  private presenceVarCounter = 0
+
   private toTemplateName(componentName: string): string {
     // Convert PascalCase to snake_case for template naming.
     return componentName
@@ -1199,12 +1206,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         // → `aria-disabled="true"`), so bare presence would diverge.
         // Route through `bool_str` when the name/shape witnesses a
         // boolean value, same as the unconditional path below (#1897).
+        // Bind to a temp first so the expression evaluates once, not in
+        // both the guard and the value.
         const perl = this.convertExpressionToKolon(value.expr)
+        const tmp = `$bf_pu${this.presenceVarCounter++}`
         const body =
           isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<: $bf.bool_str(${perl}) :>"`
-            : `${name}="<: ${perl} :>"`
-        return `\n: if (${perl}) {\n${body}\n: }\n`
+            ? `${name}="<: $bf.bool_str(${tmp}) :>"`
+            : `${name}="<: ${tmp} :>"`
+        return `\n: my ${tmp} = ${perl};\n: if (${tmp}) {\n${body}\n: }\n`
       }
       // `attr={cond ? value : undefined}` OMITS the attribute on the
       // falsy branch (Hono drops undefined-valued attributes) — wrap the

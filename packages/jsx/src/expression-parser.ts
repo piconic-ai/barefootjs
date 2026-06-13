@@ -507,7 +507,9 @@ export type ProviderObjectMember =
  * contains a shape with no per-member story (spread entry, computed key,
  * get/set accessor) — callers fall back to their existing whole-expression
  * path (typically a BF101 refusal). Shorthand members (`{ search }`) yield
- * an `expression` member with the identifier as the expression.
+ * an `expression` member with the identifier as the expression; method
+ * members (`{ open() {…} }`) classify as `function` like block-bodied
+ * arrows.
  */
 export function parseProviderObjectLiteral(source: string): ProviderObjectMember[] | null {
   const sf = ts.createSourceFile(
@@ -544,7 +546,17 @@ export function parseProviderObjectLiteral(source: string): ProviderObjectMember
       members.push({ name: prop.name.text, kind: 'expression', expr: prop.name.text })
       continue
     }
-    if (!ts.isPropertyAssignment(prop)) return null // spread / accessor / method
+    if (ts.isMethodDeclaration(prop)) {
+      // `{ open() {…} }` — function-shaped behavior, same as a
+      // block-bodied arrow member.
+      const name = ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name)
+        ? prop.name.text
+        : null
+      if (name === null) return null // computed key
+      members.push({ name, kind: 'function' })
+      continue
+    }
+    if (!ts.isPropertyAssignment(prop)) return null // spread / accessor
     const name = ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name)
       ? prop.name.text
       : null

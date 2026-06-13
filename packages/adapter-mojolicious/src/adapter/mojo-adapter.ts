@@ -668,9 +668,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     const members = parseProviderObjectLiteral(expr.trim())
     if (members === null) return null
     const entries = members.map(m => {
-      if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `'${m.name}' => undef`
+      // String-literal JS keys can carry `'` / `\` — escape for the
+      // single-quoted Perl key string.
+      const key = `'${m.name.replace(/[\\']/g, c => `\\${c}`)}'`
+      if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `${key} => undef`
       const src = m.kind === 'getter' ? m.body : m.expr
-      return `'${m.name}' => ${this.convertExpressionToPerl(src)}`
+      return `${key} => ${this.convertExpressionToPerl(src)}`
     })
     return `{ ${entries.join(', ')} }`
   }
@@ -1242,6 +1245,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
 
   private childrenCaptureCounter = 0
 
+  /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
+   *  presence-folded attrs in one template don't collide. */
+  private presenceVarCounter = 0
+
   private toTemplateName(componentName: string): string {
     // Convert PascalCase to snake_case for Mojo template naming
     return componentName
@@ -1384,12 +1391,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         // → `aria-disabled="true"`), so bare presence would diverge.
         // Route through `bool_str` when the name/shape witnesses a
         // boolean value, same as the unconditional path below (#1897).
+        // Bind to a temp first so the expression evaluates once, not in
+        // both the guard and the value.
         const perl = this.convertExpressionToPerl(value.expr)
+        const tmp = `$bf_pu${this.presenceVarCounter++}`
         const body =
           isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
-            ? `${name}="<%= bf->bool_str(${perl}) %>"`
-            : `${name}="<%= ${perl} %>"`
-        return `<% if (${perl}) { %>${body}<% } %>`
+            ? `${name}="<%= bf->bool_str(${tmp}) %>"`
+            : `${name}="<%= ${tmp} %>"`
+        return `<% my ${tmp} = ${perl}; if (${tmp}) { %>${body}<% } %>`
       }
       // Boolean-result handling (#1466 follow-up). Two trigger paths:
       //
