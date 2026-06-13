@@ -23,6 +23,7 @@ export {
   BF_PLACEHOLDER,
   BF_ASYNC,
   BF_ASYNC_RESOLVE,
+  BF_OUTLET,
   BF_PARENT_SCOPE_PLACEHOLDER,
 } from './markers.ts'
 
