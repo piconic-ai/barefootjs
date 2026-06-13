@@ -70,33 +70,20 @@ runAdapterConformanceTests({
     // (`cn\`base \${tone()}\``) — same family as #1322 above and refused
     // via the same gate.
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
-    // #1467 demo corpus: the composed RadioGroup sibling builds its
-    // context-provider value as an object literal carrying arrow-function
-    // members (`{ value: currentValue, onValueChange: (v) => {…} }`),
-    // which has no EP lowering — refused via the same `isSupported`
-    // expression gate as `tagged-template-classname` above. Hono / Go
-    // render the fixture to parity; the real composed hydration runs in
-    // the fixture-hydrate layer.
-    'radio-group': [{ code: 'BF101', severity: 'error' }],
-    // #1467 demo corpus: the AccordionItem context-provider value is the
-    // same object-literal-with-arrow-members shape as `radio-group`
-    // above (`{ open: () => props.open ?? false, ... }`) — refused via
-    // the identical `isSupported` gate.
-    'accordion': [{ code: 'BF101', severity: 'error' }],
-    // #1467 Phase 2c overlay: Dialog and Popover provide the same
-    // object-literal-with-arrow-members context value — same BF101 gate.
-    'dialog': [{ code: 'BF101', severity: 'error' }],
-    'popover': [{ code: 'BF101', severity: 'error' }],
-    // #1467 Phase 2d: the selection/menu primitives (and the command
-    // demo source itself) all carry expression shapes the EP gate
-    // refuses — context-provider object literals and function props.
-    'select': [{ code: 'BF101', severity: 'error' }],
-    'dropdown-menu': [{ code: 'BF101', severity: 'error' }],
-    'combobox': [{ code: 'BF101', severity: 'error' }],
-    'command': [{ code: 'BF101', severity: 'error' }],
+    // #1467 demo-corpus context providers (`radio-group`, `accordion`,
+    // `dialog`, `popover`, `select`, `dropdown-menu`, `combobox`,
+    // `command`) are no longer pinned — an object-literal provider value
+    // (`{ open: () => props.open ?? false, onOpenChange: (v) => {…} }`)
+    // lowers to a Perl hashref via `parseProviderObjectLiteral` (#1897):
+    // getter members snapshot their body's SSR value, handler /
+    // function-shaped members lower to `undef`. The command demo's
+    // `ref={(el) => {…}}` function prop on an imported component is
+    // skipped at SSR like `on*` handlers.
+    //
     // #1467 Phase 2e: the data-table demo source's `/* @client */`
-    // comparator sort has no EP lowering — refused at the demo-source
-    // compile, same gate.
+    // comparator sort (`selected()[index]` signal-call indexing) has no
+    // EP lowering — refused at the demo-source compile via the
+    // `isSupported` gate.
     'data-table': [{ code: 'BF101', severity: 'error' }],
     // #1443: `[a, b].filter(Boolean).join(' ')` (the registry Slot's
     // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.

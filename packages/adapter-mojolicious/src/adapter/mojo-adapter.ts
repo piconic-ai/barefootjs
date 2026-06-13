@@ -44,6 +44,7 @@ import {
   parseStyleObjectEntries,
   isSupported,
   exprToString,
+  parseProviderObjectLiteral,
   identifierPath,
   emitParsedExpr,
   emitIRNode,
@@ -55,7 +56,6 @@ import {
   collectContextConsumers,
   isLowerableObjectRestDestructure,
   type ContextConsumer,
-  extractSsrDefaults,
   collectModuleStringConsts,
   lookupStaticRecordLiteral
 } from '@barefootjs/jsx'
@@ -635,11 +635,47 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         ? `'${v.value.replace(/[\\']/g, m => `\\${m}`)}'`
         : String(v.value)
     }
-    if (v.kind === 'expression') return this.convertExpressionToPerl(v.expr)
+    if (v.kind === 'expression') {
+      const hashref = this.providerObjectLiteralPerl(v.expr)
+      if (hashref !== null) return hashref
+      return this.convertExpressionToPerl(v.expr)
+    }
     if (v.kind === 'template') return this.convertTemplateLiteralPartsToPerl(v.parts)
     // Out-of-shape value (spread / jsx-children) — render as undef rather
     // than emit invalid Perl; the consumer falls back to its default.
     return 'undef'
+  }
+
+  /**
+   * Lower an object-literal provider value (`value={{ open: () => props.open
+   * ?? false, onOpenChange: … }}`) to a Perl hashref (#1897). The SSR
+   * lowering is a per-member snapshot of what a consumer would READ during
+   * the same render:
+   *
+   * - zero-param expression-body arrows are getters — lower the body (the
+   *   value is fixed for the render, so the call-time indirection drops out)
+   * - `on[A-Z]`-named members and function-shaped values are client-only
+   *   behavior SSR never invokes — lower to `undef`
+   * - anything else lowers through the normal expression pipeline (so an
+   *   unsupported getter body still refuses loudly with BF101)
+   *
+   * Keys keep their JS names verbatim so a consumer-side `ctx.open` access
+   * maps onto the same key. Returns `null` when the expression is not a
+   * plain object literal (spread / computed key) — the caller falls back to
+   * the whole-expression path, which refuses those shapes with BF101.
+   */
+  private providerObjectLiteralPerl(expr: string): string | null {
+    const members = parseProviderObjectLiteral(expr.trim())
+    if (members === null) return null
+    const entries = members.map(m => {
+      // String-literal JS keys can carry `'` / `\` — escape for the
+      // single-quoted Perl key string.
+      const key = `'${m.name.replace(/[\\']/g, c => `\\${c}`)}'`
+      if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `${key} => undef`
+      const src = m.kind === 'getter' ? m.body : m.expr
+      return `${key} => ${this.convertExpressionToPerl(src)}`
+    })
+    return `{ ${entries.join(', ')} }`
   }
 
   /** Perl literal for a context-consumer's `createContext` default. */
@@ -684,7 +720,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     const memos = ir.metadata.memos ?? []
     const signals = ir.metadata.signals ?? []
     if (memos.length === 0 && signals.length === 0) return ''
-    const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
     // Props seed first; each signal/memo adds its own name as it lands so a
     // later one can reference an earlier one.
     const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
@@ -706,17 +741,20 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
 
     for (const memo of memos) {
-      const def = ssrDefaults[memo.name]
-      const isNull = !def || (typeof def === 'object' && 'value' in def && def.value === null)
-      if (!isNull) {
-        available.add(memo.name)
-        continue
-      }
+      // Seed every memo whose body lowers cleanly — not just the ones whose
+      // static SSR default is null. A statically-foldable prop-derived memo
+      // (`createMemo(() => props.disabled ?? false)` → default `false`)
+      // still depends on the per-call prop: the static stash seed bakes in
+      // the absent-prop fold, so a caller passing `disabled => 1` would
+      // render the default branch (#1897, select's disabled item). The
+      // in-template recomputation reads the prop lexical the stash already
+      // seeded, so it's correct per call; block-bodied arrows /
+      // out-of-scope references fall back to the static ssr-defaults seed.
       const body = extractArrowBodyExpression(memo.computation)
-      // Block-bodied arrows / non-expression shapes stay on the null path.
-      if (body === null) continue
-      const perl = this.tryLowerToPerl(body, available)
-      if (perl !== null) lines.push(`% my $${memo.name} = ${perl};`)
+      if (body !== null) {
+        const perl = this.tryLowerToPerl(body, available)
+        if (perl !== null) lines.push(`% my $${memo.name} = ${perl};`)
+      }
       available.add(memo.name)
     }
     return lines.length > 0 ? lines.join('\n') + '\n' : ''
@@ -1163,8 +1201,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   renderComponent(comp: IRComponent): string {
     const propParts: string[] = []
     for (const p of comp.props) {
-      // Skip callback props (onXxx) — event handlers are client-only for SSR.
-      if (p.name.match(/^on[A-Z]/) && p.value.kind === 'expression') continue
+      // Skip callback props (onXxx) and `ref` — both are client-only for
+      // SSR (Hono renders neither; the client JS wires them at hydration).
+      if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
       const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
       if (lowered) propParts.push(lowered)
     }
@@ -1205,6 +1244,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   }
 
   private childrenCaptureCounter = 0
+
+  /** Uniquifies the `presenceOrUndefined` temp binding (`$bf_puN`) so two
+   *  presence-folded attrs in one template don't collide. */
+  private presenceVarCounter = 0
 
   private toTemplateName(componentName: string): string {
     // Convert PascalCase to snake_case for Mojo template naming
@@ -1337,9 +1380,26 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
             : `${name}="<%= ${perl} %>"`
         return `<% if (defined ${perl}) { %>${body}<% } %>`
       }
-      if (isBooleanAttr(name) || value.presenceOrUndefined) {
+      if (isBooleanAttr(name)) {
         // Boolean attributes: render conditionally (present or absent).
         return `<%= ${this.convertExpressionToPerl(value.expr)} ? '${name}' : '' %>`
+      }
+      if (value.presenceOrUndefined) {
+        // `attr={expr || undefined}` on a NON-boolean attribute: Hono
+        // renders the attr with its stringified value when truthy and
+        // omits it otherwise (`aria-disabled={isDisabled() || undefined}`
+        // → `aria-disabled="true"`), so bare presence would diverge.
+        // Route through `bool_str` when the name/shape witnesses a
+        // boolean value, same as the unconditional path below (#1897).
+        // Bind to a temp first so the expression evaluates once, not in
+        // both the guard and the value.
+        const perl = this.convertExpressionToPerl(value.expr)
+        const tmp = `$bf_pu${this.presenceVarCounter++}`
+        const body =
+          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+            ? `${name}="<%= bf->bool_str(${tmp}) %>"`
+            : `${name}="<%= ${tmp} %>"`
+        return `<% my ${tmp} = ${perl}; if (${tmp}) { %>${body}<% } %>`
       }
       // Boolean-result handling (#1466 follow-up). Two trigger paths:
       //
