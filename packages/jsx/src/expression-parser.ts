@@ -1145,6 +1145,13 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
   if (ts.isElementAccessExpression(node)) {
     const object = convertNode(node.expression, raw)
     const argNode = node.argumentExpression
+    // `argumentExpression` is non-optional in the TS types but CAN be
+    // undefined on an AST recovered from incomplete source (`arr[`). Guard
+    // so a half-typed expression surfaces a recoverable BF101 instead of
+    // throwing inside `ts.isNumericLiteral(undefined)`.
+    if (!argNode) {
+      return { kind: 'unsupported', raw, reason: 'Element access with no index expression' }
+    }
     // For simple number/string access, store as property
     if (ts.isNumericLiteral(argNode)) {
       return { kind: 'member', object, property: argNode.text, computed: true }

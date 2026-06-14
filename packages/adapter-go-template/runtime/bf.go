@@ -753,8 +753,20 @@ func ToFixed(v any, digits int) string {
 	if digits < 0 {
 		digits = 0
 	}
+	n := Number(v)
+	// JS toFixed returns the strings "NaN" / "Infinity" / "-Infinity" for
+	// non-finite inputs; fmt would render "NaN"/"+Inf"/"-Inf".
+	if math.IsNaN(n) {
+		return "NaN"
+	}
+	if math.IsInf(n, 1) {
+		return "Infinity"
+	}
+	if math.IsInf(n, -1) {
+		return "-Infinity"
+	}
 	factor := math.Pow(10, float64(digits))
-	rounded := math.Floor(Number(v)*factor + 0.5)
+	rounded := math.Floor(n*factor + 0.5)
 	return fmt.Sprintf("%.*f", digits, rounded/factor)
 }
 

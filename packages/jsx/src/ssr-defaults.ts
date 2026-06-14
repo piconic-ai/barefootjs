@@ -241,8 +241,8 @@ function tryStaticEval(expr: string, ctx: EvalContext): EvalResult {
  * `const` declarations (bound into `ctx.bindings`, which mutate in
  * place so later statements and nested branches see them), `return`
  * statements, and `if (cond) …` guards whose condition is statically
- * resolvable — the early-return-on-default-state shape of a
- * `/* @client *​/`-guarded memo (`const key = sortKey(); if (!key)
+ * resolvable — the early-return-on-default-state shape of
+ * an `@client`-annotated memo (`const key = sortKey(); if (!key)
  * return payments; … sort …`). A resolvable-but-falsy guard continues
  * to the next statement (`NO_RETURN` from the skipped branch); an
  * unresolvable condition or any other statement kind bails to
