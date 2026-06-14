@@ -25,10 +25,21 @@ runAdapterConformanceTests({
   // initials, memo ssrDefaults — closing the strict-vars `Global
   // symbol "$id"` gap), boolean-typed prop routing through
   // `bf->bool_str`, `attr={cond ? v : undefined}` omission, and
-  // literal-const inlining. The remaining demo fixtures are pinned in
-  // `expectedDiagnostics` below — they need the context-provider
-  // object-literal lowering, an adapter feature tracked in #1897.
-  skipJsx: [],
+  // literal-const inlining.
+  //
+  // `data-table` is the one remaining JSX-render skip (#1897). It now
+  // COMPILES clean — `selected()[index]` lowers via the shared
+  // `index-access` parser kind and `payment.amount.toFixed(2)` via
+  // `bf->to_fixed`, and its `/* @client */`-guarded `sortedData` memo
+  // SSR-evaluates to the unsorted `payments` early-return — so the
+  // template renders structurally BYTE-IDENTICAL to Hono on real
+  // Mojolicious. The sole divergence is the scope-ID of imported
+  // components inside the keyed `.map` (`TableCell_<random>` vs Hono's
+  // `DataTablePreviewDemo_test_s9`): the loop-child slot-skip is a
+  // hydration-scope concern tracked with #1896, not an expression gap.
+  // Pinned here rather than in `expectedDiagnostics` because no BF101
+  // fires anymore.
+  skipJsx: ['data-table'],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't
@@ -80,11 +91,11 @@ runAdapterConformanceTests({
     // `ref={(el) => {…}}` function prop on an imported component is
     // skipped at SSR like `on*` handlers.
     //
-    // #1467 Phase 2e: the data-table demo source's `/* @client */`
-    // comparator sort (`selected()[index]` signal-call indexing) has no
-    // EP lowering — refused at the demo-source compile via the
-    // `isSupported` gate.
-    'data-table': [{ code: 'BF101', severity: 'error' }],
+    // #1467 Phase 2e: `data-table` is no longer pinned here either — it
+    // compiles clean (`selected()[index]` → `index-access`,
+    // `.toFixed(2)` → `bf->to_fixed`, `/* @client */` memo SSR-folded)
+    // and is pinned in `skipJsx` above on the keyed-loop scope-ID
+    // divergence alone (#1896), not a BF101.
     // #1443: `[a, b].filter(Boolean).join(' ')` (the registry Slot's
     // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.
     // No BF101 expected — pinned positively via the

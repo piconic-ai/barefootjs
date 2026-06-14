@@ -592,12 +592,15 @@ function buildPerlProps(
     }
   }
 
-  // Add signal values evaluated from props (must come after user props)
+  // Add signal values evaluated from props (must come after user props).
+  // Seed `undef` for a null / unevaluable initial (e.g. a
+  // `createSignal<SortKey>(null)` whose getter is read in a child-prop
+  // ternary) rather than skipping it — an unseeded getter faults strict
+  // vars with `Global symbol "$x" requires explicit package name`. Same
+  // rule `buildChildDefaultsPerl` applies to child signals (#1897).
   for (const signal of ir.metadata.signals) {
     const value = evaluateSignalInit(signal.initialValue.trim(), props)
-    if (value !== null) {
-      entries.push(`${signal.getter} => ${toPerlLiteral(value)}`)
-    }
+    entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
   }
 
   // Add memo values. The production Mojo plugin seeds these from the

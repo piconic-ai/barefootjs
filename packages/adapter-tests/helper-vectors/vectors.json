@@ -599,6 +599,51 @@
       "note": "numeric-string operand routes through number coercion"
     },
     {
+      "fn": "to_fixed",
+      "args": [
+        316,
+        2
+      ],
+      "expect": "316.00",
+      "note": "integer padded to 2 decimals (data-table amount)"
+    },
+    {
+      "fn": "to_fixed",
+      "args": [
+        3.14159,
+        2
+      ],
+      "expect": "3.14",
+      "note": "rounds to 2 decimals"
+    },
+    {
+      "fn": "to_fixed",
+      "args": [
+        2.5,
+        0
+      ],
+      "expect": "3",
+      "note": "zero digits rounds to integer string"
+    },
+    {
+      "fn": "to_fixed",
+      "args": [
+        1.005,
+        2
+      ],
+      "expect": "1.00",
+      "note": "IEEE-754 double: 1.005 formats as 1.00 on all backends"
+    },
+    {
+      "fn": "to_fixed",
+      "args": [
+        "7.1",
+        3
+      ],
+      "expect": "7.100",
+      "note": "numeric-string operand routes through number coercion"
+    },
+    {
       "fn": "lower",
       "args": [
         "HeLLo"

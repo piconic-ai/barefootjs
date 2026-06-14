@@ -61,6 +61,7 @@ my %bindings = (
     floor  => sub { $bf->floor($_[0]) },
     ceil   => sub { $bf->ceil($_[0]) },
     round  => sub { $bf->round($_[0]) },
+    to_fixed => sub { $bf->to_fixed(@_) },
 
     # The Mojo renderer emits native lc()/uc(); Xslate emits $bf.lc /
     # $bf.uc. The helper methods wrap CORE::lc/uc, so binding them

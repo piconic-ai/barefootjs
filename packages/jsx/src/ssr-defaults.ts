@@ -65,6 +65,12 @@ export interface SsrDefault {
 const UNRESOLVED = Symbol('unresolved')
 type EvalResult = unknown | typeof UNRESOLVED
 
+// Sentinel: a statement list ran to its end without hitting a `return`
+// (so the enclosing branch falls through to the next statement). Kept
+// distinct from `UNRESOLVED` (couldn't evaluate) so a falsy guard
+// (`if (!key) return X`) continues evaluation instead of bailing.
+const NO_RETURN = Symbol('no-return')
+
 interface EvalContext {
   /** Identifier name → previously-resolved value (signal getters, memos). */
   bindings: Record<string, EvalResult>
@@ -230,6 +236,53 @@ function tryStaticEval(expr: string, ctx: EvalContext): EvalResult {
   return evalNode(node, ctx)
 }
 
+/**
+ * Evaluate a block-body's statements for its returned value. Handles
+ * `const` declarations (bound into `ctx.bindings`, which mutate in
+ * place so later statements and nested branches see them), `return`
+ * statements, and `if (cond) …` guards whose condition is statically
+ * resolvable — the early-return-on-default-state shape of
+ * an `@client`-annotated memo (`const key = sortKey(); if (!key)
+ * return payments; … sort …`). A resolvable-but-falsy guard continues
+ * to the next statement (`NO_RETURN` from the skipped branch); an
+ * unresolvable condition or any other statement kind bails to
+ * `UNRESOLVED`. #1897 (data-table's `sortedData`).
+ */
+function evalStatementsForReturn(
+  statements: readonly ts.Statement[],
+  ctx: EvalContext,
+): EvalResult | typeof NO_RETURN {
+  for (const stmt of statements) {
+    if (ts.isVariableStatement(stmt)) {
+      for (const d of stmt.declarationList.declarations) {
+        if (!ts.isIdentifier(d.name) || !d.initializer) continue
+        const v = evalNode(d.initializer, ctx)
+        // Leave unresolved locals unbound; only a `return` / guard
+        // referencing one would then surface UNRESOLVED.
+        if (v !== UNRESOLVED) ctx.bindings[d.name.text] = v
+      }
+    } else if (ts.isReturnStatement(stmt)) {
+      return stmt.expression ? evalNode(stmt.expression, ctx) : UNRESOLVED
+    } else if (ts.isIfStatement(stmt)) {
+      const cond = evalNode(stmt.expression, ctx)
+      if (cond === UNRESOLVED) return UNRESOLVED
+      const branch = cond ? stmt.thenStatement : stmt.elseStatement
+      if (branch) {
+        const taken = evalStatementsForReturn(
+          ts.isBlock(branch) ? branch.statements : [branch],
+          ctx,
+        )
+        if (taken !== NO_RETURN) return taken
+      }
+      // Guard not taken (or its branch fell through) — continue.
+    } else {
+      // Any other statement (loop, side-effecting call) — bail.
+      return UNRESOLVED
+    }
+  }
+  return NO_RETURN
+}
+
 function parseExpression(expr: string): ts.Expression | null {
   // Wrap in parens so a leading `{}` parses as an object literal rather
   // than an empty block statement.
@@ -269,23 +322,8 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     if (!ts.isBlock(node.body)) return evalNode(node.body as ts.Expression, ctx)
     const localBindings: Record<string, EvalResult> = { ...ctx.bindings }
     const localCtx: EvalContext = { ...ctx, bindings: localBindings }
-    for (const stmt of node.body.statements) {
-      if (ts.isVariableStatement(stmt)) {
-        for (const d of stmt.declarationList.declarations) {
-          if (!ts.isIdentifier(d.name) || !d.initializer) continue
-          const v = evalNode(d.initializer, localCtx)
-          // Leave unresolved locals unbound; only the `return` referencing
-          // one would then surface UNRESOLVED.
-          if (v !== UNRESOLVED) localBindings[d.name.text] = v
-        }
-      } else if (ts.isReturnStatement(stmt)) {
-        return stmt.expression ? evalNode(stmt.expression, localCtx) : UNRESOLVED
-      } else {
-        // Any other statement (a branch, a side-effecting call) — bail.
-        return UNRESOLVED
-      }
-    }
-    return UNRESOLVED
+    const result = evalStatementsForReturn(node.body.statements, localCtx)
+    return result === NO_RETURN ? UNRESOLVED : result
   }
 
   if (ts.isNumericLiteral(node)) return Number(node.text)

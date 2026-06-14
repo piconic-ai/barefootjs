@@ -530,6 +530,10 @@ sub number ($self, $value) {
 # portable sentinel check in floor/ceil/round.
 sub _is_nan { my $n = shift; return $n != $n }
 
+# True for +/-Infinity. `9**9**9` is Perl's portable infinity literal; a
+# finite number is always strictly less than +Inf in magnitude.
+sub _is_inf { my $n = shift; return $n == 9**9**9 || $n == -9**9**9 }
+
 sub floor ($self, $value) {
     my $n = $self->number($value);
     return $n if _is_nan($n);
@@ -846,6 +850,27 @@ sub trim ($self, $recv) {
     my $s = "$recv";
     $s =~ s/^\s+|\s+$//gu;
     return $s;
+}
+
+# `Number.prototype.toFixed(digits)` (#1897) — fixed-decimal string with
+# zero-padding. JS rounds the scaled integer half toward +Infinity (the
+# spec's "pick the larger n" tie-break), so `(2.5).toFixed(0)` is "3";
+# bare `sprintf("%.*f")` would round half-to-even ("2"), diverging. Scale
+# by 10**digits, round with `floor(x + 0.5)` (the same tie-break the
+# `round` helper uses), then format the exact multiple. A negative
+# `digits` clamps to 0, mirroring how the adapters default an omitted
+# argument.
+sub to_fixed ($self, $value, $digits = 0) {
+    my $n = $self->number($value);
+    # JS toFixed returns the STRINGS "NaN" / "Infinity" / "-Infinity" for
+    # non-finite inputs; the numeric values would stringify per-platform
+    # ("nan"/"inf"/...) and diverge.
+    return 'NaN' if _is_nan($n);
+    return $n < 0 ? '-Infinity' : 'Infinity' if _is_inf($n);
+    $digits = 0 if !defined $digits || $digits < 0;
+    my $factor  = 10 ** $digits;
+    my $rounded = POSIX::floor($n * $factor + 0.5);
+    return sprintf('%.*f', $digits, $rounded / $factor);
 }
 
 # `String.prototype.split(sep)` (#1448 Tier B) — string → ARRAY ref.

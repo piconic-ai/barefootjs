@@ -50,9 +50,10 @@ func FuncMap() template.FuncMap {
 		// the Go adapter's `templatePrimitives` map (#1188).
 		"bf_json":   JSON,
 		"bf_number": Number,
-		"bf_floor":  Floor,
-		"bf_ceil":   Ceil,
-		"bf_round":  Round,
+		"bf_floor":    Floor,
+		"bf_ceil":     Ceil,
+		"bf_round":    Round,
+		"bf_to_fixed": ToFixed,
 
 		// Array/Slice
 		"bf_len":            Len,
@@ -740,6 +741,33 @@ func Number(v any) float64 {
 // (`bf_floor` then `bf_string`) line up with JS's number type.
 func Floor(v any) float64 {
 	return math.Floor(Number(v))
+}
+
+// ToFixed formats v with exactly `digits` decimal places, mirroring JS
+// `Number.prototype.toFixed` (zero-padding + half-toward-+Infinity
+// rounding). JS rounds the scaled integer half up (`(2.5).toFixed(0)`
+// is "3"); bare `fmt.Sprintf("%.*f")` rounds half-to-even ("2"), so we
+// scale, round with `Floor(x + 0.5)` (matching `Round`), then format
+// the exact multiple. #1897.
+func ToFixed(v any, digits int) string {
+	if digits < 0 {
+		digits = 0
+	}
+	n := Number(v)
+	// JS toFixed returns the strings "NaN" / "Infinity" / "-Infinity" for
+	// non-finite inputs; fmt would render "NaN"/"+Inf"/"-Inf".
+	if math.IsNaN(n) {
+		return "NaN"
+	}
+	if math.IsInf(n, 1) {
+		return "Infinity"
+	}
+	if math.IsInf(n, -1) {
+		return "-Infinity"
+	}
+	factor := math.Pow(10, float64(digits))
+	rounded := math.Floor(n*factor + 0.5)
+	return fmt.Sprintf("%.*f", digits, rounded/factor)
 }
 
 // Ceil returns the smallest integer ≥ v as a float64. Mirrors JS

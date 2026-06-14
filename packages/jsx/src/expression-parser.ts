@@ -17,6 +17,14 @@ export type ParsedExpr =
   | { kind: 'literal'; value: string | number | boolean | null; literalType: 'string' | 'number' | 'boolean' | 'null' }
   | { kind: 'call'; callee: ParsedExpr; args: ParsedExpr[] }
   | { kind: 'member'; object: ParsedExpr; property: string; computed: boolean }
+  // Element access with a NON-literal index (`selected()[index]`,
+  // `rows[i + 1]`). A literal-index access (`arr[0]`, `obj['key']`)
+  // stays a `member` (computed) since the key is statically known and
+  // folds into the same property path. The variable case can't, so the
+  // index travels as its own `ParsedExpr` for the adapter to lower
+  // (array `->[$i]` vs hash `->{$k}` in Perl, `[index]` in JS). #1897
+  // (data-table's per-row `selected()[index]`).
+  | { kind: 'index-access'; object: ParsedExpr; index: ParsedExpr }
   | { kind: 'binary'; op: string; left: ParsedExpr; right: ParsedExpr }
   | { kind: 'unary'; op: string; argument: ParsedExpr }
   | { kind: 'conditional'; test: ParsedExpr; consequent: ParsedExpr; alternate: ParsedExpr }
@@ -46,6 +54,7 @@ export type ParsedExpr =
         | 'toLowerCase'
         | 'toUpperCase'
         | 'trim'
+        | 'toFixed'
         | 'split'
         | 'startsWith'
         | 'endsWith'
@@ -857,6 +866,14 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       if (callee.property === 'trim') {
         return { kind: 'array-method', method: 'trim', object: callee.object, args }
       }
+      // `.toFixed(digits?)` — Number → fixed-decimal string. The digit
+      // count (default 0) travels as the single arg; all adapters route
+      // through a `to_fixed` runtime helper (Perl) / `fmt.Sprintf` (Go)
+      // so JS's rounding + zero-padding semantics match. #1897
+      // (data-table's `payment.amount.toFixed(2)`).
+      if (callee.property === 'toFixed') {
+        return { kind: 'array-method', method: 'toFixed', object: callee.object, args }
+      }
       // `.split()` / `.split(sep)` / `.split(sep, limit)` — string →
       // array, full JS arity. `.split()` (no separator) returns the
       // whole string as a single element; `.split(sep)` splits on the
@@ -1128,6 +1145,13 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
   if (ts.isElementAccessExpression(node)) {
     const object = convertNode(node.expression, raw)
     const argNode = node.argumentExpression
+    // `argumentExpression` is non-optional in the TS types but CAN be
+    // undefined on an AST recovered from incomplete source (`arr[`). Guard
+    // so a half-typed expression surfaces a recoverable BF101 instead of
+    // throwing inside `ts.isNumericLiteral(undefined)`.
+    if (!argNode) {
+      return { kind: 'unsupported', raw, reason: 'Element access with no index expression' }
+    }
     // For simple number/string access, store as property
     if (ts.isNumericLiteral(argNode)) {
       return { kind: 'member', object, property: argNode.text, computed: true }
@@ -1135,8 +1159,13 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     if (ts.isStringLiteral(argNode)) {
       return { kind: 'member', object, property: argNode.text, computed: true }
     }
-    // Complex computed access
-    return { kind: 'unsupported', raw, reason: 'Complex computed property access' }
+    // Variable / expression index (`selected()[index]`, `rows[i + 1]`):
+    // carry the index as its own ParsedExpr so the adapter can lower it
+    // (the literal forms above fold into a static property path; this
+    // one can't). #1897 (data-table).
+    const index = convertNode(argNode, raw)
+    if (index.kind === 'unsupported') return index
+    return { kind: 'index-access', object, index }
   }
 
   // Binary expression: a === b, count > 0, a + b
@@ -2088,6 +2117,8 @@ function findImpureDefaultNode(expr: ParsedExpr): string | null {
       return null
     case 'member':
       return findImpureDefaultNode(expr.object)
+    case 'index-access':
+      return findImpureDefaultNode(expr.object) ?? findImpureDefaultNode(expr.index)
     case 'unary':
       return findImpureDefaultNode(expr.argument)
     case 'binary':
@@ -2317,6 +2348,10 @@ function collectIdentifiers(expr: ParsedExpr, out: Set<string>): void {
     case 'member':
       collectIdentifiers(expr.object, out)
       return
+    case 'index-access':
+      collectIdentifiers(expr.object, out)
+      collectIdentifiers(expr.index, out)
+      return
     case 'binary':
     case 'logical':
       collectIdentifiers(expr.left, out)
@@ -2411,6 +2446,8 @@ function substituteDestructuredFields(
           }
         }
         return { kind: 'member', object: walk(e.object), property: e.property, computed: e.computed }
+      case 'index-access':
+        return { kind: 'index-access', object: walk(e.object), index: walk(e.index) }
       case 'binary':
         return { kind: 'binary', op: e.op, left: walk(e.left), right: walk(e.right) }
       case 'logical':
@@ -2659,6 +2696,17 @@ function checkSupport(expr: ParsedExpr): SupportResult {
       return { supported: true, level: 'L2' }
     }
 
+    case 'index-access': {
+      // `arr[index]` — supported when both the receiver and the index
+      // expression are themselves supported (the index is typically a
+      // loop variable or arithmetic over one). #1897 (data-table).
+      const objSupport = checkSupport(expr.object)
+      if (!objSupport.supported) return objSupport
+      const indexSupport = checkSupport(expr.index)
+      if (!indexSupport.supported) return indexSupport
+      return { supported: true, level: 'L2' }
+    }
+
     case 'binary': {
       const leftSupport = checkSupport(expr.left)
       if (!leftSupport.supported) return leftSupport
@@ -2740,6 +2788,8 @@ export function containsHigherOrder(expr: ParsedExpr): boolean {
       return expr.args.some(containsHigherOrder) || containsHigherOrder(expr.callee)
     case 'member':
       return containsHigherOrder(expr.object)
+    case 'index-access':
+      return containsHigherOrder(expr.object) || containsHigherOrder(expr.index)
     case 'binary':
       return containsHigherOrder(expr.left) || containsHigherOrder(expr.right)
     case 'unary':
@@ -2911,6 +2961,8 @@ export function exprToString(expr: ParsedExpr): string {
       return `${exprToString(expr.callee)}(${expr.args.map(exprToString).join(', ')})`
     case 'member':
       return `${exprToString(expr.object)}.${expr.property}`
+    case 'index-access':
+      return `${exprToString(expr.object)}[${exprToString(expr.index)}]`
     case 'binary':
       return `${exprToString(expr.left)} ${expr.op} ${exprToString(expr.right)}`
     case 'unary':
@@ -2992,6 +3044,8 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
         : JSON.stringify(expr.property)
       return `${obj}[${key}]`
     }
+    case 'index-access':
+      return `${stringifyParsedExpr(expr.object)}[${stringifyParsedExpr(expr.index)}]`
     case 'binary':
       return `${stringifyParsedExpr(expr.left)} ${expr.op} ${stringifyParsedExpr(expr.right)}`
     case 'unary':

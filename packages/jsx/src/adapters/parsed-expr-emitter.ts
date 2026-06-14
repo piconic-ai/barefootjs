@@ -66,6 +66,7 @@ export type ArrayMethod =
   | 'toLowerCase'
   | 'toUpperCase'
   | 'trim'
+  | 'toFixed'
   | 'split'
   | 'startsWith'
   | 'endsWith'
@@ -113,6 +114,14 @@ export interface ParsedExprEmitter {
     object: ParsedExpr,
     property: string,
     computed: boolean,
+    emit: (e: ParsedExpr) => string,
+  ): string
+  // Element access with a non-literal index (`arr[index]`). The index
+  // is a full `ParsedExpr` (loop variable, arithmetic, etc.); the
+  // adapter picks array vs hash deref per target language. #1897.
+  indexAccess(
+    object: ParsedExpr,
+    index: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string
@@ -196,6 +205,8 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       return emitter.call(expr.callee, expr.args, emit)
     case 'member':
       return emitter.member(expr.object, expr.property, expr.computed, emit)
+    case 'index-access':
+      return emitter.indexAccess(expr.object, expr.index, emit)
     case 'binary':
       return emitter.binary(expr.op, expr.left, expr.right, emit)
     case 'unary':

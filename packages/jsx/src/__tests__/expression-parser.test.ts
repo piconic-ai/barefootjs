@@ -1136,6 +1136,25 @@ describe('expression-parser', () => {
       expect(result.level).toBe('L2')
     })
 
+    test('L2: variable element access (`arr[index]`) is supported (#1897)', () => {
+      const expr = parseExpression('selected()[index]')
+      expect(expr.kind).toBe('index-access')
+      const result = isSupported(expr)
+      expect(result.supported).toBe(true)
+      expect(result.level).toBe('L2')
+    })
+
+    test('arithmetic index (`arr[i + 1]`) is supported', () => {
+      const expr = parseExpression('arr[i + 1]')
+      expect(expr.kind).toBe('index-access')
+      expect(isSupported(expr).supported).toBe(true)
+    })
+
+    test('element access with an unsupported (arrow) index is refused', () => {
+      const expr = parseExpression('rows[() => x]')
+      expect(isSupported(expr).supported).toBe(false)
+    })
+
     test('L2: .length is supported', () => {
       const expr = parseExpression('items().length')
       const result = isSupported(expr)
@@ -1461,6 +1480,8 @@ describe('expression-parser — array-method full-arity lowering (#1448)', () =>
     ['slice(start)', 'arr.slice(1)'],
     ['slice(start, end)', 'arr.slice(1, 2)'],
     ['trim()', 's.trim()'],
+    ['toFixed(digits)', 'n.toFixed(2)'],
+    ['toFixed() → default 0', 'n.toFixed()'],
     // zero-arg defaults (every one of these escaping both its arm AND
     // the guard is the footgun the relaxation must NOT reintroduce)
     ['join() → default ","', 'arr.join()'],

@@ -36,6 +36,7 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   floor: (v: unknown) => Math.floor(Number(v)),
   ceil: (v: unknown) => Math.ceil(Number(v)),
   round: (v: unknown) => Math.round(Number(v)),
+  to_fixed: (v: unknown, digits?: number) => Number(v).toFixed(digits ?? 0),
   lower: (s: string) => s.toLowerCase(),
   upper: (s: string) => s.toUpperCase(),
   trim: (s: string) => s.trim(),
@@ -209,6 +210,12 @@ export const cases: HelperCase[] = [
   { fn: 'round', args: [-2.4], note: 'negative below half rounds toward zero' },
   { fn: 'round', args: [7], note: 'integral passthrough' },
   { fn: 'round', args: ['6.6'], note: 'numeric-string operand routes through number coercion' },
+
+  { fn: 'to_fixed', args: [316, 2], note: 'integer padded to 2 decimals (data-table amount)' },
+  { fn: 'to_fixed', args: [3.14159, 2], note: 'rounds to 2 decimals' },
+  { fn: 'to_fixed', args: [2.5, 0], note: 'zero digits rounds to integer string' },
+  { fn: 'to_fixed', args: [1.005, 2], note: 'IEEE-754 double: 1.005 formats as 1.00 on all backends' },
+  { fn: 'to_fixed', args: ['7.1', 3], note: 'numeric-string operand routes through number coercion' },
 
   { fn: 'lower', args: ['HeLLo'], note: 'mixed case' },
   { fn: 'lower', args: ['ABC123'], note: 'digits pass through' },
