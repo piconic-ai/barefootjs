@@ -23,7 +23,9 @@
  * seed-passing. On the server (no `window`) the initial value is `''`; an
  * adapter-side SSR impl that reads the request is a follow-up.
  */
-import { createSignal, type Reactive } from '@barefootjs/client/reactive'
+import { createSignal } from '@barefootjs/client/reactive'
+
+type Reactive<T> = T & { readonly __reactive: true }
 
 const [searchString, setSearchString] = createSignal(
   typeof window !== 'undefined' ? window.location.search : '',

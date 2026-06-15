@@ -28,10 +28,12 @@
     "src"
   ],
   "scripts": {
-    "build": "bun run build:js && bun run build:types",
+    "build": "bun run clean && bun run build:js && bun run build:types",
     "build:js": "bun build ./src/index.ts ./src/search-params.ts --outdir ./dist --format esm --external @barefootjs/shared --external @barefootjs/client",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
+    "example": "bun example/server.ts",
+    "example:capture": "bun example/capture.ts",
     "clean": "rm -rf dist",
     "prepack": "node ../../scripts/swap-publish-config.mjs pack",
     "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
