@@ -51,10 +51,21 @@ export async function defaultRehydrate(outlet: Element): Promise<void> {
 }
 
 /** Dispose the outgoing islands precisely when the runtime exposes it. */
-export function defaultDispose(outlet: Element): void {
+export async function defaultDispose(outlet: Element): Promise<void> {
   const w = window as unknown as ClientSeams
-  // Otherwise a no-op (detached local-state islands are reclaimed by GC).
-  w.__bf_dispose_within?.(outlet)
+  if (typeof w.__bf_dispose_within === 'function') {
+    w.__bf_dispose_within(outlet)
+    return
+  }
+  // Match re-hydration's optional-runtime fallback so missing streaming
+  // seams do not silently leak effects owned by the outgoing outlet.
+  try {
+    const spec = '@barefootjs/client/runtime'
+    const mod = (await import(spec)) as { disposeScope?: (root: Element) => void }
+    mod.disposeScope?.(outlet)
+  } catch {
+    // No client runtime on the page (static shell) — nothing to dispose.
+  }
 }
 
 /** Fall back to a full browser navigation. */

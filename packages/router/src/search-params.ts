@@ -18,10 +18,9 @@
  * `window.__bf_set_search` so the router core can drive it without importing
  * this module.
  *
- * SSR note: both server and client read the *same* source (the request URL
- * ↔ `location`), so the value agrees across hydration with no flash and no
- * seed-passing. On the server (no `window`) the initial value is `''`; an
- * adapter-side SSR impl that reads the request is a follow-up.
+ * SSR note: on the server (no `window`) the initial value is `''`. Until an
+ * adapter-side implementation supplies request-scoped URL state, a direct
+ * load with a query string can render the empty-query state before hydration.
  */
 import { createSignal } from '@barefootjs/client/reactive'
 

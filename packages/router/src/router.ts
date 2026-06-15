@@ -120,6 +120,9 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     target.search !== window.location.search &&
     setSearchSeam(target.search)
   ) {
+    // This navigation is now the winner even though it does not fetch/swap.
+    // Prevent an older full navigation from committing after the query update.
+    state.inflight?.abort()
     if (mode === 'push') window.history.pushState({ bfRouter: true }, '', target.href)
     else if (mode === 'replace') window.history.replaceState({ bfRouter: true }, '', target.href)
     return
@@ -155,7 +158,8 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     }
 
     // Dispose the outgoing islands, then swap only the outlet.
-    state.dispose(current)
+    await state.dispose(current)
+    if (controller.signal.aborted) return
     current.replaceChildren(...content.nodes)
     if (content.title !== null) document.title = content.title
 

@@ -49,6 +49,8 @@ beforeEach(() => {
   document.title = 'Blog — Page 1'
   fetchCalls = []
   mockFetch(fullPage2)
+  ;(window as unknown as { __bf_dispose_within?: (root: Element) => void }).__bf_dispose_within =
+    () => {}
 })
 
 afterEach(() => {
@@ -56,6 +58,7 @@ afterEach(() => {
   stop = undefined
   // Some tests install the searchParams seam — don't leak it across tests.
   delete (window as unknown as { __bf_set_search?: unknown }).__bf_set_search
+  delete (window as unknown as { __bf_dispose_within?: unknown }).__bf_dispose_within
 })
 
 function setURL(href: string): void {
@@ -401,6 +404,29 @@ test('a pathname change swaps even when searchParams is in use', async () => {
 
   expect(fetchCalls).toHaveLength(1) // swapped
   expect(rehydrate).toHaveBeenCalledTimes(1)
+})
+
+test('query-only navigation supersedes an older in-flight outlet swap', async () => {
+  setURL('https://example.test/list')
+  ;(window as unknown as { __bf_set_search: (s: string) => void }).__bf_set_search = () => {}
+  ;(globalThis as { fetch: unknown }).fetch = mock(async (url: unknown) => ({
+    ok: true,
+    redirected: false,
+    url: String(url),
+    text: () =>
+      new Promise<string>((resolve) =>
+        setTimeout(() => resolve('<main bf-outlet><p>stale result</p></main>'), 30),
+      ),
+  }))
+  const router = startRouter({ rehydrate: () => {} })
+  stop = router.stop
+
+  const staleNavigation = router.navigate('/slow')
+  await router.navigate('/list?sort=price')
+  await staleNavigation
+
+  expect(window.location.search).toBe('?sort=price')
+  expect(document.querySelector('[bf-outlet]')!.textContent).not.toContain('stale result')
 })
 
 test('popstate query-only (same route) does not swap when searchParams is in use', async () => {

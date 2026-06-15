@@ -17,9 +17,10 @@ export interface RouterOptions {
    * Called with the current outlet element **before** it is replaced, to
    * dispose the reactive scopes of the outgoing islands. Defaults to
    * `window.__bf_dispose_within(outlet)` — the client runtime's precise
-   * per-scope disposal. Pass `() => {}` to opt out.
+   * per-scope disposal, then to a dynamic import of
+   * `@barefootjs/client/runtime`'s `disposeScope`. Pass `() => {}` to opt out.
    */
-  dispose?: (outlet: Element) => void
+  dispose?: (outlet: Element) => void | Promise<void>
   /**
    * Loads an island JS module the navigation introduced — the response's
    * `<script type="module" src>` tags carry which modules the swapped-in
@@ -100,7 +101,7 @@ export interface OutletContent {
 export interface RouterState {
   outletSelector: string
   rehydrate: (outlet: Element) => void | Promise<void>
-  dispose: (outlet: Element) => void
+  dispose: (outlet: Element) => void | Promise<void>
   loadModule: (src: string) => Promise<unknown>
   /** Absolute URLs of module scripts already loaded (deduped across navs). */
   loadedModules: Set<string>

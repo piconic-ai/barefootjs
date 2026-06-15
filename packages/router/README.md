@@ -91,6 +91,9 @@ the payload.
 | Re-hydrate freshly inserted scopes | `window.__bf_hydrate_within(outlet)` → `rehydrateScope(outlet)` (subtree-scoped, O(outlet)) |
 | Single-component fragment SSR | `renderToHtml(<Component/>)` from `@barefootjs/hono` |
 
+Inline scripts inside the outlet do not execute on swap. Put island setup in
+the external module scripts emitted by BarefootJS instead.
+
 ## Prefetch & cache
 
 On hover (after a short dwell), focus, or primary press (`pointerdown` —
@@ -146,10 +149,14 @@ swap as usual (legacy) — so it's opt-in by importing it.
 
 The accessor is branded `Reactive<…>`, so the *existing* compiler
 reactivity analysis wires the island's DOM updates — no new compiler
-feature. It's a pure-runtime primitive: server and client read the same
-source (request URL ↔ `location`), so they agree across hydration. (It's
-the first of an intended "environment signal" family; an adapter-side SSR
-impl that reads the request is a follow-up.)
+feature. On the server it currently starts with an empty query; until an
+adapter-side request-scoped SSR implementation lands, a direct load with a
+query string can flash the empty-query state before hydration.
+
+The signals entry and `@barefootjs/client/reactive` must each resolve to one
+shared browser module instance. Keep them external when bundling and map each
+bare specifier to a single served module; bundling either dependency into
+multiple islands creates disconnected signals.
 
 ## Package design
 
@@ -161,6 +168,10 @@ The public surface is intentionally small: `startRouter`, `navigate`, `Router`, 
   an island present on both pages is re-created. A `data-bf-permanent`
   carry-over and idiomorph-style morphing are future work.
 - **No scroll restoration on back/forward.** The router resets to top.
+- **No focus management or route-change announcement yet.** After a swap,
+  applications must move focus and announce the new route as appropriate.
+- **Prefetched module metadata is session-lived.** The page snapshot cache is
+  LRU-bounded, but modulepreload links and their deduplication set are not.
 - **Outlet is authored, not compiler-derived yet.** Marking `bf-outlet`
   by hand is the v0 contract; auto-derivation from the scope tree is the
   intended end state.
