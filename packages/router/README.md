@@ -15,8 +15,6 @@ BarefootJS's existing runtime instead of a separate framework.
 - **Island-aware partial navigation:** the shell stays mounted, outgoing scopes are disposed, newly required modules load, and only incoming islands hydrate.
 - **Fast by intent:** hover/focus/press prefetch plus a bounded stale-while-revalidate cache reduces waits without sacrificing full-navigation fallback.
 
-See the runnable [blog example](./example/README.md), which intentionally uses plain server-rendered pages to exercise these properties.
-
 ## Why "automatic"
 
 You mark the swappable region **once**. Every internal `<a>` then

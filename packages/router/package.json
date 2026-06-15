@@ -32,7 +32,6 @@
     "build:js": "bun build ./src/index.ts ./src/search-params.ts --outdir ./dist --format esm --external @barefootjs/shared --external @barefootjs/client",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
-    "example": "bun example/server.ts",
     "clean": "rm -rf dist",
     "prepack": "node ../../scripts/swap-publish-config.mjs pack",
     "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
