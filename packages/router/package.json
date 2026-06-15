@@ -33,7 +33,6 @@
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "example": "bun example/server.ts",
-    "example:capture": "bun example/capture.ts",
     "clean": "rm -rf dist",
     "prepack": "node ../../scripts/swap-publish-config.mjs pack",
     "postpack": "node ../../scripts/swap-publish-config.mjs unpack"
