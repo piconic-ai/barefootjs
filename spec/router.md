@@ -139,12 +139,13 @@ holds when:
 #### Request-scoped SSR
 
 PR #1910 stored the query in a process-wide module-level signal, which races
-across concurrent SSR requests. The SSR value must instead live in the adapter's
-**per-request context** (`RequestContext`): Hono populates it from `c.req`
-automatically; Go/Perl adapters prime a well-known binding (e.g. `BfEnv.*`) that
-the handler fills from the request, which the template bakes into the initial
-render. A direct load of `/list?sort=price` then renders the correct state with
-no flash and no hydration mismatch.
+across concurrent SSR requests. The SSR value must instead come from an
+**adapter-specific per-request context** (no single shared type is implied):
+the Hono adapter reads the request via `useRequestContext().req`; Go/Perl
+adapters prime a well-known binding (e.g. `BfEnv.*`) that the handler fills from
+the request, which the template bakes into the initial render. A direct load of
+`/list?sort=price` then renders the correct state with no flash and no hydration
+mismatch.
 
 ## Suspense / streaming
 
@@ -232,7 +233,7 @@ outlet parsing, cache (fetch + freshness), seams (client-runtime integration).
   This is the "never worse than MPA" floor.
 - **v0.5 — `searchParams` done right.** Exported from `@barefootjs/client`
   (lazy, side-effect-free, router-driven via `__pushSearch`); request-scoped SSR
-  state via the adapter `RequestContext`; `"sideEffects": false` on the client
+  state via an adapter-specific per-request context; `"sideEffects": false` on the client
   package for clean tree-shaking. Cookies (`createEnvSignal` second instance,
   non-`httpOnly` only) are a later follow-up.
 - **v1 — persistence within an outlet.** `data-bf-permanent` carry-over and
@@ -250,9 +251,9 @@ outlet parsing, cache (fetch + freshness), seams (client-runtime integration).
 - What is the default focus target and the a11y announcement API after a swap?
 - How does outlet-tree diffing interact with backend streaming when a changed
   segment is still streaming at swap time?
-- What is the shape of the adapter `RequestContext` that env signals read at SSR,
-  and how do non-Node adapters (Go/Perl) prime the `BfEnv.*` binding from the
-  request?
+- What per-request context do env signals read at SSR in each adapter (Hono via
+  `useRequestContext().req`), and how do non-Node adapters (Go/Perl) prime the
+  `BfEnv.*` binding from the request?
 - For the cookie follow-up: how is a single-key view (`cookie('theme')`) typed,
   and what is the change-observation fallback where the CookieStore API is
   unavailable (no native same-tab cookie event)?
