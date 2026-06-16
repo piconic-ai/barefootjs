@@ -34,6 +34,7 @@ Mark the swappable region in your layout with `<Region>` (compiled to
 | `cacheFreshMs` / `cacheStaleMs` / `cacheCap` | `15000` / `60000` / `30` | SWR + LRU snapshot cache |
 | `scrollToTop` | `true` | scroll to top after a swap |
 | `manageFocus` | `true` | move focus into the region + announce the route |
+| `morph` | `true` | preserve `[data-bf-permanent]` live nodes across a swap (no-op when none present); `false` forces a plain `replaceChildren` |
 
 ## Correct by default
 
@@ -56,12 +57,17 @@ setup step.
   existing state (scroll-restoration libs, framework state).
 - **A11y**: focus moves into the swapped region (its first heading) and the new
   title is announced via a polite live region.
+- **Persistence** (`data-bf-permanent`): an element marked
+  `<div data-bf-permanent="player">` keeps its *live* node across a swap — its
+  state, media playback, scroll, and hydrated scope survive — matched between
+  documents by the attribute value (or `id`). A no-op when no element is marked;
+  pass `morph: false` for a plain swap.
 
-## v0 scope
+## Scope
 
-This is the **v0** floor: a single authored region (the broadest match),
-correct by default. Compiler-derived **nested** regions (deepest-differs swap,
-sibling master–detail) are v2. `searchParams()` (query-only navigation without a
-swap) ships in `@barefootjs/client` at v0.5; the router already drives it via
-the `__bf_pushSearch` seam, so query-only navigations short-circuit once a
-consumer is present.
+A **single authored region** (the broadest `[bf-region]` match), correct by
+default. `searchParams()` (query-only navigation without a swap) ships in
+`@barefootjs/client` (v0.5); the router drives it via the `__bf_pushSearch`
+seam, so query-only navigations short-circuit once a consumer is present.
+`data-bf-permanent` persistence is v1. Compiler-derived **nested** regions
+(deepest-differs swap, sibling master–detail) are v2.

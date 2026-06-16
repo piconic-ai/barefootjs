@@ -16,6 +16,7 @@ import {
   extractRegion,
   loadNewModules,
 } from './region.ts'
+import { buildMorphedContent } from './morph.ts'
 import {
   defaultDispose,
   defaultRehydrate,
@@ -62,6 +63,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     shouldIntercept: options.shouldIntercept ?? defaultShouldIntercept,
     scrollToTop: options.scrollToTop ?? true,
     manageFocus: options.manageFocus ?? true,
+    morph: options.morph ?? true,
     currentPath: window.location.pathname,
     inflight: null,
     hoverTimer: null,
@@ -95,6 +97,13 @@ export function startRouter(options: RouterOptions = {}): Router {
 
   active = state
   return { stop: state.stop, navigate, prefetch: (url) => prefetch(url) }
+}
+
+/** Collect nodes into a fragment (the non-morph swap path). */
+function toFragment(nodes: Node[]): DocumentFragment {
+  const frag = document.createDocumentFragment()
+  for (const node of nodes) frag.appendChild(node)
+  return frag
 }
 
 // --- History --------------------------------------------------------------
@@ -239,11 +248,34 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
       return
     }
 
-    // Dispose the outgoing islands, then swap only the region's children.
-    await state.dispose(current)
-    if (controller.signal.aborted) return
-    current.replaceChildren(...content.nodes)
+    // Build the incoming tree (morph re-homes live `[data-bf-permanent]` nodes
+    // into it) and swap — both synchronous. A morph-preserved node therefore
+    // travels current → fragment → current without ever being detached across
+    // the dispose `await`: a navigation that supersedes this one still finds it
+    // under the region (last-wins safe), and an abort/throw during dispose can't
+    // leave it orphaned. With no permanent nodes this is a plain `replaceChildren`.
+    const fragment = state.morph
+      ? buildMorphedContent(current, content.nodes)
+      : toFragment(content.nodes)
+    // A shallow clone of the region element (its tag, attributes, id, classes —
+    // e.g. `main[bf-region]`) so a custom `dispose` sees the same shell it ran
+    // against on first mount, not a bare `<div>`.
+    const outgoing = current.cloneNode(false) as Element
+    // Move every current child into the holder. An explicit drain (rather than
+    // `append(...current.childNodes)`) is unambiguous about not skipping nodes
+    // while the live `childNodes` shrinks.
+    while (current.firstChild) outgoing.append(current.firstChild)
+    current.replaceChildren(fragment)
     if (content.title !== null) document.title = content.title
+
+    // Dispose the outgoing islands. They're now detached in `outgoing`, and the
+    // swap is already committed, so a superseded navigation just skips the
+    // remaining work below — it never has to undo a DOM mutation. With `morph`,
+    // any matched `[data-bf-permanent]` node was moved into the new tree above,
+    // so it isn't here; with `morph: false` the permanent nodes stay in
+    // `outgoing` and are disposed normally.
+    await state.dispose(outgoing)
+    if (controller.signal.aborted) return
 
     // Register any island modules this response introduced before hydrating.
     await loadNewModules(state, content.moduleSrcs)
