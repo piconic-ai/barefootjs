@@ -97,6 +97,41 @@ already has — no new cross-page analysis:
    deepest outlet whose content differs is the swap point. Outer outlets and the
    shell keep their DOM and signal state.
 
+## Nested vs sibling outlets
+
+`<Outlet/>` placement encodes the relationship; the compiler reads it from the
+tree, so the author never declares "nested" or "parallel" explicitly:
+
+- **Nested** — `<Outlet>…<Outlet/>…</Outlet>` (DOM ancestor/descendant). The
+  deepest outlet whose owned content differs swaps; ancestors persist.
+- **Sibling** — `<><Outlet/>…<Outlet/></>` (adjacent). Each is an *independent*
+  swap region at the same level. The canonical case is **master–detail**: a list
+  pane and a detail pane, where navigating the detail leaves the list pane's DOM,
+  scroll, selection, and signal state intact.
+
+Both fall out of the **same** contract — no extra mechanism:
+
+1. fetch the full document, 2. match every `[bf-outlet=id]` by id, 3. swap only
+the outlets whose **owned content** (the DOM between an outlet and its descendant
+outlets) differs. Nesting yields "deepest differs"; siblings yield "each
+independent." Siblings just need **distinct** ids, which
+`outletId = <file scope>:<structural index>` provides automatically.
+
+**Content source.** A nested outlet naturally wraps `{children}`
+(`<Outlet>{children}</Outlet>`). Sibling outlets are most natural when the
+**page itself renders both regions** — the server emits one document containing
+both, so no named-slot machinery is needed. (If instead a *layout* wants to host
+two sibling regions fed from the page, a single `children` prop is insufficient;
+that needs two content channels / named slots and is left as an open ergonomic
+question.)
+
+**Not parallel routes.** Sibling outlets are multiple swap regions within a
+**single navigation driven by the one current URL** — they are *not* App Router
+parallel routes (`@slot` folders with per-slot route state and intercepting
+routes). Independent per-region navigation state would require the client route
+manifest this design rejects (see [Non-goals](#honest-limitations--what-a-true-derivation-would-still-require)
+and the router RFC). All outlets here are driven by the single current URL.
+
 ## IR & marker representation
 
 - Add `BF_OUTLET` (e.g. `bf-outlet`) to `packages/shared/src/markers.ts`
