@@ -59,7 +59,7 @@ string-matched). From the IR it already has, the compiler derives:
 - **Lowering** → the host element gets a `BF_REGION` (`bf-region`) marker via the
   same emit path as `needsScope` → `bf-s` (`renderElement`, hono-adapter). Add the
   marker to `packages/shared/src/markers.ts`, add `IRElement.regionId?: string`;
-  each adapter emits a static `bf-region="{id}"` (one line, no per-backend logic).
+  each adapter emits a static `bf-region="<id>"` attribute (one line, no per-backend logic).
 - **Stable id** = `<layout file scope>:<structural index>`, deterministic via
   `computeFileScope` (FNV hash, not per-run random). Layouts compile to a shared
   partial, so every page renders the *same* region markup with the *same* id —
@@ -83,7 +83,7 @@ string-matched). From the IR it already has, the compiler derives:
 On an interceptable same-origin click (or `navigate(href)`):
 
 1. Resolve the target page (SWR cache, else fetch full HTML).
-2. Match `[bf-region=id]` between current and incoming docs; the **deepest region
+2. Match `[bf-region="<id>"]` between current and incoming docs; the **deepest region
    whose owned content differs** is the swap point (fallback to the broadest region
    if an id is absent — the v0 single-region behavior).
 3. Dispose the swap point's owned scopes (fallback to `disposeScope`).
