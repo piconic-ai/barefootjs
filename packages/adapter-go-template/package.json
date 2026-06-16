@@ -67,6 +67,9 @@
     "url": "https://github.com/piconic-ai/barefootjs",
     "directory": "packages/adapter-go-template"
   },
+  "dependencies": {
+    "@barefootjs/shared": "workspace:*"
+  },
   "peerDependencies": {
     "@barefootjs/jsx": ">=0.2.0",
     "typescript": "^5.0.0"

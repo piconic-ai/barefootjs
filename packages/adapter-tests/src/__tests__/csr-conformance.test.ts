@@ -167,6 +167,16 @@ describe('CSR Conformance Tests', () => {
     //     default-prop limitation documented in CLAUDE.md.
     'pagination',
     'data-table',
+    // `bf-region` is an SSR hydration boundary marker emitted by the
+    // adapters' `renderElement` (the load-bearing path: it tags the
+    // server-rendered document the client router matches regions on).
+    // The CSR template-eval path constructs the `<Region>` wrapper div
+    // without the marker — emitting it on the client-built DOM is part of
+    // the deferred runtime region work (dispose/rehydrate, spec/router.md),
+    // not this lowering spike. The four-adapter SSR emit is pinned by the
+    // `region-boundary` JSX conformance test; only the CSR parity is
+    // out of scope here. Same SSR-only-marker divergence as the entries above.
+    'region-boundary',
   ])
 
   for (const fixture of jsxFixtures) {
