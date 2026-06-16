@@ -39,7 +39,13 @@ runAdapterConformanceTests({
   // hydration-scope concern tracked with #1896, not an expression gap.
   // Pinned here rather than in `expectedDiagnostics` because no BF101
   // fires anymore.
-  skipJsx: ['data-table'],
+  //
+  // `search-params` (router v0.5): the generic lowering mis-compiles
+  // `searchParams().get('sort')` to a hash access (`$searchParams->{get}`),
+  // dropping the call + arg; it needs dedicated env-signal lowering plus a
+  // per-request Perl `search_params` reader. Tracked in
+  // https://github.com/piconic-ai/barefootjs/issues/1922.
+  skipJsx: ['data-table', 'search-params'],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't

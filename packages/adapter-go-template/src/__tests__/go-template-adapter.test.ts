@@ -48,7 +48,13 @@ runAdapterConformanceTests({
   // components, which the nested-component slice constructor can't bake
   // yet (`item.ID` is on the loop datum, not the child's Input). Full
   // coverage remains at the Hono SSR + fixture-hydrate layers.
-  skipJsx: ['data-table'],
+  //
+  // `search-params` (router v0.5): `searchParams().get(k) ?? d` needs
+  // dedicated env-signal lowering (the generic lowering emits
+  // `{{or .SearchParams.Get "sort" "none"}}`, missing the parens that group the
+  // method call, so it renders empty) plus a Go-runtime `SearchParams` binding.
+  // Tracked in https://github.com/piconic-ai/barefootjs/issues/1922.
+  skipJsx: ['data-table', 'search-params'],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
   // shared fixtures) so adding a new adapter doesn't require touching

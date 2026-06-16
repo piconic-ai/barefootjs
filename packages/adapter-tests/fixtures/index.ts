@@ -144,6 +144,7 @@ import { fixture as recordIndexLookupViaChildProp } from './record-index-lookup-
 import { fixture as contextProvider } from './context-provider'
 import { fixture as asyncBoundary } from './async-boundary'
 import { fixture as regionBoundary } from './region-boundary'
+import { fixture as searchParamsFixture } from './search-params'
 // Priority 10: Compiler stress catalog (#1244)
 import { fixture as style3Signals } from './style-3-signals'
 import { fixture as jsxSpreadReactive } from './jsx-spread-reactive'
@@ -360,6 +361,7 @@ export const jsxFixtures: JSXFixture[] = [
   contextProvider,
   asyncBoundary,
   regionBoundary,
+  searchParamsFixture,
   // Priority 10: Compiler stress catalog (#1244)
   style3Signals,
   jsxSpreadReactive,

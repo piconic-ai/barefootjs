@@ -34,6 +34,9 @@ import { useRequestContext } from 'hono/jsx-renderer'
 // of this runtime/Workers-bundled module while sharing one importmap renderer.
 import { renderImportMapHtml, type ImportMapManifest } from '@barefootjs/jsx/import-map'
 import { createDevReloader } from './dev-worker.ts'
+// Side-effect import: auto-wires request-scoped `searchParams()` for SSR so any
+// Hono app rendering the BarefootJS scripts gets it without an opt-in step.
+import './search-params-ssr.ts'
 
 const DEV_RELOAD_ENDPOINT_KEY = 'bfDevReloadEndpoint'
 

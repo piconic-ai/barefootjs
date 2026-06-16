@@ -46,7 +46,13 @@ runAdapterConformanceTests({
   // `.map` (a hydration-scope concern tracked with #1896, not an
   // expression gap), so it's pinned in `skipJsx` rather than
   // `expectedDiagnostics` (no BF101 fires anymore).
-  skipJsx: ['data-table'],
+  //
+  // `search-params` (router v0.5): the generic lowering mis-compiles
+  // `searchParams().get('sort')` to a field access (`$searchParams.get`),
+  // dropping the call + arg; it needs dedicated env-signal lowering plus a
+  // per-request Perl `search_params` reader. Tracked in
+  // https://github.com/piconic-ai/barefootjs/issues/1922.
+  skipJsx: ['data-table', 'search-params'],
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.
