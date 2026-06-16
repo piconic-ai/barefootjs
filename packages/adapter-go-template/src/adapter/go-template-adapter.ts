@@ -4102,6 +4102,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`
     }
+    // Page-lifecycle boundary lowered from `<Region>` (spec/router.md). The id
+    // is a deterministic static string (`<file scope>:<index>`), so it emits as
+    // a plain literal attribute — no Go-template interpolation — exactly like
+    // the `bf=` slot marker above.
+    if (element.regionId) {
+      hydrationAttrs += ` bf-region="${element.regionId}"`
+    }
 
     const voidElements = [
       'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',

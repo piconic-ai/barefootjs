@@ -84,7 +84,7 @@ import ts from 'typescript'
  */
 type XslateRenderCtx = Record<string, never>
 import type { ParsedExpr, ParsedStatement, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 interface PrimitiveSpec {
   arity: number
@@ -653,6 +653,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     }
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`
+    }
+    // Page-lifecycle boundary lowered from `<Region>` (spec/router.md). The id
+    // is a deterministic static string (`<file scope>:<index>`), so it emits as
+    // a plain literal attribute — no Xslate template tag.
+    if (element.regionId) {
+      hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
 
     const voidElements = [
