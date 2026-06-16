@@ -1,19 +1,41 @@
 # @barefootjs/router
 
-Automatic **partial-navigation** client router for BarefootJS.
+Router for server-rendered sites that want the strongest client-side
+continuation possible without turning navigation into an SPA protocol.
 
-On a same-origin link click it swaps **only the content outlet** and
-re-hydrates the islands inside it — the surrounding shell (header,
-sidebar, pagination nav) stays mounted with its signal state intact.
-Think Turbo Drive / Turbo Frames, but the swap + re-hydration reuse
-BarefootJS's existing runtime instead of a separate framework.
+On a same-origin link click it fetches the next full HTML document, swaps
+**only one content outlet**, disposes the reactive scopes that belonged to
+the old page content, loads any newly required island modules, and
+re-hydrates the islands inside the new content. The surrounding shell
+(header, sidebar, pagination nav, global UI) stays mounted with its
+signal state intact. The goal is not merely to avoid reloading bytes of
+shell HTML; it is to avoid resetting shell-owned DOM, state, focusable UI,
+and long-lived effects while keeping ordinary links and ordinary server
+responses as the source of truth.
 
 ## Why this router
 
-- **Progressive enhancement:** links remain ordinary links and the server returns ordinary complete HTML documents. There is no client route table or router-specific request header.
-- **Backend independence:** any backend that renders the same outlet marker works without an adapter-specific protocol.
-- **Island-aware partial navigation:** the shell stays mounted, outgoing scopes are disposed, newly required modules load, and only incoming islands hydrate.
-- **Fast by intent:** hover/focus/press prefetch plus a bounded stale-while-revalidate cache reduces waits without sacrificing full-navigation fallback.
+- **Keep the web contract:** links remain ordinary links and the server returns ordinary complete HTML documents. There is no client route table, router-specific request header, or fragment endpoint to maintain.
+- **Preserve shell state:** global UI outside the outlet stays mounted across page changes, so nav/sidebar state, open panels, media players, and other shell-owned interactions do not reset just because the main content changed.
+- **Own the page lifecycle boundary:** the single outlet marks what belongs to the current page. Scopes inside it are disposed before replacement, newly required modules are loaded, and only the incoming content is hydrated.
+- **Feel fast without becoming an SPA:** hover/focus/press prefetch plus a bounded stale-while-revalidate cache reduces waits while every navigation can still fall back to a normal full-page load.
+
+## Design trade-off
+
+The outlet boundary is a spectrum, not a niche-only mode. A document-heavy site
+can choose a broad outlet around most of the body and get Turbo-like navigation:
+ordinary links, full HTML responses, prefetch, history, title updates, and normal
+full-page fallback. As the site grows more shared UI — navigation, filters,
+media, command palettes, drawers, or other stateful shell controls — the same
+contract lets the outlet move inward so that shell-owned DOM, effects, and state
+survive page changes.
+
+That is the intended super-set: start with MPA ergonomics, then optimize away
+only the browser work that is safe to preserve. The router avoids a client route
+manifest, loader protocol, or fragment endpoint, so adopting it should not force
+a site to stop being server-rendered. The added boundary must not make simple
+pages worse; it should become more valuable as the shell becomes more
+interactive.
 
 ## Why "automatic"
 
@@ -44,7 +66,9 @@ Mark the content region and start the router once on the client:
 ```
 
 That's it. Clicking `/blog/2` fetches the page, swaps the `<main bf-outlet>`
-contents, updates the URL + `<title>`, and re-hydrates the new islands.
+contents, updates the URL + `<title>`, disposes the old page-owned scopes,
+and re-hydrates the new islands. The `<main bf-outlet>` element itself stays
+mounted; only its children are replaced.
 
 ### Options
 
@@ -72,7 +96,11 @@ Opt a link out with `data-bf-router="false"`, `target`, `download`, or
 
 The router **always fetches the full page** and extracts `[bf-outlet]`
 client-side — zero backend gimmick, works against any backend (including
-the Go/Perl adapters). There is **no content-negotiation header**.
+the Go/Perl adapters). There is **no content-negotiation header**. This is
+more deliberate than a speed-only body swap: the outlet is the shell/page
+lifecycle boundary. A broad outlet behaves close to document navigation, while
+a narrower outlet preserves more shell continuity by tearing down and
+re-hydrating only page-owned reactive scopes.
 
 Returning just the outlet fragment from the server was considered and
 **deliberately dropped**: it would shave only highly-compressible shell
@@ -86,7 +114,7 @@ the payload.
 
 | Concern | Mechanism |
 |---|---|
-| Insert new HTML into a region | `replaceChildren` on the `[bf-outlet]` element |
+| Insert new HTML into a region | `replaceChildren` on the single `[bf-outlet]` element; the outlet element's own attributes are not replaced |
 | Load a navigated-to island's JS | import the response's `<script type="module" src>` (BfScripts) not already loaded — so a new island's `hydrate(name, def)` runs before re-hydration |
 | Re-hydrate freshly inserted scopes | `window.__bf_hydrate_within(outlet)` → `rehydrateScope(outlet)` (subtree-scoped, O(outlet)) |
 | Single-component fragment SSR | `renderToHtml(<Component/>)` from `@barefootjs/hono` |
@@ -164,9 +192,14 @@ The public surface is intentionally small: `startRouter`, `navigate`, `Router`, 
 
 ## Limitations & next steps
 
-- **No morph / persistent islands yet.** The outlet is fully replaced;
-  an island present on both pages is re-created. A `data-bf-permanent`
-  carry-over and idiomorph-style morphing are future work.
+- **Single outlet per shell.** The router coordinates one page-content outlet.
+  Multiple matching outlets are not a frame-router feature today; only the
+  first match is used by the current selector lookup. Keep persistent shell UI
+  outside the outlet and page-owned content inside it.
+- **No morph / persistent page islands yet.** The outlet element stays mounted,
+  but its children are fully replaced; an island present on both pages inside
+  the outlet is re-created. A `data-bf-permanent` carry-over and
+  idiomorph-style morphing are future work.
 - **No scroll restoration on back/forward.** The router resets to top.
 - **No focus management or route-change announcement yet.** After a swap,
   applications must move focus and announce the new route as appropriate.

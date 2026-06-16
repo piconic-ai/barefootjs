@@ -3,7 +3,7 @@
  */
 
 export interface RouterOptions {
-  /** CSS selector for the swappable content region. Defaults to `[bf-outlet]`. */
+  /** CSS selector for the single swappable page-content region. Defaults to `[bf-outlet]`. */
   outlet?: string
   /**
    * Called with the (post-swap) outlet element to re-hydrate the new islands.
