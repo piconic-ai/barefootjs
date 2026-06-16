@@ -1,269 +1,164 @@
-# Router Specification (RFC / Draft)
+# Router & Region Specification (RFC / Draft)
 
-> **Status:** RFC / Draft — supersedes the design shipped in
-> [#1910](https://github.com/piconic-ai/barefootjs/pull/1910), which was closed
-> "to rethink it." This document fixes the *vision and north star* first; the
-> package surface follows from it.
+> **Status:** RFC / Draft. Supersedes [#1910](https://github.com/piconic-ai/barefootjs/pull/1910)
+> (closed "to rethink it"). Fixes the vision and the **region** (page-lifecycle
+> boundary) model; the package surface follows from it.
 
 ## Vision
 
-**"A better MPA that earns continuity as the shell grows interactive — without
-ever adopting a client route manifest, loader protocol, or RSC payload."**
+**"A better MPA that earns continuity as the shell grows interactive — without a
+client route manifest, loader protocol, or RSC payload."**
 
-The router starts as ordinary multi-page navigation (plain `<a>`, plain
-complete HTML responses, any backend) and *progressively* preserves more of the
-browser's work — DOM, signal state, focusable UI, long-lived effects — only
-where it is safe to do so. It must never make a simple page worse than a plain
-server-rendered page; it should become *more* valuable as the shell becomes
-more interactive.
+Plain `<a>`, plain complete HTML, any backend. The router progressively preserves
+browser work (DOM, signal state, focus, long-lived effects) only where safe, and
+never makes a page worse than plain server rendering. Two responsibilities stay
+separate: the **router owns continuity**; the **SSR layer owns streaming/Suspense**.
 
-Two responsibilities are kept strictly separate:
+## Positioning
 
-- **The router owns continuity** — what survives a navigation and what is torn
-  down and re-hydrated.
-- **The SSR layer owns streaming/Suspense** — slow regions stream as ordinary
-  HTML from the backend. The router must *not break* that; it does not
-  implement a client-side Suspense protocol. (See [Suspense](#suspense--streaming).)
-
-## North star: compiler-derived nested regions
-
-A **region** is a page-lifecycle boundary: everything outside it persists
-across a navigation; everything inside it is disposed, re-loaded, and
-re-hydrated. PR #1910 modeled this as a *single, hand-authored* region on a
-broad↔narrow spectrum. That single cut cannot express what real apps need: a
-sidebar that updates with the route, a media player that must persist, and a
-content region that fully swaps are **three different persistence zones**, not
-one.
-
-The north star is therefore **nested regions derived by the compiler from the
-component tree** — which is the same idea as Next.js App Router's persistent
-nested layouts, minus RSC, minus Node lock-in, minus a non-HTML payload
-protocol:
-
-- Each level of the route/component tree has a **persistent layout** plus a
-  **swappable child region** (the nested region).
-- On navigation, only the deepest segments that actually changed are disposed
-  and re-hydrated; outer layouts keep their DOM and signal state.
-- The boundary is **emitted by the compiler** (`bf-region` markers derived from
-  the scope tree), not annotated per link and not hand-placed.
-
-**The single authored region is the degenerate (broadest) case of this model**,
-and remains the v0 contract while derivation is built. Adopting the router must
-never force a site to stop being server-rendered.
-
-## Positioning vs existing approaches
-
-| Approach | Nav unit | Continuity | Backend req. | Streaming/Suspense | Link annotation |
+| Approach | Nav unit | Continuity | Backend | Streaming | Link annotation |
 |---|---|---|---|---|---|
-| Plain MPA | full document | none | any | backend-owned | none |
-| Turbo / Turbolinks | full doc → body swap | `turbo-permanent` / Frames | any | Turbo Streams (manual) | per-Frame |
-| htmx | fragment | non-target survives | must return fragments | SSE / manual | per-link `hx-*` |
+| Plain MPA | full doc | none | any | backend | none |
+| Turbo | full doc → body swap | `turbo-permanent` / Frames | any | manual | per-Frame |
+| htmx | fragment | non-target survives | fragments | manual | per-link `hx-*` |
 | Next Pages Router | client transition | whole tree is SPA | Node/React | none | none |
-| Next App Router (RSC) | RSC payload | **nested layouts persist** | Node/React/bundler | **first-class** (`loading.tsx`) | none |
-| Inertia | JSON page object | persistent layout | server adapter | none | none |
-| Astro `<ClientRouter>` | full doc → swap | `transition:persist` | any (static/SSR) | View Transitions | none |
-| **BarefootJS Router** | full doc → **nested regions** | **scope-precise, compiler-derived** | **any** | **backend SSR layer** | **none** |
+| Next App Router (RSC) | RSC payload | nested layouts persist | Node/React | first-class | none |
+| Astro `<ClientRouter>` | full doc → swap | `transition:persist` | any | View Transitions | none |
+| **BarefootJS** | full doc → **nested regions** | **scope-precise** | **any** | **backend SSR** | **none** |
 
-Differentiators, in one line each:
+- **vs MPA** — prefetch + continuity, but never worse (always falls back to full load).
+- **vs Turbo** — scope-precise dispose/re-hydrate, not whole-body swap + manual `permanent`.
+- **vs App Router** — recover nested-layout continuity + streaming via islands + backend
+  streaming, dropping RSC, Node lock-in, the four-layer cache, and the non-HTML payload.
+- **vs Astro** — a real cross-route reactive graph + `searchParams()` reactivity.
 
-- **vs plain MPA** — prefetch + state continuity, but never worse; always falls
-  back to a full-page load.
-- **vs Turbo** — scope-precise dispose/re-hydrate instead of whole-body swap +
-  manual `permanent`; the boundary is compiler-derived, not hand-placed.
-- **vs htmx** — navigation-centric, zero per-link annotation; the server returns
-  ordinary pages, not fragments.
-- **vs App Router** — recover the good parts (nested-layout continuity,
-  streaming) via islands + backend streaming + derived nested regions, while
-  dropping RSC, Node lock-in, the four-layer cache, and the non-HTML payload.
-- **vs Inertia** — no server-side protocol adapter; plain HTML.
-- **vs Astro ClientRouter** — same MPA-island philosophy, but with a *real
-  cross-route reactive graph* and `searchParams()` reactivity (below) that
-  framework-siloed islands cannot offer.
+## Regions
 
-### The wedge: environment signals (`searchParams` first)
+A **region** is a page-lifecycle boundary: everything *outside* persists across a
+navigation; everything *inside* is disposed, re-loaded, and re-hydrated. Real apps
+have several persistence zones (a route-updating sidebar, a persistent player, a
+fully-swapping content area), so regions **nest**. The single broad region is the
+degenerate v0 case.
 
-URL-bearing, data-only state — sort / filter / paginate / search — is a large
-fraction of real apps. `searchParams()` is a reactive read of the query string:
-a same-route, query-only navigation updates the signal and the URL **with no
-region swap and no re-hydration**, and islands reconcile fine-grained. No other
-approach in the table offers this cleanly on an arbitrary backend. This is the
-headline capability and the strongest reason to adopt the router.
+**Author marks, compiler derives.** Zero-input inference of "which subtree is the
+shell" is not feasible: `bf build` compiles strictly per file
+(`discoverComponentFiles`, `packages/cli/src/lib/build.ts`) with no cross-page
+graph, so one page's tree never reveals that `Shell` is shared. (App Router
+`layout.tsx` and React Router `<Outlet/>` are authored too.) So the author places
+`<Region>` once and the compiler derives the rest:
 
-`searchParams` is the first instance of a broader idea: a **request-scoped
-reactive environment signal** — ambient request/browser state read correctly
-per-request under SSR and reactively on the client, with **no new compiler
-feature** (the existing `Reactive<>` brand wires the DOM updates). Cookies are a
-natural second instance and are deferred to a **follow-up** (preference-style,
-non-`httpOnly` cookies only; `httpOnly` cookies are invisible to client JS by
-design and are explicitly out of scope as client signals). The shared
-constructor (`createEnvSignal`) stays **internal** — only concrete instances
-(`searchParams`, later `cookie`) are exported, so the generic factory does not
-become a sanctioned extension point.
+```tsx
+export function Shell({ children }) {
+  return <div><Nav/><Region>{children}</Region></div>
+}
+```
 
-#### Packaging & purity
+`<Region>` is recognised by its `@barefootjs/client` import (structural, not
+string-matched). From the IR it already has, the compiler derives:
 
-- **Exported from `@barefootjs/client` top-level**, not a separate
-  `@barefootjs/router/signals` entry. The authoring import
-  (`import { searchParams } from '@barefootjs/client'`) is the **SSR-safe type
-  facade**; the real browser implementation lives in `@barefootjs/client/runtime`
-  (the compiler target). One package, no extra install.
-- **The singleton requirement dissolves.** Because the signal rides the shared
-  `@barefootjs/client/reactive` runtime that every island already imports, there
-  is structurally only one instance. The PR #1910 "two `searchString` signals
-  silently disconnect" failure mode cannot occur.
-- **`searchParams` owns no subscription side effect.** Reactivity to query
-  changes only matters when the router is present (without it, every query
-  change is a full navigation that re-reads on load). The **router** already
-  owns `popstate` and query-only navigation, so it **pushes** updates through a
-  seam (e.g. `__pushSearch(url.search)`); `searchParams()` is a near-pure read of
-  a **lazily-created** signal (initial value from `location.search`, a read, not
-  a side effect). No `addEventListener` lives in `searchParams` itself.
+- **Lowering** → the host element gets a `BF_REGION` (`bf-region`) marker via the
+  same emit path as `needsScope` → `bf-s` (`renderElement`, hono-adapter). Add the
+  marker to `packages/shared/src/markers.ts`, add `IRElement.regionId?: string`;
+  each adapter emits a static `bf-region="{id}"` (one line, no per-backend logic).
+- **Stable id** = `<layout file scope>:<structural index>`, deterministic via
+  `computeFileScope` (FNV hash, not per-run random). Layouts compile to a shared
+  partial, so every page renders the *same* region markup with the *same* id —
+  cross-page matching falls out for free. **This is the load-bearing requirement**
+  (random ids would break matching).
+- **Scope ownership** = each `bf-s` scope belongs to its nearest enclosing
+  `[bf-region]`. A swap disposes exactly those scopes, then re-hydrates the incoming
+  subtree via `rehydrateScope(root)` (O(subtree), `packages/client/src/runtime/hydrate.ts`).
 
-#### Tree-shaking contract
+**Nested vs sibling** — placement encodes it; nothing is declared:
 
-An island that never references `searchParams` must ship **zero** of it. This
-holds when:
+- Nested `<Region>…<Region/>…</Region>` → the deepest region whose owned content
+  differs swaps; ancestors persist.
+- Sibling `<><Region/><Region/></>` → independent regions (master–detail: the detail
+  swaps while the list pane keeps its DOM/scroll/state). Distinct ids are automatic.
+- Both are multiple swap regions within **one URL-driven navigation** — *not* App
+  Router parallel routes (per-region route state would need the route manifest we reject).
 
-1. **The authoring surface is side-effect-free** at module top level (no eager
-   listener or `location` read); the one lazy signal is confined to
-   `/runtime`. Add **`"sideEffects": false`** to `packages/client/package.json`
-   (currently absent — safe, since the client `src` has no import-time global
-   writes) to unlock cross-module DCE; if `/runtime` ever needs import-time
-   side effects, list those files instead of `false`.
-2. **It is reachable only via island imports** — the compiler emits the
-   `searchParams` import only for components that reference it, so it is never
-   baked unconditionally into the always-loaded shared bundle.
-3. **The router seam is a static import** in the (opt-in) router bundle; absent
-   the router, `__pushSearch` and its wiring are dead code and drop out.
+## Lifecycle
 
-#### Request-scoped SSR
+On an interceptable same-origin click (or `navigate(href)`):
 
-PR #1910 stored the query in a process-wide module-level signal, which races
-across concurrent SSR requests. The SSR value must instead come from an
-**adapter-specific per-request context** (no single shared type is implied):
-the Hono adapter reads the request via `useRequestContext().req`; Go/Perl
-adapters prime a well-known binding (e.g. `BfEnv.*`) that the handler fills from
-the request, which the template bakes into the initial render. A direct load of
-`/list?sort=price` then renders the correct state with no flash and no hydration
-mismatch.
+1. Resolve the target page (SWR cache, else fetch full HTML).
+2. Match `[bf-region=id]` between current and incoming docs; the **deepest region
+   whose owned content differs** is the swap point (fallback to the broadest region
+   if an id is absent — the v0 single-region behavior).
+3. Dispose the swap point's owned scopes (fallback to `disposeScope`).
+4. Load new island modules (`<script type=module src>` not yet loaded), resolving
+   relative `src` against the **response URL**, not `location`.
+5. `replaceChildren` + `rehydrateScope` on the incoming subtree; outer regions/shell untouched.
+6. Commit history + `<title>`, **preserving existing `history.state`**.
+7. Move focus to the swapped region and announce the route change.
+
+Query-only navigations short-circuit before step 2, abort any in-flight swap
+(last-wins), update `searchParams()` + the URL, and do not swap.
+
+## The wedge: environment signals (`searchParams` first)
+
+`searchParams()` is a reactive read of the query string: a same-route, query-only
+navigation updates the signal + URL **with no swap and no re-hydration**, and islands
+reconcile fine-grained — uniquely clean on an arbitrary backend. It is the first
+**request-scoped reactive environment signal** (ambient request/browser state, correct
+per-request under SSR, reactive on the client, with **no new compiler feature** — the
+existing `Reactive<>` brand wires it). Cookies (non-`httpOnly` only) are a follow-up;
+the generic `createEnvSignal` stays **internal** (only concrete instances are exported).
+
+- **Lives in `@barefootjs/client` top-level**, not a `@barefootjs/router/signals` entry.
+  The authoring import is the SSR-safe facade; the real impl is in `/runtime`. Riding
+  the shared `@barefootjs/client/reactive` runtime means there is structurally **one
+  instance** — the #1910 "two signals silently disconnect" failure cannot occur.
+- **No subscription side effect.** The router already owns `popstate`/query-only nav, so
+  it **pushes** updates through a seam (`__pushSearch`); `searchParams()` is a near-pure
+  read of a lazily-created signal. So an island that never uses it ships **zero** of it,
+  given `"sideEffects": false` on the client package and a static (opt-in) router seam.
+- **Request-scoped SSR.** Read the initial value from an adapter-specific per-request
+  context (Hono: `useRequestContext().req`; Go/Perl: a `BfEnv.*` binding the handler
+  fills and the template bakes in) — not a process-wide module global (which races).
 
 ## Suspense / streaming
 
-Suspense's value is real: a slow data region must not block the shell, and
-content should stream in. App Router delivers this but **couples it to RSC, a
-non-HTML payload, React, and Node/bundler integration** — exactly the lock-in
-this project rejects.
+Owned by the **backend SSR layer**, not a client protocol. Slow regions stream as
+ordinary out-of-order HTML (`@barefootjs/streaming`); the router only **must not break**
+in-flight streaming and re-hydrates islands as chunks land. The client-transition feel
+comes from prefetch + stale-while-revalidate (and an optional skeleton during a swap).
+No `<Suspense>` / `loading.tsx` / streaming protocol of its own.
 
-**Decision: streaming/Suspense is owned by the backend SSR layer, not by a
-client router protocol.**
+## Seams & correctness
 
-- Slow regions stream as ordinary out-of-order HTML from the backend (the
-  existing `@barefootjs/streaming` package is the seam). A placeholder renders
-  first; the late HTML chunk replaces it. This is plain HTML on any backend.
-- The router's only obligation is to **not break in-flight streaming** when it
-  extracts and swaps a region, and to re-hydrate islands as their chunks land.
-- The *client-transition* feel of Suspense (don't stare at a blank region) is
-  provided by **prefetch + stale-while-revalidate** (show cached/stale content
-  instantly) and, optionally, a skeleton shown during a structural swap and
-  replaced when the new region arrives.
+Must be **correct by default** — the #1910 failure (silent island leaks unless the dev
+calls `setupStreaming()`) is unacceptable. `startRouter()` installs the runtime seams
+itself; both `dispose` and `rehydrate` degrade through the **same** fallback chain ending
+at `@barefootjs/client/runtime` (`disposeScope`/`rehydrateScope`). Neither may silently no-op.
 
-The router therefore exposes **no** `<Suspense>`, `loading.tsx`, or streaming
-protocol of its own. "Suspense" is a property of how the backend renders, which
-BarefootJS already supports.
-
-## Lifecycle model
-
-On a same-origin, interceptable link click (or `navigate()`):
-
-1. **Resolve** the target page — from the SWR snapshot cache if fresh/aging,
-   else fetch the full HTML document.
-2. **Diff regions** — compare the current region tree to the incoming document's
-   region tree; determine the deepest changed segment(s). (v0: the single region
-   always "changes.")
-3. **Dispose** the reactive scopes owned by the outgoing segment(s), with a
-   guaranteed fallback to `disposeScope` (see [Seams](#seams--integration)).
-4. **Load** any newly required island modules (`import` of the response's
-   `<script type="module" src>` not already loaded), resolving relative `src`
-   against the **response URL**, not `window.location`.
-5. **Swap** the changed segment(s) via `replaceChildren`; outer layouts keep
-   their DOM and state.
-6. **Re-hydrate** only the freshly inserted scopes (subtree-scoped,
-   `O(region)`).
-7. **Commit** history and `<title>`, **preserving existing `history.state`**
-   (merge the `bfRouter` flag rather than overwriting).
-8. **Manage focus / announce** the route change (move focus to the changed
-   region, announce via a live region).
-
-Query-only navigations short-circuit before step 2, abort any in-flight
-structural swap (last-wins), update `searchParams()` + the URL, and do not swap.
-
-## Seams & integration
-
-The router integrates with `@barefootjs/client` through narrow seams, but must
-be **correct by default** — the PR #1910 failure mode (silent island leaks
-unless the developer happens to call `setupStreaming()`) is unacceptable.
-
-- `startRouter()` must install the runtime seams itself (or the client must
-  auto-install them), so the documented `startRouter()`-only usage gives correct
-  disposal and re-hydration.
-- Both `dispose` and `rehydrate` must degrade through the **same fallback
-  chain**, ending at the dynamic import of `@barefootjs/client/runtime`
-  (`disposeScope` / `rehydrateScope`). Neither may silently no-op.
-
-## Public surface (intentionally small)
+## Public surface
 
 - `startRouter(options?)` — install once on the client; no-op on the server.
-- `navigate(href)` — programmatic navigation; environment-guarded so an
-  accidental SSR call no-ops instead of throwing.
-
-`searchParams` is **not** a router export. It lives in `@barefootjs/client`
-(see [the wedge](#the-wedge-environment-signals-searchparams-first)); the router
-merely drives it through the `__pushSearch` seam on query-only navigation. There
-is no `@barefootjs/router/signals` entry — dropping it is what makes the
-singleton guarantee structural rather than a packaging contract.
-
-Router internals stay separated by responsibility: controller (events/history),
-region parsing, cache (fetch + freshness), seams (client-runtime integration).
+- `navigate(href)` — programmatic; environment-guarded (SSR no-op, not throw).
+- `searchParams` is a `@barefootjs/client` export, **not** a router export; the router
+  only drives it via `__pushSearch`. No `@barefootjs/router/signals` entry.
 
 ## Phased plan
 
-- **v0 — single authored region, correct by default.** Hand-placed `bf-region`;
-  `startRouter()` installs seams; `dispose`/`rehydrate` share a fallback;
-  `history.state` preserved; response-URL base resolution; focus/a11y on swap.
-  This is the "never worse than MPA" floor.
-- **v0.5 — `searchParams` done right.** Exported from `@barefootjs/client`
-  (lazy, side-effect-free, router-driven via `__pushSearch`); request-scoped SSR
-  state via an adapter-specific per-request context; `"sideEffects": false` on the client
-  package for clean tree-shaking. Cookies (`createEnvSignal` second instance,
-  non-`httpOnly` only) are a later follow-up.
-- **v1 — persistence within a region.** `data-bf-permanent` carry-over and
-  idiomorph-style morphing so an island present on both pages is not needlessly
-  re-created.
-- **v2 — compiler-derived nested regions.** The compiler emits the nested
-  `bf-region` boundaries from the scope/component tree; the router diffs the
-  region tree and swaps only the deepest changed segments. This is the north
-  star.
+- **v0 — single authored region, correct by default.** Seams auto-install; shared
+  dispose/rehydrate fallback; `history.state` preserved; response-URL base resolution;
+  focus/a11y on swap. The "never worse than MPA" floor.
+- **v0.5 — `searchParams` done right.** In `@barefootjs/client` (lazy, side-effect-free,
+  router-driven); request-scoped SSR; `"sideEffects": false`. Cookies later.
+- **v1 — persistence within a region.** `data-bf-permanent` + idiomorph-style morphing.
+- **v2 — compiler-derived nested regions.** Smallest proof: `BF_REGION` + `IRElement.regionId`
+  + `<Region>` lowering in `jsx-to-ir.ts`; a Hono fixture asserting a stable id reused
+  across two pages; a runtime test for nearest-enclosing-region dispose + subtree rehydrate.
 
-## Open questions
+## Limitations & non-goals
 
-- How is the nested-region boundary derived from the scope tree, and how is it
-  represented in the IR so every adapter can emit it?
-- What is the default focus target and the a11y announcement API after a swap?
-- How does region-tree diffing interact with backend streaming when a changed
-  segment is still streaming at swap time?
-- What per-request context do env signals read at SSR in each adapter (Hono via
-  `useRequestContext().req`), and how do non-Node adapters (Go/Perl) prime the
-  `BfEnv.*` binding from the request?
-- For the cookie follow-up: how is a single-key view (`cookie('theme')`) typed,
-  and what is the change-observation fallback where the CookieStore API is
-  unavailable (no native same-tab cookie event)?
-- Should prefetch's modulepreload links and dedupe set be capped/pruned (they
-  are session-lived today) once sessions are long-lived?
-
-## Non-goals
-
-- A client route manifest, loader protocol, or fragment endpoint.
-- An RSC-style server/client component boundary or non-HTML navigation payload.
-- A client-owned Suspense protocol (streaming belongs to the SSR layer).
-- A content-negotiation/navigation header — the router always fetches ordinary
-  complete HTML so it works against any backend, including the Go/Perl adapters.
+- True zero-input region inference would need a separate, fragile cross-page diff pass
+  (lone-page layouts, conditional shells, per-route layouts confound it). Ship authored
+  boundaries first; treat inference as a later optional lint/codemod.
+- Permanent islands and scope-ownership edge cases (portals, context/loops crossing a
+  region) need conformance fixtures before v2 is more than a sketch.
+- No scroll restoration; modulepreload links/dedupe set are session-lived (cap later).
+- **Non-goals:** client route manifest / loader protocol / fragment endpoint; RSC-style
+  boundary or non-HTML payload; client-owned Suspense protocol; navigation/content-negotiation header.
