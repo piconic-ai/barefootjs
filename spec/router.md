@@ -25,29 +25,29 @@ Two responsibilities are kept strictly separate:
   HTML from the backend. The router must *not break* that; it does not
   implement a client-side Suspense protocol. (See [Suspense](#suspense--streaming).)
 
-## North star: compiler-derived nested outlets
+## North star: compiler-derived nested regions
 
-An **outlet** is a page-lifecycle boundary: everything outside it persists
+A **region** is a page-lifecycle boundary: everything outside it persists
 across a navigation; everything inside it is disposed, re-loaded, and
-re-hydrated. PR #1910 modeled this as a *single, hand-authored* outlet on a
+re-hydrated. PR #1910 modeled this as a *single, hand-authored* region on a
 broad↔narrow spectrum. That single cut cannot express what real apps need: a
 sidebar that updates with the route, a media player that must persist, and a
 content region that fully swaps are **three different persistence zones**, not
 one.
 
-The north star is therefore **nested outlets derived by the compiler from the
+The north star is therefore **nested regions derived by the compiler from the
 component tree** — which is the same idea as Next.js App Router's persistent
 nested layouts, minus RSC, minus Node lock-in, minus a non-HTML payload
 protocol:
 
 - Each level of the route/component tree has a **persistent layout** plus a
-  **swappable child region** (the nested outlet).
+  **swappable child region** (the nested region).
 - On navigation, only the deepest segments that actually changed are disposed
   and re-hydrated; outer layouts keep their DOM and signal state.
-- The boundary is **emitted by the compiler** (`bf-outlet` markers derived from
+- The boundary is **emitted by the compiler** (`bf-region` markers derived from
   the scope tree), not annotated per link and not hand-placed.
 
-**The single authored outlet is the degenerate (broadest) case of this model**,
+**The single authored region is the degenerate (broadest) case of this model**,
 and remains the v0 contract while derivation is built. Adopting the router must
 never force a site to stop being server-rendered.
 
@@ -62,7 +62,7 @@ never force a site to stop being server-rendered.
 | Next App Router (RSC) | RSC payload | **nested layouts persist** | Node/React/bundler | **first-class** (`loading.tsx`) | none |
 | Inertia | JSON page object | persistent layout | server adapter | none | none |
 | Astro `<ClientRouter>` | full doc → swap | `transition:persist` | any (static/SSR) | View Transitions | none |
-| **BarefootJS Router** | full doc → **nested outlets** | **scope-precise, compiler-derived** | **any** | **backend SSR layer** | **none** |
+| **BarefootJS Router** | full doc → **nested regions** | **scope-precise, compiler-derived** | **any** | **backend SSR layer** | **none** |
 
 Differentiators, in one line each:
 
@@ -73,7 +73,7 @@ Differentiators, in one line each:
 - **vs htmx** — navigation-centric, zero per-link annotation; the server returns
   ordinary pages, not fragments.
 - **vs App Router** — recover the good parts (nested-layout continuity,
-  streaming) via islands + backend streaming + derived nested outlets, while
+  streaming) via islands + backend streaming + derived nested regions, while
   dropping RSC, Node lock-in, the four-layer cache, and the non-HTML payload.
 - **vs Inertia** — no server-side protocol adapter; plain HTML.
 - **vs Astro ClientRouter** — same MPA-island philosophy, but with a *real
@@ -85,7 +85,7 @@ Differentiators, in one line each:
 URL-bearing, data-only state — sort / filter / paginate / search — is a large
 fraction of real apps. `searchParams()` is a reactive read of the query string:
 a same-route, query-only navigation updates the signal and the URL **with no
-outlet swap and no re-hydration**, and islands reconcile fine-grained. No other
+region swap and no re-hydration**, and islands reconcile fine-grained. No other
 approach in the table offers this cleanly on an arbitrary backend. This is the
 headline capability and the strongest reason to adopt the router.
 
@@ -161,11 +161,11 @@ client router protocol.**
   existing `@barefootjs/streaming` package is the seam). A placeholder renders
   first; the late HTML chunk replaces it. This is plain HTML on any backend.
 - The router's only obligation is to **not break in-flight streaming** when it
-  extracts and swaps an outlet, and to re-hydrate islands as their chunks land.
+  extracts and swaps a region, and to re-hydrate islands as their chunks land.
 - The *client-transition* feel of Suspense (don't stare at a blank region) is
   provided by **prefetch + stale-while-revalidate** (show cached/stale content
   instantly) and, optionally, a skeleton shown during a structural swap and
-  replaced when the new outlet arrives.
+  replaced when the new region arrives.
 
 The router therefore exposes **no** `<Suspense>`, `loading.tsx`, or streaming
 protocol of its own. "Suspense" is a property of how the backend renders, which
@@ -177,8 +177,8 @@ On a same-origin, interceptable link click (or `navigate()`):
 
 1. **Resolve** the target page — from the SWR snapshot cache if fresh/aging,
    else fetch the full HTML document.
-2. **Diff outlets** — compare the current outlet tree to the incoming document's
-   outlet tree; determine the deepest changed segment(s). (v0: the single outlet
+2. **Diff regions** — compare the current region tree to the incoming document's
+   region tree; determine the deepest changed segment(s). (v0: the single region
    always "changes.")
 3. **Dispose** the reactive scopes owned by the outgoing segment(s), with a
    guaranteed fallback to `disposeScope` (see [Seams](#seams--integration)).
@@ -188,7 +188,7 @@ On a same-origin, interceptable link click (or `navigate()`):
 5. **Swap** the changed segment(s) via `replaceChildren`; outer layouts keep
    their DOM and state.
 6. **Re-hydrate** only the freshly inserted scopes (subtree-scoped,
-   `O(outlet)`).
+   `O(region)`).
 7. **Commit** history and `<title>`, **preserving existing `history.state`**
    (merge the `bfRouter` flag rather than overwriting).
 8. **Manage focus / announce** the route change (move focus to the changed
@@ -223,11 +223,11 @@ is no `@barefootjs/router/signals` entry — dropping it is what makes the
 singleton guarantee structural rather than a packaging contract.
 
 Router internals stay separated by responsibility: controller (events/history),
-outlet parsing, cache (fetch + freshness), seams (client-runtime integration).
+region parsing, cache (fetch + freshness), seams (client-runtime integration).
 
 ## Phased plan
 
-- **v0 — single authored outlet, correct by default.** Hand-placed `bf-outlet`;
+- **v0 — single authored region, correct by default.** Hand-placed `bf-region`;
   `startRouter()` installs seams; `dispose`/`rehydrate` share a fallback;
   `history.state` preserved; response-URL base resolution; focus/a11y on swap.
   This is the "never worse than MPA" floor.
@@ -236,20 +236,20 @@ outlet parsing, cache (fetch + freshness), seams (client-runtime integration).
   state via an adapter-specific per-request context; `"sideEffects": false` on the client
   package for clean tree-shaking. Cookies (`createEnvSignal` second instance,
   non-`httpOnly` only) are a later follow-up.
-- **v1 — persistence within an outlet.** `data-bf-permanent` carry-over and
+- **v1 — persistence within a region.** `data-bf-permanent` carry-over and
   idiomorph-style morphing so an island present on both pages is not needlessly
   re-created.
-- **v2 — compiler-derived nested outlets.** The compiler emits the nested
-  `bf-outlet` boundaries from the scope/component tree; the router diffs the
-  outlet tree and swaps only the deepest changed segments. This is the north
+- **v2 — compiler-derived nested regions.** The compiler emits the nested
+  `bf-region` boundaries from the scope/component tree; the router diffs the
+  region tree and swaps only the deepest changed segments. This is the north
   star.
 
 ## Open questions
 
-- How is the nested-outlet boundary derived from the scope tree, and how is it
+- How is the nested-region boundary derived from the scope tree, and how is it
   represented in the IR so every adapter can emit it?
 - What is the default focus target and the a11y announcement API after a swap?
-- How does outlet-tree diffing interact with backend streaming when a changed
+- How does region-tree diffing interact with backend streaming when a changed
   segment is still streaming at swap time?
 - What per-request context do env signals read at SSR in each adapter (Hono via
   `useRequestContext().req`), and how do non-Node adapters (Go/Perl) prime the
