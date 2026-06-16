@@ -1028,7 +1028,7 @@ describe('<Async> inside .map() — per-item streaming boundary', () => {
   test('async boundary used inside a loop body', () => {
     const src = `
       'use client'
-      import { createSignal } from '@barefootjs/client'
+      import { createSignal, Async } from '@barefootjs/client'
       function Card({ id }: { id: string }) { return <span>{id}</span> }
       export function Demo() {
         const [items, setItems] = createSignal<{ id: string }[]>([])
@@ -1053,7 +1053,7 @@ describe('.map() inside <Async> — loop body wired after async chunk lands', ()
   test('map call inside an async boundary body', () => {
     const src = `
       'use client'
-      import { createSignal } from '@barefootjs/client'
+      import { createSignal, Async } from '@barefootjs/client'
       export function Demo() {
         const [items, setItems] = createSignal<{ id: string; label: string }[]>([])
         return (
@@ -1087,6 +1087,7 @@ describe('<Async> body error path — sync throw + async reject (#1375)', () => 
 
   test('synchronously-throwing body component compiles to a clean boundary', () => {
     const src = `
+      import { Async } from '@barefootjs/client'
       export function Demo() {
         return (
           <Async fallback={<p>Fallback</p>}>
@@ -1100,6 +1101,7 @@ describe('<Async> body error path — sync throw + async reject (#1375)', () => 
 
   test('async (Promise-returning) body component compiles to a clean boundary', () => {
     const src = `
+      import { Async } from '@barefootjs/client'
       export function Demo() {
         return (
           <Async fallback={<Skeleton />}>

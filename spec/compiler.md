@@ -261,6 +261,35 @@ Helpers exported from `@barefootjs/jsx`:
 | `error` | Compilation error is expected |
 | `n/a` | Not applicable (Out of Scope items) |
 
+### Import-scoped built-ins (`<Async>` / `<Region>`)
+
+`<Async>` (streaming boundary → `IRAsync`, e.g. Hono `<Suspense>`) and
+`<Region>` (page-lifecycle boundary → `bf-region`, `spec/router.md`) are
+compiler built-ins that are **compiled away** — no runtime value survives in
+the emitted output. They are recognised **import-scoped**: the compiler treats
+a tag as the built-in only when its local binding is imported from
+`@barefootjs/client` (keyed off `ir.metadata.imports`), never by a bare
+capitalized tag-name match. This is the same model `Portal` already follows and
+mirrors how Solid imports `<Show>` / `<Suspense>` from `solid-js`.
+
+```tsx
+import { Async, Region } from '@barefootjs/client'
+```
+
+- **Provenance & collision safety** — a user's own `<Async>` / `<Region>`
+  component (imported from elsewhere or declared locally) does not collide with
+  the built-in. An aliased `import { Async as Boundary }` maps `<Boundary>` to
+  the built-in.
+- **Diagnostic** — a bare `<Async>` / `<Region>` used without the import and
+  with no other in-scope binding raises `BF054` (import the built-in).
+- **Emit-time elision** — the `@barefootjs/client` import of these tags is
+  stripped on emit (`templateImports` and the client-JS DOM imports) so it never
+  lingers as a phantom runtime import. Real type-checked stubs ship from
+  `@barefootjs/client` (`packages/client/src/builtins.ts`).
+
+The runtime stubs throw if ever executed — reaching them means the JSX was
+rendered outside the compiler pipeline. See piconic-ai/barefootjs#1915.
+
 ### Hydration Markers
 
 1. **Marked Template**: Template with hydration markers (used for both SSR and CSR)

@@ -1648,6 +1648,9 @@ const CLIENT_EXPORTS = new Set([
   'forwardProps', 'unwrap', '__slot',
   'createContext', 'useContext', 'provideContext',
   'createPortal', 'isSSRPortal', 'findSiblingSlot', 'cleanupPortalPlaceholder',
+  // Compile-away JSX built-ins (#1915) — importing them is what scopes the
+  // compiler's `<Async>` / `<Region>` recognition; the import is elided on emit.
+  'Async', 'Region',
 ])
 
 /**

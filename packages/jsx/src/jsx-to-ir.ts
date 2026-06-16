@@ -35,6 +35,7 @@ import {
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, extractSortComparatorFromTS, cssKebabCase, type ParsedExpr, type ParsedStatement, type SortComparator } from './expression-parser.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
+import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
 import { containsReactiveExpression } from './reactivity-checker.ts'
 import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
@@ -140,6 +141,14 @@ interface TransformContext {
    * See #1425.
    */
   _branchScopePropDeps?: Map<string, Set<string>>
+  /**
+   * Lazily computed map of local JSX tag name → compile-away built-in
+   * (`Async` / `Region`), derived from `@barefootjs/client` imports (#1915).
+   * Recognition is import-scoped (not a bare tag-name match) so a user's own
+   * `<Async>` / `<Region>` component doesn't collide with the built-in, and an
+   * aliased `import { Async as Boundary }` maps `<Boundary>` to the built-in.
+   */
+  _clientBuiltinTags?: Map<string, ClientBuiltinTag>
 }
 
 /**
@@ -709,6 +718,91 @@ function transformNode(node: ts.Node, ctx: TransformContext): IRNode | null {
 // JSX Element Transformation
 // =============================================================================
 
+/**
+ * Map a local JSX tag name to its compile-away built-in (`Async` / `Region`)
+ * if it was imported from `@barefootjs/client` (#1915). Recognition is
+ * import-scoped — keyed off `imports` metadata, never a bare tag-name match —
+ * so a user's own `<Async>` / `<Region>` component does not collide with the
+ * built-in, and `import { Async as Boundary }` maps `<Boundary>` to it.
+ * Memoized on `ctx`; the import list is fixed for the compile.
+ */
+function clientBuiltinTags(ctx: TransformContext): Map<string, ClientBuiltinTag> {
+  if (ctx._clientBuiltinTags) return ctx._clientBuiltinTags
+  const map = new Map<string, ClientBuiltinTag>()
+  for (const imp of ctx.analyzer.imports) {
+    if (imp.source !== CLIENT_BUILTIN_SOURCE) continue
+    for (const spec of imp.specifiers) {
+      if (spec.isDefault || spec.isNamespace) continue
+      if (isClientBuiltinName(spec.name)) {
+        map.set(spec.alias ?? spec.name, spec.name)
+      }
+    }
+  }
+  ctx._clientBuiltinTags = map
+  return map
+}
+
+/**
+ * Whether `name` resolves to any in-scope value binding — an import (by its
+ * local name), a local function / constant, or an ambient `declare`. Used to
+ * keep the BF054 "import the built-in" diagnostic from firing when the author
+ * legitimately has their own `<Async>` / `<Region>` binding.
+ */
+function isNameBound(ctx: TransformContext, name: string): boolean {
+  const a = ctx.analyzer
+  if (a.ambientGlobals.has(name)) return true
+  if (a.localFunctions.some(f => f.name === name)) return true
+  if (a.localConstants.some(c => c.name === name)) return true
+  for (const imp of a.imports) {
+    for (const spec of imp.specifiers) {
+      if ((spec.alias ?? spec.name) === name) return true
+    }
+  }
+  return false
+}
+
+function reportBuiltinNotImported(
+  ctx: TransformContext,
+  node: ts.Node,
+  tagName: ClientBuiltinTag,
+): void {
+  ctx.analyzer.errors.push(
+    createError(
+      ErrorCodes.BUILTIN_REQUIRES_IMPORT,
+      getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+      {
+        severity: 'error',
+        message: `<${tagName}> must be imported from '${CLIENT_BUILTIN_SOURCE}' to be recognised as a compiler built-in.`,
+        suggestion: {
+          message: `Add: import { ${tagName} } from '${CLIENT_BUILTIN_SOURCE}'`,
+        },
+      },
+    ),
+  )
+}
+
+/**
+ * Dispatch a built-in JSX tag (`Async` / `Region`) when import-scoped
+ * recognition matches, or emit BF054 when the bare built-in name is used
+ * without the import and without any other in-scope binding. Returns the
+ * lowered IR node, or `null` to fall through to normal component handling.
+ */
+function dispatchClientBuiltin(
+  tagName: string,
+  ctx: TransformContext,
+  diagNode: ts.Node,
+  transformAsync: () => IRNode,
+  transformRegion: () => IRNode,
+): IRNode | null {
+  const builtin = clientBuiltinTags(ctx).get(tagName)
+  if (builtin === 'Async') return transformAsync()
+  if (builtin === 'Region') return transformRegion()
+  if (isClientBuiltinName(tagName) && !isNameBound(ctx, tagName)) {
+    reportBuiltinNotImported(ctx, diagNode, tagName)
+  }
+  return null
+}
+
 function transformJsxElement(
   node: ts.JsxElement,
   ctx: TransformContext
@@ -720,15 +814,16 @@ function transformJsxElement(
     return transformProviderElement(node, ctx, tagName)
   }
 
-  // Detect Async streaming boundary: <Async fallback={...}>
-  if (tagName === 'Async') {
-    return transformAsyncElement(node, ctx)
-  }
-
-  // Detect Region page-lifecycle boundary: <Region>{children}</Region>
-  if (tagName === 'Region') {
-    return transformRegionElement(node, ctx)
-  }
+  // Detect compile-away built-ins (`<Async>` / `<Region>`), recognised by
+  // their `@barefootjs/client` import rather than by tag name (#1915).
+  const builtin = dispatchClientBuiltin(
+    tagName,
+    ctx,
+    node.openingElement,
+    () => transformAsyncElement(node, ctx),
+    () => transformRegionElement(node, ctx),
+  )
+  if (builtin) return builtin
 
   const isComponent = /^[A-Z]/.test(tagName)
 
@@ -791,15 +886,16 @@ function transformSelfClosingElement(
     return transformSelfClosingProviderElement(node, ctx, tagName)
   }
 
-  // Detect Async streaming boundary: <Async ... />
-  if (tagName === 'Async') {
-    return transformSelfClosingAsyncElement(node, ctx)
-  }
-
-  // Detect Region page-lifecycle boundary: <Region />
-  if (tagName === 'Region') {
-    return transformSelfClosingRegionElement(node, ctx)
-  }
+  // Detect compile-away built-ins (`<Async />` / `<Region />`), recognised by
+  // their `@barefootjs/client` import rather than by tag name (#1915).
+  const builtin = dispatchClientBuiltin(
+    tagName,
+    ctx,
+    node,
+    () => transformSelfClosingAsyncElement(node, ctx),
+    () => transformSelfClosingRegionElement(node, ctx),
+  )
+  if (builtin) return builtin
 
   const isComponent = /^[A-Z]/.test(tagName)
 
@@ -1026,8 +1122,8 @@ function transformSelfClosingAsyncElement(
  * `bf-region` marker (spec/router.md "Regions"). The id is deterministic —
  * `<file scope>:<index>` — so a layout that compiles to one shared partial
  * emits the *same* id across every page that composes it, which is what the
- * client router matches on. `<Region>` is recognised by its capitalized tag
- * name here; import-scoped disambiguation is a follow-up.
+ * client router matches on. `<Region>` is recognised by its `@barefootjs/client`
+ * import (import-scoped, not a bare tag-name match — #1915).
  */
 function regionId(ctx: TransformContext): string {
   return `${computeFileScope(ctx.filePath)}:${ctx.regionIdCounter++}`

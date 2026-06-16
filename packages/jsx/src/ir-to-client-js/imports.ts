@@ -3,6 +3,7 @@
  */
 
 import type { ComponentIR, IRNode } from '../types.ts'
+import { isClientBuiltinName } from '../builtins.ts'
 
 // All exports from @barefootjs/client/runtime that may be used in generated code
 export const RUNTIME_IMPORT_CANDIDATES = [
@@ -62,6 +63,10 @@ export function collectUserDomImports(ir: ComponentIR): string[] {
     if (runtimeSources.has(imp.source) && !imp.isTypeOnly) {
       for (const spec of imp.specifiers) {
         if (!spec.isDefault && !spec.isNamespace) {
+          // Compile-away built-ins (`<Async>` / `<Region>`) are lowered into
+          // the template — never emit their import into the client bundle,
+          // where it would be a phantom runtime import (#1915).
+          if (isClientBuiltinName(spec.name)) continue
           userImports.push(spec.alias ? `${spec.name} as ${spec.alias}` : spec.name)
         }
       }

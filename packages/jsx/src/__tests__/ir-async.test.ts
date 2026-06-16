@@ -11,6 +11,7 @@ const adapter = new TestAdapter()
 describe('<Async> streaming boundary', () => {
   test('transforms <Async> with fallback and children into IRAsync', () => {
     const source = `
+      import { Async } from '@barefootjs/client'
       export function ProductPage() {
         return (
           <div>
@@ -48,6 +49,7 @@ describe('<Async> streaming boundary', () => {
 
   test('assigns sequential IDs to multiple async boundaries', () => {
     const source = `
+      import { Async } from '@barefootjs/client'
       export function Dashboard() {
         return (
           <div>
@@ -76,6 +78,7 @@ describe('<Async> streaming boundary', () => {
 
   test('fallback can be a self-closing element', () => {
     const source = `
+      import { Async } from '@barefootjs/client'
       export function Page() {
         return (
           <Async fallback={<Skeleton />}>
@@ -98,6 +101,7 @@ describe('<Async> streaming boundary', () => {
 
   test('reports BF046 when fallback prop is missing and emits a fragment stub', () => {
     const source = `
+      import { Async } from '@barefootjs/client'
       export function Page() {
         return (
           <Async>
@@ -123,6 +127,7 @@ describe('<Async> streaming boundary', () => {
 
   test('reports BF046 when self-closing <Async /> is missing fallback', () => {
     const source = `
+      import { Async } from '@barefootjs/client'
       export function Page() {
         return <Async />
       }
@@ -162,6 +167,7 @@ describe('<Async> streaming boundary', () => {
 
   test('body component that throws at render keeps fallback + child wired on the boundary', () => {
     const source = `
+      import { Async } from '@barefootjs/client'
       export function Page() {
         return (
           <Async fallback={<p>Fallback</p>}>
@@ -190,6 +196,7 @@ describe('<Async> streaming boundary', () => {
 
   test('async (Promise-returning) body component keeps the boundary intact', () => {
     const source = `
+      import { Async } from '@barefootjs/client'
       export function Page() {
         return (
           <Async fallback={<Skeleton />}>
@@ -218,6 +225,7 @@ describe('<Async> streaming boundary', () => {
     // and the BF046 diagnostic must reach result.errors so consumers can
     // fail the build.
     const source = `
+      import { Async } from '@barefootjs/client'
       export function Page() {
         return (
           <Async>

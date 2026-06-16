@@ -29,6 +29,7 @@ function templateOf(source: string): string {
 describe('compiled <Async> boundary — ErrorBoundary wrapping (#1375)', () => {
   test('emits ErrorBoundary enclosing Suspense, sharing the fallback', () => {
     const template = templateOf(`
+      import { Async } from '@barefootjs/client'
       export function Page() {
         return (
           <div>
@@ -52,6 +53,7 @@ describe('compiled <Async> boundary — ErrorBoundary wrapping (#1375)', () => {
 
   test('injects the aliased ErrorBoundary import alongside Suspense', () => {
     const template = templateOf(`
+      import { Async } from '@barefootjs/client'
       export function Page() {
         return (
           <Async fallback={<p>Loading...</p>}>
@@ -71,6 +73,7 @@ describe('compiled <Async> boundary — ErrorBoundary wrapping (#1375)', () => {
     // injected Hono import to duplicate the user's own `ErrorBoundary`
     // binding (which would be a "Duplicate identifier" build error).
     const template = templateOf(`
+      import { Async } from '@barefootjs/client'
       import { ErrorBoundary } from './my-error-boundary'
       export function Page() {
         return (
@@ -91,6 +94,7 @@ describe('compiled <Async> boundary — ErrorBoundary wrapping (#1375)', () => {
 
   test('each of multiple boundaries gets its own ErrorBoundary wrapper', () => {
     const template = templateOf(`
+      import { Async } from '@barefootjs/client'
       export function Dashboard() {
         return (
           <div>

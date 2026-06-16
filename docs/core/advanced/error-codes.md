@@ -227,6 +227,35 @@ function Child({ initialCount }: Props) {
 <Child count={count()} />
 ```
 
+### BF054 — Built-in `<Async>` / `<Region>` Used Without Import
+
+**Trigger:** A bare `<Async>` or `<Region>` tag is used without importing it
+from `@barefootjs/client`, and no other binding with that name is in scope.
+These compiler built-ins are recognised by their import (not by tag name), so
+an unimported tag is treated as an undeclared component.
+
+```tsx
+// ❌ BF054
+export function Page() {
+  return <Async fallback={<p>Loading…</p>}><Body /></Async>
+}
+```
+
+**Fix:** Import the built-in from `@barefootjs/client`.
+
+```tsx
+// ✅ Fixed
+import { Async } from '@barefootjs/client'
+
+export function Page() {
+  return <Async fallback={<p>Loading…</p>}><Body /></Async>
+}
+```
+
+> A component of your own named `Async` / `Region` does **not** trip BF054 as
+> long as it is imported or declared — the built-in only applies to the
+> `@barefootjs/client` import.
+
 ---
 
 ## Suppressing Warnings
@@ -259,3 +288,4 @@ function Component({ checked }: Props) {
 | BF023 | Error | Missing key in list |
 | BF043 | Warning | Props destructuring breaks reactivity |
 | BF044 | Error | Signal/memo getter passed without calling it |
+| BF054 | Error | Built-in `<Async>` / `<Region>` used without `@barefootjs/client` import |
