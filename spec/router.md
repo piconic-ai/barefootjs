@@ -80,29 +80,71 @@ Differentiators, in one line each:
   cross-route reactive graph* and `searchParams()` reactivity (below) that
   framework-siloed islands cannot offer.
 
-### The wedge: `searchParams()`
+### The wedge: environment signals (`searchParams` first)
 
 URL-bearing, data-only state — sort / filter / paginate / search — is a large
-fraction of real apps. `@barefootjs/router/signals` exposes `searchParams()` as
-a reactive read of the query string: a same-route, query-only navigation updates
-the signal and the URL **with no outlet swap and no re-hydration**, and islands
-reconcile fine-grained. No other approach in the table offers this cleanly on an
-arbitrary backend. This is the headline capability and the strongest reason to
-adopt the router.
+fraction of real apps. `searchParams()` is a reactive read of the query string:
+a same-route, query-only navigation updates the signal and the URL **with no
+outlet swap and no re-hydration**, and islands reconcile fine-grained. No other
+approach in the table offers this cleanly on an arbitrary backend. This is the
+headline capability and the strongest reason to adopt the router.
 
-Two architectural requirements that PR #1910 got wrong and this RFC makes
-load-bearing:
+`searchParams` is the first instance of a broader idea: a **request-scoped
+reactive environment signal** — ambient request/browser state read correctly
+per-request under SSR and reactively on the client, with **no new compiler
+feature** (the existing `Reactive<>` brand wires the DOM updates). Cookies are a
+natural second instance and are deferred to a **follow-up** (preference-style,
+non-`httpOnly` cookies only; `httpOnly` cookies are invisible to client JS by
+design and are explicitly out of scope as client signals). The shared
+constructor (`createEnvSignal`) stays **internal** — only concrete instances
+(`searchParams`, later `cookie`) are exported, so the generic factory does not
+become a sanctioned extension point.
 
-1. **Request-scoped SSR state, not a module global.** PR #1910 stored the query
-   in a process-wide module-level signal, which races across concurrent SSR
-   requests. The SSR value must live in the adapter's **per-request context**,
-   so a direct load of `/list?sort=price` renders the correct state with no
-   flash and no hydration mismatch.
-2. **Single shared module instance.** The signals entry and
-   `@barefootjs/client/reactive` must each resolve to exactly one served browser
-   module; bundling either into multiple islands splits the signal and silently
-   kills reactivity. The build/import-map contract must guarantee this, and the
-   runtime should warn when a second instance overwrites the setter.
+#### Packaging & purity
+
+- **Exported from `@barefootjs/client` top-level**, not a separate
+  `@barefootjs/router/signals` entry. The authoring import
+  (`import { searchParams } from '@barefootjs/client'`) is the **SSR-safe type
+  facade**; the real browser implementation lives in `@barefootjs/client/runtime`
+  (the compiler target). One package, no extra install.
+- **The singleton requirement dissolves.** Because the signal rides the shared
+  `@barefootjs/client/reactive` runtime that every island already imports, there
+  is structurally only one instance. The PR #1910 "two `searchString` signals
+  silently disconnect" failure mode cannot occur.
+- **`searchParams` owns no subscription side effect.** Reactivity to query
+  changes only matters when the router is present (without it, every query
+  change is a full navigation that re-reads on load). The **router** already
+  owns `popstate` and query-only navigation, so it **pushes** updates through a
+  seam (e.g. `__pushSearch(url.search)`); `searchParams()` is a near-pure read of
+  a **lazily-created** signal (initial value from `location.search`, a read, not
+  a side effect). No `addEventListener` lives in `searchParams` itself.
+
+#### Tree-shaking contract
+
+An island that never references `searchParams` must ship **zero** of it. This
+holds when:
+
+1. **The authoring surface is side-effect-free** at module top level (no eager
+   listener or `location` read); the one lazy signal is confined to
+   `/runtime`. Add **`"sideEffects": false`** to `packages/client/package.json`
+   (currently absent — safe, since the client `src` has no import-time global
+   writes) to unlock cross-module DCE; if `/runtime` ever needs import-time
+   side effects, list those files instead of `false`.
+2. **It is reachable only via island imports** — the compiler emits the
+   `searchParams` import only for components that reference it, so it is never
+   baked unconditionally into the always-loaded shared bundle.
+3. **The router seam is a static import** in the (opt-in) router bundle; absent
+   the router, `__pushSearch` and its wiring are dead code and drop out.
+
+#### Request-scoped SSR
+
+PR #1910 stored the query in a process-wide module-level signal, which races
+across concurrent SSR requests. The SSR value must instead live in the adapter's
+**per-request context** (`RequestContext`): Hono populates it from `c.req`
+automatically; Go/Perl adapters prime a well-known binding (e.g. `BfEnv.*`) that
+the handler fills from the request, which the template bakes into the initial
+render. A direct load of `/list?sort=price` then renders the correct state with
+no flash and no hydration mismatch.
 
 ## Suspense / streaming
 
@@ -172,12 +214,15 @@ unless the developer happens to call `setupStreaming()`) is unacceptable.
 - `startRouter(options?)` — install once on the client; no-op on the server.
 - `navigate(href)` — programmatic navigation; environment-guarded so an
   accidental SSR call no-ops instead of throwing.
-- `@barefootjs/router/signals` — optional entry exposing `searchParams()` (and
-  the SSR `setSearch` priming seam used by adapters).
 
-Internals stay separated by responsibility: controller (events/history), outlet
-parsing, cache (fetch + freshness), seams (client-runtime integration),
-search-params (the reactive query signal).
+`searchParams` is **not** a router export. It lives in `@barefootjs/client`
+(see [the wedge](#the-wedge-environment-signals-searchparams-first)); the router
+merely drives it through the `__pushSearch` seam on query-only navigation. There
+is no `@barefootjs/router/signals` entry — dropping it is what makes the
+singleton guarantee structural rather than a packaging contract.
+
+Router internals stay separated by responsibility: controller (events/history),
+outlet parsing, cache (fetch + freshness), seams (client-runtime integration).
 
 ## Phased plan
 
@@ -185,8 +230,11 @@ search-params (the reactive query signal).
   `startRouter()` installs seams; `dispose`/`rehydrate` share a fallback;
   `history.state` preserved; response-URL base resolution; focus/a11y on swap.
   This is the "never worse than MPA" floor.
-- **v0.5 — `searchParams()` done right.** Request-scoped SSR state via the
-  adapter context; single-instance guarantee + runtime warn.
+- **v0.5 — `searchParams` done right.** Exported from `@barefootjs/client`
+  (lazy, side-effect-free, router-driven via `__pushSearch`); request-scoped SSR
+  state via the adapter `RequestContext`; `"sideEffects": false` on the client
+  package for clean tree-shaking. Cookies (`createEnvSignal` second instance,
+  non-`httpOnly` only) are a later follow-up.
 - **v1 — persistence within an outlet.** `data-bf-permanent` carry-over and
   idiomorph-style morphing so an island present on both pages is not needlessly
   re-created.
@@ -202,8 +250,12 @@ search-params (the reactive query signal).
 - What is the default focus target and the a11y announcement API after a swap?
 - How does outlet-tree diffing interact with backend streaming when a changed
   segment is still streaming at swap time?
-- What is the exact build/import-map contract that guarantees the signals
-  singleton across `bf build` output and the bootstrap?
+- What is the shape of the adapter `RequestContext` that env signals read at SSR,
+  and how do non-Node adapters (Go/Perl) prime the `BfEnv.*` binding from the
+  request?
+- For the cookie follow-up: how is a single-key view (`cookie('theme')`) typed,
+  and what is the change-observation fallback where the CookieStore API is
+  unavailable (no native same-tab cookie event)?
 - Should prefetch's modulepreload links and dedupe set be capped/pruned (they
   are session-lived today) once sessions are long-lived?
 
