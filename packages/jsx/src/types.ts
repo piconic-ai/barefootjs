@@ -302,6 +302,13 @@ export interface IRElement {
   children: IRNode[]
   slotId: string | null
   needsScope: boolean
+  /**
+   * Page-lifecycle boundary id for an element lowered from `<Region>`
+   * (spec/router.md). Set only on region host elements; adapters emit it as
+   * `bf-region="<id>"`. Deterministic (`<file scope>:<index>`) so a layout's
+   * shared partial carries the same id across every page that composes it.
+   */
+  regionId?: string
   loc: SourceLocation
 }
 
