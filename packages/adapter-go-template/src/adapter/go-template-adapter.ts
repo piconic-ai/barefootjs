@@ -67,6 +67,7 @@ import {
   collectModuleStringConsts as collectModuleStringConstsShared
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
+import { BF_REGION } from '@barefootjs/shared'
 
 /**
  * Go-template adapter's IRNode render context. Only `isRootOfClientComponent`
@@ -4101,6 +4102,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     if (element.slotId) {
       hydrationAttrs += ` ${this.renderSlotMarker(element.slotId)}`
+    }
+    // Page-lifecycle boundary lowered from `<Region>` (spec/router.md). The id
+    // is a deterministic static string (`<file scope>:<index>`), so it emits as
+    // a plain literal attribute — no Go-template interpolation.
+    if (element.regionId) {
+      hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
 
     const voidElements = [

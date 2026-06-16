@@ -169,6 +169,22 @@ export const BF_ASYNC = 'bf-async'
 export const BF_ASYNC_RESOLVE = 'bf-async-resolve'
 
 // ---------------------------------------------------------------------------
+// Region (page-lifecycle boundary, spec/router.md)
+// ---------------------------------------------------------------------------
+
+/**
+ * Page-lifecycle boundary emitted for an authored `<Region>`:
+ *   `bf-region="<file scope>:<index>"`
+ *
+ * Everything outside a `[bf-region]` persists across a client navigation;
+ * everything inside is the unit the router disposes, re-loads, and
+ * re-hydrates. The value is deterministic (the layout file's `computeFileScope`
+ * hash + a per-file index), so a layout that compiles to one shared partial
+ * emits the *same* id across every page — which is what the router matches on.
+ */
+export const BF_REGION = 'bf-region'
+
+// ---------------------------------------------------------------------------
 // Hoisted-children scope placeholder (#1320)
 // ---------------------------------------------------------------------------
 

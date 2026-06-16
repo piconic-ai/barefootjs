@@ -47,7 +47,7 @@ type HonoRenderCtx = {
   isInsideLoop?: boolean
   isLoopItemRoot?: boolean
 }
-import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION } from '@barefootjs/shared'
 
 export interface HonoAdapterOptions {
   /**
@@ -714,6 +714,9 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     }
     if (element.slotId) {
       hydrationAttrs += ` bf="${element.slotId}"`
+    }
+    if (element.regionId) {
+      hydrationAttrs += ` ${BF_REGION}="${element.regionId}"`
     }
 
     if (children) {

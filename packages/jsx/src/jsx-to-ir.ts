@@ -41,6 +41,7 @@ import {
   collectAstPropRefs,
 } from './prop-rewrite.ts'
 import { resolveFreeRefs, type BindingEnvironment } from './free-refs.ts'
+import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 
@@ -78,6 +79,8 @@ interface TransformContext {
   loopParams: Set<string>
   /** Counter for async boundary IDs (a0, a1, ...) */
   asyncIdCounter: number
+  /** Counter for <Region> structural index (0, 1, ...) within a file. */
+  regionIdCounter: number
   /** Counter for loop marker IDs (l0, l1, ...) — separate from slot IDs so element bf="sN" numbering stays stable across versions (#1087). */
   loopMarkerCounter: number
   /**
@@ -366,6 +369,7 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     filePath: analyzer.filePath,
     slotIdCounter: 0,
     asyncIdCounter: 0,
+    regionIdCounter: 0,
     loopMarkerCounter: 0,
     spreadIdCounter: 0,
     isRoot: true,
@@ -721,6 +725,11 @@ function transformJsxElement(
     return transformAsyncElement(node, ctx)
   }
 
+  // Detect Region page-lifecycle boundary: <Region>{children}</Region>
+  if (tagName === 'Region') {
+    return transformRegionElement(node, ctx)
+  }
+
   const isComponent = /^[A-Z]/.test(tagName)
 
   if (isComponent) {
@@ -785,6 +794,11 @@ function transformSelfClosingElement(
   // Detect Async streaming boundary: <Async ... />
   if (tagName === 'Async') {
     return transformSelfClosingAsyncElement(node, ctx)
+  }
+
+  // Detect Region page-lifecycle boundary: <Region />
+  if (tagName === 'Region') {
+    return transformSelfClosingRegionElement(node, ctx)
   }
 
   const isComponent = /^[A-Z]/.test(tagName)
@@ -1003,6 +1017,67 @@ function transformSelfClosingAsyncElement(
     id,
     fallback: fallbackNode,
     children: [],
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+  }
+}
+
+/**
+ * Lower `<Region>{children}</Region>` to a plain wrapper element carrying the
+ * `bf-region` marker (spec/router.md "Regions"). The id is deterministic —
+ * `<file scope>:<index>` — so a layout that compiles to one shared partial
+ * emits the *same* id across every page that composes it, which is what the
+ * client router matches on. `<Region>` is recognised by its capitalized tag
+ * name here; import-scoped disambiguation is a follow-up.
+ */
+function regionId(ctx: TransformContext): string {
+  return `${computeFileScope(ctx.filePath)}:${ctx.regionIdCounter++}`
+}
+
+function transformRegionElement(
+  node: ts.JsxElement,
+  ctx: TransformContext
+): IRElement {
+  const id = regionId(ctx)
+
+  // Mirror transformHtmlElement's isRoot bookkeeping so the region's children
+  // are not mistaken for component roots.
+  const needsScope = ctx.isRoot
+  ctx.isRoot = false
+
+  const children = transformChildren(node.children, ctx)
+
+  return {
+    type: 'element',
+    tag: 'div',
+    attrs: [],
+    events: [],
+    ref: null,
+    children,
+    slotId: null,
+    needsScope,
+    regionId: id,
+    loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
+  }
+}
+
+function transformSelfClosingRegionElement(
+  node: ts.JsxSelfClosingElement,
+  ctx: TransformContext
+): IRElement {
+  const id = regionId(ctx)
+  const needsScope = ctx.isRoot
+  ctx.isRoot = false
+
+  return {
+    type: 'element',
+    tag: 'div',
+    attrs: [],
+    events: [],
+    ref: null,
+    children: [],
+    slotId: null,
+    needsScope,
+    regionId: id,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
