@@ -44,7 +44,9 @@ subtest 'present-but-empty value keeps "" (matches JS ?? / Perl //)' => sub {
     is render('?sort=', 'sort'), '', 'empty value does NOT fall back to default';
 
     # `?sort` with no `=` is also present-with-empty-value, per URLSearchParams.
-    is BarefootJS::SearchParams->new('?sort')->get('sort'), '', 'bare key → ""';
+    # (Bind first — `is Class->new(...)` trips Perl's indirect-object parse.)
+    my $bare = BarefootJS::SearchParams->new('?sort');
+    is $bare->get('sort'), '', 'bare key → ""';
 };
 
 subtest 'application/x-www-form-urlencoded decoding' => sub {
