@@ -141,8 +141,22 @@ const workspace = mkdtempSync(join(tmpdir(), 'bf-smoke-workspace-'))
 // Install create-barefootjs + @barefootjs/cli into a throwaway tree so
 // the bin can `require.resolve('@barefootjs/cli/dist/index.js')`. The
 // app being scaffolded gets its own install via the rewrite below.
+//
+// `overrides` collapses the cli tarball's transitive `@barefootjs/*`
+// deps (`@barefootjs/client`, `@barefootjs/shared` — both `workspace:*`
+// in the repo, resolved to the bumped version by `bun pm pack`) onto the
+// local tarballs. Without this, npm resolves those versions from the
+// registry, which fails on a version-bump PR where the new version isn't
+// published yet (ETARGET "No matching version found"). Mirrors the app
+// rewrite below; `create-barefootjs` is the entry point, never a
+// transitive dep, so it's skipped.
 const installerDir = join(workspace, '_installer')
 mkdirSync(installerDir, { recursive: true })
+const installerOverrides = {}
+for (const [n, p] of Object.entries(tarballs)) {
+  if (n === 'create-barefootjs') continue
+  installerOverrides[n] = `file:${p}`
+}
 writeFileSync(
   resolve(installerDir, 'package.json'),
   JSON.stringify(
@@ -153,6 +167,7 @@ writeFileSync(
         'create-barefootjs': `file:${tarballs['create-barefootjs']}`,
         '@barefootjs/cli': `file:${tarballs['@barefootjs/cli']}`,
       },
+      overrides: installerOverrides,
     },
     null,
     2,
