@@ -301,12 +301,15 @@ function preloadModules(state: RouterState, snap: PageSnapshot): void {
 }
 
 let hoverTimer: ReturnType<typeof setTimeout> | null = null
+/** The anchor the dwell timer is currently counting down for. */
+let hoverAnchor: HTMLAnchorElement | null = null
 
 function clearHoverTimer(): void {
   if (hoverTimer !== null) {
     clearTimeout(hoverTimer)
     hoverTimer = null
   }
+  hoverAnchor = null
 }
 
 function prefetchableAnchor(event: Event): HTMLAnchorElement | null {
@@ -321,15 +324,26 @@ function prefetchableAnchor(event: Event): HTMLAnchorElement | null {
 function onPointerOver(event: MouseEvent): void {
   const anchor = prefetchableAnchor(event)
   if (!anchor) return
+  // `mouseover` bubbles, so moving between descendants of the same link fires it
+  // repeatedly — don't restart the dwell each time we're already on this anchor.
+  if (anchor === hoverAnchor) return
   clearHoverTimer()
+  hoverAnchor = anchor
   const href = anchor.href
   hoverTimer = setTimeout(() => {
     hoverTimer = null
+    hoverAnchor = null
     prefetch(href)
   }, active?.prefetchDelay ?? 65)
 }
 
-function onPointerOut(): void {
+function onPointerOut(event: MouseEvent): void {
+  if (!hoverAnchor) return
+  // `mouseout` also bubbles: moving between descendants inside the same `<a>`
+  // fires it even though the pointer is still over the link. Only cancel when
+  // the pointer actually left the dwelled anchor (it moved to a node outside it).
+  const to = event.relatedTarget as Node | null
+  if (to && hoverAnchor.contains(to)) return
   clearHoverTimer()
 }
 

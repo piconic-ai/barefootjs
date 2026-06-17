@@ -203,6 +203,29 @@ describe('@barefootjs/router v0', () => {
     expect(region().textContent).toContain('page 2 body')
   })
 
+  test('hover dwell survives a mouseout between descendants of the same link', async () => {
+    const a = document.getElementById('next')!
+    a.innerHTML = '<span id="inner">next</span>'
+    router = startRouter({ rehydrate: () => {}, dispose: () => {}, prefetchDelay: 15 })
+    a.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true }))
+    // Pointer moves to a child still inside the same <a> → relatedTarget within.
+    document
+      .getElementById('inner')!
+      .dispatchEvent(new window.MouseEvent('mouseout', { bubbles: true, relatedTarget: a }))
+    await flush(35)
+    expect(fetchCalls.length).toBe(1) // dwell wasn't cancelled
+  })
+
+  test('hover dwell cancels once the pointer leaves the link', async () => {
+    router = startRouter({ rehydrate: () => {}, dispose: () => {}, prefetchDelay: 15 })
+    const a = document.getElementById('next')!
+    a.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true }))
+    // Pointer leaves the anchor entirely (relatedTarget outside it).
+    a.dispatchEvent(new window.MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }))
+    await flush(35)
+    expect(fetchCalls.length).toBe(0) // cancelled
+  })
+
   test('prefetch: false disables hover prefetching', async () => {
     router = startRouter({ rehydrate: () => {}, dispose: () => {}, prefetch: false })
     document.getElementById('next')!.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true }))

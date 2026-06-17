@@ -10,6 +10,8 @@
  * footgun, where islands leaked unless the dev opted in, is what this avoids).
  */
 
+import { BF_HOST, BF_SCOPE } from '@barefootjs/shared'
+
 interface ClientSeams {
   /** Subtree-scoped re-hydration (O(region)); installed by the client runtime. */
   __bf_hydrate_within?: (root: Element) => void
@@ -61,7 +63,11 @@ export async function defaultRehydrate(region: Element): Promise<void> {
     if (mod.rehydrateScope) mod.rehydrateScope(region)
     else mod.rehydrateAll?.()
   } catch {
-    // No client runtime on the page (static shell) — nothing to hydrate.
+    // A region with hydration markers but no reachable runtime is a real
+    // failure — the swapped content won't be interactive. Surface it rather
+    // than silently no-op (spec/router.md "Neither may silently no-op"). A
+    // static shell (no markers) genuinely has nothing to do, so stays quiet.
+    warnIfIslandsUnreachable(region, 're-hydrate')
   }
 }
 
@@ -76,8 +82,32 @@ export async function defaultDispose(region: Element): Promise<void> {
     const mod = (await import(spec)) as { disposeScope?: (root: Element) => void }
     mod.disposeScope?.(region)
   } catch {
-    // No client runtime on the page (static shell) — nothing to dispose.
+    // Same as re-hydrate: a no-op dispose on a region that has islands leaks
+    // their handlers/effects across the navigation — surface it.
+    warnIfIslandsUnreachable(region, 'dispose')
   }
+}
+
+/**
+ * Does the region contain BarefootJS hydration markers (`bf-s` scope roots or
+ * `bf-h` child-scope hosts)? If so, the client runtime *should* be on the page,
+ * and failing to reach it is an error worth surfacing — not the silent
+ * "static shell" path.
+ */
+export function regionHasIslands(region: Element): boolean {
+  return (
+    region.hasAttribute(BF_SCOPE) ||
+    region.hasAttribute(BF_HOST) ||
+    region.querySelector(`[${BF_SCOPE}],[${BF_HOST}]`) !== null
+  )
+}
+
+function warnIfIslandsUnreachable(region: Element, op: 'dispose' | 're-hydrate'): void {
+  if (!regionHasIslands(region)) return
+  console.error(
+    `[barefootjs/router] could not load @barefootjs/client/runtime to ${op} a region that contains islands. ` +
+      `The swapped content may leak handlers or not be interactive — ensure the runtime is served and mapped in the page's import map.`,
+  )
 }
 
 /** Full browser navigation — the "never worse than an MPA" floor. */
