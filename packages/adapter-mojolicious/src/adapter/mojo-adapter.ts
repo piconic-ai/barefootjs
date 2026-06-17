@@ -58,7 +58,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts,
   lookupStaticRecordLiteral,
-  importsSearchParams,
+  searchParamsLocalNames,
   matchSearchParamsMethodCall
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
@@ -262,14 +262,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   private stringValueNames: Set<string> = new Set()
   /**
-   * (#1922) Whether the component imports the request-scoped `searchParams()`
-   * environment signal. When true the emitter lowers `searchParams().get(k)`
-   * to a real method call on the per-request `$searchParams` reader object
-   * (`$searchParams->get('sort')`) instead of the generic hash deref. Set at
-   * `generate()` entry from `ir.metadata.imports`; read by the top-level
-   * ParsedExpr emitter via `_usesSearchParams`.
+   * (#1922) Local binding names the request-scoped `searchParams()` env signal
+   * is imported under (handles `import { searchParams as sp }`). When non-empty
+   * the emitter lowers a `<binding>().get(k)` call to a real method call on the
+   * per-request `$searchParams` reader (`$searchParams->get('sort')`) instead of
+   * the generic hash deref. Set at `generate()` entry from `ir.metadata.imports`;
+   * read by the top-level ParsedExpr emitter.
    */
-  _usesSearchParams: boolean = false
+  _searchParamsLocals: Set<string> = new Set()
   /**
    * Module-scope pure string-literal constants (`const X = 'literal'` at
    * file top-level), keyed by name → resolved literal value. Populated at
@@ -385,7 +385,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
-    this._usesSearchParams = importsSearchParams(ir.metadata)
+    this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this.localConstants = ir.metadata.localConstants ?? []
     this.loopBoundNames.clear()
     this.errors = []
@@ -2701,9 +2701,9 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     // Env-signal method call (#1922): `searchParams().get('sort')` is a real
     // method call on the per-request `$searchParams` reader object, not the
     // generic hash deref `member` would emit (`$searchParams->{get}`, which
-    // drops the arg). Only when the component imports `searchParams`.
-    if (this.adapter._usesSearchParams) {
-      const sp = matchSearchParamsMethodCall(callee, args)
+    // drops the arg). Matches the local import binding (incl. an alias).
+    if (this.adapter._searchParamsLocals.size > 0) {
+      const sp = matchSearchParamsMethodCall(callee, args, this.adapter._searchParamsLocals)
       if (sp) {
         return `$searchParams->${sp.method}(${sp.args.map(emit).join(', ')})`
       }

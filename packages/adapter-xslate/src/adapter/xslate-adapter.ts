@@ -72,7 +72,7 @@ import {
   isLowerableObjectRestDestructure,
   type ContextConsumer,
   lookupStaticRecordLiteral,
-  importsSearchParams,
+  searchParamsLocalNames,
   matchSearchParamsMethodCall
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
@@ -248,14 +248,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private moduleStringConsts: Map<string, string> = new Map()
 
   /**
-   * (#1922) Whether the component imports the request-scoped `searchParams()`
-   * environment signal. When true the emitter lowers `searchParams().get(k)`
-   * to a real method call on the per-request `$searchParams` reader object
-   * (`$searchParams.get('sort')`) instead of the generic dot deref. Set at
-   * `generate()` entry from `ir.metadata.imports`; read by the top-level
-   * ParsedExpr emitter via `_usesSearchParams`.
+   * (#1922) Local binding names the request-scoped `searchParams()` env signal
+   * is imported under (handles `import { searchParams as sp }`). When non-empty
+   * the emitter lowers a `<binding>().get(k)` call to a real method call on the
+   * per-request `$searchParams` reader (`$searchParams.get('sort')`) instead of
+   * the generic dot deref. Set at `generate()` entry from `ir.metadata.imports`;
+   * read by the top-level ParsedExpr emitter.
    */
-  _usesSearchParams: boolean = false
+  _searchParamsLocals: Set<string> = new Set()
 
   /**
    * Local + module constants from the IR, used by the conditional-spread and
@@ -327,7 +327,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
-    this._usesSearchParams = importsSearchParams(ir.metadata)
+    this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -2347,9 +2347,9 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
     // Env-signal method call (#1922): `searchParams().get('sort')` is a real
     // method call on the per-request `$searchParams` reader object, not the
     // generic dot deref `member` would emit (`$searchParams.get`, which drops
-    // the arg). Only when the component imports `searchParams`.
-    if (this.adapter._usesSearchParams) {
-      const sp = matchSearchParamsMethodCall(callee, args)
+    // the arg). Matches the local import binding (incl. an alias).
+    if (this.adapter._searchParamsLocals.size > 0) {
+      const sp = matchSearchParamsMethodCall(callee, args, this.adapter._searchParamsLocals)
       if (sp) {
         return `$searchParams.${sp.method}(${sp.args.map(emit).join(', ')})`
       }
