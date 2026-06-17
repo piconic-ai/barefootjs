@@ -191,6 +191,37 @@ describe('@barefootjs/router v0', () => {
     expect(imported.length).toBe(1)
   })
 
+  test('an overlapping navigation does not skip a module whose earlier import is still in-flight', async () => {
+    // The module is only marked "loaded" after a successful import, so an
+    // overlapping navigation can't mistake an in-flight (or failed) import for a
+    // completed one and hydrate without it.
+    const attempts: string[] = []
+    mockFetch(() => fullPage('<div bf-s="x" data-island="C">x</div>', { modules: ['/static/c.js'] }))
+    router = startRouter({
+      rehydrate: () => {},
+      dispose: () => {},
+      loadModule: async () => {
+        attempts.push('c')
+        if (attempts.length === 1) await flush(30) // first import stays in-flight
+      },
+    })
+    void navigate('/a') // A: begins importing c.js (in-flight)
+    await flush(5)
+    void navigate('/a?b=1') // B: overlaps — must not skip c.js as already loaded
+    await flush(60)
+    expect(attempts.length).toBe(2)
+  })
+
+  test('navigate() is a no-op outside the DOM (does not throw on the server)', async () => {
+    const savedWindow = (globalThis as unknown as { window?: unknown }).window
+    delete (globalThis as unknown as { window?: unknown }).window
+    try {
+      await navigate('/somewhere') // would otherwise hit hardNavigate → window.* → throw
+    } finally {
+      ;(globalThis as unknown as { window?: unknown }).window = savedWindow
+    }
+  })
+
   test('hover prefetches the page so the click reuses it (no second fetch)', async () => {
     router = startRouter({ rehydrate: () => {}, dispose: () => {}, prefetchDelay: 5 })
     const a = document.getElementById('next')!

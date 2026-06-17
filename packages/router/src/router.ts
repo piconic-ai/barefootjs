@@ -181,6 +181,10 @@ function onPopState(): void {
 // --- Core navigation ------------------------------------------------------
 
 export async function navigate(url: string, options: NavigateOptions = {}): Promise<void> {
+  // SSR / non-DOM: a no-op. The bare `navigate` export is documented SSR-safe,
+  // but on the server `active` is null and the fall-through to `hardNavigate`
+  // would touch `window` and throw — guard before that.
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
   const mode = options.history ?? 'push'
   const state = active
   if (!state) {

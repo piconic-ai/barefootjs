@@ -67,12 +67,18 @@ export async function loadNewModules(state: RouterState, srcs: string[]): Promis
   const fresh = srcs.filter((s) => !state.loadedModules.has(s))
   await Promise.all(
     fresh.map(async (src) => {
-      state.loadedModules.add(src) // mark first so a concurrent nav won't re-import
       try {
         await state.loadModule(src)
+        // Mark as loaded only AFTER a successful import. Marking *before* the
+        // await (to dedupe a concurrent nav) risks a false positive: if this
+        // import fails while a second navigation is already in flight, that nav
+        // would see the src as "loaded", skip it, and hydrate without the module.
+        // `loadModule` (native `import()`) is idempotent, so two overlapping
+        // navigations importing the same src is a cheap no-op second call, not a
+        // double fetch.
+        state.loadedModules.add(src)
       } catch {
-        // Un-mark on failure so a later navigation retries the import.
-        state.loadedModules.delete(src)
+        // Left unmarked → a later navigation retries the import.
       }
     }),
   )
