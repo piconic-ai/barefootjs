@@ -101,13 +101,6 @@ export interface CacheEntry {
   refreshing: boolean
 }
 
-/** The swappable content lifted out of a fetched page. */
-export interface RegionContent {
-  nodes: Node[]
-  title: string | null
-  moduleSrcs: string[]
-}
-
 /** Mutable state for the one active router instance. */
 export interface RouterState {
   regionSelector: string

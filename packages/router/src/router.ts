@@ -13,8 +13,11 @@ import { loadPage } from './cache.ts'
 import {
   collectModuleScripts,
   collectRegionModuleSrcs,
-  extractRegion,
+  importRegionChildren,
   loadNewModules,
+  parseDocument,
+  planRegionSwaps,
+  type RegionSwap,
 } from './region.ts'
 import { buildMorphedContent } from './morph.ts'
 import {
@@ -239,46 +242,64 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     }
     const finalUrl = snap.finalUrl
 
-    // Resolve the incoming document's module srcs against the response's final
-    // URL (after redirects), not the current location.
-    const content = extractRegion(snap.html, state.regionSelector, finalUrl)
-    const current = document.querySelector(state.regionSelector)
-    if (!content || !current) {
-      hardNavigate(finalUrl)
-      return
+    // Parse the incoming page once. Module srcs are collected from the whole
+    // document and resolved against the response's final URL (after redirects),
+    // not the current location.
+    const incomingDoc = parseDocument(snap.html)
+    const title = incomingDoc.querySelector('title')?.textContent ?? null
+    const moduleSrcs = [...collectModuleScripts(incomingDoc, finalUrl)]
+
+    // Decide the swap point(s). When the compiler-derived region ids line up
+    // across both documents, swap only the deepest regions whose owned content
+    // differs (nested/sibling, spec v2); otherwise fall back to the single
+    // broadest region (v0).
+    const plan = planRegionSwaps(document, incomingDoc, state.regionSelector)
+    let targets: RegionSwap[]
+    if (plan.mode === 'regions') {
+      targets = plan.targets
+    } else {
+      const current = document.querySelector(state.regionSelector)
+      const incoming = incomingDoc.querySelector(state.regionSelector)
+      if (!current || !incoming) {
+        hardNavigate(finalUrl)
+        return
+      }
+      targets = [{ current, incoming }]
     }
 
-    // Build the incoming tree (morph re-homes live `[data-bf-permanent]` nodes
-    // into it) and swap — both synchronous. A morph-preserved node therefore
-    // travels current → fragment → current without ever being detached across
-    // the dispose `await`: a navigation that supersedes this one still finds it
-    // under the region (last-wins safe), and an abort/throw during dispose can't
-    // leave it orphaned. With no permanent nodes this is a plain `replaceChildren`.
-    const fragment = state.morph
-      ? buildMorphedContent(current, content.nodes)
-      : toFragment(content.nodes)
-    // A shallow clone of the region element (its tag, attributes, id, classes —
-    // e.g. `main[bf-region]`) so a custom `dispose` sees the same shell it ran
-    // against on first mount, not a bare `<div>`.
-    const outgoing = current.cloneNode(false) as Element
-    // Move every current child into the holder. An explicit drain (rather than
-    // `append(...current.childNodes)`) is unambiguous about not skipping nodes
-    // while the live `childNodes` shrinks.
-    while (current.firstChild) outgoing.append(current.firstChild)
-    current.replaceChildren(fragment)
-    if (content.title !== null) document.title = content.title
+    // Swap every target synchronously, before any `await`. A morph-preserved
+    // node therefore travels current → fragment → current without ever being
+    // detached across the dispose `await`: a navigation that supersedes this
+    // one still finds it under its region (last-wins safe), and an abort/throw
+    // during dispose can't leave it orphaned. Each `outgoing` is a shallow clone
+    // of its region element (tag, attributes, id, classes — e.g.
+    // `main[bf-region]`) so a custom `dispose` sees the same shell it ran
+    // against on first mount, not a bare `<div>`. With no permanent nodes and a
+    // single region this is exactly the v0 `replaceChildren` swap.
+    const swapped: { region: Element; outgoing: Element }[] = []
+    for (const { current, incoming } of targets) {
+      const nodes = importRegionChildren(incoming)
+      const fragment = state.morph ? buildMorphedContent(current, nodes) : toFragment(nodes)
+      const outgoing = current.cloneNode(false) as Element
+      // An explicit drain (rather than `append(...current.childNodes)`) is
+      // unambiguous about not skipping nodes while the live `childNodes` shrinks.
+      while (current.firstChild) outgoing.append(current.firstChild)
+      current.replaceChildren(fragment)
+      swapped.push({ region: current, outgoing })
+    }
+    if (title !== null) document.title = title
 
-    // Dispose the outgoing islands. They're now detached in `outgoing`, and the
-    // swap is already committed, so a superseded navigation just skips the
+    // Dispose the outgoing islands. They're now detached in each `outgoing`, and
+    // the swaps are already committed, so a superseded navigation just skips the
     // remaining work below — it never has to undo a DOM mutation. With `morph`,
     // any matched `[data-bf-permanent]` node was moved into the new tree above,
     // so it isn't here; with `morph: false` the permanent nodes stay in
     // `outgoing` and are disposed normally.
-    await state.dispose(outgoing)
+    await Promise.all(swapped.map(({ outgoing }) => state.dispose(outgoing)))
     if (controller.signal.aborted) return
 
     // Register any island modules this response introduced before hydrating.
-    await loadNewModules(state, content.moduleSrcs)
+    await loadNewModules(state, moduleSrcs)
     if (controller.signal.aborted) return
 
     if (mode === 'push') commitHistory('push', finalUrl)
@@ -290,17 +311,19 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
 
     if (state.scrollToTop) window.scrollTo(0, 0)
 
-    // Re-hydrate the freshly inserted islands (subtree-scoped).
-    await state.rehydrate(current)
+    // Re-hydrate the freshly inserted islands (subtree-scoped, per region).
+    await Promise.all(swapped.map(({ region }) => state.rehydrate(region)))
     // `rehydrate` may await (a dynamic import); a newer navigation could have
     // superseded us in the meantime — don't run a11y side effects on what is
     // now stale content.
     if (controller.signal.aborted) return
 
-    // Accessibility: move focus into the new region and announce the route.
-    if (state.manageFocus) {
-      focusRegion(current)
-      announceNavigation(content.title)
+    // Accessibility: move focus into the first swapped region (the broadest /
+    // topmost in document order) and announce the route. A navigation with no
+    // changed region (targets empty) still committed history + title above.
+    if (state.manageFocus && swapped.length > 0) {
+      focusRegion(swapped[0].region)
+      announceNavigation(title)
     }
   } finally {
     if (state.inflight === controller) state.inflight = null

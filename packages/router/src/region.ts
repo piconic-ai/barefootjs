@@ -1,13 +1,23 @@
 /**
- * Read a fetched page and lift out the swappable region subtree.
+ * Read a fetched page and lift out the swappable region subtree(s).
  *
  * The router fetches an ordinary full-page HTML response (no protocol header),
- * parses it client-side, and extracts the `[bf-region]` children. Island module
- * scripts (`<script type=module src>`) sit at body-end, outside the region, so
- * they are collected from the whole parsed document.
+ * parses it client-side, and matches its `[bf-region]` boundaries against the
+ * live document. v0 swaps a single broad region; v2 matches compiler-derived
+ * nested/sibling regions by their stable `bf-region` id and swaps only the
+ * deepest ones whose *owned* content differs (spec/router.md "Regions"). Island
+ * module scripts (`<script type=module src>`) sit at body-end, outside any
+ * region, so they are collected from the whole parsed document.
  */
 
-import type { RegionContent, RouterState } from './types.ts'
+import { BF_REGION } from '@barefootjs/shared'
+import type { RouterState } from './types.ts'
+
+/** Parse a fetched page's HTML into a detached document. */
+export function parseDocument(html: string): Document {
+  return new DOMParser().parseFromString(html, 'text/html')
+}
+
 
 /**
  * Same-origin absolute URLs of `<script type=module src>` in a tree, resolved
@@ -31,27 +41,105 @@ export function collectModuleScripts(root: ParentNode, baseUrl: string): Set<str
   return out
 }
 
-export function extractRegion(
-  html: string,
+/** A swap target: a live region element and its counterpart in the incoming doc. */
+export interface RegionSwap {
+  current: Element
+  incoming: Element
+}
+
+export type SwapPlan =
+  /** Matched compiler-derived regions: swap exactly `targets` (may be empty when nothing changed). */
+  | { mode: 'regions'; targets: RegionSwap[] }
+  /** Region ids don't line up (or collide): fall back to the single broadest-region swap (v0). */
+  | { mode: 'broadest' }
+
+/**
+ * Index every `[bf-region]` in `root` by its `bf-region` id. Returns `null` if
+ * two regions share an id — they can't be matched 1:1 across documents, so the
+ * caller falls back to the broadest single-region swap.
+ */
+function indexRegions(root: ParentNode, selector: string): Map<string, Element> | null {
+  const map = new Map<string, Element>()
+  for (const el of root.querySelectorAll(selector)) {
+    const id = el.getAttribute(BF_REGION) ?? ''
+    if (map.has(id)) return null
+    map.set(id, el)
+  }
+  return map
+}
+
+/**
+ * A region's **owned** content: its inner HTML with every *nested* `[bf-region]`
+ * subtree masked out (replaced by an id-keyed placeholder). Two regions compare
+ * equal when only their nested regions' interiors differ — so an outer region
+ * stays mounted when just an inner region changed (the deepest differing region
+ * is the one that swaps).
+ */
+export function ownedContentKey(region: Element, selector: string): string {
+  const clone = region.cloneNode(true) as Element
+  // `querySelectorAll` on the clone returns descendants only (not the clone
+  // itself), so this masks nested regions, not this one.
+  for (const nested of Array.from(clone.querySelectorAll(selector))) {
+    // A deeper region already vanished when its ancestor region was masked.
+    if (!clone.contains(nested)) continue
+    const mask = (clone.ownerDocument ?? document).createElement('bf-region-mask')
+    mask.setAttribute('data-id', nested.getAttribute(BF_REGION) ?? '')
+    nested.replaceWith(mask)
+  }
+  return clone.innerHTML
+}
+
+/**
+ * Decide which regions to swap between the live document and a parsed incoming
+ * document. When both expose the **same set** of region ids, swap the *topmost*
+ * regions whose owned content differs (an ancestor swap rebuilds its nested
+ * regions, so a nested candidate inside another candidate is dropped). When the
+ * id sets differ or collide, fall back to the broadest single-region swap.
+ */
+export function planRegionSwaps(
+  currentRoot: ParentNode,
+  incomingRoot: ParentNode,
   selector: string,
-  baseUrl: string,
-): RegionContent | null {
-  const doc = new DOMParser().parseFromString(html, 'text/html')
-  const region = doc.querySelector(selector)
-  if (!region) return null // not part of this shell → caller hard-navigates
-  const title = doc.querySelector('title')?.textContent ?? null
-  const moduleSrcs = [...collectModuleScripts(doc, baseUrl)]
-  // Adopt the parsed nodes into the live document so they're ready to insert.
-  const nodes = Array.from(region.childNodes).map((n) => document.importNode(n, true))
-  return { nodes, title, moduleSrcs }
+): SwapPlan {
+  const cur = indexRegions(currentRoot, selector)
+  const inc = indexRegions(incomingRoot, selector)
+  if (!cur || !inc || !sameKeys(cur, inc)) return { mode: 'broadest' }
+
+  const candidates: RegionSwap[] = []
+  for (const [id, current] of cur) {
+    const incoming = inc.get(id) as Element
+    if (ownedContentKey(current, selector) !== ownedContentKey(incoming, selector)) {
+      candidates.push({ current, incoming })
+    }
+  }
+  // Drop any candidate nested inside another candidate (in the live document):
+  // swapping the ancestor replaces it anyway.
+  const targets = candidates.filter(
+    (c) => !candidates.some((o) => o !== c && o.current.contains(c.current)),
+  )
+  return { mode: 'regions', targets }
+}
+
+function sameKeys(a: Map<string, unknown>, b: Map<string, unknown>): boolean {
+  if (a.size !== b.size) return false
+  for (const k of a.keys()) if (!b.has(k)) return false
+  return true
+}
+
+/**
+ * Adopt an incoming region's child nodes into the live document so they're ready
+ * to insert (the parsed nodes belong to a detached document).
+ */
+export function importRegionChildren(incoming: Element): Node[] {
+  return Array.from(incoming.childNodes).map((n) => document.importNode(n, true))
 }
 
 /**
  * Prefetch-path read: parse once, confirm the page belongs to this shell, and
- * return only its island module srcs (resolved against `baseUrl`). Unlike
- * {@link extractRegion} this does **not** clone/import the region's child nodes
- * — prefetch only needs the module list, and importing a large region's subtree
- * is wasted work. Returns `null` when the page has no region.
+ * return only its island module srcs (resolved against `baseUrl`). It does
+ * **not** clone/import any region subtree — prefetch only needs the module list,
+ * and importing a large region is wasted work. Returns `null` when the page has
+ * no region.
  */
 export function collectRegionModuleSrcs(
   html: string,
