@@ -40,12 +40,12 @@ runAdapterConformanceTests({
   // Pinned here rather than in `expectedDiagnostics` because no BF101
   // fires anymore.
   //
-  // `search-params` (router v0.5): the generic lowering mis-compiles
-  // `searchParams().get('sort')` to a hash access (`$searchParams->{get}`),
-  // dropping the call + arg; it needs dedicated env-signal lowering plus a
-  // per-request Perl `search_params` reader. Tracked in
-  // https://github.com/piconic-ai/barefootjs/issues/1922.
-  skipJsx: ['data-table', 'search-params'],
+  // `search-params` (router v0.5) now renders: the emitter lowers
+  // `searchParams().get('sort')` to a real method call on the per-request
+  // `$searchParams` reader (`$searchParams->get('sort')`), and the harness
+  // binds it to an empty-query `BarefootJS::SearchParams` (`.get` → undef →
+  // `// 'none'` renders the default). See #1922.
+  skipJsx: ['data-table'],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't

@@ -5,7 +5,7 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileJSX, extractSsrDefaults, augmentInheritedPropAccesses } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, augmentInheritedPropAccesses, importsSearchParams } from '@barefootjs/jsx'
 import type { ComponentIR } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -243,6 +243,7 @@ use Mojo::Template;
 use Mojo::JSON;
 
 use BarefootJS;
+use BarefootJS::SearchParams;
 
 my $app = Mojolicious->new;
 
@@ -614,6 +615,15 @@ function buildPerlProps(
     const entry = ssrDefaults[memo.name]
     const value = entry && typeof entry === 'object' && 'value' in entry ? entry.value : 0
     entries.push(`${memo.name} => ${toPerlLiteral(value ?? 0)}`)
+  }
+
+  // (#1922) Request-scoped `searchParams()`: bind `$searchParams` to an
+  // empty-query reader. The conformance harness issues no query string (the
+  // production Mojo plugin builds this from `$c->req->query_params`), so
+  // `.get(k)` resolves to undef and the author's `?? default` renders. Only
+  // when the component imports `searchParams`.
+  if (importsSearchParams(ir.metadata)) {
+    entries.push(`searchParams => BarefootJS::SearchParams->new('')`)
   }
 
   return `{${entries.join(', ')}}`

@@ -71,7 +71,9 @@ import {
   collectContextConsumers,
   isLowerableObjectRestDestructure,
   type ContextConsumer,
-  lookupStaticRecordLiteral
+  lookupStaticRecordLiteral,
+  importsSearchParams,
+  matchSearchParamsMethodCall
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
@@ -246,6 +248,16 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private moduleStringConsts: Map<string, string> = new Map()
 
   /**
+   * (#1922) Whether the component imports the request-scoped `searchParams()`
+   * environment signal. When true the emitter lowers `searchParams().get(k)`
+   * to a real method call on the per-request `$searchParams` reader object
+   * (`$searchParams.get('sort')`) instead of the generic dot deref. Set at
+   * `generate()` entry from `ir.metadata.imports`; read by the top-level
+   * ParsedExpr emitter via `_usesSearchParams`.
+   */
+  _usesSearchParams: boolean = false
+
+  /**
    * Local + module constants from the IR, used by the conditional-spread and
    * `Record<staticKeys, scalar>[propKey]` lowering paths (#textarea / #checkbox).
    * Stashed at `generate()` entry so `emitSpread` can resolve a bare local
@@ -315,6 +327,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
+    this._usesSearchParams = importsSearchParams(ir.metadata)
     this.errors = []
     this.childrenCaptureCounter = 0
 
@@ -2330,6 +2343,16 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
     // Signal getter: count() → $count
     if (callee.kind === 'identifier' && args.length === 0) {
       return `$${callee.name}`
+    }
+    // Env-signal method call (#1922): `searchParams().get('sort')` is a real
+    // method call on the per-request `$searchParams` reader object, not the
+    // generic dot deref `member` would emit (`$searchParams.get`, which drops
+    // the arg). Only when the component imports `searchParams`.
+    if (this.adapter._usesSearchParams) {
+      const sp = matchSearchParamsMethodCall(callee, args)
+      if (sp) {
+        return `$searchParams.${sp.method}(${sp.args.map(emit).join(', ')})`
+      }
     }
     // Identifier-path templatePrimitive: `JSON.stringify(x)` / `Math.floor(x)`
     // → `$bf.json($x)` / `$bf.floor($x)`. Args render recursively through this

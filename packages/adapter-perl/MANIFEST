@@ -2,6 +2,7 @@ Changes
 cpanfile
 lib/BarefootJS.pm
 lib/BarefootJS/DevReload.pm
+lib/BarefootJS/SearchParams.pm
 LICENSE
 MANIFEST
 Makefile.PL
@@ -9,5 +10,6 @@ README.md
 t/controller_cycle.t
 t/dev_reload.t
 t/helper_vectors.t
+t/search_params.t
 t/spread_attrs.t
 t/template_primitives.t
