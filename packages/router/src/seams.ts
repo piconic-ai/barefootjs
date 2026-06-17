@@ -10,22 +10,32 @@
  * footgun, where islands leaked unless the dev opted in, is what this avoids).
  */
 
-import { BF_HOST, BF_SCOPE } from '@barefootjs/shared'
+import {
+  BF_HOST,
+  BF_SCOPE,
+  BF_SEAM_DISPOSE_WITHIN,
+  BF_SEAM_HYDRATE,
+  BF_SEAM_HYDRATE_WITHIN,
+  BF_SEAM_PUSH_SEARCH,
+} from '@barefootjs/shared'
 
+// Seam-name keys come from `@barefootjs/shared` so this reader and the client
+// installer can never disagree on a property name (a typo would otherwise just
+// fall through to the dynamic-import path and silently change behaviour).
 interface ClientSeams {
   /** Subtree-scoped re-hydration (O(region)); installed by the client runtime. */
-  __bf_hydrate_within?: (root: Element) => void
+  [BF_SEAM_HYDRATE_WITHIN]?: (root: Element) => void
   /** Subtree-scoped disposal; installed by the client runtime. */
-  __bf_dispose_within?: (root: Element) => void
+  [BF_SEAM_DISPOSE_WITHIN]?: (root: Element) => void
   /** Whole-document re-hydration fallback. */
-  __bf_hydrate?: () => void
+  [BF_SEAM_HYDRATE]?: () => void
   /**
    * Push a new query string into the `searchParams()` env signal
    * (`@barefootjs/client`, v0.5). The router owns popstate/query-only nav and
    * pushes through this seam; the client installs it lazily on first
    * `searchParams()` read, so the client package stays `sideEffects: false`.
    */
-  __bf_pushSearch?: (search: string) => void
+  [BF_SEAM_PUSH_SEARCH]?: (search: string) => void
 }
 
 /**
@@ -35,20 +45,23 @@ interface ClientSeams {
  */
 export function pushSearchSeam(search: string): boolean {
   const w = window as unknown as ClientSeams
-  if (typeof w.__bf_pushSearch !== 'function') return false
-  w.__bf_pushSearch(search)
+  const push = w[BF_SEAM_PUSH_SEARCH]
+  if (typeof push !== 'function') return false
+  push(search)
   return true
 }
 
 export async function defaultRehydrate(region: Element): Promise<void> {
   const w = window as unknown as ClientSeams
   // Prefer the subtree-scoped walk — O(region), not O(document).
-  if (typeof w.__bf_hydrate_within === 'function') {
-    w.__bf_hydrate_within(region)
+  const hydrateWithin = w[BF_SEAM_HYDRATE_WITHIN]
+  if (typeof hydrateWithin === 'function') {
+    hydrateWithin(region)
     return
   }
-  if (typeof w.__bf_hydrate === 'function') {
-    w.__bf_hydrate()
+  const hydrateAll = w[BF_SEAM_HYDRATE]
+  if (typeof hydrateAll === 'function') {
+    hydrateAll()
     return
   }
   // Fall back to the runtime's named exports. The specifier is a *variable* so
@@ -73,8 +86,9 @@ export async function defaultRehydrate(region: Element): Promise<void> {
 
 export async function defaultDispose(region: Element): Promise<void> {
   const w = window as unknown as ClientSeams
-  if (typeof w.__bf_dispose_within === 'function') {
-    w.__bf_dispose_within(region)
+  const disposeWithin = w[BF_SEAM_DISPOSE_WITHIN]
+  if (typeof disposeWithin === 'function') {
+    disposeWithin(region)
     return
   }
   try {

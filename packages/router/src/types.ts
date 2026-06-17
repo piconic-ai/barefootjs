@@ -29,6 +29,12 @@ export interface RouterOptions {
   dispose?: (region: Element) => void | Promise<void>
   /** Import an island module by src. Defaults to `(src) => import(src)`. */
   loadModule?: (src: string) => Promise<unknown>
+  /**
+   * Fetch a page's HTML. Defaults to the global `fetch`. Inject to add auth
+   * headers / a custom transport, or to drive the router under test without
+   * monkeypatching the global.
+   */
+  fetch?: typeof fetch
   /** Decide whether to intercept an anchor click. Defaults to {@link defaultShouldIntercept}. */
   shouldIntercept?: (anchor: HTMLAnchorElement, event: Event) => boolean
   /** Scroll to the top of the document after a swap. Default `true`. */
@@ -94,6 +100,8 @@ export interface RouterState {
   rehydrate: (region: Element) => void | Promise<void>
   dispose: (region: Element) => void | Promise<void>
   loadModule: (src: string) => Promise<unknown>
+  /** Fetch used for page loads (injectable; defaults to the global `fetch`). */
+  fetchFn: typeof fetch
   /** Absolute URLs of island modules already loaded (deduped across navigations). */
   loadedModules: Set<string>
   prefetchEnabled: boolean
@@ -110,5 +118,8 @@ export interface RouterState {
   /** Pathname of the currently-displayed region (for the query-only short-circuit). */
   currentPath: string
   inflight: AbortController | null
+  /** Hover-prefetch dwell timer + the anchor it is counting down for (per instance). */
+  hoverTimer: ReturnType<typeof setTimeout> | null
+  hoverAnchor: HTMLAnchorElement | null
   stop: () => void
 }

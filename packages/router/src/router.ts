@@ -47,6 +47,8 @@ export function startRouter(options: RouterOptions = {}): Router {
     rehydrate: options.rehydrate ?? defaultRehydrate,
     dispose: options.dispose ?? defaultDispose,
     loadModule: options.loadModule ?? ((src) => import(src)),
+    // Bind through a wrapper so a default `fetch` keeps its global `this`.
+    fetchFn: options.fetch ?? ((input, init) => fetch(input, init)),
     // Seed with modules already on the page so we never re-import them. The
     // live document's srcs resolve against the current location.
     loadedModules: collectModuleScripts(document, window.location.href),
@@ -62,6 +64,8 @@ export function startRouter(options: RouterOptions = {}): Router {
     manageFocus: options.manageFocus ?? true,
     currentPath: window.location.pathname,
     inflight: null,
+    hoverTimer: null,
+    hoverAnchor: null,
     stop: () => {},
   }
 
@@ -84,7 +88,7 @@ export function startRouter(options: RouterOptions = {}): Router {
     document.removeEventListener('mouseout', onPointerOut)
     document.removeEventListener('focusin', onFocusIn)
     document.removeEventListener('pointerdown', onPointerDown)
-    clearHoverTimer()
+    clearHoverTimer(state)
     state.inflight?.abort()
     if (active === state) active = null
   }
@@ -300,16 +304,15 @@ function preloadModules(state: RouterState, snap: PageSnapshot): void {
   }
 }
 
-let hoverTimer: ReturnType<typeof setTimeout> | null = null
-/** The anchor the dwell timer is currently counting down for. */
-let hoverAnchor: HTMLAnchorElement | null = null
-
-function clearHoverTimer(): void {
-  if (hoverTimer !== null) {
-    clearTimeout(hoverTimer)
-    hoverTimer = null
+// The dwell timer lives on `RouterState` (per instance), not at module scope —
+// so two routers don't share one timer and tests are isolated without manual
+// global resets.
+function clearHoverTimer(state: RouterState): void {
+  if (state.hoverTimer !== null) {
+    clearTimeout(state.hoverTimer)
+    state.hoverTimer = null
   }
-  hoverAnchor = null
+  state.hoverAnchor = null
 }
 
 function prefetchableAnchor(event: Event): HTMLAnchorElement | null {
@@ -322,29 +325,32 @@ function prefetchableAnchor(event: Event): HTMLAnchorElement | null {
 }
 
 function onPointerOver(event: MouseEvent): void {
+  const state = active
+  if (!state) return
   const anchor = prefetchableAnchor(event)
   if (!anchor) return
   // `mouseover` bubbles, so moving between descendants of the same link fires it
   // repeatedly — don't restart the dwell each time we're already on this anchor.
-  if (anchor === hoverAnchor) return
-  clearHoverTimer()
-  hoverAnchor = anchor
+  if (anchor === state.hoverAnchor) return
+  clearHoverTimer(state)
+  state.hoverAnchor = anchor
   const href = anchor.href
-  hoverTimer = setTimeout(() => {
-    hoverTimer = null
-    hoverAnchor = null
+  state.hoverTimer = setTimeout(() => {
+    state.hoverTimer = null
+    state.hoverAnchor = null
     prefetch(href)
-  }, active?.prefetchDelay ?? 65)
+  }, state.prefetchDelay)
 }
 
 function onPointerOut(event: MouseEvent): void {
-  if (!hoverAnchor) return
+  const state = active
+  if (!state || !state.hoverAnchor) return
   // `mouseout` also bubbles: moving between descendants inside the same `<a>`
   // fires it even though the pointer is still over the link. Only cancel when
   // the pointer actually left the dwelled anchor (it moved to a node outside it).
   const to = event.relatedTarget as Node | null
-  if (to && hoverAnchor.contains(to)) return
-  clearHoverTimer()
+  if (to && state.hoverAnchor.contains(to)) return
+  clearHoverTimer(state)
 }
 
 function onFocusIn(event: FocusEvent): void {

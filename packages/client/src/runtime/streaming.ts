@@ -13,7 +13,13 @@
  * 3. This module swaps fallback → resolved content and triggers hydration.
  */
 
-import { BF_ASYNC, BF_ASYNC_RESOLVE } from '@barefootjs/shared'
+import {
+  BF_ASYNC,
+  BF_ASYNC_RESOLVE,
+  BF_SEAM_DISPOSE_WITHIN,
+  BF_SEAM_HYDRATE,
+  BF_SEAM_HYDRATE_WITHIN,
+} from '@barefootjs/shared'
 import { rehydrateAll, rehydrateScope, disposeScope } from './hydrate.ts'
 
 /**
@@ -65,7 +71,9 @@ export function setupStreaming(): void {
 
   const w = window as unknown as Record<string, unknown>
   w.__bf_swap = __bf_swap
-  w.__bf_hydrate = rehydrateAll
-  w.__bf_hydrate_within = rehydrateScope
-  w.__bf_dispose_within = disposeScope
+  // Seam names shared with `@barefootjs/router` via `@barefootjs/shared` so the
+  // installer (here) and the reader (the router) can never drift apart.
+  w[BF_SEAM_HYDRATE] = rehydrateAll
+  w[BF_SEAM_HYDRATE_WITHIN] = rehydrateScope
+  w[BF_SEAM_DISPOSE_WITHIN] = disposeScope
 }

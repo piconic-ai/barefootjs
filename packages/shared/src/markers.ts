@@ -205,3 +205,25 @@ export const BF_REGION = 'bf-region'
  *   - CSR conformance harness (`@barefootjs/adapter-tests/src/csr-render.ts`)
  */
 export const BF_PARENT_SCOPE_PLACEHOLDER = '__BF_PARENT_SCOPE__'
+
+// ---------------------------------------------------------------------------
+// Client-runtime seam names (router ↔ client `window` bridge)
+// ---------------------------------------------------------------------------
+//
+// The optional client router (`@barefootjs/router`) reaches the client runtime
+// through a few `window.__bf_*` function properties. The runtime *installs*
+// them (`@barefootjs/client/runtime/streaming.ts`, `@barefootjs/client`'s
+// `searchParams`) and the router *reads* them (`@barefootjs/router/seams.ts`),
+// in different packages — so the names live here as the single source of truth.
+// A rename is then a compile error on both sides instead of a silently-broken
+// seam (the router would otherwise fall back to a dynamic import and mask the
+// mismatch).
+
+/** Re-hydrate the whole document. `window[BF_SEAM_HYDRATE]()`. */
+export const BF_SEAM_HYDRATE = '__bf_hydrate'
+/** Re-hydrate only a swapped subtree. `window[BF_SEAM_HYDRATE_WITHIN](root)`. */
+export const BF_SEAM_HYDRATE_WITHIN = '__bf_hydrate_within'
+/** Dispose the islands in a subtree. `window[BF_SEAM_DISPOSE_WITHIN](root)`. */
+export const BF_SEAM_DISPOSE_WITHIN = '__bf_dispose_within'
+/** Push a new query string into the `searchParams()` env signal. `window[BF_SEAM_PUSH_SEARCH](search)`. */
+export const BF_SEAM_PUSH_SEARCH = '__bf_pushSearch'

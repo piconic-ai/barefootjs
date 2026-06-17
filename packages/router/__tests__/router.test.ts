@@ -290,6 +290,29 @@ describe('@barefootjs/router v0', () => {
     expect(fetchCalls[0].headers).toEqual({ Accept: 'text/html' })
   })
 
+  test('the fetch option is used instead of the global fetch', async () => {
+    const calls: string[] = []
+    const injected = (async (input: RequestInfo | URL) => {
+      calls.push(String(input))
+      return {
+        ok: true,
+        status: 200,
+        redirected: false,
+        url: String(input),
+        text: async () => fullPage('<p>injected body</p>', { title: 'I' }),
+      } as unknown as Response
+    }) as typeof fetch
+    // Make the global throw to prove the injected fetch is what's used.
+    ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (() => {
+      throw new Error('global fetch must not be called when one is injected')
+    }) as typeof fetch
+    router = startRouter({ rehydrate: () => {}, dispose: () => {}, fetch: injected })
+    await navigate('/blog/2')
+    await flush()
+    expect(calls).toEqual(['https://example.test/blog/2'])
+    expect(region().textContent).toContain('injected body')
+  })
+
   test('a redirected response commits at the final URL', async () => {
     mockFetch(
       (url) => (url.includes('/old') || url.includes('/new') ? fullPage('<p>moved</p>', { title: 'new' }) : null),

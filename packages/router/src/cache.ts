@@ -14,10 +14,10 @@ import type { PageSnapshot, RouterState } from './types.ts'
 
 const REFRESH_JITTER = 0.3 // ±30% on the per-entry refresh threshold
 
-export function fetchSnapshot(url: string): Promise<PageSnapshot | null> {
+export function fetchSnapshot(state: RouterState, url: string): Promise<PageSnapshot | null> {
   return (async () => {
     try {
-      const res = await fetch(url, { headers: { Accept: 'text/html' }, credentials: 'same-origin' })
+      const res = await state.fetchFn(url, { headers: { Accept: 'text/html' }, credentials: 'same-origin' })
       if (!res.ok) return null
       // Response-URL base resolution: a redirect commits at the real URL.
       const finalUrl = res.redirected && res.url ? res.url : url
@@ -58,7 +58,7 @@ export function loadPage(state: RouterState, url: string): Promise<PageSnapshot 
     if (now >= hit.refreshAt && !hit.refreshing) {
       // Aging → refresh in the background (single-flight), keep serving cached.
       hit.refreshing = true
-      const fresh = fetchSnapshot(url)
+      const fresh = fetchSnapshot(state, url)
       void fresh.then((result) => {
         if (result !== null) storeEntry(state, url, fresh) // swap in the fresh window
         else if (state.cache.get(url) === hit) hit.refreshing = false // failed → keep old, retry later
@@ -71,7 +71,7 @@ export function loadPage(state: RouterState, url: string): Promise<PageSnapshot 
   }
 
   // Miss or past staleAt → fetch fresh (and cache it).
-  const snap = fetchSnapshot(url)
+  const snap = fetchSnapshot(state, url)
   storeEntry(state, url, snap)
   return snap
 }
