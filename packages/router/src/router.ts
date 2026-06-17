@@ -10,7 +10,12 @@
 
 import { BF_REGION } from '@barefootjs/shared'
 import { loadPage } from './cache.ts'
-import { collectModuleScripts, extractRegion, loadNewModules } from './region.ts'
+import {
+  collectModuleScripts,
+  collectRegionModuleSrcs,
+  extractRegion,
+  loadNewModules,
+} from './region.ts'
 import {
   defaultDispose,
   defaultRehydrate,
@@ -18,7 +23,13 @@ import {
   pushSearchSeam,
 } from './seams.ts'
 import { announceNavigation, focusRegion } from './a11y.ts'
-import type { NavigateOptions, Router, RouterOptions, RouterState } from './types.ts'
+import type {
+  NavigateOptions,
+  PageSnapshot,
+  Router,
+  RouterOptions,
+  RouterState,
+} from './types.ts'
 
 let active: RouterState | null = null
 
@@ -36,8 +47,9 @@ export function startRouter(options: RouterOptions = {}): Router {
     rehydrate: options.rehydrate ?? defaultRehydrate,
     dispose: options.dispose ?? defaultDispose,
     loadModule: options.loadModule ?? ((src) => import(src)),
-    // Seed with modules already on the page so we never re-import them.
-    loadedModules: collectModuleScripts(document),
+    // Seed with modules already on the page so we never re-import them. The
+    // live document's srcs resolve against the current location.
+    loadedModules: collectModuleScripts(document, window.location.href),
     prefetchEnabled: options.prefetch ?? true,
     prefetchDelay: options.prefetchDelay ?? 65,
     cacheFreshMs: options.cacheFreshMs ?? 15_000,
@@ -210,7 +222,9 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     }
     const finalUrl = snap.finalUrl
 
-    const content = extractRegion(snap.html, state.regionSelector)
+    // Resolve the incoming document's module srcs against the response's final
+    // URL (after redirects), not the current location.
+    const content = extractRegion(snap.html, state.regionSelector, finalUrl)
     const current = document.querySelector(state.regionSelector)
     if (!content || !current) {
       hardNavigate(finalUrl)
@@ -238,6 +252,10 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
 
     // Re-hydrate the freshly inserted islands (subtree-scoped).
     await state.rehydrate(current)
+    // `rehydrate` may await (a dynamic import); a newer navigation could have
+    // superseded us in the meantime — don't run a11y side effects on what is
+    // now stale content.
+    if (controller.signal.aborted) return
 
     // Accessibility: move focus into the new region and announce the route.
     if (state.manageFocus) {
@@ -264,12 +282,15 @@ function prefetch(url: string): void {
   if (target.href === window.location.href) return // current page
 
   void loadPage(state, target.href).then((snap) => {
-    if (snap) preloadModules(state, snap.html)
+    if (snap) preloadModules(state, snap)
   })
 }
 
-function preloadModules(state: RouterState, html: string): void {
-  for (const src of extractRegion(html, state.regionSelector)?.moduleSrcs ?? []) {
+function preloadModules(state: RouterState, snap: PageSnapshot): void {
+  // Parse once and read only the module srcs (no region-node import), resolved
+  // against the fetched page's final URL.
+  const srcs = collectRegionModuleSrcs(snap.html, state.regionSelector, snap.finalUrl) ?? []
+  for (const src of srcs) {
     if (state.loadedModules.has(src) || state.preloaded.has(src)) continue
     state.preloaded.add(src)
     const link = document.createElement('link')
@@ -293,7 +314,7 @@ function prefetchableAnchor(event: Event): HTMLAnchorElement | null {
   if (!state) return null
   const anchor = (event.target as Element | null)?.closest?.('a') as HTMLAnchorElement | null
   if (!anchor || !anchor.getAttribute('href')) return null
-  if (!state.shouldIntercept(anchor, event as MouseEvent)) return null
+  if (!state.shouldIntercept(anchor, event)) return null
   return anchor
 }
 

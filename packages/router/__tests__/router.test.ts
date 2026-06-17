@@ -26,6 +26,7 @@ type FetchCall = { url: string; headers?: Record<string, string> }
 let router: { stop(): void; navigate: (u: string, o?: { history?: 'push' | 'replace' | false }) => Promise<void>; prefetch: (u: string) => void } | null = null
 let fetchCalls: FetchCall[] = []
 let pushed: Array<{ state: unknown; url: string }> = []
+let originalPushState: typeof window.history.pushState
 
 const flush = (ms = 10) => new Promise((r) => setTimeout(r, ms))
 
@@ -75,11 +76,13 @@ beforeEach(() => {
   document.title = 'page 1'
   document.body.innerHTML = `<header id="hdr">shell</header>
     <main bf-region><p>page 1 body</p><a id="next" href="/blog/2">next</a></main>`
-  // Capture history writes without losing real behaviour.
-  const realPush = window.history.pushState.bind(window.history)
+  // Capture history writes without losing real behaviour. Save the (real,
+  // unwrapped) pushState — `afterEach` restores it, so each test starts from a
+  // single wrapper rather than stacking one per test.
+  originalPushState = window.history.pushState
   window.history.pushState = ((state: unknown, _t: string, url: string) => {
     pushed.push({ state, url: String(url) })
-    realPush(state, _t, url)
+    originalPushState.call(window.history, state, _t, url)
   }) as typeof window.history.pushState
   mockFetch((url) => (url.includes('/blog/2') ? fullPage('<p>page 2 body</p>', { title: 'page 2' }) : null))
   // A no-op dispose seam so the default-dispose dynamic import isn't exercised.
@@ -89,6 +92,8 @@ beforeEach(() => {
 afterEach(() => {
   router?.stop()
   router = null
+  // Restore the unwrapped pushState so wrappers don't stack across tests.
+  window.history.pushState = originalPushState
   const w = window as unknown as Record<string, unknown>
   delete w.__bf_dispose_within
   delete w.__bf_hydrate_within
@@ -271,6 +276,25 @@ describe('@barefootjs/router v0', () => {
     await navigate('/old')
     await flush()
     expect(pushed[pushed.length - 1]?.url).toBe('https://example.test/new')
+  })
+
+  test('a relative module src resolves against the response URL, not the current location', async () => {
+    const imported: string[] = []
+    // Served (after redirect) from /sub/page, carrying a *relative* module src.
+    mockFetch(
+      () => fullPage('<div bf-s="x" data-island="I">x</div>', { modules: ['./island.js'] }),
+      () => 'https://example.test/sub/page',
+    )
+    router = startRouter({
+      rehydrate: () => {},
+      dispose: () => {},
+      loadModule: async (s) => { imported.push(s) },
+    })
+    // Current location is /blog/1; without response-URL resolution this would
+    // resolve against /blog/ instead of /sub/.
+    await navigate('/sub/page')
+    await flush()
+    expect(imported).toEqual(['https://example.test/sub/island.js'])
   })
 
   // --- v0 additions over the #1910 reference -----------------------------

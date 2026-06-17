@@ -30,7 +30,7 @@ export interface RouterOptions {
   /** Import an island module by src. Defaults to `(src) => import(src)`. */
   loadModule?: (src: string) => Promise<unknown>
   /** Decide whether to intercept an anchor click. Defaults to {@link defaultShouldIntercept}. */
-  shouldIntercept?: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
+  shouldIntercept?: (anchor: HTMLAnchorElement, event: Event) => boolean
   /** Scroll to the top of the document after a swap. Default `true`. */
   scrollToTop?: boolean
   /** Move focus to the swapped region + announce the route change. Default `true`. */
@@ -104,7 +104,7 @@ export interface RouterState {
   cache: Map<string, CacheEntry>
   /** Module srcs already `<link rel=modulepreload>`-ed. */
   preloaded: Set<string>
-  shouldIntercept: (anchor: HTMLAnchorElement, event: MouseEvent) => boolean
+  shouldIntercept: (anchor: HTMLAnchorElement, event: Event) => boolean
   scrollToTop: boolean
   manageFocus: boolean
   /** Pathname of the currently-displayed region (for the query-only short-circuit). */
