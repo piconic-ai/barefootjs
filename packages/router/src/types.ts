@@ -101,13 +101,6 @@ export interface CacheEntry {
   refreshing: boolean
 }
 
-/** The swappable content lifted out of a fetched page. */
-export interface RegionContent {
-  nodes: Node[]
-  title: string | null
-  moduleSrcs: string[]
-}
-
 /** Mutable state for the one active router instance. */
 export interface RouterState {
   regionSelector: string
@@ -129,6 +122,13 @@ export interface RouterState {
   shouldIntercept: (anchor: HTMLAnchorElement, event: Event) => boolean
   scrollToTop: boolean
   manageFocus: boolean
+  /**
+   * Per-region server-render baseline: `bf-region` id → owned-content key of the
+   * server render currently displayed there. The swap planner compares an
+   * incoming region against this (not the island-mutated live DOM) so an
+   * unchanged region keeps its state; refreshed after each navigation.
+   */
+  regionBaselines: Map<string, string>
   morph: boolean
   /** Pathname of the currently-displayed region (for the query-only short-circuit). */
   currentPath: string
