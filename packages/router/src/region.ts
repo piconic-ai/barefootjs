@@ -48,8 +48,13 @@ export interface RegionSwap {
 }
 
 export type SwapPlan =
-  /** Matched compiler-derived regions: swap exactly `targets` (may be empty when nothing changed). */
-  | { mode: 'regions'; targets: RegionSwap[] }
+  /**
+   * Matched compiler-derived regions: swap exactly `targets` (may be empty when
+   * nothing changed). `incomingKeys` is the owned-content key per matched region
+   * id from the **incoming server render** — the caller commits it as the new
+   * per-region baseline (see {@link planRegionSwaps}).
+   */
+  | { mode: 'regions'; targets: RegionSwap[]; incomingKeys: Map<string, string> }
   /** Region ids don't line up (or collide): fall back to the single broadest-region swap (v0). */
   | { mode: 'broadest' }
 
@@ -95,29 +100,53 @@ export function ownedContentKey(region: Element, selector: string): string {
  * regions whose owned content differs (an ancestor swap rebuilds its nested
  * regions, so a nested candidate inside another candidate is dropped). When the
  * id sets differ or collide, fall back to the broadest single-region swap.
+ *
+ * The "differs" test compares the incoming region's **server-rendered** owned
+ * content against `baselines` — the owned-content key captured from the server
+ * render currently displayed in that region — **not** the live DOM. A live
+ * region's DOM may have been mutated by its islands (signal-driven updates), so
+ * comparing against it would flag an unchanged region as changed and swap away
+ * its state — the opposite of v2's goal. The caller seeds `baselines` from the
+ * initial document and refreshes it from `incomingKeys` after each navigation.
+ * A region missing from `baselines` falls back to its live owned content.
  */
 export function planRegionSwaps(
   currentRoot: ParentNode,
   incomingRoot: ParentNode,
   selector: string,
+  baselines: ReadonlyMap<string, string>,
 ): SwapPlan {
   const cur = indexRegions(currentRoot, selector)
   const inc = indexRegions(incomingRoot, selector)
   if (!cur || !inc || !sameKeys(cur, inc)) return { mode: 'broadest' }
 
+  const incomingKeys = new Map<string, string>()
   const candidates: RegionSwap[] = []
   for (const [id, current] of cur) {
     const incoming = inc.get(id) as Element
-    if (ownedContentKey(current, selector) !== ownedContentKey(incoming, selector)) {
-      candidates.push({ current, incoming })
-    }
+    const incomingKey = ownedContentKey(incoming, selector)
+    incomingKeys.set(id, incomingKey)
+    const baseline = baselines.get(id) ?? ownedContentKey(current, selector)
+    if (incomingKey !== baseline) candidates.push({ current, incoming })
   }
   // Drop any candidate nested inside another candidate (in the live document):
   // swapping the ancestor replaces it anyway.
   const targets = candidates.filter(
     (c) => !candidates.some((o) => o !== c && o.current.contains(c.current)),
   )
-  return { mode: 'regions', targets }
+  return { mode: 'regions', targets, incomingKeys }
+}
+
+/**
+ * Capture the owned-content key of every `[bf-region]` in `root`, keyed by id —
+ * the per-region server-render baseline the swap planner compares against.
+ */
+export function captureRegionBaselines(root: ParentNode, selector: string): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const el of root.querySelectorAll(selector)) {
+    out.set(el.getAttribute(BF_REGION) ?? '', ownedContentKey(el, selector))
+  }
+  return out
 }
 
 function sameKeys(a: Map<string, unknown>, b: Map<string, unknown>): boolean {

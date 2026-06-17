@@ -11,6 +11,7 @@
 import { BF_REGION } from '@barefootjs/shared'
 import { loadPage } from './cache.ts'
 import {
+  captureRegionBaselines,
   collectModuleScripts,
   collectRegionModuleSrcs,
   importRegionChildren,
@@ -67,6 +68,9 @@ export function startRouter(options: RouterOptions = {}): Router {
     scrollToTop: options.scrollToTop ?? true,
     manageFocus: options.manageFocus ?? true,
     morph: options.morph ?? true,
+    // Seed the per-region baselines from the initial document's server render
+    // (captured before islands mutate the DOM). Refreshed after each navigation.
+    regionBaselines: captureRegionBaselines(document, options.region ?? `[${BF_REGION}]`),
     currentPath: window.location.pathname,
     inflight: null,
     hoverTimer: null,
@@ -253,7 +257,7 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     // across both documents, swap only the deepest regions whose owned content
     // differs (nested/sibling, spec v2); otherwise fall back to the single
     // broadest region (v0).
-    const plan = planRegionSwaps(document, incomingDoc, state.regionSelector)
+    const plan = planRegionSwaps(document, incomingDoc, state.regionSelector, state.regionBaselines)
     let targets: RegionSwap[]
     if (plan.mode === 'regions') {
       targets = plan.targets
@@ -289,13 +293,26 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     }
     if (title !== null) document.title = title
 
-    // Dispose the outgoing islands. They're now detached in each `outgoing`, and
-    // the swaps are already committed, so a superseded navigation just skips the
-    // remaining work below — it never has to undo a DOM mutation. With `morph`,
-    // any matched `[data-bf-permanent]` node was moved into the new tree above,
-    // so it isn't here; with `morph: false` the permanent nodes stay in
-    // `outgoing` and are disposed normally.
-    await Promise.all(swapped.map(({ outgoing }) => state.dispose(outgoing)))
+    // Refresh the per-region baselines to the server render now displayed: from
+    // the incoming keys (matched regions), else recaptured from the live DOM
+    // (the broadest fallback just inserted fresh server content). Done right
+    // after the synchronous swaps so a superseded navigation that bails below
+    // still leaves baselines consistent with the committed DOM.
+    if (plan.mode === 'regions') {
+      for (const [id, key] of plan.incomingKeys) state.regionBaselines.set(id, key)
+    } else {
+      state.regionBaselines = captureRegionBaselines(document, state.regionSelector)
+    }
+
+    // Dispose the outgoing islands, sequentially in document order. `dispose` is
+    // user-overridable and may do global teardown or assume single-call
+    // ordering, so we never run several in parallel (the region count is small).
+    // Each `outgoing` is already detached and the swaps are committed, so a
+    // superseded navigation just skips the remaining work below — it never has
+    // to undo a DOM mutation. With `morph`, any matched `[data-bf-permanent]`
+    // node was moved into the new tree above, so it isn't here; with
+    // `morph: false` the permanent nodes stay in `outgoing` and are disposed.
+    for (const { outgoing } of swapped) await state.dispose(outgoing)
     if (controller.signal.aborted) return
 
     // Register any island modules this response introduced before hydrating.
@@ -311,8 +328,11 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
 
     if (state.scrollToTop) window.scrollTo(0, 0)
 
-    // Re-hydrate the freshly inserted islands (subtree-scoped, per region).
-    await Promise.all(swapped.map(({ region }) => state.rehydrate(region)))
+    // Re-hydrate the freshly inserted islands (subtree-scoped, per region),
+    // sequentially in document order — like `dispose`, `rehydrate` is
+    // user-overridable and may touch shared global state, so parallel runs are
+    // avoided (the region count is small).
+    for (const { region } of swapped) await state.rehydrate(region)
     // `rehydrate` may await (a dynamic import); a newer navigation could have
     // superseded us in the meantime — don't run a11y side effects on what is
     // now stale content.

@@ -171,6 +171,26 @@ describe('@barefootjs/router v2 — nested / sibling regions', () => {
     expect(document.getElementById('body')?.textContent).toBe('B')
   })
 
+  test('a region whose island mutated the DOM is not swapped when the server render is unchanged', async () => {
+    // The diff compares the incoming SERVER render against the region's server
+    // baseline, not the live DOM — so an island that changed the DOM after
+    // hydration does not make an otherwise-unchanged region look "changed" and
+    // get swapped (which would lose its state). Regression for the v2 review.
+    document.body.innerHTML =
+      `<header>shell</header><div bf-region="r:0" id="outer"><p id="body">server</p></div>`
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} }) // baseline = "<p>server</p>"
+    // Simulate a signal-driven island mutating the live DOM after hydration.
+    ;(document.getElementById('body') as HTMLElement).textContent = 'mutated by island'
+    mark('body', 7)
+    // Incoming server render is byte-identical to the original (the baseline).
+    mockFetch(() => page(`<div bf-region="r:0" id="outer"><p id="body">server</p></div>`))
+    await navigate('/b')
+    await flush()
+    // Not swapped: same live node (marker intact) and the island mutation kept.
+    expect(readMark('body')).toBe(7)
+    expect(document.getElementById('body')?.textContent).toBe('mutated by island')
+  })
+
   test('a navigation that changes no region commits history without swapping', async () => {
     document.body.innerHTML = `<header>shell</header>
       <div bf-region="r:0" id="outer"><p id="body">same</p></div>`
