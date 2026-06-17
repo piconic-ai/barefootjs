@@ -1387,6 +1387,44 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * Whether the component reads the request-scoped `searchParams()`
+   * environment signal (router v0.5, #1922). Detected from a non-type
+   * `searchParams` import off `@barefootjs/client` — the same import the
+   * analyzer validates against `CLIENT_EXPORTS`. When true the generated
+   * structs carry a `SearchParams bf.SearchParams` binding the route handler
+   * fills per request and the template reads via `.SearchParams.Get "key"`.
+   *
+   * Guarded against a name collision with a user prop / signal / memo also
+   * called `searchParams`: that author owns the `SearchParams` field, so the
+   * env-signal field is dropped (the reference would resolve to their value).
+   */
+  private usesSearchParams(ir: ComponentIR): boolean {
+    const imported = ir.metadata.imports.some(
+      imp =>
+        imp.source === '@barefootjs/client' &&
+        !imp.isTypeOnly &&
+        imp.specifiers.some(s => !s.isTypeOnly && (s.alias ?? s.name) === 'searchParams'),
+    )
+    if (!imported) return false
+    // Every other source that contributes a Props/Input struct field: a
+    // collision on `SearchParams` would redeclare the field and break the Go
+    // compile. Covers props, signals, memos, `useContext` consumers, and the
+    // `{...rest}` bag — the same field-producing sets the struct emitters draw
+    // from. When the author already owns `SearchParams`, drop the env-signal
+    // field (their binding lowers to the same `.SearchParams` reference).
+    const taken = new Set<string>([
+      ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => this.capitalizeFieldName(m.name)),
+      ...this.contextConsumers.map(c => this.contextFieldName(c)),
+    ])
+    if (ir.metadata.restPropsName) {
+      taken.add(this.capitalizeFieldName(ir.metadata.restPropsName))
+    }
+    return !taken.has('SearchParams')
+  }
+
+  /**
    * Generate Input struct for a component
    */
   private generateInputStruct(
@@ -1405,6 +1443,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // outer component. Forwarded to Props's BfParent / BfMount.
     lines.push('\tBfParent string // Optional: parent scope id')
     lines.push('\tBfMount string // Optional: slot id in parent')
+
+    // (#1922) Request-scoped `searchParams()` binding. The route handler
+    // builds it from the request URL (`bf.NewSearchParams(r.URL.RawQuery)`);
+    // the zero value is an empty query, so an omitted field resolves every
+    // `.Get` to "" — the author's `?? default` then renders.
+    if (this.usesSearchParams(ir)) {
+      lines.push('\tSearchParams bf.SearchParams // Optional: request query for searchParams()')
+    }
 
     // Static + prop-derived nested components appear in Input;
     // signal-backed dynamic ones are template-only
@@ -1489,6 +1535,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Add Scripts field for dynamic script collection
     lines.push('\tScripts *bf.ScriptCollector `json:"-"`')
+
+    // (#1922) Request-scoped `searchParams()` SSR value. Read by the
+    // template as `.SearchParams.Get "key"`. Not serialised for hydration
+    // (`json:"-"`) — the client re-reads `window.location.search` itself.
+    if (this.usesSearchParams(ir)) {
+      lines.push('\tSearchParams bf.SearchParams `json:"-"`')
+    }
 
     // Collect nested component array field names to skip from propsParams
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
@@ -1720,6 +1773,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // slot-attached child of an outer page/component.
     lines.push('\t\tBfParent: in.BfParent,')
     lines.push('\t\tBfMount: in.BfMount,')
+    // (#1922) Forward the request-scoped searchParams() binding unchanged.
+    if (this.usesSearchParams(ir)) {
+      lines.push('\t\tSearchParams: in.SearchParams,')
+    }
 
     // Collect nested component array field names
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
@@ -4443,10 +4500,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     right: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string {
-    const l = emit(left)
-    const r = emit(right)
-    const wrapLeft = this.needsParens(left) ? `(${l})` : l
-    const wrapRight = this.needsParens(right) ? `(${r})` : r
+    // Go's `and`/`or` are prefix builtins, so every operand that renders to
+    // more than one token (a method/function call like `.SearchParams.Get
+    // "sort"`, an arithmetic `bf_add a b`, a comparison `eq a b`, a nested
+    // `not …` / `or …`) must be parenthesised or it degrades into extra
+    // sibling args of the enclosing `and`/`or`. `wrapIfMultiToken` is the
+    // file-wide idiom for exactly this (every other prefix-helper emitter
+    // composes operands through it); a bare field ref / quoted literal stays
+    // uncluttered. This is what makes `searchParams().get(k) ?? d` lower to
+    // `or (.SearchParams.Get "sort") "none"` instead of the broken
+    // `or .SearchParams.Get "sort" "none"` (#1922).
+    const wrapLeft = wrapIfMultiToken(emit(left))
+    const wrapRight = wrapIfMultiToken(emit(right))
     if (op === '&&') return `and ${wrapLeft} ${wrapRight}`
     return `or ${wrapLeft} ${wrapRight}`
   }

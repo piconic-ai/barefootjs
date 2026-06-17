@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"math"
 	"math/rand"
+	"net/url"
 	"os"
 	"reflect"
 	"sort"
@@ -2465,4 +2466,54 @@ func toString(v any) string {
 	default:
 		return ""
 	}
+}
+
+// =============================================================================
+// searchParams() — request-scoped environment signal (router v0.5, #1922)
+// =============================================================================
+
+// SearchParams is the SSR view of the request query string behind the
+// reactive searchParams() environment signal. The route handler builds it
+// from the request URL and assigns it to the component's SearchParams input
+// field; the generated template reads it via `.SearchParams.Get "key"`.
+//
+// The zero value is an empty query (url.Values.Get tolerates a nil map), so a
+// render with no request query — e.g. the adapter conformance harness, which
+// issues no query string — resolves every key to "", which the template's
+// `or`/`??` fallback turns into the author's default.
+type SearchParams struct {
+	values url.Values
+}
+
+// NewSearchParams parses a raw query string (with or without a leading "?")
+// into a SearchParams. A malformed query yields an empty set rather than an
+// error, mirroring the browser's URLSearchParams, which never throws on junk.
+//
+// Typical handler use (net/http):
+//
+//	in := MyComponentInput{SearchParams: bf.NewSearchParams(r.URL.RawQuery)}
+func NewSearchParams(raw string) SearchParams {
+	raw = strings.TrimPrefix(raw, "?")
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		values = url.Values{}
+	}
+	return SearchParams{values: values}
+}
+
+// Get returns the first value associated with key, or "" when the key is
+// absent. This mirrors url.Values.Get, which also returns "" for a
+// present-but-empty value (`?sort=`). Safe on the zero value (nil map).
+//
+// This is not byte-for-byte URLSearchParams.get under the template's `??`
+// lowering. JS distinguishes absent (`null`) from present-but-empty (`""`):
+// `null ?? d` yields the default, but `"" ?? d` keeps the empty string. The
+// Go adapter lowers `??` to the `or` builtin — Go templates have no
+// null-coalescing operator — so here BOTH an absent key and a present-but-
+// empty value fall back to the author's default. The conformance fixture only
+// exercises the absent-key default, where the two runtimes agree; the
+// empty-string divergence is the same general `?? → or` limitation that
+// applies to any `x ?? default` the Go adapter lowers.
+func (s SearchParams) Get(key string) string {
+	return s.values.Get(key)
 }
