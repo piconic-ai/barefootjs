@@ -20,7 +20,8 @@ stand-in. So this doubles as an end-to-end integration test of the router's
 |---|---|
 | ![home](./screenshots/01-home.png) | First load: the index list + sort/tag controls. The shell shows `uptime · partial navs · live islands`, all hydrated once. |
 | ![sort](./screenshots/02-sort-title.png) | **v0.5 `searchParams()`:** clicking `sort` / `tag` re-orders/filters the list reactively — **`partial navs` stays 0** (no region swap) while the list and the controls' active state update. A pinned post keeps its state across a re-sort. |
-| ![post](./screenshots/03-post.png) | **v0** After opening a post: the body is swapped in, **uptime kept climbing**, `partial navs` ticked. **v1** The ▶ NowPlaying player is marked `data-bf-permanent`, so it keeps playing across the next post→post swap, while the ⏱ reading timer (unmarked) resets. |
+| ![post](./screenshots/03-post.png) | **v0** After opening a post (post 10, `partial navs 1`): the body is swapped in, **uptime kept climbing**. The ▶ NowPlaying player (marked `data-bf-permanent`) is playing — elapsed `0.7s`. |
+| ![persist](./screenshots/04-permanent-persist.png) | **v1** After paging to the next post (post 9, `partial navs 2`): the player's clock **continued to `1.5s`** — the same live node was moved across the swap — while the unmarked ⏱ reading timer **reset** to `0.7s`. Same region, same swap, only the marker differs. |
 
 The header is the proof of v0's persistent shell: its uptime clock and theme
 toggle start **once**. A full reload would reset them. Only `<main bf-region>`

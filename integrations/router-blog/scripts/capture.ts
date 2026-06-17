@@ -33,5 +33,11 @@ await page.click('.island.player .player-toggle')
 await page.waitForTimeout(600)
 await shot('03-post.png')
 
+// v1: page to the next post — the data-bf-permanent player keeps playing with
+// its clock continued (live node preserved), while the ⏱ reading timer resets.
+await page.click('.pager a.pager-link[href^="/posts/"]')
+await page.waitForTimeout(700)
+await shot('04-permanent-persist.png')
+
 await browser.close()
 console.log('Wrote screenshots/')
