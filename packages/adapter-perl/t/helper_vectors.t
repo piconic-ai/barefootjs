@@ -94,6 +94,11 @@ my %bindings = (
     # Mirrors the Mojo inline `[grep { $_ } @{...}]` for filter(Boolean).
     filter_truthy => sub { [grep { $_ } @{ $_[0] }] },
 
+    # searchParams().get(key) (#1922) via the lazy factory consumers use.
+    # No divergence entry: get() returns undef for an absent key (~ JS null)
+    # and '' for present-but-empty, so the Perl backend matches JS exactly.
+    search_params_get => sub { BarefootJS->search_params($_[0])->get($_[1]) },
+
     # Higher-order entries arrive in the canonical projection form
     # (spec: items + field [+ value]); the closures below rebuild the
     # predicate the adapters compile (`i => i.field === value`,
