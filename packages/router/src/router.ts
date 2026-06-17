@@ -15,6 +15,7 @@ import {
   collectModuleScripts,
   collectRegionModuleSrcs,
   importRegionChildren,
+  isRootRegion,
   loadNewModules,
   parseDocument,
   planRegionSwaps,
@@ -262,9 +263,14 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
     if (plan.mode === 'regions') {
       targets = plan.targets
     } else {
+      // Ids diverge or collide. Swap the broadest region only if it is a true
+      // root containing every other region (one swap rebuilds them all — the v0
+      // single-region behaviour). If the regions are siblings, a single swap
+      // would half-update the page, so hard-navigate instead (never worse than
+      // an MPA).
       const current = document.querySelector(state.regionSelector)
       const incoming = incomingDoc.querySelector(state.regionSelector)
-      if (!current || !incoming) {
+      if (!current || !incoming || !isRootRegion(current, state.regionSelector)) {
         hardNavigate(finalUrl)
         return
       }

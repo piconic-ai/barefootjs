@@ -200,6 +200,21 @@ function sameKeys(a: Map<string, unknown>, b: Map<string, unknown>): boolean {
 }
 
 /**
+ * True when `region` contains every other `[bf-region]` in its document — i.e.
+ * it is a single root whose swap rebuilds them all. Used by the broadest
+ * fallback: a root may be swapped wholesale (the v0 behaviour), but if the
+ * regions are siblings a single swap would only half-update the page, so the
+ * caller hard-navigates instead.
+ */
+export function isRootRegion(region: Element, selector: string): boolean {
+  const root = region.ownerDocument ?? document
+  for (const el of root.querySelectorAll(selector)) {
+    if (el !== region && !region.contains(el)) return false
+  }
+  return true
+}
+
+/**
  * Adopt an incoming region's child nodes into the live document so they're ready
  * to insert (the parsed nodes belong to a detached document).
  */
