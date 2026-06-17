@@ -85,6 +85,16 @@ sub register ($self, $app, $config = {}) {
                 $c->stash->{$name} = $value;
             }
         }
+
+        # (#1922) Seed the request-scoped `searchParams()` reader as the
+        # `$searchParams` template var, built from the live request query —
+        # so `searchParams().get(k)` resolves the current query during SSR
+        # (the client re-reads window.location on hydration). A caller that
+        # set it by hand wins (`//=`). Harmless for components that never read
+        # it; the var simply goes unused. `$bf->search_params` lazy-loads the
+        # reader class, so the plugin needn't `use` it directly.
+        $c->stash->{searchParams} //=
+            $bf->search_params($c->req->query_params->to_string);
     });
 }
 

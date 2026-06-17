@@ -126,6 +126,45 @@ subtest 'plugin before_render — caller stash wins over manifest defaults' => s
     is $c->stash('count'), 10, 'caller-supplied stash value preserved';
 };
 
+subtest 'plugin before_render — seeds searchParams from the request query (#1922)' => sub {
+    my $dir = tempdir;
+    my $manifest_file = $dir->child('manifest.json');
+    $manifest_file->spew(encode_json({
+        Counter => { markedTemplate => 'templates/Counter.html.ep', ssrDefaults => {} },
+    }));
+
+    my $app = Mojolicious->new;
+    $app->plugin('BarefootJS' => { manifest_path => "$manifest_file" });
+    my $c = $app->build_controller;
+    $c->req->url->query->parse('sort=price&page=2');
+
+    $app->plugins->emit_hook(before_render => $c, { template => 'Counter' });
+
+    my $sp = $c->stash('searchParams');
+    is ref($sp), 'BarefootJS::SearchParams', 'request-scoped searchParams reader stashed';
+    is $sp->get('sort'),    'price', 'reader resolves the live request query';
+    is $sp->get('missing'), undef,   'absent key → undef (→ author default in template)';
+};
+
+subtest 'plugin before_render — caller searchParams wins over the request' => sub {
+    my $dir = tempdir;
+    my $manifest_file = $dir->child('manifest.json');
+    $manifest_file->spew(encode_json({
+        Counter => { markedTemplate => 'templates/Counter.html.ep', ssrDefaults => {} },
+    }));
+
+    my $app = Mojolicious->new;
+    $app->plugin('BarefootJS' => { manifest_path => "$manifest_file" });
+    my $c = $app->build_controller;
+    $c->req->url->query->parse('sort=price');
+    my $custom = BarefootJS->search_params('sort=custom');
+    $c->stash(searchParams => $custom);
+
+    $app->plugins->emit_hook(before_render => $c, { template => 'Counter' });
+
+    is $c->stash('searchParams'), $custom, 'caller-supplied searchParams preserved (//=)';
+};
+
 subtest 'plugin before_render — skips child templates' => sub {
     my $dir = tempdir;
     my $manifest_file = $dir->child('manifest.json');

@@ -40,12 +40,12 @@ runAdapterConformanceTests({
   // Pinned here rather than in `expectedDiagnostics` because no BF101
   // fires anymore.
   //
-  // `search-params` (router v0.5): the generic lowering mis-compiles
-  // `searchParams().get('sort')` to a hash access (`$searchParams->{get}`),
-  // dropping the call + arg; it needs dedicated env-signal lowering plus a
-  // per-request Perl `search_params` reader. Tracked in
-  // https://github.com/piconic-ai/barefootjs/issues/1922.
-  skipJsx: ['data-table', 'search-params'],
+  // `search-params` (router v0.5) now renders: the emitter lowers
+  // `searchParams().get('sort')` to a real method call on the per-request
+  // `$searchParams` reader (`$searchParams->get('sort')`), and the harness
+  // binds it to an empty-query `BarefootJS::SearchParams` (`.get` → undef →
+  // `// 'none'` renders the default). See #1922.
+  skipJsx: ['data-table'],
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't
@@ -248,6 +248,35 @@ function Box({ k, v }: { k?: string; v?: string }) {
     adapter.generate(ir)
     const errs = (adapter as unknown as { errors: { code: string }[] }).errors
     expect(errs.some(e => e.code === 'BF101')).toBe(true)
+  })
+})
+
+describe('MojoAdapter - searchParams() env-signal lowering (#1922)', () => {
+  // `searchParams().get(k)` is an env-signal method call: it must lower to a
+  // real method call on the per-request `$searchParams` reader, not the
+  // generic hash deref `$searchParams->{get}` (which drops the arg).
+  test('lowers searchParams().get(k) to a method call on $searchParams', () => {
+    const { template } = compileAndGenerate(`
+import { searchParams } from '@barefootjs/client'
+function SortLabel() {
+  return <p>{searchParams().get('sort') ?? 'none'}</p>
+}
+`)
+    expect(template).toContain("($searchParams->get('sort') // 'none')")
+    expect(template).not.toContain('$searchParams->{get}')
+  })
+
+  // An aliased import binds the env signal to a different local name; the
+  // expression reads `sp()`, but it still lowers to the canonical
+  // `$searchParams` reader (the harness/plugin seed that fixed var).
+  test('matches an aliased import (`searchParams as sp`) and emits canonical $searchParams', () => {
+    const { template } = compileAndGenerate(`
+import { searchParams as sp } from '@barefootjs/client'
+function SortLabel() {
+  return <p>{sp().get('sort') ?? 'none'}</p>
+}
+`)
+    expect(template).toContain("($searchParams->get('sort') // 'none')")
   })
 })
 

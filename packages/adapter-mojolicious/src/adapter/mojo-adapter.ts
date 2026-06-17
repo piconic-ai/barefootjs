@@ -57,7 +57,9 @@ import {
   isLowerableObjectRestDestructure,
   type ContextConsumer,
   collectModuleStringConsts,
-  lookupStaticRecordLiteral
+  lookupStaticRecordLiteral,
+  searchParamsLocalNames,
+  matchSearchParamsMethodCall
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 
@@ -260,6 +262,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   private stringValueNames: Set<string> = new Set()
   /**
+   * (#1922) Local binding names the request-scoped `searchParams()` env signal
+   * is imported under (handles `import { searchParams as sp }`). When non-empty
+   * the emitter lowers a `<binding>().get(k)` call to a real method call on the
+   * per-request `$searchParams` reader (`$searchParams->get('sort')`) instead of
+   * the generic hash deref. Set at `generate()` entry from `ir.metadata.imports`;
+   * read by the top-level ParsedExpr emitter.
+   */
+  _searchParamsLocals: Set<string> = new Set()
+  /**
    * Module-scope pure string-literal constants (`const X = 'literal'` at
    * file top-level), keyed by name → resolved literal value. Populated at
    * `generate()` entry from `ir.metadata.localConstants`. When an identifier
@@ -374,6 +385,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
     }
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
+    this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this.localConstants = ir.metadata.localConstants ?? []
     this.loopBoundNames.clear()
     this.errors = []
@@ -2685,6 +2697,16 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     // Signal getter: count() → $count
     if (callee.kind === 'identifier' && args.length === 0) {
       return `$${callee.name}`
+    }
+    // Env-signal method call (#1922): `searchParams().get('sort')` is a real
+    // method call on the per-request `$searchParams` reader object, not the
+    // generic hash deref `member` would emit (`$searchParams->{get}`, which
+    // drops the arg). Matches the local import binding (incl. an alias).
+    if (this.adapter._searchParamsLocals.size > 0) {
+      const sp = matchSearchParamsMethodCall(callee, args, this.adapter._searchParamsLocals)
+      if (sp) {
+        return `$searchParams->${sp.method}(${sp.args.map(emit).join(', ')})`
+      }
     }
     // Identifier-path templatePrimitive (#1189): `JSON.stringify(x)` /
     // `Math.floor(x)` → `bf->json($x)` / `bf->floor($x)`. Args render

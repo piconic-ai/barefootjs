@@ -17,7 +17,7 @@
  * than the Mojo harness's literal `test_<sN>`.
  */
 
-import { compileJSX, extractSsrDefaults } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
 import type { ComponentIR } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -529,6 +529,16 @@ function buildPerlProps(
     const entry = ssrDefaults[memo.name]
     const value = entry && typeof entry === 'object' && 'value' in entry ? entry.value : 0
     entries.push(`${memo.name} => ${toPerlLiteral(value ?? 0)}`)
+  }
+
+  // (#1922) Request-scoped `searchParams()`: bind `$searchParams` to an
+  // empty-query reader via the lazy-loading factory (so the render script
+  // needn't `use BarefootJS::SearchParams`). The conformance harness issues no
+  // query string (the production Xslate integration builds this from the
+  // request's query), so `.get(k)` resolves to nil and the author's
+  // `?? default` renders. Only when the component imports `searchParams`.
+  if (importsSearchParams(ir.metadata)) {
+    entries.push(`searchParams => BarefootJS->search_params('')`)
   }
 
   return `{${entries.join(', ')}}`

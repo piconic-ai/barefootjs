@@ -61,6 +61,14 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   arr: (...elements: unknown[]) => elements,
   filter_truthy: (a: unknown[]) => a.filter(Boolean),
 
+  // searchParams() env-signal reader (#1922). The reference is the real
+  // URLSearchParams.get the client runtime uses, so the template backends'
+  // per-request readers (Go bf.SearchParams.Get / Perl
+  // BarefootJS::SearchParams::get) are held to JS parity — with each
+  // backend's deliberate divergence pinned in its harness (Go's url.Values.Get
+  // returns "" for an absent key where JS returns null).
+  search_params_get: (query: string, key: string) => new URLSearchParams(query).get(key),
+
   // Higher-order entries use the compiled projection catalogue as the
   // canonical argument form (spec: "canonical projection form") — the
   // references run the REAL JS array methods over predicates built
@@ -479,4 +487,19 @@ export const cases: HelperCase[] = [
     args: [['5', '6'], '+', 'self', '', 'numeric', '0', 'left'],
     note: 'numeric-string items concatenate under JS +',
   },
+
+  // searchParams().get(key) (#1922) — request-query reader parity. URLSearchParams
+  // parses application/x-www-form-urlencoded: leading `?` stripped, `+`/`%XX`
+  // decoded, pairs split on the first `=`, `.get` returns the first value or null.
+  { fn: 'search_params_get', args: ['sort=price', 'missing'], note: 'absent key is null' },
+  { fn: 'search_params_get', args: ['sort=price', 'sort'], note: 'present key returns its value' },
+  { fn: 'search_params_get', args: ['?sort=price', 'sort'], note: 'leading ? is stripped' },
+  { fn: 'search_params_get', args: ['sort=a&sort=b', 'sort'], note: 'repeated key returns the first value' },
+  { fn: 'search_params_get', args: ['a=1&b=2', 'b'], note: 'second pair resolves independently' },
+  { fn: 'search_params_get', args: ['sort=', 'sort'], note: 'present-but-empty value stays empty string' },
+  { fn: 'search_params_get', args: ['sort', 'sort'], note: 'bare key (no =) is present with empty value' },
+  { fn: 'search_params_get', args: ['q=a+b', 'q'], note: 'plus decodes to space' },
+  { fn: 'search_params_get', args: ['q=a%20b', 'q'], note: 'percent-encoded space decodes' },
+  { fn: 'search_params_get', args: ['q=a%26b', 'q'], note: 'encoded & in a value is data, not a separator' },
+  { fn: 'search_params_get', args: ['token=a=b=c', 'token'], note: 'only the first = splits; the rest is value' },
 ]

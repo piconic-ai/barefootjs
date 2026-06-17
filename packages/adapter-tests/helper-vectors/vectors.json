@@ -2584,6 +2584,105 @@
       ],
       "expect": "056",
       "note": "numeric-string items concatenate under JS +"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "sort=price",
+        "missing"
+      ],
+      "expect": null,
+      "note": "absent key is null"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "sort=price",
+        "sort"
+      ],
+      "expect": "price",
+      "note": "present key returns its value"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "?sort=price",
+        "sort"
+      ],
+      "expect": "price",
+      "note": "leading ? is stripped"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "sort=a&sort=b",
+        "sort"
+      ],
+      "expect": "a",
+      "note": "repeated key returns the first value"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "a=1&b=2",
+        "b"
+      ],
+      "expect": "2",
+      "note": "second pair resolves independently"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "sort=",
+        "sort"
+      ],
+      "expect": "",
+      "note": "present-but-empty value stays empty string"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "sort",
+        "sort"
+      ],
+      "expect": "",
+      "note": "bare key (no =) is present with empty value"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "q=a+b",
+        "q"
+      ],
+      "expect": "a b",
+      "note": "plus decodes to space"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "q=a%20b",
+        "q"
+      ],
+      "expect": "a b",
+      "note": "percent-encoded space decodes"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "q=a%26b",
+        "q"
+      ],
+      "expect": "a&b",
+      "note": "encoded & in a value is data, not a separator"
+    },
+    {
+      "fn": "search_params_get",
+      "args": [
+        "token=a=b=c",
+        "token"
+      ],
+      "expect": "a=b=c",
+      "note": "only the first = splits; the rest is value"
     }
   ]
 }

@@ -111,6 +111,9 @@ var vectorBindings = map[string]func(args []any) any{
 	"join":          func(args []any) any { return Join(args[0], args[1].(string)) },
 	"arr":           func(args []any) any { return Arr(args...) },
 	"filter_truthy": func(args []any) any { return FilterTruthy(args[0]) },
+	"search_params_get": func(args []any) any {
+		return NewSearchParams(args[0].(string)).Get(args[1].(string))
+	},
 	"every":         func(args []any) any { return Every(args[0], args[1].(string)) },
 	"some":          func(args []any) any { return Some(args[0], args[1].(string)) },
 	"filter":        func(args []any) any { return Filter(args[0], args[1].(string), args[2]) },
@@ -196,6 +199,10 @@ var vectorDivergences = map[string]vectorDivergence{
 	"reduce/numeric-string items concatenate under JS +": {
 		expect: 11.0,
 		reason: "numeric folds parse numeric strings (toFloat64WithOK) instead of concatenating",
+	},
+	"search_params_get/absent key is null": {
+		expect: "",
+		reason: "url.Values.Get returns \"\" for an absent key where JS URLSearchParams.get returns null; the ?? → or lowering folds both to the author default, so SSR output still matches",
 	},
 }
 
