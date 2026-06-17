@@ -40,16 +40,21 @@ export function isClientBuiltinName(name: string): name is ClientBuiltinTag {
 export function stripClientBuiltinImports(imports: ImportInfo[]): ImportInfo[] {
   const result: ImportInfo[] = []
   for (const imp of imports) {
-    if (imp.source !== CLIENT_BUILTIN_SOURCE) {
+    // Only a *value* named import of the built-ins can become a phantom runtime
+    // import. Leave everything else untouched: imports from other sources;
+    // `import type { Async }` (erased by TS — never a runtime import, and may be
+    // needed to type-check emitted templates); and side-effect imports (no
+    // specifiers, deliberate). See #1915 review.
+    if (imp.source !== CLIENT_BUILTIN_SOURCE || imp.isTypeOnly || imp.specifiers.length === 0) {
       result.push(imp)
       continue
     }
     const kept = imp.specifiers.filter(
       spec => spec.isDefault || spec.isNamespace || !isClientBuiltinName(spec.name),
     )
-    // A side-effect import (no specifiers) or one whose only specifiers were
-    // the built-ins is dropped entirely; otherwise re-emit without them.
-    if (kept.length === 0 && imp.specifiers.length > 0) continue
+    // Drop the import entirely when every specifier was a built-in; otherwise
+    // re-emit without them.
+    if (kept.length === 0) continue
     result.push(kept.length === imp.specifiers.length ? imp : { ...imp, specifiers: kept })
   }
   return result

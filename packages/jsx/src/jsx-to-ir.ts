@@ -730,7 +730,11 @@ function clientBuiltinTags(ctx: TransformContext): Map<string, ClientBuiltinTag>
   if (ctx._clientBuiltinTags) return ctx._clientBuiltinTags
   const map = new Map<string, ClientBuiltinTag>()
   for (const imp of ctx.analyzer.imports) {
-    if (imp.source !== CLIENT_BUILTIN_SOURCE) continue
+    // Require a *value* import: the tag is used as a JSX value, and the design
+    // is import-value-required. `import type { Async }` brings no value binding
+    // into scope (and is never a runtime import), so it does not scope the
+    // built-in — `<Async>` then falls through to BF054 (#1915 review).
+    if (imp.source !== CLIENT_BUILTIN_SOURCE || imp.isTypeOnly) continue
     for (const spec of imp.specifiers) {
       if (spec.isDefault || spec.isNamespace) continue
       if (isClientBuiltinName(spec.name)) {
@@ -754,6 +758,9 @@ function isNameBound(ctx: TransformContext, name: string): boolean {
   if (a.localFunctions.some(f => f.name === name)) return true
   if (a.localConstants.some(c => c.name === name)) return true
   for (const imp of a.imports) {
+    // Type-only imports create a type binding, not a value one — they can't
+    // back a JSX value tag, so they must not suppress BF054 (#1915 review).
+    if (imp.isTypeOnly) continue
     for (const spec of imp.specifiers) {
       if ((spec.alias ?? spec.name) === name) return true
     }

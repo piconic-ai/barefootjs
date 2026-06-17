@@ -91,6 +91,19 @@ describe('import-scoped recognition for <Async> / <Region>', () => {
     expect(err?.message).toContain('@barefootjs/client')
   })
 
+  test('a type-only import does NOT scope the built-in and does not suppress BF054', () => {
+    // `import type { Async }` brings no value binding into scope — the design
+    // is import-value-required, so <Async> must still raise BF054.
+    const { ir: root, ctx } = ir(`
+      import type { Async } from '@barefootjs/client'
+      export function Page() {
+        return <Async fallback={<p>Loading</p>}><Body /></Async>
+      }
+    `)
+    expect((root as IRElement).type).not.toBe('async')
+    expect(ctx.errors.find(e => e.code === ErrorCodes.BUILTIN_REQUIRES_IMPORT)).toBeDefined()
+  })
+
   test('bare <Region /> with no import reports BF054', () => {
     const { ctx } = ir(`
       export function Shell() {
@@ -123,5 +136,15 @@ describe('stripClientBuiltinImports (emit-time elision)', () => {
   test('leaves imports from other sources untouched', () => {
     const other = imp('./my-async', ['Async'])
     expect(stripClientBuiltinImports([other])).toEqual([other])
+  })
+
+  test('does NOT strip type-only imports (never a runtime phantom)', () => {
+    const typeOnly: ImportInfo = { ...imp('@barefootjs/client', ['Async', 'Region']), isTypeOnly: true }
+    expect(stripClientBuiltinImports([typeOnly])).toEqual([typeOnly])
+  })
+
+  test('preserves a side-effect import of @barefootjs/client', () => {
+    const sideEffect = imp('@barefootjs/client', [])
+    expect(stripClientBuiltinImports([sideEffect])).toEqual([sideEffect])
   })
 })
