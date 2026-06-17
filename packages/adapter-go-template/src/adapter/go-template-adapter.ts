@@ -1406,11 +1406,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         imp.specifiers.some(s => !s.isTypeOnly && (s.alias ?? s.name) === 'searchParams'),
     )
     if (!imported) return false
+    // Every other source that contributes a Props/Input struct field: a
+    // collision on `SearchParams` would redeclare the field and break the Go
+    // compile. Covers props, signals, memos, `useContext` consumers, and the
+    // `{...rest}` bag — the same field-producing sets the struct emitters draw
+    // from. When the author already owns `SearchParams`, drop the env-signal
+    // field (their binding lowers to the same `.SearchParams` reference).
     const taken = new Set<string>([
       ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
       ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
       ...ir.metadata.memos.map(m => this.capitalizeFieldName(m.name)),
+      ...this.contextConsumers.map(c => this.contextFieldName(c)),
     ])
+    if (ir.metadata.restPropsName) {
+      taken.add(this.capitalizeFieldName(ir.metadata.restPropsName))
+    }
     return !taken.has('SearchParams')
   }
 

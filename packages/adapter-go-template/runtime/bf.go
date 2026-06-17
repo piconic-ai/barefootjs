@@ -2502,8 +2502,18 @@ func NewSearchParams(raw string) SearchParams {
 }
 
 // Get returns the first value associated with key, or "" when the key is
-// absent — matching URLSearchParams.get, whose JS `null` the template's
-// `?? default` lowering treats as the default. Safe on the zero value.
+// absent. This mirrors url.Values.Get, which also returns "" for a
+// present-but-empty value (`?sort=`). Safe on the zero value (nil map).
+//
+// This is not byte-for-byte URLSearchParams.get under the template's `??`
+// lowering. JS distinguishes absent (`null`) from present-but-empty (`""`):
+// `null ?? d` yields the default, but `"" ?? d` keeps the empty string. The
+// Go adapter lowers `??` to the `or` builtin — Go templates have no
+// null-coalescing operator — so here BOTH an absent key and a present-but-
+// empty value fall back to the author's default. The conformance fixture only
+// exercises the absent-key default, where the two runtimes agree; the
+// empty-string divergence is the same general `?? → or` limitation that
+// applies to any `x ?? default` the Go adapter lowers.
 func (s SearchParams) Get(key string) string {
 	return s.values.Get(key)
 }
