@@ -80,10 +80,15 @@ survival, disposal, back/forward, `data-bf-permanent` persistence, console
 errors):
 
 ```sh
+bunx playwright install chromium   # once, if you don't have the browser
 PORT=8788 bun run server.tsx &
 bun run scripts/verify.ts
 bun run scripts/capture.ts    # writes screenshots/
 ```
+
+Both scripts use Playwright's managed browser discovery; set
+`PW_EXECUTABLE_PATH` to point at a specific Chromium binary if yours lives
+outside Playwright's cache.
 
 ## `searchParams()` + SSR
 

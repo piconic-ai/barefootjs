@@ -8,9 +8,11 @@ const BASE = process.env.BASE ?? 'http://localhost:8788'
 const OUT = new URL('../screenshots/', import.meta.url)
 await mkdir(OUT, { recursive: true })
 
-const browser = await chromium.launch({
-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
-})
+// Managed browser discovery (honours PLAYWRIGHT_BROWSERS_PATH / the default
+// cache). Set PW_EXECUTABLE_PATH to override for a non-standard location.
+const browser = await chromium.launch(
+  process.env.PW_EXECUTABLE_PATH ? { executablePath: process.env.PW_EXECUTABLE_PATH } : {},
+)
 const page = await browser.newPage({ viewport: { width: 1100, height: 720 } })
 const shot = (name: string) => page.screenshot({ path: new URL(name, OUT).pathname })
 

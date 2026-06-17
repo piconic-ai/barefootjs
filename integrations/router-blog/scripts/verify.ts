@@ -14,9 +14,12 @@ const check = (name: string, ok: boolean, info = '') => {
   console.log(`${ok ? '✅' : '❌'} ${name}${info ? ` — ${info}` : ''}`)
 }
 
-const browser = await chromium.launch({
-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
-})
+// Use Playwright's managed browser discovery (honours PLAYWRIGHT_BROWSERS_PATH
+// / the default cache, so `bunx playwright install chromium` just works). Set
+// PW_EXECUTABLE_PATH to override for a non-standard browser location.
+const browser = await chromium.launch(
+  process.env.PW_EXECUTABLE_PATH ? { executablePath: process.env.PW_EXECUTABLE_PATH } : {},
+)
 const page = await browser.newPage()
 const errors: string[] = []
 page.on('pageerror', (e) => errors.push(String(e)))

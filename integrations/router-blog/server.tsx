@@ -13,6 +13,7 @@
  *                    so its live node + state survive a post→post swap, v1)
  *   - `/static/*`    the compiled bundles (barefoot.js, *.client.js, …)
  */
+import { basename } from 'node:path'
 import { Hono } from 'hono'
 // Side-effect import: auto-wires request-scoped `searchParams()` for SSR
 // (`globalThis.__bf_serverSearchReader`, resolved per-request via Hono's
@@ -92,6 +93,10 @@ app.get('/posts/:slug', (c) => {
 // Serve the compiled bundles from ./dist/components at /static/components/*.
 app.get('/static/components/:file', async (c) => {
   const file = c.req.param('file')
+  // Only ever serve a plain filename out of dist/components — reject anything
+  // with a path separator or `..` so the segment can't escape the directory
+  // (path traversal). The bundles are flat, so a basename is all we need.
+  if (file !== basename(file) || file === '..') return c.notFound()
   const path = new URL(`./dist/components/${file}`, import.meta.url)
   const f = Bun.file(path)
   if (!(await f.exists())) return c.notFound()

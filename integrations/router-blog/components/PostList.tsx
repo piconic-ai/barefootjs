@@ -11,6 +11,9 @@ interface Item {
 }
 
 type SortKey = 'date' | 'title' | 'tag'
+const SORT_KEYS: readonly SortKey[] = ['date', 'title', 'tag']
+const asSortKey = (raw: string | null): SortKey =>
+  SORT_KEYS.includes(raw as SortKey) ? (raw as SortKey) : 'date'
 
 interface PostListProps {
   items: Item[]
@@ -27,7 +30,9 @@ interface PostListProps {
 export function PostList(props: PostListProps) {
   const params = createMemo(() => {
     const sp = searchParams()
-    return { sort: (sp.get('sort') ?? 'date') as SortKey, tag: sp.get('tag') ?? '' }
+    // Validate the query value against the known keys so an invalid `?sort=foo`
+    // falls back to `date` instead of flowing into UI state / generated hrefs.
+    return { sort: asSortKey(sp.get('sort')), tag: sp.get('tag') ?? '' }
   })
 
   const visible = createMemo(() => {
