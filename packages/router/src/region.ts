@@ -10,7 +10,7 @@
  * region, so they are collected from the whole parsed document.
  */
 
-import { BF_REGION } from '@barefootjs/shared'
+import { BF_HOST, BF_REGION, BF_SCOPE, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
 import type { RouterState } from './types.ts'
 
 /** Parse a fetched page's HTML into a detached document. */
@@ -75,10 +75,20 @@ function indexRegions(root: ParentNode, selector: string): Map<string, Element> 
 
 /**
  * A region's **owned** content: its inner HTML with every *nested* `[bf-region]`
- * subtree masked out (replaced by an id-keyed placeholder). Two regions compare
- * equal when only their nested regions' interiors differ — so an outer region
- * stays mounted when just an inner region changed (the deepest differing region
- * is the one that swaps).
+ * subtree masked out (replaced by an id-keyed placeholder), and with per-render
+ * **volatile hydration scaffolding** normalized away. Two regions compare equal
+ * when only their nested regions' interiors differ — so an outer region stays
+ * mounted when just an inner region changed (the deepest differing region is the
+ * one that swaps).
+ *
+ * The normalization matters: a top-level island's scope id is randomized per
+ * server render (`<div bf-s="Counter_a1b2c3">`), so two renders of the *same*
+ * region are never byte-identical. Comparing raw `innerHTML` would flag every
+ * region containing an island as "changed" and swap away its state — the
+ * opposite of v2's goal. The diff therefore compares *content*, ignoring the
+ * scope-id-carrying markers (`bf-s`, `bf-h`, and the id inside `bf-scope:`
+ * comments); the structural markers (`bf` slot refs, `bf-m` slot ids, `bf-r`)
+ * and any props stay, so a real content/prop change is still detected.
  */
 export function ownedContentKey(region: Element, selector: string): string {
   const clone = region.cloneNode(true) as Element
@@ -91,7 +101,41 @@ export function ownedContentKey(region: Element, selector: string): string {
     mask.setAttribute('data-id', nested.getAttribute(BF_REGION) ?? '')
     nested.replaceWith(mask)
   }
+  stripVolatileHydration(clone)
   return clone.innerHTML
+}
+
+/** Hydration attributes carrying a per-render-random scope id — ignored by the diff. */
+const VOLATILE_ATTRS = [BF_SCOPE, BF_HOST]
+
+/** Strip per-render-volatile hydration scaffolding so the diff compares content, not scope ids. */
+function stripVolatileHydration(root: Element): void {
+  for (const a of VOLATILE_ATTRS) root.removeAttribute(a)
+  const walker = (root.ownerDocument ?? document).createTreeWalker(
+    root,
+    NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT,
+  )
+  while (walker.nextNode()) {
+    const node = walker.currentNode
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      for (const a of VOLATILE_ATTRS) (node as Element).removeAttribute(a)
+    } else if ((node as Comment).data.startsWith(BF_SCOPE_COMMENT_PREFIX)) {
+      ;(node as Comment).data = normalizeScopeComment((node as Comment).data)
+    }
+  }
+}
+
+/**
+ * Normalize a `bf-scope:<scopeId>[|h=<host>][|m=<slot>][|<props>]` comment: blank
+ * the random `<scopeId>` and drop any `h=<host>` host token (both per-render
+ * volatile), keeping the structural slot (`m=`) and props so a real prop change
+ * is still detected.
+ */
+function normalizeScopeComment(data: string): string {
+  const parts = data.slice(BF_SCOPE_COMMENT_PREFIX.length).split('|')
+  parts[0] = '' // scope id → blanked
+  const kept = parts.filter((p, i) => i === 0 || !p.startsWith('h='))
+  return BF_SCOPE_COMMENT_PREFIX + kept.join('|')
 }
 
 /**

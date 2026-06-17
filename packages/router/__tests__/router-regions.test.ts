@@ -191,6 +191,29 @@ describe('@barefootjs/router v2 — nested / sibling regions', () => {
     expect(document.getElementById('body')?.textContent).toBe('mutated by island')
   })
 
+  test('a region differing only by a per-render island scope id is not swapped', async () => {
+    // A top-level island's `bf-s` scope id is randomized per server render, so
+    // two renders of the same region are never byte-identical. The diff must
+    // ignore that scaffolding and treat the region as unchanged (keep its state).
+    document.body.innerHTML =
+      `<header>shell</header>` +
+      `<aside bf-region="nav:0"><div class="w" bf-s="Widget_aaa111" bf-r=""><span id="w-state">keep</span></div></aside>` +
+      `<main bf-region="content:1"><p id="body">A</p></main>`
+    mark('w-state', 8)
+    // Incoming sidebar: SAME content, DIFFERENT random scope id; content differs.
+    mockFetch(() =>
+      page(
+        `<aside bf-region="nav:0"><div class="w" bf-s="Widget_zzz999" bf-r=""><span id="w-state">keep</span></div></aside>` +
+          `<main bf-region="content:1"><p id="body">B</p></main>`,
+      ),
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    await navigate('/b')
+    await flush()
+    expect(readMark('w-state')).toBe(8) // sidebar not swapped despite the new scope id
+    expect(document.getElementById('body')?.textContent).toBe('B') // content swapped
+  })
+
   test('a navigation that changes no region commits history without swapping', async () => {
     document.body.innerHTML = `<header>shell</header>
       <div bf-region="r:0" id="outer"><p id="body">same</p></div>`
