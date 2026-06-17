@@ -22,9 +22,15 @@ export interface RouterOptions {
    */
   rehydrate?: (region: Element) => void | Promise<void>
   /**
-   * Dispose the outgoing region's islands before it is removed. Defaults to
-   * {@link defaultDispose}. Pass `() => {}` to opt out (e.g. a fully static
-   * shell with no client runtime).
+   * Dispose the outgoing islands after they are swapped out. Receives a
+   * detached holder — a shallow clone of the region element (same tag,
+   * attributes, id, classes) holding the previous region children — so tearing
+   * it down never affects the live document. When `morph` is on, any matched
+   * `[data-bf-permanent]` node was moved into the new tree first and so is
+   * absent from the holder; with `morph: false` the permanent nodes remain in
+   * the holder and are disposed normally. Defaults to {@link defaultDispose}.
+   * Pass `() => {}` to opt out (e.g. a fully static shell with no client
+   * runtime).
    */
   dispose?: (region: Element) => void | Promise<void>
   /** Import an island module by src. Defaults to `(src) => import(src)`. */
@@ -41,6 +47,14 @@ export interface RouterOptions {
   scrollToTop?: boolean
   /** Move focus to the swapped region + announce the route change. Default `true`. */
   manageFocus?: boolean
+  /**
+   * Preserve `[data-bf-permanent]` elements across a swap — their live DOM node
+   * (state, media playback, scroll, hydrated scope) is moved into the incoming
+   * tree instead of disposed and recreated (spec/router.md v1). Default `true`;
+   * a no-op when no permanent elements are present. Pass `false` for a plain
+   * `replaceChildren` swap.
+   */
+  morph?: boolean
   /** Enable hover/focus/pointerdown prefetch. Default `true`. */
   prefetch?: boolean
   /** Hover dwell before prefetch (ms). Default `65`. */
@@ -115,6 +129,7 @@ export interface RouterState {
   shouldIntercept: (anchor: HTMLAnchorElement, event: Event) => boolean
   scrollToTop: boolean
   manageFocus: boolean
+  morph: boolean
   /** Pathname of the currently-displayed region (for the query-only short-circuit). */
   currentPath: string
   inflight: AbortController | null
