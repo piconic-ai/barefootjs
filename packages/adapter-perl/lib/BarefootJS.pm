@@ -103,6 +103,22 @@ sub new ($class, $c, $config = {}) {
     return $self;
 }
 
+# search_params($query = '')
+#
+# Build a request-scoped reader for the reactive searchParams() environment
+# signal (router v0.5, #1922) from a raw query string. Callable as a class or
+# instance method — the invocant is unused.
+#
+# The `require` lives here so consumers (the Mojo plugin, the Xslate host, the
+# test harness, generated render scripts) reach BarefootJS::SearchParams through
+# the BarefootJS object they already hold, never `use`-ing it directly — the
+# same lazy-load seam the Mojo backend uses above. The compiled template reads
+# the returned object via `$searchParams->get('key')`.
+sub search_params ($invocant, $query = '') {
+    require BarefootJS::SearchParams;
+    return BarefootJS::SearchParams->new($query);
+}
+
 # ---------------------------------------------------------------------------
 # Scope & Props
 # ---------------------------------------------------------------------------

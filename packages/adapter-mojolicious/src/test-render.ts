@@ -243,7 +243,6 @@ use Mojo::Template;
 use Mojo::JSON;
 
 use BarefootJS;
-use BarefootJS::SearchParams;
 
 my $app = Mojolicious->new;
 
@@ -618,12 +617,13 @@ function buildPerlProps(
   }
 
   // (#1922) Request-scoped `searchParams()`: bind `$searchParams` to an
-  // empty-query reader. The conformance harness issues no query string (the
-  // production Mojo plugin builds this from `$c->req->query_params`), so
-  // `.get(k)` resolves to undef and the author's `?? default` renders. Only
-  // when the component imports `searchParams`.
+  // empty-query reader via the lazy-loading factory (so the render script
+  // needn't `use BarefootJS::SearchParams`). The conformance harness issues no
+  // query string (the production Mojo plugin builds this from
+  // `$c->req->query_params`), so `.get(k)` resolves to undef and the author's
+  // `?? default` renders. Only when the component imports `searchParams`.
   if (importsSearchParams(ir.metadata)) {
-    entries.push(`searchParams => BarefootJS::SearchParams->new('')`)
+    entries.push(`searchParams => BarefootJS->search_params('')`)
   }
 
   return `{${entries.join(', ')}}`

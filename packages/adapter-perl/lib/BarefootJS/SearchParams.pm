@@ -59,7 +59,12 @@ sub get ($self, $key) {
 sub _decode ($s) {
     $s //= '';
     $s =~ tr/+/ /;
+    # %XX → raw octet, then interpret the octet stream as UTF-8 (what
+    # URLSearchParams does). `utf8::decode` is a core builtin — no CPAN URI /
+    # URI::Escape dependency, keeping this runtime core-Perl-only. A byte run
+    # that isn't valid UTF-8 is left as-is rather than dying (lenient parsing).
     $s =~ s/%([0-9A-Fa-f]{2})/chr hex $1/ge;
+    utf8::decode($s);
     return $s;
 }
 

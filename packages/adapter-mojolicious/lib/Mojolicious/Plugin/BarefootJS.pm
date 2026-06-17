@@ -6,7 +6,6 @@ use Mojo::File qw(path);
 use Mojo::JSON qw(decode_json);
 
 use BarefootJS;
-use BarefootJS::SearchParams;
 
 # Plugin entry point. Wires up:
 #
@@ -92,9 +91,10 @@ sub register ($self, $app, $config = {}) {
         # so `searchParams().get(k)` resolves the current query during SSR
         # (the client re-reads window.location on hydration). A caller that
         # set it by hand wins (`//=`). Harmless for components that never read
-        # it; the var simply goes unused.
+        # it; the var simply goes unused. `$bf->search_params` lazy-loads the
+        # reader class, so the plugin needn't `use` it directly.
         $c->stash->{searchParams} //=
-            BarefootJS::SearchParams->new($c->req->query_params->to_string);
+            $bf->search_params($c->req->query_params->to_string);
     });
 }
 

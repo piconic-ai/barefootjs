@@ -258,7 +258,6 @@ use lib '${LIB_DIR}', '${PERL_CORE_LIB_DIR}';
 use JSON::PP ();
 use BarefootJS;
 use BarefootJS::Backend::Xslate;
-use BarefootJS::SearchParams;
 
 binmode(STDOUT, ':utf8');
 
@@ -533,12 +532,13 @@ function buildPerlProps(
   }
 
   // (#1922) Request-scoped `searchParams()`: bind `$searchParams` to an
-  // empty-query reader. The conformance harness issues no query string (the
-  // production Xslate integration builds this from the request's query), so
-  // `.get(k)` resolves to nil and the author's `?? default` renders. Only when
-  // the component imports `searchParams`.
+  // empty-query reader via the lazy-loading factory (so the render script
+  // needn't `use BarefootJS::SearchParams`). The conformance harness issues no
+  // query string (the production Xslate integration builds this from the
+  // request's query), so `.get(k)` resolves to nil and the author's
+  // `?? default` renders. Only when the component imports `searchParams`.
   if (importsSearchParams(ir.metadata)) {
-    entries.push(`searchParams => BarefootJS::SearchParams->new('')`)
+    entries.push(`searchParams => BarefootJS->search_params('')`)
   }
 
   return `{${entries.join(', ')}}`

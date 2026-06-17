@@ -23,7 +23,6 @@ use Mojolicious;
 use Mojolicious::Plugin::BarefootJS;
 
 use BarefootJS;
-use BarefootJS::SearchParams;
 
 subtest '_derive_stash_from_defaults — UI registry child shape' => sub {
     # Manifest entry for a Badge-like component: every template
@@ -158,7 +157,7 @@ subtest 'plugin before_render — caller searchParams wins over the request' => 
     $app->plugin('BarefootJS' => { manifest_path => "$manifest_file" });
     my $c = $app->build_controller;
     $c->req->url->query->parse('sort=price');
-    my $custom = BarefootJS::SearchParams->new('sort=custom');
+    my $custom = BarefootJS->search_params('sort=custom');
     $c->stash(searchParams => $custom);
 
     $app->plugins->emit_hook(before_render => $c, { template => 'Counter' });

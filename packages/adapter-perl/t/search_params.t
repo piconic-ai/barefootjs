@@ -1,12 +1,18 @@
 use Test2::V0;
+use utf8;
 
 # BarefootJS::SearchParams — SSR reader behind the reactive searchParams()
 # environment signal (router v0.5, #1922). Mirrors the Go runtime's
 # bf.SearchParams test surface so cross-adapter regressions stay symmetric.
+#
+# This is the adapter-independent contract for the hand-rolled query parser:
+# the runtime stays core-Perl-only (no URI / URI::Escape dependency), so this
+# suite is the safety net that keeps the parsing honest across edge cases.
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
+use BarefootJS;
 use BarefootJS::SearchParams;
 
 # The compiled template renders `($searchParams->get($k) // 'none')`, so the
@@ -53,6 +59,19 @@ subtest 'application/x-www-form-urlencoded decoding' => sub {
     is render('q=a%20b', 'q'), 'a b', 'percent-encoded space';
     is render('q=a+b', 'q'),   'a b', 'plus → space';
     is render('na%6de=x', 'name'), 'x', 'percent-encoded key';
+
+    # Encoded separators in a VALUE must survive: the pair split is on the raw
+    # `&` / `;` / `=`, decoding happens afterward, so `%26` / `%3D` are data.
+    is render('q=a%26b', 'q'), 'a&b', 'encoded & in value is data, not a separator';
+    is render('q=a%3Db', 'q'), 'a=b', 'encoded = in value is data';
+
+    # A literal (unencoded) second `=` is part of the value (split limit 2),
+    # matching URLSearchParams.
+    is render('token=a=b=c', 'token'), 'a=b=c', 'unencoded = past the first is value data';
+
+    # Percent-encoded UTF-8 decodes to characters (utf8::decode), not raw bytes
+    # — `%E2%9C%93` is U+2713 CHECK MARK.
+    is render('q=%E2%9C%93', 'q'), "\x{2713}", 'percent-encoded UTF-8 → decoded character';
 };
 
 subtest 'lenient parsing never dies' => sub {
@@ -60,6 +79,17 @@ subtest 'lenient parsing never dies' => sub {
     ok lives { BarefootJS::SearchParams->new('&&&') }, 'only separators';
     is render('a=1;b=2', 'b'), '2', 'semicolon pair separator';
     is render('=novalue', 'sort'), 'none', 'empty key pair ignored for other keys';
+};
+
+# The lazy-loading factory on the BarefootJS object is how every consumer
+# (Mojo plugin, Xslate host, render harness) reaches this class — assert it
+# loads + builds a working reader without anyone `use`-ing SearchParams.
+subtest 'BarefootJS->search_params lazy factory' => sub {
+    my $sp = BarefootJS->search_params('sort=price');
+    is ref($sp), 'BarefootJS::SearchParams', 'factory returns a reader instance';
+    is $sp->get('sort'), 'price', 'factory-built reader resolves the query';
+    is $sp->get('missing'), undef, 'factory-built reader: absent key → undef';
+    is ref(BarefootJS->search_params), 'BarefootJS::SearchParams', 'default empty query';
 };
 
 done_testing;
