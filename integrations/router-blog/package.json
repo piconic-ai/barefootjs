@@ -1,0 +1,22 @@
+{
+  "name": "barefootjs-router-blog-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "bun run --filter '@barefootjs/shared' build && bun run --filter '@barefootjs/jsx' build && bun run --filter '@barefootjs/client' build && bun run --filter '@barefootjs/hono' build",
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/build-client.ts",
+    "serve": "bun run server.tsx",
+    "start": "bun run setup && bun run build && bun run server.tsx"
+  },
+  "dependencies": {
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/hono": "workspace:*",
+    "@barefootjs/router": "workspace:*",
+    "@barefootjs/shared": "workspace:*",
+    "hono": "^4"
+  },
+  "devDependencies": {
+    "bun-types": "^1.1.0"
+  }
+}
