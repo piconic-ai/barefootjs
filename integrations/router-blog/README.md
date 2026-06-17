@@ -1,16 +1,17 @@
 # Router blog — `@barefootjs/router` reference (real-component edition)
 
 A small blog built on [`@barefootjs/router`](../../packages/router) for
-**automatic partial navigation**: clicking a post swaps only the
-`<main bf-region>` content and leaves the page shell mounted; clicking a
+**automatic partial navigation**: clicking a post swaps only the content region
+and leaves the page shell — and a sibling sidebar region — mounted; clicking a
 `?sort=` / `?tag=` link re-orders/filters the list **reactively with no region
-swap at all**; and a marked mini-player keeps **playing across a navigation**.
+swap at all**; a marked mini-player keeps **playing across a navigation**; and a
+sidebar island **keeps its state** while the article beside it swaps.
 
 Every island here is a **real compiled BarefootJS `"use client"` component**
 hydrated by the **real `@barefootjs/client` runtime** — the router drives the
 actual `__bf_hydrate_within` / `__bf_dispose_within` seams, not a hand-written
 stand-in. So this doubles as an end-to-end integration test of the router's
-**v0 / v0.5 / v1** against the shipping compiler + runtime.
+**v0 / v0.5 / v1 / v2** against the shipping compiler + runtime.
 
 ![home](./screenshots/01-home.png)
 
@@ -24,8 +25,10 @@ stand-in. So this doubles as an end-to-end integration test of the router's
 | ![persist](./screenshots/04-permanent-persist.png) | **v1** After paging to the next post (post 9, `partial navs 2`): the player's clock **continued to `1.5s`** — the same live node was moved across the swap — while the unmarked ⏱ reading timer **reset** to `0.7s`. Same region, same swap, only the marker differs. |
 
 The header is the proof of v0's persistent shell: its uptime clock and theme
-toggle start **once**. A full reload would reset them. Only `<main bf-region>`
-is replaced.
+toggle start **once**. A full reload would reset them. The page below it is two
+sibling regions (sidebar + content); only the region whose content differs is
+replaced. (Run `bun run scripts/capture.ts` to regenerate the screenshots,
+including the sibling-region view.)
 
 ## Components (all real `"use client"`)
 
@@ -33,11 +36,12 @@ is replaced.
 |---|---|---|
 | `ShellStats` | shell | uptime clock + a `MutationObserver` partial-nav counter + live-island gauge |
 | `ThemeToggle` | shell | flips `data-theme`; the choice survives navigation |
-| `PostList` | region | the index; reads `searchParams()` to sort/filter with no swap; reactive sort/tag bars |
-| `PostListItem` | region | one keyed row with a local pin toggle (state survives re-sort) |
-| `LikeButton` | region | local like counter — re-created per navigation |
-| `ReadingTimer` | region | a `setInterval` timer wired through `onCleanup` — the **disposal** stress case |
-| `NowPlaying` | region | a mini-player whose root carries `data-bf-permanent` — the **v1 persistence** case (live node + state survive a swap) |
+| `Sidebar` | `nav:0` region | a pin counter in a sibling region — its state survives while the content region swaps (the **v2** case) |
+| `PostList` | `content:1` region | the index; reads `searchParams()` to sort/filter with no swap; reactive sort/tag bars |
+| `PostListItem` | `content:1` region | one keyed row with a local pin toggle (state survives re-sort) |
+| `LikeButton` | `content:1` region | local like counter — re-created per navigation |
+| `ReadingTimer` | `content:1` region | a `setInterval` timer wired through `onCleanup` — the **disposal** stress case |
+| `NowPlaying` | `content:1` region | a mini-player whose root carries `data-bf-permanent` — the **v1 persistence** case (live node + state survive a swap) |
 
 ## How it works
 
@@ -74,9 +78,10 @@ imports at runtime (`@barefootjs/shared`, `@barefootjs/jsx`,
 `searchParams()` imports it). Run `setup` once; after that, iterate with
 `bun run build && bun run serve` (or just `bun run serve`).
 
-Verify behavior in a real browser (drives the router through **22 assertions** —
+Verify behavior in a real browser (drives the router through **27 assertions** —
 region swap, shell persistence, `searchParams()` no-swap sort/filter, pin
-survival, disposal, back/forward, `data-bf-permanent` persistence, console
+survival, disposal, back/forward, `data-bf-permanent` persistence, sibling-region
+persistence, console
 errors):
 
 ```sh
@@ -113,6 +118,30 @@ unmarked `ReadingTimer` right beside it resets on the same swap — same region,
 same navigation, the only difference is the marker. `verify.ts` proves the node
 is the **same live instance** (a marker set on it via `evaluate` survives the
 swap), not just equal text.
+
+## v2 — sibling regions (master–detail)
+
+The page below the header is **two sibling regions**: `<aside bf-region="nav:0">`
+(the `Sidebar` island) and `<main bf-region="content:1">` (the article / list).
+Both pages render both regions, so the router matches them by id and swaps only
+the one whose content differs. Bump the sidebar's 📌 pin counter, then open a
+post: the content region swaps while the **sidebar island is never disposed** —
+its count survives. `verify.ts` proves it is the same live node (a marker set via
+`evaluate` survives the swap).
+
+This is the case a single-region (v0) router cannot express: with two regions it
+would swap the *first* one (the sidebar) and never update the article. Two notes
+on how the match stays robust:
+
+- The ids are written by hand in `renderer.tsx` because that layout is a plain
+  Hono SSR template, not a compiled component tree; in `bf build` output the
+  `<Region>` component lowers to the same deterministic
+  `bf-region="<file scope>:<index>"` ids. The runtime only needs them equal
+  across page documents.
+- A top-level island's `bf-s` scope id is **randomized per server render**, so a
+  region's markup is never byte-identical across pages. The router's owned-content
+  diff normalizes that scaffolding away (it compares content + props, not scope
+  ids), so the unchanged sidebar is correctly left mounted.
 
 ## Integration gaps this surfaced (now shipped in v0 / v0.5)
 

@@ -41,5 +41,16 @@ await page.click('.pager a.pager-link[href^="/posts/"]')
 await page.waitForTimeout(700)
 await shot('04-permanent-persist.png')
 
+// v2: bump the sidebar (its own region), then open a post — the content region
+// swaps while the sidebar island keeps its pin count.
+await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+await page.waitForTimeout(500)
+await page.click('.sidebar-pin')
+await page.click('.sidebar-pin')
+await page.click('.sidebar-pin')
+await page.click('.sortable-list li:first-child .item-link')
+await page.waitForTimeout(500)
+await shot('05-sibling-region.png')
+
 await browser.close()
 console.log('Wrote screenshots/')

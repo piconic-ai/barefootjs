@@ -140,7 +140,47 @@ try {
   const timerAfter = Number(await text('.island.timer .v'))
   check('unmarked timer resets on the same swap (contrast)', timerAfter < 0.5 && playerAfter > 0.5, `timer=${timerAfter} vs player=${playerAfter}`)
 
-  // ── 10. No console / page errors throughout ─────────────────────────────
+  // ── 10. v2: sibling regions — the sidebar persists while content swaps ───
+  // Fresh load so the sidebar island starts clean, then bump its local pin
+  // counter and client-navigate to a post. The sidebar is its own region
+  // (`nav:0`) with identical markup on both pages, so the router swaps only the
+  // content region (`content:1`) — the sidebar island is never disposed and its
+  // counter survives. (A single-region v0 router could not express this: it
+  // would swap the first region — the sidebar — and never update the article.)
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(200)
+  await page.click('.sidebar-pin')
+  await page.click('.sidebar-pin')
+  const pinsBefore = await text('.sidebar-pin .v')
+  check('sidebar island hydrated (pin counter)', pinsBefore === '2', `pins=${pinsBefore}`)
+  await page.$eval('aside[bf-region] .sidebar', (el) => {
+    ;(el as unknown as { __mark?: string }).__mark = 'KEEP'
+  })
+  const navsBeforeSidebar = await navCount()
+  await page.click('.sortable-list li:first-child .item-link') // → post: content swaps
+  // Wait for the content region's MutationObserver to tick, then read the count
+  // once — so the condition and the message use the same value (no double read
+  // racing the observer).
+  await page
+    .waitForFunction(
+      (before) =>
+        document.querySelector('.shell-stats .chip:nth-child(2) b')?.textContent !== before,
+      navsBeforeSidebar,
+      { timeout: 2000 },
+    )
+    .catch(() => {})
+  const navsAfterSidebar = await navCount()
+  check('content region swapped (partial nav)', navsAfterSidebar !== navsBeforeSidebar, `navs ${navsBeforeSidebar} → ${navsAfterSidebar}`)
+  check('article content swapped in (like island present)', (await page.locator('.island.like').count()) === 1)
+  const pinsAfter = await text('.sidebar-pin .v')
+  check('sidebar region persisted across the content swap (v2 sibling)', pinsAfter === '2', `pins=${pinsAfter}`)
+  const sidebarSame = await page.$eval(
+    'aside[bf-region] .sidebar',
+    (el) => (el as unknown as { __mark?: string }).__mark,
+  )
+  check('sidebar is the SAME live node (never disposed)', sidebarSame === 'KEEP', `mark=${sidebarSame}`)
+
+  // ── 11. No console / page errors throughout ─────────────────────────────
   check('no console or page errors', errors.length === 0, errors.slice(0, 3).join(' | '))
 } catch (e) {
   check('script ran to completion', false, String(e))

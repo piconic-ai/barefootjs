@@ -3,13 +3,16 @@
 import { createSignal, onMount, onCleanup } from '@barefootjs/client'
 
 /**
- * A SHELL island (outside `[bf-region]`) that proves the shell stays mounted
+ * A SHELL island (outside every region) that proves the shell stays mounted
  * across partial navigations:
  *
  *   - uptime — started once on first load; a full reload would reset it.
- *   - partial navs — a `MutationObserver` on the region ticks on every swap.
- *   - live islands — count of hydrated scopes (`[bf-s]`) inside the region,
- *     re-counted after each swap so disposal/re-hydration is observable.
+ *   - partial navs — a `MutationObserver` on the **content** region
+ *     (`main[bf-region]`) ticks on every swap. (The page also has a sibling
+ *     sidebar region that the router leaves mounted, so we watch the content
+ *     region specifically.)
+ *   - live islands — count of hydrated scopes (`[bf-s]`) inside the content
+ *     region, re-counted after each swap so disposal/re-hydration is observable.
  */
 export function ShellStats() {
   const [uptime, setUptime] = createSignal('0.0s')
@@ -21,7 +24,7 @@ export function ShellStats() {
     const handle = setInterval(() => setUptime(`${((Date.now() - start) / 1000).toFixed(1)}s`), 100)
     onCleanup(() => clearInterval(handle))
 
-    const region = document.querySelector('[bf-region]')
+    const region = document.querySelector('main[bf-region]')
     if (!region) return
     const recount = () => setIslands(region.querySelectorAll('[bf-s]').length)
     recount()
