@@ -232,6 +232,10 @@ const $c = (...args) => new Array(args.length - 1).fill(null)
 const createSignal = (v) => [() => v, () => {}]
 const createEffect = () => {}
 const createMemo = (fn) => fn
+// Env signal (router v0.5): the template reads \`searchParams().get(k)\`; the
+// harness has no real request, so it resolves to an empty query (matching the
+// SSR conformance default).
+const searchParams = () => new URLSearchParams()
 const onMount = () => {}
 const onCleanup = () => {}
 const insert = () => {}

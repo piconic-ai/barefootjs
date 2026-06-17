@@ -5,6 +5,8 @@
  * Inspired by SolidJS signals.
  */
 
+import { BF_SEAM_PUSH_SEARCH } from '@barefootjs/shared'
+
 /**
  * Phantom brand for compile-time reactivity detection.
  * The compiler checks for the '__reactive' property via TypeChecker
@@ -597,3 +599,114 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
   return value
 }
 
+
+// ---------------------------------------------------------------------------
+// Request-scoped environment signals (router v0.5, spec/router.md "The wedge")
+// ---------------------------------------------------------------------------
+//
+// An environment signal is ambient request/browser state — the query string,
+// later cookies — that is correct per-request under SSR (read from the adapter's
+// per-request context, never a process-wide module global, which would race) and
+// reactive on the client (a query-only navigation updates it with no swap and no
+// re-hydration; islands reconcile fine-grained). It rides the `Reactive<>` brand,
+// so the compiler's reactivity analysis wires DOM updates with no new feature.
+//
+// These live HERE, in the single physical `@barefootjs/client/reactive` module,
+// for the same reason the signal primitives do: both `@barefootjs/client` and
+// the `/runtime` entry re-export them from this one module, so a page has ONE
+// `searchParams` signal instance regardless of which entry an island imports
+// from. A relative copy bundled into each entry would create two disconnected
+// signals — the #1910 failure (the router would push into one while an island
+// reads the other).
+//
+// No import-time side effect: the underlying signal is created lazily on first
+// read and the router push seam is installed there (not at module top-level), so
+// reading is the only thing that materialises anything.
+
+/**
+ * SSR reader for the current request's query string, injected by an adapter
+ * (e.g. Hono via `useRequestContext().req`). Resolves per-request inside the
+ * adapter's request context, so there is no shared mutable server state.
+ */
+let serverSearchReader: (() => string) | null = null
+
+/**
+ * Adapter hook: teach `@barefootjs/client` how to read the current request's
+ * query string during SSR. Call once with a reader that resolves per-request.
+ */
+export function __bfSetServerSearchReader(reader: (() => string) | null): void {
+  serverSearchReader = reader
+}
+
+/**
+ * Resolve the SSR query reader: the one set via {@link __bfSetServerSearchReader},
+ * else a `globalThis.__bf_serverSearchReader` seam — so an adapter can wire
+ * request-scoped SSR *without* importing `@barefootjs/client` (the server-side
+ * analogue of the `window.__bf_*` client seams).
+ */
+function resolveServerReader(): (() => string) | null {
+  if (serverSearchReader) return serverSearchReader
+  const seam = (globalThis as unknown as { __bf_serverSearchReader?: () => string })
+    .__bf_serverSearchReader
+  return typeof seam === 'function' ? seam : null
+}
+
+/** Build a request-scoped reactive environment signal. Internal. */
+function createEnvSignal<T>(
+  read: () => string,
+  parse: (raw: string) => T,
+  seam: string,
+): Reactive<() => T> {
+  let getRaw: (() => string) | null = null
+
+  function ensureClientSignal(): string {
+    if (!getRaw) {
+      const [get, set] = createSignal(read())
+      getRaw = get
+      // Install the router push seam inside the lazily-invoked accessor (not at
+      // module top-level), so reading is the only thing with an effect.
+      const w = window as unknown as Record<string, (next: string) => void>
+      // `set` already bails on `Object.is` equality, so no equality guard is
+      // needed — and a `get()` here would register a spurious dependency if a
+      // caller ever pushed from inside an effect.
+      w[seam] = (next: string) => {
+        set(next)
+      }
+    }
+    return getRaw()
+  }
+
+  return (() => {
+    if (typeof window === 'undefined') {
+      // SSR: resolve per-call inside the adapter's request context. Never cache
+      // a module-level signal — it would be a process-wide global that races.
+      const reader = resolveServerReader()
+      return parse(reader ? reader() : '')
+    }
+    return parse(ensureClientSignal())
+  }) as Reactive<() => T>
+}
+
+/**
+ * Reactive read of the current query string as `URLSearchParams`.
+ *
+ * ```tsx
+ * const sort = createMemo(() => searchParams().get('sort') ?? 'recent')
+ * ```
+ *
+ * A same-route, query-only navigation (`/list?sort=price`) driven by
+ * `@barefootjs/router` updates this signal and the URL **without a swap or
+ * re-hydration**. On the server it reflects the current request's query.
+ *
+ * Reactivity is **router-driven**: the signal is seeded once on first read and
+ * thereafter updated only through the `window.__bf_pushSearch` seam, which
+ * `startRouter()` drives (including on `popstate`). Without the router running
+ * — or after a non-router `history` change — the value is read-once; the seam
+ * name is shared with `@barefootjs/router` via `BF_SEAM_PUSH_SEARCH`, so the
+ * installer (here) and the pusher agree by construction.
+ */
+export const searchParams = createEnvSignal(
+  () => (typeof window !== 'undefined' ? window.location.search : (resolveServerReader()?.() ?? '')),
+  (raw) => new URLSearchParams(raw),
+  BF_SEAM_PUSH_SEARCH,
+)

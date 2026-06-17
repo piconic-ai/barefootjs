@@ -15,6 +15,12 @@ export {
   beginTurn,
   endTurn,
   __bfReportOutput,
+  // Request-scoped reactive environment signals (spec/router.md "The wedge").
+  // `searchParams` lives in the shared reactive module too, so this entry and
+  // the `/runtime` entry resolve to ONE signal instance. `createEnvSignal` stays
+  // internal; `__bfSetServerSearchReader` is the adapter hook for SSR.
+  searchParams,
+  __bfSetServerSearchReader,
   type Reactive,
   type Signal,
   type Memo,

@@ -1648,6 +1648,10 @@ const CLIENT_EXPORTS = new Set([
   'forwardProps', 'unwrap', '__slot',
   'createContext', 'useContext', 'provideContext',
   'createPortal', 'isSSRPortal', 'findSiblingSlot', 'cleanupPortalPlaceholder',
+  // Request-scoped environment signal (router v0.5) — a real user-facing
+  // reactive export the compiler lowers like any other `@barefootjs/client`
+  // signal read (SSR: a template binding; client: a `createEffect`).
+  'searchParams',
   // Compile-away JSX built-ins (#1915) — importing them is what scopes the
   // compiler's `<Async>` / `<Region>` recognition; the import is elided on emit.
   'Async', 'Region',

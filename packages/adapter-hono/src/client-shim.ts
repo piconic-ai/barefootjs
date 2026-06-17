@@ -27,6 +27,12 @@ export {
   forwardProps,
   unwrap,
   __slot,
+  // Request-scoped env signal (router v0.5). Unlike the reactive primitives
+  // below, `searchParams()` is meant to resolve during SSR — on the server it
+  // reads the per-request query via the injected reader (the Hono adapter wires
+  // it in `search-params-ssr.ts`), defaulting to an empty query — so the real
+  // export is re-exported, not a throwing stub.
+  searchParams,
 } from '@barefootjs/client'
 
 export type {
