@@ -6,6 +6,7 @@ import { HonoAdapter } from '../../../../packages/adapter-hono/src/adapter/hono-
 import type { IRElement } from '../types'
 
 const LAYOUT = `
+  import { Region } from '@barefootjs/client'
   export function Layout({ title, children }) {
     return (
       <div>
@@ -45,6 +46,7 @@ describe('<Region> page-lifecycle boundary', () => {
 
   test('assigns sequential structural indices within a file', () => {
     const source = `
+      import { Region } from '@barefootjs/client'
       export function Split() {
         return (
           <div>

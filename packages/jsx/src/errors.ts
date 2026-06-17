@@ -47,6 +47,11 @@ export const ErrorCodes = {
   // Import errors (BF050-BF059)
   SHARED_PROGRAM_REQUIRED: 'BF050',
   WRONG_PACKAGE_IMPORT: 'BF051',
+  // A bare `<Async>` / `<Region>` tag was used without importing it from
+  // `@barefootjs/client`. The built-ins are recognised import-scoped (#1915),
+  // so an unimported tag with the built-in name is either a forgotten import
+  // or an undeclared component — fail loud with the import to add.
+  BUILTIN_REQUIRES_IMPORT: 'BF054',
 
   // Init statement errors (BF052)
   UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
@@ -134,6 +139,11 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.WRONG_PACKAGE_IMPORT]:
     'Import from wrong package.',
+
+  [ErrorCodes.BUILTIN_REQUIRES_IMPORT]:
+    "Built-in <Async> / <Region> must be imported from '@barefootjs/client'. " +
+    'The compiler recognises these tags by their import (not by tag name), ' +
+    'so an unimported tag with this name is treated as an undeclared component.',
 
   [ErrorCodes.UNDECLARED_INIT_STATEMENT_REFERENCE]:
     'Init statement references an undeclared identifier. Declare it at module scope, inside the component, or import it — otherwise ESM strict mode throws ReferenceError at runtime.',

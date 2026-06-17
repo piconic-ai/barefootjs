@@ -14,6 +14,7 @@ export const fixture = createFixture({
   id: 'region-boundary',
   description: '<Region> lowers to a bf-region page-lifecycle boundary',
   source: `
+import { Region } from '@barefootjs/client'
 export function Layout() {
   return (
     <div>

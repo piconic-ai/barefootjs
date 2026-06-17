@@ -14,15 +14,10 @@
  * - Per-item immutable updates inside a reactive loop
  */
 
-import { createSignal, createMemo, onMount, onCleanup } from '@barefootjs/client'
+import { createSignal, createMemo, onMount, onCleanup, Async } from '@barefootjs/client'
 import { Avatar, AvatarFallback } from '@ui/components/ui/avatar'
 import { Button } from '@ui/components/ui/button'
 import { Separator } from '@ui/components/ui/separator'
-
-// Compiler built-in: the BarefootJS compiler intercepts <Async> and emits it
-// as <Suspense> in the Hono adapter output. declare keeps TypeScript happy;
-// no runtime function is needed because it is compiled away.
-declare function Async(props: { fallback: unknown; children: unknown }): unknown
 
 // --- Types ---
 

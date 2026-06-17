@@ -1648,6 +1648,9 @@ const CLIENT_EXPORTS = new Set([
   'forwardProps', 'unwrap', '__slot',
   'createContext', 'useContext', 'provideContext',
   'createPortal', 'isSSRPortal', 'findSiblingSlot', 'cleanupPortalPlaceholder',
+  // Compile-away JSX built-ins (#1915) — importing them is what scopes the
+  // compiler's `<Async>` / `<Region>` recognition; the import is elided on emit.
+  'Async', 'Region',
 ])
 
 /**
@@ -1748,6 +1751,8 @@ function collectImport(node: ts.ImportDeclaration, ctx: AnalyzerContext): void {
             alias: element.propertyName ? element.name.text : null,
             isDefault: false,
             isNamespace: false,
+            // Per-specifier `import { type Foo }` — no value binding (#1915).
+            isTypeOnly: element.isTypeOnly,
           })
         }
       }

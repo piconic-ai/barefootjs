@@ -53,3 +53,13 @@ export {
   type PortalOptions,
   type Renderable,
 } from './shims.ts'
+
+// Compiler built-ins (`<Async>` / `<Region>`) — recognised by their import
+// here and compiled away. Importing them is what scopes the recognition; the
+// compiler elides the import on emit. See ./builtins.ts and #1915.
+export {
+  Async,
+  Region,
+  type AsyncProps,
+  type RegionProps,
+} from './builtins.ts'

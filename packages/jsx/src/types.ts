@@ -1213,6 +1213,15 @@ export interface ImportSpecifier {
   alias: string | null
   isDefault: boolean
   isNamespace: boolean
+  /**
+   * Per-specifier type-only import (`import { type Foo } from '...'`). Distinct
+   * from `ImportInfo.isTypeOnly` (the whole `import type { ... }` statement).
+   * A type-only specifier introduces no runtime/value binding, so consumers
+   * enforcing a value import (e.g. the `<Async>`/`<Region>` built-ins, #1915)
+   * must ignore it. Absent/false for value specifiers and for default /
+   * namespace imports (which cannot be per-specifier type-only).
+   */
+  isTypeOnly?: boolean
 }
 
 export interface FunctionInfo {

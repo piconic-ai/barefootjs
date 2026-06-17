@@ -14,6 +14,7 @@ import type {
 import type { TemplateAdapter } from './adapters/interface.ts'
 import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTypeBasedDetection } from './analyzer.ts'
 import { jsxToIR } from './jsx-to-ir.ts'
+import { stripClientBuiltinImports } from './builtins.ts'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
 import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level.ts'
 import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode } from './ir-to-client-js/imports.ts'
@@ -502,8 +503,11 @@ export function buildMetadata(
     // re-emission. Adapters that re-emit imports (Hono, test) call
     // `rewriteImportsForTemplate` themselves to apply client-shim rewrite or
     // strip behaviour; adapters whose templates never carry imports (Go,
-    // Mojo) only consult this list for diagnostics like BF103.
-    templateImports: ctx.imports,
+    // Mojo) only consult this list for diagnostics like BF103. The
+    // compile-away built-ins (`<Async>` / `<Region>`) are stripped here so
+    // their `@barefootjs/client` import never reaches any adapter's template
+    // as a phantom (#1915).
+    templateImports: stripClientBuiltinImports(ctx.imports),
     namedExports: ctx.namedExports,
     localFunctions: ctx.localFunctions,
     localConstants: ctx.localConstants,
