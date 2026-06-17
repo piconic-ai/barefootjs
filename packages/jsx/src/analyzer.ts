@@ -1751,6 +1751,8 @@ function collectImport(node: ts.ImportDeclaration, ctx: AnalyzerContext): void {
             alias: element.propertyName ? element.name.text : null,
             isDefault: false,
             isNamespace: false,
+            // Per-specifier `import { type Foo }` — no value binding (#1915).
+            isTypeOnly: element.isTypeOnly,
           })
         }
       }

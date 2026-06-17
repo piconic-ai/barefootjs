@@ -736,7 +736,8 @@ function clientBuiltinTags(ctx: TransformContext): Map<string, ClientBuiltinTag>
     // built-in — `<Async>` then falls through to BF054 (#1915 review).
     if (imp.source !== CLIENT_BUILTIN_SOURCE || imp.isTypeOnly) continue
     for (const spec of imp.specifiers) {
-      if (spec.isDefault || spec.isNamespace) continue
+      // Skip per-specifier `import { type Async }` — no value binding.
+      if (spec.isDefault || spec.isNamespace || spec.isTypeOnly) continue
       if (isClientBuiltinName(spec.name)) {
         map.set(spec.alias ?? spec.name, spec.name)
       }
@@ -759,9 +760,11 @@ function isNameBound(ctx: TransformContext, name: string): boolean {
   if (a.localConstants.some(c => c.name === name)) return true
   for (const imp of a.imports) {
     // Type-only imports create a type binding, not a value one — they can't
-    // back a JSX value tag, so they must not suppress BF054 (#1915 review).
+    // back a JSX value tag, so they must not suppress BF054. Applies to both
+    // `import type { ... }` and per-specifier `import { type X }` (#1915 review).
     if (imp.isTypeOnly) continue
     for (const spec of imp.specifiers) {
+      if (spec.isTypeOnly) continue
       if ((spec.alias ?? spec.name) === name) return true
     }
   }

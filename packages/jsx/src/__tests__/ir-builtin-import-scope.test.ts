@@ -104,6 +104,28 @@ describe('import-scoped recognition for <Async> / <Region>', () => {
     expect(ctx.errors.find(e => e.code === ErrorCodes.BUILTIN_REQUIRES_IMPORT)).toBeDefined()
   })
 
+  test('a per-specifier type-only import (`import { type Async }`) does NOT scope the built-in', () => {
+    const { ir: root, ctx } = ir(`
+      import { type Async } from '@barefootjs/client'
+      export function Page() {
+        return <Async fallback={<p>Loading</p>}><Body /></Async>
+      }
+    `)
+    expect((root as IRElement).type).not.toBe('async')
+    expect(ctx.errors.find(e => e.code === ErrorCodes.BUILTIN_REQUIRES_IMPORT)).toBeDefined()
+  })
+
+  test('a value specifier alongside a type-only one is still recognised (`import { type Async, Region }`)', () => {
+    const { ir: root } = ir(`
+      import { type Async, Region } from '@barefootjs/client'
+      export function Shell({ children }) {
+        return <div><Region>{children}</Region></div>
+      }
+    `)
+    const div = root as IRElement
+    expect(div.children.some(c => c.type === 'element' && c.regionId !== undefined)).toBe(true)
+  })
+
   test('bare <Region /> with no import reports BF054', () => {
     const { ctx } = ir(`
       export function Shell() {
@@ -146,5 +168,21 @@ describe('stripClientBuiltinImports (emit-time elision)', () => {
   test('preserves a side-effect import of @barefootjs/client', () => {
     const sideEffect = imp('@barefootjs/client', [])
     expect(stripClientBuiltinImports([sideEffect])).toEqual([sideEffect])
+  })
+
+  test('does NOT strip a per-specifier type-only built-in, but strips the value one', () => {
+    const mixed: ImportInfo = {
+      source: '@barefootjs/client',
+      isTypeOnly: false,
+      loc,
+      specifiers: [
+        { name: 'Async', alias: null, isDefault: false, isNamespace: false, isTypeOnly: true },
+        { name: 'Region', alias: null, isDefault: false, isNamespace: false, isTypeOnly: false },
+      ],
+    }
+    const out = stripClientBuiltinImports([mixed])
+    expect(out).toHaveLength(1)
+    expect(out[0].specifiers.map(s => s.name)).toEqual(['Async'])
+    expect(out[0].specifiers[0].isTypeOnly).toBe(true)
   })
 })

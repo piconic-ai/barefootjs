@@ -50,7 +50,9 @@ export function stripClientBuiltinImports(imports: ImportInfo[]): ImportInfo[] {
       continue
     }
     const kept = imp.specifiers.filter(
-      spec => spec.isDefault || spec.isNamespace || !isClientBuiltinName(spec.name),
+      // Keep per-specifier type-only built-ins (`import { type Async }`) — they
+      // are erased by TS and never a runtime phantom.
+      spec => spec.isDefault || spec.isNamespace || spec.isTypeOnly || !isClientBuiltinName(spec.name),
     )
     // Drop the import entirely when every specifier was a built-in; otherwise
     // re-emit without them.
