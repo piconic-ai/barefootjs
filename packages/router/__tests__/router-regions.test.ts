@@ -1,15 +1,16 @@
 /**
  * @barefootjs/router v2 — compiler-derived nested / sibling regions (table-driven).
  *
- * Each case sets up the live document and the incoming page, tags live nodes
- * with an identity marker, navigates, then asserts which regions were
- * **preserved** (marker survives → not swapped) vs **replaced** (marker gone →
- * swapped/rebuilt), the resulting text, and whether the router fell back to a
- * hard navigation. `mutate` runs after the router captured its baseline, to
- * simulate an island changing the live DOM. Markup inside a region is written
- * compactly (no inter-element whitespace): both pages come from the same
- * compiler, so a region's markup is byte-identical except for real changes and
- * the per-render scope ids the diff already normalizes away.
+ * Each case declares the live document and the incoming page, then its
+ * expectations: which live nodes `survives` the navigation (their region was
+ * not swapped) vs are `replaced` (swapped/rebuilt), the `textAfter`, whether it
+ * `fallsBackToReload`, and the `committedPath`. The runner auto-tags every node
+ * an expectation names so it can tell a surviving live node from a freshly
+ * rendered one of the same id. `islandMutates` runs after the router captured
+ * its baseline, to simulate an island changing the live DOM. Markup inside a
+ * region is written compactly (no inter-element whitespace): both pages come
+ * from the same compiler, so a region's markup is byte-identical except for real
+ * changes and the per-render scope ids the diff already normalizes away.
  */
 
 import { describe, test, expect, beforeAll, beforeEach, afterEach } from 'bun:test'
@@ -79,25 +80,28 @@ afterEach(() => {
 })
 
 interface RegionCase {
+  /** What this case demonstrates. */
   name: string
-  /** Live document body (regions + any shell). */
+  /** The live document, before navigating. */
   current: string
-  /** Incoming fetched page body. */
+  /** The full page the navigation fetches. */
   incoming: string
-  /** Live element ids to tag with an identity marker before navigating. */
-  tag?: string[]
-  /** Runs after `startRouter` (baseline captured) — e.g. an island mutating the DOM. */
-  mutate?: () => void
-  /** Ids whose live node must SURVIVE the navigation (region not swapped). */
-  preserved?: string[]
-  /** Ids whose live node must be REPLACED (region swapped/rebuilt). */
+
+  // ── optional setup ──
+  /** After the router captured its baseline, an island mutates the live DOM. */
+  islandMutates?: () => void
+
+  // ── expectations (every id listed here is auto-tracked by node identity) ──
+  /** These live nodes must SURVIVE the navigation — their region was not swapped. */
+  survives?: string[]
+  /** These live nodes must be REPLACED — their region was swapped / rebuilt. */
   replaced?: string[]
-  /** Expected `textContent` by element id after the navigation. */
-  text?: Record<string, string>
-  /** Expect a hard navigation (full reload) instead of any swap. */
-  hardNavigate?: boolean
-  /** Expect this committed pathname (a swap commits history). */
-  path?: string
+  /** Expected `textContent` after the navigation, by element id. */
+  textAfter?: Record<string, string>
+  /** The navigation should fall back to a full page reload, not a partial swap. */
+  fallsBackToReload?: boolean
+  /** The pathname the navigation committed to history (a partial swap does). */
+  committedPath?: string
 }
 
 const cases: RegionCase[] = [
@@ -110,9 +114,8 @@ const cases: RegionCase[] = [
     incoming:
       `<div bf-region="r:0" id="list"><p id="list-item">list A</p></div>` +
       `<div bf-region="r:1" id="detail"><p id="detail-body">detail B</p></div>`,
-    tag: ['list-item'],
-    preserved: ['list-item'],
-    text: { 'detail-body': 'detail B' },
+    survives: ['list-item'],
+    textAfter: { 'detail-body': 'detail B' },
   },
   {
     name: 'sibling regions: both swap when both differ',
@@ -123,9 +126,8 @@ const cases: RegionCase[] = [
     incoming:
       `<div bf-region="r:0" id="list"><p id="list-item">list B</p></div>` +
       `<div bf-region="r:1" id="detail"><p id="detail-body">detail B</p></div>`,
-    tag: ['list-item'],
     replaced: ['list-item'],
-    text: { 'list-item': 'list B', 'detail-body': 'detail B' },
+    textAfter: { 'list-item': 'list B', 'detail-body': 'detail B' },
   },
   {
     name: 'nested regions: only the inner swaps; the outer shell persists',
@@ -135,9 +137,8 @@ const cases: RegionCase[] = [
     incoming:
       `<div bf-region="r:0" id="outer"><p id="outer-own">shell</p>` +
       `<div bf-region="r:1" id="inner"><p id="inner-body">inner B</p></div></div>`,
-    tag: ['outer-own'],
-    preserved: ['outer-own'],
-    text: { 'inner-body': 'inner B' },
+    survives: ['outer-own'],
+    textAfter: { 'inner-body': 'inner B' },
   },
   {
     name: 'nested regions: an outer change rebuilds the outer (inner rides along)',
@@ -147,9 +148,8 @@ const cases: RegionCase[] = [
     incoming:
       `<div bf-region="r:0" id="outer"><p id="outer-own">shell B</p>` +
       `<div bf-region="r:1" id="inner"><p id="inner-body">inner A</p></div></div>`,
-    tag: ['outer-own', 'inner-body'],
     replaced: ['outer-own', 'inner-body'],
-    text: { 'outer-own': 'shell B' },
+    textAfter: { 'outer-own': 'shell B' },
   },
   {
     name: 'a header change outside every region is ignored (the shell persists)',
@@ -162,25 +162,22 @@ const cases: RegionCase[] = [
     incoming:
       `<header id="hdr">new header</header>` +
       `<div bf-region="r:0" id="region"><p id="body">same</p></div>`,
-    tag: ['body'],
-    preserved: ['body'],
-    text: { hdr: 'old header', body: 'same' },
-    path: '/b',
+    survives: ['body'],
+    textAfter: { hdr: 'old header', body: 'same' },
+    committedPath: '/b',
   },
   {
     name: 'a region whose island mutated the DOM is not swapped when the server render is unchanged',
     current: `<header>shell</header><div bf-region="r:0" id="region"><p id="body">server</p></div>`,
     incoming: `<div bf-region="r:0" id="region"><p id="body">server</p></div>`,
-    // Simulate a signal-driven island mutating the live DOM after hydration; the
-    // diff compares the incoming SERVER render against the baseline server render,
-    // not the live DOM, so the region stays mounted with its mutation intact.
-    mutate: () => {
+    // The diff compares the incoming SERVER render against the baseline server
+    // render, not the live DOM, so the region stays mounted with its mutation.
+    islandMutates: () => {
       const el = document.getElementById('body')
       if (el) el.textContent = 'mutated by island'
     },
-    tag: ['body'],
-    preserved: ['body'],
-    text: { body: 'mutated by island' },
+    survives: ['body'],
+    textAfter: { body: 'mutated by island' },
   },
   {
     name: 'a region differing only by a per-render island scope id is not swapped',
@@ -191,18 +188,16 @@ const cases: RegionCase[] = [
     incoming:
       `<aside bf-region="nav:0" id="nav"><div class="w" bf-s="Widget_zzz999" bf-r=""><span id="w-state">keep</span></div></aside>` +
       `<main bf-region="content:1" id="main"><p id="body">B</p></main>`,
-    tag: ['w-state'],
-    preserved: ['w-state'],
-    text: { body: 'B' },
+    survives: ['w-state'],
+    textAfter: { body: 'B' },
   },
   {
     name: 'a navigation that changes no region commits history without swapping',
     current: `<header>shell</header><div bf-region="r:0" id="region"><p id="body">same</p></div>`,
     incoming: `<div bf-region="r:0" id="region"><p id="body">same</p></div>`,
-    tag: ['body'],
-    preserved: ['body'],
-    text: { body: 'same' },
-    path: '/b',
+    survives: ['body'],
+    textAfter: { body: 'same' },
+    committedPath: '/b',
   },
   {
     name: 'sibling region set diverges (Region + Region → Region + div): hard-navigates',
@@ -217,9 +212,8 @@ const cases: RegionCase[] = [
     incoming:
       `<aside bf-region="nav:0" id="nav"><p id="np">N</p></aside>` +
       `<div id="plain"><p id="mp">B</p></div>`,
-    tag: ['mp'],
-    hardNavigate: true,
-    text: { mp: 'A' }, // no partial swap happened
+    fallsBackToReload: true,
+    textAfter: { mp: 'A' }, // no partial swap happened
   },
   {
     name: 'nested region set diverges but a root contains all: the root rebuilds',
@@ -232,9 +226,8 @@ const cases: RegionCase[] = [
     incoming:
       `<div bf-region="r:0" id="outer"><p id="oo">shell</p>` +
       `<div bf-region="r:9" id="inner"><p id="ii">B</p></div></div>`,
-    tag: ['oo', 'ii'],
     replaced: ['oo', 'ii'],
-    text: { ii: 'B' },
+    textAfter: { ii: 'B' },
   },
 ]
 
@@ -244,20 +237,22 @@ describe('@barefootjs/router v2 — nested / sibling regions', () => {
       document.body.innerHTML = c.current
       mockFetch(fullDoc(c.incoming))
       router = startRouter({ rehydrate: () => {}, dispose: () => {} })
-      c.mutate?.()
-      for (const id of c.tag ?? []) tag(id)
+      c.islandMutates?.()
+      // Tag every node an expectation refers to, so we can tell a surviving live
+      // node from a freshly rendered one of the same id after the navigation.
+      for (const id of [...(c.survives ?? []), ...(c.replaced ?? [])]) tag(id)
 
       await navigate('/b')
       await flush()
 
-      if (c.hardNavigate) expect(assigned).toContain('/b')
+      if (c.fallsBackToReload) expect(assigned).toContain('/b')
       else expect(assigned).toBe('')
-      for (const id of c.preserved ?? []) expect(marker(id)).toBe(MARK)
+      for (const id of c.survives ?? []) expect(marker(id)).toBe(MARK)
       for (const id of c.replaced ?? []) expect(marker(id)).toBeUndefined()
-      for (const [id, t] of Object.entries(c.text ?? {})) {
+      for (const [id, t] of Object.entries(c.textAfter ?? {})) {
         expect(document.getElementById(id)?.textContent).toBe(t)
       }
-      if (c.path) expect(window.location.pathname).toBe(c.path)
+      if (c.committedPath) expect(window.location.pathname).toBe(c.committedPath)
     })
   }
 })
