@@ -20,7 +20,7 @@ import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
-import { runWithSearchParams } from '@barefootjs/hono/search-params'
+import { runWithRequestEnv } from '@barefootjs/hono/request-env'
 import { Layout } from './renderer'
 import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
@@ -47,12 +47,13 @@ function html(markup: string): Response {
   })
 }
 
-// Render a page with `searchParams()` bound to this request's query for SSR.
-// `renderToHtml` has no request context of its own (unlike Hono's jsxRenderer),
-// so we scope the query with AsyncLocalStorage per async context — concurrent
-// requests never race. #1922
+// Render a page with the request's environment bound for SSR — here the query
+// string behind `searchParams()`. `renderToHtml` has no request context of its
+// own (unlike Hono's jsxRenderer), so we scope the env with AsyncLocalStorage
+// per async context — concurrent requests never race. Future env signals
+// (cookies, …) add a field to this object, not a new wrapper. #1922
 function renderWithSearch(request: Request, node: unknown): Promise<string> {
-  return runWithSearchParams(new URL(request.url).search, () => renderToHtml(node))
+  return runWithRequestEnv({ search: new URL(request.url).search }, () => renderToHtml(node))
 }
 
 // ── per-session todo store ─────────────────────────────────────────────────

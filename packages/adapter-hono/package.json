@@ -77,9 +77,9 @@
       "types": "./src/render.ts",
       "import": "./src/render.ts"
     },
-    "./search-params": {
-      "types": "./src/search-params-als.ts",
-      "import": "./src/search-params-als.ts"
+    "./request-env": {
+      "types": "./src/request-env.ts",
+      "import": "./src/request-env.ts"
     }
   },
   "//publishConfig": "At pack time, swap-publish-config.mjs merges these overrides into the top-level so the published tarball resolves all entry points to dist/ instead of src/. Workspace exports stay at src/ so bun resolves source directly during dev.",
@@ -158,9 +158,9 @@
         "types": "./dist/render.d.ts",
         "import": "./dist/render.js"
       },
-      "./search-params": {
-        "types": "./dist/search-params-als.d.ts",
-        "import": "./dist/search-params-als.js"
+      "./request-env": {
+        "types": "./dist/request-env.d.ts",
+        "import": "./dist/request-env.js"
       }
     }
   },
@@ -170,7 +170,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/scripts.tsx ./src/portals.tsx ./src/portal-ssr.tsx ./src/dialog-context.tsx ./src/client-shim.ts ./src/preload.tsx ./src/dev.tsx ./src/dev-worker.ts ./src/jsx/jsx-runtime/index.ts ./src/jsx/jsx-dev-runtime/index.ts ./src/async.tsx ./src/utils.ts ./src/build.ts ./src/app.ts ./src/render.ts ./src/search-params-als.ts --root ./src --outdir ./dist --format esm --external hono --external @barefootjs/client --external @barefootjs/jsx --external @barefootjs/shared",
+    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/scripts.tsx ./src/portals.tsx ./src/portal-ssr.tsx ./src/dialog-context.tsx ./src/client-shim.ts ./src/preload.tsx ./src/dev.tsx ./src/dev-worker.ts ./src/jsx/jsx-runtime/index.ts ./src/jsx/jsx-dev-runtime/index.ts ./src/async.tsx ./src/utils.ts ./src/build.ts ./src/app.ts ./src/render.ts ./src/request-env.ts --root ./src --outdir ./dist --format esm --external hono --external @barefootjs/client --external @barefootjs/jsx --external @barefootjs/shared",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist",

@@ -17,7 +17,7 @@ beforeAll(() => {
   }
 })
 
-const { searchParams, __bfSetServerSearchReader, createEffect, createRoot } = await import(
+const { searchParams, __bfSetServerEnvReader, createEffect, createRoot } = await import(
   '../src/reactive.ts'
 )
 
@@ -70,29 +70,31 @@ describe('searchParams (SSR)', () => {
     delete (globalThis as unknown as { window?: unknown }).window
     try {
       let current = '?q=alpha'
-      __bfSetServerSearchReader(() => current)
+      __bfSetServerEnvReader((key) => (key === 'search' ? current : undefined))
       expect(searchParams().get('q')).toBe('alpha')
       // A second request's value — no module-level signal cached the first.
       current = '?q=beta'
       expect(searchParams().get('q')).toBe('beta')
       // No reader → empty query, never throws.
-      __bfSetServerSearchReader(null)
+      __bfSetServerEnvReader(null)
       expect(searchParams().toString()).toBe('')
     } finally {
       ;(globalThis as unknown as { window?: unknown }).window = savedWindow
     }
   })
 
-  test('falls back to the globalThis reader seam (adapter wiring without importing the client)', () => {
+  test('falls back to the globalThis keyed reader seam (host wiring without importing the client)', () => {
     const savedWindow = (globalThis as unknown as { window?: unknown }).window
     delete (globalThis as unknown as { window?: unknown }).window
-    const g = globalThis as unknown as { __bf_serverSearchReader?: () => string }
+    const g = globalThis as unknown as {
+      __bf_serverEnvReader?: (key: string) => string | undefined
+    }
     try {
-      __bfSetServerSearchReader(null) // explicit setter unused — seam should win
-      g.__bf_serverSearchReader = () => '?via=seam'
+      __bfSetServerEnvReader(null) // explicit setter unused — seam should win
+      g.__bf_serverEnvReader = (key) => (key === 'search' ? '?via=seam' : undefined)
       expect(searchParams().get('via')).toBe('seam')
     } finally {
-      delete g.__bf_serverSearchReader
+      delete g.__bf_serverEnvReader
       ;(globalThis as unknown as { window?: unknown }).window = savedWindow
     }
   })

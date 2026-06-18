@@ -33,7 +33,7 @@ import {
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
-import { runWithSearchParams } from '@barefootjs/hono/search-params'
+import { runWithRequestEnv } from '@barefootjs/hono/request-env'
 
 // h3's `createEventStream` leaks an `undefined` unhandled rejection when an
 // SSE client disconnects under the web handler (`onClosed` does not fire in
@@ -126,12 +126,16 @@ function getSession(event: H3Event): Session {
 }
 
 // ── HTML pages ───────────────────────────────────────────────────────────
-// Bind `searchParams()` to this request's query for SSR (`renderToHtml` has no
-// request context of its own, unlike Hono's jsxRenderer), scoped per async
-// context so concurrent requests don't race. #1922
+// Bind the request's environment for SSR — here the query behind
+// `searchParams()` (`renderToHtml` has no request context of its own, unlike
+// Hono's jsxRenderer), scoped per async context so concurrent requests don't
+// race. Future env signals (cookies, …) add a field to this object. #1922
 async function page(event: H3Event, node: unknown): Promise<string> {
   const search = getRequestURL(event).search
-  return '<!DOCTYPE html>' + (await runWithSearchParams(search, () => renderToHtml(node)))
+  return (
+    '<!DOCTYPE html>' +
+    (await runWithRequestEnv({ search }, () => renderToHtml(node)))
+  )
 }
 
 const router = createRouter()

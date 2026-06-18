@@ -28,7 +28,7 @@ export {
   // means this entry and the main `@barefootjs/client` entry resolve to ONE
   // signal instance — no second copy to disconnect from router pushes.
   searchParams,
-  __bfSetServerSearchReader,
+  __bfSetServerEnvReader,
   type Reactive,
   type Signal,
   type Memo,

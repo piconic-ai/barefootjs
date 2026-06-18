@@ -1,8 +1,8 @@
 /**
  * searchFromRequestUrl — the pure query-extraction helper the Hono SSR
- * auto-wire publishes through the `globalThis.__bf_serverSearchReader` seam
- * (which `@barefootjs/client`'s `searchParams()` reads on the server),
- * spec/router.md v0.5.
+ * auto-wire publishes through the keyed `globalThis.__bf_serverEnvReader` seam
+ * (which `@barefootjs/client`'s `searchParams()` reads on the server, key
+ * `'search'`), spec/router.md v0.5.
  */
 
 import { describe, test, expect } from 'bun:test'

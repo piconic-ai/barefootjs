@@ -99,8 +99,8 @@ outside Playwright's cache.
 
 `searchParams()` is environment-neutral: in the browser it reads
 `location.search`; on the server it asks for the current request's query string
-through a reader seam. The Hono adapter publishes that reader on
-`globalThis.__bf_serverSearchReader`, resolved **per request** via
+through a keyed reader seam. The Hono adapter publishes that reader on
+`globalThis.__bf_serverEnvReader` (key `'search'`), resolved **per request** via
 `useRequestContext()` — so there is no shared mutable server state and no flash.
 This example opts in with a single side-effect `import '@barefootjs/hono/app'`
 in `server.tsx`; an app composed through the adapter's full setup gets it
@@ -152,7 +152,7 @@ Building the original version of this app against the router's reference branch
    `@barefootjs/client`'s `setupStreaming()` (the bootstrap does this);
    `defaultRehydrate` / `defaultDispose` degrade through the shared fallback
    chain rather than silently no-op'ing.
-2. `searchParams()` SSR is **request-scoped** (the `__bf_serverSearchReader`
+2. `searchParams()` SSR is **request-scoped** (the `__bf_serverEnvReader`
    seam above), not a process-global — safe under concurrent SSR.
 3. `searchParams()` lives in the single physical `@barefootjs/client/reactive`
    module re-exported by every `@barefootjs/client*` entry, so the island and
