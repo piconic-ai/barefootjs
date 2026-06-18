@@ -26,9 +26,9 @@
  * scope is active — or this env doesn't carry the requested key — we delegate to
  * it, so a process mixing Hono and `renderToHtml` hosts keeps resolving both ways.
  *
- * Node-only (`node:async_hooks`). It lives behind its own subpath
- * (`@barefootjs/hono/request-env`) imported solely by Node/Bun hosts, so the
- * edge/Workers path through `renderToHtml` never loads `async_hooks`.
+ * Lives behind its own subpath (`@barefootjs/hono/request-env`), imported only
+ * by the hosts that opt in, so the always-on `renderToHtml` path never loads
+ * `node:async_hooks`.
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks'
