@@ -6,7 +6,7 @@ use Mojolicious::Lite -signatures;
 use lib 'lib', '../../packages/adapter-mojolicious/lib';
 use Mojo::JSON qw(true false encode_json decode_json);
 use Mojo::ByteStream qw(b);
-use Mojo::Util qw(xml_escape url_escape);
+use Mojo::Util qw(xml_escape);
 
 # Load BarefootJS plugin
 plugin 'BarefootJS';
@@ -450,80 +450,6 @@ my $BLOG_DATA = do {
     my $f = app->home->child('dist/blog-data.json');
     -r $f ? decode_json($f->slurp) : { posts => [], listItems => [], allTags => [] };
 };
-
-# Blog styles — the same design-system block the Hono showcase inlines, so the
-# region-shell page is self-contained (it does not use the catalog stylesheets).
-my $BLOG_STYLES = <<'CSS';
-  :root { color-scheme: dark; }
-  * { box-sizing: border-box; }
-  html[data-theme="light"] { color-scheme: light; }
-  body { margin: 0; font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0e1116; color: #e6edf3; }
-  html[data-theme="light"] body { background: #f6f8fa; color: #1f2328; }
-  a { color: #58a6ff; }
-  .shell { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; background: #161b22; border-bottom: 1px solid #30363d; }
-  html[data-theme="light"] .shell { background: #fff; border-bottom-color: #d0d7de; }
-  .shell-brand { font-weight: 700; font-size: 18px; text-decoration: none; color: inherit; }
-  .shell-island { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .toggle { cursor: pointer; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 999px; padding: 5px 12px; font-size: 13px; }
-  html[data-theme="light"] .toggle { background: #f6f8fa; border-color: #d0d7de; color: #1f2328; }
-  .layout { display: flex; gap: 28px; align-items: flex-start; max-width: 1000px; margin: 0 auto; padding: 32px 24px 80px; }
-  .layout main { flex: 1; min-width: 0; }
-  .layout aside { position: sticky; top: 78px; width: 210px; flex: none; }
-  html[data-theme="light"] .sidebar { background: #fff; border-color: #d0d7de; }
-  .sidebar { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 16px; }
-  .sidebar-title { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #8b949e; margin-bottom: 12px; }
-  .sidebar-pin { cursor: pointer; width: 100%; background: #0d1117; border: 1px solid #30363d; color: #f2cc60; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
-  html[data-theme="light"] .sidebar-pin { background: #f6f8fa; border-color: #d0d7de; }
-  .sidebar-note { font-size: 12px; color: #6e7681; margin: 12px 0 0; }
-  @media (max-width: 720px) { .layout { flex-direction: column; } .layout aside { position: static; width: 100%; } }
-  .page-title { font-size: 28px; margin: 0 0 6px; }
-  .lede, .meta { color: #8b949e; }
-  html[data-theme="light"] .lede, html[data-theme="light"] .meta { color: #57606a; }
-  .meta { font-size: 13px; margin-bottom: 12px; }
-  .lede { margin: 0 0 18px; }
-  .controls, .tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .ctl-label { font-size: 13px; color: #6e7681; }
-  .tag, .tag-inline, .sort { text-decoration: none; font-size: 13px; color: #9aa7b4; }
-  .tag, .sort { border: 1px solid #30363d; border-radius: 999px; padding: 4px 11px; }
-  .tag.on, .sort.on { background: #1f6feb; border-color: #1f6feb; color: #fff; }
-  .tag-inline { color: #58a6ff; }
-  .status { font-size: 13px; color: #8b949e; margin-bottom: 12px; min-height: 1.2em; font-variant-numeric: tabular-nums; }
-  .sortable-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .sortable-list li { display: flex; align-items: center; gap: 10px; border: 1px solid #30363d; border-radius: 10px; background: #161b22; padding: 10px 14px; }
-  html[data-theme="light"] .sortable-list li { background: #fff; border-color: #d0d7de; }
-  .sortable-list li.pinned { border-color: #f2cc60; box-shadow: inset 3px 0 0 #f2cc60; }
-  .pin { cursor: pointer; background: none; border: none; font-size: 16px; color: #f2cc60; padding: 0; line-height: 1; }
-  .item-link { color: #e6edf3; text-decoration: none; font-weight: 600; font-size: 15px; }
-  html[data-theme="light"] .item-link { color: #1f2328; }
-  .item-link:hover { color: #58a6ff; }
-  .item-meta { margin-left: auto; font-size: 12px; color: #6e7681; }
-  .islands { display: flex; gap: 12px; align-items: center; margin: 4px 0 22px; }
-  .island { font-size: 14px; }
-  .island.like { cursor: pointer; background: #161b22; border: 1px solid #30363d; color: #f778ba; border-radius: 8px; padding: 6px 12px; }
-  html[data-theme="light"] .island.like { background: #fff; border-color: #d0d7de; }
-  .island.timer { color: #8b949e; font-variant-numeric: tabular-nums; }
-  .now-playing-bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 50; display: inline-flex; align-items: center; gap: 12px; background: #161b22; border: 1px solid #30363d; border-radius: 999px; padding: 8px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.45); color: #3fb950; font-size: 13px; font-variant-numeric: tabular-nums; }
-  html[data-theme="light"] .now-playing-bar { background: #fff; border-color: #d0d7de; box-shadow: 0 8px 28px rgba(140,149,159,.35); }
-  .np-toggle { cursor: pointer; background: none; border: none; color: inherit; font-size: 15px; padding: 0; line-height: 1; }
-  .np-title { color: #8b949e; }
-  .np-bar { display: inline-block; width: 120px; height: 6px; background: #30363d; border-radius: 999px; overflow: hidden; }
-  html[data-theme="light"] .np-bar { background: #d0d7de; }
-  .np-fill { display: block; height: 100%; background: #3fb950; transition: width .1s linear; }
-  .reader-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 6px 12px; border: 1px solid #30363d; border-radius: 8px; background: #161b22; font-size: 13px; color: #8b949e; }
-  html[data-theme="light"] .reader-toolbar { background: #fff; border-color: #d0d7de; }
-  .rt-label { text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
-  .rt-btn { cursor: pointer; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 6px; padding: 2px 8px; font-size: 12px; }
-  html[data-theme="light"] .rt-btn { background: #f6f8fa; border-color: #d0d7de; color: #1f2328; }
-  .rt-level { color: #58a6ff; font-variant-numeric: tabular-nums; min-width: 1ch; text-align: center; }
-  .prose p { margin: 0 0 18px; color: #d8e0e8; }
-  html[data-theme="light"] .prose p { color: #424a53; }
-  .back { display: inline-block; margin-bottom: 14px; text-decoration: none; font-size: 14px; }
-  .pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 32px; padding-top: 18px; border-top: 1px solid #30363d; }
-  .pager-link { color: #58a6ff; text-decoration: none; font-weight: 600; font-size: 14px; max-width: 46%; }
-  .pager-link.next { text-align: right; margin-left: auto; }
-  .pager-link.disabled { color: #6e7681; }
-CSS
-
 sub _rand6 { return substr(rand() =~ s/^0\.//r, 0, 6) }
 
 # Register a renderer for a flat (non-`ui/*`) child component the build manifest
@@ -532,7 +458,7 @@ sub _rand6 { return substr(rand() =~ s/^0\.//r, 0, 6) }
 # entries: a fresh child scope chained off the caller's slot, the shared script
 # collector + renderer registry, and the manifest's ssrDefaults seeded (the
 # caller's matching prop wins).
-sub _register_blog_child ($c, $parent_bf, $slot, $component) {
+sub _register_blog_child ($c, $parent_bf, $slot, $component, $extra_seed = {}) {
     my $entry = $BLOG_MANIFEST->{$component} or return;
     my $defaults = $entry->{ssrDefaults};
     $parent_bf->register_child_renderer($slot, sub {
@@ -551,7 +477,10 @@ sub _register_blog_child ($c, $parent_bf, $slot, $component) {
         $child->_script_seen($parent_bf->_script_seen);
         my %extra = $defaults
             ? BarefootJS::_derive_stash_from_defaults($defaults, $props) : ();
-        my $html = $parent_bf->backend->render_named($component, $child, { %$props, %extra });
+        # Per-child SSR seeds the static extractor can't supply (e.g. NowPlaying's
+        # `Math` → `{ min => 0 }` for the progress-bar width).
+        my $html = $parent_bf->backend->render_named(
+            $component, $child, { %extra, %$extra_seed, %$props });
         chomp $html;
         return $html;
     });
@@ -580,7 +509,12 @@ helper blog_island => sub ($c, $component, $props = {}, $extra = {}, $children =
     $bf->_scripts($root->_scripts);
     $bf->_script_seen($root->_script_seen);
     $bf->_child_renderers($root->_child_renderers);
-    _register_blog_child($c, $bf, $_, $children->{$_}) for keys %$children;
+    # Each child is `slot => 'Template'` or `slot => ['Template', \%extra_seed]`.
+    for my $slot (keys %$children) {
+        my $spec = $children->{$slot};
+        my ($tpl, $seed) = ref($spec) eq 'ARRAY' ? @$spec : ($spec, {});
+        _register_blog_child($c, $bf, $slot, $tpl, $seed);
+    }
     my $defaults = ($BLOG_MANIFEST->{$component} // {})->{ssrDefaults};
     my %seed = $defaults
         ? BarefootJS::_derive_stash_from_defaults($defaults, $props) : ();
@@ -619,7 +553,7 @@ sub _blog_page ($c, $title, $base, $content_html) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>$esc_title</title>
 <script type="importmap">$importmap</script>
-<style>$BLOG_STYLES</style>
+<link rel="stylesheet" href="$BASE_PATH/styles/blog.css">
 </head>
 <body>
 <header class="shell">
@@ -634,39 +568,6 @@ $scripts
 <script type="module" src="$static/router-entry.js"></script>
 </body>
 </html>
-HTML
-}
-
-# The article body for a post page (hand-authored HTML, mirroring the Hono post
-# route). Like / ReadingTimer / NowPlaying are pre-rendered islands spliced in.
-sub _article_html ($c, $p, $i, $prev, $next, $base, $like, $timer, $now) {
-    my $n = scalar @{ $BLOG_DATA->{posts} };
-    my $tags_inline = CORE::join '', map {
-        my $t = $_;
-        my $href = "$base?tag=" . url_escape($t);
-        qq{<a class="tag-inline" href="$href">#@{[ xml_escape($t) ]} </a>}
-    } @{ $p->{tags} };
-    my $prose = CORE::join '', map { '<p>' . xml_escape($_) . '</p>' } @{ $p->{body} };
-    my $pager_prev = $prev
-        ? qq{<a class="pager-link" href="$base/posts/$prev->{slug}">\x{2190} @{[ xml_escape($prev->{title}) ]}</a>}
-        : qq{<span class="pager-link disabled">\x{2190} Start</span>};
-    my $pager_next = $next
-        ? qq{<a class="pager-link next" href="$base/posts/$next->{slug}">@{[ xml_escape($next->{title}) ]} \x{2192}</a>}
-        : qq{<a class="pager-link next" href="$base">Back to start \x{2192}</a>};
-    my $title = xml_escape($p->{title});
-    my $date  = xml_escape($p->{date});
-    my $slug  = xml_escape($p->{slug});
-    my $num   = $i + 1;
-    return <<"HTML";
-<article class="post" data-slug="$slug">
-<a class="back" href="$base">\x{2190} All posts</a>
-<h1 class="page-title">$title</h1>
-<div class="meta">$date \x{B7} post $num of $n \x{B7} $tags_inline</div>
-<div class="islands">$like$timer</div>
-$now
-<div class="prose">$prose</div>
-<nav class="pager">$pager_prev$pager_next</nav>
-</article>
 HTML
 }
 
@@ -716,10 +617,27 @@ $r_blog->get('/blog/posts/:slug' => sub ($c) {
     my $prev = $i > 0        ? $posts->[$i - 1] : undef;
     my $next = $i < $#$posts ? $posts->[$i + 1] : undef;
     my $base = "$BASE_PATH/blog";
-    my $like  = $c->blog_island('LikeButton');
-    my $timer = $c->blog_island('ReadingTimer');
-    my $now   = $c->blog_island('NowPlaying', {}, { Math => { min => 0 } });
-    my $content = _article_html($c, $p, $i, $prev, $next, $base, $like, $timer, $now);
+    # The whole article is the shared <PostArticle> island; the interactive
+    # widgets are its nested children (NowPlaying needs Math seeded for the
+    # progress-bar width).
+    my $content = $c->blog_island(
+        'PostArticle',
+        {
+            slug => $p->{slug}, title => $p->{title}, date => $p->{date},
+            tags => $p->{tags}, body => $p->{body},
+            position => $i + 1, total => scalar(@$posts), base => $base,
+            prevSlug  => $prev ? $prev->{slug}  : undef,
+            prevTitle => $prev ? $prev->{title} : undef,
+            nextSlug  => $next ? $next->{slug}  : undef,
+            nextTitle => $next ? $next->{title} : undef,
+        },
+        {},
+        {
+            like_button   => 'LikeButton',
+            reading_timer => 'ReadingTimer',
+            now_playing   => [ 'NowPlaying', { Math => { min => 0 } } ],
+        },
+    );
     $c->render(
         text   => _blog_page($c, "$p->{title} \x{2014} Barefoot Blog", $base, $content),
         format => 'html',
