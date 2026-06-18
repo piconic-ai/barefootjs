@@ -350,7 +350,9 @@ type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
 
 // `withRequestEnv` binds this request's env (the query behind `searchParams()`,
 // and future signals) for the whole fetch, so every `renderToHtml` inside
-// resolves it with no per-page plumbing — scoped per async context, race-free. #1922
+// resolves it with no per-page plumbing — scoped per async context, race-free.
+// The static-asset branch is wrapped too: a harmless no-op scope (it reads no
+// env), which keeps the entry a single wrap. #1922
 export default {
   port: PORT,
   fetch: withRequestEnv(async (request: Request, env?: Env, ctx?: unknown): Promise<Response> => {

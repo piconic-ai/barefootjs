@@ -11,7 +11,7 @@
  * future signals (cookies, …) ride the same wrapper.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect, beforeAll } from 'bun:test'
 import { searchParams } from '@barefootjs/client'
 import { renderToHtml } from '../render'
 import { runWithRequestEnv, withRequestEnv } from '../request-env'
@@ -20,6 +20,19 @@ import { runWithRequestEnv, withRequestEnv } from '../request-env'
 // compiled BarefootJS component lowers `{searchParams().get('sort') ?? 'none'}`
 // to on the Hono adapter.
 const SortLabel = () => <p>{searchParams().get('sort') ?? 'none'}</p>
+
+// Install a prior keyed reader on the seam BEFORE the first `runWithRequestEnv`
+// call below — `request-env` captures whatever reader is already there at
+// install time and delegates to it (mirrors a process where Hono's auto-wire
+// installed its reader first). The prior answers only a sentinel key and returns
+// `undefined` for `search`, so the searchParams tests are unaffected while the
+// delegation suite below can assert the chain.
+const PRIOR_KEY = 'env-test-prior'
+beforeAll(() => {
+  ;(
+    globalThis as unknown as { __bf_serverEnvReader?: (key: string) => string | undefined }
+  ).__bf_serverEnvReader = (key) => (key === PRIOR_KEY ? 'from-prior' : undefined)
+})
 
 describe('runWithRequestEnv + renderToHtml', () => {
   test('binds searchParams() to the wrapped query', async () => {
@@ -99,5 +112,28 @@ describe('withRequestEnv (WinterCG fetch-handler wrapper)', () => {
     const handler = withRequestEnv(async () => new Response(await renderToHtml(<SortLabel />)))
     const res = await handler(new Request('https://x.test/list'))
     expect(await res.text()).toBe('<p>none</p>')
+  })
+})
+
+describe('keyed seam — delegates to the prior reader', () => {
+  // The reader currently published on the seam (the chained one once
+  // `runWithRequestEnv` has installed it, else the raw prior — either way the
+  // delegation behaviour is identical for these cases).
+  const seam = () =>
+    (globalThis as unknown as { __bf_serverEnvReader: (key: string) => string | undefined })
+      .__bf_serverEnvReader
+
+  test('an unknown key delegates to the prior reader (outside any scope)', () => {
+    expect(seam()(PRIOR_KEY)).toBe('from-prior')
+    // The prior returns undefined for `search`, so a non-request render still
+    // resolves to the empty default rather than leaking a value.
+    expect(seam()('search')).toBeUndefined()
+  })
+
+  test('a scoped env wins for its key; absent keys still delegate to the prior', () => {
+    runWithRequestEnv({ search: '?sort=price' }, () => {
+      expect(seam()('search')).toBe('?sort=price') // scoped value wins over the prior
+      expect(seam()(PRIOR_KEY)).toBe('from-prior') // key not in env → delegate
+    })
   })
 })
