@@ -51,6 +51,13 @@ test('v1: data-bf-permanent keeps the player live across a post→post swap', as
   expect(await marker(page, '[data-bf-permanent="now-playing"]')).toBe('KEEP') // same live node
   expect(Number(await page.locator('.now-playing-bar .np-time').innerText())).toBeGreaterThanOrEqual(before)
   expect(Number(await page.locator('.island.timer .v').innerText())).toBeLessThan(0.5) // unmarked timer reset
+  // post → index ("← All posts"): the player is also data-bf-permanent on the
+  // list, so the same live node survives returning to the index — not reset.
+  const elapsed = Number(await page.locator('.now-playing-bar .np-time').innerText())
+  await page.click('.post .back')
+  await page.waitForSelector('.sortable-list li', { timeout: 3000 })
+  expect(await marker(page, '[data-bf-permanent="now-playing"]')).toBe('KEEP') // same live node on the index
+  expect(Number(await page.locator('.now-playing-bar .np-time').innerText())).toBeGreaterThanOrEqual(elapsed)
 })
 
 test('v2 sibling: the sidebar region persists while content swaps', async ({ page }) => {

@@ -130,6 +130,11 @@ export function registerBlog(
     return renderPage(
       <BlogLayout base={base} manifest={manifest} title={title}>
         <PostList items={items} tags={allTags} base={blog} />
+        {/* v1: the player also lives in the content region on the index, marked
+            `data-bf-permanent`, so the router moves the same live node between
+            the list and a post — it keeps playing instead of resetting on
+            "← All posts". */}
+        <NowPlaying />
       </BlogLayout>,
     )
   })

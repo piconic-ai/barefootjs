@@ -89,7 +89,16 @@ blog.get('/', (c) => {
   const tag = c.req.query('tag')
   const items = posts.map((p) => ({ slug: p.slug, title: p.title, date: p.date, tags: p.tags }))
   const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
-  return c.render(<PostList items={items} tags={allTags} base={BASE} />, { title })
+  return c.render(
+    <>
+      <PostList items={items} tags={allTags} base={BASE} />
+      {/* v1: the player also lives in the content region on the index, marked
+          `data-bf-permanent`, so the router moves the same live node between the
+          list and a post — it keeps playing instead of resetting on "← All posts". */}
+      <NowPlaying />
+    </>,
+    { title },
+  )
 })
 
 blog.get('/posts/:slug', (c) => {
