@@ -18,7 +18,7 @@ import { LikeButton } from '@/components/LikeButton'
 import { ReadingTimer } from '@/components/ReadingTimer'
 import { NowPlaying } from '@/components/NowPlaying'
 import { PostList } from '@/components/PostList'
-import { posts, postIndex, allTags } from '../shared/blog/posts'
+import { posts, postIndex, allTags, listItems } from '../shared/blog/posts'
 
 const BASE_PATH = process.env.BASE_PATH ?? '/integrations/hono'
 const STATIC = `${BASE_PATH}/static/components`
@@ -87,7 +87,7 @@ blog.use(blogRenderer)
 // matches the client with no manual priming.
 blog.get('/', (c) => {
   const tag = c.req.query('tag')
-  const items = posts.map((p) => ({ slug: p.slug, title: p.title, date: p.date, tags: p.tags }))
+  const items = listItems
   const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
   return c.render(
     <>

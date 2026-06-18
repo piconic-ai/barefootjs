@@ -35,7 +35,7 @@ import { LikeButton } from '@/components/LikeButton'
 import { ReadingTimer } from '@/components/ReadingTimer'
 import { NowPlaying } from '@/components/NowPlaying'
 import { PostList } from '@/components/PostList'
-import { posts, postIndex, allTags } from '../shared/blog/posts'
+import { posts, postIndex, allTags, listItems } from '../shared/blog/posts'
 
 interface LayoutProps {
   base: string
@@ -125,7 +125,7 @@ export function registerBlog(
   // render of a `?sort=` / `?tag=` URL matches the client with no priming.
   const indexHandler = eventHandler(async (event) => {
     const tag = getQuery(event).tag as string | undefined
-    const items = posts.map((p) => ({ slug: p.slug, title: p.title, date: p.date, tags: p.tags }))
+    const items = listItems
     const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
     return renderPage(
       <BlogLayout base={base} manifest={manifest} title={title}>

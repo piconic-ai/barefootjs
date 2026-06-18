@@ -4,7 +4,9 @@ use Mojolicious::Lite -signatures;
 # container); `../../packages/adapter-mojolicious/lib` is the workspace source (used
 # in local dev). Both are listed so either location resolves.
 use lib 'lib', '../../packages/adapter-mojolicious/lib';
-use Mojo::JSON qw(true false encode_json);
+use Mojo::JSON qw(true false encode_json decode_json);
+use Mojo::ByteStream qw(b);
+use Mojo::Util qw(xml_escape url_escape);
 
 # Load BarefootJS plugin
 plugin 'BarefootJS';
@@ -13,6 +15,10 @@ plugin 'BarefootJS';
 # the app is deploy-ready for barefootjs.dev/integrations/mojolicious.
 my $BASE_PATH = $ENV{BASE_PATH} // '/integrations/mojolicious';
 app->defaults(base_path => $BASE_PATH);
+# Default title so routes that render the `default` layout without setting one
+# (e.g. /counter) don't trip strict-vars on `<%= $title %>` under modern
+# Mojolicious. Routes that set their own title override this.
+app->defaults(title => 'BarefootJS + Mojolicious Example');
 
 # Dev-only browser auto-reload (no-op in production). The companion snippet
 # is emitted in the layout below via `bf_dev_snippet`. The plugin registers
@@ -411,6 +417,313 @@ $r->post('/api/todos/reset' => sub ($c) {
     $session->{todos}   = seed_todos();
     $session->{next_id} = 4;
     $c->rendered(200);
+});
+
+# ---------------------------------------------------------------------------
+# Blog — the @barefootjs/router showcase (mojolicious)
+#
+# Mirrors integrations/hono/blog.tsx: a region-shell layout (header +
+# ThemeToggle in the shell, a hand-authored sidebar region `nav:0` + the
+# compiled <PageShell> nested content regions in the main column) whose islands
+# are the shared blog components in ../shared/blog, compiled by this
+# integration's `bf build`. The client router (client/router-entry.ts, bundled
+# to client/router-entry.js) swaps only the content region on navigation.
+#
+# Unlike Hono — where the whole page is one JSX tree — there is no server JSX
+# here: the page is composed in Perl from individually-rendered island
+# templates (`blog_island`), each sharing the request's script collector so
+# `bf->scripts` emits the full set once.
+#
+# searchParams() SSR (router v0.5): the derived `params` / `visible` memos of
+# PostList are not statically lowerable to a template-string adapter, so their
+# SSR defaults are null (the same class of limitation the Go adapter has). We
+# seed `params` from the request query (correct sort/tag labels on the server)
+# and seed `visible` with the full item list as a graceful fallback; the client
+# re-derives the sorted/filtered list from `searchParams()` on hydration.
+# ---------------------------------------------------------------------------
+
+my $BLOG_MANIFEST = do {
+    my $f = app->home->child('dist/templates/manifest.json');
+    -r $f ? decode_json($f->slurp) : {};
+};
+my $BLOG_DATA = do {
+    my $f = app->home->child('dist/blog-data.json');
+    -r $f ? decode_json($f->slurp) : { posts => [], listItems => [], allTags => [] };
+};
+
+# Blog styles — the same design-system block the Hono showcase inlines, so the
+# region-shell page is self-contained (it does not use the catalog stylesheets).
+my $BLOG_STYLES = <<'CSS';
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html[data-theme="light"] { color-scheme: light; }
+  body { margin: 0; font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0e1116; color: #e6edf3; }
+  html[data-theme="light"] body { background: #f6f8fa; color: #1f2328; }
+  a { color: #58a6ff; }
+  .shell { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; background: #161b22; border-bottom: 1px solid #30363d; }
+  html[data-theme="light"] .shell { background: #fff; border-bottom-color: #d0d7de; }
+  .shell-brand { font-weight: 700; font-size: 18px; text-decoration: none; color: inherit; }
+  .shell-island { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .toggle { cursor: pointer; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 999px; padding: 5px 12px; font-size: 13px; }
+  html[data-theme="light"] .toggle { background: #f6f8fa; border-color: #d0d7de; color: #1f2328; }
+  .layout { display: flex; gap: 28px; align-items: flex-start; max-width: 1000px; margin: 0 auto; padding: 32px 24px 80px; }
+  .layout main { flex: 1; min-width: 0; }
+  .layout aside { position: sticky; top: 78px; width: 210px; flex: none; }
+  html[data-theme="light"] .sidebar { background: #fff; border-color: #d0d7de; }
+  .sidebar { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 16px; }
+  .sidebar-title { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #8b949e; margin-bottom: 12px; }
+  .sidebar-pin { cursor: pointer; width: 100%; background: #0d1117; border: 1px solid #30363d; color: #f2cc60; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  html[data-theme="light"] .sidebar-pin { background: #f6f8fa; border-color: #d0d7de; }
+  .sidebar-note { font-size: 12px; color: #6e7681; margin: 12px 0 0; }
+  @media (max-width: 720px) { .layout { flex-direction: column; } .layout aside { position: static; width: 100%; } }
+  .page-title { font-size: 28px; margin: 0 0 6px; }
+  .lede, .meta { color: #8b949e; }
+  html[data-theme="light"] .lede, html[data-theme="light"] .meta { color: #57606a; }
+  .meta { font-size: 13px; margin-bottom: 12px; }
+  .lede { margin: 0 0 18px; }
+  .controls, .tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .ctl-label { font-size: 13px; color: #6e7681; }
+  .tag, .tag-inline, .sort { text-decoration: none; font-size: 13px; color: #9aa7b4; }
+  .tag, .sort { border: 1px solid #30363d; border-radius: 999px; padding: 4px 11px; }
+  .tag.on, .sort.on { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  .tag-inline { color: #58a6ff; }
+  .status { font-size: 13px; color: #8b949e; margin-bottom: 12px; min-height: 1.2em; font-variant-numeric: tabular-nums; }
+  .sortable-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .sortable-list li { display: flex; align-items: center; gap: 10px; border: 1px solid #30363d; border-radius: 10px; background: #161b22; padding: 10px 14px; }
+  html[data-theme="light"] .sortable-list li { background: #fff; border-color: #d0d7de; }
+  .sortable-list li.pinned { border-color: #f2cc60; box-shadow: inset 3px 0 0 #f2cc60; }
+  .pin { cursor: pointer; background: none; border: none; font-size: 16px; color: #f2cc60; padding: 0; line-height: 1; }
+  .item-link { color: #e6edf3; text-decoration: none; font-weight: 600; font-size: 15px; }
+  html[data-theme="light"] .item-link { color: #1f2328; }
+  .item-link:hover { color: #58a6ff; }
+  .item-meta { margin-left: auto; font-size: 12px; color: #6e7681; }
+  .islands { display: flex; gap: 12px; align-items: center; margin: 4px 0 22px; }
+  .island { font-size: 14px; }
+  .island.like { cursor: pointer; background: #161b22; border: 1px solid #30363d; color: #f778ba; border-radius: 8px; padding: 6px 12px; }
+  html[data-theme="light"] .island.like { background: #fff; border-color: #d0d7de; }
+  .island.timer { color: #8b949e; font-variant-numeric: tabular-nums; }
+  .now-playing-bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 50; display: inline-flex; align-items: center; gap: 12px; background: #161b22; border: 1px solid #30363d; border-radius: 999px; padding: 8px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.45); color: #3fb950; font-size: 13px; font-variant-numeric: tabular-nums; }
+  html[data-theme="light"] .now-playing-bar { background: #fff; border-color: #d0d7de; box-shadow: 0 8px 28px rgba(140,149,159,.35); }
+  .np-toggle { cursor: pointer; background: none; border: none; color: inherit; font-size: 15px; padding: 0; line-height: 1; }
+  .np-title { color: #8b949e; }
+  .np-bar { display: inline-block; width: 120px; height: 6px; background: #30363d; border-radius: 999px; overflow: hidden; }
+  html[data-theme="light"] .np-bar { background: #d0d7de; }
+  .np-fill { display: block; height: 100%; background: #3fb950; transition: width .1s linear; }
+  .reader-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 6px 12px; border: 1px solid #30363d; border-radius: 8px; background: #161b22; font-size: 13px; color: #8b949e; }
+  html[data-theme="light"] .reader-toolbar { background: #fff; border-color: #d0d7de; }
+  .rt-label { text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+  .rt-btn { cursor: pointer; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 6px; padding: 2px 8px; font-size: 12px; }
+  html[data-theme="light"] .rt-btn { background: #f6f8fa; border-color: #d0d7de; color: #1f2328; }
+  .rt-level { color: #58a6ff; font-variant-numeric: tabular-nums; min-width: 1ch; text-align: center; }
+  .prose p { margin: 0 0 18px; color: #d8e0e8; }
+  html[data-theme="light"] .prose p { color: #424a53; }
+  .back { display: inline-block; margin-bottom: 14px; text-decoration: none; font-size: 14px; }
+  .pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 32px; padding-top: 18px; border-top: 1px solid #30363d; }
+  .pager-link { color: #58a6ff; text-decoration: none; font-weight: 600; font-size: 14px; max-width: 46%; }
+  .pager-link.next { text-align: right; margin-left: auto; }
+  .pager-link.disabled { color: #6e7681; }
+CSS
+
+sub _rand6 { return substr(rand() =~ s/^0\.//r, 0, 6) }
+
+# Register a renderer for a flat (non-`ui/*`) child component the build manifest
+# knows about (`post_list_item` → PostListItem, `reader_toolbar` → ReaderToolbar).
+# Mirrors the closure `register_components_from_manifest` builds for UI-registry
+# entries: a fresh child scope chained off the caller's slot, the shared script
+# collector + renderer registry, and the manifest's ssrDefaults seeded (the
+# caller's matching prop wins).
+sub _register_blog_child ($c, $parent_bf, $slot, $component) {
+    my $entry = $BLOG_MANIFEST->{$component} or return;
+    my $defaults = $entry->{ssrDefaults};
+    $parent_bf->register_child_renderer($slot, sub {
+        my ($props, $caller) = @_;
+        my $host = $caller // $parent_bf;
+        my $host_scope = $host->_scope_id;
+        my $child = BarefootJS->new($c, { backend => $parent_bf->backend });
+        my $slot_id  = delete $props->{_bf_slot};
+        my $data_key = delete $props->{key};
+        $child->_data_key($data_key) if defined $data_key;
+        $child->_scope_id($slot_id ? $host_scope . '_' . $slot_id : $component . '_' . _rand6());
+        $child->_is_child(1);
+        if ($slot_id) { $child->_bf_parent($host_scope); $child->_bf_mount($slot_id) }
+        $child->_child_renderers($parent_bf->_child_renderers);
+        $child->_scripts($parent_bf->_scripts);
+        $child->_script_seen($parent_bf->_script_seen);
+        my %extra = $defaults
+            ? BarefootJS::_derive_stash_from_defaults($defaults, $props) : ();
+        my $html = $parent_bf->backend->render_named($component, $child, { %$props, %extra });
+        chomp $html;
+        return $html;
+    });
+}
+
+# Render a single top-level island template to an HTML string. The island gets
+# its own scope id but shares the request bf's script collector + renderer
+# registry, so multiple islands compose into one page and `bf->scripts` emits
+# the union once.
+#
+#   $props    — the component's props. Serialised into `bf-p` (so the client
+#               hydration sees them) AND fed to SSR as template vars. PostList's
+#               `visible()` memo reactively reads `props.items`, so these MUST
+#               reach the client, not just the server.
+#   $extra    — SSR-only template vars: the derived memo / getter values that
+#               are not statically lowerable (`params`, `visible`, the
+#               sort/tag class+href scalars). The client re-derives these from
+#               `searchParams()` on hydration, so they stay out of `bf-p`.
+#   $children — slot key → child template to register for this island's nested
+#               `render_child` calls.
+helper blog_island => sub ($c, $component, $props = {}, $extra = {}, $children = {}) {
+    my $root = $c->bf;
+    my $bf = BarefootJS->new($c, { backend => $root->backend });
+    $bf->_scope_id($component . '_' . _rand6());
+    $bf->_props($props) if %$props;
+    $bf->_scripts($root->_scripts);
+    $bf->_script_seen($root->_script_seen);
+    $bf->_child_renderers($root->_child_renderers);
+    _register_blog_child($c, $bf, $_, $children->{$_}) for keys %$children;
+    my $defaults = ($BLOG_MANIFEST->{$component} // {})->{ssrDefaults};
+    my %seed = $defaults
+        ? BarefootJS::_derive_stash_from_defaults($defaults, $props) : ();
+    # `%seed` first, then props (provide `$items`/`$tags`/`$base`), then `%extra`
+    # (the computed `params`/`visible`/… override the seeded nulls).
+    return $root->backend->render_named($component, $bf, { %seed, %$props, %$extra });
+};
+
+# Assemble the full region-shell page around already-rendered content HTML.
+sub _blog_page ($c, $title, $base, $content_html) {
+    my $static = "$BASE_PATH/client";
+    my $theme   = $c->blog_island('ThemeToggle');
+    my $sidebar = $c->blog_island('Sidebar');
+    my $shell   = $c->blog_island(
+        'PageShell',
+        {},                                       # no client props
+        { children => b($content_html) },         # SSR-only: the page content
+        { reader_toolbar => 'ReaderToolbar' },
+    );
+    # `searchParams()` lives in the single physical `@barefootjs/client/reactive`
+    # module re-exported by every `@barefootjs/client*` entry, so the islands and
+    # the router bootstrap share ONE signal instance by resolving the bare
+    # specifiers to the same `barefoot.js`.
+    my $importmap = encode_json({ imports => {
+        '@barefootjs/client'         => "$static/barefoot.js",
+        '@barefootjs/client/runtime' => "$static/barefoot.js",
+        '@barefootjs/client/reactive'=> "$static/barefoot.js",
+    } });
+    my $scripts = $c->bf->scripts;
+    my $esc_title = xml_escape($title);
+    return <<"HTML";
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$esc_title</title>
+<script type="importmap">$importmap</script>
+<style>$BLOG_STYLES</style>
+</head>
+<body>
+<header class="shell">
+<a class="shell-brand" href="$base">\x{1F4F0} Barefoot Blog</a>
+<div class="shell-island">$theme</div>
+</header>
+<div class="layout">
+<aside bf-region="nav:0">$sidebar</aside>
+<main>$shell</main>
+</div>
+$scripts
+<script type="module" src="$static/router-entry.js"></script>
+</body>
+</html>
+HTML
+}
+
+# The article body for a post page (hand-authored HTML, mirroring the Hono post
+# route). Like / ReadingTimer / NowPlaying are pre-rendered islands spliced in.
+sub _article_html ($c, $p, $i, $prev, $next, $base, $like, $timer, $now) {
+    my $n = scalar @{ $BLOG_DATA->{posts} };
+    my $tags_inline = CORE::join '', map {
+        my $t = $_;
+        my $href = "$base?tag=" . url_escape($t);
+        qq{<a class="tag-inline" href="$href">#@{[ xml_escape($t) ]} </a>}
+    } @{ $p->{tags} };
+    my $prose = CORE::join '', map { '<p>' . xml_escape($_) . '</p>' } @{ $p->{body} };
+    my $pager_prev = $prev
+        ? qq{<a class="pager-link" href="$base/posts/$prev->{slug}">\x{2190} @{[ xml_escape($prev->{title}) ]}</a>}
+        : qq{<span class="pager-link disabled">\x{2190} Start</span>};
+    my $pager_next = $next
+        ? qq{<a class="pager-link next" href="$base/posts/$next->{slug}">@{[ xml_escape($next->{title}) ]} \x{2192}</a>}
+        : qq{<a class="pager-link next" href="$base">Back to start \x{2192}</a>};
+    my $title = xml_escape($p->{title});
+    my $date  = xml_escape($p->{date});
+    my $slug  = xml_escape($p->{slug});
+    my $num   = $i + 1;
+    return <<"HTML";
+<article class="post" data-slug="$slug">
+<a class="back" href="$base">\x{2190} All posts</a>
+<h1 class="page-title">$title</h1>
+<div class="meta">$date \x{B7} post $num of $n \x{B7} $tags_inline</div>
+<div class="islands">$like$timer</div>
+$now
+<div class="prose">$prose</div>
+<nav class="pager">$pager_prev$pager_next</nav>
+</article>
+HTML
+}
+
+my $r_blog = $r;
+
+# Index — PostList + NowPlaying in the content region. NowPlaying lives on the
+# index too (data-bf-permanent) so the router moves the same live node between
+# the list and a post.
+$r_blog->get('/blog' => sub ($c) {
+    my $sort  = $c->param('sort') // 'date';
+    my $tag   = $c->param('tag')  // '';
+    my $base  = "$BASE_PATH/blog";
+    my $items = $BLOG_DATA->{listItems};
+    my $post_list = $c->blog_island(
+        'PostList',
+        # Client props (→ bf-p): `visible()` re-derives from these on every
+        # `searchParams()` change, so they must reach the client.
+        { items => $items, tags => $BLOG_DATA->{allTags}, base => $base },
+        {
+            # SSR-only derived values. `params` is seeded from the request query
+            # for correct server-side labels; `visible` falls back to the full
+            # list (the client re-sorts/filters on hydration). The per-link sort
+            # /tag class+href getters collapse to one SSR scalar each (the
+            # compiler can't tell `sortClass('date')` from `sortClass('title')`
+            # statically), so seed neutral defaults — the client sets the
+            # correct active highlight + hrefs per link from `searchParams()`.
+            params    => { sort => $sort, tag => $tag },
+            visible   => $items,
+            sortClass => 'sort',
+            sortHref  => $base,
+            tagClass  => 'tag',
+            tagHref   => $base,
+        },
+        { post_list_item => 'PostListItem' },
+    );
+    my $now = $c->blog_island('NowPlaying', {}, { Math => { min => 0 } });
+    my $title = length $tag ? "#$tag \x{2014} Barefoot Blog" : "Barefoot Blog \x{2014} Latest posts";
+    $c->render(text => _blog_page($c, $title, $base, $post_list . $now), format => 'html');
+});
+
+$r_blog->get('/blog/posts/:slug' => sub ($c) {
+    my $slug  = $c->param('slug');
+    my $posts = $BLOG_DATA->{posts};
+    my ($i) = grep { $posts->[$_]{slug} eq $slug } 0 .. $#$posts;
+    return $c->reply->not_found unless defined $i;
+    my $p    = $posts->[$i];
+    my $prev = $i > 0        ? $posts->[$i - 1] : undef;
+    my $next = $i < $#$posts ? $posts->[$i + 1] : undef;
+    my $base = "$BASE_PATH/blog";
+    my $like  = $c->blog_island('LikeButton');
+    my $timer = $c->blog_island('ReadingTimer');
+    my $now   = $c->blog_island('NowPlaying', {}, { Math => { min => 0 } });
+    my $content = _article_html($c, $p, $i, $prev, $next, $base, $like, $timer, $now);
+    $c->render(
+        text   => _blog_page($c, "$p->{title} \x{2014} Barefoot Blog", $base, $content),
+        format => 'html',
+    );
 });
 
 app->start;

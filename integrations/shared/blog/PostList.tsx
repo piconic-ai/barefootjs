@@ -8,6 +8,13 @@ interface Item {
   title: string
   date: string
   tags: string[]
+  /**
+   * Pre-rendered meta line (`<date> · #tag #tag`), supplied by the caller. It
+   * is NOT built here from `p.tags` because a value-producing `.map().join()`
+   * in the island template can't be lowered for SSR on the template-string
+   * adapters (Go / Perl) — see `ListItem.meta` in `posts.ts`.
+   */
+  meta: string
 }
 
 type SortKey = 'date' | 'title' | 'tag'
@@ -101,7 +108,7 @@ export function PostList(props: PostListProps) {
             href={`${base}/posts/${p.slug}`}
             title={p.title}
             date={p.date}
-            meta={`${p.date} · ${p.tags.map((t) => `#${t}`).join(' ')}`}
+            meta={p.meta}
           />
         ))}
       </ol>
