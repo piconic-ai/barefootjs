@@ -24,6 +24,7 @@ import {
   setCookie,
   readBody,
   getQuery,
+  getRequestURL,
   createEventStream,
   setResponseStatus,
   toWebHandler,
@@ -32,6 +33,7 @@ import {
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
+import { runWithSearchParams } from '@barefootjs/hono/search-params'
 
 // h3's `createEventStream` leaks an `undefined` unhandled rejection when an
 // SSE client disconnects under the web handler (`onClosed` does not fire in
@@ -124,14 +126,19 @@ function getSession(event: H3Event): Session {
 }
 
 // ── HTML pages ───────────────────────────────────────────────────────────
-async function page(node: unknown): Promise<string> {
-  return '<!DOCTYPE html>' + (await renderToHtml(node))
+// Bind `searchParams()` to this request's query for SSR (`renderToHtml` has no
+// request context of its own, unlike Hono's jsxRenderer), scoped per async
+// context so concurrent requests don't race. #1922
+async function page(event: H3Event, node: unknown): Promise<string> {
+  const search = getRequestURL(event).search
+  return '<!DOCTYPE html>' + (await runWithSearchParams(search, () => renderToHtml(node)))
 }
 
 const router = createRouter()
 
-const homeHandler = eventHandler(async () =>
+const homeHandler = eventHandler(async (event) =>
   page(
+    event,
     <Layout title="BarefootJS + h3" manifest={manifest} base={BASE}>
       <h1>BarefootJS + h3 Integration</h1>
       <nav>
@@ -153,8 +160,9 @@ if (BASE) router.get(BASE, homeHandler)
 
 router.get(
   link('/counter'),
-  eventHandler(async () =>
+  eventHandler(async (event) =>
     page(
+      event,
       <Layout title="Counter — BarefootJS + h3" manifest={manifest} base={BASE}>
         <h1>Counter</h1>
         <Counter initial={0} />
@@ -166,8 +174,9 @@ router.get(
 
 router.get(
   link('/toggle'),
-  eventHandler(async () =>
+  eventHandler(async (event) =>
     page(
+      event,
       <Layout title="Toggle — BarefootJS + h3" manifest={manifest} base={BASE}>
         <h1>Toggle</h1>
         <Toggle
@@ -187,6 +196,7 @@ router.get(
   link('/todos'),
   eventHandler(async (event) =>
     page(
+      event,
       <Layout
         title="Todo (@client) — BarefootJS + h3"
         manifest={manifest}
@@ -207,6 +217,7 @@ router.get(
   link('/todos-ssr'),
   eventHandler(async (event) =>
     page(
+      event,
       <Layout
         title="Todo (SSR) — BarefootJS + h3"
         manifest={manifest}
@@ -225,8 +236,9 @@ router.get(
 
 router.get(
   link('/ai-chat'),
-  eventHandler(async () =>
+  eventHandler(async (event) =>
     page(
+      event,
       <Layout
         title="AI Chat — BarefootJS + h3"
         manifest={manifest}

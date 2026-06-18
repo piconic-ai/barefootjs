@@ -20,6 +20,7 @@ import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
+import { runWithSearchParams } from '@barefootjs/hono/search-params'
 import { Layout } from './renderer'
 import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
@@ -44,6 +45,14 @@ function html(markup: string): Response {
   return new Response('<!DOCTYPE html>' + markup, {
     headers: { 'content-type': 'text/html; charset=utf-8' },
   })
+}
+
+// Render a page with `searchParams()` bound to this request's query for SSR.
+// `renderToHtml` has no request context of its own (unlike Hono's jsxRenderer),
+// so we scope the query with AsyncLocalStorage per async context — concurrent
+// requests never race. #1922
+function renderWithSearch(request: Request, node: unknown): Promise<string> {
+  return runWithSearchParams(new URL(request.url).search, () => renderToHtml(node))
 }
 
 // ── per-session todo store ─────────────────────────────────────────────────
@@ -123,9 +132,9 @@ const onWorkers = typeof Bun === 'undefined'
 const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
 
   // ── HTML pages ───────────────────────────────────────────────────────────
-  .get(link('/'), async () =>
+  .get(link('/'), async ({ request }) =>
     html(
-      await renderToHtml(
+      await renderWithSearch(request,
         <Layout title="BarefootJS + Elysia" manifest={manifest} base={BASE}>
           <h1>BarefootJS + Elysia Integration</h1>
           <nav>
@@ -142,9 +151,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/counter'), async () =>
+  .get(link('/counter'), async ({ request }) =>
     html(
-      await renderToHtml(
+      await renderWithSearch(request,
         <Layout title="Counter — BarefootJS + Elysia" manifest={manifest} base={BASE}>
           <h1>Counter</h1>
           <Counter initial={0} />
@@ -154,9 +163,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/toggle'), async () =>
+  .get(link('/toggle'), async ({ request }) =>
     html(
-      await renderToHtml(
+      await renderWithSearch(request,
         <Layout title="Toggle — BarefootJS + Elysia" manifest={manifest} base={BASE}>
           <h1>Toggle</h1>
           <Toggle
@@ -172,9 +181,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/todos'), async ({ cookie }) =>
+  .get(link('/todos'), async ({ request, cookie }) =>
     html(
-      await renderToHtml(
+      await renderWithSearch(request,
         <Layout
           title="Todo (@client) — BarefootJS + Elysia"
           manifest={manifest}
@@ -191,9 +200,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/todos-ssr'), async ({ cookie }) =>
+  .get(link('/todos-ssr'), async ({ request, cookie }) =>
     html(
-      await renderToHtml(
+      await renderWithSearch(request,
         <Layout
           title="Todo (SSR) — BarefootJS + Elysia"
           manifest={manifest}
@@ -210,9 +219,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/ai-chat'), async () =>
+  .get(link('/ai-chat'), async ({ request }) =>
     html(
-      await renderToHtml(
+      await renderWithSearch(request,
         <Layout
           title="AI Chat — BarefootJS + Elysia"
           manifest={manifest}
