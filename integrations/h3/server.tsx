@@ -48,6 +48,7 @@ if (typeof process !== 'undefined' && typeof process.on === 'function') {
   })
 }
 import { Layout } from './renderer'
+import { registerBlog } from './blog'
 import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
 import { Toggle } from '@/components/Toggle'
@@ -145,6 +146,7 @@ const homeHandler = eventHandler(async () =>
           <li><a href={link('/todos')}>Todo (@client)</a></li>
           <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
           <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
+          <li><a href={link('/blog')}>Blog (@barefootjs/router)</a></li>
         </ul>
       </nav>
     </Layout>,
@@ -351,6 +353,10 @@ router.get(
     return eventStream.send()
   }),
 )
+
+// Blog routes (`@barefootjs/router` showcase) — `${BASE}/blog` + posts. Its
+// own region-shell layout, separate from the catalog `Layout`.
+registerBlog(router, BASE, manifest)
 
 const app = createApp()
 app.use(router)

@@ -6,7 +6,7 @@ import { createConfig } from '@barefootjs/hono/build'
 const staticBase = '/static/components/'
 
 export default createConfig({
-  components: ['../shared/components'],
+  components: ['../shared/components', '../shared/blog'],
   outDir: 'dist',
   minify: true,
   scriptBasePath: staticBase,
