@@ -1123,25 +1123,41 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Find nested components (loops with childComponent)
     const nestedComponents = this.findNestedComponents(ir.root)
 
-    // (#1897) When a loop iterates a memo whose SSR path returns a module-const
-    // array, the IR's `loop.itemType` is null (the memo type is generic
-    // `object`). Resolve the element type from the constant's type annotation
-    // so wrapper structs and constructors get the correct datum fields.
+    // (#1897) When a loop's `itemType` is null, resolve the element type
+    // from the source array so wrapper structs get correct datum fields.
+    // Two cases:
+    //   1. Memo-derived: `sortedData()` → resolve through the memo's SSR
+    //      path to the module const it returns (block-body memo baking).
+    //   2. Direct module const: `payments` → look up the constant directly.
     for (const nested of nestedComponents) {
       if (nested.loopItemType || !nested.loopArray) continue
+
+      // Case 1: memo-derived loop array (`sortedData()`)
       const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
-      if (!memoName) continue
-      const memo = ir.metadata.memos.find(m => m.name === memoName)
-      if (!memo) continue
-      const blockReturn = this.resolveBlockBodyMemoModuleConst(
-        memo.computation, ir.metadata.signals,
+      if (memoName) {
+        const memo = ir.metadata.memos.find(m => m.name === memoName)
+        if (memo) {
+          const blockReturn = this.resolveBlockBodyMemoModuleConst(
+            memo.computation, ir.metadata.signals,
+          )
+          if (blockReturn) {
+            const constant = (ir.metadata.localConstants ?? []).find(
+              c => c.name === blockReturn.constName && c.origin?.scope === 'module',
+            )
+            if (constant?.type?.elementType) {
+              nested.loopItemType = constant.type.elementType
+            }
+          }
+        }
+        continue
+      }
+
+      // Case 2: direct module-const array reference (`payments`)
+      const directConst = (ir.metadata.localConstants ?? []).find(
+        c => c.name === nested.loopArray && c.origin?.scope === 'module',
       )
-      if (!blockReturn) continue
-      const constant = (ir.metadata.localConstants ?? []).find(
-        c => c.name === blockReturn.constName && c.origin?.scope === 'module',
-      )
-      if (constant?.type?.elementType) {
-        nested.loopItemType = constant.type.elementType
+      if (directConst?.type?.elementType) {
+        nested.loopItemType = directConst.type.elementType
       }
     }
 
@@ -1874,27 +1890,103 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Signal-backed dynamic arrays are set manually by the handler.
     const staticNested = nestedComponents.filter(n => !n.isDynamic || n.isPropDerived)
 
-    // Handle nested components
-    if (staticNested.length > 0) {
-      for (const nested of staticNested) {
-        const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
-        lines.push(`\t${varName} := make([]${nested.name}Props, len(in.${nested.name}s))`)
-        lines.push(`\tfor i, item := range in.${nested.name}s {`)
-        lines.push(`\t\t${varName}[i] = New${nested.name}Props(item)`)
-        // (#1249) Stamp slot identity on each child item so bf-h / bf-m
-        // mark it as a slot-attached child of this scope.
-        lines.push(`\t\t${varName}[i].BfParent = scopeID`)
-        lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
-        // (#1297) Stamp the keyed-loop `data-key` per item from the loop's
-        // `key` expression (`item.label` → `item.Label`), matching Hono.
-        const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
-        if (keyField) {
-          lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
-          this.usesFmt = true
-        }
-        lines.push('\t}')
-        lines.push('')
+    // Track which wrapper vars have been emitted so the return struct can
+    // conditionally include them (both static-with-body and dynamic-with-body
+    // paths may emit wrappers).
+    const emittedWrapperVars = new Set<string>()
+
+    // (#1897) Split static nested into those with and without body children.
+    // Static loops with body children backed by module consts bake the data
+    // directly (like the dynamic-with-body path) because Input items don't
+    // carry the datum fields the wrapper struct needs.
+    const staticWithBody = staticNested.filter(
+      n => n.bodyChildren && n.bodyChildren.length > 0,
+    )
+    const staticWithoutBody = staticNested.filter(
+      n => !n.bodyChildren || n.bodyChildren.length === 0,
+    )
+
+    // Handle static nested components WITHOUT body children (original path)
+    for (const nested of staticWithoutBody) {
+      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      lines.push(`\t${varName} := make([]${nested.name}Props, len(in.${nested.name}s))`)
+      lines.push(`\tfor i, item := range in.${nested.name}s {`)
+      lines.push(`\t\t${varName}[i] = New${nested.name}Props(item)`)
+      lines.push(`\t\t${varName}[i].BfParent = scopeID`)
+      lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      if (keyField) {
+        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
+        this.usesFmt = true
       }
+      lines.push('\t}')
+      lines.push('')
+    }
+
+    // (#1897) Handle static nested components WITH body children.
+    // Bake the module-const array into the constructor so wrapper structs
+    // get their datum fields directly from the data, not from Input items
+    // (Input items only carry child-component params, not loop datum fields).
+    for (const nested of staticWithBody) {
+      const loopArray = nested.loopArray
+      const moduleConst = loopArray
+        ? (ir.metadata.localConstants ?? []).find(
+            c => c.name === loopArray && c.origin?.scope === 'module' && c.value && c.type,
+          )
+        : null
+      const bakedValue = moduleConst?.type
+        ? this.convertInitialValue(moduleConst.value!, moduleConst.type, ir.metadata.propsParams)
+        : null
+      if (!bakedValue || bakedValue === 'nil' || bakedValue === '0') continue
+
+      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const wrapperType = this.loopBodyWrapperName(componentName, nested)
+      const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+
+      for (const child of bodyChildInstances) {
+        const childVar = `child_${child.fieldName}`
+        lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
+        lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
+        lines.push(`\t\tBfParent: scopeID,`)
+        lines.push(`\t\tBfMount: "${child.slotId}",`)
+        for (const prop of child.props) {
+          if (prop.value.kind === 'literal') {
+            lines.push(`\t\t${this.capitalizeFieldName(prop.name)}: ${this.goLiteral(prop.value.value)},`)
+          } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
+            lines.push(`\t\t${this.capitalizeFieldName(prop.name)}: true,`)
+          }
+        }
+        lines.push(`\t})`)
+      }
+      if (bodyChildInstances.length > 0) lines.push('')
+
+      const dataVar = `${varName}Data`
+      lines.push(`\t${dataVar} := ${bakedValue}`)
+      lines.push(`\t${varName} := make([]${wrapperType}, len(${dataVar}))`)
+      lines.push(`\tfor i, item := range ${dataVar} {`)
+      lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
+      lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
+      lines.push(`\t\t\t\tBfParent: scopeID,`)
+      lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
+      lines.push(`\t\t\t}),`)
+      for (const f of datumFields) {
+        lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
+      }
+      for (const child of bodyChildInstances) {
+        lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
+      }
+      lines.push(`\t\t}`)
+      lines.push(`\t\t${varName}[i].BfParent = scopeID`)
+      lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      if (keyField) {
+        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
+        this.usesFmt = true
+      }
+      lines.push('\t}')
+      lines.push('')
+      emittedWrapperVars.add(varName)
     }
 
     // (#1423) Collect signal-time prop fallbacks: when a signal is
@@ -1918,7 +2010,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // bakes to a module-const via a memo. Creates the wrapper slice with
     // embedded child Props + datum fields + static sub-component instances.
     const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
-    const emittedWrapperVars = new Set<string>()
     for (const nested of dynamicWithBody) {
       const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
       if (!memoName) continue
@@ -2072,12 +2163,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    // Add nested component arrays (static + body-wrapped; plain dynamic ones are set by the handler)
-    for (const nested of staticNested) {
+    // Add nested component arrays (static without body always emitted;
+    // static with body + dynamic with body use emittedWrapperVars guard)
+    for (const nested of staticWithoutBody) {
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       lines.push(`\t\t${nested.name}s: ${varName},`)
     }
-    for (const nested of dynamicWithBody) {
+    for (const nested of [...staticWithBody, ...dynamicWithBody]) {
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       if (!emittedWrapperVars.has(varName)) continue
       lines.push(`\t\t${nested.name}s: ${varName},`)
