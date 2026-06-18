@@ -25,7 +25,7 @@ import { LikeButton } from '@/components/LikeButton'
 import { ReadingTimer } from '@/components/ReadingTimer'
 import { NowPlaying } from '@/components/NowPlaying'
 import { PostList } from '@/components/PostList'
-import { posts, postIndex, allTags } from '../shared/blog/posts'
+import { posts, postIndex, allTags, listItems } from '../shared/blog/posts'
 
 interface LayoutProps {
   base: string
@@ -95,7 +95,7 @@ function BlogLayout({ base, manifest, title, children }: LayoutProps) {
 /** Index page node — the post list reacts to ?sort= / ?tag= via searchParams(). */
 export function renderBlogIndex(base: string, manifest: BarefootBuildManifest, tag?: string) {
   const blog = `${base}/blog`
-  const items = posts.map((p) => ({ slug: p.slug, title: p.title, date: p.date, tags: p.tags }))
+  const items = listItems
   const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
   return (
     <BlogLayout base={base} manifest={manifest} title={title}>

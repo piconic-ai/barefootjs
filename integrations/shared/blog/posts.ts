@@ -130,6 +130,36 @@ export const posts: Post[] = [
   },
 ]
 
+/** The item shape the index list renders — the post fields the list needs plus
+ *  a pre-rendered `meta` line. */
+export interface ListItem {
+  slug: string
+  title: string
+  date: string
+  tags: string[]
+  /**
+   * Pre-rendered meta line (`<date> · #tag #tag`). Computed here, NOT inside
+   * the `PostList` island, on purpose: building it in the island needs a
+   * value-producing tag-map-join, a shape the template-string adapters
+   * (Go / Mojolicious / Xslate) can't lower for SSR (it trips the compiler's
+   * `UNSUPPORTED_METHODS` gate → BF101). Pre-computing
+   * it upstream keeps the island's template a plain member access (`p.meta`),
+   * so the same shared component compiles on every adapter. JS-runtime adapters
+   * (Hono / h3 / Elysia) render a byte-identical string.
+   */
+  meta: string
+}
+
+/** Index-list items derived from `posts`, with `meta` pre-rendered. The Perl
+ *  adapters build the equivalent array in their own backend language. */
+export const listItems: ListItem[] = posts.map((p) => ({
+  slug: p.slug,
+  title: p.title,
+  date: p.date,
+  tags: p.tags,
+  meta: `${p.date} · ${p.tags.map((t) => `#${t}`).join(' ')}`,
+}))
+
 export const allTags: string[] = [...new Set(posts.flatMap((p) => p.tags))].sort()
 
 export function postIndex(slug: string): number {
