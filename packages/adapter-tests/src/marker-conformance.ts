@@ -186,9 +186,9 @@ export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
 export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   const out = emptySets()
   for (const m of template.matchAll(/\bbf="(\^?[\w-]+)"/g)) out.slots.add(m[1])
-  for (const m of template.matchAll(/bfText\("([\w-]+)"\)/g)) out.slots.add(m[1])
-  for (const m of template.matchAll(/text_start\("([\w-]+)"\)/g)) out.slots.add(m[1])
-  for (const m of template.matchAll(/bfTextStart\s+"([\w-]+)"/g)) out.slots.add(m[1])
+  for (const m of template.matchAll(/bfText\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
+  for (const m of template.matchAll(/text_start\("(\^?[\w-]+)"\)/g)) out.slots.add(m[1])
+  for (const m of template.matchAll(/bfTextStart\s+"(\^?[\w-]+)"/g)) out.slots.add(m[1])
   for (const m of template.matchAll(/\bbf-c="([\w-]+)"/g)) out.conds.add(m[1])
   for (const m of template.matchAll(/cond-start:([\w-]+)/g)) out.conds.add(m[1])
   for (const m of template.matchAll(/(?:^|[^/])loop:([\w-]+)/g)) out.loops.add(m[1])

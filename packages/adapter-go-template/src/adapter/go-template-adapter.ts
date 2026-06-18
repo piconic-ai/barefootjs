@@ -91,6 +91,18 @@ interface NestedComponentInfo extends IRLoopChildComponent {
    *  name (`item`), so the loop-child init can stamp `data-key` per item. */
   loopKey?: string
   loopParam?: string
+  /** The loop body component's JSX children (e.g. the 4 `<TableCell>` nodes
+   *  inside `<TableRow>` in data-table's `.map(payment => <TableRow>…</TableRow>)`).
+   *  Non-empty when the loop body component has children that need a companion
+   *  define rendered via `bf_with_children` + `bf_tmpl`. (#1897) */
+  bodyChildren?: IRNode[]
+  /** The loop's array expression for baking (e.g. `sortedData()`) */
+  loopArray?: string
+  /** The enclosing loop's `markerId` (e.g. `l0`) for unique naming */
+  loopMarkerId?: string
+  /** The loop item's TS type (`Payment` from `sortedData().map(payment => …)`),
+   *  resolved to Go struct fields for the wrapper struct's datum fields. */
+  loopItemType?: TypeInfo | null
 }
 
 interface StaticChildInstance {
@@ -554,6 +566,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * initial-value baker.
    */
   private synthStructTypes: Map<string, TypeInfo> = new Map()
+  /** Full type definitions from the current IR, stashed for loop-datum field resolution (#1897). */
+  private currentTypeDefinitions: TypeDefinition[] = []
 
   /** Set during type generation when any emit references
    *  `template.HTML(...)`; toggles the `"html/template"` import. */
@@ -662,6 +676,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
     this.currentMemos = ir.metadata.memos ?? []
+    this.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.contextConsumers = collectContextConsumers(ir.metadata)
     this.searchParamsLocals = searchParamsLocalNames(ir.metadata)
     // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
@@ -1041,6 +1056,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
     this.currentMemos = ir.metadata.memos ?? []
+    this.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.contextConsumers = collectContextConsumers(ir.metadata)
     this.searchParamsLocals = searchParamsLocalNames(ir.metadata)
     const lines: string[] = []
@@ -1106,6 +1122,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Find nested components (loops with childComponent)
     const nestedComponents = this.findNestedComponents(ir.root)
+
+    // (#1897) When a loop iterates a memo whose SSR path returns a module-const
+    // array, the IR's `loop.itemType` is null (the memo type is generic
+    // `object`). Resolve the element type from the constant's type annotation
+    // so wrapper structs and constructors get the correct datum fields.
+    for (const nested of nestedComponents) {
+      if (nested.loopItemType || !nested.loopArray) continue
+      const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
+      if (!memoName) continue
+      const memo = ir.metadata.memos.find(m => m.name === memoName)
+      if (!memo) continue
+      const blockReturn = this.resolveBlockBodyMemoModuleConst(
+        memo.computation, ir.metadata.signals,
+      )
+      if (!blockReturn) continue
+      const constant = (ir.metadata.localConstants ?? []).find(
+        c => c.name === blockReturn.constName && c.origin?.scope === 'module',
+      )
+      if (constant?.type?.elementType) {
+        nested.loopItemType = constant.type.elementType
+      }
+    }
+
+    // (#1897) Generate wrapper structs for loop body components with JSX children.
+    // The wrapper embeds the child component's Props and adds datum fields from
+    // the loop's item type + static child instances from the body children.
+    for (const nested of nestedComponents) {
+      if (!nested.bodyChildren || nested.bodyChildren.length === 0) continue
+      this.generateLoopBodyWrapperStruct(lines, componentName, nested)
+    }
 
     // Build prop type overrides from signal types
     const propTypeOverrides = this.buildPropTypeOverrides(ir)
@@ -1649,14 +1695,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Add array fields for nested components (for template rendering)
     for (const nested of nestedComponents) {
+      // (#1897) Loop body with JSX children → use the wrapper struct type
+      const elemType = nested.bodyChildren?.length
+        ? this.loopBodyWrapperName(componentName, nested)
+        : `${nested.name}Props`
       if (nested.isDynamic && !nested.isPropDerived) {
         // Dynamic signal array loops: template-only, not in JSON
-        lines.push(`\t${nested.name}s []${nested.name}Props \`json:"-"\``)
+        lines.push(`\t${nested.name}s []${elemType} \`json:"-"\``)
       } else {
         // Static arrays and prop-derived dynamic arrays: include in JSON
         // so the client can hydrate via mapArray or forEach
         const jsonTag = this.toJsonTag(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
-        lines.push(`\t${nested.name}s []${nested.name}Props \`json:"${jsonTag}"\``)
+        lines.push(`\t${nested.name}s []${elemType} \`json:"${jsonTag}"\``)
       }
     }
 
@@ -1684,6 +1734,90 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * (#1897) Generate a wrapper struct for loop body components with JSX children.
+   * The wrapper embeds the child component's Props, adds datum fields from the
+   * loop's item type, and adds static child instance fields for sub-components
+   * within the loop body children (e.g. the `TableCell` instances inside
+   * `<TableRow>…</TableRow>`).
+   */
+  private generateLoopBodyWrapperStruct(
+    lines: string[],
+    parentComponentName: string,
+    nested: NestedComponentInfo,
+  ): void {
+    const wrapperName = this.loopBodyWrapperName(parentComponentName, nested)
+
+    // Resolve datum fields from the loop's item type
+    const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
+
+    // Collect static child instances from the body children
+    const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+
+    lines.push(`// ${wrapperName} wraps ${nested.name}Props with per-row loop datum`)
+    lines.push(`// fields and child component slots for the loop body children. (#1897)`)
+    lines.push(`type ${wrapperName} struct {`)
+    lines.push(`\t${nested.name}Props`)
+    for (const f of datumFields) {
+      lines.push(`\t${f.goName} ${f.goType} \`json:"-"\``)
+    }
+    for (const child of bodyChildInstances) {
+      lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
+    }
+    lines.push('}')
+    lines.push('')
+  }
+
+  /** Extract a memo name from a loop array expression like `sortedData()` → `sortedData`. */
+  private extractMemoNameFromLoopArray(loopArray: string | undefined): string | null {
+    if (!loopArray) return null
+    const match = loopArray.match(/^(\w+)\(\)$/)
+    return match ? match[1] : null
+  }
+
+  /** Stable name for the wrapper struct: `<Parent><Child>L<Marker>Ctx` */
+  private loopBodyWrapperName(parentName: string, nested: NestedComponentInfo): string {
+    return `${parentName}${nested.name}L${nested.loopMarkerId ?? '0'}Ctx`
+  }
+
+  /** Resolve a loop item's TypeInfo to Go struct fields for the wrapper. */
+  private resolveLoopDatumFields(
+    itemType: TypeInfo | null | undefined,
+  ): Array<{ tsName: string; goName: string; goType: string }> {
+    if (!itemType) return []
+    const typeName = itemType.raw?.replace(/\[\]$/, '') ?? itemType.raw
+    if (!typeName) return []
+    for (const td of this.currentTypeDefinitions) {
+      if (td.name === typeName) {
+        const fields: Array<{ tsName: string; goName: string; goType: string }> = []
+        for (const prop of td.properties ?? []) {
+          if (!GoTemplateAdapter.GO_IDENTIFIER.test(prop.name)) continue
+          fields.push({
+            tsName: prop.name,
+            goName: this.capitalizeFieldName(prop.name),
+            goType: this.typeInfoToGo(prop.type),
+          })
+        }
+        if (fields.length > 0) return fields
+        break
+      }
+    }
+    const structFields = this.localStructFields.get(typeName)
+    if (structFields) {
+      return Array.from(structFields, ([tsName, goName]) => ({ tsName, goName, goType: 'interface{}' }))
+    }
+    return []
+  }
+
+  /** Collect static child instances from loop body children for the wrapper struct. */
+  private collectBodyChildInstances(bodyChildren: IRNode[]): StaticChildInstance[] {
+    const result: StaticChildInstance[] = []
+    for (const child of bodyChildren) {
+      this.collectStaticChildInstancesRecursive(child, result, false, new Map())
+    }
+    return result
+  }
+
+  /**
    * Generate NewXxxProps function
    */
   private generateNewPropsFunction(
@@ -1704,7 +1838,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // field, the SSR template iterates over it, but
     // `NewTodoAppProps(TodoAppInput{Initial: ...})` returns it empty
     // and the page renders a blank list (#1442 echo TodoApp repro).
-    const signalDynamicNested = nestedComponents.filter(n => n.isDynamic && !n.isPropDerived)
+    // (#1897) Split dynamic nested: components with body children get auto-populated
+    // from baked memo data; components without stay handler-populated.
+    const dynamicWithBody = nestedComponents.filter(
+      n => n.isDynamic && !n.isPropDerived && n.bodyChildren && n.bodyChildren.length > 0,
+    )
+    const signalDynamicNested = nestedComponents.filter(
+      n => n.isDynamic && !n.isPropDerived && !(n.bodyChildren && n.bodyChildren.length > 0),
+    )
     lines.push(`// New${componentName}Props creates ${propsTypeName} from ${inputTypeName}.`)
     for (const nested of signalDynamicNested) {
       const arrayField = `${nested.name}s`
@@ -1772,6 +1913,71 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t}`)
     }
     if (propFallbackVars.size > 0) lines.push('')
+
+    // (#1897) Build wrapper items for dynamic loop body components whose array
+    // bakes to a module-const via a memo. Creates the wrapper slice with
+    // embedded child Props + datum fields + static sub-component instances.
+    const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
+    const emittedWrapperVars = new Set<string>()
+    for (const nested of dynamicWithBody) {
+      const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
+      if (!memoName) continue
+      const memo = ir.metadata.memos.find(m => m.name === memoName)
+      if (!memo) continue
+
+      const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
+      const bakedValue = this.computeMemoInitialValue(
+        memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType,
+      )
+      if (bakedValue === 'nil' || bakedValue === '0') continue
+
+      const wrapperType = this.loopBodyWrapperName(componentName, nested)
+      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+
+      // Create child sub-component instances once (identical scope IDs across rows)
+      for (const child of bodyChildInstances) {
+        const childVar = `child_${child.fieldName}`
+        lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
+        lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
+        lines.push(`\t\tBfParent: scopeID,`)
+        lines.push(`\t\tBfMount: "${child.slotId}",`)
+        for (const prop of child.props) {
+          if (prop.value.kind === 'literal') {
+            lines.push(`\t\t${this.capitalizeFieldName(prop.name)}: ${this.goLiteral(prop.value.value)},`)
+          } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
+            lines.push(`\t\t${this.capitalizeFieldName(prop.name)}: true,`)
+          }
+        }
+        lines.push(`\t})`)
+      }
+      if (bodyChildInstances.length > 0) lines.push('')
+
+      lines.push(`\tbakedData := ${bakedValue}`)
+      lines.push(`\t${varName} := make([]${wrapperType}, len(bakedData))`)
+      lines.push(`\tfor i, item := range bakedData {`)
+      lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
+      lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
+      lines.push(`\t\t\t\tBfParent: scopeID,`)
+      lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
+      lines.push(`\t\t\t}),`)
+      for (const f of datumFields) {
+        lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
+      }
+      for (const child of bodyChildInstances) {
+        lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
+      }
+      lines.push(`\t\t}`)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      if (keyField) {
+        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
+        this.usesFmt = true
+      }
+      lines.push(`\t}`)
+      lines.push('')
+      emittedWrapperVars.add(varName)
+    }
 
     lines.push(`\treturn ${propsTypeName}{`)
     lines.push('\t\tScopeID: scopeID,')
@@ -1866,9 +2072,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    // Add nested component arrays (static only; dynamic ones are set by the handler)
+    // Add nested component arrays (static + body-wrapped; plain dynamic ones are set by the handler)
     for (const nested of staticNested) {
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      lines.push(`\t\t${nested.name}s: ${varName},`)
+    }
+    for (const nested of dynamicWithBody) {
+      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      if (!emittedWrapperVars.has(varName)) continue
       lines.push(`\t\t${nested.name}s: ${varName},`)
     }
 
@@ -2089,12 +2300,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (loop.childComponent) {
         // Check for duplicates
         if (!result.some(c => c.name === loop.childComponent!.name)) {
+          const hasBodyChildren = loop.childComponent.children.length > 0
           result.push({
             ...loop.childComponent,
             isDynamic: !loop.isStaticArray,
             isPropDerived: !!loop.isPropDerivedArray,
             loopKey: loop.key ?? undefined,
             loopParam: loop.param ?? undefined,
+            bodyChildren: hasBodyChildren ? loop.childComponent.children : undefined,
+            loopArray: loop.array,
+            loopMarkerId: loop.markerId,
+            loopItemType: loop.itemType,
           })
         }
       }
@@ -3707,7 +3923,122 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
+    // (#1897) Pattern: block-body memo that early-returns a module-const array
+    // when a guard signal is falsy — `() => { const k = getter(); if (!k)
+    // return MODULE_ARRAY; return /* @client */ ... }`. When the signal starts
+    // null, the SSR value is the module-const array. The constant's literal
+    // value (not the identifier) is passed to the baker so `jsLiteralToGo`
+    // can reduce it to a Go slice.
+    const blockReturn = this.resolveBlockBodyMemoModuleConst(computation, signals)
+    if (blockReturn !== null && blockReturn.constValue) {
+      return this.convertInitialValue(
+        blockReturn.constValue,
+        blockReturn.constType ?? memo.type,
+        propsParams,
+      )
+    }
+
     return null
+  }
+
+  /**
+   * (#1897) Recognises a block-body memo whose SSR path returns a module-const
+   * array when the guard signal starts falsy:
+   *   `() => { const k = getter(); if (!k) return MODULE_CONST; … }`
+   * Returns the constant's name and inferred type, or null.
+   */
+  private resolveBlockBodyMemoModuleConst(
+    computation: string,
+    signals: { getter: string; initialValue: string }[],
+  ): { constName: string; constValue: string | undefined; constType: TypeInfo | undefined } | null {
+    try {
+      const sf = ts.createSourceFile(
+        '__memo.ts',
+        `const __x = (${computation});`,
+        ts.ScriptTarget.Latest,
+        false,
+      )
+      const stmt = sf.statements[0]
+      if (!stmt || !ts.isVariableStatement(stmt)) return null
+      let init = stmt.declarationList.declarations[0]?.initializer
+      while (init && ts.isParenthesizedExpression(init)) init = init.expression
+      if (!init || !ts.isArrowFunction(init)) return null
+      const body = init.body
+      if (!ts.isBlock(body)) return null
+
+      // Walk the block's statements collecting:
+      //   const <varName> = <signalGetter>()   →  varToSignal map
+      //   if (!<varName>) return <moduleConst>  →  match varName back to signal
+      const varToSignal = new Map<string, string>()
+      let guardSignalGetter: string | null = null
+      let returnedConst: string | null = null
+
+      for (const s of body.statements) {
+        if (ts.isVariableStatement(s)) {
+          for (const decl of s.declarationList.declarations) {
+            if (
+              ts.isIdentifier(decl.name) &&
+              decl.initializer &&
+              ts.isCallExpression(decl.initializer) &&
+              ts.isIdentifier(decl.initializer.expression)
+            ) {
+              const callee = decl.initializer.expression.text
+              if (signals.some(sg => sg.getter === callee)) {
+                varToSignal.set(decl.name.text, callee)
+              }
+            }
+          }
+        }
+        if (
+          ts.isIfStatement(s) &&
+          ts.isPrefixUnaryExpression(s.expression) &&
+          s.expression.operator === ts.SyntaxKind.ExclamationToken &&
+          ts.isIdentifier(s.expression.operand)
+        ) {
+          const guardVar = s.expression.operand.text
+          const signalGetter = varToSignal.get(guardVar)
+          if (!signalGetter) continue
+          const thenBlock = ts.isBlock(s.thenStatement)
+            ? s.thenStatement.statements
+            : [s.thenStatement]
+          for (const rs of thenBlock) {
+            if (
+              ts.isReturnStatement(rs) &&
+              rs.expression &&
+              ts.isIdentifier(rs.expression)
+            ) {
+              guardSignalGetter = signalGetter
+              returnedConst = rs.expression.text
+            }
+          }
+        }
+        if (guardSignalGetter && returnedConst) break
+      }
+
+      if (!guardSignalGetter || !returnedConst) return null
+
+      // The guard signal must start falsy (null, '', 0, false)
+      const guardSignal = signals.find(sg => sg.getter === guardSignalGetter)
+      if (!guardSignal) return null
+      const iv = guardSignal.initialValue.trim()
+      if (iv !== 'null' && iv !== "''" && iv !== '""' && iv !== '0' && iv !== 'false') {
+        return null
+      }
+
+      // The returned identifier must be a module-scope constant
+      const constant = this.localConstants.find(
+        c => c.name === returnedConst && c.origin?.scope === 'module',
+      )
+      if (!constant) return null
+
+      return {
+        constName: constant.name,
+        constValue: constant.value,
+        constType: constant.type ?? undefined,
+      }
+    } catch {
+      return null
+    }
   }
 
   /**
@@ -3786,6 +4117,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // explicitly-typed memo still wins.
     if (this.typeInfoToGo(memo.type) === 'interface{}' && this.isBooleanMemo(memo, signals, propsParamMap)) {
       return 'bool'
+    }
+
+    // (#1897) Block-body memo returning a module-const array: use the
+    // constant's array type instead of the memo's generic `object`.
+    const blockReturn = this.resolveBlockBodyMemoModuleConst(memo.computation, signals)
+    if (blockReturn?.constType?.kind === 'array') {
+      return this.typeInfoToGo(blockReturn.constType)
     }
 
     // Default to the memo's declared type
@@ -6318,6 +6656,34 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return name
   }
 
+  /**
+   * (#1897) Queue a companion define for a loop body component's JSX children.
+   * Like `queueDynamicChildrenDefine` but temporarily exits the `inLoop`
+   * context so nested component calls render with the normal `.NameSlotN`
+   * field-access pattern (the fields live on the wrapper struct that the
+   * companion define receives as its data context). The loop param stack
+   * stays intact so datum-field references (`payment.id` → `.Id`) still
+   * resolve.
+   */
+  private queueLoopBodyChildrenDefine(comp: IRComponent): string | null {
+    const effectiveChildren = comp.children.length > 0
+      ? comp.children
+      : this.jsxChildrenPropNodes(comp.props)
+    if (effectiveChildren.length === 0) return null
+    if (this.extractTextChildren(effectiveChildren) !== null) return null
+    if (this.extractHtmlChildren(effectiveChildren) !== null) return null
+    if (this.extractScopedHtmlChildren(effectiveChildren) !== null) return null
+    const name = `${this.componentName}__loop_children_${comp.slotId}`
+    if (!this.pendingChildrenDefines.some(d => d.name === name)) {
+      const wasInLoop = this.inLoop
+      this.inLoop = false
+      const content = this.renderChildren(effectiveChildren)
+      this.inLoop = wasInLoop
+      this.pendingChildrenDefines.push({ name, content })
+    }
+    return name
+  }
+
   renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean }): string {
     // Handle Portal component specially - collect content for body end
     if (comp.name === 'Portal') {
@@ -6339,8 +6705,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // In Go templates, components are rendered using {{template "name" data}}
     let templateCall: string
     if (this.inLoop) {
-      // Loop children: dot becomes loop item (already has correct props)
-      templateCall = `{{template "${comp.name}" .}}`
+      // (#1897) Loop body component with JSX children: render children through
+      // a companion define so `bf_with_children` injects them at template
+      // execution time. Temporarily exit loop context so nested component
+      // calls (e.g. TableCell inside TableRow) use the normal non-loop
+      // rendering path (`.TableCellSlotN` fields on the wrapper struct),
+      // while the loop param stack stays intact so datum references resolve.
+      const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp)
+      if (loopBodyDefine) {
+        templateCall = `{{template "${comp.name}" (bf_with_children . (bf_tmpl "${loopBodyDefine}" .))}}`
+      } else {
+        templateCall = `{{template "${comp.name}" .}}`
+      }
     } else if (comp.slotId) {
       // Static children with slotId: use unique field name based on slotId
       const suffix = slotIdToFieldSuffix(comp.slotId)

@@ -55,7 +55,7 @@ runAdapterConformanceTests({
   // a `SearchParams bf.SearchParams` binding (zero value → empty query → the
   // author's default). See #1922; Mojo / Xslate stay skipped pending their own
   // env-signal lowering + per-request Perl reader.
-  skipJsx: ['data-table'],
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
   // shared fixtures) so adding a new adapter doesn't require touching
@@ -174,9 +174,8 @@ runAdapterConformanceTests({
     // the IR still declares (s6). See hono-adapter.test for the
     // contract.
     'todo-app',
-    // #1467 Phase 2e: same `/* @client */` keyed-map elision for the
-    // DataTablePreviewDemo sort memo.
-    'data-table',
+    // (#1897) data-table no longer skipped — loop body children + wrapper
+    // struct + block-body memo baking render correctly on Go.
   ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
