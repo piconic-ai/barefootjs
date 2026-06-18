@@ -22,6 +22,7 @@ import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
 import { withRequestEnv } from '@barefootjs/hono/request-env'
 import { Layout } from './renderer'
+import { renderBlogIndex, renderBlogPost } from './blog'
 import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
 import { Toggle } from '@/components/Toggle'
@@ -140,6 +141,7 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
               <li><a href={link('/todos')}>Todo (@client)</a></li>
               <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
               <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
+              <li><a href={link('/blog')}>Blog (@barefootjs/router)</a></li>
             </ul>
           </nav>
         </Layout>,
@@ -235,6 +237,20 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
       ),
     ),
   )
+
+  // ── Blog (@barefootjs/router showcase) — its own region-shell layout ─────
+  .get(link('/blog'), async ({ query }) =>
+    html(await renderToHtml(renderBlogIndex(BASE, manifest, query.tag as string | undefined))),
+  )
+
+  .get(link('/blog/posts/:slug'), async ({ params, set }) => {
+    const node = renderBlogPost(BASE, manifest, params.slug)
+    if (!node) {
+      set.status = 404
+      return 'Not found'
+    }
+    return html(await renderToHtml(node))
+  })
 
   // ── Todo API (relative `api/todos` from the page resolves here) ──────────
   .get(link('/api/todos'), ({ cookie }) => getSession(cookie).todos)
