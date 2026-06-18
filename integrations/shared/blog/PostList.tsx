@@ -53,13 +53,17 @@ export function PostList(props: PostListProps) {
     return sorted
   })
 
-  const base = props.base ?? ''
+  // Normalize a trailing slash so a caller passing `/blog/` can't produce
+  // `//posts/...`. `root` is the index path (`/` when mounted at the site root),
+  // so query-only links stay absolute (`/?sort=...`) rather than relative.
+  const base = (props.base ?? '').replace(/\/+$/, '')
+  const root = base || '/'
   const hrefFor = (sort: SortKey, tag: string): string => {
     const u = new URLSearchParams()
     if (sort !== 'date') u.set('sort', sort)
     if (tag) u.set('tag', tag)
     const s = u.toString()
-    return s ? `${base}?${s}` : base || '/'
+    return s ? `${root}?${s}` : root
   }
   const sortHref = (k: SortKey) => hrefFor(k, params().tag)
   const tagHref = (t: string) => hrefFor(params().sort, t)
