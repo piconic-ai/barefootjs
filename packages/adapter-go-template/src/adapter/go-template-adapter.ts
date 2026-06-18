@@ -4195,24 +4195,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return ''
     }
 
-    const goExpr = this.convertExpressionToGo(expr.expr)
+    // Parse once and reuse the result for both the wrap decision below and the
+    // lowering, so the classification doesn't cost a second `ts.createSourceFile`
+    // on the `bf build` hot path.
+    const parsed = parseExpression(expr.expr.trim())
+    const goExpr = this.convertExpressionToGo(expr.expr, parsed)
 
     // If the lowered expression is already template text, don't wrap it again
     // in {{...}} (double-wrapping). Two distinct shapes reach here:
     //   - whole-expression blocks that START with `{{` (a `{{with ...}}` /
     //     `{{if ...}}` chain from a nested ternary), and
-    //   - template literals, which lower to a MIX of literal text and actions
-    //     (` · #${tag}` → ` · #{{.Tag}}`). Those don't start with `{{`, so a
-    //     plain `startsWith` test let them fall through to the wrap below and
-    //     produced `{{ · #{{.Tag}}}}` — invalid `html/template` syntax that
-    //     panics at parse time (#1933, blog PostList status line).
+    //   - template literals, which lower via `templateLiteral()` to a MIX of
+    //     literal text and actions (` · #${tag}` → ` · #{{.Tag}}`). Those don't
+    //     start with `{{`, so a plain `startsWith` test let them fall through to
+    //     the wrap below and produced `{{ · #{{.Tag}}}}` — invalid
+    //     `html/template` syntax that panics at parse time (#1933, blog PostList
+    //     status line).
     //
-    // Detect those two shapes precisely rather than substring-matching `{{`:
-    // a bare string literal that merely CONTAINS `{{` (JSX `{"{{"}` → Go expr
+    // Detect those two shapes precisely rather than substring-matching `{{`: a
+    // bare string literal that merely CONTAINS `{{` (JSX `{"{{"}` → Go expr
     // `"{{"`) is neither — it must still be wrapped so html/template evaluates
     // and escapes the string instead of emitting the raw quotes (#1937 review).
     // Use comment markers instead of <span> to avoid changing DOM structure.
-    if (goExpr.startsWith('{{') || this.isTemplateLiteralExpr(expr.expr)) {
+    if (goExpr.startsWith('{{') || parsed.kind === 'template-literal') {
       if (expr.slotId) {
         return `{{bfTextStart "${expr.slotId}"}}${goExpr}{{bfTextEnd}}`
       }
@@ -4226,30 +4231,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     return `{{${goExpr}}}`
-  }
-
-  /**
-   * True when `src` is a template literal WITH interpolations
-   * (`ts.TemplateExpression`, e.g. `` ` · #${tag}` ``). Those lower via
-   * `templateLiteral()` to a MIX of literal text and `{{...}}` actions, so
-   * `renderExpression` must emit the lowered string as-is rather than wrapping
-   * it in another action. A bare string literal that merely *contains* `{{`
-   * (JSX `{"{{"}` → Go expr `"{{"`) is NOT a template expression and still
-   * needs wrapping so html/template evaluates and escapes it (#1937 review).
-   * A no-substitution template (`` `foo` ``) lowers to a plain Go string and
-   * is intentionally excluded — it has no embedded actions to preserve.
-   */
-  private isTemplateLiteralExpr(src: string): boolean {
-    const sf = ts.createSourceFile(
-      '__bf_tl.ts',
-      `(${src.trim()})`,
-      ts.ScriptTarget.Latest,
-    )
-    const stmt = sf.statements[0]
-    if (!stmt || !ts.isExpressionStatement(stmt)) return false
-    let e: ts.Expression = stmt.expression
-    while (ts.isParenthesizedExpression(e)) e = e.expression
-    return ts.isTemplateExpression(e)
   }
 
   /**
@@ -5655,7 +5636,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * Convert a JS expression to Go template syntax.
    */
-  private convertExpressionToGo(jsExpr: string): string {
+  private convertExpressionToGo(jsExpr: string, preParsed?: ParsedExpr): string {
     const trimmed = jsExpr.trim()
 
     // Handle null/undefined specially
@@ -5690,7 +5671,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    const parsed = parseExpression(trimmed)
+    // Reuse a parse the caller already performed (renderExpression parses to
+    // classify template literals) — none of the early returns above apply to a
+    // template literal, so passing it through here is safe and avoids a second
+    // `ts.createSourceFile` on the `bf build` hot path.
+    const parsed = preParsed ?? parseExpression(trimmed)
     const support = isSupported(parsed)
 
     if (!support.supported) {
