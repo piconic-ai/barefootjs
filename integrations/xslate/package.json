@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/assemble-deps.ts",
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/build-client.ts && bun run scripts/assemble-deps.ts",
     "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
     "dev": "BASE_PATH=/integrations/xslate plackup -s Starman --workers 5 -p 3007 app.psgi",
     "deploy": "bun run build && wrangler deploy",
     "test:e2e": "bunx playwright test",
     "test:e2e:ui": "bunx playwright test --ui"
+  },
+  "dependencies": {
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/router": "workspace:*"
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
