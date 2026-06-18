@@ -1399,19 +1399,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Whether the component reads the request-scoped `searchParams()`
-   * environment signal (router v0.5, #1922). Detected via the shared
-   * `searchParamsLocalNames` helper, which finds the binding under any local
-   * name (including an aliased `import { searchParams as sp }`). When true the
-   * generated structs carry a `SearchParams bf.SearchParams` binding the route
-   * handler fills per request and the template reads via `.SearchParams.Get
-   * "key"`.
+   * environment signal (router v0.5, #1922). Detected from `searchParamsLocals`
+   * — the binding names the shared `searchParamsLocalNames` helper found at
+   * `generate()` / `generateTypes()` entry, covering any local name (including
+   * an aliased `import { searchParams as sp }`). When non-empty the generated
+   * structs carry a `SearchParams bf.SearchParams` binding the route handler
+   * fills per request and the template reads via `.SearchParams.Get "key"`.
    *
    * Guarded against a name collision with a user prop / signal / memo also
    * called `searchParams`: that author owns the `SearchParams` field, so the
    * env-signal field is dropped (the reference would resolve to their value).
    */
   private usesSearchParams(ir: ComponentIR): boolean {
-    if (searchParamsLocalNames(ir.metadata).size === 0) return false
+    if (this.searchParamsLocals.size === 0) return false
     // Every other source that contributes a Props/Input struct field: a
     // collision on `SearchParams` would redeclare the field and break the Go
     // compile. Covers props, signals, memos, `useContext` consumers, and the
