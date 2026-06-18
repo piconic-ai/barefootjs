@@ -7,9 +7,9 @@ import { createFixture } from '../src/types'
 // renders the default `none`.
 //
 // This is the cross-adapter twin of the client-side `env-signal.test.ts` and
-// the Hono `search-params-ssr.test.ts`. It runs on Hono today; the Go / Mojo /
-// Xslate template adapters are skipped via their `skipJsx` lists until
-// env-signal SSR lowering + runtime land for them — tracked in
+// the Hono `search-params-ssr.test.ts`. It now runs on every adapter — Hono,
+// Go, Mojolicious, and Xslate — after env-signal SSR lowering + per-request
+// runtimes landed for the template-string adapters in
 // https://github.com/piconic-ai/barefootjs/issues/1922.
 export const fixture = createFixture({
   id: 'search-params',
