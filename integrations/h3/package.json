@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/assemble-public.ts",
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/build-client.ts && bun run scripts/assemble-public.ts",
     "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
     "dev": "bun run build && wrangler dev",
     "deploy": "bun run build && wrangler deploy",
@@ -14,6 +14,7 @@
     "@barefootjs/client": "workspace:*",
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/router": "workspace:*",
     "@barefootjs/shared": "workspace:*",
     "h3": "^1.13.0",
     "hono": "^4"
