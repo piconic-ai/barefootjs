@@ -4197,18 +4197,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const goExpr = this.convertExpressionToGo(expr.expr)
 
-    // If the expression already contains Go template actions, don't wrap it
-    // again in {{...}} to avoid double-wrapping. Two shapes reach here:
+    // If the lowered expression is already template text, don't wrap it again
+    // in {{...}} (double-wrapping). Two distinct shapes reach here:
     //   - whole-expression blocks that START with `{{` (a `{{with ...}}` /
     //     `{{if ...}}` chain from a nested ternary), and
     //   - template literals, which lower to a MIX of literal text and actions
-    //     (` · #${tag}` → ` · #{{.Tag}}`). Those don't start with `{{`, so the
-    //     old `startsWith` test let them fall through to the wrap below and
+    //     (` · #${tag}` → ` · #{{.Tag}}`). Those don't start with `{{`, so a
+    //     plain `startsWith` test let them fall through to the wrap below and
     //     produced `{{ · #{{.Tag}}}}` — invalid `html/template` syntax that
-    //     panics at parse time (#1933, blog PostList status line). Any `{{`
-    //     anywhere means the string is already template text; emit it as-is.
+    //     panics at parse time (#1933, blog PostList status line).
+    //
+    // Detect those two shapes precisely rather than substring-matching `{{`:
+    // a bare string literal that merely CONTAINS `{{` (JSX `{"{{"}` → Go expr
+    // `"{{"`) is neither — it must still be wrapped so html/template evaluates
+    // and escapes the string instead of emitting the raw quotes (#1937 review).
     // Use comment markers instead of <span> to avoid changing DOM structure.
-    if (goExpr.includes('{{')) {
+    if (goExpr.startsWith('{{') || this.isTemplateLiteralExpr(expr.expr)) {
       if (expr.slotId) {
         return `{{bfTextStart "${expr.slotId}"}}${goExpr}{{bfTextEnd}}`
       }
@@ -4222,6 +4226,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     return `{{${goExpr}}}`
+  }
+
+  /**
+   * True when `src` is a template literal WITH interpolations
+   * (`ts.TemplateExpression`, e.g. `` ` · #${tag}` ``). Those lower via
+   * `templateLiteral()` to a MIX of literal text and `{{...}}` actions, so
+   * `renderExpression` must emit the lowered string as-is rather than wrapping
+   * it in another action. A bare string literal that merely *contains* `{{`
+   * (JSX `{"{{"}` → Go expr `"{{"`) is NOT a template expression and still
+   * needs wrapping so html/template evaluates and escapes it (#1937 review).
+   * A no-substitution template (`` `foo` ``) lowers to a plain Go string and
+   * is intentionally excluded — it has no embedded actions to preserve.
+   */
+  private isTemplateLiteralExpr(src: string): boolean {
+    const sf = ts.createSourceFile(
+      '__bf_tl.ts',
+      `(${src.trim()})`,
+      ts.ScriptTarget.Latest,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isExpressionStatement(stmt)) return false
+    let e: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(e)) e = e.expression
+    return ts.isTemplateExpression(e)
   }
 
   /**

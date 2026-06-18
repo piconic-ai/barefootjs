@@ -11,7 +11,7 @@ import {
   TemplatePrimitiveCaseId,
 } from '@barefootjs/adapter-tests'
 import { renderGoTemplateComponent, GoNotAvailableError } from '@barefootjs/go-template/test-render'
-import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
+import { compileJSX, type ComponentIR, type IRExpression } from '@barefootjs/jsx'
 
 runAdapterConformanceTests({
   name: 'go-template',
@@ -297,6 +297,28 @@ export function Label() {
     const { template } = adapter.generate(ir)
     expect(template).not.toContain('{{count: ')
     expect(template).toContain('count: {{.N}}')
+  })
+
+  // A bare string literal that merely *contains* `{{` (NOT a template literal)
+  // must still be WRAPPED in an action so html/template evaluates and escapes
+  // the string. Emitting the raw Go expression `"{{"` would print the literal
+  // quotes and bypass escaping. The skip-wrapping path is reserved for template
+  // literals + `{{`-leading action chains, so a substring `includes('{{')` check
+  // would wrongly treat this string as template text (#1937 review).
+  test('string literal containing "{{" is wrapped, not treated as template text', () => {
+    const adapter = new GoTemplateAdapter()
+    // Drive renderExpression directly: a JSX `{'{{'}` lowers `expr.expr` to the
+    // Go string literal `"{{"`, which contains `{{` but is not a template expr.
+    const out = adapter.renderExpression({ expr: `'{{'` } as IRExpression)
+    expect(out).toBe('{{"{{"}}')
+  })
+
+  // Control: a real template literal IS emitted as-is (mixed text + action),
+  // exercising the same code path with the opposite outcome.
+  test('template literal expression is emitted as-is via renderExpression', () => {
+    const adapter = new GoTemplateAdapter()
+    const out = adapter.renderExpression({ expr: '`a #${tag}`' } as IRExpression)
+    expect(out).toBe('a #{{.Tag}}')
   })
 })
 
