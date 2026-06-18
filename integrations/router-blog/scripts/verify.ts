@@ -180,7 +180,40 @@ try {
   )
   check('sidebar is the SAME live node (never disposed)', sidebarSame === 'KEEP', `mark=${sidebarSame}`)
 
-  // ── 11. No console / page errors throughout ─────────────────────────────
+  // ── 11. v2 nested: outer region (ReaderToolbar) persists; inner swaps ─────
+  // The content area is a compiled `<PageShell>` with nested `<Region>`s. The
+  // ReaderToolbar lives in the OUTER region (above the inner one the router
+  // swaps), so its font-size level survives a page navigation while the inner
+  // content swaps — the deepest differing region is the only one replaced.
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(300)
+  await page.click('.reader-toolbar .rt-btn[aria-label="larger"]')
+  await page.click('.reader-toolbar .rt-btn[aria-label="larger"]')
+  const levelBefore = await text('.reader-toolbar .v')
+  check('reader toolbar hydrated (font level)', levelBefore === '3', `level=${levelBefore}`)
+  await page.$eval('.reader-toolbar', (el) => {
+    ;(el as unknown as { __mark?: string }).__mark = 'KEEP'
+  })
+  const navsBeforeNested = await navCount()
+  await page.click('.sortable-list li:first-child .item-link') // → post: inner swaps
+  await page
+    .waitForFunction(
+      (before) =>
+        document.querySelector('.shell-stats .chip:nth-child(2) b')?.textContent !== before,
+      navsBeforeNested,
+      { timeout: 2000 },
+    )
+    .catch(() => {})
+  check('inner region swapped (article in)', (await page.locator('.island.like').count()) === 1)
+  const levelAfter = await text('.reader-toolbar .v')
+  check('outer region (toolbar) persisted across the inner swap (v2 nested)', levelAfter === '3', `level=${levelAfter}`)
+  const toolbarSame = await page.$eval(
+    '.reader-toolbar',
+    (el) => (el as unknown as { __mark?: string }).__mark,
+  )
+  check('toolbar is the SAME live node (outer region never swapped)', toolbarSame === 'KEEP', `mark=${toolbarSame}`)
+
+  // ── 12. No console / page errors throughout ─────────────────────────────
   check('no console or page errors', errors.length === 0, errors.slice(0, 3).join(' | '))
 } catch (e) {
   check('script ran to completion', false, String(e))

@@ -29,6 +29,7 @@ import { BfScripts } from '@barefootjs/hono/scripts'
 import { ShellStats } from '@/components/ShellStats'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Sidebar } from '@/components/Sidebar'
+import { PageShell } from '@/components/PageShell'
 
 const STATIC = '/static/components'
 
@@ -64,20 +65,25 @@ export const renderer = jsxRenderer(({ children, title }) => {
         </header>
         <div className="layout">
           {/*
-            Two sibling regions. The `bf-region` ids are written BY HAND here
-            only because this layout is a plain Hono `jsxRenderer` template, not
-            a `bf build`-compiled component tree — so the `<Region>` component
-            (from `@barefootjs/client`) would not be lowered. In a compiled tree
-            you write `<Region>{children}</Region>` and the compiler emits a
-            deterministic `bf-region="<file-scope hash>:<index>"` id for you.
-            The router matches regions by plain string equality, so these
-            readable ids work identically — they only need to be the same across
-            every page that renders this layout.
+            Two ways to author a region, side by side:
+
+            - The sidebar's `bf-region="nav:0"` is written BY HAND, because this
+              layout is a plain Hono `jsxRenderer` template (not a `bf build`-
+              compiled tree), so a `<Region>` here would not be lowered.
+            - The content area is a compiled `<PageShell>` whose `<Region>`s the
+              compiler lowers to deterministic `bf-region="<file scope>:<index>"`
+              ids — and it nests them (an outer region holding a persistent
+              toolbar, an inner region the router swaps).
+
+            The router matches regions by plain string equality, so both styles
+            interoperate; ids only need to be the same across every page.
           */}
           <aside bf-region="nav:0">
             <Sidebar />
           </aside>
-          <main bf-region="content:1">{children}</main>
+          <main>
+            <PageShell>{children}</PageShell>
+          </main>
         </div>
         <BfScripts />
         <script type="module" src={`${STATIC}/router-entry.js`} />
@@ -141,6 +147,12 @@ const STYLES = `
   .island.player { display: inline-flex; align-items: center; gap: 6px; color: #3fb950; font-variant-numeric: tabular-nums; border: 1px solid #30363d; border-radius: 8px; padding: 4px 10px; }
   html[data-theme="light"] .island.player { border-color: #d0d7de; }
   .player-toggle { cursor: pointer; background: none; border: none; color: inherit; font-size: 14px; padding: 0; line-height: 1; }
+  .reader-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 6px 12px; border: 1px solid #30363d; border-radius: 8px; background: #161b22; font-size: 13px; color: #8b949e; }
+  html[data-theme="light"] .reader-toolbar { background: #fff; border-color: #d0d7de; }
+  .rt-label { text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+  .rt-btn { cursor: pointer; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 6px; padding: 2px 8px; font-size: 12px; }
+  html[data-theme="light"] .rt-btn { background: #f6f8fa; border-color: #d0d7de; color: #1f2328; }
+  .rt-level { color: #58a6ff; font-variant-numeric: tabular-nums; min-width: 1ch; text-align: center; }
   .prose p { margin: 0 0 18px; color: #d8e0e8; }
   html[data-theme="light"] .prose p { color: #424a53; }
   .back { display: inline-block; margin-bottom: 14px; text-decoration: none; font-size: 14px; }

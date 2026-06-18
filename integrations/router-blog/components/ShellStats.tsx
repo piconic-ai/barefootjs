@@ -24,7 +24,9 @@ export function ShellStats() {
     const handle = setInterval(() => setUptime(`${((Date.now() - start) / 1000).toFixed(1)}s`), 100)
     onCleanup(() => clearInterval(handle))
 
-    const region = document.querySelector('main[bf-region]')
+    // The inner content region (inside PageShell's `.content-area`) is the one
+    // the router swaps on a page navigation — watch it for the partial-nav count.
+    const region = document.querySelector('.content-area [bf-region]')
     if (!region) return
     const recount = () => setIslands(region.querySelectorAll('[bf-s]').length)
     recount()

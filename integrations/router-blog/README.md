@@ -2,10 +2,11 @@
 
 A small blog built on [`@barefootjs/router`](../../packages/router) for
 **automatic partial navigation**: clicking a post swaps only the content region
-and leaves the page shell — and a sibling sidebar region — mounted; clicking a
-`?sort=` / `?tag=` link re-orders/filters the list **reactively with no region
-swap at all**; a marked mini-player keeps **playing across a navigation**; and a
-sidebar island **keeps its state** while the article beside it swaps.
+and leaves the page shell — plus a sibling sidebar region and an outer toolbar
+region — mounted; clicking a `?sort=` / `?tag=` link re-orders/filters the list
+**reactively with no region swap at all**; a marked mini-player keeps **playing
+across a navigation**; and both a sibling sidebar island and a nested toolbar
+island **keep their state** while the article swaps.
 
 Every island here is a **real compiled BarefootJS `"use client"` component**
 hydrated by the **real `@barefootjs/client` runtime** — the router drives the
@@ -36,12 +37,14 @@ including the sibling-region view.)
 |---|---|---|
 | `ShellStats` | shell | uptime clock + a `MutationObserver` partial-nav counter + live-island gauge |
 | `ThemeToggle` | shell | flips `data-theme`; the choice survives navigation |
-| `Sidebar` | `nav:0` region | a pin counter in a sibling region — its state survives while the content region swaps (the **v2** case) |
-| `PostList` | `content:1` region | the index; reads `searchParams()` to sort/filter with no swap; reactive sort/tag bars |
-| `PostListItem` | `content:1` region | one keyed row with a local pin toggle (state survives re-sort) |
-| `LikeButton` | `content:1` region | local like counter — re-created per navigation |
-| `ReadingTimer` | `content:1` region | a `setInterval` timer wired through `onCleanup` — the **disposal** stress case |
-| `NowPlaying` | `content:1` region | a mini-player whose root carries `data-bf-permanent` — the **v1 persistence** case (live node + state survive a swap) |
+| `Sidebar` | sidebar region (`nav:0`, sibling) | a pin counter — its state survives while the content swaps (**v2 sibling**, hand-authored id) |
+| `PageShell` | content area | a compiled layout whose nested `<Region>`s the compiler lowers to `bf-region` ids (**v2 nested**, compiler-derived) |
+| `ReaderToolbar` | outer content region | a font-size control in the outer region — its level survives while the inner region swaps (**v2 nested**) |
+| `PostList` | inner content region | the index; reads `searchParams()` to sort/filter with no swap; reactive sort/tag bars |
+| `PostListItem` | inner content region | one keyed row with a local pin toggle (state survives re-sort) |
+| `LikeButton` | inner content region | local like counter — re-created per navigation |
+| `ReadingTimer` | inner content region | a `setInterval` timer wired through `onCleanup` — the **disposal** stress case |
+| `NowPlaying` | inner content region | a mini-player whose root carries `data-bf-permanent` — the **v1 persistence** case (live node + state survive a swap) |
 
 ## How it works
 
@@ -78,10 +81,10 @@ imports at runtime (`@barefootjs/shared`, `@barefootjs/jsx`,
 `searchParams()` imports it). Run `setup` once; after that, iterate with
 `bun run build && bun run serve` (or just `bun run serve`).
 
-Verify behavior in a real browser (drives the router through **27 assertions** —
+Verify behavior in a real browser (drives the router through **31 assertions** —
 region swap, shell persistence, `searchParams()` no-swap sort/filter, pin
-survival, disposal, back/forward, `data-bf-permanent` persistence, sibling-region
-persistence, console
+survival, disposal, back/forward, `data-bf-permanent` persistence, and both
+sibling- and nested-region persistence, plus console
 errors):
 
 ```sh
@@ -119,29 +122,55 @@ same navigation, the only difference is the marker. `verify.ts` proves the node
 is the **same live instance** (a marker set on it via `evaluate` survives the
 swap), not just equal text.
 
-## v2 — sibling regions (master–detail)
+## v2 — nested & sibling regions
 
-The page below the header is **two sibling regions**: `<aside bf-region="nav:0">`
-(the `Sidebar` island) and `<main bf-region="content:1">` (the article / list).
-Both pages render both regions, so the router matches them by id and swaps only
-the one whose content differs. Bump the sidebar's 📌 pin counter, then open a
-post: the content region swaps while the **sidebar island is never disposed** —
-its count survives. `verify.ts` proves it is the same live node (a marker set via
-`evaluate` survives the swap).
+The page shows both region shapes at once, and both ways to author them.
 
-This is the case a single-region (v0) router cannot express: with two regions it
-would swap the *first* one (the sidebar) and never update the article. Two notes
-on how the match stays robust:
+**Sibling (hand-authored).** `<aside bf-region="nav:0">` (the `Sidebar`) and the
+content `<main>` sit side by side. Bump the sidebar's 📌 pin counter, then open a
+post: only the content swaps while the **sidebar island is never disposed** — its
+count survives. This is the case a single-region (v0) router cannot express: with
+two regions it would swap the *first* one (the sidebar) and never update the
+article.
 
-- The ids are written by hand in `renderer.tsx` because that layout is a plain
-  Hono SSR template, not a compiled component tree; in `bf build` output the
-  `<Region>` component lowers to the same deterministic
-  `bf-region="<file scope>:<index>"` ids. The runtime only needs them equal
-  across page documents.
+**Nested (compiler-derived).** The content area is a compiled `<PageShell>`:
+
+```tsx
+'use client'
+import { Region } from '@barefootjs/client'
+import { ReaderToolbar } from './ReaderToolbar'
+export function PageShell({ children }) {
+  return (
+    <Region>                          {/* outer — bf-region="<hash>:0" */}
+      <ReaderToolbar />               {/* persists across inner swaps */}
+      <div className="content-area">
+        <Region>{children}</Region>   {/* inner — bf-region="<hash>:1" */}
+      </div>
+    </Region>
+  )
+}
+```
+
+`bf build` lowers each `<Region>` to a deterministic `bf-region="<file scope>:<index>"`
+id (`:0` outer, `:1` inner). Bump the `ReaderToolbar` font level, then open a post:
+the **outer region's owned content is unchanged**, so the router swaps only the
+**inner** region — the toolbar (in the outer region) keeps its level while the
+article swaps. `verify.ts` proves both the sidebar and the toolbar are the same
+live nodes after the swap (markers set via `evaluate` survive).
+
+Two notes on how the match stays robust:
+
+- Region ids must be **equal across pages**. The compiler-derived ids are
+  deterministic (same `<Region>` in the same file → same id on every page). The
+  hand-authored sidebar id is a stable literal; the router matches by plain string
+  equality, so both styles interoperate. (`<Region>` only lowers in a
+  `bf build`-compiled file, which is why the Hono `renderer.tsx` layout hand-writes
+  `nav:0` — see the comment there.)
 - A top-level island's `bf-s` scope id is **randomized per server render**, so a
-  region's markup is never byte-identical across pages. The router's owned-content
-  diff normalizes that scaffolding away (it compares content + props, not scope
-  ids), so the unchanged sidebar is correctly left mounted.
+  region's raw markup is never byte-identical across pages. The router's
+  owned-content diff normalizes that scaffolding away (it compares content + props,
+  not scope ids), so an unchanged region containing an island is correctly left
+  mounted.
 
 ## Integration gaps this surfaced (now shipped in v0 / v0.5)
 
