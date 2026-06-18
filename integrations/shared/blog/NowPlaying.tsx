@@ -6,16 +6,15 @@ import { createSignal, onMount, onCleanup } from '@barefootjs/client'
 const TRACK = 8
 
 /**
- * A region island that demonstrates **v1 persistence** (`data-bf-permanent`).
+ * A docked **"Now playing" bar** (fixed to the bottom of the viewport) that
+ * demonstrates **v1 persistence** (`data-bf-permanent`).
  *
- * A fake "now playing" mini-player: press ▶ and a **progress bar** advances
- * (with the elapsed seconds beside it). Its root carries
- * `data-bf-permanent="now-playing"`, so on a post→post navigation the router
- * moves this **live** DOM node into the incoming page instead of disposing it —
- * the bar keeps advancing from where it was, rather than snapping back to the
- * start. Contrast `ReadingTimer` next to it: that one is NOT marked, so it is
- * disposed and rebuilt on every swap and resets to 0. Same region, same swap —
- * the only difference is the marker.
+ * It reads as a global player — not article metadata — but it lives in the DOM
+ * inside the swappable content region and is marked `data-bf-permanent`. So on a
+ * post→post navigation the router moves this **live** node into the incoming
+ * page instead of disposing it: the progress bar keeps advancing from where it
+ * was, rather than snapping back to the start. Contrast `ReadingTimer` (per-page,
+ * unmarked): it is disposed and rebuilt on every swap and resets to 0.
  */
 export function NowPlaying() {
   const [playing, setPlaying] = createSignal(false)
@@ -29,19 +28,20 @@ export function NowPlaying() {
   })
 
   return (
-    <span className="island player" data-bf-permanent="now-playing">
+    <div className="now-playing-bar" data-bf-permanent="now-playing">
       <button
-        className="player-toggle"
+        className="np-toggle"
         type="button"
         aria-label={playing() ? 'pause' : 'play'}
         onClick={() => setPlaying(!playing())}
       >
         {playing() ? '⏸' : '▶'}
       </button>
-      <span className="player-bar" aria-hidden="true">
-        <span className="player-fill" style={`width:${Math.min(100, (elapsed() / TRACK) * 100)}%`} />
+      <span className="np-title">Now playing · Ambient Focus</span>
+      <span className="np-bar" aria-hidden="true">
+        <span className="np-fill" style={`width:${Math.min(100, (elapsed() / TRACK) * 100)}%`} />
       </span>
-      <span className="player-time v">{elapsed().toFixed(1)}</span>s
-    </span>
+      <span className="np-time v">{elapsed().toFixed(1)}</span>s
+    </div>
   )
 }

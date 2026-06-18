@@ -40,16 +40,16 @@ test('v1: data-bf-permanent keeps the player live across a post→post swap', as
   test.setTimeout(15000)
   await page.goto(BLOG, { waitUntil: 'networkidle' })
   await page.click('.sortable-list li:first-child .item-link')
-  await page.waitForSelector('.island.player', { timeout: 3000 })
-  await page.click('.island.player .player-toggle') // ▶ play
+  await page.waitForSelector('.now-playing-bar', { timeout: 3000 })
+  await page.click('.now-playing-bar .np-toggle') // ▶ play
   await page.waitForTimeout(900)
-  const before = Number(await page.locator('.island.player .player-time').innerText())
+  const before = Number(await page.locator('.now-playing-bar .np-time').innerText())
   expect(before).toBeGreaterThan(0.4)
   await mark(page, '[data-bf-permanent="now-playing"]')
   await page.click('.pager a.pager-link[href*="/posts/"]')
   await page.waitForTimeout(400)
   expect(await marker(page, '[data-bf-permanent="now-playing"]')).toBe('KEEP') // same live node
-  expect(Number(await page.locator('.island.player .player-time').innerText())).toBeGreaterThanOrEqual(before)
+  expect(Number(await page.locator('.now-playing-bar .np-time').innerText())).toBeGreaterThanOrEqual(before)
   expect(Number(await page.locator('.island.timer .v').innerText())).toBeLessThan(0.5) // unmarked timer reset
 })
 

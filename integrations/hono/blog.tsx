@@ -112,11 +112,12 @@ blog.get('/posts/:slug', (c) => {
       <div className="islands">
         <LikeButton />
         <ReadingTimer />
-        {/* v1: NowPlaying's root is `data-bf-permanent`, so its live node (play
-            state + clock) is moved into the next post instead of disposed —
-            contrast ReadingTimer, which resets every swap. */}
-        <NowPlaying />
       </div>
+      {/* v1: a docked "Now playing" bar. It reads as a global player but lives
+          in the swappable content region marked `data-bf-permanent`, so the
+          router moves its live node (play state + progress) into the next post
+          instead of disposing it — contrast ReadingTimer above, which resets. */}
+      <NowPlaying />
       <div className="prose">
         {p.body.map((para) => (
           <p>{para}</p>
@@ -188,12 +189,13 @@ const STYLES = `
   .island.like { cursor: pointer; background: #161b22; border: 1px solid #30363d; color: #f778ba; border-radius: 8px; padding: 6px 12px; }
   html[data-theme="light"] .island.like { background: #fff; border-color: #d0d7de; }
   .island.timer { color: #8b949e; font-variant-numeric: tabular-nums; }
-  .island.player { display: inline-flex; align-items: center; gap: 8px; color: #3fb950; font-variant-numeric: tabular-nums; border: 1px solid #30363d; border-radius: 8px; padding: 4px 10px; }
-  html[data-theme="light"] .island.player { border-color: #d0d7de; }
-  .player-toggle { cursor: pointer; background: none; border: none; color: inherit; font-size: 14px; padding: 0; line-height: 1; }
-  .player-bar { display: inline-block; width: 96px; height: 6px; background: #30363d; border-radius: 999px; overflow: hidden; }
-  html[data-theme="light"] .player-bar { background: #d0d7de; }
-  .player-fill { display: block; height: 100%; background: #3fb950; transition: width .1s linear; }
+  .now-playing-bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 50; display: inline-flex; align-items: center; gap: 12px; background: #161b22; border: 1px solid #30363d; border-radius: 999px; padding: 8px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.45); color: #3fb950; font-size: 13px; font-variant-numeric: tabular-nums; }
+  html[data-theme="light"] .now-playing-bar { background: #fff; border-color: #d0d7de; box-shadow: 0 8px 28px rgba(140,149,159,.35); }
+  .np-toggle { cursor: pointer; background: none; border: none; color: inherit; font-size: 15px; padding: 0; line-height: 1; }
+  .np-title { color: #8b949e; }
+  .np-bar { display: inline-block; width: 120px; height: 6px; background: #30363d; border-radius: 999px; overflow: hidden; }
+  html[data-theme="light"] .np-bar { background: #d0d7de; }
+  .np-fill { display: block; height: 100%; background: #3fb950; transition: width .1s linear; }
   .reader-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 6px 12px; border: 1px solid #30363d; border-radius: 8px; background: #161b22; font-size: 13px; color: #8b949e; }
   html[data-theme="light"] .reader-toolbar { background: #fff; border-color: #d0d7de; }
   .rt-label { text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
