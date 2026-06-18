@@ -20,7 +20,7 @@ import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
-import { runWithRequestEnv } from '@barefootjs/hono/request-env'
+import { withRequestEnv } from '@barefootjs/hono/request-env'
 import { Layout } from './renderer'
 import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
@@ -47,14 +47,9 @@ function html(markup: string): Response {
   })
 }
 
-// Render a page with the request's environment bound for SSR — here the query
-// string behind `searchParams()`. `renderToHtml` has no request context of its
-// own (unlike Hono's jsxRenderer), so we scope the env with AsyncLocalStorage
-// per async context — concurrent requests never race. Future env signals
-// (cookies, …) add a field to this object, not a new wrapper. #1922
-function renderWithSearch(request: Request, node: unknown): Promise<string> {
-  return runWithRequestEnv({ search: new URL(request.url).search }, () => renderToHtml(node))
-}
+// Pages are plain `renderToHtml` — no per-render env plumbing. The whole fetch
+// runs inside `withRequestEnv` (see the default export), so `searchParams()` SSR
+// resolves this request's query (and future env signals ride along). #1922
 
 // ── per-session todo store ─────────────────────────────────────────────────
 type Todo = { id: number; text: string; done: boolean }
@@ -133,9 +128,9 @@ const onWorkers = typeof Bun === 'undefined'
 const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
 
   // ── HTML pages ───────────────────────────────────────────────────────────
-  .get(link('/'), async ({ request }) =>
+  .get(link('/'), async () =>
     html(
-      await renderWithSearch(request,
+      await renderToHtml(
         <Layout title="BarefootJS + Elysia" manifest={manifest} base={BASE}>
           <h1>BarefootJS + Elysia Integration</h1>
           <nav>
@@ -152,9 +147,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/counter'), async ({ request }) =>
+  .get(link('/counter'), async () =>
     html(
-      await renderWithSearch(request,
+      await renderToHtml(
         <Layout title="Counter — BarefootJS + Elysia" manifest={manifest} base={BASE}>
           <h1>Counter</h1>
           <Counter initial={0} />
@@ -164,9 +159,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/toggle'), async ({ request }) =>
+  .get(link('/toggle'), async () =>
     html(
-      await renderWithSearch(request,
+      await renderToHtml(
         <Layout title="Toggle — BarefootJS + Elysia" manifest={manifest} base={BASE}>
           <h1>Toggle</h1>
           <Toggle
@@ -182,9 +177,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/todos'), async ({ request, cookie }) =>
+  .get(link('/todos'), async ({ cookie }) =>
     html(
-      await renderWithSearch(request,
+      await renderToHtml(
         <Layout
           title="Todo (@client) — BarefootJS + Elysia"
           manifest={manifest}
@@ -201,9 +196,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/todos-ssr'), async ({ request, cookie }) =>
+  .get(link('/todos-ssr'), async ({ cookie }) =>
     html(
-      await renderWithSearch(request,
+      await renderToHtml(
         <Layout
           title="Todo (SSR) — BarefootJS + Elysia"
           manifest={manifest}
@@ -220,9 +215,9 @@ const app = new Elysia(onWorkers ? { adapter: CloudflareAdapter } : {})
     ),
   )
 
-  .get(link('/ai-chat'), async ({ request }) =>
+  .get(link('/ai-chat'), async () =>
     html(
-      await renderWithSearch(request,
+      await renderToHtml(
         <Layout
           title="AI Chat — BarefootJS + Elysia"
           manifest={manifest}
@@ -353,9 +348,12 @@ async function serveFromDisk(pathname: string): Promise<Response> {
 
 type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
 
+// `withRequestEnv` binds this request's env (the query behind `searchParams()`,
+// and future signals) for the whole fetch, so every `renderToHtml` inside
+// resolves it with no per-page plumbing — scoped per async context, race-free. #1922
 export default {
   port: PORT,
-  async fetch(request: Request, env?: Env, ctx?: unknown): Promise<Response> {
+  fetch: withRequestEnv(async (request: Request, env?: Env, ctx?: unknown): Promise<Response> => {
     const url = new URL(request.url)
     if (isStaticPath(url.pathname)) {
       // Production (Workers): serve from the Assets binding. Dev (Bun): disk.
@@ -369,7 +367,7 @@ export default {
       env,
       ctx,
     )
-  },
+  }),
 }
 
 export type App = typeof app

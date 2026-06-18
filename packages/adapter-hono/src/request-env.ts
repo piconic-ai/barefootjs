@@ -90,3 +90,34 @@ export function runWithRequestEnv<T>(env: BfRequestEnv, fn: () => T): T {
   ensureReaderInstalled()
   return envStore.run(env, fn)
 }
+
+/**
+ * Derive the request environment from a WinterCG `Request` — the single place
+ * that maps a request to env-signal values. A new env signal extends this (and
+ * {@link BfRequestEnv}); hosts using {@link withRequestEnv} get it for free.
+ */
+function requestEnv(request: Request): BfRequestEnv {
+  return { search: new URL(request.url).search }
+  // When the cookie env signal lands:
+  //   cookie: request.headers.get('cookie') ?? undefined
+}
+
+/**
+ * Wrap a WinterCG `fetch` handler so the whole request runs with its env bound —
+ * env signals (`searchParams()`, …) resolve this request's values at SSR with no
+ * per-render plumbing. Bind ONCE at the entry point and every `renderToHtml`
+ * inside (across routing, handlers, `async` components) inherits it via the
+ * async context; concurrent requests never race.
+ *
+ *   export default { port, fetch: withRequestEnv(handler) }
+ *
+ * Extra args (the framework / Bun server, Workers `env` / `ctx`) pass through
+ * unchanged. The env is derived from the `Request` by {@link requestEnv}, so the
+ * host never names env keys — a future signal (cookies, …) needs no host change.
+ */
+export function withRequestEnv<A extends unknown[]>(
+  handler: (request: Request, ...args: A) => Response | Promise<Response>,
+): (request: Request, ...args: A) => Promise<Response> {
+  return (request, ...args) =>
+    runWithRequestEnv(requestEnv(request), async () => handler(request, ...args))
+}

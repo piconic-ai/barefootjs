@@ -14,7 +14,7 @@
 import { describe, test, expect } from 'bun:test'
 import { searchParams } from '@barefootjs/client'
 import { renderToHtml } from '../render'
-import { runWithRequestEnv } from '../request-env'
+import { runWithRequestEnv, withRequestEnv } from '../request-env'
 
 // A plain hono/jsx component that reads the env signal at SSR — exactly what a
 // compiled BarefootJS component lowers `{searchParams().get('sort') ?? 'none'}`
@@ -69,5 +69,35 @@ describe('runWithRequestEnv + renderToHtml', () => {
     // get('sort') is null → author default.
     const html = await renderToHtml(<SortLabel />)
     expect(html).toBe('<p>none</p>')
+  })
+})
+
+describe('withRequestEnv (WinterCG fetch-handler wrapper)', () => {
+  test('binds searchParams() from the Request — the handler just renders', async () => {
+    const handler = withRequestEnv(
+      async (_req: Request) =>
+        new Response(await renderToHtml(<SortLabel />), {
+          headers: { 'content-type': 'text/html' },
+        }),
+    )
+    const res = await handler(new Request('https://x.test/list?sort=price'))
+    expect(await res.text()).toBe('<p>price</p>')
+  })
+
+  test('derives env from the Request and passes extra args (server / env / ctx) through', async () => {
+    const seen: unknown[] = []
+    const handler = withRequestEnv(async (_req: Request, a: number, b: string) => {
+      seen.push(a, b)
+      return new Response(await renderToHtml(<SortLabel />))
+    })
+    const res = await handler(new Request('https://x.test/?sort=name'), 7, 'z')
+    expect(seen).toEqual([7, 'z'])
+    expect(await res.text()).toBe('<p>name</p>')
+  })
+
+  test('a request with no query resolves the author default', async () => {
+    const handler = withRequestEnv(async () => new Response(await renderToHtml(<SortLabel />)))
+    const res = await handler(new Request('https://x.test/list'))
+    expect(await res.text()).toBe('<p>none</p>')
   })
 })

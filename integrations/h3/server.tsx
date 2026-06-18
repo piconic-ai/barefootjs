@@ -24,7 +24,6 @@ import {
   setCookie,
   readBody,
   getQuery,
-  getRequestURL,
   createEventStream,
   setResponseStatus,
   toWebHandler,
@@ -33,7 +32,7 @@ import {
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
-import { runWithRequestEnv } from '@barefootjs/hono/request-env'
+import { withRequestEnv } from '@barefootjs/hono/request-env'
 
 // h3's `createEventStream` leaks an `undefined` unhandled rejection when an
 // SSE client disconnects under the web handler (`onClosed` does not fire in
@@ -126,23 +125,17 @@ function getSession(event: H3Event): Session {
 }
 
 // ── HTML pages ───────────────────────────────────────────────────────────
-// Bind the request's environment for SSR — here the query behind
-// `searchParams()` (`renderToHtml` has no request context of its own, unlike
-// Hono's jsxRenderer), scoped per async context so concurrent requests don't
-// race. Future env signals (cookies, …) add a field to this object. #1922
-async function page(event: H3Event, node: unknown): Promise<string> {
-  const search = getRequestURL(event).search
-  return (
-    '<!DOCTYPE html>' +
-    (await runWithRequestEnv({ search }, () => renderToHtml(node)))
-  )
+// A page is just a `renderToHtml` — no per-render env plumbing. The whole fetch
+// runs inside `withRequestEnv` (see the default export), so `searchParams()` SSR
+// already resolves this request's query (and future env signals ride along). #1922
+async function page(node: unknown): Promise<string> {
+  return '<!DOCTYPE html>' + (await renderToHtml(node))
 }
 
 const router = createRouter()
 
-const homeHandler = eventHandler(async (event) =>
+const homeHandler = eventHandler(async () =>
   page(
-    event,
     <Layout title="BarefootJS + h3" manifest={manifest} base={BASE}>
       <h1>BarefootJS + h3 Integration</h1>
       <nav>
@@ -164,9 +157,8 @@ if (BASE) router.get(BASE, homeHandler)
 
 router.get(
   link('/counter'),
-  eventHandler(async (event) =>
+  eventHandler(async () =>
     page(
-      event,
       <Layout title="Counter — BarefootJS + h3" manifest={manifest} base={BASE}>
         <h1>Counter</h1>
         <Counter initial={0} />
@@ -178,9 +170,8 @@ router.get(
 
 router.get(
   link('/toggle'),
-  eventHandler(async (event) =>
+  eventHandler(async () =>
     page(
-      event,
       <Layout title="Toggle — BarefootJS + h3" manifest={manifest} base={BASE}>
         <h1>Toggle</h1>
         <Toggle
@@ -200,7 +191,6 @@ router.get(
   link('/todos'),
   eventHandler(async (event) =>
     page(
-      event,
       <Layout
         title="Todo (@client) — BarefootJS + h3"
         manifest={manifest}
@@ -221,7 +211,6 @@ router.get(
   link('/todos-ssr'),
   eventHandler(async (event) =>
     page(
-      event,
       <Layout
         title="Todo (SSR) — BarefootJS + h3"
         manifest={manifest}
@@ -240,9 +229,8 @@ router.get(
 
 router.get(
   link('/ai-chat'),
-  eventHandler(async (event) =>
+  eventHandler(async () =>
     page(
-      event,
       <Layout
         title="AI Chat — BarefootJS + h3"
         manifest={manifest}
@@ -402,9 +390,12 @@ async function serveFromDisk(pathname: string): Promise<Response> {
 
 type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
 
+// `withRequestEnv` binds this request's env (the query behind `searchParams()`,
+// and future signals) for the whole fetch, so every `renderToHtml` inside
+// resolves it with no per-page plumbing — scoped per async context, race-free. #1922
 export default {
   port: PORT,
-  async fetch(request: Request, env?: Env): Promise<Response> {
+  fetch: withRequestEnv(async (request: Request, env?: Env): Promise<Response> => {
     const url = new URL(request.url)
     if (isStaticPath(url.pathname)) {
       // Production (Workers): serve from the Assets binding. Dev (Bun): disk.
@@ -412,5 +403,5 @@ export default {
       return serveFromDisk(url.pathname)
     }
     return webHandler(request)
-  },
+  }),
 }
