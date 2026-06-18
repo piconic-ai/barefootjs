@@ -16,9 +16,9 @@
 import { basename } from 'node:path'
 import { Hono } from 'hono'
 // Side-effect import: auto-wires request-scoped `searchParams()` for SSR
-// (`globalThis.__bf_serverSearchReader`, resolved per-request via Hono's
-// `useRequestContext`), so the initial server render of `?sort=` / `?tag=`
-// matches what the client signal reads — no manual priming needed.
+// (the keyed `globalThis.__bf_serverEnvReader` seam, resolved per-request via
+// Hono's `useRequestContext`), so the initial server render of `?sort=` /
+// `?tag=` matches what the client signal reads — no manual priming needed.
 import '@barefootjs/hono/app'
 import { renderer } from './renderer'
 import { posts, postIndex, allTags } from './posts'
@@ -33,7 +33,7 @@ app.use('*', renderer)
 
 // Index — the post list reacts to ?sort= / ?tag= via searchParams() with no
 // region swap. SSR resolves the query per-request through the auto-wired
-// `__bf_serverSearchReader` seam (imported above), so the server render of a
+// `__bf_serverEnvReader` seam (imported above), so the server render of a
 // `?sort=` / `?tag=` URL matches the client with no manual priming.
 app.get('/', (c) => {
   const tag = c.req.query('tag')

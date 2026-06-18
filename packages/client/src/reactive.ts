@@ -624,44 +624,61 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
 // reading is the only thing that materialises anything.
 
 /**
- * SSR reader for the current request's query string, injected by an adapter
- * (e.g. Hono via `useRequestContext().req`). Resolves per-request inside the
- * adapter's request context, so there is no shared mutable server state.
+ * SSR reader for request-scoped environment signals, keyed by env id
+ * (`'search'` today; `'cookie'` etc. later). Injected by an adapter / host so
+ * each value resolves per-request inside the host's async context — no shared
+ * mutable server state. ONE keyed reader serves every env signal, so a new
+ * signal needs no new seam or setter.
  */
-let serverSearchReader: (() => string) | null = null
+let serverEnvReader: ((key: string) => string | undefined) | null = null
 
 /**
- * Adapter hook: teach `@barefootjs/client` how to read the current request's
- * query string during SSR. Call once with a reader that resolves per-request.
+ * Adapter/host hook: teach `@barefootjs/client` how to read the current
+ * request's environment values during SSR. The reader receives an env key
+ * (`'search'`, …) and returns the raw value, or `undefined` to defer (to the
+ * `globalThis` seam, else the empty default). Call once with a reader that
+ * resolves per-request.
  */
-export function __bfSetServerSearchReader(reader: (() => string) | null): void {
-  serverSearchReader = reader
+export function __bfSetServerEnvReader(
+  reader: ((key: string) => string | undefined) | null,
+): void {
+  serverEnvReader = reader
 }
 
 /**
- * Resolve the SSR query reader: the one set via {@link __bfSetServerSearchReader},
- * else a `globalThis.__bf_serverSearchReader` seam — so an adapter can wire
- * request-scoped SSR *without* importing `@barefootjs/client` (the server-side
- * analogue of the `window.__bf_*` client seams).
+ * Resolve a request-scoped env value during SSR: the reader set via
+ * {@link __bfSetServerEnvReader}, else a `globalThis.__bf_serverEnvReader` seam
+ * — so a host can wire request-scoped SSR *without* importing
+ * `@barefootjs/client` (the server-side analogue of the `window.__bf_*` client
+ * seams). `undefined` when no reader resolves the key.
  */
-function resolveServerReader(): (() => string) | null {
-  if (serverSearchReader) return serverSearchReader
-  const seam = (globalThis as unknown as { __bf_serverSearchReader?: () => string })
-    .__bf_serverSearchReader
-  return typeof seam === 'function' ? seam : null
+function resolveServerEnv(key: string): string | undefined {
+  if (serverEnvReader) {
+    const v = serverEnvReader(key)
+    if (v !== undefined) return v
+  }
+  const seam = (
+    globalThis as unknown as { __bf_serverEnvReader?: (key: string) => string | undefined }
+  ).__bf_serverEnvReader
+  return typeof seam === 'function' ? seam(key) : undefined
 }
 
-/** Build a request-scoped reactive environment signal. Internal. */
+/**
+ * Build a request-scoped reactive environment signal, keyed by `key` — the env
+ * id the SSR reader resolves (`'search'`, …). Internal: only concrete instances
+ * (`searchParams`, …) are exported.
+ */
 function createEnvSignal<T>(
-  read: () => string,
+  key: string,
+  readClient: () => string,
   parse: (raw: string) => T,
-  seam: string,
+  pushSeam: string,
 ): Reactive<() => T> {
   let getRaw: (() => string) | null = null
 
   function ensureClientSignal(): string {
     if (!getRaw) {
-      const [get, set] = createSignal(read())
+      const [get, set] = createSignal(readClient())
       getRaw = get
       // Install the router push seam inside the lazily-invoked accessor (not at
       // module top-level), so reading is the only thing with an effect.
@@ -669,7 +686,7 @@ function createEnvSignal<T>(
       // `set` already bails on `Object.is` equality, so no equality guard is
       // needed — and a `get()` here would register a spurious dependency if a
       // caller ever pushed from inside an effect.
-      w[seam] = (next: string) => {
+      w[pushSeam] = (next: string) => {
         set(next)
       }
     }
@@ -678,10 +695,9 @@ function createEnvSignal<T>(
 
   return (() => {
     if (typeof window === 'undefined') {
-      // SSR: resolve per-call inside the adapter's request context. Never cache
-      // a module-level signal — it would be a process-wide global that races.
-      const reader = resolveServerReader()
-      return parse(reader ? reader() : '')
+      // SSR: resolve per-call inside the host's request context. Never cache a
+      // module-level signal — it would be a process-wide global that races.
+      return parse(resolveServerEnv(key) ?? '')
     }
     return parse(ensureClientSignal())
   }) as Reactive<() => T>
@@ -706,7 +722,8 @@ function createEnvSignal<T>(
  * installer (here) and the pusher agree by construction.
  */
 export const searchParams = createEnvSignal(
-  () => (typeof window !== 'undefined' ? window.location.search : (resolveServerReader()?.() ?? '')),
+  'search',
+  () => window.location.search,
   (raw) => new URLSearchParams(raw),
   BF_SEAM_PUSH_SEARCH,
 )

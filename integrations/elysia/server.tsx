@@ -20,6 +20,7 @@ import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
+import { withRequestEnv } from '@barefootjs/hono/request-env'
 import { Layout } from './renderer'
 import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
@@ -45,6 +46,10 @@ function html(markup: string): Response {
     headers: { 'content-type': 'text/html; charset=utf-8' },
   })
 }
+
+// Pages are plain `renderToHtml` — no per-render env plumbing. The whole fetch
+// runs inside `withRequestEnv` (see the default export), so `searchParams()` SSR
+// resolves this request's query (and future env signals ride along). #1922
 
 // ── per-session todo store ─────────────────────────────────────────────────
 type Todo = { id: number; text: string; done: boolean }
@@ -343,9 +348,14 @@ async function serveFromDisk(pathname: string): Promise<Response> {
 
 type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
 
+// `withRequestEnv` binds this request's env (the query behind `searchParams()`,
+// and future signals) for the whole fetch, so every `renderToHtml` inside
+// resolves it with no per-page plumbing — scoped per async context, race-free.
+// The static-asset branch is wrapped too: a harmless no-op scope (it reads no
+// env), which keeps the entry a single wrap. #1922
 export default {
   port: PORT,
-  async fetch(request: Request, env?: Env, ctx?: unknown): Promise<Response> {
+  fetch: withRequestEnv(async (request: Request, env?: Env, ctx?: unknown): Promise<Response> => {
     const url = new URL(request.url)
     if (isStaticPath(url.pathname)) {
       // Production (Workers): serve from the Assets binding. Dev (Bun): disk.
@@ -359,7 +369,7 @@ export default {
       env,
       ctx,
     )
-  },
+  }),
 }
 
 export type App = typeof app

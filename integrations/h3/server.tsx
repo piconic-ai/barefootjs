@@ -32,6 +32,7 @@ import {
 import { join, normalize, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { renderToHtml } from '@barefootjs/hono/render'
+import { withRequestEnv } from '@barefootjs/hono/request-env'
 
 // h3's `createEventStream` leaks an `undefined` unhandled rejection when an
 // SSE client disconnects under the web handler (`onClosed` does not fire in
@@ -124,6 +125,9 @@ function getSession(event: H3Event): Session {
 }
 
 // ── HTML pages ───────────────────────────────────────────────────────────
+// A page is just a `renderToHtml` — no per-render env plumbing. The whole fetch
+// runs inside `withRequestEnv` (see the default export), so `searchParams()` SSR
+// already resolves this request's query (and future env signals ride along). #1922
 async function page(node: unknown): Promise<string> {
   return '<!DOCTYPE html>' + (await renderToHtml(node))
 }
@@ -386,9 +390,14 @@ async function serveFromDisk(pathname: string): Promise<Response> {
 
 type Env = { ASSETS?: { fetch: (request: Request) => Promise<Response> } }
 
+// `withRequestEnv` binds this request's env (the query behind `searchParams()`,
+// and future signals) for the whole fetch, so every `renderToHtml` inside
+// resolves it with no per-page plumbing — scoped per async context, race-free.
+// The static-asset branch is wrapped too: a harmless no-op scope (it reads no
+// env), which keeps the entry a single wrap. #1922
 export default {
   port: PORT,
-  async fetch(request: Request, env?: Env): Promise<Response> {
+  fetch: withRequestEnv(async (request: Request, env?: Env): Promise<Response> => {
     const url = new URL(request.url)
     if (isStaticPath(url.pathname)) {
       // Production (Workers): serve from the Assets binding. Dev (Bun): disk.
@@ -396,5 +405,5 @@ export default {
       return serveFromDisk(url.pathname)
     }
     return webHandler(request)
-  },
+  }),
 }
