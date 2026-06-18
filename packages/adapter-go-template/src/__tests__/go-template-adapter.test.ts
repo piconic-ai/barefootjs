@@ -217,6 +217,42 @@ function compileAndGenerate(source: string, adapter?: GoTemplateAdapter) {
 // Go-Template-Specific Tests
 // =============================================================================
 
+describe('GoTemplateAdapter - searchParams() env-signal lowering (#1922)', () => {
+  // `searchParams().get(k)` lowers to a method call on the canonical
+  // `.SearchParams` struct field, parenthesised inside `or` so the nullish
+  // fallback groups correctly.
+  test('lowers searchParams().get(k) to .SearchParams.Get and emits the struct binding', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+import { searchParams } from '@barefootjs/client'
+export function SortLabel() {
+  return <p>{searchParams().get('sort') ?? 'none'}</p>
+}
+`, adapter)
+    const { template, types } = adapter.generate(ir)
+    expect(template).toContain('{{or (.SearchParams.Get "sort") "none"}}')
+    expect(types).toContain('SearchParams bf.SearchParams')
+    expect(types).toContain('SearchParams: in.SearchParams')
+  })
+
+  // An aliased import binds the env signal to a different local name; the
+  // call `sp()` still resolves to the canonical `.SearchParams` field (the
+  // generated struct field name is fixed, not derived from the JS alias).
+  test('aliased import (`searchParams as sp`) resolves sp() to canonical .SearchParams', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+import { searchParams as sp } from '@barefootjs/client'
+export function SortLabel() {
+  return <p>{sp().get('sort') ?? 'none'}</p>
+}
+`, adapter)
+    const { template, types } = adapter.generate(ir)
+    expect(template).toContain('{{or (.SearchParams.Get "sort") "none"}}')
+    expect(template).not.toContain('.Sp.Get')
+    expect(types).toContain('SearchParams bf.SearchParams')
+  })
+})
+
 describe('GoTemplateAdapter - Adapter Specific', () => {
   describe('generate - Go struct types', () => {
     test('deduplicates struct field when signal name matches prop name (#461)', () => {
