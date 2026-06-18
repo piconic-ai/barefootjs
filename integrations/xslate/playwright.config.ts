@@ -12,6 +12,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3007',
     trace: 'on-first-retry',
+    launchOptions: { executablePath: process.env.PW_EXECUTABLE_PATH || undefined },
   },
   projects: [
     {
