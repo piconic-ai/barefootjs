@@ -188,9 +188,12 @@ const STYLES = `
   .island.like { cursor: pointer; background: #161b22; border: 1px solid #30363d; color: #f778ba; border-radius: 8px; padding: 6px 12px; }
   html[data-theme="light"] .island.like { background: #fff; border-color: #d0d7de; }
   .island.timer { color: #8b949e; font-variant-numeric: tabular-nums; }
-  .island.player { display: inline-flex; align-items: center; gap: 6px; color: #3fb950; font-variant-numeric: tabular-nums; border: 1px solid #30363d; border-radius: 8px; padding: 4px 10px; }
+  .island.player { display: inline-flex; align-items: center; gap: 8px; color: #3fb950; font-variant-numeric: tabular-nums; border: 1px solid #30363d; border-radius: 8px; padding: 4px 10px; }
   html[data-theme="light"] .island.player { border-color: #d0d7de; }
   .player-toggle { cursor: pointer; background: none; border: none; color: inherit; font-size: 14px; padding: 0; line-height: 1; }
+  .player-bar { display: inline-block; width: 96px; height: 6px; background: #30363d; border-radius: 999px; overflow: hidden; }
+  html[data-theme="light"] .player-bar { background: #d0d7de; }
+  .player-fill { display: block; height: 100%; background: #3fb950; transition: width .1s linear; }
   .reader-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 6px 12px; border: 1px solid #30363d; border-radius: 8px; background: #161b22; font-size: 13px; color: #8b949e; }
   html[data-theme="light"] .reader-toolbar { background: #fff; border-color: #d0d7de; }
   .rt-label { text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
