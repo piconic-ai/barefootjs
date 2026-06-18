@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 
 // The blog routes are mounted under the integration's base path.
-const BLOG = '/integrations/h3/blog'
+const BLOG = '/integrations/elysia/blog'
 
 // Tag a live node with an identity marker; read it back to tell a surviving
 // node (region kept) from a freshly rendered one (region swapped).

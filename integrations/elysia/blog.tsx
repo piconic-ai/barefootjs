@@ -1,31 +1,21 @@
 /** @jsxImportSource @barefootjs/hono/jsx */
 //
-// Blog routes for the h3 integration — the `@barefootjs/router` showcase.
+// Blog routes for the Elysia integration — the `@barefootjs/router` showcase.
 //
-// Phase 3 of running the blog across every adapter (phase 2 folded it into
-// Hono, #1933). h3 has no JSX runtime and no `jsxRenderer`, so unlike the Hono
-// sub-app this is a plain `registerBlog(router, ...)` that adds `/blog` +
-// `/blog/posts/:slug` to the existing h3 router. Each route is a `renderToHtml`
-// of `BlogLayout` — its own region-shell layout (hand-authored sidebar
-// `nav:0` + the compiled `<PageShell>` nested content regions + a shell
-// `ThemeToggle` + the `router-entry` bootstrap), separate from the catalog
-// `Layout`. The islands are the shared blog components in `../shared/blog`,
-// compiled into `dist/components` by this integration's `bf build`; links are
-// base-path aware via `BLOG`, so the same shared components work under any
-// adapter's mount point.
+// Phase 4 of running the blog across every adapter (phase 2 → Hono #1933,
+// phase 3 → h3 #1935), over the same `shared/blog` components. Like h3, Elysia
+// is just the HTTP host with no `jsxRenderer`: this module exports the
+// region-shell `BlogLayout` plus two JSX builders, and `server.tsx` wires them
+// into the Elysia route chain (kept inline so the blog never introduces a
+// second adapter instance — the Cloudflare adapter compiles one app). The
+// islands are the shared blog components in `../shared/blog`, compiled into
+// `dist/components` by this integration's `bf build`; links are base-path aware,
+// so the same shared components work under any adapter's mount point.
 //
 // `searchParams()` SSR rides the adapter's existing reader seam: the whole
 // fetch runs inside `withRequestEnv` (see server.tsx), so the index render of a
 // `?sort=` / `?tag=` URL resolves the query per-request with no manual priming.
 
-import {
-  eventHandler,
-  getRouterParam,
-  getQuery,
-  setResponseStatus,
-  createRouter,
-} from 'h3'
-import { renderToHtml } from '@barefootjs/hono/render'
 import { BfScripts } from '@barefootjs/hono/app'
 import type { BarefootBuildManifest } from '@barefootjs/hono/app'
 import { Sidebar } from '@/components/Sidebar'
@@ -52,7 +42,7 @@ function BlogLayout({ base, manifest, title, children }: LayoutProps) {
   // the router bootstrap share ONE signal instance just by resolving the bare
   // specifiers to the same `barefoot.js`. `BfImportMap` only emits the
   // `/client` + `/runtime` keys, so the blog writes its own map to add
-  // `/reactive` (same as the Hono integration).
+  // `/reactive` (same as the Hono / h3 integrations).
   const importMap = JSON.stringify({
     imports: {
       '@barefootjs/client': `${componentsBase}/barefoot.js`,
@@ -92,9 +82,9 @@ function BlogLayout({ base, manifest, title, children }: LayoutProps) {
             <PageShell>{children}</PageShell>
           </main>
         </div>
-        {/* h3 has no per-page script collector, so BfScripts emits every island
-            in the manifest (the same way every other h3 page does); the router
-            bootstrap is appended once. */}
+        {/* Elysia has no per-page script collector, so BfScripts emits every
+            island in the manifest (the same way every other Elysia page does);
+            the router bootstrap is appended once. */}
         <BfScripts base={componentsBase} manifest={manifest} />
         <script type="module" src={`${componentsBase}/router-entry.js`} />
       </body>
@@ -102,99 +92,69 @@ function BlogLayout({ base, manifest, title, children }: LayoutProps) {
   )
 }
 
-async function renderPage(node: unknown): Promise<string> {
-  return '<!DOCTYPE html>' + (await renderToHtml(node))
+/** Index page node — the post list reacts to ?sort= / ?tag= via searchParams(). */
+export function renderBlogIndex(base: string, manifest: BarefootBuildManifest, tag?: string) {
+  const blog = `${base}/blog`
+  const items = posts.map((p) => ({ slug: p.slug, title: p.title, date: p.date, tags: p.tags }))
+  const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
+  return (
+    <BlogLayout base={base} manifest={manifest} title={title}>
+      <PostList items={items} tags={allTags} base={blog} />
+      {/* v1: the player also lives in the content region on the index, marked
+          `data-bf-permanent`, so the router moves the same live node between the
+          list and a post — it keeps playing instead of resetting on "← All posts". */}
+      <NowPlaying />
+    </BlogLayout>
+  )
 }
 
-/**
- * Register the blog routes on the h3 router. `base` is the integration's
- * BASE_PATH; the blog mounts at `${base}/blog` and every link is built relative
- * to it. `manifest` is the shared `dist/components/manifest.json` (now including
- * the blog islands, compiled via `barefoot.config.ts`).
- */
-export function registerBlog(
-  router: ReturnType<typeof createRouter>,
-  base: string,
-  manifest: BarefootBuildManifest,
-): void {
+/** Post page node, or `null` when the slug is unknown (caller returns 404). */
+export function renderBlogPost(base: string, manifest: BarefootBuildManifest, slug: string) {
+  const i = postIndex(slug)
+  if (i < 0) return null
   const blog = `${base}/blog`
-
-  // Index — the post list reacts to ?sort= / ?tag= via searchParams() with no
-  // region swap. SSR resolves the query per-request through the reader seam
-  // (active because this module imports `@barefootjs/hono/app`), so the server
-  // render of a `?sort=` / `?tag=` URL matches the client with no priming.
-  const indexHandler = eventHandler(async (event) => {
-    const tag = getQuery(event).tag as string | undefined
-    const items = posts.map((p) => ({ slug: p.slug, title: p.title, date: p.date, tags: p.tags }))
-    const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
-    return renderPage(
-      <BlogLayout base={base} manifest={manifest} title={title}>
-        <PostList items={items} tags={allTags} base={blog} />
-        {/* v1: the player also lives in the content region on the index, marked
-            `data-bf-permanent`, so the router moves the same live node between
-            the list and a post — it keeps playing instead of resetting on
-            "← All posts". */}
+  const p = posts[i]
+  const prev = posts[i - 1]
+  const next = posts[i + 1]
+  return (
+    <BlogLayout base={base} manifest={manifest} title={`${p.title} — Barefoot Blog`}>
+      <article className="post" data-slug={p.slug}>
+        <a className="back" href={blog}>← All posts</a>
+        <h1 className="page-title">{p.title}</h1>
+        <div className="meta">
+          {p.date} · post {i + 1} of {posts.length} ·{' '}
+          {p.tags.map((t) => (
+            <a className="tag-inline" href={`${blog}?tag=${encodeURIComponent(t)}`}>#{t} </a>
+          ))}
+        </div>
+        <div className="islands">
+          <LikeButton />
+          <ReadingTimer />
+        </div>
+        {/* v1: a docked "Now playing" bar. It reads as a global player but lives
+            in the swappable content region marked `data-bf-permanent`, so the
+            router moves its live node (play state + progress) into the next post
+            instead of disposing it — contrast ReadingTimer above, which resets. */}
         <NowPlaying />
-      </BlogLayout>,
-    )
-  })
-  router.get(blog, indexHandler)
-  router.get(`${blog}/`, indexHandler)
-
-  router.get(
-    `${blog}/posts/:slug`,
-    eventHandler(async (event) => {
-      const slug = getRouterParam(event, 'slug')
-      const i = slug ? postIndex(slug) : -1
-      if (i < 0) {
-        setResponseStatus(event, 404)
-        return 'Not found'
-      }
-      const p = posts[i]
-      const prev = posts[i - 1]
-      const next = posts[i + 1]
-      return renderPage(
-        <BlogLayout base={base} manifest={manifest} title={`${p.title} — Barefoot Blog`}>
-          <article className="post" data-slug={p.slug}>
-            <a className="back" href={blog}>← All posts</a>
-            <h1 className="page-title">{p.title}</h1>
-            <div className="meta">
-              {p.date} · post {i + 1} of {posts.length} ·{' '}
-              {p.tags.map((t) => (
-                <a className="tag-inline" href={`${blog}?tag=${encodeURIComponent(t)}`}>#{t} </a>
-              ))}
-            </div>
-            <div className="islands">
-              <LikeButton />
-              <ReadingTimer />
-            </div>
-            {/* v1: a docked "Now playing" bar. It reads as a global player but
-                lives in the swappable content region marked `data-bf-permanent`,
-                so the router moves its live node (play state + progress) into the
-                next post instead of disposing it — contrast ReadingTimer above,
-                which resets. */}
-            <NowPlaying />
-            <div className="prose">
-              {p.body.map((para) => (
-                <p>{para}</p>
-              ))}
-            </div>
-            <nav className="pager">
-              {prev ? (
-                <a className="pager-link" href={`${blog}/posts/${prev.slug}`}>← {prev.title}</a>
-              ) : (
-                <span className="pager-link disabled">← Start</span>
-              )}
-              {next ? (
-                <a className="pager-link next" href={`${blog}/posts/${next.slug}`}>{next.title} →</a>
-              ) : (
-                <a className="pager-link next" href={blog}>Back to start →</a>
-              )}
-            </nav>
-          </article>
-        </BlogLayout>,
-      )
-    }),
+        <div className="prose">
+          {p.body.map((para) => (
+            <p>{para}</p>
+          ))}
+        </div>
+        <nav className="pager">
+          {prev ? (
+            <a className="pager-link" href={`${blog}/posts/${prev.slug}`}>← {prev.title}</a>
+          ) : (
+            <span className="pager-link disabled">← Start</span>
+          )}
+          {next ? (
+            <a className="pager-link next" href={`${blog}/posts/${next.slug}`}>{next.title} →</a>
+          ) : (
+            <a className="pager-link next" href={blog}>Back to start →</a>
+          )}
+        </nav>
+      </article>
+    </BlogLayout>
   )
 }
 
