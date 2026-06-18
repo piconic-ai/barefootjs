@@ -13,7 +13,7 @@ hydrated by the **real `@barefootjs/client` runtime** — the router drives the
 actual `__bf_hydrate_within` / `__bf_dispose_within` seams, not a hand-written
 stand-in. So this doubles as an end-to-end integration test of the router's
 **v0 / v0.5 / v1 / v2** against the shipping compiler + runtime. The islands live
-in [`../shared/components/blog`](../shared/components/blog), so the same demo
+in [`../shared/blog`](../shared/blog), so the same demo
 compiles for every backend adapter.
 
 ## What it shows
@@ -34,7 +34,7 @@ compiles for every backend adapter.
 (tag a live node, navigate, check whether it survived) — no on-page debug
 instrumentation.
 
-## Components (all real `"use client"`, in `../shared/components/blog`)
+## Components (all real `"use client"`, in `../shared/blog`)
 
 | Component | Where | Role |
 |---|---|---|

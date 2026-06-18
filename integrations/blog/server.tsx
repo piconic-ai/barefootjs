@@ -21,7 +21,7 @@ import { Hono } from 'hono'
 // `?tag=` matches what the client signal reads — no manual priming needed.
 import '@barefootjs/hono/app'
 import { renderer } from './renderer'
-import { posts, postIndex, allTags } from '../shared/components/blog/posts'
+import { posts, postIndex, allTags } from '../shared/blog/posts'
 import { LikeButton } from '@/components/LikeButton'
 import { ReadingTimer } from '@/components/ReadingTimer'
 import { NowPlaying } from '@/components/NowPlaying'
