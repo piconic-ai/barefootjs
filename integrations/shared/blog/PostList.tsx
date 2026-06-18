@@ -18,6 +18,11 @@ const asSortKey = (raw: string | null): SortKey =>
 interface PostListProps {
   items: Item[]
   tags: string[]
+  /**
+   * Path the blog is mounted at (e.g. `/integrations/hono/blog`), so links work
+   * under any adapter's base path. Defaults to `''` (mounted at the root).
+   */
+  base?: string
 }
 
 /**
@@ -48,12 +53,17 @@ export function PostList(props: PostListProps) {
     return sorted
   })
 
+  // Normalize a trailing slash so a caller passing `/blog/` can't produce
+  // `//posts/...`. `root` is the index path (`/` when mounted at the site root),
+  // so query-only links stay absolute (`/?sort=...`) rather than relative.
+  const base = (props.base ?? '').replace(/\/+$/, '')
+  const root = base || '/'
   const hrefFor = (sort: SortKey, tag: string): string => {
     const u = new URLSearchParams()
     if (sort !== 'date') u.set('sort', sort)
     if (tag) u.set('tag', tag)
     const s = u.toString()
-    return s ? `/?${s}` : '/'
+    return s ? `${root}?${s}` : root
   }
   const sortHref = (k: SortKey) => hrefFor(k, params().tag)
   const tagHref = (t: string) => hrefFor(params().sort, t)
@@ -88,7 +98,7 @@ export function PostList(props: PostListProps) {
         {visible().map((p) => (
           <PostListItem
             key={p.slug}
-            slug={p.slug}
+            href={`${base}/posts/${p.slug}`}
             title={p.title}
             date={p.date}
             meta={`${p.date} · ${p.tags.map((t) => `#${t}`).join(' ')}`}

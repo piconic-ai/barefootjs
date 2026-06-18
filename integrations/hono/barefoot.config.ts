@@ -4,7 +4,7 @@ const basePath = process.env.BASE_PATH ?? '/integrations/hono'
 const staticBase = `${basePath}/static/components/`
 
 export default createConfig({
-  components: ['components', '../shared/components'],
+  components: ['components', '../shared/components', '../shared/blog'],
   outDir: 'dist',
   minify: true,
   scriptBasePath: staticBase,
