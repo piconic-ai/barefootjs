@@ -1,11 +1,23 @@
 /**
  * Layout for the router-blog.
  *
- * The shell (`<header>` with its islands) lives OUTSIDE `<main bf-region>`,
- * so a partial navigation never re-renders or re-hydrates it — the uptime
- * clock keeps climbing and the theme toggle keeps its state. Only the
- * `<main bf-region>` children are swapped by `@barefootjs/router` (its
- * default `[bf-region]` selector — the "single authored region", spec v0).
+ * The shell (`<header>` with its islands) lives OUTSIDE any region, so a
+ * partial navigation never re-renders or re-hydrates it — the uptime clock
+ * keeps climbing and the theme toggle keeps its state.
+ *
+ * Below it are **two sibling regions** (spec/router.md **v2**, master–detail):
+ *
+ *   - `<aside bf-region="nav:0">` — a persistent sidebar. Both pages render it
+ *     with the same id and the same content, so its *owned content* never
+ *     differs (the router's diff normalizes away the per-render `bf-s` scope
+ *     ids) and it is left mounted — its `Sidebar` island keeps its state.
+ *   - `<main bf-region="content:1">` — the swappable content. Only this region's
+ *     children change between pages, so it is the one the router swaps.
+ *
+ * The ids are written by hand here because this layout is a plain Hono SSR
+ * template, not a compiled component tree; in `bf build` output the `<Region>`
+ * component lowers to the same deterministic `bf-region="<file scope>:<index>"`
+ * ids. The runtime only needs them equal across page documents to match.
  *
  * `BfScripts` emits the runtime + island module scripts at body end; the
  * router reads those `<script type="module" src>` tags off each navigation
@@ -16,6 +28,7 @@ import { jsxRenderer } from 'hono/jsx-renderer'
 import { BfScripts } from '@barefootjs/hono/scripts'
 import { ShellStats } from '@/components/ShellStats'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Sidebar } from '@/components/Sidebar'
 
 const STATIC = '/static/components'
 
@@ -49,7 +62,23 @@ export const renderer = jsxRenderer(({ children, title }) => {
             <ThemeToggle />
           </div>
         </header>
-        <main bf-region>{children}</main>
+        <div className="layout">
+          {/*
+            Two sibling regions. The `bf-region` ids are written BY HAND here
+            only because this layout is a plain Hono `jsxRenderer` template, not
+            a `bf build`-compiled component tree — so the `<Region>` component
+            (from `@barefootjs/client`) would not be lowered. In a compiled tree
+            you write `<Region>{children}</Region>` and the compiler emits a
+            deterministic `bf-region="<file-scope hash>:<index>"` id for you.
+            The router matches regions by plain string equality, so these
+            readable ids work identically — they only need to be the same across
+            every page that renders this layout.
+          */}
+          <aside bf-region="nav:0">
+            <Sidebar />
+          </aside>
+          <main bf-region="content:1">{children}</main>
+        </div>
         <BfScripts />
         <script type="module" src={`${STATIC}/router-entry.js`} />
       </body>
@@ -73,7 +102,16 @@ const STYLES = `
   .chip b { color: #58a6ff; font-variant-numeric: tabular-nums; }
   .toggle { cursor: pointer; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 999px; padding: 5px 12px; font-size: 13px; }
   html[data-theme="light"] .toggle { background: #f6f8fa; border-color: #d0d7de; color: #1f2328; }
-  main { display: block; max-width: 760px; margin: 0 auto; padding: 32px 24px 80px; }
+  .layout { display: flex; gap: 28px; align-items: flex-start; max-width: 1000px; margin: 0 auto; padding: 32px 24px 80px; }
+  .layout main { flex: 1; min-width: 0; }
+  .layout aside { position: sticky; top: 78px; width: 210px; flex: none; }
+  html[data-theme="light"] .sidebar { background: #fff; border-color: #d0d7de; }
+  .sidebar { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 16px; }
+  .sidebar-title { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #8b949e; margin-bottom: 12px; }
+  .sidebar-pin { cursor: pointer; width: 100%; background: #0d1117; border: 1px solid #30363d; color: #f2cc60; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  html[data-theme="light"] .sidebar-pin { background: #f6f8fa; border-color: #d0d7de; }
+  .sidebar-note { font-size: 12px; color: #6e7681; margin: 12px 0 0; }
+  @media (max-width: 720px) { .layout { flex-direction: column; } .layout aside { position: static; width: 100%; } }
   .page-title { font-size: 28px; margin: 0 0 6px; }
   .lede, .meta { color: #8b949e; }
   html[data-theme="light"] .lede, html[data-theme="light"] .meta { color: #57606a; }
