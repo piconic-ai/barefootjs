@@ -64,7 +64,8 @@ import {
   collectContextConsumers,
   isLowerableObjectRestDestructure,
   type ContextConsumer,
-  collectModuleStringConsts as collectModuleStringConstsShared
+  collectModuleStringConsts as collectModuleStringConstsShared,
+  searchParamsLocalNames
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION } from '@barefootjs/shared'
@@ -611,6 +612,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private contextConsumers: ContextConsumer[] = []
 
+  /**
+   * (#1922) Local binding names the request-scoped `searchParams()` env signal
+   * is imported under (handles `import { searchParams as sp }`). A zero-arg call
+   * on one of these names lowers to the canonical `.SearchParams` field
+   * regardless of the JS alias. Set at `generate()` / `generateTypes()` entry.
+   */
+  private searchParamsLocals: Set<string> = new Set()
+
   /** Child component name → the contexts it consumes (cross-component, for provider wiring). */
   private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
 
@@ -654,6 +663,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.localConstants = ir.metadata.localConstants ?? []
     this.currentMemos = ir.metadata.memos ?? []
     this.contextConsumers = collectContextConsumers(ir.metadata)
+    this.searchParamsLocals = searchParamsLocalNames(ir.metadata)
     // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
     // before computing the nillable set / rendering, so the synthetic params
     // participate in attribute omission and field binding uniformly. Shared
@@ -1032,6 +1042,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.localConstants = ir.metadata.localConstants ?? []
     this.currentMemos = ir.metadata.memos ?? []
     this.contextConsumers = collectContextConsumers(ir.metadata)
+    this.searchParamsLocals = searchParamsLocalNames(ir.metadata)
     const lines: string[] = []
 
     const componentName = ir.metadata.componentName
@@ -1388,9 +1399,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Whether the component reads the request-scoped `searchParams()`
-   * environment signal (router v0.5, #1922). Detected from a non-type
-   * `searchParams` import off `@barefootjs/client` — the same import the
-   * analyzer validates against `CLIENT_EXPORTS`. When true the generated
+   * environment signal (router v0.5, #1922). Detected from `searchParamsLocals`
+   * — the binding names the shared `searchParamsLocalNames` helper found at
+   * `generate()` / `generateTypes()` entry, covering any local name (including
+   * an aliased `import { searchParams as sp }`). When non-empty the generated
    * structs carry a `SearchParams bf.SearchParams` binding the route handler
    * fills per request and the template reads via `.SearchParams.Get "key"`.
    *
@@ -1399,13 +1411,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * env-signal field is dropped (the reference would resolve to their value).
    */
   private usesSearchParams(ir: ComponentIR): boolean {
-    const imported = ir.metadata.imports.some(
-      imp =>
-        imp.source === '@barefootjs/client' &&
-        !imp.isTypeOnly &&
-        imp.specifiers.some(s => !s.isTypeOnly && (s.alias ?? s.name) === 'searchParams'),
-    )
-    if (!imported) return false
+    if (this.searchParamsLocals.size === 0) return false
     // Every other source that contributes a Props/Input struct field: a
     // collision on `SearchParams` would redeclare the field and break the Go
     // compile. Covers props, signals, memos, `useContext` consumers, and the
@@ -4263,7 +4269,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // the inner dot no longer refers to it, and it's not a root field. (#1677)
     if (this.isOuterLoopParam(name)) return `$${name}`
     if (this.loopVarRefCount.has(name)) return `$${name}`
-    return this.rootFieldRef(name)
+    // Env-signal binding (incl. an alias) → canonical `.SearchParams` (#1922).
+    return this.searchParamsFieldRef(name) ?? this.rootFieldRef(name)
   }
 
   /**
@@ -4290,6 +4297,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private rootFieldRef(name: string): string {
     const prefix = this.loopParamStack.length > 0 ? '$.' : '.'
     return `${prefix}${this.capitalizeFieldName(name)}`
+  }
+
+  /**
+   * (#1922) When `name` is a local binding of the `searchParams()` env signal,
+   * resolve it to the canonical `.SearchParams` field — not `.<Capitalized
+   * name>` — so an aliased `import { searchParams as sp }` (`sp()`) reaches the
+   * same struct field the generator emits. Returns null for any other name so
+   * callers fall back to their normal field-ref lowering.
+   */
+  private searchParamsFieldRef(name: string): string | null {
+    return this.searchParamsLocals.has(name) ? this.rootFieldRef('searchParams') : null
   }
 
   /**
@@ -4344,9 +4362,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
-    // Signal call: count() -> .Count (or $.Count inside a loop, #1677)
+    // Signal call: count() -> .Count (or $.Count inside a loop, #1677).
+    // An env-signal binding (`searchParams()`, or an aliased `sp()`) resolves to
+    // the canonical `.SearchParams` field regardless of the JS name (#1922).
     if (callee.kind === 'identifier' && args.length === 0) {
-      return this.rootFieldRef(callee.name)
+      return this.searchParamsFieldRef(callee.name) ?? this.rootFieldRef(callee.name)
     }
     // Array methods (`.join` and any others added to ArrayMethod, #1443)
     // are lifted into the `array-method` IR kind at parse time, so
