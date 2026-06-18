@@ -21,7 +21,17 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'BASE_PATH=/integrations/xslate plackup -s Starman --workers 3 -p 3007 app.psgi',
+    // Run the test server in production mode with a larger Starman worker pool.
+    // In dev mode every page that emits the DevReload snippet opens a persistent
+    // SSE connection that pins one Starman prefork worker for the page's
+    // lifetime; a full sequential run starves the pool and the server stops
+    // responding (`net::ERR_ABORTED`). Production mode drops DevReload entirely
+    // (tests don't need hot reload) and exercises the production render path
+    // (template cache on); the wider pool absorbs the SSE/streaming endpoints
+    // (DevReload, the AI-chat stream) without starving. Mojolicious is immune to
+    // this because its daemon is a single-process event loop.
+    command:
+      'BASE_PATH=/integrations/xslate PLACK_ENV=production plackup -s Starman --workers 10 -p 3007 app.psgi',
     url: 'http://localhost:3007/integrations/xslate/',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
