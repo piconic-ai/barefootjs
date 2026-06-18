@@ -1,41 +1,34 @@
 /**
- * Layout for the blog.
+ * Blog routes for the Hono integration — the `@barefootjs/router` showcase.
  *
- * The shell (`<header>` with the brand + theme toggle) lives OUTSIDE any region,
- * so a partial navigation never re-renders or re-hydrates it — the theme toggle
- * keeps its state across navigations.
- *
- * Below it are **two sibling regions** (spec/router.md **v2**, master–detail):
- *
- *   - `<aside bf-region="nav:0">` — a persistent sidebar. Both pages render it
- *     with the same id and the same content, so its *owned content* never
- *     differs (the router's diff normalizes away the per-render `bf-s` scope
- *     ids) and it is left mounted — its `Sidebar` island keeps its state.
- *   - `<main bf-region="content:1">` — the swappable content. Only this region's
- *     children change between pages, so it is the one the router swaps.
- *
- * The ids are written by hand here because this layout is a plain Hono SSR
- * template, not a compiled component tree; in `bf build` output the `<Region>`
- * component lowers to the same deterministic `bf-region="<file scope>:<index>"`
- * ids. The runtime only needs them equal across page documents to match.
- *
- * `BfScripts` emits the runtime + island module scripts at body end; the
- * router reads those `<script type="module" src>` tags off each navigation
- * response to load any newly-required island before re-hydrating. The
- * `router-entry.js` bootstrap (seams + startRouter) is emitted last.
+ * A sub-app mounted at `/blog` (under the integration's BASE_PATH) with its own
+ * region-shell layout, so it doesn't share the catalog renderer. The islands are
+ * the shared blog components in `../shared/blog`, compiled by this integration's
+ * `bf build`; `client/router-entry.ts` (bundled to `router-entry.js`) boots the
+ * client router. Links are base-path aware via `BASE`, so the same shared
+ * components work under any adapter's mount point.
  */
+import { Hono } from 'hono'
 import { jsxRenderer } from 'hono/jsx-renderer'
 import { BfScripts } from '@barefootjs/hono/scripts'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { Sidebar } from '@/components/Sidebar'
 import { PageShell } from '@/components/PageShell'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { LikeButton } from '@/components/LikeButton'
+import { ReadingTimer } from '@/components/ReadingTimer'
+import { NowPlaying } from '@/components/NowPlaying'
+import { PostList } from '@/components/PostList'
+import { posts, postIndex, allTags } from '../shared/blog/posts'
 
-const STATIC = '/static/components'
+const BASE_PATH = process.env.BASE_PATH ?? '/integrations/hono'
+const STATIC = `${BASE_PATH}/static/components`
+/** Where the blog is mounted; every link is built relative to this. */
+const BASE = `${BASE_PATH}/blog`
 
-// `searchParams()` now lives in the single physical `@barefootjs/client/reactive`
-// module (re-exported by every `@barefootjs/client*` entry), so the island and
-// the bootstrap share ONE signal instance just by resolving the bare specifiers
-// to the same `barefoot.js` — no extra `router/signals` shim is needed.
+// `searchParams()` lives in the single physical `@barefootjs/client/reactive`
+// module re-exported by every `@barefootjs/client*` entry, so the island and the
+// router bootstrap share ONE signal instance just by resolving the bare
+// specifiers to the same `barefoot.js`.
 const importMap = JSON.stringify({
   imports: {
     '@barefootjs/client': `${STATIC}/barefoot.js`,
@@ -44,7 +37,7 @@ const importMap = JSON.stringify({
   },
 })
 
-export const renderer = jsxRenderer(({ children, title }) => {
+const blogRenderer = jsxRenderer(({ children, title }) => {
   return (
     <html lang="en" data-theme="dark">
       <head>
@@ -56,26 +49,20 @@ export const renderer = jsxRenderer(({ children, title }) => {
       </head>
       <body>
         <header className="shell">
-          <a className="shell-brand" href="/">📰 Barefoot Blog</a>
+          <a className="shell-brand" href={BASE}>📰 Barefoot Blog</a>
           <div className="shell-island">
             <ThemeToggle />
           </div>
         </header>
+        {/*
+          Two ways to author a region, side by side. The sidebar's
+          `bf-region="nav:0"` is hand-written (this is a plain Hono template, not
+          a `bf build`-compiled tree, so `<Region>` would not lower here). The
+          content area is a compiled `<PageShell>` whose nested `<Region>`s the
+          compiler lowers to deterministic `bf-region="<file scope>:<index>"` ids.
+          The router matches both by string equality.
+        */}
         <div className="layout">
-          {/*
-            Two ways to author a region, side by side:
-
-            - The sidebar's `bf-region="nav:0"` is written BY HAND, because this
-              layout is a plain Hono `jsxRenderer` template (not a `bf build`-
-              compiled tree), so a `<Region>` here would not be lowered.
-            - The content area is a compiled `<PageShell>` whose `<Region>`s the
-              compiler lowers to deterministic `bf-region="<file scope>:<index>"`
-              ids — and it nests them (an outer region holding a persistent
-              toolbar, an inner region the router swaps).
-
-            The router matches regions by plain string equality, so both styles
-            interoperate; ids only need to be the same across every page.
-          */}
           <aside bf-region="nav:0">
             <Sidebar />
           </aside>
@@ -87,6 +74,68 @@ export const renderer = jsxRenderer(({ children, title }) => {
         <script type="module" src={`${STATIC}/router-entry.js`} />
       </body>
     </html>
+  )
+})
+
+export const blog = new Hono()
+blog.use(blogRenderer)
+
+// Index — the post list reacts to ?sort= / ?tag= via searchParams() with no
+// region swap. SSR resolves the query per-request through the Hono adapter's
+// auto-wired reader seam (active because the catalog renderer imports
+// `@barefootjs/hono/app`), so the server render of a `?sort=` / `?tag=` URL
+// matches the client with no manual priming.
+blog.get('/', (c) => {
+  const tag = c.req.query('tag')
+  const items = posts.map((p) => ({ slug: p.slug, title: p.title, date: p.date, tags: p.tags }))
+  const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
+  return c.render(<PostList items={items} tags={allTags} base={BASE} />, { title })
+})
+
+blog.get('/posts/:slug', (c) => {
+  const slug = c.req.param('slug')
+  const i = postIndex(slug)
+  if (i < 0) return c.notFound()
+  const p = posts[i]
+  const prev = posts[i - 1]
+  const next = posts[i + 1]
+  return c.render(
+    <article className="post" data-slug={p.slug}>
+      <a className="back" href={BASE}>← All posts</a>
+      <h1 className="page-title">{p.title}</h1>
+      <div className="meta">
+        {p.date} · post {i + 1} of {posts.length} ·{' '}
+        {p.tags.map((t) => (
+          <a className="tag-inline" href={`${BASE}?tag=${encodeURIComponent(t)}`}>#{t} </a>
+        ))}
+      </div>
+      <div className="islands">
+        <LikeButton />
+        <ReadingTimer />
+        {/* v1: NowPlaying's root is `data-bf-permanent`, so its live node (play
+            state + clock) is moved into the next post instead of disposed —
+            contrast ReadingTimer, which resets every swap. */}
+        <NowPlaying />
+      </div>
+      <div className="prose">
+        {p.body.map((para) => (
+          <p>{para}</p>
+        ))}
+      </div>
+      <nav className="pager">
+        {prev ? (
+          <a className="pager-link" href={`${BASE}/posts/${prev.slug}`}>← {prev.title}</a>
+        ) : (
+          <span className="pager-link disabled">← Start</span>
+        )}
+        {next ? (
+          <a className="pager-link next" href={`${BASE}/posts/${next.slug}`}>{next.title} →</a>
+        ) : (
+          <a className="pager-link next" href={BASE}>Back to start →</a>
+        )}
+      </nav>
+    </article>,
+    { title: `${p.title} — Barefoot Blog` },
   )
 })
 

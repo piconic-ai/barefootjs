@@ -19,6 +19,7 @@ import { Form } from '@/components/Form'
 import { PortalExample } from '@/components/PortalExample'
 import ConditionalReturn from '@/components/ConditionalReturn'
 import { AIChatPage } from './components/AIChatPage'
+import { blog } from './blog'
 
 const BASE_PATH = process.env.BASE_PATH ?? '/integrations/hono'
 const link = (path: string) => `${BASE_PATH}${path}`
@@ -36,6 +37,11 @@ app.use(renderer)
 // stream drops, the client reconnects, the boot id differs, reload fires.
 // No-op in production (NODE_ENV=production).
 app.get('/_bf/reload', createDevReloader())
+
+// Blog — the `@barefootjs/router` showcase (partial navigation across nested /
+// sibling regions). A sub-app with its own region-shell renderer, mounted under
+// `${BASE_PATH}/blog`. Registered before the catalog routes so its renderer wins.
+app.route('/blog', blog)
 
 // Per-session in-memory todo storage. Each browser gets an opaque session
 // id via a cookie scoped to BASE_PATH; the map is keyed by that id so one
@@ -111,6 +117,7 @@ app.get('/', (c) => {
           <li><a href={link('/todos')}>Todo (@client)</a></li>
           <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
           <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
+          <li><a href={link('/blog')}>Blog (@barefootjs/router — partial navigation)</a></li>
         </ul>
       </nav>
     </div>

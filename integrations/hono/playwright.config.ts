@@ -12,6 +12,9 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3001',
     trace: 'on-first-retry',
+    // Honour a non-standard Chromium location for local runs; unset in CI, where
+    // Playwright's managed browser is installed.
+    launchOptions: { executablePath: process.env.PW_EXECUTABLE_PATH || undefined },
   },
   projects: [
     {

@@ -3,7 +3,8 @@
 import { createSignal } from '@barefootjs/client'
 
 interface PostListItemProps {
-  slug: string
+  /** Full href to the post (base-path aware; built by the parent list). */
+  href: string
   title: string
   date: string
   meta: string
@@ -22,7 +23,7 @@ export function PostListItem(props: PostListItemProps) {
       <button className="pin" type="button" aria-label="pin" onClick={() => setPinned(!pinned())}>
         {pinned() ? '★' : '☆'}
       </button>
-      <a className="item-link" href={`/posts/${props.slug}`}>{props.title}</a>
+      <a className="item-link" href={props.href}>{props.title}</a>
       <span className="item-meta">{props.meta}</span>
     </li>
   )
