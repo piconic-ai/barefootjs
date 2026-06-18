@@ -3930,10 +3930,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // value (not the identifier) is passed to the baker so `jsLiteralToGo`
     // can reduce it to a Go slice.
     const blockReturn = this.resolveBlockBodyMemoModuleConst(computation, signals)
-    if (blockReturn !== null && blockReturn.constValue) {
+    if (blockReturn !== null && blockReturn.constValue && blockReturn.constType) {
       return this.convertInitialValue(
         blockReturn.constValue,
-        blockReturn.constType ?? memo.type,
+        blockReturn.constType,
         propsParams,
       )
     }
