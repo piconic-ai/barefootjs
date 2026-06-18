@@ -4197,10 +4197,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const goExpr = this.convertExpressionToGo(expr.expr)
 
-    // If the expression already contains Go template blocks (e.g., {{with ...}}),
-    // don't wrap it again in {{...}} to avoid double-wrapping.
+    // If the expression already contains Go template actions, don't wrap it
+    // again in {{...}} to avoid double-wrapping. Two shapes reach here:
+    //   - whole-expression blocks that START with `{{` (a `{{with ...}}` /
+    //     `{{if ...}}` chain from a nested ternary), and
+    //   - template literals, which lower to a MIX of literal text and actions
+    //     (` · #${tag}` → ` · #{{.Tag}}`). Those don't start with `{{`, so the
+    //     old `startsWith` test let them fall through to the wrap below and
+    //     produced `{{ · #{{.Tag}}}}` — invalid `html/template` syntax that
+    //     panics at parse time (#1933, blog PostList status line). Any `{{`
+    //     anywhere means the string is already template text; emit it as-is.
     // Use comment markers instead of <span> to avoid changing DOM structure.
-    if (goExpr.startsWith('{{')) {
+    if (goExpr.includes('{{')) {
       if (expr.slotId) {
         return `{{bfTextStart "${expr.slotId}"}}${goExpr}{{bfTextEnd}}`
       }

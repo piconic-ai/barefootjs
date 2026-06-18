@@ -253,6 +253,53 @@ export function SortLabel() {
   })
 })
 
+describe('GoTemplateAdapter - template-literal text lowering (#1933)', () => {
+  // A dynamic text node whose expression is a template literal lowers to a
+  // MIX of literal text + `{{...}}` actions (e.g. ` · #${tag}` →
+  // ` · #{{.Tag}}`). `renderExpression` must emit that mixed string as-is
+  // between bfTextStart/bfTextEnd — wrapping the whole thing in another
+  // `{{...}}` produces `{{ · #{{.Tag}}}}`, which `html/template` rejects at
+  // parse time with `unrecognized character in action: U+00B7 '·'`. This is
+  // the blog PostList status-line shape (the `· #${params().tag}` branch).
+  test('template literal in a conditional text branch keeps literal text outside the action', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function StatusLine() {
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  return (
+    <div className="status">
+      {tag() ? \` · #\${tag()}\` : ''}
+    </div>
+  )
+}
+`, adapter)
+    const { template } = adapter.generate(ir)
+    // The literal text ` · #` must sit OUTSIDE the action, with only the
+    // interpolation as `{{...}}`. The broken form double-wraps it.
+    expect(template).not.toContain('{{ · #')
+    expect(template).toContain(' · #{{.Tag}}')
+  })
+
+  // Generalised: a template literal with a trailing interpolation in plain
+  // dynamic-text position (no conditional) must not be double-wrapped either.
+  test('template literal in plain dynamic text is not double-wrapped', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Label() {
+  const [n, setN] = createSignal(0)
+  return <span>{\`count: \${n()}\`}</span>
+}
+`, adapter)
+    const { template } = adapter.generate(ir)
+    expect(template).not.toContain('{{count: ')
+    expect(template).toContain('count: {{.N}}')
+  })
+})
+
 describe('GoTemplateAdapter - Adapter Specific', () => {
   describe('generate - Go struct types', () => {
     test('deduplicates struct field when signal name matches prop name (#461)', () => {
