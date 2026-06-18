@@ -1,9 +1,9 @@
 /**
- * Layout for the router-blog.
+ * Layout for the blog.
  *
- * The shell (`<header>` with its islands) lives OUTSIDE any region, so a
- * partial navigation never re-renders or re-hydrates it — the uptime clock
- * keeps climbing and the theme toggle keeps its state.
+ * The shell (`<header>` with the brand + theme toggle) lives OUTSIDE any region,
+ * so a partial navigation never re-renders or re-hydrates it — the theme toggle
+ * keeps its state across navigations.
  *
  * Below it are **two sibling regions** (spec/router.md **v2**, master–detail):
  *
@@ -26,7 +26,6 @@
  */
 import { jsxRenderer } from 'hono/jsx-renderer'
 import { BfScripts } from '@barefootjs/hono/scripts'
-import { ShellStats } from '@/components/ShellStats'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Sidebar } from '@/components/Sidebar'
 import { PageShell } from '@/components/PageShell'
@@ -59,7 +58,6 @@ export const renderer = jsxRenderer(({ children, title }) => {
         <header className="shell">
           <a className="shell-brand" href="/">📰 Barefoot Blog</a>
           <div className="shell-island">
-            <ShellStats />
             <ThemeToggle />
           </div>
         </header>
@@ -102,10 +100,7 @@ const STYLES = `
   .shell { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; background: #161b22; border-bottom: 1px solid #30363d; }
   html[data-theme="light"] .shell { background: #fff; border-bottom-color: #d0d7de; }
   .shell-brand { font-weight: 700; font-size: 18px; text-decoration: none; color: inherit; }
-  .shell-island, .shell-stats { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; background: #0d1117; border: 1px solid #30363d; border-radius: 999px; padding: 5px 12px; font-size: 13px; color: #9aa7b4; }
-  html[data-theme="light"] .chip { background: #f6f8fa; border-color: #d0d7de; color: #57606a; }
-  .chip b { color: #58a6ff; font-variant-numeric: tabular-nums; }
+  .shell-island { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .toggle { cursor: pointer; background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 999px; padding: 5px 12px; font-size: 13px; }
   html[data-theme="light"] .toggle { background: #f6f8fa; border-color: #d0d7de; color: #1f2328; }
   .layout { display: flex; gap: 28px; align-items: flex-start; max-width: 1000px; margin: 0 auto; padding: 32px 24px 80px; }
